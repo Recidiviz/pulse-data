@@ -1,0 +1,9 @@
+queue:
+- name: session-refresh
+  rate: 60/s
+  bucket_size: 60
+  
+- name: us-ny
+  rate: 1/s
+  bucket_size: 40
+  max_concurrent_requests: 3
