@@ -1,0 +1,17 @@
+runtime: python27
+api_version: 1
+threadsafe: false
+
+handlers:
+- url: /start
+  script: recidiviz.app
+
+- url: /scraper
+  script: worker.app
+  login: admin
+
+libraries:
+- name: webapp2
+  version: latest
+- name: lxml
+  version: "3.7.3"
