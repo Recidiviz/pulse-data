@@ -19,6 +19,8 @@ The current plan is to use Expando data models, since some inmates may have stra
 
 The code is heavily commented, so it shouldn't be too difficult to follow what's going on.
 
+The repo 'Issues' reflects substantial changes that are still needed / desirable. 
+
 Properties of region-specific prison sites
 ------
 Each state and the federal government have created their own inmate search systems, and several aspects of each one make them more or less difficult for this tool to grapple with.
