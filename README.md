@@ -25,7 +25,7 @@ Development
 ### Why AppEngine?
 This is a scraper - it needs to scale up and down, it needs to throttle its requests on a per-site basis, it needs to gracefully handly weird HTTP errors from the sites it's scraping, but that's about it. It's not a very fancy web application.
 
-AppEngine is both easy to toss small services like this up onto, and easy to scale up and down as needed. It also comes with helpful utilities like TaskQueues built-in, so we don't have to worry about creating that functionality from scratch.
+AppEngine is both easy to toss small services like this up onto, and easy to scale up and down as needed. It also comes with helpful utilities like [TaskQueues](https://cloud.google.com/appengine/docs/standard/python/taskqueue/push/) built-in, so we don't have to worry about creating that functionality from scratch.
 
 ### Getting set up
 Install the GCloud SDK (I recommend using the [interactive installer](https://cloud.google.com/sdk/downloads#interactive)), and clone the recidiviz repo from Github.
@@ -36,17 +36,16 @@ There are two ways to run the app - on your local machine, or deployed to the cl
 #### Local
 Running from your local machine is preferred for development - it yields much quicker iteration cycles, and the local dev server is able to handle the needs of the simple scraping tool pretty well.
 
-To run this locally, just navigate to the directory you cloned recidiviz into and run:
-`dev_appservey.py .`
+To run this locally, just navigate to the directory you cloned recidiviz into and run `dev_appservey.py .`.
 
-Logs will show up in the console where you ran that command, and you can kick off the scraping by navigating in your browser to localhost:8080/start
+Logs will show up in the console you run the command in, and you can kick off the scraping by navigating in your browser to localhost:8080/start (logs won't show much til the scraping starts).
 
 #### On AppEngine
-To deploy to AppEngine, navigate to the directory where you cloned recidiviz into and run:
-`gcloud app deploy`
+To deploy to AppEngine, navigate to the directory where you cloned recidiviz into and run `gcloud app deploy`. This will upload the full project to the cloud and push it to production.
 
-If it doesn't seem to know which project of yours to deploy to, or your account info, you may have skipped part of the interactive setup for gcloud. Run:
-`gcloud init`
+Once there, you can kick off scraping by visiting 
+
+If it doesn't seem to know which project of yours to deploy to, or your account info, you may have skipped part of the interactive setup for gcloud. Run `gcloud init` to revisit that setup.
 
 ### General structure
 This app is intended to support multiple scrapers, each specific to the prison system they're individually tailored to scrape. Currently the only scraper built is one for the New York Department of Corrections and Community Supervision (DOCCS) system.
