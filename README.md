@@ -43,9 +43,11 @@ Logs will show up in the console you run the command in, and you can kick off th
 #### On AppEngine
 To deploy to AppEngine, navigate to the directory where you cloned recidiviz into and run `gcloud app deploy`. This will upload the full project to the cloud and push it to production.
 
-Once there, you can kick off scraping by visiting 
-
 If it doesn't seem to know which project of yours to deploy to, or your account info, you may have skipped part of the interactive setup for gcloud. Run `gcloud init` to revisit that setup.
+
+Once the project is in production, you can kick off scraping by visiting [recidiviz-123.appspot.com/start](recidiviz-123.appspot.com/start). You can monitor the task queue (and purge it) in the [Cloud Console](https://console.cloud.google.com/appengine/taskqueues?project=recidiviz-123&serviceId=default&tab=PUSH), and read the service logs there [as well](https://console.cloud.google.com/logs/viewer?project=recidiviz-123&minLogLevel=0&expandAll=false).
+
+**_(Note: Don't test in prod unless you really mean it! It will try to crawl all of NYS-DOCCS at 1qps at the moment, which isn't tested over long durations yet. I strongly recommend developing only with the local dev server, which you can easily kill during tests with Ctrl+C.)_**
 
 ### General structure
 This app is intended to support multiple scrapers, each specific to the prison system they're individually tailored to scrape. Currently the only scraper built is one for the New York Department of Corrections and Community Supervision (DOCCS) system.
