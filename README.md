@@ -11,13 +11,25 @@ Usage
 ------
 There isn't much to actively 'use' - if you navigate to the URL of the app with '/start' at the end, it'll kick off scraping for the sites it knows about (currently the New York State prison system).
 
-State of the world
+State of the tool
 ------
 Everything works, but records aren't persisted yet. Tomorrow I should be able to add in persistence in Cloud Datastore. 
 
 The current plan is to use Expando data models, since some inmates may have strange fields we don't anticipate, and if the prison system's data schema or field names are changed we may be able to continue scraping with them and can adapt on the analytics side instead of the scraping side.
 
 The code is heavily commented, so it shouldn't be too difficult to follow what's going on.
+
+Properties of region-specific prison sites
+------
+Each state and the federal government have created their own inmate search systems, and several aspects of each one make them more or less difficult for this tool to grapple with.
+
+A [tracker](https://docs.google.com/a/andrewland.co/spreadsheets/d/1D53EyAg__oPsFii0bQVNXiQTDFOG6wu-t4nq8-FhT1E/edit?usp=sharing) has been started to keep tabs on how these features vary between the different systems.
+
+Salient attributes include:
+- **Current vs. Historical data:** Some systems return only current parolees / inmates, whereas others return all records from the system. The latter give us historical data to work with, bootstrapping us out of needing to wait a year to provide actionable metrics.
+- **Age-only vs. Birth date:** Some systems give an inmate's birth date, others just her or his age. We'll be using birthdates to de-dup between different incarceration events of the same person (e.g. someone leaves prison, then recidivates), so only age makes things more difficult. _Note: Even systems with birthdates have data problems with them - often the birthdate will just be 1/1/(year of birth), or else the birth date might not be remembered or transcribed correctly between incarceration events for the same prisoner...so this will be fuzzy matching regardless._
+- **Last name vs. Full name search:** Last name searches are preferable, see the README in the Names List subdirectory for details.
+- **Sex / race info:** Useful for demographic analysis, but not all systems provide this info.
 
 Development
 ------
