@@ -37,7 +37,7 @@ Development
 ------
 
 ### Why AppEngine?
-This is a scraper - it needs to scale up and down, it needs to throttle its requests on a per-site basis, it needs to gracefully handly weird HTTP errors from the sites it's scraping, but that's about it. It's not a very fancy web application.
+This is a scraper - it needs to scale up and down, it needs to throttle its requests on a per-site basis, it needs to gracefully handle weird HTTP errors from the sites it's scraping, but that's about it. It's not a very fancy web application.
 
 AppEngine is both easy to toss small services like this up onto, and easy to scale up and down as needed. It also comes with helpful utilities like [TaskQueues](https://cloud.google.com/appengine/docs/standard/python/taskqueue/push/) built-in, so we don't have to worry about creating that functionality from scratch.
 
@@ -50,9 +50,9 @@ There are two ways to run the app - on your local machine, or deployed to the cl
 #### Local
 Running from your local machine is preferred for development - it yields much quicker iteration cycles, and the local dev server is able to handle the needs of the simple scraping tool pretty well.
 
-To run this locally, just navigate to the directory you cloned recidiviz into and run `dev_appservey.py .`.
+To run this locally, just navigate to the directory you cloned recidiviz into and run `dev_appserver.py .` (note the trailing dot).
 
-Logs will show up in the console you run the command in, and you can kick off the scraping by navigating in your browser to localhost:8080/start (logs won't show much til the scraping starts).
+Logs will show up in the console you run the command in, and you can kick off the scraping by navigating in your browser to `localhost:8080/start` (logs won't show much til the scraping starts).
 
 #### On AppEngine
 To deploy to AppEngine, navigate to the directory where you cloned recidiviz into and run `gcloud app deploy`. This will upload the full project to the cloud and push it to production.
@@ -70,7 +70,7 @@ Scraping is started centrally (this may change), and each scraper initialized an
 
 Since different prison systems have different specificities in the queries they support (some will take last names only, others require first+last, etc.), different name files are used depending on the locale / scraper being started.These might be unique to the prison system, or more general for multiple systems with the same requirements.
 
-As the main module kicks off, an insance of each scraper is started up for a particular name from a list. That scraper will scrape each successive page of results for that name, extract links to prisoner records, then scrape those records and save them.
+As the main module kicks off, an instance of each scraper is started up for a particular name from a list. That scraper will scrape each successive page of results for that name, extract links to prisoner records, then scrape those records and save them.
 
 All work that happens in a scraper that uses a network request goes through a task queue specific to that scraper. This allows us to throttle the speed of execution of network requests (read: not DOS state prison websites), and allows the tasks to get retried with exponential backoff if they fail due to transient issues.
 
@@ -98,9 +98,9 @@ I'll add more to the README file on names later, but take a quick look now - it'
 That said, we'll be able to do even better than they have, once we start seeing the names that come off of our scraping of more lenient prison systems that allow last name only searches.
 
 ### Adding new scrapers
-Requires adding a <region>_scraper.py file, an entry in ScraperStart in recidiviz.py to specify the name file it should take in, and the addition of a queue for it (same as region name, but with a dash instead of an underscore) in queue.yaml.
+Requires adding a `[region]_scraper.py` file, an entry in ScraperStart in `recidiviz.py` to specify the name file it should take in, and the addition of a queue for it (same as region name, but with a dash instead of an underscore) in queue.yaml.
 
-I'll flesh this out more later, there are a few changes needed to make this easier. In particular, I'd like to create a class that scrapers can inherit from that has the core functions that are expected by recidiviz.py and worker.py.
+I'll flesh this out more later, there are a few changes needed to make this easier. In particular, I'd like to create a class that scrapers can inherit from that has the core functions that are expected by `recidiviz.py` and `worker.py`.
 
 ### Adding new dependencies
 Be sure to install new dependencies in the 'libs' folder, using:
