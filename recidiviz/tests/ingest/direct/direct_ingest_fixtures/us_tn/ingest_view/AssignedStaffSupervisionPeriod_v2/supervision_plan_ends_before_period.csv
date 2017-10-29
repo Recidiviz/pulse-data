@@ -1,3 +1,0 @@
-offenderid,supervisiontype,startdate,enddate,admissionreason,terminationreason,supervisionlevel,supervisionofficerid,supervisionofficerfirstname,supervisionofficerlastname,supervisionofficersuffix,assignmenttype,site,supervisionperiodsequencenumber
-"12345678","PPO","2020-10-12","2020-12-04","RENEO","RNO","MED","ABCDEF01","DALE","COOPER","JR.","PRO","P94F",1
-"12345678","PPO","2020-12-04","2021-01-04","RENEO","RNO","EXTERNAL_UNKNOWN","ABCDEF01","DALE","COOPER","JR.","PRO","P94F",2

@@ -1,6 +1,0 @@
-Violation_Id,Client_Id,Start_Date,Finding_Date,Violation_Finding_Descr_Tx,Violation_Type_Desc,Disposition_Desc,Served_At_Desc
-101,00000001,2018-01-02 00:00:00,2018-01-31 00:00:00,Violation Not Found,Technical,,
-102,00000001,2018-12-28 00:00:00,2019-02-18 00:00:00,Graduated Sanction By Officer,Technical,Violation Found - Conditions Amended,
-201,00000002,2019-11-05 00:00:00,2019-12-10 00:00:00,Violation Found,Misdemeanor,Full Revocation,DOC Facility
-202,00000002,2009-03-27 00:00:00,2009-04-12 00:00:00,Violation Found,Technical,Violation Found - Conditions Amended,
-203,00000002,2018-04-03 00:00:00,2018-05-24 00:00:00,Violation Found,Felony,Full Revocation,DOC Facility

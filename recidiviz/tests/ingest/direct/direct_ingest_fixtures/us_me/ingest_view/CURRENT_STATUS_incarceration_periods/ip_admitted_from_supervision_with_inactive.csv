@@ -1,6 +1,0 @@
-incarceration_period_id,client_id,previous_status,current_status,next_status,current_status_location,location_type,next_location_type,jurisdiction_location_type,housing_unit,start_date,end_date,movement_type,next_movement_type,transfer_type,transfer_reason
-1,740383,Inactive,Incarcerated,Incarcerated,Maine Correctional Center,2,2,2,MPU,2008-06-30,2008-09-18,Sentence/Disposition,Transfer,Society In,Sentence/Disposition
-2,740383,Incarcerated,Incarcerated,Inactive,Maine State Prison,2,8,2,Medium,2008-09-18,2009-01-06,Transfer,Discharge,DOC Transfer,Population Distribution
-3,740383,Pending Violation - Incarcerated,Incarcerated,Incarcerated,Maine Correctional Center,2,2,2,Unit 3,2013-05-08,2013-08-29,Transfer,Transfer,DOC Transfer,Violation of Probation
-4,740383,Incarcerated,Incarcerated,Incarcerated,Maine State Prison,2,2,2,Medium,2013-08-29,2013-08-29,Transfer,Transfer,DOC Transfer,Population Distribution
-5,740383,Incarcerated,Incarcerated,Probation,Maine State Prison,2,4,2,Medium,2013-08-29,2013-11-08,Transfer,Release,DOC Transfer,Population Distribution

@@ -1,4 +1,0 @@
-OffenderID,ConvictionCounty,CaseYear,CaseNumber,CountNumber,JudgeName,JOStatusDate,JOStatus,OverridenToLegalFlag,JOEntryDate,LastLetterCreatedDate,PostConvictionReliefConvictionCounty,PostConvictionReliefCaseYear,PostConvictionReliefCaseNumber,PostConvictionReliefCountNumber,LastAppealFinalizedDate,LastAmendmentFiledDate,LastPostConvictionReliefDate,LastAppealDecision,LastJudgmentOrderChangeDate,LastUpdateUserID,LastUpdateDate
-67271361,010,1998,12165,2,LYNN BROWN.,2000-06-19 00:00:00,CL,N,1998-03-27 00:00:00,,010,1998,15534,2,2004-09-21 00:00:00,2000-05-23 00:00:00,2004-09-21 00:00:00,MO,2004-09-28 00:00:00,BI01135,2004-09-28 10:08:32.911560
-67271361,010,1998,12165,4,LYNN BROWN,1998-04-14 00:00:00,CL,N,1998-03-27 00:00:00,,010,1998,15534,4,,,2004-09-21 00:00:00,,2004-09-28 00:00:00,BI01135,2004-09-28 10:06:29.788690
-37670730,054,2003,03129,3,ROSS,2003-10-30 00:00:00,CL,N,2003-09-08 00:00:00,,,0,,0,,,,,2008-03-04 00:00:00,BI01617,2008-03-04 10:54:51.890760

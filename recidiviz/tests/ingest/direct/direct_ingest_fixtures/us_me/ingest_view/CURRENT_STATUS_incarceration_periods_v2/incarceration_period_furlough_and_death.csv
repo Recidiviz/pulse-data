@@ -1,3 +1,0 @@
-incarceration_period_id,client_id,previous_status,current_status,next_status,current_status_location,location_type,previous_location_type,next_location_type,jurisdiction_location_type,housing_unit,start_date,end_date,movement_type,next_movement_type,transfer_type,transfer_reason
-1,556,,Incarcerated,Incarcerated,Maine State Prison,2,,2,2,Medical,1990-12-18,2011-01-05,Sentence/Disposition,Furlough Hospital,Society In,Sentence/Disposition
-2,556,Incarcerated,Incarcerated,Inactive,Maine State Prison,2,2,14,2,Medical,2011-01-12,2014-12-22,Furlough Hospital,,,

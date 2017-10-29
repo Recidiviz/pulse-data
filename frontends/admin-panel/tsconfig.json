@@ -1,4 +1,0 @@
-{
-  "extends": "@recidiviz/tsconfig/react",
-  "include": ["src"]
-}

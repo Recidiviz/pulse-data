@@ -1,8 +1,0 @@
-file_tag: tagPrimaryKeyColsMissing
-file_description: |-
-  tagPrimaryKeyColsMissing file description
-primary_key_cols: []
-columns:
-  - name: column_1
-    description: |-
-      column_1 description

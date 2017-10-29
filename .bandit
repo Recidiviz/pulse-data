@@ -1,3 +1,0 @@
-[bandit]
-targets: recidiviz
-skips: B101,B404,B410,B608

@@ -1,9 +1,0 @@
-manifest_language: 1.0.0
-input_columns:
-  - AGENTNAME
-  - AGENTID
-unused_columns: []
-output:
-  FakeAgent:
-    name: AGENTNAME
-    external_id: AGENTID

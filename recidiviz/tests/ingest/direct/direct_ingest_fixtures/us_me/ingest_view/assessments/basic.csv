@@ -1,5 +1,0 @@
-Assessment_Id,Client_Id,Conductor_Id,Assessment_Type,Assessment_Date,Assessment_Score_Num,Lsi_Rating_Approved,Lsi_Rating_Override,Lsi_Rating,Conductor_First_Name,Conductor_Last_Name,Conductor_Middle_Name
-18435801161,00000001,7777,"Juvenile, Male, Community",2009-08-12 00:00:00,3,,,Low,Dan,Whitford,L
-3576501161,00000002,1234,"Adult, Male, Facility",2013-02-07 00:00:00,14,,Moderate,Low,Ben,Browning,
-3576501162,00000002,1234,"Adult, Male, Community",2004-12-01 00:00:00,10,High,High,Administrative,Ben,Browning,
-3576502151,00000002,1188,Static 99,2008-07-10 10:54:00,0,,,Administrative,Tim,Hoey,Tom

@@ -6,19 +6,6 @@ __pycache__/
 # C extensions
 *.so
 
-# Emacs files
-*~
-\#*\#
-/.emacs.desktop
-/.emacs.desktop.lock
-*.elc
-auto-save-list
-tramp
-.\#*
-
-# Vim backup files
-*.sw[op]
-
 # Distribution / packaging
 .Python
 build/
@@ -29,7 +16,6 @@ eggs/
 .eggs/
 lib64/
 parts/
-.pytest_cache/
 sdist/
 var/
 wheels/
@@ -37,7 +23,6 @@ wheels/
 .installed.cfg
 *.egg
 MANIFEST
-lib/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -52,7 +37,6 @@ pip-delete-this-directory.txt
 # Unit test / coverage reports
 htmlcov/
 .tox/
-coverage/
 .coverage
 .coverage.*
 .cache
@@ -99,21 +83,14 @@ celerybeat-schedule
 # PyCharm files
 .idea/
 
-# VSCode files
-.vscode/
-
 # Environments
 .env
-.env.*
 .venv
 env/
 venv/
 ENV/
 env.bak/
 venv.bak/
-.firebase/
-.runtimeconfig.json
-service_account.json
 
 # Spyder project settings
 .spyderproject
@@ -127,46 +104,3 @@ service_account.json
 
 # mypy
 .mypy_cache/
-
-# Local development
-local.yaml # keep in case any developers still have them
-secrets.yaml # keep in case any developers still have them
-/queue.yaml
-
-#pytest
-.pytest_cache/
-
-# Mac
-.DS_Store
-
-# Terraform
-**/.terraform/*
-*.tfstate
-*.tfstate.*
-*.tfvars
-# Used to store temporary files
-**/.tfout/*
-
-# Typescript
-**/node_modules
-.yalc
-yalc.lock
-*.tsbuildinfo
-
-
-# Stackdriver Traces
-traces
-
-# Local Case Triage files
-recidiviz/case_triage/local/**/*
-
-# ESLint Cache
-.eslintcache
-
-# Deployment artifacts
-recidiviz/tools/deploy/dist/
-recidiviz/tools/deploy/log/
-
-# Binaries
-recidiviz/tools/postgres/log/
-recidiviz/tools/postgres/vendor/

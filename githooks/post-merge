@@ -1,3 +1,0 @@
-#!/bin/sh
-
-recidiviz/tools/diff_pipenv.sh

@@ -1,6 +1,0 @@
-Arrested_Warr_Date,Cis_100_Client_Id,Cis_4009_Client_Loc_Cd,Cis_4009_Disposition_Cd,Cis_4009_Served_At_Cd,Cis_4009_Supervision_Type_Cd,Cis_4009_Toll_Violation_Cd,Cis_4009_Violation_Type_Cd,Cis_4800_Violation_Finding_Cd,Cis_900_Employee_Id,Finding_Date,Finding_Notes_Tx,Fta_Date,Fta_Ind,Start_Date,Toll_End_Date,Toll_Start_Date,Violation_Descr_Tx,Violation_Id,Warning_Issued_Ind,Serve_Days,Serve_Mths,Serve_Yrs
-,00000001,68,,,96,,63,2,7777,2018-01-31 00:00:00,"toll time added",,,2018-01-02 00:00:00,2018-01-04 00:00:00,2008-02-02 00:00:00,Some notes about a violation that was a technical,101,N,0,0,0
-,00000001,68,73,,96,,63,6,7777,2019-02-18 00:00:00,30 days sentence has been served,,,2018-12-28 00:00:00,2018-12-28 00:00:00,2019-02-08 00:00:00,Some notes about a violation that was a technical,102,N,0,0,0
-,00000002,68,71,66,96,60,64,1,1234,2019-12-10 00:00:00,,,,2019-11-05 00:00:00,2019-11-09 00:00:00,2019-12-09 00:00:00,Some notes about a violation that was a misdemeanor,201,N,0,3,0
-,00000002,68,73,,96,,63,1,1234,2009-04-12 00:00:00,probation to terminate,,,2009-03-27 00:00:00,2009-03-27 00:00:00,2009-04-12 00:00:00,Some notes about a violation that was a technical,202,N,0,0,0
-,00000002,68,71,66,96,60,65,1,1234,2018-05-24 00:00:00,,,,2018-04-03 00:00:00,2018-04-03 00:00:00,2018-05-23 00:00:00,Some notes about a violation that was a felony,203,N,0,3,1
