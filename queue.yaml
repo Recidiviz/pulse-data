@@ -4,6 +4,6 @@ queue:
   bucket_size: 60
   
 - name: us-ny
-  rate: 1/s
+  rate: 6/m
   bucket_size: 40
   max_concurrent_requests: 3
