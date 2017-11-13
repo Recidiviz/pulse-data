@@ -2,8 +2,12 @@ queue:
 - name: session-refresh
   rate: 60/s
   bucket_size: 60
-  
+
 - name: us-ny
-  rate: 6/m
+  rate: 5/m
   bucket_size: 40
   max_concurrent_requests: 3
+  retry_parameters:
+    min_backoff_seconds: 5
+    max_backoff_seconds: 300
+    task_age_limit: 3d
