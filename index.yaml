@@ -21,3 +21,14 @@ indexes:
   properties:
   - name: snapshot_date
     direction: desc
+
+- kind: ScrapeSession
+  properties:
+  - name: end
+  - name: start
+    direction: desc
+
+- kind: ScrapedRecord
+  properties:
+  - name: record_id
+  - name: created_on

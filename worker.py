@@ -2,6 +2,7 @@
 # All rights reserved.
 
 
+from auth import authenticate_request
 from requests.packages.urllib3.contrib.appengine import TimeoutError
 import logging
 import webapp2
@@ -45,6 +46,7 @@ Returns:
 
 class Scraper(webapp2.RequestHandler):
 
+    # Note: Never called manually, so auth enforced in app.yaml
     def post(self):
 
         # Verify this was actually a task queued by our app
@@ -58,9 +60,10 @@ class Scraper(webapp2.RequestHandler):
         task = self.request.get('task')
         params = self.request.get('params')
 
-        # Add a log entry that this task made it out of the queue / was attempted
+        # Add a log entry that this task made it out of the queue / was 
+        # attempted
         queue_name = self.request.headers.get('X-AppEngine-QueueName', None)
-        logging.info("worker.py - Queue %s, processing task (%s) for %s." %
+        logging.info("Queue %s, processing task (%s) for %s." %
                      (queue_name, task, region))
 
         # Import scraper and call task with params
@@ -76,12 +79,13 @@ class Scraper(webapp2.RequestHandler):
                 result = scraper_task()
             
         except TimeoutError:
-            # Timeout errors happen occasionally, and I can't change the
-            # deadline via Requests lib. So just fail the task and let it retry.
+            # Timeout errors happen occasionally, so just fail the task and let
+            # it retry.
             logging.info("--- Request timed out, re-queuing task. ---")
             result = -1
 
-        # Respond to the task queue to mark this task as done, or requeue if error result
+        # Respond to the task queue to mark this task as done, or requeue if 
+        # error result
         if result == -1:
             self.response.set_status(500)
         else:

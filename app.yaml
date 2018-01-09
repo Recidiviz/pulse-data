@@ -5,6 +5,13 @@ threadsafe: false
 handlers:
 - url: /start
   script: recidiviz.app
+  login: admin
+
+- url: /stop_scraper
+  script: queue_control.app
+
+- url: /resume_scraper
+  script: queue_control.app
 
 - url: /scraper
   script: worker.app
@@ -15,3 +22,6 @@ libraries:
   version: latest
 - name: lxml
   version: "3.7.3"
+
+env_variables:
+  GAE_USE_SOCKETS_HTTPLIB : 'true'

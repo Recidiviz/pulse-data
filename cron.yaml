@@ -1,0 +1,18 @@
+cron:
+- description: Start NY scraper every day at 9pm
+  url: /resume_scraper?region=us_ny
+  schedule: every day 21:00
+  timezone: America/New_York
+  retry_parameters:
+    min_backoff_seconds: 2.5
+    max_doublings: 5
+    job_age_limit: 9h
+
+- description: Stop NY scraper every day at 9am
+  url: /stop_scraper?region=us_ny
+  schedule: every day 09:00
+  timezone: America/New_York
+  retry_parameters:
+    min_backoff_seconds: 2.5
+    max_doublings: 5
+    job_age_limit: 9h

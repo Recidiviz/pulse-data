@@ -24,8 +24,6 @@ available. See us_ny_scraper.py for an example.
 Fields:
     - snapshot_date: Python datetime for time of snapshot
     - facility: State-provided facility name
-    - associated_inmate: Inmate this data is about
-    - associated_record: Record that this is from
 """
 class InmateFacilitySnapshot(polymodel.PolyModel):
     snapshot_date = ndb.DateTimeProperty(auto_now_add=True)
