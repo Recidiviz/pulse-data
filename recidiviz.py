@@ -1,6 +1,7 @@
 # Copyright 2017 Andrew Corp <andrew@andrewland.co> 
 # All rights reserved.
 
+from auth import authenticate_request
 from google.appengine.api import taskqueue
 import csv
 import logging
@@ -10,6 +11,7 @@ import webapp2
 # The URL handler which receives the 'start' command
 class ScraperStart(webapp2.RequestHandler):
 
+    @authenticate_request
     def get(self):
         """
         get()
@@ -22,42 +24,134 @@ class ScraperStart(webapp2.RequestHandler):
         region + the relevant name list for that region. Each region has its own
         task queue defined in queue.yaml, with configurable request throttling.
 
-        TODO
-        For now this URL is called manually for testing purposes, but once stable
-        we'll add login:admin to the handler in app.yaml to prevent calling it
-        from the web, and create a cron job in appengine that calls it e.g. weekly.
+        This URL can only be called by cron jobs. For testing locally, you'll be 
+        prompted to login when you visit the URL - check the 'Login as 
+        administrator' box and sign in with the default credentials to test.
 
-        Args:
-            None
+        Parameters:
+            region - Required. 'all' to start all scrapers, otherwise region 
+                code (e.g. us_ny)
+            last_name - Optional. Starting last name to scrape.
+            given_names - Optional. Starting first name to scrape. If given,
+                last_name is required.
 
         Returns:
-            None
+            Nothing
         """
 
         logging.info("Recidiviz starting up...")
+        name_lists = {}
 
         # Read in the main 'most common name' lists
         last_only_csv = open('./name_lists/last_only.csv', "rb")
         last_only_names = list(csv.reader(last_only_csv))
 
         last_and_first_csv = open('./name_lists/last_and_first.csv', "rb")
-        last_and_first_names = list(csv.reader(last_only_csv))
+        first_and_last_names = list(csv.reader(last_only_csv))
 
         # Read in any locale-specific name lists
         us_ny_csv = open('./name_lists/us_ny_names.csv', "rb")
-        us_ny_names = list(csv.reader(us_ny_csv))
+        name_lists['us_ny'] = list(csv.reader(us_ny_csv))
 
         # us_co_csv = open(...)
+        # name_lists['us_co'] = ...
 
-        # TODO(andrew): Check if there are request params for 'name' and 'region',
-        # if so use those to call generate_tasks for the region's name list, but
-        # skip to the name provided in the request param. Will make it easier if
-        # a scraper hits trouble for person to purge the taskqueue, fix the issue,
-        # and restart the scraper where it left off instead of at the beginning.
+        # Get the 'region' request params, and 'last_name' / 'first_names' if 
+        # we're starting the scraper at a particular place.
+        request_region = self.request.get('region', None)
+        request_fnames = self.request.get('given_names', "")
+        request_last_name = self.request.get('last_name', "")
 
-        # Generating starting tasks for each name/locale pair
-        generate_tasks('us_ny', us_ny_names)
-        # generate_tasks('us_co', ...) ...
+        if not request_region:
+            # No region code - may be accident, ignore / do not start scrapers.
+            logging.error("No region parameter provided. Use 'all', or a "
+                "specific region code (e.g., us_ny). Exiting.")
+            
+            self.response.write('Missing parameters, see service logs.')
+            self.response.set_status(400)
+            return
+
+        elif request_region == "all":
+            logging.info("Request to start all scrapers. Starting...")
+
+            # Generating starting tasks for each name/locale pair
+            for region_code, names in name_lists.iteritems():
+                generate_tasks(region_code, names)
+
+            self.response.set_status(200)
+            return
+
+        elif request_region in name_lists:
+            region_names = name_lists[request_region]
+
+            if request_last_name and request_fnames:
+                logging_name = request_fnames + " " + request_last_name
+
+                try:
+                    match_index = region_names.index([request_last_name, 
+                                                      request_fnames])
+
+                    # Strip all names above index out of name list, and 
+                    # generate tasks
+                    new_name_list = region_names[match_index:]
+                    generate_tasks(request_region, new_name_list)
+
+                    logging.info("Found %s in name list for %s, starting "
+                        "tasks from there onward." % 
+                        (logging_name, request_region))
+                    self.response.set_status(200)
+
+                except ValueError:
+                    # The name isn't in the name list - warn, then start 
+                    # scraper for this new name only.
+                    # Note: This is normal for some fuzzy-match prison systems
+                    #       such as us_ny.
+                    logging.warn("Name list for %s doesn't include %s. "
+                        "Generating one-off task to scrape this name ONLY." % 
+                        (request_region, logging_name))
+
+                    new_name_list = [[request_last_name, request_fnames]]
+                    generate_tasks(request_region, new_name_list)
+
+                    self.response.set_status(200)
+
+            elif request_last_name:
+
+                try:
+                    match_index = region_names.index([request_last_name])
+
+                    new_name_list = region_names[match_index:]
+                    generate_tasks(request_region, new_name_list)
+
+                    logging.info("Found %s in name list for %s, starting tasks "
+                        "from there onward." % (request_last_name, request_region))
+                    self.response.set_status(200)
+
+                except ValueError:
+                    logging.warn("Name list for %s doesn't include %s. "
+                        "Generating one-off task to scrape this name ONLY." % 
+                        (request_region, request_last_name))
+
+                    new_name_list = [[request_last_name]]
+                    generate_tasks(request_region, new_name_list)
+
+                    self.response.set_status(200)
+
+            else:
+                # No name provided, start this scraper from the beginning
+                generate_tasks(request_region, region_names)
+
+                logging.info("Request to start %s scraper from beginning. "
+                    "Starting..." % (request_region))
+                self.response.set_status(200)
+
+        else:
+            # Unrecognized region code, log the error and exit.
+            logging.error("No region found with name '%s'. Exiting." % 
+                request_region)
+            
+            self.response.write('Could not start, see service logs.')
+            self.response.set_status(400)
 
 
 # Generates a bunch of tasks for scraping the prison system site
