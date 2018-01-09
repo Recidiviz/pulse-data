@@ -66,13 +66,14 @@ Fields:
     - custody_date: Date the inmate's sentence started, if available
     - offense_date: Date the offense was committed, if available
     - is_released: Whether the inmate was released (at least, for this crime)
-    - associated_inmate: The Inmate this record was tied to at time of scraping
+    - given_names: Any first and middle names provided by the prison system
+    - last_name: The inmate's surname, as provided by the prison system
+    - birthday: Date of birth for the prisoner, as provided by prison system
+    - sex: Sex of the prisoner as provided by the prison system
+    - race: Race of the prisoner as provided by prison system.
 
 Analytics tooling will use record_id for dedup, so it's important to update 
 records based on that key, rather than attempting to store them each time. 
-
-associated_listing is also a key field to include, as this enables dedup when
-no record ID is given, and race/age analytics by tying to inmate data.
 """
 class Record(polymodel.PolyModel):
     offense = ndb.StructuredProperty(Offense, repeated=True)
@@ -82,3 +83,8 @@ class Record(polymodel.PolyModel):
     custody_date = ndb.DateProperty()
     offense_date = ndb.DateProperty()
     is_released = ndb.BooleanProperty()
+    given_names = ndb.StringProperty()
+    last_name = ndb.StringProperty()
+    birthday = ndb.DateProperty()
+    sex = ndb.StringProperty()
+    race = ndb.StringProperty()

@@ -25,9 +25,7 @@ Fields:
     - birthday: Birth date, if available
     - age: Age, if birth date is not available.
     - region: The region code for the scraper that captured this
-    - sex: Sex of inmate in listing, if provided ("Male" or "Female")
-        >> This is due to classification in the systems scraped - if they 
-        shift to a less binary approach, we can improve this <<
+    - sex: Sex of inmate in listing, as provided by prison system
     - race:  Race of inmate in the listing, for now string provided by region
     - created_on: Python datetime object of first time we added this record
     - updated_on: Python datetime object of last time we updated this record
