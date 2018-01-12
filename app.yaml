@@ -4,17 +4,17 @@ threadsafe: false
 
 handlers:
 - url: /start
-  script: recidiviz.app
+  script: scraper.recidiviz.app
   login: admin
 
 - url: /stop_scraper
-  script: queue_control.app
+  script: scraper.queue_control.app
 
 - url: /resume_scraper
-  script: queue_control.app
+  script: scraper.queue_control.app
 
 - url: /scraper
-  script: worker.app
+  script: scraper.worker.app
   login: admin
 
 libraries:

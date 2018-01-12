@@ -22,6 +22,11 @@ indexes:
   - name: snapshot_date
     direction: desc
 
+- kind: Record
+  ancestor: yes
+  properties:
+  - name: custody_date
+
 - kind: ScrapeSession
   properties:
   - name: end

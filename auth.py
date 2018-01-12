@@ -25,30 +25,26 @@ def authenticate_request(func):
 
         # Check this is either an admin user or a call from within the app itself
         user = users.get_current_user()
-        is_admin = users.is_current_user_admin()
 
         this_app_id = app_identity.get_application_id()
         incoming_app_id = request_handler.request.headers.get(
-                'X-Appengine-Inbound-Appid', None)
+            'X-Appengine-Inbound-Appid', None)
 
         is_cron = request_handler.request.headers.get(
-                'X-Appengine-Cron', None)
+            'X-Appengine-Cron', None)
 
         if is_cron:
-            logging.info("Requester is one of our cron jobs, "
-                "proceeding.")
+            logging.info("Requester is one of our cron jobs, proceeding.")
 
         elif incoming_app_id:
             # Check whether this is an intra-app call from our GAE service
-            logging.info("Requester authenticated as app-id: %s." % 
-                (incoming_app_id))
+            logging.info("Requester authenticated as app-id: %s." %
+                         incoming_app_id)
 
             if incoming_app_id == this_app_id:
-                logging.info("Authenticated intra-app call, "
-                    "proceeding.")
+                logging.info("Authenticated intra-app call, proceeding.")
             else:
-                logging.info("App ID is %s, not allowed - "
-                    "exiting." % incoming_app_id)
+                logging.info("App ID is %s, not allowed - exiting." % incoming_app_id)
                 request_handler.response.write('Failed: Unauthorized external request.')
                 request_handler.response.status = '401 Unauthorized'
                 return
@@ -56,15 +52,13 @@ def authenticate_request(func):
         elif user:
             # Not an intra-app call, but was sent by an authenticated user. 
             # Check if they're an admin / have permission to impact scrapers.
-            logging.info("Requester authenticated as %s (%s)." % 
-                (user.nickname(), user.email()))
+            logging.info("Requester authenticated as %s (%s)." %
+                         (user.nickname(), user.email()))
 
             if users.is_current_user_admin():
-                logging.info("Authenticated as admin, "
-                    "proceeding.")
+                logging.info("Authenticated as admin, proceeding.")
             else:
-                logging.info("Logged in, but not as admin - "
-                    "exiting.")
+                logging.info("Logged in, but not as admin - exiting.")
                 request_handler.response.write('Failed: Not an admin.')
                 request_handler.response.status = '401 Unauthorized'
                 return
