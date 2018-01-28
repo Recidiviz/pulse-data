@@ -1,4 +1,4 @@
-# recidiviz
+# Recidiviz Data Platform
 AppEngine-based scraper for inmate data in multiple prison systems
 
 Objective
@@ -105,3 +105,8 @@ I'll flesh this out more later, there are a few changes needed to make this easi
 ### Adding new dependencies
 Be sure to install new dependencies in the 'libs' folder, using:
 `pip install -t lib/ <library_name>`
+
+License
+-------
+
+This project is licensed under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
