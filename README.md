@@ -1,112 +1,64 @@
 # Recidiviz Data Platform
-AppEngine-based scraper for inmate data in multiple prison systems
 
-Objective
+At the center of Recidiviz is our platform for tracking granular recidivism metrics in real time. It includes a system
+for the ingest of corrections records from different criminal justice systems, and for calculation of recidivism metrics
+from the ingested records.
+
+Read more on data ingest in [`/scraper`](./scraper) and recidivism calculation in `/calculator`.
+
+License
+-------
+
+This project is licensed under the terms of the GNU General Public License as published by the Free Software Foundation,
+either version 3 of the License, or (at your option) any later version.
+
+Data Access
 ------
-All prison systems provide search engines, used to look up inmates' locations. These vary in function and in how you query them - some require just a last name, other require a full first and last name. Some show inmates who've been released, others don't. Most of them provide back a list of inmates who matched the query, their birthdates, and the facility they're currently being held in.
 
-The goal for this tool is to automate scraping of these systems, to build highly accurate per-prison recidivism rates over time. Depending on how much information is provided by the state site, this tool may be able to collect all data necessary for calculating 1- and 3-yr recidivism rates immediately, or may only have that information after 1-3 years of operation.
+The data that we have gathered from criminal justice systems has been sanitized, de-duplicated, and standardized in a
+single schema. This processed data is central to our purposes but may be useful to others, as well. If you would like
+access to the processed data, in whole or in part, please reach out to us at `team@recidiviz.com`. We evaluate such
+requests on a case-by-case basis.
 
-Usage
-------
-There isn't much to actively 'use' - if you navigate to the URL of the app with '/start' at the end, it'll kick off scraping for the sites it knows about (currently the New York State prison system).
-
-State of the tool
-------
-Everything works, but records aren't persisted yet. Tomorrow I should be able to add in persistence in Cloud Datastore. 
-
-The current plan is to use Expando data models, since some inmates may have strange fields we don't anticipate, and if the prison system's data schema or field names are changed we may be able to continue scraping with them and can adapt on the analytics side instead of the scraping side.
-
-The code is heavily commented, so it shouldn't be too difficult to follow what's going on.
-
-The repo 'Issues' reflects substantial changes that are still needed / desirable. 
-
-Properties of region-specific prison sites
-------
-Each state and the federal government have created their own inmate search systems, and several aspects of each one make them more or less difficult for this tool to grapple with.
-
-A [tracker](https://docs.google.com/a/andrewland.co/spreadsheets/d/1D53EyAg__oPsFii0bQVNXiQTDFOG6wu-t4nq8-FhT1E/edit?usp=sharing) has been started to keep tabs on how these features vary between the different systems.
-
-Salient attributes include:
-- **Current vs. Historical data:** Some systems return only current parolees / inmates, whereas others return all records from the system. The latter give us historical data to work with, bootstrapping us out of needing to wait a year to provide actionable metrics.
-- **Age-only vs. Birth date:** Some systems give an inmate's birth date, others just her or his age. We'll be using birthdates to de-dup between different incarceration events of the same person (e.g. someone leaves prison, then recidivates), so only age makes things more difficult. _Note: Even systems with birthdates have data problems with them - often the birthdate will just be 1/1/(year of birth), or else the birth date might not be remembered or transcribed correctly between incarceration events for the same prisoner...so this will be fuzzy matching regardless._
-- **Last name vs. Full name search:** Last name searches are preferable, see the README in the Names List subdirectory for details.
-- **Sex / race info:** Useful for demographic analysis, but not all systems provide this info.
+Calculated recidivism metrics can also be made available through the same process, though we anticipate publishing our
+analysis in various forms and channels over time.
 
 Development
 ------
 
 ### Why AppEngine?
-This is a scraper - it needs to scale up and down, it needs to throttle its requests on a per-site basis, it needs to gracefully handle weird HTTP errors from the sites it's scraping, but that's about it. It's not a very fancy web application.
-
-AppEngine is both easy to toss small services like this up onto, and easy to scale up and down as needed. It also comes with helpful utilities like [TaskQueues](https://cloud.google.com/appengine/docs/standard/python/taskqueue/push/) built-in, so we don't have to worry about creating that functionality from scratch.
+AppEngine is both easy to rapidly build out services, and easy to scale up and down as needed. It also comes with
+helpful utilities like [TaskQueues](https://cloud.google.com/appengine/docs/standard/python/taskqueue/push/) built-in,
+so we don't have to worry about creating that functionality from scratch. Error handling is straight forward.
 
 ### Getting set up
-Install the GCloud SDK (I recommend using the [interactive installer](https://cloud.google.com/sdk/downloads#interactive)), and clone the recidiviz repo from Github.
+Install the GCloud SDK (we recommend using the [interactive installer](https://cloud.google.com/sdk/downloads#interactive)),
+and clone the recidiviz repo from Github.
 
-### Running the AppEngine app
+### Running the app
 There are two ways to run the app - on your local machine, or deployed to the cloud.
 
 #### Local
-Running from your local machine is preferred for development - it yields much quicker iteration cycles, and the local dev server is able to handle the needs of the simple scraping tool pretty well.
+Running from your local machine is preferred for development - it yields much quicker iteration cycles, and the local
+dev server is able to handle the needs of the simple scraping tool pretty well.
 
-To run this locally, just navigate to the directory you cloned recidiviz into and run `dev_appserver.py .` (note the trailing dot).
+To run this locally, just navigate to the directory you cloned pulse-data into and run `dev_appserver.py .`
+(note the trailing dot).
 
-Logs will show up in the console you run the command in, and you can kick off the scraping by navigating in your browser to `localhost:8080/start` (logs won't show much til the scraping starts).
+Logs will show up in the console you run the command in, and you can kick off the scraping by navigating in your browser
+to `localhost:8080/start` (logs won't show much until the scraping starts).
 
-#### On AppEngine
-To deploy to AppEngine, navigate to the directory where you cloned recidiviz into and run `gcloud app deploy`. This will upload the full project to the cloud and push it to production.
+#### Production
+To deploy to production AppEngine, navigate to the directory where you cloned pulse-data into and run
+`gcloud app deploy`. This will upload the full project to the cloud and push it to production.
 
-If it doesn't seem to know which project of yours to deploy to, or your account info, you may have skipped part of the interactive setup for gcloud. Run `gcloud init` to revisit that setup.
+If it doesn't seem to know which project of yours to deploy to, or your account info, you may have skipped part of the
+interactive setup for gcloud. Run `gcloud init` to revisit that setup.
 
-Once the project is in production, you can kick off scraping by visiting [recidiviz-123.appspot.com/start](recidiviz-123.appspot.com/start). You can monitor the task queue (and purge it) in the [Cloud Console](https://console.cloud.google.com/appengine/taskqueues?project=recidiviz-123&serviceId=default&tab=PUSH), and read the service logs there [as well](https://console.cloud.google.com/logs/viewer?project=recidiviz-123&minLogLevel=0&expandAll=false).
+Once the project is in production, you can kick off scraping by visiting `myproject.appspot.com/start`. You can monitor
+the task queue (and purge it) in the [Cloud Console](https://console.cloud.google.com/appengine/taskqueues?project=recidiviz-123&serviceId=default&tab=PUSH),
+and read the service logs there [as well](https://console.cloud.google.com/logs/viewer?project=recidiviz-123&minLogLevel=0&expandAll=false).
 
-**_(Note: Don't test in prod unless you really mean it! It will try to crawl all of NYS-DOCCS at 1qps at the moment, which isn't tested over long durations yet. I strongly recommend developing only with the local dev server, which you can easily kill during tests with Ctrl+C.)_**
-
-### General structure
-This app is intended to support multiple scrapers, each specific to the prison system they're individually tailored to scrape. Currently the only scraper built is one for the New York Department of Corrections and Community Supervision (DOCCS) system.
-
-Scraping is started centrally (this may change), and each scraper initialized and kicked off in sequence from the main module. The main module generates scraping tasks based on a list of names, since all of these prison systems are search engines for particular inmates. Our goal is to have broad enough name coverage to retrieve a representative sample of inmates based on our shot-in-the-dark queries.
-
-Since different prison systems have different specificities in the queries they support (some will take last names only, others require first+last, etc.), different name files are used depending on the locale / scraper being started.These might be unique to the prison system, or more general for multiple systems with the same requirements.
-
-As the main module kicks off, an instance of each scraper is started up for a particular name from a list. That scraper will scrape each successive page of results for that name, extract links to prisoner records, then scrape those records and save them.
-
-All work that happens in a scraper that uses a network request goes through a task queue specific to that scraper. This allows us to throttle the speed of execution of network requests (read: not DOS state prison websites), and allows the tasks to get retried with exponential backoff if they fail due to transient issues.
-
-#### recidiviz.py
-This is the main module for the app - it contains the function that's called from the /start URL handler. It's sole purpose is to read in the name files for each supported scraper, then generate scraping tasks for each region / name pair.
-
-#### worker.py
-This is the general-purpose task handler. All tasks call it, and it provides a very thin shim to call whichever function the task was trying to execute. 
-
-It also handles the functions' responses, to set a response for the task queue system on whether or not the task failed / needs to be retried later.
-
-#### scrapers
-These are where all region / prison system / site-specific work occurs. They handle scraping of the series of pages unique to that system, and storage of the results.
-
-Almost all of the work happens in the scrapers. Once we have more than one, they'll be moved to a subdirectory.
-
-#### Name lists
-These are csv files, in the form:
-`last_name, first_name`
-
-First names are optional, since some scrapers don't need them (and we'll get more results with last name only queries). There are some real questions we should consider on the name files longer term, especially about how to ensure they capture a representative / unbiased sample of the prison population.
-
-I'll add more to the README file on names later, but take a quick look now - it's in the subdirectory 'name_lists'. The link in it to the fivethirtyeight blog post illustrates the challenges of coming up with a good sample of first+last names.
-
-That said, we'll be able to do even better than they have, once we start seeing the names that come off of our scraping of more lenient prison systems that allow last name only searches.
-
-### Adding new scrapers
-Requires adding a `[region]_scraper.py` file, an entry in ScraperStart in `recidiviz.py` to specify the name file it should take in, and the addition of a queue for it (same as region name, but with a dash instead of an underscore) in queue.yaml.
-
-I'll flesh this out more later, there are a few changes needed to make this easier. In particular, I'd like to create a class that scrapers can inherit from that has the core functions that are expected by `recidiviz.py` and `worker.py`.
-
-### Adding new dependencies
-Be sure to install new dependencies in the 'libs' folder, using:
-`pip install -t lib/ <library_name>`
-
-License
--------
-
-This project is licensed under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+**_(Note: Don't test in prod unless you really mean it! It will try to crawl production data systems at 1qps at the
+moment, which may impact actual operations. We strongly recommend developing only with the local dev server, which you
+can easily kill during tests with Ctrl+C.)_**
