@@ -1,6 +1,13 @@
 runtime: python27
 api_version: 1
 threadsafe: false
+# It is imperative that the module and version values are set to default,
+# due to a GAE MapReduce bug: https://github.com/GoogleCloudPlatform/appengine-mapreduce/issues/103
+module: default
+version: default
+
+includes:
+- lib/mapreduce/include.yaml
 
 handlers:
 - url: /start
@@ -16,6 +23,13 @@ handlers:
 - url: /scraper
   script: scraper.worker.app
   login: admin
+
+- url: /_ah/pipeline.*
+  script: mapreduce.lib.pipeline.handlers._APP
+  login: admin
+
+- url: /calculator_pipeline
+  script: calculator.pipeline.app
 
 libraries:
 - name: webapp2
