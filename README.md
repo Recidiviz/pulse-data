@@ -4,7 +4,7 @@ At the center of Recidiviz is our platform for tracking granular recidivism metr
 for the ingest of corrections records from different criminal justice systems, and for calculation of recidivism metrics
 from the ingested records.
 
-Read more on data ingest in [`/scraper`](./scraper) and recidivism calculation in `/calculator`.
+Read more on data ingest in [`/scraper`](./scraper) and recidivism calculation in [`/calculator`](./calculator).
 
 License
 -------
