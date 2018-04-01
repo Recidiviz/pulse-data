@@ -170,7 +170,7 @@ class CalculationPipeline(base_handler.PipelineBase):
             mapper_spec="calculator.pipeline.map_inmate",
             mapper_params=mapper_params,
             reducer_spec="calculator.pipeline.reduce_recidivism_events",
-            shards=8)
+            shards=64)
 
 
 app = webapp2.WSGIApplication([
