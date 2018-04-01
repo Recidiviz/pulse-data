@@ -17,6 +17,7 @@
 
 
 from datetime import date
+from dateutil.relativedelta import relativedelta
 import logging
 import webapp2
 
@@ -135,7 +136,7 @@ def count_releases_in_window(start_date, follow_up_period, all_release_dates):
     the given start date
     """
     releases_in_window = [release_date for release_date in all_release_dates
-                          if start_date.replace(year=start_date.year + follow_up_period)
+                          if start_date + relativedelta(years=follow_up_period)
                           > release_date >= start_date]
     return len(releases_in_window)
 
@@ -182,7 +183,7 @@ def relevant_follow_up_periods(release_date, follow_up_periods):
     :return: the array of follow up periods which are relevant to track, i.e. completed or in progress
     """
     return [period for period in follow_up_periods
-            if release_date.replace(year=release_date.year + period - 1) <= date.today()]
+            if release_date + relativedelta(years=period - 1) <= date.today()]
 
 
 def age_at_date(inmate, date):
@@ -268,6 +269,17 @@ def find_recidivism(inmate, include_conditional_violations=False):
         record_id = record.key.id()
 
         original_entry_date = first_entrance(record)
+
+        if original_entry_date is None:
+            # If there is no entry date on the record, there is nothing we can process. Skip it.
+            # See Issue #49.
+            continue
+
+        if record.is_released and not record.last_release_date:
+            # If the record is marked as released but there is no release date, there is nothing we
+            # can process. Skip it. See Issue #51.
+            continue
+
         release_date = final_release(record)
         release_cohort = release_date.year if release_date else None
         release_facility = last_facility(record, snapshots)

@@ -13,6 +13,14 @@ All calculated metrics are stored in Cloud Datastore for later use.
 
 More on the precise calculation methodology can be [read here](TODO).
 
+Operational Note
+------
+
+The calculation pipeline will fail at startup (runtime) on your local machine if you do not uncomment the two
+flagged lines in `app.yaml`: `module: default` and `version:default`. There is an outstanding item to make this
+configuration dynamic by environment. For now, remember to uncomment these when running locally.
+
+
 General structure
 ------
 

@@ -1,10 +1,13 @@
 runtime: python27
 api_version: 1
 threadsafe: false
-# It is imperative that the module and version values are set to default,
-# due to a GAE MapReduce bug: https://github.com/GoogleCloudPlatform/appengine-mapreduce/issues/103
-module: default
-version: default
+instance_class: F2
+
+# It is imperative that the module and version values are set to default for local and not production,
+# due to a GAE MapReduce bug: https://github.com/GoogleCloudPlatform/appengine-mapreduce/issues/103.
+# Comment these out to run locally. TODO: make this dynamic by environment.
+#module: default
+#version: default
 
 includes:
 - lib/mapreduce/include.yaml
