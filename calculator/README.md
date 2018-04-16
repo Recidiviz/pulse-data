@@ -96,4 +96,4 @@ approximation of overall recidivism. But the number can provide a sanity check: 
 percentage of `total_records_reduced`, maybe somewhere around 15%-40% depending on region.
 
 Logs are printed via stdout by default for the local development server. In production, logs can be read
-[here](https://console.cloud.google.com/logs/viewer?project=recidiviz-123&minLogLevel=0&expandAll=false).
+in the Cloud Console.
