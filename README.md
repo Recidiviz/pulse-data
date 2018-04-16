@@ -56,8 +56,7 @@ If it doesn't seem to know which project of yours to deploy to, or your account 
 interactive setup for gcloud. Run `gcloud init` to revisit that setup.
 
 Once the project is in production, you can kick off scraping by visiting `myproject.appspot.com/start`. You can monitor
-the task queue (and purge it) in the [Cloud Console](https://console.cloud.google.com/appengine/taskqueues?project=recidiviz-123&serviceId=default&tab=PUSH),
-and read the service logs there [as well](https://console.cloud.google.com/logs/viewer?project=recidiviz-123&minLogLevel=0&expandAll=false).
+the task queue (and purge it) in the Cloud Console, and read the service logs there as well.
 
 **_(Note: Don't test in prod unless you really mean it! It will try to crawl production data systems at 1qps at the
 moment, which may impact actual operations. We strongly recommend developing only with the local dev server, which you
