@@ -16,3 +16,8 @@ cron:
     min_backoff_seconds: 2.5
     max_doublings: 5
     job_age_limit: 9h
+
+- description: Backup the raw ingest entities every Sunday at 3pm
+  url: /datastore_export?output_url_prefix=gs://pulse-datastore-backups&kind=Inmate&kind=Record&kind=InmateFacilitySnapshot
+  schedule: every sunday 15:00
+  timezone: America/New_York
