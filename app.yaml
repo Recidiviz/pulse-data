@@ -34,6 +34,10 @@ handlers:
 - url: /calculator_pipeline
   script: calculator.pipeline.app
 
+- url: /datastore_export
+  script: cloud_datastore_admin.app
+  login: admin
+
 libraries:
 - name: webapp2
   version: latest
