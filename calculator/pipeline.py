@@ -67,6 +67,26 @@ def reduce_recidivism_events(metric_key, values):
     total_records = len(values)
     value_numerals = map(float, values)
     total_recidivism = sum(event for event in value_numerals if event > 0)
+
+    metric = to_metric(metric_key, total_records, total_recidivism)
+
+    yield op.counters.Increment('unique_metric_keys_reduced')
+    yield op.counters.Increment('total_records_reduced', delta=total_records)
+    yield op.counters.Increment('total_recidivisms_reduced', delta=total_recidivism)
+
+    yield op.db.Put(metric)
+
+
+def to_metric(metric_key, total_records, total_recidivism):
+    """
+    Transforms a metric key and the number of records and recidivating records into a full metric
+    for persistence.
+
+    :param metric_key: the mapping of characteristics for a particular recidivism metric
+    :param total_records: the total number of records to whom this metric key applies
+    :param total_recidivism: the number of relevant records that correspond to recidivism
+    :return: a metric to be persisted
+    """
     recidivism_rate = ((total_recidivism + 0.0) / total_records)
 
     metric = RecidivismMetric()
@@ -91,13 +111,7 @@ def reduce_recidivism_events(metric_key, values):
     if "release_facility" in key_mapping:
         metric.release_facility = key_mapping["release_facility"]
 
-    yield op.counters.Increment('unique_metric_keys_reduced')
-    yield op.counters.Increment('total_records_reduced', delta=total_records)
-    yield op.counters.Increment('total_recidivisms_reduced', delta=total_recidivism)
-
-    # TODO: shift from putting directly from `reduce` to a custom output writer?
-    # Use a mutation pool to batch calls? Check production performance.
-    yield op.db.Put(metric)
+    return metric
 
 
 class CalculatorHandler(webapp2.RequestHandler):
