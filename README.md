@@ -31,9 +31,38 @@ AppEngine is both easy to rapidly build out services, and easy to scale up and d
 helpful utilities like [TaskQueues](https://cloud.google.com/appengine/docs/standard/python/taskqueue/push/) built-in,
 so we don't have to worry about creating that functionality from scratch. Error handling is straight forward.
 
-### Getting set up
+### Local Development
+
+#### Getting set up
 Install the GCloud SDK (we recommend using the [interactive installer](https://cloud.google.com/sdk/downloads#interactive)),
 and clone the recidiviz repo from Github.
+
+#### Running tests
+First, install Pytest and pytest-cov: `pip install -U pytest pytest-cov`.
+
+Then, update your sourced `$PYTHONPATH` to add the Google App Engine libraries to the system Python path, which will
+allow imports of the various GAE libraries to work in test mode. Add the following line to your shell profile:
+
+`export PYTHONPATH="/path/to/google_appengine:/path/to/google_appengine/lib/:/path/to/google_appengine/lib/yaml/:$PYTHONPATH"`
+
+If you installed the GCloud SDK via the steps above, it's probably wherever you chose to install the SDK, under
+`google-cloud-sdk/platform/`.
+
+Finally, you will likely need to fix an [issue in the Google App Engine installation](https://stackoverflow.com/a/27274135) 
+that comes with the GCloud SDK. Check the `google_appengine/lib/fancy_urllib` folder to see if you have the nested
+`__init__.py` files with an empty file on the outer layer. If so, follow the instructions in that answer, and maybe 
+copy the outer file into a temp file for safe-keeping (even though it's blank):
+
+```
+cd /path/to/google_appengine/lib/fancy_urllib
+cp __init__.py old__init__.py
+cp fancy_urllib/__init__.py __init__.py
+```
+
+Once that's all done, tests can be run from the root directory via `pytest`.
+
+The configuration in `setup.cfg` and `.coveragerc` will ensure the right code is tested and the proper code coverage
+metrics are displayed.
 
 ### Running the app
 There are two ways to run the app - on your local machine, or deployed to the cloud.
