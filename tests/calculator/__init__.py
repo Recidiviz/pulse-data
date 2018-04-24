@@ -14,19 +14,3 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-
-
-# appengine_config.py
-from google.appengine.ext import vendor
-import logging
-import os
-
-# Add any libraries installed in the "lib" folder.
-vendor.add(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'lib'))
-
-# Override GAE logger to use our formatting
-log_format = "%(module)s/%(funcName)s : %(message)s"
-fr = logging.Formatter(log_format)
-handlers = logging.getLogger().handlers
-if handlers:
-    handlers[0].setFormatter(fr)

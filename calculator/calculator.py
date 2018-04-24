@@ -267,7 +267,7 @@ def map_recidivism_combinations(inmate, recidivism_events):
 
             earliest_follow_up_period = earliest_recidivated_follow_up_period(
                 event.release_date, event.reincarceration_date)
-            relevant_periods = relevant_follow_up_periods(event.release_date, FOLLOW_UP_PERIODS)
+            relevant_periods = relevant_follow_up_periods(event.release_date, date.today(), FOLLOW_UP_PERIODS)
 
             for period in relevant_periods:
                 offender_based_combo = augment_combination(combo, "OFFENDER", period)
@@ -351,7 +351,7 @@ def earliest_recidivated_follow_up_period(release_date, reincarceration_date):
         return years_apart + 1 if after_anniversary else years_apart
 
 
-def relevant_follow_up_periods(release_date, follow_up_periods):
+def relevant_follow_up_periods(release_date, current_date, follow_up_periods):
     """
     Returns all of the given follow up periods after the given release date which are either
     complete as of today, or still in progress as of today. Examples where today is 2018-01-26:
@@ -365,11 +365,12 @@ def relevant_follow_up_periods(release_date, follow_up_periods):
     relevant_follow_up_periods("2018-02-05", FOLLOW_UP_PERIODS) = []
 
     :param release_date: the release date we are tracking from
+    :param current_date: the current date we are tracking towards
     :param follow_up_periods: the array of follow up periods to filter
     :return: the array of follow up periods which are relevant to track, i.e. completed or in progress
     """
     return [period for period in follow_up_periods
-            if release_date + relativedelta(years=period - 1) <= date.today()]
+            if release_date + relativedelta(years=period - 1) <= current_date]
 
 
 def age_at_date(inmate, check_date):
@@ -496,3 +497,19 @@ class RecidivismEvent(object):
         :return: a RecidivismEvent for an instance of non-reincarceration
         """
         return RecidivismEvent(False, original_entry_date, release_date, release_facility)
+
+    def __repr__(self):
+        return "<RecidivismEvent recidivated:%s, original_entry_date:%s, release_date:%s, release_facility:%s, " \
+               "reincarceration_date:%s, reincarceration_facility:%s, was_conditional:%s>" \
+               % (self.recidivated, self.original_entry_date, self.release_date, self.release_facility,
+                  self.reincarceration_date, self.reincarceration_facility, self.was_conditional)
+
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return self.recidivated == other.recidivated \
+                   and self.original_entry_date == other.original_entry_date \
+                   and self.release_date == other.release_date \
+                   and self.release_facility == other.release_facility \
+                   and self.reincarceration_facility == other.reincarceration_facility \
+                   and self.was_conditional == other.was_conditional
+        return False

@@ -64,6 +64,10 @@ def reduce_recidivism_events(metric_key, values):
     for instances when recidivism did occur
     :return: yields up a RecidivismMetric to be put into the database
     """
+    if not values:
+        # This method should never be called by MapReduce with an empty values parameter, but we'll be defensive.
+        return
+
     total_records = len(values)
     value_numerals = map(float, values)
     total_recidivism = sum(event for event in value_numerals if event > 0)
