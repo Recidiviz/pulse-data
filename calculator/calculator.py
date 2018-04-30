@@ -23,7 +23,7 @@ import webapp2
 
 from itertools import combinations
 from models.inmate import Inmate
-from models.inmate_facility_snapshot import InmateFacilitySnapshot
+from models.snapshot import Snapshot
 from models.record import Offense, SentenceDuration, Record
 from scraper.us_ny.us_ny_inmate import UsNyInmate
 from scraper.us_ny.us_ny_record import UsNyRecord
@@ -60,7 +60,7 @@ def find_recidivism(inmate, include_conditional_violations=False):
     that cohort. No more than one event can be returned per release cohort per inmate.
     """
     records = Record.query(ancestor=inmate.key).order(Record.custody_date).fetch()
-    snapshots = InmateFacilitySnapshot.query(ancestor=inmate.key).order(-InmateFacilitySnapshot.snapshot_date).fetch()
+    snapshots = Snapshot.query(ancestor=inmate.key).order(-Snapshot.created_on).fetch()
 
     recidivism_events = {}
 
@@ -74,7 +74,7 @@ def find_recidivism(inmate, include_conditional_violations=False):
             # See Issue #49.
             continue
 
-        if record.is_released and not record.last_release_date:
+        if record.is_released and not record.latest_release_date:
             # If the record is marked as released but there is no release date, there is nothing we
             # can process. Skip it. See Issue #51.
             continue
@@ -170,10 +170,10 @@ def final_release(record):
     if not record.is_released:
         return None
 
-    return record.last_release_date
+    return record.latest_release_date
 
 
-def first_facility(record, inmate_snapshots):
+def first_facility(record, snapshots):
     """
     Returns the facility that the inmate was first in for the given record. That is, the facility that
     they started that record in, whether or not they have since been released.
@@ -182,13 +182,13 @@ def first_facility(record, inmate_snapshots):
     facility in the last snapshot in the collection that matches the given record.
 
     :param record: a single record
-    :param inmate_snapshots: all facility snapshots for the inmate
+    :param snapshots: all facility snapshots for the inmate
     :return: the facility that the inmate first occupied for the record
     """
-    return last_facility(record, reversed(inmate_snapshots))
+    return last_facility(record, reversed(snapshots))
 
 
-def last_facility(record, inmate_snapshots):
+def last_facility(record, snapshots):
     """
     Returns the facility that the inmate was last in for the given record. That is, the facility that
     they are currently in if still incarcerated, or that they were released from on their final release
@@ -198,10 +198,10 @@ def last_facility(record, inmate_snapshots):
     facility in the first snapshot in the collection that matches the given record.
 
     :param record: a single record
-    :param inmate_snapshots: all facility snapshots for the inmate
+    :param snapshots: all snapshots for the inmate
     :return: the facility that the inmate last occupied for the record
     """
-    return next((snapshot.facility for snapshot in inmate_snapshots
+    return next((snapshot.latest_facility for snapshot in snapshots
                  if snapshot.key.parent().id() == record.key.id()), None)
 
 
@@ -437,6 +437,7 @@ def augment_combination(characteristic_combo, methodology, period):
     :param period: the followup period to set
     :return: the augmented characteristic combination
     """
+
     augmented_combo = characteristic_combo.copy()
     augmented_combo["methodology"] = methodology
     augmented_combo["follow_up_period"] = period

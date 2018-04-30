@@ -16,25 +16,17 @@
 # =============================================================================
 
 
-from google.appengine.ext import ndb
+regions:
 
-
-"""
-EnvironmentVariable
-
-Environment variables pulled in at runtime. This is where sensitive info such 
-as usernames and passwords to third-party services are kept. They're added
-manually in the gcloud console.
-
-Entity keys are expected to be in the format region_varname, to preserve
-uniqueness.
-
-Fields:
-	- region: String region code, or 'all' 
-    - name: String variable name
-    - value: String variable value, set by admins in gcloud console
-"""
-class EnvironmentVariable(ndb.Model):
-    region = ndb.StringProperty()
-    name = ndb.StringProperty()
-    value = ndb.StringProperty()
+  us_ny:
+    region_name: New York State
+    agency_name: Department of Corrections and Community Supervision (DOCCS)
+    region_code: us_ny
+    agency_type: prison
+    scrape_queue_name: us-ny-scraper
+    base_url: http://nysdoccslookup.doccs.ny.gov
+    names_file: us_ny_names.csv
+    entity_kinds:
+      inmate: UsNyInmate
+      record: UsNyRecord
+      snapshot: UsNySnapshot

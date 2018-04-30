@@ -20,39 +20,36 @@ from google.appengine.ext import ndb
 from google.appengine.ext.ndb import polymodel
 
 
-"""
-Inmate
-
-Datastore model for a snapshot of a particular inmate listing. This is intended
-to be a 1:1 mapping to human beings in the prison system. We don't want 
-multiple copies of the same inmate, so we update them when re-scraped.
-
-Individual region scrapers are expected to create their own subclasses which
-inherit these common properties, then add more if their region has more 
-available. See us_ny_scraper.py for an example.  
-
-Fields:
-    - inmate_id: The identifier the state site uses for this listing
-    - inmate_id_is_fuzzy: Whether we generated this ID/it's not x-scrape stable
-    - given_names: First and middle names (space separated), if provided
-    - last_name: Last name, if provided
-    - birthday: Birth date, if available
-    - age: Age, if birth date is not available.
-    - region: The region code for the scraper that captured this
-    - sex: Sex of inmate in listing, as provided by prison system
-    - race:  Race of inmate in the listing, for now string provided by region
-    - created_on: Python datetime object of first time we added this record
-    - updated_on: Python datetime object of last time we updated this record
-
-Analytics tooling may use inmate_id + region to dedup if available, so it's
-important to update the listing based on that field, rather than just write a 
-new one. If none can be found, generate a random 10-digit 
-alphanumeric ID and set record_id_is_fuzzy to True. This will help in 
-analytics logic.
-
-For any inmate listing, there will be 1+ Records and 1+ InmateFacilitySnapshots.
-"""
 class Inmate(polymodel.PolyModel):
+    """Top-level PolyModel class to describe an incarcerated individual
+
+    Datastore model for a snapshot of a particular inmate listing. This is
+    intended to be a 1:1 mapping to human beings in the prison system. We don't
+    want multiple copies of the same inmate, so we update them when re-scraped.
+
+    Individual region scrapers are expected to create their own subclasses which
+    inherit these common properties, then add more if their region has more
+    available. See us_ny_scraper.py for an example.
+
+    If no corrections-provided ID can be found for the inmate, we generate a
+    random 10-digit alphanumeric ID and set record_id_is_fuzzy to True.
+
+    For any inmate listing, there will be 1+ Records and 1+ Snapshots.
+
+    Attributes:
+        inmate_id: (string) The identifier the state site uses for this person
+        inmate_id_is_fuzzy: Whether we generated this ID/it's not consistent
+            across multiple scrapes of the same inmate.
+        given_names: (string) First and middle names (space separated), if available
+        last_name: (string) Last name, if provided
+        birthday: (date) Birth date, if available
+        age: (int) Age, if birth date is not available.
+        region: (string) The region code for the scraper that captured this
+        sex: (string) Sex of inmate in listing, as provided by prison system
+        race: (sring) Race of inmate in the listing, for now string provided by region
+        created_on: (datetime) Python datetime object of first time we added this record
+        updated_on: (date) Python datetime object of last time we updated this record
+    """
     inmate_id = ndb.StringProperty()
     inmate_id_is_fuzzy = ndb.BooleanProperty()
     given_names = ndb.StringProperty()

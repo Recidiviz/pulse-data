@@ -43,6 +43,36 @@ indexes:
   - name: snapshot_date
     direction: desc
 
+- kind: InmateSnapshot
+  properties:
+  - name: is_released
+  - name: snapshot_date
+
+- kind: InmateSnapshot
+  ancestor: yes
+  properties:
+  - name: class
+  - name: snapshot_date
+    direction: desc
+
+- kind: Record
+  properties:
+  - name: class
+  - name: is_released
+  - name: created
+
+- kind: Record
+  properties:
+  - name: class
+  - name: is_released
+  - name: created_on
+
+- kind: Record
+  properties:
+  - name: class
+  - name: is_released
+  - name: latest_release_date
+
 - kind: Record
   ancestor: yes
   properties:
@@ -51,10 +81,72 @@ indexes:
 - kind: ScrapeSession
   properties:
   - name: end
+  - name: region
+  - name: scrape_type
+  - name: start
+    direction: desc
+
+- kind: ScrapeSession
+  properties:
+  - name: end
+  - name: region
+  - name: start
+    direction: desc
+
+- kind: ScrapeSession
+  properties:
+  - name: region
+  - name: scrape_type
+  - name: docket_item
+
+- kind: ScrapeSession
+  properties:
+  - name: region
+  - name: scrape_type
   - name: start
     direction: desc
 
 - kind: ScrapedRecord
   properties:
   - name: record_id
+  - name: region
   - name: created_on
+
+- kind: Snapshot
+  properties:
+  - name: class
+  - name: is_released
+  - name: created_on
+
+- kind: Snapshot
+  properties:
+  - name: class
+  - name: is_released
+  - name: snapshot_date
+
+- kind: Snapshot
+  properties:
+  - name: class
+  - name: is_released
+  - name: snapshot_timestamp
+
+- kind: Snapshot
+  ancestor: yes
+  properties:
+  - name: class
+  - name: created_on
+    direction: desc
+
+- kind: Snapshot
+  ancestor: yes
+  properties:
+  - name: class
+  - name: snapshot_date
+    direction: desc
+
+- kind: Snapshot
+  ancestor: yes
+  properties:
+  - name: class
+  - name: snapshot_timestamp
+    direction: desc
