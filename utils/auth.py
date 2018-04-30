@@ -22,21 +22,20 @@ import logging
 
 
 def authenticate_request(func):
-    """
-    authenticate()
-    Decorator function that checks for end-user authentication or that the 
+    """Decorator to validate inbound request is authorized for Recidiviz
+
+    Decorator function that checks for end-user authentication or that the
     request came from our app prior to calling the function it's decorating.
 
     Args:
         func: Function being decorated and its args
 
     Returns:
-        The function it's decorating, with its original args
-        Nothing, if called w/o user or app credentials
+        If authenticated, results from the decorated function.
+        If not, redirects to user login page
     """
 
     def auth_and_call(request_handler, *args, **kwargs):
-
         # Check this is either an admin user or a call from within the app itself
         user = users.get_current_user()
 
@@ -47,8 +46,14 @@ def authenticate_request(func):
         is_cron = request_handler.request.headers.get(
             'X-Appengine-Cron', None)
 
+        is_task = request_handler.request.headers.get(
+            'X-AppEngine-QueueName', None)
+
         if is_cron:
             logging.info("Requester is one of our cron jobs, proceeding.")
+
+        elif is_task:
+            logging.info("Requester is the taskqueue, proceeding.")
 
         elif incoming_app_id:
             # Check whether this is an intra-app call from our GAE service
@@ -64,7 +69,7 @@ def authenticate_request(func):
                 return
 
         elif user:
-            # Not an intra-app call, but was sent by an authenticated user. 
+            # Not an intra-app call, but was sent by an authenticated user.
             # Check if they're an admin / have permission to impact scrapers.
             logging.info("Requester authenticated as %s (%s)." %
                          (user.nickname(), user.email()))
@@ -84,7 +89,7 @@ def authenticate_request(func):
             request_handler.redirect(login_url)
             return
 
-        # If we made it this far, client is authorized - run the decorated func      
+        # If we made it this far, client is authorized - run the decorated func
         return func(request_handler, *args, **kwargs)
 
     return auth_and_call

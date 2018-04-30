@@ -106,6 +106,8 @@ venv.bak/
 # mypy
 .mypy_cache/
 
-# Sublime stuff
-*.sublime*
+# Local development
+local.yaml
 
+#pytest
+.pytest_cache/

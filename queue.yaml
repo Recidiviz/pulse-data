@@ -1,9 +1,11 @@
 queue:
-- name: session-refresh
-  rate: 60/s
-  bucket_size: 12
 
-- name: us-ny
+- name: docket
+  mode: pull
+
+# us_ny - New York (state)
+- name: us-ny-scraper
+  mode: push
   rate: 18/m
   bucket_size: 1
   max_concurrent_requests: 3
@@ -11,3 +13,4 @@ queue:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
     task_age_limit: 3d
+

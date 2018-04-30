@@ -1,3 +1,4 @@
+
 # Recidiviz - a platform for tracking granular recidivism metrics in real time
 # Copyright (C) 2018 Recidiviz, Inc.
 #
@@ -15,7 +16,5 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-from scraper import queue_control
-from scraper import worker
-from scraper import us_ny
-from scraper import models
+
+from scraper.models import scrape_session

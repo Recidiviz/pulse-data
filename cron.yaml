@@ -1,6 +1,6 @@
 cron:
-- description: Start NY scraper every day at 9pm
-  url: /resume_scraper?region=us_ny
+- description: Start NY background scraper every day at 9pm
+  url: /scraper/start?region=us_ny&scrape_type=background
   schedule: every day 21:00
   timezone: America/New_York
   retry_parameters:
@@ -9,7 +9,7 @@ cron:
     job_age_limit: 9h
 
 - description: Stop NY scraper every day at 9am
-  url: /stop_scraper?region=us_ny
+  url: /scraper/stop?region=us_ny&scrape_type=background
   schedule: every day 09:00
   timezone: America/New_York
   retry_parameters:
@@ -18,6 +18,6 @@ cron:
     job_age_limit: 9h
 
 - description: Backup the raw ingest entities every Sunday at 3pm
-  url: /datastore_export?output_url_prefix=gs://pulse-datastore-backups&kind=Inmate&kind=Record&kind=InmateFacilitySnapshot
+  url: /datastore_export?output_url_prefix=gs://pulse-datastore-backups&kind=Inmate&kind=Record&kind=Snapshot
   schedule: every sunday 15:00
   timezone: America/New_York

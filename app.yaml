@@ -6,26 +6,29 @@ instance_class: F2
 # It is imperative that the module and version values are set to default for local and not production,
 # due to a GAE MapReduce bug: https://github.com/GoogleCloudPlatform/appengine-mapreduce/issues/103.
 # Comment these out to run locally. TODO: make this dynamic by environment.
+
 #module: default
 #version: default
 
 includes:
 - lib/mapreduce/include.yaml
 
+builtins:
+# Deferred is required to use google.appengine.ext.deferred
+- deferred: on
+
 handlers:
-- url: /start
-  script: scraper.recidiviz.app
-  login: admin
-
-- url: /stop_scraper
+- url: /scraper/start
   script: scraper.queue_control.app
 
-- url: /resume_scraper
+- url: /scraper/stop
   script: scraper.queue_control.app
 
-- url: /scraper
+- url: /scraper/resume
+  script: scraper.queue_control.app
+
+- url: /scraper/work
   script: scraper.worker.app
-  login: admin
 
 - url: /_ah/pipeline.*
   script: mapreduce.lib.pipeline.handlers._APP
@@ -37,6 +40,18 @@ handlers:
 - url: /datastore_export
   script: cloud_datastore_admin.app
   login: admin
+
+# MIGRATION ONLY
+# TODO: Remove post-migration
+- url: /data_migration
+  script: utils.data_migration.app
+
+# LOCAL ONLY / TEST ENV BELOW HERE
+- url: /test_populator/populate
+  script: tests.populate_test_db.app
+
+- url: /test_populator/clear
+  script: tests.populate_test_db.app
 
 libraries:
 - name: webapp2
