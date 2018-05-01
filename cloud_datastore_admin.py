@@ -3,19 +3,27 @@
 # All rights reserved by Google, Inc.
 # ==========================================================================
 
+"""A module for performing exports of our Datastore."""
+
 import datetime
 import httplib
 import json
 import logging
 import webapp2
-
+from auth import authenticate_request
 from google.appengine.api import app_identity
 from google.appengine.api import urlfetch
 
 
 class Export(webapp2.RequestHandler):
-
+    """Request handler which supports triggering exports of our Datastore."""
+    @authenticate_request
     def get(self):
+        """Triggers an export of Cloud Datastore.
+
+        The exact data that is exported is determined from parameters in the
+        request.
+        """
         access_token, _ = app_identity.get_access_token(
             'https://www.googleapis.com/auth/datastore')
         app_id = app_identity.get_application_id()

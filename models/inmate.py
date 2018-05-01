@@ -1,4 +1,4 @@
-# Recidiviz - a platform for tracking granular recidivism metrics in real time
+# Recidiviz a platform for tracking granular recidivism metrics in real time
 # Copyright (C) 2018 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
@@ -14,6 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
+
+"""Inmates in the criminal justice system."""
 
 
 from google.appengine.ext import ndb
@@ -40,15 +42,19 @@ class Inmate(polymodel.PolyModel):
         inmate_id: (string) The identifier the state site uses for this person
         inmate_id_is_fuzzy: Whether we generated this ID/it's not consistent
             across multiple scrapes of the same inmate.
-        given_names: (string) First and middle names (space separated), if available
+        given_names: (string) First and middle names (space separated),
+            if available
         last_name: (string) Last name, if provided
         birthday: (date) Birth date, if available
         age: (int) Age, if birth date is not available.
         region: (string) The region code for the scraper that captured this
         sex: (string) Sex of inmate in listing, as provided by prison system
-        race: (sring) Race of inmate in the listing, for now string provided by region
-        created_on: (datetime) Python datetime object of first time we added this record
-        updated_on: (date) Python datetime object of last time we updated this record
+        race: (sring) Race of inmate in the listing, for now string provided
+            by region
+        created_on: (datetime) Python datetime object of first time we added
+            this record
+        updated_on: (date) Python datetime object of last time we updated
+            this record
     """
     inmate_id = ndb.StringProperty()
     inmate_id_is_fuzzy = ndb.BooleanProperty()

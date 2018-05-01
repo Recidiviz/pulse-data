@@ -15,6 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
+"""Records corresponding to individual sentences in prison."""
+
 
 from google.appengine.ext import ndb
 from google.appengine.ext.ndb import polymodel
@@ -23,16 +25,17 @@ from google.appengine.ext.ndb import polymodel
 class Offense(ndb.Model):
     """Model to describe a particular crime of conviction
 
-    Datastore model for a specific crime that led to an incarceration event. Note
-    that incarceration events often result from multiple crimes (e.g. larceny AND
-    evading arrest, etc.) so there may be multiple Offense entities in a single
-    Record.
+    Datastore model for a specific crime that led to an incarceration event.
+    Note that incarceration events often result from multiple crimes (e.g.
+    larceny AND evading arrest, etc.) so there may be multiple Offense entities
+    in a single Record.
 
     One or more Offense entities are stored in the 'offense' property of a
     Record.
 
     Attributes:
-        crime_description: (string) Scraped from prison site describing the crime
+        crime_description: (string) Scraped from prison site describing the
+            crime
         crime_class: (string) Scraped from prison site describing class of crime
     """
     crime_description = ndb.StringProperty()
@@ -45,8 +48,8 @@ class SentenceDuration(ndb.Model):
     Describes a duration of time for a sentence (could be minimum duration,
     could be maximum - this is used for both fields in Record entities).
 
-    A SentenceDuration entity is stored as one of the sentence duration properties
-    of a Record entity.
+    A SentenceDuration entity is stored as one of the sentence duration
+    properties of a Record entity.
 
     Attributes:
         life_sentence: (bool) Whether or not this is a life sentence
@@ -63,8 +66,8 @@ class SentenceDuration(ndb.Model):
 class Record(polymodel.PolyModel):
     """Top-level PolyModel class to describe the record of a criminal event
 
-    Datastore model for a record of a particular criminal event. This is intended
-    to be a 1:1 mapping to human beings in the prison system.
+    Datastore model for a record of a particular criminal event. This is
+    intended to be a 1:1 mapping to human beings in the prison system.
 
     Record entities are never duplicated - if a change is discovered during re-
     scraping (e.g., the parole date has been pushed back), the Record entity is
@@ -91,8 +94,8 @@ class Record(polymodel.PolyModel):
         max_sentence: (record.SentenceDuration) Maximum sentence to be served
         custody_date: (date) Date the inmate's sentence started
         offense_date: (date) Date the offense was committed
-        latest_facility: (string) The name of the most recent facility the inmate has
-            been held in
+        latest_facility: (string) The name of the most recent facility the
+            inmate has been held in
         latest_release_date: (date) Most recent date of release
         latest_release_type: (string) Reason given for most recent release
         is_released: (bool) Whether the inmate has been released from this
@@ -105,8 +108,10 @@ class Record(polymodel.PolyModel):
     """
     offense = ndb.StructuredProperty(Offense, repeated=True)
     record_id = ndb.StringProperty()
-    min_sentence_length = ndb.StructuredProperty(SentenceDuration, repeated=False)
-    max_sentence_length = ndb.StructuredProperty(SentenceDuration, repeated=False)
+    min_sentence_length = ndb.StructuredProperty(SentenceDuration,
+                                                 repeated=False)
+    max_sentence_length = ndb.StructuredProperty(SentenceDuration,
+                                                 repeated=False)
     custody_date = ndb.DateProperty()
     offense_date = ndb.DateProperty()
     latest_facility = ndb.StringProperty()

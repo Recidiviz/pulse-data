@@ -15,19 +15,49 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
+"""Classes of metrics we calculate."""
+
 
 from google.appengine.ext import ndb
 from google.appengine.ext.ndb import polymodel
 
 
 class RecidivismMetric(polymodel.PolyModel):
-    """
-    Models a single recidivism metric. A recidivism metric contains a recidivism rate,
-    including the numerator of total instances of recidivism and a denominator of total
-    instances of release from prison. It also contains all of the identifying
-    characteristics of the metric, including release cohort, follow-up period, and
-    measurement methodology, as well as optional characteristics such as the race or
-    release facility of inmates included in the calculation.
+    """Models a single recidivism metric.
+
+    A recidivism metric contains a recidivism rate, including the numerator of
+    total instances of recidivism and a denominator of total instances of
+    release from prison. It also contains all of the identifying characteristics
+    of the metric, including required characteristics for normalization as well
+    as optional characteristics for slicing the data.
+
+    Attributes:
+        execution_id: the string id of the calculation pipeline that produced
+            this metric. Required.
+        release_cohort: the integer year during which the inmate was released.
+            Required.
+        follow_up_period: the integer number of years after date of release
+            duringwhich recidivism was measured, e.g. the recidivism rate within
+            5 years of release. Required.
+        methodology: the calculation methodology for the metric, i.e. 'EVENT' or
+            'OFFENDER'. Required.
+        age_bucket: the age bucket string of the inmate the metric describes,
+            e.g. '<25' or '35-39'.
+        race: the race of the inmate the metric describes.
+        sex: the sex of the inmate the metric describes.
+        release_facility: the facility the inmate was released from prior to
+            recidivating.
+        total_records: the integer number of records that the characteristics in
+            this metric describe.
+        total_recidivism: the total number of records that led to recidivism
+            that the characteristics in this metric describe. This is a float
+            because the 'OFFENDER' methodology calculates a weighted recidivism
+            number based on total recidivating instances for the offender.
+        recidivism_rate: the float rate of recidivism for the records that the
+            characteristics in this metric describe.
+        created_on: a DateTime for when this metric was created.
+        updated_on: a DateTime for when this metric was last updated.
+
     """
     # Id of the calculation pipeline that created this metric
     execution_id = ndb.StringProperty()

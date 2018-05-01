@@ -15,7 +15,18 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
+"""The core models of the Recidiviz data platform.
 
-from models import inmate
-from models import snapshot
-from models import record
+These are the models that must be shared between ingest and calculation. They
+capture, conceptually:
+    An Inmate who serves a particular sentence in the criminal justice system.
+    A historical Record of that sentence, including facility, dates, offense,
+        sentencing information, and more.
+    An Inmate Facility Snapshot that records where an Inmate was incarcerated
+        at a particular point in time.
+"""
+
+
+from . import inmate
+from . import record
+from . import snapshot

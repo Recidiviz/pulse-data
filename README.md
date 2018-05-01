@@ -64,6 +64,16 @@ Once that's all done, tests can be run from the root directory via `pytest`.
 The configuration in `setup.cfg` and `.coveragerc` will ensure the right code is tested and the proper code coverage
 metrics are displayed.
 
+#### Checking code style
+Install Pylint: `pip install pylint`.
+
+Then run it across the main body of code, in particular: `pylint *.py calculator models scraper tests utils`.
+
+The output will include individual lines for all style violations, followed by a handful of reports, and finally a
+general code score out of 10. Fix any new violations in your commit. If you believe there is cause for a rule change,
+e.g. if you believe a particular rule is inappropriate in the codebase, then submit that change as part of your
+inbound pull request. 
+
 ### Running the app
 There are two ways to run the app - on your local machine, or deployed to the cloud.
 
