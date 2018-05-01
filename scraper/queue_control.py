@@ -15,9 +15,19 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
+"""Requests handlers for queue control requests, e.g. stopping or resuming
+a scraper.
+"""
+
+
+from datetime import datetime
+import csv
+import hashlib
+import json
+import logging
+import webapp2
 
 from dateutil.relativedelta import relativedelta
-from datetime import datetime
 from google.appengine.api import taskqueue
 from google.appengine.ext import deferred
 from google.appengine.ext import ndb
@@ -25,12 +35,6 @@ from scraper.models.scrape_session import ScrapeSession
 from utils import environment
 from utils import regions
 from utils.auth import authenticate_request
-
-import csv
-import hashlib
-import json
-import logging
-import webapp2
 
 
 FILENAME_PREFIX = "./name_lists/"
@@ -42,6 +46,7 @@ SNAPSHOT_BATCH_SIZE = 100
 
 
 class ScraperStart(webapp2.RequestHandler):
+    """Request handler for triggering scrapers."""
 
     @authenticate_request
     def get(self):
@@ -74,29 +79,34 @@ class ScraperStart(webapp2.RequestHandler):
             for region in scrape_regions:
 
                 for scrape_type in scrape_types:
-                    logging.info("Starting new %s scrape(s) for %s." %
-                        (scrape_type, region))
+                    logging.info("Starting new %s scrape(s) for %s."
+                                 % (scrape_type, region))
 
                     scraper = regions.get_scraper(region)
 
                     # Set up scraper for new session
                     scraper.setup(scrape_type)
 
-                    # Clear prior query docket for this scrape type and add new items
+                    # Clear prior query docket for this scrape type and add new
+                    # items
                     purge_query_docket(region, scrape_type)
                     load_target_list(scrape_type, region, params)
 
                     # Start scraper, but give the target list loader a headstart
                     timer = 30 if not environment.in_prod() else 300
-                    logging.info("Starting %s/%s scrape in %d seconds..." %
-                        (region, scrape_type, timer))
-                    deferred.defer(scraper.start_scrape, scrape_type, _countdown=timer)
+                    logging.info("Starting %s/%s scrape in %d seconds..."
+                                 % (region, scrape_type, timer))
+                    deferred.defer(scraper.start_scrape,
+                                   scrape_type,
+                                   _countdown=timer)
 
         else:
-            invalid_params(self.response, "Scrape type or region not recognized.")
+            invalid_params(self.response,
+                           "Scrape type or region not recognized.")
 
 
 class ScraperStop(webapp2.RequestHandler):
+    """Request handler for pausing//stopping scrapers."""
 
     @authenticate_request
     def get(self):
@@ -134,21 +144,23 @@ class ScraperStop(webapp2.RequestHandler):
         valid_params = get_and_validate_params(request_params)
 
         if valid_params:
-            (scrape_regions, scrape_types, params) = valid_params
+            (scrape_regions, scrape_types, _params) = valid_params
 
             for region in scrape_regions:
 
-                logging.info("Stopping %s scrapes for %s." %
-                    (scrape_types, region))
+                logging.info("Stopping %s scrapes for %s."
+                             % (scrape_types, region))
 
                 scraper = regions.get_scraper(region)
                 scraper.stop_scrape(scrape_types)
 
         else:
-            invalid_params(self.response, "Scrape type or region not recognized.")
+            invalid_params(self.response,
+                           "Scrape type or region not recognized.")
 
 
 class ScraperResume(webapp2.RequestHandler):
+    """Request handler for resuming paused//stoped scrapers."""
 
     @authenticate_request
     def get(self):
@@ -173,20 +185,21 @@ class ScraperResume(webapp2.RequestHandler):
         valid_params = get_and_validate_params(request_params)
 
         if valid_params:
-            (scrape_regions, scrape_types, params) = valid_params
+            (scrape_regions, scrape_types, _params) = valid_params
 
             for region in scrape_regions:
 
                 for scrape_type in scrape_types:
-                    logging.info("Resuming %s scrape for %s." %
-                        (scrape_type, region))
+                    logging.info("Resuming %s scrape for %s."
+                                 % (scrape_type, region))
 
                     scraper = regions.get_scraper(region)
                     scraper.setup(scrape_type)
                     scraper.resume_scrape(scrape_type)
 
         else:
-            invalid_params(self.response, "Scrape type or region not recognized.")
+            invalid_params(self.response,
+                           "Scrape type or region not recognized.")
 
 
 def get_and_validate_params(request_params):
@@ -256,6 +269,7 @@ def get_param(param_name, params, default=None):
         param_name: (string) Name of the URL parameter being sought
         params: List of URL parameter key/value pairs, in tuples (e.g.,
             [("key", "val"), ("key2", "val2"), ...])
+        default: The default value to return if the param name is not found
 
     Returns:
         Value for given param_name if found
@@ -307,7 +321,8 @@ def load_target_list(scrape_type, region_code, params):
         load_snapshot_target_list(region_code, phase)
 
 
-def load_background_target_list(region_code, name_file, query_name, load, start_line=1):
+def load_background_target_list(region_code, name_file, query_name, load,
+                                start_line=1):
     """Load background scrape docket items, from name file
 
     Iterates over a CSV of common names, loading a docket item for the scraper
@@ -334,7 +349,6 @@ def load_background_target_list(region_code, name_file, query_name, load, start_
     """
     batch_size = BACKGROUND_BATCH_SIZE
     write_to_docket = load
-    end_of_list = False
     names = []
     next_line = None
     scrape_type = "background"
@@ -368,9 +382,9 @@ def load_background_target_list(region_code, name_file, query_name, load, start_
 
         if not write_to_docket and end_of_list:
             # Name not in list, add it as a one-off docket item
-            logging.info("Couldn't find user-provided name '%s' in name "
-                "list, adding one-off docket item for the name instead." %
-                str(query_name))
+            logging.info("Couldn't find user-provided name '%s' in name list, "
+                         "adding one-off docket item for the name instead."
+                         % str(query_name))
             names = [query_name]
             write_to_docket = True
 
@@ -410,7 +424,7 @@ def get_name_list_subset(names, query_name):
         match_index = names.index(query_name)
 
         logging.info("Found query name %s in name list, adding subsequent "
-                "names to docket." % str(query_name))
+                     "names to docket." % str(query_name))
         subset = names[match_index:]
 
         return (True, subset)
@@ -447,13 +461,11 @@ def load_snapshot_target_list(region_code, phase, cursor=None):
         N/A
     """
     batch_size = SNAPSHOT_BATCH_SIZE
-    result = []
     (start_date, start_datetime) = get_snapshot_start()
     scrape_type = "snapshot"
 
     # Get relevant sub-kinds for the region
     region = regions.Region(region_code)
-    region_inmate = region.get_inmate_kind()
     region_record = region.get_record_kind()
     region_snapshot = region.get_snapshot_kind()
 
@@ -465,7 +477,7 @@ def load_snapshot_target_list(region_code, phase, cursor=None):
         # (Snapshot search aims to catch when they get out / facility changes)
         snapshot_query = region_snapshot.query(ndb.AND(
             region_snapshot.created_on > start_datetime,
-            region_snapshot.is_released == False))
+            not region_snapshot.is_released))
 
         query_results, next_cursor, more = snapshot_query.fetch_page(
             batch_size, start_cursor=cursor)
@@ -482,7 +494,7 @@ def load_snapshot_target_list(region_code, phase, cursor=None):
         # is to catch any for which the core snapshot query didn't apply.
         inmate_records_query = region_record.query(ndb.AND(
             region_record.latest_release_date > start_date,
-            region_record.is_released == True))
+            region_record.is_released))
 
         query_results, next_cursor, more = inmate_records_query.fetch_page(
             batch_size, start_cursor=cursor)
@@ -502,7 +514,7 @@ def load_snapshot_target_list(region_code, phase, cursor=None):
         # inmates of interest for this edge-case won't have any snapshots
         # updating is_released in that time.
         inmate_records_query = region_record.query(ndb.AND(
-            region_record.is_released == False,
+            not region_record.is_released,
             region_record.created_on < start_datetime))
 
         query_results, next_cursor, more = inmate_records_query.fetch_page(
@@ -516,7 +528,8 @@ def load_snapshot_target_list(region_code, phase, cursor=None):
         query_type, query_results)
 
     # Invert results to a combination of inmate + set of records to ignore
-    results = get_ignore_records(start_date, region_record, relevant_records, inmate_keys_ids)
+    results = get_ignore_records(start_date, region_record, relevant_records,
+                                 inmate_keys_ids)
 
     # Store the inmates and ignore records as docket items for snapshot scrape
     add_to_query_docket(region_code, scrape_type, results)
@@ -536,7 +549,8 @@ def process_query_response(query_type, query_results):
     """Extracts relevant details for docket items from snapshot query results
 
     Args:
-        query_type: (string) "snapshot" if query was for snapshots, "record" if not
+        query_type: (string) "snapshot" if query was for snapshots, "record"
+            if not
         query_results: (list of entities) Result set from the query
 
     Returns:
@@ -564,7 +578,8 @@ def process_query_response(query_type, query_results):
     return (relevant_records, inmate_keys_ids)
 
 
-def get_ignore_records(start_date, region_record, relevant_records, inmate_keys_ids):
+def get_ignore_records(start_date, region_record, relevant_records,
+                       inmate_keys_ids):
     """Invert list of relevant records to produce list scraper should ignore
 
     Takes a list of inmates, and of relevant records, then inverts the
@@ -601,8 +616,8 @@ def get_ignore_records(start_date, region_record, relevant_records, inmate_keys_
                 # scraping after they had already been released. Don't
                 # ignore those records - may have been put back e.g.
                 # on parole violation.
-                if (record.latest_release_date and not
-                    record.latest_release_date > start_date):
+                if (record.latest_release_date and
+                        not record.latest_release_date > start_date):
                     inmate_ignore_records.append(record_id)
 
         result_list.append((inmate_id, inmate_ignore_records))
@@ -647,8 +662,8 @@ def purge_query_docket(region, scrape_type):
     Returns:
         N/A
     """
-    logging.info("Purging existing query docket for %s/%s" %
-        (region, scrape_type))
+    logging.info("Purging existing query docket for %s/%s"
+                 % (region, scrape_type))
 
     lease_seconds = 3600
     max_tasks = 1000
@@ -664,7 +679,7 @@ def purge_query_docket(region, scrape_type):
                                             tag_name,
                                             deadline_seconds)
 
-        if docket_items and len(docket_items) > 0:
+        if docket_items:
             q.delete_tasks(docket_items)
         else:
             empty = True
@@ -692,8 +707,9 @@ def purge_leased_docket_items(region, scrape_type):
     # Query for the relevant session
     session_query = ScrapeSession.query()
     session_query = session_query.filter(ScrapeSession.region == region)
-    session_query = session_query.filter(ScrapeSession.scrape_type == scrape_type)
-    session_query = session_query.filter(ScrapeSession.docket_item != None)
+    session_query = session_query.filter(
+        ScrapeSession.scrape_type == scrape_type)
+    session_query = session_query.filter(ScrapeSession.docket_item is not None)
     session_results = session_query.fetch()
 
     for session in session_results:
@@ -709,7 +725,7 @@ def purge_leased_docket_items(region, scrape_type):
             # Possible the docket item was deleted too long ago for the
             # task queue to recognize.
             logging.warning("Failed to remove docket item (%s) from session "
-                "(%s):\n%s" % (docket_item_name, session.key, e))
+                            "(%s):\n%s" % (docket_item_name, session.key, e))
 
     return
 
@@ -717,17 +733,18 @@ def purge_leased_docket_items(region, scrape_type):
 def add_to_query_docket(region_code, scrape_type, docket_items):
     """ Add docket item to the query docket for relevant region / scrape type
 
-    Adds items in the list to the relevant query docket (that matching the region
-    and type given). The scraper will pull each item from the docket in turn for
-    scraping (e.g. each name, if a background scrape, or each inmate ID if a
-    snapshot scrape.)
+    Adds items in the list to the relevant query docket (that matching the
+    region and type given). The scraper will pull each item from the docket in
+    turn for scraping (e.g. each name, if a background scrape, or each inmate ID
+    if a snapshot scrape.)
 
     Args:
         region_code: (string) Region code, e.g. us_ny
         scrape_type: (string) Scrape type to add item to docket for
         docket_items: (list) List of payloads to add.
     """
-    logging.info("Populating query docket for %s/%s." % (region_code, scrape_type))
+    logging.info("Populating query docket for %s/%s."
+                 % (region_code, scrape_type))
     q = taskqueue.Queue(DOCKET_QUEUE_NAME)
 
     tag_name = region_code + "-" + scrape_type
@@ -737,7 +754,8 @@ def add_to_query_docket(region_code, scrape_type, docket_items):
         payload = json.dumps(item)
 
         if scrape_type == "snapshot":
-            logging.debug("Attempting to add snapshot item to docket: %s" % (item[0]))
+            logging.debug("Attempting to add snapshot item to docket: %s"
+                          % (item[0]))
             task_name = get_task_name(region_code, item[0])
             new_task = taskqueue.Task(payload=payload,
                                       method='PULL',
@@ -757,7 +775,7 @@ def add_to_query_docket(region_code, scrape_type, docket_items):
             taskqueue.taskqueue.TombstonedTaskError,
             taskqueue.taskqueue.TaskAlreadyExistsError):
         logging.debug("Some inmates been added to the docket already; "
-            "skipping.")
+                      "skipping.")
 
 
 def get_task_name(region_code, inmate_id):
@@ -783,7 +801,7 @@ def get_task_name(region_code, inmate_id):
     # Get the time, rounded down to the last hour. New tasks will have unique
     # names an hour after the last snapshot scrape, but immediate duplicates
     # will be blocked.
-    time_component = datetime.now().replace(microsecond=0,second=0,minute=0)
+    time_component = datetime.now().replace(microsecond=0, second=0, minute=0)
 
     string_base = region_code + inmate_id + str(time_component)
 

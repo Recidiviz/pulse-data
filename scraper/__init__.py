@@ -15,7 +15,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-from scraper import queue_control
-from scraper import worker
-from scraper import us_ny
-from scraper import models
+"""The ingest portion of the Recidiviz data platform.
+
+This includes infrastructure, logic, and models for ingesting, validating,
+normalizing, and storing records ingested from various criminal justice data
+sources.
+"""
+
+
+import scraper.models
+import scraper.queue_control
+import scraper.us_ny
+import scraper.worker

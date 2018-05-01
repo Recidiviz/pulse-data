@@ -15,33 +15,45 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
+"""MapReduce pipeline for recidivism calculation.
 
+This includes functions for the `map` and `reduce` phases of the pipeline,
+a pipeline class that composes all MapReduce components, and a request handler
+class that initiates pipelines on web requests.
+"""
+
+
+import logging
+import webapp2
 from mapreduce import base_handler
 from mapreduce import context
 from mapreduce import mapreduce_pipeline
 from mapreduce import operation as op
-from mapreduce.model import MapreduceState
-
 from auth import authenticate_request
-from calculator import find_recidivism, map_recidivism_combinations
-from metrics import RecidivismMetric
-import logging
-import webapp2
+from .calculator import find_recidivism, map_recidivism_combinations
+from .metrics import RecidivismMetric
 
 
 def map_inmate(inmate):
-    """
-    Maps the Inmate read from the database into a set of metric combinations for each
-    Record from which that Inmate has been released from prison. That is, this identifies
-    each instance of recidivism or not-recidivism following a release from prison, and
-    maps each to all unique combinations of characteristics whose calculations will be
-    impacted by that instance.
+    """Performs the `map` phase of the pipeline.
 
-    :param inmate: the inmate to evaluate recidivism for
-    :return: yields up all recidivism metric combinations for that inmate
+    Maps the Inmate read from the database into a set of metric combinations for
+    each Record from which that Inmate has been released from prison. That is,
+    this identifies each instance of recidivism or not-recidivism following a
+    release from prison, and maps each to all unique combinations of
+    characteristics whose calculations will be impacted by that instance.
+
+    Args:
+        inmate: an Inmate to be mapped into recidivism metrics.
+
+    Yields:
+        Metrics for each unique recidivism metric derived from the inmate. Also
+        MapReduce Increment counters for a variety of metrics related to the
+        `map` phase.
     """
     params = context.get().mapreduce_spec.mapper.params
-    include_conditional_violations = params.get("include_conditional_violations")
+    include_conditional_violations = \
+        params.get("include_conditional_violations")
 
     recidivism_events = find_recidivism(inmate, include_conditional_violations)
     metric_combinations = map_recidivism_combinations(inmate, recidivism_events)
@@ -54,18 +66,30 @@ def map_inmate(inmate):
 
 
 def reduce_recidivism_events(metric_key, values):
-    """
-    Takes in a unique key, i.e. a mapping of characteristics to identify a recidivism metric,
-    and the set of all recidivism or not-recidivism instances for that combination of
-    characteristics, and calculates the overall recidivism rate for that combination.
+    """Performs the `reduce` phase of the pipeline.
 
-    :param metric_key: the mapping of characteristics for a particular recidivism metric
-    :param values: a set containing 0s, for instances when recidivism did not occur, and 1s,
-    for instances when recidivism did occur
-    :return: yields up a RecidivismMetric to be put into the database
+    Takes in a unique key, i.e. a mapping of characteristics to identify a
+    recidivism metric, and the set of all recidivism or not-recidivism instances
+    for that combination of characteristics, and calculates the overall
+    recidivism rate for that combination.
+
+    Args:
+        metric_key: the mapping of characteristics for a particular recidivism
+            metric. This is a json-serialized string representation of a
+            dictionary because all keys in the GAE MapReduce framework must be
+            strings.
+        values: a list containing recidivism values, i.e. 0s, for instances when
+            recidivism did not occur, 1s when it did occur, or maybe floating
+            point values between (0,1] where the methodology is 'OFFENDER'.
+
+    Yields:
+        A RecidivismMetric instance to be persisted by the framework. Also
+        MapReduce Increment counters for a variety of metrics related to the
+        `reduce` phase.
     """
     if not values:
-        # This method should never be called by MapReduce with an empty values parameter, but we'll be defensive.
+        # This method should never be called by MapReduce with an
+        # empty values parameter, but we'll be defensive.
         return
 
     total_records = len(values)
@@ -76,20 +100,32 @@ def reduce_recidivism_events(metric_key, values):
 
     yield op.counters.Increment('unique_metric_keys_reduced')
     yield op.counters.Increment('total_records_reduced', delta=total_records)
-    yield op.counters.Increment('total_recidivisms_reduced', delta=total_recidivism)
+    yield op.counters.Increment('total_recidivisms_reduced',
+                                delta=total_recidivism)
 
     yield op.db.Put(metric)
 
 
 def to_metric(metric_key, total_records, total_recidivism):
-    """
-    Transforms a metric key and the number of records and recidivating records into a full metric
-    for persistence.
+    """Transforms a metric key and values into a RecidivismMetric.
 
-    :param metric_key: the mapping of characteristics for a particular recidivism metric
-    :param total_records: the total number of records to whom this metric key applies
-    :param total_recidivism: the number of relevant records that correspond to recidivism
-    :return: a metric to be persisted
+    Transforms the metric key and the number of total records and recidivating
+    records into a new RecidivismMetric instance for persistence.
+
+    Args:
+        metric_key: the mapping of characteristics for a particular recidivism
+            metric. This is a json-serialized string representation of a
+            dictionary because all keys in the GAE MapReduce framework must be
+            strings.
+        total_records: the integer number of records to whom this metric key
+            applies.
+        total_recidivism: the total number of records that led to recidivism
+            that the characteristics in this metric describe. This is a float
+            because the 'OFFENDER' methodology calculates a weighted recidivism
+            number based on total recidivating instances for the offender.
+
+    Returns:
+        A RecidivismMetric instance ready to persist.
     """
     recidivism_rate = ((total_recidivism + 0.0) / total_records)
 
@@ -99,7 +135,8 @@ def to_metric(metric_key, total_records, total_recidivism):
     metric.total_recidivism = total_recidivism
     metric.recidivism_rate = recidivism_rate
 
-    # TODO: eval is evil. Find a better way to pass the key through map and shuffle to reduce as a dictionary.
+    # TODO: eval is evil. Find a better way to pass the key through
+    # map and shuffle to reduce as a dictionary.
     key_mapping = eval(metric_key)
 
     metric.release_cohort = key_mapping["release_cohort"]
@@ -119,16 +156,24 @@ def to_metric(metric_key, total_records, total_recidivism):
 
 
 class CalculatorHandler(webapp2.RequestHandler):
-    """
-    Request handler which handles the startup of a recidivism calculation pipeline.
+    """Request handler which handles the startup of a recidivism calculation
+    pipeline.
     """
 
     @authenticate_request
     def get(self):
-        include_conditional_violations_param = self.request.get('include_conditional_violations', "false").lower()
+        """Handles a GET request to the calculator endpoint.
+
+        Creates a CalculatorPipeline instance from parameters in the request and
+        starts the pipeline. Redirects to the built-in MapReduce status page for
+        the pipeline execution instance.
+        """
+        include_conditional_violations_param = \
+            self.request.get('include_conditional_violations', "false").lower()
 
         if include_conditional_violations_param not in ['true', 'false']:
-            error_message = "include_conditional_values must be true or false. Bad param: %s" % \
+            error_message = "include_conditional_values must be true or " \
+                            "false. Bad param: %s" % \
                             include_conditional_violations_param
             logging.error(error_message)
 
@@ -136,43 +181,51 @@ class CalculatorHandler(webapp2.RequestHandler):
             self.response.set_status(400)
 
         else:
-            include_conditional_violations = include_conditional_violations_param == 'true'
+            include_conditional_violations = \
+                include_conditional_violations_param == 'true'
 
             request_region = self.request.get('region', None)
 
             if not request_region or request_region == "all":
                 # No region code - log and exit.
                 logging.info("No specific region parameter provided. "
-                             "Will calculate recidivism metrics across entire data set.")
+                             "Will calculate recidivism metrics across "
+                             "entire data set.")
                 request_region = None
             else:
-                logging.info("Will calculate recidivism metrics for %s region." %
+                logging.info("Will calculate recidivism metrics for "
+                             "%s region." %
                              request_region)
 
-            logging.info("Include conditional violation metrics in calculation? %s" %
+            logging.info("Include conditional violation metrics in "
+                         "calculation? %s" %
                          include_conditional_violations)
 
-            pipeline = CalculationPipeline(request_region, include_conditional_violations)
+            pipeline = CalculationPipeline(request_region,
+                                           include_conditional_violations)
             logging.info("Starting calculation pipeline...")
             pipeline.start()
 
-            self.redirect(pipeline.base_path + "/status?root=" + pipeline.pipeline_id)
+            self.redirect(pipeline.base_path
+                          + "/status?root="
+                          + pipeline.pipeline_id)
 
 
 class CalculationPipeline(base_handler.PipelineBase):
-    """
-    Pipeline to calculate recidivism metrics.
-    """
+    """Pipeline to calculate recidivism metrics."""
 
     def run(self, region, include_conditional_violations):
-        """
-        Yields a recidivism calculation MapReduce pipeline to be started.
-        :param region: a specific region to calculate recidivism for. Calculates for
-        all regions of this is None.
-        :param include_conditional_violations: whether or not to include violations
-        of conditional release in recidivism calculations (split out into separate
-        metrics)
-        :return: yields up a MapReduce pipeline to start
+        """Yields a recidivism calculation MapReduce pipeline to be started.
+
+        Args:
+            region: a specific region to calculate recidivism for. Calculates
+                for all regions if this is None.
+            include_conditional_violations: a boolean indicating whether or not
+                to include violations of conditional release in recidivism
+                calculations.
+
+        Yields:
+             A MapReduce pipeline to start.
         """
         mapper_params = {
             "entity_kind": "models.inmate.Inmate",

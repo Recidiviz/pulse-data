@@ -15,6 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
+# pylint: disable=protected-access
+
 """
 populate_test_db
 
@@ -25,12 +27,13 @@ You will need a local.yaml file with appropriate environment variables to
 use this tool.
 """
 
+
 from datetime import datetime
 import logging
-import os
 import random
 import string
 import time
+import webapp2
 
 from google.appengine.ext import ndb
 from models.env_vars import EnvironmentVariable
@@ -41,14 +44,14 @@ from scraper.models.scrape_session import ScrapeSession, ScrapedRecord
 from utils import environment
 from utils import regions
 from utils.auth import authenticate_request
-import webapp2
 
 # TODO: Remove post-migration
-from scraper.us_ny.us_ny_record import UsNyRecord
-from models.snapshot import InmateFacilitySnapshot
+from scraper.us_ny.us_ny_record import UsNyRecord  # pylint: disable=ungrouped-imports
+from models.snapshot import InmateFacilitySnapshot  # pylint: disable=ungrouped-imports
 
 
 class PopulateDb(webapp2.RequestHandler):
+    """Request handler for populating the database."""
 
     @environment.local_only
     @authenticate_request
@@ -64,8 +67,8 @@ class PopulateDb(webapp2.RequestHandler):
             there:
             http://localhost:8080/test_populator/populate
 
-            Delete any existing datastore contents, populate environment variables
-            and fake data in the datastore:
+            Delete any existing datastore contents, populate environment
+            variables and fake data in the datastore:
             http://localhost:8080/test_populator/populate?wipe_db=true
 
             Delete existing datastore contents, populate env vars and fake data
@@ -96,7 +99,8 @@ class PopulateDb(webapp2.RequestHandler):
             inmate_count = int(self.request.get('inmates', 5))
             record_count = int(self.request.get('records_per_inmate', 3))
             snapshot_count = int(self.request.get('snapshots_per_record', 3))
-            old_snapshot_count = int(self.request.get('old_snapshots_per_record', 0))
+            old_snapshot_count = int(self.request.get(
+                'old_snapshots_per_record', 0))
         except ValueError:
             self.invalid_params("Fake data quantity must be integer. Exiting.")
             return
@@ -140,6 +144,7 @@ class PopulateDb(webapp2.RequestHandler):
 
 
 class ClearDb(webapp2.RequestHandler):
+    """Request handler for clearing the database."""
 
     @environment.local_only
     @authenticate_request
@@ -188,7 +193,7 @@ def load_env_vars():
     for var in old_env_vars:
         var.key.delete()
 
-    for variable, details in env_vars.iteritems():
+    for _, details in env_vars.iteritems():
 
         new_variable = EnvironmentVariable(
             name=details['name'],
@@ -248,7 +253,7 @@ def generate_inmates(region, num_inmates):
 
     region_inmate = region.get_inmate_kind()
 
-    for n in range(num_inmates):
+    for _ in range(num_inmates):
 
         inmate = region_inmate()
 
@@ -263,7 +268,7 @@ def generate_inmates(region, num_inmates):
 
                 setattr(inmate, attr, fake_value)
 
-        inmate_key = inmate.put()
+        inmate.put()
 
 
 def generate_inmate_records(region, num_records, suppress_new_fields):
@@ -294,7 +299,7 @@ def generate_inmate_records(region, num_records, suppress_new_fields):
                      "max_sentence_length",
                      "offense"]
 
-    #TODO: Remove post-Record migration
+    # TODO: Remove post-Record migration
     if suppress_new_fields:
         exclude_attrs.append("latest_release_date")
         exclude_attrs.append("latest_release_type")
@@ -304,9 +309,10 @@ def generate_inmate_records(region, num_records, suppress_new_fields):
     for inmate in inmate_query:
         inmate_key = inmate.key
 
-        for n in range(random.choice(range(1,num_records))):
+        for _ in range(random.choice(range(1, num_records))):
 
-            record_id = ''.join(random.choice(string.lowercase) for x in range(8))
+            record_id = ''.join(random.choice(string.lowercase)
+                                for _ in range(8))
             record = region_record.get_or_insert(record_id, parent=inmate_key)
             record.record_id = record_id
 
@@ -325,7 +331,7 @@ def generate_inmate_records(region, num_records, suppress_new_fields):
 
                     setattr(record, attr, fake_value)
 
-            record_key = record.put()
+            record.put()
 
 
 def generate_sentence_duration():
@@ -375,7 +381,7 @@ def generate_offense():
     """
     offenses = []
 
-    for n in range(random.choice(range(0,3))):
+    for _ in range(random.choice(range(0, 3))):
         offense = Offense()
 
         offense_class = ndb.Model._kind_map['Offense']
@@ -422,7 +428,7 @@ def generate_snapshots(region, num_snapshots):
 
         for record in record_query:
 
-            for n in range(random.choice(range(1,num_snapshots))):
+            for _ in range(random.choice(range(1, num_snapshots))):
                 record_key = record.key
                 snapshot = region_snapshot(parent=record_key)
 
@@ -440,11 +446,13 @@ def generate_snapshots(region, num_snapshots):
                         enum = region_snapshot._properties[attr]._choices
                         required = region_snapshot._properties[attr]._required
 
-                        fake_value = details_generator(model_prop, enum, required)
+                        fake_value = details_generator(model_prop,
+                                                       enum,
+                                                       required)
 
                         setattr(snapshot, attr, fake_value)
 
-                snapshot_key = snapshot.put()
+                snapshot.put()
 
 
 # TODO: Remove this method post-snapshot migration
@@ -468,15 +476,15 @@ def generate_old_snapshot_type(num_snapshots):
 
         for record in record_query:
 
-            for n in range(random.choice(range(1,num_snapshots))):
+            for _ in range(random.choice(range(1, num_snapshots))):
                 record_key = record.key
                 snapshot = InmateFacilitySnapshot(parent=record_key)
 
                 model_prop = InmateFacilitySnapshot._properties["facility"]
 
-                snapshot.facility=details_generator(model_prop, None, True)
+                snapshot.facility = details_generator(model_prop, None, True)
 
-                snapshot_key = snapshot.put()
+                snapshot.put()
 
 
 def details_generator(model_property, enum, required):
@@ -503,7 +511,8 @@ def details_generator(model_property, enum, required):
     if isinstance(model_property, ndb.StructuredProperty):
         # Too complex to handle for the moment
         logging.warning("Asked to generate details for unknown "
-            "StructuredProperty %s; setting to None." % str(model_property))
+                        "StructuredProperty %s; setting to None."
+                        % str(model_property))
         return None
 
     elif isinstance(model_property, ndb.StringProperty):
@@ -528,10 +537,11 @@ def details_generator(model_property, enum, required):
         return random.choice([True, False])
 
     elif isinstance(model_property, ndb.IntegerProperty):
-        return random.randint(1,50)
+        return random.randint(1, 50)
 
     else:
-        raise Exception("populate_test_db/details_generator: Unrecognized field type.")
+        raise Exception("populate_test_db/details_generator: "
+                        "Unrecognized field type.")
 
 
 app = webapp2.WSGIApplication([

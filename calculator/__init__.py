@@ -16,6 +16,12 @@
 # =============================================================================
 
 
-import pipeline
-import calculator
-from metrics import RecidivismMetric
+"""The calculation portion of the Recidiviz data platform.
+
+This includes infrastructure, logic, and models for calculating various criminal
+justice metrics from ingested records and persisting those metrics.
+"""
+
+from . import calculator
+from . import pipeline
+from .metrics import RecidivismMetric

@@ -16,10 +16,17 @@
 # =============================================================================
 
 
+"""Custom configuration for our Google App Engine instances.
+
+Specifies where installed libraries reside in the project.
+Modifies our logging output format across the project.
+"""
+
+
 # appengine_config.py
-from google.appengine.ext import vendor
 import logging
 import os
+from google.appengine.ext import vendor
 
 # Add any libraries installed in the "lib" folder.
 vendor.add(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'lib'))

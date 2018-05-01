@@ -15,17 +15,23 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
+# pylint: disable=protected-access
+
+"""Tools for migrating data after changing Datastore entities.
+
+These are for migrating data for Datastore entities after backwards incompatible
+changes have been made.
+"""
+
 
 import logging
-
+import webapp2
 from utils.auth import authenticate_request
 from google.appengine.ext import deferred
 from google.appengine.ext import ndb
 from scraper.us_ny.us_ny_snapshot import UsNySnapshot
-from scraper.us_ny.us_ny_inmate import UsNyInmate
 from scraper.us_ny.us_ny_record import UsNyRecord
 from models.snapshot import InmateFacilitySnapshot
-import webapp2
 
 
 TEST_BATCH_SIZE = 10
@@ -33,6 +39,7 @@ DEFAULT_BATCH_SIZE = 25
 
 
 class DataMigration(webapp2.RequestHandler):
+    """Request handler for requests related to data migration."""
 
     @authenticate_request
     def get(self):
@@ -79,7 +86,7 @@ class DataMigration(webapp2.RequestHandler):
             deferred.defer(migrate_record_fields, test_only=test_only)
         else:
             logging.error("Migration type '%s' not recognized. Exiting." %
-                migration_type)
+                          migration_type)
             self.response.write("Invalid parameters, see logs.")
             self.response.set_status(500)
             return
@@ -88,7 +95,8 @@ class DataMigration(webapp2.RequestHandler):
         logging.info("Kicked off migration.")
 
 
-def migrate_snapshots(cursor=None, num_updated=0, batch_size=DEFAULT_BATCH_SIZE, test_only=True):
+def migrate_snapshots(cursor=None, num_updated=0, batch_size=DEFAULT_BATCH_SIZE,
+                      test_only=True):
     """Migrate a batch of InmateFacilitySnapshot entities
 
     Migrate InmateFacilitySnapshots into Snapshot entities. Reads in N
@@ -111,8 +119,8 @@ def migrate_snapshots(cursor=None, num_updated=0, batch_size=DEFAULT_BATCH_SIZE,
     # Get (batch_size) InmateFacilitySnapshots. If <(batch_size) returned, set
     # migration_complete to True.
     inmate_facility_query = InmateFacilitySnapshot.query()
-    inmate_facility_snapshots, next_cursor, more = inmate_facility_query.fetch_page(
-        batch_size, start_cursor=cursor)
+    inmate_facility_snapshots, next_cursor, more = \
+        inmate_facility_query.fetch_page(batch_size, start_cursor=cursor)
 
     to_put = []
     to_del = []
@@ -123,37 +131,38 @@ def migrate_snapshots(cursor=None, num_updated=0, batch_size=DEFAULT_BATCH_SIZE,
         record_key = facility_snapshot.key.parent()
         record = record_key.get()
 
-        snapshot = UsNySnapshot(parent=record_key,
-                                admission_type=record.admission_type,
-                                birthday=record.birthday,
-                                cond_release_date=record.cond_release_date,
-                                county_of_commit=record.county_of_commit,
-                                custody_date=record.custody_date,
-                                custody_status=record.custody_status,
-                                latest_facility=facility_snapshot.facility,
-                                earliest_release_date=record.earliest_release_date,
-                                earliest_release_type=record.earliest_release_type,
-                                given_names=record.given_names,
-                                is_released=record.is_released,
-                                latest_release_date=record.last_release_date,
-                                latest_release_type=record.last_release_type,
-                                last_custody_date=record.last_custody_date,
-                                last_name=record.last_name,
-                                max_expir_date=record.max_expir_date,
-                                max_expir_date_superv=record.max_expir_date_superv,
-                                max_expir_date_parole=record.max_expir_date_parole,
-                                max_sentence_length=record.max_sentence_length,
-                                min_sentence_length=record.min_sentence_length,
-                                offense=record.offense,
-                                offense_date=record.offense_date,
-                                parole_discharge_date=record.parole_discharge_date,
-                                parole_elig_date=record.parole_elig_date,
-                                parole_hearing_date=record.parole_hearing_date,
-                                parole_hearing_type=record.parole_hearing_type,
-                                race=record.race,
-                                sex=record.sex,
-                                created_on=facility_snapshot.snapshot_date
-                                )
+        snapshot = UsNySnapshot(
+            parent=record_key,
+            admission_type=record.admission_type,
+            birthday=record.birthday,
+            cond_release_date=record.cond_release_date,
+            county_of_commit=record.county_of_commit,
+            custody_date=record.custody_date,
+            custody_status=record.custody_status,
+            latest_facility=facility_snapshot.facility,
+            earliest_release_date=record.earliest_release_date,
+            earliest_release_type=record.earliest_release_type,
+            given_names=record.given_names,
+            is_released=record.is_released,
+            latest_release_date=record.last_release_date,
+            latest_release_type=record.last_release_type,
+            last_custody_date=record.last_custody_date,
+            last_name=record.last_name,
+            max_expir_date=record.max_expir_date,
+            max_expir_date_superv=record.max_expir_date_superv,
+            max_expir_date_parole=record.max_expir_date_parole,
+            max_sentence_length=record.max_sentence_length,
+            min_sentence_length=record.min_sentence_length,
+            offense=record.offense,
+            offense_date=record.offense_date,
+            parole_discharge_date=record.parole_discharge_date,
+            parole_elig_date=record.parole_elig_date,
+            parole_hearing_date=record.parole_hearing_date,
+            parole_hearing_type=record.parole_hearing_type,
+            race=record.race,
+            sex=record.sex,
+            created_on=facility_snapshot.snapshot_date
+        )
 
         to_put.append(snapshot)
         to_del.append(facility_snapshot.key)
@@ -168,10 +177,11 @@ def migrate_snapshots(cursor=None, num_updated=0, batch_size=DEFAULT_BATCH_SIZE,
                        test_only=test_only)
     else:
         logging.debug('migrate_snapshots complete with %d updates!' %
-            num_updated)
+                      num_updated)
 
 
-def migrate_record_fields(cursor=None, num_updated=0, batch_size=DEFAULT_BATCH_SIZE, test_only=True):
+def migrate_record_fields(cursor=None, num_updated=0,
+                          batch_size=DEFAULT_BATCH_SIZE, test_only=True):
     """Migrate a batch of Record entities
 
     Transfers the UsNyRecord fields 'last_release_date' and 'last_release_type'
@@ -198,11 +208,13 @@ def migrate_record_fields(cursor=None, num_updated=0, batch_size=DEFAULT_BATCH_S
 
     for record in records:
         # Move properties to new, superclass-level properties
-        # 'if...' checks protect against any accidental re-running of the migration
-        if not hasattr(record, 'latest_release_date') or not record.latest_release_date:
+        # 'if' checks protect against any accidental re-running of the migration
+        if not hasattr(record, 'latest_release_date') \
+                or not record.latest_release_date:
             record.latest_release_date = record.last_release_date
 
-        if not hasattr(record, 'latest_release_type') or not record.latest_release_type:
+        if not hasattr(record, 'latest_release_type') \
+                or not record.latest_release_type:
             record.latest_release_type = record.last_release_type
 
         # Clone properties to the instance (so as not to delete from the class),
@@ -231,8 +243,8 @@ def migrate_record_fields(cursor=None, num_updated=0, batch_size=DEFAULT_BATCH_S
             'migrate_record_fields complete with %d updates!' % num_updated)
 
 
-@ndb.transactional(xg=True)
-def transactional_put_multi(to_put, to_del=[], test_only=True):
+@ndb.transactional(xg=True)  # pylint: disable=no-value-for-parameter
+def transactional_put_multi(to_put, to_del=None, test_only=True):
     """Transactionally persist updated entiies and delete those they replace
 
     Saves a set of entities, and deletes a set of entities, in the same

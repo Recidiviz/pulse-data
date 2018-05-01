@@ -15,12 +15,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
+"""Infrastructure for workers in the ingest pipeline."""
 
+
+import logging
+import webapp2
 from requests.packages.urllib3.contrib.appengine import TimeoutError
 from utils import regions
 from utils.auth import authenticate_request
-import logging
-import webapp2
 
 
 class Scraper(webapp2.RequestHandler):
@@ -29,39 +31,40 @@ class Scraper(webapp2.RequestHandler):
     Very thin shim to receive a chunk of work from the task queue, and call
     the relevant part of the specified scraper to execute it.
 
-    All scraper work that hits a third-party website goes through this handler as
-    small discrete tasks, so that we leverage the taskqueue's throttling and
+    All scraper work that hits a third-party website goes through this handler
+    as small discrete tasks, so that we leverage the taskqueue's throttling and
     retry support for network requests to the sites (and don't DOS them).
 
-    Because scraping will vary so significantly by region, this taskqueue handler
-    is very lightweight - it really just accepts the POST for the task, and calls
-    the relevant regional scraper to do whatever was asked. This allows it to
-    stay agnostic to regional variation.
+    Because scraping will vary so significantly by region, this taskqueue
+    handler is very lightweight - it really just accepts the POST for the task,
+    and calls the relevant regional scraper to do whatever was asked. This
+    allows it to stay agnostic to regional variation.
     """
 
     @authenticate_request
     def post(self):
         """POST request handler to route chunk of scraper work
 
-        Handles incoming POST requests issues from the push task queue. Most scraper
-        work is issued using the push queues via this handler.
+        Handles incoming POST requests issues from the push task queue. Most
+        scraper work is issued using the push queues via this handler.
 
         Never called manually, so authentication is enforced in app.yaml.
 
         URL Parameters:
             region: (string) Region code for the scraper in question.
             task: (string) Name of the function to call in the scraper
-            params: (dict) Parameter payload to give the function being called (optional)
+            params: (dict) Parameter payload to give the function being called
+                (optional)
 
         Returns:
             Response code 200 if successful
 
-            Any other response code will make taskqueue consider the task failed, and
-            it will retry the task until it expires or succeeds (handling backoff
-            logic, etc.)
+            Any other response code will make taskqueue consider the task
+            failed, and it will retry the task until it expires or succeeds
+            (handling backoff logic, etc.)
 
-            The task will set response code to 500 if it receives a return value of -1
-            from the function it calls.
+            The task will set response code to 500 if it receives a return value
+            of -1 from the function it calls.
         """
         # Verify this was actually a task queued by our app
         if "X-AppEngine-QueueName" not in self.request.headers:

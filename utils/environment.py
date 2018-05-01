@@ -15,9 +15,19 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
+"""Tools for working with environment variables.
+
+Environment variables in Google App Engine are parsed via .yml files, which are
+static and cannot be trivially made environment-specific. So this includes
+functionality for determining which environment we are in and loading the
+appropriate variables.
+"""
+
+
 import os
 import logging
 import yaml
+
 
 def in_prod():
     """ Check whether we're currently running on local dev machine or in prod
@@ -33,10 +43,7 @@ def in_prod():
         False if not
     """
     current_environment = os.getenv('SERVER_SOFTWARE', '')
-    if current_environment.startswith('Google App Engine/'):
-        return True
-    else:
-        return False
+    return current_environment.startswith('Google App Engine/')
 
 
 def local_only(func):
@@ -76,12 +83,12 @@ def local_only(func):
             logging.error("This API call is not allowed in production.")
             request_handler.response.write('Not available, see service logs.')
             request_handler.response.set_status(500)
-            return
-        else:
-            # Local development server - continue
-            logging.info("Test environment, proceeding.")
+            return None
 
-            return func(request_handler, *args, **kwargs)
+        # Local development server - continue
+        logging.info("Test environment, proceeding.")
+
+        return func(request_handler, *args, **kwargs)
 
     return check_env
 

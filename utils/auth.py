@@ -15,10 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
+"""Tools for handling authentication of requests."""
 
+
+import logging
 from google.appengine.api import app_identity
 from google.appengine.api import users
-import logging
 
 
 def authenticate_request(func):
@@ -36,7 +38,20 @@ def authenticate_request(func):
     """
 
     def auth_and_call(request_handler, *args, **kwargs):
-        # Check this is either an admin user or a call from within the app itself
+        """Authenticates the inbound request and delegates.
+
+        Args:
+            request_handler: the handler of the inbound request
+            *args: args to the function
+            **kwargs: keyword args to the function
+
+        Returns:
+            The output of the function, if successfully authenticated.
+            Nothing, otherwise. The request handler will have an error response
+            written to it.
+        """
+        # Check this is either an admin user
+        # or a call from within the app itself
         user = users.get_current_user()
 
         this_app_id = app_identity.get_application_id()
@@ -63,10 +78,12 @@ def authenticate_request(func):
             if incoming_app_id == this_app_id:
                 logging.info("Authenticated intra-app call, proceeding.")
             else:
-                logging.info("App ID is %s, not allowed - exiting." % incoming_app_id)
-                request_handler.response.write('Failed: Unauthorized external request.')
+                logging.info("App ID is %s, not allowed - exiting."
+                             % incoming_app_id)
+                request_handler.response.write('Failed: Unauthorized '
+                                               'external request.')
                 request_handler.response.status = '401 Unauthorized'
-                return
+                return None
 
         elif user:
             # Not an intra-app call, but was sent by an authenticated user.
@@ -80,20 +97,16 @@ def authenticate_request(func):
                 logging.info("Logged in, but not as admin - exiting.")
                 request_handler.response.write('Failed: Not an admin.')
                 request_handler.response.status = '401 Unauthorized'
-                return
+                return None
         else:
             # No app ID, no signed-in user account - redirect to login
             current_url = request_handler.request.path_qs
             login_url = users.create_login_url(current_url)
 
             request_handler.redirect(login_url)
-            return
+            return None
 
         # If we made it this far, client is authorized - run the decorated func
         return func(request_handler, *args, **kwargs)
 
     return auth_and_call
-
-
-if __name__ == "__main__":
-    authenticate_request()
