@@ -15,19 +15,26 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
+"""Environment variables for use at runtime.
+
+Whereas traditional environment variables are simple key-value pairs, we have
+an extra dimension for region, to allow us to define variables that vary
+between regional scraping and//or calculation.
+"""
+
+import logging
 
 from google.appengine.api import memcache
 from google.appengine.ext import ndb
 
-import logging
-
 
 class EnvironmentVariable(ndb.Model):
-    """Environment variables loaded at runtime by the application (not from source)
+    """Environment variables loaded at runtime by the application (not from
+    source)
 
-    Environment variables pulled in at runtime. This is where sensitive info such
-    as usernames and passwords to third-party services are kept. They're added
-    manually in the gcloud console.
+    Environment variables pulled in at runtime. This is where sensitive info
+    such as usernames and passwords to third-party services are kept. They're
+    added manually in the gcloud console.
 
     Entity keys are expected to be in the format region_varname, to enforce
     uniqueness.
@@ -74,7 +81,7 @@ def get_env_var(var_name, region_code):
 
         else:
             logging.error("Couldn't retrieve env var: %s for %s region." %
-                (var_name, region_code))
+                          (var_name, region_code))
             return None
 
     return value

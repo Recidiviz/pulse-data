@@ -15,6 +15,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
+"""Snapshots of changes to Record data.
+
+Whereas Records hold the latest truth about a particular sentencing in the
+criminal justice system, those Records can be updated for many reasons
+throughout its lifetime. Each time we scrape a particular Record and find that
+it has changed in some way, we persist that change in a Snapshot. The Snapshot
+will only have those fields set which have changed since the last scrape.
+
+The first scrape that finds a new Record yields a Snapshot with all fields set.
+"""
+
 
 from google.appengine.ext import ndb
 from google.appengine.ext.ndb import polymodel
@@ -37,7 +48,8 @@ class Snapshot(polymodel.PolyModel):
 
     Attributes:
         created_on: (datetime) Timestamp for creation time of snapshot
-        latest_facility: (string) The name of the facility the inmate was held in
+        latest_facility: (string) The name of the facility the inmate was
+            held in
         latest_release_date: (date) Most recent date of release
         latest_release_type: (string) Reason given for most recent release
         is_released: (bool) Whether the inmate has been released from the
@@ -59,8 +71,10 @@ class Snapshot(polymodel.PolyModel):
     latest_release_date = ndb.DateProperty()
     latest_release_type = ndb.StringProperty()
     is_released = ndb.BooleanProperty()
-    min_sentence_length = ndb.StructuredProperty(SentenceDuration, repeated=False)
-    max_sentence_length = ndb.StructuredProperty(SentenceDuration, repeated=False)
+    min_sentence_length = ndb.StructuredProperty(SentenceDuration,
+                                                 repeated=False)
+    max_sentence_length = ndb.StructuredProperty(SentenceDuration,
+                                                 repeated=False)
     offense = ndb.StructuredProperty(Offense, repeated=True)
     offense_date = ndb.DateProperty()
     custody_date = ndb.DateProperty()

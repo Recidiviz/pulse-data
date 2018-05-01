@@ -15,12 +15,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
+"""Tools for working with regions.
+
+Regions represent geographic areas/legal jurisdictions from which we ingest
+criminal justice data and calculate metrics.
+"""
+
 
 import yaml
-import logging
 
 
-class Region():
+class Region(object):
     """Constructs region entity with attributes and helper functions
 
     Builds a region entity, which holds useful info about a region as properties
@@ -47,11 +52,11 @@ class Region():
         region_config = load_region_manifest(region_code)
 
         self.region_code = region_config["region_code"]
-        self.region_name =  region_config["region_name"]
-        self.agency_name =  region_config["agency_name"]
-        self.agency_type =  region_config["agency_type"]
-        self.scrape_queue_name =  region_config["scrape_queue_name"]
-        self.base_url =  region_config["base_url"]
+        self.region_name = region_config["region_name"]
+        self.agency_name = region_config["agency_name"]
+        self.agency_type = region_config["agency_type"]
+        self.scrape_queue_name = region_config["scrape_queue_name"]
+        self.base_url = region_config["base_url"]
 
         self.names_file = get_name_list_file(self.region_code)
 
@@ -66,7 +71,7 @@ class Region():
         Returns:
             Top-level scraper module for this region
         """
-        scraper_module = get_scraper(self.region_code)
+        return get_scraper(self.region_code)
 
     def get_inmate_kind(self):
         """Return the Inmate PolyModel sub-kind for this region
@@ -119,7 +124,8 @@ def get_subkind(region_code, parent_kind_name):
     child_kind_name = region_config["entity_kinds"][parent_kind_name]
 
     scraper_module = get_scraper_module(region_code)
-    child_kind_module = getattr(scraper_module, region_code + "_" + parent_kind_name)
+    child_kind_module = getattr(scraper_module, region_code + "_"
+                                + parent_kind_name)
 
     subkind = getattr(child_kind_module, child_kind_name)
 
@@ -182,7 +188,6 @@ def get_supported_regions(full_manifest=False):
     return supported_regions
 
 
-
 def load_region_manifest(region_code=None):
     """Load the region manifest from disk, store as a dictionary
 
@@ -216,7 +221,7 @@ def validate_region_code(region_code):
     """
     supported_regions = get_supported_regions()
 
-    return (region_code in supported_regions)
+    return region_code in supported_regions
 
 
 def get_name_list_file(region_code):
@@ -235,6 +240,3 @@ def get_name_list_file(region_code):
     names_file = region_config['names_file']
 
     return names_file
-
-
-
