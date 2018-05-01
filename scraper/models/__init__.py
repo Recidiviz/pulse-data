@@ -16,5 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
+"""The core models specific to the ingest platform, but agnostic across
+scraper vendors and regions."""
 
 from scraper.models import scrape_session
