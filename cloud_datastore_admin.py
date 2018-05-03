@@ -10,9 +10,9 @@ import httplib
 import json
 import logging
 import webapp2
-from auth import authenticate_request
 from google.appengine.api import app_identity
 from google.appengine.api import urlfetch
+from utils.auth import authenticate_request
 
 
 class Export(webapp2.RequestHandler):

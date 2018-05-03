@@ -29,7 +29,7 @@ from mapreduce import base_handler
 from mapreduce import context
 from mapreduce import mapreduce_pipeline
 from mapreduce import operation as op
-from auth import authenticate_request
+from utils.auth import authenticate_request
 from .calculator import find_recidivism, map_recidivism_combinations
 from .metrics import RecidivismMetric
 
@@ -137,7 +137,7 @@ def to_metric(metric_key, total_records, total_recidivism):
 
     # TODO: eval is evil. Find a better way to pass the key through
     # map and shuffle to reduce as a dictionary.
-    key_mapping = eval(metric_key)
+    key_mapping = eval(metric_key)  # pylint: disable=eval-used
 
     metric.release_cohort = key_mapping["release_cohort"]
     metric.follow_up_period = key_mapping["follow_up_period"]
