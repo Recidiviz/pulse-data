@@ -506,7 +506,8 @@ def details_generator(model_property, enum, required):
             return None
 
     if enum:
-        return random.choice(options)
+        # TODO: Andrew to fix
+        return random.choice(options)  # pylint: disable=undefined-variable
 
     if isinstance(model_property, ndb.StructuredProperty):
         # Too complex to handle for the moment
