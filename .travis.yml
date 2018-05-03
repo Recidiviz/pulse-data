@@ -1,0 +1,13 @@
+language: python
+python:
+- '2.7'
+install:
+- pip install -r requirements.txt
+script:
+- pylint *.py calculator models tests utils
+- pytest
+after_success:
+- coveralls
+notifications:
+  slack:
+    secure: RRx5Klgwfr2ggUxugs2nBOt2atYoKDrv+RfVY2OeINsZqPeZoxpfKntpIctfdUfPIZofyNUfPFfIFjZdNWBwXHKTu1/3KkCslBDUoPW9En1np5RTrVUmZJJy7no+J19PuDUDQYcDRCcEw41PbjcE7NPfK12bTI7jCGKw3ZTX1tLWlXDz70BOIsJxW3gLrgopFo0mNGWKbIVBU4VeUxhOpxB3RzegtCNrTIcfiEpnuNcyNvzhTpzlQdinW4rXQjv5p7oxCEkMGTfywtVrUVLfrSMCCVde1rv2RUBJPmShmFbJjfWuozMMlVK82vXMjj+z3HrIYPAYMmbVM9zqn/SDjdwzfzbmldol8yKcW4DTmlH4phfw9qWGa/UdpcHPT5vUoNzg3QVvVTYwV8sG8O6XeO341BSelSdfmbFq6YJvgfgHgDXbjbP8ME2DqUP/0RE21FEXReaV8Ln3FvneMFK1MnKV3czKOOwh6m48M7zFcdQr1OFto2+aIdF8IS7nke3btzUW1HL7ppn+wlLdOGsYuTPsMUQ/ykVSMTvB9Iolj083mtGm/QOu316JKgZMbH82e9p6FbXil44i1UGc8H2j9RVri4U0m2sEps4MnHbuBRhejzh6fO4k7pbAKTn35sH7TEgfacCIzBOI8t3crPB1AaK8fmMGEiZo07WalWT/MS0=
