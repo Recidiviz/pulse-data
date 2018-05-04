@@ -14,3 +14,7 @@ queue:
     max_backoff_seconds: 300
     task_age_limit: 3d
 
+# Recidivism Calculation queue
+- name: recidivism-calculator-mr
+  mode: push
+  rate: 20/s

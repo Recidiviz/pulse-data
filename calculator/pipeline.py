@@ -204,7 +204,7 @@ class CalculatorHandler(webapp2.RequestHandler):
             pipeline = CalculationPipeline(request_region,
                                            include_conditional_violations)
             logging.info("Starting calculation pipeline...")
-            pipeline.start()
+            pipeline.start(queue_name="recidivism-calculator-mr")
 
             self.redirect(pipeline.base_path
                           + "/status?root="
