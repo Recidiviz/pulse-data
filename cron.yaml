@@ -21,3 +21,8 @@ cron:
   url: /datastore_export?output_url_prefix=gs://pulse-datastore-backups&kind=Inmate&kind=Record&kind=Snapshot
   schedule: every sunday 15:00
   timezone: America/New_York
+
+- description: Calculate recidivism for NY every Saturday at 12pm
+  url: /calculator_pipeline?region=us_ny
+  schedule: every saturday 12:00
+  timezone: America/New_York
