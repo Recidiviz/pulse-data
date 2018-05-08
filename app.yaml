@@ -48,10 +48,10 @@ handlers:
 
 # LOCAL ONLY / TEST ENV BELOW HERE
 - url: /test_populator/populate
-  script: tests.populate_test_db.app
+  script: tests.utils.populate_test_db.app
 
 - url: /test_populator/clear
-  script: tests.populate_test_db.app
+  script: tests.utils.populate_test_db.app
 
 libraries:
 - name: webapp2
