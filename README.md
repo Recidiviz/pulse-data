@@ -39,10 +39,10 @@ so we don't have to worry about creating that functionality from scratch. Error 
 Install the GCloud SDK (we recommend using the [interactive installer](https://cloud.google.com/sdk/downloads#interactive)),
 and clone the recidiviz repo from Github.
 
-#### Running tests
-First, install Pytest and pytest-cov: `pip install -U pytest pytest-cov`.
+Then install project dependencies: `pip install -r requirements.txt`.
 
-Then, update your sourced `$PYTHONPATH` to add the Google App Engine libraries to the system Python path, which will
+#### Running tests
+Update your sourced `$PYTHONPATH` to add the Google App Engine libraries to the system Python path, which will
 allow imports of the various GAE libraries to work in test mode. Add the following line to your shell profile:
 
 `export PYTHONPATH="/path/to/google_appengine:/path/to/google_appengine/lib/:/path/to/google_appengine/lib/yaml/:$PYTHONPATH"`
@@ -67,9 +67,7 @@ The configuration in `setup.cfg` and `.coveragerc` will ensure the right code is
 metrics are displayed.
 
 #### Checking code style
-Install Pylint: `pip install pylint`.
-
-Then run it across the main body of code, in particular: `pylint *.py calculator models scraper tests utils`.
+Run Pylint across the main body of code, in particular: `pylint *.py calculator models scraper tests utils`.
 
 The output will include individual lines for all style violations, followed by a handful of reports, and finally a
 general code score out of 10. Fix any new violations in your commit. If you believe there is cause for a rule change,
@@ -87,7 +85,7 @@ To run this locally, just navigate to the directory you cloned pulse-data into a
 (note the trailing dot).
 
 Logs will show up in the console you run the command in, and you can kick off the scraping by navigating in your browser
-to `localhost:8080/start` (logs won't show much until the scraping starts).
+to `localhost:8080/scraper/start?region=[region]` (logs won't show much until the scraping starts).
 
 #### Production
 To deploy to production AppEngine, navigate to the directory where you cloned pulse-data into and run
