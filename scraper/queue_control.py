@@ -101,8 +101,8 @@ class ScraperStart(webapp2.RequestHandler):
                                    _countdown=timer)
 
         else:
-            invalid_params(self.response,
-                           "Scrape type or region not recognized.")
+            invalid_input(self.response,
+                          "Scrape type or region not recognized.")
 
 
 class ScraperStop(webapp2.RequestHandler):
@@ -155,8 +155,8 @@ class ScraperStop(webapp2.RequestHandler):
                 scraper.stop_scrape(scrape_types)
 
         else:
-            invalid_params(self.response,
-                           "Scrape type or region not recognized.")
+            invalid_input(self.response,
+                          "Scrape type or region not recognized.")
 
 
 class ScraperResume(webapp2.RequestHandler):
@@ -198,8 +198,8 @@ class ScraperResume(webapp2.RequestHandler):
                     scraper.resume_scrape(scrape_type)
 
         else:
-            invalid_params(self.response,
-                           "Scrape type or region not recognized.")
+            invalid_input(self.response,
+                          "Scrape type or region not recognized.")
 
 
 def get_and_validate_params(request_params):
