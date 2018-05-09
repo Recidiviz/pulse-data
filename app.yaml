@@ -61,3 +61,13 @@ libraries:
 
 env_variables:
   GAE_USE_SOCKETS_HTTPLIB : 'true'
+
+# The first five regular expressions are the default values which have to be
+# made explicit when defining custom values: https://cloud.google.com/appengine/docs/standard/python/config/appref
+skip_files:
+- ^(.*/)?#.*#$
+- ^(.*/)?.*~$
+- ^(.*/)?.*\.py[co]$
+- ^(.*/)?.*/RCS/.*$
+- ^(.*/)?\..*$
+- ^local\.yaml$
