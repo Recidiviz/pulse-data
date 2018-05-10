@@ -81,7 +81,7 @@ There are two ways to run the app - on your local machine, or deployed to the cl
 Running from your local machine is preferred for development - it yields much quicker iteration cycles, and the local
 dev server is able to handle the needs of the simple scraping tool pretty well.
 
-To run this locally, just navigate to the directory you cloned pulse-data into and run `dev_appserver.py .`
+To run this locally, just navigate to the directory you cloned pulse-data into and run `dev_appserver.py local_app.yaml`
 (note the trailing dot).
 
 Logs will show up in the console you run the command in, and you can kick off the scraping by navigating in your browser
