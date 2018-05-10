@@ -1,0 +1,35 @@
+includes:
+- lib/mapreduce/include.yaml
+
+builtins:
+# Deferred is required to use google.appengine.ext.deferred
+- deferred: on
+
+handlers:
+- url: /scraper/start
+  script: scraper.queue_control.app
+
+- url: /scraper/stop
+  script: scraper.queue_control.app
+
+- url: /scraper/resume
+  script: scraper.queue_control.app
+
+- url: /scraper/work
+  script: scraper.worker.app
+
+- url: /_ah/pipeline.*
+  script: mapreduce.lib.pipeline.handlers._APP
+  login: admin
+
+- url: /calculator_pipeline
+  script: calculator.pipeline.app
+
+- url: /datastore_export
+  script: cloud_datastore_admin.app
+  login: admin
+
+# MIGRATION ONLY
+# TODO: Remove post-migration
+- url: /data_migration
+  script: utils.data_migration.app
