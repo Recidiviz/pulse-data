@@ -153,7 +153,7 @@ def test_last_facility_none_at_all():
     assert last_facility is None
 
 
-def test_release_dates():
+def test_reincarceration_dates():
     release_date = date.today()
     original_entry_date = release_date - relativedelta(years=4)
     reincarceration_date = release_date + relativedelta(years=3)
@@ -166,12 +166,12 @@ def test_release_dates():
         reincarceration_date, second_release_date, "Sing Sing")
     recidivism_events = {2018: first_event, 2022: second_event}
 
-    release_dates = calculator.release_dates(recidivism_events)
-    assert release_dates == [release_date, second_release_date]
+    release_dates = calculator.reincarceration_dates(recidivism_events)
+    assert release_dates == [reincarceration_date]
 
 
-def test_release_dates_empty():
-    release_dates = calculator.release_dates({})
+def test_reincarceration_dates_empty():
+    release_dates = calculator.reincarceration_dates({})
     assert release_dates == []
 
 
@@ -184,15 +184,14 @@ def test_count_releases_in_window():
     release_2021 = date(2021, 5, 13)
     # Too late
     release_2022 = date(2022, 5, 13)
-    all_release_dates = [release_2012, release_2016, release_2020,
-                         release_2021, release_2022]
+    all_reincarceration_dates = [release_2012, release_2016, release_2020,
+                                 release_2021, release_2022]
 
     start_date = date(2016, 5, 13)
 
-    releases = calculator.count_releases_in_window(start_date,
-                                                   6,
-                                                   all_release_dates)
-    assert releases == 3
+    reincarcerations = calculator.count_reincarcerations_in_window(
+        start_date, 6, all_reincarceration_dates)
+    assert reincarcerations == 3
 
 
 def test_count_releases_in_window_all_early():
@@ -202,15 +201,14 @@ def test_count_releases_in_window_all_early():
     release_2020 = date(2020, 11, 20)
     release_2021 = date(2021, 5, 13)
     release_2022 = date(2022, 5, 13)
-    all_release_dates = [release_2012, release_2016, release_2020,
-                         release_2021, release_2022]
+    all_reincarceration_dates = [release_2012, release_2016, release_2020,
+                                 release_2021, release_2022]
 
     start_date = date(2026, 5, 13)
 
-    releases = calculator.count_releases_in_window(start_date,
-                                                   6,
-                                                   all_release_dates)
-    assert releases == 0
+    reincarcerations = calculator.count_reincarcerations_in_window(
+        start_date, 6, all_reincarceration_dates)
+    assert reincarcerations == 0
 
 
 def test_count_releases_in_window_all_late():
@@ -220,15 +218,14 @@ def test_count_releases_in_window_all_late():
     release_2020 = date(2020, 11, 20)
     release_2021 = date(2021, 5, 13)
     release_2022 = date(2022, 5, 13)
-    all_release_dates = [release_2012, release_2016, release_2020,
-                         release_2021, release_2022]
+    all_reincarceration_dates = [release_2012, release_2016, release_2020,
+                                 release_2021, release_2022]
 
     start_date = date(2006, 5, 13)
 
-    releases = calculator.count_releases_in_window(start_date,
-                                                   5,
-                                                   all_release_dates)
-    assert releases == 0
+    reincarcerations = calculator.count_reincarcerations_in_window(
+        start_date, 5, all_reincarceration_dates)
+    assert reincarcerations == 0
 
 
 def test_earliest_recidivated_follow_up_period_later_month_in_year():
@@ -633,7 +630,7 @@ class TestMapRecidivismCombinations(object):
         self.testbed.deactivate()
 
     def test_map_recidivism_combinations(self):
-        """Tests the map_recidivism_combinations function where there is no
+        """Tests the map_recidivism_combinations function where there is
         recidivism."""
         inmate = Inmate(id="test-inmate", birthday=date(1984, 8, 31),
                         race="white", sex="female")
@@ -657,8 +654,44 @@ class TestMapRecidivismCombinations(object):
             else:
                 assert value == 1
 
+    def test_map_recidivism_combinations_multiple_in_period(self):
+        """Tests the map_recidivism_combinations function where there are
+        multiple instances of recidivism within a follow-up period."""
+        inmate = Inmate(id="test-inmate", birthday=date(1884, 8, 31),
+                        race="white", sex="female")
+
+        recidivism_events_by_cohort = {
+            1908: calculator.RecidivismEvent.recidivism_event(
+                date(1905, 7, 19), date(1908, 9, 19), "Hudson",
+                date(1910, 8, 12), "Upstate", False),
+            1912: calculator.RecidivismEvent.recidivism_event(
+                date(1910, 8, 12), date(1912, 8, 19), "Upstate",
+                date(1914, 7, 12), "Sing Sing", False)
+        }
+
+        recidivism_combinations = calculator.map_recidivism_combinations(
+            inmate, recidivism_events_by_cohort)
+
+        # For the first event:
+        #   For the first 5 periods:
+        #       16 combinations of demographics and facility * 2 methodologies
+        #       * 5 periods = 160 metrics
+        #   For the second 5 periods, there is an additional event-based count:
+        #       16 combinations * (2 methodologies + 1 more instance)
+        #       * 5 periods = 240 metrics
+        #
+        # For the second event:
+        #   16 combinations * 2 methodologies * 10 periods = 320 metrics
+        assert len(recidivism_combinations) == 160 + 240 + 320
+
+        for combination, value in recidivism_combinations:
+            if combination['follow_up_period'] < 2:
+                assert value == 0
+            else:
+                assert value == 1
+
     def test_map_recidivism_combinations_no_recidivism(self):
-        """Tests the map_recidivism_combinations function where there is
+        """Tests the map_recidivism_combinations function where there is no
         recidivism."""
         inmate = Inmate(id="test-inmate", birthday=date(1984, 8, 31),
                         race="white", sex="female")
