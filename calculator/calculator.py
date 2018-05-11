@@ -40,6 +40,7 @@ Attributes:
 import logging
 from datetime import date
 from itertools import combinations
+from itertools import repeat
 from dateutil.relativedelta import relativedelta
 from models.snapshot import Snapshot
 from models.record import Record
@@ -333,7 +334,7 @@ def map_recidivism_combinations(inmate, recidivism_events):
         the recidivism value corresponding to that metric.
     """
     metrics = []
-    all_release_dates = release_dates(recidivism_events)
+    all_reincarceration_dates = reincarceration_dates(recidivism_events)
     race = inmate.race
     sex = inmate.sex
 
@@ -374,78 +375,82 @@ def map_recidivism_combinations(inmate, recidivism_events):
 
                 # If they didn't recidivate at all or not yet for this period
                 # (or they didn't recidivate until 10 years had passed),
-                # assign 0.
-                if not event.recidivated or not earliest_follow_up_period \
+                # assign 0 for both event- and offender-based measurement.
+                if not event.recidivated \
+                        or not earliest_follow_up_period \
                         or period < earliest_follow_up_period:
                     metrics.append((offender_based_combo, 0))
                     metrics.append((event_based_combo, 0))
+
+                # If they recidivated, each unique release of a given person
+                # within a follow-up period after the year of release is counted
+                # as an instance of recidivism for event-based measurement. For
+                # offender-based measurement, only one instance is counted.
                 else:
-                    # TODO: This may be a bug. I think the first instance
-                    # should be 1/1, the second 1/2, the third 1/3, and so on.
-                    # As written, all instances in the period would be 1/k,
-                    # which would reduce the calculated offender-based metric
-                    # and seemingly cause the issue we see where recidivism
-                    # rate goes _down_ in later periods for the offender
-                    # methodology.
+                    metrics.append((offender_based_combo, 1))
 
-                    # For offender-based recidivism, we weight each instance of
-                    # recidivism as equal to 1 / k, where k = the number of
-                    # releases from prison for that inmate within that window.
-                    # See "Following Incarceration, Most Released Offenders
-                    # Never Return to Prison" by Rhodes et. al.
-                    total_releases_in_window = count_releases_in_window(
-                        event.release_date, period, all_release_dates)
+                    reincarcerations_in_window = \
+                        count_reincarcerations_in_window(
+                            event.release_date, period,
+                            all_reincarceration_dates)
 
-                    metrics.append((offender_based_combo,
-                                    1.0 / total_releases_in_window))
-                    metrics.append((event_based_combo, 1))
+                    for _ in repeat(None, reincarcerations_in_window):
+                        metrics.append((event_based_combo, 1))
 
     return metrics
 
 
-def release_dates(recidivism_events):
-    """The dates of release within the given recidivism events.
+def reincarceration_dates(recidivism_events):
+    """The dates of reincarceration within the given recidivism events.
 
-    Returns the list of release dates extracted from the given array of
-    recidivism events. The output is the same length as the input.
+    Returns the list of reincarceration dates extracted from the given array of
+    recidivism events. If one of the given events is not an instance of
+    recidivism, i.e. has no reincarceration date, then it is not represented in
+    the output.
 
     Args:
         recidivism_events: the list of recidivism events.
 
     Returns:
-        A list of release dates, in the order in which they appear in the
-        given list of objects.
+        A list of reincarceration dates, in the order in which they appear in
+        the given list of objects.
     """
-    return [event.release_date
-            for _cohort, event in recidivism_events.iteritems()]
+    return [event.reincarceration_date
+            for _cohort, event in recidivism_events.iteritems()
+            if event.reincarceration_date]
 
 
-def count_releases_in_window(start_date, follow_up_period, all_release_dates):
-    """The number of the given release dates during the window from the start
-    date until the end of the follow-up period.
+def count_reincarcerations_in_window(start_date,
+                                     follow_up_period,
+                                     all_reincarceration_dates):
+    """The number of the given reincarceration dates during the window from the
+    start date until the end of the follow-up period.
 
-    Returns how many of the given release dates fall within the given follow-up
-    period after the given start date, end point exclusive, including the start
-    date itself if it is within the given array.
+    Returns how many of the given reincarceration dates fall within the given
+    follow-up period after the given start date, end point exclusive, including
+    the start date itself if it is within the given array.
 
     Example:
-        count_releases_in_window("2016-05-13", 6,
+        count_reincarcerations_in_window("2016-05-13", 6,
             ["2012-04-30", "2016-05-13", "2020-11-20",
             "2021-01-12", "2022-05-13"]) = 3
 
     Args:
         start_date: a Date to start tracking from
         follow_up_period: the follow-up period to count within
-        all_release_dates: the list of release dates to check
+        all_reincarceration_dates: the list of reincarceration dates to check
 
     Returns:
-        How many of the given release dates are within the follow-up period from
-        the given start date.
+        How many of the given reincarceration dates are within the follow-up
+        period from the given start date.
     """
-    releases_in_window = [release_date for release_date in all_release_dates
-                          if start_date + relativedelta(years=follow_up_period)
-                          > release_date >= start_date]
-    return len(releases_in_window)
+    reincarcerations_in_window = \
+        [reincarceration_date for reincarceration_date
+         in all_reincarceration_dates
+         if start_date + relativedelta(years=follow_up_period)
+         > reincarceration_date >= start_date]
+
+    return len(reincarcerations_in_window)
 
 
 def earliest_recidivated_follow_up_period(release_date, reincarceration_date):
@@ -484,13 +489,20 @@ def relevant_follow_up_periods(release_date, current_date, follow_up_periods):
     today.
 
     Examples where today is 2018-01-26:
-        relevant_follow_up_periods("2015-01-05", FOLLOW_UP_PERIODS) = [1,2,3,4]
-        relevant_follow_up_periods("2015-01-26", FOLLOW_UP_PERIODS) = [1,2,3,4]
-        relevant_follow_up_periods("2015-01-27", FOLLOW_UP_PERIODS) = [1,2,3]
-        relevant_follow_up_periods("2016-01-05", FOLLOW_UP_PERIODS) = [1,2,3]
-        relevant_follow_up_periods("2017-04-10", FOLLOW_UP_PERIODS) = [1]
-        relevant_follow_up_periods("2018-01-05", FOLLOW_UP_PERIODS) = [1]
-        relevant_follow_up_periods("2018-02-05", FOLLOW_UP_PERIODS) = []
+        relevant_follow_up_periods("2015-01-05", today, FOLLOW_UP_PERIODS) =
+            [1,2,3,4]
+        relevant_follow_up_periods("2015-01-26", today, FOLLOW_UP_PERIODS) =
+            [1,2,3,4]
+        relevant_follow_up_periods("2015-01-27", today, FOLLOW_UP_PERIODS) =
+            [1,2,3]
+        relevant_follow_up_periods("2016-01-05", today, FOLLOW_UP_PERIODS) =
+            [1,2,3]
+        relevant_follow_up_periods("2017-04-10", today, FOLLOW_UP_PERIODS) =
+            [1]
+        relevant_follow_up_periods("2018-01-05", today, FOLLOW_UP_PERIODS) =
+            [1]
+        relevant_follow_up_periods("2018-02-05", today, FOLLOW_UP_PERIODS) =
+            []
 
     Args:
         release_date: the release Date we are tracking from

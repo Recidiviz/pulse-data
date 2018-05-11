@@ -91,18 +91,12 @@ class TestMapReduceMethods(object):
             else:
                 combination, value = result
 
-                # The offender-based metric is 0.5 once we get to 4 years,
-                # because of a second release at that point.
-                # But otherwise it is always 1, because recidivism occurred
+                # The value is always 1, because recidivism occurred
                 # within the first year of release.
-                print combination, value
                 if combination['release_cohort'] == 2010:
                     total_combinations_2010 += 1
-                    if combination['follow_up_period'] >= 4 \
-                            and combination['methodology'] == 'OFFENDER':
-                        assert value == 0.5
-                    else:
-                        assert value == 1
+                    assert value == 1
+
                 # This is the last instance of recidivism
                 # and it occurs at the 3 year mark.
                 elif combination['release_cohort'] == 2014:
@@ -112,15 +106,21 @@ class TestMapReduceMethods(object):
                     else:
                         assert value == 1
 
-        # 16 combinations * 2 methodologies * 8 periods = 256 combinations
-        # for the 2010 release cohort
-        # TODO: this will fail on December 5, 2018 because our calculator
-        # is hard-coded to today for follow up periods.
-        assert total_combinations_2010 == 256
+        # 16 combinations * 2 methodologies * 10 periods = 320 combinations
+        # for the 2010 release cohort over all periods into the future. But we
+        # do not track metrics for periods that start after today, so we need to
+        # subtract for some number of periods that go beyond whatever today is.
+        periods = relativedelta(date.today(), date(2010, 12, 4)).years + 1
+        periods_with_single = 6
+        periods_with_double = periods - periods_with_single
+        assert total_combinations_2010 == (16 * 2 * periods_with_single) + \
+               (16 * 3 * periods_with_double)
 
         # 16 combinations * 2 methodologies * 5 periods = 160 combinations
-        # for the 2014 release cohort
-        assert total_combinations_2014 == 160
+        # for the 2014 release cohort over all periods into the future. Same
+        # deal here as previous.
+        periods = relativedelta(date.today(), date(2014, 4, 14)).years + 1
+        assert total_combinations_2014 == 16 * 2 * periods
 
     def test_map_inmates_no_results(self):
         """Tests the map_inmate function when the inmate has no records."""
