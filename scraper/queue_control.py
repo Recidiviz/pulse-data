@@ -709,7 +709,7 @@ def purge_leased_docket_items(region, scrape_type):
     session_query = session_query.filter(ScrapeSession.region == region)
     session_query = session_query.filter(
         ScrapeSession.scrape_type == scrape_type)
-    session_query = session_query.filter(ScrapeSession.docket_item is not None)
+    session_query = session_query.filter(ScrapeSession.docket_item != None)
     session_results = session_query.fetch()
 
     for session in session_results:
