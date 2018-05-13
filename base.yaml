@@ -23,7 +23,7 @@ handlers:
   login: admin
 
 - url: /calculator_pipeline
-  script: calculator.pipeline.app
+  script: calculator.recidivism.pipeline.app
 
 - url: /datastore_export
   script: cloud_datastore_admin.app

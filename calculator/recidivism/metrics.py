@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Classes of metrics we calculate."""
+"""Recidivism metrics we calculate."""
 
 
 from google.appengine.ext import ndb
