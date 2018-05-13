@@ -30,7 +30,8 @@ from mapreduce import context
 from mapreduce import mapreduce_pipeline
 from mapreduce import operation as op
 from utils.auth import authenticate_request
-from .calculator import find_recidivism, map_recidivism_combinations
+from .calculator import map_recidivism_combinations
+from .identifier import find_recidivism
 from .metrics import RecidivismMetric
 
 
@@ -188,22 +189,20 @@ class CalculatorHandler(webapp2.RequestHandler):
 
             if not request_region or request_region == "all":
                 # No region code - log and exit.
-                logging.info("No specific region parameter provided. "
-                             "Will calculate recidivism metrics across "
-                             "entire data set.")
+                logging.info('No specific region parameter provided. '
+                             'Will calculate recidivism metrics across '
+                             'entire data set.')
                 request_region = None
             else:
-                logging.info("Will calculate recidivism metrics for "
-                             "%s region." %
-                             request_region)
+                logging.info('Will calculate recidivism metrics for '
+                             '%s region.', request_region)
 
-            logging.info("Include conditional violation metrics in "
-                         "calculation? %s" %
-                         include_conditional_violations)
+            logging.info('Include conditional violation metrics in '
+                         'calculation? %s', include_conditional_violations)
 
             pipeline = CalculationPipeline(request_region,
                                            include_conditional_violations)
-            logging.info("Starting calculation pipeline...")
+            logging.info('Starting calculation pipeline...')
             pipeline.start(queue_name="recidivism-calculator-mr")
 
             self.redirect(pipeline.base_path
@@ -238,9 +237,10 @@ class CalculationPipeline(base_handler.PipelineBase):
         yield mapreduce_pipeline.MapreducePipeline(
             "Calculate recidivism across various dimensions",
             input_reader_spec="mapreduce.input_readers.DatastoreInputReader",
-            mapper_spec="calculator.pipeline.map_inmate",
+            mapper_spec="calculator.recidivism.pipeline.map_inmate",
             mapper_params=mapper_params,
-            reducer_spec="calculator.pipeline.reduce_recidivism_events",
+            reducer_spec="calculator.recidivism."
+                         "pipeline.reduce_recidivism_events",
             shards=64)
 
 
