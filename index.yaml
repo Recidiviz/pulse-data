@@ -150,3 +150,9 @@ indexes:
   - name: class
   - name: snapshot_timestamp
     direction: desc
+
+- kind: Snapshot
+  ancestor: yes
+  properties:
+  - name: created_on
+    direction: desc

@@ -16,10 +16,14 @@
 # =============================================================================
 
 
-"""The calculation portion of the Recidiviz data platform.
+"""The recidivism calculation pipeline.
 
-This includes infrastructure, logic, and models for calculating various criminal
-justice metrics from ingested records and persisting those metrics.
+This includes infrastructure, logic, and models for calculating recidivism
+metrics from ingested records and persisting those metrics.
 """
 
-from . import recidivism
+from . import calculator
+from . import identifier
+from . import pipeline
+from . import recidivism_event
+from .metrics import RecidivismMetric

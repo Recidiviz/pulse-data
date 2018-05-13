@@ -17,7 +17,7 @@
 
 # pylint: disable=unused-import,wrong-import-order
 
-"""Tests for calculator/pipeline.py."""
+"""Tests for recidivism/pipeline.py."""
 
 
 from datetime import date
@@ -32,9 +32,8 @@ from mapreduce import context
 from mapreduce import model as mapreduce_model
 from mapreduce import operation as op
 
-from ..context import calculator
-from calculator import metrics
-from calculator import pipeline
+from tests.context import calculator
+from calculator.recidivism import metrics, pipeline
 from scraper.us_ny.us_ny_record import UsNyRecord
 from models.inmate import Inmate
 from models.snapshot import Snapshot
@@ -114,7 +113,7 @@ class TestMapReduceMethods(object):
         periods_with_single = 6
         periods_with_double = periods - periods_with_single
         assert total_combinations_2010 == (16 * 2 * periods_with_single) + \
-               (16 * 3 * periods_with_double)
+            (16 * 3 * periods_with_double)
 
         # 16 combinations * 2 methodologies * 5 periods = 160 combinations
         # for the 2014 release cohort over all periods into the future. Same
