@@ -50,9 +50,9 @@ allow imports of the various GAE libraries to work in test mode. Add the followi
 If you installed the GCloud SDK via the steps above, it's probably wherever you chose to install the SDK, under
 `google-cloud-sdk/platform/`.
 
-Finally, you will likely need to fix an [issue in the Google App Engine installation](https://stackoverflow.com/a/27274135) 
+Finally, you will likely need to fix an [issue in the Google App Engine installation](https://stackoverflow.com/a/27274135)
 that comes with the GCloud SDK. Check the `google_appengine/lib/fancy_urllib` folder to see if you have the nested
-`__init__.py` files with an empty file on the outer layer. If so, follow the instructions in that answer, and maybe 
+`__init__.py` files with an empty file on the outer layer. If so, follow the instructions in that answer, and maybe
 copy the outer file into a temp file for safe-keeping (even though it's blank):
 
 ```
@@ -72,7 +72,7 @@ Run Pylint across the main body of code, in particular: `pylint *.py calculator 
 The output will include individual lines for all style violations, followed by a handful of reports, and finally a
 general code score out of 10. Fix any new violations in your commit. If you believe there is cause for a rule change,
 e.g. if you believe a particular rule is inappropriate in the codebase, then submit that change as part of your
-inbound pull request. 
+inbound pull request.
 
 ### Running the app
 There are two ways to run the app - on your local machine, or deployed to the cloud.
@@ -84,8 +84,16 @@ dev server is able to handle the needs of the simple scraping tool pretty well.
 To run this locally, just navigate to the directory you cloned pulse-data into and run `dev_appserver.py local_app.yaml`
 (note the trailing dot).
 
+If you haven't run the local development server recently, or this is your first time running it at all, first make a
+call to the test datastore populator (e.g., `localhost:8080/test_populator/clear`). Any call to the test data populator
+(including `/clear`, which is used to empty the local datastore) will ensure the proper environment variables have been set
+up for your local test system.
+
 Logs will show up in the console you run the command in, and you can kick off the scraping by navigating in your browser
 to `localhost:8080/scraper/start?region=[region]` (logs won't show much until the scraping starts).
+
+You can check datastore entries, queue tasks, and more on the local dev server admin page (http://localhost:8000/datastore)
+while it's running.
 
 #### Production
 To deploy to production AppEngine, navigate to the directory where you cloned pulse-data into and run
@@ -97,6 +105,6 @@ interactive setup for gcloud. Run `gcloud init` to revisit that setup.
 Once the project is in production, you can kick off scraping by visiting `myproject.appspot.com/start`. You can monitor
 the task queue (and purge it) in the Cloud Console, and read the service logs there as well.
 
-**_(Note: Don't test in prod unless you really mean it! It will try to crawl production data systems at 1qps at the
-moment, which may impact actual operations. We strongly recommend developing only with the local dev server, which you
-can easily kill during tests with Ctrl+C.)_**
+**_Note: Don't test in prod! A lot can go wrong (you could scrape in a way that doesn't throttle properly, you could
+create data inconsistencies in our prod data, etc.), and at scale. We strongly recommend developing only with the local
+dev server, which you can easily kill during tests with Ctrl+C.)_**
