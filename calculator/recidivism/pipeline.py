@@ -54,7 +54,7 @@ def map_inmate(inmate):
     """
     params = context.get().mapreduce_spec.mapper.params
     include_conditional_violations = \
-        params.get("include_conditional_violations")
+        params.get('include_conditional_violations')
 
     recidivism_events = find_recidivism(inmate, include_conditional_violations)
     metric_combinations = map_recidivism_combinations(inmate, recidivism_events)
@@ -144,13 +144,13 @@ def to_metric(metric_key, total_records, total_recidivism):
     metric.follow_up_period = key_mapping["follow_up_period"]
     metric.methodology = key_mapping["methodology"]
 
-    if "age" in key_mapping:
+    if 'age' in key_mapping:
         metric.age_bucket = key_mapping["age"]
-    if "race" in key_mapping:
+    if 'race' in key_mapping:
         metric.race = key_mapping["race"]
-    if "sex" in key_mapping:
+    if 'sex' in key_mapping:
         metric.sex = key_mapping["sex"]
-    if "release_facility" in key_mapping:
+    if 'release_facility' in key_mapping:
         metric.release_facility = key_mapping["release_facility"]
 
     return metric
@@ -170,14 +170,14 @@ class CalculatorHandler(webapp2.RequestHandler):
         the pipeline execution instance.
         """
         include_conditional_violations_param = \
-            self.request.get('include_conditional_violations', "false").lower()
+            self.request.get('include_conditional_violations', 'false').lower()
 
         if include_conditional_violations_param not in ['true', 'false']:
             error_message = "include_conditional_values must be true or " \
-                            "false. Bad param: %s" % \
-                            include_conditional_violations_param
-            logging.error(error_message)
+                            "false. Bad param: {}".format(
+                                include_conditional_violations_param)
 
+            logging.error(error_message)
             self.response.write(error_message)
             self.response.set_status(400)
 
@@ -187,27 +187,26 @@ class CalculatorHandler(webapp2.RequestHandler):
 
             request_region = self.request.get('region', None)
 
-            if not request_region or request_region == "all":
+            if not request_region or request_region == 'all':
                 # No region code - log and exit.
                 logging.info('No specific region parameter provided. '
                              'Will calculate recidivism metrics across '
                              'entire data set.')
                 request_region = None
             else:
-                logging.info('Will calculate recidivism metrics for '
-                             '%s region.', request_region)
+                logging.info("Will calculate recidivism metrics for "
+                             "%s region.", request_region)
 
-            logging.info('Include conditional violation metrics in '
-                         'calculation? %s', include_conditional_violations)
+            logging.info("Include conditional violation metrics in "
+                         "calculation? %s", include_conditional_violations)
 
             pipeline = CalculationPipeline(request_region,
                                            include_conditional_violations)
             logging.info('Starting calculation pipeline...')
-            pipeline.start(queue_name="recidivism-calculator-mr")
+            pipeline.start(queue_name='recidivism-calculator-mr')
 
-            self.redirect(pipeline.base_path
-                          + "/status?root="
-                          + pipeline.pipeline_id)
+            self.redirect("{}/status?root={}".format(pipeline.base_path,
+                                                     pipeline.pipeline_id))
 
 
 class CalculationPipeline(base_handler.PipelineBase):
@@ -227,20 +226,20 @@ class CalculationPipeline(base_handler.PipelineBase):
              A MapReduce pipeline to start.
         """
         mapper_params = {
-            "entity_kind": "models.inmate.Inmate",
+            "entity_kind": 'models.inmate.Inmate',
             "include_conditional_violations": include_conditional_violations
         }
 
         if region:
-            mapper_params["filters"] = [("region", "=", region)]
+            mapper_params["filters"] = [('region', '=', region)]
 
         yield mapreduce_pipeline.MapreducePipeline(
-            "Calculate recidivism across various dimensions",
-            input_reader_spec="mapreduce.input_readers.DatastoreInputReader",
-            mapper_spec="calculator.recidivism.pipeline.map_inmate",
+            'Calculate recidivism across various dimensions',
+            input_reader_spec='mapreduce.input_readers.DatastoreInputReader',
+            mapper_spec='calculator.recidivism.pipeline.map_inmate',
             mapper_params=mapper_params,
-            reducer_spec="calculator.recidivism."
-                         "pipeline.reduce_recidivism_events",
+            reducer_spec='calculator.recidivism.pipeline.'
+                         'reduce_recidivism_events',
             shards=64)
 
 

@@ -256,14 +256,14 @@ def age_bucket(age):
         A string representation of the age bucket for the inmate.
     """
     if age < 25:
-        return "<25"
+        return '<25'
     elif age <= 29:
-        return "25-29"
+        return '25-29'
     elif age <= 34:
-        return "30-34"
+        return '30-34'
     elif age <= 39:
-        return "35-39"
-    return "40<"
+        return '35-39'
+    return '40<'
 
 
 def characteristic_combinations(inmate, event):
@@ -359,8 +359,8 @@ def combination_metrics(combo, event, all_reincarceration_dates,
     metrics = []
 
     for period in relevant_periods:
-        offender_based_combo = augment_combination(combo, "OFFENDER", period)
-        event_based_combo = augment_combination(combo, "EVENT", period)
+        offender_based_combo = augment_combination(combo, 'OFFENDER', period)
+        event_based_combo = augment_combination(combo, 'EVENT', period)
 
         # If they didn't recidivate at all or not yet for this period
         # (or they didn't recidivate until 10 years had passed),
