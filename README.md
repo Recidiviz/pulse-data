@@ -25,6 +25,21 @@ requests on a case-by-case basis.
 Calculated recidivism metrics can also be made available through the same process, though we anticipate publishing our
 analysis in various forms and channels over time.
 
+Forking
+------
+
+The Recidiviz data system is provided as open source software - for transparency and collaborative development, to
+help jump-start similar projects in other spaces, and to ensure continuation if Recidiviz itself ever becomes inactive.
+
+If you plan to fork the project for work in the criminal justice space (to scrape the same systems we are, or similar),
+we ask that you first [contact us](mailto:team@recidiviz.com) for a quick consulation. We work carefully to ensure
+that our scraping activities don't disrupt other users' experiences with the public data services we scrape, but if
+multiple scrapers are running against the same systems, without knowing about one another, it may place excessive
+strain on them and impact the services those systems provide.
+
+If you have ideas or new work for the same data we're collecting, let us know and we'll work with you to find the
+best way to get it done.
+
 Development
 ------
 
@@ -40,6 +55,18 @@ Install the GCloud SDK (we recommend using the [interactive installer](https://c
 and clone the recidiviz repo from Github.
 
 Then install project dependencies: `pip install -r requirements.txt`.
+
+#### Adding environment variables
+Recidiviz depends on sensitive information to run. This data is stored in environment variables, which should be added
+manually to your production environment (see `models/env_vars` for more information on the datastore kind used).
+
+For local testing, these environment variables are loaded from `local.yaml` in your top-level project directory,
+which is not provided in this repository. Instead, a template is provided (`local.example.yaml`) - run
+`$ cp local.example.yaml local.yaml` to copy the template, then edit the new file to add values specific to your
+project.
+
+_Note: Recidiviz team members and partners can download a pre-populated `local.yaml` for local development - check your
+onboarding document for details._
 
 #### Running tests
 Update your sourced `$PYTHONPATH` to add the Google App Engine libraries to the system Python path, which will
