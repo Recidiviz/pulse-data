@@ -54,6 +54,10 @@ so we don't have to worry about creating that functionality from scratch. Error 
 Install the GCloud SDK (we recommend using the [interactive installer](https://cloud.google.com/sdk/downloads#interactive)),
 and clone the recidiviz repo from Github.
 
+Your mileage may vary here. If you've installed via the interactive installer and cannot find `google_appengine` inside of 
+`google-cloud-sdk/platform/`, then you will need to install google_appengine separately by doing:
+`gcloud components install app-engine-python`
+
 Then install project dependencies: `pip install -r requirements.txt`.
 
 #### Adding environment variables
@@ -72,10 +76,10 @@ onboarding document for details._
 Update your sourced `$PYTHONPATH` to add the Google App Engine libraries to the system Python path, which will
 allow imports of the various GAE libraries to work in test mode. Add the following line to your shell profile:
 
-`export PYTHONPATH="/path/to/google_appengine:/path/to/google_appengine/lib/:/path/to/google_appengine/lib/yaml/:$PYTHONPATH"`
+`export PYTHONPATH="/path/to/google_appengine:/path/to/google_appengine/lib/:/path/to/google_appengine/lib/yaml-x.x/:$PYTHONPATH"`
 
 If you installed the GCloud SDK via the steps above, it's probably wherever you chose to install the SDK, under
-`google-cloud-sdk/platform/`.
+`google-cloud-sdk/platform/`. The `-x.x` after yaml is meant to denote a version number that will be present if you installed google_appengine as a separate component. If you did not, then it is unlikely that you will need to specify a version at all.
 
 Finally, you will likely need to fix an [issue in the Google App Engine installation](https://stackoverflow.com/a/27274135)
 that comes with the GCloud SDK. Check the `google_appengine/lib/fancy_urllib` folder to see if you have the nested
@@ -108,8 +112,7 @@ There are two ways to run the app - on your local machine, or deployed to the cl
 Running from your local machine is preferred for development - it yields much quicker iteration cycles, and the local
 dev server is able to handle the needs of the simple scraping tool pretty well.
 
-To run this locally, just navigate to the directory you cloned pulse-data into and run `dev_appserver.py local_app.yaml`
-(note the trailing dot).
+To run this locally, just navigate to the directory you cloned pulse-data into and run `dev_appserver.py local_app.yaml`.
 
 If you haven't run the local development server recently, or this is your first time running it at all, first make a
 call to the test datastore populator (e.g., `localhost:8080/test_populator/clear`). Any call to the test data populator
@@ -117,7 +120,7 @@ call to the test datastore populator (e.g., `localhost:8080/test_populator/clear
 up for your local test system.
 
 Logs will show up in the console you run the command in, and you can kick off the scraping by navigating in your browser
-to `localhost:8080/scraper/start?region=[region]` (logs won't show much until the scraping starts).
+to `localhost:8080/scraper/start?region=[region]` (logs won't show much until the scraping starts). For now, use region `us_ny`
 
 You can check datastore entries, queue tasks, and more on the local dev server admin page (http://localhost:8000/datastore)
 while it's running.
