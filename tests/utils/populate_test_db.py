@@ -40,13 +40,13 @@ from models.env_vars import EnvironmentVariable
 from models.inmate import Inmate
 from models.record import Offense, SentenceDuration, Record
 from models.snapshot import Snapshot
-from scraper.models.scrape_session import ScrapeSession, ScrapedRecord
+from ingest.models.scrape_session import ScrapeSession, ScrapedRecord
 from utils import environment
 from utils import regions
 from utils.auth import authenticate_request
 
 # TODO: Remove post-migration
-from scraper.us_ny.us_ny_record import UsNyRecord  # pylint: disable=ungrouped-imports
+from ingest.us_ny.us_ny_record import UsNyRecord  # pylint: disable=ungrouped-imports
 from models.snapshot import InmateFacilitySnapshot  # pylint: disable=ungrouped-imports
 
 

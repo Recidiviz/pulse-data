@@ -301,7 +301,7 @@ system to reach out to us if they notice a problem. It's important for us to be 
 issues develop that we aren't aware of.
 
 ### Directory structure
-All region // prison system // site-specific logic occurs in the `scraper/**` directory, with region-specific scrapers
+All region // prison system // site-specific logic occurs in the `ingest/**` directory, with region-specific scrapers
 each in separate subdirectories below that. These handle scraping of the series of pages unique to that system, and
 storage of the results.
 
@@ -361,9 +361,9 @@ Add a new entry in `queue.yaml` with a configuration for your new scraper, using
 	during normal scraping.
 
 **Add the scraper directory and file**
-Add `scraper/[region code]` subdirectory and within it a `[region code]_scraper.py` file.
+Add `ingest/[region code]` subdirectory and within it a `[region code]_scraper.py` file.
 
-You can scaffold the `scraper.py` file using the methods and flow shown in `scraper/us_ny/us_ny_scraper.py`.
+You can scaffold the `scraper.py` file using the methods and flow shown in `ingest/us_ny/us_ny_scraper.py`.
 
 **Implement required control methods**
 Your scraper must implement the following methods in order to work with the rest of Recidiviz:
@@ -374,13 +374,13 @@ Your scraper must implement the following methods in order to work with the rest
 - `stop_scrape()`
 
 These methods are not expected to return anything. See the descriptions (above, under 'Regional variation') and their
-implementations in `scraper/us_ny/us_ny_scraper.py` for reference.
+implementations in `ingest/us_ny/us_ny_scraper.py` for reference.
 
 **Build scraper**
 Build out the scraper behavior and site parsing for your region. This must make use of the `DocketItem` queries provided
 by the Recidiviz framework at the start of each scrape, and must support both background and snapshot scrapes.
 
-Use the `scraper/us_ny/us_ny_scraper.py` implementation as a reference point.
+Use the `ingest/us_ny/us_ny_scraper.py` implementation as a reference point.
 
 **Extend top-level data models**
 Your scraper will need to store the data it scrapes about `Inmates`, `Records`, and snapshots of `Snapshot`
@@ -392,7 +392,7 @@ inmate search system provides. You should collect all information returned by th
 how frivolous it might seem.
 
 For examples of extending the top-level data models, see both the models in the `models` directory and the
-`us_ny_inmate.py`, `us_ny_record.py`, and `us_ny_inmate_snapshot.py` files in the `scraper/us_ny` directory.
+`us_ny_inmate.py`, `us_ny_record.py`, and `us_ny_inmate_snapshot.py` files in the `ingest/us_ny` directory.
 
 ### Adding new dependencies
 Be sure to install new dependencies in the '/libs' folder, using: `pip install -t lib/ <library_name>`

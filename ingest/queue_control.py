@@ -31,7 +31,7 @@ from dateutil.relativedelta import relativedelta
 from google.appengine.api import taskqueue
 from google.appengine.ext import deferred
 from google.appengine.ext import ndb
-from scraper.models.scrape_session import ScrapeSession
+from ingest.models.scrape_session import ScrapeSession
 from utils import environment
 from utils import regions
 from utils.auth import authenticate_request
