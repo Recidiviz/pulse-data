@@ -29,8 +29,8 @@ import webapp2
 from google.appengine.ext import deferred
 from google.appengine.ext import ndb
 from utils.auth import authenticate_request
-from scraper.us_ny.us_ny_snapshot import UsNySnapshot
-from scraper.us_ny.us_ny_record import UsNyRecord
+from ingest.us_ny.us_ny_snapshot import UsNySnapshot
+from ingest.us_ny.us_ny_record import UsNyRecord
 from models.snapshot import InmateFacilitySnapshot
 
 

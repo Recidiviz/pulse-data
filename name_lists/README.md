@@ -10,7 +10,7 @@ This [FiveThirtyEight article](https://fivethirtyeight.com/features/whats-the-mo
 
 Very little effort has gone into making robust name lists for recidiviz so far.
 
-At the moment, following files are included for scrapers:
+At the moment, the following files are included for scrapers:
 - last_only: For scrapers that can search by last name only. Sourced from the FiveThirtyEight dataset's [surnames.csv file](https://github.com/fivethirtyeight/data/blob/master/most-common-name/surnames.csv). 
 
 - last_and_first: For regions which require full names to search. Sourced from FiveThirtyEight dataset's [adjusted-name-combinations_list.csv file](https://github.com/fivethirtyeight/data/blob/master/most-common-name/adjusted-name-combinations-list.csv).

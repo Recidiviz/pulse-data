@@ -143,17 +143,17 @@ def test_get_name_list_file():
 
 def test_get_scraper_module():
     module = regions.get_scraper_module('us_ny')
-    assert module.__name__ == 'scraper.us_ny'
+    assert module.__name__ == 'ingest.us_ny'
 
 
 def test_get_scraper():
     scraper = regions.get_scraper('us_ny')
-    assert scraper.__name__ == 'scraper.us_ny.us_ny_scraper'
+    assert scraper.__name__ == 'ingest.us_ny.us_ny_scraper'
 
 
 def test_region_class():
     region = with_manifest(regions.Region, 'us_ny')
-    assert region.scraper().__name__ == 'scraper.us_ny.us_ny_scraper'
+    assert region.scraper().__name__ == 'ingest.us_ny.us_ny_scraper'
     assert region.get_inmate_kind().__name__ == 'UsNyInmate'
     assert region.get_record_kind().__name__ == 'UsNyRecord'
     assert region.get_snapshot_kind().__name__ == 'UsNySnapshot'
