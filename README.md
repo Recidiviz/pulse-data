@@ -6,7 +6,7 @@ At the center of Recidiviz is our platform for tracking granular recidivism metr
 for the ingest of corrections records from different criminal justice systems, and for calculation of recidivism metrics
 from the ingested records.
 
-Read more on data ingest in [`/scraper`](./scraper) and recidivism calculation in [`/calculator`](./calculator).
+Read more on data ingest in [`/ingest`](./ingest) and recidivism calculation in [`/calculator`](./calculator).
 
 License
 -------
@@ -98,7 +98,7 @@ The configuration in `setup.cfg` and `.coveragerc` will ensure the right code is
 metrics are displayed.
 
 #### Checking code style
-Run Pylint across the main body of code, in particular: `pylint *.py calculator models scraper tests utils`.
+Run Pylint across the main body of code, in particular: `pylint *.py calculator ingest models tests utils`.
 
 The output will include individual lines for all style violations, followed by a handful of reports, and finally a
 general code score out of 10. Fix any new violations in your commit. If you believe there is cause for a rule change,

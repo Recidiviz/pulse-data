@@ -34,7 +34,7 @@ from mapreduce import operation as op
 
 from tests.context import calculator
 from calculator.recidivism import metrics, pipeline
-from scraper.us_ny.us_ny_record import UsNyRecord
+from ingest.us_ny.us_ny_record import UsNyRecord
 from models.inmate import Inmate
 from models.snapshot import Snapshot
 

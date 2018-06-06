@@ -82,7 +82,7 @@ are interested but unsure about contributing to a particular issue, leave a
 comment on that issue.
 
 In general, you will find that our issues are separated into vertical
-functionality, e.g. `scraper` or `calculator`, and//or into horizontal type,
+functionality, e.g. `ingest` or `calculator`, and//or into horizontal type,
 e.g. `feature` or `bug`. Take a look at the code and consider jumping first
 into an area where you feel more comfortable, and then perhaps into an area
 where you feel less comfortable or need to learn something new.

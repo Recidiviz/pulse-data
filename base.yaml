@@ -7,16 +7,16 @@ builtins:
 
 handlers:
 - url: /scraper/start
-  script: scraper.queue_control.app
+  script: ingest.queue_control.app
 
 - url: /scraper/stop
-  script: scraper.queue_control.app
+  script: ingest.queue_control.app
 
 - url: /scraper/resume
-  script: scraper.queue_control.app
+  script: ingest.queue_control.app
 
 - url: /scraper/work
-  script: scraper.worker.app
+  script: ingest.worker.app
 
 - url: /_ah/pipeline.*
   script: mapreduce.lib.pipeline.handlers._APP

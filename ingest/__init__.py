@@ -23,7 +23,7 @@ sources.
 """
 
 
-import scraper.models
-import scraper.queue_control
-import scraper.us_ny
-import scraper.worker
+import ingest.models
+import ingest.queue_control
+import ingest.us_ny
+import ingest.worker

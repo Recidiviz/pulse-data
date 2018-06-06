@@ -145,7 +145,7 @@ def get_scraper_module(region_code):
     Returns:
         Scraper module (e.g., scraper.us_ny)
     """
-    top_level = __import__("scraper")
+    top_level = __import__("ingest")
     module = getattr(top_level, region_code)
 
     return module
