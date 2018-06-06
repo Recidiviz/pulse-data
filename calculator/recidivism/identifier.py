@@ -35,7 +35,7 @@ import logging
 from models.snapshot import Snapshot
 from models.record import Record
 # This is required to permit access to PolyModel attributes on UsNyRecord
-from scraper.us_ny.us_ny_record import UsNyRecord #pylint: disable=unused-import
+from ingest.us_ny.us_ny_record import UsNyRecord #pylint: disable=unused-import
 from .recidivism_event import RecidivismEvent
 
 

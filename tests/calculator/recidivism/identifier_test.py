@@ -32,7 +32,7 @@ from google.appengine.ext import testbed
 from tests.context import calculator
 from calculator.recidivism import identifier
 from calculator.recidivism import recidivism_event
-from scraper.us_ny.us_ny_record import UsNyRecord
+from ingest.us_ny.us_ny_record import UsNyRecord
 from models.inmate import Inmate
 from models.snapshot import Snapshot
 
