@@ -22,7 +22,9 @@ criminal justice data and calculate metrics.
 """
 
 
+import logging
 import yaml
+from google.appengine.api import memcache
 
 
 class Region(object):
@@ -32,46 +34,57 @@ class Region(object):
     and has helper functions to get region-specific configuration info.
 
     Attributes:
-        region_code: (string) Region code
-        region_name: (string) Human-readable region name
         agency_name: (string) Human-readable agency name
         agency_type: (string) 'prison' or 'jail'
-        scrape_queue_name: (string) Queue name for scraping queue
         base_url: (string) Base URL for scraping
-        names_file: (string) Filename of names file for this region
         entity_kinds: (dict) Mapping of top-level entity kind names (inmate,
             record, snapshot) to region subclasses. E.g.,
             {'inmate': 'UsNyInmate',
              'record': 'UsNyRecord',
              'snapshot': 'UsNySnapshot'}
-
+        names_file: (string) Filename of names file for this region
+        params: (dict) Optional mapping of key-value pairs specific to region
+        queues: (list) List of queue name for acceptable scraping queues
+        region_code: (string) Region code
+        region_name: (string) Human-readable region name
+        scraper_class: (string) Optional name of the class for this region's
+            scraper. If absent, assumes the scraper is `[region_code]_scraper`.
+        scraper_package: (string) Name of the package with this region's scraper
+        timezone: (string) Timezone in which this region resides. If the region
+            is in multiple timezones, this is the timezone in which most of the
+            region resides, where "most" is whatever is most useful for that
+            region, e.g. population count versus land size.
     """
 
     def __init__(self, region_code):
         # Attempt to load region info from region_manifest
         region_config = load_region_manifest(region_code)
 
-        self.region_code = region_config["region_code"]
-        self.region_name = region_config["region_name"]
         self.agency_name = region_config["agency_name"]
         self.agency_type = region_config["agency_type"]
-        self.scrape_queue_name = region_config["scrape_queue_name"]
         self.base_url = region_config["base_url"]
-
-        self.names_file = get_name_list_file(self.region_code)
-
         self.entity_kinds = region_config["entity_kinds"]
+        self.region_code = region_config["region_code"]
+        self.names_file = get_name_list_file(self.region_code)
+        self.params = region_config.get("params", {})
+        self.queues = region_config["queues"]
+        self.region_name = region_config["region_name"]
+        self.scraper_class = region_config.get("scraper_class",
+                                               self.region_code + "_scraper")
+        self.scraper_package = region_config["scraper_package"]
+        self.timezone = region_config["timezone"]
 
     def scraper(self):
-        """Return the scraper class for this region
+        """Return the scraper module for this region
 
         Args:
             N/A
 
         Returns:
-            Top-level scraper module for this region
+            Region's fully resolved scraper class
+            (e.g., ingest.us_ny.us_ny_scraper)
         """
-        return get_scraper(self.region_code)
+        return get_scraper(self.scraper_package, self.scraper_class)
 
     def get_inmate_kind(self):
         """Return the Inmate PolyModel sub-kind for this region
@@ -115,7 +128,7 @@ def get_subkind(region_code, parent_kind_name):
         parent_kind_name: (string) Name of the top-level PolyModel kind
 
     Returns:
-        Model subclass (e.g., scraper.us_ny.us_ny_record.UsNyRecord)
+        Model subclass (e.g., ingest.us_ny.us_ny_record.UsNyRecord)
     """
     parent_kind_name = parent_kind_name.lower()
 
@@ -132,38 +145,85 @@ def get_subkind(region_code, parent_kind_name):
     return subkind
 
 
-def get_scraper_module(region_code):
+def get_scraper_module(scraper_package):
     """Retrieve top-level module for the given region
 
     Retrieves the scraper module for a particular region. Note that this is
-    only the module containing the scraper and entity subclasses/models, not
+    only the module containing the scraper and/or entity subclasses/models, not
     the scraper itself (use get_scraper() to get the scraper).
 
+    Some regions will use a general-purpose scraper that is not in the same
+    package as the entity sub-kinds for that region. For such a region, you
+    would pass different args into this method to get the scraper class versus
+    the entity classes.
+
     Args:
-        region_code: (string) Region code to get scraper for
+        scraper_package: (string) The package where the scraper resides
 
     Returns:
-        Scraper module (e.g., scraper.us_ny)
+        Scraper module (e.g., ingest.us_ny)
     """
     top_level = __import__("ingest")
-    module = getattr(top_level, region_code)
+    module = getattr(top_level, scraper_package)
 
     return module
 
 
-def get_scraper(region_code):
+def get_scraper(scraper_package, scraper_class):
     """Retrieve the scraper for a particular region
+
+    Args:
+        scraper_package: (string) Name of the region's scraper package
+        scraper_class: (string) Name of the scraper class itself
+
+    Returns:
+        Region's fully resolved scraper class (e.g., ingest.us_ny.us_ny_scraper)
+    """
+    scraper_module = get_scraper_module(scraper_package)
+    scraper = getattr(scraper_module, scraper_class)
+
+    return scraper
+
+
+def get_scraper_from_cache(region_code):
+    """Retrieves the scraper for a particular region
+
+    Since this is called to retrieve the scraper class for every new instance of
+    a scraper class at runtime, we cache the value in Memcache and retrieve it
+    from there if available. If not available, we parse the region manifest and
+    cache it.
 
     Args:
         region_code: (string) Region code to get scraper for
 
     Returns:
-        Region's scraper module (e.g., scraper.us_ny.us_ny_scraper)
+        Region's scraper module (e.g., ingest.us_ny.us_ny_scraper)
     """
-    scraper_module = get_scraper_module(region_code)
-    scraper = getattr(scraper_module, region_code + "_scraper")
+    logging.debug('Fetching scraper package and class from cache '
+                  'for region %s', region_code)
 
-    return scraper
+    memcache_package_name = region_code + "_scraper_package"
+    scraper_package = memcache.get(memcache_package_name)
+
+    memcache_class_name = region_code + "_scraper_class"
+    scraper_class = memcache.get(memcache_class_name)
+
+    if not scraper_package or not scraper_class:
+        logging.debug('Scraper package and class not in cache cache, loading '
+                      'from manifest for region %s', region_code)
+
+        region = Region(region_code)
+        scraper_package = region.scraper_package
+        memcache.set(key=memcache_package_name,
+                     value=scraper_package,
+                     time=3600)
+
+        scraper_class = region.scraper_class
+        memcache.set(key=memcache_class_name,
+                     value=region.scraper_class,
+                     time=3600)
+
+    return get_scraper(scraper_package, scraper_class)
 
 
 def get_supported_regions(full_manifest=False):
