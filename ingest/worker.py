@@ -80,7 +80,7 @@ class Scraper(webapp2.RequestHandler):
         logging.info("Queue %s, processing task (%s) for %s." %
                      (queue_name, task, region))
 
-        scraper = regions.get_scraper(region)
+        scraper = regions.get_scraper_from_cache(region)
         scraper_task = getattr(scraper, task)
 
         try:

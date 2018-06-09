@@ -82,7 +82,7 @@ class ScraperStart(webapp2.RequestHandler):
                     logging.info("Starting new %s scrape(s) for %s."
                                  % (scrape_type, region))
 
-                    scraper = regions.get_scraper(region)
+                    scraper = regions.get_scraper_from_cache(region)
 
                     # Set up scraper for new session
                     scraper.setup(scrape_type)
@@ -151,7 +151,7 @@ class ScraperStop(webapp2.RequestHandler):
                 logging.info("Stopping %s scrapes for %s."
                              % (scrape_types, region))
 
-                scraper = regions.get_scraper(region)
+                scraper = regions.get_scraper_from_cache(region)
                 scraper.stop_scrape(scrape_types)
 
         else:
@@ -193,7 +193,7 @@ class ScraperResume(webapp2.RequestHandler):
                     logging.info("Resuming %s scrape for %s."
                                  % (scrape_type, region))
 
-                    scraper = regions.get_scraper(region)
+                    scraper = regions.get_scraper_from_cache(region)
                     scraper.setup(scrape_type)
                     scraper.resume_scrape(scrape_type)
 

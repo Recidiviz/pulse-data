@@ -19,14 +19,17 @@
 regions:
 
   us_ny:
-    region_name: New York State
-    agency_name: Department of Corrections and Community Supervision (DOCCS)
-    region_code: us_ny
+    agency_name: Department of Corrections and Community Supervision
     agency_type: prison
-    scrape_queue_name: us-ny-scraper
     base_url: http://nysdoccslookup.doccs.ny.gov
-    names_file: us_ny_names.csv
     entity_kinds:
       inmate: UsNyInmate
       record: UsNyRecord
       snapshot: UsNySnapshot
+    names_file: us_ny_names.csv
+    queues:
+    - us-ny-scraper
+    region_code: us_ny
+    region_name: New York State
+    scraper_package: us_ny
+    timezone: America/New_York
