@@ -23,6 +23,9 @@
 import pytest
 
 from ..context import utils
+from google.appengine.api import memcache
+from google.appengine.ext import ndb
+from google.appengine.ext import testbed
 from mock import patch, mock_open
 from utils import regions
 
@@ -30,61 +33,81 @@ from utils import regions
 MANIFEST_CONTENTS = """
     regions:
       us_ny:
-        region_name: New York State
-        agency_name: Department of Corrections and Community Supervision (DOCCS)
-        region_code: us_ny
+        agency_name: Department of Corrections and Community Supervision
         agency_type: prison
-        scrape_queue_name: us-ny-scraper
         base_url: http://nysdoccslookup.doccs.ny.gov
-        names_file: us_ny_names.csv
         entity_kinds:
           inmate: UsNyInmate
           record: UsNyRecord
           snapshot: UsNySnapshot
+        names_file: us_ny_names.csv
+        queues:
+        - us-ny-scraper
+        region_code: us_ny
+        region_name: New York State
+        scraper_package: us_ny
+        timezone: America/New_York
       us_fl:
-        region_name: Florida State
         agency_name: Department of Corrections
-        region_code: us_fl
         agency_type: prison
-        scrape_queue_name: us-fl-scraper
         base_url: http://www.dc.state.fl.us/OffenderSearch/Search.aspx
-        names_file: us_fl_names.csv
         entity_kinds:
           inmate: UsFlInmate
           record: UsFlRecord
           snapshot: UsFlSnapshot
+        names_file: us_fl_names.csv
+        params:
+          foo: bar
+          sha: baz
+        queues:
+        - us-fl-scraper
+        - a-different-queue
+        region_code: us_fl
+        region_name: Florida State
+        scraper_class: a_different_scraper
+        scraper_package: us_fl
+        timezone: America/New_York
     """
 
 FULL_MANIFEST = {
     'regions': {
         'us_ny': {
-            'region_name': 'New York State',
             'agency_name': 'Department of Corrections and '
-                           'Community Supervision (DOCCS)',
-            'region_code': 'us_ny',
+                           'Community Supervision',
             'agency_type': 'prison',
-            'scrape_queue_name': 'us-ny-scraper',
             'base_url': 'http://nysdoccslookup.doccs.ny.gov',
-            'names_file': 'us_ny_names.csv',
             'entity_kinds': {
                 'inmate': 'UsNyInmate',
                 'record': 'UsNyRecord',
                 'snapshot': 'UsNySnapshot'
-            }
+            },
+            'names_file': 'us_ny_names.csv',
+            'queues': ['us-ny-scraper'],
+            'region_code': 'us_ny',
+            'region_name': 'New York State',
+            'scraper_package': 'us_ny',
+            'timezone': 'America/New_York'
         },
         'us_fl': {
-            'region_name': 'Florida State',
             'agency_name': 'Department of Corrections',
-            'region_code': 'us_fl',
             'agency_type': 'prison',
-            'scrape_queue_name': 'us-fl-scraper',
             'base_url': 'http://www.dc.state.fl.us/OffenderSearch/Search.aspx',
-            'names_file': 'us_fl_names.csv',
             'entity_kinds': {
                 'inmate': 'UsFlInmate',
                 'record': 'UsFlRecord',
                 'snapshot': 'UsFlSnapshot'
-            }
+            },
+            'names_file': 'us_fl_names.csv',
+            'params': {
+                'foo': 'bar',
+                'sha': 'baz'
+            },
+            'queues': ['us-fl-scraper', 'a-different-queue'],
+            'region_code': 'us_fl',
+            'region_name': 'Florida State',
+            'scraper_class': 'a_different_scraper',
+            'scraper_package': 'us_fl',
+            'timezone': 'America/New_York'
         }
     }
 }
@@ -147,7 +170,7 @@ def test_get_scraper_module():
 
 
 def test_get_scraper():
-    scraper = regions.get_scraper('us_ny')
+    scraper = regions.get_scraper('us_ny', 'us_ny_scraper')
     assert scraper.__name__ == 'ingest.us_ny.us_ny_scraper'
 
 
@@ -157,6 +180,16 @@ def test_region_class():
     assert region.get_inmate_kind().__name__ == 'UsNyInmate'
     assert region.get_record_kind().__name__ == 'UsNyRecord'
     assert region.get_snapshot_kind().__name__ == 'UsNySnapshot'
+    assert not region.params
+    assert region.queues == ['us-ny-scraper']
+    assert region.scraper_class == 'us_ny_scraper'
+
+
+def test_region_class_with_scraper_class_and_multiple_queues():
+    region = with_manifest(regions.Region, 'us_fl')
+    assert region.params == {'foo': 'bar', 'sha': 'baz'}
+    assert region.queues == ['us-fl-scraper', 'a-different-queue']
+    assert region.scraper_class == 'a_different_scraper'
 
 
 def with_manifest(func, *args, **kwargs):
@@ -166,3 +199,24 @@ def with_manifest(func, *args, **kwargs):
         value = func(*args, **kwargs)
         mock_file.assert_called_with('region_manifest.yaml', 'r')
         return value
+
+
+class TestRegionsCache(object):
+    """Tests for caching methods in the module."""
+
+    def setup_method(self, _test_method):
+        # noinspection PyAttributeOutsideInit
+        self.testbed = testbed.Testbed()
+        self.testbed.activate()
+        self.testbed.init_memcache_stub()
+        ndb.get_context().clear_cache()
+
+    def teardown_method(self, _test_method):
+        self.testbed.deactivate()
+
+    def test_get_scraper_from_cache(self):
+        scraper = regions.get_scraper_from_cache('us_ny')
+        assert scraper.__name__ == 'ingest.us_ny.us_ny_scraper'
+
+        assert memcache.get('us_ny_scraper_package') == 'us_ny'
+        assert memcache.get('us_ny_scraper_class') == 'us_ny_scraper'
