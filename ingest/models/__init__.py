@@ -19,4 +19,5 @@
 """The core models specific to the ingest platform, but agnostic across
 scraper vendors and regions."""
 
+from ingest.models import scrape_key
 from ingest.models import scrape_session
