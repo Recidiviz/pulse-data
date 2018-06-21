@@ -14,19 +14,3 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-
-"""The ingest portion of the Recidiviz data platform.
-
-This includes infrastructure, logic, and models for ingesting, validating,
-normalizing, and storing records ingested from various criminal justice data
-sources.
-"""
-
-
-import ingest.docket
-import ingest.models
-import ingest.queue_control
-import ingest.sessions
-import ingest.tracker
-import ingest.us_ny
-import ingest.worker

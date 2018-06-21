@@ -15,18 +15,26 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""The ingest portion of the Recidiviz data platform.
-
-This includes infrastructure, logic, and models for ingesting, validating,
-normalizing, and storing records ingested from various criminal justice data
-sources.
-"""
+"""Tests for utils/params.py."""
 
 
-import ingest.docket
-import ingest.models
-import ingest.queue_control
-import ingest.sessions
-import ingest.tracker
-import ingest.us_ny
-import ingest.worker
+from utils import params
+
+
+PARAMS = [("region", "us_mo"), ("scrape_type", "background")]
+
+
+def test_get_param():
+    assert params.get_param("region", PARAMS) == "us_mo"
+
+
+def test_get_param_default():
+    assert params.get_param("foo", PARAMS, default="bar") == "bar"
+
+
+def test_get_param_no_default():
+    assert not params.get_param("foo", PARAMS)
+
+
+def test_get_param_explicitly_none_default():
+    assert not params.get_param("foo", PARAMS, default=None)

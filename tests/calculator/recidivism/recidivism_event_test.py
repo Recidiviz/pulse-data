@@ -15,24 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-# pylint: disable=unused-import,wrong-import-order
-
 """Tests for recidivism/recidivism_event.py."""
 
 
-from datetime import date
 from datetime import datetime
-
-import pytest
-
-from dateutil.relativedelta import relativedelta
-from google.appengine.ext import ndb
-from google.appengine.ext import testbed
-from mapreduce import context
-from mapreduce import model as mapreduce_model
-from mapreduce import operation as op
-
-from tests.context import calculator
 from calculator.recidivism import recidivism_event
 
 

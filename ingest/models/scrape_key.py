@@ -15,18 +15,25 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""The ingest portion of the Recidiviz data platform.
-
-This includes infrastructure, logic, and models for ingesting, validating,
-normalizing, and storing records ingested from various criminal justice data
-sources.
-"""
+"""Tools for identifying scrapers."""
 
 
-import ingest.docket
-import ingest.models
-import ingest.queue_control
-import ingest.sessions
-import ingest.tracker
-import ingest.us_ny
-import ingest.worker
+class ScrapeKey(object):
+    """A key defining a conceptual scraper, i.e. region plus scrape type."""
+
+    def __init__(self, region_code, scrape_type):
+        if not region_code or not scrape_type:
+            raise ValueError('A scrape key must include both a region code '
+                             'and a scrape type')
+        self.region_code = region_code
+        self.scrape_type = scrape_type
+
+    def __repr__(self):
+        return "<ScrapeKey region_code: {}, scrape_type: {}>"\
+            .format(self.region_code, self.scrape_type)
+
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return self.region_code == other.region_code \
+                   and self.scrape_type == other.scrape_type
+        return False
