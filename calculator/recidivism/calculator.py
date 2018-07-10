@@ -266,6 +266,67 @@ def age_bucket(age):
     return '40<'
 
 
+def stay_length_from_event(event):
+    """Length of facility stay of a given event in months.
+
+    This is rounded down to the nearest month, so a stay from 2015-01-15 to
+    2017-01-14 results in a stay length of 23 months. Note that bucketing in
+    stay_length_bucketing is upper bound exclusive, so in this example the
+    bucket would be 12-24, and if the stay ended on 2017-01-15, the stay length
+    would be 24 months and the bucket would be 24-36.
+
+    Args:
+        event: the event
+
+    Returns:
+	The length of the facility stay in months. None if the original entry
+        date or release date is not known.
+    """
+    if event.original_entry_date is None or event.release_date is None:
+        return None
+
+    delta = relativedelta(event.release_date, event.original_entry_date)
+    return delta.years * 12 + delta.months
+
+
+def stay_length_bucket(stay_length):
+    """The stay length bucket that applies to measurement.
+
+    Stay length buckets (upper bound exclusive) for measurement:
+        <12, 12-24, 24-36, 36-48, 48-60, 60-72,
+        72-84, 84-96, 96-108, 108-120, 120+.
+
+    Args:
+        stay_length: the length in months of the inmate's facility stay.
+
+    Returns:
+        A string representation of the age bucket for the inmate.
+    """
+    if stay_length is None:
+        return None
+    elif stay_length < 12:
+        return '<12'
+    elif stay_length < 24:
+        return '12-24'
+    elif stay_length < 36:
+        return '24-36'
+    elif stay_length < 48:
+        return '36-48'
+    elif stay_length < 60:
+        return '48-60'
+    elif stay_length < 72:
+        return '60-72'
+    elif stay_length < 84:
+        return '72-84'
+    elif stay_length < 96:
+        return '84-96'
+    elif stay_length < 108:
+        return '96-108'
+    elif stay_length < 120:
+        return '108-120'
+    return '120<'
+
+
 def characteristic_combinations(inmate, event):
     """The list of all combinations of the metric characteristics picked from
     the given inmate and recidivism event.
@@ -278,7 +339,8 @@ def characteristic_combinations(inmate, event):
     For each event, we need to calculate metrics across combinations of:
     Release Cohort; Follow-up Period (up to 10 years);
     Methodology (Event-based, Offender-based);
-    Demographics (age, race, sex); Location (prison, region); ...
+    Demographics (age, race, sex); Location (facility, region);
+    Facility Stay Breakdown (stay length); ...
     TODO: Add support for conditional violations, offense, sentencing
     - Issues 34, 33, 32
 
@@ -286,14 +348,10 @@ def characteristic_combinations(inmate, event):
     output here. They are added into augmented versions of these combinations
     later.
 
-    Example:
-        characteristic_combinations(
-        {"race": "black", "sex": "female", "age": "<25"}) =
-            [{},
-            {'age': '<25'}, {'race': 'black'}, {'sex': 'female'},
-            {'age': '<25', 'race': 'black'}, {'age': '<25', 'sex': 'female'},
-            {'race': 'black', 'sex': 'female'},
-            {'age': '<25', 'race': 'black', 'sex': 'female'}]
+    The output for a black female age 24 and an incarceration that began in
+    January 2008 and ended in February 2009 is equal to the output of:
+            for_characteristics({'age': '<25', 'race': 'black',
+                                 'sex': 'female', 'stay_length': '12-24'})
 
 
     Args:
@@ -306,9 +364,12 @@ def characteristic_combinations(inmate, event):
     """
     entry_age = age_at_date(inmate, event.original_entry_date)
     entry_age_bucket = age_bucket(entry_age)
+    event_stay_length = stay_length_from_event(event)
+    event_stay_length_bucket = stay_length_bucket(event_stay_length)
     characteristics = {"age": entry_age_bucket,
                        "race": inmate.race,
                        "sex": inmate.sex,
+                       "stay_length": event_stay_length_bucket,
                        "release_facility": event.release_facility}
 
     return for_characteristics(characteristics)
@@ -316,6 +377,16 @@ def characteristic_combinations(inmate, event):
 
 def for_characteristics(characteristics):
     """The list of all combinations of the given metric characteristics.
+
+    Example:
+        for_characteristics(
+        {"race": "black", "sex": "female", "age": "<25"}) =
+            [{},
+            {'age': '<25'}, {'race': 'black'}, {'sex': 'female'},
+            {'age': '<25', 'race': 'black'}, {'age': '<25', 'sex': 'female'},
+            {'race': 'black', 'sex': 'female'},
+            {'age': '<25', 'race': 'black', 'sex': 'female'}]
+
 
     Args:
         characteristics: a dictionary of metric characteristics to derive
