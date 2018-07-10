@@ -43,6 +43,8 @@ class RecidivismMetric(polymodel.PolyModel):
             'OFFENDER'. Required.
         age_bucket: the age bucket string of the inmate the metric describes,
             e.g. '<25' or '35-39'.
+        stay_length_bucket: the bucket string of the inmate's prison stay length
+            (in months), e.g., '<12' or '36-48'.
         race: the race of the inmate the metric describes.
         sex: the sex of the inmate the metric describes.
         release_facility: the facility the inmate was released from prior to
@@ -69,6 +71,7 @@ class RecidivismMetric(polymodel.PolyModel):
 
     # Optional characteristics
     age_bucket = ndb.StringProperty()
+    stay_length_bucket = ndb.StringProperty()
     race = ndb.StringProperty()
     sex = ndb.StringProperty()
     release_facility = ndb.StringProperty()
