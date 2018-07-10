@@ -33,7 +33,8 @@ from mapreduce import model as mapreduce_model
 from mapreduce import operation as op
 
 from tests.context import calculator
-from calculator.recidivism import metrics, pipeline
+from calculator.recidivism import (calculator, metrics, pipeline,
+                                   recidivism_event)
 from ingest.us_ny.us_ny_record import UsNyRecord
 from models.inmate import Inmate
 from models.snapshot import Snapshot
@@ -105,21 +106,30 @@ class TestMapReduceMethods(object):
                     else:
                         assert value == 1
 
-        # 16 combinations * 2 methodologies * 10 periods = 320 combinations
+        # Get the number of combinations of inmate-event characteristics.
+        original_entry_date = date(2013, 6, 17)
+        event = recidivism_event.RecidivismEvent(False, original_entry_date,
+                                                 None, "Sing Sing")
+        num_combinations = len(calculator.characteristic_combinations(
+            inmate, event))
+        assert num_combinations > 0
+
+        # num_combinations * 2 methodologies * 10 periods = 320 combinations
         # for the 2010 release cohort over all periods into the future. But we
         # do not track metrics for periods that start after today, so we need to
         # subtract for some number of periods that go beyond whatever today is.
         periods = relativedelta(date.today(), date(2010, 12, 4)).years + 1
         periods_with_single = 6
         periods_with_double = periods - periods_with_single
-        assert total_combinations_2010 == (16 * 2 * periods_with_single) + \
-            (16 * 3 * periods_with_double)
+        assert (total_combinations_2010 ==
+                (num_combinations * 2 * periods_with_single) +
+                (num_combinations * 3 * periods_with_double))
 
-        # 16 combinations * 2 methodologies * 5 periods = 160 combinations
+        # num_combinations * 2 methodologies * 5 periods = 160 combinations
         # for the 2014 release cohort over all periods into the future. Same
         # deal here as previous.
         periods = relativedelta(date.today(), date(2014, 4, 14)).years + 1
-        assert total_combinations_2014 == 16 * 2 * periods
+        assert total_combinations_2014 == num_combinations * 2 * periods
 
     def test_map_inmates_no_results(self):
         """Tests the map_inmate function when the inmate has no records."""
@@ -145,6 +155,7 @@ class TestMapReduceMethods(object):
 
         metric_key_offender = "{'follow_up_period': 4, " \
                               "'age': '<25', " \
+                              "'stay_length': '12-24', " \
                               "'sex': u'male', " \
                               "'methodology': 'OFFENDER', " \
                               "'race': u'black', " \
@@ -162,14 +173,16 @@ class TestMapReduceMethods(object):
             else:
                 expected = metrics.RecidivismMetric(
                     release_cohort=2010, follow_up_period=4, age_bucket='<25',
-                    sex='male', race='black', release_facility='Adirondack',
-                    methodology='OFFENDER', execution_id='some-id',
-                    total_records=4, total_recidivism=2.0, recidivism_rate=0.5)
+                    stay_length_bucket='12-24', sex='male', race='black',
+                    release_facility='Adirondack', methodology='OFFENDER',
+                    execution_id='some-id', total_records=4,
+                    total_recidivism=2.0, recidivism_rate=0.5)
 
                 assert result.entity == expected
 
         metric_key_event = "{'follow_up_period': 4, " \
                            "'age': '<25', " \
+                           "'stay_length': '12-24', " \
                            "'sex': u'male', " \
                            "'methodology': 'EVENT', " \
                            "'race': u'black', " \
@@ -187,9 +200,10 @@ class TestMapReduceMethods(object):
             else:
                 expected = metrics.RecidivismMetric(
                     release_cohort=2010, follow_up_period=4, age_bucket='<25',
-                    sex='male', race='black', release_facility='Adirondack',
-                    methodology='EVENT', execution_id='some-id',
-                    total_records=10, total_recidivism=4, recidivism_rate=0.4)
+                    stay_length_bucket='12-24', sex='male', race='black',
+                    release_facility='Adirondack', methodology='EVENT',
+                    execution_id='some-id', total_records=10,
+                    total_recidivism=4, recidivism_rate=0.4)
                 assert result.entity == expected
 
     def test_reduce_recidivism_events_no_values(self):
@@ -203,6 +217,7 @@ class TestMapReduceMethods(object):
 
         metric_key_offender = "{'follow_up_period': 4, " \
                               "'age': '<25', " \
+                              "'stay_length': '12-24', " \
                               "'sex': u'male', " \
                               "'methodology': 'OFFENDER', " \
                               "'race': u'black', " \

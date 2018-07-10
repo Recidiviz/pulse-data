@@ -152,6 +152,8 @@ def to_metric(metric_key, total_records, total_recidivism):
         metric.sex = key_mapping["sex"]
     if 'release_facility' in key_mapping:
         metric.release_facility = key_mapping["release_facility"]
+    if 'stay_length' in key_mapping:
+        metric.stay_length_bucket = key_mapping["stay_length"]
 
     return metric
 
