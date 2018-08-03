@@ -330,7 +330,7 @@ Region codes should follow the schema of `<country>_<region>`, such as in the ex
 deviation will be required (e.g., for the federal prison system).
 
 Once decided, verify the region code doesn't conflict with others in the `region_list` variable at the top of
-`queue_control.py`, and add it to that list.
+`scraper_control.py`, and add it to that list.
 
 **Set a name list for background scraping**
 Check what's required for a name search in the inmate search system you're adding a scraper for. Depending on its needs,
@@ -345,7 +345,7 @@ containing only the surname `aaardvark`, which prompts the NY system to return a
 All name lists (including the defaults provided) are stored in the `name_lists` subdirectory.
 
 Once you have selected the best name list for your scraper, add the region code : name list mapping to the `name_lists`
-dict at the top of `queue_control.py`.
+dict at the top of `scraper_control.py`.
 
 **Create a TaskQueue for the scraper**
 Add a new entry in `queue.yaml` with a configuration for your new scraper, using the entry for `us_ny` as your guide.
