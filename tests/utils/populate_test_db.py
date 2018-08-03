@@ -40,7 +40,7 @@ from models.env_vars import EnvironmentVariable
 from models.inmate import Inmate
 from models.record import Offense, SentenceDuration, Record
 from models.snapshot import Snapshot
-from ingest.models.scrape_session import ScrapeSession, ScrapedRecord
+from ingest.sessions import ScrapeSession, ScrapedRecord
 from utils import environment
 from utils import regions
 from utils.auth import authenticate_request

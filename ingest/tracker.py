@@ -78,10 +78,7 @@ def remove_item_from_session_and_docket(scrape_key):
         N/A
     """
     # Get the current session, remove and delete its docket item
-    session = sessions.get_open_sessions(scrape_key.region_code,
-                                         open_only=True,
-                                         most_recent_only=True,
-                                         scrape_type=scrape_key.scrape_type)
+    session = sessions.get_current_session(scrape_key)
 
     if not session:
         logging.warning("No open sessions found to remove docket item.")

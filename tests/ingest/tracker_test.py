@@ -28,7 +28,7 @@ from ingest import docket
 from ingest import sessions
 from ingest import tracker
 from ingest.models.scrape_key import ScrapeKey
-from ingest.models.scrape_session import ScrapeSession
+from ingest.sessions import ScrapeSession
 
 
 class TestTracker(object):
