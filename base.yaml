@@ -7,13 +7,13 @@ builtins:
 
 handlers:
 - url: /scraper/start
-  script: ingest.queue_control.app
+  script: ingest.scraper_control.app
 
 - url: /scraper/stop
-  script: ingest.queue_control.app
+  script: ingest.scraper_control.app
 
 - url: /scraper/resume
-  script: ingest.queue_control.app
+  script: ingest.scraper_control.app
 
 - url: /scraper/work
   script: ingest.worker.app

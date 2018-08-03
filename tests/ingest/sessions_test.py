@@ -23,7 +23,73 @@ from google.appengine.ext import ndb
 from google.appengine.ext import testbed
 from ingest import sessions
 from ingest.models.scrape_key import ScrapeKey
-from ingest.models.scrape_session import ScrapeSession
+from ingest.sessions import ScrapeSession
+
+
+class TestWriteSessions(object):
+    """Tests for the create_session, end_session, and update_session methods
+    in the module."""
+
+    def setup_method(self, _test_method):
+        # noinspection PyAttributeOutsideInit
+        self.testbed = testbed.Testbed()
+        self.testbed.activate()
+        self.testbed.init_datastore_v3_stub()
+        self.testbed.init_memcache_stub()
+        ndb.get_context().clear_cache()
+
+    def teardown_method(self, _test_method):
+        self.testbed.deactivate()
+
+    def test_create_session(self):
+        scrape_key = ScrapeKey("us_ok", "snapshot")
+        sessions.create_session(scrape_key)
+
+        session = sessions.get_current_session(scrape_key)
+        assert session.region == "us_ok"
+        assert session.scrape_type == "snapshot"
+        assert session.docket_item is None
+        assert session.end is None
+        assert session.last_scraped is None
+
+    def test_create_session_something_to_end(self):
+        scrape_key = ScrapeKey("us_wy", "background")
+        sessions.create_session(scrape_key)
+        sessions.create_session(scrape_key)
+        sessions.create_session(scrape_key)
+
+        results = sessions.get_open_sessions("us_wy",
+                                             open_only=False,
+                                             scrape_type="background")
+
+        assert len(results) == 3
+
+        current_session = results[0]
+        assert current_session.region == "us_wy"
+        assert current_session.scrape_type == "background"
+        assert current_session.docket_item is None
+        assert current_session.end is None
+        assert current_session.last_scraped is None
+
+        for i in range(1, 3):
+            session = results[i]
+            assert session.region == "us_wy"
+            assert session.scrape_type == "background"
+            assert session.end
+
+    def test_update_session(self):
+        scrape_key = ScrapeKey("us_sd", "snapshot")
+        sessions.create_session(scrape_key)
+
+        assert sessions.update_session("CAMUS, ALBERT", scrape_key)
+        session = sessions.get_current_session(scrape_key)
+        assert session.region == "us_sd"
+        assert session.scrape_type == "snapshot"
+        assert session.last_scraped == "CAMUS, ALBERT"
+
+    def test_update_session_nothing_current(self):
+        scrape_key = ScrapeKey("us_sd", "background")
+        assert not sessions.update_session("VONNEGUT, KURT", scrape_key)
 
 
 class TestAddDocketItemToCurrentSession(object):
@@ -196,6 +262,31 @@ class TestGetOpenSessions(object):
     def test_get_open_sessions_none_at_all(self):
         results = sessions.get_open_sessions("us_ny")
         assert not results
+
+    def test_get_current_session(self):
+        first = create_open_session("us_ny", "background",
+                                    datetime(2009, 6, 17), "a")
+        create_open_session("us_ny", "snapshot", datetime(2009, 6, 18), "b")
+        create_closed_session("us_ny", "background",
+                              datetime(2009, 6, 19),
+                              datetime(2009, 6, 21), "c")
+        create_open_session("us_fl", "snapshot", datetime(2009, 6, 19), "d")
+        create_open_session("us_ny", "background", datetime(2009, 6, 14), "e")
+
+        result = sessions.get_current_session(ScrapeKey("us_ny", "background"))
+        assert result == first
+
+    def test_get_recent_sessions(self):
+        first = create_open_session("us_ny", "background",
+                                    datetime(2009, 6, 17), "a")
+        create_open_session("us_ny", "snapshot", datetime(2009, 6, 18), "b")
+        third = create_closed_session("us_ny", "background",
+                                      datetime(2009, 6, 19),
+                                      datetime(2009, 6, 21), "c")
+        create_open_session("us_fl", "snapshot", datetime(2009, 6, 19), "d")
+
+        results = sessions.get_recent_sessions(ScrapeKey("us_ny", "background"))
+        assert results == [third, first]
 
 
 class TestGetSessionsWithWithLeasedDocketItems(object):

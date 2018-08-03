@@ -28,7 +28,7 @@ from google.appengine.ext import ndb
 from google.appengine.ext import testbed
 from ingest import docket
 from ingest.models.scrape_key import ScrapeKey
-from ingest.models.scrape_session import ScrapeSession
+from ingest.sessions import ScrapeSession
 from ingest.us_ny.us_ny_record import UsNyRecord
 from ingest.us_ny.us_ny_snapshot import UsNySnapshot
 from models.inmate import Inmate

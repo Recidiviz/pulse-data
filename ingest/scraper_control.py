@@ -24,9 +24,11 @@ Attributes:
 
 
 import logging
+import time
 import webapp2
 
 from google.appengine.ext import deferred
+from ingest import sessions
 from ingest.docket import load_target_list
 from ingest.models.scrape_key import ScrapeKey
 from ingest.tracker import purge_docket_and_session
@@ -78,8 +80,11 @@ class ScraperStart(webapp2.RequestHandler):
 
                     scraper = regions.get_scraper_from_cache(region)
 
-                    # Set up scraper for new session
-                    scraper.setup(scrape_type)
+                    sessions.create_session(scrape_key)
+
+                    # Help avoid race condition with new session info
+                    # vs updating that w/first task.
+                    time.sleep(5)
 
                     # Clear prior query docket for this scrape type and add new
                     # items
@@ -141,9 +146,11 @@ class ScraperStop(webapp2.RequestHandler):
             (scrape_regions, scrape_types, _params) = valid_params
 
             for region in scrape_regions:
-
                 logging.info("Stopping %s scrapes for %s."
                              % (scrape_types, region))
+
+                for scrape_type in scrape_types:
+                    sessions.end_session(ScrapeKey(region, scrape_type))
 
                 scraper = regions.get_scraper_from_cache(region)
                 scraper.stop_scrape(scrape_types)
@@ -187,8 +194,13 @@ class ScraperResume(webapp2.RequestHandler):
                     logging.info("Resuming %s scrape for %s."
                                  % (scrape_type, region))
 
+                    sessions.create_session(ScrapeKey(region, scrape_type))
+
+                    # Help avoid race condition with new session info
+                    # vs updating that w/first task.
+                    time.sleep(5)
+
                     scraper = regions.get_scraper_from_cache(region)
-                    scraper.setup(scrape_type)
                     scraper.resume_scrape(scrape_type)
 
         else:

@@ -25,7 +25,7 @@ sources.
 
 import ingest.docket
 import ingest.models
-import ingest.queue_control
+import ingest.scraper_control
 import ingest.sessions
 import ingest.tracker
 import ingest.us_ny

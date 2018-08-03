@@ -20,4 +20,3 @@
 scraper vendors and regions."""
 
 from ingest.models import scrape_key
-from ingest.models import scrape_session
