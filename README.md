@@ -6,7 +6,7 @@ At the center of Recidiviz is our platform for tracking granular recidivism metr
 for the ingest of corrections records from different criminal justice systems, and for calculation of recidivism metrics
 from the ingested records.
 
-Read more on data ingest in [`/ingest`](./ingest) and recidivism calculation in [`/calculator`](./calculator).
+Read more on data ingest in [`/recidiviz/ingest`](./recidiviz/ingest) and recidivism calculation in [`/recidiviz/calculator`](./recidiviz/calculator).
 
 License
 -------
@@ -54,7 +54,7 @@ so we don't have to worry about creating that functionality from scratch. Error 
 Install the GCloud SDK (we recommend using the [interactive installer](https://cloud.google.com/sdk/downloads#interactive)),
 and clone the recidiviz repo from Github.
 
-Your mileage may vary here. If you've installed via the interactive installer and cannot find `google_appengine` inside of 
+Your mileage may vary here. If you've installed via the interactive installer and cannot find `google_appengine` inside of
 `google-cloud-sdk/platform/`, then you will need to install google_appengine separately by doing:
 `gcloud components install app-engine-python`
 
@@ -98,7 +98,7 @@ The configuration in `setup.cfg` and `.coveragerc` will ensure the right code is
 metrics are displayed.
 
 #### Checking code style
-Run Pylint across the main body of code, in particular: `pylint *.py calculator ingest models tests utils`.
+Run Pylint across the main body of code, in particular: `pylint *.py recidiviz`.
 
 The output will include individual lines for all style violations, followed by a handful of reports, and finally a
 general code score out of 10. Fix any new violations in your commit. If you believe there is cause for a rule change,
