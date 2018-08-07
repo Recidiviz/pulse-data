@@ -7,23 +7,23 @@ builtins:
 
 handlers:
 - url: /scraper/start
-  script: ingest.scraper_control.app
+  script: recidiviz.ingest.scraper_control.app
 
 - url: /scraper/stop
-  script: ingest.scraper_control.app
+  script: recidiviz.ingest.scraper_control.app
 
 - url: /scraper/resume
-  script: ingest.scraper_control.app
+  script: recidiviz.ingest.scraper_control.app
 
 - url: /scraper/work
-  script: ingest.worker.app
+  script: recidiviz.ingest.worker.app
 
 - url: /_ah/pipeline.*
-  script: mapreduce.lib.pipeline.handlers._APP
+  script: recidiviz.mapreduce.lib.pipeline.handlers._APP
   login: admin
 
 - url: /calculator_pipeline
-  script: calculator.recidivism.pipeline.app
+  script: recidiviz.calculator.recidivism.pipeline.app
 
 - url: /datastore_export
   script: cloud_datastore_admin.app
@@ -32,4 +32,4 @@ handlers:
 # MIGRATION ONLY
 # TODO: Remove post-migration
 - url: /data_migration
-  script: utils.data_migration.app
+  script: recidiviz.utils.data_migration.app

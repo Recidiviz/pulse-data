@@ -4,7 +4,8 @@ python:
 install:
 - pip install -r requirements.txt
 script:
-- pylint *.py calculator models tests utils
+# TODO: this should be "pylint *.py recidiviz" after ingest gets up to lint.
+- pylint *.py recidiviz/calculator recidiviz/models recidiviz/tests recidiviz/utils
 - pytest
 after_success:
 - coveralls

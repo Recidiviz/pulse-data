@@ -11,7 +11,7 @@ impactful, and to keep Recidiviz effective as we grow.
 
 ## Code of Conduct
 
-The Recidiviz project and everyone participating in it are governed by the 
+The Recidiviz project and everyone participating in it are governed by the
 [Recidiviz Code of Conduct](CODE_OF_CONDUCT.md). By contributing, you agree to
 uphold this code and to treat others with dignity and respect. Please report
 unacceptable behavior to [core-team@recidiviz.com](mailto:core-team@recidiviz.com).
@@ -33,12 +33,12 @@ miss out on your help.
 
 ### Reporting Bugs
 
-Send any bugs you find our way by filing an issue against one of our 
+Send any bugs you find our way by filing an issue against one of our
 repositories. Don't overthink picking the repository: if it's related to data
 ingest or calculation, submit it [here](https://github.com/Recidiviz/pulse-data/issues).
 If it's related to our website, submit it [there](https://github.com/Recidiviz/recidiviz.com/issues).
 
-Please provide as much information as you can to help us reproduce and fix the 
+Please provide as much information as you can to help us reproduce and fix the
 bug. This may include, but is not limited to:
 
 * A concise title and clear description of the bug and how it manifests
@@ -46,7 +46,7 @@ bug. This may include, but is not limited to:
 * A description of what you expected to occur and how it differed from reality
 * A description of any relevant data that was present and//or used (_sans PII of
 any kind_)
-* Environment information, such as your OS or available memory, or versions of 
+* Environment information, such as your OS or available memory, or versions of
 Python, Google Cloud SDK, or any relevant libraries
 
 ### Submitting Feature Requests
@@ -97,19 +97,19 @@ where you feel less comfortable or need to learn something new.
 
 Once you have selected an issue and assigned it to yourself, you will start
 writing the code on an appropriately named branch on your local machine. If you
-are part of the Recidiviz Team, you may push branches directly to the 
+are part of the Recidiviz Team, you may push branches directly to the
 `recidiviz/pulse-data` remote. Otherwise, you may push branches to a [fork](https://help.github.com/articles/fork-a-repo/)
 of the repository.
 
 Before issuing a pull request, run our linting and test suite over your changes
 to ensure no regression, as described in [our Readme](README.md):
 ```bash
-pylint *.py calculator models scraper tests utils
+pylint *.py recidiviz
 pytest
 ```
 
-These same commands will be run by our continuous integration (CI) suite and 
-your pull request will be "built against" automatically to show whether it 
+These same commands will be run by our continuous integration (CI) suite and
+your pull request will be "built against" automatically to show whether it
 passes. Stay ahead of the curve by running these throughout the development
 process to help you avoid any surprises.
 
@@ -123,15 +123,15 @@ feedback if you believe it would be helpful. If you do so, please format the
 title as "WIP: My title here."
 
 Make sure the pull request description explicitly lists everything that the work
-does, and references any issues it contributes to. 
+does, and references any issues it contributes to.
 
 ### Before Merging
 
 Before merging, all commits should be rebased and squashed down into a single
 atomic commit that does one thing. Squashing can be done either locally by hand
-or by an approver with the "Squash and Merge" button. 
+or by an approver with the "Squash and Merge" button.
 
-If your pull request does two separate things, it should likely (but not 
+If your pull request does two separate things, it should likely (but not
 necessarily) be multiple pull requests. We prefer for pull requests to be
 focused on one feature, issue, etc.
 
@@ -141,7 +141,7 @@ lower our test coverage. (As noted above, our CI suite is run automatically for
 each new commit to each new pull request and will output the results on the pull
 request itself.) We will explicitly grant exceptions to this rule where
 appropriate. Modifying lint rules will not be granted without a well-reasoned
-justification. 
+justification.
 
 Once the above conditions are met, someone from the Recidiviz Team will merge
 your pull request (and delete the branch if issued against our remote).
@@ -153,4 +153,4 @@ Follow the [Google Python Style Guide](https://google.github.io/styleguide/pygui
 The [linting configuration](.pylintrc) should adhere to this style guide and
 help you follow it automatically. You can use Pylint support for warning
 suppression if you find it necessary, but this may be argued against during
-code review. 
+code review.
