@@ -22,7 +22,6 @@ This includes infrastructure, logic, and models for calculating recidivism
 metrics from ingested records and persisting those metrics.
 """
 
-from recidiviz.calculator.recidivism import calculator
 from recidiviz.calculator.recidivism import identifier
 from recidiviz.calculator.recidivism import pipeline
 from recidiviz.calculator.recidivism import recidivism_event
