@@ -171,12 +171,12 @@ def test_get_scraper_module():
 
 def test_get_scraper():
     scraper = regions.get_scraper('us_ny', 'us_ny_scraper')
-    assert scraper.__name__ == 'recidiviz.ingest.us_ny.us_ny_scraper'
+    assert type(scraper).__name__ == 'UsNyScraper'
 
 
 def test_region_class():
     region = with_manifest(regions.Region, 'us_ny')
-    assert region.scraper().__name__ == 'recidiviz.ingest.us_ny.us_ny_scraper'
+    assert region.scraper().__name__ == 'recidiviz.ingest.us_ny'
     assert region.get_inmate_kind().__name__ == 'UsNyInmate'
     assert region.get_record_kind().__name__ == 'UsNyRecord'
     assert region.get_snapshot_kind().__name__ == 'UsNySnapshot'
@@ -216,7 +216,7 @@ class TestRegionsCache(object):
 
     def test_get_scraper_from_cache(self):
         scraper = regions.get_scraper_from_cache('us_ny')
-        assert scraper.__name__ == 'recidiviz.ingest.us_ny.us_ny_scraper'
+        assert type(scraper).__name__ == 'UsNyScraper'
 
         assert memcache.get('us_ny_scraper_package') == 'us_ny'
         assert memcache.get('us_ny_scraper_class') == 'us_ny_scraper'
