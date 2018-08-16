@@ -18,6 +18,7 @@
 """Infrastructure for workers in the ingest pipeline."""
 
 
+import json
 import logging
 import webapp2
 from requests.packages.urllib3.contrib.appengine import TimeoutError
@@ -85,6 +86,7 @@ class Scraper(webapp2.RequestHandler):
 
         try:
             if params:
+                params = json.loads(params)
                 result = scraper_task(params)
             else:
                 result = scraper_task()

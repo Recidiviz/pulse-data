@@ -84,7 +84,7 @@ class Region(object):
             Region's fully resolved scraper class
             (e.g., ingest.us_ny.us_ny_scraper)
         """
-        return get_scraper(self.scraper_package, self.scraper_class)
+        return get_scraper_module(self.scraper_package)
 
     def get_inmate_kind(self):
         """Return the Inmate PolyModel sub-kind for this region
@@ -148,9 +148,10 @@ def get_subkind(region_code, parent_kind_name):
 def get_scraper_module(scraper_package):
     """Retrieve top-level module for the given region
 
-    Retrieves the scraper module for a particular region. Note that this is
-    only the module containing the scraper and/or entity subclasses/models, not
-    the scraper itself (use get_scraper() to get the scraper).
+    Retrieves the scraper module for a particular region. Note that
+    this is only the module containing the scraper and/or entity
+    subclasses/models, not the scraper itself (use get_scraper() to
+    get an instance of the scraper class).
 
     Some regions will use a general-purpose scraper that is not in the same
     package as the entity sub-kinds for that region. For such a region, you
@@ -162,6 +163,7 @@ def get_scraper_module(scraper_package):
 
     Returns:
         Scraper module (e.g., ingest.us_ny)
+
     """
     top_level = __import__("recidiviz")
     ingest_module = getattr(top_level, "ingest")
@@ -170,20 +172,23 @@ def get_scraper_module(scraper_package):
     return scraper_module
 
 
-def get_scraper(scraper_package, scraper_class):
-    """Retrieve the scraper for a particular region
+def get_scraper(scraper_package, scraper_classname):
+    """Retrieve a scraper object for a particular region
 
     Args:
         scraper_package: (string) Name of the region's scraper package
-        scraper_class: (string) Name of the scraper class itself
+        scraper_classname: (string) Name of the scraper class itself
 
     Returns:
-        Region's fully resolved scraper class (e.g., ingest.us_ny.us_ny_scraper)
+        Region's fully resolved scraper class (e.g.,
+        ingest.us_ny.us_ny_scraper)
     """
     scraper_module = get_scraper_module(scraper_package)
-    scraper = getattr(scraper_module, scraper_class)
+    scraper = getattr(scraper_module, scraper_classname)
+    scraper_class = getattr(scraper, ''.join(
+        [s.title() for s in scraper_package.split('_')]) + "Scraper")
 
-    return scraper
+    return scraper_class()
 
 
 def get_scraper_from_cache(region_code):
