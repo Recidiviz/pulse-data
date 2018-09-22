@@ -33,7 +33,7 @@ from recidiviz.tests.context import calculator
 from recidiviz.calculator.recidivism import calculator
 from recidiviz.calculator.recidivism import recidivism_event
 from recidiviz.ingest.us_ny.us_ny_record import UsNyRecord
-from recidiviz.models.inmate import Inmate
+from recidiviz.models.person import Person
 from recidiviz.models.snapshot import Snapshot
 
 
@@ -194,47 +194,47 @@ def test_relevant_follow_up_periods():
 
 
 def test_age_at_date_earlier_month():
-    birthday = date(1989, 6, 17)
+    birthdate = date(1989, 6, 17)
     check_date = date(2014, 4, 15)
-    inmate = Inmate(birthday=birthday)
+    person = Person(birthdate=birthdate)
 
-    assert calculator.age_at_date(inmate, check_date) == 24
+    assert calculator.age_at_date(person, check_date) == 24
 
 
 def test_age_at_date_same_month_earlier_date():
-    birthday = date(1989, 6, 17)
+    birthdate = date(1989, 6, 17)
     check_date = date(2014, 6, 16)
-    inmate = Inmate(birthday=birthday)
+    person = Person(birthdate=birthdate)
 
-    assert calculator.age_at_date(inmate, check_date) == 24
+    assert calculator.age_at_date(person, check_date) == 24
 
 
 def test_age_at_date_same_month_same_date():
-    birthday = date(1989, 6, 17)
+    birthdate = date(1989, 6, 17)
     check_date = date(2014, 6, 17)
-    inmate = Inmate(birthday=birthday)
+    person = Person(birthdate=birthdate)
 
-    assert calculator.age_at_date(inmate, check_date) == 25
+    assert calculator.age_at_date(person, check_date) == 25
 
 
 def test_age_at_date_same_month_later_date():
-    birthday = date(1989, 6, 17)
+    birthdate = date(1989, 6, 17)
     check_date = date(2014, 6, 18)
-    inmate = Inmate(birthday=birthday)
+    person = Person(birthdate=birthdate)
 
-    assert calculator.age_at_date(inmate, check_date) == 25
+    assert calculator.age_at_date(person, check_date) == 25
 
 
 def test_age_at_date_later_month():
-    birthday = date(1989, 6, 17)
+    birthdate = date(1989, 6, 17)
     check_date = date(2014, 7, 11)
-    inmate = Inmate(birthday=birthday)
+    person = Person(birthdate=birthdate)
 
-    assert calculator.age_at_date(inmate, check_date) == 25
+    assert calculator.age_at_date(person, check_date) == 25
 
 
-def test_age_at_date_birthday_unknown():
-    assert calculator.age_at_date(Inmate(), datetime.today()) is None
+def test_age_at_date_birthdate_unknown():
+    assert calculator.age_at_date(Person(), datetime.today()) is None
 
 
 def test_age_bucket():
@@ -384,7 +384,7 @@ class TestMapRecidivismCombinations(object):
     def test_map_recidivism_combinations(self):
         """Tests the map_recidivism_combinations function where there is
         recidivism."""
-        inmate = Inmate(id="test-inmate", birthday=date(1984, 8, 31),
+        person = Person(id="test-person", birthdate=date(1984, 8, 31),
                         race="white", sex="female")
 
         recidivism_events_by_cohort = {
@@ -394,7 +394,7 @@ class TestMapRecidivismCombinations(object):
         }
 
         recidivism_combinations = calculator.map_recidivism_combinations(
-            inmate, recidivism_events_by_cohort)
+            person, recidivism_events_by_cohort)
 
         # 32 combinations of demographics, facility, and stay length
         # * 2 methodologies * 10 periods = 640 metrics
@@ -409,7 +409,7 @@ class TestMapRecidivismCombinations(object):
     def test_map_recidivism_combinations_multiple_in_period(self):
         """Tests the map_recidivism_combinations function where there are
         multiple instances of recidivism within a follow-up period."""
-        inmate = Inmate(id="test-inmate", birthday=date(1884, 8, 31),
+        person = Person(id="test-person", birthdate=date(1884, 8, 31),
                         race="white", sex="female")
 
         recidivism_events_by_cohort = {
@@ -422,7 +422,7 @@ class TestMapRecidivismCombinations(object):
         }
 
         recidivism_combinations = calculator.map_recidivism_combinations(
-            inmate, recidivism_events_by_cohort)
+            person, recidivism_events_by_cohort)
 
         # For the first event:
         #   For the first 5 periods:
@@ -445,7 +445,7 @@ class TestMapRecidivismCombinations(object):
     def test_map_recidivism_combinations_no_recidivism(self):
         """Tests the map_recidivism_combinations function where there is no
         recidivism."""
-        inmate = Inmate(id="test-inmate", birthday=date(1984, 8, 31),
+        person = Person(id="test-person", birthdate=date(1984, 8, 31),
                         race="white", sex="female")
 
         recidivism_events_by_cohort = {
@@ -454,7 +454,7 @@ class TestMapRecidivismCombinations(object):
         }
 
         recidivism_combinations = calculator.map_recidivism_combinations(
-            inmate, recidivism_events_by_cohort)
+            person, recidivism_events_by_cohort)
 
         # 32 combinations of demographics, facility, and stay length
         # * 2 methodologies * 10 periods = 640 metrics
@@ -465,7 +465,7 @@ class TestMapRecidivismCombinations(object):
     def test_map_recidivism_combinations_recidivated_after_last_period(self):
         """Tests the map_recidivism_combinations function where there is
         recidivism but it occurred after the last follow-up period we track."""
-        inmate = Inmate(id="test-inmate", birthday=date(1984, 8, 31),
+        person = Person(id="test-person", birthdate=date(1984, 8, 31),
                         race="white", sex="female")
 
         recidivism_events_by_cohort = {
@@ -475,7 +475,7 @@ class TestMapRecidivismCombinations(object):
         }
 
         recidivism_combinations = calculator.map_recidivism_combinations(
-            inmate, recidivism_events_by_cohort)
+            person, recidivism_events_by_cohort)
 
         # 32 combinations of demographics, facility, and stay length
         # * 2 methodologies * 10 periods = 640 metrics

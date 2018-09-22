@@ -27,6 +27,6 @@ capture, conceptually:
 """
 
 
-from . import inmate
+from . import person
 from . import record
 from . import snapshot
