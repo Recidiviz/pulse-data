@@ -29,4 +29,5 @@ import recidiviz.ingest.scraper_control
 import recidiviz.ingest.sessions
 import recidiviz.ingest.tracker
 import recidiviz.ingest.us_ny
+import recidiviz.ingest.us_vt
 import recidiviz.ingest.worker

@@ -45,6 +45,8 @@ class Inmate(polymodel.PolyModel):
         given_names: (string) First and middle names (space separated),
             if available
         last_name: (string) Last name, if provided
+        suffix: (string) Suffix portion of the person's name.
+        alias: (string) Alias(es) known to be used by this person.
         birthday: (date) Birth date, if available
         age: (int) Age, if birth date is not available.
         region: (string) The region code for the scraper that captured this
@@ -60,6 +62,8 @@ class Inmate(polymodel.PolyModel):
     inmate_id_is_fuzzy = ndb.BooleanProperty()
     given_names = ndb.StringProperty()
     last_name = ndb.StringProperty()
+    suffix = ndb.StringProperty()
+    alias = ndb.StringProperty()
     birthday = ndb.DateProperty()
     age = ndb.IntegerProperty()
     region = ndb.StringProperty()
