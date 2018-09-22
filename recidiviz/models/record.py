@@ -87,27 +87,44 @@ class Record(polymodel.PolyModel):
         created_on: (datetime) Creation date of this record. If data is
             migrated in the future, effort will be made to preserve this field
         updated_on: (date) Date of last change / update to this record
+        status: (string) Status of the person at this time (sentenced,
+            detained, released, etc.)
         offense: (record.Offense) State-provided strings describing the crimes
             of conviction and (if available) class of crimes.
         record_id: (string) The identifier the state site uses for this crime
+        given_names: (string) Any given names provided by the source
+        last_name: (string) The inmate's surname, as provided by the source
+        birthday: (date) Date of birth for the inmate as provided by the source
+        sex: (string) Sex of the prisoner as provided by the prison system
+        race: (string) Race of the prisoner as provided by prison system
         min_sentence: (record.SentenceDuration) Minimum sentence to be served
         max_sentence: (record.SentenceDuration) Maximum sentence to be served
         custody_date: (date) Date the inmate's sentence started
         offense_date: (date) Date the offense was committed
         latest_facility: (string) The name of the most recent facility the
             inmate has been held in
+        release_date: (date) Date of actual release.
+        earliest_release_date: (date) Earliest date release is possible.
         latest_release_date: (date) Most recent date of release
         latest_release_type: (string) Reason given for most recent release
         is_released: (bool) Whether the inmate has been released from this
             sentence
-        given_names: (string) Any given names provided by the source
-        last_name: (string) The inmate's surname, as provided by the source
-        birthday: (date) Date of birth for the inmate as provided by the source
-        sex: (string) Sex of the prisoner as provided by the prison system
-        race: (string) Race of the prisoner as provided by prison system
+        earliest_release_date: (date) Earliest date to be released based on
+            min_sentence. In certain circumstances, may be released before
+            this.
+        community_supervision_agency: (string) The parole or probation office
+            that does or will have jurisdiction over this person after release.
+        parole_officer: (string) Name of the parole officer.
+        case_worker: (string) Name of the case worker.
     """
+    status = ndb.StringProperty()
     offense = ndb.StructuredProperty(Offense, repeated=True)
     record_id = ndb.StringProperty()
+    given_names = ndb.StringProperty()
+    last_name = ndb.StringProperty()
+    birthday = ndb.DateProperty()
+    sex = ndb.StringProperty()
+    race = ndb.StringProperty()
     min_sentence_length = ndb.StructuredProperty(SentenceDuration,
                                                  repeated=False)
     max_sentence_length = ndb.StructuredProperty(SentenceDuration,
@@ -115,13 +132,13 @@ class Record(polymodel.PolyModel):
     custody_date = ndb.DateProperty()
     offense_date = ndb.DateProperty()
     latest_facility = ndb.StringProperty()
+    release_date = ndb.DateProperty()
+    earliest_release_date = ndb.DateProperty()
     latest_release_date = ndb.DateProperty()
     latest_release_type = ndb.StringProperty()
     is_released = ndb.BooleanProperty()
-    given_names = ndb.StringProperty()
-    last_name = ndb.StringProperty()
-    birthday = ndb.DateProperty()
-    sex = ndb.StringProperty()
-    race = ndb.StringProperty()
+    community_supervision_agency = ndb.StringProperty()
+    parole_officer = ndb.StringProperty()
+    case_worker = ndb.StringProperty()
     created_on = ndb.DateTimeProperty(auto_now_add=True)
     updated_on = ndb.DateProperty(auto_now=True)

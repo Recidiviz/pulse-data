@@ -44,7 +44,7 @@ def test_get_and_validate_params_all():
     params = [("region", "all"), ("scrape_type", "all")]
 
     results = scraper_control.get_and_validate_params(params)
-    assert results == (["us_ny"], ["background", "snapshot"], params)
+    assert results == (["us_ny", "us_vt"], ["background", "snapshot"], params)
 
 
 def test_get_and_validate_params_invalid_region():

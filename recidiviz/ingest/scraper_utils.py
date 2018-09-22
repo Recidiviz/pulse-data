@@ -58,8 +58,8 @@ def parse_date_string(date_string, inmate_id):
             result = parser.parse(date_string)
             result = result.date()
         except ValueError:
-            logging.debug("Couldn't parse date string '%s' for inmate: %s",
-                          date_string, inmate_id)
+            logging.warning("Couldn't parse date string '%s' for inmate: %s",
+                            date_string, inmate_id)
             return None
 
         # If month-only date, manually force date to first of the month.
