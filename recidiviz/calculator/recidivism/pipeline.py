@@ -35,20 +35,20 @@ from .identifier import find_recidivism
 from .metrics import RecidivismMetric
 
 
-def map_inmate(inmate):
+def map_person(person):
     """Performs the `map` phase of the pipeline.
 
-    Maps the Inmate read from the database into a set of metric combinations for
-    each Record from which that Inmate has been released from prison. That is,
+    Maps the Person read from the database into a set of metric combinations for
+    each Record from which that Person has been released from prison. That is,
     this identifies each instance of recidivism or not-recidivism following a
     release from prison, and maps each to all unique combinations of
     characteristics whose calculations will be impacted by that instance.
 
     Args:
-        inmate: an Inmate to be mapped into recidivism metrics.
+        person: an Person to be mapped into recidivism metrics.
 
     Yields:
-        Metrics for each unique recidivism metric derived from the inmate. Also
+        Metrics for each unique recidivism metric derived from the person. Also
         MapReduce Increment counters for a variety of metrics related to the
         `map` phase.
     """
@@ -56,10 +56,10 @@ def map_inmate(inmate):
     include_conditional_violations = \
         params.get('include_conditional_violations')
 
-    recidivism_events = find_recidivism(inmate, include_conditional_violations)
-    metric_combinations = map_recidivism_combinations(inmate, recidivism_events)
+    recidivism_events = find_recidivism(person, include_conditional_violations)
+    metric_combinations = map_recidivism_combinations(person, recidivism_events)
 
-    yield op.counters.Increment('total_inmates_mapped')
+    yield op.counters.Increment('total_people_mapped')
 
     for combination in metric_combinations:
         yield op.counters.Increment('total_metric_combinations_mapped')
@@ -228,7 +228,7 @@ class CalculationPipeline(base_handler.PipelineBase):
              A MapReduce pipeline to start.
         """
         mapper_params = {
-            "entity_kind": 'recidiviz.models.inmate.Inmate',
+            "entity_kind": 'recidiviz.models.person.Person',
             "include_conditional_violations": include_conditional_violations
         }
 
@@ -238,7 +238,7 @@ class CalculationPipeline(base_handler.PipelineBase):
         yield mapreduce_pipeline.MapreducePipeline(
             'Calculate recidivism across various dimensions',
             input_reader_spec='mapreduce.input_readers.DatastoreInputReader',
-            mapper_spec='recidiviz.calculator.recidivism.pipeline.map_inmate',
+            mapper_spec='recidiviz.calculator.recidivism.pipeline.map_person',
             mapper_params=mapper_params,
             reducer_spec='recidiviz.calculator.recidivism.pipeline.'
                          'reduce_recidivism_events',

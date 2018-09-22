@@ -266,8 +266,8 @@ many regions provide information that is unique or shared only by one or two oth
 
 To handle this, Recidiviz uses the [PolyModel inheritance](https://cloud.google.com/appengine/docs/standard/python/ndb/polymodelclass) provided as part of the AppEngine datastore. This allows each
 scraper to define a subclass of the primary data types which have the common fields of the top-level models, but also
-several region-specific fields to capture more information. For instance, the `us_ny` scraper extends `Inmate`, `Record`,
-and `Snapshot` models to become `UsNyInmate`, `UsNyRecord`, and `UsNySnapshot`. When it stores new entities
+several region-specific fields to capture more information. For instance, the `us_ny` scraper extends `Inmate`
+and `Record` models to become `UsNyInmate` and `UsNyRecord`. When it stores new entities
 using these models, the Recidiviz-wide calculation process will still see these subclass records in its queries for
 `Inmate`, `Record`, and `Snapshot`, and still be able to pull relevant data from the fields it expects for those
 top-level models.
