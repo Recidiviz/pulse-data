@@ -33,3 +33,18 @@ regions:
     region_name: New York State
     scraper_package: us_ny
     timezone: America/New_York
+  us_vt:
+    region_name: UsVt
+    agency_name: Vermont Department of Corrections
+    region_code: us_vt
+    agency_type: unified
+    queues:
+    - us-vt-scraper
+    base_url: https://omsweb.public-safety-cloud.com/jtclientweb
+    names_file: us_ny_names.csv
+    entity_kinds:
+      inmate: UsVtInmate
+      record: UsVtRecord
+      snapshot: UsVtSnapshot
+    scraper_package: us_vt
+    timezone: America/New_York

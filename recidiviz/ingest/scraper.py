@@ -24,15 +24,28 @@ import abc
 import json
 import logging
 
+import requests_toolbelt.adapters.appengine
 import requests
 
 from google.appengine.ext import deferred
 from google.appengine.api import taskqueue
+from google.appengine.api import urlfetch
 from recidiviz.ingest import scraper_utils
 from recidiviz.ingest import sessions
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest import tracker
 from recidiviz.utils.regions import Region
+
+
+# Use the App Engine Requests adapter to make sure that Requests plays
+# nice with GAE
+requests_toolbelt.adapters.appengine.monkeypatch()
+urlfetch.set_default_fetch_deadline(60)
+
+# Squelch urllib3 / sockets platform warning
+requests.packages.urllib3.disable_warnings(
+    requests.packages.urllib3.contrib.appengine.AppEnginePlatformWarning
+)
 
 
 class Scraper(object):
@@ -59,7 +72,6 @@ class Scraper(object):
             self.get_region().region_code + "_next_page_fail_counter")
         self.scraper_work_url = '/scraper/work'
 
-
     @abc.abstractmethod
     def inmate_id_to_record_id(self, inmate_id):
         """Abstract method for child classes to map an inmate ID to a DB
@@ -73,7 +85,6 @@ class Scraper(object):
         """
         pass
 
-
     @abc.abstractmethod
     def get_initial_task(self):
         """Abstract method for child classes to specify the name of the first
@@ -85,7 +96,6 @@ class Scraper(object):
         """
         pass
 
-
     def get_region(self):
         """Retrieve the region object associated with this scraper.
 
@@ -94,7 +104,6 @@ class Scraper(object):
 
         """
         return self.region
-
 
     def start_scrape(self, scrape_type):
         """Start new scrape session / query against corrections site
@@ -120,7 +129,6 @@ class Scraper(object):
         params = {"scrape_type": scrape_type, "content": docket_item}
 
         self.add_task(self.get_initial_task(), params)
-
 
     def stop_scrape(self, scrape_types):
         """Stops all active scraping tasks, resume non-targeted scrape types
@@ -160,7 +168,6 @@ class Scraper(object):
 
         q = taskqueue.Queue(self.get_region().queues[0])
         q.purge()
-
 
     def resume_scrape(self, scrape_type):
         """Resume a stopped scrape from where it left off
@@ -219,7 +226,6 @@ class Scraper(object):
         params = {'scrape_type': scrape_type, 'content': content}
         self.add_task(self.get_initial_task(), params)
 
-
     def fetch_page(self, url, data=None):
         """Fetch content from a URL. If data is None (the default), we perform
         a GET for the page. If the data is set, it must be a dict of parameters
@@ -270,7 +276,6 @@ class Scraper(object):
 
         return page
 
-
     def add_task(self, task_name, params):
         """ Add a task to the task queue.
 
@@ -293,7 +298,6 @@ class Scraper(object):
                       params={'region': self.get_region().region_code,
                               'task': task_name,
                               'params': params_serial})
-
 
     def iterate_docket_item(self, scrape_type):
         """Leases new docket item, updates current session, returns item
