@@ -47,7 +47,7 @@ from dateutil.relativedelta import relativedelta
 FOLLOW_UP_PERIODS = range(1, 11)
 
 
-def map_recidivism_combinations(inmate, recidivism_events):
+def map_recidivism_combinations(person, recidivism_events):
     """Transforms the given recidivism events and inmate details into unique
     recidivism metric combinations to count.
 
@@ -82,8 +82,8 @@ def map_recidivism_combinations(inmate, recidivism_events):
     ]
 
     Args:
-        inmate: the inmate
-        recidivism_events: the list of RecidivismEvents for the inmate.
+        person: the person
+        recidivism_events: the list of RecidivismEvents for the person.
 
     Returns:
         A list of key-value tuples representing specific metric combinations and
@@ -93,7 +93,7 @@ def map_recidivism_combinations(inmate, recidivism_events):
     all_reincarceration_dates = reincarceration_dates(recidivism_events)
 
     for release_cohort, event in recidivism_events.iteritems():
-        characteristic_combos = characteristic_combinations(inmate, event)
+        characteristic_combos = characteristic_combinations(person, event)
 
         earliest_recidivism_period = earliest_recidivated_follow_up_period(
             event.release_date, event.reincarceration_date)
@@ -228,20 +228,20 @@ def relevant_follow_up_periods(release_date, current_date, follow_up_periods):
             if release_date + relativedelta(years=period - 1) <= current_date]
 
 
-def age_at_date(inmate, check_date):
+def age_at_date(person, check_date):
     """The age of the inmate at the given date.
 
     Args:
-        inmate: the inmate
+        person: the inmate
         check_date: the date to check
 
     Returns:
-        The age of the inmate at the given date. None if no birthday is known.
+        The age of the person at the given date. None if no birthdate is known.
     """
-    birthday = inmate.birthday
-    return None if birthday is None else \
-        check_date.year - birthday.year - \
-        ((check_date.month, check_date.day) < (birthday.month, birthday.day))
+    birthdate = person.birthdate
+    return None if birthdate is None else \
+        check_date.year - birthdate.year - \
+        ((check_date.month, check_date.day) < (birthdate.month, birthdate.day))
 
 
 def age_bucket(age):
@@ -327,7 +327,7 @@ def stay_length_bucket(stay_length):
     return '120<'
 
 
-def characteristic_combinations(inmate, event):
+def characteristic_combinations(person, event):
     """The list of all combinations of the metric characteristics picked from
     the given inmate and recidivism event.
 
@@ -355,20 +355,20 @@ def characteristic_combinations(inmate, event):
 
 
     Args:
-        inmate: the inmate we are picking characteristics from
+        person: the person we are picking characteristics from
         event: the recidivism event we are picking characteristics from
 
     Returns:
         A list of dictionaries containing all unique combinations of
         characteristics.
     """
-    entry_age = age_at_date(inmate, event.original_entry_date)
+    entry_age = age_at_date(person, event.original_entry_date)
     entry_age_bucket = age_bucket(entry_age)
     event_stay_length = stay_length_from_event(event)
     event_stay_length_bucket = stay_length_bucket(event_stay_length)
     characteristics = {"age": entry_age_bucket,
-                       "race": inmate.race,
-                       "sex": inmate.sex,
+                       "race": person.race,
+                       "sex": person.sex,
                        "stay_length": event_stay_length_bucket,
                        "release_facility": event.release_facility}
 

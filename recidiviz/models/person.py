@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Inmates in the criminal justice system."""
+"""Incarcerated individuals in the criminal justice system."""
 
 
 from google.appengine.ext import ndb
@@ -58,13 +58,62 @@ class Inmate(polymodel.PolyModel):
         updated_on: (date) Python datetime object of last time we updated
             this record
     """
+    # TODO: Delete this class after migration
     inmate_id = ndb.StringProperty()
     inmate_id_is_fuzzy = ndb.BooleanProperty()
     given_names = ndb.StringProperty()
     last_name = ndb.StringProperty()
-    suffix = ndb.StringProperty()
-    alias = ndb.StringProperty()
     birthday = ndb.DateProperty()
+    age = ndb.IntegerProperty()
+    region = ndb.StringProperty()
+    sex = ndb.StringProperty()
+    race = ndb.StringProperty()
+    created_on = ndb.DateTimeProperty(auto_now_add=True)
+    updated_on = ndb.DateProperty(auto_now=True)
+
+
+class Person(polymodel.PolyModel):
+    """Top-level PolyModel class to describe an incarcerated individual
+
+    Datastore model for a snapshot of a particular person listing. This is
+    intended to be a 1:1 mapping to human beings in the jail or prison system.
+    We don't want multiple copies of the same person, so we update them when
+    re-scraped.
+
+    Individual region scrapers are expected to create their own subclasses which
+    inherit these common properties, then add more if their region has more
+    region-specific fields available. See us_ny_scraper.py for an example.
+
+    If no corrections-provided ID can be found for the person, we generate a
+    random 10-digit alphanumeric ID and set record_id_is_fuzzy to True.
+
+    For any person listing, there will be 1+ Records and 1+ Snapshots.
+
+    Attributes:
+        person_id: (string) The identifier the state site uses for this person
+        person_id_is_fuzzy: Whether we generated this ID/it's not consistent
+            across multiple scrapes of the same person.
+        given_names: (string) First and middle names (space separated),
+            if available
+        surname: (string) Last name, if provided
+        birthdate: (date) Birth date, if available
+        age: (int) Age, if birth date is not available.
+        region: (string) The region code for the scraper that captured this
+        sex: (string) Sex of person in listing, as provided by prison system
+        race: (sring) Race of person in the listing, for now string provided
+            by region
+        created_on: (datetime) Python datetime object of first time we added
+            this record
+        updated_on: (date) Python datetime object of last time we updated
+            this record
+    """
+    person_id = ndb.StringProperty()
+    person_id_is_fuzzy = ndb.BooleanProperty()
+    given_names = ndb.StringProperty()
+    surname = ndb.StringProperty()
+    # suffix = ndb.StringProperty()
+    # alias = ndb.StringProperty()
+    birthdate = ndb.DateProperty()
     age = ndb.IntegerProperty()
     region = ndb.StringProperty()
     sex = ndb.StringProperty()

@@ -386,10 +386,10 @@ def process_query_response(query_type, query_results):
         Tuple in the form (relevant_records, inmate_keys_ids).
             relevant_records: A list of records which should be scraped to
                 check for changes
-            inmate_keys_ids: Dictionary of parent entities (inmates who we
-                should re-scrape), keyed (de-duplicated) by inmate key.
+            person_key_ids: Dictionary of parent entities (persons who we
+                should re-scrape), keyed (de-duplicated) by person key.
     """
-    inmate_keys_ids = {}
+    person_key_ids = {}
     relevant_records = []
 
     for result in query_results:
@@ -400,11 +400,11 @@ def process_query_response(query_type, query_results):
             record = result
 
         relevant_records.append(record.record_id)
-        inmate_key = record.key.parent()
-        inmate = inmate_key.get()
-        inmate_keys_ids[inmate.key] = inmate.inmate_id
+        person_key = record.key.parent()
+        person = person_key.get()
+        person_key_ids[person.key] = person.person_id
 
-    return relevant_records, inmate_keys_ids
+    return relevant_records, person_key_ids
 
 
 def get_ignore_records(start_date, region_record, relevant_records,

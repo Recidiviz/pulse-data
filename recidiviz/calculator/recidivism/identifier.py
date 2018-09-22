@@ -39,7 +39,7 @@ from recidiviz.ingest.us_ny.us_ny_record import UsNyRecord #pylint: disable=unus
 from .recidivism_event import RecidivismEvent
 
 
-def find_recidivism(inmate, include_conditional_violations=False):
+def find_recidivism(person, include_conditional_violations=False):
     """Classifies all individual sentences for the inmate as either leading to
     recidivism or not.
 
@@ -61,7 +61,7 @@ def find_recidivism(inmate, include_conditional_violations=False):
     }
 
     Args:
-        inmate: an inmate to determine recidivism for.
+        person: a person to determine recidivism for.
         include_conditional_violations: a boolean indicating whether or not
                 to include violations of conditional release in recidivism
                 calculations.
@@ -71,11 +71,11 @@ def find_recidivism(inmate, include_conditional_violations=False):
         inmate in that cohort. No more than one event can be returned per
         release cohort per inmate.
     """
-    records = Record.query(ancestor=inmate.key)\
+    records = Record.query(ancestor=person.key)\
         .order(Record.custody_date)\
         .fetch()
 
-    snapshots = Snapshot.query(ancestor=inmate.key)\
+    snapshots = Snapshot.query(ancestor=person.key)\
         .order(-Snapshot.created_on)\
         .fetch()
 
@@ -250,14 +250,14 @@ def for_last_record(record, original_entry_date,
     # There is only something to capture
     # if they are out of prison from this last record
     if record.is_released:
-        logging.debug('Inmate was released from last or only '
+        logging.debug('Person was released from last or only '
                       'record %s. No recidivism.', record.key.id())
 
         return RecidivismEvent.non_recidivism_event(original_entry_date,
                                                     release_date,
                                                     release_facility)
 
-    logging.debug('Inmate is still incarcerated for last or only '
+    logging.debug('Person is still incarcerated for last or only '
                   'record %s. Nothing to track', record.key.id())
     return None
 
@@ -284,7 +284,7 @@ def for_intermediate_record(record, recidivism_record, snapshots,
     Returns:
         A recidivism event.
     """
-    logging.debug('Inmate was released from record %s and went '
+    logging.debug('Person was released from record %s and went '
                   'back again. Yes recidivism.', record.key.id())
 
     reincarceration_date = first_entrance(recidivism_record)

@@ -5,4 +5,4 @@ mapreduce:
     handler: recidiviz.calculator.recidivism.pipeline.not_real
     params:
     - name: entity_kind
-      default: recidiviz.models.inmate.Inmate
+      default: recidiviz.models.person.Person

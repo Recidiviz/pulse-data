@@ -37,7 +37,7 @@ import webapp2
 
 from google.appengine.ext import ndb
 from recidiviz.models.env_vars import EnvironmentVariable
-from recidiviz.models.inmate import Inmate
+from recidiviz.models.person import Inmate
 from recidiviz.models.record import Offense, SentenceDuration, Record
 from recidiviz.models.snapshot import Snapshot
 from recidiviz.ingest.sessions import ScrapeSession, ScrapedRecord

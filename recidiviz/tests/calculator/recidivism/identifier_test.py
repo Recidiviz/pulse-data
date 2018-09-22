@@ -29,11 +29,10 @@ from dateutil.relativedelta import relativedelta
 from google.appengine.ext import ndb
 from google.appengine.ext import testbed
 
-from recidiviz.tests.context import calculator
 from recidiviz.calculator.recidivism import identifier
 from recidiviz.calculator.recidivism import recidivism_event
 from recidiviz.ingest.us_ny.us_ny_record import UsNyRecord
-from recidiviz.models.inmate import Inmate
+from recidiviz.models.person import Person
 from recidiviz.models.snapshot import Snapshot
 
 
@@ -169,29 +168,29 @@ class TestFindRecidivism(object):
         self.testbed.deactivate()
 
     def test_find_recidivism(self):
-        """Tests the find_recidivism function path where the inmate did
+        """Tests the find_recidivism function path where the person did
         recidivate."""
-        inmate = Inmate(id="test-inmate")
-        inmate.put()
+        person = Person(id="test-person")
+        person.put()
 
-        initial_incarceration = record(inmate.key, True, date(2008, 11, 20),
+        initial_incarceration = record(person.key, True, date(2008, 11, 20),
                                        date(2010, 12, 4))
         snapshot(initial_incarceration.key, datetime(2009, 6, 17), "Sing Sing")
         initial_incarceration_second_snapshot = snapshot(
             initial_incarceration.key, datetime(2010, 10, 17), "Adirondack")
 
-        first_reincarceration = record(inmate.key, True, date(2011, 4, 5),
+        first_reincarceration = record(person.key, True, date(2011, 4, 5),
                                        date(2014, 4, 14))
         first_reincarceration_first_snapshot = snapshot(
             first_reincarceration.key, datetime(2012, 10, 15), "Adirondack")
         first_reincarceration_second_snapshot = snapshot(
             first_reincarceration.key, datetime(2013, 10, 15), "Upstate")
 
-        subsequent_reincarceration = record(inmate.key, False, date(2017, 1, 4))
+        subsequent_reincarceration = record(person.key, False, date(2017, 1, 4))
         subsequent_reincarceration_snapshot = snapshot(
             subsequent_reincarceration.key, datetime(2017, 10, 15), "Downstate")
 
-        recidivism_events_by_cohort = identifier.find_recidivism(inmate)
+        recidivism_events_by_cohort = identifier.find_recidivism(person)
 
         assert len(recidivism_events_by_cohort) == 2
 
@@ -214,27 +213,27 @@ class TestFindRecidivism(object):
                 False)
 
     def test_find_recidivism_no_records_at_all(self):
-        """Tests the find_recidivism function when the inmate has no records."""
-        inmate = Inmate(id="test-inmate")
-        inmate.put()
+        """Tests the find_recidivism function when the person has no records."""
+        person = Person(id="test-person")
+        person.put()
 
-        recidivism_events_by_cohort = identifier.find_recidivism(inmate)
+        recidivism_events_by_cohort = identifier.find_recidivism(person)
 
         assert not recidivism_events_by_cohort
 
     def test_find_recidivism_no_recidivism_after_first(self):
-        """Tests the find_recidivism function where the inmate did not
+        """Tests the find_recidivism function where the person did not
         recidivate."""
-        inmate = Inmate(id="test-inmate")
-        inmate.put()
+        person = Person(id="test-person")
+        person.put()
 
-        initial_incarceration = record(inmate.key, True, date(2008, 11, 20),
+        initial_incarceration = record(person.key, True, date(2008, 11, 20),
                                        date(2010, 12, 4))
         snapshot(initial_incarceration.key, datetime(2009, 6, 17), "Sing Sing")
         initial_incarceration_second_snapshot = snapshot(
             initial_incarceration.key, datetime(2010, 10, 17), "Adirondack")
 
-        recidivism_events_by_cohort = identifier.find_recidivism(inmate)
+        recidivism_events_by_cohort = identifier.find_recidivism(person)
 
         assert len(recidivism_events_by_cohort) == 1
 
@@ -245,42 +244,42 @@ class TestFindRecidivism(object):
                 initial_incarceration_second_snapshot.latest_facility)
 
     def test_find_recidivism_still_incarcerated_on_first(self):
-        """Tests the find_recidivism function where the inmate is still
+        """Tests the find_recidivism function where the person is still
         incarcerated on their very first record."""
-        inmate = Inmate(id="test-inmate")
-        inmate.put()
+        person = Person(id="test-person")
+        person.put()
 
-        initial_incarceration = record(inmate.key, False, date(2008, 11, 20))
+        initial_incarceration = record(person.key, False, date(2008, 11, 20))
         snapshot(initial_incarceration.key, datetime(2009, 6, 17), "Sing Sing")
 
-        recidivism_events_by_cohort = identifier.find_recidivism(inmate)
+        recidivism_events_by_cohort = identifier.find_recidivism(person)
 
         assert not recidivism_events_by_cohort
 
     def test_find_recidivism_invalid_no_entry_date(self):
         """Tests the find_recidivism function error handling when the record
         is invalid because it has no entry date."""
-        inmate = Inmate(id="test-inmate")
-        inmate.put()
+        person = Person(id="test-person")
+        person.put()
 
-        initial_incarceration = record(inmate.key, True, None,
+        initial_incarceration = record(person.key, True, None,
                                        date(2010, 12, 4))
         snapshot(initial_incarceration.key, datetime(2009, 6, 17), "Sing Sing")
         snapshot(initial_incarceration.key, datetime(2010, 10, 17),
                  "Adirondack")
 
-        first_reincarceration = record(inmate.key, True, date(2011, 4, 5),
+        first_reincarceration = record(person.key, True, date(2011, 4, 5),
                                        date(2014, 4, 14))
         snapshot(first_reincarceration.key, datetime(2012, 10, 15),
                  "Adirondack")
         first_reincarceration_second_snapshot = snapshot(
             first_reincarceration.key, datetime(2013, 10, 15), "Upstate")
 
-        subsequent_reincarceration = record(inmate.key, False, date(2017, 1, 4))
+        subsequent_reincarceration = record(person.key, False, date(2017, 1, 4))
         subsequent_reincarceration_snapshot = snapshot(
             subsequent_reincarceration.key, datetime(2017, 10, 15), "Downstate")
 
-        recidivism_events_by_cohort = identifier.find_recidivism(inmate)
+        recidivism_events_by_cohort = identifier.find_recidivism(person)
 
         # Only one event. The 2010 event should be discarded
         # because of its lack of a custody date.
@@ -298,27 +297,27 @@ class TestFindRecidivism(object):
     def test_find_recidivism_invalid_released_but_no_release_date(self):
         """Tests the find_recidivism function error handling when the record
         is invalid because it has no release date but is marked as released."""
-        inmate = Inmate(id="test-inmate")
-        inmate.put()
+        person = Person(id="test-person")
+        person.put()
 
-        initial_incarceration = record(inmate.key, True, date(2008, 11, 20),
+        initial_incarceration = record(person.key, True, date(2008, 11, 20),
                                        None)
         snapshot(initial_incarceration.key, datetime(2009, 6, 17), "Sing Sing")
         snapshot(initial_incarceration.key, datetime(2010, 10, 17),
                  "Adirondack")
 
-        first_reincarceration = record(inmate.key, True, date(2011, 4, 5),
+        first_reincarceration = record(person.key, True, date(2011, 4, 5),
                                        date(2014, 4, 14))
         snapshot(first_reincarceration.key, datetime(2012, 10, 15),
                  "Adirondack")
         first_reincarceration_second_snapshot = snapshot(
             first_reincarceration.key, datetime(2013, 10, 15), "Upstate")
 
-        subsequent_reincarceration = record(inmate.key, False, date(2017, 1, 4))
+        subsequent_reincarceration = record(person.key, False, date(2017, 1, 4))
         subsequent_reincarceration_snapshot = snapshot(
             subsequent_reincarceration.key, datetime(2017, 10, 15), "Downstate")
 
-        recidivism_events_by_cohort = identifier.find_recidivism(inmate)
+        recidivism_events_by_cohort = identifier.find_recidivism(person)
 
         # Only one event. The 2010 event should be discarded
         # because of its lack of a release date although released=True.
@@ -337,26 +336,26 @@ class TestFindRecidivism(object):
         """Tests the find_recidivism function error handling when the record
         cannot be counted because the subsequent record indicates recidivism
         but itself has no entry date."""
-        inmate = Inmate(id="test-inmate")
-        inmate.put()
+        person = Person(id="test-person")
+        person.put()
 
-        initial_incarceration = record(inmate.key, True, date(2008, 11, 20),
+        initial_incarceration = record(person.key, True, date(2008, 11, 20),
                                        date(2010, 12, 4))
         snapshot(initial_incarceration.key, datetime(2009, 6, 17), "Sing Sing")
         initial_incarceration_second_snapshot = snapshot(
             initial_incarceration.key, datetime(2010, 10, 17), "Adirondack")
 
-        first_reincarceration = record(inmate.key, True, None,
+        first_reincarceration = record(person.key, True, None,
                                        date(2014, 4, 14))
         snapshot(first_reincarceration.key, datetime(2012, 10, 15),
                  "Adirondack")
         snapshot(first_reincarceration.key, datetime(2013, 10, 15), "Upstate")
 
-        subsequent_reincarceration = record(inmate.key, False, date(2017, 1, 4))
+        subsequent_reincarceration = record(person.key, False, date(2017, 1, 4))
         subsequent_reincarceration_snapshot = snapshot(
             subsequent_reincarceration.key, datetime(2017, 10, 15), "Downstate")
 
-        recidivism_events_by_cohort = identifier.find_recidivism(inmate)
+        recidivism_events_by_cohort = identifier.find_recidivism(person)
 
         # Only one event. The 2014 event should be discarded because of its
         # lack of a release date though released=True.

@@ -23,7 +23,7 @@ regions:
     agency_type: prison
     base_url: http://nysdoccslookup.doccs.ny.gov
     entity_kinds:
-      inmate: UsNyInmate
+      person: UsNyPerson
       record: UsNyRecord
       snapshot: UsNySnapshot
     names_file: us_ny_names.csv

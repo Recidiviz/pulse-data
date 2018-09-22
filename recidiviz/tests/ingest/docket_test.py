@@ -26,12 +26,13 @@ from dateutil.relativedelta import relativedelta
 from google.appengine.api import taskqueue
 from google.appengine.ext import ndb
 from google.appengine.ext import testbed
+
 from recidiviz.ingest import docket
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.sessions import ScrapeSession
 from recidiviz.ingest.us_ny.us_ny_record import UsNyRecord
 from recidiviz.ingest.us_ny.us_ny_snapshot import UsNySnapshot
-from recidiviz.models.inmate import Inmate
+from recidiviz.models.person import Person
 
 
 class TestPopulation(object):
@@ -105,9 +106,9 @@ class TestPopulation(object):
         scrape_key = ScrapeKey("us_ny", "snapshot")
         halfway = datetime.now() - relativedelta(years=5)
 
-        inmate = get_inmate("clem", "12345")
-        record = get_record(inmate.key, "56789", halfway)
-        get_record(inmate.key, "89012", halfway - relativedelta(years=10))
+        person = get_person("clem", "12345")
+        record = get_record(person.key, "56789", halfway)
+        get_record(person.key, "89012", halfway - relativedelta(years=10))
         get_snapshot(record.key, halfway)
 
         docket.load_target_list(scrape_key, {})
@@ -248,10 +249,10 @@ def create_open_session(region_code, scrape_type, start, docket_item):
     return session
 
 
-def get_inmate(key, inmate_id):
-    new_inmate = Inmate(id=key, inmate_id=inmate_id)
-    new_inmate.put()
-    return new_inmate
+def get_person(key, person_id):
+    new_person = Person(id=key, person_id=person_id)
+    new_person.put()
+    return new_person
 
 
 def get_record(parent_key, record_id, latest_release_date):
