@@ -36,7 +36,7 @@ from recidiviz.tests.context import calculator
 from recidiviz.calculator.recidivism import (calculator, metrics, pipeline,
                                              recidivism_event)
 from recidiviz.ingest.us_ny.us_ny_record import UsNyRecord
-from recidiviz.models.inmate import Inmate
+from recidiviz.models.person import Person
 from recidiviz.models.snapshot import Snapshot
 
 
@@ -54,31 +54,31 @@ class TestMapReduceMethods(object):
     def teardown_method(self, _test_method):
         self.testbed.deactivate()
 
-    def test_map_inmate(self):
-        """Tests the map_inmate function happy path."""
+    def test_map_person(self):
+        """Tests the map_person function happy path."""
         set_pipeline_context({})
 
-        inmate = Inmate(id="test-inmate", birthday=date(1987, 2, 24),
+        person = Person(id="test-person", birthdate=date(1987, 2, 24),
                         race="black", sex="male")
-        inmate.put()
+        person.put()
 
-        initial_incarceration = record(inmate.key, True, date(2008, 11, 20),
+        initial_incarceration = record(person.key, True, date(2008, 11, 20),
                                        date(2010, 12, 4))
         snapshot(initial_incarceration.key, datetime(2009, 6, 17), "Sing Sing")
         snapshot(initial_incarceration.key, datetime(2010, 10, 17),
                  "Adirondack")
 
-        first_reincarceration = record(inmate.key, True, date(2011, 4, 5),
+        first_reincarceration = record(person.key, True, date(2011, 4, 5),
                                        date(2014, 4, 14))
         snapshot(first_reincarceration.key, datetime(2012, 10, 15),
                  "Adirondack")
         snapshot(first_reincarceration.key, datetime(2013, 10, 15), "Upstate")
 
-        subsequent_reincarceration = record(inmate.key, False, date(2017, 1, 4))
+        subsequent_reincarceration = record(person.key, False, date(2017, 1, 4))
         snapshot(subsequent_reincarceration.key, datetime(2017, 10, 15),
                  "Downstate")
 
-        result_generator = pipeline.map_inmate(inmate)
+        result_generator = pipeline.map_person(person)
         total_combinations_2010 = 0
         total_combinations_2014 = 0
 
@@ -87,7 +87,7 @@ class TestMapReduceMethods(object):
         for result in result_generator:
             if isinstance(result, op.counters.Increment):
                 assert result.counter_name in [
-                    'total_metric_combinations_mapped', 'total_inmates_mapped']
+                    'total_metric_combinations_mapped', 'total_people_mapped']
             else:
                 combination, value = result
 
@@ -106,12 +106,12 @@ class TestMapReduceMethods(object):
                     else:
                         assert value == 1
 
-        # Get the number of combinations of inmate-event characteristics.
+        # Get the number of combinations of person-event characteristics.
         original_entry_date = date(2013, 6, 17)
         event = recidivism_event.RecidivismEvent(False, original_entry_date,
                                                  None, "Sing Sing")
         num_combinations = len(calculator.characteristic_combinations(
-            inmate, event))
+            person, event))
         assert num_combinations > 0
 
         # num_combinations * 2 methodologies * 10 periods = 320 combinations
@@ -131,21 +131,21 @@ class TestMapReduceMethods(object):
         periods = relativedelta(date.today(), date(2014, 4, 14)).years + 1
         assert total_combinations_2014 == num_combinations * 2 * periods
 
-    def test_map_inmates_no_results(self):
-        """Tests the map_inmate function when the inmate has no records."""
+    def test_map_persons_no_results(self):
+        """Tests the map_person function when the person has no records."""
         set_pipeline_context({})
 
-        inmate = Inmate(id="test-inmate", birthday=date(1987, 2, 24),
+        person = Person(id="test-person", birthdate=date(1987, 2, 24),
                         race="black", sex="male")
-        inmate.put()
+        person.put()
 
-        result_generator = pipeline.map_inmate(inmate)
+        result_generator = pipeline.map_person(person)
 
         total_results = 0
         for result in result_generator:
             total_results += 1
             assert isinstance(result, op.counters.Increment)
-            assert result.counter_name == 'total_inmates_mapped'
+            assert result.counter_name == 'total_people_mapped'
 
         assert total_results == 1
 

@@ -37,7 +37,7 @@ MANIFEST_CONTENTS = """
         agency_type: prison
         base_url: http://nysdoccslookup.doccs.ny.gov
         entity_kinds:
-          inmate: UsNyInmate
+          person: UsNyPerson
           record: UsNyRecord
           snapshot: UsNySnapshot
         names_file: us_ny_names.csv
@@ -52,7 +52,7 @@ MANIFEST_CONTENTS = """
         agency_type: prison
         base_url: http://www.dc.state.fl.us/OffenderSearch/Search.aspx
         entity_kinds:
-          inmate: UsFlInmate
+          person: UsFlPerson
           record: UsFlRecord
           snapshot: UsFlSnapshot
         names_file: us_fl_names.csv
@@ -77,7 +77,7 @@ FULL_MANIFEST = {
             'agency_type': 'prison',
             'base_url': 'http://nysdoccslookup.doccs.ny.gov',
             'entity_kinds': {
-                'inmate': 'UsNyInmate',
+                'person': 'UsNyPerson',
                 'record': 'UsNyRecord',
                 'snapshot': 'UsNySnapshot'
             },
@@ -93,7 +93,7 @@ FULL_MANIFEST = {
             'agency_type': 'prison',
             'base_url': 'http://www.dc.state.fl.us/OffenderSearch/Search.aspx',
             'entity_kinds': {
-                'inmate': 'UsFlInmate',
+                'person': 'UsFlPerson',
                 'record': 'UsFlRecord',
                 'snapshot': 'UsFlSnapshot'
             },
@@ -155,8 +155,8 @@ def test_validate_region_code_invalid():
 
 
 def test_get_subkind():
-    inmate = with_manifest(regions.get_subkind, 'us_ny', 'Inmate')
-    assert inmate.__name__ == 'UsNyInmate'
+    person = with_manifest(regions.get_subkind, 'us_ny', 'Person')
+    assert person.__name__ == 'UsNyPerson'
 
 
 def test_get_name_list_file():
@@ -177,7 +177,7 @@ def test_get_scraper():
 def test_region_class():
     region = with_manifest(regions.Region, 'us_ny')
     assert region.scraper().__name__ == 'recidiviz.ingest.us_ny'
-    assert region.get_inmate_kind().__name__ == 'UsNyInmate'
+    assert region.get_person_kind().__name__ == 'UsNyPerson'
     assert region.get_record_kind().__name__ == 'UsNyRecord'
     assert region.get_snapshot_kind().__name__ == 'UsNySnapshot'
     assert not region.params

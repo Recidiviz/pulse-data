@@ -37,9 +37,9 @@ class Region(object):
         agency_name: (string) Human-readable agency name
         agency_type: (string) 'prison' or 'jail'
         base_url: (string) Base URL for scraping
-        entity_kinds: (dict) Mapping of top-level entity kind names (inmate,
+        entity_kinds: (dict) Mapping of top-level entity kind names (person,
             record, snapshot) to region subclasses. E.g.,
-            {'inmate': 'UsNyInmate',
+            {'person': 'UsNyPerson',
              'record': 'UsNyRecord',
              'snapshot': 'UsNySnapshot'}
         names_file: (string) Filename of names file for this region
@@ -86,16 +86,16 @@ class Region(object):
         """
         return get_scraper_module(self.scraper_package)
 
-    def get_inmate_kind(self):
-        """Return the Inmate PolyModel sub-kind for this region
+    def get_person_kind(self):
+        """Return the Person PolyModel sub-kind for this region
 
         Args:
             N/A
 
         Returns:
-            Inmate subclass for this region
+            Person subclass for this region
         """
-        return get_subkind(self.region_code, "inmate")
+        return get_subkind(self.region_code, "person")
 
     def get_record_kind(self):
         """Return the Record PolyModel sub-kind for this region
