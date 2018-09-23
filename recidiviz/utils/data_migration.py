@@ -389,8 +389,8 @@ def migration_pass2(cursor=None,
                        num_updated=num_updated,
                        test_only=test_only)
     else:
-        logging.info('Migration pass #2 complete with %d Records updated. '
-                     'Migration complete!', num_updated)
+        logging.info('Migration pass #2 complete with %d Records and Snapshots '
+                     'updated. Migration complete!', num_updated)
 
 
 def convert_temp_to_record(temp_record):

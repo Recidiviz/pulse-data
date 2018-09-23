@@ -31,8 +31,8 @@ from recidiviz.ingest import docket
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.sessions import ScrapeSession
 from recidiviz.ingest.us_ny.us_ny_record import UsNyRecord
-from recidiviz.ingest.us_ny.us_ny_snapshot import UsNySnapshot
 from recidiviz.models.person import Person
+from recidiviz.models.snapshot import Snapshot
 
 
 class TestPopulation(object):
@@ -265,8 +265,8 @@ def get_record(parent_key, record_id, latest_release_date):
 
 
 def get_snapshot(parent_key, snapshot_date):
-    new_snapshot = UsNySnapshot(parent=parent_key,
-                                created_on=snapshot_date,
-                                is_released=False)
+    new_snapshot = Snapshot(parent=parent_key,
+                            created_on=snapshot_date,
+                            is_released=False)
     new_snapshot.put()
     return new_snapshot
