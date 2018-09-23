@@ -44,7 +44,7 @@ class Region(object):
              'snapshot': 'UsNySnapshot'}
         names_file: (string) Filename of names file for this region
         params: (dict) Optional mapping of key-value pairs specific to region
-        queues: (list) List of queue name for acceptable scraping queues
+        queue: (string) Name of the queue for this region
         region_code: (string) Region code
         region_name: (string) Human-readable region name
         scraper_class: (string) Optional name of the class for this region's
@@ -67,7 +67,7 @@ class Region(object):
         self.region_code = region_config["region_code"]
         self.names_file = get_name_list_file(self.region_code)
         self.params = region_config.get("params", {})
-        self.queues = region_config["queues"]
+        self.queue = region_config["queue"]
         self.region_name = region_config["region_name"]
         self.scraper_class = region_config.get("scraper_class",
                                                self.region_code + "_scraper")
