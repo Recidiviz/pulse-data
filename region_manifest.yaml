@@ -25,7 +25,6 @@ regions:
     entity_kinds:
       person: UsNyPerson
       record: UsNyRecord
-      snapshot: UsNySnapshot
     names_file: us_ny_names.csv
     queues:
     - us-ny-scraper

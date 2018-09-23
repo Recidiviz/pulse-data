@@ -39,7 +39,6 @@ MANIFEST_CONTENTS = """
         entity_kinds:
           person: UsNyPerson
           record: UsNyRecord
-          snapshot: UsNySnapshot
         names_file: us_ny_names.csv
         queues:
         - us-ny-scraper
@@ -78,8 +77,7 @@ FULL_MANIFEST = {
             'base_url': 'http://nysdoccslookup.doccs.ny.gov',
             'entity_kinds': {
                 'person': 'UsNyPerson',
-                'record': 'UsNyRecord',
-                'snapshot': 'UsNySnapshot'
+                'record': 'UsNyRecord'
             },
             'names_file': 'us_ny_names.csv',
             'queues': ['us-ny-scraper'],
@@ -179,7 +177,7 @@ def test_region_class():
     assert region.scraper().__name__ == 'recidiviz.ingest.us_ny'
     assert region.get_person_kind().__name__ == 'UsNyPerson'
     assert region.get_record_kind().__name__ == 'UsNyRecord'
-    assert region.get_snapshot_kind().__name__ == 'UsNySnapshot'
+    assert region.get_snapshot_kind().__name__ == 'Snapshot'
     assert not region.params
     assert region.queues == ['us-ny-scraper']
     assert region.scraper_class == 'us_ny_scraper'
