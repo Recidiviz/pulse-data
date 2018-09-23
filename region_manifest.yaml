@@ -26,8 +26,7 @@ regions:
       person: UsNyPerson
       record: UsNyRecord
     names_file: us_ny_names.csv
-    queues:
-    - us-ny-scraper
+    queue: us-ny-scraper
     region_code: us_ny
     region_name: New York State
     scraper_package: us_ny
