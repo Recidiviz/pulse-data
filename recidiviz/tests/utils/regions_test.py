@@ -40,8 +40,7 @@ MANIFEST_CONTENTS = """
           person: UsNyPerson
           record: UsNyRecord
         names_file: us_ny_names.csv
-        queues:
-        - us-ny-scraper
+        queue: us-ny-scraper
         region_code: us_ny
         region_name: New York State
         scraper_package: us_ny
@@ -58,9 +57,7 @@ MANIFEST_CONTENTS = """
         params:
           foo: bar
           sha: baz
-        queues:
-        - us-fl-scraper
-        - a-different-queue
+        queue: us-fl-scraper
         region_code: us_fl
         region_name: Florida State
         scraper_class: a_different_scraper
@@ -80,7 +77,7 @@ FULL_MANIFEST = {
                 'record': 'UsNyRecord'
             },
             'names_file': 'us_ny_names.csv',
-            'queues': ['us-ny-scraper'],
+            'queue': 'us-ny-scraper',
             'region_code': 'us_ny',
             'region_name': 'New York State',
             'scraper_package': 'us_ny',
@@ -100,7 +97,7 @@ FULL_MANIFEST = {
                 'foo': 'bar',
                 'sha': 'baz'
             },
-            'queues': ['us-fl-scraper', 'a-different-queue'],
+            'queue': 'us-fl-scraper',
             'region_code': 'us_fl',
             'region_name': 'Florida State',
             'scraper_class': 'a_different_scraper',
@@ -179,14 +176,14 @@ def test_region_class():
     assert region.get_record_kind().__name__ == 'UsNyRecord'
     assert region.get_snapshot_kind().__name__ == 'Snapshot'
     assert not region.params
-    assert region.queues == ['us-ny-scraper']
+    assert region.queue == 'us-ny-scraper'
     assert region.scraper_class == 'us_ny_scraper'
 
 
-def test_region_class_with_scraper_class_and_multiple_queues():
+def test_region_class_with_scraper_class():
     region = with_manifest(regions.Region, 'us_fl')
     assert region.params == {'foo': 'bar', 'sha': 'baz'}
-    assert region.queues == ['us-fl-scraper', 'a-different-queue']
+    assert region.queue == 'us-fl-scraper'
     assert region.scraper_class == 'a_different_scraper'
 
 

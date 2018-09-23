@@ -292,9 +292,7 @@ class Scraper(object):
         params_serial = json.dumps(params)
 
         taskqueue.add(url=self.scraper_work_url,
-                      # TODO (Issue #88): Replace this with dynamic
-                      # queue selection
-                      queue_name=self.get_region().queues[0],
+                      queue_name=self.get_region().queue,
                       params={'region': self.get_region().region_code,
                               'task': task_name,
                               'params': params_serial})
@@ -333,6 +331,6 @@ class Scraper(object):
                               str(item_content))
                 return False
 
-            return (record_id, item_content[1])
+            return record_id, item_content[1]
 
         return item_content
