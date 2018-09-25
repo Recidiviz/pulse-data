@@ -125,14 +125,17 @@ to `localhost:8080/scraper/start?region=[region]` (logs won't show much until th
 You can check datastore entries, queue tasks, and more on the local dev server admin page (http://localhost:8000/datastore)
 while it's running.
 
-#### Production
-To deploy to production AppEngine, navigate to the directory where you cloned pulse-data into and run
-`gcloud app deploy`. This will upload the full project to the cloud and push it to production.
+#### Deployed
+To deploy to a live AppEngine project, navigate to the directory where you cloned `pulse-data` and run
+`gcloud app deploy`. This will upload the full project to the cloud and enable it as the current version in your environment.
+
+If you have multiple deployed projects, e.g. separate projects for staging and production, you can specify the project
+for most `gcloud` commands like so: `gcloud app deploy --project=my-staging-env`
 
 If it doesn't seem to know which project of yours to deploy to, or your account info, you may have skipped part of the
 interactive setup for gcloud. Run `gcloud init` to revisit that setup.
 
-Once the project is in production, you can kick off scraping by visiting `myproject.appspot.com/start`. You can monitor
+Once the project is deployed, you can kick off scraping by visiting `myproject.appspot.com/start_scraper`. You can monitor
 the task queue (and purge it) in the Cloud Console, and read the service logs there as well.
 
 **_Note: Don't test in prod! A lot can go wrong (you could scrape in a way that doesn't throttle properly, you could
