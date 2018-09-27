@@ -45,7 +45,7 @@ def map_person(person):
     characteristics whose calculations will be impacted by that instance.
 
     Args:
-        person: an Person to be mapped into recidivism metrics.
+        person: a Person to be mapped into recidivism metrics.
 
     Yields:
         Metrics for each unique recidivism metric derived from the person. Also

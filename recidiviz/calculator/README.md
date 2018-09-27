@@ -4,7 +4,7 @@ This package contains a recidivism calculation pipeline built on Google App Engi
 
 This calculates both event- and offender-based recidivism metrics across a variety of dimensions, including location,
 sentence history, offense characteristics, and more. All metrics are normalized by release cohort, the calendar year
-in which a subset of the inmate population is released from prison, and by follow-up period, the number of years
+in which a subset of the person population is released from prison, and by follow-up period, the number of years
 after release of prison during which recidivism was measured. For example, this will calculate the overall recidivism
 rate for the 2005 release cohort over a 10-year follow-up period, or recidivism rates over a 10-year follow-up period
 for white females aged 30-34, released from Sing Sing, who were arrested for drug possession.
@@ -26,7 +26,7 @@ General structure
 
 The calculation pipeline runs in three steps.
 
-First, it `maps` each `Inmate` and their personal set of `Records`
+First, it `maps` each `Person` and their personal set of `Records`
 (instances of incarceration) into an array an array of tuples whose first element is a "metric combination",
 a set of key-value pairs that describe that particular record (i.e. release cohort, follow-up period,
 methodology, and other optional characteristics), and whose second element is a "recidivism value" that will
@@ -34,7 +34,7 @@ be counted toward recidivism rates across all records that share that metric com
 all possible combinations of relevant characteristics for a particular record, the number of metric combinations
 is much higher than the total number of records counted. If recidivism did occur, then the recidivism value is
 a 1 for event-based measurements and _1 / k_ for offender-based measurements, where _k_ is the number of releases
-from prison for that inmate in that particular follow-up period.
+from prison for that person in that particular follow-up period.
 
 Then, automatically, it `shuffles` all metric combinations to group equal ones. This produces an array of key-value
 pairs where each key is a unique metric combination and each value is an array of recidivism values that share that
@@ -81,8 +81,8 @@ Cloud Datastore where `execution_id` equals that reduce step id.
 ### Counters and logs
 
 Counters being tracked in each pipeline include:
-* `total_inmates_mapped` (map step): the total number of inmates passed through the map step. This should equal the
-number of inmate entities in Datastore.
+* `total_people_mapped` (map step): the total number of people passed through the map step. This should equal the
+number of person entities in Datastore.
 * `total_metric_combinations_mapped` (map step): the total number of metric combinations created by the map step.
 * `unique_metric_keys_reduced` (reduce step): the number of unique metric keys passed from the shuffle step to the
 reduce step. This should be strictly less than `total_metric_combinations_mapped` as it effectively de-duplicates

@@ -54,7 +54,7 @@ class Scraper(object):
     queueing, state tracking, and a bunch of static convenience
     methods for data manipulation.
 
-    Note that all child classes must implement the inmate_id_to_record_id
+    Note that all child classes must implement the person_id_to_record_id
     method, which is used to iterate docket items.
 
     """
@@ -73,14 +73,14 @@ class Scraper(object):
         self.scraper_work_url = '/scraper/work'
 
     @abc.abstractmethod
-    def inmate_id_to_record_id(self, inmate_id):
-        """Abstract method for child classes to map an inmate ID to a DB
+    def person_id_to_record_id(self, person_id):
+        """Abstract method for child classes to map a person ID to a DB
         record ID.
 
-        Args: (any type) the inmate ID to transform
+        Args: (any type) the person ID to transform
 
         Returns:
-            A record id mapped from the given inmate id.
+            A record id mapped from the given person id.
 
         """
         pass
@@ -321,10 +321,10 @@ class Scraper(object):
             return False
 
         if scrape_type == "snapshot":
-            # Content will be in the form (inmate ID, [list of records
-            # to ignore]); allow the child class to convert inmate to
+            # Content will be in the form (person ID, [list of records
+            # to ignore]); allow the child class to convert person to
             # record
-            record_id = self.inmate_id_to_record_id(item_content[0])
+            record_id = self.person_id_to_record_id(item_content[0])
 
             if not record_id:
                 logging.error("Couldn't convert docket item [%s] to record",

@@ -34,10 +34,10 @@ from recidiviz.models.record import Offense
 
 
 class Snapshot(polymodel.PolyModel):
-    """Model to describe updates to Inmate or Record data
+    """Model to describe updates to Person or Record data
 
-    Datastore model for mutable details about an inmate or criminal record
-    at the time of a particular scraping. An inmate should have at least one
+    Datastore model for mutable details about a person or criminal record
+    at the time of a particular scraping. A person should have at least one
     entry for this from time of creation, as well as an additional entity for
     each subsequent scrape in which a change was found. Only updated fields
     are stored (includes all fields for the first snapshot of a Record entity).
@@ -48,29 +48,29 @@ class Snapshot(polymodel.PolyModel):
 
     Attributes:
         created_on: (datetime) Timestamp for creation time of snapshot
-        latest_facility: (string) The name of the facility the inmate was
+        latest_facility: (string) The name of the facility the person was
             held in
         latest_release_date: (date) Most recent date of release
         latest_release_type: (string) Reason given for most recent release
-        is_released: (bool) Whether the inmate has been released from the
+        is_released: (bool) Whether the person has been released from the
         min_sentence: (record.SentenceDuration) Minimum sentence to be served
         max_sentence: (record.SentenceDuration) Maximum sentence to be served
             sentence
         offense: (record.Offense) State-provided strings describing the crimes
             of conviction and (if available) class of crimes.
         offense_date: (date) Date the offense was committed
-        custody_date: (date) Date the inmate's sentence started
-        birthdate: (date) Date of birth for the inmate as provided by the source
+        custody_date: (date) Date the person's sentence started
+        birthdate: (date) Date of birth for the person as provided by the source
         sex: (string) Sex of the prisoner as provided by the prison system
         race: (string) Race of the prisoner as provided by prison system
-        surname: (string) The inmate's surname, as provided by the source
+        surname: (string) The person's surname, as provided by the source
         given_names: (string) Any given names provided by the source
-        last_custody_date: (date) Most recent date inmate returned for this
+        last_custody_date: (date) Most recent date person returned for this
             sentence (may not be the initial custody date - e.g., if parole
             was violated, may be readmitted for remainder of prison term)
         admission_type: (string) 'New commitment' is beginning to serve a term,
             other reasons are usually after term has started (e.g. parole issue)
-        county_of_commit: (string) County the inmate was convicted/committed in
+        county_of_commit: (string) County the person was convicted/committed in
         custody_status: (string) Scraped string on custody status (more granular
             than just 'released' / 'not-released')
         earliest_release_date: (date) Earliest date to be released based on
@@ -79,67 +79,52 @@ class Snapshot(polymodel.PolyModel):
             release date.
         parole_hearing_date: (date) Date of next hearing before Parole Board
         parole_hearing_type: (string) Type of hearing for next PB appearance.
-        parole_elig_date: (date) Date inmate will be eligible for parole
+        parole_elig_date: (date) Date person will be eligible for parole
         cond_release_date: (date) Release date based on prison discretion for
             'good time off' based on behavior. Releases prisoner on parole, but
             bypasses PB review.
         max_expir_date: (date) Date of release if no PB or conditional release,
             maximum obligation to the state.
         max_expir_date_parole: (date) Last possible date of ongoing parole
-            supervision. Doesn't apply to all inmates.
+            supervision. Doesn't apply to all people.
         max_expir_date_superv: (date) Last possible date of post-release
-            supervision. Doesn't apply to all inmates.
+            supervision. Doesn't apply to all people.
         parole_discharge_date: (date) Final date of parole supervision, based on
             the parole board's decision to end supervision before max
             expiration.
         region: (string) The Recidiviz region code that this Record belongs to
 
     """
-    latest_facility = ndb.StringProperty()
-    latest_release_date = ndb.DateProperty()
-    latest_release_type = ndb.StringProperty()
-    is_released = ndb.BooleanProperty()
-    min_sentence_length = ndb.StructuredProperty(SentenceDuration,
-                                                 repeated=False)
-    max_sentence_length = ndb.StructuredProperty(SentenceDuration,
-                                                 repeated=False)
-    offense = ndb.StructuredProperty(Offense, repeated=True)
-    offense_date = ndb.DateProperty()
-    custody_date = ndb.DateProperty()
-    birthdate = ndb.DateProperty()
-    sex = ndb.StringProperty()
-    race = ndb.StringProperty()
-    surname = ndb.StringProperty()
-    given_names = ndb.StringProperty()
-    created_on = ndb.DateTimeProperty(auto_now_add=True)
-    # New fields post-migration
-    last_custody_date = ndb.DateProperty()
     admission_type = ndb.StringProperty()
+    birthdate = ndb.DateProperty()
+    cond_release_date = ndb.DateProperty()
     county_of_commit = ndb.StringProperty()
+    custody_date = ndb.DateProperty()
     custody_status = ndb.StringProperty()
     earliest_release_date = ndb.DateProperty()
     earliest_release_type = ndb.StringProperty()
-    parole_hearing_date = ndb.DateProperty()
-    parole_hearing_type = ndb.StringProperty()
-    parole_elig_date = ndb.DateProperty()
-    cond_release_date = ndb.DateProperty()
+    is_released = ndb.BooleanProperty()
+    last_custody_date = ndb.DateProperty()
+    latest_facility = ndb.StringProperty()
+    latest_release_date = ndb.DateProperty()
+    latest_release_type = ndb.StringProperty()
     max_expir_date = ndb.DateProperty()
     max_expir_date_parole = ndb.DateProperty()
     max_expir_date_superv = ndb.DateProperty()
+    max_sentence_length = ndb.StructuredProperty(SentenceDuration,
+                                                 repeated=False)
+    min_sentence_length = ndb.StructuredProperty(SentenceDuration,
+                                                 repeated=False)
+    offense = ndb.StructuredProperty(Offense, repeated=True)
+    offense_date = ndb.DateProperty()
     parole_discharge_date = ndb.DateProperty()
+    parole_elig_date = ndb.DateProperty()
+    parole_hearing_date = ndb.DateProperty()
+    parole_hearing_type = ndb.StringProperty()
+    race = ndb.StringProperty()
     region = ndb.StringProperty()
+    sex = ndb.StringProperty()
+    surname = ndb.StringProperty()
+    given_names = ndb.StringProperty()
 
-
-class InmateFacilitySnapshot(polymodel.PolyModel):
-    """
-    InmateFacilitySnapshot
-
-    Old model, keeping for short-term migration purposes only.
-    TODO(andrew): Remove post-migration to Snapshot
-
-    Attributes:
-        snapshot_date: (datetime) Timestamp for creation time of snapshot
-        facility: (string) The name of the facility the inmate was held in
-    """
-    snapshot_date = ndb.DateTimeProperty(auto_now_add=True)
-    facility = ndb.StringProperty()
+    created_on = ndb.DateTimeProperty(auto_now_add=True)

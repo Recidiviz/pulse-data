@@ -18,16 +18,16 @@
 """Identifies instances of recidivism and non-recidivism for calculation.
 
 This contains the core logic for identifying recidivism events on an
-inmate-by-inmate basis, transform raw records for a given inmate into instances
+person-by-person basis, transform raw records for a given person into instances
 of recidivism or non-recidivism as appropriate.
 
 This class is paired with calculator.py, together providing the ability to
-transform an inmate into an array of recidivism metrics.
+transform a person into an array of recidivism metrics.
 
 Example:
-    recidivism_events = identification.find_recidivism(inmate)
+    recidivism_events = identification.find_recidivism(person)
     metric_combinations = calculator.map_recidivism_combinations(
-        inmate, recidivism_events)
+        person, recidivism_events)
 """
 
 
@@ -40,14 +40,14 @@ from .recidivism_event import RecidivismEvent
 
 
 def find_recidivism(person, include_conditional_violations=False):
-    """Classifies all individual sentences for the inmate as either leading to
+    """Classifies all individual sentences for the person as either leading to
     recidivism or not.
 
-    Transforms each sentence from which the inmate has been released into a
+    Transforms each sentence from which the person has been released into a
     mapping from its release cohort to the details of the event. The release
     cohort is an integer for the year, e.g. 2006. The event details are a
     RecidivismEvent object, which represents events of both recidivism and
-    non-recidivism. That is, each inmate sentence is transformed into a
+    non-recidivism. That is, each person sentence is transformed into a
     recidivism event unless it is the most recent sentence and they are still
     incarcerated.
 
@@ -68,8 +68,8 @@ def find_recidivism(person, include_conditional_violations=False):
 
     Returns:
         A dictionary from release cohorts to recidivism events for the given
-        inmate in that cohort. No more than one event can be returned per
-        release cohort per inmate.
+        person in that cohort. No more than one event can be returned per
+        release cohort per person.
     """
     records = Record.query(ancestor=person.key)\
         .order(Record.custody_date)\
@@ -125,8 +125,8 @@ def find_recidivism(person, include_conditional_violations=False):
 def first_entrance(record):
     """The date of first entrance into prison for the given record.
 
-    The first entrance is when an inmate first when to prison for a new
-    sentence. An inmate may be conditionally released and returned to prison on
+    The first entrance is when a person first when to prison for a new
+    sentence. A person may be conditionally released and returned to prison on
     violation of conditions for the same sentence, yielding a subsequent
     entrance date.
 
@@ -134,7 +134,7 @@ def first_entrance(record):
         record: a single record
 
     Returns:
-        A Date for when the inmate first entered into prison for this record.
+        A Date for when the person first entered into prison for this record.
     """
     return record.custody_date
 
@@ -142,7 +142,7 @@ def first_entrance(record):
 def subsequent_entrance(record):
     """The date of most recent entrance into prison for the given record.
 
-    A subsequent entrance is when an inmate returns to prison for a given
+    A subsequent entrance is when a person returns to prison for a given
     sentence, after having already been conditionally for that same sentence.
     It is not returning to prison for a brand new sentence.
 
@@ -150,7 +150,7 @@ def subsequent_entrance(record):
         record: a single record
 
     Returns:
-        A Date for when the inmate re-entered prison for this record.
+        A Date for when the person re-entered prison for this record.
     """
     return record.last_custody_date
 
@@ -158,7 +158,7 @@ def subsequent_entrance(record):
 def final_release(record):
     """The date of final release from prison for the given record.
 
-    An inmate can be released from prison multiple times for a given record if
+    A person can be released from prison multiple times for a given record if
     they are sent back in the interim for conditional violations. This
     represents the last time they were released for this particular record.
 
@@ -166,8 +166,8 @@ def final_release(record):
         record: a single record
 
     Returns:
-        A Date for when the inmate was released from prison for this record
-        for the last time. None if the inmate is still in custody.
+        A Date for when the person was released from prison for this record
+        for the last time. None if the person is still in custody.
     """
     if not record.is_released:
         return None
@@ -176,9 +176,9 @@ def final_release(record):
 
 
 def first_facility(record, snapshots):
-    """The facility that the inmate first occupied for the given record.
+    """The facility that the person first occupied for the given record.
 
-    Returns the facility that the inmate was first in for the given record.
+    Returns the facility that the person was first in for the given record.
     That is, the facility that they started that record in, whether or not they
     have since been released.
 
@@ -190,19 +190,19 @@ def first_facility(record, snapshots):
 
     Args:
         record: a single record
-        snapshots: a list of all facility snapshots for the inmate.
+        snapshots: a list of all facility snapshots for the person.
 
     Returns:
-        The facility that the inmate first occupied for the record. None if we
+        The facility that the person first occupied for the record. None if we
         have no apparent history available for the record.
     """
     return last_facility(record, reversed(snapshots))
 
 
 def last_facility(record, snapshots):
-    """The facility that the inmate last occupied for the given record.
+    """The facility that the person last occupied for the given record.
 
-    Returns the facility that the inmate was last in for the given record.
+    Returns the facility that the person was last in for the given record.
     That is, the facility that they are currently in if still incarcerated, or
     that they were released from on their final release for that record.
 
@@ -214,10 +214,10 @@ def last_facility(record, snapshots):
 
     Args:
         record: a single record
-        snapshots: a list of all facility snapshots for the inmate.
+        snapshots: a list of all facility snapshots for the person.
 
     Returns:
-        The facility that the inmate last occupied for the record. None if we
+        The facility that the person last occupied for the record. None if we
         have no apparent history available for the record.
     """
     return next((snapshot.latest_facility for snapshot in snapshots

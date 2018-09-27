@@ -17,19 +17,19 @@
 
 """Calculates recidivism metrics from recidivism and non-recidivism events.
 
-This contains the core logic for calculating recidivism metrics on an
-inmate-by-inmate basis. It transforms RecidivismEvents into recidivism metrics,
+This contains the core logic for calculating recidivism metrics on a
+person-by-person basis. It transforms RecidivismEvents into recidivism metrics,
 key-value pairs where the key represents all of the dimensions represented in
 the data point, and the value represents a recidivism value, e.g. 0 for no or 1
 for yes.
 
 This class is paired with identifier.py, together providing the ability to
-transform an inmate into an array of recidivism metrics.
+transform a person into an array of recidivism metrics.
 
 Example:
-    recidivism_events = identification.find_recidivism(inmate)
+    recidivism_events = identification.find_recidivism(person)
     metric_combinations = calculator.map_recidivism_combinations(
-        inmate, recidivism_events)
+        person, recidivism_events)
 
 Attributes:
     FOLLOW_UP_PERIODS: a list of integers, the follow-up periods that we measure
@@ -48,15 +48,15 @@ FOLLOW_UP_PERIODS = range(1, 11)
 
 
 def map_recidivism_combinations(person, recidivism_events):
-    """Transforms the given recidivism events and inmate details into unique
+    """Transforms the given recidivism events and person details into unique
     recidivism metric combinations to count.
 
-    Takes in an inmate and all of her recidivism events and returns an array of
+    Takes in a person and all of her recidivism events and returns an array of
     "recidivism combinations". These are key-value pairs where the key
     represents a specific metric and the value represents whether or not
     recidivism occurred. If a metric does count towards recidivism, then the
     value is 1 if event-based or 1/k if offender-based, where k = the number of
-    releases for that inmate within the follow-up period after the release.
+    releases for that person within the follow-up period after the release.
     If it does not count towards recidivism, then the value is 0 in either
     methodology.
 
@@ -172,8 +172,8 @@ def earliest_recidivated_follow_up_period(release_date, reincarceration_date):
     as they had not yet recidivated within 3 years, but had within 4.
 
     Args:
-        release_date: a Date for when the inmate was released
-        reincarceration_date: a Date for when the inmate was reincarcerated
+        release_date: a Date for when the person was released
+        reincarceration_date: a Date for when the person was reincarcerated
 
     Returns:
         An integer for the earliest follow-up period under which recidivism
@@ -229,10 +229,10 @@ def relevant_follow_up_periods(release_date, current_date, follow_up_periods):
 
 
 def age_at_date(person, check_date):
-    """The age of the inmate at the given date.
+    """The age of the person at the given date.
 
     Args:
-        person: the inmate
+        person: the person
         check_date: the date to check
 
     Returns:
@@ -250,10 +250,10 @@ def age_bucket(age):
     Age buckets for measurement: <25, 25-29, 30-34, 35-39, 40<
 
     Args:
-        age: the inmate's age
+        age: the person's age
 
     Returns:
-        A string representation of the age bucket for the inmate.
+        A string representation of the age bucket for the person.
     """
     if age < 25:
         return '<25'
@@ -297,10 +297,10 @@ def stay_length_bucket(stay_length):
         72-84, 84-96, 96-108, 108-120, 120+.
 
     Args:
-        stay_length: the length in months of the inmate's facility stay.
+        stay_length: the length in months of the person's facility stay.
 
     Returns:
-        A string representation of the age bucket for the inmate.
+        A string representation of the age bucket for the person.
     """
     if stay_length is None:
         return None
@@ -329,7 +329,7 @@ def stay_length_bucket(stay_length):
 
 def characteristic_combinations(person, event):
     """The list of all combinations of the metric characteristics picked from
-    the given inmate and recidivism event.
+    the given person and recidivism event.
 
     Returns the list of all combinations of the metric characteristics, of all
     sizes. That is, this returns a list of dictionaries where each dictionary
