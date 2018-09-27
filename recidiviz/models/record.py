@@ -75,9 +75,9 @@ class Record(polymodel.PolyModel):
     the changed fields / new values.
 
     Because prison systems frequently collect new (and sometimes conflicting)
-    information each time an inmate is entered into custody, potentially
-    mutable Inmate field names are duplicated here (to ensure we capture all
-    variants of e.g. an Inmate's birth date).
+    information each time a person is entered into custody, potentially
+    mutable Person field names are duplicated here (to ensure we capture all
+    variants of e.g. a Person's birth date).
 
     Individual region scrapers are expected to create their own subclasses which
     inherit these common properties, then add more if their region has unique
@@ -96,31 +96,30 @@ class Record(polymodel.PolyModel):
             provided by the corrections system (False)
         min_sentence: (record.SentenceDuration) Minimum sentence to be served
         max_sentence: (record.SentenceDuration) Maximum sentence to be served
-        custody_date: (date) Date the inmate's sentence started
+        custody_date: (date) Date the person's sentence started
         offense_date: (date) Date the offense was committed
         latest_facility: (string) The name of the most recent facility the
-            inmate has been held in
+            person has been held in
         release_date: (date) Date of actual release.
-        earliest_release_date: (date) Earliest date release is possible.
         latest_release_date: (date) Most recent date of release
         latest_release_type: (string) Reason given for most recent release
-        is_released: (bool) Whether the inmate has been released from this
+        is_released: (bool) Whether the person has been released from this
             sentence
         community_supervision_agency: (string) The parole or probation office
             that does or will have jurisdiction over this person after release.
         parole_officer: (string) Name of the parole officer.
         case_worker: (string) Name of the case worker.
         given_names: (string) Any given names provided by the source
-        surname: (string) The inmate's surname, as provided by the source
-        birthdate: (date) Date of birth for the inmate as provided by the source
+        surname: (string) The person's surname, as provided by the source
+        birthdate: (date) Date of birth for the person as provided by the source
         sex: (string) Sex of the prisoner as provided by the prison system
         race: (string) Race of the prisoner as provided by prison system
-        last_custody_date: (date) Most recent date inmate returned for this
+        last_custody_date: (date) Most recent date person returned for this
             sentence (may not be the initial custody date - e.g., if parole
             was violated, may be readmitted for remainder of prison term)
         admission_type: (string) 'New commitment' is beginning to serve a term,
             other reasons are usually after term has started (e.g. parole issue)
-        county_of_commit: (string) County the inmate was convicted/committed in
+        county_of_commit: (string) County the person was convicted/committed in
         custody_status: (string) Scraped string on custody status (more granular
             than just 'released' / 'not-released')
         earliest_release_date: (date) Earliest date to be released based on
@@ -129,153 +128,59 @@ class Record(polymodel.PolyModel):
             release date.
         parole_hearing_date: (date) Date of next hearing before Parole Board
         parole_hearing_type: (string) Type of hearing for next PB appearance.
-        parole_elig_date: (date) Date inmate will be eligible for parole
+        parole_elig_date: (date) Date person will be eligible for parole
         cond_release_date: (date) Release date based on prison discretion for
             'good time off' based on behavior. Releases prisoner on parole, but
             bypasses PB review.
         max_expir_date: (date) Date of release if no PB or conditional release,
             maximum obligation to the state.
         max_expir_date_parole: (date) Last possible date of ongoing parole
-            supervision. Doesn't apply to all inmates.
+            supervision. Doesn't apply to all people.
         max_expir_date_superv: (date) Last possible date of post-release
-            supervision. Doesn't apply to all inmates.
+            supervision. Doesn't apply to all people.
         parole_discharge_date: (date) Final date of parole supervision, based on
             the parole board's decision to end supervision before max
             expiration.
         region: (string) The Recidiviz region code that this Record belongs to
     """
-    # status = ndb.StringProperty()
-    offense = ndb.StructuredProperty(Offense, repeated=True)
-    record_id = ndb.StringProperty()
-    record_id_is_fuzzy = ndb.BooleanProperty()
-    min_sentence_length = ndb.StructuredProperty(SentenceDuration,
-                                                 repeated=False)
-    max_sentence_length = ndb.StructuredProperty(SentenceDuration,
-                                                 repeated=False)
-    custody_date = ndb.DateProperty()
-    offense_date = ndb.DateProperty()
-    release_date = ndb.DateProperty()
-    latest_facility = ndb.StringProperty()
-    latest_release_date = ndb.DateProperty()
-    latest_release_type = ndb.StringProperty()
-    is_released = ndb.BooleanProperty()
-    community_supervision_agency = ndb.StringProperty()
-    parole_officer = ndb.StringProperty()
+    admission_type = ndb.StringProperty()
+    birthdate = ndb.DateProperty()
     case_worker = ndb.StringProperty()
-    given_names = ndb.StringProperty()
-    sex = ndb.StringProperty()
-    race = ndb.StringProperty()
-    last_custody_date = ndb.DateProperty()
-    admission_type = ndb.StringProperty()
+    community_supervision_agency = ndb.StringProperty()
+    cond_release_date = ndb.DateProperty()
     county_of_commit = ndb.StringProperty()
+    custody_date = ndb.DateProperty()
     custody_status = ndb.StringProperty()
     earliest_release_date = ndb.DateProperty()
     earliest_release_type = ndb.StringProperty()
-    parole_hearing_date = ndb.DateProperty()
-    parole_hearing_type = ndb.StringProperty()
-    parole_elig_date = ndb.DateProperty()
-    cond_release_date = ndb.DateProperty()
-    max_expir_date = ndb.DateProperty()
-    max_expir_date_parole = ndb.DateProperty()
-    max_expir_date_superv = ndb.DateProperty()
-    parole_discharge_date = ndb.DateProperty()
-    region = ndb.StringProperty()
-    birthdate = ndb.DateProperty()
-    surname = ndb.StringProperty()
-    created_on = ndb.DateTimeProperty(auto_now_add=True)
-    updated_on = ndb.DateProperty(auto_now=True)
-
-
-class TempRecord63(polymodel.PolyModel):
-    """PolyModel class to store Record fields during migration for issue 63
-
-    Attributes:
-        created_on: (datetime) Creation date of this record. If data is
-            migrated in the future, effort will be made to preserve this field
-        updated_on: (date) Date of last change / update to this record
-        offense: (record.Offense) State-provided strings describing the crimes
-            of conviction and (if available) class of crimes.
-        record_id: (string) The identifier the state site uses for this crime
-        record_id_is_fuzzy: (bool) Whether the ID is generated by us (True) or
-            provided by the corrections system (False)
-        min_sentence: (record.SentenceDuration) Minimum sentence to be served
-        max_sentence: (record.SentenceDuration) Maximum sentence to be served
-        custody_date: (date) Date the inmate's sentence started
-        offense_date: (date) Date the offense was committed
-        latest_facility: (string) The name of the most recent facility the
-            inmate has been held in
-        latest_release_date: (date) Most recent date of release
-        latest_release_type: (string) Reason given for most recent release
-        is_released: (bool) Whether the inmate has been released from this
-            sentence
-        given_names: (string) Any given names provided by the source
-        surname: (string) The inmate's surname, as provided by the source
-        birthdate: (date) Date of birth for the inmate as provided by the source
-        sex: (string) Sex of the prisoner as provided by the prison system
-        race: (string) Race of the prisoner as provided by prison system
-        last_custody_date: (date) Most recent date inmate returned for this
-            sentence (may not be the initial custody date - e.g., if parole
-            was violated, may be readmitted for remainder of prison term)
-        admission_type: (string) 'New commitment' is beginning to serve a term,
-            other reasons are usually after term has started (e.g. parole issue)
-        county_of_commit: (string) County the inmate was convicted/committed in
-        custody_status: (string) Scraped string on custody status (more granular
-            than just 'released' / 'not-released')
-        earliest_release_date: (date) Earliest date to be released based on
-            min_sentence. In certain circumstances, may be released before this.
-        earliest_release_type: (string) The reason for the earliest possible
-            release date.
-        parole_hearing_date: (date) Date of next hearing before Parole Board
-        parole_hearing_type: (string) Type of hearing for next PB appearance.
-        parole_elig_date: (date) Date inmate will be eligible for parole
-        cond_release_date: (date) Release date based on prison discretion for
-            'good time off' based on behavior. Releases prisoner on parole, but
-            bypasses PB review.
-        max_expir_date: (date) Date of release if no PB or conditional release,
-            maximum obligation to the state.
-        max_expir_date_parole: (date) Last possible date of ongoing parole
-            supervision. Doesn't apply to all inmates.
-        max_expir_date_superv: (date) Last possible date of post-release
-            supervision. Doesn't apply to all inmates.
-        parole_discharge_date: (date) Final date of parole supervision, based on
-            the parole board's decision to end supervision before max
-            expiration.
-        region: (string) The Recidiviz region code that this Record belongs to
-    """
-    offense = ndb.StructuredProperty(Offense, repeated=True)
-    record_id = ndb.StringProperty()
-    record_id_is_fuzzy = ndb.BooleanProperty()
-    min_sentence_length = ndb.StructuredProperty(SentenceDuration,
-                                                 repeated=False)
-    max_sentence_length = ndb.StructuredProperty(SentenceDuration,
-                                                 repeated=False)
-    custody_date = ndb.DateProperty()
-    offense_date = ndb.DateProperty()
+    is_released = ndb.BooleanProperty()
+    last_custody_date = ndb.DateProperty()
     latest_facility = ndb.StringProperty()
     latest_release_date = ndb.DateProperty()
     latest_release_type = ndb.StringProperty()
-    is_released = ndb.BooleanProperty()
-    given_names = ndb.StringProperty()
-    surname = ndb.StringProperty()
-    birthdate = ndb.DateProperty()
-    sex = ndb.StringProperty()
-    race = ndb.StringProperty()
-    last_custody_date = ndb.DateProperty()
-    admission_type = ndb.StringProperty()
-    county_of_commit = ndb.StringProperty()
-    custody_status = ndb.StringProperty()
-    earliest_release_date = ndb.DateProperty()
-    earliest_release_type = ndb.StringProperty()
-    parole_hearing_date = ndb.DateProperty()
-    parole_hearing_type = ndb.StringProperty()
-    parole_elig_date = ndb.DateProperty()
-    cond_release_date = ndb.DateProperty()
     max_expir_date = ndb.DateProperty()
     max_expir_date_parole = ndb.DateProperty()
     max_expir_date_superv = ndb.DateProperty()
+    max_sentence_length = ndb.StructuredProperty(SentenceDuration,
+                                                 repeated=False)
+    min_sentence_length = ndb.StructuredProperty(SentenceDuration,
+                                                 repeated=False)
+    offense = ndb.StructuredProperty(Offense, repeated=True)
+    offense_date = ndb.DateProperty()
     parole_discharge_date = ndb.DateProperty()
+    parole_elig_date = ndb.DateProperty()
+    parole_hearing_date = ndb.DateProperty()
+    parole_hearing_type = ndb.StringProperty()
+    parole_officer = ndb.StringProperty()
+    race = ndb.StringProperty()
+    record_id = ndb.StringProperty()
+    record_id_is_fuzzy = ndb.BooleanProperty()
     region = ndb.StringProperty()
+    release_date = ndb.DateProperty()
+    sex = ndb.StringProperty()
+    status = ndb.StringProperty()
+    surname = ndb.StringProperty()
+    given_names = ndb.StringProperty()
+
     created_on = ndb.DateTimeProperty(auto_now_add=True)
     updated_on = ndb.DateProperty(auto_now=True)
-    # The field below is not being temp stored for Record, but for UsNyRecord
-    us_ny_record_id = ndb.StringProperty()
