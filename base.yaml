@@ -28,8 +28,3 @@ handlers:
 - url: /datastore_export
   script: cloud_datastore_admin.app
   login: admin
-
-# MIGRATION ONLY
-# TODO: Remove post-migration
-- url: /data_migration
-  script: recidiviz.utils.data_migration.app

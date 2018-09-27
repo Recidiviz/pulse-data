@@ -210,16 +210,16 @@ def load_background_target_list(region_code, name_file, query_name, load,
 
 
 def load_snapshot_target_list(region_code, phase, cursor=None):
-    """Load snapshot scrape docket items, based on previously-found inmates
+    """Load snapshot scrape docket items, based on previously-found people.
 
-    We need to run several queries to find relevant inmates to follow-up
+    We need to run several queries to find relevant people to follow-up
     on. This method runs them by query type and by batch, using the deferred
     library to iterate through the batches (and the queries) until complete.
 
     Note that these query types (checking snapshots and records) are likely
-    to produce some duplicate inmates for us to re-snapshot. To prevent
+    to produce some duplicate people for us to re-snapshot. To prevent
     extra work, we add these items to the docket (pull taskqueue) with task
-    names that encode the inmate and current datetime, accurate to the hour.
+    names that encode the person and current datetime, accurate to the hour.
     GAE ensures multiple tasks can't be submitted with the same name within
     several days of one another, preventing duplicate tasks / work.
 
@@ -249,7 +249,7 @@ def load_snapshot_target_list(region_code, phase, cursor=None):
         # Query 1: Snapshots
         query_type = "snapshot"
 
-        # Get all snapshots showing inmates in prison within the date range
+        # Get all snapshots showing people in prison within the date range
         # (Snapshot search aims to catch when they get out / facility changes)
         snapshot_query = region_snapshot.query(ndb.AND(
             region_snapshot.created_on > start_datetime,
@@ -269,12 +269,12 @@ def load_snapshot_target_list(region_code, phase, cursor=None):
         # records also won't be on ignore lists from the snapshot query,
         # because we check for and exclude them there. The aim of this query
         # is to catch any for which the core snapshot query didn't apply.
-        inmate_records_query = region_record.query(ndb.AND(
+        person_records_query = region_record.query(ndb.AND(
             region_record.latest_release_date > start_date,
             # This must be an equality operator to work
             region_record.is_released == True))  # pylint: disable=singleton-comparison
 
-        query_results, next_cursor, more = inmate_records_query.fetch_page(
+        query_results, next_cursor, more = person_records_query.fetch_page(
             batch_size, start_cursor=cursor)
 
     elif phase == 2:
@@ -289,28 +289,28 @@ def load_snapshot_target_list(region_code, phase, cursor=None):
         # query; those will be de-duplicated by task name when added to the
         # docket. There's no risk of the records we care about from this being
         # in the ignore lists from the snapshot query, however - by definition,
-        # inmates of interest for this edge-case won't have any snapshots
+        # people of interest for this edge-case won't have any snapshots
         # updating is_released in that time.
-        inmate_records_query = region_record.query(ndb.AND(
+        person_records_query = region_record.query(ndb.AND(
             # This must be an equality operator to work
             region_record.is_released == False,  # pylint: disable=singleton-comparison
             region_record.created_on < start_datetime))
 
-        query_results, next_cursor, more = inmate_records_query.fetch_page(
+        query_results, next_cursor, more = person_records_query.fetch_page(
             batch_size, start_cursor=cursor)
 
     else:
         logging.info("Finished loading snapshot target list to docket.")
         return
 
-    (relevant_records, inmate_keys_ids) = process_query_response(
+    (relevant_records, person_keys_ids) = process_query_response(
         query_type, query_results)
 
-    # Invert results to a combination of inmate + set of records to ignore
+    # Invert results to a combination of person + set of records to ignore
     results = get_ignore_records(start_date, region_record, relevant_records,
-                                 inmate_keys_ids)
+                                 person_keys_ids)
 
-    # Store the inmates and ignore records as docket items for snapshot scrape
+    # Store the people and ignore records as docket items for snapshot scrape
     add_to_query_docket(ScrapeKey(region_code, scrape_type), results)
 
     # Move to next phase, if we've completed all results for this phase
@@ -383,7 +383,7 @@ def process_query_response(query_type, query_results):
         query_results: (list of entities) Result set from the query
 
     Returns:
-        Tuple in the form (relevant_records, inmate_keys_ids).
+        Tuple in the form (relevant_records, person_keys_ids).
             relevant_records: A list of records which should be scraped to
                 check for changes
             person_key_ids: Dictionary of parent entities (persons who we
@@ -408,10 +408,10 @@ def process_query_response(query_type, query_results):
 
 
 def get_ignore_records(start_date, region_record, relevant_records,
-                       inmate_keys_ids):
+                       person_keys_ids):
     """Invert list of relevant records to produce list scraper should ignore
 
-    Takes a list of inmates, and of relevant records, then inverts the
+    Takes a list of persons, and of relevant records, then inverts the
     list to get only a list of records we don't want to waste time
     re-scraping.
 
@@ -419,21 +419,21 @@ def get_ignore_records(start_date, region_record, relevant_records,
         start_date: (date) Date when the window of snapshot interest starts
         region_record: (models.Record subclass) The sub-kind for Record for
             the specific region
-        inmate_keys_ids: A dictionary in the form {inmate_key: inmate_id, ...}
+        person_keys_ids: A dictionary in the form {person_key: person_id, ...}
         relevant_records: (list) Records we should re-scrape
 
     Returns:
         List of record IDs to ignore. Each list item is a tuple in the form:
-            (<inmate ID>, <list of record IDs to ignore for this inmate>)
+            (<person ID>, <list of record IDs to ignore for this person>)
     """
     result_list = []
 
-    # Use the inmate keys to invert the record list - need to know which
+    # Use the person keys to invert the record list - need to know which
     # records to ignore, not which to scrape, since it's important to
     # scrape new records as well.
-    for inmate_key, inmate_id in inmate_keys_ids.iteritems():
-        inmate_ignore_records = []
-        records = region_record.query(ancestor=inmate_key).fetch()
+    for person_key, person_id in person_keys_ids.iteritems():
+        person_ignore_records = []
+        records = region_record.query(ancestor=person_key).fetch()
 
         for record in records:
             record_id = record.record_id
@@ -447,9 +447,9 @@ def get_ignore_records(start_date, region_record, relevant_records,
                 # on parole violation.
                 if (record.latest_release_date and
                         not record.latest_release_date > start_date):
-                    inmate_ignore_records.append(record_id)
+                    person_ignore_records.append(record_id)
 
-        result_list.append((inmate_id, inmate_ignore_records))
+        result_list.append((person_id, person_ignore_records))
 
     return result_list
 
@@ -459,7 +459,7 @@ def add_to_query_docket(scrape_key, docket_items):
 
     Adds items in the list to the query docket, tagged with the given region and
     scrape type. The scraper will pull each item from the docket in
-    turn for scraping (e.g. each name, if a background scrape, or each inmate ID
+    turn for scraping (e.g. each name, if a background scrape, or each person ID
     if a snapshot scrape.)
 
     Args:
@@ -502,26 +502,26 @@ def add_to_query_docket(scrape_key, docket_items):
     except (taskqueue.taskqueue.DuplicateTaskNameError,
             taskqueue.taskqueue.TombstonedTaskError,
             taskqueue.taskqueue.TaskAlreadyExistsError):
-        logging.debug("Some inmates been added to the docket already; "
+        logging.debug("Some people have been added to the docket already; "
                       "skipping.")
 
 
-def get_task_name(region_code, inmate_id):
-    """Generate unique task name for region+inmate+current datetime
+def get_task_name(region_code, person_id):
+    """Generate unique task name for region+person+current datetime
 
-    Generates a unique task name for a particular inmate ID and region.
+    Generates a unique task name for a particular person ID and region.
 
     Because taskqueue enforces uniqueness for 9 days even after a task
     has been deleted, and we may want to run (or re-run) snapshot scrapes
     more frequently, we incorporate the datetime accurate to the current hour.
 
     Because taskqueues become less efficient if task names are closely related
-    or sequential, we hash the region/inmate-specific string chosen for the
+    or sequential, we hash the region/person-specific string chosen for the
     name to try to ensure they're more evenly distributed.
 
     Args:
         region_code: (string) Region code this task will be tied to
-        inmate_id: (string) Inmate ID the task is for
+        person_id: (string) Person ID the task is for
 
     Returns:
         Task name, in the form of an MD5 hash
@@ -531,7 +531,7 @@ def get_task_name(region_code, inmate_id):
     # will be blocked.
     time_component = datetime.now().replace(microsecond=0, second=0, minute=0)
 
-    string_base = region_code + inmate_id + str(time_component)
+    string_base = region_code + person_id + str(time_component)
 
     return hashlib.md5(string_base).hexdigest()
 

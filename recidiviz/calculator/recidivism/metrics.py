@@ -34,20 +34,20 @@ class RecidivismMetric(polymodel.PolyModel):
     Attributes:
         execution_id: the string id of the calculation pipeline that produced
             this metric. Required.
-        release_cohort: the integer year during which the inmate was released.
+        release_cohort: the integer year during which the person was released.
             Required.
         follow_up_period: the integer number of years after date of release
             duringwhich recidivism was measured, e.g. the recidivism rate within
             5 years of release. Required.
         methodology: the calculation methodology for the metric, i.e. 'EVENT' or
             'OFFENDER'. Required.
-        age_bucket: the age bucket string of the inmate the metric describes,
+        age_bucket: the age bucket string of the person the metric describes,
             e.g. '<25' or '35-39'.
-        stay_length_bucket: the bucket string of the inmate's prison stay length
+        stay_length_bucket: the bucket string of the person's prison stay length
             (in months), e.g., '<12' or '36-48'.
-        race: the race of the inmate the metric describes.
-        sex: the sex of the inmate the metric describes.
-        release_facility: the facility the inmate was released from prior to
+        race: the race of the person the metric describes.
+        sex: the sex of the person the metric describes.
+        release_facility: the facility the person was released from prior to
             recidivating.
         total_records: the integer number of records that the characteristics in
             this metric describe.
