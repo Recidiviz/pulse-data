@@ -37,17 +37,13 @@ import webapp2
 
 from google.appengine.ext import ndb
 from recidiviz.models.env_vars import EnvironmentVariable
-from recidiviz.models.person import Inmate
+from recidiviz.models.person import Person
 from recidiviz.models.record import Offense, SentenceDuration, Record
 from recidiviz.models.snapshot import Snapshot
 from recidiviz.ingest.sessions import ScrapeSession, ScrapedRecord
 from recidiviz.utils import environment
 from recidiviz.utils import regions
 from recidiviz.utils.auth import authenticate_request
-
-# TODO: Remove post-migration
-from recidiviz.ingest.us_ny.us_ny_record import UsNyRecord  # pylint: disable=ungrouped-imports
-from recidiviz.models.snapshot import InmateFacilitySnapshot  # pylint: disable=ungrouped-imports
 
 
 class PopulateDb(webapp2.RequestHandler):
@@ -96,18 +92,12 @@ class PopulateDb(webapp2.RequestHandler):
             return
 
         try:
-            inmate_count = int(self.request.get('inmates', 5))
-            record_count = int(self.request.get('records_per_inmate', 3))
+            person_count = int(self.request.get('persons', 5))
+            record_count = int(self.request.get('records_per_person', 3))
             snapshot_count = int(self.request.get('snapshots_per_record', 3))
-            old_snapshot_count = int(self.request.get(
-                'old_snapshots_per_record', 0))
         except ValueError:
             self.invalid_params("Fake data quantity must be integer. Exiting.")
             return
-
-        # TODO: Remove this after Record migration
-        suppress_new_fields = self.request.get('suppress_new_fields', False)
-        suppress_new_fields = True if suppress_new_fields == "true" else False
 
         if wipe_db:
             purge_datastore()
@@ -115,15 +105,14 @@ class PopulateDb(webapp2.RequestHandler):
         load_env_vars()
         region = regions.Region(region_code)
 
-        # Add some sample NY inmates, records, and snapshots to work with
+        # Add some sample NY people, records, and snapshots to work with
         # Sleeps allow datastore indices to catch up, since each method
         # below relies on the prior's generated data
-        generate_inmates(region, inmate_count)
+        generate_people(region, person_count)
         time.sleep(5)
-        generate_inmate_records(region, record_count, suppress_new_fields)
+        generate_person_records(region, record_count)
         time.sleep(5)
         generate_snapshots(region, snapshot_count)
-        generate_old_snapshot_type(old_snapshot_count)
 
         self.response.write("Database populated, feel free to test.")
         logging.info("Completed test datastore setup.")
@@ -220,67 +209,63 @@ def purge_datastore():
 
     entities = []
 
-    entities.extend(Inmate.query().fetch())
+    entities.extend(Person.query().fetch())
     entities.extend(Record.query().fetch())
     entities.extend(Snapshot.query().fetch())
     entities.extend(ScrapeSession.query().fetch())
     entities.extend(ScrapedRecord.query().fetch())
 
-    # TODO: Remove InmateFacilitySnapshot post migration
-    entities.extend(InmateFacilitySnapshot.query().fetch())
-
     for entity in entities:
         entity.key.delete()
 
 
-def generate_inmates(region, num_inmates):
-    """Generate inmate entities with semi-random field values
+def generate_people(region, num_people):
+    """Generate person entities with semi-random field values
 
-    Generates (num_inmates) inmate entities with pseudo-random
+    Generates (num_people) person entities with pseudo-random
     property values.
 
     Args:
         region: (string) Region object
-        num_inmates: (int) How many inmate entities to generate
+        num_people: (int) How many person entities to generate
 
     Returns:
         N/A
     """
-    logging.info("Generating fake inmate data...")
+    logging.info("Generating fake person data...")
 
-    inmate_class = ndb.Model._kind_map[region.entity_kinds['inmate']]
-    inmate_attrs = inmate_class._properties
+    person_class = ndb.Model._kind_map[region.entity_kinds['person']]
+    person_attrs = person_class._properties
 
-    region_inmate = region.get_inmate_kind()
+    region_person = region.get_person_kind()
 
-    for _ in range(num_inmates):
+    for _ in range(num_people):
 
-        inmate = region_inmate()
+        person = region_person()
 
-        for attr in inmate_attrs:
+        for attr in person_attrs:
             if attr not in ["class"]:
 
-                model_prop = region_inmate._properties[attr]
-                enum = region_inmate._properties[attr]._choices
-                required = region_inmate._properties[attr]._required
+                model_prop = region_person._properties[attr]
+                enum = region_person._properties[attr]._choices
+                required = region_person._properties[attr]._required
 
                 fake_value = details_generator(model_prop, enum, required)
 
-                setattr(inmate, attr, fake_value)
+                setattr(person, attr, fake_value)
 
-        inmate.put()
+        person.put()
 
 
-def generate_inmate_records(region, num_records, suppress_new_fields):
+def generate_person_records(region, num_records):
     """Generate record entities with semi-random field values
 
     Generates at least one, and at most num_records, Record entities for the
-    each inmate associated with the provided region in the datastore.
+    each person associated with the provided region in the datastore.
 
     Args:
         region: (string) Region code to create entities for
-        num_records: (int) Generate up to this many records per inmate
-        suppress_new_fields: (bool) Suppress new fields to test migration
+        num_records: (int) Generate up to this many records per person
 
     Returns:
         N/A
@@ -290,7 +275,7 @@ def generate_inmate_records(region, num_records, suppress_new_fields):
     record_class = ndb.Model._kind_map[region.entity_kinds['record']]
     record_attrs = record_class._properties
 
-    region_inmate = region.get_inmate_kind()
+    region_person = region.get_person_kind()
     region_record = region.get_record_kind()
 
     exclude_attrs = ["class",
@@ -299,21 +284,16 @@ def generate_inmate_records(region, num_records, suppress_new_fields):
                      "max_sentence_length",
                      "offense"]
 
-    # TODO: Remove post-Record migration
-    if suppress_new_fields:
-        exclude_attrs.append("latest_release_date")
-        exclude_attrs.append("latest_release_type")
+    person_query = region_person.query().fetch()
 
-    inmate_query = region_inmate.query().fetch()
-
-    for inmate in inmate_query:
-        inmate_key = inmate.key
+    for person in person_query:
+        person_key = person.key
 
         for _ in range(random.choice(range(1, num_records))):
 
             record_id = ''.join(random.choice(string.lowercase)
                                 for _ in range(8))
-            record = region_record.get_or_insert(record_id, parent=inmate_key)
+            record = region_record.get_or_insert(record_id, parent=person_key)
             record.record_id = record_id
 
             record.offense = generate_offense()
@@ -451,38 +431,6 @@ def generate_snapshots(region, num_snapshots):
                                                        required)
 
                         setattr(snapshot, attr, fake_value)
-
-                snapshot.put()
-
-
-# TODO: Remove this method post-snapshot migration
-def generate_old_snapshot_type(num_snapshots):
-    """Generates inmate entities with pseudo-random field values
-
-    Generates old snapshot type (InmateFacilitySnapshot entities), between one
-    and (num_snapshots) per Record entity found in datastore.
-
-    Args:
-        region: (string) Region code to create entities for
-        num_snapshots: (int) Max number of entities to generate per Record
-
-    Returns:
-        N/A
-    """
-    logging.info("Generating fake old snapshot data...")
-
-    if num_snapshots:
-        record_query = UsNyRecord.query().fetch()
-
-        for record in record_query:
-
-            for _ in range(random.choice(range(1, num_snapshots))):
-                record_key = record.key
-                snapshot = InmateFacilitySnapshot(parent=record_key)
-
-                model_prop = InmateFacilitySnapshot._properties["facility"]
-
-                snapshot.facility = details_generator(model_prop, None, True)
 
                 snapshot.put()
 

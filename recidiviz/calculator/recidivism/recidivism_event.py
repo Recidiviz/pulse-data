@@ -26,16 +26,16 @@ class RecidivismEvent(object):
     recidivism later took place.
 
     Attributes:
-        recidivated: A boolean indicating whether or not the inmate actually
+        recidivated: A boolean indicating whether or not the person actually
             recidivated for this release event.
-        original_entry_date: A Date for when the inmate first entered prison
+        original_entry_date: A Date for when the person first entered prison
             for this record.
-        release_date: A Date for when the inmate was last released from prison
+        release_date: A Date for when the person was last released from prison
             for this record.
-        release_facility: The facility that the inmate was last released from
+        release_facility: The facility that the person was last released from
             for this record.
-        reincarceration_date: A Date for when the inmate re-entered prison.
-        reincarceration_facility: The facility that the inmate entered into upon
+        reincarceration_date: A Date for when the person re-entered prison.
+        reincarceration_facility: The facility that the person entered into upon
             first return to prison after the release.
         was_conditional: A boolean indicating whether or not the recidivism,
             if it occurred, was due to a conditional violation, as opposed to a
@@ -67,14 +67,14 @@ class RecidivismEvent(object):
         occurred.
 
         Args:
-            original_entry_date: A Date for when the inmate first entered prison
+            original_entry_date: A Date for when the person first entered prison
                 for this record.
-            release_date: A Date for when the inmate was last released from
+            release_date: A Date for when the person was last released from
                 prison for this record.
-            release_facility: The facility that the inmate was last released
+            release_facility: The facility that the person was last released
                 from for this record.
-            reincarceration_date: A Date for when the inmate re-entered prison.
-            reincarceration_facility: The facility that the inmate entered into
+            reincarceration_date: A Date for when the person re-entered prison.
+            reincarceration_facility: The facility that the person entered into
                 upon first return to prison after the release.
             was_conditional: A boolean indicating whether or not the recidivism,
                 if it occurred, was due to a conditional violation, as opposed
@@ -94,11 +94,11 @@ class RecidivismEvent(object):
         did not occur.
 
         Args:
-            original_entry_date: A Date for when the inmate first entered
+            original_entry_date: A Date for when the person first entered
                 prison for this record.
-            release_date: A Date for when the inmate was last released from
+            release_date: A Date for when the person was last released from
                 prison for this record.
-            release_facility: The facility that the inmate was last released
+            release_facility: The facility that the person was last released
                 from for this record.
 
         Returns:

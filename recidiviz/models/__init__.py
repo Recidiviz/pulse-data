@@ -19,11 +19,11 @@
 
 These are the models that must be shared between ingest and calculation. They
 capture, conceptually:
-    An Inmate who serves a particular sentence in the criminal justice system.
+    A Person who serves a particular sentence in the criminal justice system.
     A historical Record of that sentence, including facility, dates, offense,
         sentencing information, and more.
-    An Inmate Facility Snapshot that records where an Inmate was incarcerated
-        at a particular point in time.
+    A Snapshot that records changes to a Person or Record at a specific ingest
+        execution. That is, the new value of a changed field at a point in time.
 """
 
 

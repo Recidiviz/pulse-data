@@ -31,7 +31,7 @@ from recidiviz.models import env_vars
 from recidiviz.utils import environment
 
 
-def parse_date_string(date_string, inmate_id):
+def parse_date_string(date_string, person_id):
     """Converts string describing date to Python date object
 
     Dates are expressed differently in different records,
@@ -45,7 +45,7 @@ def parse_date_string(date_string, inmate_id):
 
     Args:
         date_string: (string) Scraped string containing a date
-        inmate_id: (string) Inmate ID this date is for, for logging
+        person_id: (string) Person ID this date is for, for logging
 
     Returns:
         Python date object representing the date parsed from the string, or
@@ -58,8 +58,8 @@ def parse_date_string(date_string, inmate_id):
             result = parser.parse(date_string)
             result = result.date()
         except ValueError:
-            logging.warning("Couldn't parse date string '%s' for inmate: %s",
-                            date_string, inmate_id)
+            logging.debug("Couldn't parse date string '%s' for person: %s",
+                          date_string, person_id)
             return None
 
         # If month-only date, manually force date to first of the month.
@@ -80,7 +80,7 @@ def generate_id(entity_kind):
     returning a new ID.
 
     Args:
-        entity_kind: (ndb model class, e.g. us_ny.UsNyInmate) Entity kind to
+        entity_kind: (ndb model class, e.g. us_ny.UsNyPerson) Entity kind to
             check uniqueness of generated id.
 
     Returns:
@@ -120,7 +120,7 @@ def normalize_key_value_row(row_data):
 def calculate_age(birth_date):
     """Converts birth date to age during current scrape.
 
-    Determines age of inmate based on her or his birth date. Note: We don't
+    Determines age of person based on her or his birth date. Note: We don't
     know the timezone of birth, so we use local time for us. Result may be
     off by up to a day.
 
@@ -128,7 +128,7 @@ def calculate_age(birth_date):
         birth_date: (date) Date of birth as reported by prison system
 
     Returns:
-        (int) Age of inmate
+        (int) Age of person
     """
     today = date.today()
     age = today.year - birth_date.year - ((today.month, today.day) <
