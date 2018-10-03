@@ -506,7 +506,7 @@ def add_to_query_docket(scrape_key, docket_items):
                       "skipping.")
 
 
-def get_task_name(region_code, person_id):
+def get_task_name(region_code, person_id, date_time=None):
     """Generate unique task name for region+person+current datetime
 
     Generates a unique task name for a particular person ID and region.
@@ -522,6 +522,8 @@ def get_task_name(region_code, person_id):
     Args:
         region_code: (string) Region code this task will be tied to
         person_id: (string) Person ID the task is for
+        date_time: (datetime) The date and time when the task is generated,
+            defaults to right now
 
     Returns:
         Task name, in the form of an MD5 hash
@@ -529,7 +531,9 @@ def get_task_name(region_code, person_id):
     # Get the time, rounded down to the last hour. New tasks will have unique
     # names an hour after the last snapshot scrape, but immediate duplicates
     # will be blocked.
-    time_component = datetime.now().replace(microsecond=0, second=0, minute=0)
+    if date_time is None:
+        date_time = datetime.now()
+    time_component = date_time.replace(microsecond=0, second=0, minute=0)
 
     string_base = region_code + person_id + str(time_component)
 
