@@ -19,7 +19,6 @@
 
 
 import json
-import time
 
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
@@ -219,9 +218,10 @@ class TestRemoval(object):
 
 
 def test_get_task_name_same_within_minute():
-    first = docket.get_task_name("us_ny", "12345")
-    time.sleep(2)
-    second = docket.get_task_name("us_ny", "12345")
+    first_time = datetime(2018, 10, 2, 16, 29, 43)
+    first = docket.get_task_name("us_ny", "12345", date_time=first_time)
+    second_time = datetime(2018, 10, 2, 16, 29, 48)
+    second = docket.get_task_name("us_ny", "12345", date_time=second_time)
 
     assert first == second
 
