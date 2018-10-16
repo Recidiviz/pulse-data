@@ -28,6 +28,8 @@ import requests_toolbelt.adapters.appengine
 import requests
 
 from google.appengine.ext import deferred
+from google.appengine.ext.db import InternalError
+from google.appengine.ext.db import Timeout, TransactionFailedError
 from google.appengine.api import taskqueue
 from google.appengine.api import urlfetch
 from recidiviz.ingest import scraper_utils
@@ -334,3 +336,86 @@ class Scraper(object):
             return record_id, item_content[1]
 
         return item_content
+
+    def compare_and_set_snapshot(self, old_record, snapshot):
+        """Check for updates since last scrape, if found persist new snapshot
+        Checks the last snapshot taken for this record, and if fields
+        have changed since the last time the record was updated (or
+        the record has no old snapshots) stores new snapshot.
+
+        The new snapshot will only include those fields which have changed.
+        Args:
+            old_record: (UsVtRecord) The record entity this
+                snapshot pertains to
+            snapshot: (UsVtSnapshot) Snapshot object with details from
+                current scrape.
+        Returns:
+            True if successful
+            False if datastore errors
+
+        """
+        new_snapshot = False
+
+        # pylint:disable=protected-access
+        snapshot_class = self.region.get_snapshot_kind()
+
+        last_snapshot = snapshot_class.query(
+            ancestor=old_record.key).order(
+                -snapshot_class.created_on).get()
+
+        if last_snapshot:
+            snapshot_attrs = snapshot_class._properties
+            for attribute in snapshot_attrs:
+                if attribute not in ["class", "created_on", "offense"]:
+                    current_value = getattr(snapshot, attribute)
+                    last_value = getattr(old_record, attribute)
+                    if current_value != last_value:
+                        new_snapshot = True
+                        logging.info("Found change in person snapshot: field "
+                                     "%s was '%s', is now '%s'.",
+                                     attribute, last_value, current_value)
+                    else:
+                        setattr(snapshot, attribute, None)
+
+                elif attribute == "offense":
+                    # Offenses have to be treated differently -
+                    # setting them to None means an empty list or
+                    # tuple instead of None, and an unordered list of
+                    # them can't be compared to another unordered list
+                    # of them.
+                    offense_changed = False
+
+                    # Check if any new offenses have been added
+                    for charge in snapshot.offense:
+                        if charge in old_record.offense:
+                            pass
+                        else:
+                            offense_changed = True
+
+                    # Check if any old offenses have been removed
+                    for charge in old_record.offense:
+                        if charge in snapshot.offense:
+                            pass
+                        else:
+                            offense_changed = True
+
+                    if offense_changed:
+                        new_snapshot = True
+                        logging.info("Found change in person snapshot: field "
+                                     "%s was '%s', is now '%s'.", attribute,
+                                     old_record.offense, snapshot.offense)
+                    else:
+                        setattr(snapshot, attribute, [])
+
+        else:
+            # This is the first snapshot, store everything
+            new_snapshot = True
+
+        if new_snapshot:
+            try:
+                snapshot.put()
+            except (Timeout, TransactionFailedError, InternalError):
+                logging.warning("Couldn't store new snapshot for record %s",
+                                old_record.record_id)
+
+        return True
