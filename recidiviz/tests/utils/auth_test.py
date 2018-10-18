@@ -17,7 +17,7 @@
 
 # pylint: disable=unused-import,wrong-import-order
 
-"""Tests for utils/environment.py."""
+"""Tests for utils/auth.py."""
 
 
 import pytest

@@ -61,6 +61,8 @@ class Scraper(object):
 
     """
 
+    __metaclass__ = abc.ABCMeta
+
     def __init__(self, region_name):
         """Initialize the parent scraper object.
 
@@ -184,9 +186,6 @@ class Scraper(object):
         Returns:
             N/A
         """
-        recent_sessions = sessions.get_recent_sessions(ScrapeKey(
-            self.get_region().region_code, scrape_type))
-
         if scrape_type == "background":
             # Background scrape
 
@@ -200,6 +199,9 @@ class Scraper(object):
             # the docket un-leased. It will get deleted the next time
             # we start a new background scrape.
 
+            recent_sessions = sessions.get_recent_sessions(ScrapeKey(
+                self.get_region().region_code, scrape_type))
+
             last_scraped = None
             for session in recent_sessions:
                 if session.last_scraped:
@@ -211,6 +213,7 @@ class Scraper(object):
             else:
                 logging.error("No earlier session with last_scraped found; "
                               "cannot resume.")
+                return
 
         else:
             # Snapshot scrape
@@ -253,24 +256,28 @@ class Scraper(object):
         except requests.exceptions.RequestException as ce:
             log_error = "Error: {0}".format(ce)
 
-            if ce.request:
-                log_error += ("\n\nRequest headers: \n{0}"
-                              "\n\nMethod: {1}"
-                              "\n\nBody: \n{2} ")
-                log_error = log_error.format(
-                    ce.request.headers,
-                    ce.request.method,
-                    ce.request.body)
+            request = ce.request
+            if request is not None:
+                request_error = ("\n\nRequest headers: \n{0}"
+                                 "\n\nMethod: {1}"
+                                 "\n\nBody: \n{2} ")\
+                    .format(request.headers,
+                            request.method,
+                            request.body)
 
-            if ce.response:
-                log_error += ("\n\nResponse: \n{0} / {1}"
-                              "\n\nHeaders: \n{2}"
-                              "\n\nText: \n{3}")
-                log_error = log_error.format(
-                    ce.response.status_code,
-                    ce.response.reason,
-                    ce.response.headers,
-                    ce.response.text)
+                log_error += request_error
+
+            response = ce.response
+            if response is not None:
+                response_error = ("\n\nResponse: \n{0} / {1}"
+                                  "\n\nHeaders: \n{2}"
+                                  "\n\nText: \n{3}")\
+                    .format(response.status_code,
+                            response.reason,
+                            response.headers,
+                            response.text)
+
+                log_error += response_error
 
             logging.warning("Problem retrieving page, failing task to "
                             "retry. \n\n%s", log_error)
@@ -417,5 +424,6 @@ class Scraper(object):
             except (Timeout, TransactionFailedError, InternalError):
                 logging.warning("Couldn't store new snapshot for record %s",
                                 old_record.record_id)
+                return False
 
         return True

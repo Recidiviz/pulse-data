@@ -125,9 +125,8 @@ def test_load_region_manifest_not_found():
                 as mock_file:
             regions.load_region_manifest('us_az')
 
-        assert exception.value.message == "Region 'us_az' not " \
-                                          "found in manifest."
-        mock_file.assert_called_with('region_manifest.yaml', 'r')
+    assert exception.value.message == "Region 'us_az' not found in manifest."
+    mock_file.assert_called_with('region_manifest.yaml', 'r')
 
 
 def test_get_supported_regions():

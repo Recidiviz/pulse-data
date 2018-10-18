@@ -1,2 +1,2 @@
 [run]
-omit = lib/*,tests/*
+omit = lib/*,recidiviz/tests/*,recidiviz/utils/data_migration.py
