@@ -168,7 +168,7 @@ class Scraper(object):
                          "scrape type: %s.", str(scrape))
             deferred.defer(self.resume_scrape, scrape, _countdown=60)
 
-        q = taskqueue.Queue(self.get_region().queues[0])
+        q = taskqueue.Queue(self.get_region().queue)
         q.purge()
 
     def resume_scrape(self, scrape_type):

@@ -36,8 +36,7 @@ regions:
     agency_name: Vermont Department of Corrections
     region_code: us_vt
     agency_type: unified
-    queues:
-    - us-vt-scraper
+    queue: us-vt-scraper
     base_url: https://omsweb.public-safety-cloud.com/jtclientweb
     names_file: us_ny_names.csv
     entity_kinds:
