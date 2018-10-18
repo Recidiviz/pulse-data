@@ -18,6 +18,8 @@
 """Tests for ingest/models/scrape_key.py."""
 
 
+import pytest
+
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 
 
@@ -49,6 +51,13 @@ def test_eq_same():
     assert left == right
 
 
+def test_eq_different_objects():
+    left = ScrapeKey("us_ny", "background")
+    right = "We don't read the papers, we don't read the news"
+
+    assert not left.__eq__(right)
+
+
 def test_repr():
     scrape_key = ScrapeKey("us_ut", "snapshot")
 
@@ -56,3 +65,17 @@ def test_repr():
 
     assert representation == "<ScrapeKey region_code: us_ut, " \
                              "scrape_type: snapshot>"
+
+
+def test_no_region():
+    with pytest.raises(ValueError) as exception:
+        ScrapeKey(None, "snapshot")
+    assert exception.value.message == 'A scrape key must include both ' \
+                                      'a region code and a scrape type'
+
+
+def test_no_scrape_type():
+    with pytest.raises(ValueError) as exception:
+        ScrapeKey("us_ut", None)
+    assert exception.value.message == 'A scrape key must include both ' \
+                                      'a region code and a scrape type'
