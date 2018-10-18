@@ -53,7 +53,7 @@ def parse_date_string(date_string, person_id):
         often NONE or LIFE are put in for these if life sentence).
 
     """
-    if date_string:
+    if date_string and not date_string.isspace():
         try:
             result = parser.parse(date_string)
             result = result.date()
@@ -63,7 +63,7 @@ def parse_date_string(date_string, person_id):
             return None
 
         # If month-only date, manually force date to first of the month.
-        if len(date_string.split("/")) == 2:
+        if len(date_string.split("/")) == 2 or len(date_string.split("-")) == 2:
             result = result.replace(day=1)
 
     else:
@@ -117,7 +117,7 @@ def normalize_key_value_row(row_data):
     return key, value
 
 
-def calculate_age(birth_date):
+def calculate_age(birthdate, check_date=None):
     """Converts birth date to age during current scrape.
 
     Determines age of person based on her or his birth date. Note: We don't
@@ -125,17 +125,18 @@ def calculate_age(birth_date):
     off by up to a day.
 
     Args:
-        birth_date: (date) Date of birth as reported by prison system
+        birthdate: (date) Date of birth as reported by prison system
+        check_date: (date) The date to compare against, defaults to today
 
     Returns:
         (int) Age of person
     """
-    today = date.today()
-    age = today.year - birth_date.year - ((today.month, today.day) <
-                                          (birth_date.month,
-                                           birth_date.day))
+    if check_date is None:
+        check_date = date.today()
 
-    return age
+    return None if birthdate is None else \
+        check_date.year - birthdate.year - \
+        ((check_date.month, check_date.day) < (birthdate.month, birthdate.day))
 
 
 def get_proxies(use_test=False):
@@ -168,6 +169,9 @@ def get_proxies(use_test=False):
         pass_var = "proxy_password"
 
     proxy_url = env_vars.get_env_var("proxy_url", None)
+
+    if proxy_url is None:
+        raise Exception("No proxy url")
 
     proxy_user = env_vars.get_env_var(user_var, None)
     proxy_password = env_vars.get_env_var(pass_var, None)
@@ -207,5 +211,5 @@ def get_headers():
     if not user_agent_string:
         raise Exception("No user agent string")
 
-    headers = {'User-Agent': (user_agent_string)}
+    headers = {'User-Agent': user_agent_string}
     return headers

@@ -28,10 +28,10 @@ import time
 import webapp2
 
 from google.appengine.ext import deferred
+from recidiviz.ingest import docket
 from recidiviz.ingest import sessions
-from recidiviz.ingest.docket import load_target_list
+from recidiviz.ingest import tracker
 from recidiviz.ingest.models.scrape_key import ScrapeKey
-from recidiviz.ingest.tracker import purge_docket_and_session
 from recidiviz.utils import environment
 from recidiviz.utils import regions
 from recidiviz.utils.auth import authenticate_request
@@ -88,8 +88,8 @@ class ScraperStart(webapp2.RequestHandler):
 
                     # Clear prior query docket for this scrape type and add new
                     # items
-                    purge_docket_and_session(scrape_key)
-                    load_target_list(scrape_key, params)
+                    tracker.purge_docket_and_session(scrape_key)
+                    docket.load_target_list(scrape_key, params)
 
                     # Start scraper, but give the target list loader a headstart
                     timer = 30 if not environment.in_prod() else 300
