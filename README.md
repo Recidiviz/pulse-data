@@ -2,11 +2,11 @@
 
 [![Build Status](https://travis-ci.org/Recidiviz/pulse-data.svg?branch=master)](https://travis-ci.org/Recidiviz/pulse-data) [![Coverage Status](https://coveralls.io/repos/github/Recidiviz/pulse-data/badge.svg?branch=master)](https://coveralls.io/github/Recidiviz/pulse-data?branch=master)
 
-At the center of Recidiviz is our platform for tracking granular recidivism metrics in real time. It includes a system
-for the ingest of corrections records from different criminal justice systems, and for calculation of recidivism metrics
-from the ingested records.
+At the center of Recidiviz is our platform for tracking granular criminal justice metrics in real time. It includes a system
+for the ingest of corrections records from different source data systems, and for calculation of various metrics from the
+ingested records.
 
-Read more on data ingest in [`/recidiviz/ingest`](./recidiviz/ingest) and recidivism calculation in [`/recidiviz/calculator`](./recidiviz/calculator).
+Read more on data ingest in [`/recidiviz/ingest`](./recidiviz/ingest) and calculation in [`/recidiviz/calculator`](./recidiviz/calculator).
 
 License
 -------
@@ -20,10 +20,10 @@ Data Access
 The data that we have gathered from criminal justice systems has been sanitized, de-duplicated, and standardized in a
 single schema. This processed data is central to our purposes but may be useful to others, as well. If you would like
 access to the processed data, in whole or in part, please reach out to us at `team@recidiviz.com`. We evaluate such
-requests on a case-by-case basis.
+requests on a case-by-case basis, in conjunction with our partners.
 
-Calculated recidivism metrics can also be made available through the same process, though we anticipate publishing our
-analysis in various forms and channels over time.
+Calculated metrics can also be made available through the same process, though we anticipate publishing our analysis
+in various forms and channels over time.
 
 Forking
 ------
@@ -31,8 +31,8 @@ Forking
 The Recidiviz data system is provided as open source software - for transparency and collaborative development, to
 help jump-start similar projects in other spaces, and to ensure continuation if Recidiviz itself ever becomes inactive.
 
-If you plan to fork the project for work in the criminal justice space (to scrape the same systems we are, or similar),
-we ask that you first [contact us](mailto:team@recidiviz.com) for a quick consulation. We work carefully to ensure
+If you plan to fork the project for work in the criminal justice space (to ingest from the same systems we are, or similar),
+we ask that you first [contact us](mailto:team@recidiviz.com) for a quick consultation. We work carefully to ensure
 that our scraping activities don't disrupt other users' experiences with the public data services we scrape, but if
 multiple scrapers are running against the same systems, without knowing about one another, it may place excessive
 strain on them and impact the services those systems provide.
