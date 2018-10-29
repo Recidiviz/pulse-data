@@ -14,7 +14,18 @@ queue:
     max_backoff_seconds: 300
     task_age_limit: 3d
 
-# us-vt-scraper - Vermont
+# us_pa_greene - Greene County, Pennsylvania
+- name: us-pa-greene-scraper
+  mode: push
+  rate: 5/m
+  bucket_size: 1
+  max_concurrent_requests: 3
+  retry_parameters:
+    min_backoff_seconds: 5
+    max_backoff_seconds: 300
+    task_age_limit: 3d
+
+# us_vt - Vermont
 - name: us-vt-scraper
   mode: push
   rate: 5/m
