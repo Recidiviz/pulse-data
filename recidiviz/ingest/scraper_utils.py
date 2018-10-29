@@ -20,7 +20,7 @@
 that does not depend on member data.
 """
 
-from datetime import date
+from datetime import date, datetime
 import logging
 import random
 import string
@@ -56,15 +56,24 @@ def parse_date_string(date_string, person_id=None):
     """
     if date_string and not date_string.isspace():
         try:
-            result = parser.parse(date_string)
+            # The year and month in the `default` do not matter. This protects
+            # against an esoteric bug: parsing a 2-integer date with a month of
+            # February while the local machine date is the 29th or higher (or
+            # 30th or higher if the year of the string is a leap year).
+            # Without a default day of `01` to fall back on, it falls back to
+            # the local machine day, which will fail because February does not
+            # have that many days.
+            result = parser.parse(date_string, default=datetime(2018, 01, 01))
             result = result.date()
-        except ValueError:
+        except ValueError, e:
             if person_id:
                 logging.debug("Couldn't parse date string '%s' for person: %s",
                               date_string, person_id)
             else:
                 logging.debug("Couldn't parse date string '%s'",
                               date_string)
+
+            logging.debug(str(e))
             return None
 
         # If month-only date, manually force date to first of the month.
