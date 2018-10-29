@@ -24,6 +24,7 @@ from datetime import date
 import logging
 import random
 import string
+import zlib
 import dateutil.parser as parser
 
 from google.appengine.ext import ndb
@@ -31,7 +32,7 @@ from recidiviz.models import env_vars
 from recidiviz.utils import environment
 
 
-def parse_date_string(date_string, person_id):
+def parse_date_string(date_string, person_id=None):
     """Converts string describing date to Python date object
 
     Dates are expressed differently in different records,
@@ -58,8 +59,12 @@ def parse_date_string(date_string, person_id):
             result = parser.parse(date_string)
             result = result.date()
         except ValueError:
-            logging.debug("Couldn't parse date string '%s' for person: %s",
-                          date_string, person_id)
+            if person_id:
+                logging.debug("Couldn't parse date string '%s' for person: %s",
+                              date_string, person_id)
+            else:
+                logging.debug("Couldn't parse date string '%s'",
+                              date_string)
             return None
 
         # If month-only date, manually force date to first of the month.
@@ -139,6 +144,22 @@ def calculate_age(birthdate, check_date=None):
         ((check_date.month, check_date.day) < (birthdate.month, birthdate.day))
 
 
+def get_id_value_from_html_tree(html_tree, html_id):
+    """Retrieves the value of the given id from the given html tree.
+
+    Args:
+        html_tree: (string) html of the scraped page.
+        html_id: (string) the html id we are trying to retrieve.
+
+    Returns:
+        A string representing the value of the id from the html page.
+    """
+    html_obj = html_tree.cssselect('[id={}]'.format(html_id))
+    if html_obj:
+        return html_obj[0].get('value')
+    return None
+
+
 def get_proxies(use_test=False):
     """Retrieves proxy username/pass from environment variables
 
@@ -213,3 +234,42 @@ def get_headers():
 
     headers = {'User-Agent': user_agent_string}
     return headers
+
+
+def currency_to_float(currency):
+    """Converts a given currency string value to a float.  This function has
+    limited uses currently as it only works when the given currency starts with
+    a currency symbol.
+
+    Args:
+        currency: A string representing the dollar currency dollar amount.
+
+    Returns:
+        A float representing the currency.
+    """
+    return float(currency[1:].replace(',', ''))
+
+def compress_string(s, level=1):
+    """Uses the built in DEFLATE algorithm to compress the string.
+
+    Args:
+        s: The string to be compressed
+        level: The level of compression, 1 is almost always the right answer
+            here as the multi-level compression is much slower and provides
+            very little benefit.
+
+    Returns:
+        The compressed string
+    """
+    return zlib.compress(s, level)
+
+def decompress_string(s):
+    """Uses the built in DEFLATE algorithm to decompress the string.
+
+    Args:
+        s: The string to be decompressed
+
+    Returns:
+        The decompressed string
+    """
+    return zlib.decompress(s)
