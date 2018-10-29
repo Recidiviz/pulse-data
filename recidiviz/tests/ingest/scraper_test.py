@@ -19,13 +19,20 @@
 
 
 import json
-
+from datetime import datetime
 from mock import patch
+
+from google.appengine.ext import ndb
+from google.appengine.ext.db import InternalError
+from google.appengine.ext import testbed
+
 import requests
 
 from recidiviz.ingest.scraper import Scraper
 from recidiviz.ingest.sessions import ScrapeSession
 from recidiviz.ingest.models.scrape_key import ScrapeKey
+from recidiviz.models.record import Offense, Record, SentenceDuration
+from recidiviz.models.snapshot import Snapshot
 
 
 class TestAbstractScraper(object):
@@ -436,6 +443,233 @@ class TestFetchPage(object):
         mock_proxies.assert_called_with()
         mock_headers.assert_called_with()
         mock_requests.assert_called_with(url, proxies=proxies, headers=headers)
+
+
+class TestCompareAndSetSnapshot(object):
+    """Tests for the compare_and_set_snapshot method."""
+
+    def setup_method(self, _test_method):
+        # noinspection PyAttributeOutsideInit
+        self.testbed = testbed.Testbed()
+        self.testbed.activate()
+        self.testbed.init_datastore_v3_stub()
+        self.testbed.init_memcache_stub()
+        ndb.get_context().clear_cache()
+
+        # root_path must be set the the location of queue.yaml.
+        # Otherwise, only the 'default' queue will be available.
+        self.testbed.init_taskqueue_stub(root_path='.')
+
+        # noinspection PyAttributeOutsideInit
+        self.taskqueue_stub = self.testbed.get_stub(
+            testbed.TASKQUEUE_SERVICE_NAME)
+
+    def teardown_method(self, _test_method):
+        self.testbed.deactivate()
+
+    def test_first_snapshot_for_record(self):
+        """Tests the happy path for compare_and_set_snapshot."""
+        scraper = FakeScraper('us_ny', 'initial_task')
+
+        record, snapshot = self.prepare_record_and_snapshot()
+
+        scraper.compare_and_set_snapshot(record, snapshot)
+        snapshots = Snapshot.query(ancestor=record.key).fetch()
+        assert len(snapshots) == 1
+
+    def test_no_changes(self):
+        """Tests that a lack of changes in any field does not lead to a new
+        snapshot."""
+        scraper = FakeScraper('us_ny', 'initial_task')
+
+        record, snapshot = self.prepare_record_and_snapshot()
+
+        scraper.compare_and_set_snapshot(record, snapshot)
+        snapshots = Snapshot.query(ancestor=record.key).fetch()
+        assert len(snapshots) == 1
+
+        # There should still only be one snapshot, because nothing changes
+        scraper.compare_and_set_snapshot(record, snapshot)
+        snapshots = Snapshot.query(ancestor=record.key).fetch()
+        assert len(snapshots) == 1
+
+    def test_changes_in_flat_field(self):
+        """Tests that changes in a flat field lead to a new snapshot."""
+        scraper = FakeScraper('us_ny', 'initial_task')
+
+        record, snapshot = self.prepare_record_and_snapshot()
+
+        scraper.compare_and_set_snapshot(record, snapshot)
+        snapshots = Snapshot.query(ancestor=record.key).fetch()
+        assert len(snapshots) == 1
+
+        second_snapshot = self.record_to_snapshot(record, record.key)
+        second_snapshot.latest_facility = "ANOTHER FACILITY"
+
+        scraper.compare_and_set_snapshot(record, second_snapshot)
+        snapshots = Snapshot.query(ancestor=record.key).fetch()
+        assert len(snapshots) == 2
+
+    def test_changes_in_nested_field_offense(self):
+        """Tests that changes in a nested field, i.e. offense,
+        lead to a new snapshot."""
+        scraper = FakeScraper('us_ny', 'initial_task')
+
+        record, snapshot = self.prepare_record_and_snapshot()
+
+        scraper.compare_and_set_snapshot(record, snapshot)
+        snapshots = Snapshot.query(ancestor=record.key).fetch()
+        assert len(snapshots) == 1
+
+        second_snapshot = self.record_to_snapshot(record, record.key)
+        updated_offenses = [
+            # This one remained the same
+            Offense(
+                crime_description="MANSLAUGHTER 1ST",
+                crime_class="B"
+            ),
+            # This one remained the same
+            Offense(
+                crime_description="ARMED ROBBERY",
+                crime_class="B"
+            ),
+            # This one is new
+            Offense(
+                crime_description="INTIMIDATION",
+                crime_class="D"
+            )
+        ]
+        second_snapshot.offense = updated_offenses
+
+        scraper.compare_and_set_snapshot(record, second_snapshot)
+        snapshots = Snapshot.query(ancestor=record.key).fetch()
+        assert len(snapshots) == 2
+
+        new_offenses = snapshots[1].offense
+        assert new_offenses == updated_offenses
+
+    def test_removed_array_element_offense(self):
+        """Tests that removing an element from an array of offenses leads
+        to a new snapshot."""
+        scraper = FakeScraper('us_ny', 'initial_task')
+
+        record, snapshot = self.prepare_record_and_snapshot()
+
+        scraper.compare_and_set_snapshot(record, snapshot)
+        snapshots = Snapshot.query(ancestor=record.key).fetch()
+        assert len(snapshots) == 1
+
+        second_snapshot = self.record_to_snapshot(record, record.key)
+        second_snapshot.offense = []
+
+        scraper.compare_and_set_snapshot(record, second_snapshot)
+        snapshots = Snapshot.query(ancestor=record.key).fetch()
+        assert len(snapshots) == 2
+
+        new_offenses = snapshots[1].offense
+        assert new_offenses == []
+
+    @patch("recidiviz.models.snapshot.Snapshot.put")
+    def test_error_saving_snapshot(self, mock_put):
+        mock_put.side_effect = InternalError()
+
+        scraper = FakeScraper('us_ny', 'initial_task')
+
+        record, snapshot = self.prepare_record_and_snapshot()
+
+        result = scraper.compare_and_set_snapshot(record, snapshot)
+        assert not result
+
+        mock_put.assert_called_with()
+
+    @staticmethod
+    def record_to_snapshot(record, record_key):
+        return Snapshot(
+            parent=record_key,
+            admission_type=record.admission_type,
+            birthdate=record.birthdate,
+            cond_release_date=record.cond_release_date,
+            county_of_commit=record.county_of_commit,
+            custody_date=record.custody_date,
+            custody_status=record.custody_status,
+            earliest_release_date=record.earliest_release_date,
+            earliest_release_type=record.earliest_release_type,
+            is_released=record.is_released,
+            last_custody_date=record.last_custody_date,
+            latest_facility=record.latest_facility,
+            latest_release_date=record.latest_release_date,
+            latest_release_type=record.latest_release_type,
+            max_expir_date=record.max_expir_date,
+            max_expir_date_parole=record.max_expir_date_parole,
+            max_expir_date_superv=record.max_expir_date_superv,
+            max_sentence_length=record.max_sentence_length,
+            min_sentence_length=record.min_sentence_length,
+            offense=record.offense,
+            parole_discharge_date=record.parole_discharge_date,
+            parole_elig_date=record.parole_elig_date,
+            parole_hearing_date=record.parole_hearing_date,
+            parole_hearing_type=record.parole_hearing_type,
+            race=record.race,
+            region=record.region,
+            sex=record.sex,
+            surname=record.surname,
+            given_names=record.given_names)
+
+    def prepare_record_and_snapshot(self):
+        """Prepares a Record suitable for comparing snapshots to, and a
+        translated snapshot."""
+        offense = Offense(
+            crime_description='MANSLAUGHTER 1ST',
+            crime_class='B'
+        )
+
+        record = Record(
+            admission_type='REVOCATION',
+            birthdate=datetime(1972, 4, 22),
+            cond_release_date=datetime(2006, 8, 14),
+            county_of_commit='KINGS',
+            custody_date=datetime(1991, 3, 14),
+            custody_status='RELEASED',
+            earliest_release_date=datetime(2002, 8, 14),
+            earliest_release_type='PAROLE',
+            is_released=True,
+            last_custody_date=datetime(1994, 7, 1),
+            latest_release_date=datetime(2002, 10, 28),
+            latest_release_type='PAROLE',
+            latest_facility='QUEENSBORO',
+            max_expir_date=datetime(2010, 1, 14),
+            max_expir_date_parole=datetime(2010, 1, 14),
+            max_expir_date_superv=datetime(2010, 1, 14),
+            max_sentence_length=SentenceDuration(
+                life_sentence=False,
+                years=18,
+                months=10,
+                days=0),
+            min_sentence_length=SentenceDuration(
+                life_sentence=False,
+                years=11,
+                months=5,
+                days=0),
+            parole_elig_date=datetime(2002, 8, 14),
+            parole_discharge_date=datetime(2002, 8, 14),
+            parole_hearing_date=datetime(2002, 6, 17),
+            parole_hearing_type='INITIAL HEARING',
+            offense=[offense],
+            race='WHITE',
+            record_id='1234567',
+            region='us_ny',
+            sex='MALE',
+            surname='SIMPSON',
+            given_names='BART'
+        )
+        record_key = record.put()
+
+        before_compare = Snapshot.query(ancestor=record_key).fetch()
+        assert not before_compare
+
+        snapshot = self.record_to_snapshot(record, record_key)
+
+        return record, snapshot
 
 
 def mock_region_manifest(region_code, queue_name):
