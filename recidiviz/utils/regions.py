@@ -314,6 +314,4 @@ def get_name_list_file(region_code):
         None, if not
     """
     region_config = load_region_manifest(region_code=region_code)
-    names_file = region_config['names_file']
-
-    return names_file
+    return region_config.get('names_file', None)

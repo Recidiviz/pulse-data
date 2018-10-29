@@ -45,3 +45,16 @@ regions:
       snapshot: UsVtSnapshot
     scraper_package: us_vt
     timezone: America/New_York
+  us_pa_greene:
+    region_name: UsPaGreene
+    agency_name: Greene County Detention Center
+    region_code: us_pa_greene
+    agency_type: unified
+    queue: us-pa-greene-scraper
+    base_url: http://www.co.greene.pa.us/InmateLocator
+    names_file: us_ny_names.csv
+    entity_kinds:
+      person: UsPaGreenePerson
+      record: UsPaGreeneRecord
+    scraper_package: us_pa_greene
+    timezone: America/New_York
