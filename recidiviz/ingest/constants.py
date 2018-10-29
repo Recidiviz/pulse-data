@@ -15,20 +15,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""The ingest portion of the Recidiviz data platform.
+"""Constants file used by everyone."""
 
-This includes infrastructure, logic, and models for ingesting, validating,
-normalizing, and storing records ingested from various criminal justice data
-sources.
-"""
+# These constants tell the generic scraper what functions to perform
+INITIAL_TASK = 0x1
+SCRAPE_PERSON = 0x2
+SCRAPE_RECORD = 0X4
+GET_MORE_TASKS = 0x8
 
-
-import recidiviz.ingest.docket
-import recidiviz.ingest.models
-import recidiviz.ingest.scraper_control
-import recidiviz.ingest.sessions
-import recidiviz.ingest.tracker
-import recidiviz.ingest.us_ny
-import recidiviz.ingest.us_pa_greene
-import recidiviz.ingest.us_vt
-import recidiviz.ingest.worker
+# Convenience definitions for scraper task types
+INITIAL_TASK_AND_MORE = INITIAL_TASK | GET_MORE_TASKS
+SCRAPE_PERSON_AND_MORE = SCRAPE_PERSON | GET_MORE_TASKS
+SCRAPE_PERSON_AND_RECORD = SCRAPE_PERSON | SCRAPE_RECORD
+SCRAPE_RECORD_AND_MORE = SCRAPE_RECORD | GET_MORE_TASKS
