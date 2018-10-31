@@ -63,7 +63,7 @@ def parse_date_string(date_string, person_id=None):
             # Without a default day of `01` to fall back on, it falls back to
             # the local machine day, which will fail because February does not
             # have that many days.
-            result = parser.parse(date_string, default=datetime(2018, 01, 01))
+            result = parser.parse(date_string, default=datetime(2018, 1, 1))
             result = result.date()
         except ValueError, e:
             if person_id:
@@ -258,6 +258,7 @@ def currency_to_float(currency):
     """
     return float(currency[1:].replace(',', ''))
 
+
 def compress_string(s, level=1):
     """Uses the built in DEFLATE algorithm to compress the string.
 
@@ -271,6 +272,7 @@ def compress_string(s, level=1):
         The compressed string
     """
     return zlib.compress(s, level)
+
 
 def decompress_string(s):
     """Uses the built in DEFLATE algorithm to decompress the string.
