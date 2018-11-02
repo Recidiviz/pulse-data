@@ -58,7 +58,9 @@ Your mileage may vary here. If you've installed via the interactive installer an
 `google-cloud-sdk/platform/`, then you will need to install google_appengine separately by doing:
 `gcloud components install app-engine-python`
 
-Then install project dependencies: `pip install -r requirements.txt`.
+Then install project dependencies with [`pipenv`](https://pipenv.readthedocs.io/en/latest/): `pipenv install`. Activate the environment with `pipenv shell`.
+
+To generate a production environment `requirements.txt`, run: `pipenv lock --requirements > requirements.txt`
 
 #### Adding environment variables
 Recidiviz depends on sensitive information to run. This data is stored in environment variables, which should be added
