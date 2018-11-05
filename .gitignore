@@ -84,6 +84,9 @@ celerybeat-schedule
 # PyCharm files
 .idea/
 
+# VSCode files
+.vscode/
+
 # Environments
 .env
 .venv
