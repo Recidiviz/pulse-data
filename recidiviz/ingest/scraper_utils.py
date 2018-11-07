@@ -256,7 +256,11 @@ def currency_to_float(currency):
     Returns:
         A float representing the currency.
     """
-    return float(currency[1:].replace(',', ''))
+    try:
+        return float(currency[1:].replace(',', ''))
+    except ValueError:
+        logging.debug("Could not convert '%s' to float", currency)
+        return None
 
 
 def compress_string(s, level=1):
