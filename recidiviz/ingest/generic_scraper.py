@@ -154,6 +154,7 @@ class GenericScraper(Scraper):
         """
         person_id = self.get_person_id(content, params)
         person = self.get_person_class().get_or_insert(person_id)
+        person.person_id = person_id
         person.person_id_is_fuzzy = self.person_id_is_fuzzy()
         person.given_names = self.get_given_names(content, params)
         person.surname = self.get_surname(content, params)
@@ -201,6 +202,7 @@ class GenericScraper(Scraper):
         record.region = person.region
 
         # Now populate all of the record related information
+        record.record_id = record_id
         record.record_id_is_fuzzy = self.record_id_is_fuzzy()
         record.admission_type = self.get_admission_type(content, params)
         record.case_worker = self.get_case_worker(content, params)
