@@ -58,3 +58,16 @@ regions:
       record: UsPaGreeneRecord
     scraper_package: us_pa_greene
     timezone: America/New_York
+  us_co_mesa:
+    region_name: UsCoMesa
+    agency_name: Mesa County Sheriff's Office
+    region_code: us_co_mesa
+    agency_type: jail
+    queue: us-co-mesa-scraper
+    base_url: http://inmateinfo.mesacounty.us
+    names_file: us_ny_names.csv
+    entity_kinds:
+      person: Person
+      record: Record
+    scraper_package: us_co_mesa
+    timezone: America/Denver

@@ -28,6 +28,7 @@ import recidiviz.ingest.models
 import recidiviz.ingest.scraper_control
 import recidiviz.ingest.sessions
 import recidiviz.ingest.tracker
+import recidiviz.ingest.us_co_mesa
 import recidiviz.ingest.us_ny
 import recidiviz.ingest.us_pa_greene
 import recidiviz.ingest.us_vt
