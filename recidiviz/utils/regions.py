@@ -65,6 +65,7 @@ class Region(object):
         self.base_url = region_config["base_url"]
         self.entity_kinds = region_config["entity_kinds"]
         self.region_code = region_config["region_code"]
+        # TODO(#169): Make names_file optional
         self.names_file = get_name_list_file(self.region_code)
         self.params = region_config.get("params", {})
         self.queue = region_config["queue"]
