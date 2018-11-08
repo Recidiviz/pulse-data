@@ -37,9 +37,13 @@ class Offense(ndb.Model):
         crime_description: (string) Scraped from prison site describing the
             crime
         crime_class: (string) Scraped from prison site describing class of crime
+        case_number: (string) Case number of this offense.
+        bond_amount: (float) Dollar amount of bond on this charge, if any.
     """
     crime_description = ndb.StringProperty()
     crime_class = ndb.StringProperty()
+    case_number = ndb.StringProperty()
+    bond_amount = ndb.FloatProperty()
 
 
 class SentenceDuration(ndb.Model):
@@ -119,6 +123,7 @@ class Record(polymodel.PolyModel):
             was violated, may be readmitted for remainder of prison term)
         admission_type: (string) 'New commitment' is beginning to serve a term,
             other reasons are usually after term has started (e.g. parole issue)
+        committed_by: (string) The entity that committed the person.
         county_of_commit: (string) County the person was convicted/committed in
         custody_status: (string) Scraped string on custody status (more granular
             than just 'released' / 'not-released')
@@ -149,6 +154,7 @@ class Record(polymodel.PolyModel):
     community_supervision_agency = ndb.StringProperty()
     cond_release_date = ndb.DateProperty()
     county_of_commit = ndb.StringProperty()
+    committed_by = ndb.StringProperty()
     custody_date = ndb.DateProperty()
     custody_status = ndb.StringProperty()
     earliest_release_date = ndb.DateProperty()
