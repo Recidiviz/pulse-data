@@ -54,8 +54,8 @@ regions:
     base_url: http://www.co.greene.pa.us/InmateLocator
     names_file: us_ny_names.csv
     entity_kinds:
-      person: UsPaGreenePerson
-      record: UsPaGreeneRecord
+      person: ArchonixPerson
+      record: ArchonixRecord
     scraper_package: us_pa_greene
     timezone: America/New_York
   us_co_mesa:
@@ -70,4 +70,17 @@ regions:
       person: Person
       record: Record
     scraper_package: us_co_mesa
+    timezone: America/Denver
+  us_mt_gallatin:
+    region_name: UsMtGallatin
+    agency_name: Gallatin County Jail
+    region_code: us_mt_gallatin
+    agency_type: jail
+    queue: us-mt-gallatin-scraper
+    base_url: http://webapps.gallatin.mt.gov/ArchonixXJailPublic
+    names_file: us_ny_names.csv
+    entity_kinds:
+      person: ArchonixPerson
+      record: ArchonixRecord
+    scraper_package: us_mt_gallatin
     timezone: America/Denver

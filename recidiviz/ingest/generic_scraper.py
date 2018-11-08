@@ -682,6 +682,19 @@ class GenericScraper(Scraper):
         """
         pass
 
+    def get_committed_by(self, content, params):
+        """Gets the name of the entity that committed the person.
+
+        Args:
+            content: An lxml html tree.
+            params: dict of parameters passed from the last scrape session.
+
+        Returns:
+            A string representing the name of the entity that committed the
+            person
+        """
+        pass
+
     def get_custody_date(self, content, params):
         """Gets custody date given a page
 
