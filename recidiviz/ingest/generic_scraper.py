@@ -153,6 +153,7 @@ class GenericScraper(Scraper):
             A person database object that is passed through to future functions.
         """
         person_id = self.get_person_id(content, params)
+        # TODO(#170): automatically prepend person id with stable region code.
         person = self.get_person_class().get_or_insert(person_id)
         person.person_id = person_id
         person.person_id_is_fuzzy = self.person_id_is_fuzzy()
@@ -616,6 +617,9 @@ class GenericScraper(Scraper):
         """
         pass
 
+    def populate_extra_person_params(self, content, params, person):
+        pass
+
     # RECORD RELATED GETTERS
 
     def get_admission_type(self, content, params):
@@ -939,4 +943,7 @@ class GenericScraper(Scraper):
         Returns:
             A list of Offense objects for the record.
         """
+        pass
+
+    def populate_extra_record_params(self, content, params, record):
         pass
