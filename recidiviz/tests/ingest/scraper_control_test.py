@@ -17,7 +17,6 @@
 
 """Tests for ingest/scraper_control.py."""
 
-
 import webapp2
 import webtest
 
@@ -25,7 +24,6 @@ from mock import call, patch
 from google.appengine.ext import testbed
 from recidiviz.ingest import scraper_control
 from recidiviz.ingest.models.scrape_key import ScrapeKey
-
 
 APP_ID = "recidiviz-worker-test"
 
@@ -284,8 +282,9 @@ def test_get_and_validate_params_all():
     params = [("region", "all"), ("scrape_type", "all")]
 
     results = scraper_control.get_and_validate_params(params)
-    assert results == (["us_co_mesa", "us_ny", "us_pa_greene", "us_vt"],
-                       ["background", "snapshot"], params)
+    assert results == (
+        ["us_co_mesa", "us_ny", "us_mt_gallatin", "us_vt", "us_pa_greene"],
+        ["background", "snapshot"], params)
 
 
 def test_get_and_validate_params_invalid_region():
