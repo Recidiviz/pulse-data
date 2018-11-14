@@ -21,8 +21,6 @@
 
 
 import pytest
-import webapp2
-import webtest
 
 from ..context import models
 from google.appengine.api import memcache

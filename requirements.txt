@@ -59,9 +59,7 @@ tornado==5.0.2
 urllib3[secure]==1.22
 virtualenv==15.2.0
 waitress==1.1.0
-webapp2==2.5.2
 webob==1.8.1
-webtest==2.0.29
 wrapt==1.10.11
 xattr==0.6.4
 zope.interface==4.1.1

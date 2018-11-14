@@ -24,12 +24,14 @@ class that initiates pipelines on web requests.
 
 
 import logging
-import webapp2
-from mapreduce import base_handler
-from mapreduce import context
-from mapreduce import mapreduce_pipeline
+
+from flask import Flask, redirect, request
+
+from mapreduce import base_handler, context, mapreduce_pipeline
 from mapreduce import operation as op
 from recidiviz.utils.auth import authenticate_request
+from recidiviz.utils.params import get_value
+
 from .calculator import map_recidivism_combinations
 from .identifier import find_recidivism
 from .metrics import RecidivismMetric
@@ -157,58 +159,53 @@ def to_metric(metric_key, total_records, total_recidivism):
 
     return metric
 
+app = Flask(__name__)
 
-class CalculatorHandler(webapp2.RequestHandler):
-    """Request handler which handles the startup of a recidivism calculation
-    pipeline.
+@app.route('/calculator_pipeline')
+@authenticate_request
+def calculator_handler():
+    """Handles a GET request to the calculator endpoint.
+
+    Creates a CalculatorPipeline instance from parameters in the request and
+    starts the pipeline. Redirects to the built-in MapReduce status page for
+    the pipeline execution instance.
     """
+    include_conditional_violations_param = get_value(
+        'include_conditional_violations', request.args, 'false')
 
-    @authenticate_request
-    def get(self):
-        """Handles a GET request to the calculator endpoint.
+    if include_conditional_violations_param not in ['true', 'false']:
+        error_message = "include_conditional_violations must be true or " \
+                        "false. Bad param: {}".format(
+                            include_conditional_violations_param)
 
-        Creates a CalculatorPipeline instance from parameters in the request and
-        starts the pipeline. Redirects to the built-in MapReduce status page for
-        the pipeline execution instance.
-        """
-        include_conditional_violations_param = \
-            self.request.get('include_conditional_violations', 'false').lower()
+        logging.error(error_message)
+        return (error_message, 400)
 
-        if include_conditional_violations_param not in ['true', 'false']:
-            error_message = "include_conditional_values must be true or " \
-                            "false. Bad param: {}".format(
-                                include_conditional_violations_param)
+    include_conditional_violations = \
+        include_conditional_violations_param == 'true'
 
-            logging.error(error_message)
-            self.response.write(error_message)
-            self.response.set_status(400)
+    request_region = get_value('region', request.args)
 
-        else:
-            include_conditional_violations = \
-                include_conditional_violations_param == 'true'
+    if not request_region or request_region == 'all':
+        # No region code - log and exit.
+        logging.info('No specific region parameter provided. '
+                     'Will calculate recidivism metrics across '
+                     'entire data set.')
+        request_region = None
+    else:
+        logging.info("Will calculate recidivism metrics for "
+                     "%s region.", request_region)
 
-            request_region = self.request.get('region', None)
+    logging.info("Include conditional violation metrics in "
+                 "calculation? %s", include_conditional_violations)
 
-            if not request_region or request_region == 'all':
-                # No region code - log and exit.
-                logging.info('No specific region parameter provided. '
-                             'Will calculate recidivism metrics across '
-                             'entire data set.')
-                request_region = None
-            else:
-                logging.info("Will calculate recidivism metrics for "
-                             "%s region.", request_region)
+    pipeline = CalculationPipeline(request_region,
+                                   include_conditional_violations)
+    logging.info('Starting calculation pipeline...')
+    pipeline.start(queue_name='recidivism-calculator-mr')
 
-            logging.info("Include conditional violation metrics in "
-                         "calculation? %s", include_conditional_violations)
-
-            pipeline = CalculationPipeline(request_region,
-                                           include_conditional_violations)
-            logging.info('Starting calculation pipeline...')
-            pipeline.start(queue_name='recidivism-calculator-mr')
-
-            self.redirect("{}/status?root={}".format(pipeline.base_path,
-                                                     pipeline.pipeline_id))
+    return redirect("{}/status?root={}".format(pipeline.base_path,
+                                               pipeline.pipeline_id))
 
 
 class CalculationPipeline(base_handler.PipelineBase):
@@ -225,7 +222,7 @@ class CalculationPipeline(base_handler.PipelineBase):
                 calculations.
 
         Yields:
-             A MapReduce pipeline to start.
+            A MapReduce pipeline to start.
         """
         mapper_params = {
             "entity_kind": 'recidiviz.models.person.Person',
@@ -243,8 +240,3 @@ class CalculationPipeline(base_handler.PipelineBase):
             reducer_spec='recidiviz.calculator.recidivism.pipeline.'
                          'reduce_recidivism_events',
             shards=64)
-
-
-app = webapp2.WSGIApplication([
-    ('/calculator_pipeline', CalculatorHandler)
-], debug=False)

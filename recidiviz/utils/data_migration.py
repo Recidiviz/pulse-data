@@ -24,19 +24,19 @@ changes have been made.
 """
 
 
+import httplib
 import logging
-import webapp2
-from google.appengine.ext import deferred
-from google.appengine.ext import ndb
+
+from flask import Flask, request
+from google.appengine.ext import deferred, ndb
 from google.appengine.ext.ndb import polymodel
 
-from recidiviz.utils.auth import authenticate_request
-from recidiviz.ingest.us_ny.us_ny_record import UsNyRecord
 from recidiviz.ingest.us_ny.us_ny_person import UsNyPerson
-from recidiviz.models.record import Offense
-from recidiviz.models.record import SentenceDuration
+from recidiviz.ingest.us_ny.us_ny_record import UsNyRecord
+from recidiviz.models.record import Offense, SentenceDuration
 from recidiviz.models.snapshot import Snapshot
-
+from recidiviz.utils.auth import authenticate_request
+from recidiviz.utils.params import get_value
 
 # We default the first pass batch size to 12 because the first pass creates two
 # parallel sets of entity groups, one of old inmates and their records to delete
@@ -46,69 +46,64 @@ FIRST_PASS_BATCH_SIZE = 12
 SECOND_PASS_BATCH_SIZE = 25
 REGION = "us_ny"
 
+app = Flask(__name__)
 
-class DataMigration(webapp2.RequestHandler):
-    """Request handler for requests related to data migration."""
+@app.route('/data_migration')
+@authenticate_request
+def data_migration():
+    """Request handler to kick off migration work
 
-    @authenticate_request
-    def get(self):
-        """Request handler to kick off migration work
+    Request handler for data migration tasks. Migrates last_release_date
+    and last_release_type from UsNyRecord model to Record model, and old
+    InmateFacilitySnapshot entities to new Snapshot entities.
 
-        Request handler for data migration tasks. Migrates last_release_date
-        and last_release_type from UsNyRecord model to Record model, and old
-        InmateFacilitySnapshot entities to new Snapshot entities.
+    Example queries:
 
-        Example queries:
+        # First pass, 15 inmates and their child records/snapshots only,
+        # 10 people at a time, non-destructive
+        http://localhost:8080/data_migration?test_only=true&migration_type=first_pass&batch_size=10
 
-            # First pass, 15 inmates and their child records/snapshots only,
-            # 10 people at a time, non-destructive
-            http://localhost:8080/data_migration?test_only=true&migration_type=first_pass&batch_size=10
+        # Second pass, 15 records and their child snapshots only,
+        # 20 records at a time, non-destructive
+        http://localhost:8080/data_migration?test_only=false&migration_type=second_pass&batch_size=20
 
-            # Second pass, 15 records and their child snapshots only,
-            # 20 records at a time, non-destructive
-            http://localhost:8080/data_migration?test_only=false&migration_type=second_pass&batch_size=20
+        # To migrate all inmates or records, and delete migrated entities,
+        # change test_only parameter to 'false'
 
-            # To migrate all inmates or records, and delete migrated entities,
-            # change test_only parameter to 'false'
+    URL Params:
+        migration_type: (string) 'Record' or 'Snapshot' migration
+        test_only: (string) "true" or "false", whether to non-
+            destructively migrate only 10 records
 
-        URL Params:
-            migration_type: (string) 'Record' or 'Snapshot' migration
-            test_only: (string) "true" or "false", whether to non-
-                destructively migrate only 10 records
+    Returns:
+        N/A
 
-        Returns:
-            N/A
+    Response Codes:
+        HTTP 200 if successful
+        HTTP 400 if not
+    """
+    test_only = get_value('test_only', request.args, 'true') == "true"
+    migration_type = get_value('migration_type', request.args)
 
-        Response Codes:
-            HTTP 200 if successful
-            HTTP 400 if not
-        """
-        test_only = self.request.get('test_only', "true").lower()
-        test_only = True if test_only == "true" else False
+    if migration_type == "first_pass":
+        batch_size = get_value('batch_size', request.args,
+                               FIRST_PASS_BATCH_SIZE)
+        deferred.defer(migration_pass1,
+                       batch_size=batch_size,
+                       test_only=test_only)
+    elif migration_type == "second_pass":
+        batch_size = get_value('batch_size', request.args,
+                               SECOND_PASS_BATCH_SIZE)
+        deferred.defer(migration_pass2,
+                       batch_size=batch_size,
+                       test_only=test_only)
+    else:
+        logging.error("Migration type '%s' not recognized. Exiting." %
+                      migration_type)
+        return ("Invalid parameters, see logs.", httplib.INTERNAL_SERVER_ERROR)
 
-        migration_type = self.request.get('migration_type', None)
-        if migration_type:
-            migration_type = migration_type.lower()
-
-        if migration_type == "first_pass":
-            batch_size = self.request.get('batch_size', FIRST_PASS_BATCH_SIZE)
-            deferred.defer(migration_pass1,
-                           batch_size=batch_size,
-                           test_only=test_only)
-        elif migration_type == "second_pass":
-            batch_size = self.request.get('batch_size', SECOND_PASS_BATCH_SIZE)
-            deferred.defer(migration_pass2,
-                           batch_size=batch_size,
-                           test_only=test_only)
-        else:
-            logging.error("Migration type '%s' not recognized. Exiting." %
-                          migration_type)
-            self.response.write("Invalid parameters, see logs.")
-            self.response.set_status(500)
-            return
-
-        self.response.write("Kicked off migration %s." % migration_type)
-        logging.info("Kicked off migration %s.", migration_type)
+    logging.info("Kicked off migration %s.", migration_type)
+    return ("Kicked off migration %s." % migration_type, httplib.OK)
 
 
 def migration_pass1(cursor=None,
@@ -520,11 +515,6 @@ def transactional_batch_replace(to_put, to_delete=None, test_only=True):
         ndb.delete_multi([entity.key for entity in to_delete])
 
     return True
-
-
-app = webapp2.WSGIApplication([
-    ('/data_migration', DataMigration)
-], debug=False)
 
 
 class Inmate(polymodel.PolyModel):
