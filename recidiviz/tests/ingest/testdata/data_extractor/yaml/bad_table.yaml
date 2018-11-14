@@ -35,5 +35,5 @@ multi_key_mapping:
   Charge: charge.name
   Offense Date: charge.offense_date
   Bond: bond.amount
-  Bond Type: bond.type
+  Bond Type: bond.bond_type
   Charging Agency: charge.charging_entity

@@ -100,7 +100,7 @@ def test_bad_table():
     charge1.offense_date = '1-01-2042'
     bond1 = charge1.create_bond()
     bond1.amount = '$75,000.00'
-    bond1.type = 'Surety Bond'
+    bond1.bond_type = 'Surety Bond'
 
     charge2 = booking.create_charge()
     charge2.charging_entity = 'Rockwall'
@@ -108,7 +108,7 @@ def test_bad_table():
     charge2.offense_date = '1-01-2040'
     bond2 = charge2.create_bond()
     bond2.amount = '$1,500.00'
-    bond2.type = 'Surety Bond'
+    bond2.bond_type = 'Surety Bond'
 
     charge3 = booking.create_charge()
     charge3.charging_entity = 'Rockwall'
@@ -116,7 +116,7 @@ def test_bad_table():
     charge3.offense_date = '1-01-2040'
     bond3 = charge3.create_bond()
     bond3.amount = '$2,000.00'
-    bond3.type = 'Surety Bond'
+    bond3.bond_type = 'Surety Bond'
 
     html_file = '../testdata/data_extractor/html/bad_table.html'
     html_file = os.path.join(os.path.dirname(__file__), html_file)
