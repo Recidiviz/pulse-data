@@ -28,137 +28,118 @@ use this tool.
 """
 
 
-from datetime import datetime
+import httplib
 import logging
 import random
 import string
 import time
-import webapp2
+from datetime import datetime
 
 from google.appengine.ext import ndb
+
+from flask import Flask, request
+from recidiviz.ingest.sessions import ScrapedRecord, ScrapeSession
 from recidiviz.models.env_vars import EnvironmentVariable
 from recidiviz.models.person import Person
-from recidiviz.models.record import Offense, SentenceDuration, Record
+from recidiviz.models.record import Offense, Record, SentenceDuration
 from recidiviz.models.snapshot import Snapshot
-from recidiviz.ingest.sessions import ScrapeSession, ScrapedRecord
-from recidiviz.utils import environment
-from recidiviz.utils import regions
+from recidiviz.utils import environment, regions
 from recidiviz.utils.auth import authenticate_request
 
+app = Flask(__name__)
 
-class PopulateDb(webapp2.RequestHandler):
-    """Request handler for populating the database."""
+@app.route('/test_populator/populate')
+@environment.local_only
+@authenticate_request
+def populate():
+    """Request handler to populate synthetic data in the local datastore
 
-    @environment.local_only
-    @authenticate_request
-    def get(self):
-        """Request handler to populate synthetic data in the local datastore
+    Request handler to populate the local datastore with environment
+    variables and test data.
 
-        Request handler to populate the local datastore with environment
-        variables and test data.
+    Example queries:
 
-        Example queries:
+        Add (more) fake data to the datastore, but don't wipe what's already
+        there:
+        http://localhost:8080/test_populator/populate
 
-            Add (more) fake data to the datastore, but don't wipe what's already
-            there:
-            http://localhost:8080/test_populator/populate
+        Delete any existing datastore contents, populate environment
+        variables and fake data in the datastore:
+        http://localhost:8080/test_populator/populate?wipe_db=true
 
-            Delete any existing datastore contents, populate environment
-            variables and fake data in the datastore:
-            http://localhost:8080/test_populator/populate?wipe_db=true
+        Delete existing datastore contents, populate env vars and fake data
+        with up to 4 old snapshot entities per record, and no new snapshot
+        entities:
+        http://localhost:8080/test_populator/populate?wipe_db=true&region=us_ny&suppress_new_fields=true&snapshots_per_record=0&old_snapshots_per_record=4
 
-            Delete existing datastore contents, populate env vars and fake data
-            with up to 4 old snapshot entities per record, and no new snapshot
-            entities:
-            http://localhost:8080/test_populator/populate?wipe_db=true&region=us_ny&suppress_new_fields=true&snapshots_per_record=0&old_snapshots_per_record=4
+    URL Parameters:
+        wipe_db: "true" or "false", whether to remove prior datastore
+            contents before loading more
+        region: Region code to load data for
+        suppress_new_fields: "true" or "false", whether to not populate new
+            fields to test migration
 
-        URL Parameters:
-            wipe_db: "true" or "false", whether to remove prior datastore
-                contents before loading more
-            region: Region code to load data for
-            suppress_new_fields: "true" or "false", whether to not populate new
-                fields to test migration
+    Returns:
+        HTTP 200 if successful
+        HTTP 400 if not
+    """
+    wipe_db = request.args.get('wipe_db', 'false').lower() == 'true'
 
-        Returns:
-            HTTP 200 if successful
-            HTTP 400 if not
-        """
-        wipe_db = self.request.get('wipe_db', "false").lower()
-        wipe_db = True if wipe_db == "true" else False
+    region_code = request.args.get('region')
+    if not regions.validate_region_code(region_code):
+        logging.error("No region code provided. Exiting.")
+        return ("Invalid parameters, see logs.", httplib.BAD_REQUEST)
 
-        region_code = self.request.get('region', None)
-        if not regions.validate_region_code(region_code):
-            self.invalid_params("No region code provided. Exiting.")
-            return
+    # If any of the parameters can't be converted to int the default is used.
+    person_count = request.args.get('persons', 5, type=int)
+    record_count = request.args.get('records_per_person', 3, type=int)
+    snapshot_count = request.args.get('snapshots_per_record', 3, type=int)
 
-        try:
-            person_count = int(self.request.get('persons', 5))
-            record_count = int(self.request.get('records_per_person', 3))
-            snapshot_count = int(self.request.get('snapshots_per_record', 3))
-        except ValueError:
-            self.invalid_params("Fake data quantity must be integer. Exiting.")
-            return
-
-        if wipe_db:
-            purge_datastore()
-
-        load_env_vars()
-        region = regions.Region(region_code)
-
-        # Add some sample NY people, records, and snapshots to work with
-        # Sleeps allow datastore indices to catch up, since each method
-        # below relies on the prior's generated data
-        generate_people(region, person_count)
-        time.sleep(5)
-        generate_person_records(region, record_count)
-        time.sleep(5)
-        generate_snapshots(region, snapshot_count)
-
-        self.response.write("Database populated, feel free to test.")
-        logging.info("Completed test datastore setup.")
-
-    def invalid_params(self, msg):
-        """Logs problem with request and sets HTTP response code
-
-        Args:
-            msg: (string) Message to write to service logs
-
-        Returns:
-            N/A
-        """
-        self.response.write("Invalid parameters, see logs.")
-        logging.error(msg)
-        self.response.set_status(400)
-        return
-
-
-class ClearDb(webapp2.RequestHandler):
-    """Request handler for clearing the database."""
-
-    @environment.local_only
-    @authenticate_request
-    def get(self):
-        """Request handler to purge datastore, re-populate env vars only
-
-        Request handler to empty the datastore of anything except for
-        environment variables.
-
-        Example queries:
-
-            Wipe anything in the datastore (but keep env vars):
-            http://localhost:8080/test_populator/clear
-
-        Params:
-            N/A
-
-        Returns:
-            HTTP 200 if successful
-            HTTP 400 if not
-        """
+    if wipe_db:
         purge_datastore()
-        load_env_vars()
 
-        logging.info("Completed clearing test datastore.")
+    load_env_vars()
+    region = regions.Region(region_code)
+
+    # Add some sample NY people, records, and snapshots to work with
+    # Sleeps allow datastore indices to catch up, since each method
+    # below relies on the prior's generated data
+    generate_people(region, person_count)
+    time.sleep(5)
+    generate_person_records(region, record_count)
+    time.sleep(5)
+    generate_snapshots(region, snapshot_count)
+
+    logging.info("Completed test datastore setup.")
+    return ("Database populated, feel free to test.", httplib.OK)
+
+
+@app.route('/test_populator/clear')
+@environment.local_only
+@authenticate_request
+def clear():
+    """Request handler to purge datastore, re-populate env vars only
+
+    Request handler to empty the datastore of anything except for
+    environment variables.
+
+    Example queries:
+
+        Wipe anything in the datastore (but keep env vars):
+        http://localhost:8080/test_populator/clear
+
+    Params:
+        N/A
+
+    Returns:
+        HTTP 200 if successful
+        HTTP 400 if not
+    """
+    purge_datastore()
+    load_env_vars()
+
+    logging.info("Completed clearing test datastore.")
+    return ('', httplib.OK)
 
 
 def load_env_vars():
@@ -490,9 +471,3 @@ def details_generator(model_property, enum, required):
     else:
         raise Exception("populate_test_db/details_generator: "
                         "Unrecognized field type.")
-
-
-app = webapp2.WSGIApplication([
-    ('/test_populator/populate', PopulateDb),
-    ('/test_populator/clear', ClearDb)
-], debug=False)

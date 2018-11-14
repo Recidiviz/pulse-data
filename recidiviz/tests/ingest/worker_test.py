@@ -19,8 +19,6 @@
 
 
 import json
-import webapp2
-import webtest
 
 from mock import patch
 from google.appengine.ext import testbed
@@ -29,7 +27,7 @@ from recidiviz.ingest import worker
 
 
 APP_ID = "recidiviz-worker-test"
-
+PATH = "/scraper/work"
 
 class TestWorker(object):
     """Tests for requests to the Worker API."""
@@ -42,8 +40,8 @@ class TestWorker(object):
         self.testbed.init_app_identity_stub()
         self.testbed.init_user_stub()
 
-        self.app = webapp2.WSGIApplication([('/', worker.Scraper)])
-        self.test_app = webtest.TestApp(self.app)
+        worker.app.config['TESTING'] = True
+        self.client = worker.app.test_client()
 
     def teardown_method(self, _test_method):
         self.testbed.deactivate()
@@ -65,12 +63,10 @@ class TestWorker(object):
 
         self.login_user()
 
-        request_params = {'region': 'us_ca', 'task': 'fake_task'}
+        form = {'region': 'us_ca', 'task': 'fake_task'}
         headers = {'X-Appengine-QueueName': "test-queue"}
-        response = self.test_app.post('/',
-                                      params=request_params,
-                                      headers=headers)
-        assert response.status_int == 200
+        response = self.client.post(PATH, data=form, headers=headers)
+        assert response.status_code == 200
 
     @patch("recidiviz.utils.regions.get_scraper_from_cache")
     def test_post_work_params(self, mock_regions):
@@ -79,13 +75,11 @@ class TestWorker(object):
         self.login_user()
 
         scraper_params = {'foo': 'bar', 'baz': 'inga'}
-        request_params = {'region': 'us_ca', 'task': 'fake_task_params',
-                          'params': json.dumps(scraper_params)}
+        form = {'region': 'us_ca', 'task': 'fake_task_params',
+                'params': json.dumps(scraper_params)}
         headers = {'X-Appengine-QueueName': "test-queue"}
-        response = self.test_app.post('/',
-                                      params=request_params,
-                                      headers=headers)
-        assert response.status_int == 200
+        response = self.client.post(PATH, data=form, headers=headers)
+        assert response.status_code == 200
 
     @patch("recidiviz.utils.regions.get_scraper_from_cache")
     def test_post_work_error(self, mock_regions):
@@ -93,13 +87,10 @@ class TestWorker(object):
 
         self.login_user()
 
-        request_params = {'region': 'us_ca', 'task': 'fake_task'}
+        form = {'region': 'us_ca', 'task': 'fake_task'}
         headers = {'X-Appengine-QueueName': "test-queue"}
-        response = self.test_app.post('/',
-                                      params=request_params,
-                                      headers=headers,
-                                      expect_errors=True)
-        assert response.status_int == 500
+        response = self.client.post(PATH, data=form, headers=headers)
+        assert response.status_code == 500
 
     @patch("recidiviz.utils.regions.get_scraper_from_cache")
     def test_post_work_timeout(self, mock_regions):
@@ -107,19 +98,16 @@ class TestWorker(object):
 
         self.login_user()
 
-        request_params = {'region': 'us_ca', 'task': 'fake_task_timeout'}
+        form = {'region': 'us_ca', 'task': 'fake_task_timeout'}
         headers = {'X-Appengine-QueueName': "test-queue"}
-        response = self.test_app.post('/',
-                                      params=request_params,
-                                      headers=headers,
-                                      expect_errors=True)
-        assert response.status_int == 500
+        response = self.client.post(PATH, data=form, headers=headers)
+        assert response.status_code == 500
 
     def test_post_work_not_from_task(self):
         self.login_user()
 
-        response = self.test_app.post('/', expect_errors=True)
-        assert response.status_int == 500
+        response = self.client.post(PATH)
+        assert response.status_code == 500
 
 
 class FakeScraper(object):
