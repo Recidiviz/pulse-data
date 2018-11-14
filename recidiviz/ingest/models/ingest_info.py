@@ -50,18 +50,22 @@ class _Person(object):
     """Class for information about a person.
     Referenced from IngestInfo.
     """
-    def __init__(self):
-        self.person_id = None # type: str
-        self.surname = None  # type: str
-        self.given_names = None  # type: str
-        self.birthdate = None  # type: datetime
-        self.sex = None
-        self.age = None  # type: int
-        self.race = Race.unknown
-        self.ethnicity = Ethnicity.unknown
-        self.place_of_residence = None  # type: str
+    def __init__(self, person_id=None, surname=None, given_names=None,
+                 birthdate=None, sex=None, age=None, race=Race.unknown,
+                 ethnicity=Ethnicity.unknown, place_of_residence=None,
+                 bookings=None):
+        self.person_id = person_id  # type: str
+        self.surname = surname  # type: str
+        self.given_names = given_names  # type: str
+        self.birthdate = birthdate  # type: datetime
+        self.sex = sex
+        self.age = age  # type: int
+        self.race = race
+        self.ethnicity = ethnicity
+        self.place_of_residence = place_of_residence  # type: str
 
-        self.bookings = []  # type: List[Booking]
+        # type: List[Booking]
+        self.bookings = [] if bookings is None else bookings
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
@@ -76,20 +80,26 @@ class _Booking(object):
     """Class for information about a booking.
     Referenced from Person.
     """
-    def __init__(self):
-        self.booking_id = None # type: str
-        self.admission_date = None  # type: datetime
-        self.projected_release_date = None  # type: datetime
-        self.release_date = None  # type: datetime
-        self.release_reason = ReleaseReason.unknown
-        self.custody_status = CustodyStatus.unknown
-        self.jurisdiction_status = JurisdictionStatus.unknown
-        self.hold = None  # type: str
-        self.facility = None  # type: str
-        self.classification = Classification.unknown
+    def __init__(self, booking_id=None, admission_date=None,
+                 projected_release_date=None, release_date=None,
+                 release_reason=ReleaseReason.unknown,
+                 custody_status=CustodyStatus.unknown,
+                 jurisdiction_status=JurisdictionStatus.unknown, hold=None,
+                 facility=None, classification=Classification.unknown,
+                 arrest=None, charges=None):
+        self.booking_id = booking_id  # type: str
+        self.admission_date = admission_date  # type: datetime
+        self.projected_release_date = projected_release_date  # type: datetime
+        self.release_date = release_date  # type: datetime
+        self.release_reason = release_reason
+        self.custody_status = custody_status
+        self.jurisdiction_status = jurisdiction_status
+        self.hold = hold  # type: str
+        self.facility = facility  # type: str
+        self.classification = classification
 
-        self.arrest = None  # type: Arrest
-        self.charges = []  # type: List[Charge]
+        self.arrest = arrest  # type: Arrest
+        self.charges = [] if charges is None else charges  # type: List[Charge]
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
@@ -108,11 +118,12 @@ class _Arrest(object):
     """Class for information about an arrest.
     Referenced from Booking.
     """
-    def __init__(self):
-        self.date = None  # type: datetime
-        self.location = None  # type: str
-        self.officer_name = None  # type: str
-        self.officer_id = None  # type: str
+    def __init__(self, date=None, location=None, officer_name=None,
+                 officer_id=None):
+        self.date = date  # type: datetime
+        self.location = location  # type: str
+        self.officer_name = officer_name  # type: str
+        self.officer_id = officer_id  # type: str
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
@@ -122,25 +133,31 @@ class _Charge(object):
     """Class for information about a charge.
     Referenced from Booking.
     """
-    def __init__(self):
-        self.offense_date = None  # type: datetime
-        self.statute = None  # type: str
-        self.name = None  # type: str
-        self.attempted = None  # type: bool
-        self.degree = Degree.unknown
-        self.charge_class = ChargeClass.unknown
-        self.level = None  # type: str
-        self.fee = None  # type: decimal
-        self.charging_entity = None  # type: str
-        self.charge_status = ChargeStatus.unknown
-        self.number_of_counts = None  # type: int
-        self.court_type = CourtType.unknown
-        self.case_number = None  # type: str
-        self.next_court_date = None  # type: datetime
-        self.judge_name = None  # type: str
+    def __init__(self, offense_date=None, statute=None, name=None,
+                 attempted=None, degree=Degree.unknown,
+                 charge_class=ChargeClass.unknown, level=None, fee=None,
+                 charging_entity=None, charge_status=ChargeStatus.unknown,
+                 number_of_counts=None, court_type=CourtType.unknown,
+                 case_number=None, next_court_date=None, judge_name=None,
+                 bond=None, sentence=None):
+        self.offense_date = offense_date  # type: datetime
+        self.statute = statute  # type: str
+        self.name = name  # type: str
+        self.attempted = attempted  # type: bool
+        self.degree = degree
+        self.charge_class = charge_class
+        self.level = level  # type: str
+        self.fee = fee  # type: decimal
+        self.charging_entity = charging_entity  # type: str
+        self.charge_status = charge_status
+        self.number_of_counts = number_of_counts  # type: int
+        self.court_type = court_type
+        self.case_number = case_number  # type: str
+        self.next_court_date = next_court_date  # type: datetime
+        self.judge_name = judge_name  # type: str
 
-        self.bond = None  # type: Bond
-        self.sentence = None  # type: Sentence
+        self.bond = bond  # type: Bond
+        self.sentence = sentence  # type: Sentence
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
@@ -158,11 +175,12 @@ class _Bond(object):
     """Class for information about a bond.
     Referenced from Charge.
     """
-    def __init__(self):
-        self.bond_id = None  # type: str
-        self.amount = None  # type: decimal
-        self.type = BondType.unknown
-        self.status = BondStatus.unknown
+    def __init__(self, bond_id=None, amount=None, bond_type=BondType.unknown,
+                 status=BondStatus.unknown):
+        self.bond_id = bond_id  # type: str
+        self.amount = amount  # type: decimal
+        self.bond_type = bond_type
+        self.status = status
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
@@ -172,16 +190,17 @@ class _Sentence(object):
     """Class for information about a sentence.
     Referenced from Charge.
     """
-    def __init__(self):
-        self.date_imposed = None  # type: datetime
-        self.min_length = None  # type: timedelta
-        self.max_length = None  # type: timedelta
-        self.is_life = None  # type: bool
-        self.is_probation = None  # type: bool
-        self.is_suspended = None  # type: bool
-        self.fine = None  # type: decimal
-        self.parole_possible = None  # type: bool
-        self.post_release_supervision_length = None  # type: timedelta
+    def __init__(self, date_imposed=None, min_length=None, max_length=None,
+                 is_life=None, is_probation=None, is_suspended=None, fine=None,
+                 parole_possible=None, post_release_supervision_length=None):
+        self.date_imposed = date_imposed  # type: datetime
+        self.min_length = min_length  # type: timedelta
+        self.max_length = max_length  # type: timedelta
+        self.is_life = is_life  # type: bool
+        self.is_probation = is_probation  # type: bool
+        self.is_suspended = is_suspended  # type: bool
+        self.fine = fine  # type: decimal
+        self.parole_possible = parole_possible  # type: bool
 
-    def __eq__(self, other):
-        return self.__dict__ == other.__dict__
+        # type: timedelta
+        self.post_release_supervision_length = post_release_supervision_length
