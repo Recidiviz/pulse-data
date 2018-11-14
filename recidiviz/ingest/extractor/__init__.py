@@ -15,12 +15,5 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Constants related to a person entity."""
-
-
-class Race(object):
-    unknown = 1
-
-
-class Ethnicity(object):
-    unknown = 1
+"""The core models specific to the ingest platform, but agnostic across
+scraper vendors and regions."""

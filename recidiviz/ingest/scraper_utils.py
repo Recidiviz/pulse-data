@@ -40,7 +40,8 @@ def parse_date_string(date_string, person_id=None):
 
         "07/2001",
         "12/21/1991",
-        "06/14/13", etc.
+        "06/14/13",
+        "02/15/1990 4:32", etc.
 
     This function parses several common variants and returns a datetime.
 
