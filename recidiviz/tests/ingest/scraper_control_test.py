@@ -17,9 +17,6 @@
 
 """Tests for ingest/scraper_control.py."""
 
-import webapp2
-import webtest
-
 from mock import call, patch
 from google.appengine.ext import testbed
 from recidiviz.ingest import scraper_control
@@ -39,9 +36,8 @@ class TestScraperStart(object):
         self.testbed.init_app_identity_stub()
         self.testbed.init_user_stub()
 
-        self.app = webapp2.WSGIApplication(
-            [('/', scraper_control.ScraperStart)])
-        self.test_app = webtest.TestApp(self.app)
+        scraper_control.app.config['TESTING'] = True
+        self.client = scraper_control.app.test_client()
 
     def teardown_method(self, _test_method):
         self.testbed.deactivate()
@@ -81,20 +77,18 @@ class TestScraperStart(object):
         region = 'us_ut'
         scrape_type = 'background'
         scrape_key = ScrapeKey(region, scrape_type)
-        request_params = {'region': region, 'scrape_type': scrape_type}
+        request_args = {'region': region, 'scrape_type': scrape_type}
         headers = {'X-Appengine-Cron': "test-cron"}
-        response = self.test_app.get('/',
-                                     params=request_params,
-                                     headers=headers)
-        assert response.status_int == 200
+        response = self.client.get('/scraper/start',
+                                   query_string=request_args,
+                                   headers=headers)
+        assert response.status_code == 200
 
         mock_deferred.assert_called_with(fake_scraper.start_scrape,
                                          scrape_type,
                                          _countdown=30)
         mock_environment.assert_called_with()
-        mock_docket.assert_called_with(scrape_key,
-                                       [('region', 'us_ut'),
-                                        ('scrape_type', 'background')])
+        mock_docket.assert_called_with(scrape_key, '', '')
         mock_tracker.assert_called_with(scrape_key)
         mock_sessions.assert_called_with(scrape_key)
         mock_regions.assert_called_with('us_ut')
@@ -106,15 +100,14 @@ class TestScraperStart(object):
 
         self.login_user()
 
-        request_params = {'region': 'us_ca', 'scrape_type': 'all'}
+        request_args = {'region': 'us_ca', 'scrape_type': 'all'}
         headers = {'X-Appengine-Cron': "test-cron"}
-        response = self.test_app.get('/',
-                                     params=request_params,
-                                     headers=headers,
-                                     expect_errors=True)
-        assert response.status_int == 400
-        assert response.body == "Missing or invalid parameters, " \
-                                "see service logs."
+        response = self.client.get('/scraper/start',
+                                   query_string=request_args,
+                                   headers=headers)
+        assert response.status_code == 400
+        assert response.get_data() == "Missing or invalid parameters, " \
+                                      "see service logs."
 
         mock_supported.assert_called_with()
 
@@ -130,8 +123,8 @@ class TestScraperStop(object):
         self.testbed.init_app_identity_stub()
         self.testbed.init_user_stub()
 
-        self.app = webapp2.WSGIApplication([('/', scraper_control.ScraperStop)])
-        self.test_app = webtest.TestApp(self.app)
+        scraper_control.app.config['TESTING'] = True
+        self.client = scraper_control.app.test_client()
 
     def teardown_method(self, _test_method):
         self.testbed.deactivate()
@@ -157,12 +150,12 @@ class TestScraperStop(object):
 
         self.login_user()
 
-        request_params = {'region': 'all', 'scrape_type': 'all'}
+        request_args = {'region': 'all', 'scrape_type': 'all'}
         headers = {'X-Appengine-Cron': "test-cron"}
-        response = self.test_app.get('/',
-                                     params=request_params,
-                                     headers=headers)
-        assert response.status_int == 200
+        response = self.client.get('/scraper/stop',
+                                   query_string=request_args,
+                                   headers=headers)
+        assert response.status_code == 200
 
         mock_sessions.assert_has_calls([call(ScrapeKey('us_ca', 'background')),
                                         call(ScrapeKey('us_ca', 'snapshot')),
@@ -177,15 +170,14 @@ class TestScraperStop(object):
 
         self.login_user()
 
-        request_params = {'region': 'us_ca', 'scrape_type': 'all'}
+        request_args = {'region': 'us_ca', 'scrape_type': 'all'}
         headers = {'X-Appengine-Cron': "test-cron"}
-        response = self.test_app.get('/',
-                                     params=request_params,
-                                     headers=headers,
-                                     expect_errors=True)
-        assert response.status_int == 400
-        assert response.body == "Missing or invalid parameters, " \
-                                "see service logs."
+        response = self.client.get('/scraper/stop',
+                                   query_string=request_args,
+                                   headers=headers)
+        assert response.status_code == 400
+        assert response.get_data() == "Missing or invalid parameters, " \
+                                      "see service logs."
 
         mock_supported.assert_called_with()
 
@@ -201,9 +193,8 @@ class TestScraperResume(object):
         self.testbed.init_app_identity_stub()
         self.testbed.init_user_stub()
 
-        self.app = webapp2.WSGIApplication(
-            [('/', scraper_control.ScraperResume)])
-        self.test_app = webtest.TestApp(self.app)
+        scraper_control.app.config['TESTING'] = True
+        self.client = scraper_control.app.test_client()
 
     def teardown_method(self, _test_method):
         self.testbed.deactivate()
@@ -230,12 +221,12 @@ class TestScraperResume(object):
         self.login_user()
 
         region = 'us_ca'
-        request_params = {'region': region, 'scrape_type': 'all'}
+        request_args = {'region': region, 'scrape_type': 'all'}
         headers = {'X-Appengine-Cron': "test-cron"}
-        response = self.test_app.get('/',
-                                     params=request_params,
-                                     headers=headers)
-        assert response.status_int == 200
+        response = self.client.get('/scraper/resume',
+                                   query_string=request_args,
+                                   headers=headers)
+        assert response.status_code == 200
 
         mock_sessions.assert_has_calls([call(ScrapeKey(region, 'background')),
                                         call(ScrapeKey(region, 'snapshot'))])
@@ -248,60 +239,86 @@ class TestScraperResume(object):
 
         self.login_user()
 
-        request_params = {'region': 'us_ca', 'scrape_type': 'all'}
+        request_args = {'region': 'us_ca', 'scrape_type': 'all'}
         headers = {'X-Appengine-Cron': "test-cron"}
-        response = self.test_app.get('/',
-                                     params=request_params,
-                                     headers=headers,
-                                     expect_errors=True)
-        assert response.status_int == 400
-        assert response.body == "Missing or invalid parameters, " \
-                                "see service logs."
+        response = self.client.get('/scraper/resume',
+                                   query_string=request_args,
+                                   headers=headers)
+        assert response.status_code == 400
+        assert response.get_data() == "Missing or invalid parameters, " \
+                                      "see service logs."
 
         mock_supported.assert_called_with()
 
 
-def test_invalid_input():
-    response = webapp2.Response()
-    scraper_control.invalid_input(response, "Mr. Brightside")
-
-    assert response.status_code == 400
-    assert response.body == "Missing or invalid parameters, see service logs."
+def test_validate_regions_one_ok():
+    assert scraper_control.validate_regions(["us_ny"]) == ["us_ny"]
 
 
-def test_get_and_validate_params():
-    params = [("region", "us_ny"),
-              ("scrape_type", "snapshot"),
-              ("album", "Hot Fuss")]
-
-    results = scraper_control.get_and_validate_params(params)
-    assert results == (["us_ny"], ["snapshot"], params)
+def test_validate_regions_one_all():
+    assert scraper_control.validate_regions(["all"]) == [
+        "us_co_mesa", "us_ny", "us_mt_gallatin", "us_vt", "us_pa_greene"]
 
 
-def test_get_and_validate_params_all():
-    params = [("region", "all"), ("scrape_type", "all")]
-
-    results = scraper_control.get_and_validate_params(params)
-    assert results == (
-        ["us_co_mesa", "us_ny", "us_mt_gallatin", "us_vt", "us_pa_greene"],
-        ["background", "snapshot"], params)
+def test_validate_regions_one_invalid():
+    assert not scraper_control.validate_regions(["ca_bc"])
 
 
-def test_get_and_validate_params_invalid_region():
-    params = [("region", "ca_bc"), ("scrape_type", "snapshot")]
-    assert not scraper_control.get_and_validate_params(params)
+def test_validate_regions_multiple_ok():
+    assert scraper_control.validate_regions(["us_vt", "us_ny"]) == ["us_vt",
+                                                                    "us_ny"]
 
 
-def test_get_and_validate_params_invalid_scrape_type():
-    params = [("region", "us_ny"), ("scrape_type", "When You Were Young")]
-    assert not scraper_control.get_and_validate_params(params)
+def test_validate_regions_multiple_invalid():
+    assert not scraper_control.validate_regions(["us_vt", "invalid"])
 
 
-def test_get_and_validate_params_default_scrape_type():
-    params = [("region", "us_ny"), ("album", "Sam's Town")]
+def test_validate_regions_multiple_all():
+    assert scraper_control.validate_regions(["us_vt", "all"]) == [
+        "us_co_mesa", "us_ny", "us_mt_gallatin", "us_vt", "us_pa_greene"]
 
-    results = scraper_control.get_and_validate_params(params)
-    assert results == (["us_ny"], ["background"], params)
+
+def test_validate_regions_multiple_all_invalid():
+    assert not scraper_control.validate_regions(["all", "invalid"])
+
+
+def test_validate_regions_empty():
+    assert scraper_control.validate_regions([]) == []
+
+
+def test_validate_scrape_types_one_ok():
+    assert scraper_control.validate_scrape_types(["snapshot"]) == ["snapshot"]
+
+
+def test_validate_scrape_types_one_all():
+    assert scraper_control.validate_scrape_types(["all"]) == ["background",
+                                                              "snapshot"]
+
+
+def test_validate_scrape_types_one_invalid():
+    assert not scraper_control.validate_scrape_types(["When You Were Young"])
+
+
+def test_validate_scrape_types_multiple_ok():
+    assert scraper_control.validate_scrape_types(
+        ["background", "snapshot"]) == ["background", "snapshot"]
+
+
+def test_validate_scrape_types_multiple_invalid():
+    assert not scraper_control.validate_scrape_types(["background", "invalid"])
+
+
+def test_validate_scrape_types_multiple_all():
+    assert scraper_control.validate_scrape_types(["background", "all"]) == [
+        "background", "snapshot"]
+
+
+def test_validate_scrape_types_multiple_all_invalid():
+    assert not scraper_control.validate_scrape_types(["all", "invalid"])
+
+
+def test_validate_scrape_types_empty():
+    assert scraper_control.validate_scrape_types([]) == ["background"]
 
 
 class FakeScraper(object):

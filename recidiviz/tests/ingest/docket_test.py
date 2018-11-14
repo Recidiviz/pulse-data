@@ -88,7 +88,7 @@ class TestPopulation(object):
     def test_load_target_list_background_happy_path(self):
         scrape_key = ScrapeKey("us_ny", "background")
 
-        docket.load_target_list(scrape_key, {})
+        docket.load_target_list(scrape_key)
 
         task = docket.get_new_docket_item(scrape_key)
         assert task.payload == json.dumps(('aaardvark', ''))
@@ -97,7 +97,7 @@ class TestPopulation(object):
     def test_load_target_list_snapshot_never_ingested(self):
         scrape_key = ScrapeKey("us_ny", "snapshot")
 
-        docket.load_target_list(scrape_key, {})
+        docket.load_target_list(scrape_key)
 
         assert not docket.get_new_docket_item(scrape_key, back_off=1)
 
@@ -110,7 +110,7 @@ class TestPopulation(object):
         get_record(person.key, "89012", halfway - relativedelta(years=10))
         get_snapshot(record.key, halfway)
 
-        docket.load_target_list(scrape_key, {})
+        docket.load_target_list(scrape_key)
 
         task = docket.get_new_docket_item(scrape_key)
         assert task.payload == json.dumps(("12345", ["89012"]))

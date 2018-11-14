@@ -74,7 +74,6 @@ from google.appengine.ext import deferred
 from google.appengine.ext import ndb
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.utils import regions
-from recidiviz.utils.params import get_param
 
 
 BACKGROUND_BATCH_SIZE = 1000
@@ -89,7 +88,7 @@ FILENAME_PREFIX = "./name_lists/"
 # ##################### #
 
 
-def load_target_list(scrape_key, params):
+def load_target_list(scrape_key, given_names="", surname=""):
     """Starts docket loading based on scrape type and region.
 
     Determines correct scrape type and kicks off target list generation,
@@ -97,7 +96,8 @@ def load_target_list(scrape_key, params):
 
     Args:
         scrape_key: (ScrapeKey) The scraper to load docket for
-        params: List of tuples for other key/value pairs from request
+        given_names: Given names of where to begin
+        surname: Surname of where to begin
 
     Returns:
         N/A
@@ -111,8 +111,6 @@ def load_target_list(scrape_key, params):
 
         # Construct filename, process user-supplied name query (if provided)
         filename = FILENAME_PREFIX + name_list_file
-        given_names = get_param("given_names", params, "")
-        surname = get_param("surname", params, "")
         query_name = (surname, given_names)
 
         # If query name not provided, load from the start of the file
