@@ -94,7 +94,7 @@ cp __init__.py old__init__.py
 cp fancy_urllib/__init__.py __init__.py
 ```
 
-Once that's all done, tests can be run from the root directory via `pytest`.
+Once that's all done, individual tests can be run via `pytest filename.py`. To run all tests, go to the root directory and run `pytest recidiviz`.
 
 The configuration in `setup.cfg` and `.coveragerc` will ensure the right code is tested and the proper code coverage
 metrics are displayed.
