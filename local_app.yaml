@@ -23,6 +23,9 @@ libraries:
   version: latest
 - name: lxml
   version: "3.7.3"
+- name: ssl
+  version: latest
 
 env_variables:
+  FLASK_ENV : 'development'
   GAE_USE_SOCKETS_HTTPLIB : 'true'

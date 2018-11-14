@@ -62,8 +62,10 @@ PyYAML = "==3.12"
 WebTest = "==2.0.29"
 WebOb = "==1.8.1"
 "zope.interface" = "==4.1.1"
+flask = "==1.0.2"
 
 [dev-packages]
+rope = "*"
 
 [requires]
 python_version = "2.7"

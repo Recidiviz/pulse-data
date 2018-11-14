@@ -40,7 +40,22 @@ def get_param(param_key, params, default=None):
     """
     for key, val in params:
         if key == param_key:
-            val = val.lower().strip()
-            return val
+            return clean_value(val)
 
     return default
+
+
+def get_arg(arg_key, args, default=None):
+    """Same as above, but for arguments in Flask form"""
+    return clean_value(args.get(arg_key, default))
+
+
+def get_arg_list(arg_key, args):
+    """Same as above, but allows for multiple arguments for a given key"""
+    return [clean_value(val) for val in args.getlist(arg_key)]
+
+
+def clean_value(value):
+    if value:
+        return value.lower().strip()
+    return value
