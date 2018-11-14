@@ -15,12 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Constants related to a person entity."""
+key_mappings:
+  DOB: person.ssn
 
-
-class Race(object):
-    unknown = 1
-
-
-class Ethnicity(object):
-    unknown = 1
+keys_to_ignore:
+  - Name
+  - Booking#

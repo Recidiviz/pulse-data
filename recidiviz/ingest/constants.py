@@ -31,3 +31,8 @@ SCRAPE_RECORD_AND_MORE = SCRAPE_RECORD | GET_MORE_TASKS
 # TODO: this is currently only used as a hack in us_co_mesa. Should be removed
 # once we have precompute built in.
 SCRAPE_PERSON_AND_RECORD_AND_MORE = SCRAPE_PERSON_AND_MORE | GET_MORE_TASKS
+
+# Add some constants for the new base scraper, once that becomes the norm
+# the above constants should be deleted.
+SCRAPE_DATA = 0x2
+SCRAPE_DATA_AND_MORE = SCRAPE_DATA | GET_MORE_TASKS

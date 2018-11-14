@@ -17,20 +17,18 @@
 
 """Constants related to a booking entity."""
 
-from enum import Enum
 
-
-class Classification(Enum):
+class Classification(object):
     unknown = 1
 
 
-class CustodyStatus(Enum):
+class CustodyStatus(object):
     unknown = 1
 
 
-class JurisdictionStatus(Enum):
+class JurisdictionStatus(object):
     unknown = 1
 
 
-class ReleaseReason(Enum):
+class ReleaseReason(object):
     unknown = 1

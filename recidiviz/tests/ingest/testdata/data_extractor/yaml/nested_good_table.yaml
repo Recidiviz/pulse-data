@@ -1,0 +1,21 @@
+key_mappings:
+  Inmate No: person.person_id
+  Gender: person.sex
+  BirthDate: person.birthdate
+  Age: person.age
+  Race: person.race
+  "Booking #": booking.booking_id
+  Committed By: booking.hold
+  Booking Date-Time: booking.admission_date
+
+keys_to_ignore:
+  - Custody Status
+  - Release Date-Time
+  - Offense DateTime
+  - Arrest DateTime
+
+multi_key_mapping:
+  Statute Code: charge.statute
+  Description: charge.name
+  CaseNumber: charge.case_number
+  Bond Amount: bond.amount

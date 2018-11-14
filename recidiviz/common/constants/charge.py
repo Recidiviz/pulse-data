@@ -17,20 +17,17 @@
 
 """Constants related to a charge entity."""
 
-from enum import Enum
-
-
-class Degree(Enum):
+class Degree(object):
     unknown = 1
 
 
-class ChargeClass(Enum):
+class ChargeClass(object):
     unknown = 1
 
 
-class ChargeStatus(Enum):
+class ChargeStatus(object):
     unknown = 1
 
 
-class CourtType(Enum):
+class CourtType(object):
     unknown = 1
