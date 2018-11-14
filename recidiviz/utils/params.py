@@ -17,41 +17,31 @@
 
 """Helpers for working with parameters from requests."""
 
-
-def get_param(param_key, params, default=None):
+def get_value(arg_key, args, default=None):
     """Retrieves URL parameter from request handler params list
 
-    Takes an iterable list of key/value pairs (URL parameters from the request
-    object), finds the key being sought, and returns its value. The value will
-    be stripped of leading or trailing whitespace and converted to lower case.
-    If the key is not found, this returns the given default, or None. The
-    given default will not be transformed like a found value.
+    Takes an MultiDict of key/value pairs (URL parameters from the request
+    object), finds the key being sought, and returns the first value. The value
+    will be stripped of leading or trailing whitespace and converted to lower
+    case. If the key is not found, this returns the given default, or None. The
+    given default will also be transformed like a found value.
 
     Args:
         param_key: (string) Key of the URL parameter being sought
-        params: List of URL parameter key/value pairs, in tuples (e.g.,
+        params: List of URL parameter key/value pairs, as a MultiDict (e.g.,
             [("key", "val"), ("key2", "val2"), ...])
         default: The default value to return if the param name is not found
 
     Returns:
-        Value for given param_name if found
+        First value for given param_name if found
         Provided default value if not found
         None if no default provided and not found
-    """
-    for key, val in params:
-        if key == param_key:
-            return clean_value(val)
-
-    return default
-
-
-def get_arg(arg_key, args, default=None):
-    """Same as above, but for arguments in Flask form"""
+        """
     return clean_value(args.get(arg_key, default))
 
 
-def get_arg_list(arg_key, args):
-    """Same as above, but allows for multiple arguments for a given key"""
+def get_values(arg_key, args):
+    """Same as above, but returns all values for a given key"""
     return [clean_value(val) for val in args.getlist(arg_key)]
 
 

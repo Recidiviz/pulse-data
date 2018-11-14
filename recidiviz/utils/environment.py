@@ -24,8 +24,11 @@ appropriate variables.
 """
 
 
-import os
+import httplib
 import logging
+import os
+from functools import wraps
+
 import yaml
 
 
@@ -60,15 +63,14 @@ def local_only(func):
         If not, nothing.
     """
 
-    def check_env(request_handler, *args, **kwargs):
+    @wraps(func)
+    def check_env(*args, **kwargs):
         """Decorator child-method to fail if runtime is in prod
 
         This is the function the decorator uses to test whether or not our
         runtime is in prod, and if so error out.
 
         Args:
-            request_handler: The function being decorated (we expect a
-                webapp2.RequestHandler instance)
             args, kwargs: Any arguments passed to that request handler
 
         Returns:
@@ -81,14 +83,13 @@ def local_only(func):
         if deployed:
             # Production environment - fail
             logging.error("This API call is not allowed in production.")
-            request_handler.response.write('Not available, see service logs.')
-            request_handler.response.set_status(500)
-            return None
+            return ('Not available, see service logs.',
+                    httplib.INTERNAL_SERVER_ERROR)
 
         # Local development server - continue
         logging.info("Test environment, proceeding.")
 
-        return func(request_handler, *args, **kwargs)
+        return func(*args, **kwargs)
 
     return check_env
 

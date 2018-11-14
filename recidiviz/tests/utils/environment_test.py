@@ -21,12 +21,11 @@
 
 
 import pytest
-import webapp2
-import webtest
+from mock import mock_open, patch
+
+from recidiviz.utils import environment
 
 from ..context import utils
-from mock import patch, mock_open
-from recidiviz.utils import environment
 
 
 def test_load_local_vars():
@@ -60,18 +59,12 @@ def test_in_prod_true(mock_os):
 def test_local_only_is_local():
     track = 'Emerald Rush'
 
-    class TestHandler(webapp2.RequestHandler):
-        @environment.local_only
-        def get(self):
-            self.response.set_status(200)
-            self.response.write(track)
+    @environment.local_only
+    def get():
+        return (track, 200)
 
-    app = webapp2.WSGIApplication([('/', TestHandler)])
-    test_app = webtest.TestApp(app)
-
-    response = test_app.get('/')
-    assert response.status_int == 200
-    response.mustcontain(track)
+    response = get()
+    assert response == (track, 200)
 
 
 @patch("os.getenv")
@@ -79,14 +72,9 @@ def test_local_only_is_prod(mock_os):
     track = 'Emerald Rush'
     mock_os.return_value = 'Google App Engine/'
 
-    class TestHandler(webapp2.RequestHandler):
-        @environment.local_only
-        def get(self):
-            return track
+    @environment.local_only
+    def get():
+        return (track, 200)
 
-    app = webapp2.WSGIApplication([('/', TestHandler)])
-    test_app = webtest.TestApp(app)
-
-    response = test_app.get('/', expect_errors=True)
-    assert response.status_int == 500
-    response.mustcontain('Not available, see service logs.')
+    response = get()
+    assert response == ('Not available, see service logs.', 500)

@@ -18,23 +18,30 @@
 """Tests for utils/params.py."""
 
 
+from werkzeug.datastructures import MultiDict
 from recidiviz.utils import params
 
 
-PARAMS = [("region", "us_mo"), ("scrape_type", "background")]
+PARAMS = MultiDict([("region", "us_mo"),
+                    ("scrape_type", "background"),
+                    ("region", "us_wa")])
 
 
-def test_get_param():
-    assert params.get_param("region", PARAMS) == "us_mo"
+def test_get_value():
+    assert params.get_value("region", PARAMS) == "us_mo"
 
 
-def test_get_param_default():
-    assert params.get_param("foo", PARAMS, default="bar") == "bar"
+def test_get_values():
+    assert params.get_values("region", PARAMS) == ["us_mo", "us_wa"]
 
 
-def test_get_param_no_default():
-    assert not params.get_param("foo", PARAMS)
+def test_get_value_default():
+    assert params.get_value("foo", PARAMS, default="bar") == "bar"
 
 
-def test_get_param_explicitly_none_default():
-    assert not params.get_param("foo", PARAMS, default=None)
+def test_get_value_no_default():
+    assert not params.get_value("foo", PARAMS)
+
+
+def test_get_value_explicitly_none_default():
+    assert not params.get_value("foo", PARAMS, default=None)
