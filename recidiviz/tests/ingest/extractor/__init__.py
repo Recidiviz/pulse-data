@@ -14,13 +14,3 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-
-"""Constants related to a person entity."""
-
-
-class Race(object):
-    unknown = 1
-
-
-class Ethnicity(object):
-    unknown = 1

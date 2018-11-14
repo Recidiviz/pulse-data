@@ -17,12 +17,9 @@
 
 """Constants related to a bond entity."""
 
-from enum import Enum
-
-
-class BondType(Enum):
+class BondType(object):
     unknown = 1
 
 
-class BondStatus(Enum):
+class BondStatus(object):
     unknown = 1
