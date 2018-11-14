@@ -15,12 +15,25 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Constants related to a person entity."""
+key_mappings:
+  Race: person.race
 
+keys_to_ignore:
+  - Local ID
+  - Eye Color
+  - Hair Color
+  - Weight
+  - Height
+  - Admit Date
+  - Admit Time 
+  - Address
+  - Court Type
+  - Confining Agency
+  - Arresting Agency
 
-class Race(object):
-    unknown = 1
-
-
-class Ethnicity(object):
-    unknown = 1
+multi_key_mapping:
+  Charge: charge.name
+  Offense Date: charge.offense_date
+  Bond: bond.amount
+  Bond Type: bond.type
+  Charging Agency: charge.charging_entity
