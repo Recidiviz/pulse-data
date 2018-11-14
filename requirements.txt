@@ -20,6 +20,7 @@ cryptography==2.3.1 ; python_version <= '2.7' and extra == 'secure'
 cssselect==1.0.3
 docopt==0.6.2
 enum34==1.1.6
+flask==1.0.2
 funcsigs==1.0.2
 futures==3.2.0
 idna==2.6

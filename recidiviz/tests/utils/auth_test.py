@@ -26,6 +26,7 @@ import webtest
 
 from ..context import utils
 from google.appengine.ext import testbed
+from flask import Flask, request
 from recidiviz.utils import auth
 
 
@@ -39,6 +40,12 @@ class BoardsOfCanadaHandler(webapp2.RequestHandler):
         self.response.set_status(200)
         self.response.write(BEST_ALBUM)
 
+dummy_app = Flask(__name__)
+
+@dummy_app.route('/')
+@auth.authenticate_request_flask
+def boards_of_canada_holder():
+    return (BEST_ALBUM, 200)
 
 class TestAuthenticateRequest(object):
     """Tests for the @authenticate_request decorator."""
@@ -50,6 +57,9 @@ class TestAuthenticateRequest(object):
         self.testbed.setup_env(app_id=APP_ID)
         self.testbed.init_app_identity_stub()
         self.testbed.init_user_stub()
+
+        dummy_app.config['TESTING'] = True
+        self.client = dummy_app.test_client()
 
     def teardown_method(self, _test_method):
         self.testbed.deactivate()
@@ -132,3 +142,49 @@ class TestAuthenticateRequest(object):
 
         response = test_app.get('/')
         assert response.status_int == 302
+
+    # FLASK
+    def test_flask_authenticate_request_different_app_id(self):
+        self.login_user(is_admin=False)
+
+        response = self.client.get(
+            '/', headers={'X-Appengine-Inbound-Appid': 'blah'})
+        assert response.status_code == 401
+        assert response.get_data() == 'Failed: Unauthorized external request.'
+
+    def test_flask_authenticate_request_same_app_id(self):
+        self.login_user(is_admin=False)
+
+        response = self.client.get(
+            '/', headers={'X-Appengine-Inbound-Appid': APP_ID})
+        assert response.status_code == 200
+        assert response.get_data() == BEST_ALBUM
+
+    def test_flask_authenticate_request_not_admin(self):
+        self.login_user(is_admin=False)
+
+        response = self.client.get('/')
+        assert response.status_code == 401
+        assert response.get_data() == 'Failed: Not an admin.'
+
+    def test_flask_authenticate_request_is_admin(self):
+        self.login_user()
+
+        response = self.client.get('/')
+        assert response.status_code == 200
+        assert response.get_data() == BEST_ALBUM
+
+    def test_flask_authenticate_request_is_cron(self):
+        response = self.client.get('/', headers={'X-Appengine-Cron': "True"})
+        assert response.status_code == 200
+        assert response.get_data() == BEST_ALBUM
+
+    def test_flask_authenticate_request_is_task(self):
+        response = self.client.get(
+            '/', headers={'X-Appengine-QueueName': "us_ny"})
+        assert response.status_code == 200
+        assert response.get_data() == BEST_ALBUM
+
+    def test_flask_authenticate_redirect_to_login(self):
+        response = self.client.get('/')
+        assert response.status_code == 302
