@@ -27,8 +27,8 @@ class IngestInfo(object):
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
 
-    def create_person(self):
-        person = _Person()
+    def create_person(self, **kwargs):
+        person = _Person(**kwargs)
         self.person.append(person)
         return person
 
@@ -62,8 +62,8 @@ class _Person(object):
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
 
-    def create_booking(self):
-        booking = _Booking()
+    def create_booking(self, **kwargs):
+        booking = _Booking(**kwargs)
         self.booking.append(booking)
         return booking
 
@@ -101,12 +101,12 @@ class _Booking(object):
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
 
-    def create_arrest(self):
-        self.arrest = _Arrest()
+    def create_arrest(self, **kwargs):
+        self.arrest = _Arrest(**kwargs)
         return self.arrest
 
-    def create_charge(self):
-        charge = _Charge()
+    def create_charge(self, **kwargs):
+        charge = _Charge(**kwargs)
         self.charge.append(charge)
         return charge
 
@@ -167,12 +167,12 @@ class _Charge(object):
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
 
-    def create_bond(self):
-        self.bond = _Bond()
+    def create_bond(self, **kwargs):
+        self.bond = _Bond(**kwargs)
         return self.bond
 
-    def create_sentence(self):
-        self.sentence = _Sentence()
+    def create_sentence(self, **kwargs):
+        self.sentence = _Sentence(**kwargs)
         return self.sentence
 
     def get_recent_bond(self):
