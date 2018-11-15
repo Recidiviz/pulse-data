@@ -20,9 +20,9 @@
 
 import logging
 from functools import wraps
+from flask import redirect, request
 from google.appengine.api import app_identity
 from google.appengine.api import users
-from flask import redirect, request
 
 
 def authenticate_request(func):

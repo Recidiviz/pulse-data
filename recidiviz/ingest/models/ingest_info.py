@@ -16,16 +16,20 @@
 # =============================================================================
 
 """Represents data scraped for a single individual."""
+import types
 
 
 class IngestInfo(object):
     """Class for information about multiple people."""
 
-    def __init__(self):
-        self.person = []  # type: List[Person]
+    def __init__(self, people=None):
+        self.person = people or []  # type: List[Person]
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
+
+    def __repr__(self):
+        return to_string(self)
 
     def create_person(self, **kwargs):
         person = _Person(**kwargs)
@@ -42,14 +46,15 @@ class _Person(object):
     """Class for information about a person.
     Referenced from IngestInfo.
     """
+
     def __init__(self, person_id=None, surname=None, given_names=None,
                  birthdate=None, status=None, sex=None, age=None,
                  race=None, ethnicity=None, place_of_residence=None,
                  bookings=None):
-        self.person_id = person_id # type: str
+        self.person_id = person_id  # type: str
         self.surname = surname  # type: str
         self.given_names = given_names  # type: str
-        self.birthdate = birthdate # type: datetime
+        self.birthdate = birthdate  # type: datetime
         self.status = status
         self.sex = sex
         self.age = age  # type: int
@@ -61,6 +66,9 @@ class _Person(object):
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
+
+    def __repr__(self):
+        return to_string(self)
 
     def create_booking(self, **kwargs):
         booking = _Booking(**kwargs)
@@ -77,12 +85,14 @@ class _Booking(object):
     """Class for information about a booking.
     Referenced from Person.
     """
+
     def __init__(self, booking_id=None, admission_date=None,
                  projected_release_date=None, release_date=None,
                  release_reason=None,
                  custody_status=None,
                  jurisdiction_status=None, hold=None,
                  facility=None, classification=None,
+                 total_bond_amount=None,
                  arrest=None, charges=None):
         self.booking_id = booking_id  # type: str
         self.admission_date = admission_date  # type: datetime
@@ -94,12 +104,16 @@ class _Booking(object):
         self.hold = hold  # type: str
         self.facility = facility  # type: str
         self.classification = classification
+        self.total_bond_amount = total_bond_amount  # type: str
 
         self.arrest = arrest  # type: Arrest
         self.charge = charges or []  # type: List[Charge]
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
+
+    def __repr__(self):
+        return to_string(self)
 
     def create_arrest(self, **kwargs):
         self.arrest = _Arrest(**kwargs)
@@ -123,21 +137,27 @@ class _Arrest(object):
     """Class for information about an arrest.
     Referenced from Booking.
     """
+
     def __init__(self, date=None, location=None, officer_name=None,
-                 officer_id=None):
+                 officer_id=None, agency=None):
         self.date = date  # type: datetime
         self.location = location  # type: str
         self.officer_name = officer_name  # type: str
         self.officer_id = officer_id  # type: str
+        self.agency = agency  # type: str
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
+
+    def __repr__(self):
+        return to_string(self)
 
 
 class _Charge(object):
     """Class for information about a charge.
     Referenced from Booking.
     """
+
     def __init__(self, offense_date=None, statute=None, name=None,
                  attempted=None, degree=None,
                  charge_class=None, level=None, fee=None,
@@ -167,6 +187,9 @@ class _Charge(object):
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
 
+    def __repr__(self):
+        return to_string(self)
+
     def create_bond(self, **kwargs):
         self.bond = _Bond(**kwargs)
         return self.bond
@@ -186,6 +209,7 @@ class _Bond(object):
     """Class for information about a bond.
     Referenced from Charge.
     """
+
     def __init__(self, bond_id=None, amount=None, bond_type=None,
                  status=None):
         self.bond_id = bond_id  # type: str
@@ -196,11 +220,15 @@ class _Bond(object):
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
 
+    def __repr__(self):
+        return to_string(self)
+
 
 class _Sentence(object):
     """Class for information about a sentence.
     Referenced from Charge.
     """
+
     def __init__(self, date_imposed=None, min_length=None, max_length=None,
                  is_life=None, is_probation=None, is_suspended=None, fine=None,
                  parole_possible=None, post_release_supervision_length=None):
@@ -215,3 +243,20 @@ class _Sentence(object):
 
         # type: timedelta
         self.post_release_supervision_length = post_release_supervision_length
+
+    def __eq__(self, other):
+        return self.__dict__ == other.__dict__
+
+    def __repr__(self):
+        return to_string(self)
+
+
+def to_string(obj):
+    out = [obj.__class__.__name__ + ":"]
+    for key, val in vars(obj).items():
+        if isinstance(val, types.ListType):
+            for index, elem in enumerate(val):
+                out += '{}[{}]: {}'.format(key, index, elem).split('\n')
+        elif val:
+            out += '{}: {}'.format(key, val).split('\n')
+    return '\n   '.join(out)
