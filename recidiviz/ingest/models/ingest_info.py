@@ -17,33 +17,25 @@
 
 """Represents data scraped for a single individual."""
 
-from recidiviz.common.constants.bond import BondStatus
-from recidiviz.common.constants.bond import BondType
-from recidiviz.common.constants.booking import Classification
-from recidiviz.common.constants.booking import CustodyStatus
-from recidiviz.common.constants.booking import JurisdictionStatus
-from recidiviz.common.constants.booking import ReleaseReason
-from recidiviz.common.constants.charge import ChargeClass
-from recidiviz.common.constants.charge import ChargeStatus
-from recidiviz.common.constants.charge import CourtType
-from recidiviz.common.constants.charge import Degree
-from recidiviz.common.constants.person import Ethnicity
-from recidiviz.common.constants.person import Race
-
 
 class IngestInfo(object):
     """Class for information about multiple people."""
 
     def __init__(self):
-        self.people = []  # type: List[Person]
+        self.person = []  # type: List[Person]
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
 
     def create_person(self):
         person = _Person()
-        self.people.append(person)
+        self.person.append(person)
         return person
+
+    def get_recent_person(self):
+        if self.person:
+            return self.person[-1]
+        return None
 
 
 class _Person(object):
@@ -51,29 +43,34 @@ class _Person(object):
     Referenced from IngestInfo.
     """
     def __init__(self, person_id=None, surname=None, given_names=None,
-                 birthdate=None, sex=None, age=None, race=Race.unknown,
-                 ethnicity=Ethnicity.unknown, place_of_residence=None,
+                 birthdate=None, status=None, sex=None, age=None,
+                 race=None, ethnicity=None, place_of_residence=None,
                  bookings=None):
-        self.person_id = person_id  # type: str
+        self.person_id = person_id # type: str
         self.surname = surname  # type: str
         self.given_names = given_names  # type: str
-        self.birthdate = birthdate  # type: datetime
+        self.birthdate = birthdate # type: datetime
+        self.status = status
         self.sex = sex
         self.age = age  # type: int
         self.race = race
         self.ethnicity = ethnicity
         self.place_of_residence = place_of_residence  # type: str
 
-        # type: List[Booking]
-        self.bookings = [] if bookings is None else bookings
+        self.booking = bookings or []  # type: List[Booking]
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
 
     def create_booking(self):
         booking = _Booking()
-        self.bookings.append(booking)
+        self.booking.append(booking)
         return booking
+
+    def get_recent_booking(self):
+        if self.booking:
+            return self.booking[-1]
+        return None
 
 
 class _Booking(object):
@@ -82,10 +79,10 @@ class _Booking(object):
     """
     def __init__(self, booking_id=None, admission_date=None,
                  projected_release_date=None, release_date=None,
-                 release_reason=ReleaseReason.unknown,
-                 custody_status=CustodyStatus.unknown,
-                 jurisdiction_status=JurisdictionStatus.unknown, hold=None,
-                 facility=None, classification=Classification.unknown,
+                 release_reason=None,
+                 custody_status=None,
+                 jurisdiction_status=None, hold=None,
+                 facility=None, classification=None,
                  arrest=None, charges=None):
         self.booking_id = booking_id  # type: str
         self.admission_date = admission_date  # type: datetime
@@ -99,7 +96,7 @@ class _Booking(object):
         self.classification = classification
 
         self.arrest = arrest  # type: Arrest
-        self.charges = [] if charges is None else charges  # type: List[Charge]
+        self.charge = charges or []  # type: List[Charge]
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
@@ -110,8 +107,16 @@ class _Booking(object):
 
     def create_charge(self):
         charge = _Charge()
-        self.charges.append(charge)
+        self.charge.append(charge)
         return charge
+
+    def get_recent_charge(self):
+        if self.charge:
+            return self.charge[-1]
+        return None
+
+    def get_recent_arrest(self):
+        return self.arrest
 
 
 class _Arrest(object):
@@ -134,10 +139,10 @@ class _Charge(object):
     Referenced from Booking.
     """
     def __init__(self, offense_date=None, statute=None, name=None,
-                 attempted=None, degree=Degree.unknown,
-                 charge_class=ChargeClass.unknown, level=None, fee=None,
-                 charging_entity=None, charge_status=ChargeStatus.unknown,
-                 number_of_counts=None, court_type=CourtType.unknown,
+                 attempted=None, degree=None,
+                 charge_class=None, level=None, fee=None,
+                 charging_entity=None, charge_status=None,
+                 number_of_counts=None, court_type=None,
                  case_number=None, next_court_date=None, judge_name=None,
                  bond=None, sentence=None):
         self.offense_date = offense_date  # type: datetime
@@ -170,13 +175,19 @@ class _Charge(object):
         self.sentence = _Sentence()
         return self.sentence
 
+    def get_recent_bond(self):
+        return self.bond
+
+    def get_recent_sentence(self):
+        return self.sentence
+
 
 class _Bond(object):
     """Class for information about a bond.
     Referenced from Charge.
     """
-    def __init__(self, bond_id=None, amount=None, bond_type=BondType.unknown,
-                 status=BondStatus.unknown):
+    def __init__(self, bond_id=None, amount=None, bond_type=None,
+                 status=None):
         self.bond_id = bond_id  # type: str
         self.amount = amount  # type: decimal
         self.bond_type = bond_type
