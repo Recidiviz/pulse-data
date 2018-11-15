@@ -1,0 +1,33 @@
+# Recidiviz - a platform for tracking granular recidivism metrics in real time
+# Copyright (C) 2018 Recidiviz, Inc.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# =============================================================================
+
+key_mappings:
+  Inmate No: person.person_id
+  Gender: person.sex
+  "Booking #": booking.booking_id
+  Booking Date-Time: booking.admission_date
+  Release Date-Time: booking.release_date
+  Reporting Agency: booking.facility
+
+multi_key_mapping:
+  Statute Code: charge.statute
+  Description: charge.name
+  CaseNumber: charge.case_number
+  Arrest DateTime: arrest.date
+  Bond Amount: bond.amount
+  Bond Type: bond.bond_type
+  Next Court Date: charge.next_court_date

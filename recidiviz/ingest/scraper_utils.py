@@ -25,12 +25,66 @@ import logging
 import random
 import string
 import zlib
+from lxml.html import HtmlElement
+
 import dateutil.parser as parser
 
 from google.appengine.ext import ndb
 from recidiviz.models import env_vars
 from recidiviz.utils import environment
 
+
+def convert_key_to_cells(content, key):
+    """Searches for elements in |content| that match a |key| and converts those
+    elements, along with their adjacent text, as table cells.
+
+    Args:
+        content: (HtmlElement) to be modified
+        key: (string) to search for
+    """
+    matches = content.xpath('.//*[starts-with(normalize-space(text()),"%s")]'
+                            % key)
+    for match in matches:
+        key_element_to_cell(key, match)
+
+def key_element_to_cell(key, key_element):
+    """Converts a |key_element| Element to a table cell and tries to modify the
+    corresponding value to a cell.
+
+    Args:
+        key: (string) the key that |key_element| represents
+        key_element: (HtmlElement) the element to be modified
+    Returns:
+        True if a modification was made and False otherwise.
+    """
+
+    # <foo><bar>key</bar>value</foo>
+    following_siblings = key_element.xpath('following-sibling::text()')
+    if following_siblings:
+        following_text = following_siblings[0].strip()
+        if following_text:
+            key_element.tag = 'td'
+            following_cell = HtmlElement(following_text)
+            following_cell.tag = 'td'
+            key_element.addnext(following_cell)
+            return True
+
+    # <foo>key</foo><bar>value</bar>
+    if key_element.getnext() is not None:
+        key_element.tag = 'td'
+        key_element.getnext().tag = 'td'
+        return True
+
+    # <foo>key<bar>value</bar></foo>
+    if len(key_element) == 1:
+        key_cell = HtmlElement(key)
+        key_cell.tag = 'td'
+        value_cell = key_element[0]
+        value_cell.tag = 'td'
+        value_cell.addprevious(key_cell)
+        return True
+
+    return False
 
 def parse_date_string(date_string, person_id=None):
     """Converts string describing date to Python date object
