@@ -226,7 +226,7 @@ def test_bad_lookup():
     with open(html_file, 'r') as f:
         html_contents = html.fromstring(f.read())
 
-    with pytest.raises(ValueError):
+    with pytest.warns(UserWarning):
         extractor.extract_and_populate_data(html_contents)
 
 def test_bad_object():
