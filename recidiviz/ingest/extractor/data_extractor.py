@@ -23,6 +23,7 @@ TODO: Add more details here in implementation logic when it is done.
 """
 
 import itertools
+import warnings
 import yaml
 
 from recidiviz.ingest.models.ingest_info import IngestInfo
@@ -154,8 +155,8 @@ class DataExtractor(object):
         # If at the end of everything there are some keys we haven't found on
         # page we should complain.
         if needed_keys:
-            # TODO 183: warn here
-            pass
+            # TODO 183: actually have real warning codes
+            warnings.warn("The following keys could not be found: %s" % needed_keys)
         return ingest_info
 
     def _set_or_create_object(
