@@ -26,6 +26,7 @@ import itertools
 import yaml
 
 from recidiviz.ingest.models.ingest_info import IngestInfo
+from recidiviz.ingest import scraper_utils
 
 
 class DataExtractor(object):
@@ -76,7 +77,7 @@ class DataExtractor(object):
         # We want to know which of the classes are multi keys as this helps
         # us with behaviour when we set the values.
         self.multi_key_classes = set(
-            [value.split('.')[0] for value in self.multi_keys.values()])
+            value.split('.')[0] for value in self.multi_keys.values())
 
     def _set_all_cells(self, content):
         """Finds all leaf cells on a page and sets them.
@@ -84,6 +85,9 @@ class DataExtractor(object):
         Args:
             content: the html_tree we are searching.
         """
+        for key in self.keys.keys():
+            scraper_utils.convert_key_to_cells(content, key)
+
         all_cells = itertools.chain(
             content.findall('.//th'), content.findall('.//td'))
         self.cells = filter(self._is_leaf_cell, all_cells)
@@ -150,9 +154,8 @@ class DataExtractor(object):
         # If at the end of everything there are some keys we haven't found on
         # page we should complain.
         if needed_keys:
-            # TODO 183: actually have real error codes
-            raise ValueError(
-                "The following keys could not be found: %s" % needed_keys)
+            # TODO 183: warn here
+            pass
         return ingest_info
 
     def _set_or_create_object(
@@ -253,7 +256,10 @@ class DataExtractor(object):
         Returns:
             The cell below or None.
         """
-        return self._below(cell).next()
+        try:
+            return self._below(cell).next()
+        except StopIteration:
+            return None
 
     def _get_all_below(self, cell):
         """Gets all the cells below the given |cell|.
@@ -277,7 +283,7 @@ class DataExtractor(object):
         """
         while cell is not None:
             adjacent_value = self._get_value_from_cell(cell)
-            if adjacent_value:
+            if adjacent_value is not None:
                 return adjacent_value
             cell = cell.getparent()
         return None
