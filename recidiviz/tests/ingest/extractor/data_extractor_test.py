@@ -125,9 +125,94 @@ def test_bad_table():
 
     info = extractor.extract_and_populate_data(html_contents)
 
-    # The scraper scrapes a charge row that just says 'Count=3'. This would
-    # have to be removed separately by a child scraper.
-    info.people[0].bookings[0].charges.pop()
+    # The scraper scrapes a charge row that just says 'Count=3', we need to
+    # know how to ignore this somehow
+    info.person[0].booking[0].charge.pop()
+    assert info == expected_info
+
+def test_multiple_people_with_maybe_charges():
+    """Tests for a page with many people, each with possibly a set of charges"""
+    key_mapping_file = ('../testdata/data_extractor/yaml/'
+                        'multiple_people_sometimes_charges.yaml')
+    key_mapping_file = os.path.join(os.path.dirname(__file__), key_mapping_file)
+    extractor = DataExtractor(key_mapping_file)
+
+    expected_info = IngestInfo()
+
+    # Create the info for the first person
+    person1 = expected_info.create_person()
+    person1.status = 'Release'
+    person1.person_id = 'person1'
+    person1.place_of_residence = 'address1'
+    person1.age = '62'
+
+    booking1 = person1.create_booking()
+    booking1.admission_date = '03/14/2009 02:09:04'
+    booking1.release_date = '3/14/2009 3:49:00 PM'
+    booking1.booking_id = 'booking1'
+
+    b1_charge1 = booking1.create_charge()
+    b1_charge1.statute = '13A-6-24'
+    b1_charge1.case_number = '000-0000 (BALDWIN COUNTY SHERIFFS OFFICE)'
+    b1_charge1.name = 'RECKLESS ENDANGERMENT'
+    b1_charge1.degree = ''
+    b1_charge1.level = 'M'
+    b1_charge1.create_bond().amount = '$1000.00'
+    b1_charge2 = booking1.create_charge()
+    b1_charge2.statute = '13A-6-24'
+    b1_charge2.case_number = '000-0000 (BALDWIN COUNTY SHERIFFS OFFICE)'
+    b1_charge2.name = 'RECKLESS ENDANGERMENT'
+    b1_charge2.degree = ''
+    b1_charge2.level = 'M'
+    b1_charge2.create_bond().amount = '$1000.00'
+
+    # Create info for the second person
+    person2 = expected_info.create_person()
+    person2.status = 'Release'
+    person2.person_id = 'person2'
+    person2.place_of_residence = 'address2'
+    person2.age = '44'
+
+    booking2 = person2.create_booking()
+    booking2.admission_date = '11/19/2001 07:03:00'
+    booking2.release_date = '11/19/2001 6:40:00 PM'
+    booking2.booking_id = 'booking2'
+
+    # Create info for the 3rd person
+    person3 = expected_info.create_person()
+    person3.status = 'Release'
+    person3.person_id = 'person3'
+    person3.place_of_residence = 'address3'
+    person3.age = '22'
+
+    booking3 = person3.create_booking()
+    booking3.admission_date = '05/12/2014 11:04:59'
+    booking3.release_date = '5/13/2014 9:08:08 AM'
+    booking3.booking_id = 'booking3'
+
+    b3_charge1 = booking3.create_charge()
+    b3_charge1.statute = '13A-12-214'
+    b3_charge1.case_number = '000-0000 (BALDWIN COUNTY SHERIFFS OFFICE)'
+    b3_charge1.name = 'POSSESSION OF MARIJUANA SECOND DEGREE'
+    b3_charge1.degree = 'S'
+    b3_charge1.level = 'M'
+    b3_charge1.create_bond().amount = '$1000.00'
+    b3_charge2 = booking3.create_charge()
+    b3_charge2.statute = '13A-12-260'
+    b3_charge2.case_number = '000-0000 (BALDWIN COUNTY SHERIFFS OFFICE)'
+    b3_charge2.name = 'POSSESSION OF DRUG PARAPHERNALIA'
+    b3_charge2.degree = ''
+    b3_charge2.level = 'M'
+    b3_charge2.create_bond().amount = '$1000.00'
+
+    html_file = ('../testdata/data_extractor/html/'
+                 'multiple_people_sometimes_charges.html')
+    html_file = os.path.join(os.path.dirname(__file__), html_file)
+    with open(html_file, 'r') as f:
+        html_contents = html.fromstring(f.read())
+
+    info = extractor.extract_and_populate_data(html_contents)
+
     assert info == expected_info
 
 def test_bad_lookup():
@@ -155,7 +240,7 @@ def test_bad_object():
     with open(html_file, 'r') as f:
         html_contents = html.fromstring(f.read())
 
-    with pytest.raises(ValueError):
+    with pytest.raises(KeyError):
         extractor.extract_and_populate_data(html_contents)
 
 def test_bad_attr():

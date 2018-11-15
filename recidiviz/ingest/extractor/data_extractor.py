@@ -50,6 +50,16 @@ class DataExtractor(object):
             self.initialize_extractor(
                 key_mappings, multi_key_mapping, keys_to_ignore)
 
+        # Convenience map to tell us how to build the object.
+        self.hierarchy_map = {
+            'person': [],
+            'booking': ['person'],
+            'arrest': ['person', 'booking'],
+            'charge': ['person', 'booking'],
+            'bond': ['person', 'booking', 'charge'],
+            'sentence': ['person', 'booking', 'charge'],
+        }
+
     def initialize_extractor(self, keys, multi_keys, ignored_keys):
         """Initializes the data extractor with the keys that we want to
         search for in the html content.
@@ -63,6 +73,10 @@ class DataExtractor(object):
         self.keys = {k.strip():v for k, v in keys.iteritems()}
         self.multi_keys = {k.strip():v for k, v in multi_keys.iteritems()}
         self.all_keys = self.keys.keys() + self.multi_keys.keys() + ignored_keys
+        # We want to know which of the classes are multi keys as this helps
+        # us with behaviour when we set the values.
+        self.multi_key_classes = set(
+            [value.split('.')[0] for value in self.multi_keys.values()])
 
     def _set_all_cells(self, content):
         """Finds all leaf cells on a page and sets them.
@@ -86,7 +100,9 @@ class DataExtractor(object):
 
     def extract_and_populate_data(self, content, ingest_info=None):
         """This function does all the work of taking the users yaml file
-        and content and returning a populated data class.
+        and content and returning a populated data class.  This function
+        iterates through every cell on the page and builds a model based on
+        the keys that it sees.
 
         Args:
             content: An already parsed html data structure
@@ -99,128 +115,113 @@ class DataExtractor(object):
         self._set_all_cells(content)
         if not ingest_info:
             ingest_info = IngestInfo()
+        if not ingest_info.person:
+            ingest_info.create_person().create_booking()
 
-        for key, ingest_key in self.keys.iteritems():
-            value = self.get_value(key)
-            self._set_value(ingest_info, ingest_key, value)
+        # We use this set to keep track of keys we have seen, by the end of this
+        # function it should be the empty set.  If not we throw an error to let
+        # the user know we have a problem.
+        needed_keys = set(self.keys.keys() + self.multi_keys.keys())
 
-        charges = self._extract_rows() if self.multi_keys else []
-
-        if not ingest_info.people[0].bookings:
-            ingest_info.people[0].create_booking()
-
-        booking = ingest_info.people[0].bookings[0]
-
-        for charge_dict in charges:
-            charge = booking.create_charge()
-            self._populate_charge(charge, charge_dict)
-
+        for cell in self.cells:
+            # This is a tiny hack to avoid an O(n) search over the keys list for
+            # every cell.
+            # An alternative approach is to force the user to give the exact key
+            # with a semi colon in the yaml file, but that might be confusing.
+            # Finally, we could preprocess the keys mapping to include multiple
+            # keys that map to the same value ('hi' and 'hi:' both map to the
+            # same thing) but that is a more expensive preprocessing calculation
+            cell_val = cell.text_content().strip().strip(':').strip()
+            values = None
+            if cell_val in self.keys:
+                values = [self._get_value_cell(cell)]
+            elif cell_val in self.multi_keys:
+                values = self._get_values_below_cell(cell)
+            if values:
+                key_mapping_val = (self.keys.get(cell_val) or
+                                   self.multi_keys.get(cell_val))
+                value_classes = key_mapping_val.split('.')
+                ingest_key = value_classes[1]
+                class_to_set = value_classes[0]
+                self._set_or_create_object(
+                    ingest_info, class_to_set, ingest_key, values)
+                if cell_val in needed_keys:
+                    needed_keys.remove(cell_val)
+        # If at the end of everything there are some keys we haven't found on
+        # page we should complain.
+        if needed_keys:
+            # TODO 183: actually have real error codes
+            raise ValueError(
+                "The following keys could not be found: %s" % needed_keys)
         return ingest_info
 
-    def _extract_rows(self):
-        """Extracts values from |self.multi_keys|. Should only be called from
-        |extract_and_populate_data| since that method sets up parsing the
-        content. Raises a ValueError if the keys do not all have the same
-        number of rows.
-
-        Returns:
-            A list of dictionaries, where each dictionary has keys from the
-            schema that map to values.
-        """
-        lists_of_values = []
-        for key, schema_key in self.multi_keys.iteritems():
-            values_below = self._get_values_below(key)
-            values = [
-                {schema_key: value} for value in values_below
-            ]
-            lists_of_values.append(values)
-
-        charges = []
-        lengths = set(len(l) for l in lists_of_values)
-        # The charges columns should all have the same length
-        if len(lengths) == 1:
-            for i in range(lengths.pop()):
-                charge = {}
-                for field_list in lists_of_values:
-                    charge.update(field_list[i])
-                charges.append(charge)
-        else:
-            raise ValueError('the keys from |multi_key_mapping| do not all ' +
-                             'have the same number of values.')
-
-        return charges
-
-    def _set_value(self, ingest_info, ingest_key, value):
-        """This function intelligently sets the value in the ingest_info
-        object if it can.
+    def _set_or_create_object(
+            self, ingest_info, class_to_set, ingest_key, values):
+        """Contains the logic to set or create a field on an ingest object.
+        The logic here is that we check if we have a most recent class already
+        to check if the field is already set.  If the field we care about is
+        already set, we say that we need to create a new object and set the
+        field.
 
         Args:
-            ingest_info: The ingest_info object to set the value on.
-            ingest_key: The key we wish to set.
-            value: The value to set the key to
+            ingest_info: The top level IngestInfo object to set the data on.
+            class_to_set: The actual class we are setting the data on.  This
+                helps us determine hierarchy and actually find the leaf node
+                in the ingest_info object.
+            ingest_key: The actual field name we are going to eventually set
+                on the object that we find.
+            values: The list of values that the field name will be set to.
+                Each element of the list is a different write and might incur
+                objects being created/updated.
         """
-        value_classes = ingest_key.split('.')
-        ingest_key = value_classes[1]
-        class_to_set = value_classes[0]
-        if class_to_set == 'person':
-            # Create a person if one has not been created.
-            if not ingest_info.people:
-                ingest_info.create_person()
-            obj = ingest_info.people[0]
-        elif class_to_set == 'booking':
-            # Create a booking if needed.
-            if not ingest_info.people:
-                ingest_info.create_person()
-            if not ingest_info.people[0].bookings:
-                ingest_info.people[0].create_booking()
-            obj = ingest_info.people[0].bookings[0]
-        elif class_to_set == 'arrest':
-            if not ingest_info.people:
-                ingest_info.create_person()
-            if not ingest_info.people[0].bookings:
-                ingest_info.people[0].create_booking()
-            if not ingest_info.people[0].bookings[0].arrest:
-                ingest_info.people[0].bookings[0].create_arrest()
-            obj = ingest_info.people[0].bookings[0].arrest
-        else:
-            raise ValueError("can't set value on unknown class %s"
-                             % class_to_set)
+        is_multi_key = class_to_set in self.multi_key_classes
+        for i, value in enumerate(values):
+            # The first task is to find the parent.
+            parent = self._find_parent_ingest_info(
+                ingest_info, self.hierarchy_map[class_to_set], i)
 
-        if not hasattr(obj, ingest_key):
-            raise AttributeError("can't set unknown value %s on class %s"
-                                 % (ingest_key, class_to_set))
+            get_recent_name = 'get_recent_' + class_to_set
+            object_to_set = getattr(parent, get_recent_name)()
+            # If we are in multikey, we need to pull out the correct index of
+            # class type we want to set
+            if is_multi_key:
+                attr = getattr(parent, class_to_set)
+                if attr != None and isinstance(attr, list) and len(attr) > i:
+                    object_to_set = attr[i]
 
-        setattr(obj, ingest_key, value)
+            create_name = 'create_' + class_to_set
+            create_func = getattr(parent, create_name)
+            # If the object we are trying to operate on is None, or it has
+            # already set the ingest_key then we know we need to create a
+            # new one.
+            if (object_to_set is None or
+                    getattr(object_to_set, ingest_key) != None):
+                object_to_set = create_func()
 
-    def _populate_charge(self, charge, charge_dict):
-        bond = charge.create_bond()
-        for key, value in charge_dict.iteritems():
-            class_to_set, ingest_key = key.split('.')
-            if class_to_set == 'charge':
-                obj = charge
-            elif class_to_set == 'bond':
-                obj = bond
+            setattr(object_to_set, ingest_key, value)
+
+    def _find_parent_ingest_info(self, ingest_info, hierarchy, val_index):
+        """Find the parent object to set the value on
+
+        Args:
+            ingest_info: an IngestInfo object
+            hierarchy: the hierarchy of the data structure to help us
+                walk the data object.
+            val_index: the index of the value we are setting, note that this is
+                unused if it is a multi key.
+        Returns:
+            the parent object to operate on.
+        """
+        parent = ingest_info
+        for hier_class in hierarchy:
+            # If we are a multi key class instead of getting the most recent
+            # object as a parent, we use the index of the value we found
+            if hier_class in self.multi_key_classes:
+                parent = getattr(parent, hier_class)[val_index]
             else:
-                raise ValueError("can't set value on unknown class '%s'"
-                                 % class_to_set)
-
-            if not hasattr(obj, ingest_key):
-                raise AttributeError("can't set unknown value '%s' on class %s"
-                                     % (ingest_key, class_to_set))
-            setattr(obj, ingest_key, value)
-
-    def _find_cell(self, key):
-        """
-        Args:
-            key: str
-        Returns:
-            The first cell Element that matches the given |key|
-        """
-        for cell in self.cells:
-            if key in cell.text_content().strip():
-                #TODO: handle multiple key cells
-                return cell
-        raise ValueError('couldn\'t find key: %s' % key)
+                get_recent_name = 'get_recent_' + hier_class
+                parent = getattr(parent, get_recent_name)()
+        return parent
 
     def _below(self, cell):
         """Yields the cells below the given cell.
@@ -264,32 +265,30 @@ class DataExtractor(object):
         """
         return list(self._below(cell))
 
-    def get_value(self, key):
-        """Tries to find a value of a given key.
+    def _get_value_cell(self, cell):
+        """Tries to find a value of a given cell.
 
         Args:
-            key: the key we are trying to find
+            cell: the cell value we are trying to find
 
         Returns:
-            A string representing the value of the key, or None if it can't
+            A string representing the value of the cell, or None if it can't
             be found.
         """
-        cell = self._find_cell(key)
-        while cell is not None and key in cell.text_content().strip():
+        while cell is not None:
             adjacent_value = self._get_value_from_cell(cell)
             if adjacent_value:
                 return adjacent_value
             cell = cell.getparent()
         return None
 
-    def _get_values_below(self, key):
-        """Tries to find a list of values given key.
+    def _get_values_below_cell(self, cell):
+        """Tries to find a list of values given cell.
 
         Args:
-            key: The key we are trying to find.
+            key: The cell we are trying to find.
         """
-        cell = self._find_cell(key)
-        while cell is not None and cell.text_content().strip() == key:
+        while cell is not None:
             below_cells = self._get_all_below(cell)
             if below_cells:
                 values = [cell.text_content().strip() for cell in below_cells]
