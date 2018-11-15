@@ -256,3 +256,93 @@ def test_bad_attr():
 
     with pytest.raises(AttributeError):
         extractor.extract_and_populate_data(html_contents)
+
+def test_partial_table():
+    """Tests a page with a table as well as unstructured data."""
+    key_mapping_file = '../testdata/data_extractor/yaml/partial_table.yaml'
+    key_mapping_file = os.path.join(os.path.dirname(__file__), key_mapping_file)
+    extractor = DataExtractor(key_mapping_file)
+
+    expected_info = IngestInfo()
+    person = expected_info.create_person()
+    person.age = '38'
+    person.place_of_residence = 'WICHITA FALLS'
+    person.race = 'HISPANIC'
+    booking = person.create_booking()
+    booking.admission_date = '08/18/2017'
+    charge = booking.create_charge()
+    charge.name = 'FIRST CHARGE'
+    charge.charging_entity = 'WICHITA FALLS PD'
+    charge.charge_status = ''
+    bond = charge.create_bond()
+    bond.amount = '25,000.00'
+
+    html_file = '../testdata/data_extractor/html/partial_table.html'
+    html_file = os.path.join(os.path.dirname(__file__), html_file)
+    with open(html_file, 'r') as f:
+        html_contents = html.fromstring(f.read())
+    info = extractor.extract_and_populate_data(html_contents)
+    assert expected_info == info
+
+def test_labeled_fields():
+    """Tests a page with field values in <span>s labeled by <label>s."""
+    key_mapping_file = '../testdata/data_extractor/yaml/labeled_fields.yaml'
+    key_mapping_file = os.path.join(os.path.dirname(__file__), key_mapping_file)
+    extractor = DataExtractor(key_mapping_file)
+
+    expected_info = IngestInfo()
+    person = expected_info.create_person()
+    person.person_id = '11111'
+    person.race = 'White'
+    person.sex = 'Male'
+    booking = person.create_booking()
+    booking.admission_date = '11/12/2018 5:04 PM'
+    booking.facility = 'Walla Walla County Corrections Department'
+    booking.release_date = ''
+    charge = booking.create_charge()
+    charge.name = 'DUI'
+    charge.offense_date = '9/21/2018 5:34 PM'
+    charge.charge_class = 'Gross Misdemeanor'
+    charge.charge_status = 'Time Served'
+    charge.charging_entity = ''
+    charge.next_court_date = ''
+    booking.charge.append(charge)
+
+    html_file = '../testdata/data_extractor/html/labeled_fields.html'
+    html_file = os.path.join(os.path.dirname(__file__), html_file)
+    with open(html_file, 'r') as f:
+        html_contents = html.fromstring(f.read())
+    info = extractor.extract_and_populate_data(html_contents)
+    assert expected_info == info
+
+def test_bad_labels():
+    """Tests a page with field values in <span>s labeled by nested <label>s."""
+    key_mapping_file = '../testdata/data_extractor/yaml/bad_labels.yaml'
+    key_mapping_file = os.path.join(os.path.dirname(__file__), key_mapping_file)
+    extractor = DataExtractor(key_mapping_file)
+
+    expected_info = IngestInfo()
+    person = expected_info.create_person()
+    person.person_id = '046573'
+    person.sex = 'Male'
+    booking = person.create_booking()
+    booking.booking_id = '00119283'
+    booking.admission_date = '07/19/2018 14:24'
+    booking.facility = 'MCSO'
+    arrest = booking.create_arrest()
+    arrest.date = ''
+    charge = booking.create_charge()
+    bond = charge.create_bond()
+    bond.amount = '$100,000.00'
+    bond.bond_type = '10 %'
+    charge.statute = '2911.12'
+    charge.next_court_date = ''
+    charge.name = 'BURGLARY'
+    charge.case_number = ''
+
+    html_file = '../testdata/data_extractor/html/bad_labels.html'
+    html_file = os.path.join(os.path.dirname(__file__), html_file)
+    with open(html_file, 'r') as f:
+        html_contents = html.fromstring(f.read())
+    info = extractor.extract_and_populate_data(html_contents)
+    assert expected_info == info
