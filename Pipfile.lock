@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "eb7c129f75a0ad34b4af15666aedc82de1379881d94c3d8a2d8ef9be10af005f"
+            "sha256": "a1c130870e782a944f79db2fb100bcef8df70912b47f13ad396b998809769e15"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -67,7 +67,7 @@
                 "sha256:f0b0e4eba956de51238e17573b7087e852dfe9854afd2e9c873f73fc0ca0a6dd"
             ],
             "index": "pypi",
-            "markers": "python_version < '3.4'",
+            "markers": "python_version == '2.7'",
             "version": "==1.5"
         },
         "bdist-mpkg": {
@@ -648,6 +648,13 @@
             ],
             "index": "pypi",
             "version": "==0.9.65"
+        },
+        "sqlalchemy": {
+            "hashes": [
+                "sha256:9de7c7dabcf06319becdb7e15099c44e5e34ba7062f9ba10bc00e562f5db3d04"
+            ],
+            "index": "pypi",
+            "version": "==1.2.14"
         },
         "tornado": {
             "hashes": [
