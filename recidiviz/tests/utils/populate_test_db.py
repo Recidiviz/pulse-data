@@ -35,9 +35,9 @@ import string
 import time
 from datetime import datetime
 
+from flask import Flask, request
 from google.appengine.ext import ndb
 
-from flask import Flask, request
 from recidiviz.ingest.sessions import ScrapedRecord, ScrapeSession
 from recidiviz.models.env_vars import EnvironmentVariable
 from recidiviz.models.person import Person
