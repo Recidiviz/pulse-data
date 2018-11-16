@@ -84,6 +84,19 @@ def key_element_to_cell(key, key_element):
         value_cell.addprevious(key_cell)
         return True
 
+    # <foo>key : value</foo>
+    text = key_element.text.strip()
+    if text.startswith(key):
+        text = text[len(key):].strip().strip(':').strip()
+        if text != '':
+            key_cell = HtmlElement(key)
+            key_cell.tag = 'td'
+            value_cell = HtmlElement(text)
+            value_cell.tag = 'td'
+            key_element.insert(0, key_cell)
+            key_element.insert(1, value_cell)
+            return True
+
     return False
 
 def parse_date_string(date_string, person_id=None):

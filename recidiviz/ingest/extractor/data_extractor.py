@@ -156,7 +156,8 @@ class DataExtractor(object):
         # page we should complain.
         if needed_keys:
             # TODO 183: actually have real warning codes
-            warnings.warn("The following keys could not be found: %s" % needed_keys)
+            warnings.warn("The following keys could not be found: %s" %
+                          needed_keys)
         return ingest_info
 
     def _set_or_create_object(

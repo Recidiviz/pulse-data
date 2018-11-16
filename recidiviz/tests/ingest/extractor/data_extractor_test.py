@@ -346,3 +346,45 @@ def test_bad_labels():
         html_contents = html.fromstring(f.read())
     info = extractor.extract_and_populate_data(html_contents)
     assert expected_info == info
+
+def test_text_label():
+    """Tests a page with a key/value pair in plain text."""
+    key_mapping_file = '../testdata/data_extractor/yaml/text_label.yaml'
+    key_mapping_file = os.path.join(os.path.dirname(__file__), key_mapping_file)
+    extractor = DataExtractor(key_mapping_file)
+
+    expected_info = IngestInfo()
+    person = expected_info.create_person()
+    person.birthdate = '12/25/0'
+    person.race = 'W'
+    person.sex = 'M'
+    booking = person.create_booking()
+    booking.booking_id = '202200000'
+    booking.admission_date = '01/01/2001 19:44'
+    booking.release_date = '11/01/2014'
+    booking.total_bond_amount = '00000000'
+    booking.facility = 'Southwest Detention Center'
+    arrest = booking.create_arrest()
+    arrest.date = '01/01/2001 09:01'
+    arrest.agency = 'Hemet PD'
+    charge1 = booking.create_charge()
+    charge1.statute = '245(A)(1)'
+    charge1.charge_status = 'DISM'
+    charge1.name = 'CHARGE 1'
+    charge1.degree = 'FEL'
+    bond1 = charge1.create_bond()
+    bond1.amount = ''
+    charge2 = booking.create_charge()
+    charge2.statute = '245(A)(4)'
+    charge2.charge_status = 'SENT'
+    charge2.name = 'CHARGE 2'
+    charge2.degree = 'FEL'
+    bond2 = charge2.create_bond()
+    bond2.amount = '$100'
+
+    html_file = '../testdata/data_extractor/html/text_label.html'
+    html_file = os.path.join(os.path.dirname(__file__), html_file)
+    with open(html_file, 'r') as f:
+        html_contents = html.fromstring(f.read())
+    info = extractor.extract_and_populate_data(html_contents)
+    assert expected_info == info
