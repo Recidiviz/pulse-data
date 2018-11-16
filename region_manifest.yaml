@@ -84,3 +84,16 @@ regions:
       record: ArchonixRecord
     scraper_package: us_mt_gallatin
     timezone: America/Denver
+  us_pa_dauphin:
+    region_name: UsPaDauphin
+    agency_name: Dauphin County Jail
+    region_code: us_pa_dauphin
+    agency_type: jail
+    queue: us-pa-dauphin-scraper
+    base_url: http://www.dauphinc.org/dcplist/default.asp
+    names_file: us_ny_names.csv
+    entity_kinds:
+      person: Person
+      record: Record
+    scraper_package: us_pa_dauphin
+    timezone: America/New_York
