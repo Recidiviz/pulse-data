@@ -257,7 +257,9 @@ def test_validate_regions_one_ok():
 
 def test_validate_regions_one_all():
     assert scraper_control.validate_regions(["all"]) == [
-        "us_co_mesa", "us_ny", "us_mt_gallatin", "us_vt", "us_pa_greene"]
+        "us_ny", "us_pa_greene", "us_vt", "us_co_mesa", "us_mt_gallatin",
+        "us_pa_dauphin"
+    ]
 
 
 def test_validate_regions_one_invalid():
@@ -275,7 +277,9 @@ def test_validate_regions_multiple_invalid():
 
 def test_validate_regions_multiple_all():
     assert scraper_control.validate_regions(["us_vt", "all"]) == [
-        "us_co_mesa", "us_ny", "us_mt_gallatin", "us_vt", "us_pa_greene"]
+        "us_ny", "us_pa_greene", "us_vt", "us_co_mesa", "us_mt_gallatin",
+        "us_pa_dauphin"
+    ]
 
 
 def test_validate_regions_multiple_all_invalid():
