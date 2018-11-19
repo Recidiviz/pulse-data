@@ -16,27 +16,42 @@
 # =============================================================================
 """Contains logic for communicating with the persistence layer."""
 
+from recidiviz import Session
+from recidiviz.persistence import entity_matching
+from recidiviz.persistence.database.schema import Person
 
-class Persistence(object):
-    def __init__(self, database):
-        """
-        Setup persistence communication using the provided Database.
 
-        :param database: The database to persist into.
-        """
-        self._database = database
+def write(ingest_info):
+    """
+    Persist each person in the ingest_info. If a person with the given
+    surname/birthday already exists, then update that person.
 
-    def write(self, ingest_info):
-        """
-        Persist each person in the ingest_info. If a person with the given
-        surname/birthday already exists, then skip that person.
+    Args:
+         ingest_info: The IngestInfo containing each person
+    """
+    for ingest_info_person in ingest_info.person:
+        person = _convert_person(ingest_info_person)
+        session = Session()
+        try:
+            existing_person = entity_matching.get_entity_match(session, person)
 
-        :param ingest_info: The IngestInfo containing the surname.
-        """
-        for person in ingest_info.person:
-            person_already_exists = self._database.read_people(person.surname,
-                                                               person.birthdate)
-            if person_already_exists:
-                continue
+            if existing_person is None:
+                session.add(person)
+            else:
+                person.person_id = existing_person.person_id
+                session.add(session.merge(person))
 
-            self._database.write_person(person.surname, person.birthdate)
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
+
+# TODO: This will be done fully in another class
+def _convert_person(person):
+    """Converts person."""
+    return Person(surname=person.surname,
+                  birthdate=person.birthdate,
+                  place_of_residence=person.place_of_residence)
