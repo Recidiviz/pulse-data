@@ -14,8 +14,29 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""
-Contains logic for communicating with a SQL Database.
+"""Contains logic for communicating with the persistence layer."""
 
-sql_database package should not be referenced outside the persistence package!
-"""
+from recidiviz.persistence.database import database
+
+
+class EntityMatchingError(Exception):
+    """Raised when an error with entity matching is encountered."""
+    pass
+
+
+def get_entity_match(session, person):
+    """
+    Queries the database to find all matching entities for the given Person.
+
+    Returns:
+        The entity matched Person or None if no matching can be done
+    """
+    existing_people = database.read_people(session,
+                                           person.surname,
+                                           person.birthdate)
+
+    if len(existing_people) > 1:
+        raise EntityMatchingError(
+            'Found multiple people who should have been matched previously')
+
+    return existing_people[0] if existing_people else None
