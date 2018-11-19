@@ -14,22 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Initialize our database schema for in-memory testing via sqlite3."""
+"""
+Contains logic for communicating with a SQL Database.
 
-import sqlalchemy
-
-from recidiviz import Session
-from recidiviz.persistence.database.schema import Base
-
-
-def use_in_memory_sqlite_database():
-    """
-    Creates a new SqlDatabase object used to communicate to a fake in-memory
-    sqlite database. This includes:
-    1. Creates a new in memory sqlite database engine
-    2. Create all tables in the newly created sqlite database
-    3. Bind the global SessionMaker to the new fake database engine
-    """
-    engine = sqlalchemy.create_engine('sqlite:///:memory:')
-    Base.metadata.create_all(engine)
-    Session.configure(bind=engine)
+database package should not be referenced outside the persistence package!
+"""

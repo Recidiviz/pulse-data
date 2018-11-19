@@ -15,5 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Top-level recidiviz package.
-"""
+"""Top-level recidiviz package."""
+
+from sqlalchemy.orm import sessionmaker
+
+Session = sessionmaker()
