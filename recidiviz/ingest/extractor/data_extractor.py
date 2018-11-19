@@ -238,6 +238,8 @@ class DataExtractor(object):
         """
         matches = content.xpath(
             './/*[starts-with(normalize-space(text()),"%s")]' % key)
+        # results from the xpath call are references, so modifying them changes
+        # |content|.
         for match in matches:
             self._key_element_to_cell(key, match)
 
@@ -253,6 +255,8 @@ class DataExtractor(object):
         """
 
         # <foo><bar>key</bar>value</foo>
+        # Create a new td element containing the following-sibling's text and
+        # add it after the key cell.
         following_siblings = key_element.xpath('following-sibling::text()')
         if following_siblings:
             following_text = following_siblings[0].strip()
@@ -264,12 +268,15 @@ class DataExtractor(object):
                 return True
 
         # <foo>key</foo><bar>value</bar>
+        # The key and value are already adjacent, so just make them both cells.
         if key_element.getnext() is not None:
             key_element.tag = 'td'
             key_element.getnext().tag = 'td'
             return True
 
         # <foo>key<bar>value</bar></foo>
+        # Create a new td element containing the key and add it before the
+        # value cell.
         if len(key_element) == 1:
             key_cell = HtmlElement(key)
             key_cell.tag = 'td'
@@ -279,6 +286,7 @@ class DataExtractor(object):
             return True
 
         # <foo>key : value</foo>
+        # Create new td elements for the key and the value and insert them.
         text = key_element.text.strip()
         if text.startswith(key):
             text = text[len(key):].strip().strip(':').strip()
