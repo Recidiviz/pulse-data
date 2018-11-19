@@ -25,12 +25,12 @@ import logging
 import random
 import string
 import zlib
-
 import dateutil.parser as parser
 
 from google.appengine.ext import ndb
 from recidiviz.models import env_vars
 from recidiviz.utils import environment
+
 
 def parse_date_string(date_string, person_id=None):
     """Converts string describing date to Python date object
