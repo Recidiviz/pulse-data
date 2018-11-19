@@ -17,34 +17,36 @@
 """Tests for persistence."""
 
 from datetime import datetime
-from recidiviz.ingest.models.ingest_info import IngestInfo
-from recidiviz.persistence.persistence import Persistence
-from recidiviz.tests.utils import fakes
 
+from recidiviz import Session
+from recidiviz.ingest.models.ingest_info import IngestInfo
+from recidiviz.persistence import persistence
+from recidiviz.persistence.database import database
+from recidiviz.tests.utils import fakes
 
 SURNAME_1 = 'test_surname_1'
 SURNAME_2 = 'test_surname_2'
 BIRTHDATE_1 = datetime(year=1993, month=11, day=15)
 BIRTHDATE_2 = datetime(year=1996, month=2, day=11)
+PLACE_1 = 'TEST_PLACE_1'
+PLACE_2 = 'TEST_PLACE_2'
 
 
 class TestPersistence(object):
     """Test that the persistence layer correctly writes to the SQL database."""
 
     def setup_method(self, _test_method):
-        self.fake_database, _ = fakes.create_in_memory_sqlite_database()
+        fakes.use_in_memory_sqlite_database()
 
     def test_twoDifferentPeople_persistsBoth(self):
         # Arrange
-        persistence = Persistence(self.fake_database)
-
         ingest_info = IngestInfo()
         ingest_info.create_person(surname=SURNAME_1)
         ingest_info.create_person(surname=SURNAME_2)
 
         # Act
         persistence.write(ingest_info)
-        result = self.fake_database.read_people()
+        result = database.read_people(Session())
 
         # Assert
         assert len(result) == 2
@@ -53,31 +55,45 @@ class TestPersistence(object):
 
     def test_sameTwoPeople_persistsOne(self):
         # Arrange
-        persistence = Persistence(self.fake_database)
-
         ingest_info = IngestInfo()
         ingest_info.create_person(surname=SURNAME_1)
         ingest_info.create_person(surname=SURNAME_1)
 
         # Act
         persistence.write(ingest_info)
-        result = self.fake_database.read_people()
+        result = database.read_people(Session())
 
         # Assert
         assert len(result) == 1
         assert result[0].surname == SURNAME_1
 
+    def test_sameTwoPeople_matchesPeopleAndReplacesWithNewerData(self):
+        # Arrange
+        ingest_info = IngestInfo()
+        ingest_info.create_person(surname=SURNAME_1, place_of_residence=PLACE_1)
+        persistence.write(ingest_info)
+
+        ingest_info = IngestInfo()
+        ingest_info.create_person(surname=SURNAME_1, place_of_residence=PLACE_2)
+
+        # Act
+        persistence.write(ingest_info)
+        result = database.read_people(Session())
+
+        # Assert
+        assert len(result) == 1
+        assert result[0].surname == SURNAME_1
+        assert result[0].place_of_residence == PLACE_2
+
     def test_readSinglePersonByName(self):
         # Arrange
-        persistence = Persistence(self.fake_database)
-
         ingest_info = IngestInfo()
         ingest_info.create_person(surname=SURNAME_1, birthdate=BIRTHDATE_1)
         ingest_info.create_person(surname=SURNAME_2, birthdate=BIRTHDATE_2)
 
         # Act
         persistence.write(ingest_info)
-        result = self.fake_database.read_people(surname=SURNAME_1)
+        result = database.read_people(Session(), surname=SURNAME_1)
 
         # Assert
         assert len(result) == 1
