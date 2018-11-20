@@ -27,6 +27,7 @@ from google.appengine.ext import ndb
 from google.appengine.ext.db \
     import Timeout, TransactionFailedError, InternalError
 
+from recidiviz.ingest import constants
 
 class ScrapeSession(ndb.Model):
     """Model to describe a scraping session's current state
@@ -50,7 +51,8 @@ class ScrapeSession(ndb.Model):
     docket_item = ndb.StringProperty()
     last_scraped = ndb.StringProperty()
     region = ndb.StringProperty()
-    scrape_type = ndb.StringProperty(choices=("background", "snapshot"))
+    scrape_type = ndb.StringProperty(choices=(constants.BACKGROUND_SCRAPE,
+                                              constants.SNAPSHOT_SCRAPE))
 
 
 class ScrapedRecord(ndb.Model):

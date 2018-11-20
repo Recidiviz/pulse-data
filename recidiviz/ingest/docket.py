@@ -72,6 +72,7 @@ from dateutil.relativedelta import relativedelta
 from google.appengine.api import taskqueue
 from google.appengine.ext import deferred
 from google.appengine.ext import ndb
+from recidiviz.ingest import constants
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.utils import regions
 
@@ -106,7 +107,7 @@ def load_target_list(scrape_key, given_names="", surname=""):
     region_code = scrape_key.region_code
     scrape_type = scrape_key.scrape_type
 
-    if scrape_type == "background":
+    if scrape_type == constants.BACKGROUND_SCRAPE:
         name_list_file = regions.get_name_list_file(region_code)
 
         # Construct filename, process user-supplied name query (if provided)
@@ -119,7 +120,7 @@ def load_target_list(scrape_key, given_names="", surname=""):
         # Kick off docket loading
         load_background_target_list(region_code, filename, query_name, load)
 
-    elif scrape_type == "snapshot":
+    elif scrape_type == constants.SNAPSHOT_SCRAPE:
         # Kick off the snapshot loading
         phase = 0
         load_snapshot_target_list(region_code, phase)
@@ -155,7 +156,7 @@ def load_background_target_list(region_code, name_file, query_name, load,
     write_to_docket = load
     names = []
     next_line = None
-    scrape_type = "background"
+    scrape_type = constants.BACKGROUND_SCRAPE
 
     row_num = 0
     max_row = start_line + batch_size
@@ -236,7 +237,7 @@ def load_snapshot_target_list(region_code, phase, cursor=None):
     """
     batch_size = SNAPSHOT_BATCH_SIZE
     (start_date, start_datetime) = get_snapshot_start()
-    scrape_type = "snapshot"
+    scrape_type = constants.SNAPSHOT_SCRAPE
 
     # Get relevant sub-kinds for the region
     region = regions.Region(region_code)
@@ -476,7 +477,7 @@ def add_to_query_docket(scrape_key, docket_items):
     for item in docket_items:
         payload = json.dumps(item)
 
-        if scrape_type == "snapshot":
+        if scrape_type == constants.SNAPSHOT_SCRAPE:
             logging.debug("Attempting to add snapshot item to docket: %s",
                           item[0])
             task_name = get_task_name(region_code, item[0])
@@ -485,7 +486,7 @@ def add_to_query_docket(scrape_key, docket_items):
                                       tag=tag_name,
                                       name=task_name)
 
-        elif scrape_type == "background":
+        elif scrape_type == constants.BACKGROUND_SCRAPE:
             new_task = taskqueue.Task(payload=payload,
                                       method='PULL',
                                       tag=tag_name)
