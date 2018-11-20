@@ -24,6 +24,7 @@ from datetime import datetime
 from google.appengine.api import taskqueue
 from google.appengine.ext import ndb
 from google.appengine.ext import testbed
+from recidiviz.ingest import constants
 from recidiviz.ingest import docket
 from recidiviz.ingest import sessions
 from recidiviz.ingest import tracker
@@ -54,13 +55,15 @@ class TestTracker(object):
         self.testbed.deactivate()
 
     def test_iterate_docket_item(self):
-        create_open_session("us_ny", "background", datetime(2009, 6, 17), "a")
+        create_open_session(
+            "us_ny", constants.BACKGROUND_SCRAPE, datetime(2009, 6, 17), "a")
 
         taskqueue.Task(tag='us_ny-background',
                        payload=get_payload(),
                        method='PULL').add(docket.DOCKET_QUEUE_NAME)
 
-        payload = tracker.iterate_docket_item(ScrapeKey("us_ny", "background"))
+        payload = tracker.iterate_docket_item(
+            ScrapeKey("us_ny", constants.BACKGROUND_SCRAPE))
         assert payload == get_payload(as_json=False)
 
     def test_iterate_docket_item_no_open_session_to_update(self):
@@ -68,7 +71,8 @@ class TestTracker(object):
                        payload=get_payload(),
                        method='PULL').add(docket.DOCKET_QUEUE_NAME)
 
-        payload = tracker.iterate_docket_item(ScrapeKey("us_ny", "background"))
+        payload = tracker.iterate_docket_item(
+            ScrapeKey("us_ny", constants.BACKGROUND_SCRAPE))
         assert not payload
 
     def test_iterate_docket_item_no_matching_items(self):
@@ -76,19 +80,20 @@ class TestTracker(object):
                        payload=get_payload(),
                        method='PULL').add(docket.DOCKET_QUEUE_NAME)
 
-        payload = tracker.iterate_docket_item(ScrapeKey("us_fl", "background"),
-                                              back_off=1)
+        payload = tracker.iterate_docket_item(
+            ScrapeKey("us_fl", constants.BACKGROUND_SCRAPE), back_off=1)
         assert not payload
 
     def test_iterate_docket_item_no_items_at_all(self):
-        payload = tracker.iterate_docket_item(ScrapeKey("us_ny", "background"),
-                                              back_off=1)
+        payload = tracker.iterate_docket_item(
+            ScrapeKey("us_ny", constants.BACKGROUND_SCRAPE), back_off=1)
         assert not payload
 
     def test_remove_item_from_session_and_docket(self):
-        scrape_key = ScrapeKey("us_va", "background")
+        scrape_key = ScrapeKey("us_va", constants.BACKGROUND_SCRAPE)
 
-        create_open_session("us_va", "background", datetime(2016, 11, 20), "a")
+        create_open_session("us_va", constants.BACKGROUND_SCRAPE,
+                            datetime(2016, 11, 20), "a")
 
         taskqueue.Task(name="a",
                        tag='us_va-background',
@@ -100,8 +105,9 @@ class TestTracker(object):
         assert not sessions.get_sessions_with_leased_docket_items(scrape_key)
 
     def test_remove_item_from_session_and_docket_no_docket_item(self):
-        scrape_key = ScrapeKey("us_va", "background")
-        create_open_session("us_va", "background", datetime(2016, 11, 20), "a")
+        scrape_key = ScrapeKey("us_va", constants.BACKGROUND_SCRAPE)
+        create_open_session("us_va", constants.BACKGROUND_SCRAPE,
+                            datetime(2016, 11, 20), "a")
 
         taskqueue.Task(name="something-else",
                        tag='us_va-background',
@@ -113,7 +119,7 @@ class TestTracker(object):
         assert sessions.get_sessions_with_leased_docket_items(scrape_key)
 
     def test_remove_item_from_session_and_docket_no_open_sessions(self):
-        scrape_key = ScrapeKey("us_va", "background")
+        scrape_key = ScrapeKey("us_va", constants.BACKGROUND_SCRAPE)
 
         taskqueue.Task(name="a",
                        tag='us_va-background',
@@ -124,10 +130,12 @@ class TestTracker(object):
         assert docket.get_new_docket_item(scrape_key, back_off=1)
 
     def test_purge_docket_and_session(self):
-        scrape_key = ScrapeKey("us_va", "background")
+        scrape_key = ScrapeKey("us_va", constants.BACKGROUND_SCRAPE)
 
-        create_open_session("us_va", "background", datetime(2016, 11, 20), "a")
-        create_open_session("us_va", "background", datetime(2016, 11, 20), "b")
+        create_open_session("us_va", constants.BACKGROUND_SCRAPE,
+                            datetime(2016, 11, 20), "a")
+        create_open_session("us_va", constants.BACKGROUND_SCRAPE,
+                            datetime(2016, 11, 20), "b")
 
         taskqueue.Task(tag='us_va-background',
                        payload=get_payload(),
