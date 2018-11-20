@@ -26,6 +26,8 @@ import logging
 import yaml
 from google.appengine.api import memcache
 
+from recidiviz.ingest import constants
+
 
 class Region(object):
     """Constructs region entity with attributes and helper functions
@@ -118,7 +120,7 @@ class Region(object):
         Returns:
             Snapshot subclass for this region
         """
-        return get_subkind(self.region_code, "snapshot")
+        return get_subkind(self.region_code, constants.SNAPSHOT_SCRAPE)
 
 
 def get_subkind(region_code, parent_kind_name):

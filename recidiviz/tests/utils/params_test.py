@@ -19,11 +19,12 @@
 
 
 from werkzeug.datastructures import MultiDict
+from recidiviz.ingest import constants
 from recidiviz.utils import params
 
 
 PARAMS = MultiDict([("region", "us_mo"),
-                    ("scrape_type", "background"),
+                    ("scrape_type", constants.BACKGROUND_SCRAPE),
                     ("region", "us_wa")])
 
 

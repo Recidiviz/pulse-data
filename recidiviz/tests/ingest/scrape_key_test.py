@@ -20,46 +20,47 @@
 
 import pytest
 
+from recidiviz.ingest import constants
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 
 
 def test_eq_different_regions():
-    left = ScrapeKey("us_ny", "background")
-    right = ScrapeKey("us_fl", "background")
+    left = ScrapeKey("us_ny", constants.BACKGROUND_SCRAPE)
+    right = ScrapeKey("us_fl", constants.BACKGROUND_SCRAPE)
 
     assert left != right
 
 
 def test_eq_different_types():
-    left = ScrapeKey("us_ny", "background")
-    right = ScrapeKey("us_ny", "snapshot")
+    left = ScrapeKey("us_ny", constants.BACKGROUND_SCRAPE)
+    right = ScrapeKey("us_ny", constants.SNAPSHOT_SCRAPE)
 
     assert left != right
 
 
 def test_eq_different_everything():
-    left = ScrapeKey("us_ny", "snapshot")
-    right = ScrapeKey("us_fl", "background")
+    left = ScrapeKey("us_ny", constants.SNAPSHOT_SCRAPE)
+    right = ScrapeKey("us_fl", constants.BACKGROUND_SCRAPE)
 
     assert left != right
 
 
 def test_eq_same():
-    left = ScrapeKey("us_ny", "background")
-    right = ScrapeKey("us_ny", "background")
+    left = ScrapeKey("us_ny", constants.BACKGROUND_SCRAPE)
+    right = ScrapeKey("us_ny", constants.BACKGROUND_SCRAPE)
 
     assert left == right
 
 
 def test_eq_different_objects():
-    left = ScrapeKey("us_ny", "background")
+    left = ScrapeKey("us_ny", constants.BACKGROUND_SCRAPE)
     right = "We don't read the papers, we don't read the news"
 
     assert not left.__eq__(right)
 
 
 def test_repr():
-    scrape_key = ScrapeKey("us_ut", "snapshot")
+    scrape_key = ScrapeKey("us_ut", constants.SNAPSHOT_SCRAPE)
 
     representation = scrape_key.__repr__()
 
@@ -69,7 +70,7 @@ def test_repr():
 
 def test_no_region():
     with pytest.raises(ValueError) as exception:
-        ScrapeKey(None, "snapshot")
+        ScrapeKey(None, constants.SNAPSHOT_SCRAPE)
     assert exception.value.message == 'A scrape key must include both ' \
                                       'a region code and a scrape type'
 

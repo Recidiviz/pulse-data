@@ -29,6 +29,7 @@ from recidiviz.ingest import worker
 APP_ID = "recidiviz-worker-test"
 PATH = "/scraper/work"
 
+
 class TestWorker(object):
     """Tests for requests to the Worker API."""
 

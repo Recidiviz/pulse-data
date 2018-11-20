@@ -26,6 +26,7 @@ from google.appengine.api import taskqueue
 from google.appengine.ext import ndb
 from google.appengine.ext import testbed
 
+from recidiviz.ingest import constants
 from recidiviz.ingest import docket
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.sessions import ScrapeSession
@@ -57,7 +58,7 @@ class TestPopulation(object):
         self.testbed.deactivate()
 
     def test_add_to_query_docket_background(self):
-        scrape_key = ScrapeKey("us_ny", "background")
+        scrape_key = ScrapeKey("us_ny", constants.BACKGROUND_SCRAPE)
 
         docket.add_to_query_docket(scrape_key, get_payload(as_json=False))
 
@@ -71,7 +72,7 @@ class TestPopulation(object):
             assert task.tag == "us_ny-background"
 
     def test_add_to_query_docket_snapshot(self):
-        scrape_key = ScrapeKey("us_ny", "snapshot")
+        scrape_key = ScrapeKey("us_ny", constants.SNAPSHOT_SCRAPE)
 
         docket.add_to_query_docket(scrape_key,
                                    get_snapshot_payload(as_json=False))
@@ -86,7 +87,7 @@ class TestPopulation(object):
             assert task.tag == "us_ny-snapshot"
 
     def test_load_target_list_background_happy_path(self):
-        scrape_key = ScrapeKey("us_ny", "background")
+        scrape_key = ScrapeKey("us_ny", constants.BACKGROUND_SCRAPE)
 
         docket.load_target_list(scrape_key)
 
@@ -95,14 +96,14 @@ class TestPopulation(object):
         assert not docket.get_new_docket_item(scrape_key, back_off=1)
 
     def test_load_target_list_snapshot_never_ingested(self):
-        scrape_key = ScrapeKey("us_ny", "snapshot")
+        scrape_key = ScrapeKey("us_ny", constants.SNAPSHOT_SCRAPE)
 
         docket.load_target_list(scrape_key)
 
         assert not docket.get_new_docket_item(scrape_key, back_off=1)
 
     def test_load_target_list_snapshot_happy_path(self):
-        scrape_key = ScrapeKey("us_ny", "snapshot")
+        scrape_key = ScrapeKey("us_ny", constants.SNAPSHOT_SCRAPE)
         halfway = datetime.now() - relativedelta(years=5)
 
         person = get_person("clem", "12345")
@@ -145,7 +146,7 @@ class TestRetrieval(object):
                        method='PULL').add(docket.DOCKET_QUEUE_NAME)
 
         docket_item = docket.get_new_docket_item(
-            ScrapeKey("us_ny", "background"))
+            ScrapeKey("us_ny", constants.BACKGROUND_SCRAPE))
         assert docket_item.tag == 'us_ny-background'
         assert docket_item.payload == get_payload()
 
@@ -155,12 +156,12 @@ class TestRetrieval(object):
                        method='PULL').add(docket.DOCKET_QUEUE_NAME)
 
         docket_item = docket.get_new_docket_item(
-            ScrapeKey("us_fl", "background"), back_off=1)
+            ScrapeKey("us_fl", constants.BACKGROUND_SCRAPE), back_off=1)
         assert not docket_item
 
     def test_get_new_docket_item_no_items_at_all(self):
         docket_item = docket.get_new_docket_item(
-            ScrapeKey("us_ny", "background"), back_off=1)
+            ScrapeKey("us_ny", constants.BACKGROUND_SCRAPE), back_off=1)
         assert not docket_item
 
 
@@ -187,7 +188,7 @@ class TestRemoval(object):
         self.testbed.deactivate()
 
     def test_purge_query_docket(self):
-        scrape_key = ScrapeKey("us_ut", "snapshot")
+        scrape_key = ScrapeKey("us_ut", constants.SNAPSHOT_SCRAPE)
 
         taskqueue.Task(tag='us_va-background',
                        payload=get_payload(),
@@ -199,10 +200,10 @@ class TestRemoval(object):
         docket.purge_query_docket(scrape_key)
         assert not docket.get_new_docket_item(scrape_key, back_off=1)
         assert docket.get_new_docket_item(
-            ScrapeKey("us_va", "background"), back_off=1)
+            ScrapeKey("us_va", constants.BACKGROUND_SCRAPE), back_off=1)
 
     def test_purge_query_docket_nothing_matching(self):
-        scrape_key = ScrapeKey("us_ny", "background")
+        scrape_key = ScrapeKey("us_ny", constants.BACKGROUND_SCRAPE)
 
         taskqueue.Task(tag='us_va-background',
                        payload=get_payload(),
@@ -212,7 +213,7 @@ class TestRemoval(object):
         assert not docket.get_new_docket_item(scrape_key, back_off=1)
 
     def test_purge_query_docket_already_empty(self):
-        scrape_key = ScrapeKey("us_ny", "background")
+        scrape_key = ScrapeKey("us_ny", constants.BACKGROUND_SCRAPE)
         docket.purge_query_docket(scrape_key)
         assert not docket.get_new_docket_item(scrape_key, back_off=1)
 
