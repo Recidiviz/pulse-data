@@ -65,6 +65,7 @@ sqlalchemy = "*"
 
 [dev-packages]
 rope = "*"
+"autopep8" = "*"
 
 [requires]
 python_version = "2.7"

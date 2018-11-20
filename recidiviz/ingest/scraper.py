@@ -32,6 +32,7 @@ from google.appengine.ext.db import InternalError
 from google.appengine.ext.db import Timeout, TransactionFailedError
 from google.appengine.api import taskqueue
 from google.appengine.api import urlfetch
+from recidiviz.ingest import constants
 from recidiviz.ingest import scraper_utils
 from recidiviz.ingest import sessions
 from recidiviz.ingest.models.scrape_key import ScrapeKey
@@ -186,7 +187,7 @@ class Scraper(object):
         Returns:
             N/A
         """
-        if scrape_type == "background":
+        if scrape_type == constants.BACKGROUND_SCRAPE:
             # Background scrape
 
             # In most scrapers, background scrapes will use
@@ -329,7 +330,7 @@ class Scraper(object):
         if item_content is None:
             return False
 
-        if scrape_type == "snapshot":
+        if scrape_type == constants.SNAPSHOT_SCRAPE:
             # Content will be in the form (person ID, [list of records
             # to ignore]); allow the child class to convert person to
             # record

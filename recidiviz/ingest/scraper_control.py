@@ -30,13 +30,12 @@ import time
 from flask import Flask, request
 from google.appengine.ext import deferred
 
-from recidiviz.ingest import docket, sessions, tracker
+from recidiviz.ingest import constants, docket, sessions, tracker
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.utils import environment, regions
 from recidiviz.utils.auth import authenticate_request
 from recidiviz.utils.params import get_value, get_values
 
-SCRAPE_TYPES = ["background", "snapshot"]
 
 app = Flask(__name__)
 
@@ -240,14 +239,14 @@ def validate_scrape_types(scrape_type_list):
         List of scrape types if successful
     """
     if not scrape_type_list:
-        return ["background"]
+        return [constants.BACKGROUND_SCRAPE]
 
     scrape_types_list_output = scrape_type_list
 
     for scrape_type in scrape_type_list:
         if scrape_type == "all":
-            scrape_types_list_output = SCRAPE_TYPES
-        elif scrape_type not in SCRAPE_TYPES:
+            scrape_types_list_output = constants.SCRAPE_TYPES
+        elif scrape_type not in constants.SCRAPE_TYPES:
             logging.error("Scrape type '%s' not recognized." % scrape_type)
             return False
 

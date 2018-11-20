@@ -28,6 +28,7 @@ from google.appengine.ext import testbed
 
 import requests
 
+from recidiviz.ingest import constants
 from recidiviz.ingest.scraper import Scraper
 from recidiviz.ingest.sessions import ScrapeSession
 from recidiviz.ingest.models.scrape_key import ScrapeKey
@@ -64,7 +65,7 @@ class TestStartScrape(object):
                                      mock_tracker, mock_taskqueue):
         docket_item = ("Dog", "Cat")
         region = "us_nd"
-        scrape_type = "background"
+        scrape_type = constants.BACKGROUND_SCRAPE
         queue_name = "us_nd_scraper"
         initial_task = "use_it"
 
@@ -94,7 +95,7 @@ class TestStartScrape(object):
                                    mock_tracker, mock_taskqueue):
         docket_item = (41620, ["daft", "punk"])
         region = "us_nd"
-        scrape_type = "snapshot"
+        scrape_type = constants.SNAPSHOT_SCRAPE
         queue_name = "us_nd_scraper"
         initial_task = "break_it"
 
@@ -124,7 +125,7 @@ class TestStartScrape(object):
                                        mock_tracker, mock_sessions):
         docket_item = (-1, ["human", "after", "all"])
         region = "us_nd"
-        scrape_type = "snapshot"
+        scrape_type = constants.SNAPSHOT_SCRAPE
         queue_name = "us_nd_scraper"
         initial_task = "fix_it"
 
@@ -145,7 +146,7 @@ class TestStartScrape(object):
     def test_start_scrape_no_docket_item(self, mock_regions,
                                          mock_tracker, mock_sessions):
         region = "us_nd"
-        scrape_type = "background"
+        scrape_type = constants.BACKGROUND_SCRAPE
         queue_name = "us_nd_scraper"
         initial_task = "trash_it"
 
@@ -169,7 +170,7 @@ class TestStopScraper(object):
     @patch("recidiviz.utils.regions.load_region_manifest")
     def test_stop_scrape(self, mock_regions, mock_sessions, mock_queue):
         region = "us_sd"
-        scrape_type = "background"
+        scrape_type = constants.BACKGROUND_SCRAPE
         queue_name = "us_sd_scraper"
         initial_task = "change_it"
 
@@ -195,15 +196,15 @@ class TestStopScraper(object):
         """Tests that the stop_scrape method will defer launching of other
         scrape types we didn't mean to stop."""
         region = "us_sd"
-        scrape_type = "background"
+        scrape_type = constants.BACKGROUND_SCRAPE
         queue_name = "us_sd_scraper"
         initial_task = "mail_upgrade_it"
 
         mock_regions.return_value = mock_region_manifest(region, queue_name)
         open_session_other = ScrapeSession()
-        open_session_other.scrape_type = "snapshot"
+        open_session_other.scrape_type = constants.SNAPSHOT_SCRAPE
         open_session_matching = ScrapeSession()
-        open_session_matching.scrape_type = "background"
+        open_session_matching.scrape_type = constants.BACKGROUND_SCRAPE
         mock_sessions.return_value = [open_session_other, open_session_matching]
         mock_deferred.return_value = None
         mock_queue.purge.return_value = None
@@ -214,7 +215,7 @@ class TestStopScraper(object):
         mock_regions.assert_called_with(region_code=region)
         mock_sessions.assert_called_with(region)
         mock_deferred.assert_called_with(scraper.resume_scrape,
-                                         "snapshot",
+                                         constants.SNAPSHOT_SCRAPE,
                                          _countdown=60)
 
 
@@ -228,7 +229,7 @@ class TestResumeScrape(object):
                                       mock_taskqueue):
         """Tests the resume_scrape flow for background scraping."""
         region = "us_nd"
-        scrape_type = "background"
+        scrape_type = constants.BACKGROUND_SCRAPE
         queue_name = "us_nd_scraper"
         initial_task = "charge_it"
 
@@ -260,7 +261,7 @@ class TestResumeScrape(object):
     def test_resume_scrape_background_none_scraped(self, mock_regions,
                                                    mock_sessions):
         region = "us_nd"
-        scrape_type = "background"
+        scrape_type = constants.BACKGROUND_SCRAPE
         queue_name = "us_nd_scraper"
         initial_task = "point_it"
 
@@ -279,7 +280,7 @@ class TestResumeScrape(object):
     def test_resume_scrape_background_no_recent_sessions(self, mock_regions,
                                                          mock_sessions):
         region = "us_nd"
-        scrape_type = "background"
+        scrape_type = constants.BACKGROUND_SCRAPE
         queue_name = "us_nd_scraper"
         initial_task = "zoom_it"
 
@@ -299,7 +300,7 @@ class TestResumeScrape(object):
                                     mock_taskqueue):
         docket_item = (41620, ["daft", "punk"])
         region = "us_nd"
-        scrape_type = "snapshot"
+        scrape_type = constants.SNAPSHOT_SCRAPE
         queue_name = "us_nd_scraper"
         initial_task = "press_it"
 
@@ -328,7 +329,7 @@ class TestResumeScrape(object):
                                                    mock_tracker,
                                                    mock_end_session):
         region = "us_nd"
-        scrape_type = "snapshot"
+        scrape_type = constants.SNAPSHOT_SCRAPE
         queue_name = "us_nd_scraper"
         initial_task = "snap_it"
 

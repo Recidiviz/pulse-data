@@ -23,12 +23,6 @@ sources.
 """
 
 
-import recidiviz.ingest.docket
-import recidiviz.ingest.extractor.data_extractor
-import recidiviz.ingest.models
-import recidiviz.ingest.scraper_control
-import recidiviz.ingest.sessions
-import recidiviz.ingest.tracker
 import recidiviz.ingest.us_co_mesa
 import recidiviz.ingest.us_mt_gallatin
 import recidiviz.ingest.us_ny
