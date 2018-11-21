@@ -114,8 +114,10 @@ class BaseScraper(Scraper):
         """
         # If this is called without any params set, we assume its the first call
         endpoint = params.get('endpoint', self.get_initial_endpoint())
-        data = params.get('data', self.get_initial_data())
         task_type = params.get('task_type', self.get_initial_task_type())
+        data = params.get(
+            'data', self.get_initial_data() if self.is_initial_task(task_type)
+            else None)
         ingest_info = None
 
         # Let the child transform the data if it wants before sending the
