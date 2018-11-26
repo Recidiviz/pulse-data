@@ -32,6 +32,7 @@ from recidiviz.ingest.models.ingest_info import IngestInfo
 
 class DataExtractor(object):
     """Data extractor for pages with information about a single person."""
+
     def __init__(self, key_mapping_file=None):
         """The init of the data extractor.
 
@@ -145,7 +146,7 @@ class DataExtractor(object):
             # Finally, we could preprocess the keys mapping to include multiple
             # keys that map to the same value ('hi' and 'hi:' both map to the
             # same thing) but that is a more expensive preprocessing calculation
-            cell_val = cell.text_content().strip().strip(':').strip()
+            cell_val = self._normalize_cell(cell)
             values = None
             if cell_val in self.keys:
                 values = [self._get_value_cell(cell)]
@@ -250,7 +251,10 @@ class DataExtractor(object):
         # results from the xpath call are references, so modifying them changes
         # |content|.
         for match in matches:
-            self._key_element_to_cell(key, match)
+            # Ensure no individual words in |content| was split when matching.
+            remaining = ' '.join(match.text.split()).replace(key, '')
+            if not remaining or not remaining[0].isalpha():
+                self._key_element_to_cell(key, match)
 
     def _css_key_to_cell(self, content, css_key):
         matches = content.cssselect(css_key)
@@ -321,7 +325,7 @@ class DataExtractor(object):
 
 
     def _below(self, cell):
-        """Yields the cells below the given cell.
+        """Yields all cells below the given cell and breaks if it finds a key.
 
         Args:
             cell: the <th> or <td> to traverse below
@@ -339,6 +343,8 @@ class DataExtractor(object):
 
         while next_row is not None:
             if next_row.tag == 'tr' and index < len(next_row):
+                if self._element_contains_key_descendant(next_row[index]):
+                    break
                 yield next_row[index]
             next_row = next_row.getnext()
 
@@ -424,6 +430,14 @@ class DataExtractor(object):
 
         return None
 
+    def _normalize_cell(self, cell):
+        """ Given a cell, normalize the text content to compare to key mappings.
+
+        Args:
+            cell: the html element for a table cell.
+        """
+        return cell.text_content().strip().strip(':').strip()
+
     def _element_contains_key_descendant(self, e):
         """Returns True if Element |e| or a descendant has a key as its text
         content.
@@ -432,7 +446,7 @@ class DataExtractor(object):
             e: the Element to search in
         """
         for descendant in e.iter():
-            if descendant.text_content().strip() in self.all_keys:
+            if self._normalize_cell(descendant) in self.all_keys:
                 return True
         return False
 

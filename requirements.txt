@@ -5,7 +5,7 @@ asn1crypto==0.24.0
 astroid==1.6.3
 attrs==17.4.0
 backports-abc==0.5
-backports.functools-lru-cache==1.5 ; python_version == '2.7'
+backports.functools-lru-cache==1.5 ; python_version < '3.4'
 bdist-mpkg==0.5.0
 beautifulsoup4==4.6.0
 callee==0.3

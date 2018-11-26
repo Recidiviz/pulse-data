@@ -3,8 +3,41 @@ queue:
 - name: docket
   mode: pull
 
+# us_ar_van_buren - Van Buren, Arkansas
+- name: us-ar-van-buren-scraper
+  mode: push
+  rate: 5/m
+  bucket_size: 1
+  max_concurrent_requests: 3
+  retry_parameters:
+    min_backoff_seconds: 5
+    max_backoff_seconds: 300
+    task_age_limit: 3d
+
 # us_co_mesa - Mesa County, Colorado
 - name: us-co-mesa-scraper
+  mode: push
+  rate: 5/m
+  bucket_size: 1
+  max_concurrent_requests: 3
+  retry_parameters:
+    min_backoff_seconds: 5
+    max_backoff_seconds: 300
+    task_age_limit: 3d
+
+# us_mo_stone - Stone County, Missouri
+- name: us-mo-stone-scraper
+  mode: push
+  rate: 5/m
+  bucket_size: 1
+  max_concurrent_requests: 3
+  retry_parameters:
+    min_backoff_seconds: 5
+    max_backoff_seconds: 300
+    task_age_limit: 3d
+
+# us_mt_gallatin - Gallatin County, Montana
+- name: us-mt-gallatin-scraper
   mode: push
   rate: 5/m
   bucket_size: 1
@@ -38,17 +71,6 @@ queue:
 
 # us_vt - Vermont
 - name: us-vt-scraper
-  mode: push
-  rate: 5/m
-  bucket_size: 1
-  max_concurrent_requests: 3
-  retry_parameters:
-    min_backoff_seconds: 5
-    max_backoff_seconds: 300
-    task_age_limit: 3d
-
-# us_mt_gallatin - Gallatin County, Montana
-- name: us-mt-gallatin-scraper
   mode: push
   rate: 5/m
   bucket_size: 1
