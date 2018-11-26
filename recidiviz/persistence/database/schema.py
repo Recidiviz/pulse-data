@@ -18,12 +18,14 @@
 
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
 
 Base = declarative_base()
 
 
 class Person(Base):
-    __tablename__ = 'person'
+    """Represents a Person as defined by our SQL schema"""
+    __tablename__ = 'people'
 
     person_id = Column('person_id', Integer, primary_key=True)
 
@@ -37,14 +39,17 @@ class Person(Base):
     ethnicity = Column('ethnicity', String)
     place_of_residence = Column('place_of_residence', String)
 
+    bookings = relationship('Booking')
+
 
 class Booking(Base):
-    __tablename__ = 'booking'
+    """Represents a Booking as defined by our SQL schema"""
+    __tablename__ = 'bookings'
 
     booking_id = Column('booking_id', Integer, primary_key=True)
 
     person_id = Column('person_id', Integer,
-                       ForeignKey("person.person_id"))
+                       ForeignKey("people.person_id"))
 
     admission_date = Column('admission_date', DateTime)
     release_date = Column('release_date', DateTime)
@@ -56,14 +61,18 @@ class Booking(Base):
     facility = Column('facility', String)
     classification = Column('classification', String)
 
+    arrest = relationship('Arrest', uselist=False)
+    charges = relationship('Charge')
+
 
 class Arrest(Base):
-    __tablename__ = 'arrest'
+    """Represents and Arrest as defined by our SQL schema"""
+    __tablename__ = 'arrests'
 
     arrest_id = Column('arrest_id', Integer, primary_key=True)
 
     booking_id = Column('booking_id', Integer,
-                        ForeignKey("booking.booking_id"))
+                        ForeignKey("bookings.booking_id"))
 
     date = Column('date', DateTime)
     location = Column('location', String)
@@ -73,12 +82,18 @@ class Arrest(Base):
 
 
 class Charge(Base):
-    __tablename__ = 'charge'
+    """Represents a Change as defined by our SQL schema"""
+    __tablename__ = 'charges'
 
     charge_id = Column('charge_id', Integer, primary_key=True)
 
     booking_id = Column('booking_id', Integer,
-                        ForeignKey("booking.booking_id"))
+                        ForeignKey("bookings.booking_id"))
+
+    # Define many-to-one Foreign Keys
+    bond_id = Column('bond_id', Integer, ForeignKey("bonds.bond_id"))
+    sentence_id = Column('sentence_id', Integer,
+                         ForeignKey("sentences.sentence_id"))
 
     offence_date = Column('offence_date', DateTime)
     statute = Column('statute', String)
@@ -97,14 +112,15 @@ class Charge(Base):
     next_court_date = Column('next_court_date', DateTime)
     judge_name = Column('judge_name', String)
 
+    bond = relationship('Bond')
+    sentence = relationship('Sentence')
+
 
 class Bond(Base):
-    __tablename__ = 'bond'
+    """Represents a Bond as defined by our SQL schema"""
+    __tablename__ = 'bonds'
 
     bond_id = Column('bond_id', Integer, primary_key=True)
-
-    charge_id = Column('charge_id', Integer,
-                       ForeignKey("charge.charge_id"))
 
     amount = Column('amount', Integer)
     bond_type = Column('bond_type', String)
@@ -112,12 +128,10 @@ class Bond(Base):
 
 
 class Sentence(Base):
+    """Represents a Sentence as defined by our SQL schema"""
     __tablename__ = 'sentences'
 
     sentence_id = Column('sentence_id', Integer, primary_key=True)
-
-    charge_id = Column('charge_id', Integer,
-                       ForeignKey("charge.charge_id"))
 
     date_imposed = Column('date_imposed', DateTime)
     min_length_days = Column('min_length_days', Integer)
