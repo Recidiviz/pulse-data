@@ -54,6 +54,7 @@ def test_nested_good_table():
 
     # Add person information
     person = expected_info.create_person()
+    person.surname = 'LAST NAME'
     person.birthdate = '06/03/2999'
     person.sex = 'Male'
     person.age = '100000000'

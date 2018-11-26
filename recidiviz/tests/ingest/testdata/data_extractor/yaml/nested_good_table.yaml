@@ -8,6 +8,9 @@ key_mappings:
   Committed By: booking.hold
   Booking Date-Time: booking.admission_date
 
+css_key_mappings:
+  "#ctl00_ContentPlaceHolder1_spnInmateName": person.surname
+
 keys_to_ignore:
   - Custody Status
   - Release Date-Time
