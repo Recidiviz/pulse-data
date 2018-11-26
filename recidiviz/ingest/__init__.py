@@ -22,9 +22,10 @@ normalizing, and storing records ingested from various criminal justice data
 sources.
 """
 
-
+import recidiviz.ingest.us_ar_van_buren
 import recidiviz.ingest.us_co_mesa
 import recidiviz.ingest.us_mt_gallatin
+import recidiviz.ingest.us_mo_stone
 import recidiviz.ingest.us_ny
 import recidiviz.ingest.us_pa_dauphin
 import recidiviz.ingest.us_pa_greene

@@ -174,9 +174,9 @@ class BaseScraper(Scraper):
         Args:
             ingest_info: A populated ingest_info model.
         """
-        for ingest_person in ingest_info.people:
+        for ingest_person in ingest_info.person:
             person_db = self._populate_person(ingest_person)
-            for ingest_booking in ingest_person.bookings:
+            for ingest_booking in ingest_person.booking:
                 self._populate_record_and_set_snapshot(
                     person_db, ingest_booking)
 
@@ -252,7 +252,7 @@ class BaseScraper(Scraper):
 
         # Now go over the charges.
         offenses = []
-        for charge in ingest_booking.charges:
+        for charge in ingest_booking.charge:
             offense = Offense()
             offense.crime_description = charge.name
             offense.crime_class = str(charge.statute)

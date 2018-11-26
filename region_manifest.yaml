@@ -84,6 +84,19 @@ regions:
       record: ArchonixRecord
     scraper_package: us_mt_gallatin
     timezone: America/Denver
+  us_mo_stone:
+    region_name: UsMoStone
+    agency_name: Stone County Jail
+    region_code: us_mo_stone
+    agency_type: jail
+    queue: us-mo-stone-scraper
+    base_url: https://www.stonecountymosheriff.com/roster.php
+    names_file: us_ny_names.csv
+    entity_kinds:
+      person: Person
+      record: Record
+    scraper_package: us_mo_stone
+    timezone: America/Chicago
   us_pa_dauphin:
     region_name: UsPaDauphin
     agency_name: Dauphin County Jail
@@ -97,3 +110,16 @@ regions:
       record: Record
     scraper_package: us_pa_dauphin
     timezone: America/New_York
+  us_ar_van_buren:
+    region_name: UsArVanBuren
+    agency_name: Van Buren County Jail
+    region_code: us_ar_van_buren
+    agency_type: jail
+    queue: us-ar-van-buren-scraper
+    base_url: https://www.vbcso.com/roster.php
+    names_file: us_ny_names.csv
+    entity_kinds:
+      person: Person
+      record: Record
+    scraper_package: us_ar_van_buren
+    timezone: America/Chicago
