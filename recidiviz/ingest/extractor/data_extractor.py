@@ -43,14 +43,18 @@ class DataExtractor(object):
             with open(key_mapping_file, 'r') as ymlfile:
                 manifest = yaml.load(ymlfile)
             key_mappings = manifest['key_mappings']
+            css_key_mappings = {}
             keys_to_ignore = []
             multi_key_mapping = {}
+            if 'css_key_mappings' in manifest:
+                css_key_mappings = manifest['css_key_mappings']
             if 'keys_to_ignore' in manifest:
                 keys_to_ignore = manifest['keys_to_ignore']
             if 'multi_key_mapping' in manifest:
                 multi_key_mapping = manifest['multi_key_mapping']
             self.initialize_extractor(
-                key_mappings, multi_key_mapping, keys_to_ignore)
+                key_mappings, css_key_mappings, multi_key_mapping,
+                keys_to_ignore)
 
         # Convenience map to tell us how to build the object.
         self.hierarchy_map = {
@@ -62,7 +66,7 @@ class DataExtractor(object):
             'sentence': ['person', 'booking', 'charge'],
         }
 
-    def initialize_extractor(self, keys, multi_keys, ignored_keys):
+    def initialize_extractor(self, keys, css_keys, multi_keys, ignored_keys):
         """Initializes the data extractor with the keys that we want to
         search for in the html content.
 
@@ -73,6 +77,8 @@ class DataExtractor(object):
             ignored_keys: keys that exist on the page that we ignore
         """
         self.keys = {k.strip():v for k, v in keys.iteritems()}
+        self.css_keys = css_keys
+        self.keys.update(css_keys)
         self.multi_keys = {k.strip():v for k, v in multi_keys.iteritems()}
         self.all_keys = self.keys.keys() + self.multi_keys.keys() + ignored_keys
         # We want to know which of the classes are multi keys as this helps
@@ -88,6 +94,9 @@ class DataExtractor(object):
         """
         for key in self.keys.keys():
             self._convert_key_to_cells(content, key)
+
+        for css_key in self.css_keys.keys():
+            self._css_key_to_cell(content, css_key)
 
         all_cells = itertools.chain(
             content.findall('.//th'), content.findall('.//td'))
@@ -242,6 +251,15 @@ class DataExtractor(object):
         # |content|.
         for match in matches:
             self._key_element_to_cell(key, match)
+
+    def _css_key_to_cell(self, content, css_key):
+        matches = content.cssselect(css_key)
+
+        for match in matches:
+            key_cell = HtmlElement(css_key)
+            key_cell.tag = 'td'
+            match.tag = 'td'
+            match.addprevious(key_cell)
 
     def _key_element_to_cell(self, key, key_element):
         """Converts a |key_element| Element to a table cell and tries to modify
