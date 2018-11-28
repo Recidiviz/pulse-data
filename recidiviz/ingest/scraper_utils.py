@@ -199,13 +199,13 @@ def get_proxies(use_test=False):
         user_var = "proxy_user"
         pass_var = "proxy_password"
 
-    proxy_url = env_vars.get_env_var("proxy_url", None)
+    proxy_url = env_vars.get_env_var("proxy_url")
 
     if proxy_url is None:
         raise Exception("No proxy url")
 
-    proxy_user = env_vars.get_env_var(user_var, None)
-    proxy_password = env_vars.get_env_var(pass_var, None)
+    proxy_user = env_vars.get_env_var(user_var)
+    proxy_password = env_vars.get_env_var(pass_var)
 
     if (proxy_user is None) or (proxy_password is None):
         raise Exception("No proxy user/pass")
@@ -237,7 +237,7 @@ def get_headers():
         proceed without this
 
     """
-    user_agent_string = env_vars.get_env_var("user_agent", None)
+    user_agent_string = env_vars.get_env_var("user_agent")
 
     if not user_agent_string:
         raise Exception("No user agent string")
