@@ -53,6 +53,7 @@ class Booking(Base):
 
     admission_date = Column('admission_date', DateTime)
     release_date = Column('release_date', DateTime)
+    release_date_type = Column('release_date_type', String)
     release_reason = Column('release_reason', String)
     custody_status = Column('custody_status', String)
     held_for_other_jurisdiction = Column('held_for_other_jurisdiction',
@@ -60,6 +61,9 @@ class Booking(Base):
     hold = Column('hold', String)
     facility = Column('facility', String)
     classification = Column('classification', String)
+
+    region = Column('region', String)
+    last_scraped_date = Column('last_scraped_date', DateTime)
 
     arrest = relationship('Arrest', uselist=False)
     charges = relationship('Charge')
