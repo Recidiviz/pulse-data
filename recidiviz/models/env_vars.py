@@ -24,7 +24,6 @@ between regional scraping and//or calculation.
 
 import logging
 
-from google.appengine.api import memcache
 from google.appengine.ext import ndb
 
 
@@ -48,40 +47,34 @@ class EnvironmentVariable(ndb.Model):
     name = ndb.StringProperty()
     value = ndb.StringProperty()
 
+LOCAL_VARS = {}
 
-def get_env_var(var_name, region_code):
-    """Retrieve environment variable from memcache or datastore
+def get_env_var(var_name):
+    """Retrieve environment variable from local dict or datastore
 
-    Helper function for scrapers to get environment variables. Tries to pull
-    first from memcache, if not found will pull from datastore and repopulate
-    in memcache.
+    Helper function for scrapers to get environment variables. First checks
+    local environment variables, if not found will pull from datastore and
+    populate local environment variable.
 
     Args:
         var_name: Variable name to retrieve
-        region_code: (string) Region code, or 'None' if global var
 
     Returns:
         Variable value if found
         None if not
     """
-    region_code = "all" if not region_code else region_code
-    memcache_name = region_code + "_" + var_name
-
-    value = memcache.get(memcache_name)
+    value = LOCAL_VARS.get(var_name)
 
     if not value:
-
         datastore_result = EnvironmentVariable.query(ndb.AND(
-            EnvironmentVariable.region == region_code,
+            EnvironmentVariable.region == 'all',
             EnvironmentVariable.name == var_name)).get()
 
         if datastore_result:
             value = str(datastore_result.value)
-            memcache.set(key=memcache_name, value=value, time=3600)
+            LOCAL_VARS[var_name] = value
 
         else:
-            logging.error("Couldn't retrieve env var: %s for %s region." %
-                          (var_name, region_code))
-            return None
+            logging.error("Couldn't retrieve env var: %s." % var_name)
 
     return value

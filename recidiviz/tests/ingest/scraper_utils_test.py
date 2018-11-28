@@ -23,10 +23,10 @@ from lxml import html
 from mock import patch
 import pytest
 
-from google.appengine.api import memcache
 from google.appengine.ext import ndb
 from google.appengine.ext import testbed
 from recidiviz.ingest import scraper_utils
+from recidiviz.models import env_vars
 from recidiviz.models.person import Person
 
 
@@ -211,14 +211,15 @@ class TestGetProxies(object):
 
     def teardown_method(self, _test_method):
         self.testbed.deactivate()
+        env_vars.LOCAL_VARS.clear()
 
     @patch('recidiviz.utils.environment.in_prod')
     def test_get_proxies_local(self, mock_in_prod):
         mock_in_prod.return_value = False
 
-        write_to_memcache('all', 'proxy_url', 'proxy.biz/')
-        write_to_memcache('all', 'test_proxy_user', 'user')
-        write_to_memcache('all', 'test_proxy_password', 'password')
+        write_env_var('proxy_url', 'proxy.biz/')
+        write_env_var('test_proxy_user', 'user')
+        write_env_var('test_proxy_password', 'password')
 
         proxies = scraper_utils.get_proxies()
         assert proxies == {'http': 'http://user:password@proxy.biz/'}
@@ -227,9 +228,9 @@ class TestGetProxies(object):
     def test_get_proxies_prod(self, mock_in_prod):
         mock_in_prod.return_value = True
 
-        write_to_memcache('all', 'proxy_url', 'proxy.net/')
-        write_to_memcache('all', 'proxy_user', 'real_user')
-        write_to_memcache('all', 'proxy_password', 'real_password')
+        write_env_var('proxy_url', 'proxy.net/')
+        write_env_var('proxy_user', 'real_user')
+        write_env_var('proxy_password', 'real_password')
 
         proxies = scraper_utils.get_proxies()
         assert proxies == {'http': 'http://real_user:real_password@proxy.net/'}
@@ -238,8 +239,8 @@ class TestGetProxies(object):
     def test_get_proxies_local_no_user(self, mock_in_prod):
         mock_in_prod.return_value = True
 
-        write_to_memcache('all', 'proxy_url', 'proxy.net/')
-        write_to_memcache('all', 'proxy_password', 'real_password')
+        write_env_var('proxy_url', 'proxy.net/')
+        write_env_var('proxy_password', 'real_password')
 
         with pytest.raises(Exception) as exception:
             scraper_utils.get_proxies()
@@ -249,8 +250,8 @@ class TestGetProxies(object):
     def test_get_proxies_local_no_password(self, mock_in_prod):
         mock_in_prod.return_value = False
 
-        write_to_memcache('all', 'proxy_url', 'proxy.biz/')
-        write_to_memcache('all', 'test_proxy_user', 'user')
+        write_env_var('proxy_url', 'proxy.biz/')
+        write_env_var('test_proxy_user', 'user')
 
         with pytest.raises(Exception) as exception:
             scraper_utils.get_proxies()
@@ -260,8 +261,8 @@ class TestGetProxies(object):
     def test_get_proxies_local_no_url(self, mock_in_prod):
         mock_in_prod.return_value = False
 
-        write_to_memcache('all', 'test_proxy_user', 'user')
-        write_to_memcache('all', 'test_proxy_password', 'password')
+        write_env_var('test_proxy_user', 'user')
+        write_env_var('test_proxy_password', 'password')
 
         with pytest.raises(Exception) as exception:
             scraper_utils.get_proxies()
@@ -281,10 +282,11 @@ class TestGetHeaders(object):
 
     def teardown_method(self, _test_method):
         self.testbed.deactivate()
+        env_vars.LOCAL_VARS.clear()
 
     def test_get_headers(self):
         user_agent = 'test_user_agent'
-        write_to_memcache('all', 'user_agent', user_agent)
+        write_env_var('user_agent', user_agent)
 
         headers = scraper_utils.get_headers()
         assert headers == {'User-Agent': user_agent}
@@ -295,6 +297,5 @@ class TestGetHeaders(object):
         assert exception.value.message == 'No user agent string'
 
 
-def write_to_memcache(region, name, value):
-    key = region + "_" + name
-    memcache.set(key, value)
+def write_env_var(name, value):
+    env_vars.LOCAL_VARS[name] = value
