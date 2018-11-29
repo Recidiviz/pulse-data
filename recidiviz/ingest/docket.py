@@ -108,7 +108,7 @@ def load_target_list(scrape_key, given_names="", surname=""):
     scrape_type = scrape_key.scrape_type
 
     if scrape_type == constants.BACKGROUND_SCRAPE:
-        name_list_file = regions.get_name_list_file(region_code)
+        name_list_file = regions.Region(region_code).names_file
 
         # Construct filename, process user-supplied name query (if provided)
         filename = FILENAME_PREFIX + name_list_file
