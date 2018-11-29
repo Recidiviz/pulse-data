@@ -23,6 +23,7 @@ import pytest
 
 from recidiviz.ingest.extractor.data_extractor import DataExtractor
 from recidiviz.ingest.models.ingest_info import IngestInfo
+from recidiviz.tests.ingest import fixtures
 
 
 def test_good_table():
@@ -36,10 +37,8 @@ def test_good_table():
     person.create_booking()
     person.birthdate = '1/15/2048'
 
-    html_file = '../testdata/data_extractor/html/good_table.html'
-    html_file = os.path.join(os.path.dirname(__file__), html_file)
-    with open(html_file, 'r') as f:
-        html_contents = html.fromstring(f.read())
+    html_contents = html.fromstring(
+        fixtures.as_string('testdata/data_extractor/html', 'good_table.html'))
 
     info = extractor.extract_and_populate_data(html_contents)
     assert expected_info == info
@@ -76,10 +75,9 @@ def test_nested_good_table():
     # Add bond information
     charge.create_bond().amount = '$1.00'
 
-    html_file = '../testdata/data_extractor/html/nested_good_table.html'
-    html_file = os.path.join(os.path.dirname(__file__), html_file)
-    with open(html_file, 'r') as f:
-        html_contents = html.fromstring(f.read())
+    html_contents = html.fromstring(
+        fixtures.as_string('testdata/data_extractor/html',
+                           'nested_good_table.html'))
 
     info = extractor.extract_and_populate_data(html_contents)
     assert info == expected_info
@@ -119,10 +117,8 @@ def test_bad_table():
     bond3.amount = '$2,000.00'
     bond3.bond_type = 'Surety Bond'
 
-    html_file = '../testdata/data_extractor/html/bad_table.html'
-    html_file = os.path.join(os.path.dirname(__file__), html_file)
-    with open(html_file, 'r') as f:
-        html_contents = html.fromstring(f.read())
+    html_contents = html.fromstring(
+        fixtures.as_string('testdata/data_extractor/html', 'bad_table.html'))
 
     info = extractor.extract_and_populate_data(html_contents)
 
@@ -206,11 +202,9 @@ def test_multiple_people_with_maybe_charges():
     b3_charge2.level = 'M'
     b3_charge2.create_bond().amount = '$1000.00'
 
-    html_file = ('../testdata/data_extractor/html/'
-                 'multiple_people_sometimes_charges.html')
-    html_file = os.path.join(os.path.dirname(__file__), html_file)
-    with open(html_file, 'r') as f:
-        html_contents = html.fromstring(f.read())
+    html_contents = html.fromstring(
+        fixtures.as_string('testdata/data_extractor/html',
+                           'multiple_people_sometimes_charges.html'))
 
     info = extractor.extract_and_populate_data(html_contents)
 
@@ -222,10 +216,8 @@ def test_bad_lookup():
     key_mapping_file = os.path.join(os.path.dirname(__file__), key_mapping_file)
     extractor = DataExtractor(key_mapping_file)
 
-    html_file = '../testdata/data_extractor/html/good_table.html'
-    html_file = os.path.join(os.path.dirname(__file__), html_file)
-    with open(html_file, 'r') as f:
-        html_contents = html.fromstring(f.read())
+    html_contents = html.fromstring(
+        fixtures.as_string('testdata/data_extractor/html', 'good_table.html'))
 
     with pytest.warns(UserWarning):
         extractor.extract_and_populate_data(html_contents)
@@ -236,10 +228,8 @@ def test_bad_object():
     key_mapping_file = os.path.join(os.path.dirname(__file__), key_mapping_file)
     extractor = DataExtractor(key_mapping_file)
 
-    html_file = '../testdata/data_extractor/html/good_table.html'
-    html_file = os.path.join(os.path.dirname(__file__), html_file)
-    with open(html_file, 'r') as f:
-        html_contents = html.fromstring(f.read())
+    html_contents = html.fromstring(
+        fixtures.as_string('testdata/data_extractor/html', 'good_table.html'))
 
     with pytest.raises(KeyError):
         extractor.extract_and_populate_data(html_contents)
@@ -250,10 +240,8 @@ def test_bad_attr():
     key_mapping_file = os.path.join(os.path.dirname(__file__), key_mapping_file)
     extractor = DataExtractor(key_mapping_file)
 
-    html_file = '../testdata/data_extractor/html/good_table.html'
-    html_file = os.path.join(os.path.dirname(__file__), html_file)
-    with open(html_file, 'r') as f:
-        html_contents = html.fromstring(f.read())
+    html_contents = html.fromstring(
+        fixtures.as_string('testdata/data_extractor/html', 'good_table.html'))
 
     with pytest.raises(AttributeError):
         extractor.extract_and_populate_data(html_contents)
@@ -278,10 +266,10 @@ def test_partial_table():
     bond = charge.create_bond()
     bond.amount = '25,000.00'
 
-    html_file = '../testdata/data_extractor/html/partial_table.html'
-    html_file = os.path.join(os.path.dirname(__file__), html_file)
-    with open(html_file, 'r') as f:
-        html_contents = html.fromstring(f.read())
+    html_contents = html.fromstring(
+        fixtures.as_string('testdata/data_extractor/html',
+                           'partial_table.html'))
+
     info = extractor.extract_and_populate_data(html_contents)
     assert expected_info == info
 
@@ -309,10 +297,10 @@ def test_labeled_fields():
     charge.next_court_date = ''
     booking.charge.append(charge)
 
-    html_file = '../testdata/data_extractor/html/labeled_fields.html'
-    html_file = os.path.join(os.path.dirname(__file__), html_file)
-    with open(html_file, 'r') as f:
-        html_contents = html.fromstring(f.read())
+    html_contents = html.fromstring(
+        fixtures.as_string('testdata/data_extractor/html',
+                           'labeled_fields.html'))
+
     info = extractor.extract_and_populate_data(html_contents)
     assert expected_info == info
 
@@ -341,10 +329,9 @@ def test_bad_labels():
     charge.name = 'BURGLARY'
     charge.case_number = ''
 
-    html_file = '../testdata/data_extractor/html/bad_labels.html'
-    html_file = os.path.join(os.path.dirname(__file__), html_file)
-    with open(html_file, 'r') as f:
-        html_contents = html.fromstring(f.read())
+    html_contents = html.fromstring(
+        fixtures.as_string('testdata/data_extractor/html', 'bad_labels.html'))
+
     info = extractor.extract_and_populate_data(html_contents)
     assert expected_info == info
 
@@ -383,9 +370,27 @@ def test_text_label():
     bond2 = charge2.create_bond()
     bond2.amount = '$100'
 
-    html_file = '../testdata/data_extractor/html/text_label.html'
-    html_file = os.path.join(os.path.dirname(__file__), html_file)
-    with open(html_file, 'r') as f:
-        html_contents = html.fromstring(f.read())
+    html_contents = html.fromstring(
+        fixtures.as_string('testdata/data_extractor/html', 'text_label.html'))
+
+    info = extractor.extract_and_populate_data(html_contents)
+    assert expected_info == info
+
+
+def test_th_rows():
+    """Tests a yaml file with <th> keys in rows."""
+    key_mapping_file = '../testdata/data_extractor/yaml/th_rows.yaml'
+    key_mapping_file = os.path.join(os.path.dirname(__file__), key_mapping_file)
+    extractor = DataExtractor(key_mapping_file)
+
+    expected_info = IngestInfo()
+    person = expected_info.create_person()
+    person.race = 'WHITE'
+    person.sex = 'M'
+    person.create_booking()
+
+    html_contents = html.fromstring(
+        fixtures.as_string('testdata/data_extractor/html', 'th_rows.html'))
+
     info = extractor.extract_and_populate_data(html_contents)
     assert expected_info == info
