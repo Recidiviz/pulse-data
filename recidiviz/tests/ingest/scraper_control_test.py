@@ -55,14 +55,14 @@ class TestScraperStart(object):
             overwrite=True)
 
     @patch("recidiviz.utils.regions.get_supported_regions")
-    @patch("recidiviz.utils.regions.get_scraper_from_cache")
+    @patch("recidiviz.utils.regions.Region")
     @patch("recidiviz.ingest.sessions.create_session")
     @patch("recidiviz.ingest.tracker.purge_docket_and_session")
     @patch("recidiviz.ingest.docket.load_target_list")
     @patch("recidiviz.utils.environment.in_prod")
     @patch("google.appengine.ext.deferred.defer")
     def test_start(self, mock_deferred, mock_environment, mock_docket,
-                   mock_tracker, mock_sessions, mock_regions, mock_supported):
+                   mock_tracker, mock_sessions, mock_region, mock_supported):
         """Tests that the start operation chains together the correct calls."""
         mock_deferred.return_value = None
         mock_environment.return_value = False
@@ -70,7 +70,7 @@ class TestScraperStart(object):
         mock_tracker.return_value = None
         mock_sessions.return_value = None
         fake_scraper = FakeScraper()
-        mock_regions.return_value = fake_scraper
+        mock_region.return_value = FakeRegion(fake_scraper)
         mock_supported.return_value = ['us_ut', 'us_wy']
 
         self.login_user()
@@ -92,7 +92,7 @@ class TestScraperStart(object):
         mock_docket.assert_called_with(scrape_key, '', '')
         mock_tracker.assert_called_with(scrape_key)
         mock_sessions.assert_called_with(scrape_key)
-        mock_regions.assert_called_with('us_ut')
+        mock_region.assert_called_with('us_ut')
         mock_supported.assert_called_with()
 
     @patch("recidiviz.utils.regions.get_supported_regions")
@@ -142,11 +142,11 @@ class TestScraperStop(object):
             overwrite=True)
 
     @patch("recidiviz.utils.regions.get_supported_regions")
-    @patch("recidiviz.utils.regions.get_scraper_from_cache")
+    @patch("recidiviz.utils.regions.Region")
     @patch("recidiviz.ingest.sessions.end_session")
-    def test_stop(self, mock_sessions, mock_regions, mock_supported):
+    def test_stop(self, mock_sessions, mock_region, mock_supported):
         mock_sessions.return_value = None
-        mock_regions.return_value = FakeScraper()
+        mock_region.return_value = FakeRegion(FakeScraper())
         mock_supported.return_value = ['us_ca', 'us_ut']
 
         self.login_user()
@@ -162,7 +162,7 @@ class TestScraperStop(object):
                                         call(ScrapeKey('us_ca', 'snapshot')),
                                         call(ScrapeKey('us_ut', 'background')),
                                         call(ScrapeKey('us_ut', 'snapshot'))])
-        mock_regions.assert_has_calls([call('us_ca'), call('us_ut')])
+        mock_region.assert_has_calls([call('us_ca'), call('us_ut')])
         mock_supported.assert_called_with()
 
     @patch("recidiviz.utils.regions.get_supported_regions")
@@ -212,11 +212,11 @@ class TestScraperResume(object):
             overwrite=True)
 
     @patch("recidiviz.utils.regions.get_supported_regions")
-    @patch("recidiviz.utils.regions.get_scraper_from_cache")
+    @patch("recidiviz.utils.regions.Region")
     @patch("recidiviz.ingest.sessions.create_session")
-    def test_resume(self, mock_sessions, mock_regions, mock_supported):
+    def test_resume(self, mock_sessions, mock_region, mock_supported):
         mock_sessions.return_value = None
-        mock_regions.return_value = FakeScraper()
+        mock_region.return_value = FakeRegion(FakeScraper())
         mock_supported.return_value = ['us_ca']
 
         self.login_user()
@@ -231,7 +231,7 @@ class TestScraperResume(object):
 
         mock_sessions.assert_has_calls([call(ScrapeKey(region, 'background')),
                                         call(ScrapeKey(region, 'snapshot'))])
-        mock_regions.assert_called_with(region)
+        mock_region.assert_called_with(region)
         mock_supported.assert_called_with()
 
     @patch("recidiviz.utils.regions.get_supported_regions")
@@ -331,9 +331,18 @@ def test_validate_scrape_types_empty():
         []) == [constants.BACKGROUND_SCRAPE]
 
 
+class FakeRegion(object):
+    """A fake region to be returned from mocked out calls to Region"""
+    def __init__(self, scraper):
+        self.scraper = scraper
+
+    def get_scraper(self):
+        return self.scraper
+
+
 class FakeScraper(object):
     """A fake scraper to be returned from mocked out calls to
-    regions.get_scraper_from_cache."""
+    Region.get_scraper"""
 
     def start_scrape(self):
         return
