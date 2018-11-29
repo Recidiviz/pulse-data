@@ -333,6 +333,8 @@ class DataExtractor(object):
             a generator that yields the cells below |cell|
         """
         parent = cell.getparent()
+        if parent is None:
+            return
         index = parent.index(cell)
         next_row = parent.getnext()
 
@@ -416,9 +418,11 @@ class DataExtractor(object):
             # TODO(#181): fall back to manual search for this value
             return None
         if cell.tag == 'th':
-            below_text = self._get_below(cell).text_content().strip()
-            if below_text:
-                return below_text
+            below_cell = self._get_below(cell)
+            if below_cell:
+                below_text = below_cell.text_content().strip()
+                if below_text:
+                    return below_text
 
         right = cell.getnext()
         if self._is_viable(right):
