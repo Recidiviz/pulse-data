@@ -78,7 +78,7 @@ def scraper_work():
     logging.info("Queue %s, processing task (%s) for %s." %
                  (queue_name, task, region))
 
-    scraper = regions.get_scraper_from_cache(region)
+    scraper = regions.Region(region).get_scraper()
     scraper_task = getattr(scraper, task)
 
     try:

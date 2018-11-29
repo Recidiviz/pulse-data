@@ -23,7 +23,6 @@
 import pytest
 
 from ..context import utils
-from google.appengine.api import memcache
 from google.appengine.ext import ndb
 from google.appengine.ext import testbed
 from mock import patch, mock_open
@@ -108,82 +107,90 @@ FULL_MANIFEST = {
 }
 
 
-def test_load_region_manifest():
-    manifest = with_manifest(regions.load_region_manifest)
-    assert manifest == FULL_MANIFEST
+class TestRegions(object):
+    """Tests for regions.py."""
+    def setup_method(self, _test_method):
+        regions.MANIFEST = None
+
+    def teardown_method(self, _test_method):
+        regions.MANIFEST = None
+
+    def test_get_full_manifest(self):
+        manifest = with_manifest(regions.get_full_manifest)
+        assert manifest == FULL_MANIFEST
 
 
-def test_load_region_manifest_specific():
-    manifest = with_manifest(regions.load_region_manifest, 'us_ny')
-    assert manifest == FULL_MANIFEST['regions']['us_ny']
+    def test_get_region_manifest(self):
+        manifest = with_manifest(regions.get_region_manifest, 'us_ny')
+        assert manifest == FULL_MANIFEST['regions']['us_ny']
 
 
-def test_load_region_manifest_not_found():
-    with pytest.raises(Exception) as exception:
-        with patch("__builtin__.open",
-                   mock_open(read_data=MANIFEST_CONTENTS)) \
-                as mock_file:
-            regions.load_region_manifest('us_az')
+    def test_get_region_manifest_not_found(self):
+        with pytest.raises(Exception) as exception:
+            with patch("__builtin__.open",
+                       mock_open(read_data=MANIFEST_CONTENTS)) \
+                       as mock_file:
+                regions.get_region_manifest('us_az')
 
-    assert exception.value.message == "Region 'us_az' not found in manifest."
-    mock_file.assert_called_with('region_manifest.yaml', 'r')
-
-
-def test_get_supported_regions():
-    supported_regions = with_manifest(regions.get_supported_regions)
-    assert supported_regions == ['us_ny', 'us_fl']
+        assert exception.value.message == \
+            "Region 'us_az' not found in manifest."
+        mock_file.assert_called_with('region_manifest.yaml', 'r')
 
 
-def test_get_supported_regions_full_manifest():
-    supported_regions = with_manifest(regions.get_supported_regions,
-                                      full_manifest=True)
-    assert supported_regions == FULL_MANIFEST['regions']
+    def test_get_supported_regions(self):
+        supported_regions = with_manifest(regions.get_supported_regions)
+        assert supported_regions == ['us_ny', 'us_fl']
 
 
-def test_validate_region_code_valid():
-    assert with_manifest(regions.validate_region_code, 'us_fl')
+    def test_get_supported_regions_full_manifest(self):
+        supported_regions = with_manifest(regions.get_supported_regions,
+                                          full_manifest=True)
+        assert supported_regions == FULL_MANIFEST['regions']
 
 
-def test_validate_region_code_invalid():
-    assert not with_manifest(regions.validate_region_code, 'us_az')
+    def test_validate_region_code_valid(self):
+        assert with_manifest(regions.validate_region_code, 'us_fl')
 
 
-def test_get_subkind():
-    person = with_manifest(regions.get_subkind, 'us_ny', 'Person')
-    assert person.__name__ == 'UsNyPerson'
+    def test_validate_region_code_invalid(self):
+        assert not with_manifest(regions.validate_region_code, 'us_az')
 
 
-def test_get_name_list_file():
-    filename = with_manifest(regions.get_name_list_file, 'us_fl')
-    assert filename == 'us_fl_names.csv'
+    def test_get_subkind(self):
+        region = with_manifest(regions.Region, 'us_ny')
+        person = region.get_subkind('Person')
+        assert person.__name__ == 'UsNyPerson'
 
 
-def test_get_scraper_module():
-    module = regions.get_scraper_module('us_ny')
-    assert module.__name__ == 'recidiviz.ingest.us_ny'
+    def test_get_scraper_module(self):
+        region = with_manifest(regions.Region, 'us_ny')
+        module = region.get_scraper_module()
+        assert module.__name__ == 'recidiviz.ingest.us_ny'
 
 
-def test_get_scraper():
-    scraper = regions.get_scraper('us_ny', 'us_ny_scraper')
-    assert type(scraper).__name__ == 'UsNyScraper'
+    def test_get_scraper(self):
+        region = with_manifest(regions.Region, 'us_ny')
+        scraper = region.get_scraper()
+        assert type(scraper).__name__ == 'UsNyScraper'
 
 
-def test_region_class():
-    region = with_manifest(regions.Region, 'us_ny')
-    assert region.scraper().__name__ == 'recidiviz.ingest.us_ny'
-    assert region.get_person_kind().__name__ == 'UsNyPerson'
-    assert region.get_record_kind().__name__ == 'UsNyRecord'
-    assert region.get_snapshot_kind().__name__ == 'Snapshot'
-    assert not region.params
-    assert region.queue == 'us-ny-scraper'
-    assert region.scraper_class == 'us_ny_scraper'
+    def test_region_class(self):
+        region = with_manifest(regions.Region, 'us_ny')
+        assert region.get_scraper_module().__name__ == 'recidiviz.ingest.us_ny'
+        assert region.get_person_kind().__name__ == 'UsNyPerson'
+        assert region.get_record_kind().__name__ == 'UsNyRecord'
+        assert region.get_snapshot_kind().__name__ == 'Snapshot'
+        assert not region.params
+        assert region.queue == 'us-ny-scraper'
+        assert region.scraper_class == 'us_ny_scraper'
+        assert region.names_file == 'us_ny_names.csv'
 
 
-def test_region_class_with_scraper_class():
-    region = with_manifest(regions.Region, 'us_fl')
-    assert region.params == {'foo': 'bar', 'sha': 'baz'}
-    assert region.queue == 'us-fl-scraper'
-    assert region.scraper_class == 'a_different_scraper'
+    def test_region_class_with_scraper_class(self):
+        region = with_manifest(regions.Region, 'us_fl')
+        assert region.params == {'foo': 'bar', 'sha': 'baz'}
+        assert region.queue == 'us-fl-scraper'
+        assert region.scraper_class == 'a_different_scraper'
 
 
 def with_manifest(func, *args, **kwargs):
@@ -193,24 +200,3 @@ def with_manifest(func, *args, **kwargs):
         value = func(*args, **kwargs)
         mock_file.assert_called_with('region_manifest.yaml', 'r')
         return value
-
-
-class TestRegionsCache(object):
-    """Tests for caching methods in the module."""
-
-    def setup_method(self, _test_method):
-        # noinspection PyAttributeOutsideInit
-        self.testbed = testbed.Testbed()
-        self.testbed.activate()
-        self.testbed.init_memcache_stub()
-        ndb.get_context().clear_cache()
-
-    def teardown_method(self, _test_method):
-        self.testbed.deactivate()
-
-    def test_get_scraper_from_cache(self):
-        scraper = regions.get_scraper_from_cache('us_ny')
-        assert type(scraper).__name__ == 'UsNyScraper'
-
-        assert memcache.get('us_ny_scraper_package') == 'us_ny'
-        assert memcache.get('us_ny_scraper_class') == 'us_ny_scraper'

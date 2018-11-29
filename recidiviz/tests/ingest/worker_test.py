@@ -58,9 +58,9 @@ class TestWorker(object):
             user_is_admin='1' if is_admin else '0',
             overwrite=True)
 
-    @patch("recidiviz.utils.regions.get_scraper_from_cache")
-    def test_post_work(self, mock_regions):
-        mock_regions.return_value = FakeScraper(1)
+    @patch("recidiviz.utils.regions.Region")
+    def test_post_work(self, mock_region):
+        mock_region.return_value = FakeRegion(FakeScraper(1))
 
         self.login_user()
 
@@ -69,9 +69,9 @@ class TestWorker(object):
         response = self.client.post(PATH, data=form, headers=headers)
         assert response.status_code == 200
 
-    @patch("recidiviz.utils.regions.get_scraper_from_cache")
-    def test_post_work_params(self, mock_regions):
-        mock_regions.return_value = FakeScraper(1)
+    @patch("recidiviz.utils.regions.Region")
+    def test_post_work_params(self, mock_region):
+        mock_region.return_value = FakeRegion(FakeScraper(1))
 
         self.login_user()
 
@@ -82,9 +82,9 @@ class TestWorker(object):
         response = self.client.post(PATH, data=form, headers=headers)
         assert response.status_code == 200
 
-    @patch("recidiviz.utils.regions.get_scraper_from_cache")
-    def test_post_work_error(self, mock_regions):
-        mock_regions.return_value = FakeScraper(-1)
+    @patch("recidiviz.utils.regions.Region")
+    def test_post_work_error(self, mock_region):
+        mock_region.return_value = FakeRegion(FakeScraper(-1))
 
         self.login_user()
 
@@ -93,9 +93,9 @@ class TestWorker(object):
         response = self.client.post(PATH, data=form, headers=headers)
         assert response.status_code == 500
 
-    @patch("recidiviz.utils.regions.get_scraper_from_cache")
-    def test_post_work_timeout(self, mock_regions):
-        mock_regions.return_value = FakeScraper(1)
+    @patch("recidiviz.utils.regions.Region")
+    def test_post_work_timeout(self, mock_region):
+        mock_region.return_value = FakeRegion(FakeScraper(1))
 
         self.login_user()
 
@@ -111,9 +111,18 @@ class TestWorker(object):
         assert response.status_code == 500
 
 
+class FakeRegion(object):
+    """A fake region to be returned from mocked out calls to Region"""
+    def __init__(self, scraper):
+        self.scraper = scraper
+
+    def get_scraper(self):
+        return self.scraper
+
+
 class FakeScraper(object):
     """A fake scraper to be returned from mocked out calls to
-    regions.get_scraper_from_cache."""
+    Region.get_scraper."""
 
     def __init__(self, return_value):
         self.return_value = return_value

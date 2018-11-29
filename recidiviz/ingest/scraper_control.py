@@ -79,7 +79,7 @@ def scraper_start():
             scrape_key = ScrapeKey(region, scrape_type)
             logging.info("Starting new scraper for: %s", scrape_key)
 
-            scraper = regions.get_scraper_from_cache(region)
+            scraper = regions.Region(region).get_scraper()
 
             sessions.create_session(scrape_key)
 
@@ -148,7 +148,7 @@ def scraper_stop():
         for scrape_type in scrape_types:
             sessions.end_session(ScrapeKey(region, scrape_type))
 
-        scraper = regions.get_scraper_from_cache(region)
+        scraper = regions.Region(region).get_scraper()
         scraper.stop_scrape(scrape_types)
 
     return ('', httplib.OK)
@@ -193,7 +193,7 @@ def scraper_resume():
             # vs updating that w/first task.
             time.sleep(5)
 
-            scraper = regions.get_scraper_from_cache(region)
+            scraper = regions.Region(region).get_scraper()
             scraper.resume_scrape(scrape_type)
 
     return ('', httplib.OK)
