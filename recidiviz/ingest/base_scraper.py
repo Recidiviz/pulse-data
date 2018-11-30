@@ -420,7 +420,6 @@ class BaseScraper(Scraper):
         """
         pass
 
-    @abc.abstractmethod
     def set_initial_vars(self, content, params):
         """
         Sets initial vars in the params that it will pass on to future scrapes
