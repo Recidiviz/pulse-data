@@ -19,7 +19,7 @@
 from recidiviz.ingest.base_scraper import BaseScraper
 
 
-class $class_name(BaseScraper):
+class ${class_name}Scraper(BaseScraper):
     """Scraper implementation for $region."""
     def __init__(self, region_name, mapping_filepath=None):
         pass
