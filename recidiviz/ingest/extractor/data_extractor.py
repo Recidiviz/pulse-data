@@ -22,6 +22,7 @@ model and returned.
 TODO: Add more details here in implementation logic when it is done.
 """
 
+import copy
 import itertools
 import warnings
 import yaml
@@ -127,7 +128,7 @@ class DataExtractor(object):
         Returns:
             A populated ingest data model for a scrape.
         """
-        self._set_all_cells(content)
+        self._set_all_cells(copy.deepcopy(content))
         if not ingest_info:
             ingest_info = IngestInfo()
         if not ingest_info.person:
