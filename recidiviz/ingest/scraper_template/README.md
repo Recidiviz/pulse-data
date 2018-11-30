@@ -41,7 +41,6 @@ You will write most of the scraping logic in `<region_code>_scraper.py`. The
 scraper should inherit from [BaseScraper](../base_scraper.py) or a
 [vendor scraper](../vendors) and must implement the following functions:
  - `__init__(self, region_name, mapping_filepath=None)`
- - `set_initial_vars(self, content, params)`
  - `get_more_tasks(self, content, params)`
  - `populate_data(self, content, params, ingest_info)`
 
