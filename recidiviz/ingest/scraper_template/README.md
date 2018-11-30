@@ -13,9 +13,9 @@ Multi-word counties should be enclosed in quotes:
 `python create_scraper.py 'prince william' virginia`
 
 ###### Optional Arguments
- - `agency`: the name of the agency
+ - `agency`: the name of the agency, e.g. `Foo County Sheriff's Office`
  - `agency_type`: one of `jail`, `prison`, `unified`
- - `names_file`: a file with a names list for this scraper
+ - `names_file`: a file with a names list for this scraper, e.g. `us_ny_names.csv` ([README](/name_lists/README.md))
  - `timezone`: the timezone, e.g. `America/New York`
  - `url`: the initial url of the roster
 
