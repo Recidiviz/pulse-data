@@ -20,7 +20,6 @@ key_mappings:
   Gender: person.sex
   "Booking #": booking.booking_id
   Booking Date-Time: booking.admission_date
-  Release Date-Time: booking.release_date
   Reporting Agency: booking.facility
 
 multi_key_mapping:

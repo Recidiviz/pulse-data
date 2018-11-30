@@ -394,3 +394,21 @@ def test_th_rows():
 
     info = extractor.extract_and_populate_data(html_contents)
     assert expected_info == info
+
+def test_content_is_not_modified():
+    """Tests that the DataExtractor does not mutate |content|."""
+    key_mapping_file = '../testdata/data_extractor/yaml/text_label.yaml'
+    key_mapping_file = os.path.join(os.path.dirname(__file__), key_mapping_file)
+    extractor = DataExtractor(key_mapping_file)
+
+    expected_info = IngestInfo()
+    person = expected_info.create_person()
+    person.birthdate = '1/1/1111'
+    person.create_booking()
+
+    html_contents = html.fromstring('<html><div>DOB: 1/1/1111</div></html>')
+    with pytest.warns(UserWarning):
+        info = extractor.extract_and_populate_data(html_contents)
+
+    assert expected_info == info
+    assert html_contents.cssselect('td') == []
