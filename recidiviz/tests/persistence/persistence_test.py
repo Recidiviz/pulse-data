@@ -17,7 +17,9 @@
 """Tests for persistence."""
 
 from datetime import datetime
+from unittest import TestCase
 
+from mock import patch, Mock
 from recidiviz import Session
 from recidiviz.ingest.models.ingest_info import IngestInfo, _Bond
 from recidiviz.persistence import persistence
@@ -40,11 +42,41 @@ SURNAME_1 = 'TEST_SURNAME_1'
 SURNAME_2 = 'TEST_SURNAME_2'
 
 
-class TestPersistence(object):
+@patch('os.getenv', Mock(return_value='Google App Engine/'))
+@patch.dict('os.environ', {'PERSIST_LOCALLY': 'false'})
+class TestPersistence(TestCase):
     """Test that the persistence layer correctly writes to the SQL database."""
 
     def setup_method(self, _test_method):
         fakes.use_in_memory_sqlite_database()
+
+    def test_localRun(self):
+        with patch('os.getenv', Mock(return_value='Local')):
+            # Arrange
+            ingest_info = IngestInfo()
+            ingest_info.create_person(surname=SURNAME_1)
+
+            # Act
+            persistence.write(ingest_info)
+            result = database.read_people(Session())
+
+            # Assert
+            assert not result
+
+    def test_persistLocally(self):
+        # Arrange
+        with patch('os.getenv', Mock(return_value='Local'))\
+                and patch.dict('os.environ', {'PERSIST_LOCALLY': 'true'}):
+            ingest_info = IngestInfo()
+            ingest_info.create_person(surname=SURNAME_1)
+
+            # Act
+            persistence.write(ingest_info)
+            result = database.read_people(Session())
+
+            # Assert
+            assert len(result) == 1
+            assert result[0].surname == SURNAME_1
 
     def test_twoDifferentPeople_persistsBoth(self):
         # Arrange

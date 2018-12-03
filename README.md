@@ -124,8 +124,10 @@ up for your local test system.
 Logs will show up in the console you run the command in, and you can kick off the scraping by navigating in your browser
 to `localhost:8080/scraper/start?region=[region]` (logs won't show much until the scraping starts). For now, use region `us_ny`
 
-You can check datastore entries, queue tasks, and more on the local dev server admin page (http://localhost:8000/datastore)
-while it's running.
+You can check queue tasks and more on the local dev server admin page (http://localhost:8000/datastore) while it's running.
+
+By default, no data is persisted during local runs. Instead, the scraped information for each person is logged in the console.
+To persist data during a local run, set the `PERSIST_LOCALLY` in local_app.yaml to `true`.
 
 #### Deployed
 To deploy to a live AppEngine project, navigate to the directory where you cloned `pulse-data` and run
