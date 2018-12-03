@@ -34,6 +34,14 @@ The script will create the following files in the directory
 In addition, the script will append the region to [queue.yaml](/queue.yaml)
 and [region_manifest.yaml](/region_manifest.yaml).
 
+You will need to manually edit the following files:
+ - In [`recidiviz/ingest/__init__.py`](/recidiviz/ingest/__init__.py), add an
+   `import` statement for your scraper.
+ - In
+   [`recidiviz/tests/ingest/scraper_control_test.py`](/recidiviz/tests/ingest/scraper_control_test.py),
+   find the test `test_validate_regions_multiple_all()` and add the region code
+   to the set on the right hand side of the assertion.
+
 
 Writing the main scraper file
 =============================
