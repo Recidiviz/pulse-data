@@ -27,3 +27,4 @@ libraries:
 env_variables:
   FLASK_ENV : 'development'
   GAE_USE_SOCKETS_HTTPLIB : 'true'
+  PERSIST_LOCALLY: 'false'
