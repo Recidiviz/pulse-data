@@ -36,8 +36,9 @@ class TestWriteSessions(object):
         self.testbed = testbed.Testbed()
         self.testbed.activate()
         self.testbed.init_datastore_v3_stub()
-        self.testbed.init_memcache_stub()
-        ndb.get_context().clear_cache()
+        context = ndb.get_context()
+        context.set_memcache_policy(False)
+        context.clear_cache()
 
     def teardown_method(self, _test_method):
         self.testbed.deactivate()
@@ -100,8 +101,9 @@ class TestAddDocketItemToCurrentSession(object):
         self.testbed = testbed.Testbed()
         self.testbed.activate()
         self.testbed.init_datastore_v3_stub()
-        self.testbed.init_memcache_stub()
-        ndb.get_context().clear_cache()
+        context = ndb.get_context()
+        context.set_memcache_policy(False)
+        context.clear_cache()
 
     def teardown_method(self, _test_method):
         self.testbed.deactivate()
@@ -146,8 +148,9 @@ class TestGetOpenSessions(object):
         self.testbed = testbed.Testbed()
         self.testbed.activate()
         self.testbed.init_datastore_v3_stub()
-        self.testbed.init_memcache_stub()
-        ndb.get_context().clear_cache()
+        context = ndb.get_context()
+        context.set_memcache_policy(False)
+        context.clear_cache()
 
     def teardown_method(self, _test_method):
         self.testbed.deactivate()
@@ -332,8 +335,9 @@ class TestGetSessionsWithWithLeasedDocketItems(object):
         self.testbed = testbed.Testbed()
         self.testbed.activate()
         self.testbed.init_datastore_v3_stub()
-        self.testbed.init_memcache_stub()
-        ndb.get_context().clear_cache()
+        context = ndb.get_context()
+        context.set_memcache_policy(False)
+        context.clear_cache()
 
     def teardown_method(self, _test_method):
         self.testbed.deactivate()
