@@ -272,10 +272,6 @@ using these models, the Recidiviz-wide calculation process will still see these 
 `Person`, `Record`, and `Snapshot`, and still be able to pull relevant data from the fields it expects for those
 top-level models.
 
-**Memcache data**
-Individual scrapers may store some data in memcache for fast or repeated access, such as the environment variables
-above. There is no general purpose // cross-scraper schema for memcache information.
-
 ### Respecting other corrections system users
 Since search systems are intended to benefit public and law enforcement users as well, it's critical that we
 work in good faith to preserve the responsiveness of these systems for other users.

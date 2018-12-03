@@ -22,7 +22,6 @@ import logging
 import time
 from datetime import datetime
 
-from google.appengine.api import memcache
 from google.appengine.ext import ndb
 from google.appengine.ext.db \
     import Timeout, TransactionFailedError, InternalError
@@ -97,15 +96,12 @@ def end_session(scrape_key):
     """Ends any open session for the given scraper.
 
     Resets relevant session info after a scraping session is concluded and
-    before another one starts. This includes both updating the ScrapeSession
-    entity for the old session, and clearing out memcache values.
+    before another one starts, including updating the ScrapeSession entity for
+    the old session.
 
     Args:
         scrape_key: (ScrapeKey) The scraper to clean up session info for
     """
-    fail_counter = scrape_key.region_code + "_next_page_fail_counter"
-    memcache.set(key=fail_counter, value=None)
-
     open_sessions = get_open_sessions(scrape_key.region_code,
                                       scrape_type=scrape_key.scrape_type)
 
