@@ -15,21 +15,34 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains logic for communicating with the persistence layer."""
+import logging
+import os
+import distutils
 
 from recidiviz import Session
 from recidiviz.persistence import entity_matching
 from recidiviz.persistence.database.schema import Person, Booking, Arrest, \
     Charge, Bond, Sentence
+from recidiviz.utils import environment
 
 
 def write(ingest_info):
     """
-    Persist each person in the ingest_info. If a person with the given
-    surname/birthday already exists, then update that person.
+    If in prod or if 'PERSIST_LOCALLY' is set to true, persist each person in
+    the ingest_info. If a person with the given surname/birthday already exists,
+    then update that person.
+
+    Otherwise, simply log the given ingest_infos for debugging
 
     Args:
          ingest_info: The IngestInfo containing each person
     """
+    log = logging.getLogger()
+    if not environment.in_prod() and \
+            not distutils.util.strtobool(os.environ['PERSIST_LOCALLY']):
+        log.info(ingest_info)
+        return
+
     for ingest_info_person in ingest_info.person:
         person = _convert_ingest_info(ingest_info_person)
         session = Session()
