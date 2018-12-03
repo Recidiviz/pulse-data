@@ -40,23 +40,15 @@ In order to sublcass this the following functions must be implemented:
 """
 
 import abc
-from copy import deepcopy
 import logging
 
 from lxml import html
 from lxml.etree import XMLSyntaxError # pylint:disable=no-name-in-module
 
-from google.appengine.ext import ndb
-from google.appengine.ext.db import InternalError
-from google.appengine.ext.db import Timeout, TransactionFailedError
-
+from recidiviz.persistence import persistence
 from recidiviz.ingest import constants
-from recidiviz.ingest import scraper_utils
 from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.ingest.scraper import Scraper
-# This is just temporary here, but using it for now until new DB is put into
-# place.
-from recidiviz.models.record import Offense
 
 
 class BaseScraper(Scraper):
@@ -157,191 +149,8 @@ class BaseScraper(Scraper):
             if not ingest_info:
                 raise ValueError(
                     'IngestInfo must be populated if there are no more tasks')
-            # This converter should exist elsewhere, but its in here for now
-            # Because the real DB has not been put in yet, and we currently
-            # still have per region DB models.  Ideally it should
-            # do validations on datatypes, convert things to the proper format
-            # if needed, and throw exceptions when it gets things it doesn't
-            # expect.
-            self._convert_ingest_info_and_populate_db(ingest_info)
+            persistence.write(ingest_info)
         return None
-
-    def _convert_ingest_info_and_populate_db(self, ingest_info):
-        """
-        Takes an ingest info object and converts it to the DB model so it can
-        commit it to the database.
-
-        Args:
-            ingest_info: A populated ingest_info model.
-        """
-        for ingest_person in ingest_info.person:
-            person_db = self._populate_person(ingest_person)
-            for ingest_booking in ingest_person.booking:
-                self._populate_record_and_set_snapshot(
-                    person_db, ingest_booking)
-
-
-    def _populate_person(self, ingest_person):
-        """
-        Converts a Person object from ingest_info to a person db object
-
-        Args:
-            ingest_person: person object from the ingest_info model.
-
-        Returns:
-            person: a person db object.
-        """
-        # NOTE: suffix and alias are not part of the new schema so we don't
-        # set it here.
-        person_id = ingest_person.person_id
-        person = self.get_person_class().get_or_insert(person_id)
-        person.person_id = person_id
-        person.person_id_is_fuzzy = self.person_id_is_fuzzy()
-        person.given_names = ingest_person.given_names
-        person.surname = ingest_person.surname
-        person.birthdate = scraper_utils.parse_date_string(
-            ingest_person.birthdate)
-        person.age = int(ingest_person.age)
-        person.region = self.get_region().region_code
-        person.sex = ingest_person.sex
-        person.race = ingest_person.race
-
-        try:
-            person.put()
-        except (Timeout, TransactionFailedError, InternalError) as e:
-            logging.warning("Couldn't persist person: %s", person.person_id)
-            logging.error(str(e))
-            return -1
-        return person
-
-    def _populate_record_and_set_snapshot(self, person_db, ingest_booking):
-        """
-        Converts a Booking object from ingest_info to a person db object.
-        This function also creates a snapshot if needed.
-
-        Args:
-            person_db: A Person db object
-            ingest_booking: A booking object from ingest_info.
-        """
-        record_id = ingest_booking.booking_id
-        record = record = self.get_record_class().get_or_insert(
-            record_id, parent=person_db.key)
-        old_record = deepcopy(record)
-
-        # First populate the information from the person.
-        record.birthdate = person_db.birthdate
-        record.race = person_db.race
-        record.surname = person_db.surname
-        record.given_names = person_db.surname
-        record.region = person_db.region
-
-        # Now populate all of the record related information.  This is a best
-        # effort guess for now, when the DB becomes the schema it'll be easier
-        # to do these mappings.
-        record.record_id = record_id
-        record.record_id_is_fuzzy = self.record_id_is_fuzzy()
-        record.custody_date = scraper_utils.parse_date_string(
-            ingest_booking.admission_date)
-        record.release_date = scraper_utils.parse_date_string(
-            ingest_booking.release_date)
-        record.latest_release_type = str(ingest_booking.release_reason)
-        record.custody_status = str(ingest_booking.custody_status)
-        record.committed_by = ingest_booking.hold
-        # This needs to be fixed, but default to false for now.
-        record.is_released = False
-
-        # Now go over the charges.
-        offenses = []
-        for charge in ingest_booking.charge:
-            offense = Offense()
-            offense.crime_description = charge.name
-            offense.crime_class = str(charge.statute)
-            offense.case_number = charge.case_number
-            if charge.bond:
-                offense.bond_amount = scraper_utils.currency_to_float(
-                    charge.bond.amount)
-            offenses.append(offense)
-
-        record.offense = offenses
-
-        try:
-            record.put()
-        except (Timeout, TransactionFailedError, InternalError) as e:
-            logging.warning("Couldn't persist record: %s", record.record_id)
-            logging.error(str(e))
-            return -1
-
-        # Finally we do a compare of the snapshot and return it if need be.
-        self._compare_and_set_snapshot(record, old_record)
-        return record, old_record
-
-    def _compare_and_set_snapshot(self, record, old_record):
-        """Populates a snapshot object based on params in record.
-
-        Args:
-            record: The record to populate the snapshot from.
-            old_record: The old record to compare to.
-
-        Returns:
-            A snapshot database object.
-        """
-        snapshot_changed = False
-
-        # pylint:disable=protected-access
-        snapshot_class = ndb.Model._kind_map[self.get_snapshot_class().__name__]
-        snapshot_attrs = snapshot_class._properties
-
-        new_snapshot = self.get_snapshot_class()()
-        last_snapshot = self.get_snapshot_class().query(
-            ancestor=record.key).order(
-                -self.get_snapshot_class().created_on).get()
-
-        # We loop through all of the properties of the snapshot class and
-        # Create this snapshot from the scraped record entities.
-        if last_snapshot:
-            for attr in snapshot_attrs:
-                if attr not in ['class', 'created_on', 'offense']:
-                    record_value = getattr(record, attr)
-                    old_record_value = getattr(old_record, attr)
-                    if record_value != old_record_value:
-                        snapshot_changed = True
-                        logging.info("Found change in person snapshot: field "
-                                     "%s was '%s', is now '%s'.",
-                                     attr, old_record_value, record_value)
-                        setattr(new_snapshot, attr, record_value)
-                    else:
-                        setattr(new_snapshot, attr, None)
-                elif attr == 'offense':
-                    # Offenses have to be treated differently -
-                    # setting them to None means an empty list or
-                    # tuple instead of None, and an unordered list of
-                    # them can't be compared to another unordered list
-                    # of them.
-                    if len(record.offense) != len(old_record.offense):
-                        snapshot_changed = True
-                        logging.info("Found change in person snapshot: field "
-                                     "%s was '%s', is now '%s'.", attr,
-                                     old_record.offense, record.offense)
-                        setattr(new_snapshot, attr, record.offense)
-                    else:
-                        setattr(new_snapshot, attr, [])
-        # If there were no snapshots previously, we need to loop through all
-        # snapshot properties and copy them over from the current record.
-        else:
-            snapshot_changed = True
-            for attr in snapshot_attrs:
-                if attr not in ['class', 'created_on']:
-                    record_value = getattr(record, attr)
-                    setattr(new_snapshot, attr, record_value)
-
-        if snapshot_changed:
-            try:
-                new_snapshot.parent = record.key
-                new_snapshot.put()
-            except (Timeout, TransactionFailedError, InternalError) as e:
-                logging.warning("Couldn't store new snapshot for record %s",
-                                old_record.record_id)
-                logging.error(str(e))
 
     def is_initial_task(self, task_type):
         """Tells us if the task_type is initial task_type.
