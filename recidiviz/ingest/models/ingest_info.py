@@ -47,11 +47,12 @@ class _Person(object):
     Referenced from IngestInfo.
     """
 
-    def __init__(self, person_id=None, surname=None, given_names=None,
-                 birthdate=None, status=None, sex=None, age=None,
-                 race=None, ethnicity=None, place_of_residence=None,
+    def __init__(self, person_id=None, full_name=None, surname=None,
+                 given_names=None, birthdate=None, status=None, sex=None,
+                 age=None, race=None, ethnicity=None, place_of_residence=None,
                  bookings=None):
         self.person_id = person_id  # type: str
+        self.full_name = full_name
         self.surname = surname  # type: str
         self.given_names = given_names  # type: str
         self.birthdate = birthdate  # type: datetime
