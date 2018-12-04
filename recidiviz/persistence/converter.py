@@ -17,7 +17,8 @@
 """Converts scraped IngestInfo data to the database schema format."""
 
 import datetime
-import dateparser
+
+from recidiviz.ingest import scraper_utils
 from recidiviz.persistence.database import schema
 
 def _normalize(s):
@@ -31,10 +32,10 @@ def _normalize(s):
 def parse_date_or_error(date_string):
     if date_string == '' or date_string.isspace():
         return None
-    parsed_date = dateparser.parse(date_string)
+    parsed_date = scraper_utils.parse_date_string(date_string)
     if parsed_date is None:
         raise ValueError('cannot parse date: %s' % date_string)
-    return parsed_date
+    return datetime.datetime.combine(parsed_date, datetime.time())
 
 
 def calculate_birthdate_from_age(age):
@@ -54,13 +55,9 @@ def time_string_to_days(time_string):
     if time_string == '' or time_string.isspace():
         return 0
     try:
+        # TODO: use dateparser in Python3 (#176)
         return int(time_string)
     except:
-        # dateparser.parse interprets the string '1 YEAR 2 DAYS' to mean the
-        # datetime 1 year and 2 days ago.
-        date_ago = dateparser.parse(time_string)
-        if date_ago:
-            return (datetime.datetime.now() - date_ago).days
         raise ValueError('cannot parse time duration: %s' % time_string)
 
 def split_full_name(full_name):
