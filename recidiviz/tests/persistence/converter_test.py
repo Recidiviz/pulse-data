@@ -89,12 +89,10 @@ class TestConverter(object):
 
     def test_parseSentenceFields(self):
         ingest_sentence = _Sentence(min_length='1',
-                                    max_length='002 Years, 08 Months, 25 Days',
                                     post_release_supervision_length='')
 
         schema_sentence = converter.convert_sentence(ingest_sentence)
         assert schema_sentence.min_length_days == 1
-        assert schema_sentence.max_length_days in [999, 1000]
         assert schema_sentence.post_release_supervision_length_days == 0
 
     def test_convertIngestInfo(self):
