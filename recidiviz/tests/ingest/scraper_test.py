@@ -399,7 +399,7 @@ class TestFetchPage(object):
         mock_requests.return_value = page
 
         scraper = FakeScraper(region, initial_task)
-        assert scraper.fetch_page(url, data=body) == page
+        assert scraper.fetch_page(url, post_data=body) == page
 
         mock_region.assert_called_with(region)
         mock_proxies.assert_called_with()
