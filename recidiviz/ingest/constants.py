@@ -29,11 +29,10 @@ SCRAPE_PERSON_AND_MORE = SCRAPE_PERSON | GET_MORE_TASKS
 SCRAPE_PERSON_AND_RECORD = SCRAPE_PERSON | SCRAPE_RECORD
 SCRAPE_RECORD_AND_MORE = SCRAPE_RECORD | GET_MORE_TASKS
 
-# Add some constants for the new base scraper, once that becomes the norm
-# the above constants should be deleted.
+# Constants used for the new base scraper. These should eventually replace all
+# Record and Person related constants above.
 SCRAPE_DATA = 0x2
 SCRAPE_DATA_AND_MORE = SCRAPE_DATA | GET_MORE_TASKS
-
 
 # Scrape types
 BACKGROUND_SCRAPE = "background"
