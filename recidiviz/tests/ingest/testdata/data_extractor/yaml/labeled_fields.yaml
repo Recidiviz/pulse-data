@@ -17,7 +17,7 @@
 
 key_mappings:
   Subject Number: person.person_id
-  Gender: person.sex
+  Gender: person.gender
   Race: person.race
   Booking Date: booking.admission_date
   Release Date: booking.release_date
