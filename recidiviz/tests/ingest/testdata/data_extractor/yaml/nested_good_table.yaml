@@ -1,6 +1,6 @@
 key_mappings:
   Inmate No: person.person_id
-  Gender: person.sex
+  Gender: person.gender
   BirthDate: person.birthdate
   Age: person.age
   Race: person.race

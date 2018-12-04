@@ -48,19 +48,20 @@ class _Person(object):
     """
 
     def __init__(self, person_id=None, full_name=None, surname=None,
-                 given_names=None, birthdate=None, status=None, sex=None,
+                 given_names=None, birthdate=None, status=None, gender=None,
                  age=None, race=None, ethnicity=None, place_of_residence=None,
                  bookings=None):
         self.person_id = person_id  # type: str
         self.full_name = full_name
         self.surname = surname  # type: str
         self.given_names = given_names  # type: str
-        self.birthdate = birthdate  # type: datetime
-        self.status = status
-        self.sex = sex
-        self.age = age  # type: int
-        self.race = race
-        self.ethnicity = ethnicity
+        self.full_name = full_name  # type: str
+        self.birthdate = birthdate  # type: str
+        self.status = status  # type: str
+        self.gender = gender  # type: str
+        self.age = age  # type: str
+        self.race = race  # type: str
+        self.ethnicity = ethnicity  # type:str
         self.place_of_residence = place_of_residence  # type: str
 
         self.booking = bookings or []  # type: List[Booking]
@@ -89,22 +90,18 @@ class _Booking(object):
 
     def __init__(self, booking_id=None, admission_date=None,
                  projected_release_date=None, release_date=None,
-                 release_reason=None,
-                 custody_status=None,
-                 jurisdiction_status=None, hold=None,
-                 facility=None, classification=None,
-                 total_bond_amount=None,
+                 release_reason=None, custody_status=None, hold=None,
+                 facility=None, classification=None, total_bond_amount=None,
                  arrest=None, charges=None):
         self.booking_id = booking_id  # type: str
-        self.admission_date = admission_date  # type: datetime
-        self.projected_release_date = projected_release_date  # type: datetime
-        self.release_date = release_date  # type: datetime
-        self.release_reason = release_reason
-        self.custody_status = custody_status
-        self.jurisdiction_status = jurisdiction_status
+        self.admission_date = admission_date  # type: str
+        self.projected_release_date = projected_release_date  # type: str
+        self.release_date = release_date  # type: str
+        self.release_reason = release_reason  # type: str
+        self.custody_status = custody_status  # type: str
         self.hold = hold  # type: str
         self.facility = facility  # type: str
-        self.classification = classification
+        self.classification = classification  # type: str
         self.total_bond_amount = total_bond_amount  # type: str
 
         self.arrest = arrest  # type: Arrest
@@ -141,7 +138,7 @@ class _Arrest(object):
 
     def __init__(self, date=None, location=None, officer_name=None,
                  officer_id=None, agency=None):
-        self.date = date  # type: datetime
+        self.date = date  # type: str
         self.location = location  # type: str
         self.officer_name = officer_name  # type: str
         self.officer_id = officer_id  # type: str
@@ -166,20 +163,20 @@ class _Charge(object):
                  number_of_counts=None, court_type=None,
                  case_number=None, next_court_date=None, judge_name=None,
                  bond=None, sentence=None):
-        self.offense_date = offense_date  # type: datetime
+        self.offense_date = offense_date  # type: str
         self.statute = statute  # type: str
         self.name = name  # type: str
         self.attempted = attempted  # type: bool
-        self.degree = degree
-        self.charge_class = charge_class
+        self.degree = degree  # type: str
+        self.charge_class = charge_class  #type: str
         self.level = level  # type: str
-        self.fee = fee  # type: decimal
+        self.fee = fee  # type: str
         self.charging_entity = charging_entity  # type: str
-        self.charge_status = charge_status
-        self.number_of_counts = number_of_counts  # type: int
-        self.court_type = court_type
+        self.charge_status = charge_status  # type: str
+        self.number_of_counts = number_of_counts  # type: str
+        self.court_type = court_type  # type: str
         self.case_number = case_number  # type: str
-        self.next_court_date = next_court_date  # type: datetime
+        self.next_court_date = next_court_date  # type: str
         self.judge_name = judge_name  # type: str
 
         self.bond = bond  # type: Bond
@@ -214,9 +211,9 @@ class _Bond(object):
     def __init__(self, bond_id=None, amount=None, bond_type=None,
                  status=None):
         self.bond_id = bond_id  # type: str
-        self.amount = amount  # type: decimal
-        self.bond_type = bond_type
-        self.status = status
+        self.amount = amount  # type: str
+        self.bond_type = bond_type  # type: str
+        self.status = status  # type: str
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
@@ -233,16 +230,16 @@ class _Sentence(object):
     def __init__(self, date_imposed=None, min_length=None, max_length=None,
                  is_life=None, is_probation=None, is_suspended=None, fine=None,
                  parole_possible=None, post_release_supervision_length=None):
-        self.date_imposed = date_imposed  # type: datetime
-        self.min_length = min_length  # type: timedelta
-        self.max_length = max_length  # type: timedelta
+        self.date_imposed = date_imposed  # type: str
+        self.min_length = min_length  # type: str
+        self.max_length = max_length  # type: str
         self.is_life = is_life  # type: bool
         self.is_probation = is_probation  # type: bool
         self.is_suspended = is_suspended  # type: bool
-        self.fine = fine  # type: decimal
+        self.fine = fine  # type: str
         self.parole_possible = parole_possible  # type: bool
 
-        # type: timedelta
+        # type: str
         self.post_release_supervision_length = post_release_supervision_length
 
     def __eq__(self, other):

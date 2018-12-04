@@ -27,15 +27,18 @@ from recidiviz.persistence.database import database
 from recidiviz.persistence.database.schema import Booking, Charge
 from recidiviz.tests.utils import fakes
 
-BIRTHDATE_1 = datetime(year=1993, month=11, day=15)
-BIRTHDATE_2 = datetime(year=1996, month=2, day=11)
+BIRTHDATE_1 = '11/15/1993'
+BIRTHDATE_1_DATETIME = datetime(year=1993, month=11, day=15)
+BIRTHDATE_2 = '11-2-1996'
 BOND_TYPE = 'TEST_BOND_TYPE'
 CHARGE_NAME_1 = 'TEST_CHARGE_1'
 CHARGE_NAME_2 = 'TEST_CHARGE_2'
 FACILITY = 'TEST_FACILITY'
 GIVEN_NAME = 'TEST_GIVEN_NAME'
-IS_LIFE_1 = False
-IS_LIFE_2 = True
+FINE_1 = '$1,500.25'
+FINE_1_INT = 1500
+FINE_2 = ' '
+FINE_2_INT = 0
 OFFICER_NAME = 'TEST_OFFICER_NAME'
 PLACE_1 = 'TEST_PLACE_1'
 PLACE_2 = 'TEST_PLACE_2'
@@ -84,8 +87,8 @@ class TestPersistence(TestCase):
     def test_twoDifferentPeople_persistsBoth(self):
         # Arrange
         ingest_info = IngestInfo()
-        ingest_info.create_person(surname=SURNAME_1)
-        ingest_info.create_person(surname=SURNAME_2)
+        ingest_info.create_person(surname=SURNAME_1, given_names=GIVEN_NAME)
+        ingest_info.create_person(surname=SURNAME_2, given_names=GIVEN_NAME)
 
         # Act
         persistence.write(ingest_info)
@@ -99,8 +102,8 @@ class TestPersistence(TestCase):
     def test_sameTwoPeople_persistsOne(self):
         # Arrange
         ingest_info = IngestInfo()
-        ingest_info.create_person(surname=SURNAME_1)
-        ingest_info.create_person(surname=SURNAME_1)
+        ingest_info.create_person(surname=SURNAME_1, given_names=GIVEN_NAME)
+        ingest_info.create_person(surname=SURNAME_1, given_names=GIVEN_NAME)
 
         # Act
         persistence.write(ingest_info)
@@ -115,13 +118,16 @@ class TestPersistence(TestCase):
     def test_sameTwoPeople_matchesPeopleAndReplacesWithNewerData(self):
         # Arrange
         ingest_info = IngestInfo()
-        ingest_info.create_person(surname=SURNAME_1, place_of_residence=PLACE_1,
-                                  given_names=GIVEN_NAME)
+        ingest_info.create_person(surname=SURNAME_1,
+                                  given_names=GIVEN_NAME,
+                                  place_of_residence=PLACE_1,
+                                  birthdate=BIRTHDATE_1)
         persistence.write(ingest_info)
 
         ingest_info = IngestInfo()
-        ingest_info.create_person(surname=SURNAME_1, place_of_residence=PLACE_2)
-
+        ingest_info.create_person(surname=SURNAME_1,
+                                  given_names=GIVEN_NAME,
+                                  place_of_residence=PLACE_2)
         # Act
         persistence.write(ingest_info)
         result = database.read_people(Session())
@@ -130,13 +136,15 @@ class TestPersistence(TestCase):
         assert len(result) == 1
         assert result[0].surname == SURNAME_1
         assert result[0].place_of_residence == PLACE_2
-        assert result[0].given_names is None
+        assert result[0].birthdate == BIRTHDATE_1_DATETIME
 
     def test_readSinglePersonByName(self):
         # Arrange
         ingest_info = IngestInfo()
-        ingest_info.create_person(surname=SURNAME_1, birthdate=BIRTHDATE_1)
-        ingest_info.create_person(surname=SURNAME_2, birthdate=BIRTHDATE_2)
+        ingest_info.create_person(surname=SURNAME_1, given_names=GIVEN_NAME,
+                                  birthdate=BIRTHDATE_1)
+        ingest_info.create_person(surname=SURNAME_2, given_names=GIVEN_NAME,
+                                  birthdate=BIRTHDATE_2)
 
         # Act
         persistence.write(ingest_info)
@@ -145,13 +153,14 @@ class TestPersistence(TestCase):
         # Assert
         assert len(result) == 1
         assert result[0].surname == SURNAME_1
-        assert result[0].birthdate == BIRTHDATE_1
+        assert result[0].birthdate == BIRTHDATE_1_DATETIME
 
     # TODO: Rewrite this test to directly test __eq__ between the two People
     def test_readPersonAndAllRelationships(self):
         # Arrange
         ingest_info = IngestInfo()
-        person = ingest_info.create_person(surname=SURNAME_1)
+        person = ingest_info.create_person(surname=SURNAME_1,
+                                           given_names=GIVEN_NAME)
         booking = person.create_booking(facility=FACILITY)
         booking.create_arrest(officer_name=OFFICER_NAME)
 
@@ -159,11 +168,11 @@ class TestPersistence(TestCase):
 
         charge_1 = booking.create_charge(name=CHARGE_NAME_1)
         charge_1.bond = shared_bond
-        charge_1.create_sentence(is_life=IS_LIFE_1)
+        charge_1.create_sentence(fine=FINE_1)
 
         charge_2 = booking.create_charge(name=CHARGE_NAME_2)
         charge_2.bond = shared_bond
-        charge_2.create_sentence(is_life=IS_LIFE_2)
+        charge_2.create_sentence(fine=FINE_2)
 
         # Act
         persistence.write(ingest_info)
@@ -192,8 +201,9 @@ class TestPersistence(TestCase):
 
         sentence_1 = result_charges[0].sentence
         sentence_2 = result_charges[1].sentence
-        assert sentence_1.is_life == IS_LIFE_1
-        assert sentence_2.is_life == IS_LIFE_2
+        assert sentence_1.fine == FINE_1_INT
+        assert sentence_2.fine == FINE_2_INT
+
 
     def test_inferReleaseDateOnOpenBookings(self):
         # Arrange

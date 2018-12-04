@@ -1,6 +1,6 @@
 key_mappings:
   Booking Number: booking.booking_id
-  Sex: person.sex
+  Sex: person.gender
   Race: person.race
   DOB: person.birthdate
   Arrest Date/Time: arrest.date

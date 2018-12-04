@@ -17,7 +17,7 @@
 
 key_mappings:
   Race: person.race
-  Sex: person.sex
+  Sex: person.gender
 
 keys_to_ignore:
   - Height
