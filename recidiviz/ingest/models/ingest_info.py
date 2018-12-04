@@ -48,8 +48,8 @@ class _Person(object):
     """
 
     def __init__(self, person_id=None, full_name=None, surname=None,
-                 given_names=None, birthdate=None, status=None, gender=None,
-                 age=None, race=None, ethnicity=None, place_of_residence=None,
+                 given_names=None, birthdate=None, gender=None, age=None,
+                 race=None, ethnicity=None, place_of_residence=None,
                  bookings=None):
         self.person_id = person_id  # type: str
         self.full_name = full_name
@@ -57,7 +57,6 @@ class _Person(object):
         self.given_names = given_names  # type: str
         self.full_name = full_name  # type: str
         self.birthdate = birthdate  # type: str
-        self.status = status  # type: str
         self.gender = gender  # type: str
         self.age = age  # type: str
         self.race = race  # type: str
@@ -168,7 +167,7 @@ class _Charge(object):
         self.name = name  # type: str
         self.attempted = attempted  # type: bool
         self.degree = degree  # type: str
-        self.charge_class = charge_class  #type: str
+        self.charge_class = charge_class  # type: str
         self.level = level  # type: str
         self.fee = fee  # type: str
         self.charging_entity = charging_entity  # type: str
