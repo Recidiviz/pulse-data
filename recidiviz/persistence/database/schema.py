@@ -53,8 +53,9 @@ class Booking(Base):
 
     admission_date = Column('admission_date', DateTime)
     release_date = Column('release_date', DateTime)
-    release_date_type = Column('release_date_type', String)
+    release_date_inferred = Column('release_date_inferred', Boolean)
     release_reason = Column('release_reason', String)
+    projected_release_date = Column('projected_release_date', DateTime)
     custody_status = Column('custody_status', String)
     held_for_other_jurisdiction = Column('held_for_other_jurisdiction',
                                          Boolean)
