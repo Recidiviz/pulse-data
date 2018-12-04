@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains logic for communicating with a SQL Database."""
-from recidiviz.persistence.database.schema import Person
+from recidiviz.persistence.database.schema import Person, Booking
 
 
 def read_people(session, surname=None, birthdate=None):
@@ -36,4 +36,35 @@ def read_people(session, surname=None, birthdate=None):
     if birthdate is not None:
         query = query.filter(Person.birthdate == birthdate)
 
+    return query.all()
+
+
+def read_bookings(session):
+    """
+    Reads all bookings in the db.
+
+    Args:
+        session: The transaction to read from
+    Return:
+        List of all bookings
+    """
+    return session.query(Booking).all()
+
+
+def read_open_bookings_scraped_before_date(session, region, date):
+    """
+    Reads all open bookings in the given region that have a last_scraped_date
+    set to a time earlier than the provided date.
+
+    Args:
+        session: The transaction to read from
+        region: The region to match against
+        date: The exclusive upper bound on last_scrape_date to match against
+    Returns:
+        List of bookings matching the provided args
+    """
+    query = session.query(Booking)
+    query = query.filter(Booking.region == region)
+    query = query.filter(Booking.release_date.is_(None))
+    query = query.filter(Booking.last_scraped_date < date)
     return query.all()
