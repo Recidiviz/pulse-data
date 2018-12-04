@@ -19,8 +19,9 @@
 from datetime import date, datetime
 import pytest
 
+from recidiviz.common import constants
 from recidiviz.ingest.models.ingest_info import _Person, _Booking, _Charge, \
-    _Sentence
+    _Bond, _Sentence
 from recidiviz.persistence import converter
 
 class TestConverter(object):
@@ -28,13 +29,17 @@ class TestConverter(object):
 
     def test_parsePersonFields(self):
         ingest_person = _Person(full_name='LAST, FIRST',
-                                birthdate='12-31-1999',
+                                birthdate='12-31-1999', gender='MALE',
+                                race='WHITE', ethnicity='HISPANIC',
                                 place_of_residence='NNN\n  STREET \t ZIP')
 
         schema_person = converter.convert_person(ingest_person)
         assert schema_person.given_names == 'FIRST'
         assert schema_person.surname == 'LAST'
         assert schema_person.birthdate == datetime(year=1999, month=12, day=31)
+        assert schema_person.gender == constants.person.Gender.MALE
+        assert schema_person.race == constants.person.Race.WHITE
+        assert schema_person.ethnicity == constants.person.Ethnicity.HISPANIC
         assert schema_person.place_of_residence == 'NNN STREET ZIP'
 
     def test_convertAgeToBirthdate(self):
@@ -69,9 +74,12 @@ class TestConverter(object):
         assert schema_booking.charges[1].bond is not None
         assert schema_booking.charges[1].bond.amount == 100
 
-    def test_updateBookingFields(self):
+    def test_parseBookingFields(self):
         ingest_booking = _Booking(release_date='1/1/1111',
-                                  projected_release_date='2/2/2222')
+                                  projected_release_date='2/2/2222',
+                                  release_reason='UNKNOWN',
+                                  custody_status='UNKNOWN',
+                                  classification='UNKNOWN')
 
         schema_booking = converter.convert_booking(ingest_booking)
         assert schema_booking.release_date == \
@@ -79,13 +87,33 @@ class TestConverter(object):
         assert schema_booking.release_date_inferred is False
         assert schema_booking.projected_release_date == \
             datetime(year=2222, month=2, day=2)
+        assert schema_booking.release_reason == \
+            constants.booking.ReleaseReason.UNKNOWN
+        assert schema_booking.custody_status == \
+            constants.booking.CustodyStatus.UNKNOWN
+        assert schema_booking.classification == \
+            constants.booking.Classification.UNKNOWN
 
     def test_parseChargeFields(self):
-        ingest_charge = _Charge(attempted=True, number_of_counts='3')
+        ingest_charge = _Charge(attempted=True, degree='FIRST',
+                                charge_class='FELONY', charge_status='DROPPED',
+                                court_type='DISTRICT', number_of_counts='3')
 
         schema_charge = converter.convert_charge(ingest_charge)
         assert schema_charge.attempted is True
+        assert schema_charge.degree == constants.charge.ChargeDegree.FIRST
+        assert schema_charge.charge_class == \
+            constants.charge.ChargeClass.FELONY
+        assert schema_charge.status == constants.charge.ChargeStatus.DROPPED
+        assert schema_charge.court_type == constants.charge.CourtType.DISTRICT
         assert schema_charge.number_of_counts == 3
+
+    def test_parseBondFields(self):
+        ingest_bond = _Bond(bond_type='CASH', status='ACTIVE')
+
+        schema_bond = converter.convert_bond(ingest_bond)
+        assert schema_bond.type == constants.bond.BondType.CASH
+        assert schema_bond.status == constants.bond.BondStatus.ACTIVE
 
     def test_parseSentenceFields(self):
         ingest_sentence = _Sentence(min_length='1',
@@ -153,3 +181,9 @@ class TestConverter(object):
 
         with pytest.raises(ValueError):
             converter.convert_charge(ingest_charge)
+
+    def test_parseBadEnum(self):
+        ingest_person = _Person(gender='ABC')
+
+        with pytest.raises(ValueError):
+            converter.convert_person(ingest_person)

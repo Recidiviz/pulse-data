@@ -19,16 +19,23 @@
 
 
 class Classification(object):
-    unknown = 1
+    UNKNOWN = 'UNKNOWN'
 
 
 class CustodyStatus(object):
-    unknown = 1
-
-
-class JurisdictionStatus(object):
-    unknown = 1
+    UNKNOWN = 'UNKNOWN'
 
 
 class ReleaseReason(object):
-    unknown = 1
+    UNKNOWN = 'UNKNOWN'
+
+
+RELEASE_REASON_MAP = {
+    'UNKNOWN': ReleaseReason.UNKNOWN
+}
+CUSTODY_STATUS_MAP = {
+    'UNKNOWN': CustodyStatus.UNKNOWN
+}
+CLASSIFICATION_MAP = {
+    'UNKNOWN': Classification.UNKNOWN
+}

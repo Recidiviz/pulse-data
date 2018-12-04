@@ -17,17 +17,67 @@
 
 """Constants related to a charge entity."""
 
-class Degree(object):
-    unknown = 1
+class ChargeDegree(object):
+    FIRST = 'FIRST'
+    SECOND = 'SECOND'
+    THIRD = 'THIRD'
+    UNKNOWN = 'UNKNOWN'
 
 
 class ChargeClass(object):
-    unknown = 1
+    FELONY = 'FELONY'
+    MISDEMEANOR = 'MISDEMEANOR'
+    PAROLE_VIOLATION = 'PAROLE VIOLATION'
+    PROBATION_VIOLATION = 'PROBATION_VIOLATION'
+    UNKNOWN = 'UNKNOWN'
 
 
 class ChargeStatus(object):
-    unknown = 1
+    PENDING = 'PENDING'
+    PRETRIAL = 'PRETRIAL'
+    ACQUITTED = 'ACQUITTED'
+    DROPPED = 'DROPPED'
+    CONVICTED = 'CONVICTED'
+    SENTENCED = 'SENTENCED'
+    COMPLETED_SENTENCE = 'COMPLETED SENTENCE'
+    UNKNOWN = 'UNKNOWN'
 
 
 class CourtType(object):
-    unknown = 1
+    DISTRICT = 'DISTRICT'
+    SUPERIOR = 'SUPERIOR'
+    CIRCUIT = 'CIRCUIT'
+    OTHER = 'OTHER'
+    UNKNOWN = 'UNKNOWN'
+
+
+CHARGE_DEGREE_MAP = {
+    'FIRST': ChargeDegree.FIRST,
+    'SECOND': ChargeDegree.SECOND,
+    'THIRD': ChargeDegree.THIRD,
+    'UNKNOWN': ChargeDegree.UNKNOWN
+}
+CHARGE_CLASS_MAP = {
+    'FELONY': ChargeClass.FELONY,
+    'MISDEMEANOR': ChargeClass.MISDEMEANOR,
+    'PAROLE VIOLATION': ChargeClass.PAROLE_VIOLATION,
+    'PROBATION VIOLATION': ChargeClass.PROBATION_VIOLATION,
+    'UNKNOWN': ChargeClass.UNKNOWN
+}
+CHARGE_STATUS_MAP = {
+    'PENDING': ChargeStatus.PENDING,
+    'PRETRIAL': ChargeStatus.PRETRIAL,
+    'ACQUITTED': ChargeStatus.ACQUITTED,
+    'DROPPED': ChargeStatus.DROPPED,
+    'CONVICTED': ChargeStatus.CONVICTED,
+    'SENTENCED': ChargeStatus.SENTENCED,
+    'COMPLETED SENTENCE': ChargeStatus.COMPLETED_SENTENCE,
+    'UNKNOWN': ChargeStatus.UNKNOWN
+}
+COURT_TYPE_MAP = {
+    'DISTRICT': CourtType.DISTRICT,
+    'SUPERIOR': CourtType.SUPERIOR,
+    'CIRCUIT': CourtType.CIRCUIT,
+    'OTHER': CourtType.OTHER,
+    'UNKNOWN': CourtType.UNKNOWN
+}

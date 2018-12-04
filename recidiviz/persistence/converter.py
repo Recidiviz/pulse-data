@@ -18,6 +18,7 @@
 
 import datetime
 
+from recidiviz.common import global_map
 from recidiviz.ingest import scraper_utils
 from recidiviz.persistence.database import schema
 
@@ -27,6 +28,10 @@ def _normalize(s):
     if s == '' or s.isspace():
         return ''
     return ' '.join(s.split()).upper()
+
+
+def string_to_enum(enum_type, value):
+    return global_map.convert_value_to_enum(enum_type, _normalize(value))
 
 
 def parse_date_or_error(date_string):
@@ -131,16 +136,13 @@ def convert_person(ingest_person):
         person.birthdate_inferred_from_age = True
 
     if ingest_person.gender is not None:
-        # TODO(215): convert to enum
-        person.gender = _normalize(ingest_person.gender)
+        person.gender = string_to_enum('gender', ingest_person.gender)
 
     if ingest_person.race is not None:
-        # TODO(215): convert to enum
-        person.race = _normalize(ingest_person.race)
+        person.race = string_to_enum('race', ingest_person.race)
 
     if ingest_person.ethnicity is not None:
-        # TODO(215): convert to enum
-        person.ethnicity = _normalize(ingest_person.ethnicity)
+        person.ethnicity = string_to_enum('ethnicity', ingest_person.ethnicity)
 
     if ingest_person.place_of_residence is not None:
         person.place_of_residence = _normalize(ingest_person.place_of_residence)
@@ -177,12 +179,12 @@ def convert_booking(ingest_booking):
             parse_date_or_error(ingest_booking.projected_release_date)
 
     if ingest_booking.release_reason is not None:
-        # TODO(215): convert to enum
-        booking.release_reason = _normalize(ingest_booking.release_reason)
+        booking.release_reason = string_to_enum('release_reason',
+                                                ingest_booking.release_reason)
 
     if ingest_booking.custody_status is not None:
-        # TODO(215): convert to enum
-        booking.custody_status = _normalize(ingest_booking.custody_status)
+        booking.custody_status = string_to_enum('custody_status',
+                                                ingest_booking.custody_status)
 
     if ingest_booking.hold is not None:
         # TODO: decide if this should be a list (of objects? strings?) instead
@@ -194,8 +196,8 @@ def convert_booking(ingest_booking):
         booking.facility = _normalize(ingest_booking.facility)
 
     if ingest_booking.classification is not None:
-        # TODO(215): convert to enum
-        booking.classification = _normalize(ingest_booking.classification)
+        booking.classification = string_to_enum('classification',
+                                                ingest_booking.classification)
 
     if ingest_booking.arrest:
         booking.arrest = convert_arrest(ingest_booking.arrest)
@@ -279,12 +281,11 @@ def convert_charge(ingest_charge):
         charge.attempted = verify_is_bool(ingest_charge.attempted)
 
     if ingest_charge.degree is not None:
-        # TODO(215): convert to enum
-        charge.degree = _normalize(ingest_charge.degree)
+        charge.degree = string_to_enum('charge_degree', ingest_charge.degree)
 
     if ingest_charge.charge_class is not None:
-        # TODO(215): convert to enum
-        charge.charge_class = _normalize(ingest_charge.charge_class)
+        charge.charge_class = string_to_enum('charge_class',
+                                             ingest_charge.charge_class)
 
     if ingest_charge.level is not None:
         charge.level = _normalize(ingest_charge.level)
@@ -296,15 +297,15 @@ def convert_charge(ingest_charge):
         charge.charging_entity = _normalize(ingest_charge.charging_entity)
 
     if ingest_charge.charge_status is not None:
-        # TODO(215): convert to enum
-        charge.status = _normalize(ingest_charge.charge_status)
+        charge.status = string_to_enum('charge_status',
+                                       ingest_charge.charge_status)
 
     if ingest_charge.number_of_counts is not None:
         charge.number_of_counts = int(ingest_charge.number_of_counts)
 
     if ingest_charge.court_type is not None:
-        # TODO(215): convert to enum
-        charge.court_type = _normalize(ingest_charge.court_type)
+        charge.court_type = string_to_enum('court_type',
+                                           ingest_charge.court_type)
 
     if ingest_charge.case_number is not None:
         charge.case_number = _normalize(ingest_charge.case_number)
@@ -344,12 +345,10 @@ def convert_bond(ingest_bond):
         bond.amount = parse_dollar_amount(ingest_bond.amount)
 
     if ingest_bond.bond_type is not None:
-        # TODO(215): convert to enum
-        bond.type = _normalize(ingest_bond.bond_type)
+        bond.type = string_to_enum('bond_type', ingest_bond.bond_type)
 
     if ingest_bond.status is not None:
-        # TODO(215): convert to enum
-        bond.status = _normalize(ingest_bond.status)
+        bond.status = string_to_enum('bond_status', ingest_bond.status)
 
     return bond
 
