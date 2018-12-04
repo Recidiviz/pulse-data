@@ -130,7 +130,7 @@ class BaseScraper(Scraper):
             # If we want to scrape data, we should either create an ingest_info
             # object or get the one that already exists.
             ingest_info = params.get('ingest_info', IngestInfo())
-            self.populate_data(content, params, ingest_info)
+            ingest_info = self.populate_data(content, params, ingest_info)
         if self.should_get_more_tasks(task_type):
             tasks = self.get_more_tasks(content, params)
             for task_params in tasks:
