@@ -14,9 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for persistence."""
+"""Tests for persistence.py."""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from unittest import TestCase
 
 from mock import patch, Mock
@@ -24,6 +24,7 @@ from recidiviz import Session
 from recidiviz.ingest.models.ingest_info import IngestInfo, _Bond
 from recidiviz.persistence import persistence
 from recidiviz.persistence.database import database
+from recidiviz.persistence.database.schema import Booking, Charge
 from recidiviz.tests.utils import fakes
 
 BIRTHDATE_1 = datetime(year=1993, month=11, day=15)
@@ -32,12 +33,14 @@ BOND_TYPE = 'TEST_BOND_TYPE'
 CHARGE_NAME_1 = 'TEST_CHARGE_1'
 CHARGE_NAME_2 = 'TEST_CHARGE_2'
 FACILITY = 'TEST_FACILITY'
-GIVEN_NAME = "TEST_GIVEN_NAME"
+GIVEN_NAME = 'TEST_GIVEN_NAME'
 IS_LIFE_1 = False
 IS_LIFE_2 = True
 OFFICER_NAME = 'TEST_OFFICER_NAME'
 PLACE_1 = 'TEST_PLACE_1'
 PLACE_2 = 'TEST_PLACE_2'
+REGION_1 = 'REGION_1'
+REGION_2 = 'REGION_2'
 SURNAME_1 = 'TEST_SURNAME_1'
 SURNAME_2 = 'TEST_SURNAME_2'
 
@@ -191,3 +194,39 @@ class TestPersistence(TestCase):
         sentence_2 = result_charges[1].sentence
         assert sentence_1.is_life == IS_LIFE_1
         assert sentence_2.is_life == IS_LIFE_2
+
+    def test_inferReleaseDateOnOpenBookings(self):
+        # Arrange
+        most_recent_scrape_date = datetime(2018, 6, 20)
+        date_in_past = most_recent_scrape_date - timedelta(days=1)
+        charge_1 = Charge(name=CHARGE_NAME_1, status='CHARGED')
+        charge_2 = Charge(name=CHARGE_NAME_2, status='CHARGED')
+        open_booking = Booking(
+            region=REGION_1, last_scraped_date=date_in_past, charges=[charge_1])
+        open_booking_incorrect_region = Booking(
+            region=REGION_2, last_scraped_date=date_in_past, charges=[charge_2])
+
+        session = Session()
+        session.add(open_booking)
+        session.add(open_booking_incorrect_region)
+        session.commit()
+
+        # Act
+        persistence.infer_release_on_open_bookings(
+            REGION_1, most_recent_scrape_date)
+
+        # Assert
+        bookings = database.read_bookings(session)
+        assert bookings[0].region == REGION_1
+        assert bookings[0].last_scraped_date == date_in_past
+        assert bookings[0].release_date == most_recent_scrape_date
+        assert bookings[0].release_date_inferred is True
+        assert bookings[0].charges[0].name == CHARGE_NAME_1
+        assert bookings[0].charges[0].status == 'RESOLVED_UNKNOWN_REASON'
+
+        assert bookings[1].region == REGION_2
+        assert bookings[1].last_scraped_date == date_in_past
+        assert bookings[1].release_date is None
+        assert bookings[1].release_date_inferred is None
+        assert bookings[1].charges[0].name == CHARGE_NAME_2
+        assert bookings[1].charges[0].status == 'CHARGED'
