@@ -18,8 +18,30 @@
 """Constants related to a bond entity."""
 
 class BondType(object):
-    unknown = 1
+    SECURED = 'SECURED'
+    UNSECURED = 'UNSECURED'
+    CASH = 'CASH'
+    NO_BOND = 'NO BOND'
+    BOND_DENIED = 'BOND DENIED'
+    UNKNOWN = 'UNKNOWN'
 
 
 class BondStatus(object):
-    unknown = 1
+    ACTIVE = 'ACTIVE'
+    POSTED = 'POSTED'
+    UNKNOWN = 'UNKNOWN'
+
+
+BOND_TYPE_MAP = {
+    'SECURED': BondType.SECURED,
+    'UNSECURED': BondType.UNSECURED,
+    'CASH': BondType.CASH,
+    'NO BOND': BondType.NO_BOND,
+    'BOND DENIED': BondType.BOND_DENIED,
+    'UNKNOWN': BondType.UNKNOWN
+}
+BOND_STATUS_MAP = {
+    'ACTIVE': BondStatus.ACTIVE,
+    'POSTED': BondStatus.POSTED,
+    'UNKNOWN': BondStatus.UNKNOWN
+}
