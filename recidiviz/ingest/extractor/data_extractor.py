@@ -22,11 +22,12 @@ model and returned.
 TODO: Add more details here in implementation logic when it is done.
 """
 
+
 import copy
 import itertools
 import warnings
-import yaml
 from lxml.html import HtmlElement
+import yaml
 
 from recidiviz.ingest.models.ingest_info import IngestInfo
 
