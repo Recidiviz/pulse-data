@@ -17,7 +17,7 @@
 
 key_mappings:
   Inmate No: person.person_id
-  Gender: person.sex
+  Gender: person.gender
   "Booking #": booking.booking_id
   Booking Date-Time: booking.admission_date
   Reporting Agency: booking.facility
