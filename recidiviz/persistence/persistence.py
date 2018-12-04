@@ -21,9 +21,61 @@ import distutils
 
 from recidiviz import Session
 from recidiviz.persistence import entity_matching
+from recidiviz.persistence.database import database
 from recidiviz.persistence.database.schema import Person, Booking, Arrest, \
     Charge, Bond, Sentence
 from recidiviz.utils import environment
+
+
+class PersistenceError(Exception):
+    """Raised when an error with the persistence layer is encountered."""
+    pass
+
+
+def infer_release_on_open_bookings(region, scrape_date):
+    """
+   Look up all open bookings whose last_scraped_date is earlier than the
+   provided scrape_date in the provided region, update those
+   bookings to have an inferred release date equal to the provided
+   scrape_date.
+
+   Args:
+       region: the region
+       scrape_date: The last start time of a background scrape
+           for the provided region. All open bookings for this region that
+           weren't seen in this last scrape will be closed.
+   """
+
+    session = Session()
+    try:
+        bookings = database.read_open_bookings_scraped_before_date(
+            session, region, scrape_date)
+        _infer_release_date_for_bookings(bookings, scrape_date)
+        for booking in bookings:
+            session.add(session.merge(booking))
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+def _infer_release_date_for_bookings(bookings, date):
+    """Marks the provided bookings with an inferred release date equal to the
+    provided date. Also resolves any charges associated with the provided
+    bookings as 'RESOLVED_UNKNOWN_REASON'"""
+    for booking in bookings:
+        if booking.release_date:
+            raise PersistenceError('Attempting to mark booking {0} as '
+                                   'resolved, however booking already has '
+                                   'release date.'.format(booking.booking_id))
+
+        booking.release_date = date
+        booking.release_date_inferred = True
+
+        for charge in booking.charges:
+            charge.status = 'RESOLVED_UNKNOWN_REASON'
 
 
 def write(ingest_info):
