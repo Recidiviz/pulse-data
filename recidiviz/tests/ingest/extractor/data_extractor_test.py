@@ -55,7 +55,7 @@ def test_nested_good_table():
     person = expected_info.create_person()
     person.surname = 'LAST NAME'
     person.birthdate = '06/03/2999'
-    person.sex = 'Male'
+    person.gender = 'Male'
     person.age = '100000000'
     person.race = 'White/Eurp/ N.Afr/Mid Eas'
     person.person_id = '18-00187'
@@ -283,7 +283,7 @@ def test_labeled_fields():
     person = expected_info.create_person()
     person.person_id = '11111'
     person.race = 'White'
-    person.sex = 'Male'
+    person.gender = 'Male'
     booking = person.create_booking()
     booking.admission_date = '11/12/2018 5:04 PM'
     booking.facility = 'Walla Walla County Corrections Department'
@@ -313,7 +313,7 @@ def test_bad_labels():
     expected_info = IngestInfo()
     person = expected_info.create_person()
     person.person_id = '046573'
-    person.sex = 'Male'
+    person.gender = 'Male'
     booking = person.create_booking()
     booking.booking_id = '00119283'
     booking.admission_date = '07/19/2018 14:24'
@@ -345,7 +345,7 @@ def test_text_label():
     person = expected_info.create_person()
     person.birthdate = '12/25/0'
     person.race = 'W'
-    person.sex = 'M'
+    person.gender = 'M'
     booking = person.create_booking()
     booking.booking_id = '202200000'
     booking.admission_date = '01/01/2001 19:44'
@@ -386,7 +386,7 @@ def test_th_rows():
     expected_info = IngestInfo()
     person = expected_info.create_person()
     person.race = 'WHITE'
-    person.sex = 'M'
+    person.gender = 'M'
     person.create_booking()
 
     html_contents = html.fromstring(

@@ -29,12 +29,13 @@ class Person(Base):
 
     person_id = Column('person_id', Integer, primary_key=True)
 
-    scraped_person_id = Column('scraped_person_id', Integer)
+    scraped_person_id = Column('scraped_person_id', String)
     surname = Column('surname', String)
     given_names = Column('given_names', String)
     birthdate = Column('birthdate', DateTime)
     birthdate_inferred_from_age = Column('birthdate_inferred_from_age',
                                          Boolean)
+    gender = Column('gender', String)
     race = Column('race', String)
     ethnicity = Column('ethnicity', String)
     place_of_residence = Column('place_of_residence', String)
@@ -51,6 +52,7 @@ class Booking(Base):
     person_id = Column('person_id', Integer,
                        ForeignKey("people.person_id"))
 
+    scraped_booking_id = Column('scraped_booking_id', String)
     admission_date = Column('admission_date', DateTime)
     release_date = Column('release_date', DateTime)
     release_date_inferred = Column('release_date_inferred', Boolean)
@@ -87,7 +89,7 @@ class Arrest(Base):
 
 
 class Charge(Base):
-    """Represents a Change as defined by our SQL schema"""
+    """Represents a Charge as defined by our SQL schema"""
     __tablename__ = 'charges'
 
     charge_id = Column('charge_id', Integer, primary_key=True)
@@ -100,7 +102,7 @@ class Charge(Base):
     sentence_id = Column('sentence_id', Integer,
                          ForeignKey("sentences.sentence_id"))
 
-    offence_date = Column('offence_date', DateTime)
+    offense_date = Column('offense_date', DateTime)
     statute = Column('statute', String)
     offense_code = Column('offense_code', Integer)
     name = Column('name', String)
@@ -127,6 +129,7 @@ class Bond(Base):
 
     bond_id = Column('bond_id', Integer, primary_key=True)
 
+    scraped_bond_id = Column('scraped_bond_id', String)
     amount = Column('amount', Integer)
     bond_type = Column('bond_type', String)
     status = Column('status', String)
