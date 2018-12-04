@@ -39,7 +39,6 @@ from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest import tracker
 from recidiviz.utils.regions import Region
 
-
 # Use the App Engine Requests adapter to make sure that Requests plays
 # nice with GAE
 requests_toolbelt.adapters.appengine.monkeypatch()
@@ -232,14 +231,15 @@ class Scraper(object):
         params = {'scrape_type': scrape_type, 'content': content}
         self.add_task(self.get_initial_task(), params)
 
-    def fetch_page(self, url, data=None):
+    @staticmethod
+    def fetch_page(url, post_data=None):
         """Fetch content from a URL. If data is None (the default), we perform
         a GET for the page. If the data is set, it must be a dict of parameters
         to use as POST data in a POST request to the url.
 
         Args:
             url: (string) URL to fetch content from
-            data: (string) POST data to send (optional, default None)
+            post_data: dict of parameters to pass into the html POST request
 
         Returns:
             The content if successful, -1 if fails.
@@ -249,11 +249,11 @@ class Scraper(object):
         headers = scraper_utils.get_headers()
 
         try:
-            if data is None:
+            if post_data is None:
                 page = requests.get(url, proxies=proxies, headers=headers)
             else:
                 page = requests.post(url, proxies=proxies, headers=headers,
-                                     data=data)
+                                     data=post_data)
         except requests.exceptions.RequestException as ce:
             log_error = "Error: {0}".format(ce)
 
@@ -261,7 +261,7 @@ class Scraper(object):
             if request is not None:
                 request_error = ("\n\nRequest headers: \n{0}"
                                  "\n\nMethod: {1}"
-                                 "\n\nBody: \n{2} ")\
+                                 "\n\nBody: \n{2} ") \
                     .format(request.headers,
                             request.method,
                             request.body)
@@ -272,7 +272,7 @@ class Scraper(object):
             if response is not None:
                 response_error = ("\n\nResponse: \n{0} / {1}"
                                   "\n\nHeaders: \n{2}"
-                                  "\n\nText: \n{3}")\
+                                  "\n\nText: \n{3}") \
                     .format(response.status_code,
                             response.reason,
                             response.headers,
