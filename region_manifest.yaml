@@ -15,6 +15,23 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
+# Much of this file can be filled in automatically from the create_scraper.py
+# script. For each region, the following fields are required:
+#   agency_name: the official name of the facility
+#   agency_type: one of 'jail', 'prison', 'unified'
+#   base_url: the base url of the roster or search page for the facility
+#   names_file: a list of names the scraper should search for
+#     (use us_ny_names.csv as a default)
+#   queue: the scraper name in queue.yaml
+#   region_code: the region code, formatted as <country>_<state>_<county>
+#   region_name: the official name of the region
+#   scraper_package: the directory in recidiviz/ingest/ containing the scraper
+#   timezone: the tz database timezone code. The create_scraper.py script can
+#     usually infer this from the state, but double-check the timezone in
+#     Arizona, Indiana and outside of the lower 48 states.
+#
+# Note that only child scrapers (i.e. not vendor scrapers) need to be listed
+# here.
 
 regions:
 
