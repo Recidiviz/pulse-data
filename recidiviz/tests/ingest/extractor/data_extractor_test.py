@@ -262,7 +262,7 @@ def test_partial_table():
     charge = booking.create_charge()
     charge.name = 'FIRST CHARGE'
     charge.charging_entity = 'WICHITA FALLS PD'
-    charge.charge_status = ''
+    charge.status = ''
     bond = charge.create_bond()
     bond.amount = '25,000.00'
 
@@ -292,7 +292,7 @@ def test_labeled_fields():
     charge.name = 'DUI'
     charge.offense_date = '9/21/2018 5:34 PM'
     charge.charge_class = 'Gross Misdemeanor'
-    charge.charge_status = 'Time Served'
+    charge.status = 'Time Served'
     charge.charging_entity = ''
     charge.next_court_date = ''
     booking.charge.append(charge)
@@ -357,14 +357,14 @@ def test_text_label():
     arrest.agency = 'Hemet PD'
     charge1 = booking.create_charge()
     charge1.statute = '245(A)(1)'
-    charge1.charge_status = 'DISM'
+    charge1.status = 'DISM'
     charge1.name = 'CHARGE 1'
     charge1.degree = 'FEL'
     bond1 = charge1.create_bond()
     bond1.amount = ''
     charge2 = booking.create_charge()
     charge2.statute = '245(A)(4)'
-    charge2.charge_status = 'SENT'
+    charge2.status = 'SENT'
     charge2.name = 'CHARGE 2'
     charge2.degree = 'FEL'
     bond2 = charge2.create_bond()

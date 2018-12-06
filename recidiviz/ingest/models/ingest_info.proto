@@ -81,7 +81,7 @@ message Charge {
 	optional string level = 8;
 	optional string fee = 9;
 	optional string charging_entity = 10;
-	optional string charge_status = 11;
+	optional string status = 11;
 	optional string number_of_counts = 12;
 	optional string court_type = 13;
 	optional string case_number = 14;

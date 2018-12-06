@@ -26,7 +26,7 @@ key_mappings:
 multi_key_mapping:
   Charge Description: charge.name
   Offense Date: charge.offense_date
-  Disposition: charge.charge_status
+  Disposition: charge.status
   Crime Class: charge.charge_class
   Court Date: charge.next_court_date
   Arresting Agency: charge.charging_entity
