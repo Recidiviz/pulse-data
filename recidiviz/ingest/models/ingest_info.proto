@@ -1,0 +1,113 @@
+// Recidiviz - a platform for tracking granular recidivism metrics in real time
+// Copyright (C) 2018 Recidiviz, Inc.
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+// =============================================================================
+
+syntax = "proto2";
+
+package recidiviz.ingest.models;
+
+message IngestInfo {
+	repeated Person people = 1;
+	repeated Booking bookings = 2;
+	repeated Charge charges = 3;
+	repeated Bond bonds = 4;
+	repeated Arrest arrests = 5;
+	repeated Sentence sentences = 6;
+}
+
+message Person {
+	optional string person_id = 1;
+	optional string surname = 2;
+	optional string given_names = 3;
+	optional string birthdate = 4;
+	optional string status = 5;
+	optional string gender = 6;
+	optional string age = 7;
+	optional string race = 8;
+	optional string ethnicity = 9;
+	optional string place_of_residence = 10;
+
+	repeated string booking_ids = 11;
+}
+
+message Booking {
+	optional string booking_id = 1;
+	optional string admission_date = 2;
+	optional string projected_release_date = 3;
+	optional string release_date = 4;
+	optional string release_reason = 5;
+	optional string custody_status = 6;
+	optional string jurisdiction_status = 7;
+	optional string hold = 8;
+	optional string facility = 9;
+	optional string classification = 10;
+	optional string total_bond_amount = 11;
+
+	optional string arrest_id = 12;
+	repeated string charge_ids = 13;
+}
+
+message Arrest {
+	optional string arrest_id = 1;
+	optional string date = 2;
+	optional string location= 3;
+	optional string officer_name = 4;
+	optional string admission_date = 5;
+	optional string officer_id = 6;
+	optional string agency = 7;
+}
+
+message Charge {
+	optional string charge_id = 1;
+	optional string offense_date = 2;
+	optional string statute = 3;
+	optional string name = 4;
+	optional string attempted = 5;
+	optional string degree = 6;
+	optional string charge_class = 7;
+	optional string level = 8;
+	optional string fee = 9;
+	optional string charging_entity = 10;
+	optional string charge_status = 11;
+	optional string number_of_counts = 12;
+	optional string court_type = 13;
+	optional string case_number = 14;
+	optional string next_court_date = 15;
+	optional string judge_name = 16;
+
+	optional string bond_id = 17;
+	optional string sentence_id = 18;
+}
+
+message Bond {
+	optional string bond_id = 1;
+	optional string amount = 2;
+	optional string bond_type = 3;
+	optional string status = 4;
+}
+
+message Sentence {
+	optional string sentence_id = 1;
+	optional string date_imposed = 2;
+	optional string min_length = 3;
+	optional string max_length = 4;
+	optional string is_life = 5;
+	optional string is_probation = 6;
+	optional string is_suspended = 7;
+	optional string fine = 8;
+	optional string parole_possible = 9;
+	optional string post_release_supervision_length = 10;
+}
