@@ -18,6 +18,9 @@ handlers:
 - url: /scraper/work
   script: recidiviz.ingest.worker.app
 
+- url: /v1/records
+  script: recidiviz.persistence.actions.app
+
 - url: /_ah/pipeline.*
   script: recidiviz.mapreduce.lib.pipeline.handlers._APP
   login: admin
