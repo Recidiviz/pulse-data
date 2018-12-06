@@ -34,20 +34,26 @@ class TestDatabase(object):
         # Arrange
         region = 'region'
         incorrect_region = 'other_region'
-        release_date = datetime.datetime(2018, 7, 20)
-        most_recent_scrape_date = datetime.datetime(2018, 6, 20)
+        release_date = datetime.date(2018, 7, 20)
+        most_recent_scrape_date = datetime.date(2018, 6, 20)
         date_in_past = most_recent_scrape_date - datetime.timedelta(days=1)
+        person_id = 8
 
         # Bookings that should be returned
         open_booking_before_last_scrape = Booking(
+            person_id=person_id, custody_status='In Custody',
             region=region, last_scraped_date=date_in_past)
 
         # Bookings that should not be returned
         open_booking_incorrect_region = Booking(
+            person_id=person_id, custody_status='In Custody',
             region=incorrect_region, last_scraped_date=date_in_past)
         open_booking_most_recent_scrape = Booking(
+            person_id=person_id, custody_status='In Custody',
             region=region, last_scraped_date=most_recent_scrape_date)
-        resolved_booking = Booking(region=region, release_date=release_date,
+        resolved_booking = Booking(person_id=person_id,
+                                   custody_status='In Custody',
+                                   region=region, release_date=release_date,
                                    last_scraped_date=date_in_past)
 
         session = Session()

@@ -57,7 +57,7 @@ class TestConverter(object):
         assert len(schema_booking.charges) == 1
         schema_charge = schema_booking.charges[0]
         assert schema_charge.bond is not None
-        assert schema_charge.bond.amount == 100
+        assert schema_charge.bond.amount_dollars == 100
 
     def test_updateChargeWithTotalBondAmount(self):
         ingest_booking = _Booking(total_bond_amount='$100.00')
@@ -69,10 +69,10 @@ class TestConverter(object):
         schema_charge = schema_booking.charges[0]
         assert schema_charge.bond is not None
         assert schema_charge.bond.scraped_bond_id == 'ID'
-        assert schema_charge.bond.amount == 100
+        assert schema_charge.bond.amount_dollars == 100
         assert schema_booking.charges[1] is not None
         assert schema_booking.charges[1].bond is not None
-        assert schema_booking.charges[1].bond.amount == 100
+        assert schema_booking.charges[1].bond.amount_dollars == 100
 
     def test_parseBookingFields(self):
         ingest_booking = _Booking(release_date='1/1/1111',
@@ -96,7 +96,7 @@ class TestConverter(object):
 
     def test_parseChargeFields(self):
         ingest_charge = _Charge(attempted=True, degree='FIRST',
-                                charge_class='FELONY', charge_status='DROPPED',
+                                charge_class='FELONY', status='DROPPED',
                                 court_type='DISTRICT', number_of_counts='3')
 
         schema_charge = converter.convert_charge(ingest_charge)
@@ -171,7 +171,7 @@ class TestConverter(object):
             converter.convert_person(ingest_person)
 
     def test_parseBadDollarAmount(self):
-        ingest_charge = _Charge(fee='ABC')
+        ingest_charge = _Charge(fee_dollars='ABC')
 
         with pytest.raises(ValueError):
             converter.convert_charge(ingest_charge)

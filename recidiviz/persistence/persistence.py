@@ -63,6 +63,10 @@ def _infer_release_date_for_bookings(bookings, date):
     """Marks the provided bookings with an inferred release date equal to the
     provided date. Also resolves any charges associated with the provided
     bookings as 'RESOLVED_UNKNOWN_REASON'"""
+
+    # TODO: set charge status as RESOLVED_UNKNOWN_REASON once DB enum is
+    # appropriately updated
+
     for booking in bookings:
         if booking.release_date:
             raise PersistenceError('Attempting to mark booking {0} as '
@@ -71,9 +75,6 @@ def _infer_release_date_for_bookings(bookings, date):
 
         booking.release_date = date
         booking.release_date_inferred = True
-
-        for charge in booking.charges:
-            charge.status = 'RESOLVED_UNKNOWN_REASON'
 
 
 def write(ingest_info):
