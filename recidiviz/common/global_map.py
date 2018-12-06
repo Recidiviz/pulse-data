@@ -59,12 +59,12 @@ def convert_value_to_enum(enum_type, value):
     """
     if enum_type not in _WORLD_MAP:
         raise ValueError(
-            'The enum type {} could not be found'.format(enum_type))
+            'The enum type {0} could not be found'.format(enum_type))
 
     map_to_use = _WORLD_MAP[enum_type]
     if value is None:
         value = 'UNKNOWN'
     if value.upper() not in map_to_use:
         raise ValueError(
-            'Cannot find {} in the {} map'.format(value, enum_type))
+            'Cannot find {0} in the {1} map'.format(value, enum_type))
     return map_to_use[value.upper()]

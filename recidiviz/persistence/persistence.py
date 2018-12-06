@@ -20,7 +20,8 @@ import os
 from distutils.util import strtobool  # pylint: disable=no-name-in-module
 
 from recidiviz import Session
-from recidiviz.persistence import converter, entity_matching
+from recidiviz.persistence import entity_matching
+from recidiviz.persistence.converter import Converter
 from recidiviz.persistence.database import database
 from recidiviz.utils import environment
 
@@ -77,6 +78,10 @@ def _infer_release_date_for_bookings(bookings, date):
         booking.release_date_inferred = True
 
 
+def _should_persist():
+    return environment.in_prod() or strtobool((os.environ['PERSIST_LOCALLY']))
+
+
 def write(ingest_info):
     """
     If in prod or if 'PERSIST_LOCALLY' is set to true, persist each person in
@@ -89,14 +94,15 @@ def write(ingest_info):
          ingest_info: The IngestInfo containing each person
     """
     log = logging.getLogger()
+    converter = Converter()
 
-    for ingest_info_person in ingest_info.person:
-        person = converter.convert_person(ingest_info_person)
-        if not environment.in_prod() and \
-                not strtobool(os.environ['PERSIST_LOCALLY']):
-            log.info(ingest_info)
-            continue
+    log.info(ingest_info)
+    people = converter.convert_ingest_info(ingest_info)
 
+    if not _should_persist():
+        return
+
+    for person in people:
         session = Session()
         try:
             existing_person = entity_matching.get_entity_match(session, person)
