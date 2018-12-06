@@ -19,4 +19,4 @@ multi_key_mapping:
   Type: charge.degree
   Description: charge.name
   Bail: bond.amount
-  Disposition: charge.charge_status
+  Disposition: charge.status

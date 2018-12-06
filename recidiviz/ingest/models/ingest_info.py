@@ -89,8 +89,12 @@ class _Booking(object):
 
     def __init__(self, booking_id=None, admission_date=None,
                  projected_release_date=None, release_date=None,
-                 release_reason=None, custody_status=None, hold=None,
-                 facility=None, classification=None, total_bond_amount=None,
+                 release_reason=None,
+                 custody_status=None,
+                 hold=None,
+                 facility=None, classification=None,
+                 total_bond_amount=None,
+                 region=None, last_scraped_date=None,
                  arrest=None, charges=None):
         self.booking_id = booking_id  # type: str
         self.admission_date = admission_date  # type: str
@@ -102,6 +106,8 @@ class _Booking(object):
         self.facility = facility  # type: str
         self.classification = classification  # type: str
         self.total_bond_amount = total_bond_amount  # type: str
+        self.region = region # type: str
+        self.last_scraped_date = last_scraped_date # type: date
 
         self.arrest = arrest  # type: Arrest
         self.charge = charges or []  # type: List[Charge]
@@ -157,8 +163,8 @@ class _Charge(object):
 
     def __init__(self, offense_date=None, statute=None, name=None,
                  attempted=None, degree=None,
-                 charge_class=None, level=None, fee=None,
-                 charging_entity=None, charge_status=None,
+                 charge_class=None, level=None, fee_dollars=None,
+                 charging_entity=None, status=None,
                  number_of_counts=None, court_type=None,
                  case_number=None, next_court_date=None, judge_name=None,
                  bond=None, sentence=None):
@@ -169,11 +175,11 @@ class _Charge(object):
         self.degree = degree  # type: str
         self.charge_class = charge_class  # type: str
         self.level = level  # type: str
-        self.fee = fee  # type: str
+        self.fee_dollars = fee_dollars  # type: int
         self.charging_entity = charging_entity  # type: str
-        self.charge_status = charge_status  # type: str
-        self.number_of_counts = number_of_counts  # type: str
-        self.court_type = court_type  # type: str
+        self.status = status
+        self.number_of_counts = number_of_counts  # type: int
+        self.court_type = court_type
         self.case_number = case_number  # type: str
         self.next_court_date = next_court_date  # type: str
         self.judge_name = judge_name  # type: str
@@ -227,15 +233,16 @@ class _Sentence(object):
     """
 
     def __init__(self, date_imposed=None, min_length=None, max_length=None,
-                 is_life=None, is_probation=None, is_suspended=None, fine=None,
-                 parole_possible=None, post_release_supervision_length=None):
+                 is_life=None, is_probation=None, is_suspended=None,
+                 fine_dollars=None, parole_possible=None,
+                 post_release_supervision_length=None):
         self.date_imposed = date_imposed  # type: str
         self.min_length = min_length  # type: str
         self.max_length = max_length  # type: str
         self.is_life = is_life  # type: bool
         self.is_probation = is_probation  # type: bool
         self.is_suspended = is_suspended  # type: bool
-        self.fine = fine  # type: str
+        self.fine_dollars = fine_dollars  # type: int
         self.parole_possible = parole_possible  # type: bool
 
         # type: str

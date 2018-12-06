@@ -33,7 +33,8 @@ class ChargeClass(object):
 
 
 class ChargeStatus(object):
-    PENDING = 'PENDING'
+    # TODO: Fix inconsistency between Python and DB enums
+    PENDING = 'Pending'
     PRETRIAL = 'PRETRIAL'
     ACQUITTED = 'ACQUITTED'
     DROPPED = 'DROPPED'

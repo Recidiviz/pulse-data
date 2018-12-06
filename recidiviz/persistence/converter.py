@@ -170,6 +170,10 @@ def convert_booking(ingest_booking):
         booking.admission_date = \
             parse_date_or_error(ingest_booking.admission_date)
 
+    if ingest_booking.last_scraped_date is not None:
+        booking.last_scraped_date = parse_date_or_error(
+            ingest_booking.last_scraped_date)
+
     if ingest_booking.release_date is not None:
         booking.release_date = parse_date_or_error(ingest_booking.release_date)
         booking.release_date_inferred = False
@@ -195,6 +199,9 @@ def convert_booking(ingest_booking):
     if ingest_booking.facility is not None:
         booking.facility = _normalize(ingest_booking.facility)
 
+    if ingest_booking.region is not None:
+        booking.region = ingest_booking.region
+
     if ingest_booking.classification is not None:
         booking.classification = string_to_enum('classification',
                                                 ingest_booking.classification)
@@ -210,14 +217,14 @@ def convert_booking(ingest_booking):
         # any bond amounts, update the bonds to that amount or add a new bond
         # with the total amount to each charge.
         bond_amount = parse_dollar_amount(ingest_booking.total_bond_amount)
-        total_bond = schema.Bond(amount=bond_amount)
+        total_bond = schema.Bond(amount_dollars=bond_amount)
         if not booking.charges:
             booking.charges = [schema.Charge(bond=total_bond)]
-        elif not any(charge.bond and charge.bond.amount
+        elif not any(charge.bond and charge.bond.amount_dollars
                      for charge in booking.charges):
             for charge in booking.charges:
                 if charge.bond:
-                    charge.bond.amount = bond_amount
+                    charge.bond.amount_dollars = bond_amount
                 else:
                     charge.bond = total_bond
 
@@ -290,15 +297,15 @@ def convert_charge(ingest_charge):
     if ingest_charge.level is not None:
         charge.level = _normalize(ingest_charge.level)
 
-    if ingest_charge.fee is not None:
-        charge.fee = parse_dollar_amount(ingest_charge.fee)
+    if ingest_charge.fee_dollars is not None:
+        charge.fee_dollars = parse_dollar_amount(ingest_charge.fee_dollars)
 
     if ingest_charge.charging_entity is not None:
         charge.charging_entity = _normalize(ingest_charge.charging_entity)
 
-    if ingest_charge.charge_status is not None:
+    if ingest_charge.status is not None:
         charge.status = string_to_enum('charge_status',
-                                       ingest_charge.charge_status)
+                                       ingest_charge.status)
 
     if ingest_charge.number_of_counts is not None:
         charge.number_of_counts = int(ingest_charge.number_of_counts)
@@ -385,8 +392,9 @@ def convert_sentence(ingest_sentence):
     if ingest_sentence.is_suspended is not None:
         sentence.is_suspended = verify_is_bool(ingest_sentence.is_suspended)
 
-    if ingest_sentence.fine is not None:
-        sentence.fine = parse_dollar_amount(ingest_sentence.fine)
+    if ingest_sentence.fine_dollars is not None:
+        sentence.fine_dollars = parse_dollar_amount(
+            ingest_sentence.fine_dollars)
 
     if ingest_sentence.parole_possible is not None:
         sentence.parole_possible = \
