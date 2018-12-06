@@ -25,4 +25,4 @@ multi_key_mapping:
   Charge: charge.name
   Bond Amount: bond.amount
   Arrest Agency: charge.charging_entity
-  Disposition: charge.charge_status
+  Disposition: charge.status
