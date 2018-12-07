@@ -232,12 +232,14 @@ class _Sentence(object):
     Referenced from Charge.
     """
 
-    def __init__(self, sentence_id=None, date_imposed=None, min_length=None,
-                 max_length=None, is_life=None, is_probation=None,
-                 is_suspended=None, fine_dollars=None, parole_possible=None,
+    def __init__(self, sentence_id=None, date_imposed=None,
+                 county_of_commitment=None, min_length=None, max_length=None,
+                 is_life=None, is_probation=None, is_suspended=None,
+                 fine_dollars=None, parole_possible=None,
                  post_release_supervision_length=None):
         self.sentence_id = sentence_id
         self.date_imposed = date_imposed  # type: str
+        self.county_of_commitment = county_of_commitment  # type: str
         self.min_length = min_length  # type: str
         self.max_length = max_length  # type: str
         self.is_life = is_life  # type: bool

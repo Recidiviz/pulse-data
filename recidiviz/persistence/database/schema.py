@@ -336,6 +336,7 @@ class Sentence(Base):
     sentence_id = Column(Integer, primary_key=True)
     external_id = Column(String(255), index=True)
     date_imposed = Column(Date)
+    county_of_commitment = Column('county_of_commitment', String)
     min_length_days = Column(Integer)
     max_length_days = Column(Integer)
     is_life = Column(Boolean)
