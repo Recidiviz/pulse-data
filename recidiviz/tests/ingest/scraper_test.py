@@ -684,7 +684,6 @@ def mock_region_manifest(region_code, queue_name):
         'entity_kinds': [],
         'names_file': 'names.txt',
         'params': {},
-        'region_name': 'an area person',
         'scraper_class': 'fake_scraper',
         'scraper_package': 'recidiviz.tests.ingest',
         'timezone': 'America/Cleveland'

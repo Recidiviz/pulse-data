@@ -24,7 +24,6 @@
 #     (use us_ny_names.csv as a default)
 #   queue: the scraper name in queue.yaml
 #   region_code: the region code, formatted as <country>_<state>_<county>
-#   region_name: the official name of the region
 #   scraper_package: the directory in recidiviz/ingest/ containing the scraper
 #   timezone: the tz database timezone code. The create_scraper.py script can
 #     usually infer this from the state, but double-check the timezone in
@@ -45,11 +44,9 @@ regions:
     names_file: us_ny_names.csv
     queue: us-ny-scraper
     region_code: us_ny
-    region_name: New York State
     scraper_package: us_ny
     timezone: America/New_York
   us_vt:
-    region_name: UsVt
     agency_name: Vermont Department of Corrections
     region_code: us_vt
     agency_type: unified
@@ -63,7 +60,6 @@ regions:
     scraper_package: us_vt
     timezone: America/New_York
   us_pa_greene:
-    region_name: UsPaGreene
     agency_name: Greene County Detention Center
     region_code: us_pa_greene
     agency_type: unified
@@ -76,7 +72,6 @@ regions:
     scraper_package: us_pa_greene
     timezone: America/New_York
   us_co_mesa:
-    region_name: UsCoMesa
     agency_name: Mesa County Sheriff's Office
     region_code: us_co_mesa
     agency_type: jail
@@ -89,7 +84,6 @@ regions:
     scraper_package: us_co_mesa
     timezone: America/Denver
   us_mt_gallatin:
-    region_name: UsMtGallatin
     agency_name: Gallatin County Jail
     region_code: us_mt_gallatin
     agency_type: jail
@@ -102,7 +96,6 @@ regions:
     scraper_package: us_mt_gallatin
     timezone: America/Denver
   us_mo_stone:
-    region_name: UsMoStone
     agency_name: Stone County Jail
     region_code: us_mo_stone
     agency_type: jail
@@ -115,7 +108,6 @@ regions:
     scraper_package: us_mo_stone
     timezone: America/Chicago
   us_pa_dauphin:
-    region_name: UsPaDauphin
     agency_name: Dauphin County Jail
     region_code: us_pa_dauphin
     agency_type: jail
@@ -128,7 +120,6 @@ regions:
     scraper_package: us_pa_dauphin
     timezone: America/New_York
   us_ar_van_buren:
-    region_name: UsArVanBuren
     agency_name: Van Buren County Jail
     region_code: us_ar_van_buren
     agency_type: jail

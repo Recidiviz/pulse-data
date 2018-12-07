@@ -41,7 +41,6 @@ MANIFEST_CONTENTS = """
         names_file: us_ny_names.csv
         queue: us-ny-scraper
         region_code: us_ny
-        region_name: New York State
         scraper_package: us_ny
         timezone: America/New_York
       us_fl:
@@ -58,7 +57,6 @@ MANIFEST_CONTENTS = """
           sha: baz
         queue: us-fl-scraper
         region_code: us_fl
-        region_name: Florida State
         scraper_class: a_different_scraper
         scraper_package: us_fl
         timezone: America/New_York
@@ -78,7 +76,6 @@ FULL_MANIFEST = {
             'names_file': 'us_ny_names.csv',
             'queue': 'us-ny-scraper',
             'region_code': 'us_ny',
-            'region_name': 'New York State',
             'scraper_package': 'us_ny',
             'timezone': 'America/New_York'
         },
@@ -98,7 +95,6 @@ FULL_MANIFEST = {
             },
             'queue': 'us-fl-scraper',
             'region_code': 'us_fl',
-            'region_name': 'Florida State',
             'scraper_class': 'a_different_scraper',
             'scraper_package': 'us_fl',
             'timezone': 'America/New_York'
