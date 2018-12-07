@@ -32,6 +32,7 @@ app = Flask(__name__)
 def write_record():
     # TODO: Something like `ingest_info = protobuf.read(request.data)`
     ingest_info = None
-    persistence.write(ingest_info)
+    last_scraped_time = None
+    persistence.write(ingest_info, last_scraped_time)
 
     return '', httplib.NOT_IMPLEMENTED

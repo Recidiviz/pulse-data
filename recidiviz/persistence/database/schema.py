@@ -196,7 +196,7 @@ class Booking(Base):
     facility = Column(String(255))
     classification = Column(classification_enum)
     region = Column(String(255), nullable=False, index=True)
-    last_scraped_date = Column(Date, nullable=False)
+    last_scraped_time = Column(DateTime, nullable=False)
 
     person = relationship('Person', back_populates='bookings')
     holds = relationship('Hold', back_populates='booking')
@@ -208,7 +208,7 @@ class BookingHistory(Base):
     """Represents the historical state of a booking"""
     __tablename__ = 'BookingHistory'
 
-    # NOTE: BookingHistory does not contain last_scraped_date column. This is to
+    # NOTE: BookingHistory does not contain last_scraped_time column. This is to
     # avoid needing to create a new BookingHistory entity when a booking is
     # re-scraped and no values have changed except last_scraped_date.
 

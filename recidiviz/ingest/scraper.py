@@ -23,6 +23,7 @@ inherit from.
 import abc
 import json
 import logging
+from datetime import datetime
 
 import requests_toolbelt.adapters.appengine
 import requests
@@ -109,6 +110,14 @@ class Scraper(object):
         """
         return self.region
 
+    def get_now_as_str(self):
+        """Returns the current time as a datetime
+
+        Returns:
+            datetime object set to the current time
+        """
+        return datetime.now().strftime(scraper_utils.DATETIME_STR_FORMAT)
+
     def start_scrape(self, scrape_type):
         """Start new scrape session / query against corrections site
 
@@ -130,7 +139,9 @@ class Scraper(object):
                                            scrape_type))
             return
 
-        params = {"scrape_type": scrape_type, "content": docket_item}
+        params = {"scrape_type": scrape_type,
+                  "content": docket_item,
+                  "scraper_start_time": self.get_now_as_str()}
 
         self.add_task(self.get_initial_task(), params)
 
@@ -228,7 +239,9 @@ class Scraper(object):
                     ScrapeKey(self.get_region().region_code, scrape_type))
                 return
 
-        params = {'scrape_type': scrape_type, 'content': content}
+        params = {'scrape_type': scrape_type,
+                  'content': content,
+                  'scraper_start_time': self.get_now_as_str()}
         self.add_task(self.get_initial_task(), params)
 
     @staticmethod
