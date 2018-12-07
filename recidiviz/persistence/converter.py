@@ -393,6 +393,11 @@ class Converter(object):
                 self._convert(converter_utils.parse_date_or_error,
                               ingest_sentence.date_imposed)
 
+        if ingest_sentence.county_of_commitment is not None:
+            sentence.county_of_commitment = \
+                self._convert(converter_utils.normalize,
+                              ingest_sentence.county_of_commitment)
+
         if ingest_sentence.min_length is not None:
             sentence.min_length_days = \
                 self._convert(converter_utils.time_string_to_days,
