@@ -31,6 +31,9 @@ The script will create the following files in the directory
  - `__init__.py`
  - `<region_code>.yaml`
 
+It will also create a test file
+`recidiviz/tests/ingest/<region_code>/<region_code>_scraper_test.py`.
+
 In addition, the script will append the region to [queue.yaml](/queue.yaml)
 and [region_manifest.yaml](/region_manifest.yaml).
 
