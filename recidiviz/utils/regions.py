@@ -44,7 +44,6 @@ class Region(object):
         params: (dict) Optional mapping of key-value pairs specific to region
         queue: (string) Name of the queue for this region
         region_code: (string) Region code
-        region_name: (string) Human-readable region name
         scraper_class: (string) Optional name of the class for this region's
             scraper. If absent, assumes the scraper is `[region_code]_scraper`.
         scraper_package: (string) Name of the package with this region's scraper
@@ -67,7 +66,6 @@ class Region(object):
         self.names_file = region_config.get("names_file", None)
         self.params = region_config.get("params", {})
         self.queue = region_config["queue"]
-        self.region_name = region_config["region_name"]
         self.scraper_class = region_config.get("scraper_class",
                                                self.region_code + "_scraper")
         self.scraper_package = region_config["scraper_package"]
