@@ -27,7 +27,7 @@ changes have been made.
 import httplib
 import logging
 
-from flask import Flask, request
+from flask import Blueprint, request
 from google.appengine.ext import deferred, ndb
 from google.appengine.ext.ndb import polymodel
 
@@ -46,11 +46,11 @@ FIRST_PASS_BATCH_SIZE = 12
 SECOND_PASS_BATCH_SIZE = 25
 REGION = "us_ny"
 
-app = Flask(__name__)
+data_migration = Blueprint('data_migration', __name__)
 
-@app.route('/data_migration')
+@data_migration.route('/')
 @authenticate_request
-def data_migration():
+def migrate():
     """Request handler to kick off migration work
 
     Request handler for data migration tasks. Migrates last_release_date

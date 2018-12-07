@@ -10,16 +10,16 @@ import httplib
 import json
 import logging
 
-from flask import Flask, request
+from flask import Blueprint, request
 from google.appengine.api import app_identity, urlfetch
 
 from recidiviz.utils.auth import authenticate_request
 
-app = Flask(__name__)
+datastore_export = Blueprint('datastore_export', __name__)
 
-@app.route('/datastore_export')
+@datastore_export.route('/')
 @authenticate_request
-def datastore_export():
+def export():
     """Triggers an export of Cloud Datastore.
 
     The exact data that is exported is determined from parameters in the
