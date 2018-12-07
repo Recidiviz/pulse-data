@@ -398,6 +398,7 @@ class TestFetchPage(object):
         from post requests."""
         url = "/around/the/world"
         body = {'foo': 'bar'}
+        json_data = {'far': 'boo'}
         region = "us_sd"
         queue_name = "us_sd_scraper"
         initial_task = "work_it"
@@ -411,13 +412,14 @@ class TestFetchPage(object):
         mock_requests.return_value = page
 
         scraper = FakeScraper(region, initial_task)
-        assert scraper.fetch_page(url, post_data=body) == page
+        assert scraper.fetch_page(url,
+                                  post_data=body, json_data=json_data) == page
 
         mock_region.assert_called_with(region)
         mock_proxies.assert_called_with()
         mock_headers.assert_called_with()
         mock_requests.assert_called_with(url, proxies=proxies, headers=headers,
-                                         data=body)
+                                         data=body, json=json_data)
 
     @patch("requests.get")
     @patch("recidiviz.ingest.scraper_utils.get_headers")

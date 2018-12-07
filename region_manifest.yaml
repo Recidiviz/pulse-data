@@ -131,3 +131,17 @@ regions:
       record: Record
     scraper_package: us_ar_van_buren
     timezone: America/Chicago
+
+  us_pa:
+    region_name: UsPa
+    agency_name: Pennsylvania Department of Corrections
+    region_code: us_pa
+    agency_type: prison
+    queue: us-pa-scraper
+    base_url: http://inmatelocator.cor.pa.gov
+    names_file: us_ny_names.csv
+    entity_kinds:
+      person: Person
+      record: Record
+    scraper_package: us_pa
+    timezone: America/New_York

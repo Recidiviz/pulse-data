@@ -71,7 +71,7 @@ class BaseScraper(Scraper):
     # Each scraper can override this, by default it is treated as a url endpoint
     # but any scraper can override this and treat it as a different type of
     # endpoint like an API endpoint for example.
-    def _fetch_content(self, endpoint, post_data=None):
+    def _fetch_content(self, endpoint, post_data=None, json_data=None):
         """Returns the page content.
 
         Args:
@@ -81,7 +81,8 @@ class BaseScraper(Scraper):
         Returns:
             Returns the content of the page or -1.
         """
-        page = self.fetch_page(endpoint, post_data=post_data)
+        page = self.fetch_page(endpoint,
+                               post_data=post_data, json_data=json_data)
         if page == -1:
             return -1
         try:
@@ -111,6 +112,7 @@ class BaseScraper(Scraper):
             'post_data',
             self.get_initial_data() if self.is_initial_task(task_type)
             else None)
+        json_data = params.get('json', None)
         ingest_info = None
 
         # Let the child transform the post_data if it wants before sending the
@@ -121,7 +123,7 @@ class BaseScraper(Scraper):
         # We always fetch some content before doing anything.  Note that we
         # use get here for the post_data to return a default value of None if
         # this scraper doesn't set it.
-        content = self._fetch_content(endpoint, post_data)
+        content = self._fetch_content(endpoint, post_data, json_data)
         if content == -1:
             return -1
 
