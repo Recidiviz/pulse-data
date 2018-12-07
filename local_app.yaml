@@ -11,13 +11,6 @@ includes:
 module: default
 version: default
 
-handlers:
-- url: /test_populator/populate
-  script: recidiviz.tests.utils.populate_test_db.app
-
-- url: /test_populator/clear
-  script: recidiviz.tests.utils.populate_test_db.app
-
 libraries:
 - name: lxml
   version: "3.7.3"

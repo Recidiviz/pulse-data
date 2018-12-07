@@ -27,7 +27,7 @@ import httplib
 import logging
 import time
 
-from flask import Flask, request
+from flask import Blueprint, request
 from google.appengine.ext import deferred
 
 from recidiviz.ingest import constants, docket, sessions, tracker
@@ -37,9 +37,9 @@ from recidiviz.utils.auth import authenticate_request
 from recidiviz.utils.params import get_value, get_values
 
 
-app = Flask(__name__)
+scraper_control = Blueprint('scraper_control', __name__)
 
-@app.route('/scraper/start')
+@scraper_control.route('/start')
 @authenticate_request
 def scraper_start():
     """Request handler to start one or several running scrapers
@@ -47,7 +47,7 @@ def scraper_start():
     Kicks off new scrape session for each region and scrape type in request
 
     Example query:
-        /scraper/start?region=us_ny&scrape_type=background
+        /scraper_control/start?region=us_ny&scrape_type=background
 
     URL parameters:
         region: (string) Region to take action for, or 'all'
@@ -101,7 +101,7 @@ def scraper_start():
     return ('', httplib.OK)
 
 
-@app.route('/scraper/stop')
+@scraper_control.route('/stop')
 @authenticate_request
 def scraper_stop():
     """Request handler to stop one or several running scrapers.
@@ -122,7 +122,7 @@ def scraper_stop():
     Scraper.stop_scrape is responsible for fan-out.
 
     Example query:
-        /scraper/stop?region=us_ny&scrape_type=background
+        /scraper_control/stop?region=us_ny&scrape_type=background
 
     URL parameters:
         region: (string) Region to take action for, or 'all'
@@ -154,7 +154,7 @@ def scraper_stop():
     return ('', httplib.OK)
 
 
-@app.route('/scraper/resume')
+@scraper_control.route('/resume')
 @authenticate_request
 def scraper_resume():
     """Request handler to resume one or several stopped scrapers
@@ -162,7 +162,7 @@ def scraper_resume():
     Resumes scraping for each region and scrape type in request.
 
     Example query:
-        /scraper/resume?region=us_ny&scrape_type=background
+        /scraper_control/resume?region=us_ny&scrape_type=background
 
     URL parameters:
         region: (string) Region to take action for, or 'all'

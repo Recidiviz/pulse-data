@@ -22,17 +22,17 @@ import httplib
 import json
 import logging
 
-from flask import Flask, request
+from flask import Blueprint, request
 from requests.packages.urllib3.contrib.appengine import TimeoutError
 
 from recidiviz.utils import regions
 from recidiviz.utils.auth import authenticate_request
 
-app = Flask(__name__)
+worker = Blueprint('worker', __name__)
 
-@app.route("/scraper/work", methods=['POST'])
+@worker.route("/work", methods=['POST'])
 @authenticate_request
-def scraper_work():
+def work():
     """POST request handler to route chunk of scraper work
 
     Very thin shim to receive a chunk of work from the task queue, and call
