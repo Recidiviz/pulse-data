@@ -25,7 +25,7 @@ class that initiates pipelines on web requests.
 
 import logging
 
-from flask import Flask, redirect, request
+from flask import Blueprint, redirect, request
 
 from mapreduce import base_handler, context, mapreduce_pipeline
 from mapreduce import operation as op
@@ -159,9 +159,9 @@ def to_metric(metric_key, total_records, total_recidivism):
 
     return metric
 
-app = Flask(__name__)
+calculator_pipeline = Blueprint('calculator_pipeline', __name__)
 
-@app.route('/calculator_pipeline')
+@calculator_pipeline.route('/')
 @authenticate_request
 def calculator_handler():
     """Handles a GET request to the calculator endpoint.

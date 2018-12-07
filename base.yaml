@@ -6,17 +6,9 @@ builtins:
 - deferred: on
 
 handlers:
-- url: /scraper/start
-  script: recidiviz.ingest.scraper_control.app
-
-- url: /scraper/stop
-  script: recidiviz.ingest.scraper_control.app
-
-- url: /scraper/resume
-  script: recidiviz.ingest.scraper_control.app
-
-- url: /scraper/work
-  script: recidiviz.ingest.worker.app
+- url: /_ah/queue/deferred
+  script: google.appengine.ext.deferred.deferred.application
+  login: admin
 
 - url: /v1/records
   script: recidiviz.persistence.actions.app
@@ -25,9 +17,5 @@ handlers:
   script: recidiviz.mapreduce.lib.pipeline.handlers._APP
   login: admin
 
-- url: /calculator_pipeline
-  script: recidiviz.calculator.recidivism.pipeline.app
-
-- url: /datastore_export
-  script: cloud_datastore_admin.app
-  login: admin
+- url: /.*
+  script: recidiviz.server.app

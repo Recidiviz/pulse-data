@@ -20,14 +20,19 @@
 
 import json
 
-from mock import patch
+from flask import Flask
 from google.appengine.ext import testbed
+from mock import patch
 from requests.packages.urllib3.contrib.appengine import TimeoutError
+
 from recidiviz.ingest import worker
 
-
 APP_ID = "recidiviz-worker-test"
-PATH = "/scraper/work"
+PATH = "/work"
+
+app = Flask(__name__)
+app.register_blueprint(worker.worker)
+app.config['TESTING'] = True
 
 
 class TestWorker(object):
@@ -41,8 +46,7 @@ class TestWorker(object):
         self.testbed.init_app_identity_stub()
         self.testbed.init_user_stub()
 
-        worker.app.config['TESTING'] = True
-        self.client = worker.app.test_client()
+        self.client = app.test_client()
 
     def teardown_method(self, _test_method):
         self.testbed.deactivate()

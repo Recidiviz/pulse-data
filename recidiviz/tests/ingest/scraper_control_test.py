@@ -17,13 +17,18 @@
 
 """Tests for ingest/scraper_control.py."""
 
-from mock import call, patch
+from flask import Flask
 from google.appengine.ext import testbed
-from recidiviz.ingest import constants
-from recidiviz.ingest import scraper_control
+from mock import call, patch
+
+from recidiviz.ingest import constants, scraper_control
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 
 APP_ID = "recidiviz-worker-test"
+
+app = Flask(__name__)
+app.register_blueprint(scraper_control.scraper_control)
+app.config['TESTING'] = True
 
 
 class TestScraperStart(object):
@@ -37,8 +42,7 @@ class TestScraperStart(object):
         self.testbed.init_app_identity_stub()
         self.testbed.init_user_stub()
 
-        scraper_control.app.config['TESTING'] = True
-        self.client = scraper_control.app.test_client()
+        self.client = app.test_client()
 
     def teardown_method(self, _test_method):
         self.testbed.deactivate()
@@ -80,7 +84,7 @@ class TestScraperStart(object):
         scrape_key = ScrapeKey(region, scrape_type)
         request_args = {'region': region, 'scrape_type': scrape_type}
         headers = {'X-Appengine-Cron': "test-cron"}
-        response = self.client.get('/scraper/start',
+        response = self.client.get('/start',
                                    query_string=request_args,
                                    headers=headers)
         assert response.status_code == 200
@@ -103,7 +107,7 @@ class TestScraperStart(object):
 
         request_args = {'region': 'us_ca', 'scrape_type': 'all'}
         headers = {'X-Appengine-Cron': "test-cron"}
-        response = self.client.get('/scraper/start',
+        response = self.client.get('/start',
                                    query_string=request_args,
                                    headers=headers)
         assert response.status_code == 400
@@ -124,8 +128,7 @@ class TestScraperStop(object):
         self.testbed.init_app_identity_stub()
         self.testbed.init_user_stub()
 
-        scraper_control.app.config['TESTING'] = True
-        self.client = scraper_control.app.test_client()
+        self.client = app.test_client()
 
     def teardown_method(self, _test_method):
         self.testbed.deactivate()
@@ -153,7 +156,7 @@ class TestScraperStop(object):
 
         request_args = {'region': 'all', 'scrape_type': 'all'}
         headers = {'X-Appengine-Cron': "test-cron"}
-        response = self.client.get('/scraper/stop',
+        response = self.client.get('/stop',
                                    query_string=request_args,
                                    headers=headers)
         assert response.status_code == 200
@@ -173,7 +176,7 @@ class TestScraperStop(object):
 
         request_args = {'region': 'us_ca', 'scrape_type': 'all'}
         headers = {'X-Appengine-Cron': "test-cron"}
-        response = self.client.get('/scraper/stop',
+        response = self.client.get('/stop',
                                    query_string=request_args,
                                    headers=headers)
         assert response.status_code == 400
@@ -194,8 +197,7 @@ class TestScraperResume(object):
         self.testbed.init_app_identity_stub()
         self.testbed.init_user_stub()
 
-        scraper_control.app.config['TESTING'] = True
-        self.client = scraper_control.app.test_client()
+        self.client = app.test_client()
 
     def teardown_method(self, _test_method):
         self.testbed.deactivate()
@@ -224,7 +226,7 @@ class TestScraperResume(object):
         region = 'us_ca'
         request_args = {'region': region, 'scrape_type': 'all'}
         headers = {'X-Appengine-Cron': "test-cron"}
-        response = self.client.get('/scraper/resume',
+        response = self.client.get('/resume',
                                    query_string=request_args,
                                    headers=headers)
         assert response.status_code == 200
@@ -242,7 +244,7 @@ class TestScraperResume(object):
 
         request_args = {'region': 'us_ca', 'scrape_type': 'all'}
         headers = {'X-Appengine-Cron': "test-cron"}
-        response = self.client.get('/scraper/resume',
+        response = self.client.get('/resume',
                                    query_string=request_args,
                                    headers=headers)
         assert response.status_code == 400

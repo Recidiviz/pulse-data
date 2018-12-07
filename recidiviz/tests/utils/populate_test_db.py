@@ -35,7 +35,7 @@ import string
 import time
 from datetime import datetime
 
-from flask import Flask, request
+from flask import Blueprint, request
 from google.appengine.ext import ndb
 
 from recidiviz.ingest.sessions import ScrapedRecord, ScrapeSession
@@ -46,9 +46,9 @@ from recidiviz.models.snapshot import Snapshot
 from recidiviz.utils import environment, regions
 from recidiviz.utils.auth import authenticate_request
 
-app = Flask(__name__)
+test_populator = Blueprint('test_populator', __name__)
 
-@app.route('/test_populator/populate')
+@test_populator.route('/populate')
 @environment.local_only
 @authenticate_request
 def populate():
@@ -114,7 +114,7 @@ def populate():
     return ("Database populated, feel free to test.", httplib.OK)
 
 
-@app.route('/test_populator/clear')
+@test_populator.route('/clear')
 @environment.local_only
 @authenticate_request
 def clear():
