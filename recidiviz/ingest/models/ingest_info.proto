@@ -79,7 +79,7 @@ message Charge {
 	optional string degree = 6;
 	optional string charge_class = 7;
 	optional string level = 8;
-	optional string fee = 9;
+	optional string fee_dollars = 9;
 	optional string charging_entity = 10;
 	optional string status = 11;
 	optional string number_of_counts = 12;
@@ -107,7 +107,7 @@ message Sentence {
 	optional string is_life = 5;
 	optional string is_probation = 6;
 	optional string is_suspended = 7;
-	optional string fine = 8;
+	optional string fine_dollars = 8;
 	optional string parole_possible = 9;
 	optional string post_release_supervision_length = 10;
 }
