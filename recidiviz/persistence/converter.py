@@ -154,11 +154,6 @@ class Converter(object):
                 converter_utils.parse_date_or_error,
                 ingest_booking.admission_date)
 
-        if ingest_booking.last_scraped_date is not None:
-            booking.last_scraped_date = self._convert(
-                converter_utils.parse_date_or_error,
-                ingest_booking.last_scraped_date)
-
         if ingest_booking.release_date is not None:
             booking.release_date = self._convert(
                 converter_utils.parse_date_or_error,

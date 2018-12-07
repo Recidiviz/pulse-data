@@ -51,20 +51,21 @@ def read_bookings(session):
     return session.query(Booking).all()
 
 
-def read_open_bookings_scraped_before_date(session, region, date):
+def read_open_bookings_scraped_before_time(session, region, time):
     """
-    Reads all open bookings in the given region that have a last_scraped_date
-    set to a time earlier than the provided date.
+    Reads all open bookings in the given region that have a last_scraped_time
+    set to a time earlier than the provided datetime.
 
     Args:
         session: The transaction to read from
         region: The region to match against
-        date: The exclusive upper bound on last_scrape_date to match against
+        time: The datetime exclusive upper bound on last_scrape_time to match
+            against
     Returns:
         List of bookings matching the provided args
     """
     query = session.query(Booking)
     query = query.filter(Booking.region == region)
     query = query.filter(Booking.release_date.is_(None))
-    query = query.filter(Booking.last_scraped_date < date)
+    query = query.filter(Booking.last_scraped_time < time)
     return query.all()
