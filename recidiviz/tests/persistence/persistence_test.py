@@ -16,7 +16,7 @@
 # =============================================================================
 """Tests for persistence.py."""
 
-from datetime import date
+from datetime import date, datetime, timedelta
 from unittest import TestCase
 
 from mock import patch, Mock
@@ -42,12 +42,12 @@ FINE_1_INT = 1500
 FINE_2 = ' '
 FINE_2_INT = 0
 GIVEN_NAME = "TEST_GIVEN_NAME"
-LAST_SCRAPED_DATE = '3/10/2018'
 OFFICER_NAME = 'TEST_OFFICER_NAME'
 PLACE_1 = 'TEST_PLACE_1'
 PLACE_2 = 'TEST_PLACE_2'
 REGION_1 = 'REGION_1'
 REGION_2 = 'REGION_2'
+SCRAPER_START_DATETIME = datetime(year=2018, month=8, day=06)
 SURNAME_1 = 'TEST_SURNAME_1'
 SURNAME_2 = 'TEST_SURNAME_2'
 
@@ -67,7 +67,7 @@ class TestPersistence(TestCase):
             ingest_info.create_person(surname=SURNAME_1)
 
             # Act
-            persistence.write(ingest_info)
+            persistence.write(ingest_info, SCRAPER_START_DATETIME)
             result = database.read_people(Session())
 
             # Assert
@@ -81,7 +81,7 @@ class TestPersistence(TestCase):
             ingest_info.create_person(surname=SURNAME_1)
 
             # Act
-            persistence.write(ingest_info)
+            persistence.write(ingest_info, SCRAPER_START_DATETIME)
             result = database.read_people(Session())
 
             # Assert
@@ -95,7 +95,7 @@ class TestPersistence(TestCase):
         ingest_info.create_person(surname=SURNAME_2, given_names=GIVEN_NAME)
 
         # Act
-        persistence.write(ingest_info)
+        persistence.write(ingest_info, SCRAPER_START_DATETIME)
         result = database.read_people(Session())
 
         # Assert
@@ -110,7 +110,7 @@ class TestPersistence(TestCase):
         ingest_info.create_person(surname=SURNAME_1, given_names=GIVEN_NAME)
 
         # Act
-        persistence.write(ingest_info)
+        persistence.write(ingest_info, SCRAPER_START_DATETIME)
         result = database.read_people(Session())
 
         # Assert
@@ -126,14 +126,14 @@ class TestPersistence(TestCase):
                                   given_names=GIVEN_NAME,
                                   place_of_residence=PLACE_1,
                                   birthdate=BIRTHDATE_1)
-        persistence.write(ingest_info)
+        persistence.write(ingest_info, SCRAPER_START_DATETIME)
 
         ingest_info = IngestInfo()
         ingest_info.create_person(surname=SURNAME_1,
                                   given_names=GIVEN_NAME,
                                   place_of_residence=PLACE_2)
         # Act
-        persistence.write(ingest_info)
+        persistence.write(ingest_info, SCRAPER_START_DATETIME)
         result = database.read_people(Session())
 
         # Assert
@@ -151,7 +151,7 @@ class TestPersistence(TestCase):
                                   birthdate=BIRTHDATE_2)
 
         # Act
-        persistence.write(ingest_info)
+        persistence.write(ingest_info, SCRAPER_START_DATETIME)
         result = database.read_people(Session(), surname=SURNAME_1)
 
         # Assert
@@ -167,8 +167,7 @@ class TestPersistence(TestCase):
                                            given_names=GIVEN_NAME)
         booking = person.create_booking(facility=FACILITY,
                                         custody_status=BOOKING_CUSTODY_STATUS,
-                                        region=REGION_1,
-                                        last_scraped_date=LAST_SCRAPED_DATE)
+                                        region=REGION_1)
         booking.create_arrest(officer_name=OFFICER_NAME)
 
         shared_bond = _Bond(bond_type=BOND_TYPE, status=BOND_STATUS)
@@ -184,7 +183,7 @@ class TestPersistence(TestCase):
         charge_2.create_sentence(fine_dollars=FINE_2)
 
         # Act
-        persistence.write(ingest_info)
+        persistence.write(ingest_info, SCRAPER_START_DATETIME)
         result = database.read_people(Session())
 
         # Assert
@@ -195,6 +194,7 @@ class TestPersistence(TestCase):
         assert len(result_person.bookings) == 1
         result_booking = result_person.bookings[0]
         assert result_booking.facility == FACILITY
+        assert result_booking.last_scraped_time == SCRAPER_START_DATETIME
 
         result_arrest = result_booking.arrest
         assert result_arrest.officer_name == OFFICER_NAME
@@ -213,41 +213,36 @@ class TestPersistence(TestCase):
         assert sentence_1.fine_dollars == FINE_1_INT
         assert sentence_2.fine_dollars == FINE_2_INT
 
-
     def test_inferReleaseDateOnOpenBookings(self):
         # Arrange
-        most_recent_scrape_date = date(year=2018, month=6, day=20)
-        date_in_past = '6/19/2018'
+        most_recent_scrape_date = \
+            (SCRAPER_START_DATETIME + timedelta(days=1)).date()
         charge_1 = Charge(name=CHARGE_NAME_1, status='PENDING')
         charge_2 = Charge(name=CHARGE_NAME_2, status='PENDING')
         ingest_info = IngestInfo()
         person = ingest_info.create_person(surname=SURNAME_1,
                                            given_names=GIVEN_NAME)
         person.create_booking(
-            region=REGION_1, last_scraped_date=date_in_past,
-            charges=[charge_1], custody_status='IN CUSTODY')
+            region=REGION_1, charges=[charge_1], custody_status='IN CUSTODY')
         person.create_booking(
-            region=REGION_2, last_scraped_date=date_in_past,
-            charges=[charge_2], custody_status='IN CUSTODY')
+            region=REGION_2, charges=[charge_2], custody_status='IN CUSTODY')
 
         # Act
-        persistence.write(ingest_info)
+        persistence.write(ingest_info, SCRAPER_START_DATETIME)
         persistence.infer_release_on_open_bookings(
             REGION_1, most_recent_scrape_date)
 
         # Assert
         bookings = database.read_bookings(Session())
         assert bookings[0].region == REGION_1
-        assert bookings[0].last_scraped_date == \
-            date(year=2018, month=6, day=19)
+        assert bookings[0].last_scraped_time == SCRAPER_START_DATETIME
         assert bookings[0].release_date == most_recent_scrape_date
         assert bookings[0].release_date_inferred is True
         assert bookings[0].charges[0].name == CHARGE_NAME_1
         # TODO: assert status when RESOLVED status is handled
 
         assert bookings[1].region == REGION_2
-        assert bookings[1].last_scraped_date == \
-            date(year=2018, month=6, day=19)
+        assert bookings[1].last_scraped_time == SCRAPER_START_DATETIME
         assert bookings[1].release_date is None
         assert bookings[1].release_date_inferred is None
         assert bookings[1].charges[0].name == CHARGE_NAME_2

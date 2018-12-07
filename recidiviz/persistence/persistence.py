@@ -31,7 +31,7 @@ class PersistenceError(Exception):
     pass
 
 
-def infer_release_on_open_bookings(region, scrape_date):
+def infer_release_on_open_bookings(region, scrape_time):
     """
    Look up all open bookings whose last_scraped_date is earlier than the
    provided scrape_date in the provided region, update those
@@ -47,9 +47,9 @@ def infer_release_on_open_bookings(region, scrape_date):
 
     session = Session()
     try:
-        bookings = database.read_open_bookings_scraped_before_date(
-            session, region, scrape_date)
-        _infer_release_date_for_bookings(bookings, scrape_date)
+        bookings = database.read_open_bookings_scraped_before_time(
+            session, region, scrape_time)
+        _infer_release_date_for_bookings(bookings, scrape_time)
         for booking in bookings:
             session.add(session.merge(booking))
         session.commit()
@@ -82,7 +82,7 @@ def _should_persist():
     return environment.in_prod() or strtobool((os.environ['PERSIST_LOCALLY']))
 
 
-def write(ingest_info):
+def write(ingest_info, scraper_start_time):
     """
     If in prod or if 'PERSIST_LOCALLY' is set to true, persist each person in
     the ingest_info. If a person with the given surname/birthday already exists,
@@ -92,12 +92,15 @@ def write(ingest_info):
 
     Args:
          ingest_info: The IngestInfo containing each person
+         scraper_start_time: The start datetime for the scraper that produced
+            the provided ingest_info
     """
     log = logging.getLogger()
     converter = Converter()
 
     log.info(ingest_info)
     people = converter.convert_ingest_info(ingest_info)
+    _add_last_scraped_time(people, scraper_start_time)
 
     if not _should_persist():
         return
@@ -119,3 +122,9 @@ def write(ingest_info):
             raise
         finally:
             session.close()
+
+
+def _add_last_scraped_time(people, scraper_start_time):
+    for person in people:
+        for booking in person.bookings:
+            booking.last_scraped_time = scraper_start_time

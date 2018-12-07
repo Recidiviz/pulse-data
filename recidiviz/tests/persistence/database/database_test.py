@@ -35,26 +35,26 @@ class TestDatabase(object):
         region = 'region'
         incorrect_region = 'other_region'
         release_date = datetime.date(2018, 7, 20)
-        most_recent_scrape_date = datetime.date(2018, 6, 20)
+        most_recent_scrape_date = datetime.datetime(2018, 6, 20)
         date_in_past = most_recent_scrape_date - datetime.timedelta(days=1)
         person_id = 8
 
         # Bookings that should be returned
         open_booking_before_last_scrape = Booking(
             person_id=person_id, custody_status='In Custody',
-            region=region, last_scraped_date=date_in_past)
+            region=region, last_scraped_time=date_in_past)
 
         # Bookings that should not be returned
         open_booking_incorrect_region = Booking(
             person_id=person_id, custody_status='In Custody',
-            region=incorrect_region, last_scraped_date=date_in_past)
+            region=incorrect_region, last_scraped_time=date_in_past)
         open_booking_most_recent_scrape = Booking(
             person_id=person_id, custody_status='In Custody',
-            region=region, last_scraped_date=most_recent_scrape_date)
+            region=region, last_scraped_time=most_recent_scrape_date)
         resolved_booking = Booking(person_id=person_id,
                                    custody_status='In Custody',
                                    region=region, release_date=release_date,
-                                   last_scraped_date=date_in_past)
+                                   last_scraped_time=date_in_past)
 
         session = Session()
         session.add(open_booking_before_last_scrape)
@@ -64,7 +64,7 @@ class TestDatabase(object):
         session.commit()
 
         # Act
-        bookings = database.read_open_bookings_scraped_before_date(
+        bookings = database.read_open_bookings_scraped_before_time(
             session, region, most_recent_scrape_date)
 
         # Assert

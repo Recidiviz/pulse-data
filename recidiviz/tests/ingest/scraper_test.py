@@ -20,7 +20,7 @@
 
 import json
 from datetime import datetime
-from mock import patch
+from mock import patch, Mock
 
 from google.appengine.ext import ndb
 from google.appengine.ext.db import InternalError
@@ -34,6 +34,9 @@ from recidiviz.ingest.sessions import ScrapeSession
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.models.record import Offense, Record, SentenceDuration
 from recidiviz.models.snapshot import Snapshot
+
+
+_DATETIME_STR = "2018-12-06 00::00::00"
 
 
 class TestAbstractScraper(object):
@@ -55,14 +58,16 @@ class TestAbstractScraper(object):
         assert scraper.scraper_work_url == "/scraper/work"
 
 
+@patch('recidiviz.ingest.scraper.Scraper.get_now_as_str',
+       Mock(return_value=_DATETIME_STR))
 class TestStartScrape(object):
     """Tests for the Scraper.start_scrape method."""
 
     @patch("google.appengine.api.taskqueue.add")
     @patch("recidiviz.ingest.tracker.iterate_docket_item")
     @patch("recidiviz.utils.regions.get_region_manifest")
-    def test_start_scrape_background(self, mock_region,
-                                     mock_tracker, mock_taskqueue):
+    def test_start_scrape_background(
+            self, mock_region, mock_tracker, mock_taskqueue):
         docket_item = ("Dog", "Cat")
         region = "us_nd"
         scrape_type = constants.BACKGROUND_SCRAPE
@@ -72,6 +77,7 @@ class TestStartScrape(object):
         mock_region.return_value = mock_region_manifest(region, queue_name)
         mock_tracker.return_value = docket_item
         mock_taskqueue.return_value = None
+        # mock_datetime.now = Mock(return_value=_DATETIME)
 
         scraper = FakeScraper(region, initial_task)
         scraper.start_scrape(scrape_type)
@@ -79,7 +85,8 @@ class TestStartScrape(object):
         mock_region.assert_called_with(region)
         mock_tracker.assert_called_with(ScrapeKey(region, scrape_type))
         task_params = json.dumps({'scrape_type': scrape_type,
-                                  'content': docket_item})
+                                  'content': docket_item,
+                                  'scraper_start_time': _DATETIME_STR})
         mock_taskqueue.assert_called_with(url=scraper.scraper_work_url,
                                           queue_name=queue_name,
                                           params={
@@ -109,7 +116,8 @@ class TestStartScrape(object):
         mock_region.assert_called_with(region)
         mock_tracker.assert_called_with(ScrapeKey(region, scrape_type))
         task_params = json.dumps({'scrape_type': scrape_type,
-                                  'content': (83240, ["daft", "punk"])})
+                                  'content': (83240, ["daft", "punk"]),
+                                  'scraper_start_time': _DATETIME_STR})
         mock_taskqueue.assert_called_with(url=scraper.scraper_work_url,
                                           queue_name=queue_name,
                                           params={
@@ -219,6 +227,8 @@ class TestStopScraper(object):
                                          _countdown=60)
 
 
+@patch('recidiviz.ingest.scraper.Scraper.get_now_as_str',
+       Mock(return_value=_DATETIME_STR))
 class TestResumeScrape(object):
     """Tests for the Scraper.resume_scrape method."""
 
@@ -247,7 +257,8 @@ class TestResumeScrape(object):
         mock_region.assert_called_with(region)
         mock_sessions.assert_called_with(ScrapeKey(region, scrape_type))
         task_params = json.dumps({'scrape_type': scrape_type,
-                                  'content': ("Bangalter", "Thomas")})
+                                  'content': ("Bangalter", "Thomas"),
+                                  'scraper_start_time': _DATETIME_STR})
         mock_taskqueue.assert_called_with(url=scraper.scraper_work_url,
                                           queue_name=queue_name,
                                           params={
@@ -313,7 +324,8 @@ class TestResumeScrape(object):
 
         mock_region.assert_called_with(region)
         task_params = json.dumps({'scrape_type': scrape_type,
-                                  'content': (83240, ["daft", "punk"])})
+                                  'content': (83240, ["daft", "punk"]),
+                                  'scraper_start_time': _DATETIME_STR})
         mock_taskqueue.assert_called_with(url=scraper.scraper_work_url,
                                           queue_name=queue_name,
                                           params={

@@ -31,6 +31,8 @@ from google.appengine.ext import ndb
 from recidiviz.models import env_vars
 from recidiviz.utils import environment
 
+DATETIME_STR_FORMAT = '%Y-%m-%d %H:%M:%S'
+
 
 def parse_date_string(date_string, person_id=None):
     """Converts string describing date to Python date object

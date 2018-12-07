@@ -46,7 +46,7 @@ from lxml import html
 from lxml.etree import XMLSyntaxError  # pylint:disable=no-name-in-module
 
 from recidiviz.persistence import persistence
-from recidiviz.ingest import constants
+from recidiviz.ingest import constants, scraper_utils
 from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.ingest.scraper import Scraper
 
@@ -139,6 +139,7 @@ class BaseScraper(Scraper):
             for task_params in tasks:
                 # Always pass along the scrape type as well.
                 task_params['scrape_type'] = params['scrape_type']
+                task_params['scraper_start_time'] = params['scraper_start_time']
                 # If we have an ingest info to work with, we need to pass that
                 # along as well.
                 if ingest_info:
@@ -152,7 +153,9 @@ class BaseScraper(Scraper):
             if not ingest_info:
                 raise ValueError(
                     'IngestInfo must be populated if there are no more tasks')
-            persistence.write(ingest_info)
+            scraper_start_time = scraper_utils.parse_date_string(
+                params['scraper_start_time'])
+            persistence.write(ingest_info, scraper_start_time)
         return None
 
     def is_initial_task(self, task_type):
