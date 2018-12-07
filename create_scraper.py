@@ -65,6 +65,21 @@ def create_files(subs):
     yaml_target = os.path.join(target_dir, subs['region'] + '.yaml')
     populate_file(yaml_template, yaml_target, subs)
 
+    test_dir = os.path.join(os.path.dirname(__file__),
+                            'recidiviz/tests/ingest/')
+    if not os.path.exists(ingest_dir):
+        raise OSError('Couldn\'t find directory recidiviz/tests/ingest. Run ' +
+                      'this script from the top level pulse-data ' +
+                      'directory.')
+    target_test_dir = os.path.join(test_dir, subs['region'])
+    if os.path.exists(target_test_dir):
+        raise OSError('directory %s already exists' % target_test_dir)
+    os.mkdir(target_test_dir)
+
+    test_template = os.path.join(template_dir, 'region_scraper_test.txt')
+    test_target = os.path.join(target_test_dir,
+                               subs['region'] + '_scraper_test.py')
+    populate_file(test_template, test_target, subs)
 
 def append_to_config_files(subs):
     """Updates queue.yaml and region_manifest.yaml with the new region.
@@ -120,6 +135,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     state = us.states.lookup(unicode(args.state))
+    if state is None:
+        raise ValueError('Couldn\'t parse state "%s"' % args.state)
     region = ('us', state.abbr.lower()) + tuple(args.county.lower().split())
 
     substitutions = {
