@@ -102,7 +102,6 @@ def append_to_config_files(subs):
 
     region_text = """
   $region:
-    region_name: $class_name
     agency_name: $agency
     region_code: $region
     agency_type: $agency_type
