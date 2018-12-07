@@ -245,7 +245,7 @@ class Scraper(object):
         self.add_task(self.get_initial_task(), params)
 
     @staticmethod
-    def fetch_page(url, post_data=None):
+    def fetch_page(url, post_data=None, json_data=None):
         """Fetch content from a URL. If data is None (the default), we perform
         a GET for the page. If the data is set, it must be a dict of parameters
         to use as POST data in a POST request to the url.
@@ -262,11 +262,11 @@ class Scraper(object):
         headers = scraper_utils.get_headers()
 
         try:
-            if post_data is None:
+            if post_data is None and json_data is None:
                 page = requests.get(url, proxies=proxies, headers=headers)
             else:
                 page = requests.post(url, proxies=proxies, headers=headers,
-                                     data=post_data)
+                                     data=post_data, json=json_data)
         except requests.exceptions.RequestException as ce:
             log_error = "Error: {0}".format(ce)
 
