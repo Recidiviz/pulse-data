@@ -141,8 +141,9 @@ class _Arrest(object):
     Referenced from Booking.
     """
 
-    def __init__(self, date=None, location=None, officer_name=None,
-                 officer_id=None, agency=None):
+    def __init__(self, arrest_id=None, date=None, location=None,
+                 officer_name=None, officer_id=None, agency=None):
+        self.arrest_id = arrest_id
         self.date = date  # type: str
         self.location = location  # type: str
         self.officer_name = officer_name  # type: str
@@ -161,13 +162,14 @@ class _Charge(object):
     Referenced from Booking.
     """
 
-    def __init__(self, offense_date=None, statute=None, name=None,
-                 attempted=None, degree=None,
+    def __init__(self, charge_id=None, offense_date=None, statute=None,
+                 name=None, attempted=None, degree=None,
                  charge_class=None, level=None, fee_dollars=None,
                  charging_entity=None, status=None,
                  number_of_counts=None, court_type=None,
                  case_number=None, next_court_date=None, judge_name=None,
                  bond=None, sentence=None):
+        self.charge_id = charge_id
         self.offense_date = offense_date  # type: str
         self.statute = statute  # type: str
         self.name = name  # type: str
@@ -232,10 +234,11 @@ class _Sentence(object):
     Referenced from Charge.
     """
 
-    def __init__(self, date_imposed=None, min_length=None, max_length=None,
-                 is_life=None, is_probation=None, is_suspended=None,
-                 fine_dollars=None, parole_possible=None,
+    def __init__(self, sentence_id=None, date_imposed=None, min_length=None,
+                 max_length=None, is_life=None, is_probation=None,
+                 is_suspended=None, fine_dollars=None, parole_possible=None,
                  post_release_supervision_length=None):
+        self.sentence_id = sentence_id
         self.date_imposed = date_imposed  # type: str
         self.min_length = min_length  # type: str
         self.max_length = max_length  # type: str
