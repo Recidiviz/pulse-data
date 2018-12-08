@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='recidiviz.ingest.models',
   syntax='proto2',
   serialized_options=None,
-  serialized_pb=_b('\n\x11ingest_info.proto\x12\x17recidiviz.ingest.models\"\xb9\x02\n\nIngestInfo\x12/\n\x06people\x18\x01 \x03(\x0b\x32\x1f.recidiviz.ingest.models.Person\x12\x32\n\x08\x62ookings\x18\x02 \x03(\x0b\x32 .recidiviz.ingest.models.Booking\x12\x30\n\x07\x63harges\x18\x03 \x03(\x0b\x32\x1f.recidiviz.ingest.models.Charge\x12,\n\x05\x62onds\x18\x04 \x03(\x0b\x32\x1d.recidiviz.ingest.models.Bond\x12\x30\n\x07\x61rrests\x18\x05 \x03(\x0b\x32\x1f.recidiviz.ingest.models.Arrest\x12\x34\n\tsentences\x18\x06 \x03(\x0b\x32!.recidiviz.ingest.models.Sentence\"\xd3\x01\n\x06Person\x12\x11\n\tperson_id\x18\x01 \x01(\t\x12\x0f\n\x07surname\x18\x02 \x01(\t\x12\x13\n\x0bgiven_names\x18\x03 \x01(\t\x12\x11\n\tbirthdate\x18\x04 \x01(\t\x12\x0e\n\x06status\x18\x05 \x01(\t\x12\x0e\n\x06gender\x18\x06 \x01(\t\x12\x0b\n\x03\x61ge\x18\x07 \x01(\t\x12\x0c\n\x04race\x18\x08 \x01(\t\x12\x11\n\tethnicity\x18\t \x01(\t\x12\x1a\n\x12place_of_residence\x18\n \x01(\t\x12\x13\n\x0b\x62ooking_ids\x18\x0b \x03(\t\"\xb0\x02\n\x07\x42ooking\x12\x12\n\nbooking_id\x18\x01 \x01(\t\x12\x16\n\x0e\x61\x64mission_date\x18\x02 \x01(\t\x12\x1c\n\x14project_release_date\x18\x03 \x01(\t\x12\x14\n\x0crelease_date\x18\x04 \x01(\t\x12\x16\n\x0erelease_reason\x18\x05 \x01(\t\x12\x16\n\x0e\x63ustody_status\x18\x06 \x01(\t\x12\x1b\n\x13jurisdiction_status\x18\x07 \x01(\t\x12\x0c\n\x04hold\x18\x08 \x01(\t\x12\x10\n\x08\x66\x61\x63ility\x18\t \x01(\t\x12\x16\n\x0e\x63lassification\x18\n \x01(\t\x12\x19\n\x11total_bond_amount\x18\x0b \x01(\t\x12\x11\n\tarrest_id\x18\x0c \x01(\t\x12\x12\n\ncharge_ids\x18\r \x03(\t\"\x8d\x01\n\x06\x41rrest\x12\x11\n\tarrest_id\x18\x01 \x01(\t\x12\x0c\n\x04\x64\x61te\x18\x02 \x01(\t\x12\x10\n\x08location\x18\x03 \x01(\t\x12\x14\n\x0cofficer_name\x18\x04 \x01(\t\x12\x16\n\x0e\x61\x64mission_date\x18\x05 \x01(\t\x12\x12\n\nofficer_id\x18\x06 \x01(\t\x12\x0e\n\x06\x61gency\x18\x07 \x01(\t\"\xeb\x02\n\x06\x43harge\x12\x11\n\tcharge_id\x18\x01 \x01(\t\x12\x14\n\x0coffense_date\x18\x02 \x01(\t\x12\x0f\n\x07statute\x18\x03 \x01(\t\x12\x0c\n\x04name\x18\x04 \x01(\t\x12\x11\n\tattempted\x18\x05 \x01(\t\x12\x0e\n\x06\x64\x65gree\x18\x06 \x01(\t\x12\x14\n\x0c\x63harge_class\x18\x07 \x01(\t\x12\r\n\x05level\x18\x08 \x01(\t\x12\x0b\n\x03\x66\x65\x65\x18\t \x01(\t\x12\x17\n\x0f\x63harging_entity\x18\n \x01(\t\x12\x15\n\rcharge_status\x18\x0b \x01(\t\x12\x18\n\x10number_of_counts\x18\x0c \x01(\t\x12\x12\n\ncourt_type\x18\r \x01(\t\x12\x13\n\x0b\x63\x61se_number\x18\x0e \x01(\t\x12\x17\n\x0fnext_court_date\x18\x0f \x01(\t\x12\x12\n\njudge_name\x18\x10 \x01(\t\x12\x0f\n\x07\x62ond_id\x18\x11 \x01(\t\x12\x13\n\x0bsentence_id\x18\x12 \x01(\t\"J\n\x04\x42ond\x12\x0f\n\x07\x62ond_id\x18\x01 \x01(\t\x12\x0e\n\x06\x61mount\x18\x02 \x01(\t\x12\x11\n\tbond_type\x18\x03 \x01(\t\x12\x0e\n\x06status\x18\x04 \x01(\t\"\xea\x01\n\x08Sentence\x12\x13\n\x0bsentence_id\x18\x01 \x01(\t\x12\x14\n\x0c\x64\x61te_imposed\x18\x02 \x01(\t\x12\x12\n\nmin_length\x18\x03 \x01(\t\x12\x12\n\nmax_length\x18\x04 \x01(\t\x12\x0f\n\x07is_life\x18\x05 \x01(\t\x12\x14\n\x0cis_probation\x18\x06 \x01(\t\x12\x14\n\x0cis_suspended\x18\x07 \x01(\t\x12\x0c\n\x04\x66ine\x18\x08 \x01(\t\x12\x17\n\x0fparole_possible\x18\t \x01(\t\x12\'\n\x1fpost_release_supervision_length\x18\n \x01(\t')
+  serialized_pb=_b('\n\x11ingest_info.proto\x12\x17recidiviz.ingest.models\"\xb9\x02\n\nIngestInfo\x12/\n\x06people\x18\x01 \x03(\x0b\x32\x1f.recidiviz.ingest.models.Person\x12\x32\n\x08\x62ookings\x18\x02 \x03(\x0b\x32 .recidiviz.ingest.models.Booking\x12\x30\n\x07\x63harges\x18\x03 \x03(\x0b\x32\x1f.recidiviz.ingest.models.Charge\x12,\n\x05\x62onds\x18\x04 \x03(\x0b\x32\x1d.recidiviz.ingest.models.Bond\x12\x30\n\x07\x61rrests\x18\x05 \x03(\x0b\x32\x1f.recidiviz.ingest.models.Arrest\x12\x34\n\tsentences\x18\x06 \x03(\x0b\x32!.recidiviz.ingest.models.Sentence\"\xd6\x01\n\x06Person\x12\x11\n\tperson_id\x18\x01 \x01(\t\x12\x0f\n\x07surname\x18\x02 \x01(\t\x12\x13\n\x0bgiven_names\x18\x03 \x01(\t\x12\x11\n\tbirthdate\x18\x04 \x01(\t\x12\x0e\n\x06gender\x18\x05 \x01(\t\x12\x0b\n\x03\x61ge\x18\x06 \x01(\t\x12\x0c\n\x04race\x18\x07 \x01(\t\x12\x11\n\tethnicity\x18\x08 \x01(\t\x12\x1a\n\x12place_of_residence\x18\t \x01(\t\x12\x11\n\tfull_name\x18\n \x01(\t\x12\x13\n\x0b\x62ooking_ids\x18\x0b \x03(\t\"\xa5\x02\n\x07\x42ooking\x12\x12\n\nbooking_id\x18\x01 \x01(\t\x12\x16\n\x0e\x61\x64mission_date\x18\x02 \x01(\t\x12\x1e\n\x16projected_release_date\x18\x03 \x01(\t\x12\x14\n\x0crelease_date\x18\x04 \x01(\t\x12\x16\n\x0erelease_reason\x18\x05 \x01(\t\x12\x16\n\x0e\x63ustody_status\x18\x06 \x01(\t\x12\x0c\n\x04hold\x18\x07 \x01(\t\x12\x10\n\x08\x66\x61\x63ility\x18\x08 \x01(\t\x12\x16\n\x0e\x63lassification\x18\t \x01(\t\x12\x19\n\x11total_bond_amount\x18\n \x01(\t\x12\x0e\n\x06region\x18\x0b \x01(\t\x12\x11\n\tarrest_id\x18\x0c \x01(\t\x12\x12\n\ncharge_ids\x18\r \x03(\t\"u\n\x06\x41rrest\x12\x11\n\tarrest_id\x18\x01 \x01(\t\x12\x0c\n\x04\x64\x61te\x18\x02 \x01(\t\x12\x10\n\x08location\x18\x03 \x01(\t\x12\x14\n\x0cofficer_name\x18\x04 \x01(\t\x12\x12\n\nofficer_id\x18\x05 \x01(\t\x12\x0e\n\x06\x61gency\x18\x06 \x01(\t\"\xec\x02\n\x06\x43harge\x12\x11\n\tcharge_id\x18\x01 \x01(\t\x12\x14\n\x0coffense_date\x18\x02 \x01(\t\x12\x0f\n\x07statute\x18\x03 \x01(\t\x12\x0c\n\x04name\x18\x04 \x01(\t\x12\x11\n\tattempted\x18\x05 \x01(\t\x12\x0e\n\x06\x64\x65gree\x18\x06 \x01(\t\x12\x14\n\x0c\x63harge_class\x18\x07 \x01(\t\x12\r\n\x05level\x18\x08 \x01(\t\x12\x13\n\x0b\x66\x65\x65_dollars\x18\t \x01(\t\x12\x17\n\x0f\x63harging_entity\x18\n \x01(\t\x12\x0e\n\x06status\x18\x0b \x01(\t\x12\x18\n\x10number_of_counts\x18\x0c \x01(\t\x12\x12\n\ncourt_type\x18\r \x01(\t\x12\x13\n\x0b\x63\x61se_number\x18\x0e \x01(\t\x12\x17\n\x0fnext_court_date\x18\x0f \x01(\t\x12\x12\n\njudge_name\x18\x10 \x01(\t\x12\x0f\n\x07\x62ond_id\x18\x11 \x01(\t\x12\x13\n\x0bsentence_id\x18\x12 \x01(\t\"J\n\x04\x42ond\x12\x0f\n\x07\x62ond_id\x18\x01 \x01(\t\x12\x0e\n\x06\x61mount\x18\x02 \x01(\t\x12\x11\n\tbond_type\x18\x03 \x01(\t\x12\x0e\n\x06status\x18\x04 \x01(\t\"\x90\x02\n\x08Sentence\x12\x13\n\x0bsentence_id\x18\x01 \x01(\t\x12\x14\n\x0c\x64\x61te_imposed\x18\x02 \x01(\t\x12\x12\n\nmin_length\x18\x03 \x01(\t\x12\x12\n\nmax_length\x18\x04 \x01(\t\x12\x0f\n\x07is_life\x18\x05 \x01(\t\x12\x14\n\x0cis_probation\x18\x06 \x01(\t\x12\x14\n\x0cis_suspended\x18\x07 \x01(\t\x12\x14\n\x0c\x66ine_dollars\x18\x08 \x01(\t\x12\x17\n\x0fparole_possible\x18\t \x01(\t\x12\'\n\x1fpost_release_supervision_length\x18\n \x01(\t\x12\x1c\n\x14\x63ounty_of_commitment\x18\x0b \x01(\t')
 )
 
 
@@ -127,42 +127,42 @@ _PERSON = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='status', full_name='recidiviz.ingest.models.Person.status', index=4,
+      name='gender', full_name='recidiviz.ingest.models.Person.gender', index=4,
       number=5, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='gender', full_name='recidiviz.ingest.models.Person.gender', index=5,
+      name='age', full_name='recidiviz.ingest.models.Person.age', index=5,
       number=6, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='age', full_name='recidiviz.ingest.models.Person.age', index=6,
+      name='race', full_name='recidiviz.ingest.models.Person.race', index=6,
       number=7, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='race', full_name='recidiviz.ingest.models.Person.race', index=7,
+      name='ethnicity', full_name='recidiviz.ingest.models.Person.ethnicity', index=7,
       number=8, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='ethnicity', full_name='recidiviz.ingest.models.Person.ethnicity', index=8,
+      name='place_of_residence', full_name='recidiviz.ingest.models.Person.place_of_residence', index=8,
       number=9, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='place_of_residence', full_name='recidiviz.ingest.models.Person.place_of_residence', index=9,
+      name='full_name', full_name='recidiviz.ingest.models.Person.full_name', index=9,
       number=10, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -188,7 +188,7 @@ _PERSON = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=363,
-  serialized_end=574,
+  serialized_end=577,
 )
 
 
@@ -214,7 +214,7 @@ _BOOKING = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='project_release_date', full_name='recidiviz.ingest.models.Booking.project_release_date', index=2,
+      name='projected_release_date', full_name='recidiviz.ingest.models.Booking.projected_release_date', index=2,
       number=3, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -242,35 +242,35 @@ _BOOKING = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='jurisdiction_status', full_name='recidiviz.ingest.models.Booking.jurisdiction_status', index=6,
+      name='hold', full_name='recidiviz.ingest.models.Booking.hold', index=6,
       number=7, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='hold', full_name='recidiviz.ingest.models.Booking.hold', index=7,
+      name='facility', full_name='recidiviz.ingest.models.Booking.facility', index=7,
       number=8, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='facility', full_name='recidiviz.ingest.models.Booking.facility', index=8,
+      name='classification', full_name='recidiviz.ingest.models.Booking.classification', index=8,
       number=9, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='classification', full_name='recidiviz.ingest.models.Booking.classification', index=9,
+      name='total_bond_amount', full_name='recidiviz.ingest.models.Booking.total_bond_amount', index=9,
       number=10, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='total_bond_amount', full_name='recidiviz.ingest.models.Booking.total_bond_amount', index=10,
+      name='region', full_name='recidiviz.ingest.models.Booking.region', index=10,
       number=11, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -302,8 +302,8 @@ _BOOKING = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=577,
-  serialized_end=881,
+  serialized_start=580,
+  serialized_end=873,
 )
 
 
@@ -343,22 +343,15 @@ _ARREST = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='admission_date', full_name='recidiviz.ingest.models.Arrest.admission_date', index=4,
+      name='officer_id', full_name='recidiviz.ingest.models.Arrest.officer_id', index=4,
       number=5, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='officer_id', full_name='recidiviz.ingest.models.Arrest.officer_id', index=5,
+      name='agency', full_name='recidiviz.ingest.models.Arrest.agency', index=5,
       number=6, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='agency', full_name='recidiviz.ingest.models.Arrest.agency', index=6,
-      number=7, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -375,8 +368,8 @@ _ARREST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=884,
-  serialized_end=1025,
+  serialized_start=875,
+  serialized_end=992,
 )
 
 
@@ -444,7 +437,7 @@ _CHARGE = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='fee', full_name='recidiviz.ingest.models.Charge.fee', index=8,
+      name='fee_dollars', full_name='recidiviz.ingest.models.Charge.fee_dollars', index=8,
       number=9, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -458,7 +451,7 @@ _CHARGE = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='charge_status', full_name='recidiviz.ingest.models.Charge.charge_status', index=10,
+      name='status', full_name='recidiviz.ingest.models.Charge.status', index=10,
       number=11, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -525,8 +518,8 @@ _CHARGE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1028,
-  serialized_end=1391,
+  serialized_start=995,
+  serialized_end=1359,
 )
 
 
@@ -577,8 +570,8 @@ _BOND = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1393,
-  serialized_end=1467,
+  serialized_start=1361,
+  serialized_end=1435,
 )
 
 
@@ -639,7 +632,7 @@ _SENTENCE = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='fine', full_name='recidiviz.ingest.models.Sentence.fine', index=7,
+      name='fine_dollars', full_name='recidiviz.ingest.models.Sentence.fine_dollars', index=7,
       number=8, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -659,6 +652,13 @@ _SENTENCE = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='county_of_commitment', full_name='recidiviz.ingest.models.Sentence.county_of_commitment', index=10,
+      number=11, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -671,8 +671,8 @@ _SENTENCE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1470,
-  serialized_end=1704,
+  serialized_start=1438,
+  serialized_end=1710,
 )
 
 _INGESTINFO.fields_by_name['people'].message_type = _PERSON

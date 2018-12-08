@@ -33,12 +33,12 @@ message Person {
 	optional string surname = 2;
 	optional string given_names = 3;
 	optional string birthdate = 4;
-	optional string status = 5;
-	optional string gender = 6;
-	optional string age = 7;
-	optional string race = 8;
-	optional string ethnicity = 9;
-	optional string place_of_residence = 10;
+	optional string gender = 5;
+	optional string age = 6;
+	optional string race = 7;
+	optional string ethnicity = 8;
+	optional string place_of_residence = 9;
+	optional string full_name = 10;
 
 	repeated string booking_ids = 11;
 }
@@ -50,11 +50,11 @@ message Booking {
 	optional string release_date = 4;
 	optional string release_reason = 5;
 	optional string custody_status = 6;
-	optional string jurisdiction_status = 7;
-	optional string hold = 8;
-	optional string facility = 9;
-	optional string classification = 10;
-	optional string total_bond_amount = 11;
+	optional string hold = 7;
+	optional string facility = 8;
+	optional string classification = 9;
+	optional string total_bond_amount = 10;
+	optional string region = 11;
 
 	optional string arrest_id = 12;
 	repeated string charge_ids = 13;
@@ -65,9 +65,8 @@ message Arrest {
 	optional string date = 2;
 	optional string location= 3;
 	optional string officer_name = 4;
-	optional string admission_date = 5;
-	optional string officer_id = 6;
-	optional string agency = 7;
+	optional string officer_id = 5;
+	optional string agency = 6;
 }
 
 message Charge {
@@ -110,4 +109,5 @@ message Sentence {
 	optional string fine_dollars = 8;
 	optional string parole_possible = 9;
 	optional string post_release_supervision_length = 10;
+	optional string county_of_commitment = 11;
 }
