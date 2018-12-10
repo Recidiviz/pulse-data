@@ -194,7 +194,7 @@ class TestPersistence(TestCase):
         assert len(result_person.bookings) == 1
         result_booking = result_person.bookings[0]
         assert result_booking.facility == FACILITY
-        assert result_booking.last_scraped_time == SCRAPER_START_DATETIME
+        assert result_booking.last_seen_time == SCRAPER_START_DATETIME
 
         result_arrest = result_booking.arrest
         assert result_arrest.officer_name == OFFICER_NAME
@@ -235,14 +235,14 @@ class TestPersistence(TestCase):
         # Assert
         bookings = database.read_bookings(Session())
         assert bookings[0].region == REGION_1
-        assert bookings[0].last_scraped_time == SCRAPER_START_DATETIME
+        assert bookings[0].last_seen_time == SCRAPER_START_DATETIME
         assert bookings[0].release_date == most_recent_scrape_date
         assert bookings[0].release_date_inferred is True
         assert bookings[0].charges[0].name == CHARGE_NAME_1
         # TODO: assert status when RESOLVED status is handled
 
         assert bookings[1].region == REGION_2
-        assert bookings[1].last_scraped_time == SCRAPER_START_DATETIME
+        assert bookings[1].last_seen_time == SCRAPER_START_DATETIME
         assert bookings[1].release_date is None
         assert bookings[1].release_date_inferred is None
         assert bookings[1].charges[0].name == CHARGE_NAME_2

@@ -31,25 +31,25 @@ class PersistenceError(Exception):
     pass
 
 
-def infer_release_on_open_bookings(region, scrape_time):
+def infer_release_on_open_bookings(region, last_ingest_time):
     """
-   Look up all open bookings whose last_scraped_date is earlier than the
-   provided scrape_date in the provided region, update those
+   Look up all open bookings whose last_seen_time is earlier than the
+   provided last_ingest_time in the provided region, update those
    bookings to have an inferred release date equal to the provided
-   scrape_date.
+   last_ingest_time.
 
    Args:
        region: the region
-       scrape_date: The last start time of a background scrape
-           for the provided region. All open bookings for this region that
-           weren't seen in this last scrape will be closed.
+       last_ingest_time: The last time complete data was ingested for this
+           region. In the normal ingest pipeline, this is the last start time
+           of a background scrape for the region.
    """
 
     session = Session()
     try:
         bookings = database.read_open_bookings_scraped_before_time(
-            session, region, scrape_time)
-        _infer_release_date_for_bookings(bookings, scrape_time)
+            session, region, last_ingest_time)
+        _infer_release_date_for_bookings(bookings, last_ingest_time)
         for booking in bookings:
             session.add(session.merge(booking))
         session.commit()
@@ -82,7 +82,7 @@ def _should_persist():
     return environment.in_prod() or strtobool((os.environ['PERSIST_LOCALLY']))
 
 
-def write(ingest_info, scraper_start_time):
+def write(ingest_info, last_seen_time):
     """
     If in prod or if 'PERSIST_LOCALLY' is set to true, persist each person in
     the ingest_info. If a person with the given surname/birthday already exists,
@@ -92,7 +92,10 @@ def write(ingest_info, scraper_start_time):
 
     Args:
          ingest_info: The IngestInfo containing each person
-         scraper_start_time: The start datetime for the scraper that produced
+         last_seen_time: The last time this ingest_info was seen from
+            its data source. In the normal ingest pipeline, this is the
+            scraper_start_time.
+         the scraper that produced
             the provided ingest_info
     """
     log = logging.getLogger()
@@ -100,7 +103,7 @@ def write(ingest_info, scraper_start_time):
 
     log.info(ingest_info)
     people = converter.convert_ingest_info(ingest_info)
-    _add_last_scraped_time(people, scraper_start_time)
+    _add_last_seen_time(people, last_seen_time)
 
     if not _should_persist():
         return
@@ -124,7 +127,7 @@ def write(ingest_info, scraper_start_time):
             session.close()
 
 
-def _add_last_scraped_time(people, scraper_start_time):
+def _add_last_seen_time(people, last_seen_time):
     for person in people:
         for booking in person.bookings:
-            booking.last_scraped_time = scraper_start_time
+            booking.last_seen_time = last_seen_time
