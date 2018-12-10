@@ -67,5 +67,5 @@ def read_open_bookings_scraped_before_time(session, region, time):
     query = session.query(Booking)
     query = query.filter(Booking.region == region)
     query = query.filter(Booking.release_date.is_(None))
-    query = query.filter(Booking.last_scraped_time < time)
+    query = query.filter(Booking.last_seen_time < time)
     return query.all()

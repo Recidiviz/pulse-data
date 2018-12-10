@@ -42,19 +42,19 @@ class TestDatabase(object):
         # Bookings that should be returned
         open_booking_before_last_scrape = Booking(
             person_id=person_id, custody_status='In Custody',
-            region=region, last_scraped_time=date_in_past)
+            region=region, last_seen_time=date_in_past)
 
         # Bookings that should not be returned
         open_booking_incorrect_region = Booking(
             person_id=person_id, custody_status='In Custody',
-            region=incorrect_region, last_scraped_time=date_in_past)
+            region=incorrect_region, last_seen_time=date_in_past)
         open_booking_most_recent_scrape = Booking(
             person_id=person_id, custody_status='In Custody',
-            region=region, last_scraped_time=most_recent_scrape_date)
+            region=region, last_seen_time=most_recent_scrape_date)
         resolved_booking = Booking(person_id=person_id,
                                    custody_status='In Custody',
                                    region=region, release_date=release_date,
-                                   last_scraped_time=date_in_past)
+                                   last_seen_time=date_in_past)
 
         session = Session()
         session.add(open_booking_before_last_scrape)
