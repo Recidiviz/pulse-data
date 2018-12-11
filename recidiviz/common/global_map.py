@@ -45,6 +45,15 @@ _WORLD_MAP = {
     'ethnicity': person.ETHNICITY_MAP,
 }
 
+def _get_map(enum_type):
+    if enum_type not in _WORLD_MAP:
+        raise ValueError(
+            'The enum type {0} could not be found'.format(enum_type))
+    return _WORLD_MAP[enum_type]
+
+def enum_contains_value(enum_type, value):
+    map_to_use = _get_map(enum_type)
+    return value.upper() in map_to_use
 
 def convert_value_to_enum(enum_type, value):
     """This function will take a value and convert it into a standard value
@@ -57,11 +66,7 @@ def convert_value_to_enum(enum_type, value):
         The converted value (constants enum) or raises an error if it can't find
         a conversion
     """
-    if enum_type not in _WORLD_MAP:
-        raise ValueError(
-            'The enum type {0} could not be found'.format(enum_type))
-
-    map_to_use = _WORLD_MAP[enum_type]
+    map_to_use = _get_map(enum_type)
     if value is None:
         value = 'UNKNOWN'
     if value.upper() not in map_to_use:
