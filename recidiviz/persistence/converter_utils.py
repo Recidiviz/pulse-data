@@ -41,6 +41,10 @@ def normalize(s):
     return ' '.join(s.split()).upper()
 
 
+def enum_contains_value(enum_type, value):
+    return global_map.enum_contains_value(enum_type, value)
+
+
 def string_to_enum(enum_type, value):
     """
     Converts the given value into an enum of the provided enum_type
@@ -54,6 +58,11 @@ def string_to_enum(enum_type, value):
     """
     return global_map.convert_value_to_enum(
         enum_type, normalize(value))
+
+
+def race_is_actually_ethnicity(ingest_person):
+    return enum_contains_value('ethnicity', ingest_person.race) and \
+        not enum_contains_value('race', ingest_person.race)
 
 
 def parse_date_or_error(date_string):

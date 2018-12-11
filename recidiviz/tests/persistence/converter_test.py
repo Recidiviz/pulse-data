@@ -48,6 +48,12 @@ class TestConverter(object):
         assert schema_person.ethnicity == constants.person.Ethnicity.HISPANIC
         assert schema_person.place_of_residence == 'NNN STREET ZIP'
 
+    def test_parseRaceAsEthnicity(self):
+        ingest_person = _Person(race='HISPANIC')
+
+        schema_person = self.converter._convert_person(ingest_person)
+        assert schema_person.race == constants.person.Race.UNKNOWN
+        assert schema_person.ethnicity == constants.person.Ethnicity.HISPANIC
 
     def test_convertTotalBondAmountToBond(self):
         ingest_booking = _Booking(total_bond_amount='$100.00')
