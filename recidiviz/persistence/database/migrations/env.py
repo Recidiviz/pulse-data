@@ -1,7 +1,10 @@
 from __future__ import with_statement
 from alembic import context
-from sqlalchemy import engine_from_config, pool
+from sqlalchemy import create_engine
 from logging.config import fileConfig
+
+from recidiviz.persistence.database.schema import Base
+from recidiviz.utils import secrets
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -11,16 +14,18 @@ config = context.config
 # This line sets up loggers basically.
 fileConfig(config.config_file_name)
 
-# add your model's MetaData object here
-# for 'autogenerate' support
-# from myapp import mymodel
-# target_metadata = mymodel.Base.metadata
-target_metadata = None
+# Metadata from schema
+target_metadata = Base.metadata
 
-# other values from the config, defined by the needs of env.py,
-# can be acquired:
-# my_important_option = config.get_main_option("my_important_option")
-# ... etc.
+
+def get_sqlalchemy_url():
+    """Returns string needed to connect to database"""
+    user = secrets.get_secret('SQLALCHEMY_DB_USER')
+    password = secrets.get_secret('SQLALCHEMY_DB_PASSWORD')
+    host = secrets.get_secret('SQLALCHEMY_DB_HOST')
+    db_name = secrets.get_secret('SQLALCHEMY_DB_NAME')
+
+    return 'postgresql://%s:%s@%s/%s' % (user, password, host, db_name)
 
 
 def run_migrations_offline():
@@ -35,7 +40,7 @@ def run_migrations_offline():
     script output.
 
     """
-    url = config.get_main_option("sqlalchemy.url")
+    url = get_sqlalchemy_url()
     context.configure(
         url=url, target_metadata=target_metadata, literal_binds=True)
 
@@ -50,10 +55,7 @@ def run_migrations_online():
     and associate a connection with the context.
 
     """
-    connectable = engine_from_config(
-        config.get_section(config.config_ini_section),
-        prefix='sqlalchemy.',
-        poolclass=pool.NullPool)
+    connectable = create_engine(get_sqlalchemy_url())
 
     with connectable.connect() as connection:
         context.configure(
