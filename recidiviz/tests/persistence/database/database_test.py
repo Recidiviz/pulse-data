@@ -15,9 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for database.py."""
+
 import datetime
 
 from recidiviz import Session
+import recidiviz.common.constants.enum_canonical_strings as enum_strings
 from recidiviz.persistence.database import database
 from recidiviz.persistence.database.schema import Booking
 from recidiviz.tests.utils import fakes
@@ -39,22 +41,29 @@ class TestDatabase(object):
         date_in_past = most_recent_scrape_date - datetime.timedelta(days=1)
         person_id = 8
 
+        # TODO(176): Replace enum_strings with schema enum values once we've
+        # migrated to Python 3.
+
         # Bookings that should be returned
         open_booking_before_last_scrape = Booking(
-            person_id=person_id, custody_status='IN_CUSTODY',
+            person_id=person_id,
+            custody_status=enum_strings.custody_status_in_custody,
             region=region, last_seen_time=date_in_past)
 
         # Bookings that should not be returned
         open_booking_incorrect_region = Booking(
-            person_id=person_id, custody_status='IN_CUSTODY',
+            person_id=person_id,
+            custody_status=enum_strings.custody_status_in_custody,
             region=incorrect_region, last_seen_time=date_in_past)
         open_booking_most_recent_scrape = Booking(
-            person_id=person_id, custody_status='IN_CUSTODY',
+            person_id=person_id,
+            custody_status=enum_strings.custody_status_in_custody,
             region=region, last_seen_time=most_recent_scrape_date)
-        resolved_booking = Booking(person_id=person_id,
-                                   custody_status='IN_CUSTODY',
-                                   region=region, release_date=release_date,
-                                   last_seen_time=date_in_past)
+        resolved_booking = Booking(
+            person_id=person_id,
+            custody_status=enum_strings.custody_status_in_custody,
+            region=region, release_date=release_date,
+            last_seen_time=date_in_past)
 
         session = Session()
         session.add(open_booking_before_last_scrape)

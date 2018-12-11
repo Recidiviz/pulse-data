@@ -56,8 +56,10 @@ SURNAME_2 = 'TEST_SURNAME_2'
 class TestPersistence(TestCase):
     """Test that the persistence layer correctly writes to the SQL database."""
 
+
     def setup_method(self, _test_method):
         fakes.use_in_memory_sqlite_database()
+
 
     def test_localRun(self):
         with patch('os.getenv', Mock(return_value='Local')):
@@ -71,6 +73,7 @@ class TestPersistence(TestCase):
 
             # Assert
             assert not result
+
 
     def test_persistLocally(self):
         # Arrange
@@ -87,6 +90,7 @@ class TestPersistence(TestCase):
             assert len(result) == 1
             assert result[0].surname == SURNAME_1
 
+
     def test_twoDifferentPeople_persistsBoth(self):
         # Arrange
         ingest_info = IngestInfo()
@@ -102,6 +106,7 @@ class TestPersistence(TestCase):
         assert result[0].surname == SURNAME_1
         assert result[1].surname == SURNAME_2
 
+
     def test_sameTwoPeople_persistsOne(self):
         # Arrange
         ingest_info = IngestInfo()
@@ -115,6 +120,7 @@ class TestPersistence(TestCase):
         # Assert
         assert len(result) == 1
         assert result[0].surname == SURNAME_1
+
 
     # TODO: Consider not replace everything with the newly scraped data, instead
     # update only the newly scraped fields (keeping old data)
@@ -141,6 +147,7 @@ class TestPersistence(TestCase):
         assert result[0].place_of_residence == PLACE_2
         assert result[0].birthdate == BIRTHDATE_1_DATE
 
+
     def test_readSinglePersonByName(self):
         # Arrange
         ingest_info = IngestInfo()
@@ -157,6 +164,7 @@ class TestPersistence(TestCase):
         assert len(result) == 1
         assert result[0].surname == SURNAME_1
         assert result[0].birthdate == BIRTHDATE_1_DATE
+
 
     # TODO: Rewrite this test to directly test __eq__ between the two People
     def test_readPersonAndAllRelationships(self):
@@ -211,6 +219,7 @@ class TestPersistence(TestCase):
         sentence_2 = result_charges[1].sentence
         assert sentence_1.fine_dollars == FINE_1_INT
         assert sentence_2.fine_dollars == FINE_2_INT
+
 
     def test_inferReleaseDateOnOpenBookings(self):
         # Arrange

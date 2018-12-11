@@ -52,7 +52,8 @@ class TestConverter(object):
         ingest_person = _Person(race='HISPANIC')
 
         schema_person = self.converter._convert_person(ingest_person)
-        assert schema_person.race == constants.person.Race.UNKNOWN
+        # TODO(289): check race once the proper behavior here has been
+        # determined.
         assert schema_person.ethnicity == constants.person.Ethnicity.HISPANIC
 
     def test_convertTotalBondAmountToBond(self):
@@ -82,9 +83,9 @@ class TestConverter(object):
     def test_parseBookingFields(self):
         ingest_booking = _Booking(release_date='1/1/1111',
                                   projected_release_date='2/2/2222',
-                                  release_reason='UNKNOWN',
-                                  custody_status='UNKNOWN',
-                                  classification='UNKNOWN')
+                                  release_reason='Transfer',
+                                  custody_status='Held Elsewhere',
+                                  classification='Low')
 
         schema_booking = self.converter._convert_booking(ingest_booking)
         assert schema_booking.release_date == \
@@ -93,11 +94,11 @@ class TestConverter(object):
         assert schema_booking.projected_release_date == \
             datetime(year=2222, month=2, day=2)
         assert schema_booking.release_reason == \
-            constants.booking.ReleaseReason.UNKNOWN
+            constants.booking.ReleaseReason.TRANSFER
         assert schema_booking.custody_status == \
-            constants.booking.CustodyStatus.UNKNOWN
+            constants.booking.CustodyStatus.HELD_ELSEWHERE
         assert schema_booking.classification == \
-            constants.booking.Classification.UNKNOWN
+            constants.booking.Classification.LOW
 
     def test_parseChargeFields(self):
         ingest_charge = _Charge(attempted=True, degree='FIRST',

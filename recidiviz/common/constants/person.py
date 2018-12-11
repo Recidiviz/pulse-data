@@ -17,53 +17,53 @@
 
 """Constants related to a person entity."""
 
+import recidiviz.common.constants.enum_canonical_strings as enum_strings
+
 
 class Gender(object):
-    FEMALE = 'FEMALE'
-    MALE = 'MALE'
-    TRANS_FEMALE = 'TRANS FEMALE/TRANS WOMAN'
-    TRANS_MALE = 'TRANS MALE/TRANS MAN'
-    UNKNOWN = 'UNKNOWN'
+    FEMALE = enum_strings.gender_female
+    MALE = enum_strings.gender_male
+    TRANS_FEMALE = enum_strings.gender_trans_female
+    TRANS_MALE = enum_strings.gender_trans_male
 
 
 class Race(object):
-    AMERICAN_INDIAN_ALASKAN_NATIVE = 'AMERICAN INDIAN/ALASKAN NATIVE'
-    ASIAN = 'ASIAN'
-    BLACK = 'BLACK'
-    NATIVE_HAWAIIAN_PACIFIC_ISLANDER = 'NATIVE HAWAIIAN/PACIFIC ISLANDER'
-    OTHER = 'OTHER'
-    WHITE = 'WHITE'
-    UNKNOWN = 'UNKNOWN'
+    AMERICAN_INDIAN_ALASKAN_NATIVE = enum_strings.race_american_indian
+    ASIAN = enum_strings.race_asian
+    BLACK = enum_strings.race_black
+    NATIVE_HAWAIIAN_PACIFIC_ISLANDER = enum_strings.race_hawaiian
+    OTHER = enum_strings.race_other
+    WHITE = enum_strings.race_white
 
 
 class Ethnicity(object):
-    HISPANIC = 'HISPANIC'
-    NOT_HISPANIC = 'NOT HISPANIC'
-    UNKNOWN = 'UNKNOWN'
+    HISPANIC = enum_strings.ethnicity_hispanic
+    NOT_HISPANIC = enum_strings.ethnicity_not_hispanic
 
 
 GENDER_MAP = {
-    'FEMALE': Gender.FEMALE,
     'F': Gender.FEMALE,
-    'MALE': Gender.MALE,
+    'FEMALE': Gender.FEMALE,
     'M': Gender.MALE,
+    'MALE': Gender.MALE,
     'TRANS FEMALE/TRANS WOMAN': Gender.TRANS_FEMALE,
     'TRANS MALE/TRANS MAN': Gender.TRANS_MALE,
-    'UNKNOWN': Gender.UNKNOWN
 }
+
+
 RACE_MAP = {
     'AMERICAN INDIAN/ALASKAN NATIVE': Race.AMERICAN_INDIAN_ALASKAN_NATIVE,
     'ASIAN': Race.ASIAN,
-    'BLACK': Race.BLACK,
     'B': Race.BLACK,
+    'BLACK': Race.BLACK,
     'NATIVE HAWAIIAN/PACIFIC ISLANDER': Race.NATIVE_HAWAIIAN_PACIFIC_ISLANDER,
     'OTHER': Race.OTHER,
-    'WHITE': Race.WHITE,
     'W': Race.WHITE,
-    'UNKNOWN': Race.UNKNOWN
+    'WHITE': Race.WHITE,
 }
+
+
 ETHNICITY_MAP = {
     'HISPANIC': Ethnicity.HISPANIC,
     'NOT HISPANIC': Ethnicity.NOT_HISPANIC,
-    'UNKNOWN': Ethnicity.UNKNOWN
 }
