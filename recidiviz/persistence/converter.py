@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Converts scraped IngestInfo data to the database schema format."""
+from recidiviz.common import constants
 from recidiviz.persistence import converter_utils
 from recidiviz.persistence.database import schema
 
@@ -111,12 +112,18 @@ class Converter(object):
                                       'gender',
                                       ingest_person.gender)
 
-        person.race = self._convert(converter_utils.string_to_enum, 'race',
-                                    ingest_person.race)
-
-        person.ethnicity = self._convert(converter_utils.string_to_enum,
-                                         'ethnicity',
-                                         ingest_person.ethnicity)
+        if ingest_person.race is not None and ingest_person.ethnicity is None \
+            and converter_utils.race_is_actually_ethnicity(ingest_person):
+            person.race = constants.person.Race.UNKNOWN
+            person.ethnicity = self._convert(converter_utils.string_to_enum,
+                                             'ethnicity',
+                                             ingest_person.race)
+        else:
+            person.race = self._convert(converter_utils.string_to_enum,
+                                        'race', ingest_person.race)
+            person.ethnicity = self._convert(converter_utils.string_to_enum,
+                                             'ethnicity',
+                                             ingest_person.ethnicity)
 
         person.place_of_residence = self._convert(
             converter_utils.normalize, ingest_person.place_of_residence)
