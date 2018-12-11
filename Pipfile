@@ -65,6 +65,7 @@ sqlalchemy = "*"
 us = "*"
 dateparser = "*"
 protobuf = "*"
+iteration-utilities = "*"
 
 [dev-packages]
 rope = "*"
