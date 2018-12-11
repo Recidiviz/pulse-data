@@ -36,7 +36,7 @@ RELEASE_REASON_MAP = {
 CUSTODY_STATUS_MAP = {
     'UNKNOWN': CustodyStatus.UNKNOWN,
     # TODO: Resolve inconsistencies between Python and DB enums
-    'IN CUSTODY': 'In Custody'
+    'IN CUSTODY': 'IN_CUSTODY'
 }
 CLASSIFICATION_MAP = {
     'UNKNOWN': Classification.UNKNOWN

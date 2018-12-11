@@ -28,7 +28,7 @@ class BondType(object):
 
 class BondStatus(object):
     # TODO: resolve inconsistency between Python and DB enum values
-    ACTIVE = 'Active'
+    ACTIVE = 'ACTIVE'
     POSTED = 'POSTED'
     UNKNOWN = 'UNKNOWN'
 
