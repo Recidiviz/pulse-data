@@ -31,6 +31,9 @@ class IngestInfo(object):
     def __repr__(self):
         return to_string(self)
 
+    def __setattr__(self, name, value):
+        restricted_setattr(self, 'person', name, value)
+
     def create_person(self, **kwargs):
         person = _Person(**kwargs)
         self.person.append(person)
@@ -70,6 +73,9 @@ class _Person(object):
 
     def __repr__(self):
         return to_string(self)
+
+    def __setattr__(self, name, value):
+        restricted_setattr(self, 'booking', name, value)
 
     def create_booking(self, **kwargs):
         booking = _Booking(**kwargs)
@@ -116,6 +122,9 @@ class _Booking(object):
     def __repr__(self):
         return to_string(self)
 
+    def __setattr__(self, name, value):
+        restricted_setattr(self, 'charge', name, value)
+
     def create_arrest(self, **kwargs):
         self.arrest = _Arrest(**kwargs)
         return self.arrest
@@ -153,6 +162,9 @@ class _Arrest(object):
 
     def __repr__(self):
         return to_string(self)
+
+    def __setattr__(self, name, value):
+        restricted_setattr(self, 'agency', name, value)
 
 
 class _Charge(object):
@@ -193,6 +205,10 @@ class _Charge(object):
     def __repr__(self):
         return to_string(self)
 
+    def __setattr__(self, name, value):
+        restricted_setattr(self, 'sentence', name, value)
+
+
     def create_bond(self, **kwargs):
         self.bond = _Bond(**kwargs)
         return self.bond
@@ -226,6 +242,9 @@ class _Bond(object):
     def __repr__(self):
         return to_string(self)
 
+    def __setattr__(self, name, value):
+        restricted_setattr(self, 'status', name, value)
+
 
 class _Sentence(object):
     """Class for information about a sentence.
@@ -257,6 +276,9 @@ class _Sentence(object):
     def __repr__(self):
         return to_string(self)
 
+    def __setattr__(self, name, value):
+        restricted_setattr(self, 'post_release_supervision_length', name, value)
+
 
 def to_string(obj):
     out = [obj.__class__.__name__ + ":"]
@@ -267,3 +289,10 @@ def to_string(obj):
         elif val:
             out += '{}: {}'.format(key, val).split('\n')
     return '\n   '.join(out)
+
+
+def restricted_setattr(self, last_field, name, value):
+    if hasattr(self, last_field) and not hasattr(self, name):
+        raise AttributeError('No field {} in object {}'.format(name,
+                                                               type(self)))
+    self.__dict__[name] = value
