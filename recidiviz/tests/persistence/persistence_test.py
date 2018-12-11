@@ -24,7 +24,6 @@ from recidiviz import Session
 from recidiviz.ingest.models.ingest_info import IngestInfo, _Bond
 from recidiviz.persistence import persistence
 from recidiviz.persistence.database import database
-from recidiviz.persistence.database.schema import Charge
 from recidiviz.tests.utils import fakes
 
 BIRTHDATE_1 = '11/15/1993'
@@ -217,15 +216,15 @@ class TestPersistence(TestCase):
         # Arrange
         most_recent_scrape_date = \
             (SCRAPER_START_DATETIME + timedelta(days=1)).date()
-        charge_1 = Charge(name=CHARGE_NAME_1, status='PENDING')
-        charge_2 = Charge(name=CHARGE_NAME_2, status='PENDING')
         ingest_info = IngestInfo()
         person = ingest_info.create_person(surname=SURNAME_1,
                                            given_names=GIVEN_NAME)
-        person.create_booking(
-            region=REGION_1, charges=[charge_1], custody_status='IN CUSTODY')
-        person.create_booking(
-            region=REGION_2, charges=[charge_2], custody_status='IN CUSTODY')
+        booking_1 = person.create_booking(region=REGION_1,
+                                          custody_status='IN CUSTODY')
+        booking_1.create_charge(name=CHARGE_NAME_1, status='PENDING')
+        booking_2 = person.create_booking(region=REGION_2,
+                                          custody_status='IN CUSTODY')
+        booking_2.create_charge(name=CHARGE_NAME_2, status='PENDING')
 
         # Act
         persistence.write(ingest_info, SCRAPER_START_DATETIME)
