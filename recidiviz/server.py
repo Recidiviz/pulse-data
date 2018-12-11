@@ -23,7 +23,6 @@ from recidiviz.calculator.recidivism.pipeline import calculator_pipeline
 from recidiviz.ingest.scraper_control import scraper_control
 from recidiviz.ingest.worker import worker
 from recidiviz.tests.utils.populate_test_db import test_populator
-from recidiviz.utils.data_migration import data_migration
 from recidiviz.utils import environment
 
 app = Flask(__name__)
@@ -32,4 +31,3 @@ app.register_blueprint(scraper_control, url_prefix='/scraper')
 app.register_blueprint(worker, url_prefix='/scraper')
 if not environment.in_prod():
     app.register_blueprint(test_populator, url_prefix='/test_populator')
-app.register_blueprint(data_migration, url_prefix='/data_migration')
