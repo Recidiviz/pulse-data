@@ -19,13 +19,12 @@
 The below schema uses only generic SQLAlchemy types, and therefore should be
 portable between database implementations.
 
-NOTE: Many of the tables in the below schema are historical tables. Historical
-tables have no primary key. Their equivalent of the primary key from the
-corresponding master table is non-unique. A composite primary key could
-technically be generated from the ID and the period columns, but there would be
-no benefit from it, as that would require any foreign key relationship to
-directly use the period columns, which is contrary to the purpose of the
-temporal table design. Because of this non-uniqueness, any foreign key
+NOTE: Many of the tables in the below schema are historical tables. The primary
+key of a historical table exists only due to the requirements of SQLAlchemy,
+and should not be referenced by any other table. The key which should be used
+to reference a historical table is the key shared with the master table. For
+the historical table, this key is non-unique. This is necessary to allow the
+desired temporal table behavior. Because of this non-uniqueness, any foreign key
 pointing to a historical table does NOT have a foreign key constraint.
 """
 
@@ -35,107 +34,129 @@ from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
+import recidiviz.common.constants.enum_canonical_strings as enum_strings
+
+
+# Base class for all table classes
+Base = declarative_base()
+
 
 # Enum values. Exposed separately from the SQLAlchemy Enum that owns them for
 # easier access to the values.
 #
 # These values should not be used directly by application code, but should be
 # mapped to application layer enums in order to maintain decoupling between
-# the application and database.
+# the application and schema.
 #
-# TODO(176): replace with Python enums after converting to Python 3
+# TODO(176): replace with Python enums after converting to Python 3. The enum
+# values should be the canonical string representations used here.
 
 # Person
-gender = ('Female',
-          'Male')
-race = ('American Indian/Alaskan Native',
-        'Asian',
-        'Black',
-        'Native Hawaiian/Pacific Islander',
-        'Other',
-        'White')
-ethnicity = ('Hispanic',
-             'Not Hispanic')
+
+gender_values = (enum_strings.gender_female,
+                 enum_strings.gender_male)
+
+race_values = (enum_strings.race_american_indian,
+               enum_strings.race_asian,
+               enum_strings.race_black,
+               enum_strings.race_hawaiian,
+               enum_strings.race_other,
+               enum_strings.race_white)
+
+ethnicity_values = (enum_strings.ethnicity_hispanic,
+                    enum_strings.ethnicity_not_hispanic)
 
 # Booking
-release_reason = ('Bond',
-                  'Death',
-                  'Escape',
-                  'Expiration of Sentence',
-                  'Own Recognizance',
-                  'Parole',
-                  'Probation',
-                  'Transfer')
-custody_status = ('Escaped',
-                  'Held Elsewhere',
-                  'In Custody',
-                  'Released')
-classification = ('High',
-                  'Low',
-                  'Maximum',
-                  'Medium',
-                  'Minimum',
-                  'Work Release')
+
+release_reason_values = (enum_strings.release_reason_bond,
+                         enum_strings.release_reason_death,
+                         enum_strings.release_reason_escape,
+                         enum_strings.release_reason_expiration,
+                         enum_strings.release_reason_recognizance,
+                         enum_strings.release_reason_parole,
+                         enum_strings.release_reason_probation,
+                         enum_strings.release_reason_transfer)
+
+custody_status_values = (enum_strings.custody_status_escaped,
+                         enum_strings.custody_status_elsewhere,
+                         enum_strings.custody_status_in_custody,
+                         enum_strings.custody_status_released)
+
+classification_values = (enum_strings.classification_high,
+                         enum_strings.classification_low,
+                         enum_strings.classification_maximum,
+                         enum_strings.classification_medium,
+                         enum_strings.classification_minimum,
+                         enum_strings.classification_work_release)
 
 # Hold
-hold_status = ('Active',
-               'Inactive')
+
+hold_status_values = (enum_strings.hold_status_active,
+                      enum_strings.hold_status_inactive)
 
 # Bond
-bond_type = ('Bond Denied',
-             'Cash',
-             'No Bond',
-             'Secured',
-             'Unsecured')
-bond_status = ('Active',
-               'Posted')
+
+bond_type_values = (enum_strings.bond_type_denied,
+                    enum_strings.bond_type_cash,
+                    enum_strings.bond_type_no_bond,
+                    enum_strings.bond_type_secured,
+                    enum_strings.bond_type_unsecured)
+
+bond_status_values = (enum_strings.bond_status_active,
+                      enum_strings.bond_status_posted)
 
 # SentenceRelationship
-sentence_relationship_type = ('Concurrent',
-                              'Consecutive')
+
+sentence_relationship_type_values = (
+    enum_strings.sentence_relationship_type_concurrent,
+    enum_strings.sentence_relationship_type_consecutive)
 
 # Charge
-degree = ('First',
-          'Second',
-          'Third')
-charge_class = ('Felony',
-                'Misdemenor',
-                'Parole Violation',
-                'Probation Violation')
-charge_status = ('Acquitted',
-                 'Completed Sentence',
-                 'Convicted',
-                 'Dropped',
-                 'Pending',
-                 'Pretrial',
-                 'Sentenced')
-court_type = ('Circuit',
-              'District',
-              'Other',
-              'Superior')
+
+degree_values = (enum_strings.degree_first,
+                 enum_strings.degree_second,
+                 enum_strings.degree_third)
+
+charge_class_values = (enum_strings.charge_class_felony,
+                       enum_strings.charge_class_misdemeanor,
+                       enum_strings.charge_class_parole_violation,
+                       enum_strings.charge_class_probation_violation)
+
+charge_status_values = (enum_strings.charge_status_acquitted,
+                        enum_strings.charge_status_completed,
+                        enum_strings.charge_status_convicted,
+                        enum_strings.charge_status_dropped,
+                        enum_strings.charge_status_pending,
+                        enum_strings.charge_status_pretrial,
+                        enum_strings.charge_status_sentenced)
+
+court_type_values = (enum_strings.court_type_circuit,
+                     enum_strings.court_type_district,
+                     enum_strings.court_type_other,
+                     enum_strings.court_type_superior)
 
 
 # SQLAlchemy enums. Created separately from the tables so they can be shared
 # between the master and historical tables for each entity.
-bond_status_enum = Enum(*bond_status, name='bond_status')
-bond_type_enum = Enum(*bond_type, name='bond_type')
-charge_class_enum = Enum(*charge_class, name='charge_class')
-charge_status_enum = Enum(*charge_status, name='charge_status')
-classification_enum = Enum(*classification, name='classification')
-court_type_enum = Enum(*court_type, name='court_type')
-custody_status_enum = Enum(*custody_status, name='custody_status')
-degree_enum = Enum(*degree, name='degree')
-ethnicity_enum = Enum(*ethnicity, name='ethnicity')
-gender_enum = Enum(*gender, name='gender')
-hold_status_enum = Enum(*hold_status, name='hold_status')
-race_enum = Enum(*race, name='race')
-release_reason_enum = Enum(*release_reason, name='release_reason')
-sentence_relationship_type_enum = Enum(
-    *sentence_relationship_type, name='sentence_relationship_type')
 
+# TODO(176): pass values_callable to all enum constructors so the canonical
+# string representation, rather than the enum name, is passed to the DB.
 
-# Base class for all table classes
-Base = declarative_base()
+bond_status = Enum(*bond_status_values, name='bond_status')
+bond_type = Enum(*bond_type_values, name='bond_type')
+charge_class = Enum(*charge_class_values, name='charge_class')
+charge_status = Enum(*charge_status_values, name='charge_status')
+classification = Enum(*classification_values, name='classification')
+court_type = Enum(*court_type_values, name='court_type')
+custody_status = Enum(*custody_status_values, name='custody_status')
+degree = Enum(*degree_values, name='degree')
+ethnicity = Enum(*ethnicity_values, name='ethnicity')
+gender = Enum(*gender_values, name='gender')
+hold_status = Enum(*hold_status_values, name='hold_status')
+race = Enum(*race_values, name='race')
+release_reason = Enum(*release_reason_values, name='release_reason')
+sentence_relationship_type = Enum(
+    *sentence_relationship_type_values, name='sentence_relationship_type')
 
 
 class Person(Base):
@@ -148,9 +169,9 @@ class Person(Base):
     given_names = Column(String(255), index=True)
     birthdate = Column(Date, index=True)
     birthdate_inferred_from_age = Column(Boolean)
-    gender = Column(gender_enum)
-    race = Column(race_enum)
-    ethnicity = Column(ethnicity_enum)
+    gender = Column(gender)
+    race = Column(race)
+    ethnicity = Column(ethnicity)
     place_of_residence = Column(String(255))
 
     bookings = relationship('Booking', back_populates='person')
@@ -172,9 +193,9 @@ class PersonHistory(Base):
     given_names = Column(String(255))
     birthdate = Column(Date)
     birthdate_inferred_from_age = Column(Boolean)
-    gender = Column(gender_enum)
-    race = Column(race_enum)
-    ethnicity = Column(ethnicity_enum)
+    gender = Column(gender)
+    race = Column(race)
+    ethnicity = Column(ethnicity)
     place_of_residence = Column(String(255))
 
 
@@ -190,11 +211,11 @@ class Booking(Base):
     release_date = Column(Date)
     release_date_inferred = Column(Boolean)
     projected_release_date = Column(Date)
-    release_reason = Column(release_reason_enum)
-    custody_status = Column(custody_status_enum, nullable=False)
+    release_reason = Column(release_reason)
+    custody_status = Column(custody_status, nullable=False)
     held_for_other_jurisdiction = Column(Boolean)
     facility = Column(String(255))
-    classification = Column(classification_enum)
+    classification = Column(classification)
     region = Column(String(255), nullable=False, index=True)
     last_seen_time = Column(DateTime, nullable=False)
 
@@ -225,11 +246,11 @@ class BookingHistory(Base):
     release_date = Column(Date)
     release_date_inferred = Column(Boolean)
     projected_release_date = Column(Date)
-    release_reason = Column(release_reason_enum)
-    custody_status = Column(custody_status_enum, nullable=False)
+    release_reason = Column(release_reason)
+    custody_status = Column(custody_status, nullable=False)
     held_for_other_jurisdiction = Column(Boolean)
     facility = Column(String(255))
-    classification = Column(classification_enum)
+    classification = Column(classification)
     region = Column(String(255), nullable=False)
 
 
@@ -241,7 +262,7 @@ class Hold(Base):
     booking_id = Column(
         Integer, ForeignKey('Booking.booking_id'), nullable=False)
     jurisdiction_name = Column(String(255))
-    hold_status = Column(hold_status_enum, nullable=False)
+    hold_status = Column(hold_status, nullable=False)
 
     booking = relationship('Booking', back_populates='holds')
 
@@ -259,7 +280,7 @@ class HoldHistory(Base):
     valid_to = Column(DateTime)
     booking_id = Column(Integer, nullable=False, index=True)
     jurisdiction_name = Column(String(255))
-    hold_status = Column(hold_status_enum, nullable=False)
+    hold_status = Column(hold_status, nullable=False)
 
 
 class Arrest(Base):
@@ -306,8 +327,8 @@ class Bond(Base):
     bond_id = Column(Integer, primary_key=True)
     external_id = Column(String(255), index=True)
     amount_dollars = Column(Integer)
-    bond_type = Column(bond_type_enum)
-    status = Column(bond_status_enum, nullable=False)
+    bond_type = Column(bond_type)
+    status = Column(bond_status, nullable=False)
 
     charges = relationship('Charge', back_populates='bond')
 
@@ -325,8 +346,8 @@ class BondHistory(Base):
     valid_to = Column(DateTime)
     external_id = Column(String(255), index=True)
     amount_dollars = Column(Integer)
-    bond_type = Column(bond_type_enum)
-    status = Column(bond_status_enum, nullable=False)
+    bond_type = Column(bond_type)
+    status = Column(bond_status, nullable=False)
 
 
 class Sentence(Base):
@@ -394,7 +415,7 @@ class SentenceRelationship(Base):
     sentence_b_id = Column(
         Integer, ForeignKey('Sentence.sentence_id'), nullable=False)
     # Manually set name to avoid conflict with Python reserved keyword
-    sentence_relationship_type = Column('type', sentence_relationship_type_enum)
+    sentence_relationship_type = Column('type', sentence_relationship_type)
 
     sentence_a = relationship(
         'Sentence',
@@ -421,7 +442,7 @@ class SentenceRelationshipHistory(Base):
     sentence_a_id = Column(Integer, nullable=False, index=True)
     sentence_b_id = Column(Integer, nullable=False, index=True)
     # Manually set name to avoid conflict with Python reserved keyword
-    sentence_relationship_type = Column('type', sentence_relationship_type_enum)
+    sentence_relationship_type = Column('type', sentence_relationship_type)
 
 
 class Charge(Base):
@@ -440,15 +461,15 @@ class Charge(Base):
     offense_code = Column(Integer)
     name = Column(String(255))
     attempted = Column(Boolean)
-    degree = Column(degree_enum)
+    degree = Column(degree)
     # Manually set name to avoid conflict with Python reserved keyword
-    charge_class = Column('class', charge_class_enum)
+    charge_class = Column('class', charge_class)
     level = Column(String(255))
     fee_dollars = Column(Integer)
     charging_entity = Column(String(255))
-    status = Column(charge_status_enum, nullable=False)
+    status = Column(charge_status, nullable=False)
     number_of_counts = Column(Integer)
-    court_type = Column(court_type_enum)
+    court_type = Column(court_type)
     case_number = Column(String(255))
     next_court_date = Column(Date)
     judge_name = Column(String(255))
@@ -478,15 +499,15 @@ class ChargeHistory(Base):
     offense_code = Column(Integer)
     name = Column(String(255))
     attempted = Column(Boolean)
-    degree = Column(degree_enum)
+    degree = Column(degree)
     # Manually set name to avoid conflict with Python reserved keyword
-    charge_class = Column('class', charge_class_enum)
+    charge_class = Column('class', charge_class)
     level = Column(String(255))
     fee_dollars = Column(Integer)
     charging_entity = Column(String(255))
-    status = Column(charge_status_enum, nullable=False)
+    status = Column(charge_status, nullable=False)
     number_of_counts = Column(Integer)
-    court_type = Column(court_type_enum)
+    court_type = Column(court_type)
     case_number = Column(String(255))
     next_court_date = Column(Date)
     judge_name = Column(String(255))
