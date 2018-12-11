@@ -62,17 +62,17 @@ Then install project dependencies with [`pipenv`](https://pipenv.readthedocs.io/
 
 To generate a production environment `requirements.txt`, run: `pipenv lock --requirements > requirements.txt`
 
-#### Adding environment variables
-Recidiviz depends on sensitive information to run. This data is stored in environment variables, which should be added
-manually to your production environment (see `models/env_vars` for more information on the datastore kind used).
+#### Adding secrets
+Recidiviz depends on sensitive information to run. This data is stored in datastore, which should be added
+manually to your production environment (see `utils/secrets` for more information on the datastore kind used).
 
-For local testing, these environment variables are loaded from `local.yaml` in your top-level project directory,
-which is not provided in this repository. Instead, a template is provided (`local.example.yaml`) - run
-`$ cp local.example.yaml local.yaml` to copy the template, then edit the new file to add values specific to your
+For local testing, these secrets are loaded from `secrets.yaml` in your top-level project directory, which is not
+provided in this repository. Instead, a template is provided (`secrets.example.yaml`) - run
+`$ cp secrets.example.yaml secrets.yaml` to copy the template, then edit the new file to add values specific to your
 project.
 
-_Note: Recidiviz team members and partners can download a pre-populated `local.yaml` for local development - check your
-onboarding document for details._
+_Note: Recidiviz team members and partners can download a pre-populated `secrets.yaml` for local development - check
+your onboarding document for details._
 
 #### Running tests
 Update your sourced `$PYTHONPATH` to add the Google App Engine libraries to the system Python path, which will

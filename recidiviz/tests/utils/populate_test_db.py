@@ -23,8 +23,7 @@ populate_test_db
 Used to set up the local server environment for testing. Will not run on
 production server.
 
-You will need a local.yaml file with appropriate environment variables to
-use this tool.
+You will need a secrets.yaml file with appropriate secrets to use this tool.
 """
 
 
@@ -35,16 +34,17 @@ import string
 import time
 from datetime import datetime
 
+import yaml
 from flask import Blueprint, request
 from google.appengine.ext import ndb
 
 from recidiviz.ingest.sessions import ScrapedRecord, ScrapeSession
-from recidiviz.models.env_vars import EnvironmentVariable
 from recidiviz.models.person import Person
 from recidiviz.models.record import Offense, Record, SentenceDuration
 from recidiviz.models.snapshot import Snapshot
 from recidiviz.utils import environment, regions
 from recidiviz.utils.auth import authenticate_request
+from recidiviz.utils.secrets import Secret
 
 test_populator = Blueprint('test_populator', __name__)
 
@@ -96,9 +96,9 @@ def populate():
     snapshot_count = request.args.get('snapshots_per_record', 3, type=int)
 
     if wipe_db:
-        purge_datastore()
+        _purge_datastore()
 
-    load_env_vars()
+    _load_secrets()
     region = regions.Region(region_code)
 
     # Add some sample NY people, records, and snapshots to work with
@@ -135,19 +135,18 @@ def clear():
         HTTP 200 if successful
         HTTP 400 if not
     """
-    purge_datastore()
-    load_env_vars()
+    _purge_datastore()
+    _load_secrets()
 
     logging.info("Completed clearing test datastore.")
     return ('', httplib.OK)
 
 
-def load_env_vars():
-    """Load environment variables (proxy and user agent info) to datastore
+def _load_secrets():
+    """Load secrets (proxy and user agent info) into datastore
 
-    Add proxy info and user agent string to the datastore's env variables.
-    Loads environment variables from local.yaml file with appropriate
-    environment variables.
+    Get secrets (e.g. proxy info and user agent string) from secrets.yaml and
+    write them into datastore.
 
     Args:
         N/A
@@ -155,29 +154,21 @@ def load_env_vars():
     Returns:
         N/A
     """
-    logging.info("Adding environment variables...")
+    logging.info("Adding secrets...")
 
-    env_vars = environment.load_local_vars()
+    for secret in Secret.query().fetch():
+        secret.key.delete()
 
-    old_env_vars = EnvironmentVariable.query().fetch()
-    for var in old_env_vars:
-        var.key.delete()
-
-    for _, details in env_vars.iteritems():
-
-        new_variable = EnvironmentVariable(
-            name=details['name'],
-            region=details['region'],
-            value=details['value'])
-
-        new_variable.put()
+    with open("secrets.yaml", 'r') as ymlfile:
+        for name, value in yaml.load(ymlfile)['secrets'].iteritems():
+            Secret(name=name, value=value).put()
 
 
-def purge_datastore():
-    """Clear existing entities (not env vars) from datastore
+def _purge_datastore():
+    """Clear existing entities (not secrets) from datastore
 
-    Clears all existing entities from datastore, except for environment
-    variables (use load_env_vars for environment variables).
+    Clears all existing entities from datastore, except for secrets (use
+    _load_secrets instead).
 
 
     Args:

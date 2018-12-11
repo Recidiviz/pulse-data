@@ -29,8 +29,6 @@ import logging
 import os
 from functools import wraps
 
-import yaml
-
 
 def in_prod():
     """ Check whether we're currently running on local dev machine or in prod
@@ -92,23 +90,3 @@ def local_only(func):
         return func(*args, **kwargs)
 
     return check_env
-
-
-def load_local_vars():
-    """Load environmental variables from local file
-
-    Load local.yaml and return dictionary of contents. For use in test / local
-    environments.
-
-    Args:
-        N/A
-
-    Returns:
-        Dict of local environment variables
-    """
-    with open("local.yaml", 'r') as ymlfile:
-        cfg = yaml.load(ymlfile)
-
-    env_vars = cfg['env_vars']
-
-    return env_vars

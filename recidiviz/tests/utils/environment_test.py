@@ -28,22 +28,6 @@ from recidiviz.utils import environment
 from ..context import utils
 
 
-def test_load_local_vars():
-    file_contents = """
-    env_vars:
-      artist: Jon Hopkins
-      album: Singularity
-    """
-
-    with patch("__builtin__.open", mock_open(read_data=file_contents)) \
-            as mock_file:
-        env_vars = environment.load_local_vars()
-        assert len(env_vars) == 2
-        assert env_vars['artist'] == 'Jon Hopkins'
-        assert env_vars['album'] == 'Singularity'
-        mock_file.assert_called_with('local.yaml', 'r')
-
-
 @patch("os.getenv")
 def test_in_prod_false(mock_os):
     mock_os.return_value = 'NOT PRODUCTION'

@@ -110,7 +110,8 @@ venv.bak/
 .mypy_cache/
 
 # Local development
-local.yaml
+local.yaml # keep in case any developers still have them
+secrets.yaml
 
 #pytest
 .pytest_cache/
