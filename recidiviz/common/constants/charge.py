@@ -17,68 +17,68 @@
 
 """Constants related to a charge entity."""
 
+import recidiviz.common.constants.enum_canonical_strings as enum_strings
+
+
 class ChargeDegree(object):
-    FIRST = 'FIRST'
-    SECOND = 'SECOND'
-    THIRD = 'THIRD'
-    UNKNOWN = 'UNKNOWN'
+    FIRST = enum_strings.degree_first
+    SECOND = enum_strings.degree_second
+    THIRD = enum_strings.degree_third
 
 
 class ChargeClass(object):
-    FELONY = 'FELONY'
-    MISDEMEANOR = 'MISDEMEANOR'
-    PAROLE_VIOLATION = 'PAROLE VIOLATION'
-    PROBATION_VIOLATION = 'PROBATION_VIOLATION'
-    UNKNOWN = 'UNKNOWN'
+    FELONY = enum_strings.charge_class_felony
+    MISDEMEANOR = enum_strings.charge_class_misdemeanor
+    PAROLE_VIOLATION = enum_strings.charge_class_parole_violation
+    PROBATION_VIOLATION = enum_strings.charge_class_probation_violation
 
 
 class ChargeStatus(object):
-    # TODO: Fix inconsistency between Python and DB enums
-    PENDING = 'PENDING'
-    PRETRIAL = 'PRETRIAL'
-    ACQUITTED = 'ACQUITTED'
-    DROPPED = 'DROPPED'
-    CONVICTED = 'CONVICTED'
-    SENTENCED = 'SENTENCED'
-    COMPLETED_SENTENCE = 'COMPLETED SENTENCE'
-    UNKNOWN = 'UNKNOWN'
+    ACQUITTED = enum_strings.charge_status_acquitted
+    COMPLETED_SENTENCE = enum_strings.charge_status_completed
+    CONVICTED = enum_strings.charge_status_convicted
+    DROPPED = enum_strings.charge_status_dropped
+    PENDING = enum_strings.charge_status_pending
+    PRETRIAL = enum_strings.charge_status_pretrial
+    SENTENCED = enum_strings.charge_status_sentenced
 
 
 class CourtType(object):
-    DISTRICT = 'DISTRICT'
-    SUPERIOR = 'SUPERIOR'
-    CIRCUIT = 'CIRCUIT'
-    OTHER = 'OTHER'
-    UNKNOWN = 'UNKNOWN'
+    CIRCUIT = enum_strings.court_type_circuit
+    DISTRICT = enum_strings.court_type_district
+    OTHER = enum_strings.court_type_other
+    SUPERIOR = enum_strings.court_type_superior
 
 
 CHARGE_DEGREE_MAP = {
     'FIRST': ChargeDegree.FIRST,
     'SECOND': ChargeDegree.SECOND,
     'THIRD': ChargeDegree.THIRD,
-    'UNKNOWN': ChargeDegree.UNKNOWN
 }
+
+
 CHARGE_CLASS_MAP = {
     'FELONY': ChargeClass.FELONY,
     'MISDEMEANOR': ChargeClass.MISDEMEANOR,
     'PAROLE VIOLATION': ChargeClass.PAROLE_VIOLATION,
     'PROBATION VIOLATION': ChargeClass.PROBATION_VIOLATION,
-    'UNKNOWN': ChargeClass.UNKNOWN
 }
+
+
 CHARGE_STATUS_MAP = {
+    'ACQUITTED': ChargeStatus.ACQUITTED,
+    'COMPLETED SENTENCE': ChargeStatus.COMPLETED_SENTENCE,
+    'CONVICTED': ChargeStatus.CONVICTED,
+    'DROPPED': ChargeStatus.DROPPED,
     'PENDING': ChargeStatus.PENDING,
     'PRETRIAL': ChargeStatus.PRETRIAL,
-    'ACQUITTED': ChargeStatus.ACQUITTED,
-    'DROPPED': ChargeStatus.DROPPED,
-    'CONVICTED': ChargeStatus.CONVICTED,
     'SENTENCED': ChargeStatus.SENTENCED,
-    'COMPLETED SENTENCE': ChargeStatus.COMPLETED_SENTENCE,
-    'UNKNOWN': ChargeStatus.UNKNOWN
 }
+
+
 COURT_TYPE_MAP = {
-    'DISTRICT': CourtType.DISTRICT,
-    'SUPERIOR': CourtType.SUPERIOR,
     'CIRCUIT': CourtType.CIRCUIT,
+    'DISTRICT': CourtType.DISTRICT,
     'OTHER': CourtType.OTHER,
-    'UNKNOWN': CourtType.UNKNOWN
+    'SUPERIOR': CourtType.SUPERIOR,
 }
