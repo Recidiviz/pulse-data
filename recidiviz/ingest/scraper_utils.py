@@ -28,8 +28,8 @@ import zlib
 import dateutil.parser as parser
 
 from google.appengine.ext import ndb
-from recidiviz.models import env_vars
 from recidiviz.utils import environment
+from recidiviz.utils import secrets
 
 DATETIME_STR_FORMAT = '%Y-%m-%d %H:%M:%S'
 
@@ -201,13 +201,13 @@ def get_proxies(use_test=False):
         user_var = "proxy_user"
         pass_var = "proxy_password"
 
-    proxy_url = env_vars.get_env_var("proxy_url")
+    proxy_url = secrets.get_secret("proxy_url")
 
     if proxy_url is None:
         raise Exception("No proxy url")
 
-    proxy_user = env_vars.get_env_var(user_var)
-    proxy_password = env_vars.get_env_var(pass_var)
+    proxy_user = secrets.get_secret(user_var)
+    proxy_password = secrets.get_secret(pass_var)
 
     if (proxy_user is None) or (proxy_password is None):
         raise Exception("No proxy user/pass")
@@ -239,7 +239,7 @@ def get_headers():
         proceed without this
 
     """
-    user_agent_string = env_vars.get_env_var("user_agent")
+    user_agent_string = secrets.get_secret("user_agent")
 
     if not user_agent_string:
         raise Exception("No user agent string")
