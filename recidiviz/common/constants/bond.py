@@ -17,32 +17,32 @@
 
 """Constants related to a bond entity."""
 
+import recidiviz.common.constants.enum_canonical_strings as enum_strings
+
+
 class BondType(object):
-    SECURED = 'SECURED'
-    UNSECURED = 'UNSECURED'
-    CASH = 'CASH'
-    NO_BOND = 'NO BOND'
-    BOND_DENIED = 'BOND DENIED'
-    UNKNOWN = 'UNKNOWN'
+    BOND_DENIED = enum_strings.bond_type_denied
+    CASH = enum_strings.bond_type_cash
+    NO_BOND = enum_strings.bond_type_no_bond
+    SECURED = enum_strings.bond_type_secured
+    UNSECURED = enum_strings.bond_type_unsecured
 
 
 class BondStatus(object):
-    # TODO: resolve inconsistency between Python and DB enum values
-    ACTIVE = 'ACTIVE'
-    POSTED = 'POSTED'
-    UNKNOWN = 'UNKNOWN'
+    ACTIVE = enum_strings.bond_status_active
+    POSTED = enum_strings.bond_status_posted
 
 
 BOND_TYPE_MAP = {
-    'SECURED': BondType.SECURED,
-    'UNSECURED': BondType.UNSECURED,
+    'BOND DENIED': BondType.BOND_DENIED,
     'CASH': BondType.CASH,
     'NO BOND': BondType.NO_BOND,
-    'BOND DENIED': BondType.BOND_DENIED,
-    'UNKNOWN': BondType.UNKNOWN
+    'SECURED': BondType.SECURED,
+    'UNSECURED': BondType.UNSECURED,
 }
+
+
 BOND_STATUS_MAP = {
     'ACTIVE': BondStatus.ACTIVE,
     'POSTED': BondStatus.POSTED,
-    'UNKNOWN': BondStatus.UNKNOWN
 }

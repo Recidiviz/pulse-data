@@ -17,27 +17,61 @@
 
 """Constants related to a booking entity."""
 
+import recidiviz.common.constants.enum_canonical_strings as enum_strings
+
 
 class Classification(object):
-    UNKNOWN = 'UNKNOWN'
+    HIGH = enum_strings.classification_high
+    LOW = enum_strings.classification_low
+    MAXIMUM = enum_strings.classification_maximum
+    MEDIUM = enum_strings.classification_medium
+    MINIMUM = enum_strings.classification_minimum
+    WORK_RELEASE = enum_strings.classification_work_release
 
 
 class CustodyStatus(object):
-    UNKNOWN = 'UNKNOWN'
+    ESCAPED = enum_strings.custody_status_escaped
+    HELD_ELSEWHERE = enum_strings.custody_status_elsewhere
+    IN_CUSTODY = enum_strings.custody_status_in_custody
+    RELEASED = enum_strings.custody_status_released
 
 
 class ReleaseReason(object):
-    UNKNOWN = 'UNKNOWN'
+    BOND = enum_strings.release_reason_bond
+    DEATH = enum_strings.release_reason_death
+    ESCAPE = enum_strings.release_reason_escape
+    EXPIRATION_OF_SENTENCE = enum_strings.release_reason_expiration
+    OWN_RECOGNIZANCE = enum_strings.release_reason_recognizance
+    PAROLE = enum_strings.release_reason_parole
+    PROBATION = enum_strings.release_reason_probation
+    TRANSFER = enum_strings.release_reason_transfer
+
+
+CLASSIFICATION_MAP = {
+    'HIGH': Classification.HIGH,
+    'LOW': Classification.LOW,
+    'MAXIMUM': Classification.MAXIMUM,
+    'MEDIUM': Classification.MEDIUM,
+    'MINIMUM': Classification.MINIMUM,
+    'WORK RELEASE': Classification.WORK_RELEASE
+}
+
+
+CUSTODY_STATUS_MAP = {
+    'ESCAPED': CustodyStatus.ESCAPED,
+    'HELD ELSEWHERE': CustodyStatus.HELD_ELSEWHERE,
+    'IN CUSTODY': CustodyStatus.IN_CUSTODY,
+    'RELEASED': CustodyStatus.RELEASED
+}
 
 
 RELEASE_REASON_MAP = {
-    'UNKNOWN': ReleaseReason.UNKNOWN
-}
-CUSTODY_STATUS_MAP = {
-    'UNKNOWN': CustodyStatus.UNKNOWN,
-    # TODO: Resolve inconsistencies between Python and DB enums
-    'IN CUSTODY': 'IN_CUSTODY'
-}
-CLASSIFICATION_MAP = {
-    'UNKNOWN': Classification.UNKNOWN
+    'BOND': ReleaseReason.BOND,
+    'DEATH': ReleaseReason.DEATH,
+    'ESCAPE': ReleaseReason.ESCAPE,
+    'EXPIRATION OF SENTENCE': ReleaseReason.EXPIRATION_OF_SENTENCE,
+    'OWN RECOGNIZANCE': ReleaseReason.OWN_RECOGNIZANCE,
+    'PAROLE': ReleaseReason.PAROLE,
+    'PROBATION': ReleaseReason.PROBATION,
+    'TRANSFER': ReleaseReason.TRANSFER,
 }

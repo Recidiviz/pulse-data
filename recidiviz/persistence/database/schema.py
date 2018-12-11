@@ -54,7 +54,9 @@ Base = declarative_base()
 # Person
 
 gender_values = (enum_strings.gender_female,
-                 enum_strings.gender_male)
+                 enum_strings.gender_male,
+                 enum_strings.gender_trans_female,
+                 enum_strings.gender_trans_male)
 
 race_values = (enum_strings.race_american_indian,
                enum_strings.race_asian,

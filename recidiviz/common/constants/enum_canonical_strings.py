@@ -39,6 +39,8 @@ unknown = 'UNKNOWN'
 
 gender_female = 'FEMALE'
 gender_male = 'MALE'
+gender_trans_female = 'TRANS_FEMALE'
+gender_trans_male = 'TRANS_MALE'
 
 race_american_indian = 'AMERICAN_INDIAN/ALASKAN_NATIVE'
 race_asian = 'ASIAN'
