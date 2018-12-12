@@ -48,7 +48,7 @@ six = "==1.11.0"
 slack-cleaner = "==0.3.0"
 slacker = "==0.9.65"
 tornado = "==5.0.2"
-urllib3 = {extras = ["secure"],version = "==1.22"}
+urllib3 = {extras = ["secure"],version = "==1.23"}
 virtualenv = "==15.2.0"
 waitress = "==1.1.0"
 wrapt = "==1.10.11"
