@@ -560,6 +560,7 @@
             ],
             "index": "pypi",
             "version": "==2.7.6.1"
+        },
         "protobuf": {
             "hashes": [
                 "sha256:10394a4d03af7060fa8a6e1cbf38cea44be1467053b0aea5bbfcb4b13c4b88c4",
