@@ -25,21 +25,18 @@ This class is paired with calculator.py, together providing the ability to
 transform a person into an array of recidivism metrics.
 
 Example:
-    recidivism_events = identification.find_recidivism(person)
+    recidivism_events = identification.find_recidivism(records, snapshots)
     metric_combinations = calculator.map_recidivism_combinations(
         person, recidivism_events)
 """
 
 
 import logging
-from recidiviz.models.snapshot import Snapshot
-from recidiviz.models.record import Record
-# This is required to permit access to PolyModel attributes on UsNyRecord
-from recidiviz.ingest.us_ny.us_ny_record import UsNyRecord #pylint: disable=unused-import
 from .recidivism_event import RecidivismEvent
 
 
-def find_recidivism(person, include_conditional_violations=False):
+def find_recidivism(records, snapshots,
+                    include_conditional_violations=False):
     """Classifies all individual sentences for the person as either leading to
     recidivism or not.
 
@@ -61,7 +58,9 @@ def find_recidivism(person, include_conditional_violations=False):
     }
 
     Args:
-        person: a person to determine recidivism for.
+        records: placeholder - records for person ordered by custody date
+        snapshots: placeholder - snapshots for person ordered descending by
+                creation date
         include_conditional_violations: a boolean indicating whether or not
                 to include violations of conditional release in recidivism
                 calculations.
@@ -71,13 +70,6 @@ def find_recidivism(person, include_conditional_violations=False):
         person in that cohort. No more than one event can be returned per
         release cohort per person.
     """
-    records = Record.query(ancestor=person.key)\
-        .order(Record.custody_date)\
-        .fetch()
-
-    snapshots = Snapshot.query(ancestor=person.key)\
-        .order(-Snapshot.created_on)\
-        .fetch()
 
     recidivism_events = {}
 
@@ -221,7 +213,7 @@ def last_facility(record, snapshots):
         have no apparent history available for the record.
     """
     return next((snapshot.latest_facility for snapshot in snapshots
-                 if snapshot.key.parent().id() == record.key.id()), None)
+                 if snapshot.parent == record.key), None)
 
 
 def released_only_once():
@@ -251,14 +243,14 @@ def for_last_record(record, original_entry_date,
     # if they are out of prison from this last record
     if record.is_released:
         logging.debug('Person was released from last or only '
-                      'record %s. No recidivism.', record.key.id())
+                      'record %s. No recidivism.', record.key)
 
         return RecidivismEvent.non_recidivism_event(original_entry_date,
                                                     release_date,
                                                     release_facility)
 
     logging.debug('Person is still incarcerated for last or only '
-                  'record %s. Nothing to track', record.key.id())
+                  'record %s. Nothing to track', record.key)
     return None
 
 
@@ -285,7 +277,7 @@ def for_intermediate_record(record, recidivism_record, snapshots,
         A recidivism event.
     """
     logging.debug('Person was released from record %s and went '
-                  'back again. Yes recidivism.', record.key.id())
+                  'back again. Yes recidivism.', record.key)
 
     reincarceration_date = first_entrance(recidivism_record)
     reincarceration_facility = first_facility(recidivism_record,

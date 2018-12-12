@@ -19,14 +19,12 @@
 
 from flask import Flask
 
-from recidiviz.calculator.recidivism.pipeline import calculator_pipeline
 from recidiviz.ingest.scraper_control import scraper_control
 from recidiviz.ingest.worker import worker
 from recidiviz.tests.utils.populate_test_db import test_populator
 from recidiviz.utils import environment
 
 app = Flask(__name__)
-app.register_blueprint(calculator_pipeline, url_prefix='/calculator_pipeline')
 app.register_blueprint(scraper_control, url_prefix='/scraper')
 app.register_blueprint(worker, url_prefix='/scraper')
 if not environment.in_prod():

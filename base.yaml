@@ -1,6 +1,3 @@
-includes:
-- lib/mapreduce/include.yaml
-
 builtins:
 # Deferred is required to use google.appengine.ext.deferred
 - deferred: on
@@ -12,10 +9,6 @@ handlers:
 
 - url: /v1/records
   script: recidiviz.persistence.actions.app
-
-- url: /_ah/pipeline.*
-  script: recidiviz.mapreduce.lib.pipeline.handlers._APP
-  login: admin
 
 - url: /.*
   script: recidiviz.server.app
