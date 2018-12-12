@@ -23,21 +23,24 @@ class that initiates pipelines on web requests.
 """
 
 
-import logging
-
-from flask import Blueprint, redirect, request
-
-from mapreduce import base_handler, context, mapreduce_pipeline
-from mapreduce import operation as op
-from recidiviz.utils.auth import authenticate_request
-from recidiviz.utils.params import get_value
-
 from .calculator import map_recidivism_combinations
 from .identifier import find_recidivism
 from .metrics import RecidivismMetric
 
+# placeholder - these should be distributed counters
+COUNTERS = {
+    'total_people_mapped': 0,
+    'total_metric_combinations_mapped': 0,
+    'unique_metric_keys_reduced': 0,
+    'total_records_reduced': 0,
+    'total_recidivisms_reduced': 0,
+}
 
-def map_person(person):
+
+# placeholder - should be mapreduce execution id
+EXECUTION_ID = 1234
+
+def map_person(person, records, snapshots):
     """Performs the `map` phase of the pipeline.
 
     Maps the Person read from the database into a set of metric combinations for
@@ -48,23 +51,27 @@ def map_person(person):
 
     Args:
         person: a Person to be mapped into recidivism metrics.
+        records: placeholder - records for person ordered by custody date
+        snapshots: placeholder - snapshots for person ordered descending by
+            creation date
 
     Yields:
         Metrics for each unique recidivism metric derived from the person. Also
         MapReduce Increment counters for a variety of metrics related to the
         `map` phase.
     """
-    params = context.get().mapreduce_spec.mapper.params
+    params = {}
     include_conditional_violations = \
         params.get('include_conditional_violations')
 
-    recidivism_events = find_recidivism(person, include_conditional_violations)
+    recidivism_events = find_recidivism(records, snapshots,
+                                        include_conditional_violations)
     metric_combinations = map_recidivism_combinations(person, recidivism_events)
 
-    yield op.counters.Increment('total_people_mapped')
+    COUNTERS['total_people_mapped'] += 1
 
     for combination in metric_combinations:
-        yield op.counters.Increment('total_metric_combinations_mapped')
+        COUNTERS['total_metric_combinations_mapped'] += 1
         yield combination
 
 
@@ -101,12 +108,11 @@ def reduce_recidivism_events(metric_key, values):
 
     metric = to_metric(metric_key, total_records, total_recidivism)
 
-    yield op.counters.Increment('unique_metric_keys_reduced')
-    yield op.counters.Increment('total_records_reduced', delta=total_records)
-    yield op.counters.Increment('total_recidivisms_reduced',
-                                delta=total_recidivism)
+    COUNTERS['unique_metric_keys_reduced'] += 1
+    COUNTERS['total_records_reduced'] += total_records
+    COUNTERS['total_recidivisms_reduced'] += total_recidivism
 
-    yield op.db.Put(metric)
+    yield metric
 
 
 def to_metric(metric_key, total_records, total_recidivism):
@@ -133,7 +139,7 @@ def to_metric(metric_key, total_records, total_recidivism):
     recidivism_rate = ((total_recidivism + 0.0) / total_records)
 
     metric = RecidivismMetric()
-    metric.execution_id = context.get().mapreduce_id
+    metric.execution_id = EXECUTION_ID
     metric.total_records = total_records
     metric.total_recidivism = total_recidivism
     metric.recidivism_rate = recidivism_rate
@@ -158,85 +164,3 @@ def to_metric(metric_key, total_records, total_recidivism):
         metric.stay_length_bucket = key_mapping["stay_length"]
 
     return metric
-
-calculator_pipeline = Blueprint('calculator_pipeline', __name__)
-
-@calculator_pipeline.route('/')
-@authenticate_request
-def calculator_handler():
-    """Handles a GET request to the calculator endpoint.
-
-    Creates a CalculatorPipeline instance from parameters in the request and
-    starts the pipeline. Redirects to the built-in MapReduce status page for
-    the pipeline execution instance.
-    """
-    include_conditional_violations_param = get_value(
-        'include_conditional_violations', request.args, 'false')
-
-    if include_conditional_violations_param not in ['true', 'false']:
-        error_message = "include_conditional_violations must be true or " \
-                        "false. Bad param: {}".format(
-                            include_conditional_violations_param)
-
-        logging.error(error_message)
-        return (error_message, 400)
-
-    include_conditional_violations = \
-        include_conditional_violations_param == 'true'
-
-    request_region = get_value('region', request.args)
-
-    if not request_region or request_region == 'all':
-        # No region code - log and exit.
-        logging.info('No specific region parameter provided. '
-                     'Will calculate recidivism metrics across '
-                     'entire data set.')
-        request_region = None
-    else:
-        logging.info("Will calculate recidivism metrics for "
-                     "%s region.", request_region)
-
-    logging.info("Include conditional violation metrics in "
-                 "calculation? %s", include_conditional_violations)
-
-    pipeline = CalculationPipeline(request_region,
-                                   include_conditional_violations)
-    logging.info('Starting calculation pipeline...')
-    pipeline.start(queue_name='recidivism-calculator-mr')
-
-    return redirect("{}/status?root={}".format(pipeline.base_path,
-                                               pipeline.pipeline_id))
-
-
-class CalculationPipeline(base_handler.PipelineBase):
-    """Pipeline to calculate recidivism metrics."""
-
-    def run(self, region, include_conditional_violations):
-        """Yields a recidivism calculation MapReduce pipeline to be started.
-
-        Args:
-            region: a specific region to calculate recidivism for. Calculates
-                for all regions if this is None.
-            include_conditional_violations: a boolean indicating whether or not
-                to include violations of conditional release in recidivism
-                calculations.
-
-        Yields:
-            A MapReduce pipeline to start.
-        """
-        mapper_params = {
-            "entity_kind": 'recidiviz.models.person.Person',
-            "include_conditional_violations": include_conditional_violations
-        }
-
-        if region:
-            mapper_params["filters"] = [('region', '=', region)]
-
-        yield mapreduce_pipeline.MapreducePipeline(
-            'Calculate recidivism across various dimensions',
-            input_reader_spec='mapreduce.input_readers.DatastoreInputReader',
-            mapper_spec='recidiviz.calculator.recidivism.pipeline.map_person',
-            mapper_params=mapper_params,
-            reducer_spec='recidiviz.calculator.recidivism.pipeline.'
-                         'reduce_recidivism_events',
-            shards=64)

@@ -1,8 +1,0 @@
-mapreduce:
-- name: This exists only to prevent errors when loading /mapreduce/status. It is not a real job.
-  mapper:
-    input_reader: recidiviz.mapreduce.input_readers.DatastoreInputReader
-    handler: recidiviz.calculator.recidivism.pipeline.not_real
-    params:
-    - name: entity_kind
-      default: recidiviz.models.person.Person
