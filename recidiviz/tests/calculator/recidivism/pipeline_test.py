@@ -26,86 +26,76 @@ from datetime import datetime
 import pytest
 
 from dateutil.relativedelta import relativedelta
-from google.appengine.ext import ndb
-from google.appengine.ext import testbed
-from mapreduce import context
-from mapreduce import model as mapreduce_model
-from mapreduce import operation as op
 
 from recidiviz.tests.context import calculator
 from recidiviz.calculator.recidivism import (calculator, metrics, pipeline,
                                              recidivism_event)
-from recidiviz.ingest.us_ny.us_ny_record import UsNyRecord
-from recidiviz.models.person import Person
-from recidiviz.models.snapshot import Snapshot
 
 
 class TestMapReduceMethods(object):
     """Tests for the MapReduce methods in the class."""
 
-    def setup_method(self, _test_method):
-        # noinspection PyAttributeOutsideInit
-        self.testbed = testbed.Testbed()
-        self.testbed.activate()
-        self.testbed.init_datastore_v3_stub()
-        ndb_context = ndb.get_context()
-        ndb_context.set_memcache_policy(False)
-        ndb_context.clear_cache()
-
-    def teardown_method(self, _test_method):
-        self.testbed.deactivate()
-
     def test_map_person(self):
         """Tests the map_person function happy path."""
-        set_pipeline_context({})
+        person = FakePerson(key="test-person", birthdate=date(1987, 2, 24),
+                            race="black", sex="male")
 
-        person = Person(id="test-person", birthdate=date(1987, 2, 24),
-                        race="black", sex="male")
-        person.put()
+        initial_incarceration = FakeRecord(
+            key="initial", is_released=True, custody_date=date(2008, 11, 20),
+            latest_release_date=date(2010, 12, 4))
+        initial_incarceration_first_snapshot = FakeSnapshot(
+            initial_incarceration.key, datetime(2009, 6, 17), "Sing Sing")
+        initial_incarceration_second_snapshot = FakeSnapshot(
+            initial_incarceration.key, datetime(2010, 10, 17), "Adirondack")
 
-        initial_incarceration = record(person.key, True, date(2008, 11, 20),
-                                       date(2010, 12, 4))
-        snapshot(initial_incarceration.key, datetime(2009, 6, 17), "Sing Sing")
-        snapshot(initial_incarceration.key, datetime(2010, 10, 17),
-                 "Adirondack")
+        first_reincarceration = FakeRecord(
+            key="first_re", is_released=True, custody_date=date(2011, 4, 5),
+            latest_release_date=date(2014, 4, 14))
+        first_reincarceration_first_snapshot = FakeSnapshot(
+            first_reincarceration.key, datetime(2012, 10, 15), "Adirondack")
+        first_reincarceration_second_snapshot = FakeSnapshot(
+            first_reincarceration.key, datetime(2013, 10, 15), "Upstate")
 
-        first_reincarceration = record(person.key, True, date(2011, 4, 5),
-                                       date(2014, 4, 14))
-        snapshot(first_reincarceration.key, datetime(2012, 10, 15),
-                 "Adirondack")
-        snapshot(first_reincarceration.key, datetime(2013, 10, 15), "Upstate")
+        subsequent_reincarceration = FakeRecord(
+            "subsequent_re", is_released=False, custody_date=date(2017, 1, 4))
+        subsequent_reincarceration_snapshot = FakeSnapshot(
+            subsequent_reincarceration.key, datetime(2017, 10, 15), "Downstate")
 
-        subsequent_reincarceration = record(person.key, False, date(2017, 1, 4))
-        snapshot(subsequent_reincarceration.key, datetime(2017, 10, 15),
-                 "Downstate")
-
-        result_generator = pipeline.map_person(person)
+        result_generator = pipeline.map_person(
+            person, records=[
+                initial_incarceration,
+                first_reincarceration,
+                subsequent_reincarceration,
+            ], snapshots=[
+                subsequent_reincarceration_snapshot,
+                first_reincarceration_second_snapshot,
+                first_reincarceration_first_snapshot,
+                initial_incarceration_second_snapshot,
+                initial_incarceration_first_snapshot,
+            ]
+        )
         total_combinations_2010 = 0
         total_combinations_2014 = 0
 
         # The method yields up counters that we increment,
         # and yields up (combination, value) tuples for reduction.
         for result in result_generator:
-            if isinstance(result, op.counters.Increment):
-                assert result.counter_name in [
-                    'total_metric_combinations_mapped', 'total_people_mapped']
-            else:
-                combination, value = result
+            combination, value = result
 
-                # The value is always 1, because recidivism occurred
-                # within the first year of release.
-                if combination['release_cohort'] == 2010:
-                    total_combinations_2010 += 1
+            # The value is always 1, because recidivism occurred
+            # within the first year of release.
+            if combination['release_cohort'] == 2010:
+                total_combinations_2010 += 1
+                assert value == 1
+
+            # This is the last instance of recidivism
+            # and it occurs at the 3 year mark.
+            elif combination['release_cohort'] == 2014:
+                total_combinations_2014 += 1
+                if combination['follow_up_period'] < 3:
+                    assert value == 0
+                else:
                     assert value == 1
-
-                # This is the last instance of recidivism
-                # and it occurs at the 3 year mark.
-                elif combination['release_cohort'] == 2014:
-                    total_combinations_2014 += 1
-                    if combination['follow_up_period'] < 3:
-                        assert value == 0
-                    else:
-                        assert value == 1
 
         # Get the number of combinations of person-event characteristics.
         original_entry_date = date(2013, 6, 17)
@@ -134,26 +124,17 @@ class TestMapReduceMethods(object):
 
     def test_map_persons_no_results(self):
         """Tests the map_person function when the person has no records."""
-        set_pipeline_context({})
+        person = FakePerson(key="test-person", birthdate=date(1987, 2, 24),
+                            race="black", sex="male")
 
-        person = Person(id="test-person", birthdate=date(1987, 2, 24),
-                        race="black", sex="male")
-        person.put()
+        result_generator = pipeline.map_person(person, records=[], snapshots=[])
 
-        result_generator = pipeline.map_person(person)
+        total_results = len(list(result_generator))
 
-        total_results = 0
-        for result in result_generator:
-            total_results += 1
-            assert isinstance(result, op.counters.Increment)
-            assert result.counter_name == 'total_people_mapped'
-
-        assert total_results == 1
+        assert total_results == 0
 
     def test_reduce_recidivism_events(self):
         """Tests the reduce_recidivism_events function happy path."""
-        set_pipeline_context({})
-
         metric_key_offender = "{'follow_up_period': 4, " \
                               "'age': '<25', " \
                               "'stay_length': '12-24', " \
@@ -167,19 +148,13 @@ class TestMapReduceMethods(object):
             metric_key_offender, [0.5, 0.0, 0.5, 1.0])
 
         for result in offender_result_generator:
-            if isinstance(result, op.counters.Increment):
-                assert result.counter_name in ['unique_metric_keys_reduced',
-                                               'total_records_reduced',
-                                               'total_recidivisms_reduced']
-            else:
-                expected = metrics.RecidivismMetric(
-                    release_cohort=2010, follow_up_period=4, age_bucket='<25',
-                    stay_length_bucket='12-24', sex='male', race='black',
-                    release_facility='Adirondack', methodology='OFFENDER',
-                    execution_id='some-id', total_records=4,
-                    total_recidivism=2.0, recidivism_rate=0.5)
-
-                assert result.entity == expected
+            expected = metrics.RecidivismMetric(
+                release_cohort=2010, follow_up_period=4, age_bucket='<25',
+                stay_length_bucket='12-24', sex='male', race='black',
+                release_facility='Adirondack', methodology='OFFENDER',
+                execution_id=pipeline.EXECUTION_ID, total_records=4,
+                total_recidivism=2.0, recidivism_rate=0.5)
+            assert result.__dict__ == expected.__dict__
 
         metric_key_event = "{'follow_up_period': 4, " \
                            "'age': '<25', " \
@@ -194,18 +169,13 @@ class TestMapReduceMethods(object):
             metric_key_event, [1, 1, 0, 0, 0, 1, 1, 0, 0, 0])
 
         for result in event_result_generator:
-            if isinstance(result, op.counters.Increment):
-                assert result.counter_name in ['unique_metric_keys_reduced',
-                                               'total_records_reduced',
-                                               'total_recidivisms_reduced']
-            else:
-                expected = metrics.RecidivismMetric(
-                    release_cohort=2010, follow_up_period=4, age_bucket='<25',
-                    stay_length_bucket='12-24', sex='male', race='black',
-                    release_facility='Adirondack', methodology='EVENT',
-                    execution_id='some-id', total_records=10,
-                    total_recidivism=4, recidivism_rate=0.4)
-                assert result.entity == expected
+            expected = metrics.RecidivismMetric(
+                release_cohort=2010, follow_up_period=4, age_bucket='<25',
+                stay_length_bucket='12-24', sex='male', race='black',
+                release_facility='Adirondack', methodology='EVENT',
+                execution_id=pipeline.EXECUTION_ID, total_records=10,
+                total_recidivism=4, recidivism_rate=0.4)
+            assert result.__dict__ == expected.__dict__
 
     def test_reduce_recidivism_events_no_values(self):
         """Tests the reduce_recidivism_events function when there are no
@@ -214,8 +184,6 @@ class TestMapReduceMethods(object):
         This should not happen in
         the GAE MapReduce framework, but we test against it anyway.
         """
-        set_pipeline_context({})
-
         metric_key_offender = "{'follow_up_period': 4, " \
                               "'age': '<25', " \
                               "'stay_length': '12-24', " \
@@ -234,28 +202,29 @@ class TestMapReduceMethods(object):
         assert not total_results
 
 
-def set_pipeline_context(params):
-    mapper_spec_json = mapreduce_model.MapperSpec(
-        "handler", "input", params, 8).to_json()
-    mapreduce_spec = mapreduce_model.MapreduceSpec(
-        "test-mr-pipeline", "some-id", mapper_spec_json)
-
-    pipeline_context = context.Context(mapreduce_spec, None)
-    pipeline_context._set(pipeline_context)  # pylint: disable=protected-access
+class FakePerson(object):
+    def __init__(self, key=None, birthdate=None, race=None, sex=None):
+        self.key = key
+        self.birthdate = birthdate
+        self.race = race
+        self.sex = sex
 
 
-def record(parent_key, is_released, custody_date, latest_release_date=None):
-    new_record = UsNyRecord(parent=parent_key,
-                            is_released=is_released,
-                            custody_date=custody_date,
-                            latest_release_date=latest_release_date)
-    new_record.put()
-    return new_record
+class FakeRecord(object):
+    def __init__(self, key=None, is_released=None, custody_date=None,
+                 last_custody_date=None, latest_release_date=None,
+                 latest_facility=None, created_on=None):
+        self.key = key
+        self.is_released = is_released
+        self.custody_date = custody_date
+        self.last_custody_date = last_custody_date
+        self.latest_release_date = latest_release_date
+        self.latest_facility = latest_facility
+        self.created_on = created_on
 
 
-def snapshot(parent_key, snapshot_date, facility):
-    new_snapshot = Snapshot(parent=parent_key,
-                            created_on=snapshot_date,
-                            latest_facility=facility)
-    new_snapshot.put()
-    return new_snapshot
+class FakeSnapshot(object):
+    def __init__(self, parent_key=None, created_on=None, latest_facility=None):
+        self.parent = parent_key
+        self.created_on = created_on
+        self.latest_facility = latest_facility

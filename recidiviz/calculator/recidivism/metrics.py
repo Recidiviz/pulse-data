@@ -18,11 +18,7 @@
 """Recidivism metrics we calculate."""
 
 
-from google.appengine.ext import ndb
-from google.appengine.ext.ndb import polymodel
-
-
-class RecidivismMetric(polymodel.PolyModel):
+class RecidivismMetric(object):
     """Models a single recidivism metric.
 
     A recidivism metric contains a recidivism rate, including the numerator of
@@ -61,26 +57,33 @@ class RecidivismMetric(polymodel.PolyModel):
         updated_on: a DateTime for when this metric was last updated.
 
     """
-    # Id of the calculation pipeline that created this metric
-    execution_id = ndb.StringProperty()
 
-    # Required characteristics
-    release_cohort = ndb.IntegerProperty()
-    follow_up_period = ndb.IntegerProperty()
-    methodology = ndb.StringProperty()
+    def __init__(self, execution_id=None, release_cohort=None,
+                 follow_up_period=None, methodology=None, age_bucket=None,
+                 stay_length_bucket=None, race=None, sex=None,
+                 release_facility=None, total_records=None,
+                 total_recidivism=None, recidivism_rate=None, created_on=None,
+                 updated_on=None):
+        # Id of the calculation pipeline that created this metric
+        self.execution_id = execution_id
 
-    # Optional characteristics
-    age_bucket = ndb.StringProperty()
-    stay_length_bucket = ndb.StringProperty()
-    race = ndb.StringProperty()
-    sex = ndb.StringProperty()
-    release_facility = ndb.StringProperty()
+        # Required characteristics
+        self.release_cohort = release_cohort
+        self.follow_up_period = follow_up_period
+        self.methodology = methodology
 
-    # Metric values
-    total_records = ndb.IntegerProperty()
-    total_recidivism = ndb.FloatProperty()
-    recidivism_rate = ndb.FloatProperty()
+        # Optional characteristics
+        self.age_bucket = age_bucket
+        self.stay_length_bucket = stay_length_bucket
+        self.race = race
+        self.sex = sex
+        self.release_facility = release_facility
 
-    # Record keeping fields
-    created_on = ndb.DateTimeProperty(auto_now_add=True)
-    updated_on = ndb.DateTimeProperty(auto_now=True)
+        # Metric values
+        self.total_records = total_records
+        self.total_recidivism = total_recidivism
+        self.recidivism_rate = recidivism_rate
+
+        # Record keeping fields
+        self.created_on = created_on
+        self.updated_on = updated_on

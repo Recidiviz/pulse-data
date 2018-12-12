@@ -1,5 +1,7 @@
 # Recidiviz Calculator
 
+Note: As a part of the migration to `python 3`, this code no longer actually fetches records or writes out metrics. The logic to do the calculation still exists, but it is left in a non-working state until it is adapted to our new schema.
+
 This package contains a recidivism calculation pipeline built on Google App Engine’s MapReduce library.
 
 This calculates both event- and offender-based recidivism metrics across a variety of dimensions, including location,
