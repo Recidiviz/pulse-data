@@ -17,15 +17,22 @@ fileConfig(config.config_file_name)
 # Metadata from schema
 target_metadata = Base.metadata
 
+# String defining database implementation used by SQLAlchemy engine
+_DB_TYPE = 'postgresql'
+
 
 def get_sqlalchemy_url():
     """Returns string needed to connect to database"""
-    user = secrets.get_secret('SQLALCHEMY_DB_USER')
-    password = secrets.get_secret('SQLALCHEMY_DB_PASSWORD')
-    host = secrets.get_secret('SQLALCHEMY_DB_HOST')
-    db_name = secrets.get_secret('SQLALCHEMY_DB_NAME')
 
-    return 'postgresql://%s:%s@%s/%s' % (user, password, host, db_name)
+    use_ssl = secrets.get_secret('sqlalchemy_use_ssl')
+
+    if use_ssl == True:
+        return _get_sqlalchemy_url_with_ssl()
+    elif use_ssl == False:
+        return _get_sqlalchemy_url_without_ssl()
+    else:
+        raise RuntimeError('Invalid value for use_ssl: {use_ssl}'.format(
+            use_ssl=use_ssl))
 
 
 def run_migrations_offline():
@@ -65,6 +72,41 @@ def run_migrations_online():
 
         with context.begin_transaction():
             context.run_migrations()
+
+
+def _get_sqlalchemy_url_without_ssl():
+    """Returns string used for SQLAlchemy engine, without SSL params"""
+
+    user = secrets.get_secret('sqlalchemy_db_user')
+    password = secrets.get_secret('sqlalchemy_db_password')
+    host = secrets.get_secret('sqlalchemy_db_host')
+    db_name = secrets.get_secret('sqlalchemy_db_name')
+
+    return '{db_type}://{user}:{password}@{host}/{db_name}'.format(
+        db_type=_DB_TYPE,
+        user=user,
+        password=password,
+        host=host,
+        db_name=db_name)
+
+
+def _get_sqlalchemy_url_with_ssl():
+    """Returns string used for SQLAlchemy engine, with SSL params"""
+
+    ssl_ca_path = secrets.get_secret('sqlalchemy_ssl_ca_path')
+    ssl_key_path = secrets.get_secret('sqlalchemy_ssl_key_path')
+    ssl_cert_path = secrets.get_secret('sqlalchemy_ssl_cert_path')
+
+    ssl_params = '?ssl_ca={ssl_ca_path}&ssl_key={ssl_key_path}' \
+                 '&ssl_cert={ssl_cert_path}'.format(
+                     ssl_ca_path=ssl_ca_path,
+                     ssl_key_path=ssl_key_path,
+                     ssl_cert_path=ssl_cert_path)
+
+    url_without_ssl = _get_sqlalchemy_url_without_ssl()
+
+    return url_without_ssl + ssl_params
+
 
 if context.is_offline_mode():
     run_migrations_offline()
