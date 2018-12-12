@@ -6,11 +6,6 @@ instance_class: F2
 includes:
 - base.yaml
 
-# It is imperative that the module and version values are set to default for
-# local and not production, due to a GAE MapReduce bug: https://github.com/GoogleCloudPlatform/appengine-mapreduce/issues/103.
-module: default
-version: default
-
 libraries:
 - name: lxml
   version: "3.7.3"
