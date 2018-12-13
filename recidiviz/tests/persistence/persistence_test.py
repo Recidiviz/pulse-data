@@ -21,7 +21,8 @@ from unittest import TestCase
 
 from mock import patch, Mock
 from recidiviz import Session
-from recidiviz.ingest.models.ingest_info import IngestInfo, _Bond
+from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo, Charge, \
+    Sentence, Booking
 from recidiviz.persistence import persistence
 from recidiviz.persistence.database import database
 from recidiviz.tests.utils import fakes
@@ -56,16 +57,14 @@ SURNAME_2 = 'TEST_SURNAME_2'
 class TestPersistence(TestCase):
     """Test that the persistence layer correctly writes to the SQL database."""
 
-
     def setup_method(self, _test_method):
         fakes.use_in_memory_sqlite_database()
-
 
     def test_localRun(self):
         with patch('os.getenv', Mock(return_value='Local')):
             # Arrange
             ingest_info = IngestInfo()
-            ingest_info.create_person(surname=SURNAME_1)
+            ingest_info.people.add(surname=SURNAME_1)
 
             # Act
             persistence.write(ingest_info, SCRAPER_START_DATETIME)
@@ -74,13 +73,12 @@ class TestPersistence(TestCase):
             # Assert
             assert not result
 
-
     def test_persistLocally(self):
         # Arrange
-        with patch('os.getenv', Mock(return_value='Local'))\
-                and patch.dict('os.environ', {'PERSIST_LOCALLY': 'true'}):
+        with patch('os.getenv', Mock(return_value='Local')) \
+             and patch.dict('os.environ', {'PERSIST_LOCALLY': 'true'}):
             ingest_info = IngestInfo()
-            ingest_info.create_person(surname=SURNAME_1)
+            ingest_info.people.add(surname=SURNAME_1)
 
             # Act
             persistence.write(ingest_info, SCRAPER_START_DATETIME)
@@ -90,12 +88,11 @@ class TestPersistence(TestCase):
             assert len(result) == 1
             assert result[0].surname == SURNAME_1
 
-
     def test_twoDifferentPeople_persistsBoth(self):
         # Arrange
         ingest_info = IngestInfo()
-        ingest_info.create_person(surname=SURNAME_1, given_names=GIVEN_NAME)
-        ingest_info.create_person(surname=SURNAME_2, given_names=GIVEN_NAME)
+        ingest_info.people.add(surname=SURNAME_1, given_names=GIVEN_NAME)
+        ingest_info.people.add(surname=SURNAME_2, given_names=GIVEN_NAME)
 
         # Act
         persistence.write(ingest_info, SCRAPER_START_DATETIME)
@@ -106,12 +103,11 @@ class TestPersistence(TestCase):
         assert result[0].surname == SURNAME_1
         assert result[1].surname == SURNAME_2
 
-
     def test_sameTwoPeople_persistsOne(self):
         # Arrange
         ingest_info = IngestInfo()
-        ingest_info.create_person(surname=SURNAME_1, given_names=GIVEN_NAME)
-        ingest_info.create_person(surname=SURNAME_1, given_names=GIVEN_NAME)
+        ingest_info.people.add(surname=SURNAME_1, given_names=GIVEN_NAME)
+        ingest_info.people.add(surname=SURNAME_1, given_names=GIVEN_NAME)
 
         # Act
         persistence.write(ingest_info, SCRAPER_START_DATETIME)
@@ -121,22 +117,21 @@ class TestPersistence(TestCase):
         assert len(result) == 1
         assert result[0].surname == SURNAME_1
 
-
     # TODO: Consider not replace everything with the newly scraped data, instead
     # update only the newly scraped fields (keeping old data)
     def test_sameTwoPeople_matchesPeopleAndReplacesWithNewerData(self):
         # Arrange
         ingest_info = IngestInfo()
-        ingest_info.create_person(surname=SURNAME_1,
-                                  given_names=GIVEN_NAME,
-                                  place_of_residence=PLACE_1,
-                                  birthdate=BIRTHDATE_1)
+        ingest_info.people.add(surname=SURNAME_1,
+                               given_names=GIVEN_NAME,
+                               place_of_residence=PLACE_1)
         persistence.write(ingest_info, SCRAPER_START_DATETIME)
 
         ingest_info = IngestInfo()
-        ingest_info.create_person(surname=SURNAME_1,
-                                  given_names=GIVEN_NAME,
-                                  place_of_residence=PLACE_2)
+        ingest_info.people.add(surname=SURNAME_1,
+                               given_names=GIVEN_NAME,
+                               place_of_residence=PLACE_2)
+
         # Act
         persistence.write(ingest_info, SCRAPER_START_DATETIME)
         result = database.read_people(Session())
@@ -145,16 +140,14 @@ class TestPersistence(TestCase):
         assert len(result) == 1
         assert result[0].surname == SURNAME_1
         assert result[0].place_of_residence == PLACE_2
-        assert result[0].birthdate == BIRTHDATE_1_DATE
-
 
     def test_readSinglePersonByName(self):
         # Arrange
         ingest_info = IngestInfo()
-        ingest_info.create_person(surname=SURNAME_1, given_names=GIVEN_NAME,
-                                  birthdate=BIRTHDATE_1)
-        ingest_info.create_person(surname=SURNAME_2, given_names=GIVEN_NAME,
-                                  birthdate=BIRTHDATE_2)
+        ingest_info.people.add(surname=SURNAME_1, given_names=GIVEN_NAME,
+                               birthdate=BIRTHDATE_1)
+        ingest_info.people.add(surname=SURNAME_2, given_names=GIVEN_NAME,
+                               birthdate=BIRTHDATE_2)
 
         # Act
         persistence.write(ingest_info, SCRAPER_START_DATETIME)
@@ -165,29 +158,60 @@ class TestPersistence(TestCase):
         assert result[0].surname == SURNAME_1
         assert result[0].birthdate == BIRTHDATE_1_DATE
 
-
     # TODO: Rewrite this test to directly test __eq__ between the two People
     def test_readPersonAndAllRelationships(self):
         # Arrange
         ingest_info = IngestInfo()
-        person = ingest_info.create_person(surname=SURNAME_1,
-                                           given_names=GIVEN_NAME)
-        booking = person.create_booking(facility=FACILITY,
-                                        custody_status=BOOKING_CUSTODY_STATUS,
-                                        region=REGION_1)
-        booking.create_arrest(officer_name=OFFICER_NAME)
+        ingest_info.people.add(
+            surname=SURNAME_1,
+            given_names=GIVEN_NAME,
+            booking_ids=['BOOKING_ID']
+        )
+        ingest_info.bookings.add(
+            booking_id='BOOKING_ID',
+            facility=FACILITY,
+            custody_status=BOOKING_CUSTODY_STATUS,
+            region=REGION_1,
+            arrest_id='ARREST_ID',
+            charge_ids=['CHARGE_ID_1', 'CHARGE_ID_2']
+        )
+        ingest_info.arrests.add(
+            arrest_id='ARREST_ID',
+            officer_name=OFFICER_NAME
+        )
 
-        shared_bond = _Bond(bond_type=BOND_TYPE, status=BOND_STATUS)
+        ingest_info.bonds.add(
+            bond_id='SHARED_BOND_ID',
+            bond_type=BOND_TYPE,
+            status=BOND_STATUS
+        )
 
-        charge_1 = booking.create_charge(
-            name=CHARGE_NAME_1, status=CHARGE_STATUS)
-        charge_1.bond = shared_bond
-        charge_1.create_sentence(fine_dollars=FINE_1)
+        ingest_info.charges.extend([
+            Charge(
+                charge_id='CHARGE_ID_1',
+                name=CHARGE_NAME_1,
+                status=CHARGE_STATUS,
+                bond_id='SHARED_BOND_ID',
+                sentence_id='SENTENCE_ID_1'
 
-        charge_2 = booking.create_charge(
-            name=CHARGE_NAME_2, status=CHARGE_STATUS)
-        charge_2.bond = shared_bond
-        charge_2.create_sentence(fine_dollars=FINE_2)
+            ), Charge(
+                charge_id='CHARGE_ID_2',
+                name=CHARGE_NAME_2,
+                status=CHARGE_STATUS,
+                bond_id='SHARED_BOND_ID',
+                sentence_id='SENTENCE_ID_2'
+            )
+        ])
+
+        ingest_info.sentences.extend([
+            Sentence(
+                sentence_id='SENTENCE_ID_1',
+                fine_dollars=FINE_1
+            ), Sentence(
+                sentence_id='SENTENCE_ID_2',
+                fine_dollars=FINE_2
+            )
+        ])
 
         # Act
         persistence.write(ingest_info, SCRAPER_START_DATETIME)
@@ -220,20 +244,40 @@ class TestPersistence(TestCase):
         assert sentence_1.fine_dollars == FINE_1_INT
         assert sentence_2.fine_dollars == FINE_2_INT
 
-
     def test_inferReleaseDateOnOpenBookings(self):
         # Arrange
         most_recent_scrape_date = \
             (SCRAPER_START_DATETIME + timedelta(days=1)).date()
+
         ingest_info = IngestInfo()
-        person = ingest_info.create_person(surname=SURNAME_1,
-                                           given_names=GIVEN_NAME)
-        booking_1 = person.create_booking(region=REGION_1,
-                                          custody_status='IN CUSTODY')
-        booking_1.create_charge(name=CHARGE_NAME_1, status='PENDING')
-        booking_2 = person.create_booking(region=REGION_2,
-                                          custody_status='IN CUSTODY')
-        booking_2.create_charge(name=CHARGE_NAME_2, status='PENDING')
+        ingest_info.people.add(surname=SURNAME_1,
+                               given_names=GIVEN_NAME,
+                               booking_ids=['BOOKING_ID_1', 'BOOKING_ID_2'])
+        ingest_info.bookings.extend([
+            Booking(
+                booking_id='BOOKING_ID_1',
+                region=REGION_1,
+                custody_status='IN CUSTODY',
+                charge_ids=['CHARGE_ID_1']
+            ), Booking(
+                booking_id='BOOKING_ID_2',
+                region=REGION_2,
+                custody_status='IN CUSTODY',
+                charge_ids=['CHARGE_ID_2']
+            )
+        ])
+
+        ingest_info.charges.extend([
+            Charge(
+                charge_id='CHARGE_ID_1',
+                name=CHARGE_NAME_1,
+                status='PENDING'),
+            Charge(
+                charge_id='CHARGE_ID_2',
+                name=CHARGE_NAME_2,
+                status='PENDING'
+            )
+        ])
 
         # Act
         persistence.write(ingest_info, SCRAPER_START_DATETIME)
