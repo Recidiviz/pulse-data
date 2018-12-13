@@ -46,7 +46,7 @@ from lxml import html
 from lxml.etree import XMLSyntaxError  # pylint:disable=no-name-in-module
 
 from recidiviz.persistence import persistence
-from recidiviz.ingest import constants, scraper_utils
+from recidiviz.ingest import constants, scraper_utils, ingest_info_utils
 from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.ingest.scraper import Scraper
 
@@ -157,7 +157,9 @@ class BaseScraper(Scraper):
                     'IngestInfo must be populated if there are no more tasks')
             scraper_start_time = scraper_utils.parse_date_string(
                 params['scraper_start_time'])
-            persistence.write(ingest_info, scraper_start_time)
+            persistence.write(
+                ingest_info_utils.convert_ingest_info_to_proto(
+                    ingest_info), scraper_start_time)
         return None
 
     def is_initial_task(self, task_type):
@@ -192,29 +194,6 @@ class BaseScraper(Scraper):
             boolean whether or not we should scrape a person from the page.
         """
         return task_type & constants.SCRAPE_DATA
-
-    def person_id_to_record_id(self, person_id):
-        """Convert provided person_id to record_id of any record for that
-        person. This is the implementation of an abstract method in Scraper.
-
-        Args:
-            person_id: (string) Person ID for the person
-
-        Returns:
-            None if query returns None
-            Record ID if a record is found for the person in the docket item
-
-        """
-        person = self.get_person_class().query(
-            self.get_person_class().person_id == person_id).get()
-        if not person:
-            return None
-
-        record = self.get_record_class().query(ancestor=person.key).get()
-        if not record:
-            return None
-
-        return record.record_id
 
     @abc.abstractmethod
     def get_more_tasks(self, content, params):
@@ -288,31 +267,3 @@ class BaseScraper(Scraper):
             A hex code from constants telling us how to behave on the first call
         """
         return constants.INITIAL_TASK_AND_MORE
-
-    # The following can be overriden by the child scrapers to help scrape
-    # content retrieved from an endpoint.
-    # PERSON RELATED GETTERS
-
-    def get_person_class(self):
-        """Gets the person subtype to use for this scraper.
-
-        Returns:
-            The class representing the person db object.
-        """
-        return self.get_region().get_person_kind()
-
-    def get_record_class(self):
-        """Gets the person subtype to use for this scraper.
-
-        Returns:
-            The class representing the record db object.
-        """
-        return self.get_region().get_record_kind()
-
-    def get_snapshot_class(self):
-        """Gets the snapshot subtype to use for this scraper.
-
-        Returns:
-            The class representing the snapshot db object.
-        """
-        return self.get_region().get_snapshot_kind()
