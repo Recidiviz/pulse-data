@@ -77,7 +77,6 @@ class Scraper(object):
             self.get_region().region_code + "_next_page_fail_counter")
         self.scraper_work_url = '/scraper/work'
 
-    @abc.abstractmethod
     def person_id_to_record_id(self, person_id):
         """Abstract method for child classes to map a person ID to a DB
         record ID.
