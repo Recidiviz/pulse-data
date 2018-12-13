@@ -112,10 +112,10 @@ def write(ingest_info, last_seen_time):
             existing_person = entity_matching.get_entity_match(session, person)
 
             if existing_person is None:
-                session.add(database_utils.convert_person_to_database(person))
+                session.add(database_utils.convert_person(person))
             else:
                 person.person_id = existing_person.person_id
-                session.merge(database_utils.convert_person_to_database(person))
+                session.merge(database_utils.convert_person(person))
 
             session.commit()
         except Exception:
