@@ -59,7 +59,6 @@ def _convert_charge_to_database(charge):
         elif k == 'sentence':
             charge_db.sentence = _convert_object_to_database(
                 charge.sentence, schema.Sentence())
-
         else:
             setattr(charge_db, k, v)
     return charge_db
@@ -67,6 +66,9 @@ def _convert_charge_to_database(charge):
 
 def _convert_object_to_database(entity_object, db_object):
     """Converts the given person to a database person."""
+    if entity_object is None:
+        return None
+
     for k, v in vars(entity_object).items():
         setattr(db_object, k, v)
     return db_object
