@@ -69,11 +69,11 @@ class TestConverterUtils(TestCase):
             converter_utils.parse_dollar_amount('ABC')
 
     def test_parseBool(self):
-        assert converter_utils.verify_is_bool(True) is True
+        assert converter_utils.parse_bool("True") is True
 
     def test_parseBadBoolField(self):
         with pytest.raises(ValueError):
-            converter_utils.verify_is_bool('ABC')
+            converter_utils.parse_bool('ABC')
 
     def test_parseEnum(self):
         assert converter_utils.string_to_enum('gender', 'Male') == Gender.MALE
