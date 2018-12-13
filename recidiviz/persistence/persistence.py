@@ -20,9 +20,8 @@ import os
 from distutils.util import strtobool  # pylint: disable=no-name-in-module
 
 from recidiviz import Session
-from recidiviz.persistence import entity_matching
-from recidiviz.persistence.converter import Converter
-from recidiviz.persistence.database import database
+from recidiviz.persistence import entity_matching, converter
+from recidiviz.persistence.database import database, database_utils
 from recidiviz.utils import environment
 
 
@@ -99,10 +98,9 @@ def write(ingest_info, last_seen_time):
             the provided ingest_info
     """
     log = logging.getLogger()
-    converter = Converter()
 
     log.info(ingest_info)
-    people = converter.convert_ingest_info(ingest_info)
+    people = converter.convert(ingest_info)
     _add_last_seen_time(people, last_seen_time)
 
     if not _should_persist():
@@ -114,10 +112,10 @@ def write(ingest_info, last_seen_time):
             existing_person = entity_matching.get_entity_match(session, person)
 
             if existing_person is None:
-                session.add(person)
+                session.add(database_utils.convert_person_to_database(person))
             else:
                 person.person_id = existing_person.person_id
-                session.add(session.merge(person))
+                session.merge(database_utils.convert_person_to_database(person))
 
             session.commit()
         except Exception:

@@ -17,6 +17,7 @@
 """Utils for converting individual data fields."""
 
 import datetime
+from distutils.util import strtobool  # pylint: disable=no-name-in-module
 
 from recidiviz.common import global_map
 from recidiviz.ingest import scraper_utils
@@ -165,17 +166,9 @@ def parse_dollar_amount(dollar_string):
         raise ValueError('cannot parse dollar value: %s' % dollar_string)
 
 
-def verify_is_bool(possible_bool):
-    """
-    Verifies that the input is a boolean
-
-    Args:
-        possible_bool: argument to evaluate
-
-    returns:
-        True if argument is a bool, otherwise False
-    """
-    if isinstance(possible_bool, bool):
-        return possible_bool
-    raise ValueError('expected bool but got %s: %s' %
-                     (type(possible_bool), possible_bool))
+def parse_bool(bool_string):
+    """Parse a string and returns a bool."""
+    try:
+        return bool(strtobool(bool_string))
+    except Exception:
+        raise ValueError('cannot parse bool value: %s' % bool_string)
