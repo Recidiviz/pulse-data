@@ -16,154 +16,329 @@
 # =============================================================================
 """Tests for data converter."""
 
+import unittest
+
 from datetime import datetime
-import pytest
 
-from recidiviz.common import constants
-from recidiviz.ingest.models.ingest_info import _Person, _Booking, _Charge, \
-    _Bond, _Sentence, IngestInfo
-from recidiviz.persistence.converter import Converter
+from recidiviz.common.constants.bond import BondType, BondStatus
+from recidiviz.common.constants.booking import ReleaseReason, CustodyStatus, \
+    Classification
+from recidiviz.common.constants.charge import ChargeDegree, ChargeClass, \
+    ChargeStatus, CourtType
+from recidiviz.common.constants.person import Gender, Race, Ethnicity
+from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
+from recidiviz.persistence import converter
+from recidiviz.persistence.entities import Person, Booking, Arrest, Charge, \
+    Bond, Sentence
 
 
-# pylint: disable=protected-access
-class TestConverter(object):
-    """Test converting IngestInfo objects to Schema objects."""
+class TestConverter(unittest.TestCase):
+    """Test converting IngestInfo objects to Persistence layer objects."""
 
-    def setup_method(self, _test_method):
-        self.converter = Converter()
-
-    def test_parsePersonFields(self):
-        ingest_person = _Person(
+    def test_parsesPerson(self):
+        # Arrange
+        ingest_info = IngestInfo()
+        ingest_info.people.add(
             full_name='LAST,FIRST',
-            birthdate='12-31-1999', gender='MALE',
-            race='WHITE', ethnicity='HISPANIC',
+            birthdate='12-31-1999',
+            gender='MALE',
+            race='WHITE',
+            ethnicity='HISPANIC',
             place_of_residence='NNN\n  STREET \t ZIP')
 
-        schema_person = self.converter._convert_person(ingest_person)
-        assert schema_person.given_names == 'FIRST'
-        assert schema_person.surname == 'LAST'
-        assert schema_person.birthdate == datetime(year=1999, month=12, day=31)
-        assert schema_person.gender == constants.person.Gender.MALE
-        assert schema_person.race == constants.person.Race.WHITE
-        assert schema_person.ethnicity == constants.person.Ethnicity.HISPANIC
-        assert schema_person.place_of_residence == 'NNN STREET ZIP'
+        # Act
+        result = converter.convert(ingest_info)
+
+        # Assert
+        expected_result = [Person(
+            given_names='FIRST',
+            surname='LAST',
+            birthdate=datetime(year=1999, month=12, day=31),
+            birthdate_inferred_from_age=False,
+            gender=Gender.MALE,
+            race=Race.WHITE,
+            ethnicity=Ethnicity.HISPANIC,
+            place_of_residence='NNN STREET ZIP'
+        )]
+
+        self.assertEqual(result, expected_result)
+
+    def test_personWithSurnameAndFullname_throwsException(self):
+        # Arrange
+        ingest_info = IngestInfo()
+        ingest_info.people.add(full_name='LAST,FIRST', surname='LAST')
+
+        with self.assertRaises(ValueError):
+            converter.convert(ingest_info)
 
     def test_parseRaceAsEthnicity(self):
-        ingest_person = _Person(race='HISPANIC')
+        # Arrange
+        ingest_info = IngestInfo()
+        ingest_info.people.add(race='HISPANIC')
 
-        schema_person = self.converter._convert_person(ingest_person)
-        # TODO(289): check race once the proper behavior here has been
-        # determined.
-        assert schema_person.ethnicity == constants.person.Ethnicity.HISPANIC
+        # Act
+        result = converter.convert(ingest_info)
 
-    def test_convertTotalBondAmountToBond(self):
-        ingest_booking = _Booking(total_bond_amount='$100.00')
+        # Assert
+        expected_result = [Person(
+            ethnicity=Ethnicity.HISPANIC
+        )]
 
-        schema_booking = self.converter._convert_booking(ingest_booking)
-        assert len(schema_booking.charges) == 1
-        schema_charge = schema_booking.charges[0]
-        assert schema_charge.bond is not None
-        assert schema_charge.bond.amount_dollars == 100
+        self.assertEqual(result, expected_result)
 
-    def test_updateChargeWithTotalBondAmount(self):
-        ingest_booking = _Booking(total_bond_amount='$100.00')
-        ingest_booking.create_charge().create_bond(bond_id='ID')
-        ingest_booking.create_charge()
+    def test_parseBooking(self):
+        # Arrange
+        ingest_info = IngestInfo()
+        ingest_info.people.add(booking_ids=['BOOKING_ID'])
+        ingest_info.bookings.add(
+            booking_id='BOOKING_ID',
+            release_date='1/1/1111',
+            projected_release_date='2/2/2222',
+            release_reason='Transfer',
+            custody_status='Held Elsewhere',
+            classification='Low'
+        )
 
-        schema_booking = self.converter._convert_booking(ingest_booking)
-        assert len(schema_booking.charges) == 2
-        schema_charge = schema_booking.charges[0]
-        assert schema_charge.bond is not None
-        assert schema_charge.bond.scraped_bond_id == 'ID'
-        assert schema_charge.bond.amount_dollars == 100
-        assert schema_booking.charges[1] is not None
-        assert schema_booking.charges[1].bond is not None
-        assert schema_booking.charges[1].bond.amount_dollars == 100
+        # Act
+        result = converter.convert(ingest_info)
 
-    def test_parseBookingFields(self):
-        ingest_booking = _Booking(release_date='1/1/1111',
-                                  projected_release_date='2/2/2222',
-                                  release_reason='Transfer',
-                                  custody_status='Held Elsewhere',
-                                  classification='Low')
+        # Assert
+        expected_result = [Person(
+            bookings=[Booking(
+                external_id='BOOKING_ID',
+                release_date=datetime(year=1111, month=1, day=1),
+                release_date_inferred=False,
+                projected_release_date=datetime(year=2222, month=2, day=2),
+                release_reason=ReleaseReason.TRANSFER,
+                custody_status=CustodyStatus.HELD_ELSEWHERE,
+                classification=Classification.LOW
+            )]
+        )]
 
-        schema_booking = self.converter._convert_booking(ingest_booking)
-        assert schema_booking.release_date == \
-            datetime(year=1111, month=1, day=1)
-        assert schema_booking.release_date_inferred is False
-        assert schema_booking.projected_release_date == \
-            datetime(year=2222, month=2, day=2)
-        assert schema_booking.release_reason == \
-            constants.booking.ReleaseReason.TRANSFER
-        assert schema_booking.custody_status == \
-            constants.booking.CustodyStatus.HELD_ELSEWHERE
-        assert schema_booking.classification == \
-            constants.booking.Classification.LOW
+        self.assertEqual(result, expected_result)
 
-    def test_parseChargeFields(self):
-        ingest_charge = _Charge(attempted=True, degree='FIRST',
-                                charge_class='FELONY', status='DROPPED',
-                                court_type='DISTRICT', number_of_counts='3')
+    def test_parseArrest(self):
+        # Arrange
+        ingest_info = IngestInfo()
+        ingest_info.people.add(booking_ids=['BOOKING_ID'])
+        ingest_info.bookings.add(booking_id='BOOKING_ID', arrest_id='ARREST_ID')
+        ingest_info.arrests.add(
+            arrest_id='ARREST_ID',
+            date='1/2/1111',
+            location='FAKE_LOCATION',
+            officer_name='FAKE_NAME',
+            officer_id='FAKE_ID',
+            agency='FAKE_AGENCY'
+        )
 
-        schema_charge = self.converter._convert_charge(ingest_charge)
-        assert schema_charge.attempted is True
-        assert schema_charge.degree == constants.charge.ChargeDegree.FIRST
-        assert schema_charge.charge_class == \
-            constants.charge.ChargeClass.FELONY
-        assert schema_charge.status == constants.charge.ChargeStatus.DROPPED
-        assert schema_charge.court_type == constants.charge.CourtType.DISTRICT
-        assert schema_charge.number_of_counts == 3
+        # Act
+        result = converter.convert(ingest_info)
 
-    def test_parseBondFields(self):
-        ingest_bond = _Bond(bond_type='CASH', status='ACTIVE')
+        # Assert
+        expected_result = [Person(
+            bookings=[Booking(
+                external_id='BOOKING_ID',
+                arrest=Arrest(
+                    external_id='ARREST_ID',
+                    date=datetime(year=1111, month=1, day=2),
+                    location='FAKE_LOCATION',
+                    officer_name='FAKE_NAME',
+                    officer_id='FAKE_ID',
+                    agency='FAKE_AGENCY'
+                )
+            )]
+        )]
 
-        schema_bond = self.converter._convert_bond(ingest_bond)
-        assert schema_bond.type == constants.bond.BondType.CASH
-        assert schema_bond.status == constants.bond.BondStatus.ACTIVE
+        self.assertEqual(result, expected_result)
 
-    def test_parseSentenceFields(self):
-        ingest_sentence = _Sentence(min_length='1',
-                                    post_release_supervision_length='')
+    def test_parseCharge(self):
+        # Arrange
+        ingest_info = IngestInfo()
+        ingest_info.people.add(booking_ids=['BOOKING_ID'])
+        ingest_info.bookings.add(booking_id='BOOKING_ID',
+                                 charge_ids=['CHARGE_ID'])
+        ingest_info.charges.add(
+            charge_id='CHARGE_ID',
+            attempted='True',
+            degree='FIRST',
+            charge_class='FELONY',
+            status='DROPPED',
+            court_type='DISTRICT',
+            number_of_counts='3'
+        )
 
-        schema_sentence = self.converter._convert_sentence(ingest_sentence)
-        assert schema_sentence.min_length_days == 1
-        assert schema_sentence.post_release_supervision_length_days == 0
+        # Act
+        result = converter.convert(ingest_info)
 
-    def test_convertIngestInfo(self):
-        info = IngestInfo()
-        ingest_person = info.create_person(person_id='PERSON_ID')
-        ingest_booking = ingest_person.create_booking(booking_id='BOOKING_ID')
-        ingest_booking.create_arrest(agency='PD')
-        ingest_charge = ingest_booking.create_charge(name='CHARGE')
-        ingest_charge.create_bond(bond_id='BOND_ID')
-        ingest_charge.create_sentence(is_life=False)
-        info.create_person(person_id='PERSON_ID_2')
+        # Assert
+        expected_result = [Person(
+            bookings=[Booking(
+                external_id='BOOKING_ID',
+                charges=[Charge(
+                    external_id='CHARGE_ID',
+                    attempted=True,
+                    degree=ChargeDegree.FIRST,
+                    charge_class=ChargeClass.FELONY,
+                    status=ChargeStatus.DROPPED,
+                    court_type=CourtType.DISTRICT,
+                    number_of_counts=3
+                )]
+            )]
+        )]
 
-        schema_people = self.converter.convert_ingest_info(info)
-        assert len(schema_people) == 2
-        schema_person = schema_people[0]
-        assert schema_person.scraped_person_id == 'PERSON_ID'
-        assert len(schema_person.bookings) == 1
-        schema_booking = schema_person.bookings[0]
-        assert schema_booking.scraped_booking_id == 'BOOKING_ID'
-        assert schema_booking.arrest is not None
-        assert schema_booking.arrest.agency == 'PD'
-        assert len(schema_booking.charges) == 1
-        schema_charge = schema_booking.charges[0]
-        assert schema_charge.name == 'CHARGE'
-        assert schema_charge.bond is not None
-        assert schema_charge.bond.scraped_bond_id == 'BOND_ID'
-        assert schema_charge.sentence is not None
-        assert schema_charge.sentence.is_life is False
+        self.assertEqual(result, expected_result)
 
-        schema_person_another = schema_people[1]
-        assert schema_person_another.scraped_person_id == 'PERSON_ID_2'
-        assert not schema_person_another.bookings
+    def test_parseBond(self):
+        # Arrange
+        ingest_info = IngestInfo()
+        ingest_info.people.add(booking_ids=['BOOKING_ID'])
+        ingest_info.bookings.add(booking_id='BOOKING_ID',
+                                 charge_ids=['CHARGE_ID'])
+        ingest_info.charges.add(charge_id='CHARGE_ID', bond_id='BOND_ID')
+        ingest_info.bonds.add(
+            bond_id='BOND_ID',
+            bond_type='CASH',
+            status='ACTIVE'
+        )
 
-    def test_convertIngestInfo_valueError(self):
-        info = IngestInfo()
-        ingest_person = info.create_person(person_id=True)
-        ingest_person.create_booking(booking_id='BOOKING_ID')
+        # Act
+        result = converter.convert(ingest_info)
 
-        with pytest.raises(ValueError):
-            self.converter.convert_ingest_info(info)
+        # Assert
+        expected_result = [Person(
+            bookings=[Booking(
+                external_id='BOOKING_ID',
+                charges=[Charge(
+                    external_id='CHARGE_ID',
+                    bond=Bond(
+                        external_id='BOND_ID',
+                        bond_type=BondType.CASH,
+                        status=BondStatus.ACTIVE
+                    )
+                )]
+            )]
+        )]
+
+        self.assertEqual(result, expected_result)
+
+    def test_totalBondNoCharge_createsChargeWithTotalBondAmount(self):
+        # Arrange
+        ingest_info = IngestInfo()
+        ingest_info.people.add(booking_ids=['BOOKING_ID'])
+        ingest_info.bookings.add(booking_id='BOOKING_ID',
+                                 total_bond_amount='$100')
+
+        # Act
+        result = converter.convert(ingest_info)
+
+        # Assert
+        expected_result = [Person(
+            bookings=[Booking(
+                external_id='BOOKING_ID',
+                charges=[Charge(
+                    bond=Bond(amount_dollars=100)
+                )]
+            )]
+        )]
+
+        self.assertEqual(result, expected_result)
+
+    def test_totalBondWithCharge_setsTotalBondOnCharge(self):
+        # Arrange
+        ingest_info = IngestInfo()
+        ingest_info.people.add(booking_ids=['BOOKING_ID'])
+        ingest_info.bookings.add(booking_id='BOOKING_ID',
+                                 total_bond_amount='$100',
+                                 charge_ids=['CHARGE_ID'])
+        ingest_info.charges.add(charge_id='CHARGE_ID', bond_id='BOND_ID')
+        ingest_info.bonds.add(bond_id='BOND_ID')
+
+        # Act
+        result = converter.convert(ingest_info)
+
+        # Assert
+        expected_result = [Person(
+            bookings=[Booking(
+                external_id='BOOKING_ID',
+                charges=[Charge(
+                    external_id='CHARGE_ID',
+                    bond=Bond(external_id='BOND_ID', amount_dollars=100)
+                )]
+            )]
+        )]
+
+        self.assertEqual(result, expected_result)
+
+    def test_parseSentence(self):
+        # Arrange
+        ingest_info = IngestInfo()
+        ingest_info.people.add(booking_ids=['BOOKING_ID'])
+        ingest_info.bookings.add(booking_id='BOOKING_ID',
+                                 charge_ids=['CHARGE_ID'])
+        ingest_info.charges.add(charge_id='CHARGE_ID',
+                                sentence_id='SENTENCE_ID')
+        ingest_info.sentences.add(
+            sentence_id='SENTENCE_ID',
+            min_length='1',
+            post_release_supervision_length=''
+        )
+
+        # Act
+        result = converter.convert(ingest_info)
+
+        # Assert
+        expected_result = [Person(
+            bookings=[Booking(
+                external_id='BOOKING_ID',
+                charges=[Charge(
+                    external_id='CHARGE_ID',
+                    sentence=Sentence(
+                        external_id='SENTENCE_ID',
+                        min_length_days=1,
+                        post_release_supervision_length_days=0
+                    )
+                )]
+            )]
+        )]
+
+        self.assertEqual(result, expected_result)
+
+    def test_parseFullIngestInfo(self):
+        # Arrange
+        ingest_info = IngestInfo()
+        ingest_info.people.add(person_id='PERSON_ID',
+                               booking_ids=['BOOKING_ID'])
+        ingest_info.bookings.add(booking_id='BOOKING_ID',
+                                 arrest_id='ARREST_ID',
+                                 charge_ids=['CHARGE_ID'])
+        ingest_info.arrests.add(arrest_id='ARREST_ID', agency='PD')
+        ingest_info.charges.add(charge_id='CHARGE_ID', name='DUI',
+                                bond_id='BOND_ID', sentence_id='SENTENCE_ID')
+        ingest_info.bonds.add(bond_id='BOND_ID')
+        ingest_info.sentences.add(sentence_id='SENTENCE_ID', is_life='True')
+
+        # Act
+        result = converter.convert(ingest_info)
+
+        # Assert
+        expected_result = [Person(
+            external_id='PERSON_ID',
+            bookings=[Booking(
+                external_id='BOOKING_ID',
+                arrest=Arrest(external_id='ARREST_ID', agency='PD'),
+                charges=[Charge(
+                    external_id='CHARGE_ID',
+                    name='DUI',
+                    bond=Bond(external_id='BOND_ID'),
+                    sentence=Sentence(external_id='SENTENCE_ID', is_life=True)
+                )]
+            )])]
+
+        self.assertEqual(result, expected_result)
+
+    def test_cannotConvertField_raisesValueError(self):
+        ingest_info = IngestInfo()
+        ingest_info.people.add(birthdate='NOT_A_DATE')
+
+        with self.assertRaises(ValueError):
+            converter.convert(ingest_info)
