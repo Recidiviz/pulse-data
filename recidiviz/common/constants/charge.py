@@ -25,12 +25,20 @@ class ChargeDegree(object):
     SECOND = enum_strings.degree_second
     THIRD = enum_strings.degree_third
 
+    @staticmethod
+    def from_str(label):
+        return _CHARGE_DEGREE_MAP[label.upper()]
+
 
 class ChargeClass(object):
     FELONY = enum_strings.charge_class_felony
     MISDEMEANOR = enum_strings.charge_class_misdemeanor
     PAROLE_VIOLATION = enum_strings.charge_class_parole_violation
     PROBATION_VIOLATION = enum_strings.charge_class_probation_violation
+
+    @staticmethod
+    def from_str(label):
+        return _CHARGE_CLASS_MAP[label.upper()]
 
 
 class ChargeStatus(object):
@@ -42,6 +50,10 @@ class ChargeStatus(object):
     PRETRIAL = enum_strings.charge_status_pretrial
     SENTENCED = enum_strings.charge_status_sentenced
 
+    @staticmethod
+    def from_str(label):
+        return _CHARGE_STATUS_MAP[label.upper()]
+
 
 class CourtType(object):
     CIRCUIT = enum_strings.court_type_circuit
@@ -49,15 +61,19 @@ class CourtType(object):
     OTHER = enum_strings.court_type_other
     SUPERIOR = enum_strings.court_type_superior
 
+    @staticmethod
+    def from_str(label):
+        return _COURT_TYPE_MAP[label.upper()]
 
-CHARGE_DEGREE_MAP = {
+
+_CHARGE_DEGREE_MAP = {
     'FIRST': ChargeDegree.FIRST,
     'SECOND': ChargeDegree.SECOND,
     'THIRD': ChargeDegree.THIRD,
 }
 
 
-CHARGE_CLASS_MAP = {
+_CHARGE_CLASS_MAP = {
     'FELONY': ChargeClass.FELONY,
     'MISDEMEANOR': ChargeClass.MISDEMEANOR,
     'PAROLE VIOLATION': ChargeClass.PAROLE_VIOLATION,
@@ -65,7 +81,7 @@ CHARGE_CLASS_MAP = {
 }
 
 
-CHARGE_STATUS_MAP = {
+_CHARGE_STATUS_MAP = {
     'ACQUITTED': ChargeStatus.ACQUITTED,
     'COMPLETED SENTENCE': ChargeStatus.COMPLETED_SENTENCE,
     'CONVICTED': ChargeStatus.CONVICTED,
@@ -76,7 +92,7 @@ CHARGE_STATUS_MAP = {
 }
 
 
-COURT_TYPE_MAP = {
+_COURT_TYPE_MAP = {
     'CIRCUIT': CourtType.CIRCUIT,
     'DISTRICT': CourtType.DISTRICT,
     'OTHER': CourtType.OTHER,

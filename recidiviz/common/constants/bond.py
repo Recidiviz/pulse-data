@@ -27,13 +27,21 @@ class BondType(object):
     SECURED = enum_strings.bond_type_secured
     UNSECURED = enum_strings.bond_type_unsecured
 
+    @staticmethod
+    def from_str(label):
+        return _BOND_TYPE_MAP[label.upper()]
+
 
 class BondStatus(object):
     ACTIVE = enum_strings.bond_status_active
     POSTED = enum_strings.bond_status_posted
 
+    @staticmethod
+    def from_str(label):
+        return _BOND_STATUS_MAP[label.upper()]
 
-BOND_TYPE_MAP = {
+
+_BOND_TYPE_MAP = {
     'BOND DENIED': BondType.BOND_DENIED,
     'CASH': BondType.CASH,
     'NO BOND': BondType.NO_BOND,
@@ -41,8 +49,7 @@ BOND_TYPE_MAP = {
     'UNSECURED': BondType.UNSECURED,
 }
 
-
-BOND_STATUS_MAP = {
+_BOND_STATUS_MAP = {
     'ACTIVE': BondStatus.ACTIVE,
     'POSTED': BondStatus.POSTED,
 }
