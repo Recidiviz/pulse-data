@@ -23,7 +23,7 @@ from mock import patch, Mock
 from recidiviz import Session
 from recidiviz.common.constants.booking import ReleaseReason
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo, Charge, \
-    Sentence, Booking
+    Sentence
 from recidiviz.persistence import persistence
 from recidiviz.persistence.database import database
 from recidiviz.tests.utils import fakes
@@ -68,7 +68,7 @@ class TestPersistence(TestCase):
             ingest_info.people.add(surname=SURNAME_1)
 
             # Act
-            persistence.write(ingest_info, SCRAPER_START_DATETIME)
+            persistence.write(ingest_info, REGION_1, SCRAPER_START_DATETIME)
             result = database.read_people(Session())
 
             # Assert
@@ -82,7 +82,7 @@ class TestPersistence(TestCase):
             ingest_info.people.add(surname=SURNAME_1)
 
             # Act
-            persistence.write(ingest_info, SCRAPER_START_DATETIME)
+            persistence.write(ingest_info, REGION_1, SCRAPER_START_DATETIME)
             result = database.read_people(Session())
 
             # Assert
@@ -96,7 +96,7 @@ class TestPersistence(TestCase):
         ingest_info.people.add(surname=SURNAME_2, given_names=GIVEN_NAME)
 
         # Act
-        persistence.write(ingest_info, SCRAPER_START_DATETIME)
+        persistence.write(ingest_info, REGION_1, SCRAPER_START_DATETIME)
         result = database.read_people(Session())
 
         # Assert
@@ -111,7 +111,7 @@ class TestPersistence(TestCase):
         ingest_info.people.add(surname=SURNAME_1, given_names=GIVEN_NAME)
 
         # Act
-        persistence.write(ingest_info, SCRAPER_START_DATETIME)
+        persistence.write(ingest_info, REGION_1, SCRAPER_START_DATETIME)
         result = database.read_people(Session())
 
         # Assert
@@ -126,7 +126,7 @@ class TestPersistence(TestCase):
         ingest_info.people.add(surname=SURNAME_1,
                                given_names=GIVEN_NAME,
                                place_of_residence=PLACE_1)
-        persistence.write(ingest_info, SCRAPER_START_DATETIME)
+        persistence.write(ingest_info, SCRAPER_START_DATETIME, REGION_1)
 
         ingest_info = IngestInfo()
         ingest_info.people.add(surname=SURNAME_1,
@@ -134,7 +134,7 @@ class TestPersistence(TestCase):
                                place_of_residence=PLACE_2)
 
         # Act
-        persistence.write(ingest_info, SCRAPER_START_DATETIME)
+        persistence.write(ingest_info, REGION_1, SCRAPER_START_DATETIME)
         result = database.read_people(Session())
 
         # Assert
@@ -151,7 +151,7 @@ class TestPersistence(TestCase):
                                birthdate=BIRTHDATE_2)
 
         # Act
-        persistence.write(ingest_info, SCRAPER_START_DATETIME)
+        persistence.write(ingest_info, REGION_1, SCRAPER_START_DATETIME)
         result = database.read_people(Session(), surname=SURNAME_1)
 
         # Assert
@@ -172,7 +172,6 @@ class TestPersistence(TestCase):
             booking_id='BOOKING_ID',
             facility=FACILITY,
             custody_status=BOOKING_CUSTODY_STATUS,
-            region=REGION_1,
             arrest_id='ARREST_ID',
             charge_ids=['CHARGE_ID_1', 'CHARGE_ID_2']
         )
@@ -215,7 +214,7 @@ class TestPersistence(TestCase):
         ])
 
         # Act
-        persistence.write(ingest_info, SCRAPER_START_DATETIME)
+        persistence.write(ingest_info, REGION_1, SCRAPER_START_DATETIME)
         result = database.read_people(Session())
 
         # Assert
@@ -253,47 +252,45 @@ class TestPersistence(TestCase):
         ingest_info = IngestInfo()
         ingest_info.people.add(surname=SURNAME_1,
                                given_names=GIVEN_NAME,
-                               booking_ids=['BOOKING_ID_1', 'BOOKING_ID_2'])
-        ingest_info.bookings.extend([
-            Booking(
-                booking_id='BOOKING_ID_1',
-                region=REGION_1,
-                custody_status='IN CUSTODY',
-                charge_ids=['CHARGE_ID_1']
-            ), Booking(
-                booking_id='BOOKING_ID_2',
-                region=REGION_2,
-                custody_status='IN CUSTODY',
-                charge_ids=['CHARGE_ID_2']
-            )
-        ])
+                               booking_ids=['BOOKING_ID_1'])
+        ingest_info.bookings.add(
+            booking_id='BOOKING_ID_1',
+            custody_status='IN CUSTODY',
+            charge_ids=['CHARGE_ID_1']
+        )
+        ingest_info.charges.add(
+            charge_id='CHARGE_ID_1',
+            name=CHARGE_NAME_1,
+            status='PENDING')
 
-        ingest_info.charges.extend([
-            Charge(
-                charge_id='CHARGE_ID_1',
-                name=CHARGE_NAME_1,
-                status='PENDING'),
-            Charge(
-                charge_id='CHARGE_ID_2',
-                name=CHARGE_NAME_2,
-                status='PENDING'
-            )
-        ])
+        ingest_info_other_region = IngestInfo()
+        ingest_info_other_region.people.add(surname=SURNAME_2,
+                                            given_names=GIVEN_NAME,
+                                            booking_ids=['BOOKING_ID_2'])
+        ingest_info_other_region.bookings.add(
+            booking_id='BOOKING_ID_2',
+            custody_status='IN CUSTODY',
+            charge_ids=['CHARGE_ID_2']
+        )
+        ingest_info_other_region.charges.add(
+            charge_id='CHARGE_ID_2',
+            name=CHARGE_NAME_2,
+            status='PENDING')
 
         # Act
-        persistence.write(ingest_info, SCRAPER_START_DATETIME)
+        persistence.write(ingest_info, REGION_1, SCRAPER_START_DATETIME)
+        persistence.write(ingest_info_other_region, REGION_2,
+                          SCRAPER_START_DATETIME)
         persistence.infer_release_on_open_bookings(
             REGION_1, most_recent_scrape_date)
 
         # Assert
         bookings = database.read_bookings(Session())
-        assert bookings[0].region == REGION_1
         assert bookings[0].last_seen_time == SCRAPER_START_DATETIME
         assert bookings[0].release_date == most_recent_scrape_date
         assert bookings[0].release_reason == ReleaseReason.INFERRED_RELEASE
         assert bookings[0].charges[0].name == CHARGE_NAME_1
 
-        assert bookings[1].region == REGION_2
         assert bookings[1].last_seen_time == SCRAPER_START_DATETIME
         assert bookings[1].release_date is None
         assert bookings[1].charges[0].name == CHARGE_NAME_2

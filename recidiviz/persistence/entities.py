@@ -35,6 +35,7 @@ class Person(object):
     race = attr.ib(default=None)
     ethnicity = attr.ib(default=None)
     place_of_residence = attr.ib(default=None)
+    region = attr.ib(default=None)
 
     bookings = attr.ib(factory=list)
 
@@ -51,7 +52,6 @@ class Booking(object):
     held_for_other_jurisdiction = attr.ib(default=None)
     facility = attr.ib(default=None)
     classification = attr.ib(default=None)
-    region = attr.ib(default=None)
     last_scraped_time = attr.ib(default=None)
 
     holds = attr.ib(factory=list)

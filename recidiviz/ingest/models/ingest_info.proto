@@ -54,10 +54,9 @@ message Booking {
 	optional string facility = 8;
 	optional string classification = 9;
 	optional string total_bond_amount = 10;
-	optional string region = 11;
 
-	optional string arrest_id = 12;
-	repeated string charge_ids = 13;
+	optional string arrest_id = 11;
+	repeated string charge_ids = 12;
 }
 
 message Arrest {

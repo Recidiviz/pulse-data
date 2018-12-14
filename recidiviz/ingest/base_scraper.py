@@ -159,7 +159,7 @@ class BaseScraper(Scraper):
                 params['scraper_start_time'])
             persistence.write(
                 ingest_info_utils.convert_ingest_info_to_proto(
-                    ingest_info), scraper_start_time)
+                    ingest_info), self.region.region_code, scraper_start_time)
         return None
 
     def is_initial_task(self, task_type):

@@ -158,9 +158,6 @@ class _Converter(object):
             booking.facility = self._convert(converter_utils.normalize,
                                              ingest_booking.facility)
 
-        if ingest_booking.HasField('region'):
-            booking.region = ingest_booking.region
-
         if ingest_booking.HasField('classification'):
             booking.classification = self._convert(
                 Classification.from_str, ingest_booking.classification)

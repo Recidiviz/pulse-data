@@ -100,7 +100,7 @@ class _Booking(object):
                  hold=None,
                  facility=None, classification=None,
                  total_bond_amount=None,
-                 region=None, arrest=None, charges=None):
+                 arrest=None, charges=None):
         self.booking_id = booking_id  # type: str
         self.admission_date = admission_date  # type: str
         self.projected_release_date = projected_release_date  # type: str
@@ -111,7 +111,6 @@ class _Booking(object):
         self.facility = facility  # type: str
         self.classification = classification  # type: str
         self.total_bond_amount = total_bond_amount  # type: str
-        self.region = region # type: str
 
         self.arrest = arrest  # type: Arrest
         self.charge = charges or []  # type: List[Charge]

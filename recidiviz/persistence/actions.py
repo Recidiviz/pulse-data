@@ -33,6 +33,7 @@ def write_record():
     # TODO: Something like `ingest_info = protobuf.read(request.data)`
     ingest_info = None
     last_scraped_time = None
-    persistence.write(ingest_info, last_scraped_time)
+    region = None
+    persistence.write(ingest_info, region, last_scraped_time)
 
     return '', httplib.NOT_IMPLEMENTED
