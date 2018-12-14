@@ -64,8 +64,9 @@ def read_open_bookings_scraped_before_time(session, region, time):
     Returns:
         List of bookings matching the provided args
     """
-    query = session.query(Booking)
-    query = query.filter(Booking.region == region)
-    query = query.filter(Booking.release_date.is_(None))
-    query = query.filter(Booking.last_seen_time < time)
-    return query.all()
+    query = session.query(Person, Booking)\
+        .filter(Person.person_id == Booking.person_id)\
+        .filter(Person.region == region)\
+        .filter(Booking.release_date.is_(None))\
+        .filter(Booking.last_seen_time < time)
+    return [booking for _, booking in query.all()]

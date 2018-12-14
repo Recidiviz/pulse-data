@@ -176,6 +176,7 @@ class Person(Base):
     race = Column(race)
     ethnicity = Column(ethnicity)
     place_of_residence = Column(String(255))
+    region = Column(String(255), nullable=False, index=True)
 
     bookings = relationship('Booking', back_populates='person')
 
@@ -202,6 +203,7 @@ class PersonHistory(Base):
     race = Column(race)
     ethnicity = Column(ethnicity)
     place_of_residence = Column(String(255))
+    region = Column(String(255), nullable=False)
 
 
 class Booking(Base):
@@ -220,7 +222,6 @@ class Booking(Base):
     held_for_other_jurisdiction = Column(Boolean)
     facility = Column(String(255))
     classification = Column(classification)
-    region = Column(String(255), nullable=False, index=True)
     last_seen_time = Column(DateTime, nullable=False)
 
     person = relationship('Person', back_populates='bookings')
@@ -254,7 +255,6 @@ class BookingHistory(Base):
     held_for_other_jurisdiction = Column(Boolean)
     facility = Column(String(255))
     classification = Column(classification)
-    region = Column(String(255), nullable=False)
 
 
 class Hold(Base):
