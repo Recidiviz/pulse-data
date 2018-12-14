@@ -19,7 +19,7 @@
 import datetime
 from distutils.util import strtobool  # pylint: disable=no-name-in-module
 
-from recidiviz.common import global_map
+from recidiviz.common.constants.person import Ethnicity, Race
 from recidiviz.ingest import scraper_utils
 
 
@@ -42,28 +42,20 @@ def normalize(s):
     return ' '.join(s.split()).upper()
 
 
-def enum_contains_value(enum_type, value):
-    return global_map.enum_contains_value(enum_type, value)
-
-
-def string_to_enum(enum_type, value):
-    """
-    Converts the given value into an enum of the provided enum_type
-
-    Args:
-        enum_type: The enum type to convert to.
-        value: The string representation of an enum of the provided enum_type
-
-    Return:
-        (enum) Converted enum of type enum_type.
-    """
-    return global_map.convert_value_to_enum(
-        enum_type, normalize(value))
-
-
 def race_is_actually_ethnicity(ingest_person):
-    return enum_contains_value('ethnicity', ingest_person.race) and \
-        not enum_contains_value('race', ingest_person.race)
+    try:
+        Ethnicity.from_str(ingest_person.race)
+        race_is_ethnicity = True
+    except KeyError:
+        race_is_ethnicity = False
+
+    try:
+        Race.from_str(ingest_person.race)
+        race_is_already_set_correctly = True
+    except KeyError:
+        race_is_already_set_correctly = False
+
+    return race_is_ethnicity and not race_is_already_set_correctly
 
 
 def parse_date_or_error(date_string):

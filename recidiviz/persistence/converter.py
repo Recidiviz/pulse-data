@@ -18,6 +18,12 @@
 
 import more_itertools
 
+from recidiviz.common.constants.bond import BondType, BondStatus
+from recidiviz.common.constants.booking import ReleaseReason, CustodyStatus, \
+    Classification
+from recidiviz.common.constants.charge import ChargeDegree, ChargeClass, \
+    ChargeStatus, CourtType
+from recidiviz.common.constants.person import Gender, Race, Ethnicity
 from recidiviz.persistence import converter_utils, entities
 
 
@@ -87,23 +93,18 @@ class _Converter(object):
             person.birthdate_inferred_from_age = True
 
         if ingest_person.HasField('gender'):
-            person.gender = self._convert(converter_utils.string_to_enum,
-                                          'gender',
-                                          ingest_person.gender)
+            person.gender = self._convert(Gender.from_str, ingest_person.gender)
 
         if ingest_person.HasField('race') \
                 and not ingest_person.HasField('ethnicity') \
                 and converter_utils.race_is_actually_ethnicity(ingest_person):
-            person.ethnicity = self._convert(converter_utils.string_to_enum,
-                                             'ethnicity',
+            person.ethnicity = self._convert(Ethnicity.from_str,
                                              ingest_person.race)
         elif ingest_person.HasField('race'):
-            person.race = self._convert(converter_utils.string_to_enum,
-                                        'race', ingest_person.race)
+            person.race = self._convert(Race.from_str, ingest_person.race)
 
         if ingest_person.HasField('ethnicity'):
-            person.ethnicity = self._convert(converter_utils.string_to_enum,
-                                             'ethnicity',
+            person.ethnicity = self._convert(Ethnicity.from_str,
                                              ingest_person.ethnicity)
 
         if ingest_person.HasField('place_of_residence'):
@@ -145,13 +146,11 @@ class _Converter(object):
 
         if ingest_booking.HasField('release_reason'):
             booking.release_reason = self._convert(
-                converter_utils.string_to_enum, 'release_reason',
-                ingest_booking.release_reason)
+                ReleaseReason.from_str, ingest_booking.release_reason)
 
         if ingest_booking.HasField('custody_status'):
             booking.custody_status = self._convert(
-                converter_utils.string_to_enum, 'custody_status',
-                ingest_booking.custody_status)
+                CustodyStatus.from_str, ingest_booking.custody_status)
 
         # TODO: Populate hold when the proto is updated to contain a hold table
 
@@ -164,8 +163,7 @@ class _Converter(object):
 
         if ingest_booking.HasField('classification'):
             booking.classification = self._convert(
-                converter_utils.string_to_enum, 'classification',
-                ingest_booking.classification)
+                Classification.from_str, ingest_booking.classification)
 
         if ingest_booking.HasField('arrest_id'):
             booking.arrest = self._convert_arrest(ingest_booking.arrest_id)
@@ -264,15 +262,12 @@ class _Converter(object):
                 ingest_charge.attempted)
 
         if ingest_charge.HasField('degree'):
-            charge.degree = self._convert(converter_utils.string_to_enum,
-                                          'charge_degree',
+            charge.degree = self._convert(ChargeDegree.from_str,
                                           ingest_charge.degree)
 
         if ingest_charge.HasField('charge_class'):
             charge.charge_class = self._convert(
-                converter_utils.string_to_enum,
-                'charge_class',
-                ingest_charge.charge_class)
+                ChargeClass.from_str, ingest_charge.charge_class)
 
         if ingest_charge.HasField('level'):
             charge.level = self._convert(converter_utils.normalize,
@@ -288,9 +283,8 @@ class _Converter(object):
                 converter_utils.normalize, ingest_charge.charging_entity)
 
         if ingest_charge.HasField('status'):
-            charge.status = self._convert(converter_utils.string_to_enum,
-                                          'charge_status',
-                                          ingest_charge.status)
+            charge.status = self._convert(
+                ChargeStatus.from_str, ingest_charge.status)
 
         if ingest_charge.HasField('number_of_counts'):
             charge.number_of_counts = self._convert(
@@ -299,9 +293,7 @@ class _Converter(object):
 
         if ingest_charge.HasField('court_type'):
             charge.court_type = self._convert(
-                converter_utils.string_to_enum,
-                'court_type',
-                ingest_charge.court_type)
+                CourtType.from_str, ingest_charge.court_type)
 
         if ingest_charge.HasField('case_number'):
             charge.case_number = self._convert(converter_utils.normalize,
@@ -342,14 +334,12 @@ class _Converter(object):
                                         ingest_bond.amount)
 
         if ingest_bond.HasField('bond_type'):
-            bond.bond_type = self._convert(converter_utils.string_to_enum,
-                                           'bond_type',
-                                           ingest_bond.bond_type)
+            bond.bond_type = self._convert(
+                BondType.from_str, ingest_bond.bond_type)
 
         if ingest_bond.HasField('status'):
-            bond.status = self._convert(converter_utils.string_to_enum,
-                                        'bond_status',
-                                        ingest_bond.status)
+            bond.status = self._convert(
+                BondStatus.from_str, ingest_bond.status)
 
         return bond
 
@@ -430,11 +420,11 @@ class _Converter(object):
             the return value of func if no errors occur. If errors occur,
             returns None
         """
-        try:
-            return func(*args)
-        except Exception as e:
-            self.conversion_errors.add(e)
-            return None
+        # try:
+        return func(*args)
+        # except Exception as e:
+        #     self.conversion_errors.add(e)
+        #     return None
 
 
 def _build_error_string(conversion_errors):

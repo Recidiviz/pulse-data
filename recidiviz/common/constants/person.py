@@ -26,6 +26,10 @@ class Gender(object):
     TRANS_FEMALE = enum_strings.gender_trans_female
     TRANS_MALE = enum_strings.gender_trans_male
 
+    @staticmethod
+    def from_str(label):
+        return _GENDER_MAP[label.upper()]
+
 
 class Race(object):
     AMERICAN_INDIAN_ALASKAN_NATIVE = enum_strings.race_american_indian
@@ -35,13 +39,21 @@ class Race(object):
     OTHER = enum_strings.race_other
     WHITE = enum_strings.race_white
 
+    @staticmethod
+    def from_str(label):
+        return _RACE_MAP[label.upper()]
+
 
 class Ethnicity(object):
     HISPANIC = enum_strings.ethnicity_hispanic
     NOT_HISPANIC = enum_strings.ethnicity_not_hispanic
 
+    @staticmethod
+    def from_str(label):
+        return _ETHNICITY_MAP[label.upper()]
 
-GENDER_MAP = {
+
+_GENDER_MAP = {
     'F': Gender.FEMALE,
     'FEMALE': Gender.FEMALE,
     'M': Gender.MALE,
@@ -50,8 +62,7 @@ GENDER_MAP = {
     'TRANS MALE/TRANS MAN': Gender.TRANS_MALE,
 }
 
-
-RACE_MAP = {
+_RACE_MAP = {
     'AMERICAN INDIAN/ALASKAN NATIVE': Race.AMERICAN_INDIAN_ALASKAN_NATIVE,
     'ASIAN': Race.ASIAN,
     'B': Race.BLACK,
@@ -62,8 +73,7 @@ RACE_MAP = {
     'WHITE': Race.WHITE,
 }
 
-
-ETHNICITY_MAP = {
+_ETHNICITY_MAP = {
     'HISPANIC': Ethnicity.HISPANIC,
     'NOT HISPANIC': Ethnicity.NOT_HISPANIC,
 }
