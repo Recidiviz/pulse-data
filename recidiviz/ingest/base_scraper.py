@@ -46,7 +46,7 @@ from lxml import html
 from lxml.etree import XMLSyntaxError  # pylint:disable=no-name-in-module
 
 from recidiviz.persistence import persistence
-from recidiviz.ingest import constants, scraper_utils, ingest_info_utils
+from recidiviz.ingest import constants, scraper_utils, ingest_utils
 from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.ingest.scraper import Scraper
 
@@ -158,7 +158,7 @@ class BaseScraper(Scraper):
             scraper_start_time = scraper_utils.parse_date_string(
                 params['scraper_start_time'])
             persistence.write(
-                ingest_info_utils.convert_ingest_info_to_proto(
+                ingest_utils.convert_ingest_info_to_proto(
                     ingest_info), self.region.region_code, scraper_start_time)
         return None
 

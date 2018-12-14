@@ -20,14 +20,15 @@
 that does not depend on member data.
 """
 
-from datetime import date, datetime
+from datetime import date
 import logging
 import random
 import string
 import zlib
-import dateutil.parser as parser
 
 from google.appengine.ext import ndb
+
+from recidiviz.common import common_utils
 from recidiviz.utils import environment
 from recidiviz.utils import secrets
 
@@ -36,16 +37,6 @@ DATETIME_STR_FORMAT = '%Y-%m-%d %H:%M:%S'
 
 def parse_date_string(date_string, person_id=None):
     """Converts string describing date to Python date object
-
-    Dates are expressed differently in different records,
-    typically following one of these patterns:
-
-        "07/2001",
-        "12/21/1991",
-        "06/14/13",
-        "02/15/1990 4:32", etc.
-
-    This function parses several common variants and returns a datetime.
 
     Args:
         date_string: (string) Scraped string containing a date
@@ -57,35 +48,13 @@ def parse_date_string(date_string, person_id=None):
         often NONE or LIFE are put in for these if life sentence).
 
     """
-    if date_string and not date_string.isspace():
-        try:
-            # The year and month in the `default` do not matter. This protects
-            # against an esoteric bug: parsing a 2-integer date with a month of
-            # February while the local machine date is the 29th or higher (or
-            # 30th or higher if the year of the string is a leap year).
-            # Without a default day of `01` to fall back on, it falls back to
-            # the local machine day, which will fail because February does not
-            # have that many days.
-            result = parser.parse(date_string, default=datetime(2018, 1, 1))
-            result = result.date()
-        except ValueError, e:
-            if person_id:
-                logging.debug("Couldn't parse date string '%s' for person: %s",
-                              date_string, person_id)
-            else:
-                logging.debug("Couldn't parse date string '%s'",
-                              date_string)
 
-            logging.debug(str(e))
-            return None
-
-        # If month-only date, manually force date to first of the month.
-        if len(date_string.split("/")) == 2 or len(date_string.split("-")) == 2:
-            result = result.replace(day=1)
-
-    else:
-        return None
-
+    result = None
+    try:
+        result = common_utils.parse_date_string(date_string)
+    except Exception:
+        if person_id:
+            logging.debug("Error parsing datetime for person '%s'", person_id)
     return result
 
 

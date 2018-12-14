@@ -15,14 +15,92 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Tests for ingest_info_utils"""
+"""Tests for ingest/ingest_utils.py."""
 
-from recidiviz.ingest import ingest_info_utils
-from recidiviz.ingest.models import ingest_info
-from recidiviz.ingest.models import ingest_info_pb2
+from recidiviz.ingest import ingest_utils, constants
+from recidiviz.ingest.models import ingest_info_pb2, ingest_info
 
 
-def test_id_is_generated():
+def test_validate_regions_one_ok():
+    assert ingest_utils.validate_regions(["us_ny"]) == ["us_ny"]
+
+
+def test_validate_regions_one_all():
+    assert set(ingest_utils.validate_regions(["all"])) == {
+        "us_ny", "us_pa_greene", "us_vt", "us_co_mesa", "us_mt_gallatin",
+        "us_pa_dauphin", "us_mo_stone", "us_ar_van_buren", "us_pa"
+    }
+
+
+def test_validate_regions_one_invalid():
+    assert not ingest_utils.validate_regions(["ca_bc"])
+
+
+def test_validate_regions_multiple_ok():
+    assert ingest_utils.validate_regions(["us_vt", "us_ny"]) == ["us_vt",
+                                                                 "us_ny"]
+
+
+def test_validate_regions_multiple_invalid():
+    assert not ingest_utils.validate_regions(["us_vt", "invalid"])
+
+
+def test_validate_regions_multiple_all():
+    assert set(ingest_utils.validate_regions(["us_vt", "all"])) == {
+        "us_ny", "us_pa_greene", "us_vt", "us_co_mesa", "us_mt_gallatin",
+        "us_pa_dauphin", "us_mo_stone", "us_ar_van_buren", "us_pa"
+    }
+
+
+def test_validate_regions_multiple_all_invalid():
+    assert not ingest_utils.validate_regions(["all", "invalid"])
+
+
+def test_validate_regions_empty():
+    assert ingest_utils.validate_regions([]) == []
+
+
+def test_validate_scrape_types_one_ok():
+    assert ingest_utils.validate_scrape_types(
+        [constants.SNAPSHOT_SCRAPE]) == [constants.SNAPSHOT_SCRAPE]
+
+
+def test_validate_scrape_types_one_all():
+    assert ingest_utils.validate_scrape_types(["all"]) == [
+        constants.BACKGROUND_SCRAPE, constants.SNAPSHOT_SCRAPE]
+
+
+def test_validate_scrape_types_one_invalid():
+    assert not ingest_utils.validate_scrape_types(["When You Were Young"])
+
+
+def test_validate_scrape_types_multiple_ok():
+    assert ingest_utils.validate_scrape_types(
+        [constants.BACKGROUND_SCRAPE, constants.SNAPSHOT_SCRAPE]) == \
+           [constants.BACKGROUND_SCRAPE, constants.SNAPSHOT_SCRAPE]
+
+
+def test_validate_scrape_types_multiple_invalid():
+    assert not ingest_utils.validate_scrape_types(
+        [constants.BACKGROUND_SCRAPE, "invalid"])
+
+
+def test_validate_scrape_types_multiple_all():
+    assert ingest_utils.validate_scrape_types(
+        [constants.BACKGROUND_SCRAPE, "all"]) == \
+           [constants.BACKGROUND_SCRAPE, constants.SNAPSHOT_SCRAPE]
+
+
+def test_validate_scrape_types_multiple_all_invalid():
+    assert not ingest_utils.validate_scrape_types(["all", "invalid"])
+
+
+def test_validate_scrape_types_empty():
+    assert ingest_utils.validate_scrape_types(
+        []) == [constants.BACKGROUND_SCRAPE]
+
+
+def test_convert_ingest_info_id_is_generated():
     info = ingest_info.IngestInfo()
     person = info.create_person()
     person.surname = 'testname'
@@ -36,10 +114,11 @@ def test_id_is_generated():
     proto_booking.booking_id = str(id(booking)) + '_generate'
     proto_person.booking_ids.append(proto_booking.booking_id)
 
-    proto = ingest_info_utils.convert_ingest_info_to_proto(info)
+    proto = ingest_utils.convert_ingest_info_to_proto(info)
     assert proto == expected_proto
 
-def test_id_is_not_generated():
+
+def test_convert_ingest_info_id_is_not_generated():
     info = ingest_info.IngestInfo()
     person = info.create_person()
     person.person_id = 'id1'
@@ -57,11 +136,11 @@ def test_id_is_not_generated():
     booking.booking_id = 'id2'
     booking.admission_date = 'testdate'
 
-    proto = ingest_info_utils.convert_ingest_info_to_proto(info)
+    proto = ingest_utils.convert_ingest_info_to_proto(info)
     assert expected_proto == proto
 
 
-def test_one_charge_to_one_bond():
+def test_convert_ingest_info_one_charge_to_one_bond():
     info = ingest_info.IngestInfo()
     person = info.create_person()
     person.person_id = 'id1'
@@ -97,10 +176,10 @@ def test_one_charge_to_one_bond():
     proto_bond2.bond_id = str(id(bond2)) + '_generate'
     charge.bond_id = proto_bond2.bond_id
 
-    proto = ingest_info_utils.convert_ingest_info_to_proto(info)
+    proto = ingest_utils.convert_ingest_info_to_proto(info)
     assert expected_proto == proto
 
-def test_many_charge_to_one_bond():
+def test_convert_ingest_info_many_charge_to_one_bond():
     info = ingest_info.IngestInfo()
     person = info.create_person()
     person.person_id = 'id1'
@@ -132,5 +211,5 @@ def test_many_charge_to_one_bond():
     charge.charge_id = 'id2'
     charge.bond_id = proto_bond.bond_id
 
-    proto = ingest_info_utils.convert_ingest_info_to_proto(info)
+    proto = ingest_utils.convert_ingest_info_to_proto(info)
     assert expected_proto == proto

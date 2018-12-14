@@ -28,6 +28,7 @@ from google.appengine.ext.db \
 
 from recidiviz.ingest import constants
 
+
 class ScrapeSession(ndb.Model):
     """Model to describe a scraping session's current state
 
@@ -220,6 +221,14 @@ def get_recent_sessions(scrape_key):
                              open_only=False,
                              most_recent_only=False,
                              scrape_type=scrape_key.scrape_type)
+
+
+def get_most_recent_completed_session(region_code, scrape_type=None):
+    completed_sessions = [s for s in get_open_sessions(
+        region_code, open_only=False, scrape_type=scrape_type) if s.end]
+    if completed_sessions:
+        return completed_sessions[0]
+    return None
 
 
 def get_open_sessions(region_code,

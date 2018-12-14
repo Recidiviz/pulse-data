@@ -34,8 +34,8 @@ import string
 import time
 from datetime import datetime
 
-import yaml
 from flask import Blueprint, request
+import yaml
 from google.appengine.ext import ndb
 
 from recidiviz.ingest.sessions import ScrapedRecord, ScrapeSession
