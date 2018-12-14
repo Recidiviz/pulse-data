@@ -21,7 +21,7 @@ import datetime
 from recidiviz import Session
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 from recidiviz.persistence.database import database
-from recidiviz.persistence.database.schema import Booking
+from recidiviz.persistence.database.schema import Booking, Person
 from recidiviz.tests.utils import fakes
 
 
@@ -32,40 +32,43 @@ class TestDatabase(object):
     def setup_method(self, _test_method):
         fakes.use_in_memory_sqlite_database()
 
+
     def test_readOpenBookingsBeforeDate(self):
         # Arrange
-        region = 'region'
-        incorrect_region = 'other_region'
+        person = Person(person_id=8, region='region')
+        person_wrong_region = Person(person_id=9, region='wrong_region')
+
         release_date = datetime.date(2018, 7, 20)
         most_recent_scrape_date = datetime.datetime(2018, 6, 20)
         date_in_past = most_recent_scrape_date - datetime.timedelta(days=1)
-        person_id = 8
 
         # TODO(176): Replace enum_strings with schema enum values once we've
         # migrated to Python 3.
 
         # Bookings that should be returned
         open_booking_before_last_scrape = Booking(
-            person_id=person_id,
+            person_id=person.person_id,
             custody_status=enum_strings.custody_status_in_custody,
-            region=region, last_seen_time=date_in_past)
+            last_seen_time=date_in_past)
 
         # Bookings that should not be returned
         open_booking_incorrect_region = Booking(
-            person_id=person_id,
+            person_id=person_wrong_region.person_id,
             custody_status=enum_strings.custody_status_in_custody,
-            region=incorrect_region, last_seen_time=date_in_past)
+            last_seen_time=date_in_past)
         open_booking_most_recent_scrape = Booking(
-            person_id=person_id,
+            person_id=person.person_id,
             custody_status=enum_strings.custody_status_in_custody,
-            region=region, last_seen_time=most_recent_scrape_date)
+            last_seen_time=most_recent_scrape_date)
         resolved_booking = Booking(
-            person_id=person_id,
+            person_id=person.person_id,
             custody_status=enum_strings.custody_status_in_custody,
-            region=region, release_date=release_date,
+            release_date=release_date,
             last_seen_time=date_in_past)
 
         session = Session()
+        session.add(person)
+        session.add(person_wrong_region)
         session.add(open_booking_before_last_scrape)
         session.add(open_booking_incorrect_region)
         session.add(open_booking_most_recent_scrape)
@@ -74,7 +77,7 @@ class TestDatabase(object):
 
         # Act
         bookings = database.read_open_bookings_scraped_before_time(
-            session, region, most_recent_scrape_date)
+            session, person.region, most_recent_scrape_date)
 
         # Assert
         assert bookings == [open_booking_before_last_scrape]
