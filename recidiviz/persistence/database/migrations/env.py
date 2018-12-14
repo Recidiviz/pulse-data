@@ -2,9 +2,9 @@ from __future__ import with_statement
 from alembic import context
 from sqlalchemy import create_engine
 from logging.config import fileConfig
+import os
 
 from recidiviz.persistence.database.schema import Base
-from recidiviz.utils import secrets
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -24,11 +24,13 @@ _DB_TYPE = 'postgresql'
 def get_sqlalchemy_url():
     """Returns string needed to connect to database"""
 
-    use_ssl = secrets.get_secret('sqlalchemy_use_ssl')
+    # Boolean int (0 or 1) indicating whether to use SSL to connect to the
+    # database
+    use_ssl = int(os.getenv('SQLALCHEMY_USE_SSL'))
 
-    if use_ssl == True:
+    if use_ssl == 1:
         return _get_sqlalchemy_url_with_ssl()
-    elif use_ssl == False:
+    elif use_ssl == 0:
         return _get_sqlalchemy_url_without_ssl()
     else:
         raise RuntimeError('Invalid value for use_ssl: {use_ssl}'.format(
@@ -77,10 +79,10 @@ def run_migrations_online():
 def _get_sqlalchemy_url_without_ssl():
     """Returns string used for SQLAlchemy engine, without SSL params"""
 
-    user = secrets.get_secret('sqlalchemy_db_user')
-    password = secrets.get_secret('sqlalchemy_db_password')
-    host = secrets.get_secret('sqlalchemy_db_host')
-    db_name = secrets.get_secret('sqlalchemy_db_name')
+    user = os.getenv('SQLALCHEMY_DB_USER')
+    password = os.getenv('SQLALCHEMY_DB_PASSWORD')
+    host = os.getenv('SQLALCHEMY_DB_HOST')
+    db_name = os.getenv('SQLALCHEMY_DB_NAME')
 
     return '{db_type}://{user}:{password}@{host}/{db_name}'.format(
         db_type=_DB_TYPE,
@@ -93,15 +95,13 @@ def _get_sqlalchemy_url_without_ssl():
 def _get_sqlalchemy_url_with_ssl():
     """Returns string used for SQLAlchemy engine, with SSL params"""
 
-    ssl_ca_path = secrets.get_secret('sqlalchemy_ssl_ca_path')
-    ssl_key_path = secrets.get_secret('sqlalchemy_ssl_key_path')
-    ssl_cert_path = secrets.get_secret('sqlalchemy_ssl_cert_path')
+    ssl_key_path = os.getenv('SQLALCHEMY_SSL_KEY_PATH')
+    ssl_cert_path = os.getenv('SQLALCHEMY_SSL_CERT_PATH')
 
-    ssl_params = '?ssl_ca={ssl_ca_path}&ssl_key={ssl_key_path}' \
-                 '&ssl_cert={ssl_cert_path}'.format(
-                     ssl_ca_path=ssl_ca_path,
-                     ssl_key_path=ssl_key_path,
-                     ssl_cert_path=ssl_cert_path)
+    ssl_params = '?sslkey={ssl_key_path}&sslcert={ssl_cert_path}'.format(
+        ssl_ca_path=ssl_ca_path,
+        ssl_key_path=ssl_key_path,
+        ssl_cert_path=ssl_cert_path)
 
     url_without_ssl = _get_sqlalchemy_url_without_ssl()
 
