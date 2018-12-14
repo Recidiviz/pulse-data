@@ -76,8 +76,8 @@ class TestConverterUtils(TestCase):
             converter_utils.parse_bool('ABC')
 
     def test_parseEnum(self):
-        assert converter_utils.string_to_enum('gender', 'Male') == Gender.MALE
+        assert Gender.from_str('Male') == Gender.MALE
 
     def test_parseBadEnum(self):
-        with pytest.raises(ValueError):
-            converter_utils.string_to_enum('gender', 'ABC')
+        with pytest.raises(KeyError):
+            Gender.from_str('ABD')

@@ -28,12 +28,20 @@ class Classification(object):
     MINIMUM = enum_strings.classification_minimum
     WORK_RELEASE = enum_strings.classification_work_release
 
+    @staticmethod
+    def from_str(label):
+        return _CLASSIFICATION_MAP[label.upper()]
+
 
 class CustodyStatus(object):
     ESCAPED = enum_strings.custody_status_escaped
     HELD_ELSEWHERE = enum_strings.custody_status_elsewhere
     IN_CUSTODY = enum_strings.custody_status_in_custody
     RELEASED = enum_strings.custody_status_released
+
+    @staticmethod
+    def from_str(label):
+        return _CUSTODY_STATUS_MAP[label.upper()]
 
 
 class ReleaseReason(object):
@@ -46,8 +54,12 @@ class ReleaseReason(object):
     PROBATION = enum_strings.release_reason_probation
     TRANSFER = enum_strings.release_reason_transfer
 
+    @staticmethod
+    def from_str(label):
+        return _RELEASE_REASON_MAP[label.upper()]
 
-CLASSIFICATION_MAP = {
+
+_CLASSIFICATION_MAP = {
     'HIGH': Classification.HIGH,
     'LOW': Classification.LOW,
     'MAXIMUM': Classification.MAXIMUM,
@@ -57,7 +69,7 @@ CLASSIFICATION_MAP = {
 }
 
 
-CUSTODY_STATUS_MAP = {
+_CUSTODY_STATUS_MAP = {
     'ESCAPED': CustodyStatus.ESCAPED,
     'HELD ELSEWHERE': CustodyStatus.HELD_ELSEWHERE,
     'IN CUSTODY': CustodyStatus.IN_CUSTODY,
@@ -65,7 +77,7 @@ CUSTODY_STATUS_MAP = {
 }
 
 
-RELEASE_REASON_MAP = {
+_RELEASE_REASON_MAP = {
     'BOND': ReleaseReason.BOND,
     'DEATH': ReleaseReason.DEATH,
     'ESCAPE': ReleaseReason.ESCAPE,
