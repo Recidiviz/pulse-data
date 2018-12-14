@@ -19,8 +19,8 @@
 import datetime
 from distutils.util import strtobool  # pylint: disable=no-name-in-module
 
+from recidiviz.common import common_utils
 from recidiviz.common.constants.person import Ethnicity, Race
-from recidiviz.ingest import scraper_utils
 
 
 def normalize(s):
@@ -70,7 +70,7 @@ def parse_date_or_error(date_string):
     """
     if date_string == '' or date_string.isspace():
         return None
-    parsed_date = scraper_utils.parse_date_string(date_string)
+    parsed_date = common_utils.parse_date_string(date_string)
     if not parsed_date:
         raise ValueError('cannot parse date: %s' % parsed_date)
     return datetime.datetime.combine(parsed_date, datetime.time())
