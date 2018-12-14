@@ -82,7 +82,7 @@ def _should_persist():
     return environment.in_prod() or strtobool((os.environ['PERSIST_LOCALLY']))
 
 
-def write(ingest_info, last_seen_time):
+def write(ingest_info, region, last_seen_time):
     """
     If in prod or if 'PERSIST_LOCALLY' is set to true, persist each person in
     the ingest_info. If a person with the given surname/birthday already exists,
@@ -91,18 +91,17 @@ def write(ingest_info, last_seen_time):
     Otherwise, simply log the given ingest_infos for debugging
 
     Args:
-         ingest_info: The IngestInfo containing each person
-         last_seen_time: The last time this ingest_info was seen from
+        ingest_info: The IngestInfo containing each person
+        last_seen_time: The last time this ingest_info was seen from
             its data source. In the normal ingest pipeline, this is the
-            scraper_start_time.
-         the scraper that produced
-            the provided ingest_info
+            scraper_start_time
+        region: The region that this ingest_info was scraped from
     """
     log = logging.getLogger()
 
     log.info(ingest_info)
     people = converter.convert(ingest_info)
-    _add_last_seen_time(people, last_seen_time)
+    _add_scraper_metadata(people, region, last_seen_time)
 
     if not _should_persist():
         return
@@ -126,7 +125,8 @@ def write(ingest_info, last_seen_time):
             session.close()
 
 
-def _add_last_seen_time(people, last_seen_time):
+def _add_scraper_metadata(people, region, last_seen_time):
     for person in people:
+        person.region = region
         for booking in person.bookings:
             booking.last_seen_time = last_seen_time
