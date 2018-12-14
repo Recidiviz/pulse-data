@@ -17,7 +17,7 @@
 
 """Base test class for scrapers."""
 import yaml
-from recidiviz.ingest import ingest_info_utils
+from recidiviz.ingest import ingest_utils
 from recidiviz.ingest.models import ingest_info
 from recidiviz.persistence.validator import validate
 
@@ -128,7 +128,7 @@ class BaseScraperTest(object):
 
         # Attempt to convert the result to the final proto and validate its
         # output.
-        result_proto = ingest_info_utils.convert_ingest_info_to_proto(result)
+        result_proto = ingest_utils.convert_ingest_info_to_proto(result)
         validate(result_proto)
 
         assert result == expected_result

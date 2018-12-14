@@ -21,8 +21,8 @@
 import json
 
 from flask import Flask
-from google.appengine.ext import testbed
 from mock import patch
+from google.appengine.ext import testbed
 from requests.packages.urllib3.contrib.appengine import TimeoutError
 
 from recidiviz.ingest import worker

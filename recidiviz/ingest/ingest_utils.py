@@ -15,9 +15,67 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Convenience code for an ingest_info object."""
+"""Utils file for ingest module"""
 
+import logging
+
+from recidiviz.ingest import constants
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
+from recidiviz.utils import regions
+
+
+def validate_regions(region_list):
+    """Validates the region arguments.
+
+    If any region in |region_list| is "all", then all supported regions will be
+    returned.
+
+    Args:
+        region_list: List of regions from URL parameters
+
+    Returns:
+        False if invalid regions
+        List of regions to scrape if successful
+    """
+    regions_list_output = region_list
+
+    supported_regions = regions.get_supported_regions()
+    for region in region_list:
+        if region == "all":
+            regions_list_output = supported_regions
+        elif region not in supported_regions:
+            logging.error("Region '%s' not recognized." % region)
+            return False
+
+    return regions_list_output
+
+
+def validate_scrape_types(scrape_type_list):
+    """Validates the scrape type arguments.
+
+    If any scrape type in |scrape_type_list| is "all", then all supported scrape
+    types will be returned.
+
+    Args:
+        scrape_type_list: List of scrape types from URL parameters
+
+    Returns:
+        False if invalid scrape types
+        List of scrape types if successful
+    """
+    if not scrape_type_list:
+        return [constants.BACKGROUND_SCRAPE]
+
+    scrape_types_list_output = scrape_type_list
+
+    for scrape_type in scrape_type_list:
+        if scrape_type == "all":
+            scrape_types_list_output = constants.SCRAPE_TYPES
+        elif scrape_type not in constants.SCRAPE_TYPES:
+            logging.error("Scrape type '%s' not recognized." % scrape_type)
+            return False
+
+    return scrape_types_list_output
 
 
 def convert_ingest_info_to_proto(ingest_info):

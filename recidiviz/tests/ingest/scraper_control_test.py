@@ -18,10 +18,10 @@
 """Tests for ingest/scraper_control.py."""
 
 from flask import Flask
-from google.appengine.ext import testbed
 from mock import call, patch
+from google.appengine.ext import testbed
 
-from recidiviz.ingest import constants, scraper_control
+from recidiviz.ingest import scraper_control
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 
 APP_ID = "recidiviz-worker-test"
@@ -252,85 +252,6 @@ class TestScraperResume(object):
                                       "see service logs."
 
         mock_supported.assert_called_with()
-
-
-def test_validate_regions_one_ok():
-    assert scraper_control.validate_regions(["us_ny"]) == ["us_ny"]
-
-
-def test_validate_regions_one_all():
-    assert set(scraper_control.validate_regions(["all"])) == {
-        "us_ny", "us_pa_greene", "us_vt", "us_co_mesa", "us_mt_gallatin",
-        "us_pa_dauphin", "us_mo_stone", "us_ar_van_buren", "us_pa"
-    }
-
-
-def test_validate_regions_one_invalid():
-    assert not scraper_control.validate_regions(["ca_bc"])
-
-
-def test_validate_regions_multiple_ok():
-    assert scraper_control.validate_regions(["us_vt", "us_ny"]) == ["us_vt",
-                                                                    "us_ny"]
-
-
-def test_validate_regions_multiple_invalid():
-    assert not scraper_control.validate_regions(["us_vt", "invalid"])
-
-
-def test_validate_regions_multiple_all():
-    assert set(scraper_control.validate_regions(["us_vt", "all"])) == {
-        "us_ny", "us_pa_greene", "us_vt", "us_co_mesa", "us_mt_gallatin",
-        "us_pa_dauphin", "us_mo_stone", "us_ar_van_buren", "us_pa"
-    }
-
-
-def test_validate_regions_multiple_all_invalid():
-    assert not scraper_control.validate_regions(["all", "invalid"])
-
-
-def test_validate_regions_empty():
-    assert scraper_control.validate_regions([]) == []
-
-
-def test_validate_scrape_types_one_ok():
-    assert scraper_control.validate_scrape_types(
-        [constants.SNAPSHOT_SCRAPE]) == [constants.SNAPSHOT_SCRAPE]
-
-
-def test_validate_scrape_types_one_all():
-    assert scraper_control.validate_scrape_types(["all"]) == [
-        constants.BACKGROUND_SCRAPE, constants.SNAPSHOT_SCRAPE]
-
-
-def test_validate_scrape_types_one_invalid():
-    assert not scraper_control.validate_scrape_types(["When You Were Young"])
-
-
-def test_validate_scrape_types_multiple_ok():
-    assert scraper_control.validate_scrape_types(
-        [constants.BACKGROUND_SCRAPE, constants.SNAPSHOT_SCRAPE]) == [
-            constants.BACKGROUND_SCRAPE, constants.SNAPSHOT_SCRAPE]
-
-
-def test_validate_scrape_types_multiple_invalid():
-    assert not scraper_control.validate_scrape_types(
-        [constants.BACKGROUND_SCRAPE, "invalid"])
-
-
-def test_validate_scrape_types_multiple_all():
-    assert scraper_control.validate_scrape_types(
-        [constants.BACKGROUND_SCRAPE, "all"]) == [
-            constants.BACKGROUND_SCRAPE, constants.SNAPSHOT_SCRAPE]
-
-
-def test_validate_scrape_types_multiple_all_invalid():
-    assert not scraper_control.validate_scrape_types(["all", "invalid"])
-
-
-def test_validate_scrape_types_empty():
-    assert scraper_control.validate_scrape_types(
-        []) == [constants.BACKGROUND_SCRAPE]
 
 
 class FakeRegion(object):

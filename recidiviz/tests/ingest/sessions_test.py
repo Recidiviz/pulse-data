@@ -183,6 +183,22 @@ class TestGetOpenSessions(object):
         result = sessions.get_open_sessions("us_ny", most_recent_only=True)
         assert result == second
 
+    def test_get_most_recently_closed_session(self):
+        create_closed_session("us_ny", constants.BACKGROUND_SCRAPE,
+                              datetime(2009, 6, 17), datetime(2009, 6,
+                                                              18),
+                              "a")
+        create_open_session("us_ny", constants.SNAPSHOT_SCRAPE,
+                            datetime(2009, 6, 18), "b")
+        third = create_closed_session("us_ny", constants.BACKGROUND_SCRAPE,
+                                      datetime(2009, 6, 19),
+                                      datetime(2009, 6, 21), "c")
+        create_open_session("us_fl", constants.SNAPSHOT_SCRAPE,
+                            datetime(2009, 6, 19), "d")
+
+        results = sessions.get_most_recent_completed_session("us_ny")
+        assert results == third
+
     def test_get_open_sessions_open_or_closed(self):
         first = create_open_session("us_ny", constants.BACKGROUND_SCRAPE,
                                     datetime(2009, 6, 17), "a")

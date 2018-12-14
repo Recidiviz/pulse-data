@@ -14,25 +14,34 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Contains all HTTP endpoints for communicating with the persistence layer."""
+
+"""Exposes API to infer release of people."""
 
 import httplib
+import logging
 
-from flask import Flask
+from flask import Blueprint, request
 
-from recidiviz.persistence import persistence
+from recidiviz.ingest import ingest_utils
+from recidiviz.ingest import sessions
 from recidiviz.utils.auth import authenticate_request
+from recidiviz.utils.params import get_values
+from recidiviz.persistence import persistence
 
-app = Flask(__name__)
+infer_release_blueprint = Blueprint('infer_release', __name__)
 
 
-@app.route("/v1/records", methods=['POST'])
+@infer_release_blueprint.route('/release')
 @authenticate_request
-def write_record():
-    # TODO: Something like `ingest_info = protobuf.read(request.data)`
-    ingest_info = None
-    last_scraped_time = None
-    region = None
-    persistence.write(ingest_info, region, last_scraped_time)
+def infer_release():
+    regions = ingest_utils.validate_regions(get_values("region", request.args))
 
-    return '', httplib.NOT_IMPLEMENTED
+    if not regions:
+        logging.error("No valid regions found in request")
+        return 'No valid regions found in request', httplib.BAD_REQUEST
+
+    for region in regions:
+        session = sessions.get_most_recent_completed_session(region)
+        if session:
+            persistence.infer_release_on_open_bookings(region, session.end)
+    return '', httplib.OK
