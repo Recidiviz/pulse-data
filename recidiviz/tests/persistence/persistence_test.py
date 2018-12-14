@@ -21,6 +21,7 @@ from unittest import TestCase
 
 from mock import patch, Mock
 from recidiviz import Session
+from recidiviz.common.constants.booking import ReleaseReason
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo, Charge, \
     Sentence, Booking
 from recidiviz.persistence import persistence
@@ -289,13 +290,11 @@ class TestPersistence(TestCase):
         assert bookings[0].region == REGION_1
         assert bookings[0].last_seen_time == SCRAPER_START_DATETIME
         assert bookings[0].release_date == most_recent_scrape_date
-        assert bookings[0].release_date_inferred is True
+        assert bookings[0].release_reason == ReleaseReason.INFERRED_RELEASE
         assert bookings[0].charges[0].name == CHARGE_NAME_1
-        # TODO: assert status when RESOLVED status is handled
 
         assert bookings[1].region == REGION_2
         assert bookings[1].last_seen_time == SCRAPER_START_DATETIME
         assert bookings[1].release_date is None
-        assert bookings[1].release_date_inferred is None
         assert bookings[1].charges[0].name == CHARGE_NAME_2
         # TODO: assert status when RESOLVED status is handled

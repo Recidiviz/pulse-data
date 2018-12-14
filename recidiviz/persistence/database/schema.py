@@ -74,6 +74,7 @@ release_reason_values = (enum_strings.release_reason_bond,
                          enum_strings.release_reason_death,
                          enum_strings.release_reason_escape,
                          enum_strings.release_reason_expiration,
+                         enum_strings.release_reason_inferred,
                          enum_strings.release_reason_recognizance,
                          enum_strings.release_reason_parole,
                          enum_strings.release_reason_probation,
@@ -183,6 +184,11 @@ class PersonHistory(Base):
     """Represents the historical state of a person"""
     __tablename__ = 'PersonHistory'
 
+    # NOTE: PersonHistory does not contain surname, given_names, or birthdate
+    # columns. This is to ensure that PII is only stored in a single location
+    # (on the master table) and can be easily deleted when it should no longer
+    # be stored for a given individual.
+
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
     person_history_id = Column(Integer, primary_key=True)
@@ -191,9 +197,6 @@ class PersonHistory(Base):
     valid_from = Column(DateTime, nullable=False)
     valid_to = Column(DateTime)
     external_id = Column(String(255))
-    surname = Column(String(255))
-    given_names = Column(String(255))
-    birthdate = Column(Date)
     birthdate_inferred_from_age = Column(Boolean)
     gender = Column(gender)
     race = Column(race)
@@ -211,7 +214,6 @@ class Booking(Base):
     external_id = Column(String(255), index=True)
     admission_date = Column(Date)
     release_date = Column(Date)
-    release_date_inferred = Column(Boolean)
     projected_release_date = Column(Date)
     release_reason = Column(release_reason)
     custody_status = Column(custody_status, nullable=False)
@@ -246,7 +248,6 @@ class BookingHistory(Base):
     person_id = Column(Integer, nullable=False, index=True)
     admission_date = Column(Date)
     release_date = Column(Date)
-    release_date_inferred = Column(Boolean)
     projected_release_date = Column(Date)
     release_reason = Column(release_reason)
     custody_status = Column(custody_status, nullable=False)
@@ -460,7 +461,6 @@ class Charge(Base):
         Integer, ForeignKey('Sentence.sentence_id'))
     offense_date = Column(Date)
     statute = Column(String(255))
-    offense_code = Column(Integer)
     name = Column(String(255))
     attempted = Column(Boolean)
     degree = Column(degree)
@@ -470,7 +470,6 @@ class Charge(Base):
     fee_dollars = Column(Integer)
     charging_entity = Column(String(255))
     status = Column(charge_status, nullable=False)
-    number_of_counts = Column(Integer)
     court_type = Column(court_type)
     case_number = Column(String(255))
     next_court_date = Column(Date)
@@ -498,7 +497,6 @@ class ChargeHistory(Base):
     sentence_id = Column(Integer, index=True)
     offense_date = Column(Date)
     statute = Column(String(255))
-    offense_code = Column(Integer)
     name = Column(String(255))
     attempted = Column(Boolean)
     degree = Column(degree)
@@ -508,7 +506,6 @@ class ChargeHistory(Base):
     fee_dollars = Column(Integer)
     charging_entity = Column(String(255))
     status = Column(charge_status, nullable=False)
-    number_of_counts = Column(Integer)
     court_type = Column(court_type)
     case_number = Column(String(255))
     next_court_date = Column(Date)
