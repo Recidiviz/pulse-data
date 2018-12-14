@@ -49,6 +49,7 @@ class ReleaseReason(object):
     DEATH = enum_strings.release_reason_death
     ESCAPE = enum_strings.release_reason_escape
     EXPIRATION_OF_SENTENCE = enum_strings.release_reason_expiration
+    INFERRED_RELEASE = enum_strings.release_reason_inferred
     OWN_RECOGNIZANCE = enum_strings.release_reason_recognizance
     PAROLE = enum_strings.release_reason_parole
     PROBATION = enum_strings.release_reason_probation

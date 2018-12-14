@@ -30,10 +30,6 @@ us to structure the application layer code any way we want, while only
 requiring the database to be updated when an enum value is created or removed.
 """
 
-# Shared
-
-not_provided = 'NOT_PROVIDED'
-unknown = 'UNKNOWN'
 
 # Person
 
@@ -58,6 +54,7 @@ release_reason_bond = 'BOND'
 release_reason_death = 'DEATH'
 release_reason_escape = 'ESCAPE'
 release_reason_expiration = 'EXPIRATION_OF_SENTENCE'
+release_reason_inferred = 'INFERRED_RELEASE'
 release_reason_recognizance = 'OWN_RECOGNIZANCE'
 release_reason_parole = 'PAROLE'
 release_reason_probation = 'PROBATION'

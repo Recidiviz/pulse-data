@@ -20,6 +20,7 @@ import os
 from distutils.util import strtobool  # pylint: disable=no-name-in-module
 
 from recidiviz import Session
+from recidiviz.common.constants.booking import ReleaseReason
 from recidiviz.persistence import entity_matching, converter
 from recidiviz.persistence.database import database, database_utils
 from recidiviz.utils import environment
@@ -74,7 +75,7 @@ def _infer_release_date_for_bookings(bookings, date):
                                    'release date.'.format(booking.booking_id))
 
         booking.release_date = date
-        booking.release_date_inferred = True
+        booking.release_reason = ReleaseReason.INFERRED_RELEASE
 
 
 def _should_persist():
