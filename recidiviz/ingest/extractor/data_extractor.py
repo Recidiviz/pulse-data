@@ -95,8 +95,8 @@ class DataExtractor(object):
         Args:
             content: the html_tree we are searching.
         """
-        for key in self.keys.keys():
-            self._convert_key_to_cells(content, key)
+        # TODO(330): for key in self.keys.keys():
+        #    self._convert_key_to_cells(content, key)
 
         for css_key in self.css_keys.keys():
             self._css_key_to_cell(content, css_key)
