@@ -99,7 +99,6 @@ def _get_sqlalchemy_url_with_ssl():
     ssl_cert_path = os.getenv('SQLALCHEMY_SSL_CERT_PATH')
 
     ssl_params = '?sslkey={ssl_key_path}&sslcert={ssl_cert_path}'.format(
-        ssl_ca_path=ssl_ca_path,
         ssl_key_path=ssl_key_path,
         ssl_cert_path=ssl_cert_path)
 
