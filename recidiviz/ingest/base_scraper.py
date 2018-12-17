@@ -118,7 +118,7 @@ class BaseScraper(Scraper):
         # Let the child transform the post_data if it wants before sending the
         # requests.  This hook is in here in case the child did something like
         # compress the post_data before it put it on the queue.
-        post_data = self.transform_post_data(post_data)
+        self.transform_post_data(post_data)
 
         # We always fetch some content before doing anything.  Note that we
         # use get here for the post_data to return a default value of None if
@@ -245,7 +245,7 @@ class BaseScraper(Scraper):
         Args:
             data: dict of parameters to send as data to the post request.
         """
-        return data
+        pass
 
     def get_initial_endpoint(self):
         """Returns the initial endpoint to hit on the first call
