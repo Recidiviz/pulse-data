@@ -237,7 +237,11 @@ class DataExtractor(object):
                 parent = getattr(parent, hier_class)[val_index]
             else:
                 get_recent_name = 'get_recent_' + hier_class
-                parent = getattr(parent, get_recent_name)()
+                create_func = 'create_' + hier_class
+                old_parent = parent
+                parent = getattr(old_parent, get_recent_name)()
+                if parent is None:
+                    parent = getattr(old_parent, create_func)()
         return parent
 
     def _convert_key_to_cells(self, content, key):
