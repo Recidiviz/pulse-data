@@ -26,6 +26,7 @@ import attr
 
 @attr.s
 class Person(object):
+    person_id = attr.ib(default=None)
     external_id = attr.ib(default=None)
     surname = attr.ib(default=None)
     given_names = attr.ib(default=None)
@@ -42,8 +43,10 @@ class Person(object):
 
 @attr.s
 class Booking(object):
+    booking_id = attr.ib(default=None)
     external_id = attr.ib(default=None)
     admission_date = attr.ib(default=None)
+    admission_date_inferred = attr.ib(default=None)
     release_date = attr.ib(default=None)
     release_date_inferred = attr.ib(default=None)
     projected_release_date = attr.ib(default=None)
@@ -52,7 +55,7 @@ class Booking(object):
     held_for_other_jurisdiction = attr.ib(default=None)
     facility = attr.ib(default=None)
     classification = attr.ib(default=None)
-    last_scraped_time = attr.ib(default=None)
+    last_seen_time = attr.ib(default=None)
 
     holds = attr.ib(factory=list)
     arrest = attr.ib(default=None)
@@ -61,6 +64,7 @@ class Booking(object):
 
 @attr.s
 class Hold(object):
+    hold_id = attr.ib(default=None)
     external_id = attr.ib(default=None)
     jurisdiction_name = attr.ib(default=None)
     hold_status = attr.ib(default=None)
@@ -68,6 +72,7 @@ class Hold(object):
 
 @attr.s
 class Arrest(object):
+    arrest_id = attr.ib(default=None)
     external_id = attr.ib(default=None)
     date = attr.ib(default=None)
     location = attr.ib(default=None)
@@ -78,6 +83,7 @@ class Arrest(object):
 
 @attr.s
 class Charge(object):
+    charge_id = attr.ib(default=None)
     external_id = attr.ib(default=None)
     offense_date = attr.ib(default=None)
     statute = attr.ib(default=None)
@@ -102,6 +108,7 @@ class Charge(object):
 
 @attr.s
 class Bond(object):
+    bond_id = attr.ib(default=None)
     external_id = attr.ib(default=None)
     amount_dollars = attr.ib(default=None)
     bond_type = attr.ib(default=None)
@@ -110,6 +117,7 @@ class Bond(object):
 
 @attr.s
 class Sentence(object):
+    sentence_id = attr.ib(default=None)
     external_id = attr.ib(default=None)
     date_imposed = attr.ib(default=None)
     county_of_commitment = attr.ib(default=None)
