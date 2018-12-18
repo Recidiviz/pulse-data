@@ -34,7 +34,7 @@ if environment.in_prod():
     db_name = secrets.get_secret('sqlalchemy_db_name')
 
     sqlalchemy_url = \
-        'postgresql://{db_user}:{db_password}@{db_host}/{db_name}'.format(
+        'mysql+pymysql://{db_user}:{db_password}@{db_host}/{db_name}'.format(
             db_user=db_user,
             db_password=db_password,
             db_host=db_host,

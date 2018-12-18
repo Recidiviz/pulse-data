@@ -138,6 +138,7 @@ class TestConverter(unittest.TestCase):
         expected_result = [Person(
             bookings=[Booking(
                 external_id='BOOKING_ID',
+                custody_status='IN_CUSTODY',
                 arrest=Arrest(
                     external_id='ARREST_ID',
                     date=datetime(year=1111, month=1, day=2),
@@ -174,6 +175,7 @@ class TestConverter(unittest.TestCase):
         expected_result = [Person(
             bookings=[Booking(
                 external_id='BOOKING_ID',
+                custody_status='IN_CUSTODY',
                 charges=[Charge(
                     external_id='CHARGE_ID',
                     attempted=True,
@@ -208,8 +210,10 @@ class TestConverter(unittest.TestCase):
         expected_result = [Person(
             bookings=[Booking(
                 external_id='BOOKING_ID',
+                custody_status='IN_CUSTODY',
                 charges=[Charge(
                     external_id='CHARGE_ID',
+                    status='PENDING',
                     bond=Bond(
                         external_id='BOND_ID',
                         bond_type=BondType.CASH,
@@ -235,8 +239,10 @@ class TestConverter(unittest.TestCase):
         expected_result = [Person(
             bookings=[Booking(
                 external_id='BOOKING_ID',
+                custody_status='IN_CUSTODY',
                 charges=[Charge(
-                    bond=Bond(amount_dollars=100)
+                    status='PENDING',
+                    bond=Bond(status='POSTED', amount_dollars=100)
                 )]
             )]
         )]
@@ -260,9 +266,12 @@ class TestConverter(unittest.TestCase):
         expected_result = [Person(
             bookings=[Booking(
                 external_id='BOOKING_ID',
+                custody_status='IN_CUSTODY',
                 charges=[Charge(
                     external_id='CHARGE_ID',
-                    bond=Bond(external_id='BOND_ID', amount_dollars=100)
+                    status='PENDING',
+                    bond=Bond(external_id='BOND_ID', amount_dollars=100,
+                              status='POSTED')
                 )]
             )]
         )]
@@ -290,8 +299,10 @@ class TestConverter(unittest.TestCase):
         expected_result = [Person(
             bookings=[Booking(
                 external_id='BOOKING_ID',
+                custody_status='IN_CUSTODY',
                 charges=[Charge(
                     external_id='CHARGE_ID',
+                    status='PENDING',
                     sentence=Sentence(
                         external_id='SENTENCE_ID',
                         min_length_days=1,
@@ -325,11 +336,13 @@ class TestConverter(unittest.TestCase):
             external_id='PERSON_ID',
             bookings=[Booking(
                 external_id='BOOKING_ID',
+                custody_status='IN_CUSTODY',
                 arrest=Arrest(external_id='ARREST_ID', agency='PD'),
                 charges=[Charge(
                     external_id='CHARGE_ID',
+                    status='PENDING',
                     name='DUI',
-                    bond=Bond(external_id='BOND_ID'),
+                    bond=Bond(external_id='BOND_ID', status='POSTED'),
                     sentence=Sentence(external_id='SENTENCE_ID', is_life=True)
                 )]
             )])]
