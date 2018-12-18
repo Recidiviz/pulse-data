@@ -151,6 +151,10 @@ class _Converter(object):
         if ingest_booking.HasField('custody_status'):
             booking.custody_status = self._convert(
                 CustodyStatus.from_str, ingest_booking.custody_status)
+        # TODO(338): Clean up the default logic here.
+        else:
+            booking.custody_status = self._convert(
+                CustodyStatus.from_str, 'IN CUSTODY')
 
         # TODO: Populate hold when the proto is updated to contain a hold table
 
@@ -174,9 +178,11 @@ class _Converter(object):
             # add a new bond with the total amount to each charge.
             bond_amount = self._convert(converter_utils.parse_dollar_amount,
                                         ingest_booking.total_bond_amount)
-            total_bond = entities.Bond(amount_dollars=bond_amount)
+            total_bond = entities.Bond(amount_dollars=bond_amount,
+                                       status='POSTED')
             if not booking.charges:
-                booking.charges = [entities.Charge(bond=total_bond)]
+                booking.charges = [entities.Charge(
+                    bond=total_bond, status='PENDING')]
             elif not any(charge.bond and charge.bond.amount_dollars
                          for charge in booking.charges):
                 for charge in booking.charges:
@@ -282,6 +288,10 @@ class _Converter(object):
         if ingest_charge.HasField('status'):
             charge.status = self._convert(
                 ChargeStatus.from_str, ingest_charge.status)
+        # TODO(338): Clean up the default logic here.
+        else:
+            charge.status = self._convert(
+                ChargeStatus.from_str, 'PENDING')
 
         if ingest_charge.HasField('number_of_counts'):
             charge.number_of_counts = self._convert(
@@ -337,6 +347,9 @@ class _Converter(object):
         if ingest_bond.HasField('status'):
             bond.status = self._convert(
                 BondStatus.from_str, ingest_bond.status)
+        # TODO(338): Clean up the default logic here.
+        else:
+            bond.status = self._convert(BondStatus.from_str, 'POSTED')
 
         return bond
 
