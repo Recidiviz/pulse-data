@@ -91,7 +91,7 @@ def calculate_birthdate_from_age(age):
     if age == '' or age.isspace():
         return None
     try:
-        birth_year = datetime.date.today().year - int(age)
+        birth_year = datetime.datetime.now().date().year - int(age)
         return datetime.date(year=birth_year, month=1, day=1)
     except Exception:
         raise ValueError('cannot parse age: %s' % age)

@@ -20,9 +20,12 @@ import datetime
 from unittest import TestCase
 
 import pytest
+from mock import patch
 
 from recidiviz.common.constants.person import Gender
-from recidiviz.persistence import converter_utils
+from recidiviz.persistence.converter import converter_utils
+
+_NOW = datetime.datetime(2000, 1, 1)
 
 
 class TestConverterUtils(TestCase):
@@ -36,9 +39,12 @@ class TestConverterUtils(TestCase):
         with pytest.raises(ValueError):
             converter_utils.parse_date_or_error('ABC')
 
-    def test_parseAge(self):
+    @patch('recidiviz.persistence.converter.converter_utils.datetime.datetime')
+    def test_parseAge(self, mock_datetime):
+        mock_datetime.now.return_value = _NOW
+
         expected_birthdate = datetime.date(
-            year=datetime.date.today().year - 1000, month=1, day=1)
+            year=_NOW.date().year - 1000, month=1, day=1)
         assert converter_utils.calculate_birthdate_from_age('1000') == \
                expected_birthdate
 
