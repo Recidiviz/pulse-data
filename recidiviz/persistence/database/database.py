@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains logic for communicating with a SQL Database."""
+from recidiviz.persistence.database import database_utils
 from recidiviz.persistence.database.schema import Person, Booking
 
 
@@ -51,6 +52,20 @@ def read_bookings(session):
     return session.query(Booking).all()
 
 
+def read_people_with_open_bookings(session, region):
+    """
+    Reads all people with open bookings in the given region.
+
+    Args:
+        session: The transaction to read from
+        region: The region to match against
+    Returns:
+        List of people with open bookings matching the provided args
+    """
+    query = _query_people_and_open_bookings(session, region)
+    return [database_utils.convert_person(person) for person, _ in query.all()]
+
+
 def read_open_bookings_scraped_before_time(session, region, time):
     """
     Reads all open bookings in the given region that have a last_scraped_time
@@ -64,9 +79,20 @@ def read_open_bookings_scraped_before_time(session, region, time):
     Returns:
         List of bookings matching the provided args
     """
-    query = session.query(Person, Booking)\
-        .filter(Person.person_id == Booking.person_id)\
-        .filter(Person.region == region)\
-        .filter(Booking.release_date.is_(None))\
+    query = _query_people_and_open_bookings(session, region)\
         .filter(Booking.last_seen_time < time)
     return [booking for _, booking in query.all()]
+
+
+def _query_people_and_open_bookings(session, region):
+    """
+    Returns a list of tuples of (person, booking) for all open bookings.
+
+    Args:
+        session: Transaction to read from
+        region: The region to match against.
+    """
+    return session.query(Person, Booking) \
+        .filter(Person.person_id == Booking.person_id) \
+        .filter(Person.region == region) \
+        .filter(Booking.release_date.is_(None))

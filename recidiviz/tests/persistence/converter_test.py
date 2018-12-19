@@ -164,8 +164,7 @@ class TestConverter(unittest.TestCase):
             degree='FIRST',
             charge_class='FELONY',
             status='DROPPED',
-            court_type='DISTRICT',
-            number_of_counts='3'
+            court_type='DISTRICT'
         )
 
         # Act
@@ -182,8 +181,7 @@ class TestConverter(unittest.TestCase):
                     degree=ChargeDegree.FIRST,
                     charge_class=ChargeClass.FELONY,
                     status=ChargeStatus.DROPPED,
-                    court_type=CourtType.DISTRICT,
-                    number_of_counts=3
+                    court_type=CourtType.DISTRICT
                 )]
             )]
         )]

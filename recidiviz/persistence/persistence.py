@@ -106,23 +106,17 @@ def write(ingest_info, region, last_seen_time):
     if not _should_persist():
         return
 
-    for person in people:
-        session = Session()
-        try:
-            existing_person = entity_matching.get_entity_match(session, person)
-
-            if existing_person is None:
-                session.add(database_utils.convert_person(person))
-            else:
-                person.person_id = existing_person.person_id
-                session.merge(database_utils.convert_person(person))
-
-            session.commit()
-        except Exception:
-            session.rollback()
-            raise
-        finally:
-            session.close()
+    session = Session()
+    try:
+        entity_matching.match_entities(session, region, people)
+        for person in people:
+            session.merge(database_utils.convert_person(person))
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
 
 
 def _add_scraper_metadata(people, region, last_seen_time):

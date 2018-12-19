@@ -17,8 +17,8 @@
 """Domain logic entities used in the persistence layer.
 
 Note: These classes mirror the SQL Alchemy ORM objects but are kept separate.
-This allows these persistence layer objects additional flexibility (eg.
-overriding the __eq__ method) that the SQL Alchemy ORM objects can't provide.
+This allows these persistence layer objects additional flexibility that the SQL
+Alchemy ORM objects can't provide.
 """
 
 import attr
@@ -34,6 +34,7 @@ class Person(object):
     birthdate_inferred_from_age = attr.ib(default=None)
     gender = attr.ib(default=None)
     race = attr.ib(default=None)
+    region = attr.ib(default=None)
     ethnicity = attr.ib(default=None)
     place_of_residence = attr.ib(default=None)
     region = attr.ib(default=None)
@@ -87,7 +88,6 @@ class Charge(object):
     external_id = attr.ib(default=None)
     offense_date = attr.ib(default=None)
     statute = attr.ib(default=None)
-    offense_code = attr.ib(default=None)
     name = attr.ib(default=None)
     attempted = attr.ib(default=None)
     degree = attr.ib(default=None)
@@ -96,7 +96,6 @@ class Charge(object):
     fee_dollars = attr.ib(default=None)
     charging_entity = attr.ib(default=None)
     status = attr.ib(default=None)
-    number_of_counts = attr.ib(default=None)
     court_type = attr.ib(default=None)
     case_number = attr.ib(default=None)
     next_court_date = attr.ib(default=None)

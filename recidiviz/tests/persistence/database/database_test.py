@@ -17,15 +17,18 @@
 """Tests for database.py."""
 
 import datetime
+from unittest import TestCase
 
 from recidiviz import Session
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
-from recidiviz.persistence.database import database
+from recidiviz.persistence.database import database, database_utils
 from recidiviz.persistence.database.schema import Booking, Person
 from recidiviz.tests.utils import fakes
 
+_REGION = 'region'
+_REGION_ANOTHER = 'wrong region'
 
-class TestDatabase(object):
+class TestDatabase(TestCase):
     """Test that the methods in database.py correctly read from the SQL
     database """
 
@@ -35,8 +38,8 @@ class TestDatabase(object):
 
     def test_readOpenBookingsBeforeDate(self):
         # Arrange
-        person = Person(person_id=8, region='region')
-        person_wrong_region = Person(person_id=9, region='wrong_region')
+        person = Person(person_id=8, region=_REGION)
+        person_wrong_region = Person(person_id=9, region=_REGION_ANOTHER)
 
         release_date = datetime.date(2018, 7, 20)
         most_recent_scrape_date = datetime.datetime(2018, 6, 20)
@@ -80,4 +83,31 @@ class TestDatabase(object):
             session, person.region, most_recent_scrape_date)
 
         # Assert
-        assert bookings == [open_booking_before_last_scrape]
+        self.assertEqual(bookings, [open_booking_before_last_scrape])
+
+    def test_readPeopleWithOpenBookings(self):
+        admission_date = datetime.datetime(2018, 6, 20)
+        release_date = datetime.date(2018, 7, 20)
+
+        open_booking = Booking(
+            custody_status=enum_strings.custody_status_in_custody,
+            admission_date=admission_date,
+            last_seen_time=admission_date)
+        person = Person(person_id=8, region=_REGION, bookings=[open_booking])
+
+        closed_booking = Booking(
+            custody_status=enum_strings.custody_status_in_custody,
+            admission_date=admission_date,
+            release_date=release_date,
+            last_seen_time=admission_date)
+        person_no_open_bookings = Person(person_id=9, region=_REGION,
+                                         bookings=[closed_booking])
+
+        session = Session()
+        session.add(person)
+        session.add(person_no_open_bookings)
+        session.commit()
+
+        people = database.read_people_with_open_bookings(session, _REGION)
+
+        self.assertEqual(people, [database_utils.convert_person(person)])
