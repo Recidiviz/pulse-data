@@ -104,43 +104,7 @@ class TestPersistence(TestCase):
         assert result[0].surname == SURNAME_1
         assert result[1].surname == SURNAME_2
 
-    def test_sameTwoPeople_persistsOne(self):
-        # Arrange
-        ingest_info = IngestInfo()
-        ingest_info.people.add(surname=SURNAME_1, given_names=GIVEN_NAME)
-        ingest_info.people.add(surname=SURNAME_1, given_names=GIVEN_NAME)
-
-        # Act
-        persistence.write(ingest_info, REGION_1, SCRAPER_START_DATETIME)
-        result = database.read_people(Session())
-
-        # Assert
-        assert len(result) == 1
-        assert result[0].surname == SURNAME_1
-
-    # TODO: Consider not replace everything with the newly scraped data, instead
-    # update only the newly scraped fields (keeping old data)
-    def test_sameTwoPeople_matchesPeopleAndReplacesWithNewerData(self):
-        # Arrange
-        ingest_info = IngestInfo()
-        ingest_info.people.add(surname=SURNAME_1,
-                               given_names=GIVEN_NAME,
-                               place_of_residence=PLACE_1)
-        persistence.write(ingest_info, SCRAPER_START_DATETIME, REGION_1)
-
-        ingest_info = IngestInfo()
-        ingest_info.people.add(surname=SURNAME_1,
-                               given_names=GIVEN_NAME,
-                               place_of_residence=PLACE_2)
-
-        # Act
-        persistence.write(ingest_info, REGION_1, SCRAPER_START_DATETIME)
-        result = database.read_people(Session())
-
-        # Assert
-        assert len(result) == 1
-        assert result[0].surname == SURNAME_1
-        assert result[0].place_of_residence == PLACE_2
+    # TODO: test entity matching end to end
 
     def test_readSinglePersonByName(self):
         # Arrange
