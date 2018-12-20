@@ -31,6 +31,7 @@ class BondConverterTest(unittest.TestCase):
         ingest_bond = ingest_info_pb2.Bond(
             bond_id='BOND_ID',
             bond_type='CASH',
+            amount='$125.00',
             status='ACTIVE'
         )
 
@@ -41,6 +42,7 @@ class BondConverterTest(unittest.TestCase):
         expected_result = entities.Bond(
             external_id='BOND_ID',
             bond_type=BondType.CASH,
+            amount_dollars=125,
             status=BondStatus.ACTIVE
         )
 
