@@ -74,7 +74,8 @@ _CUSTODY_STATUS_MAP = {
     'ESCAPED': CustodyStatus.ESCAPED,
     'HELD ELSEWHERE': CustodyStatus.HELD_ELSEWHERE,
     'IN CUSTODY': CustodyStatus.IN_CUSTODY,
-    'RELEASED': CustodyStatus.RELEASED
+    'RELEASED': CustodyStatus.RELEASED,
+    'DISCHARGED': CustodyStatus.RELEASED,
 }
 
 

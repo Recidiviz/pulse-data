@@ -296,6 +296,12 @@ class Scraper(object):
                             "retry. \n\n%s", log_error)
             return -1
 
+        # Proxy errors don't raise an exception. : (
+        if page.status_code == 502:
+            logging.warning("Problem retrieving page (proxy error), failing "
+                            "task to retry.")
+            return -1
+
         return page
 
     def add_task(self, task_name, params):
