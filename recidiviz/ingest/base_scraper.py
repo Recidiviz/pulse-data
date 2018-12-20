@@ -105,27 +105,40 @@ class BaseScraper(Scraper):
         Returns:
             Nothing if successful, -1 if it fails
         """
-        # If this is called without any params set, we assume its the first call
-        endpoint = params.get('endpoint', self.get_initial_endpoint())
+        # If this is called without any params set, we assume its the
+        # first call
         task_type = params.get('task_type', self.get_initial_task_type())
-        post_data = params.get(
-            'post_data',
-            self.get_initial_data() if self.is_initial_task(task_type)
-            else None)
-        json_data = params.get('json', None)
+        endpoint = params.get('endpoint', self.get_initial_endpoint() if
+                              self.is_initial_task(task_type) else None)
+
+        # Here we handle a special case where we weren't really sure
+        # we were going to get data when we submitted a task, but then
+        # we ended up with data, so no more requests are required,
+        # just the content we already have.
+        if endpoint is None:
+            content = html.fromstring(params.get('content'))
+        else:
+            post_data = params.get(
+                'post_data',
+                self.get_initial_data() if self.is_initial_task(task_type)
+                else None)
+            json_data = params.get('json', None)
+
+            # Let the child transform the post_data if it wants before
+            # sending the requests.  This hook is in here in case the
+            # child did something like compress the post_data before
+            # it put it on the queue.
+            self.transform_post_data(post_data)
+
+            # We always fetch some content before doing anything.
+            # Note that we use get here for the post_data to return a
+            # default value of None if this scraper doesn't set it.
+            content = self._fetch_content(endpoint, post_data=post_data,
+                                          json_data=json_data)
+            if content == -1:
+                return -1
+
         ingest_info = None
-
-        # Let the child transform the post_data if it wants before sending the
-        # requests.  This hook is in here in case the child did something like
-        # compress the post_data before it put it on the queue.
-        self.transform_post_data(post_data)
-
-        # We always fetch some content before doing anything.  Note that we
-        # use get here for the post_data to return a default value of None if
-        # this scraper doesn't set it.
-        content = self._fetch_content(endpoint, post_data, json_data)
-        if content == -1:
-            return -1
 
         # For an initial task we just make a call to get initial variables.
         # This may be a noop for some scrapers.
