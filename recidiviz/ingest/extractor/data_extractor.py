@@ -425,7 +425,7 @@ class DataExtractor(object):
             return None
         if cell.tag == 'th':
             below_cell = self._get_below(cell)
-            if below_cell:
+            if below_cell is not None:
                 below_text = below_cell.text_content().strip()
                 if below_text:
                     return below_text
