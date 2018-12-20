@@ -17,8 +17,8 @@
 """Converts an ingest_info proto Bond to a persistence entity."""
 from recidiviz.common.constants.bond import BondType, BondStatus
 from recidiviz.persistence import entities
-from recidiviz.persistence.converter.converter_utils import fn, normalize, \
-    parse_dollars
+from recidiviz.persistence.converter import converter_utils
+from recidiviz.persistence.converter.converter_utils import fn, normalize
 
 
 def convert(proto):
@@ -26,8 +26,14 @@ def convert(proto):
     new = entities.Bond()
 
     new.external_id = fn(normalize, 'bond_id', proto)
-    new.amount_dollars = fn(parse_dollars, 'amount', proto)
+    new.amount_dollars = fn(_parse_bond_amount, 'amount', proto)
     new.bond_type = fn(BondType.from_str, 'bond_type', proto)
     new.status = fn(BondStatus.from_str, 'status', proto, BondStatus.POSTED)
 
     return new
+
+
+def _parse_bond_amount(amount):
+    if 'NO' in amount.upper() or 'DENIED' in amount.upper():
+        return 0
+    return converter_utils.parse_dollars(amount)
