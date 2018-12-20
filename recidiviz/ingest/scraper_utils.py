@@ -125,17 +125,25 @@ def calculate_age(birthdate, check_date=None):
         ((check_date.month, check_date.day) < (birthdate.month, birthdate.day))
 
 
-def get_id_value_from_html_tree(html_tree, html_id):
-    """Retrieves the value of the given id from the given html tree.
+def get_value_from_html_tree(html_tree, attribute_value, attribute_name='id'):
+    """Retrieves the value of an html tag from the given html tree. The
+    tag is chosen based on a given attribute value on an attribute
+    name that can optionally be set, but is 'id' by default.. If there
+    are multiple matches, only the first is returned.
 
     Args:
         html_tree: (string) html of the scraped page.
-        html_id: (string) the html id we are trying to retrieve.
+        attribute_value: (string) the attribute value of the tag we are trying
+            to retrieve.
+        attribute_name: (string) the attribute name of the tag we are trying to
+            retrieve [default: 'id'].
 
     Returns:
         A string representing the value of the id from the html page.
+
     """
-    html_obj = html_tree.cssselect('[id={}]'.format(html_id))
+    html_obj = html_tree.cssselect('[{}={}]'.format(attribute_name,
+                                                    attribute_value))
     if html_obj:
         return html_obj[0].get('value')
     return None

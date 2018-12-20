@@ -378,10 +378,13 @@ class TestFetchPage(object):
         headers = {'User-Agent': 'test_user_agent'}
         mock_headers.return_value = headers
         page = "<blink>Get in on the ground floor</blink>"
-        mock_requests.return_value = page
+        response = requests.Response()
+        response._content = page  # pylint: disable=protected-access
+        response.status_code = 200
+        mock_requests.return_value = response
 
         scraper = FakeScraper(region, initial_task)
-        assert scraper.fetch_page(url) == page
+        assert scraper.fetch_page(url).content == page
 
         mock_region.assert_called_with(region)
         mock_proxies.assert_called_with()
@@ -409,11 +412,14 @@ class TestFetchPage(object):
         headers = {'User-Agent': 'test_user_agent'}
         mock_headers.return_value = headers
         page = "<blink>Get in on the ground floor</blink>"
-        mock_requests.return_value = page
+        response = requests.Response()
+        response._content = page  # pylint: disable=protected-access
+        response.status_code = 200
+        mock_requests.return_value = response
 
         scraper = FakeScraper(region, initial_task)
-        assert scraper.fetch_page(url,
-                                  post_data=body, json_data=json_data) == page
+        assert scraper.fetch_page(
+            url, post_data=body, json_data=json_data).content == page
 
         mock_region.assert_called_with(region)
         mock_proxies.assert_called_with()
