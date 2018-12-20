@@ -26,7 +26,7 @@ def convert(proto):
     new = entities.Bond()
 
     new.external_id = fn(normalize, 'bond_id', proto)
-    new.amount = fn(parse_dollars, 'amount', proto)
+    new.amount_dollars = fn(parse_dollars, 'amount', proto)
     new.bond_type = fn(BondType.from_str, 'bond_type', proto)
     new.status = fn(BondStatus.from_str, 'status', proto, BondStatus.POSTED)
 
