@@ -160,8 +160,7 @@ def parse_dollars(dollar_string):
     Return:
         (int) whole number of dollars converted from input
     """
-    if dollar_string == '' or dollar_string.isspace() \
-            or 'NO' in dollar_string.upper():
+    if dollar_string == '' or dollar_string.isspace():
         return 0
     try:
         clean_string = ''.join(
