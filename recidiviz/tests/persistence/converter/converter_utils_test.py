@@ -32,12 +32,12 @@ class TestConverterUtils(TestCase):
     """Test conversion util methods."""
 
     def test_parseDate(self):
-        assert converter_utils.parse_date_or_error('Jan 1, 2018') == \
+        assert converter_utils.parse_date('Jan 1, 2018') == \
                datetime.datetime(year=2018, month=1, day=1)
 
     def test_parseBadDate(self):
         with pytest.raises(ValueError):
-            converter_utils.parse_date_or_error('ABC')
+            converter_utils.parse_date('ABC')
 
     @patch('recidiviz.persistence.converter.converter_utils.datetime.datetime')
     def test_parseAge(self, mock_datetime):
@@ -53,11 +53,11 @@ class TestConverterUtils(TestCase):
             converter_utils.calculate_birthdate_from_age('ABC')
 
     def test_parseTimeDuration(self):
-        assert converter_utils.time_string_to_days('10') == 10
+        assert converter_utils.parse_days('10') == 10
 
     def test_parseBadTimeDuration(self):
         with pytest.raises(ValueError):
-            converter_utils.time_string_to_days('ABC')
+            converter_utils.parse_days('ABC')
 
     def test_parseName(self):
         assert converter_utils.split_full_name("LAST,FIRST") == \
@@ -68,11 +68,11 @@ class TestConverterUtils(TestCase):
             converter_utils.split_full_name('ABC')
 
     def test_parseDollarAmount(self):
-        assert converter_utils.parse_dollar_amount('$100.00') == 100
+        assert converter_utils.parse_dollars('$100.00') == 100
 
     def test_parseBadDollarAmount(self):
         with pytest.raises(ValueError):
-            converter_utils.parse_dollar_amount('ABC')
+            converter_utils.parse_dollars('ABC')
 
     def test_parseBool(self):
         assert converter_utils.parse_bool("True") is True
