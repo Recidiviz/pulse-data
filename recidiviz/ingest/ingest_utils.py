@@ -131,7 +131,7 @@ def convert_ingest_info_to_proto(ingest_info):
         field_names = [i.name for i in proto_to_populate.DESCRIPTOR.fields]
         for field in field_names:
             val = getattr(ingest_info_source, field, None)
-            if val:
+            if val is not None:
                 setattr(proto_to_populate, field, val)
         proto_map[obj_id] = proto_to_populate
         return proto_to_populate

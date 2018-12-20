@@ -68,8 +68,11 @@ class CourtType(object):
 
 _CHARGE_DEGREE_MAP = {
     'FIRST': ChargeDegree.FIRST,
+    '1ST': ChargeDegree.FIRST,
     'SECOND': ChargeDegree.SECOND,
+    '2ND': ChargeDegree.SECOND,
     'THIRD': ChargeDegree.THIRD,
+    '3RD': ChargeDegree.THIRD,
 }
 
 
