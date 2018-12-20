@@ -21,7 +21,8 @@ from distutils.util import strtobool  # pylint: disable=no-name-in-module
 
 from recidiviz import Session
 from recidiviz.common.constants.booking import ReleaseReason
-from recidiviz.persistence import entity_matching, converter
+from recidiviz.persistence import entity_matching
+from recidiviz.persistence.converter import converter
 from recidiviz.persistence.database import database, database_utils
 from recidiviz.utils import environment
 

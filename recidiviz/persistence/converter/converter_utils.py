@@ -15,12 +15,20 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Utils for converting individual data fields."""
-
 import datetime
 from distutils.util import strtobool  # pylint: disable=no-name-in-module
 
 from recidiviz.common import common_utils
 from recidiviz.common.constants.person import Ethnicity, Race
+
+
+def fn(func, field_name, proto, default=None):
+    """Return the result of applying the given function to the field on the
+    proto, returning |default| if the proto field is unset.
+    """
+    if not proto.HasField(field_name):
+        return default
+    return func(getattr(proto, field_name))
 
 
 def normalize(s):
@@ -43,6 +51,11 @@ def normalize(s):
 
 
 def race_is_actually_ethnicity(ingest_person):
+    if ingest_person.HasField('ethnicity'):
+        return False
+    if not ingest_person.HasField('race'):
+        return False
+
     try:
         Ethnicity.from_str(ingest_person.race)
         race_is_ethnicity = True
@@ -58,7 +71,7 @@ def race_is_actually_ethnicity(ingest_person):
     return race_is_ethnicity and not race_is_already_set_correctly
 
 
-def parse_date_or_error(date_string):
+def parse_date(date_string):
     """
     Parses a string into a datetime object.
 
@@ -97,7 +110,7 @@ def calculate_birthdate_from_age(age):
         raise ValueError('cannot parse age: %s' % age)
 
 
-def time_string_to_days(time_string):
+def parse_days(time_string):
     """
     Converts the given string into an int number number of days
 
@@ -137,7 +150,7 @@ def split_full_name(full_name):
     raise ValueError('cannot parse full name: %s' % full_name)
 
 
-def parse_dollar_amount(dollar_string):
+def parse_dollars(dollar_string):
     """
     Parses a string and returns an int dollar amount
 
