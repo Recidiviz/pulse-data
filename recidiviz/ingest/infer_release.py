@@ -43,5 +43,5 @@ def infer_release():
     for region in regions:
         session = sessions.get_most_recent_completed_session(region)
         if session:
-            persistence.infer_release_on_open_bookings(region, session.end)
+            persistence.infer_release_on_open_bookings(region, session.start)
     return '', httplib.OK
