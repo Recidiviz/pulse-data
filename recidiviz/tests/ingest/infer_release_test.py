@@ -77,7 +77,7 @@ class TestInferRelease(TestCase):
         request_args = {'region': 'all'}
         time = datetime(2014, 8, 31)
         mock_supported_regions.return_value = ['us_ut', 'us_wy']
-        mock_get_most_recent_session.return_value = ScrapeSession(end=time)
+        mock_get_most_recent_session.return_value = ScrapeSession(start=time)
 
         self.login_user()
         response = self.client.get(
