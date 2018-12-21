@@ -102,6 +102,7 @@ def write(ingest_info, region, last_seen_time):
 
     log.info(ingest_info)
     people = converter.convert(ingest_info)
+    log.info(people)
     _add_scraper_metadata(people, region, last_seen_time)
 
     if not _should_persist():
