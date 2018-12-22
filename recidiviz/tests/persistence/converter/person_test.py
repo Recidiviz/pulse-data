@@ -31,6 +31,9 @@ _NOW = datetime(2000, 5, 15)
 class PersonConverterTest(unittest.TestCase):
     """Tests for converting people."""
 
+    def setUp(self):
+        self.subject = entities.Person.builder()
+
     def testParsesPerson(self):
         # Arrange
         ingest_person = ingest_info_pb2.Person(
@@ -42,10 +45,11 @@ class PersonConverterTest(unittest.TestCase):
             place_of_residence='NNN\n  STREET \t ZIP')
 
         # Act
-        result = person.convert(ingest_person)
+        person.copy_fields_to_builder(ingest_person, self.subject)
+        result = self.subject.build()
 
         # Assert
-        expected_result = entities.Person(
+        expected_result = entities.Person.new_with_none_defaults(
             given_names='FIRST',
             surname='LAST',
             birthdate=datetime(year=1999, month=12, day=31),
@@ -67,7 +71,7 @@ class PersonConverterTest(unittest.TestCase):
 
         # Arrange + Act
         with self.assertRaises(ValueError):
-            person.convert(ingest_person)
+            person.copy_fields_to_builder(ingest_person, self.subject)
 
     def testParsePerson_UsesSurnameAndGivenNames(self):
         # Arrange
@@ -77,10 +81,11 @@ class PersonConverterTest(unittest.TestCase):
         )
 
         # Act
-        result = person.convert(ingest_person)
+        person.copy_fields_to_builder(ingest_person, self.subject)
+        result = self.subject.build()
 
         # Assert
-        expected_result = entities.Person(
+        expected_result = entities.Person.new_with_none_defaults(
             surname='SURNAME',
             given_names='GIVEN_NAMES'
         )
@@ -94,10 +99,11 @@ class PersonConverterTest(unittest.TestCase):
         ingest_person = ingest_info_pb2.Person(age='27')
 
         # Act
-        result = person.convert(ingest_person)
+        person.copy_fields_to_builder(ingest_person, self.subject)
+        result = self.subject.build()
 
         # Assert
-        expected_result = entities.Person(
+        expected_result = entities.Person.new_with_none_defaults(
             birthdate=datetime(year=_NOW.year - 27, month=1, day=1).date(),
             birthdate_inferred_from_age=True
         )
@@ -109,8 +115,12 @@ class PersonConverterTest(unittest.TestCase):
         ingest_person = ingest_info_pb2.Person(race='HISPANIC')
 
         # Act
-        result = person.convert(ingest_person)
+        person.copy_fields_to_builder(ingest_person, self.subject)
+        result = self.subject.build()
 
         # Assert
-        expected_result = entities.Person(ethnicity=Ethnicity.HISPANIC)
+        expected_result = entities.Person.new_with_none_defaults(
+            ethnicity=Ethnicity.HISPANIC
+        )
+
         self.assertEqual(result, expected_result)

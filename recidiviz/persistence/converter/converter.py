@@ -51,12 +51,15 @@ class _Converter(object):
 
     def _convert_person(self, ingest_person):
         """Converts an ingest_info proto Person to a persistence entity."""
-        new_person = person.convert(ingest_person)
+        person_builder = entities.Person.builder()
 
-        new_person.bookings = [self._convert_booking(self.bookings[booking_id])
-                               for booking_id in ingest_person.booking_ids]
+        person.copy_fields_to_builder(ingest_person, person_builder)
+        person_builder.bookings = [
+            self._convert_booking(self.bookings[booking_id])
+            for booking_id in ingest_person.booking_ids
+        ]
 
-        return new_person
+        return person_builder.build()
 
     def _convert_booking(self, ingest_booking):
         """Converts an ingest_info proto Booking to a persistence entity."""

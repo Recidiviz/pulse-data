@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains helpers to interact with the database."""
+import attr
 
 from recidiviz.persistence import entities
 from recidiviz.persistence.database import schema
@@ -31,17 +32,19 @@ def convert_person(person_src):
     entity_to_db = isinstance(person_src, entities.Person)
     if entity_to_db:
         person_dst = schema.Person()
-        fields = vars(person_src).keys()
     else:
-        person_dst = entities.Person()
-        fields = vars(person_dst).keys()
-    for k in fields:
+        person_dst = entities.Person.builder()
+    for k in attr.fields_dict(entities.Person).keys():
         if k == 'bookings':
             person_dst.bookings = [_convert_booking(b) for b in
                                    person_src.bookings]
         else:
             setattr(person_dst, k, getattr(person_src, k))
-    return person_dst
+
+    if entity_to_db:
+        return person_dst
+
+    return person_dst.build()
 
 
 def _convert_booking(booking_src):
