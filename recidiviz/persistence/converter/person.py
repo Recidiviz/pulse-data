@@ -16,24 +16,26 @@
 # ============================================================================
 """Converts an ingest_info proto Person to a persistence entity."""
 from recidiviz.common.constants.person import Ethnicity, Race, Gender
-from recidiviz.persistence import entities
 from recidiviz.persistence.converter import converter_utils
 from recidiviz.persistence.converter.converter_utils import fn, normalize, \
     split_full_name, parse_date, calculate_birthdate_from_age
 
 
-def convert(proto):
-    """Converts an ingest_info proto Person to a persistence entity."""
-    new = entities.Person()
+def copy_fields_to_builder(proto, person_builder):
+    """Mutates the provided |person_builder| by converting an ingest_info proto
+     Person.
+
+     Note: This will not copy children into the Builder!
+     """
+    new = person_builder
 
     new.external_id = fn(normalize, 'person_id', proto)
     new.surname, new.given_names = _parse_name(proto)
     new.birthdate, new.birthdate_inferred_from_age = _parse_birthdate(proto)
     new.race, new.ethnicity = _parse_race_and_ethnicity(proto)
+    new.region = None  # TODO: Decide where this should be filled out
     new.gender = fn(Gender.from_str, 'gender', proto)
     new.place_of_residence = fn(normalize, 'place_of_residence', proto)
-
-    return new
 
 
 def _parse_name(proto):

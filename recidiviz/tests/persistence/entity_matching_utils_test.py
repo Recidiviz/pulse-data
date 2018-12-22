@@ -50,12 +50,16 @@ class TestEntityMatchingUtils(TestCase):
     """Tests for entity matching logic"""
 
     def test_person_match_name_and_birthdate(self):
-        db_person = entities.Person(given_names=_GIVEN_NAMES,
-                                    surname=_SURNAME,
-                                    birthdate=_DATE)
-        ingested_person = entities.Person(given_names=_GIVEN_NAMES,
-                                          surname=_SURNAME,
-                                          birthdate=_DATE)
+        db_person = entities.Person.new_with_none_defaults(
+            given_names=_GIVEN_NAMES,
+            surname=_SURNAME,
+            birthdate=_DATE
+        )
+        ingested_person = entities.Person.new_with_none_defaults(
+            given_names=_GIVEN_NAMES,
+            surname=_SURNAME,
+            birthdate=_DATE
+        )
         self.assertTrue(entity_matching_utils.is_person_match(
             db_person, ingested_person))
         ingested_person.birthdate = _DATE_ANOTHER
@@ -63,8 +67,12 @@ class TestEntityMatchingUtils(TestCase):
             db_person, ingested_person))
 
     def test_person_match_external_id(self):
-        db_person = entities.Person(external_id=_EXTERNAL_ID)
-        ingested_person = entities.Person(external_id=_EXTERNAL_ID)
+        db_person = entities.Person.new_with_none_defaults(
+            external_id=_EXTERNAL_ID
+        )
+        ingested_person = entities.Person.new_with_none_defaults(
+            external_id=_EXTERNAL_ID
+        )
         self.assertTrue(entity_matching_utils.is_person_match(
             db_person, ingested_person))
         ingested_person.external_id = _EXTERNAL_ID_ANOTHER

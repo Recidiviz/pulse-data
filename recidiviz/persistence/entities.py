@@ -20,25 +20,25 @@ Note: These classes mirror the SQL Alchemy ORM objects but are kept separate.
 This allows these persistence layer objects additional flexibility that the SQL
 Alchemy ORM objects can't provide.
 """
-
 import attr
+
+from recidiviz.common.buildable_attr import BuildableAttr
 
 
 @attr.s
-class Person(object):
-    person_id = attr.ib(default=None)
-    external_id = attr.ib(default=None)
-    surname = attr.ib(default=None)
-    given_names = attr.ib(default=None)
-    birthdate = attr.ib(default=None)
-    birthdate_inferred_from_age = attr.ib(default=None)
-    gender = attr.ib(default=None)
-    race = attr.ib(default=None)
-    region = attr.ib(default=None)
-    ethnicity = attr.ib(default=None)
-    place_of_residence = attr.ib(default=None)
-    region = attr.ib(default=None)
+class Person(BuildableAttr):
+    external_id = attr.ib()
+    surname = attr.ib()
+    given_names = attr.ib()
+    birthdate = attr.ib()
+    birthdate_inferred_from_age = attr.ib()
+    gender = attr.ib()
+    race = attr.ib()
+    region = attr.ib()
+    ethnicity = attr.ib()
+    place_of_residence = attr.ib()
 
+    person_id = attr.ib(default=None)
     bookings = attr.ib(factory=list)
 
 
