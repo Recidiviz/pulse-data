@@ -45,7 +45,7 @@ class TestConverter(unittest.TestCase):
         result = converter.convert(ingest_info)
 
         # Assert
-        expected_result = [Person(
+        expected_result = [Person.new_with_none_defaults(
             external_id='PERSON_ID',
             bookings=[Booking(
                 external_id='BOOKING_ID',
@@ -73,7 +73,7 @@ class TestConverter(unittest.TestCase):
         result = converter.convert(ingest_info)
 
         # Assert
-        expected_result = [Person(
+        expected_result = [Person.new_with_none_defaults(
             bookings=[Booking(
                 external_id='BOOKING_ID',
                 custody_status='IN_CUSTODY',
@@ -99,7 +99,7 @@ class TestConverter(unittest.TestCase):
         result = converter.convert(ingest_info)
 
         # Assert
-        expected_result = [Person(
+        expected_result = [Person.new_with_none_defaults(
             bookings=[Booking(
                 external_id='BOOKING_ID',
                 custody_status='IN_CUSTODY',
