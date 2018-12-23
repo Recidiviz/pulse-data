@@ -22,12 +22,14 @@ from flask import Flask
 from recidiviz.ingest.infer_release import infer_release_blueprint
 from recidiviz.ingest.scraper_control import scraper_control
 from recidiviz.ingest.worker import worker
+from recidiviz.persistence.actions import actions
 from recidiviz.tests.utils.populate_test_db import test_populator
 from recidiviz.utils import environment
 
 app = Flask(__name__)
 app.register_blueprint(scraper_control, url_prefix='/scraper')
 app.register_blueprint(worker, url_prefix='/scraper')
+app.register_blueprint(actions, url_prefix='/ingest')
 app.register_blueprint(infer_release_blueprint, url_prefix='/infer_release')
 if not environment.in_prod():
     app.register_blueprint(test_populator, url_prefix='/test_populator')

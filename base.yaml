@@ -7,8 +7,5 @@ handlers:
   script: google.appengine.ext.deferred.deferred.application
   login: admin
 
-- url: /v1/records
-  script: recidiviz.persistence.actions.app
-
 - url: /.*
   script: recidiviz.server.app
