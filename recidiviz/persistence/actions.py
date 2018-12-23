@@ -18,15 +18,15 @@
 
 import httplib
 
-from flask import Flask
+from flask import Blueprint
 
 from recidiviz.persistence import persistence
 from recidiviz.utils.auth import authenticate_request
 
-app = Flask(__name__)
+actions = Blueprint('actions', __name__)
 
 
-@app.route("/v1/records", methods=['POST'])
+@actions.route("/v1/records", methods=['POST'])
 @authenticate_request
 def write_record():
     # TODO: Something like `ingest_info = protobuf.read(request.data)`
