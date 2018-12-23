@@ -22,11 +22,7 @@ that does not depend on member data.
 
 from datetime import date
 import logging
-import random
-import string
 import zlib
-
-from google.appengine.ext import ndb
 
 from recidiviz.common import common_utils
 from recidiviz.utils import environment
@@ -56,34 +52,6 @@ def parse_date_string(date_string, person_id=None):
         if person_id:
             logging.debug("Error parsing datetime for person '%s'", person_id)
     return result
-
-
-def generate_id(entity_kind):
-    """Generate unique, 10-digit alphanumeric ID for entity kind provided
-
-    Generates a new 10-digit alphanumeric ID, checks it for uniqueness for
-    the entity type provided, and retries if needed until unique before
-    returning a new ID.
-
-    Args:
-        entity_kind: (ndb model class, e.g. us_ny.UsNyPerson) Entity kind to
-            check uniqueness of generated id.
-
-    Returns:
-        The new ID / key name (string)
-    """
-    new_id = ''.join(random.choice(string.ascii_uppercase +
-                                   string.ascii_lowercase +
-                                   string.digits) for _ in range(10))
-
-    test_key = ndb.Key(entity_kind, new_id)
-    key_result = test_key.get()
-
-    if key_result is not None:
-        # Collision, try again
-        return generate_id(entity_kind)
-
-    return new_id
 
 
 def normalize_key_value_row(row_data):

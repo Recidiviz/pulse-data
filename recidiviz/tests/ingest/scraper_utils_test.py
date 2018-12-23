@@ -26,29 +26,7 @@ import pytest
 from google.appengine.ext import ndb
 from google.appengine.ext import testbed
 from recidiviz.ingest import scraper_utils
-from recidiviz.models.person import Person
 from recidiviz.utils import secrets
-
-
-class TestGenerateId(object):
-    """Tests for the generate_id method in the module."""
-
-    def setup_method(self, _test_method):
-        # noinspection PyAttributeOutsideInit
-        self.testbed = testbed.Testbed()
-        self.testbed.activate()
-        self.testbed.init_datastore_v3_stub()
-        context = ndb.get_context()
-        context.set_memcache_policy(False)
-        context.clear_cache()
-
-    def teardown_method(self, _test_method):
-        self.testbed.deactivate()
-
-    def test_generate_id(self):
-        new_id = scraper_utils.generate_id(Person)
-        assert new_id is not None
-        assert new_id.isalnum()
 
 
 def test_normalize_key_value_row():
