@@ -371,9 +371,9 @@ class Scraper(object):
 
         The new snapshot will only include those fields which have changed.
         Args:
-            old_record: (UsVtRecord) The record entity this
+            old_record: (Record) The record entity this
                 snapshot pertains to
-            snapshot: (UsVtSnapshot) Snapshot object with details from
+            snapshot: (Snapshot) Snapshot object with details from
                 current scrape.
         Returns:
             True if successful
