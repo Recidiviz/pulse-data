@@ -46,19 +46,6 @@ regions:
     region_code: us_ny
     scraper_package: us_ny
     timezone: America/New_York
-  us_vt:
-    agency_name: Vermont Department of Corrections
-    region_code: us_vt
-    agency_type: unified
-    queue: us-vt-scraper
-    base_url: https://omsweb.public-safety-cloud.com/jtclientweb
-    names_file: us_ny_names.csv
-    entity_kinds:
-      inmate: UsVtInmate
-      record: UsVtRecord
-      snapshot: UsVtSnapshot
-    scraper_package: us_vt
-    timezone: America/New_York
   us_pa_greene:
     agency_name: Greene County Detention Center
     region_code: us_pa_greene

@@ -27,7 +27,7 @@ def test_validate_regions_one_ok():
 
 def test_validate_regions_one_all():
     assert set(ingest_utils.validate_regions(["all"])) == {
-        "us_ny", "us_pa_greene", "us_vt", "us_co_mesa", "us_mt_gallatin",
+        "us_ny", "us_pa_greene", "us_co_mesa", "us_mt_gallatin",
         "us_pa_dauphin", "us_mo_stone", "us_ar_van_buren", "us_pa",
         "us_fl_martin_county"
     }
@@ -38,17 +38,17 @@ def test_validate_regions_one_invalid():
 
 
 def test_validate_regions_multiple_ok():
-    assert ingest_utils.validate_regions(["us_vt", "us_ny"]) == ["us_vt",
+    assert ingest_utils.validate_regions(["us_pa", "us_ny"]) == ["us_pa",
                                                                  "us_ny"]
 
 
 def test_validate_regions_multiple_invalid():
-    assert not ingest_utils.validate_regions(["us_vt", "invalid"])
+    assert not ingest_utils.validate_regions(["us_pa", "invalid"])
 
 
 def test_validate_regions_multiple_all():
-    assert set(ingest_utils.validate_regions(["us_vt", "all"])) == {
-        "us_ny", "us_pa_greene", "us_vt", "us_co_mesa", "us_mt_gallatin",
+    assert set(ingest_utils.validate_regions(["us_pa", "all"])) == {
+        "us_ny", "us_pa_greene", "us_co_mesa", "us_mt_gallatin",
         "us_pa_dauphin", "us_mo_stone", "us_ar_van_buren", "us_pa",
         "us_fl_martin_county"
     }
