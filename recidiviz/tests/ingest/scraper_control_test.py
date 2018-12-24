@@ -101,7 +101,7 @@ class TestScraperStart(object):
 
     @patch("recidiviz.utils.regions.get_supported_regions")
     def test_start_unsupported_region(self, mock_supported):
-        mock_supported.return_value = ['us_ny', 'us_vt']
+        mock_supported.return_value = ['us_ny', 'us_pa']
 
         self.login_user()
 
@@ -170,7 +170,7 @@ class TestScraperStop(object):
 
     @patch("recidiviz.utils.regions.get_supported_regions")
     def test_stop_unsupported_region(self, mock_supported):
-        mock_supported.return_value = ['us_ny', 'us_vt']
+        mock_supported.return_value = ['us_ny', 'us_pa']
 
         self.login_user()
 
@@ -238,7 +238,7 @@ class TestScraperResume(object):
 
     @patch("recidiviz.utils.regions.get_supported_regions")
     def test_resume_unsupported_region(self, mock_supported):
-        mock_supported.return_value = ['us_ny', 'us_vt']
+        mock_supported.return_value = ['us_ny', 'us_pa']
 
         self.login_user()
 
