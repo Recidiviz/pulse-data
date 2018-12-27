@@ -140,8 +140,7 @@ def get_proxies(use_test=False):
     in_prod = environment.in_prod()
 
     if not in_prod or use_test:
-        user_var = "test_proxy_user"
-        pass_var = "test_proxy_password"
+        return None
     else:
         user_var = "proxy_user"
         pass_var = "proxy_password"
@@ -184,7 +183,12 @@ def get_headers():
         proceed without this
 
     """
-    user_agent_string = secrets.get_secret("user_agent")
+    in_prod = environment.in_prod()
+    if not in_prod:
+        user_agent_string = ('For any issues, concerns, or rate constraints,'
+                             'e-mail alerts@recidiviz.com')
+    else:
+        user_agent_string = secrets.get_secret("user_agent")
 
     if not user_agent_string:
         raise Exception("No user agent string")
