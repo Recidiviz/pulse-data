@@ -17,69 +17,77 @@
 
 """Tests for ingest/common_utils.py."""
 
-from datetime import date
+from datetime import date, datetime
 from recidiviz.common import common_utils
 
 
 def test_parse_date_string_american_date():
-    date_string = "11/20/1991"
+    date_string = "11/20/1991 12:30"
 
     result = common_utils.parse_date_string(date_string)
     assert result is not None
     assert result == date(1991, 11, 20)
 
 
-def test_parse_date_string_american_date_two_digit_year():
+def test_parse_datetime_string_american_date():
+    date_string = "11/20/1991 12:30"
+
+    result = common_utils.parse_datetime_string(date_string)
+    assert result is not None
+    assert result == datetime(1991, 11, 20, 12, 30)
+
+
+def test_parse_datetime_string_american_date_two_digit_year():
     date_string = "11/20/91"
 
-    result = common_utils.parse_date_string(date_string)
+    result = common_utils.parse_datetime_string(date_string)
     assert result is not None
-    assert result == date(1991, 11, 20)
+    assert result == datetime(1991, 11, 20)
 
 
-def test_parse_date_string_american_date_no_day():
+def test_parse_datetime_string_american_date_no_day():
     date_string = "11/1991"
 
-    result = common_utils.parse_date_string(date_string)
+    result = common_utils.parse_datetime_string(date_string)
     assert result is not None
-    assert result == date(1991, 11, 1)
+    assert result == datetime(1991, 11, 1)
 
 
-def test_parse_date_string_american_date_no_day_two_digit_year():
+def test_parse_datetime_string_american_date_no_day_two_digit_year():
     date_string = "11/91"
 
-    result = common_utils.parse_date_string(date_string)
+    result = common_utils.parse_datetime_string(date_string)
     assert result is not None
-    assert result == date(1991, 11, 1)
+    assert result == datetime(1991, 11, 1)
 
 
-def test_parse_date_string_international_date():
+def test_parse_datetime_string_international_date():
     date_string = "2018-05-24"
 
-    result = common_utils.parse_date_string(date_string)
+    result = common_utils.parse_datetime_string(date_string)
     assert result is not None
-    assert result == date(2018, 5, 24)
+    assert result == datetime(2018, 5, 24)
 
 
-def test_parse_date_string_international_date_no_day():
+def test_parse_datetime_string_international_date_no_day():
     date_string = "2018-03"
 
-    result = common_utils.parse_date_string(date_string)
+    result = common_utils.parse_datetime_string(date_string)
     assert result is not None
-    assert result == date(2018, 3, 1)
+    assert result == datetime(2018, 3, 1)
 
 
-def test_parse_date_string_none():
-    assert common_utils.parse_date_string(None) is None
+def test_parse_datetime_string_none():
+    assert common_utils.parse_datetime_string(None) is None
 
 
-def test_parse_date_string_garbage():
-    assert common_utils.parse_date_string("whatever") is None
+def test_parse_datetime_string_garbage():
+    assert common_utils.parse_datetime_string("whatever") is None
 
 
-def test_parse_date_string_empty():
-    assert common_utils.parse_date_string("") is None
+def test_parse_datetime_string_empty():
+    assert common_utils.parse_datetime_string("") is None
 
 
-def test_parse_date_string_space():
-    assert common_utils.parse_date_string("    ") is None
+def test_parse_datetime_string_space():
+    assert common_utils.parse_datetime_string("    ") is None

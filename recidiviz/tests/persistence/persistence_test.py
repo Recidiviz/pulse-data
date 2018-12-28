@@ -210,8 +210,7 @@ class TestPersistence(TestCase):
 
     def test_inferReleaseDateOnOpenBookings(self):
         # Arrange
-        most_recent_scrape_date = \
-            (SCRAPER_START_DATETIME + timedelta(days=1)).date()
+        most_recent_scrape_time = (SCRAPER_START_DATETIME + timedelta(days=1))
 
         ingest_info = IngestInfo()
         ingest_info.people.add(surname=SURNAME_1,
@@ -246,12 +245,12 @@ class TestPersistence(TestCase):
         persistence.write(ingest_info_other_region, REGION_2,
                           SCRAPER_START_DATETIME)
         persistence.infer_release_on_open_bookings(
-            REGION_1, most_recent_scrape_date)
+            REGION_1, most_recent_scrape_time)
 
         # Assert
         bookings = database.read_bookings(Session())
         assert bookings[0].last_seen_time == SCRAPER_START_DATETIME
-        assert bookings[0].release_date == most_recent_scrape_date
+        assert bookings[0].release_date == most_recent_scrape_time.date()
         assert bookings[0].release_reason == ReleaseReason.INFERRED_RELEASE
         assert bookings[0].charges[0].name == CHARGE_NAME_1
 

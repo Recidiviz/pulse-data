@@ -24,8 +24,8 @@ import logging
 import dateutil.parser as parser
 
 
-def parse_date_string(date_string):
-    """Converts string describing date to Python date object
+def parse_datetime_string(datetime_string):
+    """Converts string describing date to Python datetime object
 
     Dates are expressed differently in different records,
     typically following one of these patterns:
@@ -38,15 +38,15 @@ def parse_date_string(date_string):
     This function parses several common variants and returns a datetime.
 
     Args:
-        date_string: (string) Scraped string containing a date
+        datetime_string: (string) Scraped string containing a datetime
 
     Returns:
-        Python date object representing the date parsed from the string, or
+        Python datetime object representing the date parsed from the string, or
         None if string wasn't one of our expected values (this is common,
         often NONE or LIFE are put in for these if life sentence).
 
     """
-    if date_string and not date_string.isspace():
+    if datetime_string and not datetime_string.isspace():
         try:
             # The year and month in the `default` do not matter. This protects
             # against an esoteric bug: parsing a 2-integer date with a month of
@@ -55,18 +55,34 @@ def parse_date_string(date_string):
             # Without a default day of `01` to fall back on, it falls back to
             # the local machine day, which will fail because February does not
             # have that many days.
-            result = parser.parse(date_string, default=datetime(2018, 1, 1))
-            result = result.date()
+            result = parser.parse(datetime_string, default=datetime(2018, 1, 1))
+            # result = result.date()
         except ValueError, e:
-            logging.debug("Couldn't parse date string '%s'", date_string)
+            logging.debug("Couldn't parse date string '%s'", datetime_string)
             logging.debug(str(e))
             return None
 
         # If month-only date, manually force date to first of the month.
-        if len(date_string.split("/")) == 2 or len(date_string.split("-")) == 2:
+        if len(datetime_string.split("/")) == 2 \
+                or len(datetime_string.split("-")) == 2:
             result = result.replace(day=1)
 
     else:
         return None
 
     return result
+
+
+def parse_date_string(date_string):
+    """Same as above parse_datetime_string method; however, returns a Python
+    date object instead of a datetime object
+
+    Args:
+        date_string: (string) Scraped string containing a date
+
+    Returns:
+        Python date object representing the date parsed from the string, or
+        None if string wasn't one of our expected values (this is common,
+        often NONE or LIFE are put in for these if life sentence).
+    """
+    return parse_datetime_string(date_string).date()
