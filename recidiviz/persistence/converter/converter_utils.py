@@ -83,10 +83,10 @@ def parse_date(date_string):
     """
     if date_string == '' or date_string.isspace():
         return None
-    parsed_date = common_utils.parse_date_string(date_string)
+    parsed_date = common_utils.parse_datetime_string(date_string)
     if not parsed_date:
         raise ValueError('cannot parse date: %s' % parsed_date)
-    return datetime.datetime.combine(parsed_date, datetime.time())
+    return parsed_date
 
 
 def calculate_birthdate_from_age(age):
