@@ -55,7 +55,6 @@ class _Person(object):
                  race=None, ethnicity=None, place_of_residence=None,
                  bookings=None):
         self.person_id = person_id  # type: str
-        self.full_name = full_name
         self.surname = surname  # type: str
         self.given_names = given_names  # type: str
         self.full_name = full_name  # type: str
