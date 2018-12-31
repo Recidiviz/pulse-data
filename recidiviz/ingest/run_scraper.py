@@ -88,12 +88,12 @@ def _create_parser():
     parser.add_argument('--region', required=True, help='The region to test')
     parser.add_argument(
         '--num_tasks', required=False,
-        default=num_tasks_left,
+        default=num_tasks_left, type=int,
         help='The number of tasks to complete, default is {}'.format(
             num_tasks_left))
     parser.add_argument(
         '--sleep_between_requests', required=False,
-        default=sleep_between_requests,
+        default=sleep_between_requests, type=float,
         help='The number of seconds to sleep in between requests,'
              'default is {}'.format(sleep_between_requests))
     return parser
