@@ -75,29 +75,24 @@ _Note: Recidiviz team members and partners can download a pre-populated `secrets
 your onboarding document for details._
 
 #### Running tests
-Update your sourced `$PYTHONPATH` to add the Google App Engine libraries to the system Python path, which will
-allow imports of the various GAE libraries to work in test mode. Add the following line to your shell profile:
-
-`export PYTHONPATH="/path/to/google_appengine:/path/to/google_appengine/lib/:/path/to/google_appengine/lib/yaml-x.x/:$PYTHONPATH"`
-
-If you installed the GCloud SDK via the steps above, it's probably wherever you chose to install the SDK, under
-`google-cloud-sdk/platform/`. The `-x.x` after yaml is meant to denote a version number that will be present if you installed google_appengine as a separate component. If you did not, then it is unlikely that you will need to specify a version at all.
-
-Finally, you will likely need to fix an [issue in the Google App Engine installation](https://stackoverflow.com/a/27274135)
-that comes with the GCloud SDK. Check the `google_appengine/lib/fancy_urllib` folder to see if you have the nested
-`__init__.py` files with an empty file on the outer layer. If so, follow the instructions in that answer, and maybe
-copy the outer file into a temp file for safe-keeping (even though it's blank):
-
-```
-cd /path/to/google_appengine/lib/fancy_urllib
-cp __init__.py old__init__.py
-cp fancy_urllib/__init__.py __init__.py
-```
-
-Once that's all done, individual tests can be run via `pytest filename.py`. To run all tests, go to the root directory and run `pytest recidiviz`.
+Individual tests can be run via `pytest filename.py`. To run all tests, go to the root directory and run `pytest recidiviz`.
 
 The configuration in `setup.cfg` and `.coveragerc` will ensure the right code is tested and the proper code coverage
 metrics are displayed.
+
+A few tests (such as `sessions.py`) depend on running emulators (i.e. [Cloud Datastore Emulator](https://cloud.google.com/datastore/docs/tools/datastore-emulator)). These tests are skipped by default when run locally, but will always be tested by Travis. If you are modifying code tested by these tests then you can run the tests locally. You must first install the both emulators via `gcloud components install cloud-datastore-emulator` and `gcloud components install cloud-pusub-emulator`, which depends on the Java JRE (>=8). Then start the emulators and run the tests:
+
+```bash
+# Starts the emulator
+$ gcloud beta emulators datastore start --no-store-on-disk --project test-project --consistency 1.0
+$ gcloud beta emulators pubsub start --project test-project > ps_emulator.out 2> ps_emulator.err &
+# Run the tests
+$ pytest recidiviz --with-emulator
+```
+
+[A bug in the google client](https://github.com/googleapis/google-cloud-python/issues/5738) requires that you have default application credentials. This should not be necessary in the future. For now, make sure that you have done both `gcloud config set project recidiviz` and `gcloud auth application-default login`.
+
+_Note: The emulator is a long running command, either (1) run it in a separate session or (2) run it in the background (suffix with `2> emulator.out &`) and bring it back with `fg`._
 
 #### Checking code style
 Run Pylint across the main body of code, in particular: `pylint *.py recidiviz`.
@@ -111,23 +106,15 @@ inbound pull request.
 There are two ways to run the app - on your local machine, or deployed to the cloud.
 
 #### Local
-Running from your local machine is preferred for development - it yields much quicker iteration cycles, and the local
-dev server is able to handle the needs of the simple scraping tool pretty well.
+A scraper can be run locally using the `run_scraper.py` script. See that file for instructions on how to run it.
 
-To run this locally, just navigate to the directory you cloned pulse-data into and run `dev_appserver.py local_app.yaml`.
+By default the scraped entities will be logged. To persist data during a local run, set the `PERSIST_LOCALLY`
+environment variable to `true`.
 
-If you haven't run the local development server recently, or this is your first time running it at all, first make a
-call to the test datastore populator (e.g., `localhost:8080/test_populator/clear`). Any call to the test data populator
-(including `/clear`, which is used to empty the local datastore) will ensure the proper environment variables have been set
-up for your local test system.
-
-Logs will show up in the console you run the command in, and you can kick off the scraping by navigating in your browser
-to `localhost:8080/scraper/start?region=[region]` (logs won't show much until the scraping starts). For now, use region `us_ny`
-
-You can check queue tasks and more on the local dev server admin page (http://localhost:8000/datastore) while it's running.
-
-By default, no data is persisted during local runs. Instead, the scraped information for each person is logged in the console.
-To persist data during a local run, set the `PERSIST_LOCALLY` in local_app.yaml to `true`.
+The full application can also be run locally using `flask run` and talk to the local emulators for GCP services (as
+described in [running tests](#running-tests)). In practice, this is not particularly useful as there isn't a Cloud
+Tasks emulator at this time. The [appengine documentation]( https://cloud.google.com/appengine/docs/standard/python3/testing-and-deploying-your-app)
+has more information about running locally.
 
 #### Deployed
 To deploy to a live AppEngine project, navigate to the directory where you cloned `pulse-data` and run

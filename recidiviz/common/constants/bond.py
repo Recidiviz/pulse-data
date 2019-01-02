@@ -20,7 +20,7 @@
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 
 
-class BondType(object):
+class BondType:
     BOND_DENIED = enum_strings.bond_type_denied
     CASH = enum_strings.bond_type_cash
     NO_BOND = enum_strings.bond_type_no_bond
@@ -32,7 +32,7 @@ class BondType(object):
         return _BOND_TYPE_MAP[label.upper()]
 
 
-class BondStatus(object):
+class BondStatus:
     ACTIVE = enum_strings.bond_status_active
     POSTED = enum_strings.bond_status_posted
 

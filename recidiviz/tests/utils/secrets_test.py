@@ -22,61 +22,61 @@
 
 import pytest
 
-from ..context import models
-from google.appengine.ext import ndb
-from google.appengine.ext import testbed
 from recidiviz.utils import secrets
 
 
-class TestGetSecret(object):
-    """Tests for the get_secret method in the module."""
-
-    def setup_method(self, _test_method):
-        # noinspection PyAttributeOutsideInit
-        self.testbed = testbed.Testbed()
-        self.testbed.activate()
-        self.testbed.init_datastore_v3_stub()
-        context = ndb.get_context()
-        context.set_memcache_policy(False)
-        context.clear_cache()
+@pytest.mark.usefixtures("emulator")
+class TestSecrets:
+    """Tests for the secrets module."""
 
     def teardown_method(self, _test_method):
-        self.testbed.deactivate()
+        secrets.clear_secrets()
         secrets.CACHED_SECRETS.clear()
 
-    def test_in_cache(self):
+    def test_get_in_cache(self):
         write_to_local('top_track', 'Olson')
 
         actual = secrets.get_secret('top_track')
         assert actual == 'Olson'
 
-    def test_in_datastore(self):
-        write_to_datastore('top_track', 'An Eagle In Your Mind')
+    def test_get_in_datastore(self):
+        secrets.set_secret('top_track', 'An Eagle In Your Mind')
 
         actual = secrets.get_secret('top_track')
         assert actual == 'An Eagle In Your Mind'
 
-    def test_in_neither_with_different_cahce_and_datastore(self):
+    def test_get_in_neither_with_different_cahce_and_datastore(self):
         write_to_local('top_track', 'Wildlife Analysis')
         write_to_local('solid_track', 'Telephasic Workshop')
 
         actual = secrets.get_secret('other_track')
         assert actual is None
 
-    def test_in_datastore_with_different_cache(self):
+    def test_get_in_datastore_with_different_cache(self):
         write_to_local('top_track', 'Wildlife Analysis')
-        write_to_datastore('solid_track', 'Kaini Industries')
+        secrets.set_secret('solid_track', 'Kaini Industries')
 
         actual = secrets.get_secret('solid_track')
         assert actual == 'Kaini Industries'
 
-    def test_in_neither(self):
+    def test_get_in_neither(self):
         actual = secrets.get_secret('top_track')
         assert actual is None
 
+    def test_set_overwrite(self):
+        secrets.set_secret('top_track', 'An Eagle In Your Mind')
+        secrets.set_secret('top_track', 'Kaini Industries')
 
-def write_to_datastore(name, value):
-    secrets.Secret(name=name, value=value).put()
+        assert secrets.get_secret('top_track') == 'Kaini Industries'
+
+    def test_clear(self):
+        secrets.set_secret('top_track', 'An Eagle In Your Mind')
+        secrets.set_secret('solid_track', 'Kaini Industries')
+
+        secrets.clear_secrets()
+
+        assert secrets.get_secret('top_track') is None
+        assert secrets.get_secret('solid_track') is None
 
 
 def write_to_local(name, value):

@@ -17,6 +17,9 @@
 
 """Entrypoint for the application."""
 
+import logging
+
+import google.cloud.logging
 from flask import Flask
 
 from recidiviz.ingest.infer_release import infer_release_blueprint
@@ -25,6 +28,17 @@ from recidiviz.ingest.worker import worker
 from recidiviz.persistence.actions import actions
 from recidiviz.tests.utils.populate_test_db import test_populator
 from recidiviz.utils import environment
+
+# TODO(#427): potentially remove this.
+client = google.cloud.logging.Client()
+client.setup_logging()
+
+# Override GAE logger to use our formatting
+log_format = "%(module)s/%(funcName)s : %(message)s"
+fr = logging.Formatter(log_format)
+handlers = logging.getLogger().handlers
+if handlers:
+    handlers[0].setFormatter(fr)
 
 app = Flask(__name__)
 app.register_blueprint(scraper_control, url_prefix='/scraper')

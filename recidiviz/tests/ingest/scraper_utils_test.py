@@ -23,10 +23,7 @@ from lxml import html
 from mock import patch
 import pytest
 
-from google.appengine.ext import ndb
-from google.appengine.ext import testbed
 from recidiviz.ingest import scraper_utils
-from recidiviz.utils import secrets
 
 
 def test_normalize_key_value_row():
@@ -113,83 +110,76 @@ def test_calculate_age_birthdate_unknown():
     assert scraper_utils.calculate_age(None) is None
 
 
-class TestGetProxies(object):
+class TestGetProxies:
     """Tests for the get_proxies method in the module."""
 
-    def setup_method(self, _test_method):
-        # noinspection PyAttributeOutsideInit
-        self.testbed = testbed.Testbed()
-        self.testbed.activate()
-        self.testbed.init_datastore_v3_stub()
-        context = ndb.get_context()
-        context.set_memcache_policy(False)
-        context.clear_cache()
-
-    def teardown_method(self, _test_method):
-        self.testbed.deactivate()
-        secrets.CACHED_SECRETS.clear()
-
+    @patch('recidiviz.utils.secrets.get_secret')
     @patch('recidiviz.utils.environment.in_prod')
-    def test_get_proxies_prod(self, mock_in_prod):
+    def test_get_proxies_prod(self, mock_in_prod, mock_secret):
         mock_in_prod.return_value = True
-
-        write_secret('proxy_url', 'proxy.net/')
-        write_secret('proxy_user', 'real_user')
-        write_secret('proxy_password', 'real_password')
+        test_secrets = {
+            'proxy_url': 'proxy.net/',
+            'proxy_user': 'real_user',
+            'proxy_password': 'real_password',
+        }
+        mock_secret.side_effect = test_secrets.get
 
         proxies = scraper_utils.get_proxies()
         assert proxies == {'http': 'http://real_user:real_password@proxy.net/'}
 
+    @patch('recidiviz.utils.secrets.get_secret')
     @patch('recidiviz.utils.environment.in_prod')
-    def test_get_proxies_local_no_user(self, mock_in_prod):
+    def test_get_proxies_local_no_user(self, mock_in_prod, mock_secret):
         mock_in_prod.return_value = True
-
-        write_secret('proxy_url', 'proxy.net/')
-        write_secret('proxy_password', 'real_password')
+        test_secrets = {
+            'proxy_url': 'proxy.net/',
+            'proxy_password': 'real_password',
+        }
+        mock_secret.side_effect = test_secrets.get
 
         with pytest.raises(Exception) as exception:
             scraper_utils.get_proxies()
-        assert exception.value.message == 'No proxy user/pass'
+        assert str(exception.value) == 'No proxy user/pass'
 
+    @patch('recidiviz.utils.secrets.get_secret')
     @patch('recidiviz.utils.environment.in_prod')
-    def test_get_proxies_local(self, mock_in_prod):
+    def test_get_proxies_local(self, mock_in_prod, mock_secret):
         mock_in_prod.return_value = False
+        test_secrets = {
+            'proxy_url': 'proxy.biz/',
+            'test_proxy_user': 'user',
+            'test_proxy_password': 'password',
+        }
+        mock_secret.side_effect = test_secrets.get
 
         proxies = scraper_utils.get_proxies()
         assert proxies is None
 
-class TestGetHeaders(object):
+class TestGetHeaders:
     """Tests for the get_headers method in the module."""
 
-    def setup_method(self, _test_method):
-        # noinspection PyAttributeOutsideInit
-        self.testbed = testbed.Testbed()
-        self.testbed.activate()
-        self.testbed.init_datastore_v3_stub()
-        context = ndb.get_context()
-        context.set_memcache_policy(False)
-        context.clear_cache()
-
-    def teardown_method(self, _test_method):
-        self.testbed.deactivate()
-        secrets.CACHED_SECRETS.clear()
-
+    @patch('recidiviz.utils.secrets.get_secret')
     @patch('recidiviz.utils.environment.in_prod')
-    def test_get_headers(self, mock_in_prod):
+    def test_get_headers(self, mock_in_prod, mock_secret):
         # This is prod behaviour
         mock_in_prod.return_value = True
         user_agent = 'test_user_agent'
-        write_secret('user_agent', user_agent)
+
+        test_secrets = {'user_agent': user_agent}
+        mock_secret.side_effect = test_secrets.get
 
         headers = scraper_utils.get_headers()
         assert headers == {'User-Agent': user_agent}
 
+    @patch('recidiviz.utils.secrets.get_secret')
     @patch('recidiviz.utils.environment.in_prod')
-    def test_get_headers_missing_user_agent_in_prod(self, mock_in_prod):
+    def test_get_headers_missing_user_agent_in_prod(self, mock_in_prod,
+                                                    mock_secret):
         mock_in_prod.return_value = True
+        mock_secret.return_value = None
         with pytest.raises(Exception) as exception:
             scraper_utils.get_headers()
-        assert exception.value.message == 'No user agent string'
+        assert str(exception.value) == 'No user agent string'
 
     @patch('recidiviz.utils.environment.in_prod')
     def test_get_headers_local(self, mock_in_prod):
@@ -199,7 +189,3 @@ class TestGetHeaders(object):
             'User-Agent': ('For any issues, concerns, or rate constraints,'
                            'e-mail alerts@recidiviz.com')
         }
-
-
-def write_secret(name, value):
-    secrets.CACHED_SECRETS[name] = value

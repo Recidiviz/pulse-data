@@ -20,7 +20,7 @@
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 
 
-class ChargeDegree(object):
+class ChargeDegree:
     FIRST = enum_strings.degree_first
     SECOND = enum_strings.degree_second
     THIRD = enum_strings.degree_third
@@ -30,7 +30,7 @@ class ChargeDegree(object):
         return _CHARGE_DEGREE_MAP[label.upper()]
 
 
-class ChargeClass(object):
+class ChargeClass:
     FELONY = enum_strings.charge_class_felony
     MISDEMEANOR = enum_strings.charge_class_misdemeanor
     PAROLE_VIOLATION = enum_strings.charge_class_parole_violation
@@ -41,7 +41,7 @@ class ChargeClass(object):
         return _CHARGE_CLASS_MAP[label.upper()]
 
 
-class ChargeStatus(object):
+class ChargeStatus:
     ACQUITTED = enum_strings.charge_status_acquitted
     COMPLETED_SENTENCE = enum_strings.charge_status_completed
     CONVICTED = enum_strings.charge_status_convicted
@@ -55,7 +55,7 @@ class ChargeStatus(object):
         return _CHARGE_STATUS_MAP[label.upper()]
 
 
-class CourtType(object):
+class CourtType:
     CIRCUIT = enum_strings.court_type_circuit
     DISTRICT = enum_strings.court_type_district
     OTHER = enum_strings.court_type_other

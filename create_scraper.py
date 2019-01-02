@@ -108,9 +108,6 @@ def append_to_config_files(subs):
     queue: $region_dashes-scraper
     base_url: $url
     names_file: $names_file
-    entity_kinds:
-      person: Person
-      record: Record
     scraper_package: $region
     timezone: $timezone
 """
@@ -133,7 +130,7 @@ if __name__ == '__main__':
         parser.add_argument('--' + optional_arg)
     args = parser.parse_args()
 
-    state = us.states.lookup(unicode(args.state))
+    state = us.states.lookup(args.state)
     if state is None:
         raise ValueError('Couldn\'t parse state "%s"' % args.state)
     region = ('us', state.abbr.lower()) + tuple(args.county.lower().split())

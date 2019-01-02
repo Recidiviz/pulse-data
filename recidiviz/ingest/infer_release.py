@@ -17,7 +17,7 @@
 
 """Exposes API to infer release of people."""
 
-import httplib
+from http import HTTPStatus
 import logging
 
 from flask import Blueprint, request
@@ -38,10 +38,10 @@ def infer_release():
 
     if not regions:
         logging.error("No valid regions found in request")
-        return 'No valid regions found in request', httplib.BAD_REQUEST
+        return 'No valid regions found in request', HTTPStatus.BAD_REQUEST
 
     for region in regions:
         session = sessions.get_most_recent_completed_session(region)
         if session:
             persistence.infer_release_on_open_bookings(region, session.start)
-    return '', httplib.OK
+    return '', HTTPStatus.OK

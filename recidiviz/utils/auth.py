@@ -18,11 +18,14 @@
 """Tools for handling authentication of requests."""
 
 
+from http import HTTPStatus
 import logging
 from functools import wraps
-from flask import redirect, request
-from google.appengine.api import app_identity
-from google.appengine.api import users
+
+from flask import request
+
+from recidiviz.utils import metadata
+from recidiviz.utils import validate_jwt
 
 
 def authenticate_request(func):
@@ -51,16 +54,13 @@ def authenticate_request(func):
             The output of the function, if successfully authenticated.
             An error or redirect response, otherwise.
         """
-        # Check this is either an admin user
-        # or a call from within the app itself
-        user = users.get_current_user()
+        is_cron = request.headers.get('X-Appengine-Cron')
+        is_task = request.headers.get('X-AppEngine-QueueName')
+        incoming_app_id = request.headers.get('X-Appengine-Inbound-Appid')
+        jwt = request.headers.get('x-goog-iap-jwt-assertion')
 
-        this_app_id = app_identity.get_application_id()
-        incoming_app_id = request.headers.get('X-Appengine-Inbound-Appid', None)
-
-        is_cron = request.headers.get('X-Appengine-Cron', None)
-
-        is_task = request.headers.get('X-AppEngine-QueueName', None)
+        project_id = metadata.project_id()
+        project_number = metadata.project_number()
 
         if is_cron:
             logging.info("Requester is one of our cron jobs, proceeding.")
@@ -73,27 +73,26 @@ def authenticate_request(func):
             logging.info("Requester authenticated as app-id: %s." %
                          incoming_app_id)
 
-            if incoming_app_id == this_app_id:
+            if incoming_app_id == project_id:
                 logging.info("Authenticated intra-app call, proceeding.")
             else:
                 logging.info("App ID is %s, not allowed - exiting."
                              % incoming_app_id)
-                return ("Failed: Unauthorized external request.", 401)
-
-        elif user:
-            # Not an intra-app call, but was sent by an authenticated user.
-            # Check if they're an admin / have permission to impact scrapers.
+                return ("Failed: Unauthorized external request.",
+                        HTTPStatus.UNAUTHORIZED)
+        elif jwt:
+            user_id, user_email, error_str = (
+                validate_jwt.validate_iap_jwt_from_app_engine(
+                    jwt, project_number, project_id))
             logging.info("Requester authenticated as %s (%s)." %
-                         (user.nickname(), user.email()))
-
-            if users.is_current_user_admin():
-                logging.info("Authenticated as admin, proceeding.")
-            else:
-                logging.info("Logged in, but not as admin - exiting.")
-                return ("Failed: Not an admin.", 401)
+                         (user_id, user_email))
+            if error_str:
+                logging.info("Error validating user credentials: %s." %
+                             error_str)
+                return ("Error: %s" % error_str, HTTPStatus.UNAUTHORIZED)
         else:
-            # No app ID, no signed-in user account - redirect to login
-            return redirect(users.create_login_url(request.url))
+            return ("Failed: Unauthorized external request.",
+                    HTTPStatus.UNAUTHORIZED)
 
         # If we made it this far, client is authorized - run the decorated func
         return func(*args, **kwargs)

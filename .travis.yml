@@ -1,12 +1,23 @@
 language: python
 cache: pip
 python:
-- '2.7'
+- '3.7-dev'
+before_install:
+- export CLOUD_SDK_REPO="cloud-sdk-$(lsb_release -c -s)" && 
+    echo "deb http://packages.cloud.google.com/apt $CLOUD_SDK_REPO main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && 
+    curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add - && 
+    sudo apt-get update -y && sudo apt-get install google-cloud-sdk -y &&
+    sudo apt-get install google-cloud-sdk-datastore-emulator -y &&
+    sudo apt-get install google-cloud-sdk-pubsub-emulator -y
 install:
+- pip install --upgrade setuptools
 - pip install -r requirements.txt
+before_script: 
+- gcloud beta emulators datastore start --no-store-on-disk --consistency 1.0 --project test-project > ds_emulator.out 2> ds_emulator.err &
+- gcloud beta emulators pubsub start --project test-project > ps_emulator.out 2> ps_emulator.err &
 script:
 - pylint *.py recidiviz
-- pytest recidiviz/tests/
+- pytest recidiviz/tests/ --with-emulator
 after_success:
 - coveralls
 notifications:

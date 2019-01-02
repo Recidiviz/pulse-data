@@ -21,7 +21,6 @@ from unittest import TestCase
 
 from flask import Flask
 from mock import call, patch
-from google.appengine.ext import testbed
 
 from recidiviz.ingest import infer_release
 from recidiviz.ingest.sessions import ScrapeSession
@@ -38,35 +37,16 @@ class TestInferRelease(TestCase):
 
     # noinspection PyAttributeOutsideInit
     def setup_method(self, _test_method):
-        self.testbed = testbed.Testbed()
-        self.testbed.activate()
-        self.testbed.setup_env(app_id=APP_ID)
-        self.testbed.init_app_identity_stub()
-        self.testbed.init_user_stub()
-
         self.client = app.test_client()
-
-    def teardown_method(self, _test_method):
-        self.testbed.deactivate()
-
-    def login_user(self, email='user@recidiviz.com', user_id='123',
-                   is_admin=True):
-        self.testbed.setup_env(
-            app_id=APP_ID,
-            user_email=email,
-            user_id=user_id,
-            user_is_admin='1' if is_admin else '0',
-            overwrite=True)
 
     @patch("recidiviz.utils.regions.get_supported_regions")
     def test_infer_release_unsupported_region(self, mock_supported_regions):
         request_args = {'region': 'us_wy'}
+        headers = {'X-Appengine-Cron': "test-cron"}
         mock_supported_regions.return_value = ['us_ut']
 
-        self.login_user()
         response = self.client.get(
-            '/release',
-            query_string=request_args)
+            '/release', query_string=request_args, headers=headers)
         assert response.status_code == 400
 
     @patch("recidiviz.persistence.persistence.infer_release_on_open_bookings")
@@ -75,14 +55,14 @@ class TestInferRelease(TestCase):
     def test_infer_release(self, mock_get_most_recent_session,
                            mock_supported_regions, mock_infer_release):
         request_args = {'region': 'all'}
+        headers = {'X-Appengine-Cron': "test-cron"}
         time = datetime(2014, 8, 31)
         mock_supported_regions.return_value = ['us_ut', 'us_wy']
-        mock_get_most_recent_session.return_value = ScrapeSession(start=time)
+        mock_get_most_recent_session.return_value = ScrapeSession.new(
+            key=None, start=time)
 
-        self.login_user()
         response = self.client.get(
-            '/release',
-            query_string=request_args)
+            '/release', query_string=request_args, headers=headers)
         assert response.status_code == 200
         mock_infer_release.assert_has_calls([call('us_ut', time),
                                              call('us_wy', time)])

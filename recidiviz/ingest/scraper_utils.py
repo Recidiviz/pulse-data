@@ -21,6 +21,7 @@ that does not depend on member data.
 """
 
 from datetime import date
+import base64
 import logging
 import zlib
 
@@ -137,13 +138,11 @@ def get_proxies(use_test=False):
         proceed without this
 
     """
-    in_prod = environment.in_prod()
-
-    if not in_prod or use_test:
+    if not environment.in_prod() or use_test:
         return None
-    else:
-        user_var = "proxy_user"
-        pass_var = "proxy_password"
+
+    user_var = "proxy_user"
+    pass_var = "proxy_password"
 
     proxy_url = secrets.get_secret("proxy_url")
 
@@ -227,7 +226,7 @@ def compress_string(s, level=1):
     Returns:
         The compressed string
     """
-    return zlib.compress(s, level)
+    return base64.b64encode(zlib.compress(s.encode(), level)).decode()
 
 
 def decompress_string(s):
@@ -239,4 +238,4 @@ def decompress_string(s):
     Returns:
         The decompressed string
     """
-    return zlib.decompress(s)
+    return zlib.decompress(base64.b64decode(s.encode())).decode()

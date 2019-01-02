@@ -1,5 +1,7 @@
 # Recidiviz Data Ingest
 
+TODO(#370): Update to reflect new scraper model.
+
 <!---
 	Table of contents generated using [DocToc](http://doctoc.herokuapp.com/)
 -->

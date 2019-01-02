@@ -1,26 +1,7 @@
-runtime: python27
-api_version: 1
-threadsafe: false
+runtime: python37
 instance_class: F2
 
-includes:
-- base.yaml
-
-libraries:
-- name: lxml
-  version: "3.7.3"
-- name: ssl
-  version: latest
+entrypoint: gunicorn -b :$PORT recidiviz.server:app
 
 env_variables:
-  GAE_USE_SOCKETS_HTTPLIB : 'true'
-
-# The first five regular expressions are the default values which have to be
-# made explicit when defining custom values: https://cloud.google.com/appengine/docs/standard/python/config/appref
-skip_files:
-- ^(.*/)?#.*#$
-- ^(.*/)?.*~$
-- ^(.*/)?.*\.py[co]$
-- ^(.*/)?.*/RCS/.*$
-- ^(.*/)?\..*$
-- ^local\.yaml$
+  RECIDIVIZ_ENV: production

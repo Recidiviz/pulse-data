@@ -57,7 +57,7 @@ def parse_datetime_string(datetime_string):
             # have that many days.
             result = parser.parse(datetime_string, default=datetime(2018, 1, 1))
             # result = result.date()
-        except ValueError, e:
+        except ValueError as e:
             logging.debug("Couldn't parse date string '%s'", datetime_string)
             logging.debug(str(e))
             return None

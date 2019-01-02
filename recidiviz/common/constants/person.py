@@ -20,7 +20,7 @@
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 
 
-class Gender(object):
+class Gender:
     FEMALE = enum_strings.gender_female
     MALE = enum_strings.gender_male
     TRANS_FEMALE = enum_strings.gender_trans_female
@@ -31,7 +31,7 @@ class Gender(object):
         return _GENDER_MAP[label.upper()]
 
 
-class Race(object):
+class Race:
     AMERICAN_INDIAN_ALASKAN_NATIVE = enum_strings.race_american_indian
     ASIAN = enum_strings.race_asian
     BLACK = enum_strings.race_black
@@ -44,7 +44,7 @@ class Race(object):
         return _RACE_MAP[label.upper()]
 
 
-class Ethnicity(object):
+class Ethnicity:
     HISPANIC = enum_strings.ethnicity_hispanic
     NOT_HISPANIC = enum_strings.ethnicity_not_hispanic
 

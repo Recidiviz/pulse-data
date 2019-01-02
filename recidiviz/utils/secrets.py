@@ -19,49 +19,62 @@
 
 import logging
 
-from google.appengine.ext import ndb
+from google.cloud import datastore
+from recidiviz.utils import environment
+
+_ds = None
 
 
-class Secret(ndb.Model):
-    """Secrets to be used by the application.
+def ds():
+    global _ds
+    if not _ds:
+        _ds = datastore.Client()
+    return _ds
 
-    This is where sensitive info such as usernames and passwords to third-party
-    services are kept. They're added manually in the gcloud console.
 
-    Entity keys are expected to be in the format region_varname, to enforce
-    uniqueness.
+@environment.test_only
+def clear_ds():
+    global _ds
+    _ds = None
 
-    Attributes:
-        name: (string) Variable name
-        value: (string) Variable value, set by admins in gcloud console
-    """
-    name = ndb.StringProperty()
-    value = ndb.StringProperty()
-
+SECRET_KIND = "Secret"
 CACHED_SECRETS = {}
 
-def get_secret(secret_name):
-    """Retrieve environment variable from local cache or datastore
+def get_secret(name):
+    """Retrieve secret from local cache or datastore
 
     Helper function for scrapers to get secrets. First checks local cache, if
     not found will pull from datastore and populate local cache.
 
     Args:
-        secret_name: Name of the secret to retrieve
+        name: Name of the secret to retrieve
 
     Returns:
         Secret value if found otherwise None
     """
-    value = CACHED_SECRETS.get(secret_name)
+    value = CACHED_SECRETS.get(name)
 
     if not value:
-        datastore_result = Secret.query(Secret.name == secret_name).get()
+        query = ds().query(kind=SECRET_KIND)
+        query.add_filter('name', '=', name)
+        result = next(iter(query.fetch()), None)
 
-        if datastore_result:
-            value = str(datastore_result.value)
-            CACHED_SECRETS[secret_name] = value
+        if result:
+            value = str(result['value'])
+            CACHED_SECRETS[name] = value
 
         else:
-            logging.error("Couldn't retrieve env var: %s." % secret_name)
+            logging.error("Couldn't retrieve env var: %s." % name)
 
     return value
+
+@environment.local_only
+def clear_secrets():
+    query = ds().query(kind=SECRET_KIND)
+    ds().delete_multi(secret.key for secret in query.fetch())
+
+@environment.local_only
+def set_secret(name, value):
+    secret = datastore.Entity(key=ds().key(SECRET_KIND, name))
+    secret.update({'name': name, 'value': value})
+    ds().put(secret)

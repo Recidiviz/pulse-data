@@ -25,7 +25,7 @@ criminal justice data and calculate metrics.
 import yaml
 
 
-class Region(object):
+class Region:
     """Constructs region entity with attributes and helper functions
 
     Builds a region entity, which holds useful info about a region as properties
@@ -35,11 +35,6 @@ class Region(object):
         agency_name: (string) Human-readable agency name
         agency_type: (string) 'prison' or 'jail'
         base_url: (string) Base URL for scraping
-        entity_kinds: (dict) Mapping of top-level entity kind names (person,
-            record, snapshot) to region subclasses. E.g.,
-            {'person': 'UsNyPerson',
-             'record': 'UsNyRecord',
-             'snapshot': 'UsNySnapshot'}
         names_file: (string) Filename of names file for this region
         params: (dict) Optional mapping of key-value pairs specific to region
         queue: (string) Name of the queue for this region
@@ -60,7 +55,6 @@ class Region(object):
         self.agency_name = region_config["agency_name"]
         self.agency_type = region_config["agency_type"]
         self.base_url = region_config["base_url"]
-        self.entity_kinds = region_config["entity_kinds"]
         self.region_code = region_config["region_code"]
         # TODO(#169): Make names_file optional
         self.names_file = region_config.get("names_file", None)
@@ -107,71 +101,6 @@ class Region(object):
             [s.title() for s in self.scraper_class.split('_')]))
 
         return scraper_class()
-
-    def get_person_kind(self):
-        """Return the Person PolyModel sub-kind for this region
-
-        Args:
-            N/A
-
-        Returns:
-            Person subclass for this region
-        """
-        return self.get_subkind("person")
-
-    def get_record_kind(self):
-        """Return the Record PolyModel sub-kind for this region
-
-        Args:
-            N/A
-
-        Returns:
-            Record subclass for this region
-        """
-        return self.get_subkind("record")
-
-    def get_snapshot_kind(self):
-        """Return the Snapshot PolyModel sub-kind for this region
-
-        Args:
-            N/A
-
-        Returns:
-            Snapshot subclass for this region
-        """
-        return self.get_subkind("snapshot")
-
-    def get_subkind(self, parent_kind_name):
-        """Retrieve the PolyModel sub-kind for a particular kind for this region
-
-        If the child name for the subkind doesn't exist in the region manifest,
-        then we use the capitalized form of the parent kind. For example, if
-        the UsNy region does not include entity_kinds.snapshot then the subkind
-        is the parent level Snapshot class.
-
-        Args:
-            parent_kind_name: (string) Name of the top-level PolyModel kind
-
-        Returns:
-            Model subclass (e.g., ingest.us_ny.us_ny_record.UsNyRecord)
-        """
-        parent_kind_name = parent_kind_name.lower()
-
-        if parent_kind_name not in self.entity_kinds:
-            top_level = __import__("recidiviz")
-            models_module = getattr(top_level, "models")
-            kind_module = getattr(models_module, parent_kind_name)
-            return getattr(kind_module, parent_kind_name.capitalize())
-
-        child_kind_name = self.entity_kinds[parent_kind_name]
-
-        scraper_module = self.get_scraper_module()
-        child_kind_module = getattr(scraper_module, self.region_code + "_"
-                                    + parent_kind_name)
-
-        subkind = getattr(child_kind_module, child_kind_name)
-
-        return subkind
 
 
 def get_supported_regions(full_manifest=False):

@@ -22,14 +22,28 @@ import logging
 import time
 from datetime import datetime
 
-from google.appengine.ext import ndb
-from google.appengine.ext.db \
-    import Timeout, TransactionFailedError, InternalError
+from google.cloud import datastore
 
 from recidiviz.ingest import constants
+from recidiviz.utils import environment
+
+_ds = None
 
 
-class ScrapeSession(ndb.Model):
+def ds():
+    global _ds
+    if not _ds:
+        _ds = datastore.Client()
+    return _ds
+
+
+@environment.test_only
+def clear_ds():
+    global _ds
+    _ds = None
+
+
+class ScrapeSession:
     """Model to describe a scraping session's current state
 
     Datastore model for information about a scraping session. Used by the
@@ -39,37 +53,48 @@ class ScrapeSession(ndb.Model):
     Attributes:
         start: (datetime) Date/time this session started
         end: (datetime) Date/time when this session finished
-        docket_item: (string) The task name of the docket item currently leased
-            by this session. Used to delete docket items after completion.
-        last_scraped: String in the form "SURNAME, FIRST" of the last
+        docket_ack_id: (string) Ack id of the docket message currently leased by
+            this session. Used to delete docket items after completion.
+        last_scraped: (string) String in the form "SURNAME, FIRST" of the last
             scraped name in this session
-        region: Region code, e.g. us_ny
+        region: (string) Region code, e.g. us_ny
         scrape_type: (string) 'background' or 'snapshot'
     """
-    start = ndb.DateTimeProperty(auto_now_add=True)
-    end = ndb.DateTimeProperty()
-    docket_item = ndb.StringProperty()
-    last_scraped = ndb.StringProperty()
-    region = ndb.StringProperty()
-    scrape_type = ndb.StringProperty(choices=(constants.BACKGROUND_SCRAPE,
-                                              constants.SNAPSHOT_SCRAPE))
+    @classmethod
+    def from_entity(cls, entity):
+        return cls(entity)
+
+    @classmethod
+    def new(cls, key, start=None, end=None, docket_ack_id=None,
+            last_scraped=None, region=None, scrape_type=None):
+        entity = datastore.Entity(key)
+        entity['start'] = start if start else datetime.now()  # type: datetime
+        entity['end'] = end  # type: datetime
+        entity['docket_ack_id'] = docket_ack_id  # type: string
+        entity['last_scraped'] = last_scraped  # type: string
+        entity['region'] = region  # type: string
+        if scrape_type and scrape_type not in constants.SCRAPE_TYPES:
+            raise ValueError('Invalid scrape type: "{}"'.format(scrape_type))
+        entity['scrape_type'] = scrape_type  # type: string
+        return cls(entity)
+
+    def __init__(self, entity):
+        self._entity = entity
+
+    def update(self, keys_values):
+        self._entity.update(keys_values)
+
+    def __getattr__(self, attr):
+        if attr in self._entity:
+            return self._entity[attr]
+        raise AttributeError("%r object has no attribute %r" %
+                             (self.__class__.__name__, attr))
+
+    def to_entity(self):
+        return self._entity
 
 
-class ScrapedRecord(ndb.Model):
-    """Model to describe a record that has been scraped, to prevent re-scraping
-
-    Datastore model for a scraped record entry. We use this to track which
-    records we've already scraped in the session to avoid accidental duplicate
-    scraping during the same session.
-
-    Fields:
-        created_on: (datetime) Date/time when this entry was created
-        record_id: (string) Dept. ID Number, the ID for a record we've scraped
-        region: (string) Region code, e.g. us_ny
-    """
-    record_id = ndb.StringProperty()
-    region = ndb.StringProperty()
-    created_on = ndb.DateTimeProperty(auto_now_add=True)
+SCRAPE_SESSION_KIND = ScrapeSession.__name__
 
 
 def create_session(scrape_key):
@@ -84,13 +109,14 @@ def create_session(scrape_key):
     logging.info("Creating new scrape session for: [%s]", scrape_key)
 
     end_session(scrape_key)
-    new_session = ScrapeSession(scrape_type=scrape_key.scrape_type,
-                                region=scrape_key.region_code)
+    new_session = ScrapeSession.new(ds().key(SCRAPE_SESSION_KIND),
+                                    scrape_type=scrape_key.scrape_type,
+                                    region=scrape_key.region_code)
 
     try:
-        new_session.put()
-    except (Timeout, TransactionFailedError, InternalError):
-        logging.warning("Couldn't create new session entity.")
+        ds().put(new_session.to_entity())
+    except Exception as e:
+        logging.warning("Couldn't create new session entity:\n%s", e)
 
 
 def end_session(scrape_key):
@@ -103,15 +129,16 @@ def end_session(scrape_key):
     Args:
         scrape_key: (ScrapeKey) The scraper to clean up session info for
     """
-    open_sessions = get_open_sessions(scrape_key.region_code,
-                                      scrape_type=scrape_key.scrape_type)
+    open_sessions = get_sessions(scrape_key.region_code,
+                                 include_closed=False,
+                                 scrape_type=scrape_key.scrape_type)
 
     for session in open_sessions:
-        session.end = datetime.now()
+        session.update({'end':  datetime.now()})
         try:
-            session.put()
-        except (Timeout, TransactionFailedError, InternalError):
-            logging.warning("Couldn't set end time on prior sessions.")
+            ds().put(session.to_entity())
+        except Exception as e:
+            logging.warning("Couldn't set end time on prior sessions:\n%s", e)
             return
 
     return
@@ -135,12 +162,12 @@ def update_session(last_scraped, scrape_key):
     current_session = get_current_session(scrape_key)
 
     if current_session:
-        current_session.last_scraped = last_scraped
+        current_session.update({'last_scraped': last_scraped})
         try:
-            current_session.put()
-        except (Timeout, TransactionFailedError, InternalError):
-            logging.warning("Couldn't persist last scraped name: [%s]",
-                            last_scraped)
+            ds().put(current_session.to_entity())
+        except Exception as e:
+            logging.warning("Couldn't persist last scraped name: [%s]\n%s",
+                            last_scraped, e)
             return False
     else:
         logging.error("No open sessions found to update.")
@@ -149,16 +176,16 @@ def update_session(last_scraped, scrape_key):
     return True
 
 
-def add_docket_item_to_current_session(docket_item_name,
+def add_docket_item_to_current_session(docket_ack_id,
                                        scrape_key,
                                        attempt=0):
     """Adds newly leased docket item to scrape session for tracking
 
-    Adds a provided item's key to the current session info, so that the session
+    Adds a provided item's id to the current session info, so that the session
     can know which item to remove from the docket when work is done on it.
 
     Args:
-        docket_item_name: (string) A docket queue task name
+        docket_ack_id: (string) Id used to ack the docket message
         scrape_key: (ScrapeKey) The scraper whose session to add to
         attempt: (int) # of attempts so far. After 2, returns False
 
@@ -169,25 +196,57 @@ def add_docket_item_to_current_session(docket_item_name,
     session = get_current_session(scrape_key)
 
     if session:
-        session.docket_item = docket_item_name
+        return add_docket_item_to_session(docket_ack_id, session)
 
-        try:
-            session.put()
-        except (Timeout, TransactionFailedError, InternalError):
-            return False
-    else:
-        if attempt > 2:
-            # Usually means we (manually or via cron) commanded scraper to stop.
-            logging.info("No open session to update with docket item.")
-            return False
+    if attempt > 2:
+        # Usually means we (manually or via cron) commanded scraper to stop.
+        logging.info("No open session to update with docket item.")
+        return False
 
-        # Give a bit of space for eventual consistency;
-        # our newly-minted session isn't yet coming up in query results.
-        time.sleep(2)
-        return add_docket_item_to_current_session(docket_item_name,
-                                                  scrape_key,
-                                                  attempt+1)
+    # Give a bit of space for eventual consistency;
+    # our newly-minted session isn't yet coming up in query results.
+    time.sleep(2)
+    return add_docket_item_to_current_session(
+        docket_ack_id, scrape_key, attempt+1)
+
+
+def add_docket_item_to_session(docket_ack_id, session):
+    """Adds docket item to the given session
+
+    Args:
+        docket_ack_id: (string) Id used to ack the docket message
+        session: (ScrapeSession) The session to add to
+
+    Returns:
+        True if successful otherwise False
+    """
+    session.update({'docket_ack_id': docket_ack_id})
+
+    try:
+        ds().put(session.to_entity())
+    except Exception as e:
+        logging.warning("%s", e)
+        return False
     return True
+
+
+def remove_docket_item_from_session(session):
+    """Removes the docket item from the session.
+
+    Args:
+        session: (ScrapeSession) The session to remove from
+
+    Returns:
+        Id used to ack the docket message
+    """
+    docket_ack_id = session.docket_ack_id
+    session.update({'docket_ack_id': None})
+    try:
+        ds().put(session.to_entity())
+    except Exception as e:
+        logging.error("Failed to persist session [%s] after deleting "
+                      "docket item [%s]:\n%s", session.key, docket_ack_id, e)
+    return docket_ack_id
 
 
 def get_current_session(scrape_key):
@@ -199,10 +258,10 @@ def get_current_session(scrape_key):
         The current, open session for the given scraper if one exists.
         None, otherwise.
     """
-    return get_open_sessions(scrape_key.region_code,
-                             open_only=True,
+    return next(get_sessions(scrape_key.region_code,
+                             include_closed=False,
                              most_recent_only=True,
-                             scrape_type=scrape_key.scrape_type)
+                             scrape_type=scrape_key.scrape_type), None)
 
 
 def get_recent_sessions(scrape_key):
@@ -214,60 +273,70 @@ def get_recent_sessions(scrape_key):
     Args:
         scrape_key: (ScrapeKey) The scraper whose session to retrieve
     Returns:
-        A list of recent sessions for the given scraper. Empty if there has
+        A generator of recent sessions for the given scraper. Empty if there has
         never been a session for the scraper.
     """
-    return get_open_sessions(scrape_key.region_code,
-                             open_only=False,
-                             most_recent_only=False,
-                             scrape_type=scrape_key.scrape_type)
+    return get_sessions(scrape_key.region_code,
+                        most_recent_only=False,
+                        scrape_type=scrape_key.scrape_type)
 
 
 def get_most_recent_completed_session(region_code, scrape_type=None):
-    completed_sessions = [s for s in get_open_sessions(
-        region_code, open_only=False, scrape_type=scrape_type) if s.end]
-    if completed_sessions:
-        return completed_sessions[0]
-    return None
+    return next(get_sessions(region_code,
+                             include_open=False,
+                             most_recent_only=True,
+                             scrape_type=scrape_type), None)
 
 
-def get_open_sessions(region_code,
-                      open_only=True,
-                      most_recent_only=False,
-                      scrape_type=None):
-    """Retrieves open scrape sessions.
+def get_sessions(region_code, include_open=True, include_closed=True,
+                 most_recent_only=False, scrape_type=None):
+    """Retrieves scrape sessions.
 
     Retrieves some combination of scrape session entities based on the arguments
     provided.
 
+    If both `include_open` and `include_closed` are False the returned generator
+    will be empty.
+
     Args:
         region_code: (string) Region code to fetch sessions for
-        open_only: (bool) Only return currently open sessions
+        include_open: (bool) Return open sessions
+        include_closed: (bool) Return closed sessions
         most_recent_only: (bool) Only return the most recent session entity
         scrape_type: (string) Only return sessions of this scrape type
 
     Returns:
-        Result set of ScrapeSession entities,
-        or None if no matching sessions found
+        A generator of ScrapeSessions
     """
-    session_query = ScrapeSession.query()
-    session_query = session_query.filter(
-        ScrapeSession.region == region_code).order(-ScrapeSession.start)
+    session_query = ds().query(kind=SCRAPE_SESSION_KIND)
+    session_query.add_filter('region', '=', region_code)
+    session_query.order = ['-start']
 
-    if open_only:
-        # This must be an equality operator instead of `is None` to work
-        session_query = session_query.filter(ScrapeSession.end == None)  # pylint: disable=singleton-comparison
+    if not include_closed:
+        if include_open:
+            session_query.add_filter('end', '=', None)
+        else:
+            return (_ for _ in ())
 
     if scrape_type:
-        session_query = session_query.filter(
-            ScrapeSession.scrape_type == scrape_type)
+        session_query.add_filter('scrape_type', '=', scrape_type)
 
-    if most_recent_only:
-        session_results = session_query.get()
-    else:
-        session_results = session_query.fetch()
+    limit = None
+    # If `include_open` is not set we have to filter after fetching the results
+    # so we cannot limit to the first result.
+    if most_recent_only and include_open:
+        limit = 1
 
-    return session_results
+    results = session_query.fetch(limit=limit)
+
+    # Datastore doesn't allow an inequality filter on `end` because we are
+    # sorting on `start`, so we have to do the filter after we get the results.
+    if not include_open:
+        results = (result for result in results if result.get('end'))
+        if most_recent_only:
+            results = [next(results)]
+
+    return _sessions_from_entities(results)
 
 
 def get_sessions_with_leased_docket_items(scrape_key):
@@ -283,15 +352,95 @@ def get_sessions_with_leased_docket_items(scrape_key):
         Result set of ScrapeSession entities,
         or None if no matching sessions found
     """
-    session_query = ScrapeSession.query()
+    session_query = ds().query(kind=SCRAPE_SESSION_KIND)
+    session_query.add_filter('region', '=', scrape_key.region_code)
+    session_query.add_filter('scrape_type', '=', scrape_key.scrape_type)
+    session_query.add_filter('docket_ack_id', '>', None)
 
-    session_query = session_query.filter(
-        ScrapeSession.region == scrape_key.region_code)
+    return _sessions_from_entities(session_query.fetch())
 
-    session_query = session_query.filter(
-        ScrapeSession.scrape_type == scrape_key.scrape_type)
 
-    session_query = session_query.filter(
-        ScrapeSession.docket_item != None)
+def _sessions_from_entities(entity_generator):
+    return (ScrapeSession.from_entity(entity) for entity in entity_generator)
 
-    return session_query.fetch()
+
+class ScrapedRecord:
+    """Model to describe a record that has been scraped, to prevent re-scraping
+
+    Datastore model for a scraped record entry. We use this to track which
+    records we've already scraped in the session to avoid accidental duplicate
+    scraping during the same session.
+
+    Fields:
+        created_on: (datetime) Date/time when this entry was created
+        record_id: (string) Dept. ID Number, the ID for a record we've scraped
+        region: (string) Region code, e.g. us_ny
+    """
+    @classmethod
+    def from_entity(cls, entity):
+        return cls(entity)
+
+    @classmethod
+    def new(cls, key, record_id=None, region=None, created_on=None):
+        entity = datastore.Entity(key)
+        entity['record_id'] = record_id  # type: string
+        entity['region'] = region  # type: string
+        # type: datetime
+        entity['created_on'] = created_on if created_on else datetime.now()
+        return cls(entity)
+
+    def __init__(self, entity):
+        self._entity = entity
+
+    def update(self, keys_values):
+        self._entity.update(keys_values)
+
+    def __getattr__(self, attr):
+        if attr in self._entity:
+            return self._entity[attr]
+        raise AttributeError("%r object has no attribute %r" %
+                             (self.__class__.__name__, attr))
+
+    def to_entity(self):
+        return self._entity
+
+
+SCRAPED_RECORD_KIND = ScrapedRecord.__name__
+
+
+def write_scraped_record(*args, **kwds):
+    """Passes any arguments to create a scraped record and writes it to
+    datastore
+
+    Should be prior to any specific scraping tasks for the region. Ends any open
+    sessions for the given scraper and creates a brand new one.
+
+    Args:
+        scrape_key: (ScrapeKey) The scraper to setup a new session for
+    """
+    new_record = ScrapedRecord.new(ds().key(SCRAPED_RECORD_KIND),
+                                   *args, **kwds)
+
+    try:
+        ds().put(new_record.to_entity())
+    except Exception as e:
+        logging.warning("Couldn't persist ScrapedRecord entry, "
+                        "record_id: %s\n%s", new_record["record_id"], e)
+
+
+def already_scraped_record(region_code, record_id, start):
+    """Checks datastore to see if a matching record already exists.
+
+    Args:
+        region_code: Code for the region
+        record_id: Id for the record
+        start: Time to check if the record is newer than
+
+    Returns:
+        True if a record exists otherwise False
+    """
+    record_query = ds().query(kind=SCRAPED_RECORD_KIND)
+    record_query.add_filter('region', '=', region_code)
+    record_query.add_filter('record_id', '==', record_id)
+    record_query.add_filter('created_on', '>', start)
+    return bool(next(record_query.fetch(), None))

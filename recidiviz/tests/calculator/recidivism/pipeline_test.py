@@ -32,7 +32,7 @@ from recidiviz.calculator.recidivism import (calculator, metrics, pipeline,
                                              recidivism_event)
 
 
-class TestMapReduceMethods(object):
+class TestMapReduceMethods:
     """Tests for the MapReduce methods in the class."""
 
     def test_map_person(self):
@@ -202,7 +202,7 @@ class TestMapReduceMethods(object):
         assert not total_results
 
 
-class FakePerson(object):
+class FakePerson:
     def __init__(self, key=None, birthdate=None, race=None, sex=None):
         self.key = key
         self.birthdate = birthdate
@@ -210,7 +210,7 @@ class FakePerson(object):
         self.sex = sex
 
 
-class FakeRecord(object):
+class FakeRecord:
     def __init__(self, key=None, is_released=None, custody_date=None,
                  last_custody_date=None, latest_release_date=None,
                  latest_facility=None, created_on=None):
@@ -223,7 +223,7 @@ class FakeRecord(object):
         self.created_on = created_on
 
 
-class FakeSnapshot(object):
+class FakeSnapshot:
     def __init__(self, parent_key=None, created_on=None, latest_facility=None):
         self.parent = parent_key
         self.created_on = created_on

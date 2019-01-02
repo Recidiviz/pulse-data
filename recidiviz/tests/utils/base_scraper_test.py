@@ -22,7 +22,7 @@ from recidiviz.ingest.models import ingest_info
 from recidiviz.persistence.validator import validate
 
 
-class BaseScraperTest(object):
+class BaseScraperTest:
     """A base class for scraper tests which does extra validations."""
 
     def setup_method(self, _test_method):
