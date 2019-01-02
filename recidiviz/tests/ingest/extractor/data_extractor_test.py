@@ -246,7 +246,6 @@ def test_bad_attr():
     with pytest.raises(AttributeError):
         extractor.extract_and_populate_data(html_contents)
 
-@pytest.mark.skip(reason="disabled until issue #330 is fixed")
 def test_partial_table():
     """Tests a page with a table as well as unstructured data."""
     key_mapping_file = '../testdata/data_extractor/yaml/partial_table.yaml'
@@ -274,7 +273,6 @@ def test_partial_table():
     info = extractor.extract_and_populate_data(html_contents)
     assert expected_info == info
 
-@pytest.mark.skip(reason="disabled until issue #330 is fixed")
 def test_labeled_fields():
     """Tests a page with field values in <span>s labeled by <label>s."""
     key_mapping_file = '../testdata/data_extractor/yaml/labeled_fields.yaml'
@@ -306,7 +304,6 @@ def test_labeled_fields():
     info = extractor.extract_and_populate_data(html_contents)
     assert expected_info == info
 
-@pytest.mark.skip(reason="disabled until issue #330 is fixed")
 def test_bad_labels():
     """Tests a page with field values in <span>s labeled by nested <label>s."""
     key_mapping_file = '../testdata/data_extractor/yaml/bad_labels.yaml'
@@ -338,7 +335,6 @@ def test_bad_labels():
     info = extractor.extract_and_populate_data(html_contents)
     assert expected_info == info
 
-@pytest.mark.skip(reason="disabled until issue #330 is fixed")
 def test_text_label():
     """Tests a page with a key/value pair in plain text."""
     key_mapping_file = '../testdata/data_extractor/yaml/text_label.yaml'
@@ -399,7 +395,6 @@ def test_th_rows():
     info = extractor.extract_and_populate_data(html_contents)
     assert expected_info == info
 
-@pytest.mark.skip(reason="disabled until issue #330 is fixed")
 def test_content_is_not_modified():
     """Tests that the DataExtractor does not mutate |content|."""
     key_mapping_file = '../testdata/data_extractor/yaml/text_label.yaml'
