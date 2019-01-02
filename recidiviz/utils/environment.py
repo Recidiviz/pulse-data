@@ -24,10 +24,12 @@ appropriate variables.
 """
 
 
-import httplib
+from http import HTTPStatus
 import logging
 import os
 from functools import wraps
+
+import recidiviz
 
 
 def in_prod():
@@ -43,8 +45,7 @@ def in_prod():
         True if on hosted GAE instance
         False if not
     """
-    current_environment = os.getenv('SERVER_SOFTWARE', '')
-    return current_environment.startswith('Google App Engine/')
+    return os.getenv('RECIDIVIZ_ENV', '') == 'production'
 
 
 def local_only(func):
@@ -82,7 +83,7 @@ def local_only(func):
             # Production environment - fail
             logging.error("This API call is not allowed in production.")
             return ('Not available, see service logs.',
-                    httplib.INTERNAL_SERVER_ERROR)
+                    HTTPStatus.INTERNAL_SERVER_ERROR)
 
         # Local development server - continue
         logging.info("Test environment, proceeding.")
@@ -90,3 +91,18 @@ def local_only(func):
         return func(*args, **kwargs)
 
     return check_env
+
+
+def test_only(func):
+    """Decorator to verify function only runs in tests
+
+    If called while not in tests, throws an exception.
+    """
+
+    @wraps(func)
+    def check_test_and_call(*args, **kwargs):
+        if not hasattr(recidiviz, 'called_from_test'):
+            raise RuntimeError("Function may only be called from tests")
+        return func(*args, **kwargs)
+
+    return check_test_and_call

@@ -228,7 +228,6 @@ class BaseScraper(Scraper):
             A list of dicts each containing endpoint and task_type at minimum
             which tell the generic scraper how to behave.
         """
-        pass
 
     def set_initial_vars(self, content, params):
         """
@@ -238,7 +237,6 @@ class BaseScraper(Scraper):
             content: An lxml html tree.
             params: dict of parameters passed from the last scrape session.
         """
-        pass
 
     @abc.abstractmethod
     def populate_data(self, content, params, ingest_info):
@@ -250,7 +248,6 @@ class BaseScraper(Scraper):
             params: dict of parameters passed from the last scrape session.
             ingest_info: The IngestInfo object to populate
         """
-        pass
 
     def transform_post_data(self, data):
         """If the child needs to transform the data in any way before it sends
@@ -259,7 +256,6 @@ class BaseScraper(Scraper):
         Args:
             data: dict of parameters to send as data to the post request.
         """
-        pass
 
     def get_initial_endpoint(self):
         """Returns the initial endpoint to hit on the first call

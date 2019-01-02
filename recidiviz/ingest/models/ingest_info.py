@@ -16,10 +16,9 @@
 # =============================================================================
 
 """Represents data scraped for a single individual."""
-import types
 
 
-class IngestInfo(object):
+class IngestInfo:
     """Class for information about multiple people."""
 
     def __init__(self, people=None):
@@ -45,7 +44,7 @@ class IngestInfo(object):
         return None
 
 
-class _Person(object):
+class _Person:
     """Class for information about a person.
     Referenced from IngestInfo.
     """
@@ -87,7 +86,7 @@ class _Person(object):
         return None
 
 
-class _Booking(object):
+class _Booking:
     """Class for information about a booking.
     Referenced from Person.
     """
@@ -141,7 +140,7 @@ class _Booking(object):
         return self.arrest
 
 
-class _Arrest(object):
+class _Arrest:
     """Class for information about an arrest.
     Referenced from Booking.
     """
@@ -165,7 +164,7 @@ class _Arrest(object):
         restricted_setattr(self, 'agency', name, value)
 
 
-class _Charge(object):
+class _Charge:
     """Class for information about a charge.
     Referenced from Booking.
     """
@@ -222,7 +221,7 @@ class _Charge(object):
         return self.sentence
 
 
-class _Bond(object):
+class _Bond:
     """Class for information about a bond.
     Referenced from Charge.
     """
@@ -244,7 +243,7 @@ class _Bond(object):
         restricted_setattr(self, 'status', name, value)
 
 
-class _Sentence(object):
+class _Sentence:
     """Class for information about a sentence.
     Referenced from Charge.
     """
@@ -281,7 +280,7 @@ class _Sentence(object):
 def to_string(obj):
     out = [obj.__class__.__name__ + ":"]
     for key, val in vars(obj).items():
-        if isinstance(val, types.ListType):
+        if isinstance(val, list):
             for index, elem in enumerate(val):
                 out += '{}[{}]: {}'.format(key, index, elem).split('\n')
         elif val:

@@ -22,12 +22,9 @@ import json
 
 from flask import Flask
 from mock import patch
-from google.appengine.ext import testbed
-from requests.packages.urllib3.contrib.appengine import TimeoutError
 
 from recidiviz.ingest import worker
 
-APP_ID = "recidiviz-worker-test"
 PATH = "/work"
 
 app = Flask(__name__)
@@ -35,87 +32,65 @@ app.register_blueprint(worker.worker)
 app.config['TESTING'] = True
 
 
-class TestWorker(object):
+class TestWorker:
     """Tests for requests to the Worker API."""
 
     # noinspection PyAttributeOutsideInit
     def setup_method(self, _test_method):
-        self.testbed = testbed.Testbed()
-        self.testbed.activate()
-        self.testbed.setup_env(app_id=APP_ID)
-        self.testbed.init_app_identity_stub()
-        self.testbed.init_user_stub()
-
         self.client = app.test_client()
-
-    def teardown_method(self, _test_method):
-        self.testbed.deactivate()
-
-    def login_user(self,
-                   email='user@recidiviz.com',
-                   user_id='123',
-                   is_admin=True):
-        self.testbed.setup_env(
-            app_id=APP_ID,
-            user_email=email,
-            user_id=user_id,
-            user_is_admin='1' if is_admin else '0',
-            overwrite=True)
 
     @patch("recidiviz.utils.regions.Region")
     def test_post_work(self, mock_region):
         mock_region.return_value = FakeRegion(FakeScraper(1))
 
-        self.login_user()
-
         form = {'region': 'us_ca', 'task': 'fake_task'}
+        form_encoded = json.dumps(form).encode()
         headers = {'X-Appengine-QueueName': "test-queue"}
-        response = self.client.post(PATH, data=form, headers=headers)
+        response = self.client.post(PATH, data=form_encoded, headers=headers)
         assert response.status_code == 200
 
     @patch("recidiviz.utils.regions.Region")
     def test_post_work_params(self, mock_region):
         mock_region.return_value = FakeRegion(FakeScraper(1))
 
-        self.login_user()
-
         scraper_params = {'foo': 'bar', 'baz': 'inga'}
         form = {'region': 'us_ca', 'task': 'fake_task_params',
-                'params': json.dumps(scraper_params)}
+                'params': scraper_params}
+        form_encoded = json.dumps(form).encode()
         headers = {'X-Appengine-QueueName': "test-queue"}
-        response = self.client.post(PATH, data=form, headers=headers)
+        response = self.client.post(PATH, data=form_encoded, headers=headers)
         assert response.status_code == 200
 
     @patch("recidiviz.utils.regions.Region")
     def test_post_work_error(self, mock_region):
         mock_region.return_value = FakeRegion(FakeScraper(-1))
 
-        self.login_user()
-
         form = {'region': 'us_ca', 'task': 'fake_task'}
+        form_encoded = json.dumps(form).encode()
         headers = {'X-Appengine-QueueName': "test-queue"}
-        response = self.client.post(PATH, data=form, headers=headers)
+        response = self.client.post(PATH, data=form_encoded, headers=headers)
         assert response.status_code == 500
 
     @patch("recidiviz.utils.regions.Region")
     def test_post_work_timeout(self, mock_region):
         mock_region.return_value = FakeRegion(FakeScraper(1))
 
-        self.login_user()
-
         form = {'region': 'us_ca', 'task': 'fake_task_timeout'}
+        form_encoded = json.dumps(form).encode()
         headers = {'X-Appengine-QueueName': "test-queue"}
-        response = self.client.post(PATH, data=form, headers=headers)
+        response = self.client.post(PATH, data=form_encoded, headers=headers)
         assert response.status_code == 500
 
-    def test_post_work_not_from_task(self):
-        self.login_user()
+    @patch("recidiviz.utils.validate_jwt.validate_iap_jwt_from_app_engine")
+    def test_post_work_not_from_task(self, mock_jwt):
+        mock_jwt.return_value = ('user', 'email', None)
 
-        response = self.client.post(PATH)
+        headers = {'x-goog-iap-jwt-assertion': '1234'}
+        response = self.client.post(PATH, headers=headers)
         assert response.status_code == 500
 
 
-class FakeRegion(object):
+class FakeRegion:
     """A fake region to be returned from mocked out calls to Region"""
     def __init__(self, scraper):
         self.scraper = scraper
@@ -124,7 +99,7 @@ class FakeRegion(object):
         return self.scraper
 
 
-class FakeScraper(object):
+class FakeScraper:
     """A fake scraper to be returned from mocked out calls to
     Region.get_scraper."""
 

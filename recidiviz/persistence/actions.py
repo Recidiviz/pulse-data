@@ -16,7 +16,7 @@
 # =============================================================================
 """Contains all HTTP endpoints for communicating with the persistence layer."""
 
-import httplib
+from http import HTTPStatus
 
 from flask import Blueprint
 
@@ -35,4 +35,4 @@ def write_record():
     region = None
     persistence.write(ingest_info, region, last_scraped_time)
 
-    return '', httplib.NOT_IMPLEMENTED
+    return '', HTTPStatus.NOT_IMPLEMENTED

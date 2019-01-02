@@ -21,13 +21,11 @@
 import json
 import logging
 
-from google.appengine.ext.db \
-    import Timeout, TransactionFailedError, InternalError
 from recidiviz.ingest import docket
 from recidiviz.ingest import sessions
 
 
-def iterate_docket_item(scrape_key, back_off=5):
+def iterate_docket_item(scrape_key, return_immediately=False):
     """Leases new docket item, updates current session, returns item contents
 
     Pulls an arbitrary new item from the docket type provided, adds it to the
@@ -38,7 +36,8 @@ def iterate_docket_item(scrape_key, back_off=5):
 
     Args:
         scrape_key: (ScrapeKey) The scraper to retrieve a docket item for
-        back_off: (int) # of seconds to wait between attempts.
+        return_immediately: (bool) Whether to return immediately or to wait for
+            a bounded period of time for a message to enter the docket.
 
     Returns:
         The payload of the next docket item, if successfully retrieved and added
@@ -46,15 +45,15 @@ def iterate_docket_item(scrape_key, back_off=5):
         or not successfully added to the session, returns None.
     """
 
-    docket_item = docket.get_new_docket_item(scrape_key, back_off=back_off)
+    docket_item = docket.get_new_docket_item(
+        scrape_key, return_immediately=return_immediately)
 
     if not docket_item:
         logging.info("No items in docket for %s. Ending scrape.", scrape_key)
         return None
 
-    item_content = json.loads(docket_item.payload)
-
-    item_added = sessions.add_docket_item_to_current_session(docket_item.name,
+    item_content = json.loads(docket_item.message.data.decode())
+    item_added = sessions.add_docket_item_to_current_session(docket_item.ack_id,
                                                              scrape_key)
     if not item_added:
         logging.error("Failed to update session for scraper %s "
@@ -77,27 +76,16 @@ def remove_item_from_session_and_docket(scrape_key):
     Returns:
         N/A
     """
-    # Get the current session, remove and delete its docket item
     session = sessions.get_current_session(scrape_key)
 
     if not session:
         logging.warning("No open sessions found to remove docket item.")
         return
 
-    docket_item_name = session.docket_item
-    if docket_item_name:
-        item_deleted = docket.delete_docket_item(docket_item_name)
+    docket_ack_id = sessions.remove_docket_item_from_session(session)
 
-        if item_deleted:
-            session.docket_item = None
-            try:
-                session.put()
-            except (Timeout, TransactionFailedError, InternalError) as e:
-                logging.error("Failed to persist session [%s] after deleting "
-                              "docket item [%s]:\n%s",
-                              session.key, docket_item_name, e)
-
-    return
+    if docket_ack_id:
+        docket.ack_docket_item(scrape_key, docket_ack_id)
 
 
 def purge_docket_and_session(scrape_key):
@@ -122,17 +110,4 @@ def purge_docket_and_session(scrape_key):
     session_results = sessions.get_sessions_with_leased_docket_items(scrape_key)
 
     for session in session_results:
-        docket_item_name = session.docket_item
-
-        try:
-            docket.delete_docket_item(docket_item_name)
-            session.docket_item = None
-            session.put()
-
-        except Exception as e:
-            # Possible the docket item was deleted too long ago for the
-            # task queue to recognize.
-            logging.warning("Failed to remove docket item (%s) from session "
-                            "(%s):\n%s", docket_item_name, session.key, e)
-
-    return
+        sessions.remove_docket_item_from_session(session)

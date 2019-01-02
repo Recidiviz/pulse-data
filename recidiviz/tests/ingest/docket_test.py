@@ -20,257 +20,181 @@
 
 import json
 
-from datetime import datetime
-from dateutil.relativedelta import relativedelta
-from google.appengine.api import taskqueue
-from google.appengine.ext import ndb
-from google.appengine.ext import testbed
+import pytest
+from mock import patch
 
-from recidiviz.ingest import constants
-from recidiviz.ingest import docket
+from recidiviz.ingest import constants, docket
 from recidiviz.ingest.models.scrape_key import ScrapeKey
-from recidiviz.ingest.sessions import ScrapeSession
-from recidiviz.ingest.us_ny.us_ny_record import UsNyRecord
-from recidiviz.models.person import Person
-from recidiviz.models.snapshot import Snapshot
 
+REGIONS = ["us_ny", "us_va"]
 
-class TestPopulation(object):
+@pytest.mark.usefixtures("emulator")
+class TestDocket:
     """Tests for the methods related to population of items in the docket."""
-
-    def setup_method(self, _test_method):
-        # noinspection PyAttributeOutsideInit
-        self.testbed = testbed.Testbed()
-        self.testbed.activate()
-        self.testbed.init_datastore_v3_stub()
-        context = ndb.get_context()
-        context.set_memcache_policy(False)
-        context.clear_cache()
-
-        # root_path must be set the the location of queue.yaml.
-        # Otherwise, only the 'default' queue will be available.
-        self.testbed.init_taskqueue_stub(root_path='.')
-
-        # noinspection PyAttributeOutsideInit
-        self.taskqueue_stub = self.testbed.get_stub(
-            testbed.TASKQUEUE_SERVICE_NAME)
-
     def teardown_method(self, _test_method):
-        self.testbed.deactivate()
+        for region in REGIONS:
+            docket.purge_query_docket(ScrapeKey(region,
+                                                constants.BACKGROUND_SCRAPE))
 
     def test_add_to_query_docket_background(self):
-        scrape_key = ScrapeKey("us_ny", constants.BACKGROUND_SCRAPE)
+        scrape_key = ScrapeKey(REGIONS[0], constants.BACKGROUND_SCRAPE)
 
-        docket.add_to_query_docket(scrape_key, get_payload(as_json=False))
+        docket.create_topic_and_subscription(scrape_key)
 
-        tasks = [docket.get_new_docket_item(scrape_key),
+        docket.add_to_query_docket(scrape_key, get_payload()[0]).result()
+        docket.add_to_query_docket(scrape_key, get_payload()[1]).result()
+
+        items = [docket.get_new_docket_item(scrape_key),
                  docket.get_new_docket_item(scrape_key)]
-        assert len(tasks) == 2
+        assert len(items) == 2
 
-        for i, task in enumerate(tasks):
-            assert task.payload == json.dumps(
-                get_payload(as_json=False)[i])
-            assert task.tag == "us_ny-background"
-
-    def test_add_to_query_docket_snapshot(self):
-        scrape_key = ScrapeKey("us_ny", constants.SNAPSHOT_SCRAPE)
-
-        docket.add_to_query_docket(scrape_key,
-                                   get_snapshot_payload(as_json=False))
-
-        tasks = [docket.get_new_docket_item(scrape_key),
-                 docket.get_new_docket_item(scrape_key)]
-        assert len(tasks) == 2
-
-        for i, task in enumerate(tasks):
-            assert task.payload == json.dumps(
-                get_snapshot_payload(as_json=False)[i])
-            assert task.tag == "us_ny-snapshot"
+        for i, item in enumerate(items):
+            assert item.message.data.decode() == json.dumps(get_payload()[i])
 
     def test_load_target_list_background_happy_path(self):
-        scrape_key = ScrapeKey("us_ny", constants.BACKGROUND_SCRAPE)
+        scrape_key = ScrapeKey(REGIONS[0], constants.BACKGROUND_SCRAPE)
 
         docket.load_target_list(scrape_key)
 
-        task = docket.get_new_docket_item(scrape_key)
-        assert task.payload == json.dumps(('aaardvark', ''))
-        assert not docket.get_new_docket_item(scrape_key, back_off=1)
+        item = docket.get_new_docket_item(scrape_key)
+        assert item.message.data.decode() == json.dumps(('aaardvark', ''))
 
-    def test_load_target_list_snapshot_never_ingested(self):
-        scrape_key = ScrapeKey("us_ny", constants.SNAPSHOT_SCRAPE)
-
-        docket.load_target_list(scrape_key)
-
-        assert not docket.get_new_docket_item(scrape_key, back_off=1)
-
-    def test_load_target_list_snapshot_happy_path(self):
-        scrape_key = ScrapeKey("us_ny", constants.SNAPSHOT_SCRAPE)
-        halfway = datetime.now() - relativedelta(years=5)
-
-        person = get_person("clem", "12345")
-        record = get_record(person.key, "56789", halfway)
-        get_record(person.key, "89012", halfway - relativedelta(years=10))
-        get_snapshot(record.key, halfway)
+    @patch('recidiviz.utils.regions.Region')
+    def test_load_target_list_last_names(self, mock_region):
+        mock_region.return_value.names_file = \
+            '../recidiviz/tests/ingest/testdata/docket/names/last_only.csv'
+        scrape_key = ScrapeKey(REGIONS[0], constants.BACKGROUND_SCRAPE)
 
         docket.load_target_list(scrape_key)
 
-        task = docket.get_new_docket_item(scrape_key)
-        assert task.payload == json.dumps(("12345", ["89012"]))
-        assert task.tag == "us_ny-snapshot"
+        names = []
+        for _ in range(12):
+            item = docket.get_new_docket_item(scrape_key)
+            name_serialized = item.message.data.decode()
+            names.append(json.loads(name_serialized))
+        assert names == [
+            ['SMITH', ''],
+            ['JOHNSON', ''],
+            ['WILLIAMS', ''],
+            ['BROWN', ''],
+            ['JONES', ''],
+            ['MILLER', ''],
+            ['DAVIS', ''],
+            ['GARCIA', ''],
+            ['RODRIGUEZ', ''],
+            ['WILSON', ''],
+            ['MARTINEZ', ''],
+            ['ANDERSON', ''],
+        ]
+        assert not docket.get_new_docket_item(scrape_key)
 
+    @patch('recidiviz.utils.regions.Region')
+    def test_load_target_list_last_names_with_query(self, mock_region):
+        mock_region.return_value.names_file = \
+            '../recidiviz/tests/ingest/testdata/docket/names/last_only.csv'
+        scrape_key = ScrapeKey(REGIONS[0], constants.BACKGROUND_SCRAPE)
 
-class TestRetrieval(object):
-    """Tests for the methods related to retrieval of items from the docket."""
+        docket.load_target_list(scrape_key, surname='WILSON')
 
-    def setup_method(self, _test_method):
-        # noinspection PyAttributeOutsideInit
-        self.testbed = testbed.Testbed()
-        self.testbed.activate()
-        self.testbed.init_datastore_v3_stub()
-        context = ndb.get_context()
-        context.set_memcache_policy(False)
-        context.clear_cache()
+        names = []
+        for _ in range(3):
+            item = docket.get_new_docket_item(scrape_key)
+            name_serialized = item.message.data.decode()
+            names.append(json.loads(name_serialized))
+        assert names == [
+            ['WILSON', ''],
+            ['MARTINEZ', ''],
+            ['ANDERSON', ''],
+        ]
+        assert not docket.get_new_docket_item(scrape_key)
 
-        # root_path must be set the the location of queue.yaml.
-        # Otherwise, only the 'default' queue will be available.
-        self.testbed.init_taskqueue_stub(root_path='.')
+    @patch('recidiviz.utils.regions.Region')
+    def test_load_target_list_last_names_with_bad_query(self, mock_region):
+        mock_region.return_value.names_file = \
+            '../recidiviz/tests/ingest/testdata/docket/names/last_only.csv'
+        scrape_key = ScrapeKey(REGIONS[0], constants.BACKGROUND_SCRAPE)
 
-        # noinspection PyAttributeOutsideInit
-        self.taskqueue_stub = self.testbed.get_stub(
-            testbed.TASKQUEUE_SERVICE_NAME)
+        docket.load_target_list(scrape_key, surname='GARBAGE')
 
-    def teardown_method(self, _test_method):
-        self.testbed.deactivate()
+        item = docket.get_new_docket_item(scrape_key)
+        assert item.message.data.decode() == json.dumps(('GARBAGE', ''))
+        assert not docket.get_new_docket_item(scrape_key)
 
-    def test_get_new_docket_item(self):
-        taskqueue.Task(tag='us_ny-background',
-                       payload=get_payload(),
-                       method='PULL').add(docket.DOCKET_QUEUE_NAME)
+    @patch('recidiviz.utils.regions.Region')
+    def test_load_target_list_full_names(self, mock_region):
+        mock_region.return_value.names_file = \
+            '../recidiviz/tests/ingest/testdata/docket/names/last_and_first.csv'
+        scrape_key = ScrapeKey(REGIONS[0], constants.BACKGROUND_SCRAPE)
 
-        docket_item = docket.get_new_docket_item(
-            ScrapeKey("us_ny", constants.BACKGROUND_SCRAPE))
-        assert docket_item.tag == 'us_ny-background'
-        assert docket_item.payload == get_payload()
+        docket.load_target_list(scrape_key)
+
+        names = []
+        for _ in range(8):
+            item = docket.get_new_docket_item(scrape_key)
+            name_serialized = item.message.data.decode()
+            names.append(json.loads(name_serialized))
+        assert names == [
+            ['Smith', 'James'],
+            ['Smith', 'Michael'],
+            ['Smith', 'Robert'],
+            ['Smith', 'David'],
+            ['Johnson', 'James'],
+            ['Johnson', 'Michael'],
+            ['Smith', 'William'],
+            ['Williams', 'James'],
+        ]
+        assert not docket.get_new_docket_item(scrape_key)
 
     def test_get_new_docket_item_no_matching_items(self):
-        taskqueue.Task(tag='us_ny-background',
-                       payload=get_payload(),
-                       method='PULL').add(docket.DOCKET_QUEUE_NAME)
+        write_key = ScrapeKey(REGIONS[0], constants.BACKGROUND_SCRAPE)
+        read_key = ScrapeKey(REGIONS[1], constants.BACKGROUND_SCRAPE)
 
-        docket_item = docket.get_new_docket_item(
-            ScrapeKey("us_fl", constants.BACKGROUND_SCRAPE), back_off=1)
+        docket.create_topic_and_subscription(write_key)
+        docket.add_to_query_docket(write_key, get_payload()).result()
+
+        docket_item = docket.get_new_docket_item(read_key,
+                                                 return_immediately=True)
         assert not docket_item
 
     def test_get_new_docket_item_no_items_at_all(self):
         docket_item = docket.get_new_docket_item(
-            ScrapeKey("us_ny", constants.BACKGROUND_SCRAPE), back_off=1)
+            ScrapeKey(REGIONS[0], constants.BACKGROUND_SCRAPE),
+            return_immediately=True)
         assert not docket_item
 
-
-class TestRemoval(object):
-    """Tests for the methods related to removal of items from the docket."""
-
-    def setup_method(self, _test_method):
-        # noinspection PyAttributeOutsideInit
-        self.testbed = testbed.Testbed()
-        self.testbed.activate()
-        self.testbed.init_datastore_v3_stub()
-        context = ndb.get_context()
-        context.set_memcache_policy(False)
-        context.clear_cache()
-
-        # root_path must be set the the location of queue.yaml.
-        # Otherwise, only the 'default' queue will be available.
-        self.testbed.init_taskqueue_stub(root_path='.')
-
-        # noinspection PyAttributeOutsideInit
-        self.taskqueue_stub = self.testbed.get_stub(
-            testbed.TASKQUEUE_SERVICE_NAME)
-
-    def teardown_method(self, _test_method):
-        self.testbed.deactivate()
-
     def test_purge_query_docket(self):
-        scrape_key = ScrapeKey("us_ut", constants.SNAPSHOT_SCRAPE)
+        scrape_key_purge = ScrapeKey(REGIONS[0], constants.BACKGROUND_SCRAPE)
+        scrape_key_read = ScrapeKey(REGIONS[1], constants.BACKGROUND_SCRAPE)
 
-        taskqueue.Task(tag='us_va-background',
-                       payload=get_payload(),
-                       method='PULL').add(docket.DOCKET_QUEUE_NAME)
-        taskqueue.Task(tag='us_ut-snapshot',
-                       payload=get_payload(),
-                       method='PULL').add(docket.DOCKET_QUEUE_NAME)
+        docket.create_topic_and_subscription(scrape_key_purge)
+        docket.create_topic_and_subscription(scrape_key_read)
+        docket.add_to_query_docket(scrape_key_purge, get_payload()).result()
+        docket.add_to_query_docket(scrape_key_read, get_payload()).result()
 
-        docket.purge_query_docket(scrape_key)
-        assert not docket.get_new_docket_item(scrape_key, back_off=1)
-        assert docket.get_new_docket_item(
-            ScrapeKey("us_va", constants.BACKGROUND_SCRAPE), back_off=1)
+        docket.purge_query_docket(scrape_key_purge)
+        assert not docket.get_new_docket_item(scrape_key_purge,
+                                              return_immediately=True)
+        assert docket.get_new_docket_item(scrape_key_read,
+                                          return_immediately=True)
 
     def test_purge_query_docket_nothing_matching(self):
-        scrape_key = ScrapeKey("us_ny", constants.BACKGROUND_SCRAPE)
+        scrape_key_purge = ScrapeKey(REGIONS[0], constants.BACKGROUND_SCRAPE)
+        scrape_key_add = ScrapeKey(REGIONS[1], constants.BACKGROUND_SCRAPE)
 
-        taskqueue.Task(tag='us_va-background',
-                       payload=get_payload(),
-                       method='PULL').add(docket.DOCKET_QUEUE_NAME)
+        docket.create_topic_and_subscription(scrape_key_add)
+        docket.add_to_query_docket(scrape_key_add, get_payload()).result()
 
-        docket.purge_query_docket(scrape_key)
-        assert not docket.get_new_docket_item(scrape_key, back_off=1)
+        docket.purge_query_docket(scrape_key_purge)
+        assert not docket.get_new_docket_item(scrape_key_purge,
+                                              return_immediately=True)
+
 
     def test_purge_query_docket_already_empty(self):
-        scrape_key = ScrapeKey("us_ny", constants.BACKGROUND_SCRAPE)
+        scrape_key = ScrapeKey(REGIONS[0], constants.BACKGROUND_SCRAPE)
         docket.purge_query_docket(scrape_key)
-        assert not docket.get_new_docket_item(scrape_key, back_off=1)
+        assert not docket.get_new_docket_item(scrape_key,
+                                              return_immediately=True)
 
 
-def test_get_task_name_same_within_minute():
-    first_time = datetime(2018, 10, 2, 16, 29, 43)
-    first = docket.get_task_name("us_ny", "12345", date_time=first_time)
-    second_time = datetime(2018, 10, 2, 16, 29, 48)
-    second = docket.get_task_name("us_ny", "12345", date_time=second_time)
-
-    assert first == second
-
-
-def get_payload(as_json=True):
-    body = [{'name': 'Jacoby, Mackenzie'}, {'name': 'Jacoby, Clementine'}]
-    if as_json:
-        return json.dumps(body)
-    return body
-
-
-def get_snapshot_payload(as_json=True):
-    body = [('123', ['456']), ('789', ['012', '234'])]
-    if as_json:
-        return json.dumps(body)
-    return body
-
-
-def create_open_session(region_code, scrape_type, start, docket_item):
-    session = ScrapeSession(region=region_code,
-                            scrape_type=scrape_type,
-                            docket_item=docket_item,
-                            start=start)
-    session.put()
-    return session
-
-
-def get_person(key, person_id):
-    new_person = Person(id=key, person_id=person_id)
-    new_person.put()
-    return new_person
-
-
-def get_record(parent_key, record_id, latest_release_date):
-    new_record = UsNyRecord(parent=parent_key,
-                            record_id=record_id,
-                            latest_release_date=latest_release_date,
-                            is_released=False)
-    new_record.put()
-    return new_record
-
-
-def get_snapshot(parent_key, snapshot_date):
-    new_snapshot = Snapshot(parent=parent_key,
-                            created_on=snapshot_date,
-                            is_released=False)
-    new_snapshot.put()
-    return new_snapshot
+def get_payload():
+    return [{'name': 'Jacoby, Mackenzie'}, {'name': 'Jacoby, Clementine'}]

@@ -43,7 +43,7 @@ class Person(BuildableAttr):
 
 
 @attr.s
-class Booking(object):
+class Booking:
     booking_id = attr.ib(default=None)
     external_id = attr.ib(default=None)
     admission_date = attr.ib(default=None)
@@ -64,7 +64,7 @@ class Booking(object):
 
 
 @attr.s
-class Hold(object):
+class Hold:
     hold_id = attr.ib(default=None)
     external_id = attr.ib(default=None)
     jurisdiction_name = attr.ib(default=None)
@@ -72,7 +72,7 @@ class Hold(object):
 
 
 @attr.s
-class Arrest(object):
+class Arrest:
     arrest_id = attr.ib(default=None)
     external_id = attr.ib(default=None)
     date = attr.ib(default=None)
@@ -83,7 +83,7 @@ class Arrest(object):
 
 
 @attr.s
-class Charge(object):
+class Charge:
     charge_id = attr.ib(default=None)
     external_id = attr.ib(default=None)
     offense_date = attr.ib(default=None)
@@ -106,7 +106,7 @@ class Charge(object):
 
 
 @attr.s
-class Bond(object):
+class Bond:
     bond_id = attr.ib(default=None)
     external_id = attr.ib(default=None)
     amount_dollars = attr.ib(default=None)
@@ -115,7 +115,7 @@ class Bond(object):
 
 
 @attr.s
-class Sentence(object):
+class Sentence:
     sentence_id = attr.ib(default=None)
     external_id = attr.ib(default=None)
     date_imposed = attr.ib(default=None)

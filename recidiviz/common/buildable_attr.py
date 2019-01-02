@@ -18,23 +18,24 @@
 import attr
 
 
-class BuildableAttr(object):
+class BuildableAttr:
     """Abstract base class for Attr objects that can be built with a Builder."""
 
     # Consider BuildableAttr abstract and only allow instantiating subclasses
+    # pylint: disable=unused-argument
     def __new__(cls, *args, **kwargs):
         if cls is BuildableAttr:
             raise Exception('Abstract class cannot be instantiated')
-        return super(BuildableAttr, cls).__new__(cls, *args, **kwargs)
+        return super().__new__(cls)
 
     class BuilderException(Exception):
         """Exception raised if the Attr object cannot be built."""
 
         def __init__(self, cls, required_fields, fields_with_value):
             message = _error_message(cls, required_fields, fields_with_value)
-            super(BuildableAttr.BuilderException, self).__init__(message)
+            super().__init__(message)
 
-    class Builder(object):
+    class Builder:
         """Builder used to build the specified |cls| Attr object."""
 
         def __init__(self, cls):
@@ -60,7 +61,7 @@ class BuildableAttr(object):
 
             fields_provided = set(self.fields.keys())
             fields_with_defaults = {field for field, attribute in
-                                    attr.fields_dict(self.cls).iteritems() if
+                                    attr.fields_dict(self.cls).items() if
                                     attribute.default is not attr.NOTHING}
             fields_with_value = fields_provided | fields_with_defaults
 
@@ -85,7 +86,7 @@ class BuildableAttr(object):
             the attributes are set to their default or None if a default is
             unspecified.
         """
-        for field, attribute in attr.fields_dict(cls).iteritems():
+        for field, attribute in attr.fields_dict(cls).items():
             default = attribute.default
 
             # Don't set a default if the field is already set

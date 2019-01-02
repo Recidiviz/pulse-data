@@ -32,7 +32,7 @@ import yaml
 from recidiviz.ingest.models.ingest_info import IngestInfo
 
 
-class DataExtractor(object):
+class DataExtractor:
     """Data extractor for pages with information about a single person."""
 
     def __init__(self, key_mapping_file=None):
@@ -79,11 +79,12 @@ class DataExtractor(object):
                 values to the internal keys
             ignored_keys: keys that exist on the page that we ignore
         """
-        self.keys = {k.strip():v for k, v in keys.iteritems()}
+        self.keys = {k.strip(): v for k, v in keys.items()}
         self.css_keys = css_keys
         self.keys.update(css_keys)
-        self.multi_keys = {k.strip():v for k, v in multi_keys.iteritems()}
-        self.all_keys = self.keys.keys() + self.multi_keys.keys() + ignored_keys
+        self.multi_keys = {k.strip(): v for k, v in multi_keys.items()}
+        self.all_keys = set(self.keys.keys()) | \
+            set(self.multi_keys.keys()) | set(ignored_keys)
         # We want to know which of the classes are multi keys as this helps
         # us with behaviour when we set the values.
         self.multi_key_classes = set(
@@ -138,7 +139,7 @@ class DataExtractor(object):
         # We use this set to keep track of keys we have seen, by the end of this
         # function it should be the empty set.  If not we throw an error to let
         # the user know we have a problem.
-        needed_keys = set(self.keys.keys() + self.multi_keys.keys())
+        needed_keys = set(self.keys.keys()) | set(self.multi_keys.keys())
 
         for cell in self.cells:
             # This is a tiny hack to avoid an O(n) search over the keys list for
@@ -203,7 +204,9 @@ class DataExtractor(object):
             # class type we want to set
             if is_multi_key:
                 attr = getattr(parent, class_to_set)
-                if attr != None and isinstance(attr, list) and len(attr) > i:
+                if attr is not None \
+                        and isinstance(attr, list) \
+                        and len(attr) > i:
                     object_to_set = attr[i]
 
             create_name = 'create_' + class_to_set
@@ -212,7 +215,7 @@ class DataExtractor(object):
             # already set the ingest_key then we know we need to create a
             # new one.
             if (object_to_set is None or
-                    getattr(object_to_set, ingest_key) != None):
+                    getattr(object_to_set, ingest_key) is not None):
                 object_to_set = create_func()
 
             setattr(object_to_set, ingest_key, value)
@@ -364,10 +367,7 @@ class DataExtractor(object):
         Returns:
             The cell below or None.
         """
-        try:
-            return self._below(cell).next()
-        except StopIteration:
-            return None
+        return next(self._below(cell), None)
 
     def _get_all_below(self, cell):
         """Gets all the cells below the given |cell|.

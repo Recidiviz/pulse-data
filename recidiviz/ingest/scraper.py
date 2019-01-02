@@ -21,37 +21,21 @@ inherit from.
 """
 
 import abc
-import json
 import logging
 from datetime import datetime
 
-import requests_toolbelt.adapters.appengine
 import requests
 
-from google.appengine.ext import deferred
-from google.appengine.ext.db import InternalError
-from google.appengine.ext.db import Timeout, TransactionFailedError
-from google.appengine.api import taskqueue
-from google.appengine.api import urlfetch
 from recidiviz.ingest import constants
 from recidiviz.ingest import scraper_utils
 from recidiviz.ingest import sessions
 from recidiviz.ingest.models.scrape_key import ScrapeKey
+from recidiviz.ingest import queues
 from recidiviz.ingest import tracker
 from recidiviz.utils.regions import Region
 
-# Use the App Engine Requests adapter to make sure that Requests plays
-# nice with GAE
-requests_toolbelt.adapters.appengine.monkeypatch()
-urlfetch.set_default_fetch_deadline(60)
 
-# Squelch urllib3 / sockets platform warning
-requests.packages.urllib3.disable_warnings(
-    requests.packages.urllib3.contrib.appengine.AppEnginePlatformWarning
-)
-
-
-class Scraper(object):
+class Scraper(metaclass=abc.ABCMeta):
     """The base for all scraper objects. It handles basic setup, scrape
     process control (start, resume, stop), web requests, task
     queueing, state tracking, and a bunch of static convenience
@@ -61,8 +45,6 @@ class Scraper(object):
     method, which is used to iterate docket items.
 
     """
-
-    __metaclass__ = abc.ABCMeta
 
     def __init__(self, region_name):
         """Initialize the parent scraper object.
@@ -77,7 +59,7 @@ class Scraper(object):
             self.get_region().region_code + "_next_page_fail_counter")
         self.scraper_work_url = '/scraper/work'
 
-    def person_id_to_record_id(self, person_id):
+    def person_id_to_record_id(self, _person_id):
         """Abstract method for child classes to map a person ID to a DB
         record ID.
 
@@ -87,7 +69,7 @@ class Scraper(object):
             A record id mapped from the given person id.
 
         """
-        pass
+        return None
 
     @abc.abstractmethod
     def get_initial_task(self):
@@ -98,7 +80,6 @@ class Scraper(object):
             The name of the function to run as the first task.
 
         """
-        pass
 
     def get_region(self):
         """Retrieve the region object associated with this scraper.
@@ -165,23 +146,22 @@ class Scraper(object):
             N/A
 
         """
+        queues.purge_queue(self.get_region().queue)
+
         # Check for other running scrapes, and if found kick off a delayed
-        # resume for them since the taskqueue purge below will kill them.
+        # resume for them since the taskqueue purge will kill them.
         other_scrapes = set([])
 
-        open_sessions = sessions.get_open_sessions(
-            self.get_region().region_code)
+        open_sessions = sessions.get_sessions(self.get_region().region_code,
+                                              include_closed=False)
         for session in open_sessions:
             if session.scrape_type not in scrape_types:
                 other_scrapes.add(session.scrape_type)
 
         for scrape in other_scrapes:
-            logging.info("Setting 60s deferred task to resume unaffected "
-                         "scrape type: %s.", str(scrape))
-            deferred.defer(self.resume_scrape, scrape, _countdown=60)
+            logging.info("Resuming unaffected scrape type: %s.", str(scrape))
+            self.resume_scrape(scrape)
 
-        q = taskqueue.Queue(self.get_region().queue)
-        q.purge()
 
     def resume_scrape(self, scrape_type):
         """Resume a stopped scrape from where it left off
@@ -314,16 +294,16 @@ class Scraper(object):
 
         Returns:
             The content if successful, -1 if fails.
-
         """
-
-        params_serial = json.dumps(params)
-
-        taskqueue.add(url=self.scraper_work_url,
-                      queue_name=self.get_region().queue,
-                      params={'region': self.get_region().region_code,
-                              'task': task_name,
-                              'params': params_serial})
+        queues.create_task(
+            url=self.scraper_work_url,
+            queue_name=self.get_region().queue,
+            body={
+                'region': self.get_region().region_code,
+                'task': task_name,
+                'params': params
+            }
+        )
 
     def iterate_docket_item(self, scrape_type):
         """Leases new docket item, updates current session, returns item
@@ -339,7 +319,6 @@ class Scraper(object):
             If successful:
                 Background scrape: ("surname", "given names")
                 Snapshot scrape:   ("record_id", ["records to ignore", ...])
-
         """
 
         item_content = tracker.iterate_docket_item(
@@ -352,6 +331,7 @@ class Scraper(object):
             # Content will be in the form (person ID, [list of records
             # to ignore]); allow the child class to convert person to
             # record
+            # pylint:disable=assignment-from-none
             record_id = self.person_id_to_record_id(item_content[0])
 
             if not record_id:
@@ -362,87 +342,3 @@ class Scraper(object):
             return record_id, item_content[1]
 
         return item_content
-
-    def compare_and_set_snapshot(self, old_record, snapshot):
-        """Check for updates since last scrape, if found persist new snapshot
-        Checks the last snapshot taken for this record, and if fields
-        have changed since the last time the record was updated (or
-        the record has no old snapshots) stores new snapshot.
-
-        The new snapshot will only include those fields which have changed.
-        Args:
-            old_record: (Record) The record entity this
-                snapshot pertains to
-            snapshot: (Snapshot) Snapshot object with details from
-                current scrape.
-        Returns:
-            True if successful
-            False if datastore errors
-
-        """
-        new_snapshot = False
-
-        # pylint:disable=protected-access
-        snapshot_class = self.region.get_snapshot_kind()
-
-        last_snapshot = snapshot_class.query(
-            ancestor=old_record.key).order(
-                -snapshot_class.created_on).get()
-
-        if last_snapshot:
-            snapshot_attrs = snapshot_class._properties
-            for attribute in snapshot_attrs:
-                if attribute not in ["class", "created_on", "offense"]:
-                    current_value = getattr(snapshot, attribute)
-                    last_value = getattr(old_record, attribute)
-                    if current_value != last_value:
-                        new_snapshot = True
-                        logging.info("Found change in person snapshot: field "
-                                     "%s was '%s', is now '%s'.",
-                                     attribute, last_value, current_value)
-                    else:
-                        setattr(snapshot, attribute, None)
-
-                elif attribute == "offense":
-                    # Offenses have to be treated differently -
-                    # setting them to None means an empty list or
-                    # tuple instead of None, and an unordered list of
-                    # them can't be compared to another unordered list
-                    # of them.
-                    offense_changed = False
-
-                    # Check if any new offenses have been added
-                    for charge in snapshot.offense:
-                        if charge in old_record.offense:
-                            pass
-                        else:
-                            offense_changed = True
-
-                    # Check if any old offenses have been removed
-                    for charge in old_record.offense:
-                        if charge in snapshot.offense:
-                            pass
-                        else:
-                            offense_changed = True
-
-                    if offense_changed:
-                        new_snapshot = True
-                        logging.info("Found change in person snapshot: field "
-                                     "%s was '%s', is now '%s'.", attribute,
-                                     old_record.offense, snapshot.offense)
-                    else:
-                        setattr(snapshot, attribute, [])
-
-        else:
-            # This is the first snapshot, store everything
-            new_snapshot = True
-
-        if new_snapshot:
-            try:
-                snapshot.put()
-            except (Timeout, TransactionFailedError, InternalError):
-                logging.warning("Couldn't store new snapshot for record %s",
-                                old_record.record_id)
-                return False
-
-        return True

@@ -29,7 +29,6 @@ from recidiviz.utils import environment
 
 class PersistenceError(Exception):
     """Raised when an error with the persistence layer is encountered."""
-    pass
 
 
 def infer_release_on_open_bookings(region, last_ingest_time):
@@ -80,7 +79,8 @@ def _infer_release_date_for_bookings(bookings, date):
 
 
 def _should_persist():
-    return environment.in_prod() or strtobool((os.environ['PERSIST_LOCALLY']))
+    return environment.in_prod() or \
+        strtobool((os.environ.get('PERSIST_LOCALLY', 'false')))
 
 
 def write(ingest_info, region, last_seen_time):

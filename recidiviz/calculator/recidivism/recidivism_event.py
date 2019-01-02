@@ -18,7 +18,7 @@
 """Events of recidivism and non-recidivism for calculation."""
 
 
-class RecidivismEvent(object):
+class RecidivismEvent:
     """Models details related to a recidivism or non-recidivism event.
 
     This includes the information pertaining to a release from prison that we

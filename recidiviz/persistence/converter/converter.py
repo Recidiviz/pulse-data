@@ -34,7 +34,7 @@ def convert(ingest_info):
     return _Converter(ingest_info).convert()
 
 
-class _Converter(object):
+class _Converter:
     """Converts between ingest_info objects and persistence layer entity."""
 
     def __init__(self, ingest_info):

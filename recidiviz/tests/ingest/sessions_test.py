@@ -19,416 +19,580 @@
 
 
 from datetime import datetime
-from google.appengine.ext import ndb
-from google.appengine.ext import testbed
-from recidiviz.ingest import constants
-from recidiviz.ingest import sessions
+
+import pytest
+import pytz
+from google.cloud import datastore
+from mock import patch
+
+from recidiviz.ingest import constants, sessions
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.sessions import ScrapeSession
 
+fixed_now = datetime(2000, 1, 1)
 
-class TestWriteSessions(object):
+
+class TestWriteSessions:
     """Tests for the create_session, end_session, and update_session methods
     in the module."""
 
     def setup_method(self, _test_method):
-        # noinspection PyAttributeOutsideInit
-        self.testbed = testbed.Testbed()
-        self.testbed.activate()
-        self.testbed.init_datastore_v3_stub()
-        context = ndb.get_context()
-        context.set_memcache_policy(False)
-        context.clear_cache()
+        sessions.clear_ds()
 
     def teardown_method(self, _test_method):
-        self.testbed.deactivate()
+        sessions.clear_ds()
 
-    def test_create_session(self):
+    @patch('google.cloud.datastore.Client')
+    @patch('recidiviz.ingest.sessions.datetime')
+    def test_create_session(self, mock_datetime, mock_client):
+        mock_datetime.now.return_value = fixed_now
+
+        # Must use a full key so that the entities are equal.
+        key = datastore.key.Key('session', 'key', project=0)
+
+        client = mock_client.return_value
+        client.key.return_value = key
+
         scrape_key = ScrapeKey("us_ok", constants.SNAPSHOT_SCRAPE)
         sessions.create_session(scrape_key)
 
-        session = sessions.get_current_session(scrape_key)
-        assert session.region == "us_ok"
-        assert session.scrape_type == constants.SNAPSHOT_SCRAPE
-        assert session.docket_item is None
-        assert session.end is None
-        assert session.last_scraped is None
+        session = ScrapeSession.new(
+            key=datastore.key.Key('session', 'key', project=0), start=fixed_now,
+            scrape_type=constants.SNAPSHOT_SCRAPE, region='us_ok',
+        )
+        client.put.assert_called_with(session.to_entity())
 
-    def test_create_session_something_to_end(self):
+    @patch('google.cloud.datastore.Query')
+    @patch('google.cloud.datastore.Client')
+    @patch('recidiviz.ingest.sessions.datetime')
+    def test_create_session_with_existing(
+            self, mock_datetime, mock_client, mock_query
+    ):
+        mock_datetime.now.return_value = fixed_now
+
+        existing_session = ScrapeSession.new(
+            key=datastore.key.Key('session', 'existing', project=0),
+            start=fixed_now, scrape_type=constants.BACKGROUND_SCRAPE,
+            region='us_ny',
+        )
+        new_key = datastore.key.Key('session', 'new', project=0)
+        new_session = ScrapeSession.new(
+            key=new_key, start=fixed_now,
+            scrape_type=constants.BACKGROUND_SCRAPE, region='us_wy',
+        )
+
+        client = mock_client.return_value
+        client.key.return_value = new_key
+        wire_sessions_to_query(mock_client, mock_query, [existing_session])
+
         scrape_key = ScrapeKey("us_wy", constants.BACKGROUND_SCRAPE)
         sessions.create_session(scrape_key)
-        sessions.create_session(scrape_key)
-        sessions.create_session(scrape_key)
 
-        results = sessions.get_open_sessions(
-            "us_wy", open_only=False, scrape_type=constants.BACKGROUND_SCRAPE)
+        existing_session.update({'end': fixed_now})
+        client.put.assert_any_call(existing_session.to_entity())
+        client.put.assert_any_call(new_session.to_entity())
+        assert client.put.call_count == 2
 
-        assert len(results) == 3
+    @patch('google.cloud.datastore.Query')
+    @patch('google.cloud.datastore.Client')
+    @patch('recidiviz.ingest.sessions.datetime')
+    def test_update_session(self, mock_datetime, mock_client, mock_query):
+        mock_datetime.now.return_value = fixed_now
 
-        current_session = results[0]
-        assert current_session.region == "us_wy"
-        assert current_session.scrape_type == constants.BACKGROUND_SCRAPE
-        assert current_session.docket_item is None
-        assert current_session.end is None
-        assert current_session.last_scraped is None
+        key = datastore.key.Key('session', 'key', project=0)
+        session = ScrapeSession.new(
+            key, start=fixed_now, scrape_type=constants.SNAPSHOT_SCRAPE,
+            region='us_sd'
+        )
 
-        for i in range(1, 3):
-            session = results[i]
-            assert session.region == "us_wy"
-            assert session.scrape_type == constants.BACKGROUND_SCRAPE
-            assert session.end
+        wire_sessions_to_query(mock_client, mock_query, [session])
 
-    def test_update_session(self):
         scrape_key = ScrapeKey("us_sd", constants.SNAPSHOT_SCRAPE)
-        sessions.create_session(scrape_key)
-
         assert sessions.update_session("CAMUS, ALBERT", scrape_key)
-        session = sessions.get_current_session(scrape_key)
-        assert session.region == "us_sd"
-        assert session.scrape_type == constants.SNAPSHOT_SCRAPE
-        assert session.last_scraped == "CAMUS, ALBERT"
 
-    def test_update_session_nothing_current(self):
+        session.update({'last_scraped': 'CAMUS, ALBERT'})
+        mock_client.return_value.put.assert_called_with(session.to_entity())
+
+    @patch('google.cloud.datastore.Client')
+    def test_update_session_nothing_current(self, _mock_client):
         scrape_key = ScrapeKey("us_sd", constants.BACKGROUND_SCRAPE)
         assert not sessions.update_session("VONNEGUT, KURT", scrape_key)
 
 
-class TestAddDocketItemToCurrentSession(object):
+class TestAddDocketItemToCurrentSession:
     """Tests for the add_docket_item_to_current_session method in the module."""
 
     def setup_method(self, _test_method):
-        # noinspection PyAttributeOutsideInit
-        self.testbed = testbed.Testbed()
-        self.testbed.activate()
-        self.testbed.init_datastore_v3_stub()
-        context = ndb.get_context()
-        context.set_memcache_policy(False)
-        context.clear_cache()
+        sessions.clear_ds()
 
     def teardown_method(self, _test_method):
-        self.testbed.deactivate()
+        sessions.clear_ds()
 
-    def test_add_item_happy_path(self):
-        current = create_open_session("us_va", constants.SNAPSHOT_SCRAPE,
-                                      datetime(2014, 8, 31), None)
-        create_open_session("us_ny", constants.SNAPSHOT_SCRAPE,
-                            datetime(2014, 8, 17), None)
+    @patch('google.cloud.datastore.Query')
+    @patch('google.cloud.datastore.Client')
+    def test_add_item_happy_path(self, mock_client, mock_query):
+        current_session_key = datastore.key.Key('session', 'current', project=0)
+        current_session_vars = {
+            'region': 'us_va',
+            'scrape_type': constants.SNAPSHOT_SCRAPE,
+            'start': fix_dt(datetime(2014, 8, 31))
+        }
+        current_session = ScrapeSession.new(current_session_key,
+                                            **current_session_vars)
+        prior_session = ScrapeSession.new(
+            datastore.key.Key('session', 'prior', project=0), region='us_ny',
+            scrape_type=constants.SNAPSHOT_SCRAPE, start=fix_dt(
+                datetime(2014, 8, 17)),
+        )
 
-        success = sessions.add_docket_item_to_current_session(
+        wire_sessions_to_query(
+            mock_client, mock_query, [current_session, prior_session])
+
+        assert sessions.add_docket_item_to_current_session(
             "alpha", ScrapeKey("us_va", constants.SNAPSHOT_SCRAPE))
 
-        assert success
+        current_session_vars.update({'docket_ack_id': 'alpha'})
+        expected_session = ScrapeSession.new(
+            current_session_key, **current_session_vars
+        )
+        mock_client.return_value.put.assert_called_with(
+            expected_session.to_entity())
 
-        session = sessions.get_open_sessions(current.region,
-                                             most_recent_only=True,
-                                             scrape_type=current.scrape_type)
-
-        assert session.region == current.region
-        assert session.scrape_type == current.scrape_type
-        assert session.start == current.start
-        assert session.end == current.end
-        assert session.docket_item == "alpha"
-
-    def test_add_item_no_open_sessions(self):
-        create_closed_session(
-            "us_va", constants.SNAPSHOT_SCRAPE, datetime(2014, 8, 31),
-            datetime(2014, 9, 4), None)
-
-        success = sessions.add_docket_item_to_current_session(
+    @patch('google.cloud.datastore.Client')
+    def test_add_item_no_open_sessions(self, _mock_client):
+        assert not sessions.add_docket_item_to_current_session(
             "alpha", ScrapeKey("us_va", constants.SNAPSHOT_SCRAPE))
 
-        assert not success
+
+def wire_sessions_to_query(mock_client, mock_query, session_list):
+    client = mock_client.return_value
+    query = mock_query.return_value
+    client.query.return_value = query
+    query.fetch.return_value = (session.to_entity() for session in session_list)
 
 
-class TestGetOpenSessions(object):
-    """Tests for the get_open_sessions method in the module."""
+def fix_dt(dt):
+    return dt.replace(tzinfo=pytz.UTC)
 
+
+@pytest.mark.usefixtures("emulator")
+class TestSessionManager:
+    """Tests for various query methods in the module."""
     def setup_method(self, _test_method):
-        # noinspection PyAttributeOutsideInit
-        self.testbed = testbed.Testbed()
-        self.testbed.activate()
-        self.testbed.init_datastore_v3_stub()
-        context = ndb.get_context()
-        context.set_memcache_policy(False)
-        context.clear_cache()
+        self.keys_to_delete = []
 
     def teardown_method(self, _test_method):
-        self.testbed.deactivate()
+        sessions.ds().delete_multi(self.keys_to_delete)
 
-    def test_get_open_sessions_defaults(self):
-        first = create_open_session("us_ny", constants.BACKGROUND_SCRAPE,
-                                    datetime(2009, 6, 17), "a")
-        second = create_open_session("us_ny", constants.SNAPSHOT_SCRAPE,
-                                     datetime(2009, 6, 18), "b")
-        create_closed_session(
-            "us_ny", constants.BACKGROUND_SCRAPE, datetime(2009, 6, 19),
-            datetime(2009, 6, 21), "c")
-        create_open_session("us_fl", constants.SNAPSHOT_SCRAPE,
-                            datetime(2009, 6, 19), "d")
+    def test_get_sessions_defaults(self):
+        first = self.create_session(
+            region_code="us_ny", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 17)))
+        second = self.create_session(
+            region_code="us_ny", scrape_type=constants.SNAPSHOT_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 18)))
+        third = self.create_session(
+            region_code="us_ny", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 19)),
+            end=fix_dt(datetime(2009, 6, 21)))
+        # different region
+        self.create_session(
+            region_code="us_fl", scrape_type=constants.SNAPSHOT_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 19)))
+        results = sessions.get_sessions("us_ny")
+        assert to_entities(results) == to_entities([third, second, first])
 
-        results = sessions.get_open_sessions("us_ny")
-        assert results == [second, first]
+    def test_get_sessions_defaults_with_order(self):
+        first = self.create_session(
+            region_code="us_ny", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 17)),
+            end=fix_dt(datetime(2009, 6, 18)))
+        second = self.create_session(
+            region_code="us_ny", scrape_type=constants.SNAPSHOT_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 18)),
+            end=fix_dt(datetime(2009, 6, 19)))
+        third = self.create_session(
+            region_code="us_ny", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 19)))
+        results = sessions.get_sessions("us_ny")
+        assert to_entities(results) == to_entities([third, second, first])
 
-    def test_get_open_sessions_most_recent_only(self):
-        create_open_session(
-            "us_ny", constants.BACKGROUND_SCRAPE, datetime(2009, 6, 17), "a")
-        second = create_open_session("us_ny", constants.SNAPSHOT_SCRAPE,
-                                     datetime(2009, 6, 18), "b")
-        create_closed_session(
-            "us_ny", constants.BACKGROUND_SCRAPE, datetime(2009, 6, 19),
-            datetime(2009, 6, 21), "c")
-        create_open_session("us_fl", constants.SNAPSHOT_SCRAPE,
-                            datetime(2009, 6, 19), "d")
+    def test_get_sessions_most_recent_only(self):
+        # older
+        self.create_session(
+            region_code="us_ny", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 17)))
+        self.create_session(
+            region_code="us_ny", scrape_type=constants.SNAPSHOT_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 18)))
+        third = self.create_session(
+            region_code="us_ny", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 19)),
+            end=fix_dt(datetime(2009, 6, 21)))
+        # different region
+        self.create_session(
+            region_code="us_fl", scrape_type=constants.SNAPSHOT_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 19)))
+        results = sessions.get_sessions("us_ny", most_recent_only=True)
+        assert to_entities(results) == to_entities([third])
 
-        result = sessions.get_open_sessions("us_ny", most_recent_only=True)
-        assert result == second
+    def test_get_sessions_open_most_recent_only(self):
+        # older
+        self.create_session(
+            region_code="us_ny", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 17)))
+        second = self.create_session(
+            region_code="us_ny", scrape_type=constants.SNAPSHOT_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 18)))
+        # closed
+        self.create_session(
+            region_code="us_ny", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 19)),
+            end=fix_dt(datetime(2009, 6, 21)))
+        # different region
+        self.create_session(
+            region_code="us_fl", scrape_type=constants.SNAPSHOT_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 19)))
+        results = sessions.get_sessions("us_ny", include_closed=False,
+                                        most_recent_only=True)
+        assert to_entities(results) == to_entities([second])
+
+    def test_get_sessions_open_only(self):
+        first = self.create_session(
+            region_code="us_ny", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 17)))
+        second = self.create_session(
+            region_code="us_ny", scrape_type=constants.SNAPSHOT_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 18)))
+        # closed
+        self.create_session(
+            region_code="us_ny", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 19)),
+            end=fix_dt(datetime(2009, 6, 21)))
+        # different region
+        self.create_session(
+            region_code="us_fl", scrape_type=constants.SNAPSHOT_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 19)))
+        results = sessions.get_sessions("us_ny", include_closed=False)
+        assert to_entities(results) == to_entities([second, first])
+
+    def test_get_sessions_background_only(self):
+        first = self.create_session(
+            region_code="us_ny", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 17)))
+        # snapshot
+        self.create_session(
+            region_code="us_ny", scrape_type=constants.SNAPSHOT_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 18)))
+        third = self.create_session(
+            region_code="us_ny", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 19)),
+            end=fix_dt(datetime(2009, 6, 21)))
+        # different region
+        self.create_session(
+            region_code="us_fl", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 19)))
+        results = sessions.get_sessions(
+            "us_ny", scrape_type=constants.BACKGROUND_SCRAPE)
+        assert to_entities(results) == to_entities([third, first])
+
+    def test_get_sessions_background_and_open_only(self):
+        first = self.create_session(
+            region_code="us_ny", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 17)))
+        # snapshot
+        self.create_session(
+            region_code="us_ny", scrape_type=constants.SNAPSHOT_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 18)))
+        # closed
+        self.create_session(
+            region_code="us_ny", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 19)),
+            end=fix_dt(datetime(2009, 6, 21)))
+        # different region, scrape type
+        self.create_session(
+            region_code="us_fl", scrape_type=constants.SNAPSHOT_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 19)))
+        results = sessions.get_sessions(
+            "us_ny", include_closed=False,
+            scrape_type=constants.BACKGROUND_SCRAPE)
+        assert to_entities(results) == to_entities([first])
+
+    def test_get_sessions_background_and_open_and_most_recent_only(self):
+        first = self.create_session(
+            region_code="us_ny", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 17)))
+        # different scrape type
+        self.create_session(
+            region_code="us_ny", scrape_type=constants.SNAPSHOT_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 18)))
+        # closed
+        self.create_session(
+            region_code="us_ny", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 19)),
+            end=fix_dt(datetime(2009, 6, 21)))
+        # different region, scrape type
+        self.create_session(
+            region_code="us_fl", scrape_type=constants.SNAPSHOT_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 19)))
+        # older
+        self.create_session(
+            region_code="us_ny", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 14)))
+        results = sessions.get_sessions(
+            "us_ny", include_closed=False, most_recent_only=True,
+            scrape_type=constants.BACKGROUND_SCRAPE)
+        assert to_entities(results) == to_entities([first])
+
+    def test_get_sessions_none_for_region(self):
+        self.create_session(
+            region_code="us_ny", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 17)))
+        self.create_session(
+            region_code="us_ny", scrape_type=constants.SNAPSHOT_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 18)))
+        self.create_session(
+            region_code="us_ny", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 19)),
+            end=fix_dt(datetime(2009, 6, 21)))
+        self.create_session(
+            region_code="us_fl", scrape_type=constants.SNAPSHOT_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 19)))
+        results = sessions.get_sessions("us_mo")
+        assert not to_entities(results)
+
+    def test_get_sessions_none_for_scrape_type(self):
+        self.create_session(
+            region_code="us_ny", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 17)))
+        self.create_session(
+            region_code="us_ny", scrape_type=constants.SNAPSHOT_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 18)))
+        self.create_session(
+            region_code="us_ny", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 19)),
+            end=fix_dt(datetime(2009, 6, 21)))
+        self.create_session(
+            region_code="us_fl", scrape_type=constants.SNAPSHOT_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 19)))
+        results = sessions.get_sessions(
+            "us_fl", scrape_type=constants.BACKGROUND_SCRAPE)
+        assert not to_entities(results)
+
+    def test_get_sessions_none_open(self):
+        # different region
+        self.create_session(
+            region_code="us_ny", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 17)))
+        # different region
+        self.create_session(
+            region_code="us_ny", scrape_type=constants.SNAPSHOT_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 18)))
+        # closed, different region
+        self.create_session(
+            region_code="us_ny", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 19)),
+            end=fix_dt(datetime(2009, 6, 21)))
+        # closed
+        self.create_session(
+            region_code="us_fl", scrape_type=constants.SNAPSHOT_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 19)),
+            end=fix_dt(datetime(2009, 6, 21)))
+        results = sessions.get_sessions("us_fl", include_closed=False)
+        assert not to_entities(results)
+
+    def test_get_sessions_none_closed(self):
+        # open, different region
+        self.create_session(
+            region_code="us_ny", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 17)))
+        # open, different region
+        self.create_session(
+            region_code="us_ny", scrape_type=constants.SNAPSHOT_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 18)))
+        # different region
+        self.create_session(
+            region_code="us_ny", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 19)),
+            end=fix_dt(datetime(2009, 6, 21)))
+        # open
+        self.create_session(
+            region_code="us_fl", scrape_type=constants.SNAPSHOT_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 19)))
+        results = sessions.get_sessions("us_fl", include_open=False)
+        assert not to_entities(results)
+
+    def test_get_sessions_none_at_all(self):
+        results = sessions.get_sessions("us_ny")
+        assert not to_entities(results)
+
+    def test_get_sessions_not_open_or_closed(self):
+        # different region
+        self.create_session(
+            region_code="us_ny", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 17)))
+        # open
+        self.create_session(
+            region_code="us_fl", scrape_type=constants.SNAPSHOT_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 18)))
+        # closed
+        self.create_session(
+            region_code="us_fl", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 19)),
+            end=fix_dt(datetime(2009, 6, 21)))
+        results = sessions.get_sessions("us_fl", include_open=False,
+                                        include_closed=False)
+        assert not to_entities(results)
 
     def test_get_most_recently_closed_session(self):
-        create_closed_session("us_ny", constants.BACKGROUND_SCRAPE,
-                              datetime(2009, 6, 17), datetime(2009, 6,
-                                                              18),
-                              "a")
-        create_open_session("us_ny", constants.SNAPSHOT_SCRAPE,
-                            datetime(2009, 6, 18), "b")
-        third = create_closed_session("us_ny", constants.BACKGROUND_SCRAPE,
-                                      datetime(2009, 6, 19),
-                                      datetime(2009, 6, 21), "c")
-        create_open_session("us_fl", constants.SNAPSHOT_SCRAPE,
-                            datetime(2009, 6, 19), "d")
+        self.create_session(
+            region_code="us_ny", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 17)),
+            end=fix_dt(datetime(2009, 6, 18)))
+        second = self.create_session(
+            region_code="us_ny", scrape_type=constants.SNAPSHOT_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 18)),
+            end=fix_dt(datetime(2009, 6, 21)))
+        self.create_session(
+            region_code="us_ny", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 19)))
+        self.create_session(
+            region_code="us_fl", scrape_type=constants.SNAPSHOT_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 19)))
 
-        results = sessions.get_most_recent_completed_session("us_ny")
-        assert results == third
-
-    def test_get_open_sessions_open_or_closed(self):
-        first = create_open_session("us_ny", constants.BACKGROUND_SCRAPE,
-                                    datetime(2009, 6, 17), "a")
-        second = create_open_session("us_ny", constants.SNAPSHOT_SCRAPE,
-                                     datetime(2009, 6, 18), "b")
-        third = create_closed_session("us_ny", constants.BACKGROUND_SCRAPE,
-                                      datetime(2009, 6, 19),
-                                      datetime(2009, 6, 21), "c")
-        create_open_session("us_fl", constants.SNAPSHOT_SCRAPE,
-                            datetime(2009, 6, 19), "d")
-
-        results = sessions.get_open_sessions("us_ny", open_only=False)
-        assert results == [third, second, first]
-
-    def test_get_open_sessions_background_only(self):
-        first = create_open_session("us_ny", constants.BACKGROUND_SCRAPE,
-                                    datetime(2009, 6, 17), "a")
-        create_open_session("us_ny", constants.SNAPSHOT_SCRAPE,
-                            datetime(2009, 6, 18), "b")
-        third = create_closed_session("us_ny", constants.BACKGROUND_SCRAPE,
-                                      datetime(2009, 6, 19),
-                                      datetime(2009, 6, 21), "c")
-        create_open_session("us_fl", constants.SNAPSHOT_SCRAPE,
-                            datetime(2009, 6, 19), "d")
-
-        results = sessions.get_open_sessions(
-            "us_ny", open_only=False, scrape_type=constants.BACKGROUND_SCRAPE)
-        assert results == [third, first]
-
-    def test_get_open_sessions_background_and_open_only(self):
-        first = create_open_session("us_ny", constants.BACKGROUND_SCRAPE,
-                                    datetime(2009, 6, 17), "a")
-        create_open_session("us_ny", constants.SNAPSHOT_SCRAPE,
-                            datetime(2009, 6, 18), "b")
-        create_closed_session("us_ny", constants.BACKGROUND_SCRAPE,
-                              datetime(2009, 6, 19),
-                              datetime(2009, 6, 21), "c")
-        create_open_session("us_fl", constants.SNAPSHOT_SCRAPE,
-                            datetime(2009, 6, 19), "d")
-
-        result = sessions.get_open_sessions(
-            "us_ny", scrape_type=constants.BACKGROUND_SCRAPE)
-        assert result == [first]
-
-    def test_get_open_sessions_background_and_open_and_most_recent_only(self):
-        first = create_open_session("us_ny", constants.BACKGROUND_SCRAPE,
-                                    datetime(2009, 6, 17), "a")
-        create_open_session("us_ny", constants.SNAPSHOT_SCRAPE,
-                            datetime(2009, 6, 18), "b")
-        create_closed_session("us_ny", constants.BACKGROUND_SCRAPE,
-                              datetime(2009, 6, 19),
-                              datetime(2009, 6, 21), "c")
-        create_open_session("us_fl", constants.SNAPSHOT_SCRAPE,
-                            datetime(2009, 6, 19), "d")
-        create_open_session(
-            "us_ny", constants.BACKGROUND_SCRAPE, datetime(2009, 6, 14), "e")
-
-        results = sessions.get_open_sessions(
-            "us_ny", most_recent_only=True,
-            scrape_type=constants.BACKGROUND_SCRAPE)
-        assert results == first
-
-    def test_get_open_sessions_none_for_region(self):
-        create_open_session(
-            "us_ny", constants.BACKGROUND_SCRAPE, datetime(2009, 6, 17), "a")
-        create_open_session("us_ny", constants.SNAPSHOT_SCRAPE,
-                            datetime(2009, 6, 18), "b")
-        create_closed_session("us_ny", constants.BACKGROUND_SCRAPE,
-                              datetime(2009, 6, 19),
-                              datetime(2009, 6, 21), "c")
-        create_open_session("us_fl", constants.SNAPSHOT_SCRAPE,
-                            datetime(2009, 6, 19), "d")
-
-        results = sessions.get_open_sessions("us_mo")
-        assert not results
-
-    def test_get_open_sessions_none_for_scrape_type(self):
-        create_open_session(
-            "us_ny", constants.BACKGROUND_SCRAPE, datetime(2009, 6, 17), "a")
-        create_open_session("us_ny", constants.SNAPSHOT_SCRAPE,
-                            datetime(2009, 6, 18), "b")
-        create_closed_session("us_ny", constants.BACKGROUND_SCRAPE,
-                              datetime(2009, 6, 19),
-                              datetime(2009, 6, 21), "c")
-        create_open_session("us_fl", constants.SNAPSHOT_SCRAPE,
-                            datetime(2009, 6, 19), "d")
-
-        results = sessions.get_open_sessions(
-            "us_fl", scrape_type=constants.BACKGROUND_SCRAPE)
-        assert not results
-
-    def test_get_open_sessions_none_open(self):
-        create_open_session(
-            "us_ny", constants.BACKGROUND_SCRAPE, datetime(2009, 6, 17), "a")
-        create_open_session("us_ny", constants.SNAPSHOT_SCRAPE,
-                            datetime(2009, 6, 18), "b")
-        create_closed_session("us_ny", constants.BACKGROUND_SCRAPE,
-                              datetime(2009, 6, 19),
-                              datetime(2009, 6, 21), "c")
-        create_closed_session(
-            "us_fl", constants.SNAPSHOT_SCRAPE, datetime(2009, 6, 19),
-            datetime(2009, 6, 21), "d")
-
-        results = sessions.get_open_sessions("us_fl")
-        assert not results
-
-    def test_get_open_sessions_none_at_all(self):
-        results = sessions.get_open_sessions("us_ny")
-        assert not results
+        result = sessions.get_most_recent_completed_session("us_ny")
+        assert result.to_entity() == second.to_entity()
 
     def test_get_current_session(self):
-        first = create_open_session("us_ny", constants.BACKGROUND_SCRAPE,
-                                    datetime(2009, 6, 17), "a")
-        create_open_session("us_ny", constants.SNAPSHOT_SCRAPE,
-                            datetime(2009, 6, 18), "b")
-        create_closed_session("us_ny", constants.BACKGROUND_SCRAPE,
-                              datetime(2009, 6, 19),
-                              datetime(2009, 6, 21), "c")
-        create_open_session("us_fl", constants.SNAPSHOT_SCRAPE,
-                            datetime(2009, 6, 19), "d")
-        create_open_session(
-            "us_ny", constants.BACKGROUND_SCRAPE, datetime(2009, 6, 14), "e")
+        # older
+        self.create_session(
+            region_code="us_ny", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 17)))
+        current = self.create_session(
+            region_code="us_ny", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 18)))
+        # closed
+        self.create_session(
+            region_code="us_ny", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 19)),
+            end=fix_dt(datetime(2009, 6, 21)))
+        # different scrape type
+        self.create_session(
+            region_code="us_ny", scrape_type=constants.SNAPSHOT_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 19)))
+        # different region
+        self.create_session(
+            region_code="us_fl", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 19)))
 
         result = sessions.get_current_session(
             ScrapeKey("us_ny", constants.BACKGROUND_SCRAPE))
-        assert result == first
+
+        assert result.to_entity() == current.to_entity()
 
     def test_get_recent_sessions(self):
-        first = create_open_session("us_ny", constants.BACKGROUND_SCRAPE,
-                                    datetime(2009, 6, 17), "a")
-        create_open_session("us_ny", constants.SNAPSHOT_SCRAPE,
-                            datetime(2009, 6, 18), "b")
-        third = create_closed_session("us_ny", constants.BACKGROUND_SCRAPE,
-                                      datetime(2009, 6, 19),
-                                      datetime(2009, 6, 21), "c")
-        create_open_session("us_fl", constants.SNAPSHOT_SCRAPE,
-                            datetime(2009, 6, 19), "d")
+        first = self.create_session(
+            region_code="us_ny", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 17)))
+        # different scrape type
+        self.create_session(
+            region_code="us_ny", scrape_type=constants.SNAPSHOT_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 18)))
+        third = self.create_session(
+            region_code="us_ny", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 19)),
+            end=fix_dt(datetime(2009, 6, 21)))
+        # different region, scrape type
+        self.create_session(
+            region_code="us_fl", scrape_type=constants.SNAPSHOT_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 19)))
 
         results = sessions.get_recent_sessions(
             ScrapeKey("us_ny", constants.BACKGROUND_SCRAPE))
-        assert results == [third, first]
+        assert to_entities(results) == to_entities([third, first])
 
-
-class TestGetSessionsWithWithLeasedDocketItems(object):
-    """Tests for the get_sessions_with_leased_docket_items
-    method in the module."""
-
-    def setup_method(self, _test_method):
-        # noinspection PyAttributeOutsideInit
-        self.testbed = testbed.Testbed()
-        self.testbed.activate()
-        self.testbed.init_datastore_v3_stub()
-        context = ndb.get_context()
-        context.set_memcache_policy(False)
-        context.clear_cache()
-
-    def teardown_method(self, _test_method):
-        self.testbed.deactivate()
-
-    def test_get_sessions_happy_path(self):
-        first = create_open_session("us_ny", constants.BACKGROUND_SCRAPE,
-                                    datetime(2016, 11, 20), "a")
-        second = create_open_session("us_ny", constants.BACKGROUND_SCRAPE,
-                                     datetime(2016, 11, 20), "b")
-        create_open_session("us_ny", constants.SNAPSHOT_SCRAPE,
-                            datetime(2016, 11, 20), "c")
-        create_open_session("us_ny", constants.BACKGROUND_SCRAPE,
-                            datetime(2016, 11, 20), None)
-        create_open_session("us_fl", constants.BACKGROUND_SCRAPE,
-                            datetime(2016, 11, 20), "d")
+    def test_get_sessions_with_leased_happy_path(self):
+        first = self.create_session(
+            region_code="us_ny", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2016, 11, 20)), docket_ack_id="a")
+        second = self.create_session(
+            region_code="us_ny", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2016, 11, 20)), docket_ack_id="b")
+        self.create_session(
+            region_code="us_ny", scrape_type=constants.SNAPSHOT_SCRAPE,
+            start=fix_dt(datetime(2016, 11, 20)), docket_ack_id="c")
+        self.create_session(
+            region_code="us_ny", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2016, 11, 20)), docket_ack_id=None)
+        self.create_session(
+            region_code="us_fl", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2016, 11, 20)), docket_ack_id="d")
 
         results = sessions.get_sessions_with_leased_docket_items(
             ScrapeKey("us_ny", constants.BACKGROUND_SCRAPE))
-        assert results == [first, second]
+        assert to_entities(results) == to_entities([first, second])
 
-    def test_get_sessions_none_for_region(self):
-        create_open_session("us_ny", constants.BACKGROUND_SCRAPE,
-                            datetime(2016, 11, 20), "a")
-        create_open_session("us_ny", constants.BACKGROUND_SCRAPE,
-                            datetime(2016, 11, 20), "b")
-        create_open_session("us_ny", constants.SNAPSHOT_SCRAPE,
-                            datetime(2016, 11, 20), "c")
-        create_open_session("us_ny", constants.BACKGROUND_SCRAPE,
-                            datetime(2016, 11, 20), None)
-        create_open_session("us_fl", constants.BACKGROUND_SCRAPE,
-                            datetime(2016, 11, 20), "d")
+    def test_get_sessions_with_leased_none_for_region(self):
+        self.create_session(
+            region_code="us_ny", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2016, 11, 20)), docket_ack_id="a")
+        self.create_session(
+            region_code="us_ny", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2016, 11, 20)), docket_ack_id="b")
+        self.create_session(
+            region_code="us_ny", scrape_type=constants.SNAPSHOT_SCRAPE,
+            start=fix_dt(datetime(2016, 11, 20)), docket_ack_id="c")
+        self.create_session(
+            region_code="us_ny", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2016, 11, 20)), docket_ack_id=None)
+        self.create_session(
+            region_code="us_fl", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2016, 11, 20)), docket_ack_id="d")
 
         results = sessions.get_sessions_with_leased_docket_items(
             ScrapeKey("us_mo", constants.BACKGROUND_SCRAPE))
-        assert not results
+        assert not to_entities(results)
 
-    def test_get_sessions_none_for_scrape_type(self):
-        create_open_session("us_ny", constants.BACKGROUND_SCRAPE,
-                            datetime(2016, 11, 20), "a")
-        create_open_session("us_ny", constants.BACKGROUND_SCRAPE,
-                            datetime(2016, 11, 20), "b")
-        create_open_session("us_ny", constants.SNAPSHOT_SCRAPE,
-                            datetime(2016, 11, 20), "c")
-        create_open_session("us_ny", constants.BACKGROUND_SCRAPE,
-                            datetime(2016, 11, 20), None)
-        create_open_session("us_fl", constants.BACKGROUND_SCRAPE,
-                            datetime(2016, 11, 20), "d")
+    def test_get_sessions_with_leased_none_for_scrape_type(self):
+        self.create_session(
+            region_code="us_ny", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2016, 11, 20)), docket_ack_id="a")
+        self.create_session(
+            region_code="us_ny", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2016, 11, 20)), docket_ack_id="b")
+        self.create_session(
+            region_code="us_ny", scrape_type=constants.SNAPSHOT_SCRAPE,
+            start=fix_dt(datetime(2016, 11, 20)), docket_ack_id="c")
+        self.create_session(
+            region_code="us_ny", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2016, 11, 20)), docket_ack_id=None)
+        self.create_session(
+            region_code="us_fl", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2016, 11, 20)), docket_ack_id="d")
 
         results = sessions.get_sessions_with_leased_docket_items(
             ScrapeKey("us_fl", constants.SNAPSHOT_SCRAPE))
-        assert not results
+        assert not to_entities(results)
 
-    def test_get_sessions_none_with_docket_item(self):
-        create_open_session("us_ny", constants.BACKGROUND_SCRAPE,
-                            datetime(2016, 11, 20), None)
+    def test_get_sessions_with_leased_none_with_docket_ack_id(self):
+        self.create_session(
+            region_code="us_ny", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2016, 11, 20)), docket_ack_id=None)
 
         results = sessions.get_sessions_with_leased_docket_items(
             ScrapeKey("us_ny", constants.BACKGROUND_SCRAPE))
-        assert not results
+        assert not to_entities(results)
+
+    def create_session(self, region_code, scrape_type, start, end=None,
+                       docket_ack_id=None):
+        session = ScrapeSession.new(
+            key=sessions.ds().key('ScrapeSession'), region=region_code,
+            scrape_type=scrape_type, docket_ack_id=docket_ack_id, start=start,
+            end=end)
+        sessions.ds().put(session.to_entity())
+        self.keys_to_delete.append(session.to_entity().key)
+        return session
 
 
-def create_open_session(region_code, scrape_type, start, docket_item):
-    session = ScrapeSession(region=region_code,
-                            scrape_type=scrape_type,
-                            docket_item=docket_item,
-                            start=start)
-    session.put()
-    return session
-
-
-def create_closed_session(region_code, scrape_type, start, end, docket_item):
-    session = ScrapeSession(region=region_code,
-                            scrape_type=scrape_type,
-                            docket_item=docket_item,
-                            start=start,
-                            end=end)
-    session.put()
-    return session
+def to_entities(session_list):
+    return [session.to_entity() for session in session_list]

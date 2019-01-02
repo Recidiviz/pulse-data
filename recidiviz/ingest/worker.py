@@ -18,12 +18,11 @@
 """Infrastructure for workers in the ingest pipeline."""
 
 
-import httplib
+from http import HTTPStatus
 import json
 import logging
 
 from flask import Blueprint, request
-from requests.packages.urllib3.contrib.appengine import TimeoutError
 
 from recidiviz.utils import regions
 from recidiviz.utils.auth import authenticate_request
@@ -49,6 +48,8 @@ def work():
 
     Never called manually, so authentication is enforced in app.yaml.
 
+    Form data must be a bytes-encoded JSON object with parameters listed below.
+
     URL Parameters:
         region: (string) Region code for the scraper in question.
         task: (string) Name of the function to call in the scraper
@@ -68,11 +69,13 @@ def work():
     # Verify this was actually a task queued by our app
     if "X-AppEngine-QueueName" not in request.headers:
         logging.error("Couldn't validate task was legit, exiting.")
-        return ('', httplib.INTERNAL_SERVER_ERROR)
+        return ('', HTTPStatus.INTERNAL_SERVER_ERROR)
 
-    region = request.form.get('region')
-    task = request.form.get('task')
-    params = request.form.get('params')
+    json_data = request.get_data(as_text=True)
+    data = json.loads(json_data)
+    region = data.get('region')
+    task = data.get('task')
+    params = data.get('params')
 
     queue_name = request.headers.get('X-AppEngine-QueueName')
     logging.info("Queue %s, processing task (%s) for %s." %
@@ -83,7 +86,6 @@ def work():
 
     try:
         if params:
-            params = json.loads(params)
             result = scraper_task(params)
         else:
             result = scraper_task()
@@ -96,4 +98,5 @@ def work():
 
     # Respond to the task queue to mark this task as done, or re-queue if
     # error result
-    return ('', httplib.INTERNAL_SERVER_ERROR if result == -1 else httplib.OK)
+    return ('', HTTPStatus.INTERNAL_SERVER_ERROR if result == -1 \
+                                                 else HTTPStatus.OK)

@@ -148,7 +148,7 @@ def test_last_facility_none_at_all():
     assert last_facility is None
 
 
-class TestFindRecidivism(object):
+class TestFindRecidivism:
     """Tests for the find_recidivism function."""
 
     def test_find_recidivism(self):
@@ -414,7 +414,7 @@ class TestFindRecidivism(object):
                 False)
 
 
-class FakeRecord(object):
+class FakeRecord:
     def __init__(self, key=None, is_released=None, custody_date=None,
                  last_custody_date=None, latest_release_date=None):
         self.key = key
@@ -424,7 +424,7 @@ class FakeRecord(object):
         self.latest_release_date = latest_release_date
 
 
-class FakeSnapshot(object):
+class FakeSnapshot:
     def __init__(self, parent_key=None, created_on=None, latest_facility=None):
         self.parent = parent_key
         self.created_on = created_on

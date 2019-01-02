@@ -26,12 +26,9 @@ python -m recidiviz.ingest.run_scraper --region us_pa_greene --num_tasks 10
 """
 
 import argparse
-import datetime
 import logging
 import time
 import types
-from google.appengine.api import apiproxy_stub_map
-from google.appengine.api import urlfetch_stub
 from recidiviz.ingest import constants
 from recidiviz.utils import regions
 
@@ -80,7 +77,7 @@ def add_task(self, task_name, params):
 def start_scrape(self, scrape_type):
     fn = getattr(self, self.get_initial_task())
     fn({'scrape_type': scrape_type,
-        'scraper_start_time': datetime.datetime.now()})
+        'scraper_start_time': self.get_now_as_str()})
 
 
 def _create_parser():
@@ -102,8 +99,6 @@ def _create_parser():
 def _configure_logging():
     root = logging.getLogger()
     root.setLevel(logging.INFO)
-    logging.getLogger("urllib3").setLevel(logging.WARNING)
-    logging.getLogger("urlfetch").setLevel(logging.WARNING)
 
 
 if __name__ == "__main__":
@@ -114,13 +109,6 @@ if __name__ == "__main__":
     sleep_between_requests = args.sleep_between_requests
 
     _configure_logging()
-
-    # TODO: remove this once appengine is removed
-    # I have no clue why this is needed, but it is needed for in memory unit
-    # tests when importing appengine.
-    apiproxy_stub_map.apiproxy = apiproxy_stub_map.APIProxyStubMap()
-    apiproxy_stub_map.apiproxy.RegisterStub(
-        'urlfetch', urlfetch_stub.URLFetchServiceStub())
 
     region = regions.Region(args.region)
     scraper = region.get_scraper()

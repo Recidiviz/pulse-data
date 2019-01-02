@@ -134,7 +134,7 @@ def _get_duplicates(collection):
 def _trim_all_empty_errors(all_errors):
     """Trims every empty value in the provided dict of all_errors."""
     trimmed_errors = {name: _trim_empty(error) for name, error in
-                      all_errors.iteritems()}
+                      all_errors.items()}
     return _trim_empty(trimmed_errors)
 
 
@@ -143,4 +143,4 @@ def _trim_empty(dictionary):
 
     Example: {a: {1,2}, b: {}} -> {a: {1, 2}}
     """
-    return {k: v for k, v in dictionary.iteritems() if len(v) > 0}
+    return {k: v for k, v in dictionary.items() if len(v) > 0}

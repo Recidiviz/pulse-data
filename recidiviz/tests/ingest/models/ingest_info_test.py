@@ -34,14 +34,14 @@ def test_proto_fields_match():
         for field in proto_fields:
             if field not in source_fields and field not in ignore:
                 raise FieldsDontMatchError(
-                	   "Field '%s' exists in '%s' proto"
+                    "Field '%s' exists in '%s' proto"
                     " but not in the IngestInfo object" % (
                         field, proto.__name__))
 
         for field in source_fields:
             if field not in proto_fields and field not in ignore:
                 raise FieldsDontMatchError(
-                	   "Field '%s' exists in '%s'"
+                    "Field '%s' exists in '%s'"
                     " IngestInfo object but not in the proto object" % (
                         field, proto.__name__))
 
