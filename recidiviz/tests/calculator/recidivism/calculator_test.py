@@ -26,15 +26,10 @@ from datetime import datetime
 import pytest
 
 from dateutil.relativedelta import relativedelta
-from google.appengine.ext import ndb
-from google.appengine.ext import testbed
 
 from recidiviz.tests.context import calculator
 from recidiviz.calculator.recidivism import calculator
 from recidiviz.calculator.recidivism import recidivism_event
-from recidiviz.ingest.us_ny.us_ny_record import UsNyRecord
-from recidiviz.models.person import Person
-from recidiviz.models.snapshot import Snapshot
 
 
 def test_reincarceration_dates():
@@ -339,12 +334,12 @@ def test_for_characteristics():
     combinations = calculator.for_characteristics(characteristics)
 
     assert combinations == [{},
-                            {'age': '<25'},
                             {'race': 'black'},
                             {'sex': 'female'},
+                            {'age': '<25'},
+                            {'race': 'black', 'sex': 'female'},
                             {'age': '<25', 'race': 'black'},
                             {'age': '<25', 'sex': 'female'},
-                            {'race': 'black', 'sex': 'female'},
                             {'age': '<25', 'race': 'black', 'sex': 'female'}]
 
 
@@ -367,25 +362,13 @@ def test_augment_combination():
     assert augmented != combo
 
 
-class TestMapRecidivismCombinations(object):
+class TestMapRecidivismCombinations:
     """Tests the map_recidivism_combinations function."""
-
-    def setup_method(self, _test_method):
-        # noinspection PyAttributeOutsideInit
-        self.testbed = testbed.Testbed()
-        self.testbed.activate()
-        self.testbed.init_datastore_v3_stub()
-        context = ndb.get_context()
-        context.set_memcache_policy(False)
-        context.clear_cache()
-
-    def teardown_method(self, _test_method):
-        self.testbed.deactivate()
 
     def test_map_recidivism_combinations(self):
         """Tests the map_recidivism_combinations function where there is
         recidivism."""
-        person = Person(id="test-person", birthdate=date(1984, 8, 31),
+        person = Person(person_id="test-person", birthdate=date(1984, 8, 31),
                         race="white", sex="female")
 
         recidivism_events_by_cohort = {
@@ -410,7 +393,7 @@ class TestMapRecidivismCombinations(object):
     def test_map_recidivism_combinations_multiple_in_period(self):
         """Tests the map_recidivism_combinations function where there are
         multiple instances of recidivism within a follow-up period."""
-        person = Person(id="test-person", birthdate=date(1884, 8, 31),
+        person = Person(person_id="test-person", birthdate=date(1884, 8, 31),
                         race="white", sex="female")
 
         recidivism_events_by_cohort = {
@@ -446,7 +429,7 @@ class TestMapRecidivismCombinations(object):
     def test_map_recidivism_combinations_no_recidivism(self):
         """Tests the map_recidivism_combinations function where there is no
         recidivism."""
-        person = Person(id="test-person", birthdate=date(1984, 8, 31),
+        person = Person(person_id="test-person", birthdate=date(1984, 8, 31),
                         race="white", sex="female")
 
         recidivism_events_by_cohort = {
@@ -466,7 +449,7 @@ class TestMapRecidivismCombinations(object):
     def test_map_recidivism_combinations_recidivated_after_last_period(self):
         """Tests the map_recidivism_combinations function where there is
         recidivism but it occurred after the last follow-up period we track."""
-        person = Person(id="test-person", birthdate=date(1984, 8, 31),
+        person = Person(person_id="test-person", birthdate=date(1984, 8, 31),
                         race="white", sex="female")
 
         recidivism_events_by_cohort = {
@@ -485,18 +468,18 @@ class TestMapRecidivismCombinations(object):
                    in recidivism_combinations)
 
 
-def record(parent_key, is_released, custody_date, latest_release_date=None):
-    new_record = UsNyRecord(parent=parent_key,
-                            is_released=is_released,
-                            custody_date=custody_date,
-                            latest_release_date=latest_release_date)
-    new_record.put()
-    return new_record
-
-
-def snapshot(parent_key, snapshot_date, facility):
-    new_snapshot = Snapshot(parent=parent_key,
-                            created_on=snapshot_date,
-                            latest_facility=facility)
-    new_snapshot.put()
-    return new_snapshot
+class Person:
+    def __init__(self, person_id=None, person_id_is_fuzzy=None,
+                 given_names=None, surname=None, suffix=None, alias=None,
+                 birthdate=None, age=None, region=None, sex=None, race=None):
+        self.person_id = person_id
+        self.person_id_is_fuzzy = person_id_is_fuzzy
+        self.given_names = given_names
+        self.surname = surname
+        self.suffix = suffix
+        self.alias = alias
+        self.birthdate = birthdate
+        self.age = age
+        self.region = region
+        self.sex = sex
+        self.race = race

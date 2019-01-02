@@ -48,12 +48,12 @@ PLACE_1 = 'TEST_PLACE_1'
 PLACE_2 = 'TEST_PLACE_2'
 REGION_1 = 'REGION_1'
 REGION_2 = 'REGION_2'
-SCRAPER_START_DATETIME = datetime(year=2018, month=8, day=06)
+SCRAPER_START_DATETIME = datetime(year=2018, month=8, day=6)
 SURNAME_1 = 'TEST_SURNAME_1'
 SURNAME_2 = 'TEST_SURNAME_2'
 
 
-@patch('os.getenv', Mock(return_value='Google App Engine/'))
+@patch('os.getenv', Mock(return_value='production'))
 @patch.dict('os.environ', {'PERSIST_LOCALLY': 'false'})
 class TestPersistence(TestCase):
     """Test that the persistence layer correctly writes to the SQL database."""
@@ -76,7 +76,7 @@ class TestPersistence(TestCase):
 
     def test_persistLocally(self):
         # Arrange
-        with patch('os.getenv', Mock(return_value='Local')) \
+        with patch('os.getenv', Mock(return_value='local')) \
              and patch.dict('os.environ', {'PERSIST_LOCALLY': 'true'}):
             ingest_info = IngestInfo()
             ingest_info.people.add(surname=SURNAME_1)

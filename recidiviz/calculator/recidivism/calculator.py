@@ -92,7 +92,7 @@ def map_recidivism_combinations(person, recidivism_events):
     metrics = []
     all_reincarceration_dates = reincarceration_dates(recidivism_events)
 
-    for release_cohort, event in recidivism_events.iteritems():
+    for release_cohort, event in recidivism_events.items():
         characteristic_combos = characteristic_combinations(person, event)
 
         earliest_recidivism_period = earliest_recidivated_follow_up_period(
@@ -127,7 +127,7 @@ def reincarceration_dates(recidivism_events):
         the given list of objects.
     """
     return [event.reincarceration_date
-            for _cohort, event in recidivism_events.iteritems()
+            for _cohort, event in recidivism_events.items()
             if event.reincarceration_date]
 
 
@@ -257,11 +257,11 @@ def age_bucket(age):
     """
     if age < 25:
         return '<25'
-    elif age <= 29:
+    if age <= 29:
         return '25-29'
-    elif age <= 34:
+    if age <= 34:
         return '30-34'
-    elif age <= 39:
+    if age <= 39:
         return '35-39'
     return '40<'
 
@@ -304,25 +304,25 @@ def stay_length_bucket(stay_length):
     """
     if stay_length is None:
         return None
-    elif stay_length < 12:
+    if stay_length < 12:
         return '<12'
-    elif stay_length < 24:
+    if stay_length < 24:
         return '12-24'
-    elif stay_length < 36:
+    if stay_length < 36:
         return '24-36'
-    elif stay_length < 48:
+    if stay_length < 48:
         return '36-48'
-    elif stay_length < 60:
+    if stay_length < 60:
         return '48-60'
-    elif stay_length < 72:
+    if stay_length < 72:
         return '60-72'
-    elif stay_length < 84:
+    if stay_length < 84:
         return '72-84'
-    elif stay_length < 96:
+    if stay_length < 96:
         return '84-96'
-    elif stay_length < 108:
+    if stay_length < 108:
         return '96-108'
-    elif stay_length < 120:
+    if stay_length < 120:
         return '108-120'
     return '120<'
 
@@ -399,7 +399,7 @@ def for_characteristics(characteristics):
     combos = [{}]
     for i in range(len(characteristics)):
         i_combinations = map(dict,
-                             combinations(characteristics.iteritems(), i + 1))
+                             combinations(characteristics.items(), i + 1))
         for combo in i_combinations:
             combos.append(combo)
     return combos

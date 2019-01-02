@@ -20,7 +20,7 @@
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 
 
-class Classification(object):
+class Classification:
     HIGH = enum_strings.classification_high
     LOW = enum_strings.classification_low
     MAXIMUM = enum_strings.classification_maximum
@@ -33,7 +33,7 @@ class Classification(object):
         return _CLASSIFICATION_MAP[label.upper()]
 
 
-class CustodyStatus(object):
+class CustodyStatus:
     ESCAPED = enum_strings.custody_status_escaped
     HELD_ELSEWHERE = enum_strings.custody_status_elsewhere
     IN_CUSTODY = enum_strings.custody_status_in_custody
@@ -44,7 +44,7 @@ class CustodyStatus(object):
         return _CUSTODY_STATUS_MAP[label.upper()]
 
 
-class ReleaseReason(object):
+class ReleaseReason:
     BOND = enum_strings.release_reason_bond
     DEATH = enum_strings.release_reason_death
     ESCAPE = enum_strings.release_reason_escape

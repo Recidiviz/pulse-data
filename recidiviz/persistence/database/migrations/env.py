@@ -1,9 +1,11 @@
-from __future__ import with_statement
-from alembic import context
-from sqlalchemy import create_engine
-from logging.config import fileConfig
-import os
+"""Manages alembic and sqlalchemy environments."""
 
+import os
+from logging.config import fileConfig
+
+from sqlalchemy import create_engine
+
+from alembic import context
 from recidiviz.persistence.database.schema import Base
 
 # this is the Alembic Config object, which provides
