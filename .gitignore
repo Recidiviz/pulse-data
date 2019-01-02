@@ -118,3 +118,6 @@ secrets.yaml
 
 #pytest
 .pytest_cache/
+
+# Mac
+.DS_Store
