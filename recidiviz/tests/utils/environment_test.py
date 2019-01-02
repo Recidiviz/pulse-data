@@ -23,6 +23,7 @@
 import pytest
 from mock import mock_open, patch
 
+import recidiviz
 from recidiviz.utils import environment
 
 from ..context import utils
@@ -30,13 +31,13 @@ from ..context import utils
 
 @patch("os.getenv")
 def test_in_prod_false(mock_os):
-    mock_os.return_value = 'NOT PRODUCTION'
+    mock_os.return_value = 'not production'
     assert not environment.in_prod()
 
 
 @patch("os.getenv")
 def test_in_prod_true(mock_os):
-    mock_os.return_value = 'Google App Engine/'
+    mock_os.return_value = 'production'
     assert environment.in_prod()
 
 
@@ -54,7 +55,7 @@ def test_local_only_is_local():
 @patch("os.getenv")
 def test_local_only_is_prod(mock_os):
     track = 'Emerald Rush'
-    mock_os.return_value = 'Google App Engine/'
+    mock_os.return_value = 'production'
 
     @environment.local_only
     def get():
@@ -62,3 +63,31 @@ def test_local_only_is_prod(mock_os):
 
     response = get()
     assert response == ('Not available, see service logs.', 500)
+
+
+def test_test_only_is_test():
+    track = 'Emerald Rush'
+
+    @environment.test_only
+    def get():
+        return track
+
+    assert get() == track
+
+
+def test_test_only_not_test():
+    track = 'Emerald Rush'
+
+    @environment.test_only
+    def get():
+        return track
+
+    with patch.dict('recidiviz.__dict__'):
+        del recidiviz.__dict__['called_from_test']
+        assert not hasattr(recidiviz, 'called_from_test')
+
+        with pytest.raises(RuntimeError) as exception:
+            get()
+        assert str(exception.value) == 'Function may only be called from tests'
+
+    assert hasattr(recidiviz, 'called_from_test')

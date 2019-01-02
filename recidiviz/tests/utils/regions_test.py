@@ -23,8 +23,6 @@
 import pytest
 
 from ..context import utils
-from google.appengine.ext import ndb
-from google.appengine.ext import testbed
 from mock import patch, mock_open
 from recidiviz.utils import regions
 
@@ -35,9 +33,6 @@ MANIFEST_CONTENTS = """
         agency_name: Department of Corrections and Community Supervision
         agency_type: prison
         base_url: http://nysdoccslookup.doccs.ny.gov
-        entity_kinds:
-          person: UsNyPerson
-          record: UsNyRecord
         names_file: us_ny_names.csv
         queue: us-ny-scraper
         region_code: us_ny
@@ -47,10 +42,6 @@ MANIFEST_CONTENTS = """
         agency_name: Department of Corrections
         agency_type: prison
         base_url: http://www.dc.state.fl.us/OffenderSearch/Search.aspx
-        entity_kinds:
-          person: UsFlPerson
-          record: UsFlRecord
-          snapshot: UsFlSnapshot
         names_file: us_fl_names.csv
         params:
           foo: bar
@@ -69,10 +60,6 @@ FULL_MANIFEST = {
                            'Community Supervision',
             'agency_type': 'prison',
             'base_url': 'http://nysdoccslookup.doccs.ny.gov',
-            'entity_kinds': {
-                'person': 'UsNyPerson',
-                'record': 'UsNyRecord'
-            },
             'names_file': 'us_ny_names.csv',
             'queue': 'us-ny-scraper',
             'region_code': 'us_ny',
@@ -83,11 +70,6 @@ FULL_MANIFEST = {
             'agency_name': 'Department of Corrections',
             'agency_type': 'prison',
             'base_url': 'http://www.dc.state.fl.us/OffenderSearch/Search.aspx',
-            'entity_kinds': {
-                'person': 'UsFlPerson',
-                'record': 'UsFlRecord',
-                'snapshot': 'UsFlSnapshot'
-            },
             'names_file': 'us_fl_names.csv',
             'params': {
                 'foo': 'bar',
@@ -103,7 +85,7 @@ FULL_MANIFEST = {
 }
 
 
-class TestRegions(object):
+class TestRegions:
     """Tests for regions.py."""
     def setup_method(self, _test_method):
         regions.MANIFEST = None
@@ -123,13 +105,12 @@ class TestRegions(object):
 
     def test_get_region_manifest_not_found(self):
         with pytest.raises(Exception) as exception:
-            with patch("__builtin__.open",
+            with patch("builtins.open",
                        mock_open(read_data=MANIFEST_CONTENTS)) \
                        as mock_file:
                 regions.get_region_manifest('us_az')
 
-        assert exception.value.message == \
-            "Region 'us_az' not found in manifest."
+        assert str(exception.value) == "Region 'us_az' not found in manifest."
         mock_file.assert_called_with('region_manifest.yaml', 'r')
 
 
@@ -152,12 +133,6 @@ class TestRegions(object):
         assert not with_manifest(regions.validate_region_code, 'us_az')
 
 
-    def test_get_subkind(self):
-        region = with_manifest(regions.Region, 'us_ny')
-        person = region.get_subkind('Person')
-        assert person.__name__ == 'UsNyPerson'
-
-
     def test_get_scraper_module(self):
         region = with_manifest(regions.Region, 'us_ny')
         module = region.get_scraper_module()
@@ -173,9 +148,6 @@ class TestRegions(object):
     def test_region_class(self):
         region = with_manifest(regions.Region, 'us_ny')
         assert region.get_scraper_module().__name__ == 'recidiviz.ingest.us_ny'
-        assert region.get_person_kind().__name__ == 'UsNyPerson'
-        assert region.get_record_kind().__name__ == 'UsNyRecord'
-        assert region.get_snapshot_kind().__name__ == 'Snapshot'
         assert not region.params
         assert region.queue == 'us-ny-scraper'
         assert region.scraper_class == 'us_ny_scraper'
@@ -190,7 +162,7 @@ class TestRegions(object):
 
 
 def with_manifest(func, *args, **kwargs):
-    with patch("__builtin__.open",
+    with patch("builtins.open",
                mock_open(read_data=MANIFEST_CONTENTS)) \
             as mock_file:
         value = func(*args, **kwargs)

@@ -17,14 +17,7 @@
 
 """Tests for ingest/scraper.py."""
 
-
-import json
-from datetime import datetime
 from mock import patch, Mock
-
-from google.appengine.ext import ndb
-from google.appengine.ext.db import InternalError
-from google.appengine.ext import testbed
 
 import requests
 
@@ -32,14 +25,12 @@ from recidiviz.ingest import constants
 from recidiviz.ingest.scraper import Scraper
 from recidiviz.ingest.sessions import ScrapeSession
 from recidiviz.ingest.models.scrape_key import ScrapeKey
-from recidiviz.models.record import Offense, Record, SentenceDuration
-from recidiviz.models.snapshot import Snapshot
 
 
 _DATETIME_STR = "2018-12-06 00::00::00"
 
 
-class TestAbstractScraper(object):
+class TestAbstractScraper:
     """Tests the abstract-ness of the Scraper base class."""
 
     @patch("recidiviz.utils.regions.get_region_manifest")
@@ -60,14 +51,14 @@ class TestAbstractScraper(object):
 
 @patch('recidiviz.ingest.scraper.Scraper.get_now_as_str',
        Mock(return_value=_DATETIME_STR))
-class TestStartScrape(object):
+class TestStartScrape:
     """Tests for the Scraper.start_scrape method."""
 
-    @patch("google.appengine.api.taskqueue.add")
+    @patch("recidiviz.ingest.queues.create_task")
     @patch("recidiviz.ingest.tracker.iterate_docket_item")
     @patch("recidiviz.utils.regions.get_region_manifest")
     def test_start_scrape_background(
-            self, mock_region, mock_tracker, mock_taskqueue):
+            self, mock_region, mock_tracker, mock_create_task):
         docket_item = ("Dog", "Cat")
         region = "us_nd"
         scrape_type = constants.BACKGROUND_SCRAPE
@@ -76,30 +67,35 @@ class TestStartScrape(object):
 
         mock_region.return_value = mock_region_manifest(region, queue_name)
         mock_tracker.return_value = docket_item
-        mock_taskqueue.return_value = None
-        # mock_datetime.now = Mock(return_value=_DATETIME)
+        mock_create_task.return_value = None
 
         scraper = FakeScraper(region, initial_task)
         scraper.start_scrape(scrape_type)
 
         mock_region.assert_called_with(region)
         mock_tracker.assert_called_with(ScrapeKey(region, scrape_type))
-        task_params = json.dumps({'scrape_type': scrape_type,
-                                  'content': docket_item,
-                                  'scraper_start_time': _DATETIME_STR})
-        mock_taskqueue.assert_called_with(url=scraper.scraper_work_url,
-                                          queue_name=queue_name,
-                                          params={
-                                              'region': region,
-                                              'task': initial_task,
-                                              'params': task_params
-                                          })
 
-    @patch("google.appengine.api.taskqueue.add")
+        task_params = {
+            'scrape_type': scrape_type,
+            'content': docket_item,
+            'scraper_start_time': _DATETIME_STR
+        }
+        request_body = {
+            'region': region,
+            'task': initial_task,
+            'params': task_params
+        }
+
+        mock_create_task.assert_called_with(
+            url=scraper.scraper_work_url,
+            queue_name=queue_name,
+            body=request_body)
+
+    @patch("recidiviz.ingest.queues.create_task")
     @patch("recidiviz.ingest.tracker.iterate_docket_item")
     @patch("recidiviz.utils.regions.get_region_manifest")
     def test_start_scrape_snapshot(self, mock_region,
-                                   mock_tracker, mock_taskqueue):
+                                   mock_tracker, mock_create_task):
         docket_item = (41620, ["daft", "punk"])
         region = "us_nd"
         scrape_type = constants.SNAPSHOT_SCRAPE
@@ -108,23 +104,29 @@ class TestStartScrape(object):
 
         mock_region.return_value = mock_region_manifest(region, queue_name)
         mock_tracker.return_value = docket_item
-        mock_taskqueue.return_value = None
+        mock_create_task.return_value = None
 
         scraper = FakeScraper(region, initial_task)
         scraper.start_scrape(scrape_type)
 
         mock_region.assert_called_with(region)
         mock_tracker.assert_called_with(ScrapeKey(region, scrape_type))
-        task_params = json.dumps({'scrape_type': scrape_type,
-                                  'content': (83240, ["daft", "punk"]),
-                                  'scraper_start_time': _DATETIME_STR})
-        mock_taskqueue.assert_called_with(url=scraper.scraper_work_url,
-                                          queue_name=queue_name,
-                                          params={
-                                              'region': region,
-                                              'task': initial_task,
-                                              'params': task_params
-                                          })
+
+        task_params = {
+            'scrape_type': scrape_type,
+            'content': (83240, ["daft", "punk"]),
+            'scraper_start_time': _DATETIME_STR
+        }
+        request_body = {
+            'region': region,
+            'task': initial_task,
+            'params': task_params
+        }
+
+        mock_create_task.assert_called_with(
+            url=scraper.scraper_work_url,
+            queue_name=queue_name,
+            body=request_body)
 
     @patch("recidiviz.ingest.sessions.end_session")
     @patch("recidiviz.ingest.tracker.iterate_docket_item")
@@ -170,73 +172,74 @@ class TestStartScrape(object):
         mock_sessions.assert_called_with(ScrapeKey(region, scrape_type))
 
 
-class TestStopScraper(object):
+class TestStopScraper:
     """Tests for the Scraper.stop_scrape method."""
 
-    @patch("google.appengine.api.taskqueue.Queue")
-    @patch("recidiviz.ingest.sessions.get_open_sessions")
+    @patch("recidiviz.ingest.queues.purge_queue")
+    @patch("recidiviz.ingest.sessions.get_sessions")
     @patch("recidiviz.utils.regions.get_region_manifest")
-    def test_stop_scrape(self, mock_region, mock_sessions, mock_queue):
+    def test_stop_scrape(self, mock_region, mock_sessions, mock_purge_queue):
         region = "us_sd"
         scrape_type = constants.BACKGROUND_SCRAPE
         queue_name = "us_sd_scraper"
         initial_task = "change_it"
 
         mock_region.return_value = mock_region_manifest(region, queue_name)
-        open_session = ScrapeSession()
-        open_session.scrape_type = scrape_type
+        open_session = ScrapeSession.new(
+            key=None, scrape_type=scrape_type, region=region,
+        )
         mock_sessions.return_value = [open_session]
-        mock_queue.purge.return_value = None
+        mock_purge_queue.return_value = None
 
         scraper = FakeScraper(region, initial_task)
         scraper.stop_scrape([scrape_type])
 
         mock_region.assert_called_with(region)
-        mock_sessions.assert_called_with(region)
+        mock_sessions.assert_called_with(region, include_closed=False)
+        mock_purge_queue.assert_called_with(queue_name)
 
-    @patch("google.appengine.api.taskqueue.Queue")
-    @patch("google.appengine.ext.deferred.defer")
-    @patch("recidiviz.ingest.sessions.get_open_sessions")
+    @patch("recidiviz.ingest.queues.purge_queue")
+    @patch("recidiviz.ingest.sessions.get_sessions")
     @patch("recidiviz.utils.regions.get_region_manifest")
-    def test_stop_scrape_other_scrapes_to_defer(self, mock_region,
-                                                mock_sessions, mock_deferred,
-                                                mock_queue):
-        """Tests that the stop_scrape method will defer launching of other
-        scrape types we didn't mean to stop."""
+    @patch.object(Scraper, "resume_scrape")
+    def test_stop_scrape_resume_other_scrapes(self, mock_resume, mock_region,
+                                              mock_sessions, mock_purge_queue):
+        """Tests that the stop_scrape method will launch other scrape types we
+        didn't mean to stop."""
         region = "us_sd"
         scrape_type = constants.BACKGROUND_SCRAPE
         queue_name = "us_sd_scraper"
         initial_task = "mail_upgrade_it"
 
         mock_region.return_value = mock_region_manifest(region, queue_name)
-        open_session_other = ScrapeSession()
-        open_session_other.scrape_type = constants.SNAPSHOT_SCRAPE
-        open_session_matching = ScrapeSession()
-        open_session_matching.scrape_type = constants.BACKGROUND_SCRAPE
+        open_session_other = ScrapeSession.new(
+            key=None, scrape_type=constants.SNAPSHOT_SCRAPE,
+        )
+        open_session_matching = ScrapeSession.new(
+            key=None, scrape_type=constants.BACKGROUND_SCRAPE,
+        )
         mock_sessions.return_value = [open_session_other, open_session_matching]
-        mock_deferred.return_value = None
-        mock_queue.purge.return_value = None
+        mock_purge_queue.return_value = None
 
         scraper = FakeScraper(region, initial_task)
         scraper.stop_scrape([scrape_type])
 
         mock_region.assert_called_with(region)
-        mock_sessions.assert_called_with(region)
-        mock_deferred.assert_called_with(scraper.resume_scrape,
-                                         constants.SNAPSHOT_SCRAPE,
-                                         _countdown=60)
+        mock_sessions.assert_called_with(region, include_closed=False)
+        mock_resume.assert_called_with(constants.SNAPSHOT_SCRAPE)
+        mock_purge_queue.assert_called_with(queue_name)
 
 
 @patch('recidiviz.ingest.scraper.Scraper.get_now_as_str',
        Mock(return_value=_DATETIME_STR))
-class TestResumeScrape(object):
+class TestResumeScrape:
     """Tests for the Scraper.resume_scrape method."""
 
-    @patch("google.appengine.api.taskqueue.add")
+    @patch("recidiviz.ingest.queues.create_task")
     @patch("recidiviz.ingest.sessions.get_recent_sessions")
     @patch("recidiviz.utils.regions.get_region_manifest")
     def test_resume_scrape_background(self, mock_region, mock_sessions,
-                                      mock_taskqueue):
+                                      mock_create_task):
         """Tests the resume_scrape flow for background scraping."""
         region = "us_nd"
         scrape_type = constants.BACKGROUND_SCRAPE
@@ -244,28 +247,34 @@ class TestResumeScrape(object):
         initial_task = "charge_it"
 
         mock_region.return_value = mock_region_manifest(region, queue_name)
-        recent_session_none_scraped = ScrapeSession()
-        recent_session = ScrapeSession()
-        recent_session.last_scraped = "Bangalter, Thomas"
+        recent_session_none_scraped = ScrapeSession.new(key=None)
+        recent_session = ScrapeSession.new(
+            key=None, last_scraped="Bangalter, Thomas")
         mock_sessions.return_value = [recent_session_none_scraped,
                                       recent_session]
-        mock_taskqueue.return_value = None
+        mock_create_task.return_value = None
 
         scraper = FakeScraper(region, initial_task)
         scraper.resume_scrape(scrape_type)
 
         mock_region.assert_called_with(region)
         mock_sessions.assert_called_with(ScrapeKey(region, scrape_type))
-        task_params = json.dumps({'scrape_type': scrape_type,
-                                  'content': ("Bangalter", "Thomas"),
-                                  'scraper_start_time': _DATETIME_STR})
-        mock_taskqueue.assert_called_with(url=scraper.scraper_work_url,
-                                          queue_name=queue_name,
-                                          params={
-                                              'region': region,
-                                              'task': initial_task,
-                                              'params': task_params
-                                          })
+
+        task_params = {
+            'scrape_type': scrape_type,
+            'content': ["Bangalter", "Thomas"],
+            'scraper_start_time': _DATETIME_STR
+        }
+        request_body = {
+            'region': region,
+            'task': initial_task,
+            'params': task_params
+        }
+
+        mock_create_task.assert_called_with(
+            url=scraper.scraper_work_url,
+            queue_name=queue_name,
+            body=request_body)
 
     @patch("recidiviz.ingest.sessions.get_recent_sessions")
     @patch("recidiviz.utils.regions.get_region_manifest")
@@ -277,7 +286,7 @@ class TestResumeScrape(object):
         initial_task = "point_it"
 
         mock_region.return_value = mock_region_manifest(region, queue_name)
-        recent_session_none_scraped = ScrapeSession()
+        recent_session_none_scraped = ScrapeSession.new(key=None)
         mock_sessions.return_value = [recent_session_none_scraped]
 
         scraper = FakeScraper(region, initial_task)
@@ -304,11 +313,11 @@ class TestResumeScrape(object):
         mock_region.assert_called_with(region)
         mock_sessions.assert_called_with(ScrapeKey(region, scrape_type))
 
-    @patch("google.appengine.api.taskqueue.add")
+    @patch("recidiviz.ingest.queues.create_task")
     @patch("recidiviz.ingest.tracker.iterate_docket_item")
     @patch("recidiviz.utils.regions.get_region_manifest")
     def test_resume_scrape_snapshot(self, mock_region, mock_tracker,
-                                    mock_taskqueue):
+                                    mock_create_task):
         docket_item = (41620, ["daft", "punk"])
         region = "us_nd"
         scrape_type = constants.SNAPSHOT_SCRAPE
@@ -317,22 +326,28 @@ class TestResumeScrape(object):
 
         mock_region.return_value = mock_region_manifest(region, queue_name)
         mock_tracker.return_value = docket_item
-        mock_taskqueue.return_value = None
+        mock_create_task.return_value = None
 
         scraper = FakeScraper(region, initial_task)
         scraper.resume_scrape(scrape_type)
 
         mock_region.assert_called_with(region)
-        task_params = json.dumps({'scrape_type': scrape_type,
-                                  'content': (83240, ["daft", "punk"]),
-                                  'scraper_start_time': _DATETIME_STR})
-        mock_taskqueue.assert_called_with(url=scraper.scraper_work_url,
-                                          queue_name=queue_name,
-                                          params={
-                                              'region': region,
-                                              'task': initial_task,
-                                              'params': task_params
-                                          })
+
+        task_params = {
+            'scrape_type': scrape_type,
+            'content': (83240, ["daft", "punk"]),
+            'scraper_start_time': _DATETIME_STR
+        }
+        request_body = {
+            'region': region,
+            'task': initial_task,
+            'params': task_params
+        }
+
+        mock_create_task.assert_called_with(
+            url=scraper.scraper_work_url,
+            queue_name=queue_name,
+            body=request_body)
 
     @patch("recidiviz.ingest.sessions.end_session")
     @patch("recidiviz.ingest.tracker.iterate_docket_item")
@@ -357,15 +372,13 @@ class TestResumeScrape(object):
         mock_end_session.assert_called_with(ScrapeKey(region, scrape_type))
 
 
-class TestFetchPage(object):
+class TestFetchPage:
     """Tests for the Scraper.fetch_page method."""
 
-    @patch("requests.get")
     @patch("recidiviz.ingest.scraper_utils.get_headers")
     @patch("recidiviz.ingest.scraper_utils.get_proxies")
     @patch("recidiviz.utils.regions.get_region_manifest")
-    def test_fetch_page(self, mock_region, mock_proxies, mock_headers,
-                        mock_requests):
+    def test_fetch_page(self, mock_region, mock_proxies, mock_headers):
         """Tests that fetch_page returns the fetched data payload."""
         url = "/around/the/world"
         region = "us_sd"
@@ -377,19 +390,20 @@ class TestFetchPage(object):
         mock_proxies.return_value = proxies
         headers = {'User-Agent': 'test_user_agent'}
         mock_headers.return_value = headers
+
+        scraper = FakeScraper(region, initial_task)
         page = "<blink>Get in on the ground floor</blink>"
         response = requests.Response()
         response._content = page  # pylint: disable=protected-access
         response.status_code = 200
-        mock_requests.return_value = response
-
-        scraper = FakeScraper(region, initial_task)
-        assert scraper.fetch_page(url).content == page
+        with patch('requests.get', return_value=response):
+            assert scraper.fetch_page(url).content == page
+            requests.get.assert_called_with(
+                url, proxies=proxies, headers=headers)
 
         mock_region.assert_called_with(region)
         mock_proxies.assert_called_with()
         mock_headers.assert_called_with()
-        mock_requests.assert_called_with(url, proxies=proxies, headers=headers)
 
     @patch("requests.post")
     @patch("recidiviz.ingest.scraper_utils.get_headers")
@@ -464,234 +478,6 @@ class TestFetchPage(object):
         mock_proxies.assert_called_with()
         mock_headers.assert_called_with()
         mock_requests.assert_called_with(url, proxies=proxies, headers=headers)
-
-
-class TestCompareAndSetSnapshot(object):
-    """Tests for the compare_and_set_snapshot method."""
-
-    def setup_method(self, _test_method):
-        # noinspection PyAttributeOutsideInit
-        self.testbed = testbed.Testbed()
-        self.testbed.activate()
-        self.testbed.init_datastore_v3_stub()
-        context = ndb.get_context()
-        context.set_memcache_policy(False)
-        context.clear_cache()
-
-        # root_path must be set the the location of queue.yaml.
-        # Otherwise, only the 'default' queue will be available.
-        self.testbed.init_taskqueue_stub(root_path='.')
-
-        # noinspection PyAttributeOutsideInit
-        self.taskqueue_stub = self.testbed.get_stub(
-            testbed.TASKQUEUE_SERVICE_NAME)
-
-    def teardown_method(self, _test_method):
-        self.testbed.deactivate()
-
-    def test_first_snapshot_for_record(self):
-        """Tests the happy path for compare_and_set_snapshot."""
-        scraper = FakeScraper('us_ny', 'initial_task')
-
-        record, snapshot = self.prepare_record_and_snapshot()
-
-        scraper.compare_and_set_snapshot(record, snapshot)
-        snapshots = Snapshot.query(ancestor=record.key).fetch()
-        assert len(snapshots) == 1
-
-    def test_no_changes(self):
-        """Tests that a lack of changes in any field does not lead to a new
-        snapshot."""
-        scraper = FakeScraper('us_ny', 'initial_task')
-
-        record, snapshot = self.prepare_record_and_snapshot()
-
-        scraper.compare_and_set_snapshot(record, snapshot)
-        snapshots = Snapshot.query(ancestor=record.key).fetch()
-        assert len(snapshots) == 1
-
-        # There should still only be one snapshot, because nothing changes
-        scraper.compare_and_set_snapshot(record, snapshot)
-        snapshots = Snapshot.query(ancestor=record.key).fetch()
-        assert len(snapshots) == 1
-
-    def test_changes_in_flat_field(self):
-        """Tests that changes in a flat field lead to a new snapshot."""
-        scraper = FakeScraper('us_ny', 'initial_task')
-
-        record, snapshot = self.prepare_record_and_snapshot()
-
-        scraper.compare_and_set_snapshot(record, snapshot)
-        snapshots = Snapshot.query(ancestor=record.key).fetch()
-        assert len(snapshots) == 1
-
-        second_snapshot = self.record_to_snapshot(record, record.key)
-        second_snapshot.latest_facility = "ANOTHER FACILITY"
-
-        scraper.compare_and_set_snapshot(record, second_snapshot)
-        snapshots = Snapshot.query(ancestor=record.key).fetch()
-        assert len(snapshots) == 2
-
-    def test_changes_in_nested_field_offense(self):
-        """Tests that changes in a nested field, i.e. offense,
-        lead to a new snapshot."""
-        scraper = FakeScraper('us_ny', 'initial_task')
-
-        record, snapshot = self.prepare_record_and_snapshot()
-
-        scraper.compare_and_set_snapshot(record, snapshot)
-        snapshots = Snapshot.query(ancestor=record.key).fetch()
-        assert len(snapshots) == 1
-
-        second_snapshot = self.record_to_snapshot(record, record.key)
-        updated_offenses = [
-            # This one remained the same
-            Offense(
-                crime_description="MANSLAUGHTER 1ST",
-                crime_class="B"
-            ),
-            # This one remained the same
-            Offense(
-                crime_description="ARMED ROBBERY",
-                crime_class="B"
-            ),
-            # This one is new
-            Offense(
-                crime_description="INTIMIDATION",
-                crime_class="D"
-            )
-        ]
-        second_snapshot.offense = updated_offenses
-
-        scraper.compare_and_set_snapshot(record, second_snapshot)
-        snapshots = Snapshot.query(ancestor=record.key).fetch()
-        assert len(snapshots) == 2
-
-        new_offenses = snapshots[1].offense
-        assert new_offenses == updated_offenses
-
-    def test_removed_array_element_offense(self):
-        """Tests that removing an element from an array of offenses leads
-        to a new snapshot."""
-        scraper = FakeScraper('us_ny', 'initial_task')
-
-        record, snapshot = self.prepare_record_and_snapshot()
-
-        scraper.compare_and_set_snapshot(record, snapshot)
-        snapshots = Snapshot.query(ancestor=record.key).fetch()
-        assert len(snapshots) == 1
-
-        second_snapshot = self.record_to_snapshot(record, record.key)
-        second_snapshot.offense = []
-
-        scraper.compare_and_set_snapshot(record, second_snapshot)
-        snapshots = Snapshot.query(ancestor=record.key).fetch()
-        assert len(snapshots) == 2
-
-        new_offenses = snapshots[1].offense
-        assert new_offenses == []
-
-    @patch("recidiviz.models.snapshot.Snapshot.put")
-    def test_error_saving_snapshot(self, mock_put):
-        mock_put.side_effect = InternalError()
-
-        scraper = FakeScraper('us_ny', 'initial_task')
-
-        record, snapshot = self.prepare_record_and_snapshot()
-
-        result = scraper.compare_and_set_snapshot(record, snapshot)
-        assert not result
-
-        mock_put.assert_called_with()
-
-    @staticmethod
-    def record_to_snapshot(record, record_key):
-        return Snapshot(
-            parent=record_key,
-            admission_type=record.admission_type,
-            birthdate=record.birthdate,
-            cond_release_date=record.cond_release_date,
-            county_of_commit=record.county_of_commit,
-            custody_date=record.custody_date,
-            custody_status=record.custody_status,
-            earliest_release_date=record.earliest_release_date,
-            earliest_release_type=record.earliest_release_type,
-            is_released=record.is_released,
-            last_custody_date=record.last_custody_date,
-            latest_facility=record.latest_facility,
-            latest_release_date=record.latest_release_date,
-            latest_release_type=record.latest_release_type,
-            max_expir_date=record.max_expir_date,
-            max_expir_date_parole=record.max_expir_date_parole,
-            max_expir_date_superv=record.max_expir_date_superv,
-            max_sentence_length=record.max_sentence_length,
-            min_sentence_length=record.min_sentence_length,
-            offense=record.offense,
-            parole_discharge_date=record.parole_discharge_date,
-            parole_elig_date=record.parole_elig_date,
-            parole_hearing_date=record.parole_hearing_date,
-            parole_hearing_type=record.parole_hearing_type,
-            race=record.race,
-            region=record.region,
-            sex=record.sex,
-            surname=record.surname,
-            given_names=record.given_names)
-
-    def prepare_record_and_snapshot(self):
-        """Prepares a Record suitable for comparing snapshots to, and a
-        translated snapshot."""
-        offense = Offense(
-            crime_description='MANSLAUGHTER 1ST',
-            crime_class='B'
-        )
-
-        record = Record(
-            admission_type='REVOCATION',
-            birthdate=datetime(1972, 4, 22),
-            cond_release_date=datetime(2006, 8, 14),
-            county_of_commit='KINGS',
-            custody_date=datetime(1991, 3, 14),
-            custody_status='RELEASED',
-            earliest_release_date=datetime(2002, 8, 14),
-            earliest_release_type='PAROLE',
-            is_released=True,
-            last_custody_date=datetime(1994, 7, 1),
-            latest_release_date=datetime(2002, 10, 28),
-            latest_release_type='PAROLE',
-            latest_facility='QUEENSBORO',
-            max_expir_date=datetime(2010, 1, 14),
-            max_expir_date_parole=datetime(2010, 1, 14),
-            max_expir_date_superv=datetime(2010, 1, 14),
-            max_sentence_length=SentenceDuration(
-                life_sentence=False,
-                years=18,
-                months=10,
-                days=0),
-            min_sentence_length=SentenceDuration(
-                life_sentence=False,
-                years=11,
-                months=5,
-                days=0),
-            parole_elig_date=datetime(2002, 8, 14),
-            parole_discharge_date=datetime(2002, 8, 14),
-            parole_hearing_date=datetime(2002, 6, 17),
-            parole_hearing_type='INITIAL HEARING',
-            offense=[offense],
-            race='WHITE',
-            record_id='1234567',
-            region='us_ny',
-            sex='MALE',
-            surname='SIMPSON',
-            given_names='BART'
-        )
-        record_key = record.put()
-
-        before_compare = Snapshot.query(ancestor=record_key).fetch()
-        assert not before_compare
-
-        snapshot = self.record_to_snapshot(record, record_key)
-
-        return record, snapshot
 
 
 def mock_region_manifest(region_code, queue_name):

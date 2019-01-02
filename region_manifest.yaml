@@ -33,14 +33,10 @@
 # here.
 
 regions:
-
   us_ny:
     agency_name: Department of Corrections and Community Supervision
     agency_type: prison
     base_url: http://nysdoccslookup.doccs.ny.gov
-    entity_kinds:
-      person: UsNyPerson
-      record: UsNyRecord
     names_file: us_ny_names.csv
     queue: us-ny-scraper
     region_code: us_ny
@@ -53,9 +49,6 @@ regions:
     queue: us-pa-greene-scraper
     base_url: http://www.co.greene.pa.us/InmateLocator
     names_file: us_ny_names.csv
-    entity_kinds:
-      person: ArchonixPerson
-      record: ArchonixRecord
     scraper_package: us_pa_greene
     timezone: America/New_York
   us_co_mesa:
@@ -65,9 +58,6 @@ regions:
     queue: us-co-mesa-scraper
     base_url: http://inmateinfo.mesacounty.us/default.asp
     names_file: us_ny_names.csv
-    entity_kinds:
-      person: Person
-      record: Record
     scraper_package: us_co_mesa
     timezone: America/Denver
   us_mt_gallatin:
@@ -77,9 +67,6 @@ regions:
     queue: us-mt-gallatin-scraper
     base_url: http://webapps.gallatin.mt.gov/ArchonixXJailPublic
     names_file: us_ny_names.csv
-    entity_kinds:
-      person: ArchonixPerson
-      record: ArchonixRecord
     scraper_package: us_mt_gallatin
     timezone: America/Denver
   us_mo_stone:
@@ -89,9 +76,6 @@ regions:
     queue: us-mo-stone-scraper
     base_url: https://www.stonecountymosheriff.com/roster.php
     names_file: us_ny_names.csv
-    entity_kinds:
-      person: Person
-      record: Record
     scraper_package: us_mo_stone
     timezone: America/Chicago
   us_pa_dauphin:
@@ -101,9 +85,6 @@ regions:
     queue: us-pa-dauphin-scraper
     base_url: http://www.dauphinc.org/dcplist/default.asp
     names_file: us_ny_names.csv
-    entity_kinds:
-      person: Person
-      record: Record
     scraper_package: us_pa_dauphin
     timezone: America/New_York
   us_ar_van_buren:
@@ -113,12 +94,8 @@ regions:
     queue: us-ar-van-buren-scraper
     base_url: https://www.vbcso.com/roster.php
     names_file: us_ny_names.csv
-    entity_kinds:
-      person: Person
-      record: Record
     scraper_package: us_ar_van_buren
     timezone: America/Chicago
-
   us_pa:
     region_name: UsPa
     agency_name: Pennsylvania Department of Corrections
@@ -127,9 +104,6 @@ regions:
     queue: us-pa-scraper
     base_url: http://inmatelocator.cor.pa.gov
     names_file: us_ny_names.csv
-    entity_kinds:
-      person: Person
-      record: Record
     scraper_package: us_pa
     timezone: America/New_York
 

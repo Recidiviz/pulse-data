@@ -18,7 +18,7 @@
 """Tools for identifying scrapers."""
 
 
-class ScrapeKey(object):
+class ScrapeKey:
     """A key defining a conceptual scraper, i.e. region plus scrape type."""
 
     def __init__(self, region_code, scrape_type):

@@ -23,7 +23,6 @@ from recidiviz.persistence import entity_matching_utils as utils
 
 class EntityMatchingError(Exception):
     """Raised when an error with entity matching is encountered."""
-    pass
 
 
 def match_entities(session, region, ingested_people):

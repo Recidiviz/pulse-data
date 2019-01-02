@@ -18,7 +18,7 @@
 """Recidivism metrics we calculate."""
 
 
-class RecidivismMetric(object):
+class RecidivismMetric:
     """Models a single recidivism metric.
 
     A recidivism metric contains a recidivism rate, including the numerator of

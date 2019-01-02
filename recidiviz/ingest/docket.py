@@ -24,22 +24,25 @@ type that some scraper must perform before the scraping process can be
 considered complete. It typically contains a name, id, and/or other information
 to search for in some criminal justice system we are scraping.
 
-The docket is shared by all scrapers, regardless of region and scrape type. Each
-item is tagged with identifying information so that it is consumed and processed
-by the correct scraper. When a scraper wants more work, it will lease a docket
-item: pulling it from the queue and marking it as leased for some duration. When
-the work is complete, the scraper deletes the item from the queue. If it has not
-been deleted by some specified time period, i.e. it expires, it is returned to
-the queue to be attempted again.
+The docket is made up of multiple queues, one for each combination of region and
+scrape type. Each item is placed on the appropriate queue so that it is consumed
+and processed by the correct scraper. When a scraper wants more work, it will
+lease a docket item: pulling it from the queue and marking it as leased for some
+duration. When the work is complete, the scraper acks the item on the queue. If
+it has not been acked by some specified time period, i.e. it expires, it is
+returned to the queue to be attempted again.
+
+Note that the docket is backed by Pub/Sub. Typically Pub/Sub delivers each
+message once and in the order in which it was published. However, messages may
+sometimes be delivered out of order or more than once (never less than once).
 
 Each task can launch zero to many additional tasks within the push-based queue
 that the scraper is running atop. A high-level lifecycle looks like this:
 
 1. Scraping is launched for a region and scrape type, e.g. (US_NY, background)
-2. One or more docket items are tagged with this information and enqueued in the
-docket
-3. A scraper worker for (US_NY, background) leases the next appropriate task
-from the docket and begins to process it
+2. One or more docket items are enqueued on the appropriate docket queue
+3. A scraper worker for (US_NY, background) leases the next task from the
+appropriate docket and begins to process it
 4. In the lifecycle of that task: a search is made, with a response including
 potentially zero to many search results. For each result, a new task is enqueued
 on the us-ny-scraper push queue to be picked up by another scraper worker for
@@ -57,31 +60,91 @@ Attributes:
         docket, for snapshot scrapes specifically
     SNAPSHOT_DISTANCE_YEARS: (int) the max number of years into the past we will
         search for relevant snapshots whose data to scrape again
-    DOCKET_QUEUE_NAME: (string) the immutable name of the docket queue
     FILENAME_PREFIX: (string) the directory in which to find name list files
 """
 
 import csv
-import hashlib
 import json
 import logging
-import time
 
-from datetime import datetime
-from dateutil.relativedelta import relativedelta
-from google.appengine.api import taskqueue
-from google.appengine.ext import deferred
-from google.appengine.ext import ndb
+from google.api_core import exceptions  # pylint: disable=no-name-in-module
+from google.cloud import pubsub
+
 from recidiviz.ingest import constants
-from recidiviz.ingest.models.scrape_key import ScrapeKey
-from recidiviz.utils import regions
+from recidiviz.utils import environment, metadata, regions
 
-
-BACKGROUND_BATCH_SIZE = 1000
 SNAPSHOT_BATCH_SIZE = 100
 SNAPSHOT_DISTANCE_YEARS = 10
-DOCKET_QUEUE_NAME = "docket"
 FILENAME_PREFIX = "./name_lists/"
+
+# We only lease tasks for 5min, so that they pop back into the queue
+# if we pause or stop the scrape for very long.
+# Note: This may be the right number for us_ny snapshot scraping, but
+#   if reused with another scraper the background scrapes might need
+#   more time depending on e.g. # results for query 'John Doe'.
+ACK_DEADLINE_SECONDS = 300
+
+_publisher = None
+def publisher():
+    global _publisher
+    if not _publisher:
+        _publisher = pubsub.PublisherClient()
+    return _publisher
+
+
+@environment.test_only
+def clear_publisher():
+    global _publisher
+    _publisher = None
+
+
+_subscriber = None
+def subscriber():
+    global _subscriber
+    if not _subscriber:
+        _subscriber = pubsub.SubscriberClient()
+    return _subscriber
+
+
+@environment.test_only
+def clear_subscriber():
+    global _subscriber
+    _subscriber = None
+
+
+def _docket_topic_path(scrape_key):
+    return publisher().topic_path(
+        metadata.project_id(),
+        "v1.{}-{}".format(scrape_key.region_code, scrape_key.scrape_type))
+
+
+def _docket_subscription_path(scrape_key):
+    return subscriber().subscription_path(
+        metadata.project_id(),
+        "v1.{}-{}".format(scrape_key.region_code, scrape_key.scrape_type))
+
+
+@environment.test_only
+def create_topic_and_subscription(scrape_key):
+    _create_topic_and_subscription(scrape_key)
+
+
+def _create_topic_and_subscription(scrape_key):
+    topic_path = _docket_topic_path(scrape_key)
+    try:
+        logging.info("Creating pubsub topic: '%s'", topic_path)
+        publisher().create_topic(topic_path)
+    except exceptions.AlreadyExists:
+        logging.info("Topic already exists")
+
+    subscription_path = _docket_subscription_path(scrape_key)
+    try:
+        logging.info("Creating pubsub subscription: '%s'", subscription_path)
+        subscriber().create_subscription(
+            subscription_path, topic_path,
+            ack_deadline_seconds=ACK_DEADLINE_SECONDS)
+    except exceptions.AlreadyExists:
+        logging.info("Subscription already exists")
 
 
 # ##################### #
@@ -104,30 +167,18 @@ def load_target_list(scrape_key, given_names="", surname=""):
         N/A
     """
     logging.info("Getting target list for scraper: %s", scrape_key)
-    region_code = scrape_key.region_code
-    scrape_type = scrape_key.scrape_type
 
-    if scrape_type == constants.BACKGROUND_SCRAPE:
-        name_list_file = regions.Region(region_code).names_file
+    if scrape_key.scrape_type == constants.BACKGROUND_SCRAPE:
+        name_list_file = regions.Region(scrape_key.region_code).names_file
 
         # Construct filename, process user-supplied name query (if provided)
         filename = FILENAME_PREFIX + name_list_file
-        query_name = (surname, given_names)
+        query_name = (surname, given_names) if surname or given_names else None
 
-        # If query name not provided, load from the start of the file
-        load = (query_name == ("", ""))
-
-        # Kick off docket loading
-        load_background_target_list(region_code, filename, query_name, load)
-
-    elif scrape_type == constants.SNAPSHOT_SCRAPE:
-        # Kick off the snapshot loading
-        phase = 0
-        load_snapshot_target_list(region_code, phase)
+        load_background_target_list(scrape_key, filename, query_name)
 
 
-def load_background_target_list(region_code, name_file, query_name, load,
-                                start_line=1):
+def load_background_target_list(scrape_key, name_file, query_name):
     """Load background scrape docket items, from name file.
 
     Iterates over a CSV of common names, loading a docket item for the scraper
@@ -141,402 +192,79 @@ def load_background_target_list(region_code, name_file, query_name, load,
     single docket item will be created to search for that name only.
 
     Args:
-        region_code: (string) Region code
+        scrape_key: (ScrapeKey) Scrape key
         name_file: (string) Name of the name file to be loaded
         query_name: User-provided name, in the form of a tuple (surname,
             given names). Empty strings if not provided.
-        load: (bool) Whether to load docket items for names in namelist from
-            start_line, or just read them for now
-        start_line: (int) Line number to start at
 
     Returns:
         N/A
     """
-    batch_size = BACKGROUND_BATCH_SIZE
-    write_to_docket = load
-    names = []
-    next_line = None
-    scrape_type = constants.BACKGROUND_SCRAPE
+    futures = []
+    # If a query is provided then the names aren't relevant until we find the
+    # query name, so `should_write_names` starts as False. If no query is
+    # provided then all names should be written.
+    should_write_names = not bool(query_name)
 
-    row_num = 0
-    max_row = start_line + batch_size
+    _create_topic_and_subscription(scrape_key)
 
-    # Pull next BACKGROUND_BATCH_SIZE lines from CSV file
-    with open(name_file, 'rb') as csvfile:
+    with open(name_file, 'r') as csvfile:
         names_reader = csv.reader(csvfile)
 
         for row in names_reader:
-            row_num += 1
-
-            if row_num < start_line or not row:
+            if not row:
                 continue
-            elif start_line <= row_num < max_row:
-                names.append(list(row))
-            else:
-                next_line = row_num
-                break
 
-    # Check whether we're through the name list, convert name list to tuples
-    end_of_list = (len(names) < batch_size)
-    names = [(name[0], "") if len(name) == 1 else tuple(name) for name in names]
+            name = (row[0], "") if len(row) == 1 else tuple(row)
+            if not should_write_names:
+                # Check to see if this is the `query_name` and if so mark that
+                # all further names should be written to the docket.
+                should_write_names = name == query_name
 
-    if not load:
-        # We're searching for the user-provided name in the name list,
-        # check this part of the list for it.
-        (write_to_docket, names) = get_name_list_subset(names, query_name)
+            if should_write_names:
+                futures.append(_add_to_query_docket(scrape_key, name))
 
-        if not write_to_docket and end_of_list:
-            # Name not in list, add it as a one-off docket item
-            logging.info("Couldn't find user-provided name '%s' in name list, "
-                         "adding one-off docket item for the name instead.",
-                         str(query_name))
-            names = [query_name]
-            write_to_docket = True
+    # The query string was not found, add it as a separate docket item.
+    if not should_write_names:
+        logging.info("Couldn't find user-provided name '%s' in name list, "
+                     "adding one-off docket item for the name instead.",
+                     str(query_name))
+        futures.append(_add_to_query_docket(scrape_key, query_name))
 
-    if write_to_docket:
-        add_to_query_docket(ScrapeKey(region_code, scrape_type), names)
-
-    if not end_of_list:
-        # Kick off next batch of CSV lines to read
-        deferred.defer(load_background_target_list,
-                       region=region_code,
-                       name_file=name_file,
-                       query_name=query_name,
-                       load=write_to_docket,
-                       start_line=next_line)
-    else:
-        logging.info("Finished loading background target list to docket.")
+    # TODO(#176): wrap with concurrent.futures.as_completed
+    for future in futures:
+        future.result()
+    logging.info("Finished loading background target list to docket.")
 
 
-def load_snapshot_target_list(region_code, phase, cursor=None):
-    """Load snapshot scrape docket items, based on previously-found people.
-
-    We need to run several queries to find relevant people to follow-up
-    on. This method runs them by query type and by batch, using the deferred
-    library to iterate through the batches (and the queries) until complete.
-
-    Note that these query types (checking snapshots and records) are likely
-    to produce some duplicate people for us to re-snapshot. To prevent
-    extra work, we add these items to the docket (pull taskqueue) with task
-    names that encode the person and current datetime, accurate to the hour.
-    GAE ensures multiple tasks can't be submitted with the same name within
-    several days of one another, preventing duplicate tasks / work.
-
-    This set of queries should work reasonably well, but if we need to add
-    complexity in the future it may make more sense for snapshot targets
-    to be produced by daily mapreduces that evaluate each record and its
-    child snapshots in the datastore.
-
-    Args:
-        region_code: (string) Region code to snapshot (e.g., us_ny)
-        phase: (int) Query phase to continue working through
-        cursor: Query cursor for next results
-
-    Returns:
-        N/A
-    """
-    batch_size = SNAPSHOT_BATCH_SIZE
-    (start_date, start_datetime) = get_snapshot_start()
-    scrape_type = constants.SNAPSHOT_SCRAPE
-
-    # Get relevant sub-kinds for the region
-    region = regions.Region(region_code)
-    region_record = region.get_record_kind()
-    region_snapshot = region.get_snapshot_kind()
-
-    if phase == 0:
-        # Query 1: Snapshots
-        query_type = "snapshot"
-
-        # Get all snapshots showing people in prison within the date range
-        # (Snapshot search aims to catch when they get out / facility changes)
-        snapshot_query = region_snapshot.query(ndb.AND(
-            region_snapshot.created_on > start_datetime,
-            # This must be an equality operator instead of `not ...` to work
-            region_snapshot.is_released == False))  # pylint: disable=singleton-comparison
-
-        query_results, next_cursor, more = snapshot_query.fetch_page(
-            batch_size, start_cursor=cursor)
-
-    elif phase == 1:
-        # Query 2: Records (edge case: record / release predates our scraping)
-        query_type = "record"
-
-        # The second query handles the same edge-case described in the
-        # get_ignore_records method (records which have release dates within
-        # the window of interest, but before we started scraping). These
-        # records also won't be on ignore lists from the snapshot query,
-        # because we check for and exclude them there. The aim of this query
-        # is to catch any for which the core snapshot query didn't apply.
-        person_records_query = region_record.query(ndb.AND(
-            region_record.latest_release_date > start_date,
-            # This must be an equality operator to work
-            region_record.is_released == True))  # pylint: disable=singleton-comparison
-
-        query_results, next_cursor, more = person_records_query.fetch_page(
-            batch_size, start_cursor=cursor)
-
-    elif phase == 2:
-        # Query 3: Records (edge case: no record changes since before window)
-        query_type = "record"
-
-        # There's an edge case where the last snapshot during which is_released
-        # was updated is earlier than the start date of the window of interest.
-        # To compensate, we pull all records for which the subject is still in
-        # prison and our record of the event predates the start of the window.
-        # Some of these may be duplicates of records found during the snapshot
-        # query; those will be de-duplicated by task name when added to the
-        # docket. There's no risk of the records we care about from this being
-        # in the ignore lists from the snapshot query, however - by definition,
-        # people of interest for this edge-case won't have any snapshots
-        # updating is_released in that time.
-        person_records_query = region_record.query(ndb.AND(
-            # This must be an equality operator to work
-            region_record.is_released == False,  # pylint: disable=singleton-comparison
-            region_record.created_on < start_datetime))
-
-        query_results, next_cursor, more = person_records_query.fetch_page(
-            batch_size, start_cursor=cursor)
-
-    else:
-        logging.info("Finished loading snapshot target list to docket.")
-        return
-
-    (relevant_records, person_keys_ids) = process_query_response(
-        query_type, query_results)
-
-    # Invert results to a combination of person + set of records to ignore
-    results = get_ignore_records(start_date, region_record, relevant_records,
-                                 person_keys_ids)
-
-    # Store the people and ignore records as docket items for snapshot scrape
-    add_to_query_docket(ScrapeKey(region_code, scrape_type), results)
-
-    # Move to next phase, if we've completed all results for this phase
-    if not more:
-        phase += 1
-        next_cursor = None
-
-    deferred.defer(load_snapshot_target_list,
-                   region_code=region_code,
-                   phase=phase,
-                   cursor=next_cursor)
+@environment.test_only
+def add_to_query_docket(scrape_key, item):
+    return _add_to_query_docket(scrape_key, item)
 
 
-def get_snapshot_start():
-    """Get the start date for our window of interest for snapshots
+def _add_to_query_docket(scrape_key, item):
+    """Add docket item to the query docket for relevant region / scrape type
 
-    Produces a datetime N years in the past from today, where N is the value of
-    SNAPSHOT_DISTANCE_YEARS.
+    Adds item the query docket for the given region and scrape type. The scraper
+    will pull each item from the docket in turn for scraping (e.g. each name, if
+    a background scrape, or each person ID if a snapshot scrape.)
 
-    Args:
-        N/A
+    The pubsub client library automatically batches messages before sending
+    them.
 
-    Returns:
-        Date object of date N years past
-    """
-    today = datetime.now().date()
-
-    start_date = today - relativedelta(years=SNAPSHOT_DISTANCE_YEARS)
-    start_datetime = datetime.combine(start_date, datetime.min.time())
-
-    return start_date, start_datetime
-
-
-def get_name_list_subset(names, query_name):
-    """Search for name in name list, return subset including + after that name
-
-    Takes a list of name tuples (surname, given names), attempts to find the
-    name in the file. If found, returns the list including and after that
-    name.
-
-    Args:
-        names: List of tuples, in the form:
-            [('Baker', 'Mandy'),
-             ('del Toro', 'Guillero'),
-             ('Ma', 'Yo Yo')]
-        query_name: User-provided name to search for (tuple in same form)
-
-    Returns:
-        Tuple result, in the form: (success (bool), list_subset (list))
-    """
-    try:
-        match_index = names.index(query_name)
-
-        logging.info("Found query name %s in name list, adding subsequent "
-                     "names to docket.", str(query_name))
-        subset = names[match_index:]
-
-        return True, subset
-
-    except ValueError:
-        return False, []
-
-
-def process_query_response(query_type, query_results):
-    """Extracts relevant details for docket items from snapshot query results
-
-    Args:
-        query_type: (string) "snapshot" if query was for snapshots, "record"
-            if not
-        query_results: (list of entities) Result set from the query
-
-    Returns:
-        Tuple in the form (relevant_records, person_keys_ids).
-            relevant_records: A list of records which should be scraped to
-                check for changes
-            person_key_ids: Dictionary of parent entities (persons who we
-                should re-scrape), keyed (de-duplicated) by person key.
-    """
-    person_key_ids = {}
-    relevant_records = []
-
-    for result in query_results:
-        if query_type == "snapshot":
-            record_key = result.key.parent()
-            record = record_key.get()
-        else:
-            record = result
-
-        relevant_records.append(record.record_id)
-        person_key = record.key.parent()
-        person = person_key.get()
-        person_key_ids[person.key] = person.person_id
-
-    return relevant_records, person_key_ids
-
-
-def get_ignore_records(start_date, region_record, relevant_records,
-                       person_keys_ids):
-    """Invert list of relevant records to produce list scraper should ignore
-
-    Takes a list of persons, and of relevant records, then inverts the
-    list to get only a list of records we don't want to waste time
-    re-scraping.
-
-    Args:
-        start_date: (date) Date when the window of snapshot interest starts
-        region_record: (models.Record subclass) The sub-kind for Record for
-            the specific region
-        person_keys_ids: A dictionary in the form {person_key: person_id, ...}
-        relevant_records: (list) Records we should re-scrape
-
-    Returns:
-        List of record IDs to ignore. Each list item is a tuple in the form:
-            (<person ID>, <list of record IDs to ignore for this person>)
-    """
-    result_list = []
-
-    # Use the person keys to invert the record list - need to know which
-    # records to ignore, not which to scrape, since it's important to
-    # scrape new records as well.
-    for person_key, person_id in person_keys_ids.iteritems():
-        person_ignore_records = []
-        records = region_record.query(ancestor=person_key).fetch()
-
-        for record in records:
-            record_id = record.record_id
-            if record_id not in relevant_records:
-
-                # There's an edge-case where a record's release date is
-                # within the date range we care about, but doesn't come
-                # up in the snapshot query above because we started
-                # scraping after they had already been released. Don't
-                # ignore those records - may have been put back e.g.
-                # on parole violation.
-                if (record.latest_release_date and
-                        not record.latest_release_date > start_date):
-                    person_ignore_records.append(record_id)
-
-        result_list.append((person_id, person_ignore_records))
-
-    return result_list
-
-
-def add_to_query_docket(scrape_key, docket_items):
-    """Add docket items to the query docket for relevant region / scrape type.
-
-    Adds items in the list to the query docket, tagged with the given region and
-    scrape type. The scraper will pull each item from the docket in
-    turn for scraping (e.g. each name, if a background scrape, or each person ID
-    if a snapshot scrape.)
+    This requires that the topic and subscription already exist.
 
     Args:
         scrape_key: (ScrapeKey) The scraper to add to the docket for
-        docket_items: (list) List of payloads to add.
-    """
-    logging.info("Populating query docket for scraper: %s", scrape_key)
-    region_code = scrape_key.region_code
-    scrape_type = scrape_key.scrape_type
-
-    q = taskqueue.Queue(DOCKET_QUEUE_NAME)
-
-    tag_name = "{}-{}".format(region_code, scrape_type)
-
-    tasks_to_add = []
-    for item in docket_items:
-        payload = json.dumps(item)
-
-        if scrape_type == constants.SNAPSHOT_SCRAPE:
-            logging.debug("Attempting to add snapshot item to docket: %s",
-                          item[0])
-            task_name = get_task_name(region_code, item[0])
-            new_task = taskqueue.Task(payload=payload,
-                                      method='PULL',
-                                      tag=tag_name,
-                                      name=task_name)
-
-        elif scrape_type == constants.BACKGROUND_SCRAPE:
-            new_task = taskqueue.Task(payload=payload,
-                                      method='PULL',
-                                      tag=tag_name)
-        else:
-            raise ValueError("Received invalid scrape type [{}]"
-                             .format(scrape_type))
-
-        tasks_to_add.append(new_task)
-
-    try:
-        q.add(tasks_to_add)
-    except (taskqueue.taskqueue.DuplicateTaskNameError,
-            taskqueue.taskqueue.TombstonedTaskError,
-            taskqueue.taskqueue.TaskAlreadyExistsError):
-        logging.debug("Some people have been added to the docket already; "
-                      "skipping.")
-
-
-def get_task_name(region_code, person_id, date_time=None):
-    """Generate unique task name for region+person+current datetime
-
-    Generates a unique task name for a particular person ID and region.
-
-    Because taskqueue enforces uniqueness for 9 days even after a task
-    has been deleted, and we may want to run (or re-run) snapshot scrapes
-    more frequently, we incorporate the datetime accurate to the current hour.
-
-    Because taskqueues become less efficient if task names are closely related
-    or sequential, we hash the region/person-specific string chosen for the
-    name to try to ensure they're more evenly distributed.
-
-    Args:
-        region_code: (string) Region code this task will be tied to
-        person_id: (string) Person ID the task is for
-        date_time: (datetime) The date and time when the task is generated,
-            defaults to right now
+        item: Payload to add
 
     Returns:
-        Task name, in the form of an MD5 hash
+        Future for the added message
     """
-    # Get the time, rounded down to the last hour. New tasks will have unique
-    # names an hour after the last snapshot scrape, but immediate duplicates
-    # will be blocked.
-    if date_time is None:
-        date_time = datetime.now()
-    time_component = date_time.replace(microsecond=0, second=0, minute=0)
-
-    string_base = region_code + person_id + str(time_component)
-
-    return hashlib.md5(string_base).hexdigest()
+    logging.debug("Attempting to add item to '%s' docket: %s",
+                  scrape_key, item)
+    return publisher().publish(_docket_topic_path(scrape_key),
+                               data=json.dumps(item).encode())
 
 
 # ########################## #
@@ -544,52 +272,50 @@ def get_task_name(region_code, person_id, date_time=None):
 # ########################## #
 
 
-def get_new_docket_item(scrape_key, attempt=0, back_off=5):
-    """Retrieves arbitrary item from docket for the specified scrape type
+def _retry_with_create(scrape_key, fn):
+    try:
+        result = fn()
+    except exceptions.NotFound:
+        _create_topic_and_subscription(scrape_key)
+        result = fn()
+    return result
+
+
+def get_new_docket_item(scrape_key, return_immediately=False):
+    """Retrieves an item from the docket for the specified region / scrape type
 
     Retrieves an arbitrary item still in the docket (whichever docket
-    type is specified). Some retry logic is built-in, since this may
-    get called immediately after task creation and it's not clear how
-    quickly the taskqueue index updates.
+    type is specified). If the docket is currently empty this will wait for
+    a bounded period of time for a message to be published, ensuring that newly
+    created tasks are received. This behavior can be overriden using the
+    return_immediately param.
 
     Args:
         scrape_key: (ScrapeKey) The scraper to lease an item for
-        attempt: (int) # of attempts so far. After 2, returns None
-        back_off: (int) # of seconds to wait between attempts.
+        return_immediately: (bool) Whether to return immediately or to wait for
+            a bounded period of time for a message to enter the docket.
 
     Returns:
         Task entity from queue
         None if query returns None
     """
-    docket_item = None
+    docket_message = None
 
-    # We only lease tasks for 5min, so that they pop back into the queue
-    # if we pause or stop the scrape for very long.
-    # Note: This may be the right number for us_ny snapshot scraping, but
-    #   if reused with another scraper the background scrapes might need
-    #   more time depending on e.g. # results for query 'John Doe'.
-    q = taskqueue.Queue(DOCKET_QUEUE_NAME)
-    tag_name = "{}-{}".format(scrape_key.region_code, scrape_key.scrape_type)
-    lease_duration_seconds = 300
-    num_tasks = 1
-    docket_results = q.lease_tasks_by_tag(lease_duration_seconds,
-                                          num_tasks,
-                                          tag_name)
+    subscription_path = _docket_subscription_path(scrape_key)
+    def inner():
+        return subscriber().pull(subscription_path, max_messages=1,
+                                 return_immediately=return_immediately)
+    response = _retry_with_create(scrape_key, inner)
 
-    if docket_results:
-        docket_item = docket_results[0]
-        logging.info("Leased docket item %s from the docket queue.",
-                     docket_item.name)
-    elif attempt < 2:
-        # Datastore index may not have been updated, sleep and then retry
-        time.sleep(back_off)
-        return get_new_docket_item(scrape_key, attempt=attempt+1,
-                                   back_off=back_off)
+    if response.received_messages:
+        docket_message = response.received_messages[0]
+        logging.info("Leased docket item from subscription: %s",
+                     subscription_path)
     else:
         logging.info("No matching docket item found in the docket queue for "
                      "scraper: %s", scrape_key)
 
-    return docket_item
+    return docket_message
 
 
 # ######################## #
@@ -598,14 +324,12 @@ def get_new_docket_item(scrape_key, attempt=0, back_off=5):
 
 
 def purge_query_docket(scrape_key):
-    """Delete all unleased tasks from the docket for provided region/type
+    """Purges the docket of all tasks for provided region / scrape type
 
-    Retrieves and deletes all current docket items for the relevant scrape
-    type and region (e.g., all docket queue tasks with tag 'us_ny-snapshot').
-
-    Note that this doesn't remove tasks which are still currently leased -
-    as a result, it's possible for a leased task which fails to re-enter
-    the queue alongside the newly-placed docket items.
+    This deletes our current subscription to the given docket topic. When we try
+    to add or pull from the topic next, we will create a new subscription. That
+    subscription will only receive messages that are published after it is
+    created.
 
     Args:
         scrape_key: (ScrapeKey) The scraper whose tasks to purge the docket of
@@ -615,53 +339,29 @@ def purge_query_docket(scrape_key):
     """
     logging.info("Purging existing query docket for scraper: %s", scrape_key)
 
-    lease_seconds = 3600
-    max_tasks = 1000
-    tag_name = "{}-{}".format(scrape_key.region_code, scrape_key.scrape_type)
-    deadline_seconds = 20
+    # TODO(#342): Use subscriber().seek(subscription_path, time=timestamp)
+    # once available on the emulator.
+    try:
+        subscriber().delete_subscription(_docket_subscription_path(scrape_key))
+    except exceptions.NotFound:
+        pass
 
-    q = taskqueue.Queue(DOCKET_QUEUE_NAME)
-
-    empty = False
-    while not empty:
-        docket_items = q.lease_tasks_by_tag(lease_seconds,
-                                            max_tasks,
-                                            tag_name,
-                                            deadline_seconds)
-
-        if docket_items:
-            q.delete_tasks(docket_items)
-        else:
-            empty = True
+    _create_topic_and_subscription(scrape_key)
 
 
-def delete_docket_item(item_name):
-    """Delete a specific docket item from the docket pull queue.
+def ack_docket_item(scrape_key, ack_id):
+    """Ack a specific docket item
 
-    Deletes a specific docket item, e.g. when we've completed it or when we're
-    purging a prior docket to build a new one.
+    Acknowledges a specific docket item once it's been completed. This indicates
+    to pubsub that it should not be delivered again.
 
     Args:
-        item_name: (string) The docket item's name, which we use to select and
-            delete it
+        ack_id: (string) Id used to ack the message
 
     Returns:
-        True if successful
-        False if not
+        N/A
     """
-    q = taskqueue.Queue(DOCKET_QUEUE_NAME)
-
-    # Note: taskqueue.delete_tasks_by_name is supposed to accept either
-    #   a single task name (string) or a list of task names. However,
-    #   a bug currently causes it to treat a string variable as an iterable
-    #   as well, and to try to delete tasks named after each char. So we
-    #   submit a list of length 1.
-    docket_items = q.delete_tasks_by_name([item_name])
-
-    # Verify that docket item was properly deleted
-    if not docket_items[0].was_deleted:
-        logging.error("Error while deleting docket item with name %s",
-                      item_name)
-        return False
-
-    return True
+    def inner():
+        subscriber().acknowledge(_docket_subscription_path(scrape_key),
+                                 [ack_id])
+    _retry_with_create(scrape_key, inner)

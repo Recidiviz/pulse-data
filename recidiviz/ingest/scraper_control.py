@@ -22,17 +22,17 @@ Attributes:
     SCRAPE_TYPES: (list(string)) the list of acceptable scrape types
 """
 
-import httplib
+from http import HTTPStatus
 import logging
+import threading
 import time
 
 from flask import Blueprint, request
-from google.appengine.ext import deferred
 
 from recidiviz.ingest import docket, sessions, tracker
 from recidiviz.ingest import ingest_utils
 from recidiviz.ingest.models.scrape_key import ScrapeKey
-from recidiviz.utils import environment, regions
+from recidiviz.utils import regions
 from recidiviz.utils.auth import authenticate_request
 from recidiviz.utils.params import get_value, get_values
 
@@ -69,7 +69,7 @@ def scraper_start():
 
     if not scrape_regions or not scrape_types:
         return ('Missing or invalid parameters, see service logs.',
-                httplib.BAD_REQUEST)
+                HTTPStatus.BAD_REQUEST)
 
     given_names = get_value("given_names", request.args, "")
     surname = get_value("surname", request.args, "")
@@ -88,18 +88,26 @@ def scraper_start():
             # vs updating that w/first task.
             time.sleep(5)
 
-            # Clear prior query docket for this scrape type and add new
-            # items
+            # Clear prior query docket for this scrape type and start adding new
+            # items in a background thread. In the case that there is a large
+            # names list, loading it can take some time. Loading it in the
+            # background allows us to start the scraper before it is fully
+            # loaded.
             tracker.purge_docket_and_session(scrape_key)
-            docket.load_target_list(scrape_key, given_names, surname)
+            load_docket_thread = threading.Thread(
+                target=docket.load_target_list,
+                args=(scrape_key, given_names, surname))
+            load_docket_thread.start()
 
-            # Start scraper, but give the target list loader a headstart
-            timer = 30 if not environment.in_prod() else 300
-            logging.info("Starting %s/%s scrape in %d seconds..."
-                         % (region, scrape_type, timer))
-            deferred.defer(scraper.start_scrape, scrape_type, _countdown=timer)
+            # Start scraper, if the docket is empty this will wait for a bounded
+            # period of time for an item to be published (~90 seconds).
+            logging.info("Starting %s/%s scrape..." % (region, scrape_type))
+            scraper.start_scrape(scrape_type)
 
-    return ('', httplib.OK)
+            # Wait for the docket to be loaded
+            load_docket_thread.join()
+
+    return ('', HTTPStatus.OK)
 
 
 @scraper_control.route('/stop')
@@ -142,7 +150,7 @@ def scraper_stop():
 
     if not scrape_regions or not scrape_types:
         return ('Missing or invalid parameters, see service logs.',
-                httplib.BAD_REQUEST)
+                HTTPStatus.BAD_REQUEST)
 
     for region in scrape_regions:
         logging.info("Stopping %s scrapes for %s." % (scrape_types, region))
@@ -153,7 +161,7 @@ def scraper_stop():
         scraper = regions.Region(region).get_scraper()
         scraper.stop_scrape(scrape_types)
 
-    return ('', httplib.OK)
+    return ('', HTTPStatus.OK)
 
 
 @scraper_control.route('/resume')
@@ -183,7 +191,7 @@ def scraper_resume():
 
     if not scrape_regions or not scrape_types:
         return ('Missing or invalid parameters, see service logs.',
-                httplib.BAD_REQUEST)
+                HTTPStatus.BAD_REQUEST)
 
     for region in scrape_regions:
 
@@ -199,4 +207,4 @@ def scraper_resume():
             scraper = regions.Region(region).get_scraper()
             scraper.resume_scrape(scrape_type)
 
-    return ('', httplib.OK)
+    return ('', HTTPStatus.OK)
