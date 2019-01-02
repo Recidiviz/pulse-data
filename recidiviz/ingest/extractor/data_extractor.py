@@ -96,8 +96,8 @@ class DataExtractor:
         Args:
             content: the html_tree we are searching.
         """
-        # TODO(330): for key in self.keys.keys():
-        #    self._convert_key_to_cells(content, key)
+        for key in self.keys.keys():
+            self._convert_key_to_cells(content, key)
 
         for css_key in self.css_keys.keys():
             self._css_key_to_cell(content, css_key)
@@ -260,6 +260,9 @@ class DataExtractor:
         # results from the xpath call are references, so modifying them changes
         # |content|.
         for match in matches:
+            # Only convert elements that are not already table cells.
+            if match.tag == 'td' or match.tag == 'th':
+                continue
             # Ensure no individual words in |content| was split when matching.
             remaining = ' '.join(match.text.split()).replace(key, '')
             if not remaining or not remaining[0].isalpha():
