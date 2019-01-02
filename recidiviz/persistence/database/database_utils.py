@@ -20,6 +20,20 @@ import attr
 from recidiviz.persistence import entities
 from recidiviz.persistence.database import schema
 
+# TODO(440): Consider explicitly converting fields. Current implementation
+# relies on identical field names between entity and schema objects.
+
+
+def convert_people(people_src):
+    """Converts the given list of people to the correct objects
+
+    Args:
+        people_src: list of schema.Person or entities.Person
+    Returns:
+        The converted list, a schema.Person or entities.Person
+    """
+    return [convert_person(p) for p in people_src]
+
 
 def convert_person(person_src):
     """Converts the given person to the correct object.
@@ -29,6 +43,9 @@ def convert_person(person_src):
     Returns:
         The converted object, a schema or entity object.
     """
+    if not person_src:
+        return None
+
     entity_to_db = isinstance(person_src, entities.Person)
     if entity_to_db:
         person_dst = schema.Person()
@@ -36,7 +53,7 @@ def convert_person(person_src):
         person_dst = entities.Person.builder()
     for k in attr.fields_dict(entities.Person).keys():
         if k == 'bookings':
-            person_dst.bookings = [_convert_booking(b) for b in
+            person_dst.bookings = [convert_booking(b) for b in
                                    person_src.bookings]
         else:
             setattr(person_dst, k, getattr(person_src, k))
@@ -47,7 +64,18 @@ def convert_person(person_src):
     return person_dst.build()
 
 
-def _convert_booking(booking_src):
+def convert_bookings(bookings_src):
+    """Converts the given list of bookings to the correct objects
+
+    Args:
+        bookings_src: list of schema.Booking or entities.Booking
+    Returns:
+        The converted list, a schema.Booking or entities.Booking
+    """
+    return [convert_booking(b) for b in bookings_src]
+
+
+def convert_booking(booking_src):
     """Converts the given booking to the correct object.
 
     Args:
@@ -55,15 +83,17 @@ def _convert_booking(booking_src):
     Returns:
         The converted object, a schema or entity object
     """
+    if not booking_src:
+        return None
+
     entity_to_db = isinstance(booking_src, entities.Booking)
+    fields = vars(entities.Booking()).keys()
     if entity_to_db:
         dst_module = schema
         booking_dst = schema.Booking()
-        fields = vars(booking_src).keys()
     else:
         dst_module = entities
         booking_dst = entities.Booking()
-        fields = vars(booking_dst).keys()
     for k in fields:
         if k == 'holds':
             booking_dst.holds = [_convert_object(
@@ -73,41 +103,79 @@ def _convert_booking(booking_src):
             booking_dst.arrest = _convert_object(
                 booking_src.arrest, dst_module.Arrest(), entity_to_db)
         elif k == 'charges':
-            booking_dst.charges = [_convert_charge(c) for c in
+            booking_dst.charges = [convert_charge(c) for c in
                                    booking_src.charges]
         else:
             setattr(booking_dst, k, getattr(booking_src, k))
     return booking_dst
 
 
-def _convert_charge(charge_src):
+def convert_charges(charges_src):
+    """Converts the given list of charges to the correct objects
+
+    Args:
+        charges_src: list of schema.Charge or entities.Charge
+    Returns:
+        The converted list, a schema.Charge or entities.Charge
+    """
+    return [convert_charge(c) for c in charges_src]
+
+
+def convert_charge(charge_src):
     """Converts the given charge to the correct object.
 
     Args:
-        booking_src: A schema Charge or entity Charge object
+        charge_src: A schema Charge or entity Charge object
     Returns:
         The converted object, a schema or entity object
     """
+    if not charge_src:
+        return None
+
     entity_to_db = isinstance(charge_src, entities.Charge)
+    fields = vars(entities.Charge()).keys()
     if entity_to_db:
         dst_module = schema
         charge_dst = schema.Charge()
-        fields = vars(charge_src).keys()
     else:
         dst_module = entities
         charge_dst = entities.Charge()
-        fields = vars(charge_dst).keys()
 
     for k in fields:
         if k == 'bond':
             charge_dst.bond = _convert_object(
                 charge_src.bond, dst_module.Bond(), entity_to_db)
         elif k == 'sentence':
-            charge_dst.sentence = _convert_object(
-                charge_src.sentence, dst_module.Sentence(), entity_to_db)
+            charge_dst.sentence = convert_sentence(charge_src.sentence)
         else:
             setattr(charge_dst, k, getattr(charge_src, k))
     return charge_dst
+
+
+def convert_sentence(sentence_src):
+    """Converts the given sentence to the correct object.
+
+    Args:
+        sentence_src: A schema Sentence or entity Sentence object
+    Returns:
+        The converted object, a schema or entity object
+    """
+    if not sentence_src:
+        return None
+
+    entity_to_db = isinstance(sentence_src, entities.Sentence)
+    fields = list(vars(entities.Sentence()).keys())
+    # TODO(441): Correctly convert related_sentences once schema for
+    # this field is finalized.
+    fields.remove('related_sentences')
+    if entity_to_db:
+        sentence_dst = schema.Sentence()
+    else:
+        sentence_dst = entities.Sentence()
+
+    for k in fields:
+        setattr(sentence_dst, k, getattr(sentence_src, k))
+    return sentence_dst
 
 
 def _convert_object(src, dst, entity_to_db=True):

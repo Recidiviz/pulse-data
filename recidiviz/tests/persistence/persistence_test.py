@@ -21,11 +21,11 @@ from unittest import TestCase
 
 from mock import patch, Mock
 from recidiviz import Session
-from recidiviz.common.constants.booking import ReleaseReason
+from recidiviz.common.constants.booking import ReleaseReason, CustodyStatus
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo, Charge, \
     Sentence
-from recidiviz.persistence import persistence
-from recidiviz.persistence.database import database
+from recidiviz.persistence import persistence, entities
+from recidiviz.persistence.database import database, schema
 from recidiviz.tests.utils import fakes
 
 BIRTHDATE_1 = '11/15/1993'
@@ -34,9 +34,12 @@ BIRTHDATE_2 = '11-2-1996'
 BOND_TYPE = 'Cash'
 BOND_STATUS = 'Active'
 BOOKING_CUSTODY_STATUS = 'In Custody'
+BOOKING_ID = 19
 CHARGE_NAME_1 = 'TEST_CHARGE_1'
 CHARGE_NAME_2 = 'TEST_CHARGE_2'
 CHARGE_STATUS = 'Pending'
+EXTERNAL_PERSON_ID = 'EXTERNAL_PERSON_ID'
+EXTERNAL_BOOKING_ID = 'EXTERNAL_BOOKING_ID'
 FACILITY = 'TEST_FACILITY'
 FINE_1 = '$1,500.25'
 FINE_1_INT = 1500
@@ -44,6 +47,7 @@ FINE_2 = ' '
 FINE_2_INT = 0
 GIVEN_NAME = "TEST_GIVEN_NAME"
 OFFICER_NAME = 'TEST_OFFICER_NAME'
+PERSON_ID = 9
 PLACE_1 = 'TEST_PLACE_1'
 PLACE_2 = 'TEST_PLACE_2'
 REGION_1 = 'REGION_1'
@@ -207,6 +211,56 @@ class TestPersistence(TestCase):
         sentence_2 = result_charges[1].sentence
         assert sentence_1.fine_dollars == FINE_1_INT
         assert sentence_2.fine_dollars == FINE_2_INT
+
+    def test_write_preexisting_person(self):
+        # Arrange
+        schema_booking = schema.Booking(
+            booking_id=BOOKING_ID,
+            external_id=EXTERNAL_BOOKING_ID,
+            admission_date_inferred=True,
+            custody_status=CustodyStatus.IN_CUSTODY,
+            last_seen_time=SCRAPER_START_DATETIME)
+        schema_person = schema.Person(
+            person_id=PERSON_ID,
+            external_id=EXTERNAL_PERSON_ID,
+            given_names=GIVEN_NAME,
+            region=REGION_1,
+            bookings=[schema_booking])
+
+        session = Session()
+        session.add(schema_person)
+        session.commit()
+
+        most_recent_scrape_time = (SCRAPER_START_DATETIME + timedelta(days=1))
+
+        ingest_info = IngestInfo()
+        ingest_info.people.add(surname=SURNAME_1,
+                               given_names=GIVEN_NAME,
+                               person_id=EXTERNAL_PERSON_ID,
+                               booking_ids=[EXTERNAL_BOOKING_ID])
+        ingest_info.bookings.add(
+            booking_id=EXTERNAL_BOOKING_ID,
+            custody_status='IN CUSTODY',
+        )
+
+        # Act
+        persistence.write(ingest_info, REGION_1, most_recent_scrape_time)
+
+        # Assert
+        expected_booking = entities.Booking(
+            booking_id=BOOKING_ID,
+            external_id=EXTERNAL_BOOKING_ID,
+            admission_date_inferred=True,
+            custody_status=CustodyStatus.IN_CUSTODY,
+            last_seen_time=most_recent_scrape_time)
+        expected_person = entities.Person.new_with_none_defaults(
+            person_id=PERSON_ID,
+            external_id=EXTERNAL_PERSON_ID,
+            given_names=GIVEN_NAME,
+            region=REGION_1,
+            surname=SURNAME_1,
+            bookings=[expected_booking])
+        self.assertEqual([expected_person], database.read_people(Session()))
 
     def test_inferReleaseDateOnOpenBookings(self):
         # Arrange
