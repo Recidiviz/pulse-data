@@ -1,3 +1,4 @@
+
 Creating a Scraper
 ==================
 From the top level `pulse-data` directory, run the `create_scraper.py`
@@ -15,7 +16,6 @@ Multi-word counties should be enclosed in quotes:
 ###### Optional Arguments
  - `agency`: the name of the agency, e.g. `Foo County Sheriff's Office`
  - `agency_type`: one of `jail`, `prison`, `unified`
- - `names_file`: a file with a names list for this scraper, e.g. `us_ny_names.csv` ([README](/name_lists/README.md))
  - `timezone`: the timezone, e.g. `America/New York`
  - `url`: the initial url of the roster
 
@@ -61,14 +61,25 @@ scraping information about people is handled in `populate_data`.
 
 Navigation
 ----------
-Navigation is handled in `get_more_tasks`. The type of task is specified in
-`params['task_type']`. `get_more_tasks` returns a `params_list` of tasks, so the
-initial task is usually to get a list of pages to scrape. Each params must
-include an `'endpoint'` and a `'task_type'` which tell the generic scraper what
-endpoint we are getting and what we are doing with the endpoint when we do get
-it.
 
-###### What is the structure of pages on the website?
+Navigation is handled in `get_more_tasks`. The basic question to answer is, given a webpage,
+how do I navigate to the next set of pages?  This information is encapsulated
+in the params that are returned:
+
+* endpoint: The url endpoint of the next page to hit
+* task_type: Defines the type of action we will take on the next page
+* post_data: The post data to send with the next request
+
+`endpoint` and `task_type` are required fields, but post_data is not a required field.  Furthermore, the user can send any other key/values that are useful to them in the params, they will be passed along to the next tasks.
+
+The different types of tasks are found in the [Constants](../constants.py) file and they are:
+* <strong>INITIAL_TASK</strong> - This is the first request that is made and this ensures that `set_initial_vars` is called.  This function lets you fill in the params with any extra info you might need for the next set of tasks.  Examples include session keys and information that need to be sent as post data.
+* <strong>GET_MORE_TASKS</strong> - This indicates that the page has more navigation that needs to be done.  In this case, the function `get_more_tasks` is called and it is the job of the method to return a list of params that was extracted from that page. 
+* <strong>SCRAPE_DATA</strong> - This indicates that the page has information on it that we care about and need to scrape.  In this case `populate_data` is called and it is the users job to walk the page and populate the `ingest_info` object
+
+For convenience, there also exists `SCRAPE_DATA_AND_MORE` which calls both `get_more_tasks` as well as `populate_data`.  This can be used when a persons information is spread across multiple pages.  For example their booking data is on one page, and the user must click a link to reach the pages there the charges information is displayed.
+
+#### What is the structure of pages on the website?
 Most website rosters follow a couple of familiar formats. For examples, refer to
 these scrapers:
  - Data about multiple people on a single page:
@@ -78,98 +89,134 @@ these scrapers:
  - Data about an individual person spread across multiple pages:
    [TODO(210): link to VT](https://github.com/Recidiviz/pulse-data/issues/210)
 
-
-Scraping
+Scraping Data
 --------
 Data is scraped in `populate_data`, which receives an
 [IngestInfo](../models/ingest_info.py) object as a parameter, populates it with
-data, and returns it as a result.
+data, and returns it as a result.  Documentation for all of the fields are found [here](https://github.com/Recidiviz/pulse-data/tree/master/recidiviz/ingest/models/README.md)
 
 The [IngestInfo](../models/ingest_info.py) object contains classes that represent
 information about a Person, Booking, Arrest, Charge, and Bond.
-[TODO(137): provide documentation about data source -> schema mapping](https://github.com/Recidiviz/pulse-data/issues/210).
+
 You can populate the IngestInfo object manually, or use the
 [DataExtractor](../extractor/data_extractor.py) class to populate it
 automatically.
 
 ### Automatic Data Extraction
-The [DataExtractor](../extractor/data_extractor.py) class has a method,
-`extract_and_populate_data`, that reads from `region_code.yaml` and searches
-for data on a webpage. In the best-case scenario, the DataExtractor will be able
-to automatically populate every value from your yaml file:
+  
+The Data Extractor is a tool designed to make the extraction of data from a website much simpler. You should first attempt to use the data extractor as it significantly lowers the line count of your scraper and is far easier to use than trying to parse poorly formatted HTML data.  For documentation on how to use the data extractor, see [here](https://github.com/Recidiviz/pulse-data/tree/master/recidiviz/ingest/extractor/README.md)
+
+### Data Persistence
+
+The base logic decides to persist data to the database when we hit a task that scrapes data, and also doesn't need to get more tasks.  In this case, after the ingest info is returned from the `populate_data` call, that person (or people) will be persisted to the database.  
+
+Unit Tests
+==================
+The only two functions that need to be unit tested for your scraper are `get_more_tasks` and `populate_data`.  The unit tests inherit from `BaseScraperTest`. This provides two functions `validate_and_return_get_more_tasks` and `validate_and_return_populate_data`.  Both of these functions take content of a page, the params to send in, and the expected value to be returned.  In addition to calling the relevant function and validating its output against the expected output, it runs extra validations on the returned output to make sure the object is formatted correctly and has all of the required fields.
+
+End To End Tests
+==================
+To test what your scraper might look like in production, use the `run_scraper` script.  This script simply emulates the flow of your scraper.  This script does not persist any data but it does make real requests so it is a good check to see if your scraper works properly.
+
+To use it simply run:
+```shell
+$ python -m recidiviz.ingest.run_scraper --region region_name
+```
+Optional fields are:
+* num_tasks: The number of tasks to try before ending the run. The default is 5.  
+* sleep_between_requests: The seconds to sleep between each request.  The default is 1.  
+
+Please be mindful to sleep a reasonable amount of time between each request, we don't want to bring down or degrade any websites!  This can of course run through the entire roster if you set the number of tasks to be high enough, but doing 5-10 is usually reasonable enough.
+
+Example Flow
+==================
+Lets walk through a website and create an example scraper.
+
+<div align="center"><img src="../../img/home_page.png" border=0></div>
+
+This is the homepage of a website. `get_more_tasks` is called with this page and by experimentation we see that to get a list of all the people we need to click the search button.  We inspect the network traffic to see what post data needs to be sent and our `get_more_tasks` so far looks like this:
 
 ```python
-def populate_data(self, content, params, ingest_info): 
-    data_extractor = DataExtractor('path_to_yaml_file')
-    return data_extractor.extract_and_populate_data(content, ingest_info)
+    def get_more_tasks(self, content, params):
+        """
+        Gets more tasks based on the content and params passed in.  This
+        function should determine which task params, if any, should be
+        added to the queue
+
+        Args:
+            content: An lxml html tree.
+            params: dict of parameters passed from the last scrape session.
+
+        Returns:
+            A list of params containing endpoint and task_type at minimum.
+        """
+        task_type = params.get('task_type', self.get_initial_task_type())
+        params_list = []
+        # If it is our first task, we know the next task must be a query to
+        # return all people
+        if self.is_initial_task(task_type):
+            params_list.append({'endpoint': url_people_search,
+                                'task_type': constants.GET_MORE_TASKS,
+                                'post_data': post_data_if_necessary})
 ```
 
-In the yaml file, you can list both plain-text keys and
-[css selectors](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors)
-and map them to data values.
+We know that by clicking the search button, it takes us to a page where we are not yet ready to scrape any data, hence our task type is GET_MORE_TASKS. The url and post_data need to actually be scraped from the page (they are shown here for simplicity).  Once this is done, `get_more_tasks` will be called again on the following webpage:
 
-#### Plain text keys
-We try to identify key/value pairs from actual text on the page. The cleanest
-pages use tables to represent data; keys and values are represented in adjacent
-`<td>` elements (see this
-[Brooks-Jeffrey](https://www.autaugasheriff.org/roster.php) roster for an
-example). The DataExtractor may also be able to parse key/value pairs from free
-text, as in the demographic information from the roster for
-[Randolph County, AL](http://randolphcountyso.org/cur_inmates.html).
+<div align="center"><img src="../../img/search_page.png" border=0></div>
 
-To this end, the yaml file contains three fields relating to plain text keys:
- - `key_mappings` (required): lists keys on the page, for which there is only
-   one value, to keys in IngestInfo. For example, a person’s birthdate might be
-   represented by the line ` - DOB: person.birthdate`, where `DOB` appears on the
-   page and is followed in some way by a birthdate. This field goes in
-   `key_mappings` because a person has only one birthdate, regardless of how
-   many people are on the page.
- - `multi_key_mapping` (optional): lists keys on the page, for which there may
-   be multiple values, mapping to keys in IngestInfo. For example, information
-   about charges is usually listed here since a person may have multiple
-   charges: ` - Statute Code: charge.statute` maps a column of statute codes -
-   one per charge - to the appropriate field in IngestInfo.
- - `keys_to_ignore` (optional): Occasionally, the DataExtractor will pick up a
-   value that is actually another key on the page, but which is not included
-   in the above mappings because it is not used. For example, an unused `Height`
-   field might appear as a column heading next to a column containing
-   information about a person's `Gender`. In this example, ` - Height` should be
-   listed so it is not returned for the `Gender` key.
+Now that we are on this page, we must expand our `get_more_tasks` function to handle this:
 
-#### CSS-selectable values
-Some values may be accessed by using a
-[CSS selector](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors).
-Open your browser’s web development tools console (instructions for
-[Firefox](https://developer.mozilla.org/en-US/docs/Tools/Page_Inspector/How_to/Open_the_Inspector),
-[Opera](https://dev.opera.com/extensions/testing/),
-[Edge](https://docs.microsoft.com/en-us/microsoft-edge/devtools-guide/elements),
-[Chrome](https://developers.google.com/web/tools/chrome-devtools/#elements)) and
-look for element ids, class names, or other information that could identify a
-field from a css selector. The yaml file contains a field for this:
- - `css_key_mappings` (optional): maps a css selector to the value contained by
-   that selector. For example, some
-   [Archonix](http://12.163.231.93/public/ArchonixXJailPublic/Default.aspx)
-   rosters have an HTML id for the span that contains a person’s name; this is
-   handled by the line
-   `- ctl00_ContentPlaceHolder1_spnInmateName: person.fullname`.
+```python
+    def get_more_tasks(self, content, params):
+        """
+        Gets more tasks based on the content and params passed in.  This
+        function should determine which task params, if any, should be
+        added to the queue
 
-###### Example
+        Args:
+            content: An lxml html tree.
+            params: dict of parameters passed from the last scrape session.
+
+        Returns:
+            A list of params containing endpoint and task_type at minimum.
+        """
+        task_type = params.get('task_type', self.get_initial_task_type())
+        params_list = []
+        # If it is our first task, we know the next task must be a query to
+        # return all people
+        if self.is_initial_task(task_type):
+            params_list.append({'endpoint': url_people_search,
+                                'task_type': constants.GET_MORE_TASKS,
+                                'post_data': post_data_if_necessary})
+    if self._is_person_list(content):
+      # Loop through each url that clicks through to the persons page and
+      # append to the task params
+      for url, post_data_if_necessary in self._get_all_urls_and_post(content):
+          params_list.append({'endpoint': url,
+                              'task_type': constants.SCRAPE_DATA,
+                              'post_data': post_data_if_necessary})
+      # Also click on next page
+      params_list.append({'endpoint': url_next_page,
+                          'task_type': constants.GET_MORE_TASKS,
+                          'post_data': post_data_if_necessary})
+```
+
+We detect that we are on a page with a list of people on it, and our params list should contain the URLs for all 10 people on the page.  Our scrape type for those will be SCRAPE_DATA which will call `populate_data` on the content of that page because we are ready to scrape information.  Additionally we also make sure to click next page to ensure we get everyone on the roster list, the scrape type will be GET_MORE_TASKS.  Note that `is_person_list` and `get_all_urls_and_post` are just examples, you will need to implement ways to extracts this information particular to your scraper.  Finally, the person page looks like this:
+
+<div align="center"><img src="../../img/full_person_page.png" border=0></div>
+
+Because the task type was SCRAPE_DATA, the function `populate_data` will be called, so we need to implement it.  For this particular example, we will use the data extractor with the following yaml file:
+
 ```yaml
-
 key_mappings:
   Inmate No: person.person_id
-  Gender: person.sex
+  Gender: person.gender
   BirthDate: person.birthdate
   Age: person.age
   Race: person.race
   "Booking #": booking.booking_id
+  Committed By: booking.hold
   Booking Date-Time: booking.admission_date
-
-multi_key_mapping:
-  Statute Code: charge.statute
-  Description: charge.name
-  CaseNumber: charge.case_number
-  Bond Amount: bond.amount
 
 css_key_mappings:
   "#ctl00_ContentPlaceHolder1_spnInmateName": person.surname
@@ -177,32 +224,32 @@ css_key_mappings:
 keys_to_ignore:
   - Custody Status
   - Release Date-Time
+  - Offense DateTime
+  - Arrest DateTime
+
+multi_key_mapping:
+  Statute Code: charge.statute
+  Description: charge.name
+  CaseNumber: charge.case_number
+  Bond Amount: bond.amount
 ```
-Note that some special characters may need to be escaped with double-quotes
-(`"`).
 
-#### Testing the yaml file
-[TODO(211)](https://github.com/Recidiviz/pulse-data/issues/211)
-
-### Manually overriding the Data Extractor
-There may be fields that can’t be extracted automatically using the
-DataExtractor. They will have to be scraped manually in `populate_data`.
+Our `populate_data` function looks like:
 
 ```python
 def populate_data(self, content, params, ingest_info):
-    data_extractor = DataExtractor(self.mapping_filepath)
-    ingest_info = data_extractor.extract_and_populate_data(content, ingest_info)
-    race_sex = content.xpath('//span[@class="race-and-sex"]/text()')[0]
-    race, sex = race_sex.split(',')
-    ingest_info.person[0].race = race
-    ingest_info.person[0].sex = sex
-    return ingest_info
+        """
+        Populates the ingest info object from the content and params given
+
+        Args:
+            content: An lxml html tree.
+            params: dict of parameters passed from the last scrape session.
+            ingest_info: The IngestInfo object to populate
+        """
+        yaml_file = os.path.join(os.path.dirname(__file__), 'my_yaml.yaml')
+        data_extractor = DataExtractor(yaml_file)
+        data_extractor.extract_and_populate_data(content, ingest_info)
+        return ingest_info
 ```
 
-End-to-end Testing
-==================
-Finally, follow the instructions from the top-level [README.md](/README.md) to
-run your code locally and verify that everything is working. Be sure to update
-[queue.yaml](/queue.yaml) and
-[region_manifest.yaml](/region_manifest.yaml) with values that are
-appropriate for your scraper.
+The process for this is explained in the data extractor [documentation](https://github.com/Recidiviz/pulse-data/tree/master/recidiviz/ingest/extractor/README.md) with examples.  In most cases the data extractor should suffice but if it does not, your `populate_data` function will manually have to walk the html and extract out the relevant fields into the `ingest_info` object.  
