@@ -96,8 +96,8 @@ queue:
     max_backoff_seconds: 300
     task_age_limit: 3d
 
-# us-fl-martin-county-scraper - Martin County County, Florida
-- name: us-fl-martin-county-scraper
+# us-fl-martin-scraper - Martin County, Florida
+- name: us-fl-martin-scraper
   mode: push
   rate: 5/m
   bucket_size: 1
