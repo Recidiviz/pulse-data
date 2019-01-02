@@ -29,7 +29,7 @@ def test_validate_regions_one_all():
     assert set(ingest_utils.validate_regions(["all"])) == {
         "us_ny", "us_pa_greene", "us_co_mesa", "us_mt_gallatin",
         "us_pa_dauphin", "us_mo_stone", "us_ar_van_buren", "us_pa",
-        "us_fl_martin_county"
+        "us_fl_martin"
     }
 
 
@@ -50,7 +50,7 @@ def test_validate_regions_multiple_all():
     assert set(ingest_utils.validate_regions(["us_pa", "all"])) == {
         "us_ny", "us_pa_greene", "us_co_mesa", "us_mt_gallatin",
         "us_pa_dauphin", "us_mo_stone", "us_ar_van_buren", "us_pa",
-        "us_fl_martin_county"
+        "us_fl_martin"
     }
 
 

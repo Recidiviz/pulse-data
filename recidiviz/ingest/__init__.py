@@ -24,7 +24,7 @@ sources.
 
 import recidiviz.ingest.us_ar_van_buren
 import recidiviz.ingest.us_co_mesa
-import recidiviz.ingest.us_fl_martin_county
+import recidiviz.ingest.us_fl_martin
 import recidiviz.ingest.us_mt_gallatin
 import recidiviz.ingest.us_mo_stone
 import recidiviz.ingest.us_ny
