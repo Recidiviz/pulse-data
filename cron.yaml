@@ -17,6 +17,114 @@ cron:
     max_doublings: 5
     job_age_limit: 9h
 
+- description: Start VT background scraper every day at 9pm
+  url: /scraper/start?region=us_vt&scrape_type=background
+  schedule: every day 21:00
+  timezone: America/New_York
+  retry_parameters:
+    min_backoff_seconds: 2.5
+    max_doublings: 5
+    job_age_limit: 9h
+
+- description: Stop VT scraper every day at 9am
+  url: /scraper/stop?region=us_vt&scrape_type=background
+  schedule: every day 09:00
+  timezone: America/New_York
+  retry_parameters:
+    min_backoff_seconds: 2.5
+    max_doublings: 5
+    job_age_limit: 9h
+
+- description: Start PA greene background scraper every day at 9pm
+  url: /scraper/start?region=us_pa_greene&scrape_type=background
+  schedule: every day 21:00
+  timezone: America/New_York
+  retry_parameters:
+    min_backoff_seconds: 2.5
+    max_doublings: 5
+    job_age_limit: 9h
+
+- description: Stop PA greene scraper every day at 9am
+  url: /scraper/stop?region=us_pa_greene&scrape_type=background
+  schedule: every day 09:00
+  timezone: America/New_York
+  retry_parameters:
+    min_backoff_seconds: 2.5
+    max_doublings: 5
+    job_age_limit: 9h
+
+- description: Start AR Van Buren background scraper every day at 9pm
+  url: /scraper/start?region=us_ar_van_buren&scrape_type=background
+  schedule: every day 21:00
+  timezone: America/New_York
+  retry_parameters:
+    min_backoff_seconds: 2.5
+    max_doublings: 5
+    job_age_limit: 9h
+
+- description: Stop AR Van Buren greene scraper every day at 9am
+  url: /scraper/stop?region=us_ar_van_buren&scrape_type=background
+  schedule: every day 09:00
+  timezone: America/New_York
+  retry_parameters:
+    min_backoff_seconds: 2.5
+    max_doublings: 5
+    job_age_limit: 9h
+
+- description: Start MO stone background scraper every day at 9pm
+  url: /scraper/start?region=us_mo_stone&scrape_type=background
+  schedule: every day 21:00
+  timezone: America/New_York
+  retry_parameters:
+    min_backoff_seconds: 2.5
+    max_doublings: 5
+    job_age_limit: 9h
+
+- description: Stop MO stone greene scraper every day at 9am
+  url: /scraper/stop?region=us_mo_stone&scrape_type=background
+  schedule: every day 09:00
+  timezone: America/New_York
+  retry_parameters:
+    min_backoff_seconds: 2.5
+    max_doublings: 5
+    job_age_limit: 9h
+
+- description: Start FL martin county background scraper every day at 9pm
+  url: /scraper/start?region=us_fl_martin_county&scrape_type=background
+  schedule: every day 21:00
+  timezone: America/New_York
+  retry_parameters:
+    min_backoff_seconds: 2.5
+    max_doublings: 5
+    job_age_limit: 9h
+
+- description: Stop FL martin county scraper every day at 9am
+  url: /scraper/stop?region=us_fl_martin_county&scrape_type=background
+  schedule: every day 09:00
+  timezone: America/New_York
+  retry_parameters:
+    min_backoff_seconds: 2.5
+    max_doublings: 5
+    job_age_limit: 9h
+
+- description: Start mt gallatin county background scraper every day at 9pm
+  url: /scraper/start?region=us_mt_gallatin&scrape_type=background
+  schedule: every day 21:00
+  timezone: America/New_York
+  retry_parameters:
+    min_backoff_seconds: 2.5
+    max_doublings: 5
+    job_age_limit: 9h
+
+- description: Stop mt gallatin county scraper every day at 9am
+  url: /scraper/stop?region=us_mt_gallatin&scrape_type=background
+  schedule: every day 09:00
+  timezone: America/New_York
+  retry_parameters:
+    min_backoff_seconds: 2.5
+    max_doublings: 5
+    job_age_limit: 9h
+
 - description: Infer release of all people not seen in completed scrapes
   url: /infer_release/release?region=all
   schedule: every day 09:30
