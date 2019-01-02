@@ -28,13 +28,13 @@ from recidiviz.tests.utils import fakes
 _REGION = 'region'
 _REGION_ANOTHER = 'wrong region'
 
+
 class TestDatabase(TestCase):
     """Test that the methods in database.py correctly read from the SQL
     database """
 
     def setup_method(self, _test_method):
         fakes.use_in_memory_sqlite_database()
-
 
     def test_readOpenBookingsBeforeDate(self):
         # Arrange
@@ -83,7 +83,9 @@ class TestDatabase(TestCase):
             session, person.region, most_recent_scrape_date)
 
         # Assert
-        self.assertEqual(bookings, [open_booking_before_last_scrape])
+        self.assertEqual(bookings,
+                         [database_utils.convert_booking(
+                             open_booking_before_last_scrape)])
 
     def test_readPeopleWithOpenBookings(self):
         admission_date = datetime.datetime(2018, 6, 20)

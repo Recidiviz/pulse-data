@@ -105,14 +105,14 @@ class TestEntityMatching(TestCase):
         session.commit()
 
         # pylint: disable=protected-access
-        ingested_existing_charge = database_utils._convert_charge(
+        ingested_existing_charge = database_utils.convert_charge(
             schema_charge)
         ingested_existing_charge.charge_id = None
         ingested_new_charge = entities.Charge(status=ChargeStatus.PENDING,
                                               name=_CHARGE_NAME_3)
 
         # pylint: disable=protected-access
-        ingested_open_booking = database_utils._convert_booking(
+        ingested_open_booking = database_utils.convert_booking(
             open_schema_booking)
         ingested_open_booking.admission_date = None
         ingested_open_booking.booking_id = None
@@ -131,7 +131,7 @@ class TestEntityMatching(TestCase):
         expected_new_charge = copy.deepcopy(ingested_new_charge)
 
         # pylint: disable=protected-access
-        expected_dropped_charge = database_utils._convert_charge(
+        expected_dropped_charge = database_utils.convert_charge(
             schema_charge_another)
         expected_dropped_charge.status = ChargeStatus.DROPPED
         expected_open_booking = copy.deepcopy(ingested_open_booking)
@@ -140,7 +140,7 @@ class TestEntityMatching(TestCase):
                                          expected_dropped_charge]
         # pylint: disable=protected-access
         expected_closed_booking = \
-            database_utils._convert_booking(closed_schema_booking)
+            database_utils.convert_booking(closed_schema_booking)
         expected_person = copy.deepcopy(ingested_person)
         expected_person.bookings = \
             [expected_open_booking, expected_closed_booking]

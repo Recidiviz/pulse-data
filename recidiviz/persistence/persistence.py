@@ -23,7 +23,7 @@ from recidiviz import Session
 from recidiviz.common.constants.booking import ReleaseReason
 from recidiviz.persistence import entity_matching
 from recidiviz.persistence.converter import converter
-from recidiviz.persistence.database import database, database_utils
+from recidiviz.persistence.database import database
 from recidiviz.utils import environment
 
 
@@ -49,9 +49,8 @@ def infer_release_on_open_bookings(region, last_ingest_time):
     try:
         bookings = database.read_open_bookings_scraped_before_time(
             session, region, last_ingest_time)
-        _infer_release_date_for_bookings(bookings, last_ingest_time.date())
-        for booking in bookings:
-            session.add(session.merge(booking))
+        _infer_release_date_for_bookings(session, bookings,
+                                         last_ingest_time.date())
         session.commit()
     except Exception:
         session.rollback()
@@ -60,7 +59,7 @@ def infer_release_on_open_bookings(region, last_ingest_time):
         session.close()
 
 
-def _infer_release_date_for_bookings(bookings, date):
+def _infer_release_date_for_bookings(session, bookings, date):
     """Marks the provided bookings with an inferred release date equal to the
     provided date. Also resolves any charges associated with the provided
     bookings as 'RESOLVED_UNKNOWN_REASON'"""
@@ -74,8 +73,9 @@ def _infer_release_date_for_bookings(bookings, date):
                                    'resolved, however booking already has '
                                    'release date.'.format(booking.booking_id))
 
-        booking.release_date = date
-        booking.release_reason = ReleaseReason.INFERRED_RELEASE
+        database.update_booking(session, booking.booking_id,
+                                release_date=date,
+                                release_reason=ReleaseReason.INFERRED_RELEASE)
 
 
 def _should_persist():
@@ -111,8 +111,7 @@ def write(ingest_info, region, last_seen_time):
     session = Session()
     try:
         entity_matching.match_entities(session, region, people)
-        for person in people:
-            session.merge(database_utils.convert_person(person))
+        database.write_people(session, people)
         session.commit()
     except Exception:
         session.rollback()
