@@ -62,7 +62,7 @@ class BaseScraperTest(object):
             for key in manifest:
                 if (key not in
                         ['key_mappings', 'multi_key_mapping',
-                         'keys_to_ignore']):
+                         'keys_to_ignore', 'css_key_mappings']):
                     raise AttributeError("Unknown yaml key %s" % key)
 
             # Make sure every mapped value in the yaml file exists as a variable
