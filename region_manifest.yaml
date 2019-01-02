@@ -107,15 +107,15 @@ regions:
     scraper_package: us_pa
     timezone: America/New_York
 
-  us_fl_martin_county:
+  us_fl_martin:
     agency_name: Martin County
-    region_code: us_fl_martin_county
+    region_code: us_fl_martin
     agency_type: jail
-    queue: us-fl-martin-county-scraper
+    queue: us-fl-martin-scraper
     base_url: http://198.136.35.4/jailinmatesearch/jailinmatesearch.asp
     names_file: us_ny_names.csv
     entity_kinds:
       person: Person
       record: Record
-    scraper_package: us_fl_martin_county
+    scraper_package: us_fl_martin
     timezone: America/New_York
