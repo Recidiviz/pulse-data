@@ -43,5 +43,7 @@ def infer_release():
     for region in regions:
         session = sessions.get_most_recent_completed_session(region)
         if session:
+            logging.info('Got most recent completed session for %s with start'
+                         'time %s' % (region, session.start))
             persistence.infer_release_on_open_bookings(region, session.start)
     return '', HTTPStatus.OK
