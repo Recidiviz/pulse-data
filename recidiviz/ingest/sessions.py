@@ -334,7 +334,8 @@ def get_sessions(region_code, include_open=True, include_closed=True,
     if not include_open:
         results = (result for result in results if result.get('end'))
         if most_recent_only:
-            results = [next(results)]
+            first_result = next(results, None)
+            results = [first_result] if first_result else []
 
     return _sessions_from_entities(results)
 

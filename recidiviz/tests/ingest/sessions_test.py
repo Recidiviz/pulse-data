@@ -463,6 +463,20 @@ class TestSessionManager:
         result = sessions.get_most_recent_completed_session("us_ny")
         assert result.to_entity() == second.to_entity()
 
+    def test_get_most_recently_closed_session_when_empty(self):
+        self.create_session(
+            region_code="us_fl", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 17)),
+            end=fix_dt(datetime(2009, 6, 18)))
+        self.create_session(
+            region_code="us_ny", scrape_type=constants.BACKGROUND_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 19)))
+        self.create_session(
+            region_code="us_fl", scrape_type=constants.SNAPSHOT_SCRAPE,
+            start=fix_dt(datetime(2009, 6, 19)))
+
+        assert not sessions.get_most_recent_completed_session("us_ny")
+
     def test_get_current_session(self):
         # older
         self.create_session(
