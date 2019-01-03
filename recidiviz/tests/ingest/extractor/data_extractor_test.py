@@ -412,3 +412,25 @@ def test_content_is_not_modified():
 
     assert expected_info == info
     assert html_contents.cssselect('td') == []
+
+def test_cell_ordering():
+    """Tests that the DataExtractor handles 'th' and 'td' cells in the correct
+    order."""
+    key_mapping_file = '../testdata/data_extractor/yaml/good_table.yaml'
+    key_mapping_file = os.path.join(os.path.dirname(__file__), key_mapping_file)
+    extractor = DataExtractor(key_mapping_file)
+
+    expected_info = IngestInfo()
+    expected_info.create_person(birthdate='A')
+    expected_info.create_person(birthdate='B')
+    expected_info.create_person(birthdate='C')
+
+    # TODO(283): remove when extractor no longer creates empty bookings.
+    for person in expected_info.person:
+        person.create_booking()
+
+    html_contents = html.fromstring(
+        fixtures.as_string('testdata/data_extractor/html', 'mixed_cells.html'))
+
+    info = extractor.extract_and_populate_data(html_contents)
+    assert expected_info.person[0] == info.person[0]
