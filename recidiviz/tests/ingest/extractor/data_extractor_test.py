@@ -34,7 +34,6 @@ def test_good_table():
 
     expected_info = IngestInfo()
     person = expected_info.create_person()
-    person.create_booking()
     person.birthdate = '1/15/2048'
 
     html_contents = html.fromstring(
@@ -387,7 +386,6 @@ def test_th_rows():
     person = expected_info.create_person()
     person.race = 'WHITE'
     person.gender = 'M'
-    person.create_booking()
 
     html_contents = html.fromstring(
         fixtures.as_string('testdata/data_extractor/html', 'th_rows.html'))
@@ -404,7 +402,6 @@ def test_content_is_not_modified():
     expected_info = IngestInfo()
     person = expected_info.create_person()
     person.birthdate = '1/1/1111'
-    person.create_booking()
 
     html_contents = html.fromstring('<html><div>DOB: 1/1/1111</div></html>')
     with pytest.warns(UserWarning):
@@ -425,12 +422,32 @@ def test_cell_ordering():
     expected_info.create_person(birthdate='B')
     expected_info.create_person(birthdate='C')
 
-    # TODO(283): remove when extractor no longer creates empty bookings.
-    for person in expected_info.person:
-        person.create_booking()
-
     html_contents = html.fromstring(
         fixtures.as_string('testdata/data_extractor/html', 'mixed_cells.html'))
 
     info = extractor.extract_and_populate_data(html_contents)
     assert expected_info.person[0] == info.person[0]
+
+
+def test_no_multi_key_parent():
+    """Tests that parent classes are created properly when a field is scraped
+    whose parent is a multi-key class that has not been scraped. In this
+    example, charges are multi-key classes, but a bond is scraped from a
+    booking with no charge information."""
+    key_mapping_file = '../testdata/data_extractor/yaml/charge_multi_key.yaml'
+    key_mapping_file = os.path.join(os.path.dirname(__file__), key_mapping_file)
+    extractor = DataExtractor(key_mapping_file)
+
+    expected_info = IngestInfo()
+    charge = expected_info.create_person().create_booking().create_charge()
+    charge.create_bond(bond_id='1111')
+
+    html_contents = html.fromstring(
+        fixtures.as_string('testdata/data_extractor/html', 'no_charges.html'))
+
+    # The extractor will warn that 'Charge Description' cannot be found. This
+    # is necessary because we need a field under multi_key_mappings so that
+    # charge is treated as a multi_key class.
+    with pytest.warns(UserWarning):
+        info = extractor.extract_and_populate_data(html_contents)
+    assert expected_info == info
