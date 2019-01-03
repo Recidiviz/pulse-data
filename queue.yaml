@@ -8,7 +8,7 @@ queue:
   mode: push
   rate: 5/m
   bucket_size: 500
-  max_concurrent_requests: 3
+  max_concurrent_requests: 5000
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
@@ -19,7 +19,7 @@ queue:
   mode: push
   rate: 5/m
   bucket_size: 500
-  max_concurrent_requests: 3
+  max_concurrent_requests: 5000
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
@@ -30,7 +30,7 @@ queue:
   mode: push
   rate: 5/m
   bucket_size: 500
-  max_concurrent_requests: 3
+  max_concurrent_requests: 5000
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
@@ -41,7 +41,7 @@ queue:
   mode: push
   rate: 5/m
   bucket_size: 500
-  max_concurrent_requests: 3
+  max_concurrent_requests: 5000
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
@@ -52,7 +52,7 @@ queue:
   mode: push
   rate: 18/m
   bucket_size: 500
-  max_concurrent_requests: 3
+  max_concurrent_requests: 5000
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
@@ -63,7 +63,7 @@ queue:
   mode: push
   rate: 5/m
   bucket_size: 500
-  max_concurrent_requests: 3
+  max_concurrent_requests: 5000
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
@@ -74,7 +74,7 @@ queue:
   mode: push
   rate: 5/m
   bucket_size: 500
-  max_concurrent_requests: 3
+  max_concurrent_requests: 5000
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
@@ -90,7 +90,7 @@ queue:
   mode: push
   rate: 5/m
   bucket_size: 500
-  max_concurrent_requests: 3
+  max_concurrent_requests: 5000
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
@@ -101,7 +101,7 @@ queue:
   mode: push
   rate: 5/m
   bucket_size: 500
-  max_concurrent_requests: 3
+  max_concurrent_requests: 5000
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
