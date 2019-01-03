@@ -131,8 +131,6 @@ class DataExtractor:
         self._set_all_cells(copy.deepcopy(content))
         if not ingest_info:
             ingest_info = IngestInfo()
-        if not ingest_info.person:
-            ingest_info.create_person().create_booking()
 
         # We use this set to keep track of keys we have seen, by the end of this
         # function it should be the empty set.  If not we throw an error to let
@@ -233,8 +231,10 @@ class DataExtractor:
         parent = ingest_info
         for hier_class in hierarchy:
             # If we are a multi key class instead of getting the most recent
-            # object as a parent, we use the index of the value we found
-            if hier_class in self.multi_key_classes:
+            # object as a parent, we use the index of the value we found, if it
+            # exists.
+            if hier_class in self.multi_key_classes and \
+                len(getattr(parent, hier_class)) > val_index:
                 parent = getattr(parent, hier_class)[val_index]
             else:
                 get_recent_name = 'get_recent_' + hier_class
