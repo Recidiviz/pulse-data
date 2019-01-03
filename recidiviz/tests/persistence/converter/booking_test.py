@@ -20,6 +20,7 @@ from datetime import datetime
 
 from recidiviz.common.constants.booking import ReleaseReason, CustodyStatus, \
     Classification
+from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence import entities
 from recidiviz.persistence.converter import booking
@@ -30,6 +31,10 @@ class BookingConverterTest(unittest.TestCase):
 
     def testParseBooking(self):
         # Arrange
+        metadata = IngestMetadata.new_with_none_defaults(
+            last_seen_time='LAST_SEEN_TIME'
+        )
+
         ingest_booking = ingest_info_pb2.Booking(
             booking_id='BOOKING_ID',
             release_date='1/1/1111',
@@ -40,7 +45,7 @@ class BookingConverterTest(unittest.TestCase):
         )
 
         # Act
-        result = booking.convert(ingest_booking)
+        result = booking.convert(ingest_booking, metadata)
 
         # Assert
         expected_result = entities.Booking(
@@ -50,16 +55,19 @@ class BookingConverterTest(unittest.TestCase):
             projected_release_date=datetime(year=2222, month=2, day=2),
             release_reason=ReleaseReason.TRANSFER,
             custody_status=CustodyStatus.HELD_ELSEWHERE,
-            classification=Classification.LOW)
+            classification=Classification.LOW,
+            last_seen_time='LAST_SEEN_TIME'
+        )
 
         self.assertEqual(result, expected_result)
 
     def testParseBooking_SetsDefaults(self):
         # Arrange
+        metadata = IngestMetadata.new_with_none_defaults()
         ingest_booking = ingest_info_pb2.Booking()
 
         # Act
-        result = booking.convert(ingest_booking)
+        result = booking.convert(ingest_booking, metadata)
 
         # Assert
         expected_result = entities.Booking(

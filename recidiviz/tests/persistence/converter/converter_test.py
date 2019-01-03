@@ -18,6 +18,7 @@
 
 import unittest
 
+from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
 from recidiviz.persistence.converter import converter
 from recidiviz.persistence.entities import Person, Booking, Arrest, Charge, \
@@ -29,6 +30,8 @@ class TestConverter(unittest.TestCase):
 
     def testConvert_FullIngestInfo(self):
         # Arrange
+        metadata = IngestMetadata('REGION', 'LAST_SEEN_TIME')
+
         ingest_info = IngestInfo()
         ingest_info.people.add(person_id='PERSON_ID',
                                booking_ids=['BOOKING_ID'])
@@ -42,13 +45,15 @@ class TestConverter(unittest.TestCase):
         ingest_info.sentences.add(sentence_id='SENTENCE_ID', is_life='True')
 
         # Act
-        result = converter.convert(ingest_info)
+        result = converter.convert(ingest_info, metadata)
 
         # Assert
         expected_result = [Person.new_with_none_defaults(
             external_id='PERSON_ID',
+            region='REGION',
             bookings=[Booking(
                 external_id='BOOKING_ID',
+                last_seen_time='LAST_SEEN_TIME',
                 custody_status='IN_CUSTODY',
                 arrest=Arrest(external_id='ARREST_ID', agency='PD'),
                 charges=[Charge(
@@ -64,13 +69,15 @@ class TestConverter(unittest.TestCase):
 
     def testConvert_TotalBondNoCharge_CreatesChargeWithTotalBondAmount(self):
         # Arrange
+        metadata = IngestMetadata.new_with_none_defaults()
+
         ingest_info = IngestInfo()
         ingest_info.people.add(booking_ids=['BOOKING_ID'])
         ingest_info.bookings.add(booking_id='BOOKING_ID',
                                  total_bond_amount='$100')
 
         # Act
-        result = converter.convert(ingest_info)
+        result = converter.convert(ingest_info, metadata)
 
         # Assert
         expected_result = [Person.new_with_none_defaults(
@@ -88,6 +95,8 @@ class TestConverter(unittest.TestCase):
 
     def testConvert_TotalBondWithCharge_SetsTotalBondOnCharge(self):
         # Arrange
+        metadata = IngestMetadata.new_with_none_defaults()
+
         ingest_info = IngestInfo()
         ingest_info.people.add(booking_ids=['BOOKING_ID'])
         ingest_info.bookings.add(booking_id='BOOKING_ID',
@@ -96,7 +105,7 @@ class TestConverter(unittest.TestCase):
         ingest_info.charges.add(charge_id='CHARGE_ID')
 
         # Act
-        result = converter.convert(ingest_info)
+        result = converter.convert(ingest_info, metadata)
 
         # Assert
         expected_result = [Person.new_with_none_defaults(
@@ -115,6 +124,8 @@ class TestConverter(unittest.TestCase):
 
     def testConvert_TotalBondWithMultipleBonds_ThrowsException(self):
         # Arrange
+        metadata = IngestMetadata.new_with_none_defaults()
+
         ingest_info = IngestInfo()
         ingest_info.people.add(booking_ids=['BOOKING_ID'])
         ingest_info.bookings.add(booking_id='BOOKING_ID',
@@ -127,11 +138,15 @@ class TestConverter(unittest.TestCase):
 
         # Act + Assert
         with self.assertRaises(ValueError):
-            converter.convert(ingest_info)
+            converter.convert(ingest_info, metadata)
 
     def testConvert_CannotConvertField_RaisesValueError(self):
+        # Arrange
+        metadata = IngestMetadata.new_with_none_defaults()
+
         ingest_info = IngestInfo()
         ingest_info.people.add(birthdate='NOT_A_DATE')
 
+        # Act + Assert
         with self.assertRaises(ValueError):
-            converter.convert(ingest_info)
+            converter.convert(ingest_info, metadata)
