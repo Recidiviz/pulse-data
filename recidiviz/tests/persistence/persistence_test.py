@@ -22,6 +22,7 @@ from unittest import TestCase
 from mock import patch, Mock
 from recidiviz import Session
 from recidiviz.common.constants.booking import ReleaseReason, CustodyStatus
+from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo, Charge, \
     Sentence
 from recidiviz.persistence import persistence, entities
@@ -68,11 +69,13 @@ class TestPersistence(TestCase):
     def test_localRun(self):
         with patch('os.getenv', Mock(return_value='Local')):
             # Arrange
+            metadata = IngestMetadata(REGION_1, SCRAPER_START_DATETIME)
+
             ingest_info = IngestInfo()
             ingest_info.people.add(surname=SURNAME_1)
 
             # Act
-            persistence.write(ingest_info, REGION_1, SCRAPER_START_DATETIME)
+            persistence.write(ingest_info, metadata)
             result = database.read_people(Session())
 
             # Assert
@@ -82,11 +85,13 @@ class TestPersistence(TestCase):
         # Arrange
         with patch('os.getenv', Mock(return_value='local')) \
              and patch.dict('os.environ', {'PERSIST_LOCALLY': 'true'}):
+            metadata = IngestMetadata(REGION_1, SCRAPER_START_DATETIME)
+
             ingest_info = IngestInfo()
             ingest_info.people.add(surname=SURNAME_1)
 
             # Act
-            persistence.write(ingest_info, REGION_1, SCRAPER_START_DATETIME)
+            persistence.write(ingest_info, metadata)
             result = database.read_people(Session())
 
             # Assert
@@ -95,12 +100,14 @@ class TestPersistence(TestCase):
 
     def test_twoDifferentPeople_persistsBoth(self):
         # Arrange
+        metadata = IngestMetadata(REGION_1, SCRAPER_START_DATETIME)
+
         ingest_info = IngestInfo()
         ingest_info.people.add(surname=SURNAME_1, given_names=GIVEN_NAME)
         ingest_info.people.add(surname=SURNAME_2, given_names=GIVEN_NAME)
 
         # Act
-        persistence.write(ingest_info, REGION_1, SCRAPER_START_DATETIME)
+        persistence.write(ingest_info, metadata)
         result = database.read_people(Session())
 
         # Assert
@@ -112,6 +119,8 @@ class TestPersistence(TestCase):
 
     def test_readSinglePersonByName(self):
         # Arrange
+        metadata = IngestMetadata(REGION_1, SCRAPER_START_DATETIME)
+
         ingest_info = IngestInfo()
         ingest_info.people.add(surname=SURNAME_1, given_names=GIVEN_NAME,
                                birthdate=BIRTHDATE_1)
@@ -119,7 +128,7 @@ class TestPersistence(TestCase):
                                birthdate=BIRTHDATE_2)
 
         # Act
-        persistence.write(ingest_info, REGION_1, SCRAPER_START_DATETIME)
+        persistence.write(ingest_info, metadata)
         result = database.read_people(Session(), surname=SURNAME_1)
 
         # Assert
@@ -130,6 +139,8 @@ class TestPersistence(TestCase):
     # TODO: Rewrite this test to directly test __eq__ between the two People
     def test_readPersonAndAllRelationships(self):
         # Arrange
+        metadata = IngestMetadata(REGION_1, SCRAPER_START_DATETIME)
+
         ingest_info = IngestInfo()
         ingest_info.people.add(
             surname=SURNAME_1,
@@ -182,7 +193,7 @@ class TestPersistence(TestCase):
         ])
 
         # Act
-        persistence.write(ingest_info, REGION_1, SCRAPER_START_DATETIME)
+        persistence.write(ingest_info, metadata)
         result = database.read_people(Session())
 
         # Assert
@@ -214,6 +225,9 @@ class TestPersistence(TestCase):
 
     def test_write_preexisting_person(self):
         # Arrange
+        most_recent_scrape_time = (SCRAPER_START_DATETIME + timedelta(days=1))
+        metadata = IngestMetadata(REGION_1, most_recent_scrape_time)
+
         schema_booking = schema.Booking(
             booking_id=BOOKING_ID,
             external_id=EXTERNAL_BOOKING_ID,
@@ -231,8 +245,6 @@ class TestPersistence(TestCase):
         session.add(schema_person)
         session.commit()
 
-        most_recent_scrape_time = (SCRAPER_START_DATETIME + timedelta(days=1))
-
         ingest_info = IngestInfo()
         ingest_info.people.add(surname=SURNAME_1,
                                given_names=GIVEN_NAME,
@@ -244,7 +256,7 @@ class TestPersistence(TestCase):
         )
 
         # Act
-        persistence.write(ingest_info, REGION_1, most_recent_scrape_time)
+        persistence.write(ingest_info, metadata)
 
         # Assert
         expected_booking = entities.Booking(
@@ -264,6 +276,9 @@ class TestPersistence(TestCase):
 
     def test_inferReleaseDateOnOpenBookings(self):
         # Arrange
+        metadata_1 = IngestMetadata(REGION_1, SCRAPER_START_DATETIME)
+        metadata_2 = IngestMetadata(REGION_2, SCRAPER_START_DATETIME)
+
         most_recent_scrape_time = (SCRAPER_START_DATETIME + timedelta(days=1))
 
         ingest_info = IngestInfo()
@@ -295,11 +310,10 @@ class TestPersistence(TestCase):
             status='PENDING')
 
         # Act
-        persistence.write(ingest_info, REGION_1, SCRAPER_START_DATETIME)
-        persistence.write(ingest_info_other_region, REGION_2,
-                          SCRAPER_START_DATETIME)
+        persistence.write(ingest_info, metadata_1)
         persistence.infer_release_on_open_bookings(
             REGION_1, most_recent_scrape_time)
+        persistence.write(ingest_info_other_region, metadata_2)
 
         # Assert
         bookings = database.read_bookings(Session())
