@@ -21,6 +21,7 @@ from datetime import datetime
 from mock import patch
 
 from recidiviz.common.constants.person import Gender, Race, Ethnicity
+from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence import entities
 from recidiviz.persistence.converter import person
@@ -36,6 +37,7 @@ class PersonConverterTest(unittest.TestCase):
 
     def testParsesPerson(self):
         # Arrange
+        metadata = IngestMetadata.new_with_none_defaults(region='REGION')
         ingest_person = ingest_info_pb2.Person(
             full_name='LAST,FIRST',
             birthdate='12-31-1999',
@@ -45,7 +47,7 @@ class PersonConverterTest(unittest.TestCase):
             place_of_residence='NNN\n  STREET \t ZIP')
 
         # Act
-        person.copy_fields_to_builder(ingest_person, self.subject)
+        person.copy_fields_to_builder(self.subject, ingest_person, metadata)
         result = self.subject.build()
 
         # Assert
@@ -57,13 +59,15 @@ class PersonConverterTest(unittest.TestCase):
             gender=Gender.MALE,
             race=Race.WHITE,
             ethnicity=Ethnicity.HISPANIC,
-            place_of_residence='NNN STREET ZIP'
+            place_of_residence='NNN STREET ZIP',
+            region='REGION',
         )
 
         self.assertEqual(result, expected_result)
 
     def testParsePerson_WithSurnameAndFullname_ThrowsException(self):
         # Arrange
+        metadata = IngestMetadata.new_with_none_defaults()
         ingest_person = ingest_info_pb2.Person(
             full_name='LAST,FIRST',
             surname='LAST'
@@ -71,17 +75,18 @@ class PersonConverterTest(unittest.TestCase):
 
         # Arrange + Act
         with self.assertRaises(ValueError):
-            person.copy_fields_to_builder(ingest_person, self.subject)
+            person.copy_fields_to_builder(self.subject, ingest_person, metadata)
 
     def testParsePerson_UsesSurnameAndGivenNames(self):
         # Arrange
+        metadata = IngestMetadata.new_with_none_defaults()
         ingest_person = ingest_info_pb2.Person(
             surname='SURNAME',
             given_names='GIVEN_NAMES'
         )
 
         # Act
-        person.copy_fields_to_builder(ingest_person, self.subject)
+        person.copy_fields_to_builder(self.subject, ingest_person, metadata)
         result = self.subject.build()
 
         # Assert
@@ -96,10 +101,11 @@ class PersonConverterTest(unittest.TestCase):
     def testParsePerson_InfersBirthdateFromAge(self, mock_datetime):
         # Arrange
         mock_datetime.now.return_value = _NOW
+        metadata = IngestMetadata.new_with_none_defaults()
         ingest_person = ingest_info_pb2.Person(age='27')
 
         # Act
-        person.copy_fields_to_builder(ingest_person, self.subject)
+        person.copy_fields_to_builder(self.subject, ingest_person, metadata)
         result = self.subject.build()
 
         # Assert
@@ -112,10 +118,11 @@ class PersonConverterTest(unittest.TestCase):
 
     def testParsePerson_RaceIsEthnicity(self):
         # Arrange
+        metadata = IngestMetadata.new_with_none_defaults()
         ingest_person = ingest_info_pb2.Person(race='HISPANIC')
 
         # Act
-        person.copy_fields_to_builder(ingest_person, self.subject)
+        person.copy_fields_to_builder(self.subject, ingest_person, metadata)
         result = self.subject.build()
 
         # Assert

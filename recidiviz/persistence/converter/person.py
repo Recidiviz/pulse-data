@@ -21,7 +21,7 @@ from recidiviz.persistence.converter.converter_utils import fn, normalize, \
     split_full_name, parse_date, calculate_birthdate_from_age
 
 
-def copy_fields_to_builder(proto, person_builder):
+def copy_fields_to_builder(person_builder, proto, metadata):
     """Mutates the provided |person_builder| by converting an ingest_info proto
      Person.
 
@@ -33,9 +33,10 @@ def copy_fields_to_builder(proto, person_builder):
     new.surname, new.given_names = _parse_name(proto)
     new.birthdate, new.birthdate_inferred_from_age = _parse_birthdate(proto)
     new.race, new.ethnicity = _parse_race_and_ethnicity(proto)
-    new.region = None  # TODO: Decide where this should be filled out
     new.gender = fn(Gender.from_str, 'gender', proto)
     new.place_of_residence = fn(normalize, 'place_of_residence', proto)
+
+    new.region = metadata.region
 
 
 def _parse_name(proto):

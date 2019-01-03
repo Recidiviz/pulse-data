@@ -22,7 +22,7 @@ from recidiviz.persistence.converter.converter_utils import fn, normalize, \
     parse_date
 
 
-def convert(proto):
+def convert(proto, metadata):
     """Converts an ingest_info proto Booking to a persistence entity."""
     new = entities.Booking()
 
@@ -35,6 +35,8 @@ def convert(proto):
                             CustodyStatus.IN_CUSTODY)
     new.facility = fn(normalize, 'facility', proto)
     new.classification = fn(Classification.from_str, 'classification', proto)
+
+    new.last_seen_time = metadata.last_seen_time
 
     return new
 

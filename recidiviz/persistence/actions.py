@@ -20,6 +20,7 @@ from http import HTTPStatus
 
 from flask import Blueprint
 
+from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence import persistence
 from recidiviz.utils.auth import authenticate_request
 
@@ -33,6 +34,9 @@ def write_record():
     ingest_info = None
     last_scraped_time = None
     region = None
-    persistence.write(ingest_info, region, last_scraped_time)
+
+    metadata = IngestMetadata(region, last_scraped_time)
+
+    persistence.write(ingest_info, metadata)
 
     return '', HTTPStatus.NOT_IMPLEMENTED

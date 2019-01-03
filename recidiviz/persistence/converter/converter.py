@@ -25,20 +25,21 @@ from recidiviz.persistence.converter import arrest, sentence, \
 from recidiviz.persistence.converter.converter_utils import fn, parse_dollars
 
 
-def convert(ingest_info):
+def convert(ingest_info, metadata):
     """Convert an IngestInfo proto into a persistence layer entity.
 
     Returns:
         A list of entities.Person
     """
-    return _Converter(ingest_info).convert()
+    return _Converter(ingest_info, metadata).convert()
 
 
 class _Converter:
     """Converts between ingest_info objects and persistence layer entity."""
 
-    def __init__(self, ingest_info):
+    def __init__(self, ingest_info, metadata):
         self.ingest_info = ingest_info
+        self.metadata = metadata
 
         self.bookings = {b.booking_id: b for b in ingest_info.bookings}
         self.arrests = {a.arrest_id: a for a in ingest_info.arrests}
@@ -53,7 +54,9 @@ class _Converter:
         """Converts an ingest_info proto Person to a persistence entity."""
         person_builder = entities.Person.builder()
 
-        person.copy_fields_to_builder(ingest_person, person_builder)
+        person.copy_fields_to_builder(
+            person_builder, ingest_person, self.metadata)
+
         person_builder.bookings = [
             self._convert_booking(self.bookings[booking_id])
             for booking_id in ingest_person.booking_ids
@@ -63,7 +66,7 @@ class _Converter:
 
     def _convert_booking(self, ingest_booking):
         """Converts an ingest_info proto Booking to a persistence entity."""
-        new_booking = booking.convert(ingest_booking)
+        new_booking = booking.convert(ingest_booking, self.metadata)
 
         new_booking.arrest = \
             fn(lambda i: arrest.convert(self.arrests[i]),
