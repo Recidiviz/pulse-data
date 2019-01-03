@@ -98,11 +98,9 @@ def write(ingest_info, region, last_seen_time):
             scraper_start_time
         region: The region that this ingest_info was scraped from
     """
-    log = logging.getLogger()
-
-    log.info(ingest_info)
+    logging.info(ingest_info)
     people = converter.convert(ingest_info)
-    log.info(people)
+    logging.info(people)
     _add_scraper_metadata(people, region, last_seen_time)
 
     if not _should_persist():
