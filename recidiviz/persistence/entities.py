@@ -20,6 +20,9 @@ Note: These classes mirror the SQL Alchemy ORM objects but are kept separate.
 This allows these persistence layer objects additional flexibility that the SQL
 Alchemy ORM objects can't provide.
 """
+from datetime import datetime, date
+from typing import List
+
 import attr
 
 from recidiviz.common.buildable_attr import BuildableAttr
@@ -27,108 +30,112 @@ from recidiviz.common.buildable_attr import BuildableAttr
 
 @attr.s
 class Person(BuildableAttr):
-    external_id = attr.ib()
-    surname = attr.ib()
-    given_names = attr.ib()
-    birthdate = attr.ib()
-    birthdate_inferred_from_age = attr.ib()
-    gender = attr.ib()
-    race = attr.ib()
-    region = attr.ib()
-    ethnicity = attr.ib()
-    place_of_residence = attr.ib()
+    external_id: str = attr.ib()
+    surname: str = attr.ib()
+    given_names: str = attr.ib()
+    birthdate: date = attr.ib()
+    birthdate_inferred_from_age: bool = attr.ib()
+    gender: str = attr.ib()
+    race: str = attr.ib()
+    region: str = attr.ib()
+    ethnicity: str = attr.ib()
+    place_of_residence: str = attr.ib()
 
-    person_id = attr.ib(default=None)
-    bookings = attr.ib(factory=list)
+    person_id: int = attr.ib(default=None)
+    bookings: List['Booking'] = attr.ib(factory=list)
 
 
 @attr.s
 class Booking:
-    booking_id = attr.ib(default=None)
-    external_id = attr.ib(default=None)
-    admission_date = attr.ib(default=None)
-    admission_date_inferred = attr.ib(default=None)
-    release_date = attr.ib(default=None)
-    release_date_inferred = attr.ib(default=None)
-    projected_release_date = attr.ib(default=None)
-    release_reason = attr.ib(default=None)
-    custody_status = attr.ib(default=None)
-    held_for_other_jurisdiction = attr.ib(default=None)
-    facility = attr.ib(default=None)
-    classification = attr.ib(default=None)
-    last_seen_time = attr.ib(default=None)
+    external_id: str = attr.ib(default=None)
+    admission_date: date = attr.ib(default=None)
+    admission_date_inferred: bool = attr.ib(default=None)
+    release_date: date = attr.ib(default=None)
+    release_date_inferred: bool = attr.ib(default=None)
+    projected_release_date: date = attr.ib(default=None)
+    release_reason: str = attr.ib(default=None)
+    custody_status: str = attr.ib(default=None)
+    held_for_other_jurisdiction: str = attr.ib(default=None)
+    facility: str = attr.ib(default=None)
+    classification: str = attr.ib(default=None)
+    last_seen_time: datetime = attr.ib(default=None)
 
-    holds = attr.ib(factory=list)
-    arrest = attr.ib(default=None)
-    charges = attr.ib(factory=list)
+    booking_id: int = attr.ib(default=None)
+    holds: List['Hold'] = attr.ib(factory=list)
+    arrest: 'Arrest' = attr.ib(default=None)
+    charges: List['Charge'] = attr.ib(factory=list)
 
 
 @attr.s
 class Hold:
-    hold_id = attr.ib(default=None)
-    external_id = attr.ib(default=None)
-    jurisdiction_name = attr.ib(default=None)
-    hold_status = attr.ib(default=None)
+    external_id: str = attr.ib(default=None)
+    jurisdiction_name: str = attr.ib(default=None)
+    hold_status: str = attr.ib(default=None)
+
+    hold_id: int = attr.ib(default=None)
 
 
 @attr.s
 class Arrest:
-    arrest_id = attr.ib(default=None)
-    external_id = attr.ib(default=None)
-    date = attr.ib(default=None)
-    location = attr.ib(default=None)
-    agency = attr.ib(default=None)
-    officer_name = attr.ib(default=None)
-    officer_id = attr.ib(default=None)
+    external_id: str = attr.ib(default=None)
+    date: date = attr.ib(default=None)
+    location: str = attr.ib(default=None)
+    agency: str = attr.ib(default=None)
+    officer_name: str = attr.ib(default=None)
+    officer_id: str = attr.ib(default=None)
+
+    arrest_id: int = attr.ib(default=None)
 
 
 @attr.s
 class Charge:
-    charge_id = attr.ib(default=None)
-    external_id = attr.ib(default=None)
-    offense_date = attr.ib(default=None)
-    statute = attr.ib(default=None)
-    name = attr.ib(default=None)
-    attempted = attr.ib(default=None)
-    degree = attr.ib(default=None)
-    charge_class = attr.ib(default=None)
-    level = attr.ib(default=None)
-    fee_dollars = attr.ib(default=None)
-    charging_entity = attr.ib(default=None)
-    status = attr.ib(default=None)
-    court_type = attr.ib(default=None)
-    case_number = attr.ib(default=None)
-    next_court_date = attr.ib(default=None)
-    judge_name = attr.ib(default=None)
+    external_id: str = attr.ib(default=None)
+    offense_date: date = attr.ib(default=None)
+    statute: str = attr.ib(default=None)
+    name: str = attr.ib(default=None)
+    attempted: bool = attr.ib(default=None)
+    degree: str = attr.ib(default=None)
+    charge_class: str = attr.ib(default=None)
+    level: str = attr.ib(default=None)
+    fee_dollars: int = attr.ib(default=None)
+    charging_entity: str = attr.ib(default=None)
+    status: str = attr.ib(default=None)
+    court_type: str = attr.ib(default=None)
+    case_number: str = attr.ib(default=None)
+    next_court_date: date = attr.ib(default=None)
+    judge_name: str = attr.ib(default=None)
 
-    bond = attr.ib(default=None)
-    sentence = attr.ib(default=None)
+    charge_id: int = attr.ib(default=None)
+    bond: 'Bond' = attr.ib(default=None)
+    sentence: 'Sentence' = attr.ib(default=None)
 
 
 @attr.s
 class Bond:
-    bond_id = attr.ib(default=None)
-    external_id = attr.ib(default=None)
-    amount_dollars = attr.ib(default=None)
-    bond_type = attr.ib(default=None)
-    status = attr.ib(default=None)
+    external_id: str = attr.ib(default=None)
+    amount_dollars: int = attr.ib(default=None)
+    bond_type: str = attr.ib(default=None)
+    status: str = attr.ib(default=None)
+
+    bond_id: int = attr.ib(default=None)
 
 
 @attr.s
 class Sentence:
-    sentence_id = attr.ib(default=None)
-    external_id = attr.ib(default=None)
-    date_imposed = attr.ib(default=None)
-    county_of_commitment = attr.ib(default=None)
-    min_length_days = attr.ib(default=None)
-    max_length_days = attr.ib(default=None)
-    is_life = attr.ib(default=None)
-    is_probation = attr.ib(default=None)
-    is_suspended = attr.ib(default=None)
-    fine_dollars = attr.ib(default=None)
-    parole_possible = attr.ib(default=None)
-    post_release_supervision_length_days = attr.ib(default=None)
+    external_id: str = attr.ib(default=None)
+    date_imposed: date = attr.ib(default=None)
+    county_of_commitment: str = attr.ib(default=None)
+    min_length_days: int = attr.ib(default=None)
+    max_length_days: int = attr.ib(default=None)
+    is_life: bool = attr.ib(default=None)
+    is_probation: bool = attr.ib(default=None)
+    is_suspended: bool = attr.ib(default=None)
+    fine_dollars: int = attr.ib(default=None)
+    parole_possible: bool = attr.ib(default=None)
+    post_release_supervision_length_days: int = attr.ib(default=None)
+
+    sentence_id: str = attr.ib(default=None)
 
     # To avoid recursive references, store only 1 level of related_sentences
     # (ie. don't store related_sentences of these related_sentences).
-    related_sentences = attr.ib(default=None)
+    related_sentences: List['Sentence'] = attr.ib(default=None)
