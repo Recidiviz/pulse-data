@@ -65,10 +65,6 @@ def add_task(self, task_name, params):
             'Sleeping %s seconds before sending another request' %
             sleep_between_requests)
         time.sleep(sleep_between_requests)
-    task_type = params.get('task_type', self.get_initial_task_type())
-    endpoint = params.get('endpoint', self.get_initial_endpoint() if
-                          self.is_initial_task(task_type) else None)
-    logging.info('Adding a task with endpoint: %s' % endpoint)
     logging.info('***')
     fn = getattr(self, task_name)
     fn(params)

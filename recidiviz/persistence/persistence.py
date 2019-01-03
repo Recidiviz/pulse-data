@@ -47,8 +47,12 @@ def infer_release_on_open_bookings(region, last_ingest_time):
 
     session = Session()
     try:
+        logging.info('Reading all bookings that happened before %s'
+                     % last_ingest_time)
         bookings = database.read_open_bookings_scraped_before_time(
             session, region, last_ingest_time)
+        logging.info('Found %s bookings that will not be inferred released'
+                     % len(bookings))
         _infer_release_date_for_bookings(session, bookings,
                                          last_ingest_time.date())
         session.commit()
@@ -73,6 +77,8 @@ def _infer_release_date_for_bookings(session, bookings, date):
                                    'resolved, however booking already has '
                                    'release date.'.format(booking.booking_id))
 
+        logging.info('Marking booking with ID %s as inferred released'
+                     % booking.booking_id)
         database.update_booking(session, booking.booking_id,
                                 release_date=date,
                                 release_reason=ReleaseReason.INFERRED_RELEASE)
@@ -91,9 +97,10 @@ def write(ingest_info, metadata):
 
     Otherwise, simply log the given ingest_infos for debugging
     """
+    logging.info('The following proto will be written to the database:')
     logging.info(ingest_info)
-
     people = converter.convert(ingest_info, metadata)
+    logging.info('Successfully converted proto:')
     logging.info(people)
 
     if not _should_persist():
@@ -101,8 +108,11 @@ def write(ingest_info, metadata):
 
     session = Session()
     try:
+        logging.info('Starting entity matching')
         entity_matching.match_entities(session, metadata.region, people)
+        logging.info('Successfully completed entity matching')
         database.write_people(session, people)
+        logging.info('Successfully wrote to the database')
         session.commit()
     except Exception:
         session.rollback()
