@@ -24,7 +24,6 @@ TODO: Add more details here in implementation logic when it is done.
 
 
 import copy
-import itertools
 import warnings
 from lxml.html import HtmlElement
 import yaml
@@ -102,8 +101,7 @@ class DataExtractor:
         for css_key in self.css_keys.keys():
             self._css_key_to_cell(content, css_key)
 
-        all_cells = itertools.chain(
-            content.findall('.//th'), content.findall('.//td'))
+        all_cells = content.xpath('//*[self::th or self::td]')
         self.cells = filter(self._is_leaf_cell, all_cells)
 
     def _is_leaf_cell(self, e):
