@@ -22,6 +22,7 @@ from unittest import TestCase
 import pytest
 from mock import patch
 
+from recidiviz.common.constants.mappable_enum import EnumParsingError
 from recidiviz.common.constants.person import Gender
 from recidiviz.persistence.converter import converter_utils
 
@@ -85,5 +86,5 @@ class TestConverterUtils(TestCase):
         assert Gender.from_str('Male') == Gender.MALE
 
     def test_parseBadEnum(self):
-        with pytest.raises(KeyError):
+        with pytest.raises(EnumParsingError):
             Gender.from_str('ABD')

@@ -18,30 +18,31 @@
 """Constants related to a charge entity."""
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
+from recidiviz.common.constants.mappable_enum import MappableEnum
 
 
-class ChargeDegree:
+class ChargeDegree(MappableEnum):
     FIRST = enum_strings.degree_first
     SECOND = enum_strings.degree_second
     THIRD = enum_strings.degree_third
 
     @staticmethod
-    def from_str(label):
-        return _CHARGE_DEGREE_MAP[label.upper()]
+    def _get_default_map():
+        return _CHARGE_DEGREE_MAP
 
 
-class ChargeClass:
+class ChargeClass(MappableEnum):
     FELONY = enum_strings.charge_class_felony
     MISDEMEANOR = enum_strings.charge_class_misdemeanor
     PAROLE_VIOLATION = enum_strings.charge_class_parole_violation
     PROBATION_VIOLATION = enum_strings.charge_class_probation_violation
 
     @staticmethod
-    def from_str(label):
-        return _CHARGE_CLASS_MAP[label.upper()]
+    def _get_default_map():
+        return _CHARGE_CLASS_MAP
 
 
-class ChargeStatus:
+class ChargeStatus(MappableEnum):
     ACQUITTED = enum_strings.charge_status_acquitted
     COMPLETED_SENTENCE = enum_strings.charge_status_completed
     CONVICTED = enum_strings.charge_status_convicted
@@ -51,19 +52,19 @@ class ChargeStatus:
     SENTENCED = enum_strings.charge_status_sentenced
 
     @staticmethod
-    def from_str(label):
-        return _CHARGE_STATUS_MAP[label.upper()]
+    def _get_default_map():
+        return _CHARGE_STATUS_MAP
 
 
-class CourtType:
+class CourtType(MappableEnum):
     CIRCUIT = enum_strings.court_type_circuit
     DISTRICT = enum_strings.court_type_district
     OTHER = enum_strings.court_type_other
     SUPERIOR = enum_strings.court_type_superior
 
     @staticmethod
-    def from_str(label):
-        return _COURT_TYPE_MAP[label.upper()]
+    def _get_default_map():
+        return _COURT_TYPE_MAP
 
 
 _CHARGE_DEGREE_MAP = {
