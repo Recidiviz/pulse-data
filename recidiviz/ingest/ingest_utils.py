@@ -44,7 +44,7 @@ def validate_regions(region_list):
         if region == "all":
             regions_list_output = supported_regions
         elif region not in supported_regions:
-            logging.error("Region '%s' not recognized." % region)
+            logging.error("Region '%s' not recognized.", region)
             return False
 
     return regions_list_output
@@ -72,7 +72,7 @@ def validate_scrape_types(scrape_type_list):
         if scrape_type == "all":
             scrape_types_list_output = constants.SCRAPE_TYPES
         elif scrape_type not in constants.SCRAPE_TYPES:
-            logging.error("Scrape type '%s' not recognized." % scrape_type)
+            logging.error("Scrape type '%s' not recognized.", scrape_type)
             return False
 
     return scrape_types_list_output
