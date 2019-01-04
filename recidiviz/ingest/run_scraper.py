@@ -60,10 +60,9 @@ def add_task(self, task_name, params):
         logging.info('Completed the test run!')
         exit()
     else:
-        logging.info('%s tasks left to complete' % num_tasks_left)
-        logging.info(
-            'Sleeping %s seconds before sending another request' %
-            sleep_between_requests)
+        logging.info('%s tasks left to complete', num_tasks_left)
+        logging.info('Sleeping %s seconds before sending another request',
+                     sleep_between_requests)
         time.sleep(sleep_between_requests)
     logging.info('***')
     fn = getattr(self, task_name)

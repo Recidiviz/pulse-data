@@ -83,7 +83,7 @@ class BaseScraper(Scraper):
         Returns:
             Returns the content of the page or -1.
         """
-        logging.info('Fetching content with endpoint: %s' % endpoint)
+        logging.info('Fetching content with endpoint: %s', endpoint)
         page = self.fetch_page(endpoint,
                                post_data=post_data, json_data=json_data)
         if page == -1:
@@ -146,18 +146,18 @@ class BaseScraper(Scraper):
         # For an initial task we just make a call to get initial variables.
         # This may be a noop for some scrapers.
         if self.is_initial_task(task_type):
-            logging.info('Initial task for %s' % self.region.region_code)
+            logging.info('Initial task for %s', self.region.region_code)
             self.set_initial_vars(content, params)
         if self.should_scrape_data(task_type):
             # If we want to scrape data, we should either create an ingest_info
             # object or get the one that already exists.
-            logging.info('Scraping data for %s and endpoint: %s' %
-                         (self.region.region_code, endpoint))
+            logging.info('Scraping data for %s and endpoint: %s',
+                         self.region.region_code, endpoint)
             ingest_info = params.get('ingest_info', IngestInfo())
             ingest_info = self.populate_data(content, params, ingest_info)
         if self.should_get_more_tasks(task_type):
-            logging.info('Getting more tasks for %s and endpoint: %s' %
-                         (self.region.region_code, endpoint))
+            logging.info('Getting more tasks for %s and endpoint: %s',
+                         self.region.region_code, endpoint)
             tasks = self.get_more_tasks(content, params)
             for task_params in tasks:
                 # Always pass along the scrape type as well.
@@ -178,11 +178,11 @@ class BaseScraper(Scraper):
                     'IngestInfo must be populated if there are no more tasks')
             scraper_start_time = common_utils.parse_datetime_string(
                 params['scraper_start_time'])
-            logging.info('Writing the ingest_info to the database for %s:' %
-                         (self.region.region_code))
+            logging.info('Writing the ingest_info to the database for %s:',
+                         self.region.region_code)
             logging.info(ingest_info)
-            logging.info('Last seen time of person being set as: %s' %
-                         (scraper_start_time))
+            logging.info('Last seen time of person being set as: %s',
+                         scraper_start_time)
             metadata = IngestMetadata(self.region.region_code,
                                       scraper_start_time)
             persistence.write(
