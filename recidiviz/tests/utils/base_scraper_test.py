@@ -19,13 +19,14 @@
 import yaml
 from recidiviz.ingest import ingest_utils
 from recidiviz.ingest.models import ingest_info
+from recidiviz.ingest.models.ingest_info_diff import diff_ingest_infos
 from recidiviz.persistence.validator import validate
 
 
 class BaseScraperTest:
     """A base class for scraper tests which does extra validations."""
 
-    def setup_method(self, _test_method):
+    def setUp(self):
         self.scraper = None
         self.yaml = None
         self._init_scraper_and_yaml()
@@ -131,5 +132,13 @@ class BaseScraperTest:
         result_proto = ingest_utils.convert_ingest_info_to_proto(result)
         validate(result_proto)
 
-        assert result == expected_result
+        differences = diff_ingest_infos(expected_result, result)
+
+        if differences:
+            self.fail('IngestInfo objects do not match.\n'
+                      'Expected:\n{}\n'
+                      'Actual:\n{}\n'
+                      'Differences:\n{}'.format(expected_result, result,
+                                                '\n'.join(differences)))
+
         return result
