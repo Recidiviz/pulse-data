@@ -15,13 +15,36 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains helpers to interact with the database."""
+from enum import Enum
+
 import attr
 
+from recidiviz import Base
 from recidiviz.persistence import entities
 from recidiviz.persistence.database import schema
 
-# TODO(440): Consider explicitly converting fields. Current implementation
-# relies on identical field names between entity and schema objects.
+
+class DatabaseConversionError(Exception):
+    """Raised if an error is encountered when converting between entity
+    objects and schema objects (or vice versa)."""
+
+
+class _Direction(Enum):
+    SCHEMA_TO_ENTITY = 1
+    ENTITY_TO_SCHEMA = 2
+
+    @staticmethod
+    def for_cls(src_cls):
+        # TODO(363): change this to check BuildableAttr class once all
+        # entities extend BuildableAttr.
+        if not issubclass(src_cls, Base):
+            return _Direction.ENTITY_TO_SCHEMA
+
+        if issubclass(src_cls, Base):
+            return _Direction.SCHEMA_TO_ENTITY
+
+        raise DatabaseConversionError(
+            "Unable to convert class {0}".format(src_cls))
 
 
 def convert_people(people_src):
@@ -35,33 +58,15 @@ def convert_people(people_src):
     return [convert_person(p) for p in people_src]
 
 
-def convert_person(person_src):
+def convert_person(src):
     """Converts the given person to the correct object.
 
     Args:
-        person_src: A schema Person or entity Person object
+        src: A schema Person or entity Person object
     Returns:
         The converted object, a schema or entity object.
     """
-    if not person_src:
-        return None
-
-    entity_to_db = isinstance(person_src, entities.Person)
-    if entity_to_db:
-        person_dst = schema.Person()
-    else:
-        person_dst = entities.Person.builder()
-    for k in attr.fields_dict(entities.Person).keys():
-        if k == 'bookings':
-            person_dst.bookings = [convert_booking(b) for b in
-                                   person_src.bookings]
-        else:
-            setattr(person_dst, k, getattr(person_src, k))
-
-    if entity_to_db:
-        return person_dst
-
-    return person_dst.build()
+    return _convert(src)
 
 
 def convert_bookings(bookings_src):
@@ -75,125 +80,96 @@ def convert_bookings(bookings_src):
     return [convert_booking(b) for b in bookings_src]
 
 
-def convert_booking(booking_src):
+def convert_booking(src):
     """Converts the given booking to the correct object.
 
     Args:
-        booking_src: A schema Booking or entity Booking object
+        src: A schema Booking or entity Booking object
     Returns:
         The converted object, a schema or entity object
     """
-    if not booking_src:
-        return None
-
-    entity_to_db = isinstance(booking_src, entities.Booking)
-    fields = vars(entities.Booking()).keys()
-    if entity_to_db:
-        dst_module = schema
-        booking_dst = schema.Booking()
-    else:
-        dst_module = entities
-        booking_dst = entities.Booking()
-    for k in fields:
-        if k == 'holds':
-            booking_dst.holds = [_convert_object(
-                h, dst_module.Hold(), entity_to_db)
-                                 for h in booking_src.holds]
-        elif k == 'arrest':
-            booking_dst.arrest = _convert_object(
-                booking_src.arrest, dst_module.Arrest(), entity_to_db)
-        elif k == 'charges':
-            booking_dst.charges = [convert_charge(c) for c in
-                                   booking_src.charges]
-        else:
-            setattr(booking_dst, k, getattr(booking_src, k))
-    return booking_dst
+    return _convert(src)
 
 
-def convert_charges(charges_src):
-    """Converts the given list of charges to the correct objects
-
-    Args:
-        charges_src: list of schema.Charge or entities.Charge
-    Returns:
-        The converted list, a schema.Charge or entities.Charge
-    """
-    return [convert_charge(c) for c in charges_src]
-
-
-def convert_charge(charge_src):
+def convert_charge(src):
     """Converts the given charge to the correct object.
 
     Args:
-        charge_src: A schema Charge or entity Charge object
+        src: A schema Charge or entity Charge object
     Returns:
         The converted object, a schema or entity object
     """
-    if not charge_src:
-        return None
-
-    entity_to_db = isinstance(charge_src, entities.Charge)
-    fields = vars(entities.Charge()).keys()
-    if entity_to_db:
-        dst_module = schema
-        charge_dst = schema.Charge()
-    else:
-        dst_module = entities
-        charge_dst = entities.Charge()
-
-    for k in fields:
-        if k == 'bond':
-            charge_dst.bond = _convert_object(
-                charge_src.bond, dst_module.Bond(), entity_to_db)
-        elif k == 'sentence':
-            charge_dst.sentence = convert_sentence(charge_src.sentence)
-        else:
-            setattr(charge_dst, k, getattr(charge_src, k))
-    return charge_dst
+    return _convert(src)
 
 
-def convert_sentence(sentence_src):
+def convert_sentence(src):
     """Converts the given sentence to the correct object.
 
     Args:
-        sentence_src: A schema Sentence or entity Sentence object
+        src: A schema Sentence or entity Sentence object
     Returns:
         The converted object, a schema or entity object
     """
-    if not sentence_src:
+    return _convert(src)
+
+
+# TODO(363): Remove special casing for Person once all entities extend
+# BuildableAttr
+def _convert(src):
+    """Converts the given src object to its entity/schema counterpart."""
+    if not src:
         return None
 
-    entity_to_db = isinstance(sentence_src, entities.Sentence)
-    fields = list(vars(entities.Sentence()).keys())
-    # TODO(441): Correctly convert related_sentences once schema for
-    # this field is finalized.
-    fields.remove('related_sentences')
-    if entity_to_db:
-        sentence_dst = schema.Sentence()
+    direction = _Direction.for_cls(src.__class__)
+
+    schema_cls = getattr(schema, src.__class__.__name__)
+    entity_cls = getattr(entities, src.__class__.__name__)
+
+    if direction is _Direction.ENTITY_TO_SCHEMA:
+        dst = schema_cls()
     else:
-        sentence_dst = entities.Sentence()
+        if entity_cls is entities.Person:
+            dst = entity_cls.builder()
+        else:
+            dst = entity_cls()
 
-    for k in fields:
-        setattr(sentence_dst, k, getattr(sentence_src, k))
-    return sentence_dst
+    for field, attribute in attr.fields_dict(entity_cls).items():
+        if field == 'bookings':
+            dst.bookings = [_convert(b) for b in src.bookings]
+        elif field == 'holds':
+            dst.holds = [_convert(h) for h in src.holds]
+        elif field == 'arrest':
+            dst.arrest = _convert(src.arrest)
+        elif field == 'charges':
+            dst.charges = [_convert(c) for c in src.charges]
+        elif field == 'bond':
+            dst.bond = _convert(src.bond)
+        elif field == 'sentence':
+            dst.sentence = _convert(src.sentence)
+        elif field == 'related_sentences':
+            # TODO(441): Correctly convert related_sentences once schema for
+            # this field is finalized.
+            continue
+        else:
+            value = _convert_field_or_enum(
+                src, field, attribute.type, direction)
+            setattr(dst, field, value)
 
-
-def _convert_object(src, dst, entity_to_db=True):
-    """Converts the given source to the given dst.  The fields should exist
-    in both the source and destination.
-
-    Args:
-        booking_src: A schema Booking or entity Booking object
-    Returns:
-        The converted object, a schema or entity object
-    """
-    if src is None:
-        return None
-
-    if entity_to_db:
-        fields = vars(src).keys()
-    else:
-        fields = vars(dst).keys()
-    for k in fields:
-        setattr(dst, k, getattr(src, k))
+    if direction is _Direction.SCHEMA_TO_ENTITY and \
+            entity_cls is entities.Person:
+        dst = dst.build()
     return dst
+
+
+def _convert_field_or_enum(src, field, attr_type, direction):
+    if attr_type and _is_enum(attr_type) and getattr(src, field):
+        if direction is _Direction.SCHEMA_TO_ENTITY:
+            return attr_type(getattr(src, field))
+        return getattr(src, field).value
+
+    return getattr(src, field)
+
+
+# TODO: Actually check type is an enum
+def _is_enum(_):
+    return False
