@@ -13,6 +13,7 @@ queue:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
     task_age_limit: 3d
+    task_retry_limit: 5
 
 # us_co_mesa - Mesa County, Colorado
 - name: us-co-mesa-scraper
@@ -24,6 +25,7 @@ queue:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
     task_age_limit: 3d
+    task_retry_limit: 5
 
 # us_mo_stone - Stone County, Missouri
 - name: us-mo-stone-scraper
@@ -35,6 +37,7 @@ queue:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
     task_age_limit: 3d
+    task_retry_limit: 5
 
 # us_mt_gallatin - Gallatin County, Montana
 - name: us-mt-gallatin-scraper
@@ -46,6 +49,7 @@ queue:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
     task_age_limit: 3d
+    task_retry_limit: 5
 
 # us_ny - New York (state)
 - name: us-ny-scraper
@@ -57,6 +61,7 @@ queue:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
     task_age_limit: 3d
+    task_retry_limit: 5
 
 # us_pa_greene - Greene County, Pennsylvania
 - name: us-pa-greene-scraper
@@ -68,6 +73,7 @@ queue:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
     task_age_limit: 3d
+    task_retry_limit: 5
 
 # us-pa-dauphin-scraper - Dauphin County, Pennsylvania
 - name: us-pa-dauphin-scraper
@@ -79,6 +85,7 @@ queue:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
     task_age_limit: 3d
+    task_retry_limit: 5
 
 # Recidivism Calculation queue
 - name: recidivism-calculator-mr
@@ -95,6 +102,7 @@ queue:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
     task_age_limit: 3d
+    task_retry_limit: 5
 
 # us-fl-martin-scraper - Martin County, Florida
 - name: us-fl-martin-scraper
@@ -106,3 +114,4 @@ queue:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
     task_age_limit: 3d
+    task_retry_limit: 5
