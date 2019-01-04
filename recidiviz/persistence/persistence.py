@@ -51,7 +51,7 @@ def infer_release_on_open_bookings(region, last_ingest_time):
                      last_ingest_time)
         bookings = database.read_open_bookings_scraped_before_time(
             session, region, last_ingest_time)
-        logging.info('Found %s bookings that will not be inferred released',
+        logging.info('Found %s bookings that will be inferred released',
                      len(bookings))
         _infer_release_date_for_bookings(session, bookings,
                                          last_ingest_time.date())
