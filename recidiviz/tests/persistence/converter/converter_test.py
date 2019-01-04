@@ -18,6 +18,9 @@
 
 import unittest
 
+from recidiviz.common.constants.bond import BondType, BondStatus
+from recidiviz.common.constants.booking import CustodyStatus
+from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
 from recidiviz.persistence.converter import converter
@@ -54,11 +57,11 @@ class TestConverter(unittest.TestCase):
             bookings=[Booking(
                 external_id='BOOKING_ID',
                 last_seen_time='LAST_SEEN_TIME',
-                custody_status='IN_CUSTODY',
+                custody_status=CustodyStatus.IN_CUSTODY,
                 arrest=Arrest(external_id='ARREST_ID', agency='PD'),
                 charges=[Charge(
                     external_id='CHARGE_ID',
-                    status='PENDING',
+                    status=ChargeStatus.PENDING,
                     name='DUI',
                     bond=Bond(external_id='BOND_ID'),
                     sentence=Sentence(external_id='SENTENCE_ID', is_life=True)
@@ -83,10 +86,10 @@ class TestConverter(unittest.TestCase):
         expected_result = [Person.new_with_none_defaults(
             bookings=[Booking(
                 external_id='BOOKING_ID',
-                custody_status='IN_CUSTODY',
+                custody_status=CustodyStatus.IN_CUSTODY,
                 charges=[Charge(
-                    status='PENDING',
-                    bond=Bond(status='ACTIVE', bond_type='CASH',
+                    status=ChargeStatus.PENDING,
+                    bond=Bond(status=BondStatus.ACTIVE, bond_type=BondType.CASH,
                               amount_dollars=100)
                 )]
             )]
@@ -112,12 +115,12 @@ class TestConverter(unittest.TestCase):
         expected_result = [Person.new_with_none_defaults(
             bookings=[Booking(
                 external_id='BOOKING_ID',
-                custody_status='IN_CUSTODY',
+                custody_status=CustodyStatus.IN_CUSTODY,
                 charges=[Charge(
                     external_id='CHARGE_ID',
-                    status='PENDING',
-                    bond=Bond(amount_dollars=100, status='ACTIVE',
-                              bond_type='CASH')
+                    status=ChargeStatus.PENDING,
+                    bond=Bond(amount_dollars=100, status=BondStatus.ACTIVE,
+                              bond_type=BondType.CASH)
                 )]
             )]
         )]

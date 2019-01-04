@@ -16,11 +16,11 @@
 # =============================================================================
 
 """Constants related to a person entity."""
-
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
+from recidiviz.common.constants.mappable_enum import MappableEnum
 
 
-class Gender:
+class Gender(MappableEnum):
     FEMALE = enum_strings.gender_female
     MALE = enum_strings.gender_male
     OTHER = enum_strings.gender_other
@@ -28,11 +28,11 @@ class Gender:
     TRANS_MALE = enum_strings.gender_trans_male
 
     @staticmethod
-    def from_str(label):
-        return _GENDER_MAP[label.upper()]
+    def _get_default_map():
+        return _GENDER_MAP
 
 
-class Race:
+class Race(MappableEnum):
     AMERICAN_INDIAN_ALASKAN_NATIVE = enum_strings.race_american_indian
     ASIAN = enum_strings.race_asian
     BLACK = enum_strings.race_black
@@ -41,17 +41,17 @@ class Race:
     WHITE = enum_strings.race_white
 
     @staticmethod
-    def from_str(label):
-        return _RACE_MAP[label.upper()]
+    def _get_default_map():
+        return _RACE_MAP
 
 
-class Ethnicity:
+class Ethnicity(MappableEnum):
     HISPANIC = enum_strings.ethnicity_hispanic
     NOT_HISPANIC = enum_strings.ethnicity_not_hispanic
 
     @staticmethod
-    def from_str(label):
-        return _ETHNICITY_MAP[label.upper()]
+    def _get_default_map():
+        return _ETHNICITY_MAP
 
 
 _GENDER_MAP = {

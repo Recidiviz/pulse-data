@@ -59,17 +59,17 @@ class TestEntityMatching(TestCase):
         fakes.use_in_memory_sqlite_database()
 
     def test_match_entites(self):
-        schema_charge = schema.Charge(status=ChargeStatus.PENDING,
+        schema_charge = schema.Charge(status=ChargeStatus.PENDING.value,
                                       charge_id=_CHARGE_ID,
                                       name=_CHARGE_NAME)
-        schema_charge_another = schema.Charge(status=ChargeStatus.PENDING,
+        schema_charge_another = schema.Charge(status=ChargeStatus.PENDING.value,
                                               charge_id=_CHARGE_ID_ANOTHER,
                                               name=_CHARGE_NAME_2)
         open_schema_booking = schema.Booking(
             admission_date=_DATE,
             booking_id=_BOOKING_ID,
             admission_date_inferred=True,
-            custody_status=CustodyStatus.IN_CUSTODY,
+            custody_status=CustodyStatus.IN_CUSTODY.value,
             last_seen_time=_DATE,
             charges=[schema_charge,
                      schema_charge_another])
@@ -79,7 +79,7 @@ class TestEntityMatching(TestCase):
             booking_id=_BOOKING_ID_ANOTHER,
             admission_date_inferred=True,
             release_date=_DATE,
-            custody_status=CustodyStatus.RELEASED,
+            custody_status=CustodyStatus.RELEASED.value,
             last_seen_time=_DATE)
 
         schema_person = schema.Person(person_id=_PERSON_ID,

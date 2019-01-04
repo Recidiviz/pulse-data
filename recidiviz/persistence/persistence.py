@@ -79,8 +79,7 @@ def _infer_release_date_for_bookings(session, bookings, date):
 
         logging.info('Marking booking with ID %s as inferred released',
                      booking.booking_id)
-        database.update_booking(session, booking.booking_id,
-                                release_date=date,
+        database.update_booking(session, booking.booking_id, release_date=date,
                                 release_reason=ReleaseReason.INFERRED_RELEASE)
 
 

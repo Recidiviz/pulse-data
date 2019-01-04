@@ -232,7 +232,7 @@ class TestPersistence(TestCase):
             booking_id=BOOKING_ID,
             external_id=EXTERNAL_BOOKING_ID,
             admission_date_inferred=True,
-            custody_status=CustodyStatus.IN_CUSTODY,
+            custody_status=CustodyStatus.IN_CUSTODY.value,
             last_seen_time=SCRAPER_START_DATETIME)
         schema_person = schema.Person(
             person_id=PERSON_ID,
