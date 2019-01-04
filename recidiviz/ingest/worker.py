@@ -78,8 +78,8 @@ def work():
     params = data.get('params')
 
     queue_name = request.headers.get('X-AppEngine-QueueName')
-    logging.info("Queue %s, processing task (%s) for %s." %
-                 (queue_name, task, region))
+    logging.info("Queue %s, processing task (%s) for %s.", queue_name, task,
+                 region)
 
     scraper = regions.Region(region).get_scraper()
     scraper_task = getattr(scraper, task)

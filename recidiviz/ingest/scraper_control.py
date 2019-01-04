@@ -101,7 +101,7 @@ def scraper_start():
 
             # Start scraper, if the docket is empty this will wait for a bounded
             # period of time for an item to be published (~90 seconds).
-            logging.info("Starting %s/%s scrape..." % (region, scrape_type))
+            logging.info("Starting %s/%s scrape...", region, scrape_type)
             scraper.start_scrape(scrape_type)
 
             # Wait for the docket to be loaded
@@ -153,7 +153,7 @@ def scraper_stop():
                 HTTPStatus.BAD_REQUEST)
 
     for region in scrape_regions:
-        logging.info("Stopping %s scrapes for %s." % (scrape_types, region))
+        logging.info("Stopping %s scrapes for %s.", scrape_types, region)
 
         for scrape_type in scrape_types:
             sessions.end_session(ScrapeKey(region, scrape_type))
@@ -196,7 +196,7 @@ def scraper_resume():
     for region in scrape_regions:
 
         for scrape_type in scrape_types:
-            logging.info("Resuming %s scrape for %s." % (scrape_type, region))
+            logging.info("Resuming %s scrape for %s.", scrape_type, region)
 
             sessions.create_session(ScrapeKey(region, scrape_type))
 

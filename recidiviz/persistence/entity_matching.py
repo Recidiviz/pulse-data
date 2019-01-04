@@ -44,8 +44,8 @@ def match_entities(session, region, ingested_people):
         ingested_person = _get_only_match(db_person, ingested_people,
                                           utils.is_person_match)
         if ingested_person:
-            logging.info('Successfully matched person with ID %s'
-                         % db_person.person_id)
+            logging.info('Successfully matched person with ID %s',
+                         db_person.person_id)
             # If the match was previously matched to a different database
             # person, raise an error.
             if ingested_person.person_id:
@@ -69,8 +69,8 @@ def match_bookings(db_person, ingested_person):
         ingested_booking = _get_only_match(db_booking, ingested_person.bookings,
                                            utils.is_booking_match)
         if ingested_booking:
-            logging.info('Successfully matched booking with ID %s'
-                         % db_booking.booking_id)
+            logging.info('Successfully matched booking with ID %s',
+                         db_booking.booking_id)
             # If the match was previously matched to a different database
             # booking, raise an error.
             if ingested_booking.booking_id:
@@ -107,8 +107,8 @@ def match_charges(db_booking, ingested_booking):
         ingested_charge = _get_only_match(db_charge, ingested_booking.charges,
                                           utils.is_charge_match)
         if ingested_charge:
-            logging.info('Successfully matched charge with ID %s'
-                         % db_charge.charge_id)
+            logging.info('Successfully matched charge with ID %s',
+                         db_charge.charge_id)
             # If the match was previously matched to a different database
             # charge, raise an error.
             if ingested_charge.charge_id:
@@ -117,7 +117,7 @@ def match_charges(db_booking, ingested_booking):
                                           'than one database entity')
             ingested_charge.charge_id = db_charge.charge_id
         else:
-            logging.info('Dropping charge with id %s' % db_charge.charge_id)
+            logging.info('Dropping charge with id %s', db_charge.charge_id)
             db_charge.status = ChargeStatus.DROPPED
             # TODO: set boolean inferred_drop to true
             # TODO: what do we do with orphaned bonds?

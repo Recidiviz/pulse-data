@@ -70,24 +70,24 @@ def authenticate_request(func):
 
         elif incoming_app_id:
             # Check whether this is an intra-app call from our GAE service
-            logging.info("Requester authenticated as app-id: %s." %
+            logging.info("Requester authenticated as app-id: %s.",
                          incoming_app_id)
 
             if incoming_app_id == project_id:
                 logging.info("Authenticated intra-app call, proceeding.")
             else:
-                logging.info("App ID is %s, not allowed - exiting."
-                             % incoming_app_id)
+                logging.info("App ID is %s, not allowed - exiting.",
+                             incoming_app_id)
                 return ("Failed: Unauthorized external request.",
                         HTTPStatus.UNAUTHORIZED)
         elif jwt:
             user_id, user_email, error_str = (
                 validate_jwt.validate_iap_jwt_from_app_engine(
                     jwt, project_number, project_id))
-            logging.info("Requester authenticated as %s (%s)." %
-                         (user_id, user_email))
+            logging.info("Requester authenticated as %s (%s).",
+                         user_id, user_email)
             if error_str:
-                logging.info("Error validating user credentials: %s." %
+                logging.info("Error validating user credentials: %s.",
                              error_str)
                 return ("Error: %s" % error_str, HTTPStatus.UNAUTHORIZED)
         else:
