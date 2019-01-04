@@ -36,6 +36,7 @@ class Race(MappableEnum):
     AMERICAN_INDIAN_ALASKAN_NATIVE = enum_strings.race_american_indian
     ASIAN = enum_strings.race_asian
     BLACK = enum_strings.race_black
+    EXTERNAL_UNKNOWN = enum_strings.race_external_unknown
     NATIVE_HAWAIIAN_PACIFIC_ISLANDER = enum_strings.race_hawaiian
     OTHER = enum_strings.race_other
     WHITE = enum_strings.race_white
@@ -72,6 +73,7 @@ _RACE_MAP = {
     'BLACK-ORIGINS OF AFRICA': Race.BLACK,
     'NATIVE HAWAIIAN/PACIFIC ISLANDER': Race.NATIVE_HAWAIIAN_PACIFIC_ISLANDER,
     'OTHER': Race.OTHER,
+    'UNKNOWN': Race.EXTERNAL_UNKNOWN,
     'W': Race.WHITE,
     'WHITE': Race.WHITE,
     'WHITE/EURP/ N.AFR/MID EAS': Race.WHITE,

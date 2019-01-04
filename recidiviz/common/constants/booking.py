@@ -46,7 +46,9 @@ class CustodyStatus(MappableEnum):
 
 
 class ReleaseReason(MappableEnum):
+    ACQUITTAL = enum_strings.release_reason_acquittal
     BOND = enum_strings.release_reason_bond
+    CASE_DISMISSED = enum_strings.release_reason_case_dismissed
     DEATH = enum_strings.release_reason_death
     ESCAPE = enum_strings.release_reason_escape
     EXPIRATION_OF_SENTENCE = enum_strings.release_reason_expiration
@@ -81,7 +83,9 @@ _CUSTODY_STATUS_MAP = {
 
 
 _RELEASE_REASON_MAP = {
+    'ACQUITTAL': ReleaseReason.ACQUITTAL,
     'BOND': ReleaseReason.BOND,
+    'CASE DISMISSED': ReleaseReason.CASE_DISMISSED,
     'DEATH': ReleaseReason.DEATH,
     'ESCAPE': ReleaseReason.ESCAPE,
     'EXPIRATION OF SENTENCE': ReleaseReason.EXPIRATION_OF_SENTENCE,

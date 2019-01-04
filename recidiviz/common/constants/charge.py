@@ -32,6 +32,8 @@ class ChargeDegree(MappableEnum):
 
 
 class ChargeClass(MappableEnum):
+    CIVIL = enum_strings.charge_class_civil
+    EXTERNAL_UNKNOWN = enum_strings.charge_class_external_unknown
     FELONY = enum_strings.charge_class_felony
     MISDEMEANOR = enum_strings.charge_class_misdemeanor
     PAROLE_VIOLATION = enum_strings.charge_class_parole_violation
@@ -78,10 +80,12 @@ _CHARGE_DEGREE_MAP = {
 
 
 _CHARGE_CLASS_MAP = {
+    'CIVIL': ChargeClass.CIVIL,
     'FELONY': ChargeClass.FELONY,
     'MISDEMEANOR': ChargeClass.MISDEMEANOR,
     'PAROLE VIOLATION': ChargeClass.PAROLE_VIOLATION,
     'PROBATION VIOLATION': ChargeClass.PROBATION_VIOLATION,
+    'UNKNOWN': ChargeClass.EXTERNAL_UNKNOWN
 }
 
 
