@@ -19,6 +19,8 @@ import datetime
 from distutils.util import strtobool  # pylint: disable=no-name-in-module
 import dateparser
 
+
+from recidiviz.common.constants.bond import BondType
 from recidiviz.common.constants.person import Ethnicity, Race
 
 
@@ -153,6 +155,19 @@ def split_full_name(full_name):
     if len(names) >= 2:
         return names[-1], ' '.join(names[:-1])
     raise ValueError('cannot parse full name: %s' % full_name)
+
+
+def parse_bond_amount_and_infer_type(amount):
+    if amount.upper().startswith('NO'):
+        return None, BondType.NO_BOND
+
+    if 'DENIED' in amount.upper():
+        return None, BondType.BOND_DENIED
+
+    parsed_amount = parse_dollars(amount)
+    if parsed_amount == 0:
+        return None, BondType.NO_BOND
+    return parsed_amount, BondType.CASH
 
 
 def parse_dollars(dollar_string):

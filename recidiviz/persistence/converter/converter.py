@@ -22,7 +22,8 @@ from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.persistence import entities
 from recidiviz.persistence.converter import arrest, sentence, \
     charge, bond, booking, person
-from recidiviz.persistence.converter.converter_utils import fn, parse_dollars
+from recidiviz.persistence.converter.converter_utils import fn, \
+    parse_bond_amount_and_infer_type
 
 
 def convert(ingest_info, metadata):
@@ -76,10 +77,13 @@ class _Converter:
 
         # TODO: Populate hold when the proto is updated to contain a hold table
 
-        bond_amount = fn(parse_dollars, 'total_bond_amount', ingest_booking)
-        if bond_amount is not None:
-            new_booking.charges = \
-                _charges_pointing_to_total_bond(bond_amount, new_booking)
+        bond_amount_and_type = fn(parse_bond_amount_and_infer_type,
+                                  'total_bond_amount', ingest_booking)
+        if bond_amount_and_type is not None:
+            bond_amount, bond_type = bond_amount_and_type
+            new_booking.charges = _charges_pointing_to_total_bond(bond_amount,
+                                                                  bond_type,
+                                                                  new_booking)
 
         return new_booking
 
@@ -96,11 +100,12 @@ class _Converter:
         return new
 
 
-def _charges_pointing_to_total_bond(bond_amount, new_booking):
+def _charges_pointing_to_total_bond(bond_amount, bond_type, new_booking):
     """Infers a bond from the total_bond field and points all charges to the
     inferred bond. If no charges exist, then also infer a charge."""
     inferred_bond = entities.Bond(amount_dollars=bond_amount,
-                                  status=BondStatus.POSTED)
+                                  bond_type=bond_type,
+                                  status=BondStatus.ACTIVE)
 
     if not new_booking.charges:
         inferred_charge = entities.Charge(bond=inferred_bond,

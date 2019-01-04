@@ -26,14 +26,16 @@ def convert(proto):
     new = entities.Bond()
 
     new.external_id = fn(normalize, 'bond_id', proto)
-    new.amount_dollars = fn(_parse_bond_amount, 'amount', proto)
-    new.bond_type = fn(BondType.from_str, 'bond_type', proto)
-    new.status = fn(BondStatus.from_str, 'status', proto, BondStatus.POSTED)
+    new.amount_dollars, inferred_bond_type = fn(
+        converter_utils.parse_bond_amount_and_infer_type, 'amount', proto,
+        (None, None)) # default to a pair of Nones instead of None
+    # |inferred_bond_type| defaults to CASH unless the bond amount contains
+    # information about the type (i.e. NO_BOND or BOND_DENIED)
+    new.bond_type = fn(BondType.from_str, 'bond_type', proto,
+                       inferred_bond_type)
+    # TODO(491): determine what status, if any, bonds with BondType.BOND_DENIED
+    #  should have
+    new.status = fn(BondStatus.from_str, 'status', proto,
+                    BondStatus.ACTIVE if new.amount_dollars else None)
 
     return new
-
-
-def _parse_bond_amount(amount):
-    if 'NO' in amount.upper() or 'DENIED' in amount.upper():
-        return 0
-    return converter_utils.parse_dollars(amount)
