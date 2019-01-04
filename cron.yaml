@@ -90,7 +90,7 @@ cron:
     job_age_limit: 9h
 
 - description: Start FL martin county background scraper every day at 9pm
-  url: /scraper/start?region=us_fl_martin_county&scrape_type=background
+  url: /scraper/start?region=us_fl_martin&scrape_type=background
   schedule: every day 21:00
   timezone: America/New_York
   retry_parameters:
@@ -99,7 +99,7 @@ cron:
     job_age_limit: 9h
 
 - description: Stop FL martin county scraper every day at 9am
-  url: /scraper/stop?region=us_fl_martin_county&scrape_type=background
+  url: /scraper/stop?region=us_fl_martin&scrape_type=background
   schedule: every day 09:00
   timezone: America/New_York
   retry_parameters:
