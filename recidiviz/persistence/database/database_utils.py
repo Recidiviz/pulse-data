@@ -20,6 +20,7 @@ from enum import Enum
 import attr
 
 from recidiviz import Base
+from recidiviz.common.constants.mappable_enum import MappableEnum
 from recidiviz.persistence import entities
 from recidiviz.persistence.database import schema
 
@@ -170,6 +171,5 @@ def _convert_field_or_enum(src, field, attr_type, direction):
     return getattr(src, field)
 
 
-# TODO: Actually check type is an enum
-def _is_enum(_):
-    return False
+def _is_enum(attr_type):
+    return attr_type and issubclass(attr_type, MappableEnum)

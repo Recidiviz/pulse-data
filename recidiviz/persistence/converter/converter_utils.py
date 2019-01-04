@@ -21,6 +21,7 @@ import dateparser
 
 
 from recidiviz.common.constants.bond import BondType
+from recidiviz.common.constants.mappable_enum import EnumParsingError
 from recidiviz.common.constants.person import Ethnicity, Race
 
 
@@ -61,13 +62,13 @@ def race_is_actually_ethnicity(ingest_person):
     try:
         Ethnicity.from_str(ingest_person.race)
         race_is_ethnicity = True
-    except KeyError:
+    except EnumParsingError:
         race_is_ethnicity = False
 
     try:
         Race.from_str(ingest_person.race)
         race_is_already_set_correctly = True
-    except KeyError:
+    except EnumParsingError:
         race_is_already_set_correctly = False
 
     return race_is_ethnicity and not race_is_already_set_correctly

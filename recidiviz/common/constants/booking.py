@@ -18,9 +18,10 @@
 """Constants related to a booking entity."""
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
+from recidiviz.common.constants.mappable_enum import MappableEnum
 
 
-class Classification:
+class Classification(MappableEnum):
     HIGH = enum_strings.classification_high
     LOW = enum_strings.classification_low
     MAXIMUM = enum_strings.classification_maximum
@@ -29,22 +30,22 @@ class Classification:
     WORK_RELEASE = enum_strings.classification_work_release
 
     @staticmethod
-    def from_str(label):
-        return _CLASSIFICATION_MAP[label.upper()]
+    def _get_default_map():
+        return _CLASSIFICATION_MAP
 
 
-class CustodyStatus:
+class CustodyStatus(MappableEnum):
     ESCAPED = enum_strings.custody_status_escaped
     HELD_ELSEWHERE = enum_strings.custody_status_elsewhere
     IN_CUSTODY = enum_strings.custody_status_in_custody
     RELEASED = enum_strings.custody_status_released
 
     @staticmethod
-    def from_str(label):
-        return _CUSTODY_STATUS_MAP[label.upper()]
+    def _get_default_map():
+        return _CUSTODY_STATUS_MAP
 
 
-class ReleaseReason:
+class ReleaseReason(MappableEnum):
     BOND = enum_strings.release_reason_bond
     DEATH = enum_strings.release_reason_death
     ESCAPE = enum_strings.release_reason_escape
@@ -56,8 +57,8 @@ class ReleaseReason:
     TRANSFER = enum_strings.release_reason_transfer
 
     @staticmethod
-    def from_str(label):
-        return _RELEASE_REASON_MAP[label.upper()]
+    def _get_default_map():
+        return _RELEASE_REASON_MAP
 
 
 _CLASSIFICATION_MAP = {
