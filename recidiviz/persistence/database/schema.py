@@ -55,6 +55,7 @@ Base = declarative_base()
 
 gender_values = (enum_strings.gender_female,
                  enum_strings.gender_male,
+                 enum_strings.gender_other,
                  enum_strings.gender_trans_female,
                  enum_strings.gender_trans_male)
 
@@ -164,7 +165,7 @@ sentence_relationship_type = Enum(
 
 class Person(Base):
     """Represents a person in the SQL schema"""
-    __tablename__ = 'Person'
+    __tablename__ = 'person'
 
     person_id = Column(Integer, primary_key=True)
     external_id = Column(String(255), index=True)
@@ -173,8 +174,11 @@ class Person(Base):
     birthdate = Column(Date, index=True)
     birthdate_inferred_from_age = Column(Boolean)
     gender = Column(gender)
+    gender_raw_text = Column(String(255))
     race = Column(race)
+    race_raw_text = Column(String(255))
     ethnicity = Column(ethnicity)
+    ethnicity_raw_text = Column(String(255))
     place_of_residence = Column(String(255))
     region = Column(String(255), nullable=False, index=True)
 
@@ -183,7 +187,7 @@ class Person(Base):
 
 class PersonHistory(Base):
     """Represents the historical state of a person"""
-    __tablename__ = 'PersonHistory'
+    __tablename__ = 'person_history'
 
     # NOTE: PersonHistory does not contain surname, given_names, or birthdate
     # columns. This is to ensure that PII is only stored in a single location
@@ -198,21 +202,23 @@ class PersonHistory(Base):
     valid_from = Column(DateTime, nullable=False)
     valid_to = Column(DateTime)
     external_id = Column(String(255))
-    birthdate_inferred_from_age = Column(Boolean)
     gender = Column(gender)
+    gender_raw_text = Column(String(255))
     race = Column(race)
+    race_raw_text = Column(String(255))
     ethnicity = Column(ethnicity)
+    ethnicity_raw_text = Column(String(255))
     place_of_residence = Column(String(255))
     region = Column(String(255), nullable=False)
 
 
 class Booking(Base):
     """Represents a booking in the SQL schema"""
-    __tablename__ = 'Booking'
+    __tablename__ = 'booking'
 
     booking_id = Column(Integer, primary_key=True)
 
-    person_id = Column(Integer, ForeignKey('Person.person_id'), nullable=False)
+    person_id = Column(Integer, ForeignKey('person.person_id'), nullable=False)
     external_id = Column(String(255), index=True)
     admission_date = Column(Date)
     admission_date_inferred = Column(Boolean)
@@ -220,10 +226,13 @@ class Booking(Base):
     release_date_inferred = Column(Boolean)
     projected_release_date = Column(Date)
     release_reason = Column(release_reason)
+    release_reason_raw_text = Column(String(255))
     custody_status = Column(custody_status, nullable=False)
+    custody_status_raw_text = Column(String(255))
     held_for_other_jurisdiction = Column(Boolean)
     facility = Column(String(255))
     classification = Column(classification)
+    classification_raw_text = Column(String(255))
     last_seen_time = Column(DateTime, nullable=False)
 
     person = relationship('Person', back_populates='bookings')
@@ -234,7 +243,7 @@ class Booking(Base):
 
 class BookingHistory(Base):
     """Represents the historical state of a booking"""
-    __tablename__ = 'BookingHistory'
+    __tablename__ = 'booking_history'
 
     # NOTE: BookingHistory does not contain last_seen_time column. This is to
     # avoid needing to create a new BookingHistory entity when a booking is
@@ -247,34 +256,40 @@ class BookingHistory(Base):
     booking_id = Column(Integer, nullable=False, index=True)
     valid_from = Column(DateTime, nullable=False)
     valid_to = Column(DateTime)
-    external_id = Column(String(255), index=True)
     person_id = Column(Integer, nullable=False, index=True)
+    external_id = Column(String(255), index=True)
     admission_date = Column(Date)
+    admission_date_inferred = Column(Boolean)
     release_date = Column(Date)
+    release_date_inferred = Column(Boolean)
     projected_release_date = Column(Date)
     release_reason = Column(release_reason)
+    release_reason_raw_text = Column(String(255))
     custody_status = Column(custody_status, nullable=False)
+    custody_status_raw_text = Column(String(255))
     held_for_other_jurisdiction = Column(Boolean)
     facility = Column(String(255))
     classification = Column(classification)
+    classification_raw_text = Column(String(255))
 
 
 class Hold(Base):
     """Represents a hold from another jurisdiction against a booking"""
-    __tablename__ = 'Hold'
+    __tablename__ = 'hold'
 
     hold_id = Column(Integer, primary_key=True)
     booking_id = Column(
-        Integer, ForeignKey('Booking.booking_id'), nullable=False)
+        Integer, ForeignKey('booking.booking_id'), nullable=False)
     jurisdiction_name = Column(String(255))
     hold_status = Column(hold_status, nullable=False)
+    hold_status_raw_text = Column(String(255))
 
     booking = relationship('Booking', back_populates='holds')
 
 
 class HoldHistory(Base):
     """Represents the historical state of a hold"""
-    __tablename__ = 'HoldHistory'
+    __tablename__ = 'hold_history'
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
@@ -286,16 +301,17 @@ class HoldHistory(Base):
     booking_id = Column(Integer, nullable=False, index=True)
     jurisdiction_name = Column(String(255))
     hold_status = Column(hold_status, nullable=False)
+    hold_status_raw_text = Column(String(255))
 
 
 class Arrest(Base):
     """Represents an arrest in the SQL schema"""
-    __tablename__ = 'Arrest'
+    __tablename__ = 'arrest'
 
     arrest_id = Column(Integer, primary_key=True)
-    external_id = Column(String(255), index=True)
     booking_id = Column(
-        Integer, ForeignKey('Booking.booking_id'), nullable=False)
+        Integer, ForeignKey('booking.booking_id'), nullable=False)
+    external_id = Column(String(255), index=True)
     date = Column(Date)
     location = Column(String(255))
     agency = Column(String(255))
@@ -307,7 +323,7 @@ class Arrest(Base):
 
 class ArrestHistory(Base):
     """Represents the historical state of an arrest"""
-    __tablename__ = 'ArrestHistory'
+    __tablename__ = 'arrest_history'
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
@@ -316,8 +332,8 @@ class ArrestHistory(Base):
     arrest_id = Column(Integer, nullable=False, index=True)
     valid_from = Column(DateTime, nullable=False)
     valid_to = Column(DateTime)
-    external_id = Column(String(255), index=True)
     booking_id = Column(Integer, nullable=False, index=True)
+    external_id = Column(String(255), index=True)
     date = Column(Date)
     location = Column(String(255))
     agency = Column(String(255))
@@ -327,20 +343,22 @@ class ArrestHistory(Base):
 
 class Bond(Base):
     """Represents a bond in the SQL schema"""
-    __tablename__ = 'Bond'
+    __tablename__ = 'bond'
 
     bond_id = Column(Integer, primary_key=True)
     external_id = Column(String(255), index=True)
     amount_dollars = Column(Integer)
     bond_type = Column(bond_type)
+    bond_type_raw_text = Column(String(255))
     status = Column(bond_status, nullable=False)
+    status_raw_text = Column(String(255))
 
     charges = relationship('Charge', back_populates='bond')
 
 
 class BondHistory(Base):
     """Represents the historical state of a bond"""
-    __tablename__ = 'BondHistory'
+    __tablename__ = 'bond_history'
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
@@ -352,17 +370,19 @@ class BondHistory(Base):
     external_id = Column(String(255), index=True)
     amount_dollars = Column(Integer)
     bond_type = Column(bond_type)
+    bond_type_raw_text = Column(String(255))
     status = Column(bond_status, nullable=False)
+    status_raw_text = Column(String(255))
 
 
 class Sentence(Base):
     """Represents a sentence in the SQL schema"""
-    __tablename__ = 'Sentence'
+    __tablename__ = 'sentence'
 
     sentence_id = Column(Integer, primary_key=True)
     external_id = Column(String(255), index=True)
     date_imposed = Column(Date)
-    county_of_commitment = Column('county_of_commitment', String)
+    sentencing_region = Column(String(255))
     min_length_days = Column(Integer)
     max_length_days = Column(Integer)
     is_life = Column(Boolean)
@@ -386,7 +406,7 @@ class Sentence(Base):
 
 class SentenceHistory(Base):
     """Represents the historical state of a sentence"""
-    __tablename__ = 'SentenceHistory'
+    __tablename__ = 'sentence_history'
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
@@ -397,6 +417,7 @@ class SentenceHistory(Base):
     valid_to = Column(DateTime)
     external_id = Column(String(255), index=True)
     date_imposed = Column(Date)
+    sentencing_region = Column(String(255))
     min_length_days = Column(Integer)
     max_length_days = Column(Integer)
     is_life = Column(Boolean)
@@ -409,18 +430,19 @@ class SentenceHistory(Base):
 
 class SentenceRelationship(Base):
     """Represents the relationship between two sentences"""
-    __tablename__ = 'SentenceRelationship'
+    __tablename__ = 'sentence_relationship'
 
     # NOTE: (A,B) is equal to (B,A). There should only be one
     # SentenceRelationship for any pair of sentences.
 
     sentence_relationship_id = Column(Integer, primary_key=True)
     sentence_a_id = Column(
-        Integer, ForeignKey('Sentence.sentence_id'), nullable=False)
+        Integer, ForeignKey('sentence.sentence_id'), nullable=False)
     sentence_b_id = Column(
-        Integer, ForeignKey('Sentence.sentence_id'), nullable=False)
+        Integer, ForeignKey('sentence.sentence_id'), nullable=False)
     # Manually set name to avoid conflict with Python reserved keyword
     sentence_relationship_type = Column('type', sentence_relationship_type)
+    sentence_relation_type_raw_text = Column(String(255))
 
     sentence_a = relationship(
         'Sentence',
@@ -435,7 +457,7 @@ class SentenceRelationship(Base):
 class SentenceRelationshipHistory(Base):
     """Represents the historical state of the relationship between two sentences
     """
-    __tablename__ = 'SentenceRelationshipHistory'
+    __tablename__ = 'sentence_relationship_history'
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
@@ -448,31 +470,36 @@ class SentenceRelationshipHistory(Base):
     sentence_b_id = Column(Integer, nullable=False, index=True)
     # Manually set name to avoid conflict with Python reserved keyword
     sentence_relationship_type = Column('type', sentence_relationship_type)
+    sentence_relation_type_raw_text = Column(String(255))
 
 
 class Charge(Base):
     """Represents a charge in the SQL schema"""
-    __tablename__ = 'Charge'
+    __tablename__ = 'charge'
 
     charge_id = Column(Integer, primary_key=True)
-    external_id = Column(String(255), index=True)
     booking_id = Column(
-        Integer, ForeignKey('Booking.booking_id'), nullable=False)
-    bond_id = Column(Integer, ForeignKey('Bond.bond_id'))
+        Integer, ForeignKey('booking.booking_id'), nullable=False)
+    bond_id = Column(Integer, ForeignKey('bond.bond_id'))
     sentence_id = Column(
-        Integer, ForeignKey('Sentence.sentence_id'))
+        Integer, ForeignKey('sentence.sentence_id'))
+    external_id = Column(String(255), index=True)
     offense_date = Column(Date)
     statute = Column(String(255))
     name = Column(String(255))
     attempted = Column(Boolean)
     degree = Column(degree)
+    degree_raw_text = Column(String(255))
     # Manually set name to avoid conflict with Python reserved keyword
     charge_class = Column('class', charge_class)
+    class_raw_text = Column(String(255))
     level = Column(String(255))
     fee_dollars = Column(Integer)
     charging_entity = Column(String(255))
     status = Column(charge_status, nullable=False)
+    status_raw_text = Column(String(255))
     court_type = Column(court_type)
+    court_type_raw_text = Column(String(255))
     case_number = Column(String(255))
     next_court_date = Column(Date)
     judge_name = Column(String(255))
@@ -484,7 +511,7 @@ class Charge(Base):
 
 class ChargeHistory(Base):
     """Represents the historical state of a charge"""
-    __tablename__ = 'ChargeHistory'
+    __tablename__ = 'charge_history'
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
@@ -493,22 +520,26 @@ class ChargeHistory(Base):
     charge_id = Column(Integer, nullable=False, index=True)
     valid_from = Column(DateTime, nullable=False)
     valid_to = Column(DateTime)
-    external_id = Column(String(255), index=True)
     booking_id = Column(Integer, nullable=False, index=True)
     bond_id = Column(Integer, index=True)
     sentence_id = Column(Integer, index=True)
+    external_id = Column(String(255), index=True)
     offense_date = Column(Date)
     statute = Column(String(255))
     name = Column(String(255))
     attempted = Column(Boolean)
     degree = Column(degree)
+    degree_raw_text = Column(String(255))
     # Manually set name to avoid conflict with Python reserved keyword
     charge_class = Column('class', charge_class)
+    class_raw_text = Column(String(255))
     level = Column(String(255))
     fee_dollars = Column(Integer)
     charging_entity = Column(String(255))
     status = Column(charge_status, nullable=False)
+    status_raw_text = Column(String(255))
     court_type = Column(court_type)
+    court_type_raw_text = Column(String(255))
     case_number = Column(String(255))
     next_court_date = Column(Date)
     judge_name = Column(String(255))
