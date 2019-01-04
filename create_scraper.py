@@ -90,12 +90,13 @@ def append_to_config_files(subs):
 - name: $region_dashes-scraper
   mode: push
   rate: 5/m
-  bucket_size: 1
-  max_concurrent_requests: 3
+  bucket_size: 500
+  max_concurrent_requests: 5000
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
     task_age_limit: 3d
+    task_retry_limit: 5
 """
     with open(os.path.join(top_level_path, 'queue.yaml'), 'a') as queue_file:
         queue_file.write(Template(queue_text).safe_substitute(subs))
