@@ -124,7 +124,7 @@ class Bond:
 class Sentence:
     external_id: str = attr.ib(default=None)
     date_imposed: datetime.date = attr.ib(default=None)
-    county_of_commitment: str = attr.ib(default=None)
+    sentencing_region: str = attr.ib(default=None)
     min_length_days: int = attr.ib(default=None)
     max_length_days: int = attr.ib(default=None)
     is_life: bool = attr.ib(default=None)

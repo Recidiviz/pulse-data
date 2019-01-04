@@ -23,6 +23,7 @@ import recidiviz.common.constants.enum_canonical_strings as enum_strings
 class Gender:
     FEMALE = enum_strings.gender_female
     MALE = enum_strings.gender_male
+    OTHER = enum_strings.gender_other
     TRANS_FEMALE = enum_strings.gender_trans_female
     TRANS_MALE = enum_strings.gender_trans_male
 
@@ -58,6 +59,7 @@ _GENDER_MAP = {
     'FEMALE': Gender.FEMALE,
     'M': Gender.MALE,
     'MALE': Gender.MALE,
+    'OTHER': Gender.OTHER,
     'TRANS FEMALE/TRANS WOMAN': Gender.TRANS_FEMALE,
     'TRANS MALE/TRANS MAN': Gender.TRANS_MALE,
 }

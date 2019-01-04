@@ -108,5 +108,5 @@ message Sentence {
 	optional string fine_dollars = 8;
 	optional string parole_possible = 9;
 	optional string post_release_supervision_length = 10;
-	optional string county_of_commitment = 11;
+	optional string sentencing_region = 11;
 }
