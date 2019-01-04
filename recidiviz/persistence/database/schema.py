@@ -29,7 +29,7 @@ pointing to a historical table does NOT have a foreign key constraint.
 """
 
 from sqlalchemy import Boolean, Column, Date, DateTime, Enum, ForeignKey, \
-    Integer, String
+    Integer, String, Text
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
@@ -62,6 +62,7 @@ gender_values = (enum_strings.gender_female,
 race_values = (enum_strings.race_american_indian,
                enum_strings.race_asian,
                enum_strings.race_black,
+               enum_strings.race_external_unknown,
                enum_strings.race_hawaiian,
                enum_strings.race_other,
                enum_strings.race_white)
@@ -71,7 +72,9 @@ ethnicity_values = (enum_strings.ethnicity_hispanic,
 
 # Booking
 
-release_reason_values = (enum_strings.release_reason_bond,
+release_reason_values = (enum_strings.release_reason_acquittal,
+                         enum_strings.release_reason_bond,
+                         enum_strings.release_reason_case_dismissed,
                          enum_strings.release_reason_death,
                          enum_strings.release_reason_escape,
                          enum_strings.release_reason_expiration,
@@ -121,7 +124,9 @@ degree_values = (enum_strings.degree_first,
                  enum_strings.degree_second,
                  enum_strings.degree_third)
 
-charge_class_values = (enum_strings.charge_class_felony,
+charge_class_values = (enum_strings.charge_class_civil,
+                       enum_strings.charge_class_external_unknown,
+                       enum_strings.charge_class_felony,
                        enum_strings.charge_class_misdemeanor,
                        enum_strings.charge_class_parole_violation,
                        enum_strings.charge_class_probation_violation)
@@ -486,7 +491,7 @@ class Charge(Base):
     external_id = Column(String(255), index=True)
     offense_date = Column(Date)
     statute = Column(String(255))
-    name = Column(String(255))
+    name = Column(Text)
     attempted = Column(Boolean)
     degree = Column(degree)
     degree_raw_text = Column(String(255))
@@ -526,7 +531,7 @@ class ChargeHistory(Base):
     external_id = Column(String(255), index=True)
     offense_date = Column(Date)
     statute = Column(String(255))
-    name = Column(String(255))
+    name = Column(Text)
     attempted = Column(Boolean)
     degree = Column(degree)
     degree_raw_text = Column(String(255))
