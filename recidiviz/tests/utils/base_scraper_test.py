@@ -138,7 +138,11 @@ class BaseScraperTest:
             self.fail('IngestInfo objects do not match.\n'
                       'Expected:\n{}\n'
                       'Actual:\n{}\n'
-                      'Differences:\n{}'.format(expected_result, result,
-                                                '\n'.join(differences)))
+                      'Differences:\n{}\n\n'
+                      '(paste the following) scraped object:'
+                      '\n{}'.format(expected_result,
+                                    result,
+                                    '\n'.join(differences),
+                                    repr(result)))
 
         return result
