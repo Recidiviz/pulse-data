@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "2b808089dcbf434c235fdd7f4c480b75b760dfb47c4772c67ee13063a496f382"
+            "sha256": "aef914c826ed2af1c6c5dceae0f31289e8cc0f31f2e8b548da9d8bc02fc6a783"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -259,6 +259,15 @@
             "index": "pypi",
             "version": "==0.7.0"
         },
+        "deepdiff": {
+            "hashes": [
+                "sha256:152b29dd9cd97cc78403121fb394925ec47377d4a410751e56547c3930ba2b39",
+                "sha256:b4150052e610b231885c4c0be3eea86e4c029df91550ec51b9fc14dd209a5055",
+                "sha256:ecad8e16a96ffd27e8f40c9801a6ab16ec6a7e7e6e6859a7710ba4695f22702c"
+            ],
+            "index": "pypi",
+            "version": "==3.3.0"
+        },
         "dnspython": {
             "hashes": [
                 "sha256:36c5e8e38d4369a08b6780b7f27d790a292b2b08eea01607865bf0936c558e01",
@@ -507,6 +516,14 @@
             ],
             "index": "pypi",
             "version": "==2.10"
+        },
+        "jsonpickle": {
+            "hashes": [
+                "sha256:8b6212f1155f43ce67fa945efae6d010ed059f3ca5ed377aa070e5903d45b722",
+                "sha256:d43ede55b3d9b5524a8e11566ea0b11c9c8109116ef6a509a1b619d2041e7397",
+                "sha256:ed4adf0d14564c56023862eabfac211cf01211a20c5271896c8ab6f80c68086c"
+            ],
+            "version": "==1.0"
         },
         "lazy-object-proxy": {
             "hashes": [

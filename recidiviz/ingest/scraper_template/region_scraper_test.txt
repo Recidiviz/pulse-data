@@ -16,6 +16,7 @@
 # =============================================================================
 
 """Scraper tests for $region."""
+import unittest
 from lxml import html
 
 from recidiviz.ingest import constants
@@ -24,7 +25,7 @@ from recidiviz.ingest.$region.${region}_scraper import ${class_name}Scraper
 from recidiviz.tests.utils.base_scraper_test import BaseScraperTest
 
 
-class Test${class_name}Scraper(BaseScraperTest):
+class Test${class_name}Scraper(BaseScraperTest, unittest.TestCase):
 
     def _init_scraper_and_yaml(self):
         # The scraper to be tested. Required.
