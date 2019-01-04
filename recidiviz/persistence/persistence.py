@@ -47,12 +47,12 @@ def infer_release_on_open_bookings(region, last_ingest_time):
 
     session = Session()
     try:
-        logging.info('Reading all bookings that happened before %s'
-                     % last_ingest_time)
+        logging.info('Reading all bookings that happened before %s',
+                     last_ingest_time)
         bookings = database.read_open_bookings_scraped_before_time(
             session, region, last_ingest_time)
-        logging.info('Found %s bookings that will not be inferred released'
-                     % len(bookings))
+        logging.info('Found %s bookings that will not be inferred released',
+                     len(bookings))
         _infer_release_date_for_bookings(session, bookings,
                                          last_ingest_time.date())
         session.commit()
@@ -77,8 +77,8 @@ def _infer_release_date_for_bookings(session, bookings, date):
                                    'resolved, however booking already has '
                                    'release date.'.format(booking.booking_id))
 
-        logging.info('Marking booking with ID %s as inferred released'
-                     % booking.booking_id)
+        logging.info('Marking booking with ID %s as inferred released',
+                     booking.booking_id)
         database.update_booking(session, booking.booking_id,
                                 release_date=date,
                                 release_reason=ReleaseReason.INFERRED_RELEASE)
