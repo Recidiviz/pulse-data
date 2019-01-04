@@ -48,17 +48,6 @@ class BondConverterTest(unittest.TestCase):
 
         self.assertEqual(result, expected_result)
 
-    def testParseBond_SetsDefaults(self):
-        # Arrange
-        ingest_bond = ingest_info_pb2.Bond()
-
-        # Act
-        result = bond.convert(ingest_bond)
-
-        # Assert
-        expected_result = entities.Bond(status=BondStatus.POSTED)
-        self.assertEqual(result, expected_result)
-
     def testParseBond_AmountIsNoBond_SetsAmountToZero(self):
         # Arrange
         ingest_bond = ingest_info_pb2.Bond(amount='No Bond')
@@ -67,10 +56,7 @@ class BondConverterTest(unittest.TestCase):
         result = bond.convert(ingest_bond)
 
         # Assert
-        expected_result = entities.Bond(
-            amount_dollars=0,
-            status=BondStatus.POSTED
-        )
+        expected_result = entities.Bond(bond_type=BondType.NO_BOND)
         self.assertEqual(result, expected_result)
 
     def testParseBond_AmountIsBondDenied_SetsAmountToZero(self):
@@ -81,8 +67,5 @@ class BondConverterTest(unittest.TestCase):
         result = bond.convert(ingest_bond)
 
         # Assert
-        expected_result = entities.Bond(
-            amount_dollars=0,
-            status=BondStatus.POSTED
-        )
+        expected_result = entities.Bond(bond_type=BondType.BOND_DENIED)
         self.assertEqual(result, expected_result)

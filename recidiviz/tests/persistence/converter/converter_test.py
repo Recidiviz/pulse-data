@@ -60,7 +60,7 @@ class TestConverter(unittest.TestCase):
                     external_id='CHARGE_ID',
                     status='PENDING',
                     name='DUI',
-                    bond=Bond(external_id='BOND_ID', status='POSTED'),
+                    bond=Bond(external_id='BOND_ID'),
                     sentence=Sentence(external_id='SENTENCE_ID', is_life=True)
                 )]
             )])]
@@ -86,7 +86,8 @@ class TestConverter(unittest.TestCase):
                 custody_status='IN_CUSTODY',
                 charges=[Charge(
                     status='PENDING',
-                    bond=Bond(status='POSTED', amount_dollars=100)
+                    bond=Bond(status='ACTIVE', bond_type='CASH',
+                              amount_dollars=100)
                 )]
             )]
         )]
@@ -115,7 +116,8 @@ class TestConverter(unittest.TestCase):
                 charges=[Charge(
                     external_id='CHARGE_ID',
                     status='PENDING',
-                    bond=Bond(amount_dollars=100, status='POSTED')
+                    bond=Bond(amount_dollars=100, status='ACTIVE',
+                              bond_type='CASH')
                 )]
             )]
         )]
