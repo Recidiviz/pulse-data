@@ -27,6 +27,9 @@ class IngestInfo:
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
 
+    def __bool__(self):
+        return to_bool(self)
+
     def __str__(self):
         return to_string(self)
 
@@ -45,6 +48,10 @@ class IngestInfo:
         if self.person:
             return self.person[-1]
         return None
+
+    def prune(self):
+        self.person = [p.prune() for p in self.person if p]
+        return self
 
 
 class _Person:
@@ -72,6 +79,9 @@ class _Person:
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
 
+    def __bool__(self):
+        return to_bool(self)
+
     def __str__(self):
         return to_string(self)
 
@@ -90,6 +100,10 @@ class _Person:
         if self.booking:
             return self.booking[-1]
         return None
+
+    def prune(self):
+        self.booking = [b.prune() for b in self.booking if b]
+        return self
 
 
 class _Booking:
@@ -122,6 +136,9 @@ class _Booking:
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
 
+    def __bool__(self):
+        return to_bool(self)
+
     def __str__(self):
         return to_string(self)
 
@@ -148,6 +165,12 @@ class _Booking:
     def get_recent_arrest(self):
         return self.arrest
 
+    def prune(self):
+        self.charge = [c.prune() for c in self.charge if c]
+        if not self.arrest:
+            self.arrest = None
+        return self
+
 
 class _Arrest:
     """Class for information about an arrest.
@@ -165,6 +188,9 @@ class _Arrest:
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
+
+    def __bool__(self):
+        return to_bool(self)
 
     def __str__(self):
         return to_string(self)
@@ -211,6 +237,9 @@ class _Charge:
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
 
+    def __bool__(self):
+        return to_bool(self)
+
     def __str__(self):
         return to_string(self)
 
@@ -234,6 +263,13 @@ class _Charge:
     def get_recent_sentence(self):
         return self.sentence
 
+    def prune(self):
+        if not self.bond:
+            self.bond = None
+        if not self.sentence:
+            self.sentence = None
+        return self
+
 
 class _Bond:
     """Class for information about a bond.
@@ -249,6 +285,9 @@ class _Bond:
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
+
+    def __bool__(self):
+        return to_bool(self)
 
     def __str__(self):
         return to_string(self)
@@ -287,6 +326,9 @@ class _Sentence:
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
 
+    def __bool__(self):
+        return to_bool(self)
+
     def __str__(self):
         return to_string(self)
 
@@ -295,6 +337,11 @@ class _Sentence:
 
     def __setattr__(self, name, value):
         restricted_setattr(self, 'post_release_supervision_length', name, value)
+
+
+def to_bool(obj):
+    return any(any(v) if isinstance(v, list) else v
+               for v in obj.__dict__.values())
 
 
 def to_string(obj):
