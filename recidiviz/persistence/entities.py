@@ -20,9 +20,9 @@ Note: These classes mirror the SQL Alchemy ORM objects but are kept separate.
 This allows these persistence layer objects additional flexibility that the SQL
 Alchemy ORM objects can't provide.
 """
-from datetime import datetime, date
 from typing import List
 
+import datetime
 import attr
 
 from recidiviz.common.buildable_attr import BuildableAttr
@@ -33,7 +33,7 @@ class Person(BuildableAttr):
     external_id: str = attr.ib()
     surname: str = attr.ib()
     given_names: str = attr.ib()
-    birthdate: date = attr.ib()
+    birthdate: datetime.date = attr.ib()
     birthdate_inferred_from_age: bool = attr.ib()
     gender: str = attr.ib()
     race: str = attr.ib()
@@ -48,17 +48,17 @@ class Person(BuildableAttr):
 @attr.s
 class Booking:
     external_id: str = attr.ib(default=None)
-    admission_date: date = attr.ib(default=None)
+    admission_date: datetime.date = attr.ib(default=None)
     admission_date_inferred: bool = attr.ib(default=None)
-    release_date: date = attr.ib(default=None)
+    release_date: datetime.date = attr.ib(default=None)
     release_date_inferred: bool = attr.ib(default=None)
-    projected_release_date: date = attr.ib(default=None)
+    projected_release_date: datetime.date = attr.ib(default=None)
     release_reason: str = attr.ib(default=None)
     custody_status: str = attr.ib(default=None)
     held_for_other_jurisdiction: str = attr.ib(default=None)
     facility: str = attr.ib(default=None)
     classification: str = attr.ib(default=None)
-    last_seen_time: datetime = attr.ib(default=None)
+    last_seen_time: datetime.datetime = attr.ib(default=None)
 
     booking_id: int = attr.ib(default=None)
     holds: List['Hold'] = attr.ib(factory=list)
@@ -78,7 +78,7 @@ class Hold:
 @attr.s
 class Arrest:
     external_id: str = attr.ib(default=None)
-    date: date = attr.ib(default=None)
+    date: datetime.date = attr.ib(default=None)
     location: str = attr.ib(default=None)
     agency: str = attr.ib(default=None)
     officer_name: str = attr.ib(default=None)
@@ -90,7 +90,7 @@ class Arrest:
 @attr.s
 class Charge:
     external_id: str = attr.ib(default=None)
-    offense_date: date = attr.ib(default=None)
+    offense_date: datetime.date = attr.ib(default=None)
     statute: str = attr.ib(default=None)
     name: str = attr.ib(default=None)
     attempted: bool = attr.ib(default=None)
@@ -102,7 +102,7 @@ class Charge:
     status: str = attr.ib(default=None)
     court_type: str = attr.ib(default=None)
     case_number: str = attr.ib(default=None)
-    next_court_date: date = attr.ib(default=None)
+    next_court_date: datetime.date = attr.ib(default=None)
     judge_name: str = attr.ib(default=None)
 
     charge_id: int = attr.ib(default=None)
@@ -123,7 +123,7 @@ class Bond:
 @attr.s
 class Sentence:
     external_id: str = attr.ib(default=None)
-    date_imposed: date = attr.ib(default=None)
+    date_imposed: datetime.date = attr.ib(default=None)
     county_of_commitment: str = attr.ib(default=None)
     min_length_days: int = attr.ib(default=None)
     max_length_days: int = attr.ib(default=None)
