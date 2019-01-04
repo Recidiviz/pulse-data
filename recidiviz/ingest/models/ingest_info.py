@@ -27,8 +27,11 @@ class IngestInfo:
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
 
-    def __repr__(self):
+    def __str__(self):
         return to_string(self)
+
+    def __repr__(self):
+        return to_repr(self)
 
     def __setattr__(self, name, value):
         restricted_setattr(self, 'person', name, value)
@@ -69,8 +72,11 @@ class _Person:
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
 
-    def __repr__(self):
+    def __str__(self):
         return to_string(self)
+
+    def __repr__(self):
+        return to_repr(self)
 
     def __setattr__(self, name, value):
         restricted_setattr(self, 'booking', name, value)
@@ -116,8 +122,11 @@ class _Booking:
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
 
-    def __repr__(self):
+    def __str__(self):
         return to_string(self)
+
+    def __repr__(self):
+        return to_repr(self)
 
     def __setattr__(self, name, value):
         restricted_setattr(self, 'charge', name, value)
@@ -157,8 +166,11 @@ class _Arrest:
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
 
-    def __repr__(self):
+    def __str__(self):
         return to_string(self)
+
+    def __repr__(self):
+        return to_repr(self)
 
     def __setattr__(self, name, value):
         restricted_setattr(self, 'agency', name, value)
@@ -199,12 +211,14 @@ class _Charge:
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
 
-    def __repr__(self):
+    def __str__(self):
         return to_string(self)
+
+    def __repr__(self):
+        return to_repr(self)
 
     def __setattr__(self, name, value):
         restricted_setattr(self, 'sentence', name, value)
-
 
     def create_bond(self, **kwargs):
         self.bond = _Bond(**kwargs)
@@ -236,8 +250,11 @@ class _Bond:
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
 
-    def __repr__(self):
+    def __str__(self):
         return to_string(self)
+
+    def __repr__(self):
+        return to_repr(self)
 
     def __setattr__(self, name, value):
         restricted_setattr(self, 'status', name, value)
@@ -270,8 +287,11 @@ class _Sentence:
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
 
-    def __repr__(self):
+    def __str__(self):
         return to_string(self)
+
+    def __repr__(self):
+        return to_repr(self)
 
     def __setattr__(self, name, value):
         restricted_setattr(self, 'post_release_supervision_length', name, value)
@@ -286,6 +306,17 @@ def to_string(obj):
         elif val:
             out += '{}: {}'.format(key, val).split('\n')
     return '\n   '.join(out)
+
+
+def to_repr(obj):
+    plurals = {'person': 'people', 'booking': 'bookings', 'charge': 'charges'}
+    args = []
+    for key, val in vars(obj).items():
+        if val:
+            key_arg = plurals[key] if key in plurals else key
+            args.append('{}={}'.format(key_arg, repr(val)))
+
+    return '{}({})'.format(obj.__class__.__name__, ', '.join(args))
 
 
 def restricted_setattr(self, last_field, name, value):
