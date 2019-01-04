@@ -1,7 +1,7 @@
 runtime: python37
 instance_class: F2
 
-entrypoint: gunicorn -b :$PORT recidiviz.server:app
+entrypoint: gunicorn -c gunicorn.conf.py -b :$PORT recidiviz.server:app
 
 env_variables:
   RECIDIVIZ_ENV: production
