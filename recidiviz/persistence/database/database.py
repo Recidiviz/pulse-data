@@ -16,6 +16,7 @@
 # =============================================================================
 """Contains logic for communicating with a SQL Database."""
 
+from recidiviz.common.constants.mappable_enum import MappableEnum
 from recidiviz.persistence.database import database_utils
 from recidiviz.persistence.database.schema import Person, Booking
 
@@ -136,4 +137,15 @@ def update_booking(session, booking_id, **kwargs):
     """
     session.query(Booking)\
         .filter(Booking.booking_id == booking_id)\
-        .update(kwargs)
+        .update(_convert_enums_to_strings(kwargs))
+
+
+def _convert_enums_to_strings(dictionary):
+    result = {}
+    for k, v in dictionary.items():
+        if issubclass(v.__class__, MappableEnum):
+            result[k] = v.value
+        else:
+            result[k] = v
+
+    return result

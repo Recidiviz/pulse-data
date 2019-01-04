@@ -18,9 +18,10 @@
 """Constants related to a bond entity."""
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
+from recidiviz.common.constants.mappable_enum import MappableEnum
 
 
-class BondType:
+class BondType(MappableEnum):
     BOND_DENIED = enum_strings.bond_type_denied
     CASH = enum_strings.bond_type_cash
     NO_BOND = enum_strings.bond_type_no_bond
@@ -28,17 +29,17 @@ class BondType:
     UNSECURED = enum_strings.bond_type_unsecured
 
     @staticmethod
-    def from_str(label):
-        return _BOND_TYPE_MAP[label.upper()]
+    def _get_default_map():
+        return _BOND_TYPE_MAP
 
 
-class BondStatus:
+class BondStatus(MappableEnum):
     ACTIVE = enum_strings.bond_status_active
     POSTED = enum_strings.bond_status_posted
 
     @staticmethod
-    def from_str(label):
-        return _BOND_STATUS_MAP[label.upper()]
+    def _get_default_map():
+        return _BOND_STATUS_MAP
 
 
 _BOND_TYPE_MAP = {

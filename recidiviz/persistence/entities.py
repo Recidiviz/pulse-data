@@ -26,6 +26,12 @@ import datetime
 import attr
 
 from recidiviz.common.buildable_attr import BuildableAttr
+from recidiviz.common.constants.bond import BondType, BondStatus
+from recidiviz.common.constants.booking import ReleaseReason, CustodyStatus, \
+    Classification
+from recidiviz.common.constants.charge import ChargeClass, ChargeDegree, \
+    ChargeStatus, CourtType
+from recidiviz.common.constants.person import Race, Ethnicity, Gender
 
 
 @attr.s
@@ -35,10 +41,10 @@ class Person(BuildableAttr):
     given_names: str = attr.ib()
     birthdate: datetime.date = attr.ib()
     birthdate_inferred_from_age: bool = attr.ib()
-    gender: str = attr.ib()
-    race: str = attr.ib()
+    gender: Gender = attr.ib()
+    race: Race = attr.ib()
     region: str = attr.ib()
-    ethnicity: str = attr.ib()
+    ethnicity: Ethnicity = attr.ib()
     place_of_residence: str = attr.ib()
 
     person_id: int = attr.ib(default=None)
@@ -53,11 +59,11 @@ class Booking:
     release_date: datetime.date = attr.ib(default=None)
     release_date_inferred: bool = attr.ib(default=None)
     projected_release_date: datetime.date = attr.ib(default=None)
-    release_reason: str = attr.ib(default=None)
-    custody_status: str = attr.ib(default=None)
+    release_reason: ReleaseReason = attr.ib(default=None)
+    custody_status: CustodyStatus = attr.ib(default=None)
     held_for_other_jurisdiction: str = attr.ib(default=None)
     facility: str = attr.ib(default=None)
-    classification: str = attr.ib(default=None)
+    classification: Classification = attr.ib(default=None)
     last_seen_time: datetime.datetime = attr.ib(default=None)
 
     booking_id: int = attr.ib(default=None)
@@ -94,13 +100,13 @@ class Charge:
     statute: str = attr.ib(default=None)
     name: str = attr.ib(default=None)
     attempted: bool = attr.ib(default=None)
-    degree: str = attr.ib(default=None)
-    charge_class: str = attr.ib(default=None)
+    degree: ChargeDegree = attr.ib(default=None)
+    charge_class: ChargeClass = attr.ib(default=None)
     level: str = attr.ib(default=None)
     fee_dollars: int = attr.ib(default=None)
     charging_entity: str = attr.ib(default=None)
-    status: str = attr.ib(default=None)
-    court_type: str = attr.ib(default=None)
+    status: ChargeStatus = attr.ib(default=None)
+    court_type: CourtType = attr.ib(default=None)
     case_number: str = attr.ib(default=None)
     next_court_date: datetime.date = attr.ib(default=None)
     judge_name: str = attr.ib(default=None)
@@ -114,8 +120,8 @@ class Charge:
 class Bond:
     external_id: str = attr.ib(default=None)
     amount_dollars: int = attr.ib(default=None)
-    bond_type: str = attr.ib(default=None)
-    status: str = attr.ib(default=None)
+    bond_type: BondType = attr.ib(default=None)
+    status: BondStatus = attr.ib(default=None)
 
     bond_id: int = attr.ib(default=None)
 

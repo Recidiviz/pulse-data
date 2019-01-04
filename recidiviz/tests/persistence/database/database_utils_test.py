@@ -18,6 +18,12 @@
 from datetime import date, datetime
 from unittest import TestCase
 
+from recidiviz.common.constants.bond import BondType, BondStatus
+from recidiviz.common.constants.booking import CustodyStatus, ReleaseReason, \
+    Classification
+from recidiviz.common.constants.charge import ChargeDegree, ChargeClass, \
+    ChargeStatus, CourtType
+from recidiviz.common.constants.person import Gender, Race, Ethnicity
 from recidiviz.persistence import entities
 from recidiviz.persistence.database.database_utils import convert_person
 
@@ -27,10 +33,10 @@ _PERSON = entities.Person(
     given_names="given_names",
     birthdate=date(year=2000, month=1, day=2),
     birthdate_inferred_from_age=True,
-    gender="gender",
-    race="race",
+    gender=Gender.MALE,
+    race=Race.WHITE,
     region="region",
-    ethnicity="ethnicity",
+    ethnicity=Ethnicity.NOT_HISPANIC,
     place_of_residence="residence",
     person_id=1234,
     bookings=[entities.Booking(
@@ -41,11 +47,11 @@ _PERSON = entities.Person(
         release_date=date(year=2000, month=1, day=4),
         release_date_inferred=True,
         projected_release_date=date(year=2000, month=1, day=5),
-        release_reason="release_reason",
-        custody_status="custody_status",
+        release_reason=ReleaseReason.INFERRED_RELEASE,
+        custody_status=CustodyStatus.IN_CUSTODY,
         held_for_other_jurisdiction="held_for_other_jurisdiction",
         facility="facility",
-        classification="classification",
+        classification=Classification.HIGH,
         last_seen_time=datetime(year=2000, month=1, day=6, hour=13),
         holds=[entities.Hold(
             hold_id=3456,
@@ -69,13 +75,13 @@ _PERSON = entities.Person(
             statute="statute",
             name="name",
             attempted=True,
-            degree="degree",
-            charge_class="charge_class",
+            degree=ChargeDegree.FIRST,
+            charge_class=ChargeClass.FELONY,
             level="level",
             fee_dollars=1,
             charging_entity="charging_entity",
-            status="status",
-            court_type="court_type",
+            status=ChargeStatus.DROPPED,
+            court_type=CourtType.CIRCUIT,
             case_number="case_number",
             next_court_date=date(year=2000, month=1, day=7),
             judge_name="judge_name",
@@ -84,8 +90,8 @@ _PERSON = entities.Person(
                 bond_id=6789,
                 external_id="external_id",
                 amount_dollars=2,
-                bond_type="bond_type",
-                status="status"
+                bond_type=BondType.BOND_DENIED,
+                status=BondStatus.ACTIVE
             ),
             sentence=entities.Sentence(
                 sentence_id="sentence_id",
