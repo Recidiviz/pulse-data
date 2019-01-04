@@ -35,6 +35,7 @@ requiring the database to be updated when an enum value is created or removed.
 
 gender_female = 'FEMALE'
 gender_male = 'MALE'
+gender_other = 'OTHER'
 gender_trans_female = 'TRANS_FEMALE'
 gender_trans_male = 'TRANS_MALE'
 

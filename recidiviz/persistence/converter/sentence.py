@@ -26,7 +26,7 @@ def convert(proto):
 
     new.external_id = fn(normalize, 'sentence_id', proto)
     new.date_imposed = fn(parse_date, 'date_imposed', proto)
-    new.county_of_commitment = fn(normalize, 'county_of_commitment', proto)
+    new.sentencing_region = fn(normalize, 'sentencing_region', proto)
     new.min_length_days = fn(parse_days, 'min_length', proto)
     new.max_length_days = fn(parse_days, 'max_length', proto)
     new.is_life = fn(parse_bool, 'is_life', proto)
