@@ -138,4 +138,4 @@ class Sentence:
 
     # To avoid recursive references, store only 1 level of related_sentences
     # (ie. don't store related_sentences of these related_sentences).
-    related_sentences: List['Sentence'] = attr.ib(default=None)
+    related_sentences: List['Sentence'] = attr.ib(factory=list)
