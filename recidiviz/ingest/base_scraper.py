@@ -42,10 +42,10 @@ In order to sublcass this the following functions must be implemented:
 import abc
 import logging
 
+import dateparser
 from lxml import html
 from lxml.etree import XMLSyntaxError  # pylint:disable=no-name-in-module
 
-from recidiviz.common import common_utils
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence import persistence
 from recidiviz.ingest import constants, ingest_utils
@@ -176,8 +176,7 @@ class BaseScraper(Scraper):
             if not ingest_info:
                 raise ValueError(
                     'IngestInfo must be populated if there are no more tasks')
-            scraper_start_time = common_utils.parse_datetime_string(
-                params['scraper_start_time'])
+            scraper_start_time = dateparser.parse(params['scraper_start_time'])
             logging.info('Writing the ingest_info to the database for %s:',
                          self.region.region_code)
             logging.info(ingest_info)

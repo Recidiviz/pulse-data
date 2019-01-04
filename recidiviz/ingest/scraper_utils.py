@@ -20,78 +20,13 @@
 that does not depend on member data.
 """
 
-from datetime import date
 import base64
-import logging
 import zlib
 
-from recidiviz.common import common_utils
 from recidiviz.utils import environment
 from recidiviz.utils import secrets
 
 DATETIME_STR_FORMAT = '%Y-%m-%d %H:%M:%S'
-
-
-def parse_date_string(date_string, person_id=None):
-    """Converts string describing date to Python date object
-
-    Args:
-        date_string: (string) Scraped string containing a date
-        person_id: (string) Person ID this date is for, for logging
-
-    Returns:
-        Python date object representing the date parsed from the string, or
-        None if string wasn't one of our expected values (this is common,
-        often NONE or LIFE are put in for these if life sentence).
-
-    """
-
-    result = None
-    try:
-        result = common_utils.parse_date_string(date_string)
-    except Exception:
-        if person_id:
-            logging.debug("Error parsing datetime for person '%s'", person_id)
-    return result
-
-
-def normalize_key_value_row(row_data):
-    """Removes extraneous whitespace from scraped data
-
-    Removes extraneous (leading, trailing, internal) whitespace from scraped
-    data.
-
-    Args:
-        row_data: (list) One row of data in a list (key/value pair)
-
-    Returns:
-        Tuple of cleaned strings, in the order provided.
-    """
-    key = ' '.join(row_data[0].text_content().split())
-    value = ' '.join(row_data[1].text_content().split())
-    return key, value
-
-
-def calculate_age(birthdate, check_date=None):
-    """Converts birth date to age during current scrape.
-
-    Determines age of person based on her or his birth date. Note: We don't
-    know the timezone of birth, so we use local time for us. Result may be
-    off by up to a day.
-
-    Args:
-        birthdate: (date) Date of birth as reported by prison system
-        check_date: (date) The date to compare against, defaults to today
-
-    Returns:
-        (int) Age of person
-    """
-    if check_date is None:
-        check_date = date.today()
-
-    return None if birthdate is None else \
-        check_date.year - birthdate.year - \
-        ((check_date.month, check_date.day) < (birthdate.month, birthdate.day))
 
 
 def get_value_from_html_tree(html_tree, attribute_value, attribute_name='id'):
@@ -194,24 +129,6 @@ def get_headers():
 
     headers = {'User-Agent': user_agent_string}
     return headers
-
-
-def currency_to_float(currency):
-    """Converts a given currency string value to a float.  This function has
-    limited uses currently as it only works when the given currency starts with
-    a currency symbol.
-
-    Args:
-        currency: A string representing the dollar currency dollar amount.
-
-    Returns:
-        A float representing the currency.
-    """
-    try:
-        return float(currency[1:].replace(',', ''))
-    except ValueError:
-        logging.debug("Could not convert '%s' to float", currency)
-        return None
 
 
 def compress_string(s, level=1):

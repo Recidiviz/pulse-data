@@ -17,8 +17,8 @@
 """Utils for converting individual data fields."""
 import datetime
 from distutils.util import strtobool  # pylint: disable=no-name-in-module
+import dateparser
 
-from recidiviz.common import common_utils
 from recidiviz.common.constants.person import Ethnicity, Race
 
 
@@ -83,7 +83,7 @@ def parse_date(date_string):
     """
     if date_string == '' or date_string.isspace():
         return None
-    parsed_date = common_utils.parse_datetime_string(date_string)
+    parsed_date = dateparser.parse(date_string)
     if not parsed_date:
         raise ValueError('cannot parse date: %s' % parsed_date)
     return parsed_date
@@ -123,10 +123,15 @@ def parse_days(time_string):
     if time_string == '' or time_string.isspace():
         return 0
     try:
-        # TODO: use dateparser in Python3 (#176)
         return int(time_string)
-    except Exception:
-        raise ValueError('cannot parse time duration: %s' % time_string)
+    except ValueError:
+        # dateparser.parse interprets the string '1 YEAR 2 DAYS' to mean the
+        # datetime 1 year and 2 days ago.
+        date_ago = dateparser.parse(time_string)
+        if date_ago:
+            return (datetime.datetime.now() - date_ago).days
+
+    raise ValueError('cannot parse time duration: %s' % time_string)
 
 
 def split_full_name(full_name):
