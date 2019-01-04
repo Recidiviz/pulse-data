@@ -317,8 +317,6 @@ def test_bad_labels():
     booking.booking_id = '00119283'
     booking.admission_date = '07/19/2018 14:24'
     booking.facility = 'MCSO'
-    arrest = booking.create_arrest()
-    arrest.date = ''
     charge = booking.create_charge()
     bond = charge.create_bond()
     bond.amount = '$100,000.00'
@@ -359,8 +357,6 @@ def test_text_label():
     charge1.status = 'DISM'
     charge1.name = 'CHARGE 1'
     charge1.degree = 'FEL'
-    bond1 = charge1.create_bond()
-    bond1.amount = ''
     charge2 = booking.create_charge()
     charge2.statute = '245(A)(4)'
     charge2.status = 'SENT'

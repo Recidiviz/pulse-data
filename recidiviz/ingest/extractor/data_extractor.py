@@ -167,7 +167,7 @@ class DataExtractor:
             # TODO 183: actually have real warning codes
             warnings.warn("The following keys could not be found: %s" %
                           needed_keys)
-        return ingest_info
+        return ingest_info.prune()
 
     def _set_or_create_object(
             self, ingest_info, class_to_set, ingest_key, values):
