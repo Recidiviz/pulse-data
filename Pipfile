@@ -88,6 +88,7 @@ grpcio = "*"
 gunicorn = {version = "*", extras = ["eventlet"]}
 google-cloud-logging = "*"
 pymysql = "*"
+deepdiff = "*"
 
 [dev-packages]
 rope = "*"
