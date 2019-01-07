@@ -19,14 +19,14 @@ from recidiviz.common.constants.charge import ChargeDegree, ChargeClass, \
     ChargeStatus, CourtType
 from recidiviz.persistence import entities
 from recidiviz.persistence.converter.converter_utils import normalize, fn, \
-    parse_date, parse_bool, parse_dollars
+    parse_date, parse_bool, parse_dollars, parse_external_id
 
 
 def convert(proto):
     """Converts an ingest_info proto Arrest to a persistence entity."""
     new = entities.Charge()
 
-    new.external_id = fn(normalize, 'charge_id', proto)
+    new.external_id = fn(parse_external_id, 'charge_id', proto)
     new.offense_date = fn(parse_date, 'offense_date', proto)
     new.statute = fn(normalize, 'statute', proto)
     new.name = fn(normalize, 'name', proto)

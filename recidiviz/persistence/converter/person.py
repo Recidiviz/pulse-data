@@ -18,7 +18,7 @@
 from recidiviz.common.constants.person import Ethnicity, Race, Gender
 from recidiviz.persistence.converter import converter_utils
 from recidiviz.persistence.converter.converter_utils import fn, normalize, \
-    split_full_name, parse_date, calculate_birthdate_from_age
+    split_full_name, parse_date, calculate_birthdate_from_age, parse_external_id
 
 
 def copy_fields_to_builder(person_builder, proto, metadata):
@@ -29,7 +29,7 @@ def copy_fields_to_builder(person_builder, proto, metadata):
      """
     new = person_builder
 
-    new.external_id = fn(normalize, 'person_id', proto)
+    new.external_id = fn(parse_external_id, 'person_id', proto)
     new.surname, new.given_names = _parse_name(proto)
     new.birthdate, new.birthdate_inferred_from_age = _parse_birthdate(proto)
     new.race, new.ethnicity = _parse_race_and_ethnicity(proto)
