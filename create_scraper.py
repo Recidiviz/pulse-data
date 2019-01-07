@@ -101,17 +101,20 @@ def append_to_config_files(subs):
     with open(os.path.join(top_level_path, 'queue.yaml'), 'a') as queue_file:
         queue_file.write(Template(queue_text).safe_substitute(subs))
 
-    region_text = """
-  $region:
+    region_text = """  $region:
     agency_name: $agency
     region_code: $region
     agency_type: $agency_type
     queue: $region_dashes-scraper
     base_url: $url
-    names_file: $names_file
     scraper_package: $region
     timezone: $timezone
 """
+
+    # only include `names_file` if it is provided
+    if 'names_file' in subs:
+        region_text += "    names_file: $names_file\n"
+
     manifest_path = os.path.join(top_level_path, 'region_manifest.yaml')
     with open(manifest_path, 'a') as region_file:
         region_file.write(Template(region_text).safe_substitute(subs))

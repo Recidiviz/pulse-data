@@ -169,13 +169,17 @@ def load_target_list(scrape_key, given_names="", surname=""):
     logging.info("Getting target list for scraper: %s", scrape_key)
 
     if scrape_key.scrape_type == constants.BACKGROUND_SCRAPE:
-        name_list_file = regions.Region(scrape_key.region_code).names_file
+        region = regions.Region(scrape_key.region_code)
+        if region.names_file is not None:
+            name_list_file = regions.Region(scrape_key.region_code).names_file
+            filename = FILENAME_PREFIX + name_list_file
 
-        # Construct filename, process user-supplied name query (if provided)
-        filename = FILENAME_PREFIX + name_list_file
-        query_name = (surname, given_names) if surname or given_names else None
+            query_name = \
+                (surname, given_names) if surname or given_names else None
 
-        load_background_target_list(scrape_key, filename, query_name)
+            load_background_target_list(scrape_key, filename, query_name)
+        else:
+            load_empty_message(scrape_key)
 
 
 def load_background_target_list(scrape_key, name_file, query_name):
@@ -234,6 +238,22 @@ def load_background_target_list(scrape_key, name_file, query_name):
     for future in futures:
         future.result()
     logging.info("Finished loading background target list to docket.")
+
+
+def load_empty_message(scrape_key):
+    """Loads an empty message onto background scrape docket for region.
+
+    This region does not use a list of names for background scrapes so only an
+    empty message is necessary to start the scrape.
+
+    Args:
+        scrape_key: (ScrapeKey) Scrape key
+
+    Returns:
+        N/A
+    """
+    _add_to_query_docket(scrape_key, "empty").result()
+    logging.info("Finished loading empty background message to docket.")
 
 
 @environment.test_only
