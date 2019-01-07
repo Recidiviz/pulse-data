@@ -18,14 +18,15 @@
 from recidiviz.common.constants.bond import BondType, BondStatus
 from recidiviz.persistence import entities
 from recidiviz.persistence.converter import converter_utils
-from recidiviz.persistence.converter.converter_utils import fn, normalize
+from recidiviz.persistence.converter.converter_utils import fn, \
+    parse_external_id
 
 
 def convert(proto):
     """Converts an ingest_info proto Bond to a persistence entity."""
     new = entities.Bond()
 
-    new.external_id = fn(normalize, 'bond_id', proto)
+    new.external_id = fn(parse_external_id, 'bond_id', proto)
     new.amount_dollars, inferred_bond_type = fn(
         converter_utils.parse_bond_amount_and_infer_type, 'amount', proto,
         (None, None)) # default to a pair of Nones instead of None

@@ -111,9 +111,9 @@ def test_convert_ingest_info_id_is_generated():
     expected_proto = ingest_info_pb2.IngestInfo()
     proto_person = expected_proto.people.add()
     proto_person.surname = 'testname'
-    proto_person.person_id = str(id(person)) + '_generate'
+    proto_person.person_id = str(id(person)) + '_GENERATE'
     proto_booking = expected_proto.bookings.add()
-    proto_booking.booking_id = str(id(booking)) + '_generate'
+    proto_booking.booking_id = str(id(booking)) + '_GENERATE'
     proto_person.booking_ids.append(proto_booking.booking_id)
 
     proto = ingest_utils.convert_ingest_info_to_proto(info)
@@ -169,13 +169,13 @@ def test_convert_ingest_info_one_charge_to_one_bond():
     charge.charge_id = 'id1'
     proto_bond1 = expected_proto.bonds.add()
     proto_bond1.amount = '$1'
-    proto_bond1.bond_id = str(id(bond1)) + '_generate'
+    proto_bond1.bond_id = str(id(bond1)) + '_GENERATE'
     charge.bond_id = proto_bond1.bond_id
     charge = expected_proto.charges.add()
     charge.charge_id = 'id2'
     proto_bond2 = expected_proto.bonds.add()
     proto_bond2.amount = '$1'
-    proto_bond2.bond_id = str(id(bond2)) + '_generate'
+    proto_bond2.bond_id = str(id(bond2)) + '_GENERATE'
     charge.bond_id = proto_bond2.bond_id
 
     proto = ingest_utils.convert_ingest_info_to_proto(info)
@@ -207,7 +207,7 @@ def test_convert_ingest_info_many_charge_to_one_bond():
     charge.charge_id = 'id1'
     proto_bond = expected_proto.bonds.add()
     proto_bond.amount = '$1'
-    proto_bond.bond_id = str(id(bond1)) + '_generate'
+    proto_bond.bond_id = str(id(bond1)) + '_GENERATE'
     charge.bond_id = proto_bond.bond_id
     charge = expected_proto.charges.add()
     charge.charge_id = 'id2'

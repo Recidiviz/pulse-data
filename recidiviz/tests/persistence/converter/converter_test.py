@@ -70,6 +70,44 @@ class TestConverter(unittest.TestCase):
 
         self.assertEqual(result, expected_result)
 
+    def testConvert_FullIngestInfo_GeneratedIds(self):
+        # Arrange
+        metadata = IngestMetadata('REGION', 'LAST_SEEN_TIME')
+
+        ingest_info = IngestInfo()
+        ingest_info.people.add(person_id='PERSON_ID_GENERATE',
+                               booking_ids=['BOOKING_ID_GENERATE'])
+        ingest_info.bookings.add(booking_id='BOOKING_ID_GENERATE',
+                                 arrest_id='ARREST_ID_GENERATE',
+                                 charge_ids=['CHARGE_ID_GENERATE'])
+        ingest_info.arrests.add(arrest_id='ARREST_ID_GENERATE', agency='PD')
+        ingest_info.charges.add(charge_id='CHARGE_ID_GENERATE', name='DUI',
+                                bond_id='BOND_ID_GENERATE',
+                                sentence_id='SENTENCE_ID_GENERATE')
+        ingest_info.bonds.add(bond_id='BOND_ID_GENERATE')
+        ingest_info.sentences.add(sentence_id='SENTENCE_ID_GENERATE',
+                                  is_life='True')
+
+        # Act
+        result = converter.convert(ingest_info, metadata)
+
+        # Assert
+        expected_result = [Person.new_with_none_defaults(
+            region='REGION',
+            bookings=[Booking(
+                last_seen_time='LAST_SEEN_TIME',
+                custody_status=CustodyStatus.IN_CUSTODY,
+                arrest=Arrest(agency='PD'),
+                charges=[Charge(
+                    status=ChargeStatus.PENDING,
+                    name='DUI',
+                    bond=Bond(),
+                    sentence=Sentence(is_life=True)
+                )]
+            )])]
+
+        self.assertEqual(result, expected_result)
+
     def testConvert_TotalBondNoCharge_CreatesChargeWithTotalBondAmount(self):
         # Arrange
         metadata = IngestMetadata.new_with_none_defaults()

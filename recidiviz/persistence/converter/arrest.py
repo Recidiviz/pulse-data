@@ -17,14 +17,14 @@
 """Converts an ingest_info proto Arrest to a persistence entity."""
 from recidiviz.persistence import entities
 from recidiviz.persistence.converter.converter_utils import normalize, \
-    parse_date, fn
+    parse_date, fn, parse_external_id
 
 
 def convert(proto):
     """Converts an ingest_info proto Arrest to a persistence entity."""
     new = entities.Arrest()
 
-    new.external_id = fn(normalize, 'arrest_id', proto)
+    new.external_id = fn(parse_external_id, 'arrest_id', proto)
     new.date = fn(parse_date, 'date', proto)
     new.location = fn(normalize, 'location', proto)
     new.agency = fn(normalize, 'agency', proto)

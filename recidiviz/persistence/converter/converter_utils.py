@@ -19,7 +19,7 @@ import datetime
 from distutils.util import strtobool  # pylint: disable=no-name-in-module
 import dateparser
 
-
+from recidiviz.common import common_utils
 from recidiviz.common.constants.bond import BondType
 from recidiviz.common.constants.mappable_enum import EnumParsingError
 from recidiviz.common.constants.person import Ethnicity, Race
@@ -32,6 +32,14 @@ def fn(func, field_name, proto, default=None):
     if not proto.HasField(field_name):
         return default
     return func(getattr(proto, field_name))
+
+
+def parse_external_id(id_str):
+    """If the supplied |id_str| is generated, returns None. Otherwise
+    returns the normalized version of the provided |id_str|"""
+    if common_utils.is_generated_id(id_str):
+        return None
+    return normalize(id_str)
 
 
 def normalize(s):
