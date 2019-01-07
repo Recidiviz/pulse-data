@@ -46,8 +46,10 @@ _BOND_TYPE_MAP = {
     'BOND DENIED': BondType.BOND_DENIED,
     'CASH': BondType.CASH,
     'NO BOND': BondType.NO_BOND,
+    'ROR': BondType.NO_BOND,
     'SECURED': BondType.SECURED,
     'UNSECURED': BondType.UNSECURED,
+    'SURETY BOND': BondType.UNSECURED
 }
 
 _BOND_STATUS_MAP = {
