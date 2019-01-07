@@ -128,7 +128,9 @@ class DataExtractor:
         Returns:
             A populated ingest data model for a scrape.
         """
-        self._set_all_cells(copy.deepcopy(content))
+        content_copy = copy.deepcopy(content)
+        DataExtractor._process_html(content_copy)
+        self._set_all_cells(content_copy)
         if not ingest_info:
             ingest_info = IngestInfo()
 
@@ -168,6 +170,19 @@ class DataExtractor:
             warnings.warn("The following keys could not be found: %s" %
                           needed_keys)
         return ingest_info.prune()
+
+    @staticmethod
+    def _process_html(content):
+        """Cleans up the provided content."""
+        # Remove <script> elements
+        for script in content.xpath('//script'):
+            parent = script.getparent()
+            if parent is not None:
+                parent.remove(script)
+
+        # Format line breaks as newlines
+        for br in content.xpath('//br'):
+            br.tail = '\n' + br.tail if br.tail else '\n'
 
     def _set_or_create_object(
             self, ingest_info, class_to_set, ingest_key, values):
