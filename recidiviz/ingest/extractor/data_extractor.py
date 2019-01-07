@@ -131,7 +131,7 @@ class DataExtractor:
         content_copy = copy.deepcopy(content)
         DataExtractor._process_html(content_copy)
         self._set_all_cells(content_copy)
-        if not ingest_info:
+        if ingest_info is None:
             ingest_info = IngestInfo()
 
         # We use this set to keep track of keys we have seen, by the end of this
