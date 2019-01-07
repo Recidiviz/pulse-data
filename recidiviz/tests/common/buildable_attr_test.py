@@ -24,7 +24,7 @@ from recidiviz.common.buildable_attr import BuildableAttr
 
 
 @attr.s
-class TestBuildableAttr(BuildableAttr):
+class FakeBuildableAttr(BuildableAttr):
     required_field = attr.ib()
     field_with_default = attr.ib(factory=list)
 
@@ -34,14 +34,14 @@ class BuildableAttrTests(unittest.TestCase):
 
     def testBuild_WithRequiredFields_BuildsAttr(self):
         # Arrange
-        subject = TestBuildableAttr.builder()
+        subject = FakeBuildableAttr.builder()
         subject.required_field = "TEST"
 
         # Act
         result = subject.build()
 
         # Assert
-        expected_result = TestBuildableAttr(
+        expected_result = FakeBuildableAttr(
             required_field="TEST",
             field_with_default=[]
         )
@@ -50,20 +50,20 @@ class BuildableAttrTests(unittest.TestCase):
 
     def testBuild_MissingRequiredField_RaisesException(self):
         # Arrange
-        subject = TestBuildableAttr.builder()
+        subject = FakeBuildableAttr.builder()
 
         # Act + Assert
-        with self.assertRaises(TestBuildableAttr.BuilderException):
+        with self.assertRaises(FakeBuildableAttr.BuilderException):
             subject.build()
 
     def testBuild_ExtraField_RaisesException(self):
         # Arrange
-        subject = TestBuildableAttr.builder()
+        subject = FakeBuildableAttr.builder()
         subject.required_field = "TEST"
         subject.not_a_real_field = "TEST_2"
 
         # Act + Assert
-        with self.assertRaises(TestBuildableAttr.BuilderException):
+        with self.assertRaises(FakeBuildableAttr.BuilderException):
             subject.build()
 
     def testInstantiateAbstractBuildableAttr_RaisesException(self):
