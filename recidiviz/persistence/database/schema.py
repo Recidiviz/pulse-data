@@ -52,7 +52,8 @@ Base: DeclarativeMeta = declarative_base()
 
 # Person
 
-gender_values = (enum_strings.gender_female,
+gender_values = (enum_strings.external_unknown,
+                 enum_strings.gender_female,
                  enum_strings.gender_male,
                  enum_strings.gender_other,
                  enum_strings.gender_trans_female,
@@ -61,12 +62,13 @@ gender_values = (enum_strings.gender_female,
 race_values = (enum_strings.race_american_indian,
                enum_strings.race_asian,
                enum_strings.race_black,
-               enum_strings.race_external_unknown,
+               enum_strings.external_unknown,
                enum_strings.race_hawaiian,
                enum_strings.race_other,
                enum_strings.race_white)
 
-ethnicity_values = (enum_strings.ethnicity_hispanic,
+ethnicity_values = (enum_strings.external_unknown,
+                    enum_strings.ethnicity_hispanic,
                     enum_strings.ethnicity_not_hispanic)
 
 # Booking
@@ -77,6 +79,7 @@ release_reason_values = (enum_strings.release_reason_acquittal,
                          enum_strings.release_reason_death,
                          enum_strings.release_reason_escape,
                          enum_strings.release_reason_expiration,
+                         enum_strings.external_unknown,
                          enum_strings.release_reason_inferred,
                          enum_strings.release_reason_recognizance,
                          enum_strings.release_reason_parole,
@@ -88,7 +91,8 @@ custody_status_values = (enum_strings.custody_status_escaped,
                          enum_strings.custody_status_in_custody,
                          enum_strings.custody_status_released)
 
-classification_values = (enum_strings.classification_high,
+classification_values = (enum_strings.external_unknown,
+                         enum_strings.classification_high,
                          enum_strings.classification_low,
                          enum_strings.classification_maximum,
                          enum_strings.classification_medium,
@@ -103,6 +107,7 @@ hold_status_values = (enum_strings.hold_status_active,
 # Bond
 
 bond_type_values = (enum_strings.bond_type_denied,
+                    enum_strings.external_unknown,
                     enum_strings.bond_type_cash,
                     enum_strings.bond_type_no_bond,
                     enum_strings.bond_type_secured,
@@ -119,12 +124,13 @@ sentence_relationship_type_values = (
 
 # Charge
 
-degree_values = (enum_strings.degree_first,
+degree_values = (enum_strings.external_unknown,
+                 enum_strings.degree_first,
                  enum_strings.degree_second,
                  enum_strings.degree_third)
 
 charge_class_values = (enum_strings.charge_class_civil,
-                       enum_strings.charge_class_external_unknown,
+                       enum_strings.external_unknown,
                        enum_strings.charge_class_felony,
                        enum_strings.charge_class_misdemeanor,
                        enum_strings.charge_class_parole_violation,
@@ -134,12 +140,14 @@ charge_status_values = (enum_strings.charge_status_acquitted,
                         enum_strings.charge_status_completed,
                         enum_strings.charge_status_convicted,
                         enum_strings.charge_status_dropped,
+                        enum_strings.external_unknown,
                         enum_strings.charge_status_pending,
                         enum_strings.charge_status_pretrial,
                         enum_strings.charge_status_sentenced)
 
 court_type_values = (enum_strings.court_type_circuit,
                      enum_strings.court_type_district,
+                     enum_strings.external_unknown,
                      enum_strings.court_type_other,
                      enum_strings.court_type_superior)
 

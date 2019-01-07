@@ -30,6 +30,13 @@ us to structure the application layer code any way we want, while only
 requiring the database to be updated when an enum value is created or removed.
 """
 
+# Shared
+
+# This value should be used ONLY in cases where the external data source
+# explicitly specifies a value as "unknown". It should NOT be treated as a
+# default value for enums that are not provided (which should be represented
+# with None/NULL).
+external_unknown = 'EXTERNAL_UNKNOWN'
 
 # Person
 
@@ -42,7 +49,6 @@ gender_trans_male = 'TRANS_MALE'
 race_american_indian = 'AMERICAN_INDIAN/ALASKAN_NATIVE'
 race_asian = 'ASIAN'
 race_black = 'BLACK'
-race_external_unknown = 'EXTERNAL_UNKNOWN'
 race_hawaiian = 'NATIVE_HAWAIIAN/PACIFIC_ISLANDER'
 race_other = 'OTHER'
 race_white = 'WHITE'
@@ -104,7 +110,6 @@ degree_second = 'SECOND'
 degree_third = 'THIRD'
 
 charge_class_civil = 'CIVIL'
-charge_class_external_unknown = 'EXTERNAL_UNKNOWN'
 charge_class_felony = 'FELONY'
 charge_class_misdemeanor = 'MISDEMEANOR'
 charge_class_parole_violation = 'PAROLE_VIOLATION'

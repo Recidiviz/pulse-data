@@ -22,6 +22,7 @@ from recidiviz.common.constants.mappable_enum import MappableEnum
 
 
 class ChargeDegree(MappableEnum):
+    EXTERNAL_UNKNOWN = enum_strings.external_unknown
     FIRST = enum_strings.degree_first
     SECOND = enum_strings.degree_second
     THIRD = enum_strings.degree_third
@@ -33,7 +34,7 @@ class ChargeDegree(MappableEnum):
 
 class ChargeClass(MappableEnum):
     CIVIL = enum_strings.charge_class_civil
-    EXTERNAL_UNKNOWN = enum_strings.charge_class_external_unknown
+    EXTERNAL_UNKNOWN = enum_strings.external_unknown
     FELONY = enum_strings.charge_class_felony
     MISDEMEANOR = enum_strings.charge_class_misdemeanor
     PAROLE_VIOLATION = enum_strings.charge_class_parole_violation
@@ -49,6 +50,7 @@ class ChargeStatus(MappableEnum):
     COMPLETED_SENTENCE = enum_strings.charge_status_completed
     CONVICTED = enum_strings.charge_status_convicted
     DROPPED = enum_strings.charge_status_dropped
+    EXTERNAL_UNKNOWN = enum_strings.external_unknown
     PENDING = enum_strings.charge_status_pending
     PRETRIAL = enum_strings.charge_status_pretrial
     SENTENCED = enum_strings.charge_status_sentenced
@@ -61,6 +63,7 @@ class ChargeStatus(MappableEnum):
 class CourtType(MappableEnum):
     CIRCUIT = enum_strings.court_type_circuit
     DISTRICT = enum_strings.court_type_district
+    EXTERNAL_UNKNOWN = enum_strings.external_unknown
     OTHER = enum_strings.court_type_other
     SUPERIOR = enum_strings.court_type_superior
 
@@ -70,12 +73,13 @@ class CourtType(MappableEnum):
 
 
 _CHARGE_DEGREE_MAP = {
-    'FIRST': ChargeDegree.FIRST,
     '1ST': ChargeDegree.FIRST,
-    'SECOND': ChargeDegree.SECOND,
     '2ND': ChargeDegree.SECOND,
-    'THIRD': ChargeDegree.THIRD,
     '3RD': ChargeDegree.THIRD,
+    'FIRST': ChargeDegree.FIRST,
+    'SECOND': ChargeDegree.SECOND,
+    'THIRD': ChargeDegree.THIRD,
+    'UNKNOWN': ChargeDegree.EXTERNAL_UNKNOWN,
 }
 
 
@@ -97,6 +101,7 @@ _CHARGE_STATUS_MAP = {
     'PENDING': ChargeStatus.PENDING,
     'PRETRIAL': ChargeStatus.PRETRIAL,
     'SENTENCED': ChargeStatus.SENTENCED,
+    'UNKNOWN': ChargeStatus.EXTERNAL_UNKNOWN,
 }
 
 
@@ -105,4 +110,5 @@ _COURT_TYPE_MAP = {
     'DISTRICT': CourtType.DISTRICT,
     'OTHER': CourtType.OTHER,
     'SUPERIOR': CourtType.SUPERIOR,
+    'UNKNOWN': CourtType.EXTERNAL_UNKNOWN,
 }
