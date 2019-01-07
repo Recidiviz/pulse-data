@@ -22,6 +22,7 @@ from recidiviz.common.constants.mappable_enum import MappableEnum
 
 
 class Classification(MappableEnum):
+    EXTERNAL_UNKNOWN = enum_strings.external_unknown
     HIGH = enum_strings.classification_high
     LOW = enum_strings.classification_low
     MAXIMUM = enum_strings.classification_maximum
@@ -52,6 +53,7 @@ class ReleaseReason(MappableEnum):
     DEATH = enum_strings.release_reason_death
     ESCAPE = enum_strings.release_reason_escape
     EXPIRATION_OF_SENTENCE = enum_strings.release_reason_expiration
+    EXTERNAL_UNKNOWN = enum_strings.external_unknown
     INFERRED_RELEASE = enum_strings.release_reason_inferred
     OWN_RECOGNIZANCE = enum_strings.release_reason_recognizance
     PAROLE = enum_strings.release_reason_parole
@@ -69,7 +71,8 @@ _CLASSIFICATION_MAP = {
     'MAXIMUM': Classification.MAXIMUM,
     'MEDIUM': Classification.MEDIUM,
     'MINIMUM': Classification.MINIMUM,
-    'WORK RELEASE': Classification.WORK_RELEASE
+    'UNKNOWN': Classification.EXTERNAL_UNKNOWN,
+    'WORK RELEASE': Classification.WORK_RELEASE,
 }
 
 
@@ -93,4 +96,5 @@ _RELEASE_REASON_MAP = {
     'PAROLE': ReleaseReason.PAROLE,
     'PROBATION': ReleaseReason.PROBATION,
     'TRANSFER': ReleaseReason.TRANSFER,
+    'UNKNOWN': ReleaseReason.EXTERNAL_UNKNOWN,
 }
