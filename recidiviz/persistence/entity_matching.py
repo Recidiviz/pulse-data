@@ -150,4 +150,4 @@ def _get_only_match(db_entity, ingested_entities, matcher):
 
 def _get_all_matches(db_entity, ingested_entities, matcher):
     return [ingested_entity for ingested_entity in ingested_entities
-            if matcher(db_entity, ingested_entity)]
+            if matcher(db_entity=db_entity, ingested_entity=ingested_entity)]

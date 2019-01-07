@@ -231,7 +231,6 @@ def load_background_target_list(scrape_key, name_file, query_name):
                      str(query_name))
         futures.append(_add_to_query_docket(scrape_key, query_name))
 
-    # TODO(#176): wrap with concurrent.futures.as_completed
     for future in futures:
         future.result()
     logging.info("Finished loading background target list to docket.")
