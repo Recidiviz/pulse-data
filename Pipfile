@@ -89,6 +89,7 @@ gunicorn = {version = "*", extras = ["eventlet"]}
 google-cloud-logging = "*"
 pymysql = "*"
 deepdiff = "*"
+mypy = "*"
 
 [dev-packages]
 rope = "*"

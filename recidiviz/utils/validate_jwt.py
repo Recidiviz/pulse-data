@@ -109,5 +109,5 @@ def get_iap_key(key_id):
 # Used to cache the Identity-Aware Proxy public keys.  This code only
 # refetches the file when a JWT is signed with a key not present in
 # this cache.
-get_iap_key.key_cache = {}
+get_iap_key.key_cache = {}  # type: ignore
 # [END iap_validate_jwt]

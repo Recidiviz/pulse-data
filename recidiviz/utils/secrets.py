@@ -18,6 +18,7 @@
 """Secrets for use at runtime."""
 
 import logging
+from typing import Dict
 
 from google.cloud import datastore
 from recidiviz.utils import environment
@@ -38,7 +39,7 @@ def clear_ds():
     _ds = None
 
 SECRET_KIND = "Secret"
-CACHED_SECRETS = {}
+CACHED_SECRETS: Dict[str, str] = {}
 
 def get_secret(name):
     """Retrieve secret from local cache or datastore
