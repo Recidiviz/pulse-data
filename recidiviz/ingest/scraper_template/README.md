@@ -1,6 +1,9 @@
 
 Creating a Scraper
 ==================
+Before doing anything, setup your environment by running `pipenv install` in the top level directory.
+Enter your environment with `pipenv shell `.  Next you'll be ready to create the scraper.
+
 From the top level `pulse-data` directory, run the `create_scraper.py`
 script to create the relevant files for a new scraper.
 
@@ -83,7 +86,7 @@ For convenience, there also exists `SCRAPE_DATA_AND_MORE` which calls both `get_
 Most website rosters follow a couple of familiar formats. For examples, refer to
 these scrapers:
  - Data about multiple people on a single page:
-   [TODO(210)](https://github.com/Recidiviz/pulse-data/issues/210)
+   [UsFlMartinScraper](https://github.com/Recidiviz/pulse-data/tree/master/recidiviz/ingest/us_fl_martin)
  - Multiple results pages with links to individual people:
    [BrooksJeffreyScraper](../vendors/brooks_jeffrey/brooks_jeffrey_scraper.py)
  - Data about an individual person spread across multiple pages:
@@ -92,19 +95,20 @@ these scrapers:
 Scraping Data
 --------
 Data is scraped in `populate_data`, which receives an
-[IngestInfo](../models/ingest_info.py) object as a parameter, populates it with
-data, and returns it as a result.  Documentation for all of the fields are found [here](https://github.com/Recidiviz/pulse-data/tree/master/recidiviz/ingest/models/README.md)
+[IngestInfo](https://github.com/Recidiviz/pulse-data/tree/master/recidiviz/ingest/models/README.md) object as a parameter, populates it with
+data, and returns it as a result.
 
-The [IngestInfo](../models/ingest_info.py) object contains classes that represent
-information about a Person, Booking, Arrest, Charge, and Bond.
+The [IngestInfo](https://github.com/Recidiviz/pulse-data/tree/master/recidiviz/ingest/models/README.md) object contains classes that represent
+information about a Person, Booking, Arrest, Charge, and Bond.  Read the README linked here to understand
+what each of the fields means.
 
 You can populate the IngestInfo object manually, or use the
-[DataExtractor](../extractor/data_extractor.py) class to populate it
+[DataExtractor](https://github.com/Recidiviz/pulse-data/tree/master/recidiviz/ingest/extractor/README.md) class to populate it
 automatically.
 
 ### Automatic Data Extraction
   
-The Data Extractor is a tool designed to make the extraction of data from a website much simpler. You should first attempt to use the data extractor as it significantly lowers the line count of your scraper and is far easier to use than trying to parse poorly formatted HTML data.  For documentation on how to use the data extractor, see [here](https://github.com/Recidiviz/pulse-data/tree/master/recidiviz/ingest/extractor/README.md)
+The Data Extractor is a tool designed to make the extraction of data from a website much simpler. You should first attempt to use the data extractor as it significantly lowers the line count of your scraper and is far easier to use than trying to parse poorly formatted HTML data.
 
 ### Data Persistence
 
