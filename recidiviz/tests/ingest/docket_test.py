@@ -51,13 +51,15 @@ class TestDocket:
         for i, item in enumerate(items):
             assert item.message.data.decode() == json.dumps(get_payload()[i])
 
-    def test_load_target_list_background_happy_path(self):
+    @patch('recidiviz.utils.regions.Region')
+    def test_load_target_list_background_no_names_file(self, mock_region):
+        mock_region.return_value.names_file = None
         scrape_key = ScrapeKey(REGIONS[0], constants.BACKGROUND_SCRAPE)
 
         docket.load_target_list(scrape_key)
 
         item = docket.get_new_docket_item(scrape_key)
-        assert item.message.data.decode() == json.dumps(('aaardvark', ''))
+        assert item.message.data.decode() == json.dumps('empty')
 
     @patch('recidiviz.utils.regions.Region')
     def test_load_target_list_last_names(self, mock_region):

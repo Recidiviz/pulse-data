@@ -35,7 +35,7 @@ class Region:
         agency_name: (string) Human-readable agency name
         agency_type: (string) 'prison' or 'jail'
         base_url: (string) Base URL for scraping
-        names_file: (string) Filename of names file for this region
+        names_file: (string) Optional filename of names file for this region
         params: (dict) Optional mapping of key-value pairs specific to region
         queue: (string) Name of the queue for this region
         region_code: (string) Region code
@@ -56,7 +56,6 @@ class Region:
         self.agency_type = region_config["agency_type"]
         self.base_url = region_config["base_url"]
         self.region_code = region_config["region_code"]
-        # TODO(#169): Make names_file optional
         self.names_file = region_config.get("names_file", None)
         self.params = region_config.get("params", {})
         self.queue = region_config["queue"]
