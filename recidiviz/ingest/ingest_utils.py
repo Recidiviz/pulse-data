@@ -19,6 +19,7 @@
 
 import logging
 
+from recidiviz.common import common_utils
 from recidiviz.ingest import constants
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
 from recidiviz.utils import regions
@@ -113,7 +114,7 @@ def convert_ingest_info_to_proto(ingest_info):
         """
         obj_id = getattr(ingest_info_source, id_name)
         if not obj_id:
-            obj_id = str(id(ingest_info_source)) + '_generate'
+            obj_id = common_utils.create_generated_id(ingest_info_source)
         # If we've already seen this id, we don't need to create it, we can
         # simply return it as is.  Not that we use this local in memory
         # proto map so as to avoid using the map provided in proto to make it
