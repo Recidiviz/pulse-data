@@ -18,6 +18,7 @@ before_script:
 script:
 - pylint *.py recidiviz
 - pytest recidiviz/tests/ --with-emulator
+- mypy recidiviz
 after_success:
 - coveralls
 notifications:

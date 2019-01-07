@@ -332,8 +332,8 @@ class _Sentence:
         self.fine_dollars = fine_dollars  # type: int
         self.parole_possible = parole_possible  # type: bool
 
-        # type: str
-        self.post_release_supervision_length = post_release_supervision_length
+        self.post_release_supervision_length: str = \
+            post_release_supervision_length
 
     def __eq__(self, other):
         if other is None:
