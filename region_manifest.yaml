@@ -20,8 +20,7 @@
 #   agency_name: the official name of the facility
 #   agency_type: one of 'jail', 'prison', 'unified'
 #   base_url: the base url of the roster or search page for the facility
-#   names_file: a list of names the scraper should search for
-#     (use us_ny_names.csv as a default)
+#   names_file: a list of names the scraper should search for (optional)
 #   queue: the scraper name in queue.yaml
 #   region_code: the region code, formatted as <country>_<state>_<county>
 #   scraper_package: the directory in recidiviz/ingest/ containing the scraper
@@ -37,7 +36,6 @@ regions:
     agency_name: Department of Corrections and Community Supervision
     agency_type: prison
     base_url: http://nysdoccslookup.doccs.ny.gov
-    names_file: us_ny_names.csv
     queue: us-ny-scraper
     region_code: us_ny
     scraper_package: us_ny
@@ -48,7 +46,6 @@ regions:
     agency_type: unified
     queue: us-pa-greene-scraper
     base_url: http://www.co.greene.pa.us/InmateLocator
-    names_file: us_ny_names.csv
     scraper_package: us_pa_greene
     timezone: America/New_York
   us_co_mesa:
@@ -57,7 +54,6 @@ regions:
     agency_type: jail
     queue: us-co-mesa-scraper
     base_url: http://inmateinfo.mesacounty.us/default.asp
-    names_file: us_ny_names.csv
     scraper_package: us_co_mesa
     timezone: America/Denver
   us_mt_gallatin:
@@ -66,7 +62,6 @@ regions:
     agency_type: jail
     queue: us-mt-gallatin-scraper
     base_url: http://webapps.gallatin.mt.gov/ArchonixXJailPublic
-    names_file: us_ny_names.csv
     scraper_package: us_mt_gallatin
     timezone: America/Denver
   us_mo_stone:
@@ -75,7 +70,6 @@ regions:
     agency_type: jail
     queue: us-mo-stone-scraper
     base_url: https://www.stonecountymosheriff.com/roster.php
-    names_file: us_ny_names.csv
     scraper_package: us_mo_stone
     timezone: America/Chicago
   us_pa_dauphin:
@@ -84,7 +78,6 @@ regions:
     agency_type: jail
     queue: us-pa-dauphin-scraper
     base_url: http://www.dauphinc.org/dcplist/default.asp
-    names_file: us_ny_names.csv
     scraper_package: us_pa_dauphin
     timezone: America/New_York
   us_ar_van_buren:
@@ -93,7 +86,6 @@ regions:
     agency_type: jail
     queue: us-ar-van-buren-scraper
     base_url: https://www.vbcso.com/roster.php
-    names_file: us_ny_names.csv
     scraper_package: us_ar_van_buren
     timezone: America/Chicago
   us_pa:
@@ -103,17 +95,14 @@ regions:
     agency_type: prison
     queue: us-pa-scraper
     base_url: http://inmatelocator.cor.pa.gov
-    names_file: us_ny_names.csv
     scraper_package: us_pa
     timezone: America/New_York
-
   us_fl_martin:
     agency_name: Martin County
     region_code: us_fl_martin
     agency_type: jail
     queue: us-fl-martin-scraper
     base_url: http://198.136.35.4/jailinmatesearch/jailinmatesearch.asp
-    names_file: us_ny_names.csv
     entity_kinds:
       person: Person
       record: Record
