@@ -45,11 +45,10 @@ def normalize(s):
     Return:
         (str): Normalized string
     """
-    if s is None:
+    if s is None or s == '' or s.isspace():
         raise ValueError(
-            'function normalize should never be called with None')
-    if s == '' or s.isspace():
-        return ''
+            'function normalize should never be called with None or an empty '
+            'string')
     return ' '.join(s.split()).upper()
 
 
