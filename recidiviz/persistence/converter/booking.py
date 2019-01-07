@@ -19,14 +19,14 @@ from recidiviz.common.constants.booking import ReleaseReason, CustodyStatus, \
     Classification
 from recidiviz.persistence import entities
 from recidiviz.persistence.converter.converter_utils import fn, normalize, \
-    parse_date
+    parse_date, parse_external_id
 
 
 def convert(proto, metadata):
     """Converts an ingest_info proto Booking to a persistence entity."""
     new = entities.Booking()
 
-    new.external_id = fn(normalize, 'booking_id', proto)
+    new.external_id = fn(parse_external_id, 'booking_id', proto)
     new.admission_date = fn(parse_date, 'admission_date', proto)
     new.release_date, new.release_date_inferred = _parse_release_date(proto)
     new.projected_release_date = fn(parse_date, 'projected_release_date', proto)
