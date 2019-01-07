@@ -25,6 +25,8 @@ class IngestInfo:
         self.person = people or []  # type: List[Person]
 
     def __eq__(self, other):
+        if other is None:
+            return False
         return self.__dict__ == other.__dict__
 
     def __bool__(self):
@@ -77,6 +79,8 @@ class _Person:
         self.booking = bookings or []  # type: List[Booking]
 
     def __eq__(self, other):
+        if other is None:
+            return False
         return self.__dict__ == other.__dict__
 
     def __bool__(self):
@@ -134,6 +138,8 @@ class _Booking:
         self.charge = charges or []  # type: List[Charge]
 
     def __eq__(self, other):
+        if other is None:
+            return False
         return self.__dict__ == other.__dict__
 
     def __bool__(self):
@@ -187,6 +193,8 @@ class _Arrest:
         self.agency = agency  # type: str
 
     def __eq__(self, other):
+        if other is None:
+            return False
         return self.__dict__ == other.__dict__
 
     def __bool__(self):
@@ -235,6 +243,8 @@ class _Charge:
         self.sentence = sentence  # type: Sentence
 
     def __eq__(self, other):
+        if other is None:
+            return False
         return self.__dict__ == other.__dict__
 
     def __bool__(self):
@@ -284,6 +294,8 @@ class _Bond:
         self.status = status  # type: str
 
     def __eq__(self, other):
+        if other is None:
+            return False
         return self.__dict__ == other.__dict__
 
     def __bool__(self):
@@ -324,6 +336,8 @@ class _Sentence:
         self.post_release_supervision_length = post_release_supervision_length
 
     def __eq__(self, other):
+        if other is None:
+            return False
         return self.__dict__ == other.__dict__
 
     def __bool__(self):
