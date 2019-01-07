@@ -205,6 +205,8 @@ class DataExtractor:
         """
         is_multi_key = class_to_set in self.multi_key_classes
         for i, value in enumerate(values):
+            if value == '' or value.isspace():
+                continue
             # The first task is to find the parent.
             parent = self._find_parent_ingest_info(
                 ingest_info, self.hierarchy_map[class_to_set], i)
