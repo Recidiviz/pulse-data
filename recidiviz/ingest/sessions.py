@@ -386,8 +386,9 @@ class ScrapedRecord:
         entity = datastore.Entity(key)
         entity['record_id'] = record_id  # type: string
         entity['region'] = region  # type: string
-        # type: datetime
-        entity['created_on'] = created_on if created_on else datetime.now()
+        entity['created_on']: datetime = \
+            created_on if created_on else datetime.now()
+
         return cls(entity)
 
     def __init__(self, entity):

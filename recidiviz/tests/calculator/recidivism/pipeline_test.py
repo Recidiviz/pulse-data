@@ -28,7 +28,8 @@ import pytest
 from dateutil.relativedelta import relativedelta
 
 from recidiviz.tests.context import calculator
-from recidiviz.calculator.recidivism import (calculator, metrics, pipeline,
+from recidiviz.calculator.recidivism import (calculator,  # type: ignore
+                                             metrics, pipeline,
                                              recidivism_event)
 
 

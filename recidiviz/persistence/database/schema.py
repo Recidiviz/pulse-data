@@ -27,18 +27,17 @@ the historical table, this key is non-unique. This is necessary to allow the
 desired temporal table behavior. Because of this non-uniqueness, any foreign key
 pointing to a historical table does NOT have a foreign key constraint.
 """
-
 from sqlalchemy import Boolean, Column, Date, DateTime, Enum, ForeignKey, \
     Integer, String, Text
 from sqlalchemy.ext.associationproxy import association_proxy
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta
 from sqlalchemy.orm import relationship
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 
 
 # Base class for all table classes
-Base = declarative_base()
+Base: DeclarativeMeta = declarative_base()
 
 
 # Enum values. Exposed separately from the SQLAlchemy Enum that owns them for
