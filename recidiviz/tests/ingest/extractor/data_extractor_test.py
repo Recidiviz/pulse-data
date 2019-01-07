@@ -151,14 +151,12 @@ def test_multiple_people_with_maybe_charges():
     b1_charge1.statute = '13A-6-24'
     b1_charge1.case_number = '000-0000 (BALDWIN COUNTY SHERIFFS OFFICE)'
     b1_charge1.name = 'RECKLESS ENDANGERMENT'
-    b1_charge1.degree = ''
     b1_charge1.level = 'M'
     b1_charge1.create_bond().amount = '$1000.00'
     b1_charge2 = booking1.create_charge()
     b1_charge2.statute = '13A-6-24'
     b1_charge2.case_number = '000-0000 (BALDWIN COUNTY SHERIFFS OFFICE)'
     b1_charge2.name = 'RECKLESS ENDANGERMENT'
-    b1_charge2.degree = ''
     b1_charge2.level = 'M'
     b1_charge2.create_bond().amount = '$1000.00'
 
@@ -197,7 +195,6 @@ def test_multiple_people_with_maybe_charges():
     b3_charge2.statute = '13A-12-260'
     b3_charge2.case_number = '000-0000 (BALDWIN COUNTY SHERIFFS OFFICE)'
     b3_charge2.name = 'POSSESSION OF DRUG PARAPHERNALIA'
-    b3_charge2.degree = ''
     b3_charge2.level = 'M'
     b3_charge2.create_bond().amount = '$1000.00'
 
@@ -261,7 +258,6 @@ def test_partial_table():
     charge = booking.create_charge()
     charge.name = 'FIRST CHARGE'
     charge.charging_entity = 'WICHITA FALLS PD'
-    charge.status = ''
     bond = charge.create_bond()
     bond.amount = '25,000.00'
 
@@ -286,14 +282,11 @@ def test_labeled_fields():
     booking = person.create_booking()
     booking.admission_date = '11/12/2018 5:04 PM'
     booking.facility = 'Walla Walla County Corrections Department'
-    booking.release_date = ''
     charge = booking.create_charge()
     charge.name = 'DUI'
     charge.offense_date = '9/21/2018 5:34 PM'
     charge.charge_class = 'Gross Misdemeanor'
     charge.status = 'Time Served'
-    charge.charging_entity = ''
-    charge.next_court_date = ''
     booking.charge.append(charge)
 
     html_contents = html.fromstring(
@@ -322,9 +315,7 @@ def test_bad_labels():
     bond.amount = '$100,000.00'
     bond.bond_type = '10 %'
     charge.statute = '2911.12'
-    charge.next_court_date = ''
     charge.name = 'BURGLARY'
-    charge.case_number = ''
 
     html_contents = html.fromstring(
         fixtures.as_string('testdata/data_extractor/html', 'bad_labels.html'))
