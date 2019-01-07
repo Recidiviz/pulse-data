@@ -21,6 +21,7 @@ from recidiviz.common.constants.mappable_enum import MappableEnum
 
 
 class Gender(MappableEnum):
+    EXTERNAL_UNKNOWN = enum_strings.external_unknown
     FEMALE = enum_strings.gender_female
     MALE = enum_strings.gender_male
     OTHER = enum_strings.gender_other
@@ -36,7 +37,7 @@ class Race(MappableEnum):
     AMERICAN_INDIAN_ALASKAN_NATIVE = enum_strings.race_american_indian
     ASIAN = enum_strings.race_asian
     BLACK = enum_strings.race_black
-    EXTERNAL_UNKNOWN = enum_strings.race_external_unknown
+    EXTERNAL_UNKNOWN = enum_strings.external_unknown
     NATIVE_HAWAIIAN_PACIFIC_ISLANDER = enum_strings.race_hawaiian
     OTHER = enum_strings.race_other
     WHITE = enum_strings.race_white
@@ -47,6 +48,7 @@ class Race(MappableEnum):
 
 
 class Ethnicity(MappableEnum):
+    EXTERNAL_UNKNOWN = enum_strings.external_unknown
     HISPANIC = enum_strings.ethnicity_hispanic
     NOT_HISPANIC = enum_strings.ethnicity_not_hispanic
 
@@ -63,6 +65,7 @@ _GENDER_MAP = {
     'OTHER': Gender.OTHER,
     'TRANS FEMALE/TRANS WOMAN': Gender.TRANS_FEMALE,
     'TRANS MALE/TRANS MAN': Gender.TRANS_MALE,
+    'UNKNOWN': Gender.EXTERNAL_UNKNOWN,
 }
 
 _RACE_MAP = {
@@ -83,4 +86,5 @@ _ETHNICITY_MAP = {
     'HISPANIC': Ethnicity.HISPANIC,
     'H': Ethnicity.HISPANIC,
     'NOT HISPANIC': Ethnicity.NOT_HISPANIC,
+    'UNKNOWN': Ethnicity.EXTERNAL_UNKNOWN,
 }

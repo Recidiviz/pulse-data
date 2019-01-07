@@ -24,6 +24,7 @@ from recidiviz.common.constants.mappable_enum import MappableEnum
 class BondType(MappableEnum):
     BOND_DENIED = enum_strings.bond_type_denied
     CASH = enum_strings.bond_type_cash
+    EXTERNAL_UNKNOWN = enum_strings.external_unknown
     NO_BOND = enum_strings.bond_type_no_bond
     SECURED = enum_strings.bond_type_secured
     UNSECURED = enum_strings.bond_type_unsecured
@@ -48,8 +49,9 @@ _BOND_TYPE_MAP = {
     'NO BOND': BondType.NO_BOND,
     'ROR': BondType.NO_BOND,
     'SECURED': BondType.SECURED,
+    'SURETY BOND': BondType.UNSECURED,
+    'UNKNOWN': BondType.EXTERNAL_UNKNOWN,
     'UNSECURED': BondType.UNSECURED,
-    'SURETY BOND': BondType.UNSECURED
 }
 
 _BOND_STATUS_MAP = {
