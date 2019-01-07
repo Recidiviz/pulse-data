@@ -26,4 +26,4 @@ def create_generated_id(obj):
 
 
 def is_generated_id(id_str: Optional[str]) -> bool:
-    return id_str and id_str.endswith(_GENERATED_ID_SUFFIX)
+    return id_str is not None and id_str.endswith(_GENERATED_ID_SUFFIX)
