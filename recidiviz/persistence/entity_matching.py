@@ -38,8 +38,8 @@ def match_entities(session, region, ingested_people):
         region: (str)
         ingested_people: List[entities.Person]
     """
-    db_people = database.read_people_with_open_bookings(session, region)
-
+    db_people = database.read_people_for_entity_matching(session, region,
+                                                         ingested_people)
     for db_person in db_people:
         ingested_person = _get_only_match(db_person, ingested_people,
                                           utils.is_person_match)
