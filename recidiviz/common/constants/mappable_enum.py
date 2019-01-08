@@ -17,7 +17,7 @@
 """Contains logic related to MappableEnums"""
 
 from enum import Enum
-from typing import Dict
+from typing import Dict, Optional
 
 
 class EnumParsingError(Exception):
@@ -37,22 +37,30 @@ class MappableEnum(Enum):
     @classmethod
     def from_str(cls,
                  label: str,
-                 override_map: Dict[str, 'MappableEnum'] = None) \
-            -> 'MappableEnum':
+                 override_map: Dict[str, Optional['MappableEnum']] = None) \
+            -> Optional['MappableEnum']:
 
-        complete_map = cls._get_default_map()
+        label = label.upper()
+        if not override_map:
+            return cls._parse_to_enum(label, cls._get_default_map())
 
-        if override_map is not None:
-            cls_override_map = {k: v for k, v in override_map.items()
-                                if isinstance(v, cls)}
+        fields_to_ignore = {k for k, v in override_map.items() if not v}
+        if label in fields_to_ignore:
+            return None
 
-            complete_map = complete_map.copy()
-            complete_map.update(cls_override_map)
+        cls_override_map = {k: v for k, v in override_map.items()
+                            if isinstance(v, cls)}
+        complete_map = cls._get_default_map().copy()
+        complete_map.update(cls_override_map)
 
+        return cls._parse_to_enum(label, complete_map)
+
+    @classmethod
+    def _parse_to_enum(cls, label, complete_map):
         try:
-            return complete_map[label.upper()]
+            return complete_map[label]
         except KeyError:
-            raise EnumParsingError(cls, label.upper())
+            raise EnumParsingError(cls, label)
 
     @staticmethod
     def _get_default_map() -> Dict[str, 'MappableEnum']:

@@ -22,7 +22,7 @@ from recidiviz.persistence.converter.converter_utils import normalize, fn, \
     parse_date, parse_bool, parse_dollars, parse_external_id
 
 
-def convert(proto):
+def convert(proto, metadata):
     """Converts an ingest_info proto Arrest to a persistence entity."""
     new = entities.Charge()
 
@@ -31,13 +31,15 @@ def convert(proto):
     new.statute = fn(normalize, 'statute', proto)
     new.name = fn(normalize, 'name', proto)
     new.attempted = fn(parse_bool, 'attempted', proto)
-    new.degree = fn(ChargeDegree.from_str, 'degree', proto)
-    new.charge_class = fn(ChargeClass.from_str, 'charge_class', proto)
+    new.degree = fn(ChargeDegree.from_str, 'degree', proto,
+                    metadata.enum_overrides)
+    new.charge_class = fn(ChargeClass.from_str, 'charge_class', proto,
+                          metadata.enum_overrides)
     new.level = fn(normalize, 'level', proto)
     new.fee_dollars = fn(parse_dollars, 'fee_dollars', proto)
     new.charging_entity = fn(normalize, 'charging_entity', proto)
     new.status = fn(ChargeStatus.from_str, 'status', proto,
-                    ChargeStatus.PENDING)
+                    metadata.enum_overrides, default=ChargeStatus.PENDING)
     new.court_type = fn(CourtType.from_str, 'court_type', proto)
     new.case_number = fn(normalize, 'case_number', proto)
     new.next_court_date = fn(parse_date, 'next_court_date', proto)

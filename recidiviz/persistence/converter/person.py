@@ -32,8 +32,9 @@ def copy_fields_to_builder(person_builder, proto, metadata):
     new.external_id = fn(parse_external_id, 'person_id', proto)
     new.surname, new.given_names = _parse_name(proto)
     new.birthdate, new.birthdate_inferred_from_age = _parse_birthdate(proto)
-    new.race, new.ethnicity = _parse_race_and_ethnicity(proto)
-    new.gender = fn(Gender.from_str, 'gender', proto)
+    new.race, new.ethnicity = _parse_race_and_ethnicity(proto,
+                                                        metadata.enum_overrides)
+    new.gender = fn(Gender.from_str, 'gender', proto, metadata.enum_overrides)
     new.place_of_residence = fn(normalize, 'place_of_residence', proto)
 
     new.region = metadata.region
@@ -70,12 +71,12 @@ def _parse_birthdate(proto):
     return parsed_birthdate, parsed_birthdate_is_inferred
 
 
-def _parse_race_and_ethnicity(proto):
+def _parse_race_and_ethnicity(proto, enum_overrides):
     if converter_utils.race_is_actually_ethnicity(proto):
         race = None
-        ethnicity = fn(Ethnicity.from_str, 'race', proto)
+        ethnicity = fn(Ethnicity.from_str, 'race', proto, enum_overrides)
     else:
         race = fn(Race.from_str, 'race', proto)
-        ethnicity = fn(Ethnicity.from_str, 'ethnicity', proto)
+        ethnicity = fn(Ethnicity.from_str, 'ethnicity', proto, enum_overrides)
 
     return race, ethnicity

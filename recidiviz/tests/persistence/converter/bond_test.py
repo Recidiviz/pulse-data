@@ -18,9 +18,13 @@
 import unittest
 
 from recidiviz.common.constants.bond import BondType, BondStatus
+from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence import entities
 from recidiviz.persistence.converter import bond
+
+
+_EMPTY_METADATA = IngestMetadata.new_with_none_defaults()
 
 
 class BondConverterTest(unittest.TestCase):
@@ -36,7 +40,7 @@ class BondConverterTest(unittest.TestCase):
         )
 
         # Act
-        result = bond.convert(ingest_bond)
+        result = bond.convert(ingest_bond, _EMPTY_METADATA)
 
         # Assert
         expected_result = entities.Bond(
@@ -53,7 +57,7 @@ class BondConverterTest(unittest.TestCase):
         ingest_bond = ingest_info_pb2.Bond(amount='No Bond')
 
         # Act
-        result = bond.convert(ingest_bond)
+        result = bond.convert(ingest_bond, _EMPTY_METADATA)
 
         # Assert
         expected_result = entities.Bond(bond_type=BondType.NO_BOND)
@@ -64,7 +68,7 @@ class BondConverterTest(unittest.TestCase):
         ingest_bond = ingest_info_pb2.Bond(amount='Bond Denied')
 
         # Act
-        result = bond.convert(ingest_bond)
+        result = bond.convert(ingest_bond, _EMPTY_METADATA)
 
         # Assert
         expected_result = entities.Bond(bond_type=BondType.BOND_DENIED)
