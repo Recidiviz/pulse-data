@@ -19,13 +19,26 @@ import logging
 import os
 from distutils.util import strtobool  # pylint: disable=no-name-in-module
 
+from opencensus.stats import aggregation
+from opencensus.stats import measure
+from opencensus.stats import view
+
 from recidiviz import Session
 from recidiviz.common.constants.booking import ReleaseReason
 from recidiviz.persistence import entity_matching
 from recidiviz.persistence.converter import converter
 from recidiviz.persistence.database import database
-from recidiviz.utils import environment
+from recidiviz.utils import environment, monitoring
 
+m_people = measure.MeasureInt("persistence/num_people",
+                              "The number of people persisted", "1")
+people_persisted_view = view.View("recidiviz/persistence/num_people",
+                                  "The sum of people persisted",
+                                  [monitoring.TagKey.REGION,
+                                   monitoring.TagKey.PERSISTED],
+                                  m_people,
+                                  aggregation.SumAggregation())
+monitoring.register_views([people_persisted_view])
 
 class PersistenceError(Exception):
     """Raised when an error with the persistence layer is encountered."""
@@ -96,25 +109,32 @@ def write(ingest_info, metadata):
 
     Otherwise, simply log the given ingest_infos for debugging
     """
-    logging.info('The following proto will be written to the database:')
-    logging.info(ingest_info)
-    people = converter.convert(ingest_info, metadata)
-    logging.info('Successfully converted proto:')
-    logging.info(people)
+    mtags = {monitoring.TagKey.REGION: metadata.region,
+             monitoring.TagKey.SHOULD_PERSIST: _should_persist()}
+    with monitoring.measurements(mtags) as measurements:
+        logging.info('The following proto will be written to the database:')
+        logging.info(ingest_info)
+        people = converter.convert(ingest_info, metadata)
+        logging.info('Successfully converted proto:')
+        logging.info(people)
+        measurements.measure_int_put(m_people, len(people))
 
-    if not _should_persist():
-        return
+        if not _should_persist():
+            return
 
-    session = Session()
-    try:
-        logging.info('Starting entity matching')
-        entity_matching.match_entities(session, metadata.region, people)
-        logging.info('Successfully completed entity matching')
-        database.write_people(session, people)
-        logging.info('Successfully wrote to the database')
-        session.commit()
-    except Exception:
-        session.rollback()
-        raise
-    finally:
-        session.close()
+        persisted = False
+        session = Session()
+        try:
+            logging.info('Starting entity matching')
+            entity_matching.match_entities(session, metadata.region, people)
+            logging.info('Successfully completed entity matching')
+            database.write_people(session, people)
+            logging.info('Successfully wrote to the database')
+            session.commit()
+            persisted = True
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+            mtags[monitoring.TagKey.PERSISTED] = persisted
