@@ -56,6 +56,8 @@ class TestConverter(unittest.TestCase):
             region='REGION',
             bookings=[Booking.new_with_none_defaults(
                 external_id='BOOKING_ID',
+                admission_date='LAST_SEEN_TIME',
+                admission_date_inferred=True,
                 last_seen_time='LAST_SEEN_TIME',
                 custody_status=CustodyStatus.IN_CUSTODY,
                 arrest=Arrest(external_id='ARREST_ID', agency='PD'),
@@ -95,6 +97,8 @@ class TestConverter(unittest.TestCase):
         expected_result = [Person.new_with_none_defaults(
             region='REGION',
             bookings=[Booking.new_with_none_defaults(
+                admission_date='LAST_SEEN_TIME',
+                admission_date_inferred=True,
                 last_seen_time='LAST_SEEN_TIME',
                 custody_status=CustodyStatus.IN_CUSTODY,
                 arrest=Arrest(agency='PD'),
@@ -110,7 +114,8 @@ class TestConverter(unittest.TestCase):
 
     def testConvert_TotalBondNoCharge_CreatesChargeWithTotalBondAmount(self):
         # Arrange
-        metadata = IngestMetadata.new_with_none_defaults()
+        metadata = IngestMetadata.new_with_none_defaults(
+            last_seen_time='LAST_SEEN_TIME')
 
         ingest_info = IngestInfo()
         ingest_info.people.add(booking_ids=['BOOKING_ID'])
@@ -123,6 +128,9 @@ class TestConverter(unittest.TestCase):
         # Assert
         expected_result = [Person.new_with_none_defaults(
             bookings=[Booking.new_with_none_defaults(
+                admission_date='LAST_SEEN_TIME',
+                admission_date_inferred=True,
+                last_seen_time='LAST_SEEN_TIME',
                 external_id='BOOKING_ID',
                 custody_status=CustodyStatus.IN_CUSTODY,
                 charges=[Charge(
@@ -137,7 +145,8 @@ class TestConverter(unittest.TestCase):
 
     def testConvert_TotalBondWithCharge_SetsTotalBondOnCharge(self):
         # Arrange
-        metadata = IngestMetadata.new_with_none_defaults()
+        metadata = IngestMetadata.new_with_none_defaults(
+            last_seen_time='LAST_SEEN_TIME')
 
         ingest_info = IngestInfo()
         ingest_info.people.add(booking_ids=['BOOKING_ID'])
@@ -153,6 +162,9 @@ class TestConverter(unittest.TestCase):
         expected_result = [Person.new_with_none_defaults(
             bookings=[Booking.new_with_none_defaults(
                 external_id='BOOKING_ID',
+                admission_date='LAST_SEEN_TIME',
+                admission_date_inferred=True,
+                last_seen_time='LAST_SEEN_TIME',
                 custody_status=CustodyStatus.IN_CUSTODY,
                 charges=[Charge(
                     external_id='CHARGE_ID',

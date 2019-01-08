@@ -29,9 +29,8 @@ def copy_fields_to_builder(booking_builder, proto, metadata):
      """
     new = booking_builder
 
+    # 1-to-1 mappings
     new.external_id = fn(parse_external_id, 'booking_id', proto)
-    new.admission_date = fn(parse_date, 'admission_date', proto)
-    new.release_date, new.release_date_inferred = _parse_release_date(proto)
     new.projected_release_date = fn(parse_date, 'projected_release_date', proto)
     new.release_reason = fn(ReleaseReason.from_str, 'release_reason', proto,
                             metadata.enum_overrides)
@@ -41,10 +40,13 @@ def copy_fields_to_builder(booking_builder, proto, metadata):
     new.facility = fn(normalize, 'facility', proto)
     new.classification = fn(Classification.from_str, 'classification', proto)
 
-    new.last_seen_time = metadata.last_seen_time
+    # Inferred attributes
+    new.admission_date, new.admission_date_inferred = \
+        _parse_admission(proto, metadata)
+    new.release_date, new.release_date_inferred = _parse_release_date(proto)
 
-    # TODO(#363): Add logic for the following fields
-    new.admission_date_inferred = None
+    # Metadata
+    new.last_seen_time = metadata.last_seen_time
 
 
 def _parse_release_date(proto):
@@ -52,3 +54,15 @@ def _parse_release_date(proto):
     release_date_inferred = None if release_date is None else False
 
     return release_date, release_date_inferred
+
+
+def _parse_admission(proto, metadata):
+    admission_date = fn(parse_date, 'admission_date', proto)
+
+    if admission_date is None:
+        admission_date = metadata.last_seen_time
+        admission_date_inferred = True
+    else:
+        admission_date_inferred = False
+
+    return admission_date, admission_date_inferred

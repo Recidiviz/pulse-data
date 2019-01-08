@@ -77,11 +77,12 @@ def match_bookings(db_person, ingested_person):
                 raise EntityMatchingError('matched ingested booking to more '
                                           'than one database entity')
             ingested_booking.booking_id = db_booking.booking_id
-            # TODO(348): logic will need to change if inferring happens
-            # before matching.
-            if db_booking.admission_date_inferred:
+
+            if (db_booking.admission_date_inferred and
+                    ingested_booking.admission_date_inferred):
                 ingested_booking.admission_date = db_booking.admission_date
                 ingested_booking.admission_date_inferred = True
+
             match_charges(db_booking=db_booking,
                           ingested_booking=ingested_booking)
         else:
@@ -112,7 +113,7 @@ def match_charges(db_booking, ingested_booking):
             # If the match was previously matched to a different database
             # charge, raise an error.
             if ingested_charge.charge_id:
-                #TODO(349): handle identical charges
+                # TODO(349): handle identical charges
                 raise EntityMatchingError('matched ingested charge to more '
                                           'than one database entity')
             ingested_charge.charge_id = db_charge.charge_id
