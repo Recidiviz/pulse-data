@@ -83,7 +83,7 @@ def race_is_actually_ethnicity(ingest_person):
     return race_is_ethnicity and not race_is_already_set_correctly
 
 
-def parse_date(date_string):
+def parse_datetime(date_string):
     """
     Parses a string into a datetime object.
 
@@ -99,6 +99,18 @@ def parse_date(date_string):
     if not parsed_date:
         raise ValueError('cannot parse date: %s' % parsed_date)
     return parsed_date
+
+def parse_date(date_string):
+    """
+    Parses a string into a datetime object.
+
+    Args:
+        date_string: The string to be parsed.
+
+    Return:
+        (date) Date representation of the provided string.
+    """
+    return parse_datetime(date_string).date()
 
 
 def calculate_birthdate_from_age(age):

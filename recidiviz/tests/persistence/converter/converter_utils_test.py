@@ -32,13 +32,17 @@ _NOW = datetime.datetime(2000, 1, 1)
 class TestConverterUtils(TestCase):
     """Test conversion util methods."""
 
+    def test_parseDateTime(self):
+        assert converter_utils.parse_datetime('Jan 1, 2018 1:40') == \
+               datetime.datetime(year=2018, month=1, day=1, hour=1, minute=40)
+
     def test_parseDate(self):
         assert converter_utils.parse_date('Jan 1, 2018') == \
-               datetime.datetime(year=2018, month=1, day=1)
+               datetime.date(year=2018, month=1, day=1)
 
     def test_parseBadDate(self):
         with pytest.raises(ValueError):
-            converter_utils.parse_date('ABC')
+            converter_utils.parse_datetime('ABC')
 
     @patch('recidiviz.persistence.converter.converter_utils.datetime.datetime')
     def test_parseAge(self, mock_datetime):

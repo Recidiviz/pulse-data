@@ -16,7 +16,7 @@
 # =============================================================================
 """Tests for converting arrests."""
 import unittest
-from datetime import datetime
+from datetime import date
 
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence import entities
@@ -43,7 +43,7 @@ class ArrestConverterTest(unittest.TestCase):
         # Assert
         expected_result = entities.Arrest(
             external_id='ARREST_ID',
-            date=datetime(year=1111, month=1, day=2),
+            date=date(year=1111, month=1, day=2),
             location='FAKE_LOCATION',
             officer_name='FAKE_NAME',
             officer_id='FAKE_ID',
