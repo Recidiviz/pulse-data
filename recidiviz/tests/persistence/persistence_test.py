@@ -56,6 +56,8 @@ REGION_2 = 'REGION_2'
 SCRAPER_START_DATETIME = datetime(year=2018, month=8, day=6)
 SURNAME_1 = 'TEST_SURNAME_1'
 SURNAME_2 = 'TEST_SURNAME_2'
+DEFAULT_METADATA = IngestMetadata(
+    "default_region", datetime(year=1000, month=1, day=1), {})
 
 
 @patch('os.getenv', Mock(return_value='production'))
@@ -69,13 +71,11 @@ class TestPersistence(TestCase):
     def test_localRun(self):
         with patch('os.getenv', Mock(return_value='Local')):
             # Arrange
-            metadata = IngestMetadata(REGION_1, SCRAPER_START_DATETIME)
-
             ingest_info = IngestInfo()
             ingest_info.people.add(surname=SURNAME_1)
 
             # Act
-            persistence.write(ingest_info, metadata)
+            persistence.write(ingest_info, DEFAULT_METADATA)
             result = database.read_people(Session())
 
             # Assert
@@ -85,13 +85,12 @@ class TestPersistence(TestCase):
         # Arrange
         with patch('os.getenv', Mock(return_value='local')) \
              and patch.dict('os.environ', {'PERSIST_LOCALLY': 'true'}):
-            metadata = IngestMetadata(REGION_1, SCRAPER_START_DATETIME)
 
             ingest_info = IngestInfo()
             ingest_info.people.add(surname=SURNAME_1)
 
             # Act
-            persistence.write(ingest_info, metadata)
+            persistence.write(ingest_info, DEFAULT_METADATA)
             result = database.read_people(Session())
 
             # Assert
@@ -100,14 +99,12 @@ class TestPersistence(TestCase):
 
     def test_twoDifferentPeople_persistsBoth(self):
         # Arrange
-        metadata = IngestMetadata(REGION_1, SCRAPER_START_DATETIME)
-
         ingest_info = IngestInfo()
         ingest_info.people.add(surname=SURNAME_1, given_names=GIVEN_NAME)
         ingest_info.people.add(surname=SURNAME_2, given_names=GIVEN_NAME)
 
         # Act
-        persistence.write(ingest_info, metadata)
+        persistence.write(ingest_info, DEFAULT_METADATA)
         result = database.read_people(Session())
 
         # Assert
@@ -119,8 +116,6 @@ class TestPersistence(TestCase):
 
     def test_readSinglePersonByName(self):
         # Arrange
-        metadata = IngestMetadata(REGION_1, SCRAPER_START_DATETIME)
-
         ingest_info = IngestInfo()
         ingest_info.people.add(surname=SURNAME_1, given_names=GIVEN_NAME,
                                birthdate=BIRTHDATE_1)
@@ -128,7 +123,7 @@ class TestPersistence(TestCase):
                                birthdate=BIRTHDATE_2)
 
         # Act
-        persistence.write(ingest_info, metadata)
+        persistence.write(ingest_info, DEFAULT_METADATA)
         result = database.read_people(Session(), surname=SURNAME_1)
 
         # Assert
@@ -139,7 +134,9 @@ class TestPersistence(TestCase):
     # TODO: Rewrite this test to directly test __eq__ between the two People
     def test_readPersonAndAllRelationships(self):
         # Arrange
-        metadata = IngestMetadata(REGION_1, SCRAPER_START_DATETIME)
+        metadata = IngestMetadata.new_with_none_defaults(
+            region=REGION_1,
+            last_seen_time=SCRAPER_START_DATETIME)
 
         ingest_info = IngestInfo()
         ingest_info.people.add(
@@ -226,7 +223,9 @@ class TestPersistence(TestCase):
     def test_write_preexisting_person(self):
         # Arrange
         most_recent_scrape_time = (SCRAPER_START_DATETIME + timedelta(days=1))
-        metadata = IngestMetadata(REGION_1, most_recent_scrape_time)
+        metadata = IngestMetadata.new_with_none_defaults(
+            region=REGION_1,
+            last_seen_time=most_recent_scrape_time)
 
         schema_booking = schema.Booking(
             booking_id=BOOKING_ID,
@@ -276,8 +275,11 @@ class TestPersistence(TestCase):
 
     def test_inferReleaseDateOnOpenBookings(self):
         # Arrange
-        metadata_1 = IngestMetadata(REGION_1, SCRAPER_START_DATETIME)
-        metadata_2 = IngestMetadata(REGION_2, SCRAPER_START_DATETIME)
+        metadata_1 = IngestMetadata.new_with_none_defaults(
+            region=REGION_1,
+            last_seen_time=SCRAPER_START_DATETIME)
+        metadata_2 = IngestMetadata(region=REGION_2,
+                                    last_seen_time=SCRAPER_START_DATETIME)
 
         most_recent_scrape_time = (SCRAPER_START_DATETIME + timedelta(days=1))
 

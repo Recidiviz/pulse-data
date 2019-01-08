@@ -22,21 +22,22 @@ from recidiviz.persistence.converter.converter_utils import fn, \
     parse_external_id
 
 
-def convert(proto):
+def convert(proto, metadata):
     """Converts an ingest_info proto Bond to a persistence entity."""
     new = entities.Bond()
 
     new.external_id = fn(parse_external_id, 'bond_id', proto)
     new.amount_dollars, inferred_bond_type = fn(
         converter_utils.parse_bond_amount_and_infer_type, 'amount', proto,
-        (None, None)) # default to a pair of Nones instead of None
+        default=(None, None))
     # |inferred_bond_type| defaults to CASH unless the bond amount contains
     # information about the type (i.e. NO_BOND or BOND_DENIED)
     new.bond_type = fn(BondType.from_str, 'bond_type', proto,
-                       inferred_bond_type)
+                       metadata.enum_overrides, default=inferred_bond_type)
     # TODO(491): determine what status, if any, bonds with BondType.BOND_DENIED
     #  should have
     new.status = fn(BondStatus.from_str, 'status', proto,
-                    BondStatus.ACTIVE if new.amount_dollars else None)
+                    metadata.enum_overrides,
+                    default=BondStatus.ACTIVE if new.amount_dollars else None)
 
     return new

@@ -20,9 +20,13 @@ import unittest
 
 from recidiviz.common.constants.charge import ChargeDegree, ChargeClass, \
     CourtType, ChargeStatus
+from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence import entities
 from recidiviz.persistence.converter import charge
+
+
+_EMPTY_METADATA = IngestMetadata.new_with_none_defaults()
 
 
 class ChargeConverterTest(unittest.TestCase):
@@ -40,7 +44,7 @@ class ChargeConverterTest(unittest.TestCase):
         )
 
         # Act
-        result = charge.convert(ingest_charge)
+        result = charge.convert(ingest_charge, _EMPTY_METADATA)
 
         # Assert
         expected_result = entities.Charge(
@@ -59,7 +63,7 @@ class ChargeConverterTest(unittest.TestCase):
         ingest_charge = ingest_info_pb2.Charge()
 
         # Act
-        result = charge.convert(ingest_charge)
+        result = charge.convert(ingest_charge, _EMPTY_METADATA)
 
         # Assert
         expected_result = entities.Charge(status=ChargeStatus.PENDING)

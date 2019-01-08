@@ -89,10 +89,12 @@ class _Converter:
 
     def _convert_charge(self, ingest_charge):
         """Converts an ingest_info proto Charge to a persistence entity."""
-        new = charge.convert(ingest_charge)
+        new = charge.convert(ingest_charge, self.metadata)
 
         new.bond = \
-            fn(lambda i: bond.convert(self.bonds[i]), 'bond_id', ingest_charge)
+            fn(lambda i: bond.convert(self.bonds[i], self.metadata),
+               'bond_id',
+               ingest_charge)
         new.sentence = \
             fn(lambda i: sentence.convert(self.sentences[i]),
                'sentence_id', ingest_charge)

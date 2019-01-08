@@ -132,6 +132,23 @@ Optional fields are:
 
 Please be mindful to sleep a reasonable amount of time between each request, we don't want to bring down or degrade any websites!  This can of course run through the entire roster if you set the number of tasks to be high enough, but doing 5-10 is usually reasonable enough.
 
+Resolving Enum Parsing Errors
+==================
+Although we are populating all fields in `IngestInfo` with scraped strings, later several of those strings are converted into Enums. When running your scraper (either Unit Tests or End to End Tests), you may have encountered an `EnumParsingError: Could not parse X when building <enum Y>` during this process. This indicates that the scraped string could not be parsed into an Enum, in which case you have two options:
+
+### 1. Adding to the default map
+If you suspect the new string->Enum mapping should be shared across all scrapers, you should add it to the enum's default map. Enums with their default maps are in the [recidiviz/common/constants/](https://github.com/Recidiviz/pulse-data/tree/master/recidiviz/common/constants) directory.
+
+ex. [#522](https://github.com/Recidiviz/pulse-data/pull/522/)
+
+### 2. Adding a region-specific override
+If you suspect the new string->Enum mapping is region-specific and should NOT be shared across all scrapers, you should add an override mapping to your specific scraper by implementing `scraper.get_enum_overrides()`. This method returns a `Dict[str, Enum]`, which contains all mappings specific to the region, regardless of the Enum type. Default maps and Enum values can both be found in [recidiviz/common/constants/](https://github.com/Recidiviz/pulse-data/tree/master/recidiviz/common/constants). 
+
+
+If a string should NOT be mapped to any Enum value, you can map it to None.
+
+ex. [#525](https://github.com/Recidiviz/pulse-data/pull/525/files#diff-e67a771abc537872ae10c6e6aa7fd717)
+
 Example Flow
 ==================
 Lets walk through a website and create an example scraper.

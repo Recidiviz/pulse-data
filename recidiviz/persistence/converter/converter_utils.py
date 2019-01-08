@@ -25,13 +25,15 @@ from recidiviz.common.constants.mappable_enum import EnumParsingError
 from recidiviz.common.constants.person import Ethnicity, Race
 
 
-def fn(func, field_name, proto, default=None):
+def fn(func, field_name, proto, *additional_func_args, default=None):
     """Return the result of applying the given function to the field on the
     proto, returning |default| if the proto field is unset.
     """
     if not proto.HasField(field_name):
         return default
-    return func(getattr(proto, field_name))
+    if not additional_func_args:
+        return func(getattr(proto, field_name))
+    return func(getattr(proto, field_name), *additional_func_args)
 
 
 def parse_external_id(id_str):

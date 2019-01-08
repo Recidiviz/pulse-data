@@ -183,7 +183,8 @@ class BaseScraper(Scraper):
             logging.info('Last seen time of person being set as: %s',
                          scraper_start_time)
             metadata = IngestMetadata(self.region.region_code,
-                                      scraper_start_time)
+                                      scraper_start_time,
+                                      self.get_enum_overrides())
             persistence.write(
                 ingest_utils.convert_ingest_info_to_proto(
                     ingest_info), metadata)
@@ -261,6 +262,18 @@ class BaseScraper(Scraper):
             params: dict of parameters passed from the last scrape session.
             ingest_info: The IngestInfo object to populate
         """
+
+    def get_enum_overrides(self):
+        """
+        Returns a dict that contains all string to enum mappings that are
+        region specific. These overrides have a higher precedence than the
+        global mappings in ingest/constants.
+
+        Note: Before overriding this method, consider directly adding each
+        mapping directly into the respective global mappings instead.
+        """
+        return {}
+
 
     def transform_post_data(self, data):
         """If the child needs to transform the data in any way before it sends
