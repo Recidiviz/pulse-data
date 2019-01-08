@@ -18,6 +18,7 @@
 """Creates monitoring client for measuring and recording stats."""
 from contextlib import contextmanager
 
+from opencensus.tags import TagMap
 from opencensus.stats import stats as stats_module
 from opencensus.stats.exporters import stackdriver_exporter as stackdriver
 
@@ -49,7 +50,10 @@ def register_views(views):
 def measurements(tags=None):
     mmap = stats().stats_recorder.new_measurement_map()
     yield mmap
-    mmap.record(tag_map_tags=tags)
+    tag_map = TagMap()
+    for key, value in tags.items():
+        tag_map.insert(key, str(value))
+    mmap.record(tag_map)
 
 
 class TagKey:
