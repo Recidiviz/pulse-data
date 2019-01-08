@@ -16,11 +16,18 @@
 # =============================================================================
 
 """Base test class for scrapers."""
+from datetime import datetime
+
 import yaml
+
+from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest import ingest_utils
 from recidiviz.ingest.models import ingest_info
 from recidiviz.ingest.models.ingest_info_diff import diff_ingest_infos
+from recidiviz.persistence.converter import converter
 from recidiviz.persistence.validator import validate
+
+_FAKE_SCRAPER_START_TIME = datetime(year=2019, month=1, day=2)
 
 
 class BaseScraperTest:
@@ -127,10 +134,15 @@ class BaseScraperTest:
         """
         result = self.scraper.populate_data(content, params, info)
 
-        # Attempt to convert the result to the final proto and validate its
-        # output.
+        # Attempt to convert the result to the ingest info proto,
+        # validate the proto, and finally attempt to convert the proto into
+        # our entitiy/ objects (which includes parsing strings into types)
         result_proto = ingest_utils.convert_ingest_info_to_proto(result)
         validate(result_proto)
+        metadata = IngestMetadata(
+            self.scraper.region, _FAKE_SCRAPER_START_TIME,
+            self.scraper.get_enum_overrides())
+        converter.convert(result_proto, metadata)
 
         differences = diff_ingest_infos(expected_result, result)
 
