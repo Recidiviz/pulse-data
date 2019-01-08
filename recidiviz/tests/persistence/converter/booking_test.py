@@ -16,7 +16,7 @@
 # =============================================================================
 """Tests for converting bookings."""
 import unittest
-from datetime import datetime
+from datetime import date
 
 from recidiviz.common.constants.booking import ReleaseReason, CustodyStatus, \
     Classification
@@ -55,11 +55,11 @@ class BookingConverterTest(unittest.TestCase):
         # Assert
         expected_result = entities.Booking.new_with_defaults(
             external_id='BOOKING_ID',
-            admission_date=datetime(year=1000, month=2, day=3),
+            admission_date=date(year=1000, month=2, day=3),
             admission_date_inferred=False,
-            release_date=datetime(year=3333, month=1, day=2),
+            release_date=date(year=3333, month=1, day=2),
             release_date_inferred=False,
-            projected_release_date=datetime(year=2222, month=5, day=20),
+            projected_release_date=date(year=2222, month=5, day=20),
             release_reason=ReleaseReason.TRANSFER,
             custody_status=CustodyStatus.HELD_ELSEWHERE,
             classification=Classification.LOW,
