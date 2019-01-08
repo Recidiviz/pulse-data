@@ -30,9 +30,11 @@ def convert(proto, metadata):
     new.admission_date = fn(parse_date, 'admission_date', proto)
     new.release_date, new.release_date_inferred = _parse_release_date(proto)
     new.projected_release_date = fn(parse_date, 'projected_release_date', proto)
-    new.release_reason = fn(ReleaseReason.from_str, 'release_reason', proto)
-    new.custody_status = fn(CustodyStatus.from_str, 'custody_status', proto,
-                            CustodyStatus.IN_CUSTODY)
+    new.release_reason = fn(ReleaseReason.from_str, 'release_reason', proto,
+                            metadata.enum_overrides)
+    new.custody_status = fn(
+        CustodyStatus.from_str, 'custody_status', proto,
+        metadata.enum_overrides, default=CustodyStatus.IN_CUSTODY)
     new.facility = fn(normalize, 'facility', proto)
     new.classification = fn(Classification.from_str, 'classification', proto)
 

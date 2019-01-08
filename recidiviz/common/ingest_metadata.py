@@ -16,10 +16,16 @@
 # ============================================================================
 """Metadata used to construct entity objects from ingest_info objects."""
 from datetime import datetime
+from typing import Dict, Any, Optional
 
 import attr
 
 from recidiviz.common.buildable_attr import BuildableAttr
+from recidiviz.common.constants.mappable_enum import MappableEnum
+
+
+def _normalize_keys(dictionary: Dict[str, Any]) -> Dict[str, Any]:
+    return {k.upper(): v for k, v in dictionary.items()}
 
 
 @attr.s(frozen=True)
@@ -32,3 +38,7 @@ class IngestMetadata(BuildableAttr):
     # The last time this ingest_info was seen from its data source. In the
     # normal ingest pipeline, this is the scraper_start_time.
     last_seen_time: datetime = attr.ib()
+
+    # Region specific mapping which takes precedence over the global mapping.
+    enum_overrides: Dict[str, Optional[MappableEnum]] = attr.ib(
+        factory=dict, converter=_normalize_keys)
