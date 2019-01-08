@@ -40,8 +40,9 @@ class BookingConverterTest(unittest.TestCase):
 
         ingest_booking = ingest_info_pb2.Booking(
             booking_id='BOOKING_ID',
-            release_date='1/1/1111',
-            projected_release_date='2/2/2222',
+            admission_date='2/3/1000',
+            release_date='1/2/3333',
+            projected_release_date='5/20/2222',
             release_reason='Transfer',
             custody_status='Held Elsewhere',
             classification='Low'
@@ -54,9 +55,11 @@ class BookingConverterTest(unittest.TestCase):
         # Assert
         expected_result = entities.Booking.new_with_none_defaults(
             external_id='BOOKING_ID',
-            release_date=datetime(year=1111, month=1, day=1),
+            admission_date=datetime(year=1000, month=2, day=3),
+            admission_date_inferred=False,
+            release_date=datetime(year=3333, month=1, day=2),
             release_date_inferred=False,
-            projected_release_date=datetime(year=2222, month=2, day=2),
+            projected_release_date=datetime(year=2222, month=5, day=20),
             release_reason=ReleaseReason.TRANSFER,
             custody_status=CustodyStatus.HELD_ELSEWHERE,
             classification=Classification.LOW,
@@ -67,7 +70,8 @@ class BookingConverterTest(unittest.TestCase):
 
     def testParseBooking_SetsDefaults(self):
         # Arrange
-        metadata = IngestMetadata.new_with_none_defaults()
+        metadata = IngestMetadata.new_with_none_defaults(
+            last_seen_time='LAST_SEEN_TIME')
         ingest_booking = ingest_info_pb2.Booking()
 
         # Act
@@ -76,6 +80,9 @@ class BookingConverterTest(unittest.TestCase):
 
         # Assert
         expected_result = entities.Booking.new_with_none_defaults(
+            admission_date='LAST_SEEN_TIME',
+            admission_date_inferred=True,
+            last_seen_time='LAST_SEEN_TIME',
             custody_status=CustodyStatus.IN_CUSTODY
         )
 
