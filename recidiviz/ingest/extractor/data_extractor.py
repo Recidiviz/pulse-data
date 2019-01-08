@@ -96,10 +96,10 @@ class DataExtractor:
             content: the html_tree we are searching.
         """
         for key in self.keys.keys():
-            self._convert_key_to_cells(content, key)
-
-        for css_key in self.css_keys.keys():
-            self._css_key_to_cell(content, css_key)
+            if key in self.css_keys:
+                self._css_key_to_cell(content, key)
+            else:
+                self._convert_key_to_cells(content, key)
 
         all_cells = content.xpath('//*[self::th or self::td]')
         self.cells = filter(self._is_leaf_cell, all_cells)
