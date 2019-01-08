@@ -37,7 +37,7 @@ class PersonConverterTest(unittest.TestCase):
 
     def testParsesPerson(self):
         # Arrange
-        metadata = IngestMetadata.new_with_none_defaults(region='REGION')
+        metadata = IngestMetadata.new_with_defaults(region='REGION')
         ingest_person = ingest_info_pb2.Person(
             full_name='LAST,FIRST',
             birthdate='12-31-1999',
@@ -51,7 +51,7 @@ class PersonConverterTest(unittest.TestCase):
         result = self.subject.build()
 
         # Assert
-        expected_result = entities.Person.new_with_none_defaults(
+        expected_result = entities.Person.new_with_defaults(
             given_names='FIRST',
             surname='LAST',
             birthdate=datetime(year=1999, month=12, day=31),
@@ -67,7 +67,7 @@ class PersonConverterTest(unittest.TestCase):
 
     def testParsePerson_WithSurnameAndFullname_ThrowsException(self):
         # Arrange
-        metadata = IngestMetadata.new_with_none_defaults()
+        metadata = IngestMetadata.new_with_defaults()
         ingest_person = ingest_info_pb2.Person(
             full_name='LAST,FIRST',
             surname='LAST'
@@ -79,7 +79,7 @@ class PersonConverterTest(unittest.TestCase):
 
     def testParsePerson_UsesSurnameAndGivenNames(self):
         # Arrange
-        metadata = IngestMetadata.new_with_none_defaults()
+        metadata = IngestMetadata.new_with_defaults()
         ingest_person = ingest_info_pb2.Person(
             surname='SURNAME',
             given_names='GIVEN_NAMES'
@@ -90,7 +90,7 @@ class PersonConverterTest(unittest.TestCase):
         result = self.subject.build()
 
         # Assert
-        expected_result = entities.Person.new_with_none_defaults(
+        expected_result = entities.Person.new_with_defaults(
             surname='SURNAME',
             given_names='GIVEN_NAMES'
         )
@@ -101,7 +101,7 @@ class PersonConverterTest(unittest.TestCase):
     def testParsePerson_InfersBirthdateFromAge(self, mock_datetime):
         # Arrange
         mock_datetime.now.return_value = _NOW
-        metadata = IngestMetadata.new_with_none_defaults()
+        metadata = IngestMetadata.new_with_defaults()
         ingest_person = ingest_info_pb2.Person(age='27')
 
         # Act
@@ -109,7 +109,7 @@ class PersonConverterTest(unittest.TestCase):
         result = self.subject.build()
 
         # Assert
-        expected_result = entities.Person.new_with_none_defaults(
+        expected_result = entities.Person.new_with_defaults(
             birthdate=datetime(year=_NOW.year - 27, month=1, day=1).date(),
             birthdate_inferred_from_age=True
         )
@@ -118,7 +118,7 @@ class PersonConverterTest(unittest.TestCase):
 
     def testParsePerson_RaceIsEthnicity(self):
         # Arrange
-        metadata = IngestMetadata.new_with_none_defaults()
+        metadata = IngestMetadata.new_with_defaults()
         ingest_person = ingest_info_pb2.Person(race='HISPANIC')
 
         # Act
@@ -126,7 +126,7 @@ class PersonConverterTest(unittest.TestCase):
         result = self.subject.build()
 
         # Assert
-        expected_result = entities.Person.new_with_none_defaults(
+        expected_result = entities.Person.new_with_defaults(
             ethnicity=Ethnicity.HISPANIC
         )
 

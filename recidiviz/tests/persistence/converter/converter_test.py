@@ -51,10 +51,10 @@ class TestConverter(unittest.TestCase):
         result = converter.convert(ingest_info, metadata)
 
         # Assert
-        expected_result = [Person.new_with_none_defaults(
+        expected_result = [Person.new_with_defaults(
             external_id='PERSON_ID',
             region='REGION',
-            bookings=[Booking.new_with_none_defaults(
+            bookings=[Booking.new_with_defaults(
                 external_id='BOOKING_ID',
                 admission_date='LAST_SEEN_TIME',
                 admission_date_inferred=True,
@@ -94,9 +94,9 @@ class TestConverter(unittest.TestCase):
         result = converter.convert(ingest_info, metadata)
 
         # Assert
-        expected_result = [Person.new_with_none_defaults(
+        expected_result = [Person.new_with_defaults(
             region='REGION',
-            bookings=[Booking.new_with_none_defaults(
+            bookings=[Booking.new_with_defaults(
                 admission_date='LAST_SEEN_TIME',
                 admission_date_inferred=True,
                 last_seen_time='LAST_SEEN_TIME',
@@ -114,8 +114,9 @@ class TestConverter(unittest.TestCase):
 
     def testConvert_TotalBondNoCharge_CreatesChargeWithTotalBondAmount(self):
         # Arrange
-        metadata = IngestMetadata.new_with_none_defaults(
-            last_seen_time='LAST_SEEN_TIME')
+        metadata = IngestMetadata.new_with_defaults(
+            last_seen_time='LAST_SEEN_TIME'
+        )
 
         ingest_info = IngestInfo()
         ingest_info.people.add(booking_ids=['BOOKING_ID'])
@@ -126,8 +127,8 @@ class TestConverter(unittest.TestCase):
         result = converter.convert(ingest_info, metadata)
 
         # Assert
-        expected_result = [Person.new_with_none_defaults(
-            bookings=[Booking.new_with_none_defaults(
+        expected_result = [Person.new_with_defaults(
+            bookings=[Booking.new_with_defaults(
                 admission_date='LAST_SEEN_TIME',
                 admission_date_inferred=True,
                 last_seen_time='LAST_SEEN_TIME',
@@ -145,8 +146,9 @@ class TestConverter(unittest.TestCase):
 
     def testConvert_TotalBondWithCharge_SetsTotalBondOnCharge(self):
         # Arrange
-        metadata = IngestMetadata.new_with_none_defaults(
-            last_seen_time='LAST_SEEN_TIME')
+        metadata = IngestMetadata.new_with_defaults(
+            last_seen_time='LAST_SEEN_TIME'
+        )
 
         ingest_info = IngestInfo()
         ingest_info.people.add(booking_ids=['BOOKING_ID'])
@@ -159,8 +161,8 @@ class TestConverter(unittest.TestCase):
         result = converter.convert(ingest_info, metadata)
 
         # Assert
-        expected_result = [Person.new_with_none_defaults(
-            bookings=[Booking.new_with_none_defaults(
+        expected_result = [Person.new_with_defaults(
+            bookings=[Booking.new_with_defaults(
                 external_id='BOOKING_ID',
                 admission_date='LAST_SEEN_TIME',
                 admission_date_inferred=True,
@@ -179,7 +181,7 @@ class TestConverter(unittest.TestCase):
 
     def testConvert_TotalBondWithMultipleBonds_ThrowsException(self):
         # Arrange
-        metadata = IngestMetadata.new_with_none_defaults()
+        metadata = IngestMetadata.new_with_defaults()
 
         ingest_info = IngestInfo()
         ingest_info.people.add(booking_ids=['BOOKING_ID'])
@@ -197,7 +199,7 @@ class TestConverter(unittest.TestCase):
 
     def testConvert_CannotConvertField_RaisesValueError(self):
         # Arrange
-        metadata = IngestMetadata.new_with_none_defaults()
+        metadata = IngestMetadata.new_with_defaults()
 
         ingest_info = IngestInfo()
         ingest_info.people.add(birthdate='NOT_A_DATE')

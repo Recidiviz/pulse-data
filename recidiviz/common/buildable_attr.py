@@ -74,7 +74,7 @@ class BuildableAttr:
         return cls.Builder(cls)
 
     @classmethod
-    def new_with_none_defaults(cls, **kwargs):
+    def new_with_defaults(cls, **kwargs):
         """Create a new object with default values if set, otherwise None.
 
         Note: This method should only be used in tests. In prod you should

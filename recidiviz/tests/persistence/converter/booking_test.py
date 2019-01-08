@@ -34,7 +34,7 @@ class BookingConverterTest(unittest.TestCase):
 
     def testParseBooking(self):
         # Arrange
-        metadata = IngestMetadata.new_with_none_defaults(
+        metadata = IngestMetadata.new_with_defaults(
             last_seen_time='LAST_SEEN_TIME'
         )
 
@@ -53,7 +53,7 @@ class BookingConverterTest(unittest.TestCase):
         result = self.subject.build()
 
         # Assert
-        expected_result = entities.Booking.new_with_none_defaults(
+        expected_result = entities.Booking.new_with_defaults(
             external_id='BOOKING_ID',
             admission_date=datetime(year=1000, month=2, day=3),
             admission_date_inferred=False,
@@ -70,8 +70,9 @@ class BookingConverterTest(unittest.TestCase):
 
     def testParseBooking_SetsDefaults(self):
         # Arrange
-        metadata = IngestMetadata.new_with_none_defaults(
-            last_seen_time='LAST_SEEN_TIME')
+        metadata = IngestMetadata.new_with_defaults(
+            last_seen_time='LAST_SEEN_TIME'
+        )
         ingest_booking = ingest_info_pb2.Booking()
 
         # Act
@@ -79,7 +80,7 @@ class BookingConverterTest(unittest.TestCase):
         result = self.subject.build()
 
         # Assert
-        expected_result = entities.Booking.new_with_none_defaults(
+        expected_result = entities.Booking.new_with_defaults(
             admission_date='LAST_SEEN_TIME',
             admission_date_inferred=True,
             last_seen_time='LAST_SEEN_TIME',
