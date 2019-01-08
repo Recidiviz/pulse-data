@@ -16,7 +16,7 @@
 # =============================================================================
 """Tests for converting people."""
 import unittest
-from datetime import datetime
+from datetime import date, datetime
 
 from mock import patch
 
@@ -54,7 +54,7 @@ class PersonConverterTest(unittest.TestCase):
         expected_result = entities.Person.new_with_defaults(
             given_names='FIRST',
             surname='LAST',
-            birthdate=datetime(year=1999, month=12, day=31),
+            birthdate=date(year=1999, month=12, day=31),
             birthdate_inferred_from_age=False,
             gender=Gender.MALE,
             race=Race.WHITE,
