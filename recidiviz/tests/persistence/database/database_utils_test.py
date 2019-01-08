@@ -49,7 +49,6 @@ _PERSON = entities.Person(
         projected_release_date=date(year=2000, month=1, day=5),
         release_reason=ReleaseReason.INFERRED_RELEASE,
         custody_status=CustodyStatus.IN_CUSTODY,
-        held_for_other_jurisdiction="held_for_other_jurisdiction",
         facility="facility",
         classification=Classification.HIGH,
         last_seen_time=datetime(year=2000, month=1, day=6, hour=13),

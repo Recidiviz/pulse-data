@@ -54,7 +54,7 @@ class TestConverter(unittest.TestCase):
         expected_result = [Person.new_with_none_defaults(
             external_id='PERSON_ID',
             region='REGION',
-            bookings=[Booking(
+            bookings=[Booking.new_with_none_defaults(
                 external_id='BOOKING_ID',
                 last_seen_time='LAST_SEEN_TIME',
                 custody_status=CustodyStatus.IN_CUSTODY,
@@ -94,7 +94,7 @@ class TestConverter(unittest.TestCase):
         # Assert
         expected_result = [Person.new_with_none_defaults(
             region='REGION',
-            bookings=[Booking(
+            bookings=[Booking.new_with_none_defaults(
                 last_seen_time='LAST_SEEN_TIME',
                 custody_status=CustodyStatus.IN_CUSTODY,
                 arrest=Arrest(agency='PD'),
@@ -122,7 +122,7 @@ class TestConverter(unittest.TestCase):
 
         # Assert
         expected_result = [Person.new_with_none_defaults(
-            bookings=[Booking(
+            bookings=[Booking.new_with_none_defaults(
                 external_id='BOOKING_ID',
                 custody_status=CustodyStatus.IN_CUSTODY,
                 charges=[Charge(
@@ -151,7 +151,7 @@ class TestConverter(unittest.TestCase):
 
         # Assert
         expected_result = [Person.new_with_none_defaults(
-            bookings=[Booking(
+            bookings=[Booking.new_with_none_defaults(
                 external_id='BOOKING_ID',
                 custody_status=CustodyStatus.IN_CUSTODY,
                 charges=[Charge(

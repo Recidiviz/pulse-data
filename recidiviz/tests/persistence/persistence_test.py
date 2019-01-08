@@ -258,7 +258,7 @@ class TestPersistence(TestCase):
         persistence.write(ingest_info, metadata)
 
         # Assert
-        expected_booking = entities.Booking(
+        expected_booking = entities.Booking.new_with_none_defaults(
             booking_id=BOOKING_ID,
             external_id=EXTERNAL_BOOKING_ID,
             admission_date_inferred=True,

@@ -129,7 +129,7 @@ def _convert(src):
     if direction is _Direction.ENTITY_TO_SCHEMA:
         dst = schema_cls()
     else:
-        if entity_cls is entities.Person:
+        if _should_use_builder(entity_cls):
             dst = entity_cls.builder()
         else:
             dst = entity_cls()
@@ -157,9 +157,13 @@ def _convert(src):
             setattr(dst, field, value)
 
     if direction is _Direction.SCHEMA_TO_ENTITY and \
-            entity_cls is entities.Person:
+            _should_use_builder(entity_cls):
         dst = dst.build()
     return dst
+
+
+def _should_use_builder(entity_cls):
+    return entity_cls in {entities.Person, entities.Booking}
 
 
 def _convert_field_or_enum(src, field, attr_type, direction):

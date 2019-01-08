@@ -29,6 +29,9 @@ from recidiviz.persistence.converter import booking
 class BookingConverterTest(unittest.TestCase):
     """Tests for converting bookings."""
 
+    def setUp(self):
+        self.subject = entities.Booking.builder()
+
     def testParseBooking(self):
         # Arrange
         metadata = IngestMetadata.new_with_none_defaults(
@@ -45,10 +48,11 @@ class BookingConverterTest(unittest.TestCase):
         )
 
         # Act
-        result = booking.convert(ingest_booking, metadata)
+        booking.copy_fields_to_builder(self.subject, ingest_booking, metadata)
+        result = self.subject.build()
 
         # Assert
-        expected_result = entities.Booking(
+        expected_result = entities.Booking.new_with_none_defaults(
             external_id='BOOKING_ID',
             release_date=datetime(year=1111, month=1, day=1),
             release_date_inferred=False,
@@ -67,10 +71,11 @@ class BookingConverterTest(unittest.TestCase):
         ingest_booking = ingest_info_pb2.Booking()
 
         # Act
-        result = booking.convert(ingest_booking, metadata)
+        booking.copy_fields_to_builder(self.subject, ingest_booking, metadata)
+        result = self.subject.build()
 
         # Assert
-        expected_result = entities.Booking(
+        expected_result = entities.Booking.new_with_none_defaults(
             custody_status=CustodyStatus.IN_CUSTODY
         )
 

@@ -17,14 +17,17 @@
 """Converts an ingest_info proto Booking to a persistence entity."""
 from recidiviz.common.constants.booking import ReleaseReason, CustodyStatus, \
     Classification
-from recidiviz.persistence import entities
 from recidiviz.persistence.converter.converter_utils import fn, normalize, \
     parse_date, parse_external_id
 
 
-def convert(proto, metadata):
-    """Converts an ingest_info proto Booking to a persistence entity."""
-    new = entities.Booking()
+def copy_fields_to_builder(booking_builder, proto, metadata):
+    """Mutates the provided |booking_builder| by converting an ingest_info proto
+     Booking.
+
+     Note: This will not copy children into the Builder!
+     """
+    new = booking_builder
 
     new.external_id = fn(parse_external_id, 'booking_id', proto)
     new.admission_date = fn(parse_date, 'admission_date', proto)
@@ -40,7 +43,8 @@ def convert(proto, metadata):
 
     new.last_seen_time = metadata.last_seen_time
 
-    return new
+    # TODO(#363): Add logic for the following fields
+    new.admission_date_inferred = None
 
 
 def _parse_release_date(proto):
