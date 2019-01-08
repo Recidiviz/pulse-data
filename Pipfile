@@ -90,6 +90,8 @@ google-cloud-logging = "*"
 pymysql = "*"
 deepdiff = "*"
 mypy = "*"
+opencensus = "*"
+google-cloud-monitoring = "*"
 
 [dev-packages]
 rope = "*"
