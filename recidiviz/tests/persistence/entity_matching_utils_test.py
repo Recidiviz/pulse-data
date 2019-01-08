@@ -80,8 +80,12 @@ class TestEntityMatchingUtils(TestCase):
             db_entity=db_person, ingested_entity=ingested_person))
 
     def test_booking_match_external_id(self):
-        db_booking = entities.Booking(external_id=_EXTERNAL_ID)
-        ingested_booking = entities.Booking(external_id=_EXTERNAL_ID)
+        db_booking = entities.Booking.new_with_none_defaults(
+            external_id=_EXTERNAL_ID
+        )
+        ingested_booking = entities.Booking.new_with_none_defaults(
+            external_id=_EXTERNAL_ID
+        )
         self.assertTrue(entity_matching_utils.is_booking_match(
             db_entity=db_booking, ingested_entity=ingested_booking))
         ingested_booking.external_id = _EXTERNAL_ID_OTHER
@@ -89,8 +93,12 @@ class TestEntityMatchingUtils(TestCase):
             db_entity=db_booking, ingested_entity=ingested_booking))
 
     def test_booking_match_admission_date(self):
-        db_booking = entities.Booking(admission_date=_DATE)
-        ingested_booking = entities.Booking(admission_date=_DATE)
+        db_booking = entities.Booking.new_with_none_defaults(
+            admission_date=_DATE
+        )
+        ingested_booking = entities.Booking.new_with_none_defaults(
+            admission_date=_DATE
+        )
         self.assertTrue(entity_matching_utils.is_booking_match(
             db_entity=db_booking, ingested_entity=ingested_booking))
         ingested_booking.admission_date = None
@@ -98,9 +106,11 @@ class TestEntityMatchingUtils(TestCase):
             db_entity=db_booking, ingested_entity=ingested_booking))
 
     def test_booking_match_open_bookings(self):
-        db_booking = entities.Booking(admission_date=_DATE,
-                                      admission_date_inferred=True)
-        ingested_booking = entities.Booking()
+        db_booking = entities.Booking.new_with_none_defaults(
+            admission_date=_DATE,
+            admission_date_inferred=True
+        )
+        ingested_booking = entities.Booking.new_with_none_defaults()
         self.assertTrue(entity_matching_utils.is_booking_match(
             db_entity=db_booking, ingested_entity=ingested_booking))
         ingested_booking.release_date = _DATE

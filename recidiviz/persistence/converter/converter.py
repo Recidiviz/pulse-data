@@ -67,25 +67,29 @@ class _Converter:
 
     def _convert_booking(self, ingest_booking):
         """Converts an ingest_info proto Booking to a persistence entity."""
-        new_booking = booking.convert(ingest_booking, self.metadata)
+        booking_builder = entities.Booking.builder()
 
-        new_booking.arrest = \
+        booking.copy_fields_to_builder(booking_builder, ingest_booking,
+                                       self.metadata)
+
+        booking_builder.arrest = \
             fn(lambda i: arrest.convert(self.arrests[i]),
                'arrest_id', ingest_booking)
-        new_booking.charges = [self._convert_charge(self.charges[charge_id]) for
-                               charge_id in ingest_booking.charge_ids]
 
         # TODO: Populate hold when the proto is updated to contain a hold table
+
+        charges = [self._convert_charge(self.charges[charge_id])
+                   for charge_id in ingest_booking.charge_ids]
+        booking_builder.charges = charges
 
         bond_amount_and_type = fn(parse_bond_amount_and_infer_type,
                                   'total_bond_amount', ingest_booking)
         if bond_amount_and_type is not None:
             bond_amount, bond_type = bond_amount_and_type
-            new_booking.charges = _charges_pointing_to_total_bond(bond_amount,
-                                                                  bond_type,
-                                                                  new_booking)
+            booking_builder.charges = \
+                _charges_pointing_to_total_bond(bond_amount, bond_type, charges)
 
-        return new_booking
+        return booking_builder.build()
 
     def _convert_charge(self, ingest_charge):
         """Converts an ingest_info proto Charge to a persistence entity."""
@@ -102,22 +106,23 @@ class _Converter:
         return new
 
 
-def _charges_pointing_to_total_bond(bond_amount, bond_type, new_booking):
-    """Infers a bond from the total_bond field and points all charges to the
-    inferred bond. If no charges exist, then also infer a charge."""
+def _charges_pointing_to_total_bond(bond_amount, bond_type, charges):
+    """Infers a bond from the total_bond field and creates a copy of all charges
+    updated to point to the inferred bond. If no charges exist, then also infer
+    a charge."""
     inferred_bond = entities.Bond(amount_dollars=bond_amount,
                                   bond_type=bond_type,
                                   status=BondStatus.ACTIVE)
 
-    if not new_booking.charges:
+    if not charges:
         inferred_charge = entities.Charge(bond=inferred_bond,
                                           status=ChargeStatus.PENDING)
         return [inferred_charge]
 
-    if any(c.bond is not None for c in new_booking.charges):
+    if any(c.bond is not None for c in charges):
         raise ValueError("Can't use total_bond and create a bond on a charge")
 
-    charges_pointing_to_inferred_bond = deepcopy(new_booking.charges)
+    charges_pointing_to_inferred_bond = deepcopy(charges)
     for c in charges_pointing_to_inferred_bond:
         c.bond = inferred_bond
 

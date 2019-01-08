@@ -52,19 +52,18 @@ class Person(BuildableAttr):
 
 
 @attr.s
-class Booking:
-    external_id: str = attr.ib(default=None)
-    admission_date: datetime.date = attr.ib(default=None)
-    admission_date_inferred: bool = attr.ib(default=None)
-    release_date: datetime.date = attr.ib(default=None)
-    release_date_inferred: bool = attr.ib(default=None)
-    projected_release_date: datetime.date = attr.ib(default=None)
-    release_reason: ReleaseReason = attr.ib(default=None)
-    custody_status: CustodyStatus = attr.ib(default=None)
-    held_for_other_jurisdiction: str = attr.ib(default=None)
-    facility: str = attr.ib(default=None)
-    classification: Classification = attr.ib(default=None)
-    last_seen_time: datetime.datetime = attr.ib(default=None)
+class Booking(BuildableAttr):
+    external_id: str = attr.ib()
+    admission_date: datetime.date = attr.ib()
+    admission_date_inferred: bool = attr.ib()
+    release_date: datetime.date = attr.ib()
+    release_date_inferred: bool = attr.ib()
+    projected_release_date: datetime.date = attr.ib()
+    release_reason: ReleaseReason = attr.ib()
+    custody_status: CustodyStatus = attr.ib()
+    facility: str = attr.ib()
+    classification: Classification = attr.ib()
+    last_seen_time: datetime.datetime = attr.ib()
 
     booking_id: int = attr.ib(default=None)
     holds: List['Hold'] = attr.ib(factory=list)
