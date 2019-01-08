@@ -134,7 +134,7 @@ class TestPersistence(TestCase):
     # TODO: Rewrite this test to directly test __eq__ between the two People
     def test_readPersonAndAllRelationships(self):
         # Arrange
-        metadata = IngestMetadata.new_with_none_defaults(
+        metadata = IngestMetadata.new_with_defaults(
             region=REGION_1,
             last_seen_time=SCRAPER_START_DATETIME)
 
@@ -223,7 +223,7 @@ class TestPersistence(TestCase):
     def test_write_preexisting_person(self):
         # Arrange
         most_recent_scrape_time = (SCRAPER_START_DATETIME + timedelta(days=1))
-        metadata = IngestMetadata.new_with_none_defaults(
+        metadata = IngestMetadata.new_with_defaults(
             region=REGION_1,
             last_seen_time=most_recent_scrape_time)
 
@@ -258,13 +258,13 @@ class TestPersistence(TestCase):
         persistence.write(ingest_info, metadata)
 
         # Assert
-        expected_booking = entities.Booking.new_with_none_defaults(
+        expected_booking = entities.Booking.new_with_defaults(
             booking_id=BOOKING_ID,
             external_id=EXTERNAL_BOOKING_ID,
             admission_date_inferred=True,
             custody_status=CustodyStatus.IN_CUSTODY,
             last_seen_time=most_recent_scrape_time)
-        expected_person = entities.Person.new_with_none_defaults(
+        expected_person = entities.Person.new_with_defaults(
             person_id=PERSON_ID,
             external_id=EXTERNAL_PERSON_ID,
             given_names=GIVEN_NAME,
@@ -275,7 +275,7 @@ class TestPersistence(TestCase):
 
     def test_inferReleaseDateOnOpenBookings(self):
         # Arrange
-        metadata_1 = IngestMetadata.new_with_none_defaults(
+        metadata_1 = IngestMetadata.new_with_defaults(
             region=REGION_1,
             last_seen_time=SCRAPER_START_DATETIME)
         metadata_2 = IngestMetadata(region=REGION_2,

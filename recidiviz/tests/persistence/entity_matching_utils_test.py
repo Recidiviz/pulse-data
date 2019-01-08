@@ -50,12 +50,12 @@ class TestEntityMatchingUtils(TestCase):
     """Tests for entity matching logic"""
 
     def test_person_match_name_and_birthdate(self):
-        db_person = entities.Person.new_with_none_defaults(
+        db_person = entities.Person.new_with_defaults(
             given_names=_GIVEN_NAMES,
             surname=_SURNAME,
             birthdate=_DATE
         )
-        ingested_person = entities.Person.new_with_none_defaults(
+        ingested_person = entities.Person.new_with_defaults(
             given_names=_GIVEN_NAMES,
             surname=_SURNAME,
             birthdate=_DATE
@@ -67,10 +67,10 @@ class TestEntityMatchingUtils(TestCase):
             db_entity=db_person, ingested_entity=ingested_person))
 
     def test_person_match_external_id(self):
-        db_person = entities.Person.new_with_none_defaults(
+        db_person = entities.Person.new_with_defaults(
             external_id=_EXTERNAL_ID
         )
-        ingested_person = entities.Person.new_with_none_defaults(
+        ingested_person = entities.Person.new_with_defaults(
             external_id=_EXTERNAL_ID
         )
         self.assertTrue(entity_matching_utils.is_person_match(
@@ -80,10 +80,10 @@ class TestEntityMatchingUtils(TestCase):
             db_entity=db_person, ingested_entity=ingested_person))
 
     def test_booking_match_external_id(self):
-        db_booking = entities.Booking.new_with_none_defaults(
+        db_booking = entities.Booking.new_with_defaults(
             external_id=_EXTERNAL_ID
         )
-        ingested_booking = entities.Booking.new_with_none_defaults(
+        ingested_booking = entities.Booking.new_with_defaults(
             external_id=_EXTERNAL_ID
         )
         self.assertTrue(entity_matching_utils.is_booking_match(
@@ -93,10 +93,10 @@ class TestEntityMatchingUtils(TestCase):
             db_entity=db_booking, ingested_entity=ingested_booking))
 
     def test_booking_match_admission_date(self):
-        db_booking = entities.Booking.new_with_none_defaults(
+        db_booking = entities.Booking.new_with_defaults(
             admission_date=_DATE
         )
-        ingested_booking = entities.Booking.new_with_none_defaults(
+        ingested_booking = entities.Booking.new_with_defaults(
             admission_date=_DATE
         )
         self.assertTrue(entity_matching_utils.is_booking_match(
@@ -106,11 +106,11 @@ class TestEntityMatchingUtils(TestCase):
             db_entity=db_booking, ingested_entity=ingested_booking))
 
     def test_booking_match_open_bookings(self):
-        db_booking = entities.Booking.new_with_none_defaults(
+        db_booking = entities.Booking.new_with_defaults(
             admission_date=_DATE,
             admission_date_inferred=True
         )
-        ingested_booking = entities.Booking.new_with_none_defaults()
+        ingested_booking = entities.Booking.new_with_defaults()
         self.assertTrue(entity_matching_utils.is_booking_match(
             db_entity=db_booking, ingested_entity=ingested_booking))
         ingested_booking.release_date = _DATE

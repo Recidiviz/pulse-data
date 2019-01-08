@@ -24,7 +24,7 @@ from recidiviz.persistence import entities
 from recidiviz.persistence.converter import bond
 
 
-_EMPTY_METADATA = IngestMetadata.new_with_none_defaults()
+_EMPTY_METADATA = IngestMetadata.new_with_defaults()
 
 
 class BondConverterTest(unittest.TestCase):
