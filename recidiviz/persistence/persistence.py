@@ -97,8 +97,8 @@ def _infer_release_date_for_bookings(session, bookings, date):
 
 
 def _should_persist():
-    return environment.in_prod() or \
-        strtobool((os.environ.get('PERSIST_LOCALLY', 'false')))
+    return bool(environment.in_prod() or \
+        strtobool((os.environ.get('PERSIST_LOCALLY', 'false'))))
 
 
 def write(ingest_info, metadata):
