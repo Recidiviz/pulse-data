@@ -16,7 +16,6 @@
 # =============================================================================
 
 """Creates monitoring client for measuring and recording stats."""
-import enum
 from contextlib import contextmanager
 
 from opencensus.stats import stats as stats_module
@@ -53,7 +52,7 @@ def measurements(tags=None):
     mmap.record(tag_map_tags=tags)
 
 
-class TagKey(enum.Enum):
+class TagKey:
     REGION = 'region'
     SHOULD_PERSIST = 'should_persist'
     PERSISTED = 'persisted'
