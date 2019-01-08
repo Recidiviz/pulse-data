@@ -93,6 +93,11 @@ def local_only(func):
     return check_env
 
 
+def in_test():
+    """Check whether we are running in a test"""
+    return hasattr(recidiviz, 'called_from_test')
+
+
 def test_only(func):
     """Decorator to verify function only runs in tests
 
@@ -101,7 +106,7 @@ def test_only(func):
 
     @wraps(func)
     def check_test_and_call(*args, **kwargs):
-        if not hasattr(recidiviz, 'called_from_test'):
+        if not in_test():
             raise RuntimeError("Function may only be called from tests")
         return func(*args, **kwargs)
 
