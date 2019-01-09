@@ -60,7 +60,10 @@ class TestConverter(unittest.TestCase):
                 admission_date_inferred=True,
                 last_seen_time='LAST_SEEN_TIME',
                 custody_status=CustodyStatus.IN_CUSTODY,
-                arrest=Arrest(external_id='ARREST_ID', agency='PD'),
+                arrest=Arrest.new_with_defaults(
+                    external_id='ARREST_ID',
+                    agency='PD'
+                ),
                 charges=[Charge(
                     external_id='CHARGE_ID',
                     status=ChargeStatus.PENDING,
@@ -101,7 +104,7 @@ class TestConverter(unittest.TestCase):
                 admission_date_inferred=True,
                 last_seen_time='LAST_SEEN_TIME',
                 custody_status=CustodyStatus.IN_CUSTODY,
-                arrest=Arrest(agency='PD'),
+                arrest=Arrest.new_with_defaults(agency='PD'),
                 charges=[Charge(
                     status=ChargeStatus.PENDING,
                     name='DUI',
