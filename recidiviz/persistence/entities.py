@@ -81,13 +81,13 @@ class Hold:
 
 
 @attr.s
-class Arrest:
-    external_id: str = attr.ib(default=None)
-    date: datetime.date = attr.ib(default=None)
-    location: str = attr.ib(default=None)
-    agency: str = attr.ib(default=None)
-    officer_name: str = attr.ib(default=None)
-    officer_id: str = attr.ib(default=None)
+class Arrest(BuildableAttr):
+    external_id: str = attr.ib()
+    date: datetime.date = attr.ib()
+    location: str = attr.ib()
+    agency: str = attr.ib()
+    officer_name: str = attr.ib()
+    officer_id: str = attr.ib()
 
     arrest_id: int = attr.ib(default=None)
 
