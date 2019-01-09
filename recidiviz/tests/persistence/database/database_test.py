@@ -23,6 +23,7 @@ from unittest import TestCase
 from recidiviz import Session
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 from recidiviz.ingest.models.ingest_info import IngestInfo
+from recidiviz.persistence import entities
 from recidiviz.persistence.database import database, database_utils
 from recidiviz.persistence.database.schema import Booking, Person
 from recidiviz.tests.utils import fakes
@@ -93,7 +94,36 @@ class TestDatabase(TestCase):
                          [database_utils.convert_booking(
                              open_booking_before_last_scrape)])
 
-    def test_readPeopleForEntityMatching(self):
+    def test_readPeopleByExternalId(self):
+        admission_date = datetime.datetime(2018, 6, 20)
+        release_date = datetime.date(2018, 7, 20)
+        closed_booking = Booking(
+            custody_status=enum_strings.custody_status_in_custody,
+            admission_date=admission_date,
+            release_date=release_date,
+            last_seen_time=admission_date)
+
+        person_no_match = Person(person_id=1, region=_REGION,
+                                 bookings=[deepcopy(closed_booking)])
+        person_match_external_id = Person(person_id=2, region=_REGION,
+                                          bookings=[closed_booking],
+                                          external_id=_EXTERNAL_ID)
+
+        session = Session()
+        session.add(person_no_match)
+        session.add(person_match_external_id)
+        session.commit()
+
+        ingested_person = entities.Person.new_with_defaults(
+            external_id=_EXTERNAL_ID)
+        people = database.read_people_by_external_ids(session, _REGION,
+                                                      [ingested_person])
+
+        expected_people = [
+            database_utils.convert_person(person_match_external_id)]
+        self.assertCountEqual(people, expected_people)
+
+    def test_readPeopleWithOpenBookings(self):
         admission_date = datetime.datetime(2018, 6, 20)
         release_date = datetime.date(2018, 7, 20)
 
@@ -115,10 +145,6 @@ class TestDatabase(TestCase):
         person_match_given_names = Person(person_id=3, region=_REGION,
                                           bookings=[deepcopy(open_booking)],
                                           given_names=_GIVEN_NAMES)
-        person_match_external_id = Person(person_id=4, region=_REGION,
-                                          bookings=[deepcopy(open_booking)],
-                                          external_id=_EXTERNAL_ID)
-
         person_match_birthdate = Person(person_id=5, region=_REGION,
                                         bookings=[deepcopy(open_booking)],
                                         birthdate=_BIRTHDATE)
@@ -131,17 +157,15 @@ class TestDatabase(TestCase):
         session.add(person_no_open_bookings)
         session.add(person_match_given_names)
         session.add(person_match_surname)
-        session.add(person_match_external_id)
         session.add(person_match_birthdate)
         session.commit()
 
         info = IngestInfo()
         info.create_person(surname=_SURNAME, person_id=_EXTERNAL_ID)
         info.create_person(given_names=_GIVEN_NAMES, birthdate=_BIRTHDATE)
-        people = database.read_people_for_entity_matching(session, _REGION,
-                                                          info.person)
+        people = database.read_people_with_open_bookings(session, _REGION,
+                                                         info.person)
 
         expected_people = [database_utils.convert_person(p) for p in
-                           [person_match_external_id, person_match_given_names,
-                            person_match_surname]]
+                           [person_match_given_names, person_match_surname]]
         self.assertCountEqual(people, expected_people)
