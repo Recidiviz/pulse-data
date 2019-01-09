@@ -15,9 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains logic for communicating with a SQL Database."""
+from typing import List
+
 from sqlalchemy import or_
+from sqlalchemy.orm import Session
 
 from recidiviz.common.constants.mappable_enum import MappableEnum
+from recidiviz.persistence import entities
 from recidiviz.persistence.database import database_utils
 from recidiviz.persistence.database.schema import Person, Booking
 
@@ -55,10 +59,32 @@ def read_bookings(session):
     return database_utils.convert_bookings(session.query(Booking).all())
 
 
-def read_people_for_entity_matching(session, region, ingested_people):
+def read_people_by_external_ids(
+        session: Session, region: str,
+        ingested_people: List[entities.Person]) -> List[entities.Person]:
     """
-    Reads all people for a given region that have open bookings and can be
-    matched with the provided ingested_people
+    Reads all people for the given |region| that have external_ids that match
+    the external_ids from the |ingested_people|
+
+    Args:
+        session: The transaction to read from
+        region: The region to match against
+        ingested_people: The ingested people to match against
+    Returns: List of people that match the provided |ingested_people|
+    """
+    external_ids = {p.external_id for p in ingested_people}
+    query = session.query(Person, Booking) \
+        .filter(Person.person_id == Booking.person_id) \
+        .filter(Person.region == region) \
+        .filter(Person.external_id.in_(external_ids))
+
+    return [database_utils.convert_person(person) for person, _ in query.all()]
+
+
+def read_people_with_open_bookings(session, region, ingested_people):
+    """
+    Reads all people for a given |region| that have open bookings and can be
+    matched with the provided |ingested_people|.
 
     Args:
         session: The transaction to read from
@@ -71,9 +97,7 @@ def read_people_for_entity_matching(session, region, ingested_people):
 
     surnames = {p.surname for p in ingested_people}
     given_names = {p.given_names for p in ingested_people}
-    external_ids = {p.person_id for p in ingested_people}
-    query = query.filter(or_(Person.external_id.in_(external_ids),
-                             Person.surname.in_(surnames),
+    query = query.filter(or_(Person.surname.in_(surnames),
                              Person.given_names.in_(given_names)))
 
     return [database_utils.convert_person(person) for person, _ in query.all()]
