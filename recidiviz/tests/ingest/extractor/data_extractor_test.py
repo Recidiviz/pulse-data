@@ -15,13 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Tests for ingest/extractor/data_extractor_test.py"""
+"""Tests for ingest/extractor/html_data_extractor.py"""
 
 import os
 from lxml import html
 import pytest
 
-from recidiviz.ingest.extractor.data_extractor import DataExtractor
+from recidiviz.ingest.extractor.html_data_extractor import HtmlDataExtractor
 from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.tests.ingest import fixtures
 
@@ -30,7 +30,7 @@ def test_good_table():
     """Tests a well modelled table."""
     key_mapping_file = '../testdata/data_extractor/yaml/good_table.yaml'
     key_mapping_file = os.path.join(os.path.dirname(__file__), key_mapping_file)
-    extractor = DataExtractor(key_mapping_file)
+    extractor = HtmlDataExtractor(key_mapping_file)
 
     expected_info = IngestInfo()
     person = expected_info.create_person()
@@ -46,7 +46,7 @@ def test_nested_good_table():
     """Tests a well modelled nested table."""
     key_mapping_file = '../testdata/data_extractor/yaml/nested_good_table.yaml'
     key_mapping_file = os.path.join(os.path.dirname(__file__), key_mapping_file)
-    extractor = DataExtractor(key_mapping_file)
+    extractor = HtmlDataExtractor(key_mapping_file)
 
     expected_info = IngestInfo()
 
@@ -85,7 +85,7 @@ def test_bad_table():
     """Tests a table with an unusual cell layout."""
     key_mapping_file = '../testdata/data_extractor/yaml/bad_table.yaml'
     key_mapping_file = os.path.join(os.path.dirname(__file__), key_mapping_file)
-    extractor = DataExtractor(key_mapping_file)
+    extractor = HtmlDataExtractor(key_mapping_file)
 
     expected_info = IngestInfo()
     person = expected_info.create_person()
@@ -131,7 +131,7 @@ def test_multiple_people_with_maybe_charges():
     key_mapping_file = ('../testdata/data_extractor/yaml/'
                         'multiple_people_sometimes_charges.yaml')
     key_mapping_file = os.path.join(os.path.dirname(__file__), key_mapping_file)
-    extractor = DataExtractor(key_mapping_file)
+    extractor = HtmlDataExtractor(key_mapping_file)
 
     expected_info = IngestInfo()
 
@@ -210,7 +210,7 @@ def test_bad_lookup():
     """Tests a yaml file with a lookup key that doesn't exist on the page."""
     key_mapping_file = '../testdata/data_extractor/yaml/bad_lookup.yaml'
     key_mapping_file = os.path.join(os.path.dirname(__file__), key_mapping_file)
-    extractor = DataExtractor(key_mapping_file)
+    extractor = HtmlDataExtractor(key_mapping_file)
 
     html_contents = html.fromstring(
         fixtures.as_string('testdata/data_extractor/html', 'good_table.html'))
@@ -222,7 +222,7 @@ def test_bad_object():
     """Tests a yaml file with a db object that doesn't exist."""
     key_mapping_file = '../testdata/data_extractor/yaml/bad_object.yaml'
     key_mapping_file = os.path.join(os.path.dirname(__file__), key_mapping_file)
-    extractor = DataExtractor(key_mapping_file)
+    extractor = HtmlDataExtractor(key_mapping_file)
 
     html_contents = html.fromstring(
         fixtures.as_string('testdata/data_extractor/html', 'good_table.html'))
@@ -234,7 +234,7 @@ def test_bad_attr():
     """Tests a yaml file with a db attribute that doesn't exist."""
     key_mapping_file = '../testdata/data_extractor/yaml/bad_attr.yaml'
     key_mapping_file = os.path.join(os.path.dirname(__file__), key_mapping_file)
-    extractor = DataExtractor(key_mapping_file)
+    extractor = HtmlDataExtractor(key_mapping_file)
 
     html_contents = html.fromstring(
         fixtures.as_string('testdata/data_extractor/html', 'good_table.html'))
@@ -246,7 +246,7 @@ def test_partial_table():
     """Tests a page with a table as well as unstructured data."""
     key_mapping_file = '../testdata/data_extractor/yaml/partial_table.yaml'
     key_mapping_file = os.path.join(os.path.dirname(__file__), key_mapping_file)
-    extractor = DataExtractor(key_mapping_file)
+    extractor = HtmlDataExtractor(key_mapping_file)
 
     expected_info = IngestInfo()
     person = expected_info.create_person()
@@ -272,7 +272,7 @@ def test_labeled_fields():
     """Tests a page with field values in <span>s labeled by <label>s."""
     key_mapping_file = '../testdata/data_extractor/yaml/labeled_fields.yaml'
     key_mapping_file = os.path.join(os.path.dirname(__file__), key_mapping_file)
-    extractor = DataExtractor(key_mapping_file)
+    extractor = HtmlDataExtractor(key_mapping_file)
 
     expected_info = IngestInfo()
     person = expected_info.create_person()
@@ -300,7 +300,7 @@ def test_bad_labels():
     """Tests a page with field values in <span>s labeled by nested <label>s."""
     key_mapping_file = '../testdata/data_extractor/yaml/bad_labels.yaml'
     key_mapping_file = os.path.join(os.path.dirname(__file__), key_mapping_file)
-    extractor = DataExtractor(key_mapping_file)
+    extractor = HtmlDataExtractor(key_mapping_file)
 
     expected_info = IngestInfo()
     person = expected_info.create_person()
@@ -327,7 +327,7 @@ def test_text_label():
     """Tests a page with a key/value pair in plain text."""
     key_mapping_file = '../testdata/data_extractor/yaml/text_label.yaml'
     key_mapping_file = os.path.join(os.path.dirname(__file__), key_mapping_file)
-    extractor = DataExtractor(key_mapping_file)
+    extractor = HtmlDataExtractor(key_mapping_file)
 
     expected_info = IngestInfo()
     person = expected_info.create_person()
@@ -367,7 +367,7 @@ def test_th_rows():
     """Tests a yaml file with <th> keys in rows."""
     key_mapping_file = '../testdata/data_extractor/yaml/th_rows.yaml'
     key_mapping_file = os.path.join(os.path.dirname(__file__), key_mapping_file)
-    extractor = DataExtractor(key_mapping_file)
+    extractor = HtmlDataExtractor(key_mapping_file)
 
     expected_info = IngestInfo()
     person = expected_info.create_person()
@@ -381,10 +381,10 @@ def test_th_rows():
     assert expected_info == info
 
 def test_content_is_not_modified():
-    """Tests that the DataExtractor does not mutate |content|."""
+    """Tests that the HtmlDataExtractor does not mutate |content|."""
     key_mapping_file = '../testdata/data_extractor/yaml/text_label.yaml'
     key_mapping_file = os.path.join(os.path.dirname(__file__), key_mapping_file)
-    extractor = DataExtractor(key_mapping_file)
+    extractor = HtmlDataExtractor(key_mapping_file)
 
     expected_info = IngestInfo()
     person = expected_info.create_person()
@@ -398,11 +398,11 @@ def test_content_is_not_modified():
     assert html_contents.cssselect('td') == []
 
 def test_cell_ordering():
-    """Tests that the DataExtractor handles 'th' and 'td' cells in the correct
-    order."""
+    """Tests that the HtmlDataExtractor handles 'th' and 'td' cells in the
+    correct order."""
     key_mapping_file = '../testdata/data_extractor/yaml/good_table.yaml'
     key_mapping_file = os.path.join(os.path.dirname(__file__), key_mapping_file)
-    extractor = DataExtractor(key_mapping_file)
+    extractor = HtmlDataExtractor(key_mapping_file)
 
     expected_info = IngestInfo()
     expected_info.create_person(birthdate='A')
@@ -423,7 +423,7 @@ def test_no_multi_key_parent():
     booking with no charge information."""
     key_mapping_file = '../testdata/data_extractor/yaml/charge_multi_key.yaml'
     key_mapping_file = os.path.join(os.path.dirname(__file__), key_mapping_file)
-    extractor = DataExtractor(key_mapping_file)
+    extractor = HtmlDataExtractor(key_mapping_file)
 
     expected_info = IngestInfo()
     charge = expected_info.create_person().create_booking().create_charge()
