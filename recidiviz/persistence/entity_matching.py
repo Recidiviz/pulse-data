@@ -17,9 +17,11 @@
 """Contains logic to match database entities with ingested entities."""
 
 import logging
+from typing import List
+
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.persistence.database import database
-from recidiviz.persistence import entity_matching_utils as utils
+from recidiviz.persistence import entity_matching_utils as utils, entities
 
 
 class EntityMatchingError(Exception):
@@ -38,8 +40,13 @@ def match_entities(session, region, ingested_people):
         region: (str)
         ingested_people: List[entities.Person]
     """
-    db_people = database.read_people_for_entity_matching(session, region,
+    if _has_external_ids(ingested_people):
+        db_people = database.read_people_by_external_ids(session, region,
                                                          ingested_people)
+    else:
+        db_people = database.read_people_with_open_bookings(session, region,
+                                                            ingested_people)
+
     for db_person in db_people:
         ingested_person = _get_only_match(db_person, ingested_people,
                                           utils.is_person_match)
@@ -54,6 +61,13 @@ def match_entities(session, region, ingested_people):
             ingested_person.person_id = db_person.person_id
             match_bookings(db_person=db_person,
                            ingested_person=ingested_person)
+
+
+def _has_external_ids(ingested_people: List[entities.Person]) -> bool:
+    for ingested_person in ingested_people:
+        if ingested_person.external_id:
+            return True
+    return False
 
 
 def match_bookings(db_person, ingested_person):
