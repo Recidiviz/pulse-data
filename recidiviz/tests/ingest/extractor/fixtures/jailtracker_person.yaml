@@ -1,0 +1,5 @@
+key_mappings:
+  "id": person.person_id
+  "race": person.race
+  "dob": person.birthdate
+  "age": person.age

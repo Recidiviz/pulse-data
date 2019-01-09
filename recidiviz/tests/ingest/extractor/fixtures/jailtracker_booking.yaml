@@ -1,0 +1,4 @@
+key_mappings:
+  "id": booking.booking_id
+  admitted: booking.admission_date
+  released: booking.release_date

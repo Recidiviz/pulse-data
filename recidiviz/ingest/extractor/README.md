@@ -1,9 +1,23 @@
 
 # Data Extractor
 
-The Data Extractor is a tool designed to make the extraction of data from a website much simpler.  At a high level the data extractor takes a webpage, and attempts to extract values from provided keys so the user doesn't need to worry about walking HTML trees or writing css selectors to get the data they need.  It will smartly find all of the keys the user lists and map them to the correct fields in the `ingest_info` object.  The result is a structured, typed, populated object containing the information that exists on a page.
+The Data Extractor is a set of tools designed to make the extraction of data
+from a file, such as an html page or JSON object, much simpler.  At a high
+level the data extractor takes a file, and attempts to extract values from
+provided keys so the user doesn't need to worry about walking the object to
+get data they need.  It will smartly find all of the keys the user lists and
+map them to the correct fields in the `ingest_info` object.  The result is a
+structured, typed, populated object containing the information that exists on a
+page.
 
-## How To Use
+There are currently two classes of data extractors:
+ - [HtmlDataExtractor](/recidiviz/ingest/extractor/html_data_extractor.py),
+   which takes a webpage and walks tables, labeled elements and elements
+   identified by css selectors.
+ - [JsonDataExtractor](/recidiviz/ingest/extractor/json_data_extractor.py),
+   which takes a JSON object or array and looks for the provided fields.
+
+## How To Use the HtmlDataExtractor
 
 ### The Yaml File
 
@@ -97,12 +111,66 @@ multi_key_mapping:
 
 Note that we added Offense DateTime and Arrest DateTime to the ignored keys because they are also always empty.  This simple yaml file allows us to easily look at a webpage and tell the data extractor how to extract the fields.  The user doesn't need to worry about any HTML parsing!
 
-### The Code
+## How To Use the JsonDataExtractor
+
+The JsonDataExtractor works like the HtmlDataExtractor, but only requires one
+field in the yaml. All keys will be listed under `key_mappings` and will 
+contain the full path to the field in the JSON object or array.
+
+For example, consider the following JSON object:
+```json
+{
+  "person": {
+    "name": "LAST, FIRST"
+  },
+
+   "bookings": [
+    {
+      "admission date": "1/1/1111",
+      "charges": [
+        {"id": "345309", "description": "charge name 1"},
+        {"id": "894303", "description": "charge name 2"}
+      ]
+    }
+  ]
+}
+```
+
+The yaml file for this object is as follows:
+```yaml
+key_mappings:
+  person.name: person.full_name
+
+  "bookings.admission date": booking.admission_date
+
+  bookings.charges.id: charge.charge_id
+  bookings.charges.description: charge.name
+```
+
+The left side of each line should contain the full path to the field, 
+separated by dots (`.`). For example, the `name` field is located at
+`object['person']['name']` and so the left side should be `person.name`. This
+works for paths that include array elements by ignoring the indices. For 
+example, since `bookings.charges` is a list, charge IDs are located at
+`object['bookings']['charges'][0]['id']` and
+`object['bookings']['charges'][1]['id']`, but the left side can omit the indices
+and just write `bookings.charges.id`.
+
+The right side of each line should contain the name of the IngestInfo object
+and the name of that object's field, separated by a dot (`.`). This is the
+same as in the HtmlDataExtractor.
+
+## The Code
 
 Now that the yaml is written, the last step is to tell the scraper to use the extractor.  This process is simple, the first step is to import the data extractor:
 ```python
-from recidiviz.ingest.extractor.data_extractor import DataExtractor
+from recidiviz.ingest.extractor.html_data_extractor import HtmlDataExtractor
 ```
+or
+```python
+from recidiviz.ingest.extractor.json_data_extractor import JsonDataExtractor
+```
+
 
 Next, get the directory of the yaml, which should be saved in your region's directory:
 
@@ -123,7 +191,7 @@ def populate_data(self, content, params, ingest_info):
             params: dict of parameters passed from the last scrape session.
             ingest_info: The IngestInfo object to populate
         """
-        data_extractor = DataExtractor(self.yaml_file)
+        data_extractor = HtmlDataExtractor(self.yaml_file)
         data_extractor.extract_and_populate_data(content, ingest_info)
         return ingest_info
 ```
