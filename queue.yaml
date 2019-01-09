@@ -7,8 +7,8 @@ queue:
 - name: us-ar-van-buren-scraper
   mode: push
   rate: 5/m
-  bucket_size: 500
-  max_concurrent_requests: 5000
+  bucket_size: 2
+  max_concurrent_requests: 3
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
@@ -19,8 +19,8 @@ queue:
 - name: us-co-mesa-scraper
   mode: push
   rate: 5/m
-  bucket_size: 500
-  max_concurrent_requests: 5000
+  bucket_size: 2
+  max_concurrent_requests: 3
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
@@ -31,8 +31,8 @@ queue:
 - name: us-mo-stone-scraper
   mode: push
   rate: 5/m
-  bucket_size: 500
-  max_concurrent_requests: 5000
+  bucket_size: 2
+  max_concurrent_requests: 3
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
@@ -43,8 +43,8 @@ queue:
 - name: us-mt-gallatin-scraper
   mode: push
   rate: 5/m
-  bucket_size: 500
-  max_concurrent_requests: 5000
+  bucket_size: 2
+  max_concurrent_requests: 3
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
@@ -55,8 +55,8 @@ queue:
 - name: us-ny-scraper
   mode: push
   rate: 18/m
-  bucket_size: 500
-  max_concurrent_requests: 5000
+  bucket_size: 2
+  max_concurrent_requests: 3
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
@@ -67,8 +67,8 @@ queue:
 - name: us-pa-greene-scraper
   mode: push
   rate: 5/m
-  bucket_size: 500
-  max_concurrent_requests: 5000
+  bucket_size: 2
+  max_concurrent_requests: 3
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
@@ -79,8 +79,8 @@ queue:
 - name: us-pa-dauphin-scraper
   mode: push
   rate: 5/m
-  bucket_size: 500
-  max_concurrent_requests: 5000
+  bucket_size: 2
+  max_concurrent_requests: 3
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
@@ -96,8 +96,8 @@ queue:
 - name: us-pa-scraper
   mode: push
   rate: 5/m
-  bucket_size: 500
-  max_concurrent_requests: 5000
+  bucket_size: 2
+  max_concurrent_requests: 3
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
@@ -108,8 +108,8 @@ queue:
 - name: us-fl-martin-scraper
   mode: push
   rate: 5/m
-  bucket_size: 500
-  max_concurrent_requests: 5000
+  bucket_size: 2
+  max_concurrent_requests: 3
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
