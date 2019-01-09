@@ -52,7 +52,7 @@ class IngestInfo:
         return None
 
     def prune(self):
-        self.person = [p.prune() for p in self.person if p]
+        self.person = [person.prune() for person in self.person if person]
         return self
 
 
@@ -106,7 +106,7 @@ class _Person:
         return None
 
     def prune(self):
-        self.booking = [b.prune() for b in self.booking if b]
+        self.booking = [booking.prune() for booking in self.booking if booking]
         return self
 
 
@@ -172,7 +172,7 @@ class _Booking:
         return self.arrest
 
     def prune(self):
-        self.charge = [c.prune() for c in self.charge if c]
+        self.charge = [charge.prune() for charge in self.charge if charge]
         if not self.arrest:
             self.arrest = None
         return self
