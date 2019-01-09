@@ -16,13 +16,14 @@
 # =============================================================================
 
 """Represents data scraped for a single individual."""
+from typing import List, Optional
 
 
 class IngestInfo:
     """Class for information about multiple people."""
 
     def __init__(self, people=None):
-        self.person = people or []  # type: List[Person]
+        self.person: List[_Person] = people or []
 
     def __eq__(self, other):
         if other is None:
@@ -41,17 +42,17 @@ class IngestInfo:
     def __setattr__(self, name, value):
         restricted_setattr(self, 'person', name, value)
 
-    def create_person(self, **kwargs):
+    def create_person(self, **kwargs) -> '_Person':
         person = _Person(**kwargs)
         self.person.append(person)
         return person
 
-    def get_recent_person(self):
+    def get_recent_person(self) -> Optional['_Person']:
         if self.person:
             return self.person[-1]
         return None
 
-    def prune(self):
+    def prune(self) -> 'IngestInfo':
         self.person = [person.prune() for person in self.person if person]
         return self
 
@@ -65,18 +66,18 @@ class _Person:
                  given_names=None, birthdate=None, gender=None, age=None,
                  race=None, ethnicity=None, place_of_residence=None,
                  bookings=None):
-        self.person_id = person_id  # type: str
-        self.surname = surname  # type: str
-        self.given_names = given_names  # type: str
-        self.full_name = full_name  # type: str
-        self.birthdate = birthdate  # type: str
-        self.gender = gender  # type: str
-        self.age = age  # type: str
-        self.race = race  # type: str
-        self.ethnicity = ethnicity  # type:str
-        self.place_of_residence = place_of_residence  # type: str
+        self.person_id: str = person_id
+        self.surname: str = surname
+        self.given_names: str = given_names
+        self.full_name: str = full_name
+        self.birthdate: str = birthdate
+        self.gender: str = gender
+        self.age: str = age
+        self.race: str = race
+        self.ethnicity: str = ethnicity
+        self.place_of_residence: str = place_of_residence
 
-        self.booking = bookings or []  # type: List[Booking]
+        self.booking: List[_Booking] = bookings or []
 
     def __eq__(self, other):
         if other is None:
@@ -95,17 +96,17 @@ class _Person:
     def __setattr__(self, name, value):
         restricted_setattr(self, 'booking', name, value)
 
-    def create_booking(self, **kwargs):
+    def create_booking(self, **kwargs) -> '_Booking':
         booking = _Booking(**kwargs)
         self.booking.append(booking)
         return booking
 
-    def get_recent_booking(self):
+    def get_recent_booking(self) -> Optional['_Booking']:
         if self.booking:
             return self.booking[-1]
         return None
 
-    def prune(self):
+    def prune(self) -> '_Person':
         self.booking = [booking.prune() for booking in self.booking if booking]
         return self
 
@@ -123,19 +124,19 @@ class _Booking:
                  facility=None, classification=None,
                  total_bond_amount=None,
                  arrest=None, charges=None):
-        self.booking_id = booking_id  # type: str
-        self.admission_date = admission_date  # type: str
-        self.projected_release_date = projected_release_date  # type: str
-        self.release_date = release_date  # type: str
-        self.release_reason = release_reason  # type: str
-        self.custody_status = custody_status  # type: str
-        self.hold = hold  # type: str
-        self.facility = facility  # type: str
-        self.classification = classification  # type: str
-        self.total_bond_amount = total_bond_amount  # type: str
+        self.booking_id: str = booking_id
+        self.admission_date: str = admission_date
+        self.projected_release_date: str = projected_release_date
+        self.release_date: str = release_date
+        self.release_reason: str = release_reason
+        self.custody_status: str = custody_status
+        self.hold: str = hold
+        self.facility: str = facility
+        self.classification: str = classification
+        self.total_bond_amount: str = total_bond_amount
 
-        self.arrest = arrest  # type: Arrest
-        self.charge = charges or []  # type: List[Charge]
+        self.arrest: Optional[_Arrest] = arrest
+        self.charge: List[_Charge] = charges or []
 
     def __eq__(self, other):
         if other is None:
@@ -154,24 +155,24 @@ class _Booking:
     def __setattr__(self, name, value):
         restricted_setattr(self, 'charge', name, value)
 
-    def create_arrest(self, **kwargs):
+    def create_arrest(self, **kwargs) -> '_Arrest':
         self.arrest = _Arrest(**kwargs)
         return self.arrest
 
-    def create_charge(self, **kwargs):
+    def create_charge(self, **kwargs) -> '_Charge':
         charge = _Charge(**kwargs)
         self.charge.append(charge)
         return charge
 
-    def get_recent_charge(self):
+    def get_recent_charge(self) -> Optional['_Charge']:
         if self.charge:
             return self.charge[-1]
         return None
 
-    def get_recent_arrest(self):
+    def get_recent_arrest(self) -> Optional['_Arrest']:
         return self.arrest
 
-    def prune(self):
+    def prune(self) -> '_Booking':
         self.charge = [charge.prune() for charge in self.charge if charge]
         if not self.arrest:
             self.arrest = None
@@ -185,12 +186,12 @@ class _Arrest:
 
     def __init__(self, arrest_id=None, date=None, location=None,
                  officer_name=None, officer_id=None, agency=None):
-        self.arrest_id = arrest_id
-        self.date = date  # type: str
-        self.location = location  # type: str
-        self.officer_name = officer_name  # type: str
-        self.officer_id = officer_id  # type: str
-        self.agency = agency  # type: str
+        self.arrest_id: str = arrest_id
+        self.date: str = date
+        self.location: str = location
+        self.officer_name: str = officer_name
+        self.officer_id: str = officer_id
+        self.agency: str = agency
 
     def __eq__(self, other):
         if other is None:
@@ -222,25 +223,25 @@ class _Charge:
                  number_of_counts=None, court_type=None,
                  case_number=None, next_court_date=None, judge_name=None,
                  bond=None, sentence=None):
-        self.charge_id = charge_id
-        self.offense_date = offense_date  # type: str
-        self.statute = statute  # type: str
-        self.name = name  # type: str
-        self.attempted = attempted  # type: bool
-        self.degree = degree  # type: str
-        self.charge_class = charge_class  # type: str
-        self.level = level  # type: str
-        self.fee_dollars = fee_dollars  # type: int
-        self.charging_entity = charging_entity  # type: str
-        self.status = status
-        self.number_of_counts = number_of_counts  # type: int
-        self.court_type = court_type
-        self.case_number = case_number  # type: str
-        self.next_court_date = next_court_date  # type: str
-        self.judge_name = judge_name  # type: str
+        self.charge_id: str = charge_id
+        self.offense_date: str = offense_date
+        self.statute: str = statute
+        self.name: str = name
+        self.attempted: str = attempted
+        self.degree: str = degree
+        self.charge_class: str = charge_class
+        self.level: str = level
+        self.fee_dollars: str = fee_dollars
+        self.charging_entity: str = charging_entity
+        self.status: str = status
+        self.number_of_counts: str = number_of_counts
+        self.court_type: str = court_type
+        self.case_number: str = case_number
+        self.next_court_date: str = next_court_date
+        self.judge_name: str = judge_name
 
-        self.bond = bond  # type: Bond
-        self.sentence = sentence  # type: Sentence
+        self.bond: Optional[_Bond] = bond
+        self.sentence: Optional[_Sentence] = sentence
 
     def __eq__(self, other):
         if other is None:
@@ -259,21 +260,21 @@ class _Charge:
     def __setattr__(self, name, value):
         restricted_setattr(self, 'sentence', name, value)
 
-    def create_bond(self, **kwargs):
+    def create_bond(self, **kwargs) -> '_Bond':
         self.bond = _Bond(**kwargs)
         return self.bond
 
-    def create_sentence(self, **kwargs):
+    def create_sentence(self, **kwargs) -> '_Sentence':
         self.sentence = _Sentence(**kwargs)
         return self.sentence
 
-    def get_recent_bond(self):
+    def get_recent_bond(self) -> Optional['_Bond']:
         return self.bond
 
-    def get_recent_sentence(self):
+    def get_recent_sentence(self) -> Optional['_Sentence']:
         return self.sentence
 
-    def prune(self):
+    def prune(self) -> '_Charge':
         if not self.bond:
             self.bond = None
         if not self.sentence:
@@ -286,12 +287,11 @@ class _Bond:
     Referenced from Charge.
     """
 
-    def __init__(self, bond_id=None, amount=None, bond_type=None,
-                 status=None):
-        self.bond_id = bond_id  # type: str
-        self.amount = amount  # type: str
-        self.bond_type = bond_type  # type: str
-        self.status = status  # type: str
+    def __init__(self, bond_id=None, amount=None, bond_type=None, status=None):
+        self.bond_id: str = bond_id
+        self.amount: str = amount
+        self.bond_type: str = bond_type
+        self.status: str = status
 
     def __eq__(self, other):
         if other is None:
@@ -321,16 +321,16 @@ class _Sentence:
                  is_life=None, is_probation=None, is_suspended=None,
                  fine_dollars=None, parole_possible=None,
                  post_release_supervision_length=None):
-        self.sentence_id = sentence_id
-        self.date_imposed = date_imposed  # type: str
-        self.sentencing_region = sentencing_region  # type: str
-        self.min_length = min_length  # type: str
-        self.max_length = max_length  # type: str
-        self.is_life = is_life  # type: bool
-        self.is_probation = is_probation  # type: bool
-        self.is_suspended = is_suspended  # type: bool
-        self.fine_dollars = fine_dollars  # type: int
-        self.parole_possible = parole_possible  # type: bool
+        self.sentence_id: str = sentence_id
+        self.date_imposed: str = date_imposed
+        self.sentencing_region: str = sentencing_region
+        self.min_length: str = min_length
+        self.max_length: str = max_length
+        self.is_life: str = is_life
+        self.is_probation: str = is_probation
+        self.is_suspended: str = is_suspended
+        self.fine_dollars: str = fine_dollars
+        self.parole_possible: str = parole_possible
 
         self.post_release_supervision_length: str = \
             post_release_supervision_length
