@@ -118,8 +118,9 @@ def match_charges(db_booking, ingested_booking):
                                           'than one database entity')
             ingested_charge.charge_id = db_charge.charge_id
         else:
-            logging.info('Dropping charge with id %s', db_charge.charge_id)
-            db_charge.status = ChargeStatus.DROPPED
+            if db_charge.status != ChargeStatus.DROPPED:
+                logging.info('Dropping charge with id %s', db_charge.charge_id)
+                db_charge.status = ChargeStatus.DROPPED
             # TODO: set boolean inferred_drop to true
             # TODO: what do we do with orphaned bonds?
             dropped_charges.append(db_charge)

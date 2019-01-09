@@ -98,6 +98,10 @@ def is_charge_match(*, db_entity, ingested_entity):
 def _sanitize_charge(charge):
     sanitized = copy.deepcopy(charge)
     sanitized.charge_id = None
+    if charge.bond:
+        sanitized.bond = _sanitize_bond(charge.bond)
+    if charge.sentence:
+        sanitized.sentence = _sanitize_sentence(charge.sentence)
     return sanitized
 
 
