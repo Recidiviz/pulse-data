@@ -90,8 +90,8 @@ def append_to_config_files(subs):
 - name: $region_dashes-scraper
   mode: push
   rate: 5/m
-  bucket_size: 500
-  max_concurrent_requests: 5000
+  bucket_size: 2
+  max_concurrent_requests: 3
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
