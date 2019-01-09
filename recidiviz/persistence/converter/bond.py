@@ -38,6 +38,6 @@ def convert(proto, metadata):
     #  should have
     new.status = fn(BondStatus.from_str, 'status', proto,
                     metadata.enum_overrides,
-                    default=BondStatus.ACTIVE if new.amount_dollars else None)
+                    default=BondStatus.ACTIVE)
 
     return new
