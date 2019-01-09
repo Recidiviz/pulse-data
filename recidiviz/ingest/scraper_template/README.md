@@ -1,4 +1,3 @@
-
 Creating a Scraper
 ==================
 Before doing anything, setup your environment by running `pipenv install` in the top level directory.
@@ -58,7 +57,7 @@ scraper should inherit from [BaseScraper](../base_scraper.py) or a
  - `get_more_tasks(self, content, params)`
  - `populate_data(self, content, params, ingest_info)`
 
-Navigation, if necessary, is implemented in `get_more_tasks`, while 
+Navigation, if necessary, is implemented in `get_more_tasks`, while
 scraping information about people is handled in `populate_data`.
 
 
@@ -77,7 +76,7 @@ in the params that are returned:
 
 The different types of tasks are found in the [Constants](../constants.py) file and they are:
 * <strong>INITIAL_TASK</strong> - This is the first request that is made and this ensures that `set_initial_vars` is called.  This function lets you fill in the params with any extra info you might need for the next set of tasks.  Examples include session keys and information that need to be sent as post data.
-* <strong>GET_MORE_TASKS</strong> - This indicates that the page has more navigation that needs to be done.  In this case, the function `get_more_tasks` is called and it is the job of the method to return a list of params that was extracted from that page. 
+* <strong>GET_MORE_TASKS</strong> - This indicates that the page has more navigation that needs to be done.  In this case, the function `get_more_tasks` is called and it is the job of the method to return a list of params that was extracted from that page.
 * <strong>SCRAPE_DATA</strong> - This indicates that the page has information on it that we care about and need to scrape.  In this case `populate_data` is called and it is the users job to walk the page and populate the `ingest_info` object
 
 For convenience, there also exists `SCRAPE_DATA_AND_MORE` which calls both `get_more_tasks` as well as `populate_data`.  This can be used when a persons information is spread across multiple pages.  For example their booking data is on one page, and the user must click a link to reach the pages there the charges information is displayed.
@@ -95,10 +94,10 @@ these scrapers:
 Scraping Data
 --------
 Data is scraped in `populate_data`, which receives an
-[IngestInfo](https://github.com/Recidiviz/pulse-data/tree/master/recidiviz/ingest/models/README.md) object as a parameter, populates it with
+[IngestInfo](https://github.com/Recidiviz/pulse-data/tree/master/recidiviz/ingest/models/README.rst) object as a parameter, populates it with
 data, and returns it as a result.
 
-The [IngestInfo](https://github.com/Recidiviz/pulse-data/tree/master/recidiviz/ingest/models/README.md) object contains classes that represent
+The [IngestInfo](https://github.com/Recidiviz/pulse-data/tree/master/recidiviz/ingest/models/README.rst) object contains classes that represent
 information about a Person, Booking, Arrest, Charge, and Bond.  Read the README linked here to understand
 what each of the fields means.
 
@@ -107,12 +106,12 @@ You can populate the IngestInfo object manually, or use the
 automatically.
 
 ### Automatic Data Extraction
-  
+
 The Data Extractor is a tool designed to make the extraction of data from a website much simpler. You should first attempt to use the data extractor as it significantly lowers the line count of your scraper and is far easier to use than trying to parse poorly formatted HTML data.
 
 ### Data Persistence
 
-The base logic decides to persist data to the database when we hit a task that scrapes data, and also doesn't need to get more tasks.  In this case, after the ingest info is returned from the `populate_data` call, that person (or people) will be persisted to the database.  
+The base logic decides to persist data to the database when we hit a task that scrapes data, and also doesn't need to get more tasks.  In this case, after the ingest info is returned from the `populate_data` call, that person (or people) will be persisted to the database.
 
 Unit Tests
 ==================
@@ -127,8 +126,8 @@ To use it simply run:
 $ python -m recidiviz.ingest.run_scraper --region region_name
 ```
 Optional fields are:
-* num_tasks: The number of tasks to try before ending the run. The default is 5.  
-* sleep_between_requests: The seconds to sleep between each request.  The default is 1.  
+* num_tasks: The number of tasks to try before ending the run. The default is 5.
+* sleep_between_requests: The seconds to sleep between each request.  The default is 1.
 
 Please be mindful to sleep a reasonable amount of time between each request, we don't want to bring down or degrade any websites!  This can of course run through the entire roster if you set the number of tasks to be high enough, but doing 5-10 is usually reasonable enough.
 
@@ -273,4 +272,4 @@ def populate_data(self, content, params, ingest_info):
         return ingest_info
 ```
 
-The process for this is explained in the data extractor [documentation](https://github.com/Recidiviz/pulse-data/tree/master/recidiviz/ingest/extractor/README.md) with examples.  In most cases the data extractor should suffice but if it does not, your `populate_data` function will manually have to walk the html and extract out the relevant fields into the `ingest_info` object.  
+The process for this is explained in the data extractor [documentation](https://github.com/Recidiviz/pulse-data/tree/master/recidiviz/ingest/extractor/README.md) with examples.  In most cases the data extractor should suffice but if it does not, your `populate_data` function will manually have to walk the html and extract out the relevant fields into the `ingest_info` object.
