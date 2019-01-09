@@ -20,9 +20,9 @@ from recidiviz.persistence.converter.converter_utils import normalize, \
     parse_date, fn, parse_external_id
 
 
-def convert(proto):
+def convert(proto) -> entities.Arrest:
     """Converts an ingest_info proto Arrest to a persistence entity."""
-    new = entities.Arrest()
+    new = entities.Arrest.builder()
 
     new.external_id = fn(parse_external_id, 'arrest_id', proto)
     new.date = fn(parse_date, 'date', proto)
@@ -32,4 +32,4 @@ def convert(proto):
     new.officer_id = fn(normalize, 'officer_id', proto)
     new.agency = fn(normalize, 'agency', proto)
 
-    return new
+    return new.build()
