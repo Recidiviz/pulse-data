@@ -73,12 +73,11 @@ def read_people_by_external_ids(
     Returns: List of people that match the provided |ingested_people|
     """
     external_ids = {p.external_id for p in ingested_people}
-    query = session.query(Person, Booking) \
-        .filter(Person.person_id == Booking.person_id) \
+    query = session.query(Person) \
         .filter(Person.region == region) \
         .filter(Person.external_id.in_(external_ids))
 
-    return [database_utils.convert_person(person) for person, _ in query.all()]
+    return [database_utils.convert_person(p) for p in query.all()]
 
 
 def read_people_with_open_bookings(session, region, ingested_people):
