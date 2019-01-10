@@ -99,10 +99,15 @@ _CHARGE_STATUS_MAP = {
     'ACQUITTED': ChargeStatus.ACQUITTED,
     'COMPLETED SENTENCE': ChargeStatus.COMPLETED_SENTENCE,
     'CONVICTED': ChargeStatus.CONVICTED,
+    'DISMISSED BY DISTRICT ATTORNEY': ChargeStatus.DROPPED,
     'DROPPED': ChargeStatus.DROPPED,
+    'NOT GUILTY': ChargeStatus.ACQUITTED,
     'PENDING': ChargeStatus.PENDING,
+    'PRE-TRIAL': ChargeStatus.PRETRIAL,
     'PRETRIAL': ChargeStatus.PRETRIAL,
+    'PROBATION': ChargeStatus.SENTENCED,
     'SENTENCED': ChargeStatus.SENTENCED,
+    'TIME SERVED': ChargeStatus.COMPLETED_SENTENCE,
     'UNKNOWN': ChargeStatus.EXTERNAL_UNKNOWN,
 }
 
