@@ -46,11 +46,17 @@ class BondStatus(MappableEnum):
 _BOND_TYPE_MAP = {
     'BOND DENIED': BondType.BOND_DENIED,
     'CASH': BondType.CASH,
+    'CASH BOND': BondType.CASH,
+    'N/A': BondType.NO_BOND,
     'NO BOND': BondType.NO_BOND,
+    'NO BOND ALLOWED': BondType.NO_BOND,
+    'NONE SET': BondType.NO_BOND,
     'ROR': BondType.NO_BOND,
     'SECURED': BondType.SECURED,
+    'SECURED BOND': BondType.SECURED,
     'SURETY BOND': BondType.UNSECURED,
     'UNKNOWN': BondType.EXTERNAL_UNKNOWN,
+    'UNSECURE BOND': BondType.UNSECURED,
     'UNSECURED': BondType.UNSECURED,
 }
 
