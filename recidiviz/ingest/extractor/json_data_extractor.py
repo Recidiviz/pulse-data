@@ -55,15 +55,20 @@ class JsonDataExtractor(DataExtractor):
             for k, v in content.items():
                 lookup_key = '{}.{}'.format(current_key,
                                             k) if current_key else k
-                if isinstance(v, dict):
+                if v is None:
+                    continue
+                elif isinstance(v, dict):
                     self._extract(v, ingest_info, lookup_key)
                 elif isinstance(v, list):
                     self._extract_list(v, ingest_info, lookup_key)
                 elif isinstance(v, str):
                     self._set_value_if_key_exists(lookup_key, v, ingest_info)
+                elif isinstance(v, (float, int)):
+                    self._set_value_if_key_exists(
+                        lookup_key, str(v), ingest_info)
                 else:
-                    logging.error('JSON value was not an object, array or '
-                                  'string: %s', v)
+                    logging.error('JSON value was not an object, array, int, '
+                                  'float, or string: %s', v)
         else:
             logging.error('%s is not a valid JSON value', content)
 

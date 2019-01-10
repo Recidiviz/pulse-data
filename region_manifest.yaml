@@ -119,3 +119,11 @@ regions:
       record: Record
     scraper_package: us_fl_martin
     timezone: America/New_York
+  us_vt:
+    agency_name: Vermont
+    region_code: us_vt
+    agency_type: unified
+    queue: us-vt-scraper
+    base_url: $url
+    scraper_package: us_vt
+    timezone: America/New_York

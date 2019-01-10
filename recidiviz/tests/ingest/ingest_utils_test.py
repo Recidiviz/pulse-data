@@ -37,6 +37,7 @@ def test_validate_regions_one_all():
         "us_pa",
         "us_pa_dauphin",
         "us_pa_greene",
+        "us_vt",
     }
 
 
@@ -65,6 +66,7 @@ def test_validate_regions_multiple_all():
         "us_pa",
         "us_pa_dauphin",
         "us_pa_greene",
+        "us_vt",
     }
 
 

@@ -45,6 +45,7 @@ class BondStatus(MappableEnum):
 
 _BOND_TYPE_MAP = {
     'BOND DENIED': BondType.BOND_DENIED,
+    'HOLD WITHOUT BAIL': BondType.BOND_DENIED,
     'CASH': BondType.CASH,
     'CASH BOND': BondType.CASH,
     'N/A': BondType.NO_BOND,

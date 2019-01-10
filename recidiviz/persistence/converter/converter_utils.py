@@ -187,7 +187,7 @@ def parse_bond_amount_and_infer_type(amount):
         return None, BondType.BOND_DENIED
 
     parsed_amount = parse_dollars(amount)
-    if parsed_amount == 0:
+    if int(parsed_amount) == 0:
         return None, BondType.NO_BOND
     return parsed_amount, BondType.CASH
 
