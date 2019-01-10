@@ -39,30 +39,22 @@ class TestInferRelease(TestCase):
     def setup_method(self, _test_method):
         self.client = app.test_client()
 
-    @patch("recidiviz.utils.regions.get_supported_regions")
-    def test_infer_release_unsupported_region(self, mock_supported_regions):
-        request_args = {'region': 'us_wy'}
-        headers = {'X-Appengine-Cron': "test-cron"}
-        mock_supported_regions.return_value = ['us_ut']
-
-        response = self.client.get(
-            '/release', query_string=request_args, headers=headers)
-        assert response.status_code == 400
-
     @patch("recidiviz.persistence.persistence.infer_release_on_open_bookings")
-    @patch("recidiviz.utils.regions.get_supported_regions")
+    @patch("recidiviz.ingest.infer_release.get_supported_regions")
     @patch("recidiviz.ingest.sessions.get_most_recent_completed_session")
-    def test_infer_release(self, mock_get_most_recent_session,
-                           mock_supported_regions, mock_infer_release):
-        request_args = {'region': 'all'}
+    def test_infer_release(
+            self, mock_get_most_recent_session, mock_supported_regions,
+            mock_infer_release):
         headers = {'X-Appengine-Cron': "test-cron"}
         time = datetime(2014, 8, 31)
-        mock_supported_regions.return_value = ['us_ut', 'us_wy']
+        mock_supported_regions.return_value = \
+            {'us_ut': {'agency_type': 'jail'},
+             'us_wy': {'agency_type': 'jail'},
+             'us_nc': {'agency_type': 'prison'}}
         mock_get_most_recent_session.return_value = ScrapeSession.new(
             key=None, start=time)
 
-        response = self.client.get(
-            '/release', query_string=request_args, headers=headers)
+        response = self.client.get('/release', headers=headers)
         assert response.status_code == 200
         mock_infer_release.assert_has_calls([call('us_ut', time),
                                              call('us_wy', time)])

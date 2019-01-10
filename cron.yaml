@@ -144,7 +144,7 @@ cron:
     job_age_limit: 9h
 
 - description: Infer release of all people not seen in completed scrapes
-  url: /infer_release/release?region=all
+  url: /infer_release/release
   schedule: every day 09:30
   timezone: America/New_York
   retry_parameters:
