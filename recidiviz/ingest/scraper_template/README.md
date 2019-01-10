@@ -46,10 +46,8 @@ and [region_manifest.yaml](/region_manifest.yaml).
 You will need to manually edit the following files:
  - In [`recidiviz/ingest/__init__.py`](/recidiviz/ingest/__init__.py), add an
    `import` statement for your scraper.
- - In
-   [`recidiviz/tests/ingest/scraper_control_test.py`](/recidiviz/tests/ingest/scraper_control_test.py),
-   find the test `test_validate_regions_multiple_all()` and add the region code
-   to the set on the right hand side of the assertion.
+ - In [`recidiviz/tests/ingest/ingest_utils_test.py`](/recidiviz/tests/ingest/ingest_utils_test.py),
+   add your region to `test_validate_regions_multiple_all` and `test_validate_regions_one_all`
 
 
 Writing the main scraper file
