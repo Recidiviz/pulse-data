@@ -64,7 +64,7 @@ class TestConverter(unittest.TestCase):
                     external_id='ARREST_ID',
                     agency='PD'
                 ),
-                charges=[Charge(
+                charges=[Charge.new_with_defaults(
                     external_id='CHARGE_ID',
                     status=ChargeStatus.PENDING,
                     name='DUI',
@@ -106,7 +106,7 @@ class TestConverter(unittest.TestCase):
                 last_seen_time='LAST_SEEN_TIME',
                 custody_status=CustodyStatus.IN_CUSTODY,
                 arrest=Arrest.new_with_defaults(agency='PD'),
-                charges=[Charge(
+                charges=[Charge.new_with_defaults(
                     status=ChargeStatus.PENDING,
                     name='DUI',
                     bond=Bond(status=BondStatus.ACTIVE),
@@ -138,7 +138,7 @@ class TestConverter(unittest.TestCase):
                 last_seen_time='LAST_SEEN_TIME',
                 external_id='BOOKING_ID',
                 custody_status=CustodyStatus.IN_CUSTODY,
-                charges=[Charge(
+                charges=[Charge.new_with_defaults(
                     status=ChargeStatus.PENDING,
                     bond=Bond(status=BondStatus.ACTIVE, bond_type=BondType.CASH,
                               amount_dollars=100)
@@ -172,7 +172,7 @@ class TestConverter(unittest.TestCase):
                 admission_date_inferred=True,
                 last_seen_time='LAST_SEEN_TIME',
                 custody_status=CustodyStatus.IN_CUSTODY,
-                charges=[Charge(
+                charges=[Charge.new_with_defaults(
                     external_id='CHARGE_ID',
                     status=ChargeStatus.PENDING,
                     bond=Bond(amount_dollars=100, status=BondStatus.ACTIVE,
