@@ -93,7 +93,7 @@ _PERSON = entities.Person(
                 status=BondStatus.ACTIVE
             ),
             sentence=entities.Sentence(
-                sentence_id="sentence_id",
+                sentence_id=7890,
                 external_id="external_id",
                 date_imposed=date(year=2000, month=1, day=8),
                 min_length_days=3,
