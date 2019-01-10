@@ -107,8 +107,10 @@ class TestEntityMatching(TestCase):
         ingested_existing_charge = database_utils.convert_charge(
             schema_charge)
         ingested_existing_charge.charge_id = None
-        ingested_new_charge = entities.Charge(status=ChargeStatus.PENDING,
-                                              name=_CHARGE_NAME_3)
+        ingested_new_charge = entities.Charge.new_with_defaults(
+            status=ChargeStatus.PENDING,
+            name=_CHARGE_NAME_3
+        )
 
         ingested_open_booking = database_utils.convert_booking(
             open_schema_booking)

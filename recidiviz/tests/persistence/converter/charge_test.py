@@ -25,12 +25,14 @@ from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence import entities
 from recidiviz.persistence.converter import charge
 
-
 _EMPTY_METADATA = IngestMetadata.new_with_defaults()
 
 
 class ChargeConverterTest(unittest.TestCase):
     """Tests for converting charges."""
+
+    def setUp(self):
+        self.subject = entities.Charge.builder()
 
     def testParseCharge(self):
         # Arrange
@@ -44,10 +46,12 @@ class ChargeConverterTest(unittest.TestCase):
         )
 
         # Act
-        result = charge.convert(ingest_charge, _EMPTY_METADATA)
+        charge.copy_fields_to_builder(self.subject, ingest_charge,
+                                      _EMPTY_METADATA)
+        result = self.subject.build()
 
         # Assert
-        expected_result = entities.Charge(
+        expected_result = entities.Charge.new_with_defaults(
             external_id='CHARGE_ID',
             attempted=True,
             degree=ChargeDegree.FIRST,
@@ -63,8 +67,12 @@ class ChargeConverterTest(unittest.TestCase):
         ingest_charge = ingest_info_pb2.Charge()
 
         # Act
-        result = charge.convert(ingest_charge, _EMPTY_METADATA)
+        charge.copy_fields_to_builder(self.subject, ingest_charge,
+                                      _EMPTY_METADATA)
+        result = self.subject.build()
 
         # Assert
-        expected_result = entities.Charge(status=ChargeStatus.PENDING)
+        expected_result = entities.Charge.new_with_defaults(
+            status=ChargeStatus.PENDING
+        )
         self.assertEqual(result, expected_result)

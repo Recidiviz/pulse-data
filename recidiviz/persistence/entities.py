@@ -93,22 +93,22 @@ class Arrest(BuildableAttr):
 
 
 @attr.s
-class Charge:
-    external_id: str = attr.ib(default=None)
-    offense_date: datetime.date = attr.ib(default=None)
-    statute: str = attr.ib(default=None)
-    name: str = attr.ib(default=None)
-    attempted: bool = attr.ib(default=None)
-    degree: ChargeDegree = attr.ib(default=None)
-    charge_class: ChargeClass = attr.ib(default=None)
-    level: str = attr.ib(default=None)
-    fee_dollars: int = attr.ib(default=None)
-    charging_entity: str = attr.ib(default=None)
-    status: ChargeStatus = attr.ib(default=None)
-    court_type: CourtType = attr.ib(default=None)
-    case_number: str = attr.ib(default=None)
-    next_court_date: datetime.date = attr.ib(default=None)
-    judge_name: str = attr.ib(default=None)
+class Charge(BuildableAttr):
+    external_id: str = attr.ib()
+    offense_date: datetime.date = attr.ib()
+    statute: str = attr.ib()
+    name: str = attr.ib()
+    attempted: bool = attr.ib()
+    degree: ChargeDegree = attr.ib()
+    charge_class: ChargeClass = attr.ib()
+    level: str = attr.ib()
+    fee_dollars: int = attr.ib()
+    charging_entity: str = attr.ib()
+    status: ChargeStatus = attr.ib()
+    court_type: CourtType = attr.ib()
+    case_number: str = attr.ib()
+    next_court_date: datetime.date = attr.ib()
+    judge_name: str = attr.ib()
 
     charge_id: int = attr.ib(default=None)
     bond: 'Bond' = attr.ib(default=None)

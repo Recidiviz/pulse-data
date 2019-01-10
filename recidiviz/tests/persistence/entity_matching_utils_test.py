@@ -119,11 +119,14 @@ class TestEntityMatchingUtils(TestCase):
 
     def test_charge_match(self):
         # TODO(350): expand tests after more robust equality function
-        db_charge = entities.Charge(charge_id=_CHARGE_ID,
-                                    bond=entities.Bond(bond_id=_BOND_ID))
-        ingested_charge = entities.Charge(charge_id=_CHARGE_ID_OTHER,
-                                          bond=entities.Bond(bond_id=
-                                                             _BOND_ID_OTHER))
+        db_charge = entities.Charge.new_with_defaults(
+            charge_id=_CHARGE_ID,
+            bond=entities.Bond(bond_id=_BOND_ID)
+        )
+        ingested_charge = entities.Charge.new_with_defaults(
+            charge_id=_CHARGE_ID_OTHER,
+            bond=entities.Bond(bond_id=_BOND_ID_OTHER)
+        )
         self.assertTrue(entity_matching_utils.is_charge_match(
             db_entity=db_charge, ingested_entity=ingested_charge))
 
