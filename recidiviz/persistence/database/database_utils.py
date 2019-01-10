@@ -15,7 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains helpers to interact with the database."""
+import inspect
 from enum import Enum
+from typing import Optional, Union, Type
 
 import attr
 
@@ -152,8 +154,12 @@ def _convert(src):
             # this field is finalized.
             continue
         else:
-            value = _convert_field_or_enum(
-                src, field, attribute.type, direction)
+            if getattr(src, field) is None:
+                value = None
+            elif _is_enum(attribute.type):
+                value = _convert_enum(src, field, attribute.type, direction)
+            else:
+                value = getattr(src, field)
             setattr(dst, field, value)
 
     if direction is _Direction.SCHEMA_TO_ENTITY and \
@@ -167,14 +173,52 @@ def _should_use_builder(entity_cls):
                           entities.Charge}
 
 
-def _convert_field_or_enum(src, field, attr_type, direction):
-    if attr_type and _is_enum(attr_type) and getattr(src, field):
-        if direction is _Direction.SCHEMA_TO_ENTITY:
-            return attr_type(getattr(src, field))
-        return getattr(src, field).value
-
-    return getattr(src, field)
-
-
 def _is_enum(attr_type):
-    return attr_type and issubclass(attr_type, MappableEnum)
+    return _get_enum_cls(attr_type) is not None
+
+
+def _convert_enum(src, field, attr_type, direction):
+    if direction is _Direction.SCHEMA_TO_ENTITY:
+        enum_cls = _get_enum_cls(attr_type)
+        return enum_cls(getattr(src, field))
+
+    return getattr(src, field).value
+
+
+def _get_enum_cls(attr_type) -> Optional[Type[MappableEnum]]:
+    """Return the MappableEnum cls from the provided type attribute,
+    or None if the type can't be a MappableEnum"""
+    if inspect.isclass(attr_type) and issubclass(attr_type, MappableEnum):
+        return attr_type
+
+    if _is_union(attr_type):
+        return _extract_mappable_enum_from_union(attr_type)
+
+    return None
+
+
+def _is_union(attr_type) -> bool:
+    return hasattr(attr_type, '__origin__') and attr_type.__origin__ is Union
+
+
+def _extract_mappable_enum_from_union(union: Union) \
+        -> Optional[Type[MappableEnum]]:
+    """Extracts a MappableEnum from a Union.
+
+    This method throws an Error if multiple Enums exist and returns None if no
+    Enums exist.
+    """
+    result = set()
+    for type_in_union in union.__args__:  # type: ignore
+        if issubclass(type_in_union, MappableEnum):
+            result.add(type_in_union)
+
+    if not result:
+        return None
+
+    if len(result) == 1:
+        return next(iter(result))
+
+    raise TypeError(
+        "Can't extract Enum from a union containing multiple Enums: {}".format(
+            union))
