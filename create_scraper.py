@@ -15,12 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Usage: python create_scraper.py <county> <state>
+"""Usage: python create_scraper.py <county> <state> <agency_type>
+  - agency_type: one of 'jail', 'prison', 'unified'
+
 Creates __init__.py, region_name_scraper.py, and region_name.yaml files in
 recidiviz/ingest/region_name, and updates queue.yaml and region_manifest.yaml.
 Also accepts the following optional arguments:
   - agency: the name of the agency
-  - agency_type: one of 'jail', 'prison', 'unified'
   - names_file: a file with a names list for this scraper
   - timezone: the timezone, e.g. America/New York
   - url: the initial url of the roster
@@ -124,9 +125,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('county')
     parser.add_argument('state')
+    parser.add_argument('agency_type')
     optional_args = [
         'agency',
-        'agency_type',
         'names_file',
         'timezone',
         'url']

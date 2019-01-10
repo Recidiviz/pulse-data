@@ -7,22 +7,26 @@ From the top level `pulse-data` directory, run the `create_scraper.py`
 script to create the relevant files for a new scraper.
 
 ### Usage
-`python create_scraper.py <county> <state>`
+`python create_scraper.py <county> <state> <county_type>`
+
+County type describes the type of data the website has, and can be one of the following: 
+1. `jail` (majority of scrapers will be for jails)
+1. `prison` 
+1. `unified` - contains both jail and prison data
 
 For example:
-`python create_scraper.py kings ny`
+`python create_scraper.py kings ny jail`
 
 Multi-word counties should be enclosed in quotes:
-`python create_scraper.py 'prince william' virginia`
+`python create_scraper.py 'prince william' virginia jail`
 
 ###### Optional Arguments
  - `agency`: the name of the agency, e.g. `Foo County Sheriff's Office`
- - `agency_type`: one of `jail`, `prison`, `unified`
  - `timezone`: the timezone, e.g. `America/New York`
  - `url`: the initial url of the roster
 
 For example:
-`python create_scraper.py lake indiana --timezone='America/Chicago'`
+`python create_scraper.py lake indiana jail --timezone='America/Chicago'`
 
 
 Initial Setup
