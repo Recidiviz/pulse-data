@@ -69,8 +69,7 @@ class JsonDataExtractor(DataExtractor):
 
     def _set_value_if_key_exists(self, lookup_key, value, ingest_info):
         if lookup_key in self.keys:
-            class_to_set, ingest_key = self.keys[lookup_key].split('.')
-            self._set_or_create_object(ingest_info, class_to_set, ingest_key,
+            self._set_or_create_object(ingest_info, self.keys[lookup_key],
                                        [value])
 
     def _extract_list(self, content, ingest_info, current_key=None):

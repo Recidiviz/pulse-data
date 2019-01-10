@@ -107,13 +107,9 @@ class HtmlDataExtractor(DataExtractor):
             elif cell_val in self.multi_keys:
                 values = self._get_values_below_cell(cell)
             if values:
-                key_mapping_val = (self.keys.get(cell_val) or
-                                   self.multi_keys.get(cell_val))
-                value_classes = key_mapping_val.split('.')
-                ingest_key = value_classes[1]
-                class_to_set = value_classes[0]
-                self._set_or_create_object(
-                    ingest_info, class_to_set, ingest_key, values)
+                lookup_keys = (self.keys.get(cell_val) or
+                               self.multi_keys.get(cell_val))
+                self._set_or_create_object(ingest_info, lookup_keys, values)
                 if cell_val in needed_keys:
                     needed_keys.remove(cell_val)
         # If at the end of everything there are some keys we haven't found on

@@ -41,7 +41,14 @@ key_mappings:
   Committed By: booking.hold
   Booking Date-Time: booking.admission_date
   "Booking #": booking.booking_id
+  Sentence Length: [sentence.min_length, sentence.max_length]
 ```
+
+Some special cases:
+ - the left-hand side may require double-quotes (`""`) if there are special
+   characters in the key
+ - the right-hand side may be a list of values (`[a, b]`) if the same field
+   should map to multiple IngestInfo values
 
 Note that in this case, this particular site has fields for custody status and release date-time, but in fact they are never populated.  We want to let the data extractor know to ignore these fields.
 
@@ -92,6 +99,7 @@ key_mappings:
   "Booking #": booking.booking_id
   Committed By: booking.hold
   Booking Date-Time: booking.admission_date
+  Sentence Length: [sentence.min_length, sentence.max_length]
 
 css_key_mappings:
   "#ctl00_ContentPlaceHolder1_spnInmateName": person.fullname

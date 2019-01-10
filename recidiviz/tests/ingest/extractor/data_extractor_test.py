@@ -438,3 +438,17 @@ def test_no_multi_key_parent():
     with pytest.warns(UserWarning):
         info = extractor.extract_and_populate_data(html_contents)
     assert expected_info == info
+
+
+def test_one_to_many():
+    key_mapping_file = '../testdata/data_extractor/yaml/one_to_many.yaml'
+    key_mapping_file = os.path.join(os.path.dirname(__file__), key_mapping_file)
+    extractor = HtmlDataExtractor(key_mapping_file)
+
+    expected_info = IngestInfo()
+    charge = expected_info.create_person().create_booking().create_charge()
+    charge.create_sentence(min_length='1 day', max_length='1 day')
+
+    html_contents = html.fromstring('<td>Sentence Length</td><td>1 day</td>')
+    info = extractor.extract_and_populate_data(html_contents)
+    assert expected_info == info
