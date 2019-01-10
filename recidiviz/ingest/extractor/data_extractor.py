@@ -59,9 +59,7 @@ class DataExtractor(metaclass=abc.ABCMeta):
     def extract_and_populate_data(self, content, ingest_info=None):
         pass
 
-
-    def _set_or_create_object(
-            self, ingest_info, class_to_set, ingest_key, values):
+    def _set_or_create_object(self, ingest_info, lookup_keys, values):
         """Contains the logic to set or create a field on an ingest object.
         The logic here is that we check if we have a most recent class already
         to check if the field is already set.  If the field we care about is
@@ -70,44 +68,45 @@ class DataExtractor(metaclass=abc.ABCMeta):
 
         Args:
             ingest_info: The top level IngestInfo object to set the data on.
-            class_to_set: The actual class we are setting the data on.  This
-                helps us determine hierarchy and actually find the leaf node
-                in the ingest_info object.
-            ingest_key: The actual field name we are going to eventually set
-                on the object that we find.
+            lookup_keys: A list of strings or single string, formatted as
+                <class_name>.<field_name>, i.e. 'person.surname'
             values: The list of values that the field name will be set to.
                 Each element of the list is a different write and might incur
                 objects being created/updated.
         """
-        is_multi_key = class_to_set in self.multi_key_classes
-        for i, value in enumerate(values):
-            if value == '' or value.isspace():
-                continue
-            # The first task is to find the parent.
-            parent = self._find_parent_ingest_info(
-                ingest_info, _HIERARCHY_MAP[class_to_set], i)
+        lookup_keys = lookup_keys if isinstance(lookup_keys, list) \
+            else [lookup_keys]
+        for lookup_key in lookup_keys:
+            class_to_set, ingest_key = lookup_key.split('.')
+            is_multi_key = class_to_set in self.multi_key_classes
+            for i, value in enumerate(values):
+                if value == '' or value.isspace():
+                    continue
+                # The first task is to find the parent.
+                parent = self._find_parent_ingest_info(
+                    ingest_info, _HIERARCHY_MAP[class_to_set], i)
 
-            get_recent_name = 'get_recent_' + class_to_set
-            object_to_set = getattr(parent, get_recent_name)()
-            # If we are in multikey, we need to pull out the correct index of
-            # class type we want to set
-            if is_multi_key:
-                attr = getattr(parent, class_to_set)
-                if attr is not None \
-                        and isinstance(attr, list) \
-                        and len(attr) > i:
-                    object_to_set = attr[i]
+                get_recent_name = 'get_recent_' + class_to_set
+                object_to_set = getattr(parent, get_recent_name)()
+                # If we are in multikey, we need to pull out the correct index
+                # of class type we want to set
+                if is_multi_key:
+                    attr = getattr(parent, class_to_set)
+                    if attr is not None \
+                            and isinstance(attr, list) \
+                            and len(attr) > i:
+                        object_to_set = attr[i]
 
-            create_name = 'create_' + class_to_set
-            create_func = getattr(parent, create_name)
-            # If the object we are trying to operate on is None, or it has
-            # already set the ingest_key then we know we need to create a
-            # new one.
-            if (object_to_set is None or
-                    getattr(object_to_set, ingest_key) is not None):
-                object_to_set = create_func()
+                create_name = 'create_' + class_to_set
+                create_func = getattr(parent, create_name)
+                # If the object we are trying to operate on is None, or it has
+                # already set the ingest_key then we know we need to create a
+                # new one.
+                if (object_to_set is None or
+                        getattr(object_to_set, ingest_key) is not None):
+                    object_to_set = create_func()
 
-            setattr(object_to_set, ingest_key, value)
+                setattr(object_to_set, ingest_key, value)
 
     def _find_parent_ingest_info(self, ingest_info, hierarchy, val_index):
         """Find the parent object to set the value on
