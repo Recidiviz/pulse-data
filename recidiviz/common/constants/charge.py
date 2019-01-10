@@ -115,6 +115,7 @@ _CHARGE_STATUS_MAP = {
 _COURT_TYPE_MAP = {
     'CIRCUIT': CourtType.CIRCUIT,
     'DISTRICT': CourtType.DISTRICT,
+    'CRIMINAL': CourtType.DISTRICT,
     'OTHER': CourtType.OTHER,
     'SUPERIOR': CourtType.SUPERIOR,
     'UNKNOWN': CourtType.EXTERNAL_UNKNOWN,

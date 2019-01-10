@@ -32,4 +32,5 @@ import recidiviz.ingest.us_nc_guilford
 import recidiviz.ingest.us_pa
 import recidiviz.ingest.us_pa_dauphin
 import recidiviz.ingest.us_pa_greene
+import recidiviz.ingest.us_vt
 import recidiviz.ingest.worker
