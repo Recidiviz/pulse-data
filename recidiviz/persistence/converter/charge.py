@@ -44,7 +44,8 @@ def copy_fields_to_builder(new: entities.Charge.Builder, proto,
     new.charging_entity = fn(normalize, 'charging_entity', proto)
     new.status = fn(ChargeStatus.from_str, 'status', proto,
                     metadata.enum_overrides, default=ChargeStatus.PENDING)
-    new.court_type = fn(CourtType.from_str, 'court_type', proto)
+    new.court_type = fn(CourtType.from_str, 'court_type', proto,
+                        metadata.enum_overrides)
     new.case_number = fn(normalize, 'case_number', proto)
     new.next_court_date = fn(parse_date, 'next_court_date', proto)
     new.judge_name = fn(normalize, 'judge_name', proto)
