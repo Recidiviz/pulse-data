@@ -43,7 +43,7 @@ regions:
   us_pa_greene:
     agency_name: Greene County Detention Center
     region_code: us_pa_greene
-    agency_type: unified
+    agency_type: jail
     queue: us-pa-greene-scraper
     base_url: http://www.co.greene.pa.us/InmateLocator
     scraper_package: us_pa_greene

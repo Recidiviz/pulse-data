@@ -20,13 +20,12 @@
 from http import HTTPStatus
 import logging
 
-from flask import Blueprint, request
+from flask import Blueprint
 
-from recidiviz.ingest import ingest_utils
 from recidiviz.ingest import sessions
 from recidiviz.utils.auth import authenticate_request
-from recidiviz.utils.params import get_values
 from recidiviz.persistence import persistence
+from recidiviz.utils.regions import get_supported_regions
 
 infer_release_blueprint = Blueprint('infer_release', __name__)
 
@@ -34,7 +33,7 @@ infer_release_blueprint = Blueprint('infer_release', __name__)
 @infer_release_blueprint.route('/release')
 @authenticate_request
 def infer_release():
-    regions = ingest_utils.validate_regions(get_values("region", request.args))
+    regions = _get_jail_regions()
 
     if not regions:
         logging.error("No valid regions found in request")
@@ -48,3 +47,9 @@ def infer_release():
                 region, session.start)
             persistence.infer_release_on_open_bookings(region, session.start)
     return '', HTTPStatus.OK
+
+
+def _get_jail_regions():
+    return [region_code for region_code, region_dict in
+            get_supported_regions(full_manifest=True).items() if
+            region_dict['agency_type'] == 'jail']
