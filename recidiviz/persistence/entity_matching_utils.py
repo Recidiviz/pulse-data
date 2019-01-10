@@ -18,9 +18,12 @@
 
 import copy
 
+from recidiviz.persistence import entities
+
 
 # '*' catches positional arguments, making our arguments named and required.
-def is_person_match(*, db_entity, ingested_entity):
+def is_person_match(*, db_entity: entities.Person,
+                    ingested_entity: entities.Person) -> bool:
     """
     Given a database person and an ingested person, determine if they should be
     considered the same person.
@@ -45,7 +48,8 @@ def is_person_match(*, db_entity, ingested_entity):
 
 
 # '*' catches positional arguments, making our arguments named and required.
-def is_booking_match(*, db_entity, ingested_entity):
+def is_booking_match(*, db_entity: entities.Booking,
+                     ingested_entity: entities.Booking) -> bool:
     """
     Given a database booking and an ingested booking, determine if they should
     be considered the same booking. Should only be used to compare bookings for
@@ -69,7 +73,7 @@ def is_booking_match(*, db_entity, ingested_entity):
     return _is_active(db_entity) and _is_active(ingested_entity)
 
 
-def _is_active(booking):
+def _is_active(booking: entities.Booking) -> bool:
     """
     Returns True if a booking is active/open. This is true when the booking
     does not have a release date.
@@ -81,7 +85,30 @@ def _is_active(booking):
 
 
 # '*' catches positional arguments, making our arguments named and required.
-def is_charge_match(*, db_entity, ingested_entity):
+def is_hold_match(*, db_entity: entities.Hold,
+                  ingested_entity: entities.Hold) -> bool:
+    """
+    Given a database hold and an ingested hold, determine if they should
+    be considered the same hold. Should only be used to compare holds for
+    the same booking.
+    Args:
+        db_entity: (entities.Hold)
+        ingested_entity: (entities.Hold)
+    Returns: (bool)
+    """
+    return _is_match(db_entity, ingested_entity, _sanitize_hold)
+
+
+def _sanitize_hold(hold: entities.Hold) -> entities.Hold:
+    sanitized = copy.deepcopy(hold)
+    sanitized.hold_id = None
+
+    return sanitized
+
+
+# '*' catches positional arguments, making our arguments named and required.
+def is_charge_match(*, db_entity: entities.Charge,
+                    ingested_entity: entities.Charge) -> bool:
     """
     Given a database charge and an ingested charge, determine if they should be
     considered the same charge. Should only be used to compare charges for the
@@ -91,13 +118,17 @@ def is_charge_match(*, db_entity, ingested_entity):
         ingested_entity: (entities.Charge)
     Returns: (bool)
     """
-    # TODO(350): decide which fields cannot change
-    return _sanitize_charge(db_entity) == _sanitize_charge(ingested_entity)
+    return _is_match(db_entity, ingested_entity, _sanitize_charge)
 
 
-def _sanitize_charge(charge):
+def _sanitize_charge(charge: entities.Charge) -> entities.Charge:
     sanitized = copy.deepcopy(charge)
     sanitized.charge_id = None
+    sanitized.bond = None
+    sanitized.sentence = None
+    sanitized.next_court_date = None
+    sanitized.judge_name = None
+
     if charge.bond:
         sanitized.bond = _sanitize_bond(charge.bond)
     if charge.sentence:
@@ -106,7 +137,8 @@ def _sanitize_charge(charge):
 
 
 # '*' catches positional arguments, making our arguments named and required.
-def is_bond_match(*, db_entity, ingested_entity):
+def is_bond_match(*, db_entity: entities.Bond,
+                  ingested_entity: entities.Bond) -> bool:
     """
     Given a database bond and an ingested bond, determine if they should be
     considered the same bond. Should only be used to compare bonds for the same
@@ -116,18 +148,19 @@ def is_bond_match(*, db_entity, ingested_entity):
         ingested_entity: (entities.Bond)
     Returns: (bool)
     """
-    # TODO(350): decide which fields cannot change
-    return _sanitize_bond(db_entity) == _sanitize_bond(ingested_entity)
+    return _is_match(db_entity, ingested_entity, _sanitize_bond)
 
 
-def _sanitize_bond(bond):
+def _sanitize_bond(bond: entities.Bond) -> entities.Bond:
     sanitized = copy.deepcopy(bond)
     sanitized.bond_id = None
+    sanitized.status = None
     return sanitized
 
 
 # '*' catches positional arguments, making our arguments named and required.
-def is_sentence_match(*, db_entity, ingested_entity):
+def is_sentence_match(*, db_entity: entities.Sentence,
+                      ingested_entity: entities.Sentence) -> bool:
     """
     Given a database sentence and an ingested sentence, determine if they
     should be considered the same sentence. Should only be used to compare
@@ -137,12 +170,20 @@ def is_sentence_match(*, db_entity, ingested_entity):
         ingested_charge: (entities.Charge)
     Returns: (bool)
     """
+    return _is_match(db_entity, ingested_entity, _sanitize_sentence)
+
+
+def _sanitize_sentence(sentence: entities.Sentence) -> entities.Sentence:
     # TODO(350): decide which fields cannot change
-    return _sanitize_sentence(db_entity) == \
-           _sanitize_sentence(ingested_entity)
-
-
-def _sanitize_sentence(sentence):
+    # TODO(400): update with new incarceration / supervision objects
     sanitized = copy.deepcopy(sentence)
     sanitized.sentence_id = None
+    sanitized.related_sentences = []
     return sanitized
+
+
+def _is_match(db_entity, ingested_entity, sanitize_fn):
+    if db_entity.external_id or ingested_entity.external_id:
+        return db_entity.external_id == ingested_entity.external_id
+
+    return sanitize_fn(db_entity) == sanitize_fn(ingested_entity)

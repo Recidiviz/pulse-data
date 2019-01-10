@@ -139,7 +139,7 @@ class Sentence:
     parole_possible: Optional[bool] = attr.ib(default=None)
     post_release_supervision_length_days: Optional[int] = attr.ib(default=None)
 
-    sentence_id: Optional[str] = attr.ib(default=None)
+    sentence_id: Optional[int] = attr.ib(default=None)
 
     # To avoid recursive references, store only 1 level of related_sentences
     # (ie. don't store related_sentences of these related_sentences).
