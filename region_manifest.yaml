@@ -40,6 +40,17 @@ regions:
     region_code: us_ny
     scraper_package: us_ny
     timezone: America/New_York
+  us_nc_guilford:
+    region_name: UsNcGuilford
+    agency_name: Guilford County Sheriff's Office
+    region_code: us_nc_guilford
+    agency_type: jail
+    queue: us-nc-guilford-scraper
+    base_url: http://p2c.guilfordcountysheriff.com
+    names_file: us_ny_names.csv
+    entity_kinds:
+    scraper_package: us_nc_guilford
+    timezone: America/New_York
   us_pa_greene:
     agency_name: Greene County Detention Center
     region_code: us_pa_greene

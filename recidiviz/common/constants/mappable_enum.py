@@ -40,7 +40,7 @@ class MappableEnum(Enum):
                  override_map: Dict[str, Optional['MappableEnum']] = None) \
             -> Optional['MappableEnum']:
 
-        label = label.upper()
+        label = label.strip().upper()
         if not override_map:
             return cls._parse_to_enum(label, cls._get_default_map())
 
