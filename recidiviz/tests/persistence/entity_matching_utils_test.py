@@ -122,8 +122,9 @@ class TestEntityMatchingUtils(TestCase):
             db_entity=db_booking, ingested_entity=ingested_booking))
 
     def test_hold_match_external_id(self):
-        db_hold = entities.Hold(external_id=_EXTERNAL_ID)
-        ingested_hold = entities.Hold(external_id=_EXTERNAL_ID)
+        db_hold = entities.Hold.new_with_defaults(external_id=_EXTERNAL_ID)
+        ingested_hold = entities.Hold.new_with_defaults(
+            external_id=_EXTERNAL_ID)
         self.assertTrue(
             entity_matching_utils.is_hold_match(db_entity=db_hold,
                                                 ingested_entity=ingested_hold))
@@ -133,8 +134,10 @@ class TestEntityMatchingUtils(TestCase):
                                                 ingested_entity=ingested_hold))
 
     def test_hold_match(self):
-        db_hold = entities.Hold(hold_id=_HOLD_ID, jurisdiction_name=_PLACE_1)
-        ingested_hold = entities.Hold(jurisdiction_name=_PLACE_1)
+        db_hold = entities.Hold.new_with_defaults(
+            hold_id=_HOLD_ID, jurisdiction_name=_PLACE_1)
+        ingested_hold = entities.Hold.new_with_defaults(
+            jurisdiction_name=_PLACE_1)
         self.assertTrue(
             entity_matching_utils.is_hold_match(db_entity=db_hold,
                                                 ingested_entity=ingested_hold))
