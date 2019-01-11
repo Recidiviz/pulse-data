@@ -170,7 +170,7 @@ def _convert(src):
 
 def _should_use_builder(entity_cls):
     return entity_cls in {entities.Person, entities.Booking, entities.Arrest,
-                          entities.Charge}
+                          entities.Charge, entities.Hold}
 
 
 def _is_enum(attr_type):
