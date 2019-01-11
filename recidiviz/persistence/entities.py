@@ -72,10 +72,10 @@ class Booking(BuildableAttr):
 
 
 @attr.s
-class Hold:
-    external_id: Optional[str] = attr.ib(default=None)
-    jurisdiction_name: Optional[str] = attr.ib(default=None)
-    hold_status: Optional[str] = attr.ib(default=None)
+class Hold(BuildableAttr):
+    external_id: Optional[str] = attr.ib()
+    jurisdiction_name: Optional[str] = attr.ib()
+    hold_status: Optional[str] = attr.ib()
 
     hold_id: Optional[int] = attr.ib(default=None)
 
