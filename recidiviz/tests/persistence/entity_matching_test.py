@@ -268,3 +268,59 @@ class TestEntityMatching(TestCase):
         self.assertCountEqual(ingested_booking.charges,
                               [expected_matched_charge, expected_new_charge,
                                expected_dropped_charge])
+
+    def test_matchBonds(self):
+        db_bond_shared = entities.Bond.new_with_defaults(
+            bond_id=_BOND_ID, amount_dollars=12)
+        db_bond_third = entities.Bond.new_with_defaults(
+            bond_id=_BOND_ID_ANOTHER, amount_dollars=3)
+
+        db_charge_1 = entities.Charge.new_with_defaults(
+            charge_id=_CHARGE_ID, bond=db_bond_shared)
+        db_charge_2 = entities.Charge.new_with_defaults(
+            charge_id=_CHARGE_ID_ANOTHER, bond=db_bond_shared)
+        db_charge_3 = entities.Charge.new_with_defaults(
+            charge_id=_ID, bond=db_bond_third)
+        db_charge_4 = entities.Charge.new_with_defaults(charge_id=_ID_ANOTHER)
+
+        db_booking = entities.Booking.new_with_defaults(
+            charges=[db_charge_1, db_charge_2, db_charge_3, db_charge_4])
+
+        ingested_bond_shared = entities.Bond.new_with_defaults(
+            amount_dollars=12)
+        ingested_bond_newly_shared = entities.Bond.new_with_defaults(
+            amount_dollars=3)
+
+        # match_bonds is called after match_charges, so ingested charges have
+        # charge IDs at this point.
+        ingested_charge_1 = entities.Charge.new_with_defaults(
+            charge_id=_CHARGE_ID, bond=ingested_bond_shared)
+        ingested_charge_2 = entities.Charge.new_with_defaults(
+            charge_id=_CHARGE_ID_ANOTHER, bond=ingested_bond_shared)
+        ingested_charge_3 = entities.Charge.new_with_defaults(
+            charge_id=_ID, bond=ingested_bond_newly_shared)
+        ingested_charge_4 = entities.Charge.new_with_defaults(
+            charge_id=_ID_ANOTHER, bond=ingested_bond_newly_shared)
+
+        ingested_booking = entities.Booking.new_with_defaults(
+            charges=[ingested_charge_4, ingested_charge_2, ingested_charge_1,
+                     ingested_charge_3])
+
+        expected_matched_bond = copy.deepcopy(db_bond_shared)
+        expected_unmatched_bond = copy.deepcopy(ingested_bond_newly_shared)
+
+        expected_charge_1 = entities.Charge.new_with_defaults(
+            charge_id=_CHARGE_ID, bond=expected_matched_bond)
+        expected_charge_2 = entities.Charge.new_with_defaults(
+            charge_id=_CHARGE_ID_ANOTHER, bond=expected_matched_bond)
+        expected_charge_3 = entities.Charge.new_with_defaults(
+            charge_id=_ID, bond=expected_unmatched_bond)
+        expected_charge_4 = entities.Charge.new_with_defaults(
+            charge_id=_ID_ANOTHER, bond=expected_unmatched_bond)
+
+        entity_matching.match_bonds(db_booking=db_booking,
+                                    ingested_booking=ingested_booking)
+
+        self.assertCountEqual(ingested_booking.charges,
+                              [expected_charge_1, expected_charge_2,
+                               expected_charge_3, expected_charge_4])
