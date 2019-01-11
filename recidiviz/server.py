@@ -18,15 +18,21 @@
 """Entrypoint for the application."""
 import logging
 
-from google.cloud.logging import Client, handlers
 from flask import Flask
+from google.cloud.logging import Client, handlers
+from opencensus.trace import config_integration
+from opencensus.trace.exporters import file_exporter
+from opencensus.trace.exporters import stackdriver_exporter
+from opencensus.trace.exporters.transports.background_thread \
+    import BackgroundThreadTransport
+from opencensus.trace.ext.flask.flask_middleware import FlaskMiddleware
 
 from recidiviz.ingest.infer_release import infer_release_blueprint
 from recidiviz.ingest.scraper_control import scraper_control
 from recidiviz.ingest.worker import worker
 from recidiviz.persistence.actions import actions
 from recidiviz.tests.utils.populate_test_db import test_populator
-from recidiviz.utils import environment
+from recidiviz.utils import environment, metadata
 
 logger = logging.getLogger()
 
@@ -55,3 +61,17 @@ app.register_blueprint(actions, url_prefix='/ingest')
 app.register_blueprint(infer_release_blueprint, url_prefix='/infer_release')
 if not environment.in_prod():
     app.register_blueprint(test_populator, url_prefix='/test_populator')
+
+# Setup tracing of requests not traced by default
+if environment.in_prod():
+    exporter = stackdriver_exporter.StackdriverExporter(
+        project_id=metadata.project_id(), transport=BackgroundThreadTransport)
+else:
+    exporter = file_exporter.FileExporter(file_name='traces')
+# TODO(596): This is a no-op until the next release of `opencensus`.
+app.config['OPENCENSUS_TRACE_PARAMS'] = {
+    'BLACKLIST_HOSTNAMES': ['metadata']  # Don't trace metadata requests
+}
+middleware = FlaskMiddleware(app, exporter=exporter)
+config_integration.trace_integrations(
+    ['google_cloud_clientlibs', 'requests', 'sqlalchemy'])
