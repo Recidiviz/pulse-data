@@ -17,9 +17,12 @@
 """Contains logic to match database entities with ingested entities."""
 
 import logging
-from typing import List
+from collections import defaultdict
+from typing import List, Dict, Tuple, Set
 
 from recidiviz import Session
+from recidiviz.common import common_utils
+from recidiviz.common.buildable_attr import BuildableAttr
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.persistence.database import database
 from recidiviz.persistence import entity_matching_utils as utils, entities
@@ -106,11 +109,90 @@ def match_bookings(
                         ingested_booking=ingested_booking)
             match_charges(db_booking=db_booking,
                           ingested_booking=ingested_booking)
-            # TODO: match bonds
-            # TODO: match sentences
+            match_bonds(db_booking=db_booking,
+                        ingested_booking=ingested_booking)
+            match_sentences(db_booking=db_booking,
+                            ingested_booking=ingested_booking)
 
         else:
             ingested_person.bookings.append(db_booking)
+
+
+def match_bonds(*, db_booking: entities.Booking,
+                ingested_booking: entities.Booking):
+    _match_from_charges(db_booking=db_booking,
+                        ingested_booking=ingested_booking, name='bond')
+
+
+def match_sentences(*, db_booking: entities.Booking,
+                    ingested_booking: entities.Booking):
+    _match_from_charges(db_booking=db_booking,
+                        ingested_booking=ingested_booking, name='sentence')
+
+
+def _build_maps_from_charges(charges: List[entities.Charge], obj_name: str) -> \
+        Tuple[Dict[str, BuildableAttr], Dict[str, Set[BuildableAttr]]]:
+    """Helper function that returns a pair of maps describing the relationships
+    between charges and their children. The |object_map| maps ids, which may be
+    temporary generated ids, to the objects they refer to. The
+    |object_relationships| map maps those ids to the set of charges that the
+    object is a child of. This is part of determining entity equality,
+    e.g. two bonds are equal only if the same set of charges has the bond as its
+    child."""
+    object_map = {}
+    object_relationships: Dict[str, set] = defaultdict(set)
+
+    for charge in charges:
+        obj = getattr(charge, obj_name)
+        if obj:
+            obj_id = getattr(obj, obj_name + '_id')
+            if not obj_id:
+                obj_id = common_utils.create_generated_id(obj)
+            object_map[obj_id] = obj
+            object_relationships[obj_id].add(charge.charge_id)
+    return object_map, object_relationships
+
+
+def _match_from_charges(*, db_booking: entities.Booking,
+                        ingested_booking: entities.Booking, name: str):
+    """Helper function that, within a booking, matches objects that are children
+    of the booking's charges. |name| should be 'bond' or 'sentence'.
+    """
+    id_name = name + '_id'
+    db_obj_map, db_relationship_map = _build_maps_from_charges(
+        db_booking.charges, name)
+    ing_obj_map, ing_relationship_map = _build_maps_from_charges(
+        ingested_booking.charges, name)
+
+    def _is_match_with_relationships(*, db_entity, ingested_entity):
+        ing_entity_id = common_utils.create_generated_id(ingested_entity)
+        db_entity_id = getattr(db_entity, id_name)
+        matcher = getattr(utils, 'is_{}_match'.format(name))
+        obj_match = matcher(db_entity=db_entity,
+                            ingested_entity=ingested_entity)
+        relationship_match = ing_relationship_map[ing_entity_id] == \
+                             db_relationship_map[db_entity_id]
+        return obj_match and relationship_match
+
+    dropped_objs = []
+    for db_obj in db_obj_map.values():
+        ingested_obj = _get_next_available_match(
+            db_obj, ing_obj_map.values(),
+            _is_match_with_relationships)
+        if ingested_obj:
+            db_id = getattr(db_obj, name + '_id')
+            logging.info('successfully matched %s with id %s',
+                         name, db_id)
+            setattr(ingested_obj, name + '_id', db_id)
+        else:
+            logging.info('Did not match %s to any ingested %s, dropping',
+                         db_obj, name)
+            # TODO: figure out how to drop sentences/bonds
+            # _drop_bond(db_bond) / _drop_sentence(db_sentence)
+            dropped_objs.append(db_obj)
+
+    # TODO: keep bonds/sentences around on booking after being dropped
+    # ingested_booking.bonds.extend(ingested_bonds)
 
 
 def match_arrest(
