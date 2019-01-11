@@ -16,15 +16,16 @@
 # ============================================================================
 """Converts an ingest_info proto Bond to a persistence entity."""
 from recidiviz.common.constants.bond import BondType, BondStatus
+from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence import entities
 from recidiviz.persistence.converter import converter_utils
 from recidiviz.persistence.converter.converter_utils import fn, \
     parse_external_id
 
 
-def convert(proto, metadata):
+def convert(proto, metadata: IngestMetadata) -> entities.Bond:
     """Converts an ingest_info proto Bond to a persistence entity."""
-    new = entities.Bond()
+    new = entities.Bond.builder()
 
     new.external_id = fn(parse_external_id, 'bond_id', proto)
     new.amount_dollars, inferred_bond_type = fn(
@@ -40,4 +41,4 @@ def convert(proto, metadata):
                     metadata.enum_overrides,
                     default=BondStatus.ACTIVE)
 
-    return new
+    return new.build()

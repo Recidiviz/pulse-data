@@ -116,11 +116,11 @@ class Charge(BuildableAttr):
 
 
 @attr.s
-class Bond:
-    external_id: Optional[Optional[str]] = attr.ib(default=None)
-    amount_dollars: Optional[int] = attr.ib(default=None)
-    bond_type: Optional[BondType] = attr.ib(default=None)
-    status: Optional[BondStatus] = attr.ib(default=None)
+class Bond(BuildableAttr):
+    external_id: Optional[Optional[str]] = attr.ib()
+    amount_dollars: Optional[int] = attr.ib()
+    bond_type: Optional[BondType] = attr.ib()
+    status: Optional[BondStatus] = attr.ib()
 
     bond_id: Optional[int] = attr.ib(default=None)
 
