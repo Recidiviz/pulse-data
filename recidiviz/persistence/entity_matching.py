@@ -19,6 +19,7 @@
 import logging
 from typing import List
 
+from recidiviz import Session
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.persistence.database import database
 from recidiviz.persistence import entity_matching_utils as utils, entities
@@ -28,7 +29,8 @@ class EntityMatchingError(Exception):
     """Raised when an error with entity matching is encountered."""
 
 
-def match_entities(session, region, ingested_people):
+def match_entities(
+        session: Session, region: str, ingested_people: List[entities.Person]):
     """
     Finds all people in the given |region| and database |session| and attempts
     to match them to the |ingested_people|. For any ingested person, if a
@@ -70,7 +72,8 @@ def _has_external_ids(ingested_people: List[entities.Person]) -> bool:
     return False
 
 
-def match_bookings(db_person, ingested_person):
+def match_bookings(
+        *, db_person: entities.Person, ingested_person: entities.Person):
     """
     Attempts to match all bookings on the |ingested_person| with bookings on
     the |db_person|. For any ingested booking, if a matching booking exists on
@@ -97,13 +100,57 @@ def match_bookings(db_person, ingested_person):
                 ingested_booking.admission_date = db_booking.admission_date
                 ingested_booking.admission_date_inferred = True
 
+            match_arrest(db_booking=db_booking,
+                         ingested_booking=ingested_booking)
+            match_holds(db_booking=db_booking,
+                        ingested_booking=ingested_booking)
             match_charges(db_booking=db_booking,
                           ingested_booking=ingested_booking)
+            # TODO: match bonds
+            # TODO: match sentences
+
         else:
             ingested_person.bookings.append(db_booking)
 
 
-def match_charges(db_booking, ingested_booking):
+def match_arrest(
+        *, db_booking: entities.Booking, ingested_booking: entities.Booking):
+    if db_booking.arrest and ingested_booking.arrest:
+        ingested_booking.arrest.arrest_id = db_booking.arrest.arrest_id
+
+
+def match_holds(
+        *, db_booking: entities.Booking, ingested_booking: entities.Booking):
+    dropped_holds = []
+
+    for db_hold in db_booking.holds:
+        ingested_hold = _get_only_match(
+            db_hold, ingested_booking.holds, utils.is_hold_match)
+
+        if ingested_hold:
+            logging.info(
+                'Successfully matched hold with ID %s', db_hold.hold_id)
+            # If the match was previously matched to a different database
+            # charge, raise an error.
+            if ingested_hold.hold_id:
+                raise EntityMatchingError('matched ingested hold to more '
+                                          'than one database entity')
+            ingested_hold.hold_id = db_hold.hold_id
+        else:
+            _drop_hold(db_hold)
+            dropped_holds.append(db_hold)
+
+    ingested_booking.holds.extend(dropped_holds)
+
+
+def _drop_hold(_):
+    # TODO(585): Drop necessary fields for hold
+    pass
+
+
+# TODO(573): what do we do with orphaned bonds/sentences?
+def match_charges(
+        *, db_booking: entities.Booking, ingested_booking: entities.Booking):
     """
     Attempts to match all charges on the |ingested_booking| with charges on
     the |db_booking|. For any ingested charge, if a matching charge exists on
@@ -116,30 +163,35 @@ def match_charges(db_booking, ingested_booking):
     """
     dropped_charges = []
     for db_charge in db_booking.charges:
-        # TODO(349): if there is more than one match, _get_only_match will
-        # raise an EntityMatchingError - but we need to handle identical
-        # charges.
-        ingested_charge = _get_only_match(db_charge, ingested_booking.charges,
-                                          utils.is_charge_match)
+        ingested_charge = _get_next_available_match(db_charge,
+                                                    ingested_booking.charges,
+                                                    utils.is_charge_match)
         if ingested_charge:
             logging.info('Successfully matched charge with ID %s',
                          db_charge.charge_id)
-            # If the match was previously matched to a different database
-            # charge, raise an error.
-            if ingested_charge.charge_id:
-                # TODO(349): handle identical charges
-                raise EntityMatchingError('matched ingested charge to more '
-                                          'than one database entity')
             ingested_charge.charge_id = db_charge.charge_id
         else:
-            if db_charge.status != ChargeStatus.DROPPED:
-                logging.info('Dropping charge with id %s', db_charge.charge_id)
-                db_charge.status = ChargeStatus.DROPPED
-            # TODO: set boolean inferred_drop to true
-            # TODO: what do we do with orphaned bonds?
+            _drop_charge(db_charge)
             dropped_charges.append(db_charge)
 
     ingested_booking.charges.extend(dropped_charges)
+
+
+# TODO(585): set boolean inferred_drop to true
+def _drop_charge(charge: entities.Charge):
+    if charge.status != ChargeStatus.DROPPED:
+        logging.info('Dropping charge with id %s', charge.charge_id)
+        charge.status = ChargeStatus.DROPPED
+
+
+def _get_next_available_match(db_entity, ingested_entities, matcher):
+    id_name = db_entity.__class__.__name__.lower() + '_id'
+
+    for ingested_entity in ingested_entities:
+        if not getattr(ingested_entity, id_name) and matcher(
+                db_entity=db_entity, ingested_entity=ingested_entity):
+            return ingested_entity
+    return None
 
 
 def _get_only_match(db_entity, ingested_entities, matcher):
@@ -159,8 +211,9 @@ def _get_only_match(db_entity, ingested_entities, matcher):
     """
     matches = _get_all_matches(db_entity, ingested_entities, matcher)
     if len(matches) > 1:
-        raise EntityMatchingError('matched database entity {} to more than '
-                                  'one ingested entity'.format(db_entity))
+        raise EntityMatchingError(
+            'matched database entity {} to more than one ingested '
+            'entity'.format(db_entity))
     return matches[0] if matches else None
 
 

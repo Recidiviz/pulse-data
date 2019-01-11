@@ -24,8 +24,11 @@ from recidiviz.common.constants.booking import CustodyStatus
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.persistence.database import schema, database_utils
 from recidiviz.persistence import entities, entity_matching
+from recidiviz.persistence.entity_matching import EntityMatchingError
 from recidiviz.tests.utils import fakes
 
+_ID = 1
+_ID_ANOTHER = 2
 _PERSON_ID = '2'
 _PERSON_ID_ANOTHER = '3'
 _BOOKING_ID = '12'
@@ -47,9 +50,9 @@ _PLACE_1 = 'place'
 _PLACE_2 = 'another'
 _DATE = datetime(2018, 12, 13)
 _DATE_ANOTHER = datetime(2017, 12, 13)
-_CHARGE_NAME = "Charge1"
-_CHARGE_NAME_2 = "Charge2"
-_CHARGE_NAME_3 = "Charge3"
+_NAME = "name_1"
+_NAME_2 = "name_2"
+_NAME_3 = "name_3"
 
 
 class TestEntityMatching(TestCase):
@@ -61,10 +64,10 @@ class TestEntityMatching(TestCase):
     def test_match_entites(self):
         schema_charge = schema.Charge(status=ChargeStatus.PENDING.value,
                                       charge_id=_CHARGE_ID,
-                                      name=_CHARGE_NAME)
+                                      name=_NAME)
         schema_charge_another = schema.Charge(status=ChargeStatus.PENDING.value,
                                               charge_id=_CHARGE_ID_ANOTHER,
-                                              name=_CHARGE_NAME_2)
+                                              name=_NAME_2)
         open_schema_booking = schema.Booking(
             admission_date=_DATE,
             booking_id=_BOOKING_ID,
@@ -109,7 +112,7 @@ class TestEntityMatching(TestCase):
         ingested_existing_charge.charge_id = None
         ingested_new_charge = entities.Charge.new_with_defaults(
             status=ChargeStatus.PENDING,
-            name=_CHARGE_NAME_3
+            name=_NAME_3
         )
 
         ingested_open_booking = database_utils.convert_booking(
@@ -182,3 +185,86 @@ class TestEntityMatching(TestCase):
         expected_person.bookings = [expected_closed_booking]
 
         assert ingested_person == expected_person
+
+    def test_matchHolds_duplicateMatch_throws(self):
+        db_hold = entities.Hold.new_with_defaults(
+            hold_id=_ID, jurisdiction_name=_NAME)
+        ingested_hold = entities.Hold.new_with_defaults(jurisdiction_name=_NAME)
+        ingested_hold_another = copy.deepcopy(ingested_hold)
+
+        db_booking = entities.Booking.new_with_defaults(holds=[db_hold])
+        ingested_booking = entities.Booking.new_with_defaults(
+            holds=[ingested_hold, ingested_hold_another])
+
+        with self.assertRaises(EntityMatchingError):
+            entity_matching.match_holds(
+                db_booking=db_booking, ingested_booking=ingested_booking)
+
+    def test_matchHolds(self):
+        db_hold = entities.Hold.new_with_defaults(
+            hold_id=_ID, jurisdiction_name=_NAME)
+        db_hold_to_drop = entities.Hold.new_with_defaults(
+            hold_id=_ID_ANOTHER, jurisdiction_name=_NAME_2)
+        ingested_hold = entities.Hold.new_with_defaults(jurisdiction_name=_NAME)
+        ingested_hold_new = entities.Hold.new_with_defaults(
+            jurisdiction_name=_NAME_3)
+
+        db_booking = entities.Booking.new_with_defaults(
+            holds=[db_hold, db_hold_to_drop])
+        ingested_booking = entities.Booking.new_with_defaults(
+            holds=[ingested_hold, ingested_hold_new])
+
+        expected_matched_hold = copy.deepcopy(ingested_hold)
+        expected_matched_hold.hold_id = db_hold.hold_id
+        expected_new_hold = copy.deepcopy(ingested_hold_new)
+        expected_dropped_hold = copy.deepcopy(db_hold_to_drop)
+
+        entity_matching.match_holds(db_booking=db_booking,
+                                    ingested_booking=ingested_booking)
+
+        self.assertCountEqual(ingested_booking.holds,
+                              [expected_matched_hold, expected_dropped_hold,
+                               expected_new_hold])
+
+    def test_matchArrests(self):
+        db_arrest = entities.Arrest.new_with_defaults(arrest_id=_ID)
+        ingested_arrest = entities.Arrest.new_with_defaults()
+
+        expected_arrest = copy.deepcopy(ingested_arrest)
+        expected_arrest.arrest_id = db_arrest.arrest_id
+
+        entity_matching.match_arrest(
+            db_booking=entities.Booking.new_with_defaults(arrest=db_arrest),
+            ingested_booking=entities.Booking.new_with_defaults(
+                arrest=ingested_arrest))
+
+        self.assertEqual(ingested_arrest, expected_arrest)
+
+    def test_matchCharges(self):
+        db_charge = entities.Charge.new_with_defaults(charge_id=_ID,
+                                                      name=_NAME)
+        db_identical_charge = entities.Charge.new_with_defaults(
+            charge_id=_ID_ANOTHER, name=_NAME)
+
+        ingested_charge = entities.Charge.new_with_defaults(name=_NAME,
+                                                            judge_name=_NAME_2)
+        ingested_charge_new = entities.Charge.new_with_defaults(
+            name=_NAME_2)
+
+        expected_matched_charge = copy.deepcopy(ingested_charge)
+        expected_matched_charge.charge_id = db_charge.charge_id
+        expected_new_charge = copy.deepcopy(ingested_charge_new)
+        expected_dropped_charge = copy.deepcopy(db_identical_charge)
+        expected_dropped_charge.status = ChargeStatus.DROPPED
+
+        db_booking = entities.Booking.new_with_defaults(
+            charges=[db_charge, db_identical_charge])
+        ingested_booking = entities.Booking.new_with_defaults(
+            charges=[ingested_charge, ingested_charge_new])
+
+        entity_matching.match_charges(db_booking=db_booking,
+                                      ingested_booking=ingested_booking)
+
+        self.assertCountEqual(ingested_booking.charges,
+                              [expected_matched_charge, expected_new_charge,
+                               expected_dropped_charge])
