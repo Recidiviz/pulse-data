@@ -132,6 +132,7 @@ degree_values = (enum_strings.external_unknown,
 charge_class_values = (enum_strings.charge_class_civil,
                        enum_strings.external_unknown,
                        enum_strings.charge_class_felony,
+                       enum_strings.charge_class_infraction,
                        enum_strings.charge_class_misdemeanor,
                        enum_strings.charge_class_parole_violation,
                        enum_strings.charge_class_probation_violation)

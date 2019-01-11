@@ -111,6 +111,7 @@ degree_third = 'THIRD'
 
 charge_class_civil = 'CIVIL'
 charge_class_felony = 'FELONY'
+charge_class_infraction = 'INFRACTION'
 charge_class_misdemeanor = 'MISDEMEANOR'
 charge_class_parole_violation = 'PAROLE_VIOLATION'
 charge_class_probation_violation = 'PROBATION_VIOLATION'
