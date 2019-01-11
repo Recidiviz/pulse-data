@@ -113,9 +113,12 @@ def _charges_pointing_to_total_bond(bond_amount, bond_type, charges):
     """Infers a bond from the total_bond field and creates a copy of all charges
     updated to point to the inferred bond. If no charges exist, then also infer
     a charge."""
-    inferred_bond = entities.Bond(amount_dollars=bond_amount,
-                                  bond_type=bond_type,
-                                  status=BondStatus.ACTIVE)
+    inferred_bond = entities.Bond(
+        external_id=None,
+        amount_dollars=bond_amount,
+        bond_type=bond_type,
+        status=BondStatus.ACTIVE
+    )
 
     if not charges:
         inferred_charge = entities.Charge.new_with_defaults(
