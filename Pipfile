@@ -92,6 +92,7 @@ deepdiff = "*"
 mypy = "*"
 opencensus = "*"
 google-cloud-monitoring = "*"
+google-cloud-trace = "*"
 
 [dev-packages]
 rope = "*"
