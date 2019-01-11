@@ -25,6 +25,7 @@ from opencensus.stats import view
 
 from recidiviz import Session
 from recidiviz.common.constants.booking import ReleaseReason
+from recidiviz.ingest.constants import MAX_PEOPLE_TO_LOG
 from recidiviz.persistence import entity_matching
 from recidiviz.persistence.converter import converter
 from recidiviz.persistence.database import database
@@ -112,11 +113,11 @@ def write(ingest_info, metadata):
     mtags = {monitoring.TagKey.REGION: metadata.region,
              monitoring.TagKey.SHOULD_PERSIST: _should_persist()}
     with monitoring.measurements(mtags) as measurements:
-        logging.info('The following proto will be written to the database:')
-        logging.info(ingest_info)
         people = converter.convert(ingest_info, metadata)
-        logging.info('Successfully converted proto:')
-        logging.info(people)
+        logging.info('Successfully converted proto(logging max 4 people):')
+        loop_count = min(len(people), MAX_PEOPLE_TO_LOG)
+        for i in range(loop_count):
+            logging.info(people[i])
         measurements.measure_int_put(m_people, len(people))
 
         if not _should_persist():
