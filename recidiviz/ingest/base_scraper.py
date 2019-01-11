@@ -177,9 +177,12 @@ class BaseScraper(Scraper):
                 raise ValueError(
                     'IngestInfo must be populated if there are no more tasks')
             scraper_start_time = dateparser.parse(params['scraper_start_time'])
-            logging.info('Writing the ingest_info to the database for %s:',
-                         self.region.region_code)
-            logging.info(ingest_info)
+            logging.info('Writing the ingest_info to the database for %s'
+                         '(logging at most 4 people):', self.region.region_code)
+            loop_count = min(
+                len(ingest_info.person), constants.MAX_PEOPLE_TO_LOG)
+            for i in range(loop_count):
+                logging.info(ingest_info.person[i])
             logging.info('Last seen time of person being set as: %s',
                          scraper_start_time)
             metadata = IngestMetadata(self.region.region_code,
