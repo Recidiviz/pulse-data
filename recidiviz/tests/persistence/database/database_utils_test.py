@@ -96,6 +96,7 @@ _PERSON = entities.Person(
                 sentence_id=7890,
                 external_id="external_id",
                 date_imposed=date(year=2000, month=1, day=8),
+                sentencing_region='sentencing_region',
                 min_length_days=3,
                 max_length_days=4,
                 is_life=False,

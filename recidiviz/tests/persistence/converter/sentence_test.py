@@ -37,7 +37,7 @@ class SentenceConverterTest(unittest.TestCase):
         result = sentence.convert(ingest_sentence)
 
         # Assert
-        expected_result = entities.Sentence(
+        expected_result = entities.Sentence.new_with_defaults(
             external_id='SENTENCE_ID',
             min_length_days=1,
             post_release_supervision_length_days=0
