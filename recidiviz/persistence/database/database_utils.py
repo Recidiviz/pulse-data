@@ -22,6 +22,7 @@ from typing import Optional, Union, Type
 import attr
 
 from recidiviz import Base
+from recidiviz.common.buildable_attr import BuildableAttr
 from recidiviz.common.constants.mappable_enum import MappableEnum
 from recidiviz.persistence import entities
 from recidiviz.persistence.database import schema
@@ -38,9 +39,7 @@ class _Direction(Enum):
 
     @staticmethod
     def for_cls(src_cls):
-        # TODO(363): change this to check BuildableAttr class once all
-        # entities extend BuildableAttr.
-        if not issubclass(src_cls, Base):
+        if issubclass(src_cls, BuildableAttr):
             return _Direction.ENTITY_TO_SCHEMA
 
         if issubclass(src_cls, Base):
@@ -116,8 +115,6 @@ def convert_sentence(src):
     return _convert(src)
 
 
-# TODO(363): Remove special casing for Person once all entities extend
-# BuildableAttr
 def _convert(src):
     """Converts the given src object to its entity/schema counterpart."""
     if not src:
@@ -131,10 +128,7 @@ def _convert(src):
     if direction is _Direction.ENTITY_TO_SCHEMA:
         dst = schema_cls()
     else:
-        if _should_use_builder(entity_cls):
-            dst = entity_cls.builder()
-        else:
-            dst = entity_cls()
+        dst = entity_cls.builder()
 
     for field, attribute in attr.fields_dict(entity_cls).items():
         if field == 'bookings':
@@ -162,15 +156,10 @@ def _convert(src):
                 value = getattr(src, field)
             setattr(dst, field, value)
 
-    if direction is _Direction.SCHEMA_TO_ENTITY and \
-            _should_use_builder(entity_cls):
+    if direction is _Direction.SCHEMA_TO_ENTITY:
         dst = dst.build()
     return dst
 
-
-def _should_use_builder(entity_cls):
-    return entity_cls in {entities.Person, entities.Booking, entities.Arrest,
-                          entities.Charge, entities.Hold, entities.Bond}
 
 def _is_enum(attr_type):
     return _get_enum_cls(attr_type) is not None

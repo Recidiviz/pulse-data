@@ -126,18 +126,18 @@ class Bond(BuildableAttr):
 
 
 @attr.s
-class Sentence:
-    external_id: Optional[str] = attr.ib(default=None)
-    date_imposed: Optional[datetime.date] = attr.ib(default=None)
-    sentencing_region: Optional[str] = attr.ib(default=None)
-    min_length_days: Optional[int] = attr.ib(default=None)
-    max_length_days: Optional[int] = attr.ib(default=None)
-    is_life: Optional[bool] = attr.ib(default=None)
-    is_probation: Optional[bool] = attr.ib(default=None)
-    is_suspended: Optional[bool] = attr.ib(default=None)
-    fine_dollars: Optional[int] = attr.ib(default=None)
-    parole_possible: Optional[bool] = attr.ib(default=None)
-    post_release_supervision_length_days: Optional[int] = attr.ib(default=None)
+class Sentence(BuildableAttr):
+    external_id: Optional[str] = attr.ib()
+    date_imposed: Optional[datetime.date] = attr.ib()
+    sentencing_region: Optional[str] = attr.ib()
+    min_length_days: Optional[int] = attr.ib()
+    max_length_days: Optional[int] = attr.ib()
+    is_life: Optional[bool] = attr.ib()
+    is_probation: Optional[bool] = attr.ib()
+    is_suspended: Optional[bool] = attr.ib()
+    fine_dollars: Optional[int] = attr.ib()
+    parole_possible: Optional[bool] = attr.ib()
+    post_release_supervision_length_days: Optional[int] = attr.ib()
 
     sentence_id: Optional[int] = attr.ib(default=None)
 

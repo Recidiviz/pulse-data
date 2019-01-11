@@ -20,9 +20,9 @@ from recidiviz.persistence.converter.converter_utils import normalize, \
     parse_bool, parse_days, parse_dollars, parse_date, fn, parse_external_id
 
 
-def convert(proto):
+def convert(proto) -> entities.Sentence:
     """Converts an ingest_info proto Sentence to a persistence entity."""
-    new = entities.Sentence()
+    new = entities.Sentence.builder()
 
     new.external_id = fn(parse_external_id, 'sentence_id', proto)
     new.date_imposed = fn(parse_date, 'date_imposed', proto)
@@ -37,4 +37,4 @@ def convert(proto):
     new.post_release_supervision_length_days = \
         fn(parse_days, 'post_release_supervision_length', proto)
 
-    return new
+    return new.build()
