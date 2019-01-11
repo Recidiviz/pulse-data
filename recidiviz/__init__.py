@@ -34,7 +34,7 @@ if environment.in_prod():
     db_name = secrets.get_secret('sqlalchemy_db_name')
 
     sqlalchemy_url = \
-        'mysql+pymysql://{db_user}:{db_password}@{db_host}/{db_name}'.format(
+        'postgresql://{db_user}:{db_password}@{db_host}/{db_name}?host=/cloudsql/recidiviz-123:us-east4:dev-data'.format(
             db_user=db_user,
             db_password=db_password,
             db_host=db_host,
