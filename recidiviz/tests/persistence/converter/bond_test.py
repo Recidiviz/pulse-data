@@ -23,7 +23,6 @@ from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence import entities
 from recidiviz.persistence.converter import bond
 
-
 _EMPTY_METADATA = IngestMetadata.new_with_defaults()
 
 
@@ -60,9 +59,10 @@ class BondConverterTest(unittest.TestCase):
         result = bond.convert(ingest_bond, _EMPTY_METADATA)
 
         # Assert
-        expected_result = entities.Bond(
+        expected_result = entities.Bond.new_with_defaults(
             bond_type=BondType.NO_BOND,
-            status=BondStatus.ACTIVE)
+            status=BondStatus.ACTIVE
+        )
         self.assertEqual(result, expected_result)
 
     def testParseBond_AmountIsBondDenied_SetsAmountToZero(self):
@@ -73,7 +73,8 @@ class BondConverterTest(unittest.TestCase):
         result = bond.convert(ingest_bond, _EMPTY_METADATA)
 
         # Assert
-        expected_result = entities.Bond(
+        expected_result = entities.Bond.new_with_defaults(
             bond_type=BondType.BOND_DENIED,
-            status=BondStatus.ACTIVE)
+            status=BondStatus.ACTIVE
+        )
         self.assertEqual(result, expected_result)

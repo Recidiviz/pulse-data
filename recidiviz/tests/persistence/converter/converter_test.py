@@ -68,8 +68,10 @@ class TestConverter(unittest.TestCase):
                     external_id='CHARGE_ID',
                     status=ChargeStatus.PENDING,
                     name='DUI',
-                    bond=Bond(external_id='BOND_ID',
-                              status=BondStatus.ACTIVE),
+                    bond=Bond.new_with_defaults(
+                        external_id='BOND_ID',
+                        status=BondStatus.ACTIVE
+                    ),
                     sentence=Sentence(external_id='SENTENCE_ID', is_life=True)
                 )]
             )])]
@@ -109,7 +111,7 @@ class TestConverter(unittest.TestCase):
                 charges=[Charge.new_with_defaults(
                     status=ChargeStatus.PENDING,
                     name='DUI',
-                    bond=Bond(status=BondStatus.ACTIVE),
+                    bond=Bond.new_with_defaults(status=BondStatus.ACTIVE),
                     sentence=Sentence(is_life=True)
                 )]
             )])]
@@ -140,8 +142,11 @@ class TestConverter(unittest.TestCase):
                 custody_status=CustodyStatus.IN_CUSTODY,
                 charges=[Charge.new_with_defaults(
                     status=ChargeStatus.PENDING,
-                    bond=Bond(status=BondStatus.ACTIVE, bond_type=BondType.CASH,
-                              amount_dollars=100)
+                    bond=Bond.new_with_defaults(
+                        status=BondStatus.ACTIVE,
+                        bond_type=BondType.CASH,
+                        amount_dollars=100
+                    )
                 )]
             )]
         )]
@@ -175,8 +180,11 @@ class TestConverter(unittest.TestCase):
                 charges=[Charge.new_with_defaults(
                     external_id='CHARGE_ID',
                     status=ChargeStatus.PENDING,
-                    bond=Bond(amount_dollars=100, status=BondStatus.ACTIVE,
-                              bond_type=BondType.CASH)
+                    bond=Bond.new_with_defaults(
+                        amount_dollars=100,
+                        status=BondStatus.ACTIVE,
+                        bond_type=BondType.CASH
+                    )
                 )]
             )]
         )]

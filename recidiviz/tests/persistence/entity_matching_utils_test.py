@@ -157,18 +157,16 @@ class TestEntityMatchingUtils(TestCase):
             db_entity=db_charge, ingested_entity=ingested_charge))
 
     def test_charge_match(self):
-        db_charge = entities.Charge.new_with_defaults(charge_id=_CHARGE_ID,
-                                                      name=_CHARGE_NAME,
-                                                      judge_name=_JUDGE_NAME,
-                                                      bond=entities.Bond(
-                                                          bond_id=_BOND_ID))
+        db_charge = entities.Charge.new_with_defaults(
+            charge_id=_CHARGE_ID,
+            name=_CHARGE_NAME,
+            judge_name=_JUDGE_NAME,
+            bond=entities.Bond.new_with_defaults(bond_id=_BOND_ID))
         ingested_charge = entities.Charge.new_with_defaults(
             charge_id=_CHARGE_ID_OTHER,
             name=_CHARGE_NAME,
             judge_name=_JUDGE_NAME_OTHER,
-            bond=entities.Bond(bond_id=
-                               _BOND_ID_OTHER))
-
+            bond=entities.Bond.new_with_defaults(bond_id=_BOND_ID_OTHER))
         self.assertTrue(entity_matching_utils.is_charge_match(
             db_entity=db_charge, ingested_entity=ingested_charge))
         ingested_charge.name = _CHARGE_NAME_2
@@ -176,8 +174,9 @@ class TestEntityMatchingUtils(TestCase):
             db_entity=db_charge, ingested_entity=ingested_charge))
 
     def test_bond_match_external_ids(self):
-        db_bond = entities.Bond(external_id=_EXTERNAL_ID)
-        ingested_bond = entities.Bond(external_id=_EXTERNAL_ID)
+        db_bond = entities.Bond.new_with_defaults(external_id=_EXTERNAL_ID)
+        ingested_bond = entities.Bond.new_with_defaults(
+            external_id=_EXTERNAL_ID)
         self.assertTrue(entity_matching_utils.is_bond_match(
             db_entity=db_bond, ingested_entity=ingested_bond))
         ingested_bond.external_id = _EXTERNAL_ID_OTHER
@@ -185,10 +184,12 @@ class TestEntityMatchingUtils(TestCase):
             db_entity=db_bond, ingested_entity=ingested_bond))
 
     def test_bond_match(self):
-        db_bond = entities.Bond(bond_id=_BOND_ID, bond_type=BondType.CASH,
-                                status=BondStatus.ACTIVE)
-        ingested_bond = entities.Bond(bond_type=BondType.CASH,
-                                      status=BondStatus.POSTED)
+        db_bond = entities.Bond.new_with_defaults(
+            bond_id=_BOND_ID, bond_type=BondType.CASH, status=BondStatus.ACTIVE)
+        ingested_bond = entities.Bond.new_with_defaults(
+            bond_type=BondType.CASH,
+            status=BondStatus.POSTED
+        )
         self.assertTrue(entity_matching_utils.is_bond_match(
             db_entity=db_bond, ingested_entity=ingested_bond))
         ingested_bond.bond_type = BondType.SECURED
