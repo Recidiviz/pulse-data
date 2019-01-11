@@ -108,7 +108,7 @@ queue:
 - name: us-nc-guilford-scraper
   mode: push
   rate: 5/m
-  bucket_size: 1
+  bucket_size: 2
   max_concurrent_requests: 3
   retry_parameters:
     min_backoff_seconds: 5
