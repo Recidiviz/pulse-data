@@ -72,7 +72,10 @@ class TestConverter(unittest.TestCase):
                         external_id='BOND_ID',
                         status=BondStatus.ACTIVE
                     ),
-                    sentence=Sentence(external_id='SENTENCE_ID', is_life=True)
+                    sentence=Sentence.new_with_defaults(
+                        external_id='SENTENCE_ID',
+                        is_life=True
+                    )
                 )]
             )])]
 
@@ -112,7 +115,7 @@ class TestConverter(unittest.TestCase):
                     status=ChargeStatus.PENDING,
                     name='DUI',
                     bond=Bond.new_with_defaults(status=BondStatus.ACTIVE),
-                    sentence=Sentence(is_life=True)
+                    sentence=Sentence.new_with_defaults(is_life=True)
                 )]
             )])]
 
