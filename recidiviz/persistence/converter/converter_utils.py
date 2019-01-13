@@ -207,6 +207,8 @@ def parse_dollars(dollar_string):
     try:
         clean_string = ''.join(
             dollar_string.replace('$', '').replace(',', '').split())
+        if not clean_string:
+            return 0
         return int(float(clean_string))
     except Exception:
         raise ValueError('cannot parse dollar value: %s' % dollar_string)
