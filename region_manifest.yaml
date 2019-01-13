@@ -140,3 +140,16 @@ regions:
     base_url: $url
     scraper_package: us_vt
     timezone: America/New_York
+
+  us_fl_hendry:
+    agency_name: Hendry County
+    region_code: us_fl_hendry
+    agency_type: jail
+    queue: us-fl-hendry-scraper
+    base_url: http://hcso.online
+    names_file: us_ny_names.csv
+    entity_kinds:
+      person: Person
+      record: Record
+    scraper_package: us_fl_hendry
+    timezone: America/New_York
