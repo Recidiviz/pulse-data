@@ -24,6 +24,7 @@ sources.
 
 import recidiviz.ingest.us_ar_van_buren
 import recidiviz.ingest.us_co_mesa
+import recidiviz.ingest.us_fl_nassau
 import recidiviz.ingest.us_fl_martin
 import recidiviz.ingest.us_fl_osceola
 import recidiviz.ingest.us_mt_gallatin
