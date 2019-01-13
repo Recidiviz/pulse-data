@@ -108,15 +108,20 @@ regions:
     base_url: http://inmatelocator.cor.pa.gov
     scraper_package: us_pa
     timezone: America/New_York
+  us_fl_osceola:
+    agency_name: Osceola County
+    region_code: us_fl_osceola
+    agency_type: jail
+    queue: us-fl-osceola-scraper
+    base_url: http://apps.osceola.org
+    scraper_package: us_fl_osceola
+    timezone: America/New_York
   us_fl_martin:
     agency_name: Martin County
     region_code: us_fl_martin
     agency_type: jail
     queue: us-fl-martin-scraper
     base_url: http://198.136.35.4/jailinmatesearch/jailinmatesearch.asp
-    entity_kinds:
-      person: Person
-      record: Record
     scraper_package: us_fl_martin
     timezone: America/New_York
   us_vt:
