@@ -74,6 +74,7 @@ class TestConverterUtils(TestCase):
 
     def test_parseDollarAmount(self):
         assert converter_utils.parse_dollars('$100.00') == 100
+        assert converter_utils.parse_dollars('$') == 0
 
     def test_parseBadDollarAmount(self):
         with pytest.raises(ValueError):
