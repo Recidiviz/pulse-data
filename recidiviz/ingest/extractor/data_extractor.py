@@ -52,7 +52,9 @@ class DataExtractor(metaclass=abc.ABCMeta):
             # We want to know which of the classes are multi keys as this helps
             # us with behaviour when we set the values.
             self.multi_key_classes = set(
-                value.split('.')[0] for value in self.multi_keys.values())
+                value.split('.')[0] if isinstance(value, str)
+                else value[0].split('.')[0]
+                for value in self.multi_keys.values())
 
 
     @abc.abstractmethod

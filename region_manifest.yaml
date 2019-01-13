@@ -124,6 +124,14 @@ regions:
     base_url: http://198.136.35.4/jailinmatesearch/jailinmatesearch.asp
     scraper_package: us_fl_martin
     timezone: America/New_York
+  us_fl_nassau:
+    agency_name: Nassau County Sheriff's Office
+    region_code: us_fl_nassau
+    agency_type: jail
+    queue: us-fl-nassau-scraper
+    base_url: https://dssinmate.nassauso.com
+    scraper_package: us_fl_nassau
+    timezone: America/New_York
   us_vt:
     agency_name: Vermont
     region_code: us_vt
