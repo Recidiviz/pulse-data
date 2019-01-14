@@ -64,14 +64,6 @@ class TestConverterUtils(TestCase):
         with pytest.raises(ValueError):
             converter_utils.parse_days('ABC')
 
-    def test_parseName(self):
-        assert converter_utils.split_full_name("LAST,FIRST") == \
-               ('LAST', 'FIRST')
-
-    def test_parseBadName(self):
-        with pytest.raises(ValueError):
-            converter_utils.split_full_name('ABC')
-
     def test_parseDollarAmount(self):
         assert converter_utils.parse_dollars('$100.00') == 100
         assert converter_utils.parse_dollars('$') == 0

@@ -38,13 +38,11 @@ def is_person_match(
     if db_entity.external_id or ingested_entity.external_id:
         return db_entity.external_id == ingested_entity.external_id
 
-    if not all([db_entity.given_names, ingested_entity.given_names,
-                db_entity.surname, ingested_entity.surname,
+    if not all([db_entity.full_name, ingested_entity.full_name,
                 db_entity.birthdate, ingested_entity.birthdate]):
         return False
 
-    return db_entity.given_names == ingested_entity.given_names \
-           and db_entity.surname == ingested_entity.surname \
+    return db_entity.full_name == ingested_entity.full_name \
            and _is_birthdate_match(db_entity, ingested_entity)
 
 

@@ -29,8 +29,7 @@ from recidiviz.persistence.database.database_utils import convert_person
 
 _PERSON = entities.Person(
     external_id="external_id",
-    surname="surname",
-    given_names="given_names",
+    full_name="full_name",
     birthdate=date(year=2000, month=1, day=2),
     birthdate_inferred_from_age=True,
     gender=Gender.MALE,

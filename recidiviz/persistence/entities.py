@@ -37,8 +37,7 @@ from recidiviz.common.constants.person import Race, Ethnicity, Gender
 @attr.s
 class Person(BuildableAttr):
     external_id: Optional[str] = attr.ib()
-    surname: Optional[str] = attr.ib()
-    given_names: Optional[str] = attr.ib()
+    full_name: Optional[str] = attr.ib()
     birthdate: Optional[datetime.date] = attr.ib()
     birthdate_inferred_from_age: Optional[bool] = attr.ib()
     gender: Optional[Gender] = attr.ib()

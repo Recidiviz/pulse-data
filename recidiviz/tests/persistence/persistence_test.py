@@ -46,7 +46,6 @@ FINE_1 = '$1,500.25'
 FINE_1_INT = 1500
 FINE_2 = ' '
 FINE_2_INT = 0
-GIVEN_NAME = "TEST_GIVEN_NAME"
 OFFICER_NAME = 'TEST_OFFICER_NAME'
 PERSON_ID = 9
 PLACE_1 = 'TEST_PLACE_1'
@@ -54,8 +53,8 @@ PLACE_2 = 'TEST_PLACE_2'
 REGION_1 = 'REGION_1'
 REGION_2 = 'REGION_2'
 SCRAPER_START_DATETIME = datetime(year=2018, month=8, day=6)
-SURNAME_1 = 'TEST_SURNAME_1'
-SURNAME_2 = 'TEST_SURNAME_2'
+FULL_NAME_1 = 'TEST_FULL_NAME_1'
+FULL_NAME_2 = 'TEST_FULL_NAME_2'
 DEFAULT_METADATA = IngestMetadata(
     "default_region", datetime(year=1000, month=1, day=1), {})
 
@@ -72,7 +71,7 @@ class TestPersistence(TestCase):
         with patch('os.getenv', Mock(return_value='Local')):
             # Arrange
             ingest_info = IngestInfo()
-            ingest_info.people.add(surname=SURNAME_1)
+            ingest_info.people.add(full_name=FULL_NAME_1)
 
             # Act
             persistence.write(ingest_info, DEFAULT_METADATA)
@@ -85,9 +84,8 @@ class TestPersistence(TestCase):
         # Arrange
         with patch('os.getenv', Mock(return_value='local')) \
              and patch.dict('os.environ', {'PERSIST_LOCALLY': 'true'}):
-
             ingest_info = IngestInfo()
-            ingest_info.people.add(surname=SURNAME_1)
+            ingest_info.people.add(full_name=FULL_NAME_1)
 
             # Act
             persistence.write(ingest_info, DEFAULT_METADATA)
@@ -95,13 +93,13 @@ class TestPersistence(TestCase):
 
             # Assert
             assert len(result) == 1
-            assert result[0].surname == SURNAME_1
+            assert result[0].full_name == FULL_NAME_1
 
     def test_twoDifferentPeople_persistsBoth(self):
         # Arrange
         ingest_info = IngestInfo()
-        ingest_info.people.add(surname=SURNAME_1, given_names=GIVEN_NAME)
-        ingest_info.people.add(surname=SURNAME_2, given_names=GIVEN_NAME)
+        ingest_info.people.add(full_name=FULL_NAME_1)
+        ingest_info.people.add(full_name=FULL_NAME_2)
 
         # Act
         persistence.write(ingest_info, DEFAULT_METADATA)
@@ -109,26 +107,24 @@ class TestPersistence(TestCase):
 
         # Assert
         assert len(result) == 2
-        assert result[0].surname == SURNAME_1
-        assert result[1].surname == SURNAME_2
+        assert result[0].full_name == FULL_NAME_1
+        assert result[1].full_name == FULL_NAME_2
 
     # TODO: test entity matching end to end
 
     def test_readSinglePersonByName(self):
         # Arrange
         ingest_info = IngestInfo()
-        ingest_info.people.add(surname=SURNAME_1, given_names=GIVEN_NAME,
-                               birthdate=BIRTHDATE_1)
-        ingest_info.people.add(surname=SURNAME_2, given_names=GIVEN_NAME,
-                               birthdate=BIRTHDATE_2)
+        ingest_info.people.add(full_name=FULL_NAME_1, birthdate=BIRTHDATE_1)
+        ingest_info.people.add(full_name=FULL_NAME_2, birthdate=BIRTHDATE_2)
 
         # Act
         persistence.write(ingest_info, DEFAULT_METADATA)
-        result = database.read_people(Session(), surname=SURNAME_1)
+        result = database.read_people(Session(), full_name=FULL_NAME_1)
 
         # Assert
         assert len(result) == 1
-        assert result[0].surname == SURNAME_1
+        assert result[0].full_name == FULL_NAME_1
         assert result[0].birthdate == BIRTHDATE_1_DATE
 
     # TODO: Rewrite this test to directly test __eq__ between the two People
@@ -140,8 +136,7 @@ class TestPersistence(TestCase):
 
         ingest_info = IngestInfo()
         ingest_info.people.add(
-            surname=SURNAME_1,
-            given_names=GIVEN_NAME,
+            full_name=FULL_NAME_1,
             booking_ids=['BOOKING_ID']
         )
         ingest_info.bookings.add(
@@ -196,7 +191,7 @@ class TestPersistence(TestCase):
         # Assert
         assert len(result) == 1
         result_person = result[0]
-        assert result_person.surname == SURNAME_1
+        assert result_person.full_name == FULL_NAME_1
 
         assert len(result_person.bookings) == 1
         result_booking = result_person.bookings[0]
@@ -236,7 +231,6 @@ class TestPersistence(TestCase):
         schema_person = schema.Person(
             person_id=PERSON_ID,
             external_id=EXTERNAL_PERSON_ID,
-            given_names=GIVEN_NAME,
             region=REGION_1,
             bookings=[schema_booking])
 
@@ -245,8 +239,7 @@ class TestPersistence(TestCase):
         session.commit()
 
         ingest_info = IngestInfo()
-        ingest_info.people.add(surname=SURNAME_1,
-                               given_names=GIVEN_NAME,
+        ingest_info.people.add(full_name=FULL_NAME_1,
                                person_id=EXTERNAL_PERSON_ID,
                                booking_ids=[EXTERNAL_BOOKING_ID])
         ingest_info.bookings.add(
@@ -267,9 +260,8 @@ class TestPersistence(TestCase):
         expected_person = entities.Person.new_with_defaults(
             person_id=PERSON_ID,
             external_id=EXTERNAL_PERSON_ID,
-            given_names=GIVEN_NAME,
             region=REGION_1,
-            surname=SURNAME_1,
+            full_name=FULL_NAME_1,
             bookings=[expected_booking])
         self.assertEqual([expected_person], database.read_people(Session()))
 
@@ -284,8 +276,7 @@ class TestPersistence(TestCase):
         most_recent_scrape_time = (SCRAPER_START_DATETIME + timedelta(days=1))
 
         ingest_info = IngestInfo()
-        ingest_info.people.add(surname=SURNAME_1,
-                               given_names=GIVEN_NAME,
+        ingest_info.people.add(full_name=FULL_NAME_1,
                                booking_ids=['BOOKING_ID_1'])
         ingest_info.bookings.add(
             booking_id='BOOKING_ID_1',
@@ -298,8 +289,7 @@ class TestPersistence(TestCase):
             status='PENDING')
 
         ingest_info_other_region = IngestInfo()
-        ingest_info_other_region.people.add(surname=SURNAME_2,
-                                            given_names=GIVEN_NAME,
+        ingest_info_other_region.people.add(full_name=FULL_NAME_2,
                                             booking_ids=['BOOKING_ID_2'])
         ingest_info_other_region.bookings.add(
             booking_id='BOOKING_ID_2',

@@ -39,7 +39,7 @@ class PersonConverterTest(unittest.TestCase):
         # Arrange
         metadata = IngestMetadata.new_with_defaults(region='REGION')
         ingest_person = ingest_info_pb2.Person(
-            full_name='LAST,FIRST',
+            full_name='FULL_NAME',
             birthdate='12-31-1999',
             gender='MALE',
             race='WHITE',
@@ -52,8 +52,7 @@ class PersonConverterTest(unittest.TestCase):
 
         # Assert
         expected_result = entities.Person.new_with_defaults(
-            given_names='FIRST',
-            surname='LAST',
+            full_name='FULL_NAME',
             birthdate=date(year=1999, month=12, day=31),
             birthdate_inferred_from_age=False,
             gender=Gender.MALE,
@@ -77,11 +76,11 @@ class PersonConverterTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             person.copy_fields_to_builder(self.subject, ingest_person, metadata)
 
-    def testParsePerson_UsesSurnameAndGivenNames(self):
+    def testParsePerson_WithSurnameAndGivenNames_UsesFullNameAsCsv(self):
         # Arrange
         metadata = IngestMetadata.new_with_defaults()
         ingest_person = ingest_info_pb2.Person(
-            surname='SURNAME',
+            surname='UNESCAPED,SURNAME"WITH-CHARS"',
             given_names='GIVEN_NAMES'
         )
 
@@ -90,9 +89,9 @@ class PersonConverterTest(unittest.TestCase):
         result = self.subject.build()
 
         # Assert
+        expected_escaped_surname = '"UNESCAPED,SURNAME""WITH-CHARS"""'
         expected_result = entities.Person.new_with_defaults(
-            surname='SURNAME',
-            given_names='GIVEN_NAMES'
+            full_name='{},{}'.format('GIVEN_NAMES', expected_escaped_surname),
         )
 
         self.assertEqual(result, expected_result)

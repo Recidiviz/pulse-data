@@ -43,9 +43,7 @@ _REGION = 'region'
 _EXTERNAL_ID = 'external_id'
 _EXTERNAL_ID_ANOTHER = 'external_id_another'
 _FACILITY = 'facility'
-_GIVEN_NAMES = 'given_names'
-_GIVEN_NAMES_ANOTHER = 'different names'
-_SURNAME = 'surname'
+_FULL_NAME = 'full_name'
 _PLACE_1 = 'place'
 _PLACE_2 = 'another'
 _DATE = datetime(2018, 12, 13)
@@ -86,8 +84,7 @@ class TestEntityMatching(TestCase):
             last_seen_time=_DATE)
 
         schema_person = schema.Person(person_id=_PERSON_ID,
-                                      surname=_SURNAME,
-                                      given_names=_GIVEN_NAMES,
+                                      full_name=_FULL_NAME,
                                       birthdate=_DATE,
                                       place_of_residence=_PLACE_1,
                                       region=_REGION,
@@ -96,8 +93,7 @@ class TestEntityMatching(TestCase):
 
         schema_person_another = schema.Person(
             person_id=_PERSON_ID_ANOTHER,
-            given_names=_GIVEN_NAMES_ANOTHER,
-            surname=_SURNAME,
+            full_name=_FULL_NAME,
             birthdate=_DATE,
             place_of_residence=_PLACE_1,
             region=_REGION)
@@ -158,8 +154,7 @@ class TestEntityMatching(TestCase):
 
         schema_person = schema.Person(person_id=_PERSON_ID,
                                       external_id=_EXTERNAL_ID,
-                                      surname=_SURNAME,
-                                      given_names=_GIVEN_NAMES,
+                                      full_name=_FULL_NAME,
                                       birthdate=_DATE,
                                       place_of_residence=_PLACE_1,
                                       region=_REGION,
