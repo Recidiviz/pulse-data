@@ -22,10 +22,10 @@ from typing import Optional, Union, Type
 import attr
 
 from recidiviz import Base
-from recidiviz.common.buildable_attr import BuildableAttr
 from recidiviz.common.constants.mappable_enum import MappableEnum
 from recidiviz.persistence import entities
 from recidiviz.persistence.database import schema
+from recidiviz.persistence.entities import Entity
 
 
 class DatabaseConversionError(Exception):
@@ -39,7 +39,7 @@ class _Direction(Enum):
 
     @staticmethod
     def for_cls(src_cls):
-        if issubclass(src_cls, BuildableAttr):
+        if issubclass(src_cls, Entity):
             return _Direction.ENTITY_TO_SCHEMA
 
         if issubclass(src_cls, Base):

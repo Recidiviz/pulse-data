@@ -18,14 +18,14 @@
 
 import logging
 from collections import defaultdict
-from typing import List, Dict, Tuple, Set
+from typing import List, Dict, Tuple, Set, Sequence, Callable
 
 from recidiviz import Session
 from recidiviz.common import common_utils
-from recidiviz.common.buildable_attr import BuildableAttr
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.persistence.database import database
 from recidiviz.persistence import entity_matching_utils as utils, entities
+from recidiviz.persistence.entities import Entity
 
 
 class EntityMatchingError(Exception):
@@ -131,7 +131,7 @@ def match_sentences(*, db_booking: entities.Booking,
 
 
 def _build_maps_from_charges(charges: List[entities.Charge], obj_name: str) -> \
-        Tuple[Dict[str, BuildableAttr], Dict[str, Set[BuildableAttr]]]:
+        Tuple[Dict[str, Entity], Dict[str, Set[Entity]]]:
     """Helper function that returns a pair of maps describing the relationships
     between charges and their children. The |object_map| maps ids, which may be
     temporary generated ids, to the objects they refer to. The
@@ -177,7 +177,7 @@ def _match_from_charges(*, db_booking: entities.Booking,
     dropped_objs = []
     for db_obj in db_obj_map.values():
         ingested_obj = _get_next_available_match(
-            db_obj, ing_obj_map.values(),
+            db_obj, list(ing_obj_map.values()),
             _is_match_with_relationships)
         if ingested_obj:
             db_id = getattr(db_obj, name + '_id')
@@ -266,7 +266,9 @@ def _drop_charge(charge: entities.Charge):
         charge.status = ChargeStatus.DROPPED
 
 
-def _get_next_available_match(db_entity, ingested_entities, matcher):
+def _get_next_available_match(db_entity: entities.Entity,
+                              ingested_entities: Sequence[entities.Entity],
+                              matcher: Callable):
     id_name = db_entity.__class__.__name__.lower() + '_id'
 
     for ingested_entity in ingested_entities:
@@ -276,7 +278,9 @@ def _get_next_available_match(db_entity, ingested_entities, matcher):
     return None
 
 
-def _get_only_match(db_entity, ingested_entities, matcher):
+def _get_only_match(db_entity: entities.Entity,
+                    ingested_entities: Sequence[entities.Entity],
+                    matcher: Callable):
     """
     Finds the entity in |ingested_entites| that matches the |db_entity|.
     Args:
@@ -299,6 +303,8 @@ def _get_only_match(db_entity, ingested_entities, matcher):
     return matches[0] if matches else None
 
 
-def _get_all_matches(db_entity, ingested_entities, matcher):
+def _get_all_matches(db_entity: entities.Entity,
+                     ingested_entities: Sequence[entities.Entity],
+                     matcher: Callable):
     return [ingested_entity for ingested_entity in ingested_entities
             if matcher(db_entity=db_entity, ingested_entity=ingested_entity)]

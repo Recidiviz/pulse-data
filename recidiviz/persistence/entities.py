@@ -35,8 +35,17 @@ from recidiviz.common.constants.person import Race, Ethnicity, Gender
 
 
 @attr.s
-class Person(BuildableAttr):
+class Entity:
     external_id: Optional[str] = attr.ib()
+
+    # Consider Entity abstract and only allow instantiating subclasses
+    def __new__(cls, *_, **__):
+        if cls is Entity:
+            raise Exception('Abstract class cannot be instantiated')
+        return super().__new__(cls)
+
+@attr.s
+class Person(Entity, BuildableAttr):
     full_name: Optional[str] = attr.ib()
     birthdate: Optional[datetime.date] = attr.ib()
     birthdate_inferred_from_age: Optional[bool] = attr.ib()
@@ -54,8 +63,7 @@ class Person(BuildableAttr):
 
 
 @attr.s
-class Booking(BuildableAttr):
-    external_id: Optional[str] = attr.ib()
+class Booking(Entity, BuildableAttr):
     admission_date: Optional[datetime.date] = attr.ib()
     admission_date_inferred: Optional[bool] = attr.ib()
     release_date: Optional[datetime.date] = attr.ib()
@@ -77,8 +85,7 @@ class Booking(BuildableAttr):
 
 
 @attr.s
-class Hold(BuildableAttr):
-    external_id: Optional[str] = attr.ib()
+class Hold(Entity, BuildableAttr):
     jurisdiction_name: Optional[str] = attr.ib()
     hold_status: Optional[str] = attr.ib()
 
@@ -86,7 +93,7 @@ class Hold(BuildableAttr):
 
 
 @attr.s
-class Arrest(BuildableAttr):
+class Arrest(Entity, BuildableAttr):
     external_id: Optional[str] = attr.ib()
     date: Optional[datetime.date] = attr.ib()
     location: Optional[str] = attr.ib()
@@ -98,8 +105,7 @@ class Arrest(BuildableAttr):
 
 
 @attr.s
-class Charge(BuildableAttr):
-    external_id: Optional[str] = attr.ib()
+class Charge(Entity, BuildableAttr):
     offense_date: Optional[datetime.date] = attr.ib()
     statute: Optional[str] = attr.ib()
     name: Optional[str] = attr.ib()
@@ -125,8 +131,7 @@ class Charge(BuildableAttr):
 
 
 @attr.s
-class Bond(BuildableAttr):
-    external_id: Optional[Optional[str]] = attr.ib()
+class Bond(Entity, BuildableAttr):
     amount_dollars: Optional[int] = attr.ib()
     bond_type: Optional[BondType] = attr.ib()
     bond_type_raw_text: Optional[str] = attr.ib()
@@ -137,8 +142,7 @@ class Bond(BuildableAttr):
 
 
 @attr.s
-class Sentence(BuildableAttr):
-    external_id: Optional[str] = attr.ib()
+class Sentence(Entity, BuildableAttr):
     date_imposed: Optional[datetime.date] = attr.ib()
     sentencing_region: Optional[str] = attr.ib()
     min_length_days: Optional[int] = attr.ib()
