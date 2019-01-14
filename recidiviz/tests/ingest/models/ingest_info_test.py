@@ -51,8 +51,8 @@ class TestIngestInfo(unittest.TestCase):
                         " IngestInfo object but not in the proto object" % (
                             field, proto.__name__))
 
-        person_fields_ignore = ['booking_ids', 'booking']
-        booking_fields_ignore = ['arrest_id', 'charge_ids', 'arrest', 'charge']
+        person_fields_ignore = ['booking_ids', 'bookings']
+        booking_fields_ignore = ['arrest_id', 'charge_ids', 'arrest', 'charges']
         charge_fields_ignore = ['bond_id', 'sentence_id', 'bond', 'sentence']
 
         person = IngestInfo().create_person()
