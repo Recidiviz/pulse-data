@@ -32,6 +32,7 @@ _HIERARCHY_MAP = {
     'sentence': ('person', 'booking', 'charge')
 }
 
+_PLURALS = {'person': 'people', 'booking': 'bookings', 'charge': 'charges'}
 
 class DataExtractor(metaclass=abc.ABCMeta):
     """Base class for automatically extracting data from a file."""
@@ -92,8 +93,8 @@ class DataExtractor(metaclass=abc.ABCMeta):
                 object_to_set = getattr(parent, get_recent_name)()
                 # If we are in multikey, we need to pull out the correct index
                 # of class type we want to set
-                if is_multi_key:
-                    attr = getattr(parent, class_to_set)
+                if is_multi_key and class_to_set in _PLURALS:
+                    attr = getattr(parent, _PLURALS[class_to_set])
                     if attr is not None \
                             and isinstance(attr, list) \
                             and len(attr) > i:
@@ -128,8 +129,8 @@ class DataExtractor(metaclass=abc.ABCMeta):
             # object as a parent, we use the index of the value we found, if it
             # exists.
             if hier_class in self.multi_key_classes and \
-                    len(getattr(parent, hier_class)) > val_index:
-                parent = getattr(parent, hier_class)[val_index]
+                    len(getattr(parent, _PLURALS[hier_class])) > val_index:
+                parent = getattr(parent, _PLURALS[hier_class])[val_index]
             else:
                 get_recent_name = 'get_recent_' + hier_class
                 create_func = 'create_' + hier_class

@@ -158,7 +158,7 @@ class TestDatabase(TestCase):
         info = IngestInfo()
         info.create_person(full_name=_FULL_NAME, person_id=_EXTERNAL_ID)
         people = database.read_people_with_open_bookings(session, _REGION,
-                                                         info.person)
+                                                         info.people)
 
         expected_people = [database_utils.convert_person(p) for p in
                            [person_match_full_name]]

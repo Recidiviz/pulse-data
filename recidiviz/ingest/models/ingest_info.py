@@ -23,7 +23,7 @@ class IngestInfo:
     """Class for information about multiple people."""
 
     def __init__(self, people=None):
-        self.person: List[_Person] = people or []
+        self.people: List[_Person] = people or []
 
     def __eq__(self, other):
         if other is None:
@@ -40,20 +40,20 @@ class IngestInfo:
         return to_repr(self)
 
     def __setattr__(self, name, value):
-        restricted_setattr(self, 'person', name, value)
+        restricted_setattr(self, 'people', name, value)
 
     def create_person(self, **kwargs) -> '_Person':
         person = _Person(**kwargs)
-        self.person.append(person)
+        self.people.append(person)
         return person
 
     def get_recent_person(self) -> Optional['_Person']:
-        if self.person:
-            return self.person[-1]
+        if self.people:
+            return self.people[-1]
         return None
 
     def prune(self) -> 'IngestInfo':
-        self.person = [person.prune() for person in self.person if person]
+        self.people = [person.prune() for person in self.people if person]
         return self
 
 
@@ -77,7 +77,7 @@ class _Person:
         self.ethnicity: str = ethnicity
         self.place_of_residence: str = place_of_residence
 
-        self.booking: List[_Booking] = bookings or []
+        self.bookings: List[_Booking] = bookings or []
 
     def __eq__(self, other):
         if other is None:
@@ -94,20 +94,21 @@ class _Person:
         return to_repr(self)
 
     def __setattr__(self, name, value):
-        restricted_setattr(self, 'booking', name, value)
+        restricted_setattr(self, 'bookings', name, value)
 
     def create_booking(self, **kwargs) -> '_Booking':
         booking = _Booking(**kwargs)
-        self.booking.append(booking)
+        self.bookings.append(booking)
         return booking
 
     def get_recent_booking(self) -> Optional['_Booking']:
-        if self.booking:
-            return self.booking[-1]
+        if self.bookings:
+            return self.bookings[-1]
         return None
 
     def prune(self) -> '_Person':
-        self.booking = [booking.prune() for booking in self.booking if booking]
+        self.bookings = [booking.prune() \
+                         for booking in self.bookings if booking]
         return self
 
 
@@ -136,7 +137,7 @@ class _Booking:
         self.total_bond_amount: str = total_bond_amount
 
         self.arrest: Optional[_Arrest] = arrest
-        self.charge: List[_Charge] = charges or []
+        self.charges: List[_Charge] = charges or []
 
     def __eq__(self, other):
         if other is None:
@@ -153,7 +154,7 @@ class _Booking:
         return to_repr(self)
 
     def __setattr__(self, name, value):
-        restricted_setattr(self, 'charge', name, value)
+        restricted_setattr(self, 'charges', name, value)
 
     def create_arrest(self, **kwargs) -> '_Arrest':
         self.arrest = _Arrest(**kwargs)
@@ -161,19 +162,19 @@ class _Booking:
 
     def create_charge(self, **kwargs) -> '_Charge':
         charge = _Charge(**kwargs)
-        self.charge.append(charge)
+        self.charges.append(charge)
         return charge
 
     def get_recent_charge(self) -> Optional['_Charge']:
-        if self.charge:
-            return self.charge[-1]
+        if self.charges:
+            return self.charges[-1]
         return None
 
     def get_recent_arrest(self) -> Optional['_Arrest']:
         return self.arrest
 
     def prune(self) -> '_Booking':
-        self.charge = [charge.prune() for charge in self.charge if charge]
+        self.charges = [charge.prune() for charge in self.charges if charge]
         if not self.arrest:
             self.arrest = None
         return self
@@ -370,12 +371,10 @@ def to_string(obj):
 
 
 def to_repr(obj):
-    plurals = {'person': 'people', 'booking': 'bookings', 'charge': 'charges'}
     args = []
     for key, val in vars(obj).items():
         if val:
-            key_arg = plurals[key] if key in plurals else key
-            args.append('{}={}'.format(key_arg, repr(val)))
+            args.append('{}={}'.format(key, repr(val)))
 
     return '{}({})'.format(obj.__class__.__name__, ', '.join(args))
 
