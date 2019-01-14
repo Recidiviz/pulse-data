@@ -123,7 +123,7 @@ def test_bad_table():
 
     # The scraper scrapes a charge row that just says 'Count=3', we need to
     # know how to ignore this somehow
-    info.person[0].booking[0].charge.pop()
+    info.people[0].bookings[0].charges.pop()
     assert info == expected_info
 
 def test_multiple_people_with_maybe_charges():
@@ -287,7 +287,7 @@ def test_labeled_fields():
     charge.offense_date = '9/21/2018 5:34 PM'
     charge.charge_class = 'Gross Misdemeanor'
     charge.status = 'Time Served'
-    booking.charge.append(charge)
+    booking.charges.append(charge)
 
     html_contents = html.fromstring(
         fixtures.as_string('testdata/data_extractor/html',
@@ -413,7 +413,7 @@ def test_cell_ordering():
         fixtures.as_string('testdata/data_extractor/html', 'mixed_cells.html'))
 
     info = extractor.extract_and_populate_data(html_contents)
-    assert expected_info.person[0] == info.person[0]
+    assert expected_info.people[0] == info.people[0]
 
 
 def test_no_multi_key_parent():
