@@ -17,7 +17,6 @@
 """Contains logic for communicating with a SQL Database."""
 from typing import List
 
-from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from recidiviz.common.constants.mappable_enum import MappableEnum
@@ -26,21 +25,21 @@ from recidiviz.persistence.database import database_utils
 from recidiviz.persistence.database.schema import Person, Booking
 
 
-def read_people(session, surname=None, birthdate=None):
+def read_people(session, full_name=None, birthdate=None):
     """
     Read all people matching the optional surname and birthdate. If neither
     the surname or birthdate are provided, then read all people.
 
     Args:
-        surname: The surname to match against
+        full_name: The full name to match against
         birthdate: The birthdate to match against
         session: The transaction to read from
     Returns:
         List of people matching the surname and birthdate, if provided
     """
     query = session.query(Person)
-    if surname is not None:
-        query = query.filter(Person.surname == surname)
+    if full_name is not None:
+        query = query.filter(Person.full_name == full_name)
     if birthdate is not None:
         query = query.filter(Person.birthdate == birthdate)
 
@@ -94,10 +93,8 @@ def read_people_with_open_bookings(session, region, ingested_people):
     """
     query = _query_people_and_open_bookings(session, region)
 
-    surnames = {p.surname for p in ingested_people}
-    given_names = {p.given_names for p in ingested_people}
-    query = query.filter(or_(Person.surname.in_(surnames),
-                             Person.given_names.in_(given_names)))
+    full_names = {p.full_name for p in ingested_people}
+    query = query.filter(Person.full_name.in_(full_names))
 
     return [database_utils.convert_person(person) for person, _ in query.all()]
 
