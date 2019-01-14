@@ -83,8 +83,7 @@ class SchemaTest(TestCase):
         self._assert_columns_match(Person,
                                    PersonHistory,
                                    table_a_exclusions=[
-                                       'surname',
-                                       'given_names',
+                                       'full_name',
                                        'birthdate',
                                        'birthdate_inferred_from_age'],
                                    table_b_exclusions=[

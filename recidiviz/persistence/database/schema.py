@@ -35,10 +35,8 @@ from sqlalchemy.orm import relationship
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 
-
 # Base class for all table classes
 Base: DeclarativeMeta = declarative_base()
-
 
 # Enum values. Exposed separately from the SQLAlchemy Enum that owns them for
 # easier access to the values.
@@ -152,7 +150,6 @@ court_type_values = (enum_strings.court_type_circuit,
                      enum_strings.court_type_other,
                      enum_strings.court_type_superior)
 
-
 # SQLAlchemy enums. Created separately from the tables so they can be shared
 # between the master and historical tables for each entity.
 
@@ -182,8 +179,7 @@ class Person(Base):
 
     person_id = Column(Integer, primary_key=True)
     external_id = Column(String(255), index=True)
-    surname = Column(String(255), index=True)
-    given_names = Column(String(255), index=True)
+    full_name = Column(String(255), index=True)
     birthdate = Column(Date, index=True)
     birthdate_inferred_from_age = Column(Boolean)
     gender = Column(gender)
@@ -202,10 +198,10 @@ class PersonHistory(Base):
     """Represents the historical state of a person"""
     __tablename__ = 'person_history'
 
-    # NOTE: PersonHistory does not contain surname, given_names, or birthdate
-    # columns. This is to ensure that PII is only stored in a single location
-    # (on the master table) and can be easily deleted when it should no longer
-    # be stored for a given individual.
+    # NOTE: PersonHistory does not contain full_name or birthdate columns. This
+    # is to ensure that PII is only stored in a single location (on the master
+    # table) and can be easily deleted when it should no longer be stored for a
+    # given individual.
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
