@@ -17,13 +17,16 @@
 """Contains utils for match database entities with ingested entities."""
 
 import copy
+import datetime
+from typing import Optional
 
 from recidiviz.persistence import entities
 
 
 # '*' catches positional arguments, making our arguments named and required.
-def is_person_match(*, db_entity: entities.Person,
-                    ingested_entity: entities.Person) -> bool:
+def is_person_match(
+        *, db_entity: entities.Person, ingested_entity: entities.Person) \
+        -> bool:
     """
     Given a database person and an ingested person, determine if they should be
     considered the same person.
@@ -35,21 +38,39 @@ def is_person_match(*, db_entity: entities.Person,
     if db_entity.external_id or ingested_entity.external_id:
         return db_entity.external_id == ingested_entity.external_id
 
-    # TODO(351): consider not matching if birthdate_inferred_from_age
-
     if not all([db_entity.given_names, ingested_entity.given_names,
                 db_entity.surname, ingested_entity.surname,
                 db_entity.birthdate, ingested_entity.birthdate]):
         return False
 
-    return db_entity.given_names == ingested_entity.given_names and \
-           db_entity.surname == ingested_entity.surname and \
-           db_entity.birthdate == ingested_entity.birthdate
+    return db_entity.given_names == ingested_entity.given_names \
+           and db_entity.surname == ingested_entity.surname \
+           and _is_birthdate_match(db_entity, ingested_entity)
+
+
+def _is_birthdate_match(a: entities.Person, b: entities.Person) -> bool:
+    if a.birthdate_inferred_from_age and b.birthdate_inferred_from_age:
+        return _is_inferred_birthdate_match(a.birthdate, b.birthdate)
+
+    if not a.birthdate_inferred_from_age \
+            and not b.birthdate_inferred_from_age:
+        return a.birthdate == b.birthdate
+
+    return False
+
+
+def _is_inferred_birthdate_match(
+        a: Optional[datetime.date],
+        b: Optional[datetime.date]) -> bool:
+    if not a or not b:
+        return False
+    return abs(a.year - b.year) <= 1
 
 
 # '*' catches positional arguments, making our arguments named and required.
-def is_booking_match(*, db_entity: entities.Booking,
-                     ingested_entity: entities.Booking) -> bool:
+def is_booking_match(
+        *, db_entity: entities.Booking, ingested_entity: entities.Booking) \
+        -> bool:
     """
     Given a database booking and an ingested booking, determine if they should
     be considered the same booking. Should only be used to compare bookings for
@@ -85,8 +106,8 @@ def _is_active(booking: entities.Booking) -> bool:
 
 
 # '*' catches positional arguments, making our arguments named and required.
-def is_hold_match(*, db_entity: entities.Hold,
-                  ingested_entity: entities.Hold) -> bool:
+def is_hold_match(
+        *, db_entity: entities.Hold, ingested_entity: entities.Hold) -> bool:
     """
     Given a database hold and an ingested hold, determine if they should
     be considered the same hold. Should only be used to compare holds for
@@ -107,8 +128,9 @@ def _sanitize_hold(hold: entities.Hold) -> entities.Hold:
 
 
 # '*' catches positional arguments, making our arguments named and required.
-def is_charge_match(*, db_entity: entities.Charge,
-                    ingested_entity: entities.Charge) -> bool:
+def is_charge_match(
+        *, db_entity: entities.Charge, ingested_entity: entities.Charge) \
+        -> bool:
     """
     Given a database charge and an ingested charge, determine if they should be
     considered the same charge. Should only be used to compare charges for the
@@ -137,8 +159,8 @@ def _sanitize_charge(charge: entities.Charge) -> entities.Charge:
 
 
 # '*' catches positional arguments, making our arguments named and required.
-def is_bond_match(*, db_entity: entities.Bond,
-                  ingested_entity: entities.Bond) -> bool:
+def is_bond_match(
+        *, db_entity: entities.Bond, ingested_entity: entities.Bond) -> bool:
     """
     Given a database bond and an ingested bond, determine if they should be
     considered the same bond. Should only be used to compare bonds for the same
@@ -159,15 +181,16 @@ def _sanitize_bond(bond: entities.Bond) -> entities.Bond:
 
 
 # '*' catches positional arguments, making our arguments named and required.
-def is_sentence_match(*, db_entity: entities.Sentence,
-                      ingested_entity: entities.Sentence) -> bool:
+def is_sentence_match(
+        *, db_entity: entities.Sentence, ingested_entity: entities.Sentence) \
+        -> bool:
     """
     Given a database sentence and an ingested sentence, determine if they
     should be considered the same sentence. Should only be used to compare
     sentences for the same charge.
     Args:
         db_entity: (entities.Sentence)
-        ingested_charge: (entities.Charge)
+        ingested_entity: (entities.Sentence)
     Returns: (bool)
     """
     return _is_match(db_entity, ingested_entity, _sanitize_sentence)
