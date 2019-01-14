@@ -158,27 +158,6 @@ def parse_days(time_string):
     raise ValueError('cannot parse time duration: %s' % time_string)
 
 
-def split_full_name(full_name):
-    """Splits a full name into given and surnames.
-
-    Args:
-        full_name: (str)
-    Returns:
-        a pair of strings (surname, given_names)
-    """
-    if full_name == '' or full_name.isspace():
-        return None
-    full_name = normalize(full_name)
-    if ',' in full_name:
-        names = full_name.split(',')
-        if len(names) == 2 and all(names):
-            return tuple(names)
-    names = full_name.split()
-    if len(names) >= 2:
-        return names[-1], ' '.join(names[:-1])
-    raise ValueError('cannot parse full name: %s' % full_name)
-
-
 def parse_bond_amount_and_infer_type(amount):
     if amount.upper().startswith('NO'):
         return None, BondType.NO_BOND

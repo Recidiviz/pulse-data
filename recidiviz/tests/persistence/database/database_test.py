@@ -30,8 +30,7 @@ from recidiviz.tests.utils import fakes
 
 _REGION = 'region'
 _REGION_ANOTHER = 'wrong region'
-_GIVEN_NAMES = 'given_names'
-_SURNAME = 'surname'
+_FULL_NAME = 'full_name'
 _EXTERNAL_ID = 'external_id'
 _BIRTHDATE = datetime.date(year=2012, month=1, day=2)
 
@@ -139,33 +138,28 @@ class TestDatabase(TestCase):
 
         person_no_match = Person(person_id=1, region=_REGION,
                                  bookings=[deepcopy(open_booking)])
-        person_match_surname = Person(person_id=2, region=_REGION,
-                                      bookings=[deepcopy(open_booking)],
-                                      surname=_SURNAME)
-        person_match_given_names = Person(person_id=3, region=_REGION,
-                                          bookings=[deepcopy(open_booking)],
-                                          given_names=_GIVEN_NAMES)
+        person_match_full_name = Person(person_id=2, region=_REGION,
+                                        bookings=[deepcopy(open_booking)],
+                                        full_name=_FULL_NAME)
         person_match_birthdate = Person(person_id=5, region=_REGION,
                                         bookings=[deepcopy(open_booking)],
                                         birthdate=_BIRTHDATE)
         person_no_open_bookings = Person(person_id=6, region=_REGION,
-                                         surname=_SURNAME,
+                                         full_name=_FULL_NAME,
                                          bookings=[closed_booking])
 
         session = Session()
         session.add(person_no_match)
         session.add(person_no_open_bookings)
-        session.add(person_match_given_names)
-        session.add(person_match_surname)
+        session.add(person_match_full_name)
         session.add(person_match_birthdate)
         session.commit()
 
         info = IngestInfo()
-        info.create_person(surname=_SURNAME, person_id=_EXTERNAL_ID)
-        info.create_person(given_names=_GIVEN_NAMES, birthdate=_BIRTHDATE)
+        info.create_person(full_name=_FULL_NAME, person_id=_EXTERNAL_ID)
         people = database.read_people_with_open_bookings(session, _REGION,
                                                          info.person)
 
         expected_people = [database_utils.convert_person(p) for p in
-                           [person_match_given_names, person_match_surname]]
+                           [person_match_full_name]]
         self.assertCountEqual(people, expected_people)

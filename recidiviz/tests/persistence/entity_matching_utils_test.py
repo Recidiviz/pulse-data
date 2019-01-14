@@ -38,9 +38,7 @@ _REGION = 'region'
 _EXTERNAL_ID = 'external_id'
 _EXTERNAL_ID_OTHER = 'external_id_another'
 _FACILITY = 'facility'
-_GIVEN_NAMES = 'given_names'
-_GIVEN_NAMES_OTHER = 'different names'
-_SURNAME = 'surname'
+_FULL_NAME = 'full_name'
 _PLACE_1 = 'place'
 _PLACE_2 = 'another'
 _DATE = datetime(2018, 12, 13)
@@ -57,13 +55,11 @@ class TestEntityMatchingUtils(TestCase):
 
     def test_person_match_name_and_birthdate(self):
         db_person = entities.Person.new_with_defaults(
-            given_names=_GIVEN_NAMES,
-            surname=_SURNAME,
+            full_name=_FULL_NAME,
             birthdate=_DATE,
         )
         ingested_person = entities.Person.new_with_defaults(
-            given_names=_GIVEN_NAMES,
-            surname=_SURNAME,
+            full_name=_FULL_NAME,
             birthdate=_DATE
         )
         self.assertTrue(entity_matching_utils.is_person_match(
@@ -77,15 +73,13 @@ class TestEntityMatchingUtils(TestCase):
         date_plus_two_years = _DATE + relativedelta(years=2)
 
         db_person = entities.Person.new_with_defaults(
-            given_names=_GIVEN_NAMES,
-            surname=_SURNAME,
+            full_name=_FULL_NAME,
             birthdate=_DATE,
             birthdate_inferred_from_age=True
         )
 
         ingested_person = entities.Person.new_with_defaults(
-            given_names=_GIVEN_NAMES,
-            surname=_SURNAME,
+            full_name=_FULL_NAME,
             birthdate=date_plus_one_year,
             birthdate_inferred_from_age=True
         )

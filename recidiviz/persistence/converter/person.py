@@ -15,10 +15,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Converts an ingest_info proto Person to a persistence entity."""
+import csv
+import io
+
+from typing import Optional, List
+
 from recidiviz.common.constants.person import Ethnicity, Race, Gender
 from recidiviz.persistence.converter import converter_utils
 from recidiviz.persistence.converter.converter_utils import fn, normalize, \
-    split_full_name, parse_date, calculate_birthdate_from_age, parse_external_id
+    parse_date, calculate_birthdate_from_age, parse_external_id
 
 
 def copy_fields_to_builder(person_builder, proto, metadata):
@@ -30,7 +35,7 @@ def copy_fields_to_builder(person_builder, proto, metadata):
     new = person_builder
 
     new.external_id = fn(parse_external_id, 'person_id', proto)
-    new.surname, new.given_names = _parse_name(proto)
+    new.full_name = _parse_name(proto)
     new.birthdate, new.birthdate_inferred_from_age = _parse_birthdate(proto)
     new.race, new.ethnicity = _parse_race_and_ethnicity(proto,
                                                         metadata.enum_overrides)
@@ -40,19 +45,31 @@ def copy_fields_to_builder(person_builder, proto, metadata):
     new.region = metadata.region
 
 
-def _parse_name(proto):
+def _parse_name(proto) -> Optional[str]:
     """Parses name into (surname, given_names)."""
-    surname = fn(normalize, 'surname', proto)
+    full_name = fn(normalize, 'full_name', proto)
     given_names = fn(normalize, 'given_names', proto)
-    fullname = fn(split_full_name, 'full_name', proto)
+    surname = fn(normalize, 'surname', proto)
 
-    if (surname is not None or given_names is not None) and \
-            fullname is not None:
+    if full_name and (given_names or surname):
         raise ValueError('Cannot have full_name and surname/given_names')
-    elif fullname is not None:
-        return fullname
-    else:
-        return surname, given_names
+
+    if full_name:
+        return full_name
+    if given_names or surname:
+        return _to_csv([given_names, surname])
+    return None
+
+
+def _to_csv(strings: List[str]) -> str:
+    """Convert the provided strings to a CSV string.
+
+    Note: We use the csv.writer library to ensure that commas are correctly
+    escaped in the event that a comma exists within a provided string.
+    """
+    string_buffer = io.StringIO()
+    csv.writer(string_buffer).writerow(strings)
+    return string_buffer.getvalue().strip()
 
 
 def _parse_birthdate(proto):
