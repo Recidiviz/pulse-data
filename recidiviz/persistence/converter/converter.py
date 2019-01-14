@@ -133,7 +133,9 @@ def _charges_pointing_to_total_bond(bond_amount, bond_type, charges):
         external_id=None,
         amount_dollars=bond_amount,
         bond_type=bond_type,
-        status=BondStatus.ACTIVE
+        bond_type_raw_text=None,
+        status=BondStatus.ACTIVE,
+        status_raw_text=None,
     )
 
     if not charges:
