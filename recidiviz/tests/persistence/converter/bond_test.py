@@ -45,8 +45,10 @@ class BondConverterTest(unittest.TestCase):
         expected_result = entities.Bond(
             external_id='BOND_ID',
             bond_type=BondType.CASH,
+            bond_type_raw_text='CASH',
             amount_dollars=125,
-            status=BondStatus.ACTIVE
+            status=BondStatus.ACTIVE,
+            status_raw_text='ACTIVE',
         )
 
         self.assertEqual(result, expected_result)

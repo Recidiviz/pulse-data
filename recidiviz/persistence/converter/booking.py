@@ -34,11 +34,14 @@ def copy_fields_to_builder(booking_builder, proto, metadata):
     new.projected_release_date = fn(parse_date, 'projected_release_date', proto)
     new.release_reason = fn(ReleaseReason.from_str, 'release_reason', proto,
                             metadata.enum_overrides)
+    new.release_reason_raw_text = fn(normalize, 'release_reason', proto)
     new.custody_status = fn(
         CustodyStatus.from_str, 'custody_status', proto,
         metadata.enum_overrides, default=CustodyStatus.IN_CUSTODY)
+    new.custody_status_raw_text = fn(normalize, 'custody_status', proto)
     new.facility = fn(normalize, 'facility', proto)
     new.classification = fn(Classification.from_str, 'classification', proto)
+    new.classification_raw_text = fn(normalize, 'classification', proto)
 
     # Inferred attributes
     new.admission_date, new.admission_date_inferred = \

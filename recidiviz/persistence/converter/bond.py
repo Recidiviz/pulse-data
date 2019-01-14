@@ -20,7 +20,7 @@ from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence import entities
 from recidiviz.persistence.converter import converter_utils
 from recidiviz.persistence.converter.converter_utils import fn, \
-    parse_external_id
+    parse_external_id, normalize
 
 
 def convert(proto, metadata: IngestMetadata) -> entities.Bond:
@@ -35,10 +35,12 @@ def convert(proto, metadata: IngestMetadata) -> entities.Bond:
     # information about the type (i.e. NO_BOND or BOND_DENIED)
     new.bond_type = fn(BondType.from_str, 'bond_type', proto,
                        metadata.enum_overrides, default=inferred_bond_type)
+    new.bond_type_raw_text = fn(normalize, 'bond_type', proto)
     # TODO(491): determine what status, if any, bonds with BondType.BOND_DENIED
     #  should have
     new.status = fn(BondStatus.from_str, 'status', proto,
                     metadata.enum_overrides,
                     default=BondStatus.ACTIVE)
+    new.status_raw_text = fn(normalize, 'status', proto)
 
     return new.build()
