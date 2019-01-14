@@ -18,7 +18,7 @@
 
 import copy
 import datetime
-from typing import Optional
+from typing import Callable, Optional
 
 from recidiviz.persistence import entities
 
@@ -203,7 +203,8 @@ def _sanitize_sentence(sentence: entities.Sentence) -> entities.Sentence:
     return sanitized
 
 
-def _is_match(db_entity, ingested_entity, sanitize_fn):
+def _is_match(db_entity: entities.Entity, ingested_entity: entities.Entity,
+              sanitize_fn: Callable) -> bool:
     if db_entity.external_id or ingested_entity.external_id:
         return db_entity.external_id == ingested_entity.external_id
 
