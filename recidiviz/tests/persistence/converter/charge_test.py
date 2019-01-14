@@ -55,9 +55,13 @@ class ChargeConverterTest(unittest.TestCase):
             external_id='CHARGE_ID',
             attempted=True,
             degree=ChargeDegree.FIRST,
+            degree_raw_text='FIRST',
             charge_class=ChargeClass.FELONY,
+            class_raw_text='FELONY',
             status=ChargeStatus.DROPPED,
+            status_raw_text='DROPPED',
             court_type=CourtType.DISTRICT,
+            court_type_raw_text='DISTRICT',
         )
 
         self.assertEqual(result, expected_result)

@@ -56,8 +56,11 @@ class PersonConverterTest(unittest.TestCase):
             birthdate=date(year=1999, month=12, day=31),
             birthdate_inferred_from_age=False,
             gender=Gender.MALE,
+            gender_raw_text='MALE',
             race=Race.WHITE,
+            race_raw_text='WHITE',
             ethnicity=Ethnicity.HISPANIC,
+            ethnicity_raw_text='HISPANIC',
             place_of_residence='NNN STREET ZIP',
             region='REGION',
         )
@@ -126,7 +129,8 @@ class PersonConverterTest(unittest.TestCase):
 
         # Assert
         expected_result = entities.Person.new_with_defaults(
-            ethnicity=Ethnicity.HISPANIC
+            ethnicity=Ethnicity.HISPANIC,
+            race_raw_text='HISPANIC',
         )
 
         self.assertEqual(result, expected_result)

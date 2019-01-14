@@ -37,15 +37,19 @@ def copy_fields_to_builder(new: entities.Charge.Builder, proto,
     new.attempted = fn(parse_bool, 'attempted', proto)
     new.degree = fn(ChargeDegree.from_str, 'degree', proto,
                     metadata.enum_overrides)
+    new.degree_raw_text = fn(normalize, 'degree', proto)
     new.charge_class = fn(ChargeClass.from_str, 'charge_class', proto,
                           metadata.enum_overrides)
+    new.class_raw_text = fn(normalize, 'charge_class', proto)
     new.level = fn(normalize, 'level', proto)
     new.fee_dollars = fn(parse_dollars, 'fee_dollars', proto)
     new.charging_entity = fn(normalize, 'charging_entity', proto)
     new.status = fn(ChargeStatus.from_str, 'status', proto,
                     metadata.enum_overrides, default=ChargeStatus.PENDING)
+    new.status_raw_text = fn(normalize, 'status', proto)
     new.court_type = fn(CourtType.from_str, 'court_type', proto,
                         metadata.enum_overrides)
+    new.court_type_raw_text = fn(normalize, 'court_type', proto)
     new.case_number = fn(normalize, 'case_number', proto)
     new.next_court_date = fn(parse_date, 'next_court_date', proto)
     new.judge_name = fn(normalize, 'judge_name', proto)
