@@ -137,10 +137,10 @@ def convert_ingest_info_to_proto(ingest_info):
         proto_map[obj_id] = proto_to_populate
         return proto_to_populate
 
-    for person in ingest_info.person:
+    for person in ingest_info.people:
         proto_person = _populate_proto(
             'people', person, 'person_id', person_map)
-        for booking in person.booking:
+        for booking in person.bookings:
             proto_booking = _populate_proto(
                 'bookings', booking, 'booking_id', booking_map)
             # Can safely append the ids now since they should be unique.
@@ -151,7 +151,7 @@ def convert_ingest_info_to_proto(ingest_info):
                     'arrests', booking.arrest, 'arrest_id', arrest_map)
                 proto_booking.arrest_id = proto_arrest.arrest_id
 
-            for charge in booking.charge:
+            for charge in booking.charges:
                 proto_charge = _populate_proto(
                     'charges', charge, 'charge_id', charge_map)
                 proto_booking.charge_ids.append(proto_charge.charge_id)
