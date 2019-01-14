@@ -28,7 +28,10 @@ python -m recidiviz.ingest.run_scraper --region us_pa_greene --num_tasks 10
 import argparse
 import logging
 import time
+import traceback
 import types
+from distutils.util import strtobool  # pylint: disable=no-name-in-module
+
 from recidiviz.ingest import constants
 from recidiviz.utils import regions
 
@@ -37,6 +40,9 @@ sleep_between_requests = 1
 
 # Number of people to scrape by default
 num_tasks_left = 5
+
+# Fail the first time we hit an error. Set to False to log errors and continue.
+fail_fast = True
 
 # This function acts as a bound method to the scraper instance.  It is
 # overwriting the functionality of add_task to just run the task instead of
@@ -66,7 +72,12 @@ def add_task(self, task_name, params):
         time.sleep(sleep_between_requests)
     logging.info('***')
     fn = getattr(self, task_name)
-    fn(params)
+    try:
+        fn(params)
+    except Exception as e:
+        if fail_fast or e is KeyboardInterrupt:
+            raise
+        traceback.print_exc()
 
 
 def start_scrape(self, scrape_type):
@@ -88,6 +99,10 @@ def _create_parser():
         default=sleep_between_requests, type=float,
         help='The number of seconds to sleep in between requests,'
              'default is {}'.format(sleep_between_requests))
+    parser.add_argument(
+        '--fail_fast', required=False, default=fail_fast,
+        help='Stop running after an error, default is {}'.format(fail_fast)
+    )
     return parser
 
 
@@ -102,6 +117,7 @@ if __name__ == "__main__":
 
     num_tasks_left = args.num_tasks
     sleep_between_requests = args.sleep_between_requests
+    fail_fast = bool(strtobool(args.fail_fast))
 
     _configure_logging()
 
