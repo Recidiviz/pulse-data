@@ -18,6 +18,8 @@
 from datetime import datetime
 from unittest import TestCase
 
+from dateutil.relativedelta import relativedelta
+
 from recidiviz.common.constants.bond import BondType, BondStatus
 from recidiviz.persistence import entities, entity_matching_utils
 
@@ -57,7 +59,7 @@ class TestEntityMatchingUtils(TestCase):
         db_person = entities.Person.new_with_defaults(
             given_names=_GIVEN_NAMES,
             surname=_SURNAME,
-            birthdate=_DATE
+            birthdate=_DATE,
         )
         ingested_person = entities.Person.new_with_defaults(
             given_names=_GIVEN_NAMES,
@@ -67,6 +69,29 @@ class TestEntityMatchingUtils(TestCase):
         self.assertTrue(entity_matching_utils.is_person_match(
             db_entity=db_person, ingested_entity=ingested_person))
         ingested_person.birthdate = _DATE_OTHER
+        self.assertFalse(entity_matching_utils.is_person_match(
+            db_entity=db_person, ingested_entity=ingested_person))
+
+    def test_person_match_name_and_inferred_birthdate(self):
+        date_plus_one_year = _DATE + relativedelta(years=1)
+        date_plus_two_years = _DATE + relativedelta(years=2)
+
+        db_person = entities.Person.new_with_defaults(
+            given_names=_GIVEN_NAMES,
+            surname=_SURNAME,
+            birthdate=_DATE,
+            birthdate_inferred_from_age=True
+        )
+
+        ingested_person = entities.Person.new_with_defaults(
+            given_names=_GIVEN_NAMES,
+            surname=_SURNAME,
+            birthdate=date_plus_one_year,
+            birthdate_inferred_from_age=True
+        )
+        self.assertTrue(entity_matching_utils.is_person_match(
+            db_entity=db_person, ingested_entity=ingested_person))
+        ingested_person.birthdate = date_plus_two_years
         self.assertFalse(entity_matching_utils.is_person_match(
             db_entity=db_person, ingested_entity=ingested_person))
 
