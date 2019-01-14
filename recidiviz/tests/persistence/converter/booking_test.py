@@ -61,8 +61,11 @@ class BookingConverterTest(unittest.TestCase):
             release_date_inferred=False,
             projected_release_date=date(year=2222, month=5, day=20),
             release_reason=ReleaseReason.TRANSFER,
+            release_reason_raw_text='TRANSFER',
             custody_status=CustodyStatus.HELD_ELSEWHERE,
+            custody_status_raw_text='HELD ELSEWHERE',
             classification=Classification.LOW,
+            classification_raw_text='LOW',
             last_seen_time='LAST_SEEN_TIME'
         )
 

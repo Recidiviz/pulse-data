@@ -256,6 +256,7 @@ class TestPersistence(TestCase):
             external_id=EXTERNAL_BOOKING_ID,
             admission_date_inferred=True,
             custody_status=CustodyStatus.IN_CUSTODY,
+            custody_status_raw_text=BOOKING_CUSTODY_STATUS.upper(),
             last_seen_time=most_recent_scrape_time)
         expected_person = entities.Person.new_with_defaults(
             person_id=PERSON_ID,

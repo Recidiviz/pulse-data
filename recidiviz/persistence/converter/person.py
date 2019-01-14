@@ -39,7 +39,10 @@ def copy_fields_to_builder(person_builder, proto, metadata):
     new.birthdate, new.birthdate_inferred_from_age = _parse_birthdate(proto)
     new.race, new.ethnicity = _parse_race_and_ethnicity(proto,
                                                         metadata.enum_overrides)
+    new.race_raw_text = fn(normalize, 'race', proto)
+    new.ethnicity_raw_text = fn(normalize, 'ethnicity', proto)
     new.gender = fn(Gender.from_str, 'gender', proto, metadata.enum_overrides)
+    new.gender_raw_text = fn(normalize, 'gender', proto)
     new.place_of_residence = fn(normalize, 'place_of_residence', proto)
 
     new.region = metadata.region
