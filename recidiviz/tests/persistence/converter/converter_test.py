@@ -212,6 +212,43 @@ class TestConverter(unittest.TestCase):
         with self.assertRaises(ValueError):
             converter.convert(ingest_info, metadata)
 
+    def testConvert_MultipleCountsOfCharge_CreatesDuplicateCharges(self):
+        # Arrange
+        metadata = IngestMetadata.new_with_defaults()
+
+        ingest_info = IngestInfo()
+        ingest_info.people.add(booking_ids=['BOOKING_ID'])
+        ingest_info.bookings.add(booking_id='BOOKING_ID',
+                                 charge_ids=['CHARGE_ID'])
+        ingest_info.charges.add(charge_id='CHARGE_ID',
+                                name='CHARGE_NAME',
+                                number_of_counts='3')
+
+        # Act
+        result = converter.convert(ingest_info, metadata)
+
+        # Assert
+        expected_duplicate_charge = Charge.new_with_defaults(
+            external_id='CHARGE_ID',
+            status=ChargeStatus.PENDING,
+            name='CHARGE_NAME'
+        )
+
+        expected_result = [Person.new_with_defaults(
+            bookings=[Booking.new_with_defaults(
+                external_id='BOOKING_ID',
+                admission_date_inferred=True,
+                custody_status=CustodyStatus.IN_CUSTODY,
+                charges=[
+                    expected_duplicate_charge,
+                    expected_duplicate_charge,
+                    expected_duplicate_charge
+                ]
+            )]
+        )]
+
+        self.assertEqual(result, expected_result)
+
     def testConvert_CannotConvertField_RaisesValueError(self):
         # Arrange
         metadata = IngestMetadata.new_with_defaults()

@@ -16,6 +16,7 @@
 # ============================================================================
 """Converts scraped IngestInfo data to the persistence layer entity."""
 from copy import deepcopy
+from typing import List
 
 from recidiviz.common.constants.bond import BondStatus
 from recidiviz.common.constants.charge import ChargeStatus
@@ -23,7 +24,7 @@ from recidiviz.persistence import entities
 from recidiviz.persistence.converter import arrest, sentence, \
     charge, bond, booking, person
 from recidiviz.persistence.converter.converter_utils import fn, \
-    parse_bond_amount_and_infer_type
+    parse_bond_amount_and_infer_type, parse_int
 
 
 def convert(ingest_info, metadata):
@@ -78,8 +79,8 @@ class _Converter:
 
         # TODO: Populate hold when the proto is updated to contain a hold table
 
-        charges = [self._convert_charge(self.charges[charge_id])
-                   for charge_id in ingest_booking.charge_ids]
+        ingest_charges = [self.charges[c] for c in ingest_booking.charge_ids]
+        charges = self._convert_charges(ingest_charges)
         booking_builder.charges = charges
 
         bond_amount_and_type = fn(parse_bond_amount_and_infer_type,
@@ -90,6 +91,21 @@ class _Converter:
                 _charges_pointing_to_total_bond(bond_amount, bond_type, charges)
 
         return booking_builder.build()
+
+    def _convert_charges(self, ingest_charges) -> List[entities.Charge]:
+        """Converts all ingest_info proto Charges to persistence entity Charges.
+
+        When charges.number_of_counts is set, create duplicate charges for the
+        persistence entity.
+        """
+        charges: List[entities.Charge] = []
+        for ingest_charge in ingest_charges:
+            new_charge = self._convert_charge(ingest_charge)
+            number_of_counts = parse_int(ingest_charge.number_of_counts) if \
+                ingest_charge.HasField('number_of_counts') else 1
+            charges.extend(number_of_counts * [new_charge])
+
+        return charges
 
     def _convert_charge(self, ingest_charge):
         """Converts an ingest_info proto Charge to a persistence entity."""
