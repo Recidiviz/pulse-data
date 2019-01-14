@@ -220,3 +220,11 @@ def parse_bool(bool_string):
         return bool(strtobool(bool_string))
     except Exception:
         raise ValueError('cannot parse bool value: %s' % bool_string)
+
+
+def parse_int(int_string):
+    """Parse a string and returns an int."""
+    try:
+        return int(normalize(int_string))
+    except Exception:
+        raise ValueError('cannot parse int value: %s' % int_string)
