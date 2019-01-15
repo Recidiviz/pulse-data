@@ -145,6 +145,7 @@ if __name__ == '__main__':
         'county': args.county.title(),
         'region': '_'.join(region),
         'region_dashes': '-'.join(region),
+        'agency_type': args.agency_type,
         'state': state.name,
         'timezone': args.timezone or state.capital_tz,
         'year': datetime.now().year,
