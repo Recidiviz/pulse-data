@@ -100,7 +100,7 @@ def _create_parser():
         help='The number of seconds to sleep in between requests,'
              'default is {}'.format(sleep_between_requests))
     parser.add_argument(
-        '--fail_fast', required=False, default=fail_fast,
+        '--fail_fast', required=False, default=str(fail_fast),
         help='Stop running after an error, default is {}'.format(fail_fast)
     )
     return parser
