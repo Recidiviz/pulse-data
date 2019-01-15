@@ -1,7 +1,11 @@
 Creating a Scraper
 ==================
 Before doing anything, setup your environment by running `pipenv install` in the top level directory.
-Enter your environment with `pipenv shell `.  Next you'll be ready to create the scraper.
+Enter your environment with `pipenv shell `. Finally, test that your system is all setup for scraper
+development by running an existing scraper using, say
+`python -m recidiviz.ingest.run_scraper --region us_pa_greene`.
+
+Next you'll be ready to create the scraper.
 
 From the top level `pulse-data` directory, run the `create_scraper.py`
 script to create the relevant files for a new scraper.
@@ -9,9 +13,9 @@ script to create the relevant files for a new scraper.
 ### Usage
 `python create_scraper.py <county> <state> <county_type>`
 
-County type describes the type of data the website has, and can be one of the following: 
+County type describes the type of data the website has, and can be one of the following:
 1. `jail` (majority of scrapers will be for jails)
-1. `prison` 
+1. `prison`
 1. `unified` - contains both jail and prison data
 
 For example:
@@ -143,7 +147,7 @@ If you suspect the new string->Enum mapping should be shared across all scrapers
 ex. [#522](https://github.com/Recidiviz/pulse-data/pull/522/)
 
 ### 2. Adding a region-specific override
-If you suspect the new string->Enum mapping is region-specific and should NOT be shared across all scrapers, you should add an override mapping to your specific scraper by implementing `scraper.get_enum_overrides()`. This method returns a `Dict[str, Enum]`, which contains all mappings specific to the region, regardless of the Enum type. Default maps and Enum values can both be found in [recidiviz/common/constants/](https://github.com/Recidiviz/pulse-data/tree/master/recidiviz/common/constants). 
+If you suspect the new string->Enum mapping is region-specific and should NOT be shared across all scrapers, you should add an override mapping to your specific scraper by implementing `scraper.get_enum_overrides()`. This method returns a `Dict[str, Enum]`, which contains all mappings specific to the region, regardless of the Enum type. Default maps and Enum values can both be found in [recidiviz/common/constants/](https://github.com/Recidiviz/pulse-data/tree/master/recidiviz/common/constants).
 
 
 If a string should NOT be mapped to any Enum value, you can map it to None.
