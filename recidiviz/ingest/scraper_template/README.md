@@ -210,17 +210,17 @@ Now that we are on this page, we must expand our `get_more_tasks` function to ha
             params_list.append({'endpoint': url_people_search,
                                 'task_type': constants.GET_MORE_TASKS,
                                 'post_data': post_data_if_necessary})
-    if self._is_person_list(content):
-      # Loop through each url that clicks through to the persons page and
-      # append to the task params
-      for url, post_data_if_necessary in self._get_all_urls_and_post(content):
-          params_list.append({'endpoint': url,
-                              'task_type': constants.SCRAPE_DATA,
-                              'post_data': post_data_if_necessary})
-      # Also click on next page
-      params_list.append({'endpoint': url_next_page,
-                          'task_type': constants.GET_MORE_TASKS,
-                          'post_data': post_data_if_necessary})
+        if self._is_person_list(content):
+            # Loop through each url that clicks through to the persons page and
+            # append to the task params
+            for url, post_data_if_necessary in self._get_all_urls_and_post(content):
+                params_list.append({'endpoint': url,
+                                    'task_type': constants.SCRAPE_DATA,
+                                    'post_data': post_data_if_necessary})
+            # Also click on next page
+            params_list.append({'endpoint': url_next_page,
+                                'task_type': constants.GET_MORE_TASKS,
+                                'post_data': post_data_if_necessary})
 ```
 
 We detect that we are on a page with a list of people on it, and our params list should contain the URLs for all 10 people on the page.  Our scrape type for those will be SCRAPE_DATA which will call `populate_data` on the content of that page because we are ready to scrape information.  Additionally we also make sure to click next page to ensure we get everyone on the roster list, the scrape type will be GET_MORE_TASKS.  Note that `is_person_list` and `get_all_urls_and_post` are just examples, you will need to implement ways to extracts this information particular to your scraper.  Finally, the person page looks like this:
