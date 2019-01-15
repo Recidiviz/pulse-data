@@ -81,14 +81,13 @@ def is_booking_match(
     if db_entity.external_id or ingested_entity.external_id:
         return db_entity.external_id == ingested_entity.external_id
 
-    # TODO(348): we assume that dates are inferred after entity matching. If
-    # they're inferred before we can simplify the following two cases.
-
     # If the db booking's admission date was scraped (not inferred), the
     # ingested booking must have the same admission date to be a match.
     if not db_entity.admission_date_inferred:
         return db_entity.admission_date == ingested_entity.admission_date
 
+    # TODO(612): Determine if we need to match a newly released ingested booking
+    # with an open db booking
     return _is_active(db_entity) and _is_active(ingested_entity)
 
 
