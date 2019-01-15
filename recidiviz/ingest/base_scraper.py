@@ -180,9 +180,9 @@ class BaseScraper(Scraper):
             logging.info('Writing the ingest_info to the database for %s'
                          '(logging at most 4 people):', self.region.region_code)
             loop_count = min(
-                len(ingest_info.person), constants.MAX_PEOPLE_TO_LOG)
+                len(ingest_info.people), constants.MAX_PEOPLE_TO_LOG)
             for i in range(loop_count):
-                logging.info(ingest_info.person[i])
+                logging.info(ingest_info.people[i])
             logging.info('Last seen time of person being set as: %s',
                          scraper_start_time)
             metadata = IngestMetadata(self.region.region_code,
