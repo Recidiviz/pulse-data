@@ -73,18 +73,20 @@ class BaseScraper(Scraper):
     # Each scraper can override this, by default it is treated as a url endpoint
     # but any scraper can override this and treat it as a different type of
     # endpoint like an API endpoint for example.
-    def _fetch_content(self, endpoint, post_data=None, json_data=None):
+    def _fetch_content(self, endpoint, headers=None, post_data=None,
+                       json_data=None):
         """Returns the page content.
 
         Args:
             endpoint: the endpoint to make a request to.
+            headers: dict of headers to send in the request.
             post_data: dict of parameters to pass into the html request.
 
         Returns:
             Returns the content of the page or -1.
         """
         logging.info('Fetching content with endpoint: %s', endpoint)
-        page = self.fetch_page(endpoint,
+        page = self.fetch_page(endpoint, headers=headers,
                                post_data=post_data, json_data=json_data)
         if page == -1:
             return -1
@@ -108,11 +110,16 @@ class BaseScraper(Scraper):
         Returns:
             Nothing if successful, -1 if it fails
         """
-        # If this is called without any params set, we assume its the
-        # first call
-        task_type = params.get('task_type', self.get_initial_task_type())
-        endpoint = params.get('endpoint', self.get_initial_endpoint() if
-                              self.is_initial_task(task_type) else None)
+        # If this is called without a task type, we assume its the first call
+        # and use initial params
+        if 'task_type' not in params:
+            params = {
+                **self._get_default_initial_params(),
+                **self.get_initial_params(),
+                **params,
+            }
+        task_type = params.get('task_type')
+        endpoint = params.get('endpoint')
 
         # Here we handle a special case where we weren't really sure
         # we were going to get data when we submitted a task, but then
@@ -121,11 +128,7 @@ class BaseScraper(Scraper):
         if endpoint is None:
             content = html.fromstring(params.get('content'))
         else:
-            post_data = params.get(
-                'post_data',
-                self.get_initial_data() if self.is_initial_task(task_type)
-                else None)
-            json_data = params.get('json', None)
+            post_data = params.get('post_data')
 
             # Let the child transform the post_data if it wants before
             # sending the requests.  This hook is in here in case the
@@ -136,8 +139,9 @@ class BaseScraper(Scraper):
             # We always fetch some content before doing anything.
             # Note that we use get here for the post_data to return a
             # default value of None if this scraper doesn't set it.
-            content = self._fetch_content(endpoint, post_data=post_data,
-                                          json_data=json_data)
+            content = self._fetch_content(
+                endpoint, headers=params.get('headers'), post_data=post_data,
+                json_data=params.get('json'))
             if content == -1:
                 return -1
 
@@ -286,23 +290,16 @@ class BaseScraper(Scraper):
             data: dict of parameters to send as data to the post request.
         """
 
-    def get_initial_endpoint(self):
-        """Returns the initial endpoint to hit on the first call
-        Returns:
-            A string representing the initial endpoint to hit
-        """
-        return self.get_region().base_url
+    def _get_default_initial_params(self):
+        return {
+            'task_type': constants.INITIAL_TASK_AND_MORE,
+            'endpoint': self.get_region().base_url,
+        }
 
-    def get_initial_data(self):
-        """Returns the initial data to send on the first call
-        Returns:
-            A dict of data to send in the request.
-        """
-        return None
+    def get_initial_params(self):
+        """Returns the initial parameters to use for the first call.
 
-    def get_initial_task_type(self):
-        """Returns the initial task_type to set on the first call
-        Returns:
-            A hex code from constants telling us how to behave on the first call
+        If a parameter is not provided here, the default from
+        `_get_default_initial_params` will be used (if it exists).
         """
-        return constants.INITIAL_TASK_AND_MORE
+        return {}
