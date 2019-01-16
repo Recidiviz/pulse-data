@@ -34,9 +34,12 @@ The ingest_info object is just a container that holds a list of Person objects. 
 **surname**            A person’s surname.
 
                        Only use this when surname and given names are in separate fields. Use full_name when they are in a single field.
-**given_names**        A person’s given names (including any middle names), separated by whitespace. If first and middle names are provided in separate fields, concatenate all given name fields into one string and put that string in this field.
+**given_names**        A person’s given names, separated by whitespace.
 
                        Only use this when surname and given names are in separate fields. Use full_name when they are in a single field
+**middle_names**       A person’s middle name(s) or initial.
+
+                       Only use this when a middle names or initials are given in a separate field. Use full_name when they are in a single field
 **birthdate**          Date the person was born.
 
                        Use this when it is known. When a person’s age but not birthdate is reported, use age instead.

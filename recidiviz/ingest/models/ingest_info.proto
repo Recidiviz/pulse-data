@@ -39,8 +39,9 @@ message Person {
 	optional string ethnicity = 8;
 	optional string place_of_residence = 9;
 	optional string full_name = 10;
+	optional string middle_names = 11;
 
-	repeated string booking_ids = 11;
+	repeated string booking_ids = 12;
 }
 
 message Booking {
