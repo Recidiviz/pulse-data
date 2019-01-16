@@ -79,9 +79,11 @@ _CLASSIFICATION_MAP = {
 _CUSTODY_STATUS_MAP = {
     'ESCAPED': CustodyStatus.ESCAPED,
     'HELD ELSEWHERE': CustodyStatus.HELD_ELSEWHERE,
+    'OUT TO COURT': CustodyStatus.HELD_ELSEWHERE,
     'IN CUSTODY': CustodyStatus.IN_CUSTODY,
-    'RELEASED': CustodyStatus.RELEASED,
     'DISCHARGED': CustodyStatus.RELEASED,
+    'RELEASED': CustodyStatus.RELEASED,
+    'TEMP RELEASE': CustodyStatus.RELEASED,
 }
 
 
