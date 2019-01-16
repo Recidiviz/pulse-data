@@ -18,14 +18,12 @@
 # pylint: disable=unused-import,wrong-import-order
 
 """Tests for utils/regions.py."""
-
+from unittest import TestCase
 
 import pytest
 
-from ..context import utils
 from mock import patch, mock_open
 from recidiviz.utils import regions
-
 
 MANIFEST_CONTENTS = """
     regions:
@@ -85,8 +83,9 @@ FULL_MANIFEST = {
 }
 
 
-class TestRegions:
+class TestRegions(TestCase):
     """Tests for regions.py."""
+
     def setup_method(self, _test_method):
         regions.MANIFEST = None
 
@@ -97,53 +96,50 @@ class TestRegions:
         manifest = with_manifest(regions.get_full_manifest)
         assert manifest == FULL_MANIFEST
 
-
     def test_get_region_manifest(self):
         manifest = with_manifest(regions.get_region_manifest, 'us_ny')
         assert manifest == FULL_MANIFEST['regions']['us_ny']
-
 
     def test_get_region_manifest_not_found(self):
         with pytest.raises(Exception) as exception:
             with patch("builtins.open",
                        mock_open(read_data=MANIFEST_CONTENTS)) \
-                       as mock_file:
+                    as mock_file:
                 regions.get_region_manifest('us_az')
 
         assert str(exception.value) == "Region 'us_az' not found in manifest."
         mock_file.assert_called_with('region_manifest.yaml', 'r')
 
-
     def test_get_supported_regions(self):
         supported_regions = with_manifest(regions.get_supported_regions)
+        self.assertCountEqual(
+            [region.region_code for region in supported_regions],
+            ['us_ny', 'us_fl'])
+
+    def test_get_supported_region_codes(self):
+        supported_regions = with_manifest(regions.get_supported_region_codes)
         assert supported_regions == ['us_ny', 'us_fl']
 
-
-    def test_get_supported_regions_full_manifest(self):
-        supported_regions = with_manifest(regions.get_supported_regions,
+    def test_get_supported_region_codes_full_manifest(self):
+        supported_regions = with_manifest(regions.get_supported_region_codes,
                                           full_manifest=True)
         assert supported_regions == FULL_MANIFEST['regions']
-
 
     def test_validate_region_code_valid(self):
         assert with_manifest(regions.validate_region_code, 'us_fl')
 
-
     def test_validate_region_code_invalid(self):
         assert not with_manifest(regions.validate_region_code, 'us_az')
-
 
     def test_get_scraper_module(self):
         region = with_manifest(regions.Region, 'us_ny')
         module = region.get_scraper_module()
         assert module.__name__ == 'recidiviz.ingest.us_ny'
 
-
     def test_get_scraper(self):
         region = with_manifest(regions.Region, 'us_ny')
         scraper = region.get_scraper()
         assert type(scraper).__name__ == 'UsNyScraper'
-
 
     def test_region_class(self):
         region = with_manifest(regions.Region, 'us_ny')
@@ -152,7 +148,6 @@ class TestRegions:
         assert region.queue == 'us-ny-scraper'
         assert region.scraper_class == 'us_ny_scraper'
         assert region.names_file == 'us_ny_names.csv'
-
 
     def test_region_class_with_scraper_class(self):
         region = with_manifest(regions.Region, 'us_fl')

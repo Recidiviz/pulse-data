@@ -68,6 +68,7 @@ release_reason_inferred = 'INFERRED_RELEASE'
 release_reason_recognizance = 'OWN_RECOGNIZANCE'
 release_reason_parole = 'PAROLE'
 release_reason_probation = 'PROBATION'
+release_reason_removed_from_website = 'REMOVED_FROM_WEBSITE'
 release_reason_transfer = 'TRANSFER'
 
 custody_status_escaped = 'ESCAPED'

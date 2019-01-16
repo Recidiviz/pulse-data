@@ -305,7 +305,7 @@ class TestPersistence(TestCase):
         # Act
         persistence.write(ingest_info, metadata_1)
         persistence.infer_release_on_open_bookings(
-            REGION_1, most_recent_scrape_time)
+            REGION_1, most_recent_scrape_time, ReleaseReason.INFERRED_RELEASE)
         persistence.write(ingest_info_other_region, metadata_2)
 
         # Assert

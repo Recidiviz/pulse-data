@@ -24,7 +24,6 @@ from opencensus.stats import measure
 from opencensus.stats import view
 
 from recidiviz import Session
-from recidiviz.common.constants.booking import ReleaseReason
 from recidiviz.ingest.constants import MAX_PEOPLE_TO_LOG
 from recidiviz.persistence import entity_matching
 from recidiviz.persistence.converter import converter
@@ -41,11 +40,12 @@ people_persisted_view = view.View("recidiviz/persistence/num_people",
                                   aggregation.SumAggregation())
 monitoring.register_views([people_persisted_view])
 
+
 class PersistenceError(Exception):
     """Raised when an error with the persistence layer is encountered."""
 
 
-def infer_release_on_open_bookings(region, last_ingest_time):
+def infer_release_on_open_bookings(region, last_ingest_time, release_reason):
     """
    Look up all open bookings whose last_seen_time is earlier than the
    provided last_ingest_time in the provided region, update those
@@ -57,6 +57,8 @@ def infer_release_on_open_bookings(region, last_ingest_time):
        last_ingest_time: The last time complete data was ingested for this
            region. In the normal ingest pipeline, this is the last start time
            of a background scrape for the region.
+       release_reason: The release reason to be marked on the found open
+           bookings. Defaults to INFERRED_RELEASE
    """
 
     session = Session()
@@ -68,7 +70,8 @@ def infer_release_on_open_bookings(region, last_ingest_time):
         logging.info('Found %s bookings that will be inferred released',
                      len(bookings))
         _infer_release_date_for_bookings(session, bookings,
-                                         last_ingest_time.date())
+                                         last_ingest_time.date(),
+                                         release_reason)
         session.commit()
     except Exception:
         session.rollback()
@@ -77,7 +80,7 @@ def infer_release_on_open_bookings(region, last_ingest_time):
         session.close()
 
 
-def _infer_release_date_for_bookings(session, bookings, date):
+def _infer_release_date_for_bookings(session, bookings, date, release_reason):
     """Marks the provided bookings with an inferred release date equal to the
     provided date. Also resolves any charges associated with the provided
     bookings as 'RESOLVED_UNKNOWN_REASON'"""
@@ -94,12 +97,12 @@ def _infer_release_date_for_bookings(session, bookings, date):
         logging.info('Marking booking with ID %s as inferred released',
                      booking.booking_id)
         database.update_booking(session, booking.booking_id, release_date=date,
-                                release_reason=ReleaseReason.INFERRED_RELEASE)
+                                release_reason=release_reason)
 
 
 def _should_persist():
     return bool(environment.in_prod() or \
-        strtobool((os.environ.get('PERSIST_LOCALLY', 'false'))))
+                strtobool((os.environ.get('PERSIST_LOCALLY', 'false'))))
 
 
 def write(ingest_info, metadata):

@@ -20,9 +20,14 @@
 Regions represent geographic areas/legal jurisdictions from which we ingest
 criminal justice data and calculate metrics.
 """
-
+from enum import Enum
 
 import yaml
+
+
+class RemovedFromWebsite(Enum):
+    RELEASED = 'RELEASED'
+    UNKNOWN_SIGNIFICANCE = 'UNKNOWN_SIGNIFICANCE'
 
 
 class Region:
@@ -63,6 +68,11 @@ class Region:
                                                self.region_code + "_scraper")
         self.scraper_package = region_config["scraper_package"]
         self.timezone = region_config["timezone"]
+        if "removed_from_website" in region_config.keys():
+            self.removed_from_website = RemovedFromWebsite(
+                region_config["removed_from_website"])
+        else:
+            self.removed_from_website = RemovedFromWebsite.RELEASED
 
     def get_scraper_module(self):
         """Return the scraper module for this region
@@ -102,7 +112,7 @@ class Region:
         return scraper_class()
 
 
-def get_supported_regions(full_manifest=False):
+def get_supported_region_codes(full_manifest=False):
     """Retrieve a list of known scraper regions / region codes
 
     See region_manifest.yaml for full list of fields available for each region.
@@ -124,7 +134,13 @@ def get_supported_regions(full_manifest=False):
     return supported_regions
 
 
+def get_supported_regions():
+    return [Region(region_code) for region_code in get_supported_region_codes()]
+
+
 MANIFEST = None
+
+
 def get_full_manifest():
     """Gets the full region manifest
 
@@ -165,4 +181,4 @@ def validate_region_code(region_code):
         True if valid region
         False if invalid region
     """
-    return region_code in get_supported_regions()
+    return region_code in get_supported_region_codes()

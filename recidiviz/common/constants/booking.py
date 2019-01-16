@@ -58,6 +58,7 @@ class ReleaseReason(MappableEnum):
     OWN_RECOGNIZANCE = enum_strings.release_reason_recognizance
     PAROLE = enum_strings.release_reason_parole
     PROBATION = enum_strings.release_reason_probation
+    REMOVED_FROM_WEBSITE = enum_strings.release_reason_removed_from_website
     TRANSFER = enum_strings.release_reason_transfer
 
     @staticmethod

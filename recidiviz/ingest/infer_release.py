@@ -22,10 +22,12 @@ import logging
 
 from flask import Blueprint
 
+from recidiviz.common.constants.booking import ReleaseReason
 from recidiviz.ingest import sessions
 from recidiviz.utils.auth import authenticate_request
 from recidiviz.persistence import persistence
-from recidiviz.utils.regions import get_supported_regions
+from recidiviz.utils.regions import Region, RemovedFromWebsite, \
+    get_supported_regions
 
 infer_release_blueprint = Blueprint('infer_release', __name__)
 
@@ -33,23 +35,28 @@ infer_release_blueprint = Blueprint('infer_release', __name__)
 @infer_release_blueprint.route('/release')
 @authenticate_request
 def infer_release():
-    regions = _get_jail_regions()
-
-    if not regions:
-        logging.error("No valid regions found in request")
-        return 'No valid regions found in request', HTTPStatus.BAD_REQUEST
+    regions = get_supported_regions()
 
     for region in regions:
-        session = sessions.get_most_recent_completed_session(region)
+        if region.agency_type != 'jail':
+            continue
+
+        session = sessions.get_most_recent_completed_session(region.region_code)
         if session:
             logging.info(
                 'Got most recent completed session for %s with start time %s',
-                region, session.start)
-            persistence.infer_release_on_open_bookings(region, session.start)
+                region.region_code, session.start)
+            persistence.infer_release_on_open_bookings(
+                region.region_code, session.start, _get_release_reason(region))
     return '', HTTPStatus.OK
 
 
-def _get_jail_regions():
-    return [region_code for region_code, region_dict in
-            get_supported_regions(full_manifest=True).items() if
-            region_dict['agency_type'] == 'jail']
+def _get_release_reason(region: Region):
+    removed_from_website = region.removed_from_website
+    if removed_from_website == RemovedFromWebsite.RELEASED:
+        return ReleaseReason.INFERRED_RELEASE
+    if removed_from_website == RemovedFromWebsite.UNKNOWN_SIGNIFICANCE:
+        return ReleaseReason.REMOVED_FROM_WEBSITE
+    raise ValueError(
+        "RemovedFromWebsite value {} not mapped to a ReleaseReason".format(
+            removed_from_website))
