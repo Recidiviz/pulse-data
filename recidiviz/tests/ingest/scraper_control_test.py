@@ -37,7 +37,7 @@ class TestScraperStart:
     def setup_method(self, _test_method):
         self.client = app.test_client()
 
-    @patch("recidiviz.utils.regions.get_supported_regions")
+    @patch("recidiviz.utils.regions.get_supported_region_codes")
     @patch("recidiviz.utils.regions.Region")
     @patch("recidiviz.ingest.sessions.create_session")
     @patch("recidiviz.ingest.tracker.purge_docket_and_session")
@@ -68,7 +68,7 @@ class TestScraperStart:
         mock_region.assert_called_with('us_ut')
         mock_supported.assert_called_with()
 
-    @patch("recidiviz.utils.regions.get_supported_regions")
+    @patch("recidiviz.utils.regions.get_supported_region_codes")
     def test_start_unsupported_region(self, mock_supported):
         mock_supported.return_value = ['us_ny', 'us_pa']
 
@@ -91,7 +91,7 @@ class TestScraperStop:
     def setup_method(self, _test_method):
         self.client = app.test_client()
 
-    @patch("recidiviz.utils.regions.get_supported_regions")
+    @patch("recidiviz.utils.regions.get_supported_region_codes")
     @patch("recidiviz.utils.regions.Region")
     @patch("recidiviz.ingest.sessions.end_session")
     def test_stop(self, mock_sessions, mock_region, mock_supported):
@@ -113,7 +113,7 @@ class TestScraperStop:
         mock_region.assert_has_calls([call('us_ca'), call('us_ut')])
         mock_supported.assert_called_with()
 
-    @patch("recidiviz.utils.regions.get_supported_regions")
+    @patch("recidiviz.utils.regions.get_supported_region_codes")
     def test_stop_unsupported_region(self, mock_supported):
         mock_supported.return_value = ['us_ny', 'us_pa']
 
@@ -136,7 +136,7 @@ class TestScraperResume:
     def setup_method(self, _test_method):
         self.client = app.test_client()
 
-    @patch("recidiviz.utils.regions.get_supported_regions")
+    @patch("recidiviz.utils.regions.get_supported_region_codes")
     @patch("recidiviz.utils.regions.Region")
     @patch("recidiviz.ingest.sessions.create_session")
     def test_resume(self, mock_sessions, mock_region, mock_supported):
@@ -157,7 +157,7 @@ class TestScraperResume:
         mock_region.assert_called_with(region)
         mock_supported.assert_called_with()
 
-    @patch("recidiviz.utils.regions.get_supported_regions")
+    @patch("recidiviz.utils.regions.get_supported_region_codes")
     def test_resume_unsupported_region(self, mock_supported):
         mock_supported.return_value = ['us_ny', 'us_pa']
 
