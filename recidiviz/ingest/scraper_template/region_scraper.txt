@@ -24,9 +24,6 @@ class ${class_name}Scraper(BaseScraper):
     def __init__(self, mapping_filepath=None):
         pass
 
-    def set_initial_vars(self, content, params):
-        pass
-
     def populate_data(self, content, params, ingest_info):
         pass
 

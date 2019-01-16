@@ -33,9 +33,7 @@ In order to sublcass this the following functions must be implemented:
         next.  The params must include 'endpoint' and 'task_type' which tell the
         generic scraper what endpoint we are getting and what we are doing
         with the endpoint when we do get it.
-    2.  set_initial_vars:  This function should set any initial vars needed
-        after a first scrape (session vars for example)
-    3.  populate_data:  This function is called whenever a task loads a page
+    2.  populate_data:  This function is called whenever a task loads a page
         that has important data in it.
 """
 
@@ -147,11 +145,6 @@ class BaseScraper(Scraper):
 
         ingest_info = None
 
-        # For an initial task we just make a call to get initial variables.
-        # This may be a noop for some scrapers.
-        if self.is_initial_task(task_type):
-            logging.info('Initial task for %s', self.region.region_code)
-            self.set_initial_vars(content, params)
         if self.should_scrape_data(task_type):
             # If we want to scrape data, we should either create an ingest_info
             # object or get the one that already exists.
@@ -248,15 +241,6 @@ class BaseScraper(Scraper):
         Returns:
             A list of dicts each containing endpoint and task_type at minimum
             which tell the generic scraper how to behave.
-        """
-
-    def set_initial_vars(self, content, params):
-        """
-        Sets initial vars in the params that it will pass on to future scrapes
-
-        Args:
-            content: An lxml html tree.
-            params: dict of parameters passed from the last scrape session.
         """
 
     @abc.abstractmethod
