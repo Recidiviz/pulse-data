@@ -26,7 +26,7 @@ as well as operations around how to get the content of a page.  It provides
 generic implementations of getter functions which aim to scrape out important
 fields we care about.
 
-In order to sublcass this the following functions must be implemented:
+In order to subclass this the following functions must be implemented:
 
     1.  get_more_tasks: This function takes the page content as well as the
         scrape task params and returns a list of params defining what to scrape
@@ -89,12 +89,22 @@ class BaseScraper(Scraper):
         if page == -1:
             return -1
         try:
-            html_tree = html.fromstring(page.content)
+            html_tree = self._parse_content(page.content)
         except XMLSyntaxError as e:
             logging.error("Error parsing initial page. Error: %s\nPage:\n\n%s",
                           e, page.content)
             return -1
         return html_tree
+
+    def _parse_content(self, content_string: str) -> html.HtmlElement:
+        """Parses a string into a structured HtmlElement.
+
+        Args:
+            content_string: string representing HTML content
+        Returns:
+            an lxml.html.HtmlElement
+        """
+        return html.fromstring(content_string)
 
     def _generic_scrape(self, params):
         """
@@ -124,7 +134,7 @@ class BaseScraper(Scraper):
         # we ended up with data, so no more requests are required,
         # just the content we already have.
         if endpoint is None:
-            content = html.fromstring(params.get('content'))
+            content = self._parse_content(params.get('content'))
         else:
             post_data = params.get('post_data')
 
