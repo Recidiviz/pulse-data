@@ -93,6 +93,7 @@ mypy = "*"
 opencensus = "*"
 google-cloud-monitoring = "*"
 google-cloud-trace = "*"
+"html5lib" = "*"
 
 [dev-packages]
 rope = "*"
