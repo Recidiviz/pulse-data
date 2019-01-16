@@ -40,7 +40,7 @@ def validate_regions(region_list):
     """
     regions_list_output = region_list
 
-    supported_regions = regions.get_supported_regions()
+    supported_regions = regions.get_supported_region_codes()
     for region in region_list:
         if region == "all":
             regions_list_output = supported_regions
