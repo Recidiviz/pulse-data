@@ -176,7 +176,7 @@ This is the homepage of a website. `get_more_tasks` is called with this page and
         Returns:
             A list of params containing endpoint and task_type at minimum.
         """
-        task_type = params.get('task_type', self.get_initial_task_type())
+        task_type = params['task_type']
         params_list = []
         # If it is our first task, we know the next task must be a query to
         # return all people
@@ -206,7 +206,7 @@ Now that we are on this page, we must expand our `get_more_tasks` function to ha
         Returns:
             A list of params containing endpoint and task_type at minimum.
         """
-        task_type = params.get('task_type', self.get_initial_task_type())
+        task_type = params['task_type']
         params_list = []
         # If it is our first task, we know the next task must be a query to
         # return all people

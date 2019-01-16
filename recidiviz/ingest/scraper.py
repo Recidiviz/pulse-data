@@ -224,13 +224,14 @@ class Scraper(metaclass=abc.ABCMeta):
         self.add_task(self.get_initial_task(), params)
 
     @staticmethod
-    def fetch_page(url, post_data=None, json_data=None):
+    def fetch_page(url, headers=None, post_data=None, json_data=None):
         """Fetch content from a URL. If data is None (the default), we perform
         a GET for the page. If the data is set, it must be a dict of parameters
         to use as POST data in a POST request to the url.
 
         Args:
             url: (string) URL to fetch content from
+            headers: (dict) any headers to send in addition to the default
             post_data: dict of parameters to pass into the html POST request
 
         Returns:
@@ -238,7 +239,8 @@ class Scraper(metaclass=abc.ABCMeta):
 
         """
         proxies = scraper_utils.get_proxies()
-        headers = scraper_utils.get_headers()
+        headers = headers.copy() if headers else {}
+        headers.update(scraper_utils.get_headers())
 
         try:
             if post_data is None and json_data is None:
