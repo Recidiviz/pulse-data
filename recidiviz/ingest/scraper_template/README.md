@@ -81,9 +81,11 @@ in the params that are returned:
 `endpoint` and `task_type` are required fields, but post_data is not a required field.  Furthermore, the user can send any other key/values that are useful to them in the params, they will be passed along to the next tasks.
 
 The different types of tasks are found in the [Constants](../constants.py) file and they are:
-* <strong>INITIAL_TASK</strong> - This is the first request that is made and this ensures that `set_initial_vars` is called.  This function lets you fill in the params with any extra info you might need for the next set of tasks.  Examples include session keys and information that need to be sent as post data.
+* <strong>INITIAL_TASK</strong> - This is the first request that is made.
 * <strong>GET_MORE_TASKS</strong> - This indicates that the page has more navigation that needs to be done.  In this case, the function `get_more_tasks` is called and it is the job of the method to return a list of params that was extracted from that page.
-* <strong>SCRAPE_DATA</strong> - This indicates that the page has information on it that we care about and need to scrape.  In this case `populate_data` is called and it is the users job to walk the page and populate the `ingest_info` object
+* <strong>SCRAPE_DATA</strong> - This indicates that the page has information on it that we care about and need to scrape.  In this case `populate_data` is called and it is the users job to walk the page and populate the `ingest_info` object.
+
+By default, the first task is of `INITIAL_TASK_AND_MORE` type so that `get_more_tasks` is called for the `INITIAL_TASK` as well. It also task navigates to the `base_url` defined in [region_manifest.yaml](/region_manifest.yaml) by default. A different endpoint or other request parameters for the initial task can be provided by overriding `get_initial_params`.
 
 For convenience, there also exists `SCRAPE_DATA_AND_MORE` which calls both `get_more_tasks` as well as `populate_data`.  This can be used when a persons information is spread across multiple pages.  For example their booking data is on one page, and the user must click a link to reach the pages there the charges information is displayed.
 
