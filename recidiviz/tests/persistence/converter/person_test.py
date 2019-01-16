@@ -84,7 +84,8 @@ class PersonConverterTest(unittest.TestCase):
         metadata = IngestMetadata.new_with_defaults()
         ingest_person = ingest_info_pb2.Person(
             surname='UNESCAPED,SURNAME"WITH-CHARS"',
-            given_names='GIVEN_NAMES'
+            given_names='GIVEN_NAMES',
+            middle_names='MIDDLE_NAMES'
         )
 
         # Act
@@ -94,7 +95,8 @@ class PersonConverterTest(unittest.TestCase):
         # Assert
         expected_escaped_surname = '"UNESCAPED,SURNAME""WITH-CHARS"""'
         expected_result = entities.Person.new_with_defaults(
-            full_name='{},{}'.format('GIVEN_NAMES', expected_escaped_surname),
+            full_name='{},{},{}'.format('GIVEN_NAMES', 'MIDDLE_NAMES',
+                                        expected_escaped_surname),
         )
 
         self.assertEqual(result, expected_result)

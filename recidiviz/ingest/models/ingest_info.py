@@ -63,12 +63,14 @@ class _Person:
     """
 
     def __init__(self, person_id=None, full_name=None, surname=None,
-                 given_names=None, birthdate=None, gender=None, age=None,
-                 race=None, ethnicity=None, place_of_residence=None,
+                 given_names=None, middle_names=None, birthdate=None,
+                 gender=None, age=None, race=None, ethnicity=None,
+                 place_of_residence=None,
                  bookings=None):
         self.person_id: str = person_id
         self.surname: str = surname
         self.given_names: str = given_names
+        self.middle_names: str = middle_names
         self.full_name: str = full_name
         self.birthdate: str = birthdate
         self.gender: str = gender
