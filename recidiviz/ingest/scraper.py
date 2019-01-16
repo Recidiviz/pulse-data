@@ -162,7 +162,6 @@ class Scraper(metaclass=abc.ABCMeta):
             logging.info("Resuming unaffected scrape type: %s.", str(scrape))
             self.resume_scrape(scrape)
 
-
     def resume_scrape(self, scrape_type):
         """Resume a stopped scrape from where it left off
 
@@ -248,6 +247,7 @@ class Scraper(metaclass=abc.ABCMeta):
             else:
                 page = requests.post(url, proxies=proxies, headers=headers,
                                      data=post_data, json=json_data)
+            page.raise_for_status()
         except requests.exceptions.RequestException as ce:
             log_error = "Error: {0}".format(ce)
 
@@ -276,12 +276,6 @@ class Scraper(metaclass=abc.ABCMeta):
 
             logging.warning("Problem retrieving page, failing task to "
                             "retry. \n\n%s", log_error)
-            return -1
-
-        # Proxy errors don't raise an exception. : (
-        if page.status_code == 502:
-            logging.warning("Problem retrieving page (proxy error), failing "
-                            "task to retry.")
             return -1
 
         return page
