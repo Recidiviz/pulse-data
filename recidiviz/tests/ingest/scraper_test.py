@@ -463,22 +463,30 @@ class TestFetchPage:
         original_request.headers = headers
         original_request.method = 'GET'
         original_request.body = None
+
+        # test a few types of errors
+        errors = {
+            500: 'SERVER ERROR',
+            502: 'PROXY ERROR',
+            503: 'SERVICE UNAVAILABLE',
+        }
+
         error_response = requests.Response()
-        error_response.status_code = 500
-        error_response.reason = 'SERVER_ERROR'
         error_response.headers = {}
-        exception_response = requests.exceptions.RequestException(
-            request=original_request, response=error_response)
-        mock_requests.side_effect = exception_response
+        error_response.request = original_request
+        for code, name in errors.items():
+            error_response.status_code = code
+            error_response.reason = name
+            mock_requests.return_value = error_response
 
-        scraper = FakeScraper(region, initial_task)
-        assert scraper.fetch_page(url) == -1
+            scraper = FakeScraper(region, initial_task)
+            assert scraper.fetch_page(url) == -1
 
-        mock_region.assert_called_with(region)
-        mock_proxies.assert_called_with()
-        mock_headers.assert_called_with()
-        mock_requests.assert_called_with(url, proxies=proxies, headers=headers)
-
+            mock_region.assert_called_with(region)
+            mock_proxies.assert_called_with()
+            mock_headers.assert_called_with()
+            mock_requests.assert_called_with(
+                url, proxies=proxies, headers=headers)
 
 def mock_region_manifest(region_code, queue_name):
     return {
