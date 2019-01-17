@@ -103,6 +103,8 @@ class BaseScraper(Scraper):
                 logging.error("Error parsing page. Error: %s\nPage:\n\n%s",
                               e, page.content)
                 return -1
+        if response_type == constants.TEXT_RESPONSE_TYPE:
+            return page.text
         logging.error("Unexpected response type '%s' for endpoint '%s'",
                       response_type, endpoint)
         return -1
