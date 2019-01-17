@@ -40,7 +40,7 @@ def convert(proto, metadata: IngestMetadata) -> entities.Bond:
     #  should have
     new.status = fn(BondStatus.from_str, 'status', proto,
                     metadata.enum_overrides,
-                    default=BondStatus.ACTIVE)
+                    default=BondStatus.UNKNOWN_FOUND_IN_SOURCE)
     new.status_raw_text = fn(normalize, 'status', proto)
 
     return new.build()
