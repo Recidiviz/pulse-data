@@ -17,6 +17,7 @@
 """Utils for converting individual data fields."""
 import datetime
 from distutils.util import strtobool  # pylint: disable=no-name-in-module
+
 import dateparser
 
 from recidiviz.common import common_utils
@@ -99,6 +100,7 @@ def parse_datetime(date_string):
     if not parsed_date:
         raise ValueError('cannot parse date: %s' % parsed_date)
     return parsed_date
+
 
 def parse_date(date_string):
     """

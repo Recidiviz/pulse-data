@@ -38,6 +38,8 @@ class BondType(MappableEnum):
 class BondStatus(MappableEnum):
     ACTIVE = enum_strings.bond_status_active
     POSTED = enum_strings.bond_status_posted
+    UNKNOWN_REMOVED_FROM_SOURCE = enum_strings.unknown_removed_from_source
+    UNKNOWN_FOUND_IN_SOURCE = enum_strings.unknown_found_in_source
 
     @staticmethod
     def _get_default_map():

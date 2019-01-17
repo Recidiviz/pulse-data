@@ -25,6 +25,7 @@ class SentenceStatus(MappableEnum):
     COMMUTED = enum_strings.sentence_status_commuted
     COMPLETED = enum_strings.sentence_status_completed
     SERVING = enum_strings.sentence_status_serving
+    UNKNOWN_FOUND_IN_SOURCE = enum_strings.unknown_found_in_source
     UNKNOWN_REMOVED_FROM_SOURCE = enum_strings.unknown_removed_from_source
 
     @staticmethod
