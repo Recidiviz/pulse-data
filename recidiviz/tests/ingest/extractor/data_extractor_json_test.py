@@ -25,6 +25,7 @@ from recidiviz.tests.ingest import fixtures
 _JT_PERSON = fixtures.as_dict('extractor', 'jailtracker_person.json')
 _JT_BOOKING = fixtures.as_dict('extractor', 'jailtracker_booking.json')
 _PERSON_WITH_CHARGES = fixtures.as_dict('extractor', 'person_with_charges.json')
+_PERSON_WITH_HOLDS = fixtures.as_dict('extractor', 'person_with_holds.json')
 
 
 class DataExtractorJsonTest(unittest.TestCase):
@@ -42,9 +43,7 @@ class DataExtractorJsonTest(unittest.TestCase):
                                       race='WHITE')
         result = extractor.extract_and_populate_data(_JT_PERSON)
 
-
         self.assertEqual(result, expected_result)
-
 
     def test_jailtracker_booking(self):
         key_mapping_file = 'fixtures/jailtracker_booking.yaml'
@@ -66,7 +65,6 @@ class DataExtractorJsonTest(unittest.TestCase):
 
         self.assertEqual(result, expected_result)
 
-
     def test_person_with_charges(self):
         key_mapping_file = 'fixtures/person_with_charges.yaml'
         key_mapping_file = os.path.join(os.path.dirname(__file__),
@@ -86,4 +84,28 @@ class DataExtractorJsonTest(unittest.TestCase):
         booking_2.create_charge(charge_id='42309', name='charge name 3')
 
         result = extractor.extract_and_populate_data(_PERSON_WITH_CHARGES)
+        self.assertEqual(result, expected_result)
+
+    def test_person_with_holds(self):
+        key_mapping_file = 'fixtures/person_with_holds.yaml'
+        key_mapping_file = os.path.join(os.path.dirname(__file__),
+                                        key_mapping_file)
+        extractor = JsonDataExtractor(key_mapping_file)
+
+        expected_result = IngestInfo()
+        expected_person = expected_result.create_person(person_id='3245',
+                                                        full_name='AAA AAAB',
+                                                        race='BLACK')
+        booking_1 = expected_person.create_booking(booking_id='324567',
+                                                   admission_date='1/1/1111')
+        booking_1.create_hold(hold_id='345309',
+                              jurisdiction_name='jurisdiction name 1')
+        booking_1.create_hold(hold_id='894303',
+                              jurisdiction_name='jurisdiction name 2')
+        booking_2 = expected_person.create_booking(booking_id='3245',
+                                                   admission_date='2/2/2222')
+        booking_2.create_hold(hold_id='42309',
+                              jurisdiction_name='jurisdiction name 3')
+
+        result = extractor.extract_and_populate_data(_PERSON_WITH_HOLDS)
         self.assertEqual(result, expected_result)

@@ -92,6 +92,7 @@ def convert_ingest_info_to_proto(ingest_info):
     person_map = {}
     booking_map = {}
     charge_map = {}
+    hold_map = {}
     arrest_map = {}
     bond_map = {}
     sentence_map = {}
@@ -150,6 +151,10 @@ def convert_ingest_info_to_proto(ingest_info):
                 proto_arrest = _populate_proto(
                     'arrests', booking.arrest, 'arrest_id', arrest_map)
                 proto_booking.arrest_id = proto_arrest.arrest_id
+
+            for hold in booking.holds:
+                proto_hold = _populate_proto('holds', hold, 'hold_id', hold_map)
+                proto_booking.hold_ids.append(proto_hold.hold_id)
 
             for charge in booking.charges:
                 proto_charge = _populate_proto(
