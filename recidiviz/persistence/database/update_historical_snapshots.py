@@ -1,5 +1,7 @@
 """Method to update historical snapshots for a database entity"""
 
+import logging
+
 from sqlalchemy.sql import text
 
 from recidiviz.persistence.database import schema
@@ -29,14 +31,24 @@ def update_historical_snapshots(session, entity, snapshot_time):
             snapshots
     """
 
+    logging.info('Starting historical snapshot update')
+
     master_table_class_name = type(entity).__name__
     historical_table_class_name = '{}History'.format(master_table_class_name)
     historical_table_class = getattr(schema, historical_table_class_name)
     key_column_name = _get_primary_key_column_name(entity.__table__)
     master_entity_id = getattr(entity, key_column_name)
 
+    logging.info(
+        'Fetching last historical snapshot for entity: %s %s',
+        master_table_class_name, master_entity_id)
+
     most_recent_historical_snapshot = _get_most_recent_historical_snapshot(
         session, entity, historical_table_class)
+
+    logging.info(
+        'Finished fetching last historical snapshot for entity: %s %s',
+        master_table_class_name, master_entity_id)
 
     # Historical table does not need to be updated if entity is not new and
     # its current state matches its most recent historical snapshot
@@ -45,11 +57,23 @@ def update_historical_snapshots(session, entity, snapshot_time):
                     entity, most_recent_historical_snapshot):
         return
 
+    logging.info(
+        'Setting last historical snapshot for entity: %s %s',
+        master_table_class_name, master_entity_id)
+
     new_historical_snapshot = historical_table_class()
     _copy_entity_fields_to_historical_snapshot(
         entity, new_historical_snapshot)
     new_historical_snapshot.valid_from = snapshot_time
     setattr(new_historical_snapshot, key_column_name, master_entity_id)
+
+    logging.info(
+        'Finished setting last historical snapshot for entity: %s %s',
+        master_table_class_name, master_entity_id)
+
+    logging.info(
+        'Merging historical snapshots for entity: %s %s',
+        master_table_class_name, master_entity_id)
 
     # Snapshot must be merged separately from record tree, as they are not
     # included in the ORM model relationships (to avoid needing to load
@@ -60,6 +84,10 @@ def update_historical_snapshots(session, entity, snapshot_time):
     if most_recent_historical_snapshot is not None:
         most_recent_historical_snapshot.valid_to = snapshot_time
         session.merge(most_recent_historical_snapshot)
+
+    logging.info(
+        'Finished merging historical snapshots for entity: %s %s',
+        master_table_class_name, master_entity_id)
 
 
 def _get_most_recent_historical_snapshot(session, entity,
