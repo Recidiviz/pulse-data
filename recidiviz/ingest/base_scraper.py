@@ -146,7 +146,7 @@ class BaseScraper(Scraper):
         # we ended up with data, so no more requests are required,
         # just the content we already have.
         if endpoint is None:
-            content = self._parse_content(params.get('content'))
+            content = self._parse_html_content(params.get('content'))
         else:
             post_data = params.get('post_data')
             response_type = params.get('response_type',
