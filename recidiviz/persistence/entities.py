@@ -28,7 +28,7 @@ import attr
 from recidiviz.common.buildable_attr import BuildableAttr
 from recidiviz.common.constants.bond import BondType, BondStatus
 from recidiviz.common.constants.booking import ReleaseReason, CustodyStatus, \
-    Classification
+    Classification, AdmissionReason
 from recidiviz.common.constants.charge import ChargeClass, ChargeDegree, \
     ChargeStatus, CourtType
 from recidiviz.common.constants.hold import HoldStatus
@@ -66,6 +66,8 @@ class Person(Entity, BuildableAttr):
 @attr.s
 class Booking(Entity, BuildableAttr):
     admission_date: Optional[datetime.date] = attr.ib()
+    admission_reason: Optional[AdmissionReason] = attr.ib()
+    admission_reason_raw_text: Optional[str] = attr.ib()
     admission_date_inferred: Optional[bool] = attr.ib()
     release_date: Optional[datetime.date] = attr.ib()
     release_date_inferred: Optional[bool] = attr.ib()

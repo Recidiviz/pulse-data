@@ -22,7 +22,7 @@ import logging
 
 from flask import Blueprint
 
-from recidiviz.common.constants.booking import ReleaseReason
+from recidiviz.common.constants.booking import CustodyStatus
 from recidiviz.ingest import sessions
 from recidiviz.utils.auth import authenticate_request
 from recidiviz.persistence import persistence
@@ -47,16 +47,16 @@ def infer_release():
                 'Got most recent completed session for %s with start time %s',
                 region.region_code, session.start)
             persistence.infer_release_on_open_bookings(
-                region.region_code, session.start, _get_release_reason(region))
+                region.region_code, session.start, _get_custody_status(region))
     return '', HTTPStatus.OK
 
 
-def _get_release_reason(region: Region):
+def _get_custody_status(region: Region):
     removed_from_website = region.removed_from_website
     if removed_from_website == RemovedFromWebsite.RELEASED:
-        return ReleaseReason.INFERRED_RELEASE
+        return CustodyStatus.INFERRED_RELEASE
     if removed_from_website == RemovedFromWebsite.UNKNOWN_SIGNIFICANCE:
-        return ReleaseReason.REMOVED_FROM_WEBSITE
+        return CustodyStatus.REMOVED_FROM_SOURCE
     raise ValueError(
         "RemovedFromWebsite value {} not mapped to a ReleaseReason".format(
             removed_from_website))

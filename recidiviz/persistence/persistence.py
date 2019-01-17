@@ -53,7 +53,7 @@ class PersistenceError(Exception):
     """Raised when an error with the persistence layer is encountered."""
 
 
-def infer_release_on_open_bookings(region, last_ingest_time, release_reason):
+def infer_release_on_open_bookings(region, last_ingest_time, custody_status):
     """
    Look up all open bookings whose last_seen_time is earlier than the
    provided last_ingest_time in the provided region, update those
@@ -65,7 +65,7 @@ def infer_release_on_open_bookings(region, last_ingest_time, release_reason):
        last_ingest_time: The last time complete data was ingested for this
            region. In the normal ingest pipeline, this is the last start time
            of a background scrape for the region.
-       release_reason: The release reason to be marked on the found open
+       custody_status: The custody status to be marked on the found open
            bookings. Defaults to INFERRED_RELEASE
    """
 
@@ -79,7 +79,7 @@ def infer_release_on_open_bookings(region, last_ingest_time, release_reason):
                      len(bookings))
         _infer_release_date_for_bookings(session, bookings,
                                          last_ingest_time.date(),
-                                         release_reason)
+                                         custody_status)
         session.commit()
     except Exception:
         session.rollback()
@@ -88,10 +88,10 @@ def infer_release_on_open_bookings(region, last_ingest_time, release_reason):
         session.close()
 
 
-def _infer_release_date_for_bookings(session, bookings, date, release_reason):
+def _infer_release_date_for_bookings(session, bookings, date, custody_status):
     """Marks the provided bookings with an inferred release date equal to the
-    provided date. Also resolves any charges associated with the provided
-    bookings as 'RESOLVED_UNKNOWN_REASON'"""
+    provided date. Also updates the custody_status to the provided custody
+    status"""
 
     # TODO: set charge status as RESOLVED_UNKNOWN_REASON once DB enum is
     # appropriately updated
@@ -105,7 +105,7 @@ def _infer_release_date_for_bookings(session, bookings, date, release_reason):
         logging.info('Marking booking with ID %s as inferred released',
                      booking.booking_id)
         database.update_booking(session, booking.booking_id, release_date=date,
-                                release_reason=release_reason)
+                                custody_status=custody_status)
 
 
 def _should_persist():

@@ -20,7 +20,7 @@ from unittest import TestCase
 
 from recidiviz.common.constants.bond import BondType, BondStatus
 from recidiviz.common.constants.booking import CustodyStatus, ReleaseReason, \
-    Classification
+    Classification, AdmissionReason
 from recidiviz.common.constants.charge import ChargeDegree, ChargeClass, \
     ChargeStatus, CourtType
 from recidiviz.common.constants.hold import HoldStatus
@@ -46,12 +46,14 @@ _PERSON = entities.Person(
         booking_id=2345,
         external_id="external_id",
         admission_date=date(year=2000, month=1, day=3),
+        admission_reason=AdmissionReason.TRANSFER,
+        admission_reason_raw_text='transfer!',
         admission_date_inferred=True,
         release_date=date(year=2000, month=1, day=4),
         release_date_inferred=True,
         projected_release_date=date(year=2000, month=1, day=5),
-        release_reason=ReleaseReason.INFERRED_RELEASE,
-        release_reason_raw_text='RELEASED',
+        release_reason=ReleaseReason.TRANSFER,
+        release_reason_raw_text='TRANSFER',
         custody_status=CustodyStatus.IN_CUSTODY,
         custody_status_raw_text='IN CUSTODY',
         facility="facility",
