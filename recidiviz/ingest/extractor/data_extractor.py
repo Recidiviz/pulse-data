@@ -28,11 +28,14 @@ _HIERARCHY_MAP = {
     'booking': ('person',),
     'arrest': ('person', 'booking'),
     'charge': ('person', 'booking'),
+    'hold': ('person', 'booking'),
     'bond': ('person', 'booking', 'charge'),
     'sentence': ('person', 'booking', 'charge')
 }
 
-_PLURALS = {'person': 'people', 'booking': 'bookings', 'charge': 'charges'}
+_PLURALS = {'person': 'people', 'booking': 'bookings', 'charge': 'charges',
+            'hold': 'holds'}
+
 
 class DataExtractor(metaclass=abc.ABCMeta):
     """Base class for automatically extracting data from a file."""

@@ -20,9 +20,9 @@
 import unittest
 
 from recidiviz.ingest.models.ingest_info import IngestInfo, _Person, \
-    _Booking, _Charge, _Arrest, _Sentence, _Bond
+    _Booking, _Charge, _Arrest, _Sentence, _Bond, _Hold
 from recidiviz.ingest.models.ingest_info_pb2 import Person, Booking, Charge, \
-    Arrest, Sentence, Bond
+    Hold, Arrest, Sentence, Bond
 
 
 class FieldsDontMatchError(Exception):
@@ -52,18 +52,21 @@ class TestIngestInfo(unittest.TestCase):
                             field, proto.__name__))
 
         person_fields_ignore = ['booking_ids', 'bookings']
-        booking_fields_ignore = ['arrest_id', 'charge_ids', 'arrest', 'charges']
+        booking_fields_ignore = ['arrest_id', 'charge_ids', 'hold_ids',
+                                 'arrest', 'charges', 'holds']
         charge_fields_ignore = ['bond_id', 'sentence_id', 'bond', 'sentence']
 
         person = IngestInfo().create_person()
         booking = person.create_booking()
         charge = booking.create_charge()
+        hold = booking.create_hold()
         arrest = booking.create_arrest()
         sentence = charge.create_sentence()
         bond = charge.create_bond()
         _verify_fields(Person, person, person_fields_ignore)
         _verify_fields(Booking, booking, booking_fields_ignore)
         _verify_fields(Charge, charge, charge_fields_ignore)
+        _verify_fields(Hold, hold)
         _verify_fields(Arrest, arrest)
         _verify_fields(Sentence, sentence)
         _verify_fields(Bond, bond)
@@ -92,13 +95,14 @@ class TestIngestInfo(unittest.TestCase):
                     _Charge(),
                     _Charge(bond=_Bond(), sentence=_Sentence()),
                     _Charge(bond=_Bond(), sentence=_Sentence(is_life='False'))
+                ], holds=[
+                    _Hold(), _Hold(hold_id=1)
                 ])
             ])
         ])
 
         expected = IngestInfo(people=[
             _Person(bookings=[
-                _Booking(charges=[
-                    _Charge(
-                        sentence=_Sentence(is_life='False'))])])])
+                _Booking(charges=[_Charge(sentence=_Sentence(is_life='False'))],
+                         holds=[_Hold(hold_id=1)])])])
         self.assertEqual(ii.prune(), expected)
