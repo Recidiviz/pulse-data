@@ -22,6 +22,7 @@ from typing import List, Optional
 
 class IngestObject:
     """Abstract base class for all the objects contained by IngestInfo"""
+
     def __eq__(self, other):
         if other is None:
             return False
@@ -70,11 +71,12 @@ class _Person(IngestObject):
     Referenced from IngestInfo.
     """
 
-    def __init__(self, person_id=None, full_name=None, surname=None,
-                 given_names=None, middle_names=None, birthdate=None,
-                 gender=None, age=None, race=None, ethnicity=None,
-                 place_of_residence=None,
-                 bookings=None):
+    def __init__(
+            self, person_id=None, full_name=None, surname=None,
+            given_names=None, middle_names=None, birthdate=None,
+            gender=None, age=None, race=None, ethnicity=None,
+            place_of_residence=None,
+            bookings=None):
         self.person_id: str = person_id
         self.surname: str = surname
         self.given_names: str = given_names
@@ -113,15 +115,15 @@ class _Booking(IngestObject):
     Referenced from Person.
     """
 
-    def __init__(self, booking_id=None, admission_date=None,
-                 projected_release_date=None, release_date=None,
-                 release_reason=None,
-                 custody_status=None,
-                 facility=None, classification=None,
-                 total_bond_amount=None,
-                 arrest=None, charges=None, holds=None):
+    def __init__(
+            self, booking_id=None, admission_date=None,
+            admission_reason=None, projected_release_date=None,
+            release_date=None, release_reason=None, custody_status=None,
+            facility=None, classification=None, total_bond_amount=None,
+            arrest=None, charges=None, holds=None):
         self.booking_id: str = booking_id
         self.admission_date: str = admission_date
+        self.admission_reason: str = admission_reason
         self.projected_release_date: str = projected_release_date
         self.release_date: str = release_date
         self.release_reason: str = release_reason
@@ -177,8 +179,9 @@ class _Arrest(IngestObject):
     Referenced from Booking.
     """
 
-    def __init__(self, arrest_id=None, date=None, location=None,
-                 officer_name=None, officer_id=None, agency=None):
+    def __init__(
+            self, arrest_id=None, date=None, location=None,
+            officer_name=None, officer_id=None, agency=None):
         self.arrest_id: str = arrest_id
         self.date: str = date
         self.location: str = location
@@ -195,13 +198,14 @@ class _Charge(IngestObject):
     Referenced from Booking.
     """
 
-    def __init__(self, charge_id=None, offense_date=None, statute=None,
-                 name=None, attempted=None, degree=None,
-                 charge_class=None, level=None, fee_dollars=None,
-                 charging_entity=None, status=None,
-                 number_of_counts=None, court_type=None,
-                 case_number=None, next_court_date=None, judge_name=None,
-                 bond=None, sentence=None):
+    def __init__(
+            self, charge_id=None, offense_date=None, statute=None,
+            name=None, attempted=None, degree=None,
+            charge_class=None, level=None, fee_dollars=None,
+            charging_entity=None, status=None,
+            number_of_counts=None, court_type=None,
+            case_number=None, next_court_date=None, judge_name=None,
+            bond=None, sentence=None):
         self.charge_id: str = charge_id
         self.offense_date: str = offense_date
         self.statute: str = statute
@@ -281,11 +285,12 @@ class _Sentence(IngestObject):
     Referenced from Charge.
     """
 
-    def __init__(self, sentence_id=None, date_imposed=None,
-                 sentencing_region=None, min_length=None, max_length=None,
-                 is_life=None, is_probation=None, is_suspended=None,
-                 fine_dollars=None, parole_possible=None,
-                 post_release_supervision_length=None):
+    def __init__(
+            self, sentence_id=None, date_imposed=None,
+            sentencing_region=None, min_length=None, max_length=None,
+            is_life=None, is_probation=None, is_suspended=None,
+            fine_dollars=None, parole_possible=None,
+            post_release_supervision_length=None):
         self.sentence_id: str = sentence_id
         self.date_imposed: str = date_imposed
         self.sentencing_region: str = sentencing_region
