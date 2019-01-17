@@ -56,7 +56,7 @@ def _get_custody_status(region: Region):
     if removed_from_website == RemovedFromWebsite.RELEASED:
         return CustodyStatus.INFERRED_RELEASE
     if removed_from_website == RemovedFromWebsite.UNKNOWN_SIGNIFICANCE:
-        return CustodyStatus.REMOVED_FROM_SOURCE
+        return CustodyStatus.UNKNOWN_REMOVED_FROM_SOURCE
     raise ValueError(
         "RemovedFromWebsite value {} not mapped to a ReleaseReason".format(
             removed_from_website))

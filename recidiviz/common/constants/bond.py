@@ -27,6 +27,7 @@ class BondType(MappableEnum):
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
     NO_BOND = enum_strings.bond_type_no_bond
     SECURED = enum_strings.bond_type_secured
+    UNKNOWN_REMOVED_FROM_SOURCE = enum_strings.unknown_removed_from_source
     UNSECURED = enum_strings.bond_type_unsecured
 
     @staticmethod

@@ -36,10 +36,8 @@ from sqlalchemy.orm import relationship
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 
-
 # Base class for all table classes
 Base: DeclarativeMeta = declarative_base()
-
 
 # Enum values. Exposed separately from the SQLAlchemy Enum that owns them for
 # easier access to the values.
@@ -97,7 +95,7 @@ custody_status_values = (enum_strings.custody_status_escaped,
                          enum_strings.custody_status_in_custody,
                          enum_strings.custody_status_inferred_release,
                          enum_strings.custody_status_released,
-                         enum_strings.custody_status_removed_from_source)
+                         enum_strings.unknown_removed_from_source)
 
 classification_values = (enum_strings.external_unknown,
                          enum_strings.classification_high,
@@ -123,6 +121,13 @@ bond_type_values = (enum_strings.bond_type_denied,
 
 bond_status_values = (enum_strings.bond_status_active,
                       enum_strings.bond_status_posted)
+
+# Sentence
+
+sentence_status_values = (enum_strings.sentence_status_commuted,
+                          enum_strings.sentence_status_completed,
+                          enum_strings.sentence_status_serving,
+                          enum_strings.unknown_removed_from_source)
 
 # SentenceRelationship
 
@@ -182,6 +187,7 @@ race = Enum(*race_values, name='race')
 release_reason = Enum(*release_reason_values, name='release_reason')
 sentence_relationship_type = Enum(
     *sentence_relationship_type_values, name='sentence_relationship_type')
+sentence_status = Enum(*sentence_status_values, name='sentence_status')
 
 
 class Person(Base, DatabaseEntity):
@@ -403,7 +409,8 @@ class Sentence(Base, DatabaseEntity):
 
     sentence_id = Column(Integer, primary_key=True)
     external_id = Column(String(255), index=True)
-    date_imposed = Column(Date)
+    sentence_status = Column(sentence_status, nullable=False)
+    sentence_status_raw_text = Column(String(255))
     sentencing_region = Column(String(255))
     min_length_days = Column(Integer)
     max_length_days = Column(Integer)
@@ -438,7 +445,8 @@ class SentenceHistory(Base, DatabaseEntity):
     valid_from = Column(DateTime, nullable=False)
     valid_to = Column(DateTime)
     external_id = Column(String(255), index=True)
-    date_imposed = Column(Date)
+    sentence_status = Column(sentence_status, nullable=False)
+    sentence_status_raw_text = Column(String(255))
     sentencing_region = Column(String(255))
     min_length_days = Column(Integer)
     max_length_days = Column(Integer)

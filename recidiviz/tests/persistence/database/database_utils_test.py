@@ -25,6 +25,7 @@ from recidiviz.common.constants.charge import ChargeDegree, ChargeClass, \
     ChargeStatus, CourtType
 from recidiviz.common.constants.hold import HoldStatus
 from recidiviz.common.constants.person import Gender, Race, Ethnicity
+from recidiviz.common.constants.sentences import SentenceStatus
 from recidiviz.persistence import entities
 from recidiviz.persistence.database.database_utils import convert_person
 
@@ -110,8 +111,9 @@ _PERSON = entities.Person(
             sentence=entities.Sentence(
                 sentence_id=7890,
                 external_id="external_id",
-                date_imposed=date(year=2000, month=1, day=8),
                 sentencing_region='sentencing_region',
+                sentence_status=SentenceStatus.SERVING,
+                sentence_status_raw_text='SERVING',
                 min_length_days=3,
                 max_length_days=4,
                 is_life=False,

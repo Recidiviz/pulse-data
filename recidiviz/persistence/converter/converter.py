@@ -122,7 +122,7 @@ class _Converter:
                'bond_id',
                ingest_charge)
         charge_builder.sentence = \
-            fn(lambda i: sentence.convert(self.sentences[i]),
+            fn(lambda i: sentence.convert(self.sentences[i], self.metadata),
                'sentence_id', ingest_charge)
 
         return charge_builder.build()

@@ -33,6 +33,7 @@ from recidiviz.common.constants.charge import ChargeClass, ChargeDegree, \
     ChargeStatus, CourtType
 from recidiviz.common.constants.hold import HoldStatus
 from recidiviz.common.constants.person import Race, Ethnicity, Gender
+from recidiviz.common.constants.sentences import SentenceStatus
 
 
 @attr.s
@@ -147,8 +148,9 @@ class Bond(Entity, BuildableAttr):
 
 @attr.s
 class Sentence(Entity, BuildableAttr):
-    date_imposed: Optional[datetime.date] = attr.ib()
     sentencing_region: Optional[str] = attr.ib()
+    sentence_status: Optional[SentenceStatus] = attr.ib()
+    sentence_status_raw_text: Optional[str] = attr.ib()
     min_length_days: Optional[int] = attr.ib()
     max_length_days: Optional[int] = attr.ib()
     is_life: Optional[bool] = attr.ib()
