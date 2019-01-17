@@ -17,6 +17,7 @@
 """Contains logic for communicating with a SQL Database."""
 
 from datetime import datetime
+import logging
 from typing import List
 
 from sqlalchemy.orm import Session
@@ -188,13 +189,19 @@ def _save_record_tree(session, person):
         persisted Person schema object
     """
 
+    logging.info('Starting merge and flush for record tree')
+
     # Merge includes all related entities, so this persists the master record
     # tree
     person = session.merge(person)
 
+    logging.info('Merge complete')
+
     # Flush ensures all master entities, including newly created ones, have
     # primary keys set before creating historical snapshots
     session.flush()
+
+    logging.info('Flush complete for person: %s', person.person_id)
 
     # All historical snapshot changes should be given the same timestamp
     snapshot_time = datetime.now()
@@ -208,6 +215,10 @@ def _save_record_tree(session, person):
     #
     # As the number of entities in a given record tree is expected to be small,
     # we use lists here for ease of readability
+    logging.info(
+        'Starting record tree traversal for person: %s',
+        person.person_id)
+
     unprocessed = [person]
     processed = []
     while unprocessed:
@@ -219,6 +230,10 @@ def _save_record_tree(session, person):
 
         unprocessed.extend(
             _get_unexplored_related_entities(entity, processed, unprocessed))
+
+    logging.info(
+        'Record tree traversal finished for person: %s',
+        person.person_id)
 
     return person
 
