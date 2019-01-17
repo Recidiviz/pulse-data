@@ -38,6 +38,7 @@ In order to subclass this the following functions must be implemented:
 """
 
 import abc
+import json
 import logging
 
 import dateparser
@@ -45,10 +46,10 @@ from lxml import html
 from lxml.etree import XMLSyntaxError  # pylint:disable=no-name-in-module
 
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.persistence import persistence
 from recidiviz.ingest import constants, ingest_utils
 from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.ingest.scraper import Scraper
+from recidiviz.persistence import persistence
 
 
 class BaseScraper(Scraper):
@@ -71,8 +72,8 @@ class BaseScraper(Scraper):
     # Each scraper can override this, by default it is treated as a url endpoint
     # but any scraper can override this and treat it as a different type of
     # endpoint like an API endpoint for example.
-    def _fetch_content(self, endpoint, headers=None, post_data=None,
-                       json_data=None):
+    def _fetch_content(self, endpoint, response_type, headers=None,
+                       post_data=None, json_data=None):
         """Returns the page content.
 
         Args:
@@ -88,15 +89,26 @@ class BaseScraper(Scraper):
                                post_data=post_data, json_data=json_data)
         if page == -1:
             return -1
-        try:
-            html_tree = self._parse_content(page.content)
-        except XMLSyntaxError as e:
-            logging.error("Error parsing initial page. Error: %s\nPage:\n\n%s",
-                          e, page.content)
-            return -1
-        return html_tree
+        if response_type == constants.HTML_RESPONSE_TYPE:
+            try:
+                return self._parse_html_content(page.content)
+            except XMLSyntaxError as e:
+                logging.error("Error parsing page. Error: %s\nPage:\n\n%s",
+                              e, page.content)
+                return -1
+        if response_type == constants.JSON_RESPONSE_TYPE:
+            try:
+                return json.loads(page.content)
+            except json.JSONDecodeError as e:
+                logging.error("Error parsing page. Error: %s\nPage:\n\n%s",
+                              e, page.content)
+                return -1
+        logging.error("Unexpected response type '%s' for endpoint '%s'",
+                      response_type, endpoint)
+        return -1
 
-    def _parse_content(self, content_string: str) -> html.HtmlElement:
+
+    def _parse_html_content(self, content_string: str) -> html.HtmlElement:
         """Parses a string into a structured HtmlElement.
 
         Args:
@@ -137,6 +149,8 @@ class BaseScraper(Scraper):
             content = self._parse_content(params.get('content'))
         else:
             post_data = params.get('post_data')
+            response_type = params.get('response_type',
+                                       constants.HTML_RESPONSE_TYPE)
 
             # Let the child transform the post_data if it wants before
             # sending the requests.  This hook is in here in case the
@@ -148,8 +162,8 @@ class BaseScraper(Scraper):
             # Note that we use get here for the post_data to return a
             # default value of None if this scraper doesn't set it.
             content = self._fetch_content(
-                endpoint, headers=params.get('headers'), post_data=post_data,
-                json_data=params.get('json'))
+                endpoint, response_type, headers=params.get('headers'),
+                post_data=post_data, json_data=params.get('json'))
             if content == -1:
                 return -1
 
