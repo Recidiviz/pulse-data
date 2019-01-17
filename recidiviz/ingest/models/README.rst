@@ -88,7 +88,7 @@ The ingest_info object is just a container that holds a list of Person objects. 
 
                        `Complete list of valid values <https://github.com/Recidiviz/pulse-data/blob/master/recidiviz/common/constants/person.py#L78>`__
 **place_of_residence** https://github.com/Recidiviz/pulse-data/issues/415
-**booking**            A list of Booking objects for this person.
+**bookings**           A list of Booking objects for this person.
 ====================== =============================================================================================================================================================================================================================
 
 Booking
@@ -143,7 +143,6 @@ The Booking object represents information about a single “stay” in jail, pri
                            -  Released
 
                            `Complete list of valid values <https://github.com/Recidiviz/pulse-data/blob/master/recidiviz/common/constants/booking.py#L73>`__
-**hold**                   List of names of other jurisdictions that have a hold on this person.
 **facility**               The name of the facility the person is (or was) being held in on this booking.
 **classification**         Security classification of the person with respect to this booking.
 
@@ -164,7 +163,9 @@ The Booking object represents information about a single “stay” in jail, pri
                            `Complete list of valid values <https://github.com/Recidiviz/pulse-data/blob/master/recidiviz/common/constants/booking.py#L63>`__
 **total_bond_amount**      Sum of all bonds associated with this booking. This accommodates when only total bond is available, instead of bonds for individual charges.
 **arrest**                 Link to the Arrest object, which contains information about the arrest that led to this booking.
-**charge**                 A list of Charge objects associated with this booking.
+**charges**                A list of Charge objects associated with this
+                           booking.
+**holds**                  A list of Hold objects associated with this booking.
 ========================== ==================================================================================================================================================
 
 Arrest
@@ -266,6 +267,30 @@ The Charge object holds information on a single charge. Each booking may have se
 **bond**             A link to the Bond object associated with this charge.
 **sentence**         A link to the Sentence object associated with this charge.
 ==================== ====================================================================================================================================
+
+Hold
+----
+
+A Hold object holds information on a hold. This usually means someone has
+charges in another jurisdiction (like a state or county), so that
+jurisdiction "has a hold on" the individual.
+
+===================== ==========================================================
+**Field Name**        **Description**
+===================== ==========================================================
+**hold_id**           Unique identifier for a hold.
+**jurisdiction_name** The name of the jurisdiction that the hold originates
+                      from.
+**hold_status**       Status of the hold.
+
+                      Valid values:
+
+                      -  Active
+
+                      -  Inactive
+
+                      `Complete list of valid values <https://github.com/Recidiviz/pulse-data/blob/master/recidiviz/common/constants/hold.py>`__
+===================== ==========================================================
 
 Bond
 ----

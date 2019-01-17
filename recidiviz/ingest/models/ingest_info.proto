@@ -22,10 +22,11 @@ package recidiviz.ingest.models;
 message IngestInfo {
 	repeated Person people = 1;
 	repeated Booking bookings = 2;
-	repeated Charge charges = 3;
-	repeated Bond bonds = 4;
-	repeated Arrest arrests = 5;
-	repeated Sentence sentences = 6;
+	repeated Arrest arrests = 3;
+	repeated Charge charges = 4;
+	repeated Hold holds = 5;
+	repeated Bond bonds = 6;
+	repeated Sentence sentences = 7;
 }
 
 message Person {
@@ -58,6 +59,7 @@ message Booking {
 
 	optional string arrest_id = 11;
 	repeated string charge_ids = 12;
+	repeated string hold_ids = 13;
 }
 
 message Arrest {
@@ -89,6 +91,12 @@ message Charge {
 
 	optional string bond_id = 17;
 	optional string sentence_id = 18;
+}
+
+message Hold {
+    optional string hold_id = 1;
+    optional string jurisdiction_name = 2;
+    optional string hold_status = 3;
 }
 
 message Bond {

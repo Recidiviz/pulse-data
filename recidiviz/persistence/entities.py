@@ -85,14 +85,6 @@ class Booking(Entity, BuildableAttr):
 
 
 @attr.s
-class Hold(Entity, BuildableAttr):
-    jurisdiction_name: Optional[str] = attr.ib()
-    hold_status: Optional[str] = attr.ib()
-
-    hold_id: Optional[int] = attr.ib(default=None)
-
-
-@attr.s
 class Arrest(Entity, BuildableAttr):
     external_id: Optional[str] = attr.ib()
     date: Optional[datetime.date] = attr.ib()
@@ -128,6 +120,14 @@ class Charge(Entity, BuildableAttr):
     charge_id: Optional[int] = attr.ib(default=None)
     bond: Optional['Bond'] = attr.ib(default=None)
     sentence: Optional['Sentence'] = attr.ib(default=None)
+
+
+@attr.s
+class Hold(Entity, BuildableAttr):
+    jurisdiction_name: Optional[str] = attr.ib()
+    hold_status: Optional[str] = attr.ib()
+
+    hold_id: Optional[int] = attr.ib(default=None)
 
 
 @attr.s
