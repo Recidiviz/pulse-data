@@ -30,14 +30,12 @@ deploy:
   keyfile: client-secret-staging.json
   project: recidiviz-staging
   on:
-    branch: "master"
     condition: $TRAVIS_TAG =~ ^v[0-9]+\.[0-9]+\.[0-9]+
   config: queue.yaml
 - provider: gae
   keyfile: client-secret-staging.json
   project: recidiviz-staging
   on:
-    branch: "master"
     condition: $TRAVIS_TAG == ^v[0-9]+\.[0-9]+\.[0-9]+
 notifications:
   slack:
