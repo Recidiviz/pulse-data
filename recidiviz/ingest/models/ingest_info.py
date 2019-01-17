@@ -117,7 +117,6 @@ class _Booking(IngestObject):
                  projected_release_date=None, release_date=None,
                  release_reason=None,
                  custody_status=None,
-                 hold=None,
                  facility=None, classification=None,
                  total_bond_amount=None,
                  arrest=None, charges=None, holds=None):
@@ -127,7 +126,6 @@ class _Booking(IngestObject):
         self.release_date: str = release_date
         self.release_reason: str = release_reason
         self.custody_status: str = custody_status
-        self.hold: str = hold
         self.facility: str = facility
         self.classification: str = classification
         self.total_bond_amount: str = total_bond_amount
