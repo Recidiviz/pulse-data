@@ -15,6 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains logic for communicating with a SQL Database."""
+
+from datetime import datetime
 from typing import List
 
 from sqlalchemy.orm import Session
@@ -23,6 +25,8 @@ from recidiviz.common.constants.mappable_enum import MappableEnum
 from recidiviz.persistence import entities
 from recidiviz.persistence.database import database_utils
 from recidiviz.persistence.database.schema import Person, Booking
+import recidiviz.persistence.database.update_historical_snapshots as \
+    update_snapshots
 
 
 def read_people(session, full_name=None, birthdate=None):
@@ -146,15 +150,17 @@ def write_people(session, people):
 
 
 def write_person(session, person):
-    """
-    Converts the given |person| into a schema.Person object and adds it into
-    the given |session|.
+    """Converts the given |person| into a schema.Person object and persists the
+    record tree rooted at that |person|.
 
     Args:
         session: (Session)
         person:  entities.Person
+
+    Returns:
+        persisted Person schema object
     """
-    session.merge(database_utils.convert_person(person))
+    return _save_record_tree(session, database_utils.convert_person(person))
 
 
 def update_booking(session, booking_id, **kwargs):
@@ -171,10 +177,73 @@ def update_booking(session, booking_id, **kwargs):
         .update(_convert_enums_to_strings(kwargs))
 
 
+def _save_record_tree(session, person):
+    """Persists the record tree rooted at |person|.
+
+    Args:
+        session: (Session)
+        person: Person schema object
+
+    Returns:
+        persisted Person schema object
+    """
+
+    # Merge includes all related entities, so this persists the master record
+    # tree
+    person = session.merge(person)
+
+    # Flush ensures all master entities, including newly created ones, have
+    # primary keys set before creating historical snapshots
+    session.flush()
+
+    # All historical snapshot changes should be given the same timestamp
+    snapshot_time = datetime.now()
+
+    # Traverse all relationships on the record tree and save historical
+    # snapshots where needed
+    #
+    # Some entities in the record tree can be reached by more than one
+    # relationship path, so we need to track which ones have already been
+    # processed
+    #
+    # As the number of entities in a given record tree is expected to be small,
+    # we use lists here for ease of readability
+    unprocessed = [person]
+    processed = []
+    while unprocessed:
+        entity = unprocessed.pop()
+
+        update_snapshots.update_historical_snapshots(
+            session, entity, snapshot_time)
+        processed.append(entity)
+
+        unprocessed.extend(
+            _get_unexplored_related_entities(entity, processed, unprocessed))
+
+    return person
+
+
+def _get_unexplored_related_entities(entity, processed, unprocessed):
+    unexplored = []
+
+    for relationship_name in entity.get_relationship_property_names():
+        related = getattr(entity, relationship_name)
+
+        # Relationship can return either a list or a single item
+        if isinstance(related, list):
+            unexplored.extend(related)
+        elif related is not None:
+            unexplored.append(related)
+
+    return [entity for entity in unexplored
+            if entity not in processed
+            and entity not in unprocessed]
+
+
 def _convert_enums_to_strings(dictionary):
     result = {}
     for k, v in dictionary.items():
-        if issubclass(v.__class__, MappableEnum):
+        if issubclass(type(v), MappableEnum):
             result[k] = v.value
         else:
             result[k] = v
