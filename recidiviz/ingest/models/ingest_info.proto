@@ -52,14 +52,13 @@ message Booking {
 	optional string release_date = 4;
 	optional string release_reason = 5;
 	optional string custody_status = 6;
-	optional string hold = 7;
-	optional string facility = 8;
-	optional string classification = 9;
-	optional string total_bond_amount = 10;
+	optional string facility = 7;
+	optional string classification = 8;
+	optional string total_bond_amount = 9;
 
-	optional string arrest_id = 11;
-	repeated string charge_ids = 12;
-	repeated string hold_ids = 13;
+	optional string arrest_id = 10;
+	repeated string charge_ids = 11;
+	repeated string hold_ids = 12;
 }
 
 message Arrest {

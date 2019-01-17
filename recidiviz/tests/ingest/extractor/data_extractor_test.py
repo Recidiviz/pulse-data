@@ -63,7 +63,7 @@ def test_nested_good_table():
     booking = person.create_booking()
     booking.booking_id = '18-00000'
     booking.admission_date = '1/05/2000 09:39'
-    booking.hold = 'District Court 13-3-01'
+    booking.create_hold(jurisdiction_name='District Court 13-3-01')
 
     # Add charge information
     charge = booking.create_charge()
