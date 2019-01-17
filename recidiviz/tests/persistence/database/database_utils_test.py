@@ -23,6 +23,7 @@ from recidiviz.common.constants.booking import CustodyStatus, ReleaseReason, \
     Classification
 from recidiviz.common.constants.charge import ChargeDegree, ChargeClass, \
     ChargeStatus, CourtType
+from recidiviz.common.constants.hold import HoldStatus
 from recidiviz.common.constants.person import Gender, Race, Ethnicity
 from recidiviz.persistence import entities
 from recidiviz.persistence.database.database_utils import convert_person
@@ -61,7 +62,8 @@ _PERSON = entities.Person(
             hold_id=3456,
             external_id="external_id",
             jurisdiction_name="jurisdiction_name",
-            hold_status="hold_status",
+            hold_status=HoldStatus.ACTIVE,
+            hold_status_raw_text='active'
         )],
         arrest=entities.Arrest(
             arrest_id=4567,

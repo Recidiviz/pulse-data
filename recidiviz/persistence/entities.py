@@ -31,6 +31,7 @@ from recidiviz.common.constants.booking import ReleaseReason, CustodyStatus, \
     Classification
 from recidiviz.common.constants.charge import ChargeClass, ChargeDegree, \
     ChargeStatus, CourtType
+from recidiviz.common.constants.hold import HoldStatus
 from recidiviz.common.constants.person import Race, Ethnicity, Gender
 
 
@@ -125,7 +126,8 @@ class Charge(Entity, BuildableAttr):
 @attr.s
 class Hold(Entity, BuildableAttr):
     jurisdiction_name: Optional[str] = attr.ib()
-    hold_status: Optional[str] = attr.ib()
+    hold_status: Optional[HoldStatus] = attr.ib()
+    hold_status_raw_text: Optional[str] = attr.ib()
 
     hold_id: Optional[int] = attr.ib(default=None)
 
