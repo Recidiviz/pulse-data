@@ -47,7 +47,7 @@ class BondConverterTest(unittest.TestCase):
             bond_type=BondType.CASH,
             bond_type_raw_text='CASH',
             amount_dollars=125,
-            status=BondStatus.ACTIVE,
+            status=BondStatus.SET,
             status_raw_text='ACTIVE',
         )
 
@@ -76,7 +76,7 @@ class BondConverterTest(unittest.TestCase):
 
         # Assert
         expected_result = entities.Bond.new_with_defaults(
-            bond_type=BondType.BOND_DENIED,
-            status=BondStatus.UNKNOWN_FOUND_IN_SOURCE
+            bond_type=BondType.NO_BOND,
+            status=BondStatus.DENIED
         )
         self.assertEqual(result, expected_result)

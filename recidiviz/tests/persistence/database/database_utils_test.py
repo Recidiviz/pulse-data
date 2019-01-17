@@ -103,10 +103,10 @@ _PERSON = entities.Person(
                 bond_id=6789,
                 external_id="external_id",
                 amount_dollars=2,
-                bond_type=BondType.BOND_DENIED,
-                bond_type_raw_text='BOND DENIED',
-                status=BondStatus.ACTIVE,
-                status_raw_text='ACTIVE'
+                bond_type=BondType.CASH,
+                bond_type_raw_text='CASH',
+                status=BondStatus.SET,
+                status_raw_text='SET'
             ),
             sentence=entities.Sentence(
                 sentence_id=7890,
