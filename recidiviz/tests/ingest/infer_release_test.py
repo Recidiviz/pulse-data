@@ -22,7 +22,7 @@ from unittest import TestCase
 from flask import Flask
 from mock import call, patch
 
-from recidiviz.common.constants.booking import ReleaseReason
+from recidiviz.common.constants.booking import CustodyStatus
 from recidiviz.ingest import infer_release
 from recidiviz.ingest.sessions import ScrapeSession
 
@@ -88,5 +88,5 @@ class TestInferRelease(TestCase):
         response = self.client.get('/release', headers=headers)
         assert response.status_code == 200
         mock_infer_release.assert_has_calls(
-            [call('us_ut', time, ReleaseReason.INFERRED_RELEASE),
-             call('us_wy', time, ReleaseReason.REMOVED_FROM_WEBSITE)])
+            [call('us_ut', time, CustodyStatus.INFERRED_RELEASE),
+             call('us_wy', time, CustodyStatus.REMOVED_FROM_SOURCE)])

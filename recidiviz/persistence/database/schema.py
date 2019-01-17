@@ -74,6 +74,12 @@ ethnicity_values = (enum_strings.external_unknown,
 
 # Booking
 
+admission_reason_values = (enum_strings.admission_reason_escape,
+                           enum_strings.admission_reason_new_commitment,
+                           enum_strings.admission_reason_parole_violation,
+                           enum_strings.admission_reason_probation_violation,
+                           enum_strings.admission_reason_transfer)
+
 release_reason_values = (enum_strings.release_reason_acquittal,
                          enum_strings.release_reason_bond,
                          enum_strings.release_reason_case_dismissed,
@@ -81,7 +87,6 @@ release_reason_values = (enum_strings.release_reason_acquittal,
                          enum_strings.release_reason_escape,
                          enum_strings.release_reason_expiration,
                          enum_strings.external_unknown,
-                         enum_strings.release_reason_inferred,
                          enum_strings.release_reason_recognizance,
                          enum_strings.release_reason_parole,
                          enum_strings.release_reason_probation,
@@ -90,7 +95,9 @@ release_reason_values = (enum_strings.release_reason_acquittal,
 custody_status_values = (enum_strings.custody_status_escaped,
                          enum_strings.custody_status_elsewhere,
                          enum_strings.custody_status_in_custody,
-                         enum_strings.custody_status_released)
+                         enum_strings.custody_status_inferred_release,
+                         enum_strings.custody_status_released,
+                         enum_strings.custody_status_removed_from_source)
 
 classification_values = (enum_strings.external_unknown,
                          enum_strings.classification_high,
@@ -159,6 +166,7 @@ court_type_values = (enum_strings.court_type_circuit,
 # TODO(176): pass values_callable to all enum constructors so the canonical
 # string representation, rather than the enum name, is passed to the DB.
 
+admission_reason = Enum(*admission_reason_values, name='admission_reason')
 bond_status = Enum(*bond_status_values, name='bond_status')
 bond_type = Enum(*bond_type_values, name='bond_type')
 charge_class = Enum(*charge_class_values, name='charge_class')
@@ -233,6 +241,8 @@ class Booking(Base, DatabaseEntity):
     person_id = Column(Integer, ForeignKey('person.person_id'), nullable=False)
     external_id = Column(String(255), index=True)
     admission_date = Column(Date)
+    admission_reason = Column(admission_reason)
+    admission_reason_raw_text = Column(String(255))
     admission_date_inferred = Column(Boolean)
     release_date = Column(Date)
     release_date_inferred = Column(Boolean)
@@ -271,6 +281,8 @@ class BookingHistory(Base, DatabaseEntity):
     external_id = Column(String(255), index=True)
     admission_date = Column(Date)
     admission_date_inferred = Column(Boolean)
+    admission_reason = Column(admission_reason)
+    admission_reason_raw_text = Column(String(255))
     release_date = Column(Date)
     release_date_inferred = Column(Boolean)
     projected_release_date = Column(Date)

@@ -21,7 +21,7 @@ from unittest import TestCase
 
 from mock import patch, Mock
 from recidiviz import Session
-from recidiviz.common.constants.booking import ReleaseReason, CustodyStatus
+from recidiviz.common.constants.booking import CustodyStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo, Charge, \
     Sentence
@@ -305,14 +305,14 @@ class TestPersistence(TestCase):
         # Act
         persistence.write(ingest_info, metadata_1)
         persistence.infer_release_on_open_bookings(
-            REGION_1, most_recent_scrape_time, ReleaseReason.INFERRED_RELEASE)
+            REGION_1, most_recent_scrape_time, CustodyStatus.INFERRED_RELEASE)
         persistence.write(ingest_info_other_region, metadata_2)
 
         # Assert
         bookings = database.read_bookings(Session())
         assert bookings[0].last_seen_time == SCRAPER_START_DATETIME
         assert bookings[0].release_date == most_recent_scrape_time.date()
-        assert bookings[0].release_reason == ReleaseReason.INFERRED_RELEASE
+        assert bookings[0].custody_status == CustodyStatus.INFERRED_RELEASE
         assert bookings[0].charges[0].name == CHARGE_NAME_1
 
         assert bookings[1].last_seen_time == SCRAPER_START_DATETIME

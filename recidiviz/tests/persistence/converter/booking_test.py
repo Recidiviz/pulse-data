@@ -19,7 +19,7 @@ import unittest
 from datetime import date
 
 from recidiviz.common.constants.booking import ReleaseReason, CustodyStatus, \
-    Classification
+    Classification, AdmissionReason
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence import entities
@@ -41,6 +41,7 @@ class BookingConverterTest(unittest.TestCase):
         ingest_booking = ingest_info_pb2.Booking(
             booking_id='BOOKING_ID',
             admission_date='2/3/1000',
+            admission_reason='New Commitment',
             release_date='1/2/3333',
             projected_release_date='5/20/2222',
             release_reason='Transfer',
@@ -56,6 +57,8 @@ class BookingConverterTest(unittest.TestCase):
         expected_result = entities.Booking.new_with_defaults(
             external_id='BOOKING_ID',
             admission_date=date(year=1000, month=2, day=3),
+            admission_reason=AdmissionReason.NEW_COMMITMENT,
+            admission_reason_raw_text='NEW COMMITMENT',
             admission_date_inferred=False,
             release_date=date(year=3333, month=1, day=2),
             release_date_inferred=False,

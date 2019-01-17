@@ -16,7 +16,7 @@
 # ============================================================================
 """Converts an ingest_info proto Booking to a persistence entity."""
 from recidiviz.common.constants.booking import ReleaseReason, CustodyStatus, \
-    Classification
+    Classification, AdmissionReason
 from recidiviz.persistence.converter.converter_utils import fn, normalize, \
     parse_date, parse_external_id
 
@@ -32,6 +32,9 @@ def copy_fields_to_builder(booking_builder, proto, metadata):
     # 1-to-1 mappings
     new.external_id = fn(parse_external_id, 'booking_id', proto)
     new.projected_release_date = fn(parse_date, 'projected_release_date', proto)
+    new.admission_reason = fn(AdmissionReason.from_str, 'admission_reason',
+                              proto, metadata.enum_overrides)
+    new.admission_reason_raw_text = fn(normalize, 'admission_reason', proto)
     new.release_reason = fn(ReleaseReason.from_str, 'release_reason', proto,
                             metadata.enum_overrides)
     new.release_reason_raw_text = fn(normalize, 'release_reason', proto)

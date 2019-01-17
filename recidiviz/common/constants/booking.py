@@ -21,6 +21,18 @@ import recidiviz.common.constants.enum_canonical_strings as enum_strings
 from recidiviz.common.constants.mappable_enum import MappableEnum
 
 
+class AdmissionReason(MappableEnum):
+    ESCAPE = enum_strings.admission_reason_escape
+    NEW_COMMITMENT = enum_strings.admission_reason_new_commitment
+    PAROLE_VIOLATION = enum_strings.admission_reason_parole_violation
+    PROBATION_VIOLATION = enum_strings.admission_reason_probation_violation
+    TRANSFER = enum_strings.admission_reason_transfer
+
+    @staticmethod
+    def _get_default_map():
+        return _ADMISSION_REASON_MAP
+
+
 class Classification(MappableEnum):
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
     HIGH = enum_strings.classification_high
@@ -40,6 +52,8 @@ class CustodyStatus(MappableEnum):
     HELD_ELSEWHERE = enum_strings.custody_status_elsewhere
     IN_CUSTODY = enum_strings.custody_status_in_custody
     RELEASED = enum_strings.custody_status_released
+    INFERRED_RELEASE = enum_strings.custody_status_inferred_release
+    REMOVED_FROM_SOURCE = enum_strings.custody_status_removed_from_source
 
     @staticmethod
     def _get_default_map():
@@ -54,17 +68,23 @@ class ReleaseReason(MappableEnum):
     ESCAPE = enum_strings.release_reason_escape
     EXPIRATION_OF_SENTENCE = enum_strings.release_reason_expiration
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
-    INFERRED_RELEASE = enum_strings.release_reason_inferred
     OWN_RECOGNIZANCE = enum_strings.release_reason_recognizance
     PAROLE = enum_strings.release_reason_parole
     PROBATION = enum_strings.release_reason_probation
-    REMOVED_FROM_WEBSITE = enum_strings.release_reason_removed_from_website
     TRANSFER = enum_strings.release_reason_transfer
 
     @staticmethod
     def _get_default_map():
         return _RELEASE_REASON_MAP
 
+
+_ADMISSION_REASON_MAP = {
+    'ESCAPE': AdmissionReason.ESCAPE,
+    'NEW COMMITMENT': AdmissionReason.NEW_COMMITMENT,
+    'PAROLE VIOLATION': AdmissionReason.PAROLE_VIOLATION,
+    'PROBATION VIOLATION': AdmissionReason.PROBATION_VIOLATION,
+    'TRANSFER': AdmissionReason.TRANSFER,
+}
 
 _CLASSIFICATION_MAP = {
     'HIGH': Classification.HIGH,
@@ -76,7 +96,6 @@ _CLASSIFICATION_MAP = {
     'WORK RELEASE': Classification.WORK_RELEASE,
 }
 
-
 _CUSTODY_STATUS_MAP = {
     'ESCAPED': CustodyStatus.ESCAPED,
     'HELD ELSEWHERE': CustodyStatus.HELD_ELSEWHERE,
@@ -86,7 +105,6 @@ _CUSTODY_STATUS_MAP = {
     'RELEASED': CustodyStatus.RELEASED,
     'TEMP RELEASE': CustodyStatus.RELEASED,
 }
-
 
 _RELEASE_REASON_MAP = {
     'ACQUITTAL': ReleaseReason.ACQUITTAL,
