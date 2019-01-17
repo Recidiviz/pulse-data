@@ -32,7 +32,7 @@ from recidiviz.ingest.base_scraper import BaseScraper
 class Html5BaseScraper(BaseScraper):
     """Generic class for scrapers that parse HTML5 content."""
 
-    def _parse_content(self, content_string: str) -> html.HtmlElement:
+    def _parse_html_content(self, content_string: str) -> html.HtmlElement:
         # html5lib supports tags that are not closed, so parse twice to
         # convert from html5lib's xml.etree.ElementTree to lxml's
         # lxml.html.HtmlElement.
