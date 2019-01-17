@@ -18,13 +18,12 @@
 from copy import deepcopy
 from typing import List
 
-from recidiviz.common.constants.bond import BondStatus
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.persistence import entities
 from recidiviz.persistence.converter import arrest, sentence, \
     charge, bond, booking, person, hold
 from recidiviz.persistence.converter.converter_utils import fn, \
-    parse_bond_amount_and_infer_type, parse_int
+    parse_bond_amount_and_check_for_type_and_status_info, parse_int
 
 
 def convert(ingest_info, metadata):
@@ -86,12 +85,15 @@ class _Converter:
         charges = self._convert_charges(ingest_charges)
         booking_builder.charges = charges
 
-        bond_amount_and_type = fn(parse_bond_amount_and_infer_type,
-                                  'total_bond_amount', ingest_booking)
-        if bond_amount_and_type is not None:
-            bond_amount, bond_type = bond_amount_and_type
+        bond_info_tuple = fn(
+            parse_bond_amount_and_check_for_type_and_status_info,
+            'total_bond_amount',
+            ingest_booking)
+        if bond_info_tuple is not None:
+            bond_amount, bond_type, bond_status = bond_info_tuple
             booking_builder.charges = \
-                _charges_pointing_to_total_bond(bond_amount, bond_type, charges)
+                _charges_pointing_to_total_bond(
+                    bond_amount, bond_type, bond_status, charges)
 
         return booking_builder.build()
 
@@ -128,7 +130,8 @@ class _Converter:
         return charge_builder.build()
 
 
-def _charges_pointing_to_total_bond(bond_amount, bond_type, charges):
+def _charges_pointing_to_total_bond(bond_amount, bond_type, bond_status,
+                                    charges):
     """Infers a bond from the total_bond field and creates a copy of all charges
     updated to point to the inferred bond. If no charges exist, then also infer
     a charge."""
@@ -137,7 +140,7 @@ def _charges_pointing_to_total_bond(bond_amount, bond_type, charges):
         amount_dollars=bond_amount,
         bond_type=bond_type,
         bond_type_raw_text=None,
-        status=BondStatus.UNKNOWN_FOUND_IN_SOURCE,
+        status=bond_status,
         status_raw_text=None,
     )
 

@@ -204,7 +204,7 @@ class TestEntityMatchingUtils(TestCase):
 
     def test_bond_match(self):
         db_bond = entities.Bond.new_with_defaults(
-            bond_id=_BOND_ID, bond_type=BondType.CASH, status=BondStatus.ACTIVE)
+            bond_id=_BOND_ID, bond_type=BondType.CASH, status=BondStatus.SET)
         ingested_bond = entities.Bond.new_with_defaults(
             bond_type=BondType.CASH,
             status=BondStatus.POSTED

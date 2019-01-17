@@ -151,7 +151,7 @@ class TestConverter(unittest.TestCase):
                 charges=[Charge.new_with_defaults(
                     status=ChargeStatus.UNKNOWN_FOUND_IN_SOURCE,
                     bond=Bond.new_with_defaults(
-                        status=BondStatus.UNKNOWN_FOUND_IN_SOURCE,
+                        status=BondStatus.INFERRED_SET,
                         bond_type=BondType.CASH,
                         amount_dollars=100
                     )
@@ -190,7 +190,7 @@ class TestConverter(unittest.TestCase):
                     status=ChargeStatus.UNKNOWN_FOUND_IN_SOURCE,
                     bond=Bond.new_with_defaults(
                         amount_dollars=100,
-                        status=BondStatus.UNKNOWN_FOUND_IN_SOURCE,
+                        status=BondStatus.INFERRED_SET,
                         bond_type=BondType.CASH
                     )
                 )]

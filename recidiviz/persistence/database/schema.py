@@ -116,17 +116,19 @@ hold_status_values = (enum_strings.hold_status_active,
 
 # Bond
 
-bond_type_values = (enum_strings.bond_type_denied,
-                    enum_strings.external_unknown,
+bond_type_values = (enum_strings.external_unknown,
                     enum_strings.bond_type_cash,
                     enum_strings.bond_type_no_bond,
                     enum_strings.bond_type_secured,
                     enum_strings.bond_type_unsecured)
 
-bond_status_values = (enum_strings.bond_status_active,
-                      enum_strings.bond_status_posted,
+bond_status_values = (enum_strings.bond_status_denied,
                       enum_strings.unknown_found_in_source,
-                      enum_strings.unknown_removed_from_source)
+                      enum_strings.bond_status_inferred_set,
+                      enum_strings.bond_status_not_required,
+                      enum_strings.bond_status_posted,
+                      enum_strings.unknown_removed_from_source,
+                      enum_strings.bond_status_set)
 
 # Sentence
 
@@ -154,6 +156,7 @@ charge_class_values = (enum_strings.charge_class_civil,
                        enum_strings.charge_class_felony,
                        enum_strings.charge_class_infraction,
                        enum_strings.charge_class_misdemeanor,
+                       enum_strings.charge_class_other,
                        enum_strings.charge_class_parole_violation,
                        enum_strings.charge_class_probation_violation)
 

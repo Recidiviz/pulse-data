@@ -21,7 +21,8 @@ from distutils.util import strtobool  # pylint: disable=no-name-in-module
 import dateparser
 
 from recidiviz.common import common_utils
-from recidiviz.common.constants.bond import BondType
+from recidiviz.common.constants.bond import \
+    BondStatus, BondType, BOND_TYPE_MAP, BOND_STATUS_MAP
 from recidiviz.common.constants.mappable_enum import EnumParsingError
 from recidiviz.common.constants.person import Ethnicity, Race
 
@@ -160,17 +161,26 @@ def parse_days(time_string):
     raise ValueError('cannot parse time duration: %s' % time_string)
 
 
-def parse_bond_amount_and_infer_type(amount):
-    if amount.upper().startswith('NO'):
-        return None, BondType.NO_BOND
+def parse_bond_amount_and_check_for_type_and_status_info(amount):
+    """Parses bond (amount) string and returns |int| value. If (amount) string
+    is not a numeric value, checks if the text value contains information about
+    bond type or bond status.
 
-    if 'DENIED' in amount.upper():
-        return None, BondType.BOND_DENIED
+    Returns:
+        Tuple of bond amount, bond type, and bond status.
+    """
+    bond_type = BOND_TYPE_MAP.get(amount.upper(), None)
+    bond_status = BOND_STATUS_MAP.get(
+        amount.upper(), BondStatus.UNKNOWN_FOUND_IN_SOURCE)
+
+    if bond_type is not None \
+            or bond_status != BondStatus.UNKNOWN_FOUND_IN_SOURCE:
+        return None, bond_type, bond_status
 
     parsed_amount = parse_dollars(amount)
     if int(parsed_amount) == 0:
-        return None, BondType.NO_BOND
-    return parsed_amount, BondType.CASH
+        return None, BondType.NO_BOND, BondStatus.UNKNOWN_FOUND_IN_SOURCE
+    return parsed_amount, BondType.CASH, BondStatus.INFERRED_SET
 
 
 def parse_dollars(dollar_string):

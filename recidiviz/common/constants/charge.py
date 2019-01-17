@@ -38,6 +38,7 @@ class ChargeClass(MappableEnum):
     FELONY = enum_strings.charge_class_felony
     INFRACTION = enum_strings.charge_class_infraction
     MISDEMEANOR = enum_strings.charge_class_misdemeanor
+    OTHER = enum_strings.charge_class_other
     PAROLE_VIOLATION = enum_strings.charge_class_parole_violation
     PROBATION_VIOLATION = enum_strings.charge_class_probation_violation
 
