@@ -95,6 +95,7 @@ custody_status_values = (enum_strings.custody_status_escaped,
                          enum_strings.custody_status_in_custody,
                          enum_strings.custody_status_inferred_release,
                          enum_strings.custody_status_released,
+                         enum_strings.unknown_found_in_source,
                          enum_strings.unknown_removed_from_source)
 
 classification_values = (enum_strings.external_unknown,
@@ -108,7 +109,10 @@ classification_values = (enum_strings.external_unknown,
 # Hold
 
 hold_status_values = (enum_strings.hold_status_active,
-                      enum_strings.hold_status_inactive)
+                      enum_strings.hold_status_inactive,
+                      enum_strings.hold_status_inferred_dropped,
+                      enum_strings.unknown_found_in_source,
+                      enum_strings.unknown_removed_from_source)
 
 # Bond
 
@@ -120,13 +124,16 @@ bond_type_values = (enum_strings.bond_type_denied,
                     enum_strings.bond_type_unsecured)
 
 bond_status_values = (enum_strings.bond_status_active,
-                      enum_strings.bond_status_posted)
+                      enum_strings.bond_status_posted,
+                      enum_strings.unknown_found_in_source,
+                      enum_strings.unknown_removed_from_source)
 
 # Sentence
 
 sentence_status_values = (enum_strings.sentence_status_commuted,
                           enum_strings.sentence_status_completed,
                           enum_strings.sentence_status_serving,
+                          enum_strings.unknown_found_in_source,
                           enum_strings.unknown_removed_from_source)
 
 # SentenceRelationship
@@ -157,7 +164,9 @@ charge_status_values = (enum_strings.charge_status_acquitted,
                         enum_strings.external_unknown,
                         enum_strings.charge_status_pending,
                         enum_strings.charge_status_pretrial,
-                        enum_strings.charge_status_sentenced)
+                        enum_strings.charge_status_sentenced,
+                        enum_strings.unknown_found_in_source,
+                        enum_strings.unknown_removed_from_source)
 
 court_type_values = (enum_strings.court_type_circuit,
                      enum_strings.court_type_district,
