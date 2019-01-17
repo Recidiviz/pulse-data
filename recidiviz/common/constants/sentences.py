@@ -1,5 +1,5 @@
 # Recidiviz - a platform for tracking granular recidivism metrics in real time
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2018 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,22 +15,25 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Constants related to a hold entity."""
+"""Constants related to a sentence entity."""
+
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 from recidiviz.common.constants.mappable_enum import MappableEnum
 
 
-class HoldStatus(MappableEnum):
-    ACTIVE = enum_strings.hold_status_active
-    INACTIVE = enum_strings.hold_status_inactive
+class SentenceStatus(MappableEnum):
+    COMMUTED = enum_strings.sentence_status_commuted
+    COMPLETED = enum_strings.sentence_status_completed
+    SERVING = enum_strings.sentence_status_serving
     UNKNOWN_REMOVED_FROM_SOURCE = enum_strings.unknown_removed_from_source
 
     @staticmethod
     def _get_default_map():
-        return _HOLD_STATUS_MAP
+        return _SENTENCE_STATUS_MAP
 
 
-_HOLD_STATUS_MAP = {
-    'ACTIVE': HoldStatus.ACTIVE,
-    'INACTIVE': HoldStatus.INACTIVE
+_SENTENCE_STATUS_MAP = {
+    'COMMUTED': SentenceStatus.COMMUTED,
+    'COMPLETED': SentenceStatus.COMPLETED,
+    'SERVING': SentenceStatus.SERVING,
 }
