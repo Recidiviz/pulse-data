@@ -53,6 +53,7 @@ PLACE_2 = 'TEST_PLACE_2'
 REGION_1 = 'REGION_1'
 REGION_2 = 'REGION_2'
 SCRAPER_START_DATETIME = datetime(year=2018, month=8, day=6)
+SENTENCE_STATUS = 'SERVING'
 FULL_NAME_1 = 'TEST_FULL_NAME_1'
 FULL_NAME_2 = 'TEST_FULL_NAME_2'
 DEFAULT_METADATA = IngestMetadata(
@@ -177,10 +178,12 @@ class TestPersistence(TestCase):
         ingest_info.sentences.extend([
             Sentence(
                 sentence_id='SENTENCE_ID_1',
-                fine_dollars=FINE_1
+                fine_dollars=FINE_1,
+                sentence_status=SENTENCE_STATUS
             ), Sentence(
                 sentence_id='SENTENCE_ID_2',
-                fine_dollars=FINE_2
+                fine_dollars=FINE_2,
+                sentence_status=SENTENCE_STATUS
             )
         ])
 

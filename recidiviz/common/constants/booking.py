@@ -53,7 +53,7 @@ class CustodyStatus(MappableEnum):
     IN_CUSTODY = enum_strings.custody_status_in_custody
     RELEASED = enum_strings.custody_status_released
     INFERRED_RELEASE = enum_strings.custody_status_inferred_release
-    REMOVED_FROM_SOURCE = enum_strings.custody_status_removed_from_source
+    UNKNOWN_REMOVED_FROM_SOURCE = enum_strings.unknown_removed_from_source
 
     @staticmethod
     def _get_default_map():

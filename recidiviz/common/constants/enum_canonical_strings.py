@@ -37,6 +37,10 @@ requiring the database to be updated when an enum value is created or removed.
 # default value for enums that are not provided (which should be represented
 # with None/NULL).
 external_unknown = 'EXTERNAL_UNKNOWN'
+# This value should not be used by scrapers directly. It is only used in the
+# situation that an entity is removed from the website, and we cannot infer
+# anything about what removal means (i.e. 'INFER_DROPPED')
+unknown_removed_from_source = 'UNKNOWN_REMOVED_FROM_SOURCE'
 
 # Person
 
@@ -80,7 +84,6 @@ custody_status_elsewhere = 'HELD_ELSEWHERE'
 custody_status_in_custody = 'IN_CUSTODY'
 custody_status_inferred_release = 'INFERRED_RELEASE'
 custody_status_released = 'RELEASED'
-custody_status_removed_from_source = 'REMOVED_FROM_SOURCE'
 
 classification_high = 'HIGH'
 classification_low = 'LOW'
@@ -93,6 +96,7 @@ classification_work_release = 'WORK_RELEASE'
 
 hold_status_active = 'ACTIVE'
 hold_status_inactive = 'INACTIVE'
+hold_status_inferred_dropped = 'INFERRED_DROPPED'
 
 # Bond
 
@@ -104,6 +108,12 @@ bond_type_unsecured = 'UNSECURED'
 
 bond_status_active = 'ACTIVE'
 bond_status_posted = 'POSTED'
+
+# Sentence
+
+sentence_status_commuted = 'COMMUTED'
+sentence_status_completed = 'COMPLETED'
+sentence_status_serving = 'SERVING'
 
 # SentenceRelationship
 
@@ -127,6 +137,7 @@ charge_status_acquitted = 'ACQUITTED'
 charge_status_completed = 'COMPLETED_SENTENCE'
 charge_status_convicted = 'CONVICTED'
 charge_status_dropped = 'DROPPED'
+charge_status_inferred_dropped = 'INFERRED_DROPPED'
 charge_status_pending = 'PENDING'
 charge_status_pretrial = 'PRETRIAL'
 charge_status_sentenced = 'SENTENCED'

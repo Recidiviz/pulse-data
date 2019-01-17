@@ -52,9 +52,11 @@ class ChargeStatus(MappableEnum):
     CONVICTED = enum_strings.charge_status_convicted
     DROPPED = enum_strings.charge_status_dropped
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
+    INFERRED_DROPPED = enum_strings.charge_status_inferred_dropped
     PENDING = enum_strings.charge_status_pending
     PRETRIAL = enum_strings.charge_status_pretrial
     SENTENCED = enum_strings.charge_status_sentenced
+    UNKNOWN_REMOVED_FROM_SOURCE = enum_strings.unknown_removed_from_source
 
     @staticmethod
     def _get_default_map():

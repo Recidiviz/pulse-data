@@ -286,13 +286,13 @@ class _Sentence(IngestObject):
     """
 
     def __init__(
-            self, sentence_id=None, date_imposed=None,
+            self, sentence_id=None, sentence_status=None,
             sentencing_region=None, min_length=None, max_length=None,
             is_life=None, is_probation=None, is_suspended=None,
             fine_dollars=None, parole_possible=None,
             post_release_supervision_length=None):
         self.sentence_id: str = sentence_id
-        self.date_imposed: str = date_imposed
+        self.sentence_status: str = sentence_status
         self.sentencing_region: str = sentencing_region
         self.min_length: str = min_length
         self.max_length: str = max_length

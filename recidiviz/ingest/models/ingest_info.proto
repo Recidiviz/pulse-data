@@ -108,14 +108,14 @@ message Bond {
 
 message Sentence {
     optional string sentence_id = 1;
-    optional string date_imposed = 2;
-    optional string min_length = 3;
-    optional string max_length = 4;
-    optional string is_life = 5;
-    optional string is_probation = 6;
-    optional string is_suspended = 7;
-    optional string fine_dollars = 8;
-    optional string parole_possible = 9;
-    optional string post_release_supervision_length = 10;
-    optional string sentencing_region = 11;
+    optional string min_length = 2;
+    optional string max_length = 3;
+    optional string is_life = 4;
+    optional string is_probation = 5;
+    optional string is_suspended = 6;
+    optional string fine_dollars = 7;
+    optional string parole_possible = 8;
+    optional string post_release_supervision_length = 9;
+    optional string sentencing_region = 10;
+    optional string sentence_status = 11;
 }
