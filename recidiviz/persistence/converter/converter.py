@@ -22,7 +22,7 @@ from recidiviz.common.constants.bond import BondStatus
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.persistence import entities
 from recidiviz.persistence.converter import arrest, sentence, \
-    charge, bond, booking, person
+    charge, bond, booking, person, hold
 from recidiviz.persistence.converter.converter_utils import fn, \
     parse_bond_amount_and_infer_type, parse_int
 
@@ -46,6 +46,7 @@ class _Converter:
         self.bookings = {b.booking_id: b for b in ingest_info.bookings}
         self.arrests = {a.arrest_id: a for a in ingest_info.arrests}
         self.charges = {c.charge_id: c for c in ingest_info.charges}
+        self.holds = {h.hold_id: h for h in ingest_info.holds}
         self.bonds = {b.bond_id: b for b in ingest_info.bonds}
         self.sentences = {s.sentence_id: s for s in ingest_info.sentences}
 
@@ -77,7 +78,9 @@ class _Converter:
             fn(lambda i: arrest.convert(self.arrests[i]),
                'arrest_id', ingest_booking)
 
-        # TODO: Populate hold when the proto is updated to contain a hold table
+        booking_builder.holds = [hold.convert(self.holds[hold_id],
+                                              self.metadata)
+                                 for hold_id in ingest_booking.hold_ids]
 
         ingest_charges = [self.charges[c] for c in ingest_booking.charge_ids]
         charges = self._convert_charges(ingest_charges)
