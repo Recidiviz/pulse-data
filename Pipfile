@@ -90,7 +90,8 @@ google-cloud-logging = "*"
 pymysql = "*"
 deepdiff = "*"
 mypy = "*"
-opencensus = "*"
+# TODO(569): Upgrade to next pypi opencensus version that includes necessary exporter fixes
+opencensus = {editable = true, git = "https://github.com/census-instrumentation/opencensus-python.git", ref = "989470edce8fa7a82813e3846f774fd4927b5b07"}
 google-cloud-monitoring = "*"
 google-cloud-trace = "*"
 "html5lib" = "*"
