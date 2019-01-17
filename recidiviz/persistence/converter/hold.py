@@ -29,7 +29,8 @@ def convert(proto, metadata: IngestMetadata) -> entities.Hold:
     new.external_id = fn(parse_external_id, 'hold_id', proto)
     new.jurisdiction_name = fn(normalize, 'jurisdiction_name', proto)
     new.hold_status = fn(HoldStatus.from_str, 'hold_status', proto,
-                         metadata.enum_overrides)
+                         metadata.enum_overrides,
+                         default=HoldStatus.UNKNOWN_FOUND_IN_SOURCE)
     new.hold_status_raw_text = fn(normalize, 'hold_status', proto)
 
     return new.build()

@@ -77,6 +77,6 @@ class ChargeConverterTest(unittest.TestCase):
 
         # Assert
         expected_result = entities.Charge.new_with_defaults(
-            status=ChargeStatus.PENDING
+            status=ChargeStatus.UNKNOWN_FOUND_IN_SOURCE
         )
         self.assertEqual(result, expected_result)

@@ -56,6 +56,7 @@ class ChargeStatus(MappableEnum):
     PENDING = enum_strings.charge_status_pending
     PRETRIAL = enum_strings.charge_status_pretrial
     SENTENCED = enum_strings.charge_status_sentenced
+    UNKNOWN_FOUND_IN_SOURCE = enum_strings.unknown_found_in_source
     UNKNOWN_REMOVED_FROM_SOURCE = enum_strings.unknown_removed_from_source
 
     @staticmethod

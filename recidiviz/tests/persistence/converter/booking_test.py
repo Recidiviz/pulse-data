@@ -90,7 +90,7 @@ class BookingConverterTest(unittest.TestCase):
             admission_date='LAST_SEEN_TIME',
             admission_date_inferred=True,
             last_seen_time='LAST_SEEN_TIME',
-            custody_status=CustodyStatus.IN_CUSTODY
+            custody_status=CustodyStatus.UNKNOWN_FOUND_IN_SOURCE
         )
 
         self.assertEqual(result, expected_result)

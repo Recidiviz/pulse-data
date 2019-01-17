@@ -40,7 +40,7 @@ def copy_fields_to_builder(booking_builder, proto, metadata):
     new.release_reason_raw_text = fn(normalize, 'release_reason', proto)
     new.custody_status = fn(
         CustodyStatus.from_str, 'custody_status', proto,
-        metadata.enum_overrides, default=CustodyStatus.IN_CUSTODY)
+        metadata.enum_overrides, default=CustodyStatus.UNKNOWN_FOUND_IN_SOURCE)
     new.custody_status_raw_text = fn(normalize, 'custody_status', proto)
     new.facility = fn(normalize, 'facility', proto)
     new.classification = fn(Classification.from_str, 'classification', proto)

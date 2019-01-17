@@ -63,7 +63,7 @@ class BondConverterTest(unittest.TestCase):
         # Assert
         expected_result = entities.Bond.new_with_defaults(
             bond_type=BondType.NO_BOND,
-            status=BondStatus.ACTIVE
+            status=BondStatus.UNKNOWN_FOUND_IN_SOURCE
         )
         self.assertEqual(result, expected_result)
 
@@ -77,6 +77,6 @@ class BondConverterTest(unittest.TestCase):
         # Assert
         expected_result = entities.Bond.new_with_defaults(
             bond_type=BondType.BOND_DENIED,
-            status=BondStatus.ACTIVE
+            status=BondStatus.UNKNOWN_FOUND_IN_SOURCE
         )
         self.assertEqual(result, expected_result)

@@ -23,8 +23,8 @@ from recidiviz.persistence.converter.converter_utils import normalize, fn, \
     parse_date, parse_bool, parse_dollars, parse_external_id
 
 
-def copy_fields_to_builder(new: entities.Charge.Builder, proto,
-                           metadata: IngestMetadata) -> None:
+def copy_fields_to_builder(
+        new: entities.Charge.Builder, proto, metadata: IngestMetadata) -> None:
     """Mutates the provided |booking_builder| by converting an ingest_info proto
      Booking.
 
@@ -45,7 +45,8 @@ def copy_fields_to_builder(new: entities.Charge.Builder, proto,
     new.fee_dollars = fn(parse_dollars, 'fee_dollars', proto)
     new.charging_entity = fn(normalize, 'charging_entity', proto)
     new.status = fn(ChargeStatus.from_str, 'status', proto,
-                    metadata.enum_overrides, default=ChargeStatus.PENDING)
+                    metadata.enum_overrides,
+                    default=ChargeStatus.UNKNOWN_FOUND_IN_SOURCE)
     new.status_raw_text = fn(normalize, 'status', proto)
     new.court_type = fn(CourtType.from_str, 'court_type', proto,
                         metadata.enum_overrides)
