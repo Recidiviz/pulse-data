@@ -22,7 +22,10 @@ from typing import List, Dict, Tuple, Set, Sequence, Callable
 
 from recidiviz import Session
 from recidiviz.common import common_utils
+from recidiviz.common.constants.bond import BondStatus
 from recidiviz.common.constants.charge import ChargeStatus
+from recidiviz.common.constants.hold import HoldStatus
+from recidiviz.common.constants.sentences import SentenceStatus
 from recidiviz.persistence.database import database
 from recidiviz.persistence import entity_matching_utils as utils, entities
 from recidiviz.persistence.entities import Entity
@@ -187,12 +190,23 @@ def _match_from_charges(*, db_booking: entities.Booking,
         else:
             logging.info('Did not match %s to any ingested %s, dropping',
                          db_obj, name)
-            # TODO: figure out how to drop sentences/bonds
-            # _drop_bond(db_bond) / _drop_sentence(db_sentence)
+            drop_fn = globals()['_drop_' + name]
+            drop_fn(db_obj)
             dropped_objs.append(db_obj)
 
     # TODO: keep bonds/sentences around on booking after being dropped
-    # ingested_booking.bonds.extend(ingested_bonds)
+
+
+def _drop_sentence(sentence: entities.Sentence):
+    if sentence.sentence_status != SentenceStatus.UNKNOWN_REMOVED_FROM_SOURCE:
+        logging.info('Removing sentence with id %s', sentence.sentence_id)
+        sentence.sentence_status = SentenceStatus.UNKNOWN_REMOVED_FROM_SOURCE
+
+
+def _drop_bond(bond: entities.Bond):
+    if bond.status != BondStatus.UNKNOWN_REMOVED_FROM_SOURCE:
+        logging.info('Removing bond with id %s', bond.bond_id)
+        bond.status = BondStatus.UNKNOWN_REMOVED_FROM_SOURCE
 
 
 def match_arrest(
@@ -225,9 +239,10 @@ def match_holds(
     ingested_booking.holds.extend(dropped_holds)
 
 
-def _drop_hold(_):
-    # TODO(585): Drop necessary fields for hold
-    pass
+def _drop_hold(hold: entities.Hold):
+    if hold.hold_status != HoldStatus.INFERRED_DROPPED:
+        logging.info('Dropping hold with id %s', hold.hold_id)
+        hold.hold_status = HoldStatus.INFERRED_DROPPED
 
 
 # TODO(573): what do we do with orphaned bonds/sentences?
@@ -259,11 +274,10 @@ def match_charges(
     ingested_booking.charges.extend(dropped_charges)
 
 
-# TODO(585): set boolean inferred_drop to true
 def _drop_charge(charge: entities.Charge):
-    if charge.status != ChargeStatus.DROPPED:
+    if charge.status != ChargeStatus.INFERRED_DROPPED:
         logging.info('Dropping charge with id %s', charge.charge_id)
-        charge.status = ChargeStatus.DROPPED
+        charge.status = ChargeStatus.INFERRED_DROPPED
 
 
 def _get_next_available_match(db_entity: entities.Entity,
