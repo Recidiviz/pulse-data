@@ -104,14 +104,16 @@ hold_status_inferred_dropped = 'INFERRED_DROPPED'
 
 # Bond
 
-bond_type_denied = 'BOND_DENIED'
 bond_type_cash = 'CASH'
 bond_type_no_bond = 'NO_BOND'
 bond_type_secured = 'SECURED'
 bond_type_unsecured = 'UNSECURED'
 
-bond_status_active = 'ACTIVE'
+bond_status_denied = 'DENIED'
+bond_status_inferred_set = 'INFERRED_SET'
+bond_status_not_required = 'NOT_REQUIRED'
 bond_status_posted = 'POSTED'
+bond_status_set = 'SET'
 
 # Sentence
 
@@ -134,6 +136,7 @@ charge_class_civil = 'CIVIL'
 charge_class_felony = 'FELONY'
 charge_class_infraction = 'INFRACTION'
 charge_class_misdemeanor = 'MISDEMEANOR'
+charge_class_other = 'OTHER'
 charge_class_parole_violation = 'PAROLE_VIOLATION'
 charge_class_probation_violation = 'PROBATION_VIOLATION'
 

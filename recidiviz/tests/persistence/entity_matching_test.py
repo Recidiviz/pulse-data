@@ -232,7 +232,7 @@ class TestEntityMatching(TestCase):
         db_sentence = entities.Sentence.new_with_defaults(
             sentence_id=_ID, external_id=_EXTERNAL_ID, sentencing_region=_NAME)
         db_bond = entities.Bond.new_with_defaults(
-            bond_id=_ID, external_id=_EXTERNAL_ID, status=BondStatus.ACTIVE)
+            bond_id=_ID, external_id=_EXTERNAL_ID, status=BondStatus.SET)
         db_charge = entities.Charge.new_with_defaults(
             charge_id=_ID, external_id=_EXTERNAL_ID, name=_NAME,
             sentence=db_sentence, bond=db_bond)
