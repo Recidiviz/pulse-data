@@ -58,23 +58,29 @@ ethnicity_not_hispanic = 'NOT_HISPANIC'
 
 # Booking
 
+admission_reason_escape = 'ESCAPE'
+admission_reason_new_commitment = 'NEW_COMMITMENT'
+admission_reason_parole_violation = 'PAROLE_VIOLATION'
+admission_reason_probation_violation = 'PROBATION_VIOLATION'
+admission_reason_transfer = 'TRANSFER'
+
 release_reason_acquittal = 'ACQUITTAL'
 release_reason_bond = 'BOND'
 release_reason_case_dismissed = 'CASE_DISMISSED'
 release_reason_death = 'DEATH'
 release_reason_escape = 'ESCAPE'
 release_reason_expiration = 'EXPIRATION_OF_SENTENCE'
-release_reason_inferred = 'INFERRED_RELEASE'
 release_reason_recognizance = 'OWN_RECOGNIZANCE'
 release_reason_parole = 'PAROLE'
 release_reason_probation = 'PROBATION'
-release_reason_removed_from_website = 'REMOVED_FROM_WEBSITE'
 release_reason_transfer = 'TRANSFER'
 
 custody_status_escaped = 'ESCAPED'
 custody_status_elsewhere = 'HELD_ELSEWHERE'
 custody_status_in_custody = 'IN_CUSTODY'
+custody_status_inferred_release = 'INFERRED_RELEASE'
 custody_status_released = 'RELEASED'
+custody_status_removed_from_source = 'REMOVED_FROM_SOURCE'
 
 classification_high = 'HIGH'
 classification_low = 'LOW'
