@@ -34,9 +34,12 @@ from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta
 from sqlalchemy.orm import relationship
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
+from recidiviz.persistence.database.database_entity import DatabaseEntity
+
 
 # Base class for all table classes
 Base: DeclarativeMeta = declarative_base()
+
 
 # Enum values. Exposed separately from the SQLAlchemy Enum that owns them for
 # easier access to the values.
@@ -173,7 +176,7 @@ sentence_relationship_type = Enum(
     *sentence_relationship_type_values, name='sentence_relationship_type')
 
 
-class Person(Base):
+class Person(Base, DatabaseEntity):
     """Represents a person in the SQL schema"""
     __tablename__ = 'person'
 
@@ -194,7 +197,7 @@ class Person(Base):
     bookings = relationship('Booking', back_populates='person')
 
 
-class PersonHistory(Base):
+class PersonHistory(Base, DatabaseEntity):
     """Represents the historical state of a person"""
     __tablename__ = 'person_history'
 
@@ -221,7 +224,7 @@ class PersonHistory(Base):
     region = Column(String(255), nullable=False)
 
 
-class Booking(Base):
+class Booking(Base, DatabaseEntity):
     """Represents a booking in the SQL schema"""
     __tablename__ = 'booking'
 
@@ -249,7 +252,7 @@ class Booking(Base):
     charges = relationship('Charge', back_populates='booking')
 
 
-class BookingHistory(Base):
+class BookingHistory(Base, DatabaseEntity):
     """Represents the historical state of a booking"""
     __tablename__ = 'booking_history'
 
@@ -280,7 +283,7 @@ class BookingHistory(Base):
     classification_raw_text = Column(String(255))
 
 
-class Hold(Base):
+class Hold(Base, DatabaseEntity):
     """Represents a hold from another jurisdiction against a booking"""
     __tablename__ = 'hold'
 
@@ -294,7 +297,7 @@ class Hold(Base):
     booking = relationship('Booking', back_populates='holds')
 
 
-class HoldHistory(Base):
+class HoldHistory(Base, DatabaseEntity):
     """Represents the historical state of a hold"""
     __tablename__ = 'hold_history'
 
@@ -311,7 +314,7 @@ class HoldHistory(Base):
     hold_status_raw_text = Column(String(255))
 
 
-class Arrest(Base):
+class Arrest(Base, DatabaseEntity):
     """Represents an arrest in the SQL schema"""
     __tablename__ = 'arrest'
 
@@ -328,7 +331,7 @@ class Arrest(Base):
     booking = relationship('Booking', back_populates='arrest')
 
 
-class ArrestHistory(Base):
+class ArrestHistory(Base, DatabaseEntity):
     """Represents the historical state of an arrest"""
     __tablename__ = 'arrest_history'
 
@@ -348,7 +351,7 @@ class ArrestHistory(Base):
     officer_id = Column(String(255))
 
 
-class Bond(Base):
+class Bond(Base, DatabaseEntity):
     """Represents a bond in the SQL schema"""
     __tablename__ = 'bond'
 
@@ -363,7 +366,7 @@ class Bond(Base):
     charges = relationship('Charge', back_populates='bond')
 
 
-class BondHistory(Base):
+class BondHistory(Base, DatabaseEntity):
     """Represents the historical state of a bond"""
     __tablename__ = 'bond_history'
 
@@ -382,7 +385,7 @@ class BondHistory(Base):
     status_raw_text = Column(String(255))
 
 
-class Sentence(Base):
+class Sentence(Base, DatabaseEntity):
     """Represents a sentence in the SQL schema"""
     __tablename__ = 'sentence'
 
@@ -411,7 +414,7 @@ class Sentence(Base):
         'b_sentence_relations', 'sentence_b')
 
 
-class SentenceHistory(Base):
+class SentenceHistory(Base, DatabaseEntity):
     """Represents the historical state of a sentence"""
     __tablename__ = 'sentence_history'
 
@@ -435,7 +438,7 @@ class SentenceHistory(Base):
     post_release_supervision_length_days = Column(Integer)
 
 
-class SentenceRelationship(Base):
+class SentenceRelationship(Base, DatabaseEntity):
     """Represents the relationship between two sentences"""
     __tablename__ = 'sentence_relationship'
 
@@ -461,7 +464,7 @@ class SentenceRelationship(Base):
         primaryjoin='Sentence.sentence_id==SentenceRelationship.sentence_a_id')
 
 
-class SentenceRelationshipHistory(Base):
+class SentenceRelationshipHistory(Base, DatabaseEntity):
     """Represents the historical state of the relationship between two sentences
     """
     __tablename__ = 'sentence_relationship_history'
@@ -480,7 +483,7 @@ class SentenceRelationshipHistory(Base):
     sentence_relation_type_raw_text = Column(String(255))
 
 
-class Charge(Base):
+class Charge(Base, DatabaseEntity):
     """Represents a charge in the SQL schema"""
     __tablename__ = 'charge'
 
@@ -516,7 +519,7 @@ class Charge(Base):
     sentence = relationship('Sentence', back_populates='charges')
 
 
-class ChargeHistory(Base):
+class ChargeHistory(Base, DatabaseEntity):
     """Represents the historical state of a charge"""
     __tablename__ = 'charge_history'
 
