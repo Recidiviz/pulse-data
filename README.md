@@ -116,19 +116,33 @@ described in [running tests](#running-tests)). In practice, this is not particul
 Tasks emulator at this time. The [appengine documentation]( https://cloud.google.com/appengine/docs/standard/python3/testing-and-deploying-your-app)
 has more information about running locally.
 
-#### Deployed
-To deploy to a live AppEngine project, navigate to the directory where you cloned `pulse-data` and run
-`gcloud app deploy`. This will upload the full project to the cloud and enable it as the current version in your environment.
+### Deployment
 
-If you have multiple deployed projects, e.g. separate projects for staging and production, you can specify the project
-for most `gcloud` commands like so: `gcloud app deploy --project=my-staging-env`
+### Deploying a scraper
+To deploy a scraper, simply edit the [cron](./cron.yaml).  The release engineer
+that week should check for all of the newly added scrapers and manually test them.
 
-If it doesn't seem to know which project of yours to deploy to, or your account info, you may have skipped part of the
-interactive setup for gcloud. Run `gcloud init` to revisit that setup.
+The release engineer oncall should go through the following steps:
 
-Once the project is deployed, you can kick off scraping by visiting `myproject.appspot.com/start_scraper`. You can monitor
-the task queue (and purge it) in the Cloud Console, and read the service logs there as well.
+#### Push to staging
+Typically on Monday morning the release engineer should:
 
-**_Note: Don't test in prod! A lot can go wrong (you could scrape in a way that doesn't throttle properly, you could
-create data inconsistencies in our prod data, etc.), and at scale. We strongly recommend developing only with the local
-dev server, which you can easily kill during tests with Ctrl+C.)_**
+1. Verify that the tests are all passing in [Travis](https://travis-ci.org/Recidiviz/pulse-data).
+1. The release engineer should tag a commit with "va.b.c" following the [semver](www.semver.org) for numbering. This will trigger a release to staging.
+1. Once the release is complete, run `https://recidiviz-staging.appspot.com/scraper/start?region=us_fl_martin` [TODO #623](https://github.com/Recidiviz/pulse-data/issues/623)
+and verify that it is happy by looking at the monitoring page [TODO #59](https://github.com/Recidiviz/pulse-data/issues/59) and also checking the logs for errors.
+1. Manually check to see which set of scrapers have been added to the cron.yaml since last release and manually run all of those scrapers as well.
+1. Every morning until Wednesday, rerun all of the to be deployed scrapers manually and make sure there aren't any failures.
+1. For the next two days periodically check to make sure the build is happy and monitoring is good for all of the regions.  If there are errors try to fix them or contact the scraper writer to fix them.
+
+#### Push to prod
+Typically on Wednesday morning the release engineer should:
+
+1.  Verify that the scraper crons as well as the `infer_release` cron ran successfully in staging over the last two days.
+over the last two days.  Check the monitoring page to see if anything is fishy.
+1.  Once you are ready to release to production, run `./deploy_production <release_tag>` to finally release the code to production.  This will checkout the given tag and deploy that to production.
+1.  Validate that the release is happy.  Over the next two days check the monitoring page to make sure nothing is broken.
+
+
+
+
