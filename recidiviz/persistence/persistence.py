@@ -32,13 +32,21 @@ from recidiviz.utils import environment, monitoring
 
 m_people = measure.MeasureInt("persistence/num_people",
                               "The number of people persisted", "1")
+m_errors = measure.MeasureInt("persistence/num_errors",
+                              "The number of errors", "1")
 people_persisted_view = view.View("recidiviz/persistence/num_people",
                                   "The sum of people persisted",
                                   [monitoring.TagKey.REGION,
                                    monitoring.TagKey.PERSISTED],
                                   m_people,
                                   aggregation.SumAggregation())
-monitoring.register_views([people_persisted_view])
+errors_persisted_view = view.View("recidiviz/persistence/num_errors",
+                                  "The sum of errors in the persistence layer",
+                                  [monitoring.TagKey.REGION,
+                                   monitoring.TagKey.ERROR],
+                                  m_errors,
+                                  aggregation.SumAggregation())
+monitoring.register_views([people_persisted_view, errors_persisted_view])
 
 
 class PersistenceError(Exception):
@@ -136,7 +144,10 @@ def write(ingest_info, metadata):
             logging.info('Successfully wrote to the database')
             session.commit()
             persisted = True
-        except Exception:
+        except Exception as e:
+            # Record the error type that happened and increment the counter
+            mtags[monitoring.TagKey.ERROR] = type(e).__name__
+            measurements.measure_int_put(m_errors, 1)
             session.rollback()
             raise
         finally:

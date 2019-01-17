@@ -60,3 +60,4 @@ class TagKey:
     REGION = 'region'
     SHOULD_PERSIST = 'should_persist'
     PERSISTED = 'persisted'
+    ERROR = 'error'
