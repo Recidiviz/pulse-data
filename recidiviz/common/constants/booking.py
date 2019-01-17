@@ -53,6 +53,7 @@ class CustodyStatus(MappableEnum):
     IN_CUSTODY = enum_strings.custody_status_in_custody
     RELEASED = enum_strings.custody_status_released
     INFERRED_RELEASE = enum_strings.custody_status_inferred_release
+    UNKNOWN_FOUND_IN_SOURCE = enum_strings.unknown_found_in_source
     UNKNOWN_REMOVED_FROM_SOURCE = enum_strings.unknown_removed_from_source
 
     @staticmethod

@@ -37,6 +37,10 @@ requiring the database to be updated when an enum value is created or removed.
 # default value for enums that are not provided (which should be represented
 # with None/NULL).
 external_unknown = 'EXTERNAL_UNKNOWN'
+# This value should not be used by scrapers directly. It is used by status
+# enums to denote that no status for an entity was provided by the source, but
+# the entity itself was found in the source.
+unknown_found_in_source = 'UNKNOWN_FOUND_IN_SOURCE'
 # This value should not be used by scrapers directly. It is only used in the
 # situation that an entity is removed from the website, and we cannot infer
 # anything about what removal means (i.e. 'INFER_DROPPED')
