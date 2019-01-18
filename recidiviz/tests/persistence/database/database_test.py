@@ -20,6 +20,10 @@ import datetime
 from copy import deepcopy
 from unittest import TestCase
 
+import pandas as pd
+from more_itertools import one
+from sqlalchemy import func
+
 from recidiviz import Session
 from recidiviz.common.constants.booking import CustodyStatus
 from recidiviz.common.constants.charge import ChargeStatus
@@ -27,10 +31,12 @@ from recidiviz.common.constants.person import Race
 from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.persistence import entities
 from recidiviz.persistence.database import database, database_utils
+from recidiviz.persistence.database.schema import Booking, Person
 from recidiviz.persistence.database.schema import (
-    Booking, BookingHistory,
+    BookingHistory,
     Charge, ChargeHistory,
-    Person, PersonHistory)
+    PersonHistory)
+from recidiviz.persistence.database.schema import FlCountyAdp
 from recidiviz.tests.utils import fakes
 
 _REGION = 'region'
@@ -40,6 +46,8 @@ _EXTERNAL_ID = 'external_id'
 _BIRTHDATE = datetime.date(year=2012, month=1, day=2)
 _LAST_SEEN_TIME = datetime.datetime(year=2020, month=7, day=4)
 _FACILITY = 'facility'
+
+DATE_SCRAPED = datetime.datetime(year=2019, month=1, day=1)
 
 
 class TestDatabase(TestCase):
@@ -478,3 +486,62 @@ class TestDatabase(TestCase):
         self.assertIsNone(charge_snapshot.valid_to)
 
         assert_session.close()
+
+    def testWriteDf(self):
+        # Arrange
+        subject = pd.DataFrame({
+            'county': ['Alachua', 'Baker', 'Bay', 'Bradford', 'Brevard'],
+            'county_population': [257062, 26965, 176016, 27440, 568919],
+            'average_daily_population': [799, 478, 1015, 141, 1547],
+            'date_reported': [pd.NaT, pd.NaT,
+                              datetime.datetime(year=2017, month=9, day=1),
+                              pd.NaT, pd.NaT],
+            'date_scraped': 5 * [DATE_SCRAPED]
+        })
+
+        # Act
+        database.write_df(FlCountyAdp, subject)
+
+        # Assert
+        query = Session() \
+            .query(FlCountyAdp) \
+            .filter(FlCountyAdp.county == 'Bay')
+        result = one(query.all())
+
+        self.assertEqual(result.county, 'Bay')
+        self.assertEqual(result.county_population, 176016)
+        self.assertEqual(result.average_daily_population, 1015)
+        self.assertEqual(result.date_reported,
+                         datetime.datetime(year=2017, month=9, day=1))
+        self.assertEqual(result.date_scraped, DATE_SCRAPED)
+
+    def testWriteDf_OverlappingData_WritesNewAndIgnoresDuplicateRows(self):
+        # Arrange
+        initial_df = pd.DataFrame({
+            'county': ['Alachua', 'Baker', 'Bay', 'Bradford', 'Brevard'],
+            'county_population': [257062, 26965, 176016, 27440, 568919],
+            'average_daily_population': [799, 478, 1015, 141, 1547],
+            'date_reported': [pd.NaT, pd.NaT,
+                              datetime.datetime(year=2017, month=9, day=1),
+                              pd.NaT, pd.NaT],
+            'date_scraped': 5 * [DATE_SCRAPED]
+        })
+        database.write_df(FlCountyAdp, initial_df)
+
+        subject = pd.DataFrame({
+            'county': ['Alachua', 'NewCounty', 'Baker'],
+            'county_population': [257062, 1000000000, 26965],
+            'average_daily_population': [799, 50, 478],
+            'date_reported': [pd.NaT, pd.NaT, pd.NaT],
+            'date_scraped': 3 * [DATE_SCRAPED]
+        })
+
+        # Act
+        database.write_df(FlCountyAdp, subject)
+
+        # Assert
+        query = Session().query(func.sum(FlCountyAdp.county_population))
+        result = one(one(query.all()))
+
+        expected_sum_county_populations = 1001056402
+        self.assertEqual(result, expected_sum_county_populations)

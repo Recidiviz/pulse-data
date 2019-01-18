@@ -587,3 +587,13 @@ class ChargeHistory(Base, DatabaseEntity):
     case_number = Column(String(255))
     next_court_date = Column(Date)
     judge_name = Column(String(255))
+
+
+class FlCountyAdp(Base):
+    __tablename__ = 'fl_county_adp'
+
+    county = Column(String(255), primary_key=True)
+    date_scraped = Column(DateTime, primary_key=True)
+    county_population = Column(Integer)
+    average_daily_population = Column(Integer)
+    date_reported = Column(DateTime)
