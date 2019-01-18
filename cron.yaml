@@ -197,6 +197,42 @@ cron:
     max_doublings: 5
     job_age_limit: 9h
 
+- description: Start us pa dauphin county background scraper every day at 9pm
+  url: /scraper/start?region=us_pa_dauphin&scrape_type=background
+  schedule: every day 21:00
+  timezone: America/New_York
+  retry_parameters:
+    min_backoff_seconds: 2.5
+    max_doublings: 5
+    job_age_limit: 9h
+
+- description: Stop us pa dauphin scraper every day at 9am
+  url: /scraper/stop?region=us_pa_dauphin&scrape_type=background
+  schedule: every day 09:00
+  timezone: America/New_York
+  retry_parameters:
+    min_backoff_seconds: 2.5
+    max_doublings: 5
+    job_age_limit: 9h
+
+- description: Start us fl hendry county background scraper every day at 9pm
+  url: /scraper/start?region=us_pa_hendry&scrape_type=background
+  schedule: every day 21:00
+  timezone: America/New_York
+  retry_parameters:
+    min_backoff_seconds: 2.5
+    max_doublings: 5
+    job_age_limit: 9h
+
+- description: Stop us fl hendry scraper every day at 9am
+  url: /scraper/stop?region=us_fl_hendry&scrape_type=background
+  schedule: every day 09:00
+  timezone: America/New_York
+  retry_parameters:
+    min_backoff_seconds: 2.5
+    max_doublings: 5
+    job_age_limit: 9h
+
 - description: Infer release of all people not seen in completed scrapes
   url: /infer_release/release
   schedule: every day 09:30
