@@ -74,7 +74,7 @@ class TestConverter(unittest.TestCase):
                         status=BondStatus.UNKNOWN_FOUND_IN_SOURCE
                     ),
                     sentence=Sentence.new_with_defaults(
-                        sentence_status=SentenceStatus.UNKNOWN_FOUND_IN_SOURCE,
+                        status=SentenceStatus.UNKNOWN_FOUND_IN_SOURCE,
                         external_id='SENTENCE_ID',
                         is_life=True
                     )
@@ -119,7 +119,7 @@ class TestConverter(unittest.TestCase):
                     bond=Bond.new_with_defaults(
                         status=BondStatus.UNKNOWN_FOUND_IN_SOURCE),
                     sentence=Sentence.new_with_defaults(
-                        sentence_status=SentenceStatus.UNKNOWN_FOUND_IN_SOURCE,
+                        status=SentenceStatus.UNKNOWN_FOUND_IN_SOURCE,
                         is_life=True)
                 )]
             )])]

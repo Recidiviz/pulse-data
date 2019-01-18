@@ -309,7 +309,7 @@ class TestEntityMatching(TestCase):
             ingested_hold, hold_id=db_hold.hold_id)
         expected_new_hold = attr.evolve(ingested_hold_new)
         expected_dropped_hold = attr.evolve(
-            db_hold_to_drop, hold_status=HoldStatus.INFERRED_DROPPED)
+            db_hold_to_drop, status=HoldStatus.INFERRED_DROPPED)
 
         entity_matching.match_holds(
             db_booking=db_booking, ingested_booking=ingested_booking)
