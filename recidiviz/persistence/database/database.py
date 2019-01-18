@@ -104,10 +104,10 @@ def read_people_with_open_bookings(session, region, ingested_people):
     return [database_utils.convert_person(person) for person, _ in query.all()]
 
 
-def read_open_bookings_scraped_before_time(session, region, time):
+def read_people_with_open_bookings_scraped_before_time(session, region, time):
     """
-    Reads all open bookings in the given region that have a last_scraped_time
-    set to a time earlier than the provided datetime.
+    Reads all people with open bookings in the given region that have a
+    last_scraped_time set to a time earlier than the provided datetime.
 
     Args:
         session: The transaction to read from
@@ -115,12 +115,11 @@ def read_open_bookings_scraped_before_time(session, region, time):
         time: The datetime exclusive upper bound on last_scrape_time to match
             against
     Returns:
-        List of bookings matching the provided args
+        List of people matching the provided args
     """
     query = _query_people_and_open_bookings(session, region) \
         .filter(Booking.last_seen_time < time)
-    return [database_utils.convert_booking(booking)
-            for _, booking in query.all()]
+    return [database_utils.convert_booking(person) for person, _ in query.all()]
 
 
 def _query_people_and_open_bookings(session, region):
@@ -162,20 +161,6 @@ def write_person(session, person):
         persisted Person schema object
     """
     return _save_record_tree(session, database_utils.convert_person(person))
-
-
-def update_booking(session, booking_id, **kwargs):
-    """
-    Finds the booking in our db from the provided |booking_id| and updates all
-    fields on the booking that are provided in |**kwargs|.
-
-    Args:
-        session: (Session)
-        booking_id: (int)
-    """
-    session.query(Booking) \
-        .filter(Booking.booking_id == booking_id) \
-        .update(_convert_enums_to_strings(kwargs))
 
 
 def _save_record_tree(session, person):

@@ -19,9 +19,14 @@
 from datetime import date, datetime, timedelta
 from unittest import TestCase
 
+import attr
 from mock import patch, Mock
 from recidiviz import Session
+from recidiviz.common.constants.bond import BondStatus
 from recidiviz.common.constants.booking import CustodyStatus
+from recidiviz.common.constants.charge import ChargeStatus
+from recidiviz.common.constants.hold import HoldStatus
+from recidiviz.common.constants.sentences import SentenceStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo, Charge, \
     Sentence
@@ -39,6 +44,8 @@ BOOKING_ID = 19
 CHARGE_NAME_1 = 'TEST_CHARGE_1'
 CHARGE_NAME_2 = 'TEST_CHARGE_2'
 CHARGE_STATUS = 'Pending'
+DATE = date(year=2019, day=1, month=2)
+DATE_2 = date(year=2020, day=1, month=2)
 EXTERNAL_PERSON_ID = 'EXTERNAL_PERSON_ID'
 EXTERNAL_BOOKING_ID = 'EXTERNAL_BOOKING_ID'
 FACILITY = 'TEST_FACILITY'
@@ -58,6 +65,9 @@ FULL_NAME_1 = 'TEST_FULL_NAME_1'
 FULL_NAME_2 = 'TEST_FULL_NAME_2'
 DEFAULT_METADATA = IngestMetadata(
     "default_region", datetime(year=1000, month=1, day=1), {})
+ID = 1
+ID_2 = 2
+ID_3 = 3
 
 
 @patch('os.getenv', Mock(return_value='production'))
@@ -271,54 +281,73 @@ class TestPersistence(TestCase):
 
     def test_inferReleaseDateOnOpenBookings(self):
         # Arrange
-        metadata_1 = IngestMetadata.new_with_defaults(
-            region=REGION_1,
-            last_seen_time=SCRAPER_START_DATETIME)
-        metadata_2 = IngestMetadata(region=REGION_2,
-                                    last_seen_time=SCRAPER_START_DATETIME)
+        hold = entities.Hold.new_with_defaults(
+            hold_id=ID, status=HoldStatus.ACTIVE, status_raw_text='ACTIVE')
+        sentence = entities.Sentence.new_with_defaults(
+            sentence_id=ID, status=SentenceStatus.SERVING,
+            status_raw_text='SERVING')
+        bond = entities.Bond.new_with_defaults(
+            bond_id=ID, status=BondStatus.NOT_REQUIRED,
+            status_raw_text='NOT_REQUIRED')
+        charge = entities.Charge.new_with_defaults(
+            charge_id=ID, status=ChargeStatus.PENDING,
+            status_raw_text='PENDING', sentence=sentence, bond=bond)
+        booking_open = entities.Booking.new_with_defaults(
+            booking_id=ID,
+            custody_status=CustodyStatus.IN_CUSTODY,
+            custody_status_raw_text='IN CUSTODY',
+            admission_date=DATE,
+            last_seen_time=SCRAPER_START_DATETIME - timedelta(days=1),
+            charges=[charge],
+            holds=[hold])
+        booking_resolved = attr.evolve(
+            booking_open, booking_id=ID_2,
+            custody_status=CustodyStatus.RELEASED,
+            custody_status_raw_text='RELEASED', release_date=DATE_2, charges=[],
+            holds=[])
+        booking_open_most_recent_scrape = attr.evolve(
+            booking_open, booking_id=ID_3,
+            last_seen_time=SCRAPER_START_DATETIME, charges=[], holds=[])
 
-        most_recent_scrape_time = (SCRAPER_START_DATETIME + timedelta(days=1))
+        person = entities.Person.new_with_defaults(
+            person_id=ID, region=REGION_1,
+            bookings=[booking_open, booking_resolved])
+        person_unmatched = entities.Person.new_with_defaults(
+            person_id=ID_2, region=REGION_1,
+            bookings=[booking_open_most_recent_scrape])
 
-        ingest_info = IngestInfo()
-        ingest_info.people.add(full_name=FULL_NAME_1,
-                               booking_ids=['BOOKING_ID_1'])
-        ingest_info.bookings.add(
-            booking_id='BOOKING_ID_1',
-            custody_status='IN CUSTODY',
-            charge_ids=['CHARGE_ID_1']
-        )
-        ingest_info.charges.add(
-            charge_id='CHARGE_ID_1',
-            name=CHARGE_NAME_1,
-            status='PENDING')
+        session = Session()
+        database.write_person(session, person)
+        database.write_person(session, person_unmatched)
+        session.commit()
+        session.close()
 
-        ingest_info_other_region = IngestInfo()
-        ingest_info_other_region.people.add(full_name=FULL_NAME_2,
-                                            booking_ids=['BOOKING_ID_2'])
-        ingest_info_other_region.bookings.add(
-            booking_id='BOOKING_ID_2',
-            custody_status='IN CUSTODY',
-            charge_ids=['CHARGE_ID_2']
-        )
-        ingest_info_other_region.charges.add(
-            charge_id='CHARGE_ID_2',
-            name=CHARGE_NAME_2,
-            status='PENDING')
+        expected_hold = attr.evolve(
+            hold, status=HoldStatus.UNKNOWN_REMOVED_FROM_SOURCE,
+            status_raw_text=None)
+        expected_sentence = attr.evolve(
+            sentence, status=SentenceStatus.UNKNOWN_REMOVED_FROM_SOURCE,
+            status_raw_text=None)
+        expected_bond = attr.evolve(
+            bond, status=BondStatus.UNKNOWN_REMOVED_FROM_SOURCE,
+            status_raw_text=None)
+        expected_charge = attr.evolve(
+            charge, status=ChargeStatus.UNKNOWN_REMOVED_FROM_SOURCE,
+            status_raw_text=None, bond=expected_bond,
+            sentence=expected_sentence)
+        expected_resolved_booking = attr.evolve(
+            booking_open, custody_status=CustodyStatus.INFERRED_RELEASE,
+            custody_status_raw_text=None,
+            release_date=SCRAPER_START_DATETIME.date(),
+            release_date_inferred=True, charges=[expected_charge],
+            holds=[expected_hold])
+        expected_person = attr.evolve(
+            person, bookings=[expected_resolved_booking, booking_resolved])
 
         # Act
-        persistence.write(ingest_info, metadata_1)
         persistence.infer_release_on_open_bookings(
-            REGION_1, most_recent_scrape_time, CustodyStatus.INFERRED_RELEASE)
-        persistence.write(ingest_info_other_region, metadata_2)
+            REGION_1, SCRAPER_START_DATETIME, CustodyStatus.INFERRED_RELEASE)
 
         # Assert
-        bookings = database.read_bookings(Session())
-        assert bookings[0].last_seen_time == SCRAPER_START_DATETIME
-        assert bookings[0].release_date == most_recent_scrape_time.date()
-        assert bookings[0].custody_status == CustodyStatus.INFERRED_RELEASE
-        assert bookings[0].charges[0].name == CHARGE_NAME_1
-
-        assert bookings[1].last_seen_time == SCRAPER_START_DATETIME
-        assert bookings[1].release_date is None
-        assert bookings[1].charges[0].name == CHARGE_NAME_2
-        # TODO: assert status when RESOLVED status is handled
+        people = database.read_people(Session())
+        self.assertCountEqual(people, [expected_person, person_unmatched])

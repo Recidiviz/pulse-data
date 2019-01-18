@@ -21,7 +21,6 @@ from copy import deepcopy
 from unittest import TestCase
 
 from recidiviz import Session
-import recidiviz.common.constants.enum_canonical_strings as enum_strings
 from recidiviz.common.constants.booking import CustodyStatus
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.person import Race
@@ -50,36 +49,35 @@ class TestDatabase(TestCase):
     def setup_method(self, _test_method):
         fakes.use_in_memory_sqlite_database()
 
-    def test_readOpenBookingsBeforeDate(self):
+    def test_readPeopleWithOpenBookingsBeforeDate(self):
         # Arrange
         person = Person(person_id=8, region=_REGION)
-        person_wrong_region = Person(person_id=9, region=_REGION_ANOTHER)
+        person_resolved_booking = Person(person_id=9, region=_REGION)
+        person_most_recent_scrape = Person(person_id=10, region=_REGION)
+        person_wrong_region = Person(person_id=11, region=_REGION_ANOTHER)
 
         release_date = datetime.date(2018, 7, 20)
         most_recent_scrape_date = datetime.datetime(2018, 6, 20)
         date_in_past = most_recent_scrape_date - datetime.timedelta(days=1)
 
-        # TODO(176): Replace enum_strings with schema enum values once we've
-        # migrated to Python 3.
-
         # Bookings that should be returned
         open_booking_before_last_scrape = Booking(
             person_id=person.person_id,
-            custody_status=enum_strings.custody_status_in_custody,
+            custody_status=CustodyStatus.IN_CUSTODY.value,
             last_seen_time=date_in_past)
 
         # Bookings that should not be returned
         open_booking_incorrect_region = Booking(
             person_id=person_wrong_region.person_id,
-            custody_status=enum_strings.custody_status_in_custody,
+            custody_status=CustodyStatus.IN_CUSTODY.value,
             last_seen_time=date_in_past)
         open_booking_most_recent_scrape = Booking(
-            person_id=person.person_id,
-            custody_status=enum_strings.custody_status_in_custody,
+            person_id=person_most_recent_scrape.person_id,
+            custody_status=CustodyStatus.IN_CUSTODY.value,
             last_seen_time=most_recent_scrape_date)
         resolved_booking = Booking(
-            person_id=person.person_id,
-            custody_status=enum_strings.custody_status_in_custody,
+            person_id=person_resolved_booking.person_id,
+            custody_status=CustodyStatus.IN_CUSTODY.value,
             release_date=release_date,
             last_seen_time=date_in_past)
 
@@ -93,19 +91,17 @@ class TestDatabase(TestCase):
         session.commit()
 
         # Act
-        bookings = database.read_open_bookings_scraped_before_time(
+        people = database.read_people_with_open_bookings_scraped_before_time(
             session, person.region, most_recent_scrape_date)
 
         # Assert
-        self.assertEqual(bookings,
-                         [database_utils.convert_booking(
-                             open_booking_before_last_scrape)])
+        self.assertEqual(people, [database_utils.convert_person(person)])
 
     def test_readPeopleByExternalId(self):
         admission_date = datetime.datetime(2018, 6, 20)
         release_date = datetime.date(2018, 7, 20)
         closed_booking = Booking(
-            custody_status=enum_strings.custody_status_in_custody,
+            custody_status=CustodyStatus.IN_CUSTODY.value,
             admission_date=admission_date,
             release_date=release_date,
             last_seen_time=admission_date)
@@ -135,11 +131,11 @@ class TestDatabase(TestCase):
         release_date = datetime.date(2018, 7, 20)
 
         open_booking = Booking(
-            custody_status=enum_strings.custody_status_in_custody,
+            custody_status=CustodyStatus.IN_CUSTODY.value,
             admission_date=admission_date,
             last_seen_time=admission_date)
         closed_booking = Booking(
-            custody_status=enum_strings.custody_status_in_custody,
+            custody_status=CustodyStatus.IN_CUSTODY.value,
             admission_date=admission_date,
             release_date=release_date,
             last_seen_time=admission_date)
@@ -219,19 +215,17 @@ class TestDatabase(TestCase):
         snapshot_time = person_snapshot.valid_from
 
         self.assertEqual(person_snapshot.region, _REGION)
-        self.assertEqual(person_snapshot.race, enum_strings.race_other)
+        self.assertEqual(person_snapshot.race, Race.OTHER.value)
         self.assertIsNone(person_snapshot.valid_to)
 
         self.assertEqual(
-            booking_snapshot.custody_status,
-            enum_strings.custody_status_in_custody)
+            booking_snapshot.custody_status, CustodyStatus.IN_CUSTODY.value)
         self.assertEqual(booking_snapshot.valid_from, snapshot_time)
         self.assertIsNone(booking_snapshot.valid_to)
 
         self.assertEqual(
             charge_snapshot_statuses,
-            {enum_strings.charge_status_pending,
-             enum_strings.charge_status_pretrial})
+            {ChargeStatus.PENDING.value, ChargeStatus.PRETRIAL.value})
         self.assertEqual(charge_snapshots[0].valid_from, snapshot_time)
         self.assertEqual(charge_snapshots[1].valid_from, snapshot_time)
         self.assertIsNone(charge_snapshots[0].valid_to)
@@ -255,37 +249,37 @@ class TestDatabase(TestCase):
         existing_person = Person(
             person_id=existing_person_id,
             region=_REGION,
-            race=enum_strings.race_other)
+            race=Race.OTHER.value)
         existing_person_snapshot = PersonHistory(
             person_history_id=1000,
             person_id=existing_person_id,
             region=_REGION,
-            race=enum_strings.race_other,
+            race=Race.OTHER.value,
             valid_from=valid_from)
 
         existing_booking = Booking(
             booking_id=existing_booking_id,
-            custody_status=enum_strings.custody_status_in_custody,
+            custody_status=CustodyStatus.IN_CUSTODY.value,
             facility=_FACILITY,
             last_seen_time=_LAST_SEEN_TIME)
         existing_booking_snapshot = BookingHistory(
             booking_history_id=1000,
             person_id=existing_person_id,
             booking_id=existing_booking_id,
-            custody_status=enum_strings.custody_status_in_custody,
+            custody_status=CustodyStatus.IN_CUSTODY.value,
             facility=_FACILITY,
             valid_from=valid_from)
         existing_person.bookings = [existing_booking]
 
         existing_charge = Charge(
             charge_id=existing_charge_id,
-            status=enum_strings.charge_status_pending,
+            status=ChargeStatus.PENDING.value,
             name=charge_name_1)
         existing_charge_snapshot = ChargeHistory(
             charge_history_id=1000,
             charge_id=existing_charge_id,
             booking_id=existing_booking_id,
-            status=enum_strings.charge_status_pending,
+            status=ChargeStatus.PENDING.value,
             name=charge_name_1,
             valid_from=valid_from)
         existing_booking.charges = [existing_charge]
@@ -350,9 +344,9 @@ class TestDatabase(TestCase):
         new_charge_snapshot = charge_snapshots[1]
         snapshot_time = old_person_snapshot.valid_to
 
-        self.assertEqual(old_person_snapshot.race, enum_strings.race_other)
+        self.assertEqual(old_person_snapshot.race, Race.OTHER.value)
         self.assertEqual(
-            new_person_snapshot.race, enum_strings.external_unknown)
+            new_person_snapshot.race, Race.EXTERNAL_UNKNOWN.value)
 
         self.assertEqual(old_charge_snapshot.name, charge_name_1)
         self.assertEqual(new_charge_snapshot.name, charge_name_2)
@@ -386,24 +380,24 @@ class TestDatabase(TestCase):
         existing_person = Person(
             person_id=existing_person_id,
             region=_REGION,
-            race=enum_strings.race_other)
+            race=Race.OTHER.value)
         existing_person_snapshot = PersonHistory(
             person_history_id=1000,
             person_id=existing_person_id,
             region=_REGION,
-            race=enum_strings.race_other,
+            race=Race.OTHER.value,
             valid_from=valid_from)
 
         existing_booking = Booking(
             booking_id=existing_booking_id,
-            custody_status=enum_strings.custody_status_in_custody,
+            custody_status=CustodyStatus.IN_CUSTODY.value,
             facility=_FACILITY,
             last_seen_time=_LAST_SEEN_TIME)
         existing_booking_snapshot = BookingHistory(
             booking_history_id=1000,
             person_id=existing_person_id,
             booking_id=existing_booking_id,
-            custody_status=enum_strings.custody_status_in_custody,
+            custody_status=CustodyStatus.IN_CUSTODY.value,
             facility=_FACILITY,
             valid_from=valid_from)
         existing_person.bookings = [existing_booking]
@@ -467,9 +461,9 @@ class TestDatabase(TestCase):
         charge_snapshot = charge_snapshots[0]
         snapshot_time = old_person_snapshot.valid_to
 
-        self.assertEqual(old_person_snapshot.race, enum_strings.race_other)
+        self.assertEqual(old_person_snapshot.race, Race.OTHER.value)
         self.assertEqual(
-            new_person_snapshot.race, enum_strings.external_unknown)
+            new_person_snapshot.race, Race.EXTERNAL_UNKNOWN.value)
 
         self.assertEqual(charge_snapshot.name, charge_name)
 
