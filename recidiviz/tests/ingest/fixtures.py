@@ -16,8 +16,7 @@
 # =============================================================================
 
 """Utilities for working with fixture data in ingest unit testing."""
-
-
+import inspect
 import json
 import os
 
@@ -57,3 +56,18 @@ def as_dict(region_directory, filename):
     """
     contents = as_string(region_directory, filename)
     return json.loads(contents)
+
+
+# TODO(#647): Refactor this to be usable outside the `ingest` module
+def as_filepath(filename: str, subdir: str = 'fixtures') -> str:
+    """Returns the filepath for the fixture file.
+
+    Assumes the |filename| is in the |subdir| subdirectory relative to the
+    caller's directory.
+    """
+    frame = inspect.stack()[1]
+    module = inspect.getmodule(frame[0])
+    caller_filepath = module.__file__
+
+    return os.path.abspath(
+        os.path.join(caller_filepath, '..', subdir, filename))

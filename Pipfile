@@ -95,6 +95,8 @@ opencensus = {editable = true, git = "https://github.com/census-instrumentation/
 google-cloud-monitoring = "*"
 google-cloud-trace = "*"
 "html5lib" = "*"
+pandas = "*"
+tabula-py = "*"
 
 [dev-packages]
 rope = "*"
