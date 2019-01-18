@@ -15,17 +15,24 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains logic for communicating with the persistence layer."""
+import datetime
 import logging
 import os
 from distutils.util import strtobool  # pylint: disable=no-name-in-module
+from typing import List
 
 from opencensus.stats import aggregation
 from opencensus.stats import measure
 from opencensus.stats import view
 
 from recidiviz import Session
+from recidiviz.common.constants.bond import BondStatus
+from recidiviz.common.constants.booking import CustodyStatus
+from recidiviz.common.constants.charge import ChargeStatus
+from recidiviz.common.constants.hold import HoldStatus
+from recidiviz.common.constants.sentences import SentenceStatus
 from recidiviz.ingest.constants import MAX_PEOPLE_TO_LOG
-from recidiviz.persistence import entity_matching
+from recidiviz.persistence import entity_matching, entities
 from recidiviz.persistence.converter import converter
 from recidiviz.persistence.database import database
 from recidiviz.utils import environment, monitoring
@@ -73,13 +80,15 @@ def infer_release_on_open_bookings(region, last_ingest_time, custody_status):
     try:
         logging.info('Reading all bookings that happened before %s',
                      last_ingest_time)
-        bookings = database.read_open_bookings_scraped_before_time(
+        people = database.read_people_with_open_bookings_scraped_before_time(
             session, region, last_ingest_time)
-        logging.info('Found %s bookings that will be inferred released',
-                     len(bookings))
-        _infer_release_date_for_bookings(session, bookings,
-                                         last_ingest_time.date(),
-                                         custody_status)
+        logging.info(
+            'Found %s people with bookings that will be inferred released',
+            len(people))
+        for person in people:
+            _infer_release_date_for_bookings(person.bookings, last_ingest_time,
+                                             custody_status)
+        database.write_people(session, people)
         session.commit()
     except Exception:
         session.rollback()
@@ -88,24 +97,40 @@ def infer_release_on_open_bookings(region, last_ingest_time, custody_status):
         session.close()
 
 
-def _infer_release_date_for_bookings(session, bookings, date, custody_status):
+def _infer_release_date_for_bookings(
+        bookings: List[entities.Booking],
+        last_ingest_time: datetime.datetime, custody_status: CustodyStatus):
     """Marks the provided bookings with an inferred release date equal to the
-    provided date. Also updates the custody_status to the provided custody
-    status"""
-
-    # TODO: set charge status as RESOLVED_UNKNOWN_REASON once DB enum is
-    # appropriately updated
+    provided date. Updates the custody_status to the provided custody
+    status. Also updates all children of the updated booking to have status
+    'UNKNOWN_REMOVED_FROM_SOURCE"""
 
     for booking in bookings:
-        if booking.release_date:
-            raise PersistenceError('Attempting to mark booking {0} as '
-                                   'resolved, however booking already has '
-                                   'release date.'.format(booking.booking_id))
+        if not booking.release_date \
+                and booking.last_seen_time < last_ingest_time:
+            logging.info('Marking booking %s as inferred release')
+            booking.release_date = last_ingest_time.date()
+            booking.release_date_inferred = True
+            booking.custody_status = custody_status
+            booking.custody_status_raw_text = None
+            _mark_children_removed_from_source(booking)
 
-        logging.info('Marking booking with ID %s as inferred released',
-                     booking.booking_id)
-        database.update_booking(session, booking.booking_id, release_date=date,
-                                custody_status=custody_status)
+
+def _mark_children_removed_from_source(booking: entities.Booking):
+    """Marks all children of a booking with the status 'REMOVED_FROM_SOURCE'"""
+    for hold in booking.holds:
+        hold.status = HoldStatus.UNKNOWN_REMOVED_FROM_SOURCE
+        hold.status_raw_text = None
+
+    for charge in booking.charges:
+        charge.status = ChargeStatus.UNKNOWN_REMOVED_FROM_SOURCE
+        charge.status_raw_text = None
+        if charge.sentence:
+            charge.sentence.status = SentenceStatus.UNKNOWN_REMOVED_FROM_SOURCE
+            charge.sentence.status_raw_text = None
+        if charge.bond:
+            charge.bond.status = BondStatus.UNKNOWN_REMOVED_FROM_SOURCE
+            charge.bond.status_raw_text = None
 
 
 def _should_persist():

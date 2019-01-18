@@ -80,7 +80,7 @@ class Booking(Entity, BuildableAttr):
     facility: Optional[str] = attr.ib()
     classification: Optional[Classification] = attr.ib()
     classification_raw_text: Optional[str] = attr.ib()
-    last_seen_time: Optional[datetime.datetime] = attr.ib()
+    last_seen_time: datetime.datetime = attr.ib()
 
     booking_id: Optional[int] = attr.ib(default=None)
     holds: List['Hold'] = attr.ib(factory=list)
