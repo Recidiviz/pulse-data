@@ -15,54 +15,98 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for fl_aggregate_ingest.py."""
-from datetime import datetime
+import datetime
 from unittest import TestCase
 
 import pandas as pd
 from pandas.util.testing import assert_frame_equal
+from more_itertools import one
+from sqlalchemy import func
 
+from recidiviz import Session
 from recidiviz.ingest.aggregate.regions.fl import fl_aggregate_ingest
+from recidiviz.persistence.database import database
+from recidiviz.persistence.database.schema import FlCountyAdp
 from recidiviz.tests.ingest import fixtures
+from recidiviz.tests.utils import fakes
+
+DATE_SCRAPED = datetime.datetime(year=2019, month=1, day=1)
 
 # Cache the parsed pdf between tests since it's expensive to compute
 PARSED_PDF = fl_aggregate_ingest.parse(
-    fixtures.as_filepath('jails-2018-01.pdf'))
+    fixtures.as_filepath('jails-2018-01.pdf'), DATE_SCRAPED)
 
 
-class TestAggregateIngest(TestCase):
+class TestFlAggregateIngest(TestCase):
     """Test that fl_aggregate_ingest correctly parses the FL PDF."""
 
+    def setup_method(self, _test_method):
+        fakes.use_in_memory_sqlite_database()
+
     def testParseCountyAdp_parsesHeadAndTail(self):
-        result = PARSED_PDF['fl_county_adp']
+        result = PARSED_PDF[FlCountyAdp]
 
         # Assert Head
         expected_head = pd.DataFrame({
-            'County': ['Alachua', 'Baker', 'Bay', 'Bradford', 'Brevard'],
-            'County Population': [257062, 26965, 176016, 27440, 568919],
-            'Average Daily Population': [799, 478, 1015, 141, 1547],
-            'Date Reported': [pd.NaT, pd.NaT, pd.NaT, pd.NaT, pd.NaT]
+            'county': ['Alachua', 'Baker', 'Bay', 'Bradford', 'Brevard'],
+            'county_population': [257062, 26965, 176016, 27440, 568919],
+            'average_daily_population': [799, 478, 1015, 141, 1547],
+            'date_reported': [pd.NaT, pd.NaT, pd.NaT, pd.NaT, pd.NaT],
+            'date_scraped': 5 * [DATE_SCRAPED]
         })
         assert_frame_equal(result.head(), expected_head)
 
         # Assert Tail
         expected_tail = pd.DataFrame({
-            'County': ['Union', 'Volusia', 'Wakulla', 'Walton', 'Washington'],
-            'County Population': [15887, 517411, 31599, 62943, 24888],
-            'Average Daily Population': [38, 1413, 174, 293, 110],
-            'Date Reported': [pd.NaT, pd.NaT, pd.NaT, pd.NaT, pd.NaT]
+            'county': ['Union', 'Volusia', 'Wakulla', 'Walton', 'Washington'],
+            'county_population': [15887, 517411, 31599, 62943, 24888],
+            'average_daily_population': [38, 1413, 174, 293, 110],
+            'date_reported': [pd.NaT, pd.NaT, pd.NaT, pd.NaT, pd.NaT],
+            'date_scraped': 5 * [DATE_SCRAPED]
         }, index=range(62, 67))
         assert_frame_equal(result.tail(), expected_tail)
 
     def testParseCountyAdp_parsesDateReported(self):
-        result = PARSED_PDF['fl_county_adp']
+        result = PARSED_PDF[FlCountyAdp]
 
         # Specifically verify Row 43 since it has 'Date Reported' set
         expected_row_43 = pd.DataFrame({
-            'County': ['Monroe'],
-            'County Population': [76047],
-            'Average Daily Population': [545],
-            'Date Reported': [datetime(day=1, month=9, year=2017)]
+            'county': ['Monroe'],
+            'county_population': [76047],
+            'average_daily_population': [545],
+            'date_reported': [datetime.datetime(day=1, month=9, year=2017)],
+            'date_scraped': [DATE_SCRAPED]
         }, index=[43])
 
         result_row_43 = result.iloc[43:44]
         assert_frame_equal(result_row_43, expected_row_43)
+
+    def testWrite_CorrectlyReadsHernandoCounty(self):
+        # Act
+        for table, df in PARSED_PDF.items():
+            database.write_df(table, df)
+
+        # Assert
+        query = Session() \
+            .query(FlCountyAdp) \
+            .filter(FlCountyAdp.county == 'Hernando')
+
+        hernando_row = one(query.all())
+
+        self.assertEqual(hernando_row.county, 'Hernando')
+        self.assertEqual(hernando_row.county_population, 179503)
+        self.assertEqual(hernando_row.average_daily_population, 632)
+        self.assertEqual(hernando_row.date_reported,
+                         datetime.datetime(year=2017, month=9, day=1))
+
+    def testWrite_CalculatesSum(self):
+        # Act
+        for table, df in PARSED_PDF.items():
+            database.write_df(table, df)
+
+        # Assert
+        query = Session().query(func.sum(FlCountyAdp.county_population))
+        result = one(one(query.all()))
+
+        expected_sum_county_populations = 20148654
+        self.assertEqual(result, expected_sum_county_populations)
