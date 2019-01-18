@@ -15,20 +15,27 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Parse the FL Aggregated Statistics PDF."""
+import datetime
 import locale
 from typing import Dict
 
 import pandas as pd
 import tabula
+from sqlalchemy.ext.declarative import DeclarativeMeta
 
 from recidiviz.ingest.aggregate import aggregate_ingest_utils
+from recidiviz.persistence.database.schema import FlCountyAdp
 
 
-def parse(filename: str) -> Dict[str, pd.DataFrame]:
+def parse(filename: str, date_scraped: datetime.datetime) \
+        -> Dict[DeclarativeMeta, pd.DataFrame]:
     _setup()
 
+    fl_county_adp_table = _parse_table_1(filename)
+    fl_county_adp_table['date_scraped'] = date_scraped
+
     return {
-        'fl_county_adp': _parse_table_1(filename)
+        FlCountyAdp: fl_county_adp_table
     }
 
 
@@ -52,17 +59,18 @@ def _parse_table_1(filename: str) -> pd.DataFrame:
     result.columns = aggregate_ingest_utils.collapse_header(result.columns)
     result = result.rename(
         columns={
-            'Florida County': 'County',
-            'Average Daily Population (ADP)': 'Average Daily Population',
-            '*Date Reported': 'Date Reported'
+            'Florida County': 'county',
+            'County Population': 'county_population',
+            'Average Daily Population (ADP)': 'average_daily_population',
+            '*Date Reported': 'date_reported'
         })
 
-    result = result[['County', 'County Population', 'Average Daily Population',
-                     'Date Reported']]
+    result = result[['county', 'county_population', 'average_daily_population',
+                     'date_reported']]
 
-    for column_name in {'County Population', 'Average Daily Population'}:
+    for column_name in {'county_population', 'average_daily_population'}:
         result[column_name] = result[column_name].apply(locale.atoi)
-    result['Date Reported'] = pd.to_datetime(result['Date Reported'])
+    result['date_reported'] = pd.to_datetime(result['date_reported'])
 
     return result
 

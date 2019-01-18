@@ -18,11 +18,12 @@
 
 import sqlalchemy
 
+import recidiviz
 from recidiviz import Session
 from recidiviz.persistence.database.schema import Base
 
 
-def use_in_memory_sqlite_database():
+def use_in_memory_sqlite_database() -> None:
     """
     Creates a new SqlDatabase object used to communicate to a fake in-memory
     sqlite database. This includes:
@@ -30,6 +31,6 @@ def use_in_memory_sqlite_database():
     2. Create all tables in the newly created sqlite database
     3. Bind the global SessionMaker to the new fake database engine
     """
-    engine = sqlalchemy.create_engine('sqlite:///:memory:')
-    Base.metadata.create_all(engine)
-    Session.configure(bind=engine)
+    recidiviz.db_engine = sqlalchemy.create_engine('sqlite:///:memory:')
+    Base.metadata.create_all(recidiviz.db_engine)
+    Session.configure(bind=recidiviz.db_engine)
