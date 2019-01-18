@@ -85,26 +85,34 @@ class BaseScraper(Scraper):
             Returns the content of the page or -1.
         """
         logging.info('Fetching content with endpoint: %s', endpoint)
-        page = self.fetch_page(endpoint, headers=headers,
-                               post_data=post_data, json_data=json_data)
-        if page == -1:
+        response = self.fetch_page(endpoint, headers=headers,
+                                   post_data=post_data, json_data=json_data)
+        if response == -1:
             return -1
+
+        # If the character set was not explicitly set in the response, use the
+        # detected encoding instead of defaulting to 'ISO-8859-1'. See
+        # http://docs.python-requests.org/en/master/user/advanced/#encodings
+        if 'charset' not in response.headers['content-type'] and \
+            not response.apparent_encoding == 'ascii':
+            response.encoding = response.apparent_encoding
+
         if response_type == constants.HTML_RESPONSE_TYPE:
             try:
-                return self._parse_html_content(page.content)
+                return self._parse_html_content(response.text)
             except XMLSyntaxError as e:
                 logging.error("Error parsing page. Error: %s\nPage:\n\n%s",
-                              e, page.content)
+                              e, response.text)
                 return -1
         if response_type == constants.JSON_RESPONSE_TYPE:
             try:
-                return json.loads(page.content)
+                return json.loads(response.text)
             except json.JSONDecodeError as e:
                 logging.error("Error parsing page. Error: %s\nPage:\n\n%s",
-                              e, page.content)
+                              e, response.text)
                 return -1
         if response_type == constants.TEXT_RESPONSE_TYPE:
-            return page.text
+            return response.text
         logging.error("Unexpected response type '%s' for endpoint '%s'",
                       response_type, endpoint)
         return -1
