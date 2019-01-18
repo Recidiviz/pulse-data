@@ -53,6 +53,14 @@ _JUDGE_NAME_OTHER = 'jujj'
 class TestEntityMatchingUtils(TestCase):
     """Tests for entity matching logic"""
 
+    def test_person_match_name(self):
+        db_person = entities.Person.new_with_defaults(
+            full_name=_FULL_NAME, place_of_residence=_PLACE_1)
+        ingested_person = entities.Person.new_with_defaults(
+            full_name=_FULL_NAME, place_of_residence=_PLACE_2)
+        self.assertTrue(entity_matching_utils.is_person_match(
+            db_entity=db_person, ingested_entity=ingested_person))
+
     def test_person_match_name_and_birthdate(self):
         db_person = entities.Person.new_with_defaults(
             full_name=_FULL_NAME,
