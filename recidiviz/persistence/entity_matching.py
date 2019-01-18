@@ -64,8 +64,12 @@ def match_entities(
             # If the match was previously matched to a different database
             # person, raise an error.
             if ingested_person.person_id:
-                raise EntityMatchingError('matched ingested person to more '
-                                          'than one database entity')
+                raise EntityMatchingError(
+                    'matched ingested person {} to both of the following '
+                    'database entities: '
+                    '[{}, {}]'.format(ingested_person,
+                                      ingested_person.person_id,
+                                      db_person.person_id))
             ingested_person.person_id = db_person.person_id
             match_bookings(db_person=db_person,
                            ingested_person=ingested_person)
@@ -97,8 +101,12 @@ def match_bookings(
             # If the match was previously matched to a different database
             # booking, raise an error.
             if ingested_booking.booking_id:
-                raise EntityMatchingError('matched ingested booking to more '
-                                          'than one database entity')
+                raise EntityMatchingError(
+                    'matched ingested booking {} to both of the following '
+                    'database entities: '
+                    '[{}, {}]'.format(ingested_booking,
+                                      ingested_booking.booking_id,
+                                      db_booking.booking_id))
             ingested_booking.booking_id = db_booking.booking_id
 
             if (db_booking.admission_date_inferred and
@@ -217,6 +225,16 @@ def match_arrest(
 
 def match_holds(
         *, db_booking: entities.Booking, ingested_booking: entities.Booking):
+    """
+    Attempts to match all holds on the |ingested_booking| with holds on
+    the |db_booking|. For any ingested hold, if a matching hold exists on
+    |db_booking|, the primary key is updated on the ingested hold. All
+    db holds that are not matched to an ingested hold are marked dropped and
+    added to the |ingested_booking|.
+    Args:
+        ingested_booking: (entities.Booking)
+        db_booking: (entities.Booking)
+    """
     dropped_holds = []
 
     for db_hold in db_booking.holds:
@@ -229,8 +247,12 @@ def match_holds(
             # If the match was previously matched to a different database
             # charge, raise an error.
             if ingested_hold.hold_id:
-                raise EntityMatchingError('matched ingested hold to more '
-                                          'than one database entity')
+                raise EntityMatchingError(
+                    'matched ingested hold {} to both of the following '
+                    'database entities: '
+                    '[{}, {}]'.format(ingested_hold,
+                                      ingested_hold.hold_id,
+                                      db_hold.hold_id))
             ingested_hold.hold_id = db_hold.hold_id
         else:
             _drop_hold(db_hold)
@@ -311,9 +333,9 @@ def _get_only_match(db_entity: entities.Entity,
     """
     matches = _get_all_matches(db_entity, ingested_entities, matcher)
     if len(matches) > 1:
-        raise EntityMatchingError(
-            'matched database entity {} to more than one ingested '
-            'entity'.format(db_entity))
+        raise EntityMatchingError('matched database entity {} to all of the '
+                                  'following ingested entities: '
+                                  '{}'.format(db_entity, matches))
     return matches[0] if matches else None
 
 
