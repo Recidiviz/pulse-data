@@ -179,11 +179,11 @@ class TestPersistence(TestCase):
             Sentence(
                 sentence_id='SENTENCE_ID_1',
                 fine_dollars=FINE_1,
-                sentence_status=SENTENCE_STATUS
+                status=SENTENCE_STATUS
             ), Sentence(
                 sentence_id='SENTENCE_ID_2',
                 fine_dollars=FINE_2,
-                sentence_status=SENTENCE_STATUS
+                status=SENTENCE_STATUS
             )
         ])
 

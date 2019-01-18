@@ -44,7 +44,7 @@ class SentenceConverterTest(unittest.TestCase):
             external_id='SENTENCE_ID',
             min_length_days=1,
             post_release_supervision_length_days=0,
-            sentence_status=SentenceStatus.UNKNOWN_FOUND_IN_SOURCE
+            status=SentenceStatus.UNKNOWN_FOUND_IN_SOURCE
         )
 
         self.assertEqual(result, expected_result)

@@ -96,7 +96,7 @@ message Charge {
 message Hold {
     optional string hold_id = 1;
     optional string jurisdiction_name = 2;
-    optional string hold_status = 3;
+    optional string status = 3;
 }
 
 message Bond {
@@ -117,5 +117,5 @@ message Sentence {
     optional string parole_possible = 8;
     optional string post_release_supervision_length = 9;
     optional string sentencing_region = 10;
-    optional string sentence_status = 11;
+    optional string status = 11;
 }

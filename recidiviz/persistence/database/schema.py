@@ -320,9 +320,10 @@ class Hold(Base, DatabaseEntity):
     hold_id = Column(Integer, primary_key=True)
     booking_id = Column(
         Integer, ForeignKey('booking.booking_id'), nullable=False)
+    external_id = Column(String(255), index=True)
     jurisdiction_name = Column(String(255))
-    hold_status = Column(hold_status, nullable=False)
-    hold_status_raw_text = Column(String(255))
+    status = Column(hold_status, nullable=False)
+    status_raw_text = Column(String(255))
 
     booking = relationship('Booking', back_populates='holds')
 
@@ -339,9 +340,10 @@ class HoldHistory(Base, DatabaseEntity):
     valid_from = Column(DateTime, nullable=False)
     valid_to = Column(DateTime)
     booking_id = Column(Integer, nullable=False, index=True)
+    external_id = Column(String(255), index=True)
     jurisdiction_name = Column(String(255))
-    hold_status = Column(hold_status, nullable=False)
-    hold_status_raw_text = Column(String(255))
+    status = Column(hold_status, nullable=False)
+    status_raw_text = Column(String(255))
 
 
 class Arrest(Base, DatabaseEntity):
@@ -421,8 +423,8 @@ class Sentence(Base, DatabaseEntity):
 
     sentence_id = Column(Integer, primary_key=True)
     external_id = Column(String(255), index=True)
-    sentence_status = Column(sentence_status, nullable=False)
-    sentence_status_raw_text = Column(String(255))
+    status = Column(sentence_status, nullable=False)
+    status_raw_text = Column(String(255))
     sentencing_region = Column(String(255))
     min_length_days = Column(Integer)
     max_length_days = Column(Integer)
@@ -457,8 +459,8 @@ class SentenceHistory(Base, DatabaseEntity):
     valid_from = Column(DateTime, nullable=False)
     valid_to = Column(DateTime)
     external_id = Column(String(255), index=True)
-    sentence_status = Column(sentence_status, nullable=False)
-    sentence_status_raw_text = Column(String(255))
+    status = Column(sentence_status, nullable=False)
+    status_raw_text = Column(String(255))
     sentencing_region = Column(String(255))
     min_length_days = Column(Integer)
     max_length_days = Column(Integer)
