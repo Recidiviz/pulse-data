@@ -16,18 +16,22 @@
 # =============================================================================
 """Contains logic for communicating with a SQL Database."""
 
-from datetime import datetime
 import logging
+from datetime import datetime
 from typing import List
 
+import pandas as pd
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.declarative import DeclarativeMeta
 from sqlalchemy.orm import Session
 
+import recidiviz
+import recidiviz.persistence.database.update_historical_snapshots as \
+    update_snapshots
 from recidiviz.common.constants.mappable_enum import MappableEnum
 from recidiviz.persistence import entities
 from recidiviz.persistence.database import database_utils
 from recidiviz.persistence.database.schema import Person, Booking
-import recidiviz.persistence.database.update_historical_snapshots as \
-    update_snapshots
 
 
 def read_people(session, full_name=None, birthdate=None):
@@ -238,6 +242,35 @@ def _get_unexplored_related_entities(entity, processed, unprocessed):
     return [entity for entity in unexplored
             if entity not in processed
             and entity not in unprocessed]
+
+
+def write_df(table: DeclarativeMeta, df: pd.DataFrame) -> None:
+    """
+    Writes the |df| to the |table|.
+
+    The column headers on |df| must match the column names in |table|. All rows
+    in |df| will be appended to |table|. If a row in |df| already exists in
+    |table|, then that row will be skipped.
+    """
+    try:
+        df.to_sql(table.__tablename__, recidiviz.db_engine, if_exists='append',
+                  index=False)
+    except IntegrityError:
+        _write_df_only_successful_rows(table, df)
+
+
+def _write_df_only_successful_rows(
+        table: DeclarativeMeta, df: pd.DataFrame) -> None:
+    """If the dataframe can't be written all at once (eg. some rows already
+    exist in the database) then we write only the rows that we can."""
+    for i in range(len(df)):
+        row = df.iloc[i:i + 1]
+        try:
+            row.to_sql(table.__tablename__, recidiviz.db_engine,
+                       if_exists='append', index=False)
+        except IntegrityError:
+            # Skip rows that can't be written
+            logging.info("Skipping write_df to %s table: %s.", table, row)
 
 
 def _convert_enums_to_strings(dictionary):

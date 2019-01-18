@@ -16,8 +16,10 @@
 # =============================================================================
 
 """Top-level recidiviz package."""
+from typing import Optional
 
 import sqlalchemy
+from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker
 
 from recidiviz.persistence.database.schema import Base
@@ -25,6 +27,7 @@ from recidiviz.utils import environment
 from recidiviz.utils import secrets
 
 Session = sessionmaker()
+db_engine: Optional[Engine]
 
 if environment.in_prod():
     db_user = secrets.get_secret('sqlalchemy_db_user')
@@ -38,6 +41,6 @@ if environment.in_prod():
          'db_name}?host=/cloudsql/{cloudsql_instance_id}') \
             .format(db_user=db_user, db_password=db_password, db_host=db_host,
                     db_name=db_name, cloudsql_instance_id=cloudsql_instance_id)
-    engine = sqlalchemy.create_engine(sqlalchemy_url)
-    Base.metadata.create_all(engine)
-    Session.configure(bind=engine)
+    db_engine = sqlalchemy.create_engine(sqlalchemy_url)
+    Base.metadata.create_all(db_engine)
+    Session.configure(bind=db_engine)
