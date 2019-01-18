@@ -37,9 +37,9 @@ def convert(proto, metadata: IngestMetadata) -> entities.Sentence:
     new.parole_possible = fn(parse_bool, 'parole_possible', proto)
     new.post_release_supervision_length_days = \
         fn(parse_days, 'post_release_supervision_length', proto)
-    new.sentence_status = fn(SentenceStatus.from_str, 'sentence_status', proto,
-                             metadata.enum_overrides,
-                             default=SentenceStatus.UNKNOWN_FOUND_IN_SOURCE)
-    new.sentence_status_raw_text = fn(normalize, 'sentence_status', proto)
+    new.status = fn(SentenceStatus.from_str, 'status', proto,
+                    metadata.enum_overrides,
+                    default=SentenceStatus.UNKNOWN_FOUND_IN_SOURCE)
+    new.status_raw_text = fn(normalize, 'status', proto)
 
     return new.build()

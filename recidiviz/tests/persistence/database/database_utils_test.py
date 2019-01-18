@@ -18,6 +18,9 @@
 from datetime import date, datetime
 from unittest import TestCase
 
+from more_itertools import one
+
+from recidiviz import Session
 from recidiviz.common.constants.bond import BondType, BondStatus
 from recidiviz.common.constants.booking import CustodyStatus, ReleaseReason, \
     Classification, AdmissionReason
@@ -27,7 +30,9 @@ from recidiviz.common.constants.hold import HoldStatus
 from recidiviz.common.constants.person import Gender, Race, Ethnicity
 from recidiviz.common.constants.sentences import SentenceStatus
 from recidiviz.persistence import entities
+from recidiviz.persistence.database import schema
 from recidiviz.persistence.database.database_utils import convert_person
+from recidiviz.tests.utils import fakes
 
 _PERSON = entities.Person(
     external_id="external_id",
@@ -65,8 +70,8 @@ _PERSON = entities.Person(
             hold_id=3456,
             external_id="external_id",
             jurisdiction_name="jurisdiction_name",
-            hold_status=HoldStatus.ACTIVE,
-            hold_status_raw_text='active'
+            status=HoldStatus.ACTIVE,
+            status_raw_text='active'
         )],
         arrest=entities.Arrest(
             arrest_id=4567,
@@ -112,8 +117,8 @@ _PERSON = entities.Person(
                 sentence_id=7890,
                 external_id="external_id",
                 sentencing_region='sentencing_region',
-                sentence_status=SentenceStatus.SERVING,
-                sentence_status_raw_text='SERVING',
+                status=SentenceStatus.SERVING,
+                status_raw_text='SERVING',
                 min_length_days=3,
                 max_length_days=4,
                 is_life=False,
@@ -131,6 +136,15 @@ _PERSON = entities.Person(
 
 class TestDatabaseUtils(TestCase):
 
+    def setup_method(self, _test_method):
+        fakes.use_in_memory_sqlite_database()
+
     def test_convert_person(self):
-        result = convert_person(convert_person(_PERSON))
-        self.assertEqual(_PERSON, result)
+        schema_person = convert_person(_PERSON)
+        session = Session()
+        session.add(schema_person)
+        session.commit()
+
+        people = session.query(schema.Person).all()
+        self.assertEqual(len(people), 1)
+        self.assertEqual(convert_person(one(people)), _PERSON)

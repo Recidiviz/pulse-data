@@ -206,9 +206,9 @@ def _match_from_charges(*, db_booking: entities.Booking,
 
 
 def _drop_sentence(sentence: entities.Sentence):
-    if sentence.sentence_status != SentenceStatus.UNKNOWN_REMOVED_FROM_SOURCE:
+    if sentence.status != SentenceStatus.UNKNOWN_REMOVED_FROM_SOURCE:
         logging.info('Removing sentence with id %s', sentence.sentence_id)
-        sentence.sentence_status = SentenceStatus.UNKNOWN_REMOVED_FROM_SOURCE
+        sentence.status = SentenceStatus.UNKNOWN_REMOVED_FROM_SOURCE
 
 
 def _drop_bond(bond: entities.Bond):
@@ -262,9 +262,9 @@ def match_holds(
 
 
 def _drop_hold(hold: entities.Hold):
-    if hold.hold_status != HoldStatus.INFERRED_DROPPED:
+    if hold.status != HoldStatus.INFERRED_DROPPED:
         logging.info('Dropping hold with id %s', hold.hold_id)
-        hold.hold_status = HoldStatus.INFERRED_DROPPED
+        hold.status = HoldStatus.INFERRED_DROPPED
 
 
 # TODO(573): what do we do with orphaned bonds/sentences?

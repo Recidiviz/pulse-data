@@ -256,13 +256,13 @@ class _Hold(IngestObject):
     Referenced from Booking.
     """
 
-    def __init__(self, hold_id=None, jurisdiction_name=None, hold_status=None):
+    def __init__(self, hold_id=None, jurisdiction_name=None, status=None):
         self.hold_id: str = hold_id
         self.jurisdiction_name: str = jurisdiction_name
-        self.hold_status: str = hold_status
+        self.status: str = status
 
     def __setattr__(self, name, value):
-        restricted_setattr(self, 'hold_status', name, value)
+        restricted_setattr(self, 'status', name, value)
 
 
 class _Bond(IngestObject):
@@ -286,13 +286,13 @@ class _Sentence(IngestObject):
     """
 
     def __init__(
-            self, sentence_id=None, sentence_status=None,
+            self, sentence_id=None, status=None,
             sentencing_region=None, min_length=None, max_length=None,
             is_life=None, is_probation=None, is_suspended=None,
             fine_dollars=None, parole_possible=None,
             post_release_supervision_length=None):
         self.sentence_id: str = sentence_id
-        self.sentence_status: str = sentence_status
+        self.status: str = status
         self.sentencing_region: str = sentencing_region
         self.min_length: str = min_length
         self.max_length: str = max_length

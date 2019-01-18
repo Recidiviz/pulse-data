@@ -90,7 +90,6 @@ class Booking(Entity, BuildableAttr):
 
 @attr.s
 class Arrest(Entity, BuildableAttr):
-    external_id: Optional[str] = attr.ib()
     date: Optional[datetime.date] = attr.ib()
     location: Optional[str] = attr.ib()
     agency: Optional[str] = attr.ib()
@@ -129,8 +128,8 @@ class Charge(Entity, BuildableAttr):
 @attr.s
 class Hold(Entity, BuildableAttr):
     jurisdiction_name: Optional[str] = attr.ib()
-    hold_status: Optional[HoldStatus] = attr.ib()
-    hold_status_raw_text: Optional[str] = attr.ib()
+    status: Optional[HoldStatus] = attr.ib()
+    status_raw_text: Optional[str] = attr.ib()
 
     hold_id: Optional[int] = attr.ib(default=None)
 
@@ -149,8 +148,8 @@ class Bond(Entity, BuildableAttr):
 @attr.s
 class Sentence(Entity, BuildableAttr):
     sentencing_region: Optional[str] = attr.ib()
-    sentence_status: Optional[SentenceStatus] = attr.ib()
-    sentence_status_raw_text: Optional[str] = attr.ib()
+    status: Optional[SentenceStatus] = attr.ib()
+    status_raw_text: Optional[str] = attr.ib()
     min_length_days: Optional[int] = attr.ib()
     max_length_days: Optional[int] = attr.ib()
     is_life: Optional[bool] = attr.ib()
