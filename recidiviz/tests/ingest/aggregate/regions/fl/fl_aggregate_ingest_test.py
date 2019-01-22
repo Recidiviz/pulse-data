@@ -17,6 +17,7 @@
 """Tests for fl_aggregate_ingest.py."""
 import datetime
 from unittest import TestCase
+import numpy as np
 
 import pandas as pd
 from pandas.util.testing import assert_frame_equal
@@ -27,7 +28,8 @@ from recidiviz import Session
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 from recidiviz.ingest.aggregate.regions.fl import fl_aggregate_ingest
 from recidiviz.persistence.database import database
-from recidiviz.persistence.database.schema import FlCountyAggregate
+from recidiviz.persistence.database.schema import FlCountyAggregate, \
+    FlFacilityAggregate
 from recidiviz.tests.ingest import fixtures
 from recidiviz.tests.utils import fakes
 
@@ -43,6 +45,8 @@ class TestFlAggregateIngest(TestCase):
 
     def setup_method(self, _test_method):
         fakes.use_in_memory_sqlite_database()
+
+    # ==================== TABLE 1 TESTS ====================
 
     def testParseCountyAdp_parsesHeadAndTail(self):
         result = PARSED_PDF[FlCountyAggregate]
@@ -108,7 +112,7 @@ class TestFlAggregateIngest(TestCase):
         self.assertEqual(hernando_row.date_reported,
                          datetime.datetime(year=2017, month=9, day=1))
 
-    def testWrite_CalculatesSum(self):
+    def testWrite_CalculatesCountyPopulationSum(self):
         # Act
         for table, df in PARSED_PDF.items():
             database.write_df(table, df)
@@ -119,3 +123,72 @@ class TestFlAggregateIngest(TestCase):
 
         expected_sum_county_populations = 20148654
         self.assertEqual(result, expected_sum_county_populations)
+
+    # ==================== TABLE 2 TESTS ====================
+
+    def testParseFacilityAggregates_parsesHeadAndTail(self):
+        result = PARSED_PDF[FlFacilityAggregate]
+
+        # Assert Head
+        expected_head = pd.DataFrame({
+            'facility_name': [
+                'Alachua CSO, Department of the Jail',
+                'Alachua County Work Release',
+                'Baker County Detention Center',
+                'Bay County Jail and Annex',
+                'Bradford County Jail'],
+            'average_daily_population': [749., 50, 478, 1015, 141],
+            'number_felony_pretrial': [463., 4, 81, 307, 50],
+            'number_misdemeanor_pretrial': [45., 1, 15, 287, 9],
+            'fips': 5 * [None],
+            'report_date': 5 * [DATE_SCRAPED],
+            'report_granularity': 5 * [enum_strings.monthly_granularity]
+        })
+        assert_frame_equal(result.head(), expected_head)
+
+        # Assert Tail
+        expected_tail = pd.DataFrame({
+            'facility_name': [
+                'Volusia County Corr. Facility',
+                'Volusia County/Branch Jail',
+                'Wakulla County Jail',
+                'Walton County Jail',
+                'Washington County Jail'],
+            'average_daily_population': [516., 897, 174, 293, 110],
+            'number_felony_pretrial': [203., 349, 67, 135, 54],
+            'number_misdemeanor_pretrial': [42., 44, 8, 38, 7],
+            'fips': 5 * [None],
+            'report_date': 5 * [DATE_SCRAPED],
+            'report_granularity': 5 * [enum_strings.monthly_granularity]
+        }, index=range(82, 87))
+        assert_frame_equal(result.tail(), expected_tail)
+
+    def testParseFacilityAdp_parsesMissingDataAsNone(self):
+        result = PARSED_PDF[FlFacilityAggregate]
+
+        # Specifically verify Row 43 since it has 'Date Reported' set
+        expected_row_40 = pd.DataFrame({
+            'facility_name': ['Lake County Jail'],
+            'average_daily_population': [835.],
+            'number_felony_pretrial': np.array([None]).astype(float),
+            'number_misdemeanor_pretrial': np.array([None]).astype(float),
+            'fips': [None],
+            'report_date': [DATE_SCRAPED],
+            'report_granularity': [enum_strings.monthly_granularity]
+        }, index=[40])
+
+        result_row_40 = result.iloc[40:41]
+        assert_frame_equal(result_row_40, expected_row_40)
+
+    def testWrite_CalculatesFacilityAdpSum(self):
+        # Act
+        for table, df in PARSED_PDF.items():
+            database.write_df(table, df)
+
+        # Assert
+        query = Session().query(
+            func.sum(FlFacilityAggregate.average_daily_population))
+        result = one(one(query.all()))
+
+        expected_sum_facility_adp = 52388
+        self.assertEqual(result, expected_sum_facility_adp)
