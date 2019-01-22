@@ -190,7 +190,8 @@ def __init__(self):
 Finally, use the data extractor in the `populate_data` function:
 
 ```python
-def populate_data(self, content, params, ingest_info):
+def populate_data(self, content, params,
+                  ingest_info: IngestInfo) -> Optional[IngestInfo]:
         """
         Populates the ingest info object from the content and params given
 
