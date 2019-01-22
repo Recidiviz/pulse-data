@@ -15,8 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Define the ORM schema objects that map directly to the database.
+
 The below schema uses only generic SQLAlchemy types, and therefore should be
 portable between database implementations.
+
 NOTE: Many of the tables in the below schema are historical tables. The primary
 key of a historical table exists only due to the requirements of SQLAlchemy,
 and should not be referenced by any other table. The key which should be used
