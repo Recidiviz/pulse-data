@@ -15,10 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Define the ORM schema objects that map directly to the database.
-
 The below schema uses only generic SQLAlchemy types, and therefore should be
 portable between database implementations.
-
 NOTE: Many of the tables in the below schema are historical tables. The primary
 key of a historical table exists only due to the requirements of SQLAlchemy,
 and should not be referenced by any other table. The key which should be used
@@ -28,7 +26,7 @@ desired temporal table behavior. Because of this non-uniqueness, any foreign key
 pointing to a historical table does NOT have a foreign key constraint.
 """
 from sqlalchemy import Boolean, Column, Date, DateTime, Enum, ForeignKey, \
-    Integer, String, Text
+    Integer, String, Text, UniqueConstraint
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta
 from sqlalchemy.orm import relationship
@@ -176,6 +174,11 @@ court_type_values = (enum_strings.court_type_circuit,
                      enum_strings.external_unknown,
                      enum_strings.court_type_other,
                      enum_strings.court_type_superior)
+
+# Aggregate enums
+report_granularity_values = (enum_strings.daily_granularity,
+                             enum_strings.weekly_granularity,
+                             enum_strings.monthly_granularity)
 
 # SQLAlchemy enums. Created separately from the tables so they can be shared
 # between the master and historical tables for each entity.
@@ -589,11 +592,222 @@ class ChargeHistory(Base, DatabaseEntity):
     judge_name = Column(String(255))
 
 
-class FlCountyAdp(Base):
-    __tablename__ = 'fl_county_adp'
+# ==================== Aggregate Tables ====================
+# Note that we generally don't aggregate any fields in the schemas below.  The
+# fields are a one to one mapping from the column names in the PDF tables from
+# the aggregate reports.  Any aggregation will happen later in the post
+# processing.  The exception is total_population which some states did not
+# include a column for, but could be calculated from multiple columns.  It is
+# an important enough field that we add it as a field.
 
-    county = Column(String(255), primary_key=True)
-    date_scraped = Column(DateTime, primary_key=True)
+class _AggregateTableMixin:
+    """A mixin which defines common fields between all Aggregate Tables."""
+
+    # Consider this class a mixin and only allow instantiating subclasses
+    def __new__(cls, *_, **__):
+        if cls is _AggregateTableMixin:
+            raise Exception('_AggregateTableMixin cannot be instantiated')
+        return super().__new__(cls)
+
+    # Use a synthetic primary key and enforce uniqueness over a set of columns
+    # (instead of setting these columns as a MultiColumn Primary Key) to allow
+    # each row to be reference by an int directly.
+    record_id = Column(Integer, primary_key=True)
+    __table_args__ = (
+        UniqueConstraint('fips', 'report_date', 'report_granularity'),
+    )
+
+    # TODO(#689): Ensure that `fips` also supports facility level fips
+    # TODO(#689): Consider adding fips_type to denote county vs facility
+    fips = Column(String(255))
+
+    report_date = Column(DateTime)
+    report_granularity = Column(
+        Enum(*report_granularity_values, name='report_granularity'),
+    )
+
+
+class FlCountyAggregate(Base, _AggregateTableMixin):
+    """FL state-provided aggregate statistics."""
+    __tablename__ = 'fl_county_aggregates'
+
+    county_name = Column(String(255))
     county_population = Column(Integer)
     average_daily_population = Column(Integer)
+
+    # If a county fails to send updated statistics to FL State, date_reported
+    # will be set with the last time valid data was add to this report.
     date_reported = Column(DateTime)
+
+
+class FlFacilityAggregate(Base, _AggregateTableMixin):
+    """FL state-provided pretrial aggregate statistics.
+
+    Note: This 2nd FL database table is special because FL reports contain a 2nd
+    table for Pretrial information by Facility.
+    """
+    __tablename__ = 'fl_facility_pretrial_aggregates'
+
+    facility_name = Column(String(255))
+    average_daily_population = Column(Integer)
+    number_felony_pretrial = Column(Integer)
+    number_misdemeanor_pretrial = Column(Integer)
+
+
+class GaCountyAggregate(Base, _AggregateTableMixin):
+    """GA state-provided aggregate statistics."""
+    __tablename__ = 'ga_county_aggregates'
+
+    county_name = Column(String(255))
+    total_number_of_inmates_in_jail = Column(Integer)
+    jail_capacity = Column(Integer)
+
+    number_of_inmates_sentenced_to_state = Column(Integer)
+    number_of_inmates_awaiting_trial = Column(Integer)  # Pretrial
+    number_of_inmates_serving_county_sentence = Column(Integer)  # Sentenced
+    number_of_other_inmates = Column(Integer)
+
+
+class HiFacilityAggregate(Base, _AggregateTableMixin):
+    """HI state-provided aggregate statistics."""
+    __tablename__ = 'hi_facility_aggregates'
+
+    facility_name = Column(String(255))
+
+    design_bed_capacity = Column(Integer)
+    operation_bed_capacity = Column(Integer)
+
+    total_population = Column(Integer)
+    male_population = Column(Integer)
+    female_population = Column(Integer)
+
+    sentenced_felony_male_population = Column(Integer)
+    sentenced_felony_female_population = Column(Integer)
+
+    sentenced_felony_probation_male_population = Column(Integer)
+    sentenced_felony_probation_female_population = Column(Integer)
+
+    sentenced_misdemeanor_male_population = Column(Integer)
+    sentenced_misdemeanor_female_population = Column(Integer)
+
+    sentenced_pretrial_felony_male_population = Column(Integer)
+    sentenced_pretrial_felony_female_population = Column(Integer)
+
+    sentenced_pretrial_misdemeanor_male_population = Column(Integer)
+    sentenced_pretrial_misdemeanor_female_population = Column(Integer)
+
+    held_for_other_jurisdiction_male_population = Column(Integer)
+    held_for_other_jurisdiction_female_population = Column(Integer)
+
+    parole_violation_male_population = Column(Integer)
+    parole_violation_female_population = Column(Integer)
+
+    probation_violation_male_population = Column(Integer)
+    probation_violation_female_population = Column(Integer)
+
+
+# To get counts from the PDF, sum secure/non-secure. For example:
+# male_population = male_population (secure) + male_population (unsecure)
+class KyCountyAggregate(Base, _AggregateTableMixin):
+    """KY state-provided aggregate statistics."""
+    __tablename__ = 'ky_county_aggregates'
+
+    county_name = Column(String(255))
+
+    total_jail_beds = Column(Integer)
+    reported_population = Column(Integer)  # TODO: Is this adp or population
+
+    male_population = Column(Integer)
+    female_population = Column(Integer)
+
+    class_d_male_population = Column(Integer)
+    class_d_female_population = Column(Integer)
+
+    community_custody_male_population = Column(Integer)
+    community_custody_female_population = Column(Integer)
+
+    alternative_sentence_male_population = Column(Integer)
+    alternative_sentence_female_population = Column(Integer)
+
+    controlled_intake_male_population = Column(Integer)
+    controlled_intake_female_population = Column(Integer)
+
+    parole_violators_male_population = Column(Integer)
+    parole_violators_female_population = Column(Integer)
+
+    federal_male_population = Column(Integer)
+    federal_female_population = Column(Integer)
+
+
+class NyFacilityAggregate(Base, _AggregateTableMixin):
+    """NY state-provided aggregate statistics."""
+    __tablename__ = 'ny_facility_aggregates'
+
+    facility_name = Column(String(255))
+
+    in_house = Column(Integer)  # This is ADP
+    boarded_in = Column(Integer)  # This is held_for_other_jurisdiction_adp
+    boarded_out = Column(Integer)  # sent_to_other_jurisdiction_adp
+
+    sentenced = Column(Integer)
+    civil = Column(Integer)  # TODO: What is this?
+    federal = Column(Integer)  # TODO: What is this?
+    technical_parole_violators = Column(
+        Integer)  # TODO: Can we drop 'technical'?
+    state_readies = Column(Integer)  # TODO: What is this?
+    other_unsentenced = Column(Integer)
+
+
+class TxCountyAggregate(Base, _AggregateTableMixin):
+    """TX state-provided aggregate statistics."""
+    __tablename__ = 'tx_county_aggregates'
+
+    county_name = Column(String(255))
+
+    pretrial_felons = Column(Integer)
+
+    # These 2 added are 'sentenced' as defined by Vera
+    convicted_felons = Column(Integer)
+    convicted_felons_sentenced_to_county_jail = Column(Integer)
+
+    parole_violators = Column(Integer)
+    parole_violators_with_new_charge = Column(Integer)
+
+    pretrial_misdemeanor = Column(Integer)
+    convicted_misdemeanor = Column(Integer)
+
+    bench_warrants = Column(Integer)
+
+    federal = Column(Integer)
+    pretrial_sjf = Column(Integer)
+    convicted_sjf_sentenced_to_county_jail = Column(Integer)
+    convicted_sjf_sentenced_to_state_jail = Column(Integer)
+
+    # We ignore Total Local, since that's the sum of above
+    total_contract = Column(Integer)  # This is held_for_other_population
+    total_population = Column(Integer)  # This is Total Population
+
+    total_other = Column(Integer)
+
+    total_capacity = Column(Integer)
+    available_beds = Column(Integer)
+
+
+class DcFacilityAggregate(Base, _AggregateTableMixin):
+    """DC state-provided aggregate statistics."""
+    __tablename__ = 'dc_facility_aggregates'
+
+    facility_name = Column(String(255))
+
+    total_population = Column(Integer)
+    male_population = Column(Integer)
+    female_population = Column(Integer)
+
+    stsf_male_population = Column(Integer)
+    stsf_female_population = Column(Integer)
+
+    usms_gb_male_population = Column(Integer)
+    usms_gb_female_population = Column(Integer)
+
+    juvenile_male_population = Column(Integer)
+    juvenile_female_population = Column(Integer)

@@ -25,18 +25,19 @@ from more_itertools import one
 from sqlalchemy import func
 
 from recidiviz import Session
+from recidiviz.common.constants import enum_canonical_strings as enum_strings
 from recidiviz.common.constants.booking import CustodyStatus
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.person import Race
 from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.persistence import entities
 from recidiviz.persistence.database import database, database_utils
-from recidiviz.persistence.database.schema import Booking, Person
+from recidiviz.persistence.database.schema import Booking, Person, \
+    FlCountyAggregate
 from recidiviz.persistence.database.schema import (
     BookingHistory,
     Charge, ChargeHistory,
     PersonHistory)
-from recidiviz.persistence.database.schema import FlCountyAdp
 from recidiviz.tests.utils import fakes
 
 _REGION = 'region'
@@ -490,58 +491,69 @@ class TestDatabase(TestCase):
     def testWriteDf(self):
         # Arrange
         subject = pd.DataFrame({
-            'county': ['Alachua', 'Baker', 'Bay', 'Bradford', 'Brevard'],
+            'county_name': ['Alachua', 'Baker', 'Bay', 'Bradford', 'Brevard'],
             'county_population': [257062, 26965, 176016, 27440, 568919],
             'average_daily_population': [799, 478, 1015, 141, 1547],
             'date_reported': [pd.NaT, pd.NaT,
                               datetime.datetime(year=2017, month=9, day=1),
                               pd.NaT, pd.NaT],
-            'date_scraped': 5 * [DATE_SCRAPED]
+            'fips': ['0', '1', '2', '3', '4'],
+            'report_date': 5 * [DATE_SCRAPED],
+            'report_granularity': 5 * [enum_strings.monthly_granularity]
         })
 
         # Act
-        database.write_df(FlCountyAdp, subject)
+        database.write_df(FlCountyAggregate, subject)
 
         # Assert
         query = Session() \
-            .query(FlCountyAdp) \
-            .filter(FlCountyAdp.county == 'Bay')
+            .query(FlCountyAggregate) \
+            .filter(FlCountyAggregate.county_name == 'Bay')
         result = one(query.all())
 
-        self.assertEqual(result.county, 'Bay')
+        self.assertEqual(result.county_name, 'Bay')
         self.assertEqual(result.county_population, 176016)
         self.assertEqual(result.average_daily_population, 1015)
         self.assertEqual(result.date_reported,
                          datetime.datetime(year=2017, month=9, day=1))
-        self.assertEqual(result.date_scraped, DATE_SCRAPED)
+        self.assertEqual(result.fips, '2')
+        self.assertEqual(result.report_date, DATE_SCRAPED)
+        self.assertEqual(result.report_granularity,
+                         enum_strings.monthly_granularity)
 
     def testWriteDf_OverlappingData_WritesNewAndIgnoresDuplicateRows(self):
         # Arrange
         initial_df = pd.DataFrame({
-            'county': ['Alachua', 'Baker', 'Bay', 'Bradford', 'Brevard'],
+            'county_name': ['Alachua', 'Baker', 'Bay', 'Bradford', 'Brevard'],
             'county_population': [257062, 26965, 176016, 27440, 568919],
             'average_daily_population': [799, 478, 1015, 141, 1547],
             'date_reported': [pd.NaT, pd.NaT,
                               datetime.datetime(year=2017, month=9, day=1),
                               pd.NaT, pd.NaT],
-            'date_scraped': 5 * [DATE_SCRAPED]
+            'fips': ['0', '1', '2', '3', '4'],
+            'report_date': 5 * [DATE_SCRAPED],
+            'report_granularity': 5 * [enum_strings.monthly_granularity]
         })
-        database.write_df(FlCountyAdp, initial_df)
+        database.write_df(FlCountyAggregate, initial_df)
 
         subject = pd.DataFrame({
-            'county': ['Alachua', 'NewCounty', 'Baker'],
-            'county_population': [257062, 1000000000, 26965],
-            'average_daily_population': [799, 50, 478],
+            'county_name': ['Alachua', 'NewCounty', 'Baker'],
+            'county_population': [0, 1000000000, 0],
+            'average_daily_population': [0, 50, 0],
             'date_reported': [pd.NaT, pd.NaT, pd.NaT],
-            'date_scraped': 3 * [DATE_SCRAPED]
+            'fips': ['0', '1000', '2'],
+            'report_date': 3 * [DATE_SCRAPED],
+            'report_granularity': 3 * [enum_strings.monthly_granularity]
         })
 
         # Act
-        database.write_df(FlCountyAdp, subject)
+        database.write_df(FlCountyAggregate, subject)
 
         # Assert
-        query = Session().query(func.sum(FlCountyAdp.county_population))
+        query = Session().query(func.sum(FlCountyAggregate.county_population))
         result = one(one(query.all()))
 
+        # This sum includes intial_df + NewCounty and ignores other changes in
+        # the subject (eg. county_population = 0 for 'Alachua')
         expected_sum_county_populations = 1001056402
         self.assertEqual(result, expected_sum_county_populations)

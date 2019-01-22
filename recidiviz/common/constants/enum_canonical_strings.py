@@ -153,3 +153,9 @@ court_type_circuit = 'CIRCUIT'
 court_type_district = 'DISTRICT'
 court_type_other = 'OTHER'
 court_type_superior = 'SUPERIOR'
+
+# Aggregates
+
+daily_granularity = 'DAILY'
+weekly_granularity = 'WEEKLY'
+monthly_granularity = 'MONTHLY'
