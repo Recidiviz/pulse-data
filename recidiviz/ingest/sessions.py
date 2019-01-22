@@ -73,9 +73,10 @@ class ScrapeSession:
         entity['docket_ack_id'] = docket_ack_id  # type: string
         entity['last_scraped'] = last_scraped  # type: string
         entity['region'] = region  # type: string
-        if scrape_type and scrape_type not in constants.SCRAPE_TYPES:
-            raise ValueError('Invalid scrape type: "{}"'.format(scrape_type))
-        entity['scrape_type'] = scrape_type  # type: string
+        if scrape_type:
+            if scrape_type not in constants.ScrapeType:
+                raise ValueError('Invalid scrape type: {}.'.format(scrape_type))
+            entity['scrape_type'] = scrape_type.value
         return cls(entity)
 
     def __init__(self, entity):
@@ -86,6 +87,8 @@ class ScrapeSession:
 
     def __getattr__(self, attr):
         if attr in self._entity:
+            if attr == 'scrape_type':
+                return constants.ScrapeType(self._entity[attr])
             return self._entity[attr]
         raise AttributeError("%r object has no attribute %r" %
                              (self.__class__.__name__, attr))
@@ -319,7 +322,7 @@ def get_sessions(region_code, include_open=True, include_closed=True,
             return (_ for _ in ())
 
     if scrape_type:
-        session_query.add_filter('scrape_type', '=', scrape_type)
+        session_query.add_filter('scrape_type', '=', scrape_type.value)
 
     limit = None
     # If `include_open` is not set we have to filter after fetching the results
@@ -355,7 +358,7 @@ def get_sessions_with_leased_docket_items(scrape_key):
     """
     session_query = ds().query(kind=SCRAPE_SESSION_KIND)
     session_query.add_filter('region', '=', scrape_key.region_code)
-    session_query.add_filter('scrape_type', '=', scrape_key.scrape_type)
+    session_query.add_filter('scrape_type', '=', scrape_key.scrape_type.value)
     session_query.add_filter('docket_ack_id', '>', None)
 
     return _sessions_from_entities(session_query.fetch())
