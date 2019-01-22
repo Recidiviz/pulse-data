@@ -39,29 +39,27 @@ class Test${class_name}Scraper(BaseScraperTest, unittest.TestCase):
         # after navigation. Chain multiple calls to
         # |validate_and_return_get_more_tasks| together if necessary.
         content = html.fromstring('navigation page')
-        params = {
-            'endpoint': None,
-            'task_type': constants.GET_MORE_TASKS,
-        }
+        task = Task(
+            task_type=constants.TaskType.GET_MORE_TASKS,
+            endpoint=None,
+        )
         expected_result = [
-            {
-                'endpoint': None,
-                'task_type': None
-            }
+            Task(
+                endpoint=None,
+                task_type=None,
+            ),
         ]
 
-        self.validate_and_return_get_more_tasks(content, params, expected_result)
+        self.validate_and_return_get_more_tasks(content, task, expected_result)
 
 
     def test_populate_data(self):
-        # Tests scraping data. Fill in |content| and |params| with the state of
-        # the page containing person data, and |expected_result| with the
-        # IngestInfo objects that should be scraped from the page.
+        # Tests scraping data. Fill in |content| with the state of the page
+        # containing person data, and |expected_result| with the IngestInfo
+        # objects that should be scraped from the page. A default Task will be
+        # passed to the |populate_data| method, but this can be overriden by
+        # supplying a |task| argument
         content = html.fromstring('person data page')
-        params = {
-            'endpoint': None,
-            'task_type': constants.SCRAPE_DATA,
-        }
         expected_result = IngestInfo()
 
-        self.validate_and_return_populate_data(content, params, expected_result)
+        self.validate_and_return_populate_data(content, expected_result)

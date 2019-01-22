@@ -16,23 +16,27 @@
 # =============================================================================
 
 """Constants file used by everyone."""
+import enum
 
 # These constants tell the generic scraper what functions to perform
-INITIAL_TASK = 0x1
-SCRAPE_DATA = 0x2
-GET_MORE_TASKS = 0x4
+class TaskType(enum.Flag):
+    INITIAL = enum.auto()
+    SCRAPE_DATA = enum.auto()
+    GET_MORE_TASKS = enum.auto()
 
-# Convenience definitions for scraper task types
-INITIAL_TASK_AND_MORE = INITIAL_TASK | GET_MORE_TASKS
-SCRAPE_DATA_AND_MORE = SCRAPE_DATA | GET_MORE_TASKS
+    # Convenience definitions for scraper task types
+    INITIAL_AND_MORE = INITIAL | GET_MORE_TASKS
+    SCRAPE_DATA_AND_MORE = SCRAPE_DATA | GET_MORE_TASKS
 
-# Scrape types
-BACKGROUND_SCRAPE = "background"
-SNAPSHOT_SCRAPE = "snapshot"
-SCRAPE_TYPES = [BACKGROUND_SCRAPE, SNAPSHOT_SCRAPE]
+@enum.unique
+class ScrapeType(enum.Enum):
+    BACKGROUND = "background"
+    SNAPSHOT = "snapshot"
 
 MAX_PEOPLE_TO_LOG = 4
 
-HTML_RESPONSE_TYPE = "html"
-JSON_RESPONSE_TYPE = "json"
-TEXT_RESPONSE_TYPE = "text"
+@enum.unique
+class ResponseType(enum.Enum):
+    HTML = "html"
+    JSON = "json"
+    TEXT = "text"

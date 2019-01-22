@@ -25,52 +25,52 @@ from recidiviz.ingest.models.scrape_key import ScrapeKey
 
 
 def test_eq_different_regions():
-    left = ScrapeKey("us_ny", constants.BACKGROUND_SCRAPE)
-    right = ScrapeKey("us_fl", constants.BACKGROUND_SCRAPE)
+    left = ScrapeKey("us_ny", constants.ScrapeType.BACKGROUND)
+    right = ScrapeKey("us_fl", constants.ScrapeType.BACKGROUND)
 
     assert left != right
 
 
 def test_eq_different_types():
-    left = ScrapeKey("us_ny", constants.BACKGROUND_SCRAPE)
-    right = ScrapeKey("us_ny", constants.SNAPSHOT_SCRAPE)
+    left = ScrapeKey("us_ny", constants.ScrapeType.BACKGROUND)
+    right = ScrapeKey("us_ny", constants.ScrapeType.SNAPSHOT)
 
     assert left != right
 
 
 def test_eq_different_everything():
-    left = ScrapeKey("us_ny", constants.SNAPSHOT_SCRAPE)
-    right = ScrapeKey("us_fl", constants.BACKGROUND_SCRAPE)
+    left = ScrapeKey("us_ny", constants.ScrapeType.SNAPSHOT)
+    right = ScrapeKey("us_fl", constants.ScrapeType.BACKGROUND)
 
     assert left != right
 
 
 def test_eq_same():
-    left = ScrapeKey("us_ny", constants.BACKGROUND_SCRAPE)
-    right = ScrapeKey("us_ny", constants.BACKGROUND_SCRAPE)
+    left = ScrapeKey("us_ny", constants.ScrapeType.BACKGROUND)
+    right = ScrapeKey("us_ny", constants.ScrapeType.BACKGROUND)
 
     assert left == right
 
 
 def test_eq_different_objects():
-    left = ScrapeKey("us_ny", constants.BACKGROUND_SCRAPE)
+    left = ScrapeKey("us_ny", constants.ScrapeType.BACKGROUND)
     right = "We don't read the papers, we don't read the news"
 
     assert not left.__eq__(right)
 
 
 def test_repr():
-    scrape_key = ScrapeKey("us_ut", constants.SNAPSHOT_SCRAPE)
+    scrape_key = ScrapeKey("us_ut", constants.ScrapeType.SNAPSHOT)
 
     representation = scrape_key.__repr__()
 
     assert representation == "<ScrapeKey region_code: us_ut, " \
-                             "scrape_type: snapshot>"
+                             "scrape_type: ScrapeType.SNAPSHOT>"
 
 
 def test_no_region():
     with pytest.raises(ValueError) as exception:
-        ScrapeKey(None, constants.SNAPSHOT_SCRAPE)
+        ScrapeKey(None, constants.ScrapeType.SNAPSHOT)
     assert str(exception.value) == 'A scrape key must include both a region ' \
                                    'code and a scrape type'
 
