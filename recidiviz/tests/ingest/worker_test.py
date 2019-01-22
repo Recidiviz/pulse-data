@@ -18,14 +18,24 @@
 """Tests for ingest/worker.py."""
 
 
+import datetime
 import json
 
 from flask import Flask
 from mock import patch
 
-from recidiviz.ingest import worker
+from recidiviz.ingest import constants, worker
+from recidiviz.ingest.task_params import QueueRequest, Task
 
 PATH = "/work"
+FAKE_QUEUE_PARAMS = QueueRequest(
+    scrape_type=constants.ScrapeType.BACKGROUND,
+    scraper_start_time=datetime.datetime.utcnow(),
+    next_task=Task(
+        task_type=constants.TaskType.INITIAL,
+        endpoint='some.endpoint',
+    ),
+)
 
 app = Flask(__name__)
 app.register_blueprint(worker.worker)
@@ -43,7 +53,8 @@ class TestWorker:
     def test_post_work(self, mock_region):
         mock_region.return_value = FakeRegion(FakeScraper(1))
 
-        form = {'region': 'us_ca', 'task': 'fake_task'}
+        form = {'region': 'us_ca', 'task': 'fake_task',
+                'params': FAKE_QUEUE_PARAMS.to_serializable()}
         form_encoded = json.dumps(form).encode()
         headers = {'X-Appengine-QueueName': "test-queue"}
         response = self.client.post(PATH, data=form_encoded, headers=headers)
@@ -53,9 +64,8 @@ class TestWorker:
     def test_post_work_params(self, mock_region):
         mock_region.return_value = FakeRegion(FakeScraper(1))
 
-        scraper_params = {'foo': 'bar', 'baz': 'inga'}
         form = {'region': 'us_ca', 'task': 'fake_task_params',
-                'params': scraper_params}
+                'params': FAKE_QUEUE_PARAMS.to_serializable()}
         form_encoded = json.dumps(form).encode()
         headers = {'X-Appengine-QueueName': "test-queue"}
         response = self.client.post(PATH, data=form_encoded, headers=headers)
@@ -65,7 +75,11 @@ class TestWorker:
     def test_post_work_error(self, mock_region):
         mock_region.return_value = FakeRegion(FakeScraper(-1))
 
-        form = {'region': 'us_ca', 'task': 'fake_task'}
+        form = {
+            'region': 'us_ca',
+            'task': 'fake_task',
+            'params': FAKE_QUEUE_PARAMS.to_serializable(),
+        }
         form_encoded = json.dumps(form).encode()
         headers = {'X-Appengine-QueueName': "test-queue"}
         response = self.client.post(PATH, data=form_encoded, headers=headers)
@@ -75,7 +89,11 @@ class TestWorker:
     def test_post_work_timeout(self, mock_region):
         mock_region.return_value = FakeRegion(FakeScraper(1))
 
-        form = {'region': 'us_ca', 'task': 'fake_task_timeout'}
+        form = {
+            'region': 'us_ca',
+            'task': 'fake_task_timeout',
+            'params': FAKE_QUEUE_PARAMS.to_serializable(),
+        }
         form_encoded = json.dumps(form).encode()
         headers = {'X-Appengine-QueueName': "test-queue"}
         response = self.client.post(PATH, data=form_encoded, headers=headers)
@@ -106,12 +124,12 @@ class FakeScraper:
     def __init__(self, return_value):
         self.return_value = return_value
 
-    def fake_task(self):
+    def fake_task(self, _params):
         return self.return_value
 
     def fake_task_params(self, params):
         assert params is not None
         return self.return_value
 
-    def fake_task_timeout(self):
+    def fake_task_timeout(self, params):
         raise TimeoutError()

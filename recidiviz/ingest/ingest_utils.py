@@ -18,6 +18,7 @@
 """Utils file for ingest module"""
 
 import logging
+from typing import List
 
 from recidiviz.common import common_utils
 from recidiviz.ingest import constants
@@ -51,7 +52,8 @@ def validate_regions(region_list):
     return regions_list_output
 
 
-def validate_scrape_types(scrape_type_list):
+def validate_scrape_types(
+        scrape_type_list: List[str]) -> List[constants.ScrapeType]:
     """Validates the scrape type arguments.
 
     If any scrape type in |scrape_type_list| is "all", then all supported scrape
@@ -65,18 +67,21 @@ def validate_scrape_types(scrape_type_list):
         List of scrape types if successful
     """
     if not scrape_type_list:
-        return [constants.BACKGROUND_SCRAPE]
+        return [constants.ScrapeType.BACKGROUND]
 
-    scrape_types_list_output = scrape_type_list
-
+    scrape_types_output = []
+    all_types = False
     for scrape_type in scrape_type_list:
-        if scrape_type == "all":
-            scrape_types_list_output = constants.SCRAPE_TYPES
-        elif scrape_type not in constants.SCRAPE_TYPES:
-            logging.error("Scrape type '%s' not recognized.", scrape_type)
-            return False
+        if scrape_type == 'all':
+            all_types = True
+        else:
+            try:
+                scrape_types_output.append(constants.ScrapeType(scrape_type))
+            except ValueError:
+                logging.error("Scrape type '%s' not recognized.", scrape_type)
+                return []
 
-    return scrape_types_list_output
+    return list(constants.ScrapeType) if all_types else scrape_types_output
 
 
 def convert_ingest_info_to_proto(ingest_info):

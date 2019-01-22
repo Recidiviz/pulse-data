@@ -24,6 +24,7 @@ import logging
 
 from flask import Blueprint, request
 
+from recidiviz.ingest.task_params import QueueRequest
 from recidiviz.utils import regions
 from recidiviz.utils.auth import authenticate_request
 
@@ -73,9 +74,10 @@ def work():
 
     json_data = request.get_data(as_text=True)
     data = json.loads(json_data)
-    region = data.get('region')
-    task = data.get('task')
-    params = data.get('params')
+    region = data['region']
+    task = data['task']
+    params = QueueRequest.from_serializable(data['params'])
+
 
     queue_name = request.headers.get('X-AppEngine-QueueName')
     logging.info("Queue %s, processing task (%s) for %s.", queue_name, task,
@@ -85,11 +87,7 @@ def work():
     scraper_task = getattr(scraper, task)
 
     try:
-        if params:
-            result = scraper_task(params)
-        else:
-            result = scraper_task()
-
+        result = scraper_task(params)
     except TimeoutError:
         # Timeout errors happen occasionally, so just fail the task and let
         # it retry.

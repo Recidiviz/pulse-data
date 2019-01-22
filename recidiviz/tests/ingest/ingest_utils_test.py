@@ -86,12 +86,13 @@ def test_validate_regions_empty():
 
 def test_validate_scrape_types_one_ok():
     assert ingest_utils.validate_scrape_types(
-        [constants.SNAPSHOT_SCRAPE]) == [constants.SNAPSHOT_SCRAPE]
+        [constants.ScrapeType.SNAPSHOT.value]) == \
+           [constants.ScrapeType.SNAPSHOT]
 
 
 def test_validate_scrape_types_one_all():
     assert ingest_utils.validate_scrape_types(["all"]) == [
-        constants.BACKGROUND_SCRAPE, constants.SNAPSHOT_SCRAPE]
+        constants.ScrapeType.BACKGROUND, constants.ScrapeType.SNAPSHOT]
 
 
 def test_validate_scrape_types_one_invalid():
@@ -100,19 +101,20 @@ def test_validate_scrape_types_one_invalid():
 
 def test_validate_scrape_types_multiple_ok():
     assert ingest_utils.validate_scrape_types(
-        [constants.BACKGROUND_SCRAPE, constants.SNAPSHOT_SCRAPE]) == \
-           [constants.BACKGROUND_SCRAPE, constants.SNAPSHOT_SCRAPE]
+        [constants.ScrapeType.BACKGROUND.value,
+         constants.ScrapeType.SNAPSHOT.value]) == \
+           [constants.ScrapeType.BACKGROUND, constants.ScrapeType.SNAPSHOT]
 
 
 def test_validate_scrape_types_multiple_invalid():
     assert not ingest_utils.validate_scrape_types(
-        [constants.BACKGROUND_SCRAPE, "invalid"])
+        [constants.ScrapeType.BACKGROUND.value, "invalid"])
 
 
 def test_validate_scrape_types_multiple_all():
     assert ingest_utils.validate_scrape_types(
-        [constants.BACKGROUND_SCRAPE, "all"]) == \
-           [constants.BACKGROUND_SCRAPE, constants.SNAPSHOT_SCRAPE]
+        [constants.ScrapeType.BACKGROUND.value, "all"]) == \
+           [constants.ScrapeType.BACKGROUND, constants.ScrapeType.SNAPSHOT]
 
 
 def test_validate_scrape_types_multiple_all_invalid():
@@ -121,7 +123,7 @@ def test_validate_scrape_types_multiple_all_invalid():
 
 def test_validate_scrape_types_empty():
     assert ingest_utils.validate_scrape_types(
-        []) == [constants.BACKGROUND_SCRAPE]
+        []) == [constants.ScrapeType.BACKGROUND]
 
 
 def test_convert_ingest_info_id_is_generated():
