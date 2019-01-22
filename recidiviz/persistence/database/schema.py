@@ -631,7 +631,7 @@ class _AggregateTableMixin:
 
 class FlCountyAggregate(Base, _AggregateTableMixin):
     """FL state-provided aggregate statistics."""
-    __tablename__ = 'fl_county_aggregates'
+    __tablename__ = 'fl_county_aggregate'
 
     county_name = Column(String(255))
     county_population = Column(Integer)
@@ -648,7 +648,7 @@ class FlFacilityAggregate(Base, _AggregateTableMixin):
     Note: This 2nd FL database table is special because FL reports contain a 2nd
     table for Pretrial information by Facility.
     """
-    __tablename__ = 'fl_facility_pretrial_aggregates'
+    __tablename__ = 'fl_facility_aggregate'
 
     facility_name = Column(String(255))
     average_daily_population = Column(Integer)
@@ -658,7 +658,7 @@ class FlFacilityAggregate(Base, _AggregateTableMixin):
 
 class GaCountyAggregate(Base, _AggregateTableMixin):
     """GA state-provided aggregate statistics."""
-    __tablename__ = 'ga_county_aggregates'
+    __tablename__ = 'ga_county_aggregate'
 
     county_name = Column(String(255))
     total_number_of_inmates_in_jail = Column(Integer)
@@ -672,7 +672,7 @@ class GaCountyAggregate(Base, _AggregateTableMixin):
 
 class HiFacilityAggregate(Base, _AggregateTableMixin):
     """HI state-provided aggregate statistics."""
-    __tablename__ = 'hi_facility_aggregates'
+    __tablename__ = 'hi_facility_aggregate'
 
     facility_name = Column(String(255))
 
@@ -712,7 +712,7 @@ class HiFacilityAggregate(Base, _AggregateTableMixin):
 # male_population = male_population (secure) + male_population (unsecure)
 class KyCountyAggregate(Base, _AggregateTableMixin):
     """KY state-provided aggregate statistics."""
-    __tablename__ = 'ky_county_aggregates'
+    __tablename__ = 'ky_county_aggregate'
 
     county_name = Column(String(255))
 
@@ -743,7 +743,7 @@ class KyCountyAggregate(Base, _AggregateTableMixin):
 
 class NyFacilityAggregate(Base, _AggregateTableMixin):
     """NY state-provided aggregate statistics."""
-    __tablename__ = 'ny_facility_aggregates'
+    __tablename__ = 'ny_facility_aggregate'
 
     facility_name = Column(String(255))
 
@@ -762,7 +762,7 @@ class NyFacilityAggregate(Base, _AggregateTableMixin):
 
 class TxCountyAggregate(Base, _AggregateTableMixin):
     """TX state-provided aggregate statistics."""
-    __tablename__ = 'tx_county_aggregates'
+    __tablename__ = 'tx_county_aggregate'
 
     county_name = Column(String(255))
 
@@ -797,7 +797,7 @@ class TxCountyAggregate(Base, _AggregateTableMixin):
 
 class DcFacilityAggregate(Base, _AggregateTableMixin):
     """DC state-provided aggregate statistics."""
-    __tablename__ = 'dc_facility_aggregates'
+    __tablename__ = 'dc_facility_aggregate'
 
     facility_name = Column(String(255))
 
