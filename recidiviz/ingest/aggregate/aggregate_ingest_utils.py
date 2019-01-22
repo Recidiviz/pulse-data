@@ -15,6 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Common utility functions used across aggregated_ingest."""
+from typing import Dict
+
 import pandas as pd
 
 
@@ -32,3 +34,11 @@ def _should_keep_word_in_tabula_header(word: str) -> bool:
     ignored.
     """
     return 'Unnamed' not in word
+
+
+def rename_columns_and_select(df: pd.DataFrame,
+                              rename_dict: Dict[str, str]) -> pd.DataFrame:
+    """Selects only the DataFrame columns listed in |rename_dict| and performs a
+    rename operation as described in |rename_dict|."""
+    df = df.rename(columns=rename_dict)
+    return df[list(rename_dict.values())]
