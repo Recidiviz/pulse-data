@@ -106,8 +106,7 @@ def _infer_release_date_for_bookings(
     'UNKNOWN_REMOVED_FROM_SOURCE"""
 
     for booking in bookings:
-        if not booking.release_date \
-                and booking.last_seen_time < last_ingest_time:
+        if not booking.release_date:
             logging.info('Marking booking %s as inferred release')
             booking.release_date = last_ingest_time.date()
             booking.release_date_inferred = True
