@@ -24,7 +24,7 @@ from recidiviz.utils import params
 
 
 PARAMS = MultiDict([("region", "us_mo"),
-                    ("scrape_type", constants.BACKGROUND_SCRAPE),
+                    ("scrape_type", constants.ScrapeType.BACKGROUND),
                     ("region", "us_wa")])
 
 

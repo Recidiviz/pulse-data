@@ -22,8 +22,10 @@ import yaml
 
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest import ingest_utils
+from recidiviz.ingest import constants
 from recidiviz.ingest.models import ingest_info
 from recidiviz.ingest.models.ingest_info_diff import diff_ingest_infos
+from recidiviz.ingest.task_params import Task
 from recidiviz.persistence.converter import converter
 from recidiviz.persistence.validator import validate
 
@@ -91,7 +93,7 @@ class BaseScraperTest:
                             "multi_key_mappings" % (attr, class_to_set))
 
     def validate_and_return_get_more_tasks(
-            self, content, params, expected_result):
+            self, content, task, expected_result):
         """This function runs get more tasks and runs some extra validation
         on the output.
 
@@ -104,21 +106,11 @@ class BaseScraperTest:
             The result from get_more_tasks in case the user needs to do any
             extra validations on the output.
         """
-        result = self.scraper.get_more_tasks(content, params)
-
-        # Make sure at minimum endpoint and tasktype are returned.
-        for key in ['endpoint', 'task_type']:
-            for param in result:
-                if key not in param:
-                    raise AttributeError(
-                        "No value for '%s' exists in the"
-                        " result, at minimum a call to get_more_tasks must have"
-                        " endpoint and task_type" % key)
-
+        result = self.scraper.get_more_tasks(content, task)
         assert result == expected_result
 
     def validate_and_return_populate_data(
-            self, content, params, expected_result, info=None):
+            self, content, expected_result, task=None, info=None):
         """This function runs populate_data and runs some extra validation
         on the output.
 
@@ -132,7 +124,11 @@ class BaseScraperTest:
             The result from populate_data in case the user needs to do any
             extra validations on the output.
         """
-        result = self.scraper.populate_data(content, params, info)
+        info = info or ingest_info.IngestInfo()
+        task = task or Task(task_type=constants.TaskType.SCRAPE_DATA,
+                            endpoint='')
+
+        result = self.scraper.populate_data(content, task, info)
 
         # Attempt to convert the result to the ingest info proto,
         # validate the proto, and finally attempt to convert the proto into

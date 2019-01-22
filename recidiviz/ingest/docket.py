@@ -168,7 +168,7 @@ def load_target_list(scrape_key, given_names="", surname=""):
     """
     logging.info("Getting target list for scraper: %s", scrape_key)
 
-    if scrape_key.scrape_type == constants.BACKGROUND_SCRAPE:
+    if scrape_key.scrape_type is constants.ScrapeType.BACKGROUND:
         region = regions.Region(scrape_key.region_code)
         if region.names_file is not None:
             name_list_file = regions.Region(scrape_key.region_code).names_file

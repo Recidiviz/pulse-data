@@ -97,6 +97,7 @@ google-cloud-trace = "*"
 "html5lib" = "*"
 pandas = "*"
 tabula-py = "*"
+cattrs = "*"
 
 [dev-packages]
 rope = "*"

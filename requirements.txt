@@ -10,6 +10,7 @@ bdist-mpkg==0.5.0
 beautifulsoup4==4.6.0
 cachetools==3.0.0
 callee==0.3
+cattrs==0.9.0
 certifi==2018.1.18
 cffi==1.11.5
 chardet==3.0.4

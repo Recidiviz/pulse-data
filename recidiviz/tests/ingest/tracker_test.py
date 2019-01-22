@@ -42,7 +42,7 @@ class TestTracker:
         mock_docket.return_value = create_pubsub_message(get_payload())
 
         payload = tracker.iterate_docket_item(
-            ScrapeKey("us_ny", constants.BACKGROUND_SCRAPE))
+            ScrapeKey("us_ny", constants.ScrapeType.BACKGROUND))
         assert payload == get_payload()
 
     @patch('recidiviz.ingest.docket.get_new_docket_item')
@@ -53,7 +53,7 @@ class TestTracker:
         mock_docket.return_value = create_pubsub_message(get_payload())
 
         payload = tracker.iterate_docket_item(
-            ScrapeKey("us_ny", constants.BACKGROUND_SCRAPE))
+            ScrapeKey("us_ny", constants.ScrapeType.BACKGROUND))
         assert not payload
 
     @patch('recidiviz.ingest.docket.get_new_docket_item')
@@ -61,7 +61,7 @@ class TestTracker:
         mock_docket.return_value = None
 
         payload = tracker.iterate_docket_item(
-            ScrapeKey("us_fl", constants.BACKGROUND_SCRAPE))
+            ScrapeKey("us_fl", constants.ScrapeType.BACKGROUND))
         assert not payload
 
     @patch('recidiviz.ingest.docket.ack_docket_item')
@@ -69,7 +69,7 @@ class TestTracker:
     @patch('recidiviz.ingest.sessions.get_current_session')
     def test_remove_item_from_session_and_docket(
             self, mock_current, mock_remove, mock_ack):
-        scrape_key = ScrapeKey("us_va", constants.BACKGROUND_SCRAPE)
+        scrape_key = ScrapeKey("us_va", constants.ScrapeType.BACKGROUND)
 
         mock_current.return_value = 'us_va_1'
         mock_remove.return_value = 'a'
@@ -83,7 +83,7 @@ class TestTracker:
     @patch('recidiviz.ingest.sessions.get_current_session')
     def test_remove_item_from_session_and_docket_no_open_sessions(
             self, mock_current, mock_remove, mock_ack):
-        scrape_key = ScrapeKey("us_va", constants.BACKGROUND_SCRAPE)
+        scrape_key = ScrapeKey("us_va", constants.ScrapeType.BACKGROUND)
         mock_current.return_value = None
         mock_remove.return_value = None
 
@@ -96,7 +96,7 @@ class TestTracker:
     @patch('recidiviz.ingest.sessions.get_sessions_with_leased_docket_items')
     def test_purge_docket_and_session(
             self, mock_sessions, mock_remove, mock_purge):
-        scrape_key = ScrapeKey("us_va", constants.BACKGROUND_SCRAPE)
+        scrape_key = ScrapeKey("us_va", constants.ScrapeType.BACKGROUND)
         mock_sessions.return_value = ['us_va_1', 'us_va_2']
 
         tracker.purge_docket_and_session(scrape_key)
@@ -138,12 +138,12 @@ class TestTrackerIntegration:
 
     def teardown_method(self, _test_method):
         for region in REGIONS:
-            docket.purge_query_docket(ScrapeKey(region,
-                                                constants.BACKGROUND_SCRAPE))
+            docket.purge_query_docket(
+                ScrapeKey(region, constants.ScrapeType.BACKGROUND))
         sessions.ds().delete_multi(self.sessions_to_delete)
 
     def test_iterate_docket_item(self):
-        scrape_key = ScrapeKey(REGIONS[0], constants.BACKGROUND_SCRAPE)
+        scrape_key = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
 
         self.create_session(scrape_key)
         docket.add_to_query_docket(scrape_key, get_payload()[0]).result()
@@ -153,22 +153,22 @@ class TestTrackerIntegration:
         assert tracker.iterate_docket_item(scrape_key) == get_payload()[1]
 
     def test_iterate_docket_item_no_open_session_to_update(self):
-        scrape_key = ScrapeKey(REGIONS[0], constants.BACKGROUND_SCRAPE)
+        scrape_key = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
 
         docket.add_to_query_docket(scrape_key, get_payload()).result()
 
         assert not tracker.iterate_docket_item(scrape_key)
 
     def test_iterate_docket_item_no_matching_items(self):
-        docket_key = ScrapeKey(REGIONS[0], constants.BACKGROUND_SCRAPE)
+        docket_key = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
         docket.add_to_query_docket(docket_key, get_payload()).result()
 
-        session_key = ScrapeKey(REGIONS[1], constants.BACKGROUND_SCRAPE)
+        session_key = ScrapeKey(REGIONS[1], constants.ScrapeType.BACKGROUND)
         self.create_session(session_key)
         assert not tracker.iterate_docket_item(session_key)
 
     def test_remove_item_from_session_and_docket(self):
-        scrape_key = ScrapeKey(REGIONS[0], constants.BACKGROUND_SCRAPE)
+        scrape_key = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
         docket.add_to_query_docket(scrape_key, get_payload()).result()
         self.create_session(scrape_key)
         tracker.iterate_docket_item(scrape_key)
@@ -178,7 +178,7 @@ class TestTrackerIntegration:
         assert not sessions.get_current_session(scrape_key).docket_ack_id
 
     def test_purge_docket_and_session(self):
-        scrape_key = ScrapeKey(REGIONS[0], constants.BACKGROUND_SCRAPE)
+        scrape_key = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
         docket.add_to_query_docket(scrape_key, get_payload()).result()
         self.create_session(scrape_key)
 

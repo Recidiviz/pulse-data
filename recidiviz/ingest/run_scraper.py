@@ -26,13 +26,16 @@ python -m recidiviz.ingest.run_scraper --region us_pa_greene --num_tasks 10
 """
 
 import argparse
+import json
 import logging
 import time
 import traceback
 import types
+from datetime import datetime
 from distutils.util import strtobool  # pylint: disable=no-name-in-module
 
 from recidiviz.ingest import constants
+from recidiviz.ingest.task_params import QueueRequest
 from recidiviz.utils import regions
 
 # Sleep 1 seconds per task
@@ -73,7 +76,13 @@ def add_task(self, task_name, params):
     logging.info('***')
     fn = getattr(self, task_name)
     try:
-        fn(params)
+        # Serialize and deserialize the request. Simply to replicate production
+        # and catch any potential issues.
+        serialized = json.dumps(params.to_serializable())
+        request = QueueRequest.from_serializable(json.loads(serialized))
+
+        # Run the task
+        fn(request)
     except Exception as e:
         if fail_fast or e is KeyboardInterrupt:
             raise
@@ -81,9 +90,10 @@ def add_task(self, task_name, params):
 
 
 def start_scrape(self, scrape_type):
-    fn = getattr(self, self.get_initial_task())
-    fn({'scrape_type': scrape_type,
-        'scraper_start_time': self.get_now_as_str()})
+    fn = getattr(self, self.get_initial_task_method())
+    fn(QueueRequest(scrape_type=scrape_type,
+                    scraper_start_time=datetime.now(),
+                    next_task=self.get_initial_task()))
 
 
 def _create_parser():
@@ -128,4 +138,4 @@ if __name__ == "__main__":
     scraper.add_task = types.MethodType(add_task, scraper)
     scraper.start_scrape = types.MethodType(start_scrape, scraper)
 
-    scraper.start_scrape(constants.BACKGROUND_SCRAPE)
+    scraper.start_scrape(constants.ScrapeType.BACKGROUND)

@@ -29,8 +29,8 @@ fields we care about.
 In order to subclass this the following functions must be implemented:
 
     1.  get_more_tasks: This function takes the page content as well as the
-        scrape task params and returns a list of params defining what to scrape
-        next.  The params must include 'endpoint' and 'task_type' which tell the
+        scrape task params and returns a list of `Tasks` defining what to scrape
+        next.  The `Task` must include 'endpoint' and 'task_type' which tell the
         generic scraper what endpoint we are getting and what we are doing
         with the endpoint when we do get it.
     2.  populate_data:  This function is called whenever a task loads a page
@@ -40,9 +40,8 @@ In order to subclass this the following functions must be implemented:
 import abc
 import json
 import logging
-from typing import Optional
+from typing import List, Optional
 
-import dateparser
 from lxml import html
 from lxml.etree import XMLSyntaxError  # pylint:disable=no-name-in-module
 
@@ -50,6 +49,7 @@ from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest import constants, ingest_utils
 from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.ingest.scraper import Scraper
+from recidiviz.ingest.task_params import Task, QueueRequest
 from recidiviz.persistence import persistence
 
 
@@ -59,7 +59,7 @@ class BaseScraper(Scraper):
     def __init__(self, region_name):
         super(BaseScraper, self).__init__(region_name)
 
-    def get_initial_task(self):
+    def get_initial_task_method(self):
         """
         Get the name of the first task to be run.  For generic scraper we always
         call into the same function.
@@ -98,21 +98,21 @@ class BaseScraper(Scraper):
             not response.apparent_encoding == 'ascii':
             response.encoding = response.apparent_encoding
 
-        if response_type == constants.HTML_RESPONSE_TYPE:
+        if response_type is constants.ResponseType.HTML:
             try:
                 return self._parse_html_content(response.text)
             except XMLSyntaxError as e:
                 logging.error("Error parsing page. Error: %s\nPage:\n\n%s",
                               e, response.text)
                 return -1
-        if response_type == constants.JSON_RESPONSE_TYPE:
+        if response_type is constants.ResponseType.JSON:
             try:
                 return json.loads(response.text)
             except json.JSONDecodeError as e:
                 logging.error("Error parsing page. Error: %s\nPage:\n\n%s",
                               e, response.text)
                 return -1
-        if response_type == constants.TEXT_RESPONSE_TYPE:
+        if response_type is constants.ResponseType.TEXT:
             return response.text
         logging.error("Unexpected response type '%s' for endpoint '%s'",
                       response_type, endpoint)
@@ -129,7 +129,7 @@ class BaseScraper(Scraper):
         """
         return html.fromstring(content_string)
 
-    def _generic_scrape(self, params):
+    def _generic_scrape(self, request: QueueRequest):
         """
         General handler for all scrape tasks.  This function is a generic entry
         point into all types of scrapes.  It decides what to call based on
@@ -141,27 +141,19 @@ class BaseScraper(Scraper):
         Returns:
             Nothing if successful, -1 if it fails
         """
-        # If this is called without a task type, we assume its the first call
-        # and use initial params
-        if 'task_type' not in params:
-            params = {
-                **self._get_default_initial_params(),
-                **self.get_initial_params(),
-                **params,
-            }
-        task_type = params.get('task_type')
-        endpoint = params.get('endpoint')
+        task = request.next_task
 
         # Here we handle a special case where we weren't really sure
         # we were going to get data when we submitted a task, but then
         # we ended up with data, so no more requests are required,
         # just the content we already have.
-        if endpoint is None:
-            content = self._parse_html_content(params.get('content'))
+        # TODO(#680): remove this
+        if task.endpoint is None:
+            if task.content is None:
+                raise ValueError('Content is required if there is no endpoint')
+            content = self._parse_html_content(task.content)
         else:
-            post_data = params.get('post_data')
-            response_type = params.get('response_type',
-                                       constants.HTML_RESPONSE_TYPE)
+            post_data = task.post_data
 
             # Let the child transform the post_data if it wants before
             # sending the requests.  This hook is in here in case the
@@ -173,33 +165,33 @@ class BaseScraper(Scraper):
             # Note that we use get here for the post_data to return a
             # default value of None if this scraper doesn't set it.
             content = self._fetch_content(
-                endpoint, response_type, headers=params.get('headers'),
-                post_data=post_data, json_data=params.get('json'))
+                task.endpoint, task.response_type, headers=task.headers,
+                post_data=post_data, json_data=task.json)
             if content == -1:
                 return -1
 
         ingest_info = None
 
-        if self.should_scrape_data(task_type):
+        if self.should_scrape_data(task.task_type):
             # If we want to scrape data, we should either create an ingest_info
             # object or get the one that already exists.
             logging.info('Scraping data for %s and endpoint: %s',
-                         self.region.region_code, endpoint)
-            ingest_info = params.get('ingest_info', IngestInfo())
-            ingest_info = self.populate_data(content, params, ingest_info)
-        if self.should_get_more_tasks(task_type):
+                         self.region.region_code, task.endpoint)
+            ingest_info = request.ingest_info or IngestInfo()
+            ingest_info = self.populate_data(content, task, ingest_info)
+        if self.should_get_more_tasks(task.task_type):
             logging.info('Getting more tasks for %s and endpoint: %s',
-                         self.region.region_code, endpoint)
-            tasks = self.get_more_tasks(content, params)
-            for task_params in tasks:
-                # Always pass along the scrape type as well.
-                task_params['scrape_type'] = params['scrape_type']
-                task_params['scraper_start_time'] = params['scraper_start_time']
-                # If we have an ingest info to work with, we need to pass that
-                # along as well.
-                if ingest_info:
-                    task_params['ingest_info'] = ingest_info
-                self.add_task('_generic_scrape', task_params)
+                         self.region.region_code, task.endpoint)
+            next_tasks = self.get_more_tasks(content, task)
+            for next_task in next_tasks:
+                self.add_task('_generic_scrape', QueueRequest(
+                    scrape_type=request.scrape_type,
+                    scraper_start_time=request.scraper_start_time,
+                    next_task=next_task,
+                    # If we have an ingest info to work with, we need to pass
+                    # that along as well.
+                    ingest_info=ingest_info,
+                ))
         # If we don't have any more tasks to scrape, we are at a leaf node and
         # we are ready to populate the database.
         else:
@@ -208,7 +200,6 @@ class BaseScraper(Scraper):
             if not ingest_info:
                 raise ValueError(
                     'IngestInfo must be populated if there are no more tasks')
-            scraper_start_time = dateparser.parse(params['scraper_start_time'])
             logging.info('Writing the ingest_info to the database for %s'
                          '(logging at most 4 people):', self.region.region_code)
             loop_count = min(
@@ -216,9 +207,9 @@ class BaseScraper(Scraper):
             for i in range(loop_count):
                 logging.info(ingest_info.people[i])
             logging.info('Last seen time of person being set as: %s',
-                         scraper_start_time)
+                         request.scraper_start_time)
             metadata = IngestMetadata(self.region.region_code,
-                                      scraper_start_time,
+                                      request.scraper_start_time,
                                       self.get_enum_overrides())
             persistence.write(
                 ingest_utils.convert_ingest_info_to_proto(
@@ -234,7 +225,7 @@ class BaseScraper(Scraper):
         Returns:
             boolean representing whether or not the task_type is initial task.
         """
-        return task_type & constants.INITIAL_TASK
+        return task_type & constants.TaskType.INITIAL
 
     def should_get_more_tasks(self, task_type):
         """Tells us if we should get more tasks.
@@ -245,7 +236,7 @@ class BaseScraper(Scraper):
         Returns:
             boolean whether or not we should get more tasks
         """
-        return task_type & constants.GET_MORE_TASKS
+        return task_type & constants.TaskType.GET_MORE_TASKS
 
     def should_scrape_data(self, task_type):
         """Tells us if we should scrape data from a page.
@@ -256,37 +247,34 @@ class BaseScraper(Scraper):
         Returns:
             boolean whether or not we should scrape a person from the page.
         """
-        return task_type & constants.SCRAPE_DATA
+        return task_type & constants.TaskType.SCRAPE_DATA
 
     @abc.abstractmethod
-    def get_more_tasks(self, content, params):
+    def get_more_tasks(self, content, task: Task) -> List[Task]:
         """
-        Gets more tasks based on the content and params passed in.  This
-        function should determine which task params, if any, should be
-        added to the queue
+        Gets more tasks based on the content and task passed in.  This
+        function should determine which tasks, if any, should be
+        added to the queue.
 
-        Every scraper must implement this.  It should return a list of params
-        Where each param corresponds to a task we want to run.
-        Mandatory fields are endpoint and task_type.
+        Every scraper must implement this.  It should return a list of tasks.
 
         Args:
             content: An lxml html tree.
-            params: dict of parameters passed from the last scrape session.
+            task: Task from the last scrape.
 
         Returns:
-            A list of dicts each containing endpoint and task_type at minimum
-            which tell the generic scraper how to behave.
+            A list of Tasks containing endpoint and task_type at minimum
         """
 
     @abc.abstractmethod
-    def populate_data(self, content, params,
+    def populate_data(self, content, task: Task,
                       ingest_info: IngestInfo) -> Optional[IngestInfo]:
         """
-        Populates the ingest info object from the content and params given
+        Populates the ingest info object from the content and task given
 
         Args:
             content: An lxml html tree.
-            params: dict of parameters passed from the last scrape session.
+            task: Task with parameters passed from the last scrape.
             ingest_info: The IngestInfo object to populate
         """
 
@@ -301,7 +289,6 @@ class BaseScraper(Scraper):
         """
         return {}
 
-
     def transform_post_data(self, data):
         """If the child needs to transform the data in any way before it sends
         the request, it can override this function.
@@ -310,16 +297,9 @@ class BaseScraper(Scraper):
             data: dict of parameters to send as data to the post request.
         """
 
-    def _get_default_initial_params(self):
-        return {
-            'task_type': constants.INITIAL_TASK_AND_MORE,
-            'endpoint': self.get_region().base_url,
-        }
-
-    def get_initial_params(self):
-        """Returns the initial parameters to use for the first call.
-
-        If a parameter is not provided here, the default from
-        `_get_default_initial_params` will be used (if it exists).
-        """
-        return {}
+    def get_initial_task(self) -> Task:
+        """Returns the initial parameters to use for the first call."""
+        return Task(
+            task_type=constants.TaskType.INITIAL_AND_MORE,
+            endpoint=self.get_region().base_url,
+        )
