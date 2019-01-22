@@ -265,7 +265,8 @@ multi_key_mapping:
 Our `populate_data` function looks like:
 
 ```python
-def populate_data(self, content, params, ingest_info):
+def populate_data(self, content, params,
+                  ingest_info: IngestInfo) -> Optional[IngestInfo]:
         """
         Populates the ingest info object from the content and params given
 

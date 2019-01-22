@@ -40,6 +40,7 @@ In order to subclass this the following functions must be implemented:
 import abc
 import json
 import logging
+from typing import Optional
 
 import dateparser
 from lxml import html
@@ -278,7 +279,8 @@ class BaseScraper(Scraper):
         """
 
     @abc.abstractmethod
-    def populate_data(self, content, params, ingest_info):
+    def populate_data(self, content, params,
+                      ingest_info: IngestInfo) -> Optional[IngestInfo]:
         """
         Populates the ingest info object from the content and params given
 
