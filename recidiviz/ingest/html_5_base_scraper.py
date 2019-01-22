@@ -22,11 +22,13 @@ preprocess HTML content that may only be accepted in the HTML5 spec.
 
 import abc
 import xml.etree.ElementTree
+from typing import Optional
 
-from lxml import html
 import html5lib
+from lxml import html
 
 from recidiviz.ingest.base_scraper import BaseScraper
+from recidiviz.ingest.models.ingest_info import IngestInfo
 
 
 class Html5BaseScraper(BaseScraper):
@@ -45,5 +47,6 @@ class Html5BaseScraper(BaseScraper):
         pass
 
     @abc.abstractmethod
-    def populate_data(self, content, params, ingest_info):
+    def populate_data(self, content, params,
+                      ingest_info: IngestInfo) -> Optional[IngestInfo]:
         pass

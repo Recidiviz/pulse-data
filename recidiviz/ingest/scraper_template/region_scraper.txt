@@ -16,7 +16,10 @@
 # =============================================================================
 
 """Scraper implementation for $region."""
+from typing import Optional
+
 from recidiviz.ingest.base_scraper import BaseScraper
+from recidiviz.ingest.models.ingest_info import IngestInfo
 
 
 class ${class_name}Scraper(BaseScraper):
@@ -24,7 +27,8 @@ class ${class_name}Scraper(BaseScraper):
     def __init__(self, mapping_filepath=None):
         pass
 
-    def populate_data(self, content, params, ingest_info):
+    def populate_data(self, content, params,
+                      ingest_info: IngestInfo) -> Optional[IngestInfo]:
         pass
 
     def get_more_tasks(self, content, params):
