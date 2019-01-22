@@ -25,6 +25,8 @@ Also accepts the following optional arguments:
   - names_file: a file with a names list for this scraper
   - timezone: the timezone, e.g. America/New York
   - url: the initial url of the roster
+
+If the flag -tests_only is set, will only create test files.
 """
 import argparse
 import os
@@ -40,7 +42,8 @@ def populate_file(template_path, target_path, subs):
     with open(target_path, 'w') as target:
         target.write(contents)
 
-def create_files(subs):
+
+def create_scraper_files(subs):
     """Creates __init__.py, region_name_scraper.py, and region_name.yaml files
     in recidiviz/ingest/region_name
     """
@@ -66,6 +69,9 @@ def create_files(subs):
     yaml_target = os.path.join(target_dir, subs['region'] + '.yaml')
     populate_file(yaml_template, yaml_target, subs)
 
+
+def create_test_files(subs):
+    ingest_dir = os.path.join(os.path.dirname(__file__), 'recidiviz/ingest/')
     test_dir = os.path.join(os.path.dirname(__file__),
                             'recidiviz/tests/ingest/')
     if not os.path.exists(ingest_dir):
@@ -77,10 +83,12 @@ def create_files(subs):
         raise OSError('directory %s already exists' % target_test_dir)
     os.mkdir(target_test_dir)
 
+    template_dir = os.path.join(ingest_dir, 'scraper_template')
     test_template = os.path.join(template_dir, 'region_scraper_test.txt')
     test_target = os.path.join(target_test_dir,
                                subs['region'] + '_scraper_test.py')
     populate_file(test_template, test_target, subs)
+
 
 def append_to_config_files(subs):
     """Updates queue.yaml and region_manifest.yaml with the new region.
@@ -133,6 +141,8 @@ if __name__ == '__main__':
         'url']
     for optional_arg in optional_args:
         parser.add_argument('--' + optional_arg)
+    parser.add_argument('-tests_only', required=False, action='store_true',
+                        help='If set, only create test files.')
     args = parser.parse_args()
 
     state = us.states.lookup(args.state)
@@ -156,5 +166,7 @@ if __name__ == '__main__':
         if arg_value is not None:
             substitutions[optional_arg] = arg_value
 
-    create_files(substitutions)
-    append_to_config_files(substitutions)
+    if not args.tests_only:
+        create_scraper_files(substitutions)
+        append_to_config_files(substitutions)
+    create_test_files(substitutions)
