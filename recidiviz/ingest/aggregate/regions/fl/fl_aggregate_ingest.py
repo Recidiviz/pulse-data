@@ -62,16 +62,12 @@ def _parse_table_1(filename: str) -> pd.DataFrame:
     result = part1.append(part2, ignore_index=True)
 
     result.columns = aggregate_ingest_utils.collapse_header(result.columns)
-    result = result.rename(
-        columns={
-            'Florida County': 'county_name',
-            'County Population': 'county_population',
-            'Average Daily Population (ADP)': 'average_daily_population',
-            '*Date Reported': 'date_reported'
-        })
-
-    result = result[['county_name', 'county_population',
-                     'average_daily_population', 'date_reported']]
+    result = aggregate_ingest_utils.rename_columns_and_select(result, {
+        'Florida County': 'county_name',
+        'County Population': 'county_population',
+        'Average Daily Population (ADP)': 'average_daily_population',
+        '*Date Reported': 'date_reported'
+    })
 
     for column_name in {'county_population', 'average_daily_population'}:
         result[column_name] = result[column_name].apply(locale.atoi)
