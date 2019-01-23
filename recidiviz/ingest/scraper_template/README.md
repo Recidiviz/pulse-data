@@ -167,18 +167,6 @@ This is the homepage of a website. `get_more_tasks` is called with this page and
 
 ```python
     def get_more_tasks(self, content, task: Task) -> List[Task]:
-        """
-        Gets more tasks based on the content and task passed in.  This
-        function should determine which tasks, if any, should be
-        added to the queue
-
-        Args:
-            content: An lxml html tree.
-            task: Task from the last scrape.
-
-        Returns:
-            A list of Tasks containing endpoint and task_type at minimum.
-        """
         task_list = []
         # If it is our first task, we know the next task must be a query to
         # return all people
@@ -196,18 +184,6 @@ Now that we are on this page, we must expand our `get_more_tasks` function to ha
 
 ```python
     def get_more_tasks(self, content, task: Task) -> List[Task]:
-        """
-        Gets more tasks based on the content and task passed in.  This
-        function should determine which tasks, if any, should be
-        added to the queue
-
-        Args:
-            content: An lxml html tree.
-            task: Task from the last scrape.
-
-        Returns:
-            A list of Tasks containing endpoint and task_type at minimum.
-        """
         task_list = []
         # If it is our first task, we know the next task must be a query to
         # return all people
@@ -266,14 +242,6 @@ Our `populate_data` function looks like:
 ```python
 def populate_data(self, content, task: Task,
                   ingest_info: IngestInfo) -> Optional[IngestInfo]:
-        """
-        Populates the ingest info object from the content and task given
-
-        Args:
-            content: An lxml html tree.
-            task: Task with parameters passed from the last scrape.
-            ingest_info: The IngestInfo object to populate
-        """
         yaml_file = os.path.join(os.path.dirname(__file__), 'my_yaml.yaml')
         data_extractor = DataExtractor(yaml_file)
         data_extractor.extract_and_populate_data(content, ingest_info)
