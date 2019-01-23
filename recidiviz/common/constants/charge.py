@@ -26,6 +26,7 @@ class ChargeDegree(MappableEnum):
     FIRST = enum_strings.degree_first
     SECOND = enum_strings.degree_second
     THIRD = enum_strings.degree_third
+    FOURTH = enum_strings.degree_fourth
 
     @staticmethod
     def _get_default_map():
@@ -81,9 +82,11 @@ _CHARGE_DEGREE_MAP = {
     '1ST': ChargeDegree.FIRST,
     '2ND': ChargeDegree.SECOND,
     '3RD': ChargeDegree.THIRD,
+    '4TH': ChargeDegree.FOURTH,
     'FIRST': ChargeDegree.FIRST,
     'SECOND': ChargeDegree.SECOND,
     'THIRD': ChargeDegree.THIRD,
+    'FOURTH': ChargeDegree.FOURTH,
     'UNKNOWN': ChargeDegree.EXTERNAL_UNKNOWN,
 }
 
