@@ -20,7 +20,7 @@ from typing import List, Optional
 
 from recidiviz.ingest.base_scraper import BaseScraper
 from recidiviz.ingest.models.ingest_info import IngestInfo
-from recidiviz.ingest.task_params import Task
+from recidiviz.ingest.task_params import ScrapedData, Task
 
 
 class ${class_name}Scraper(BaseScraper):
@@ -29,7 +29,7 @@ class ${class_name}Scraper(BaseScraper):
         pass
 
     def populate_data(self, content, task: Task,
-                      ingest_info: IngestInfo) -> Optional[IngestInfo]:
+                      ingest_info: IngestInfo) -> Optional[ScrapedData]:
         pass
 
     def get_more_tasks(self, content, task: Task) -> List[Task]:
