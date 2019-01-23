@@ -16,7 +16,6 @@
 # =============================================================================
 """Parse the GA Aggregated Statistics PDF."""
 import datetime
-import locale
 from typing import Dict
 
 import pandas as pd
@@ -30,8 +29,6 @@ from recidiviz.persistence.database.schema import GaCountyAggregate
 
 def parse(filename: str, date_scraped: datetime.datetime) \
         -> Dict[DeclarativeMeta, pd.DataFrame]:
-    _setup()
-
     ga_county_table = _parse_table(filename)
 
     # TODO(#698): Set county fips based on the county_name
@@ -100,8 +97,3 @@ def _parse_table(filename: str) -> pd.DataFrame:
 
 def _every_43(index: int) -> bool:
     return index % 43 == 0
-
-
-def _setup() -> None:
-    # This allows us to call `locale.atoi` when converting str -> int
-    locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
