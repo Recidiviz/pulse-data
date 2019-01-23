@@ -241,11 +241,11 @@ Our `populate_data` function looks like:
 
 ```python
 def populate_data(self, content, task: Task,
-                  ingest_info: IngestInfo) -> Optional[IngestInfo]:
+                  ingest_info: IngestInfo) -> Optional[ScrapedData]:
         yaml_file = os.path.join(os.path.dirname(__file__), 'my_yaml.yaml')
         data_extractor = DataExtractor(yaml_file)
         data_extractor.extract_and_populate_data(content, ingest_info)
-        return ingest_info
+        return ScrapedData(ingest_info=ingest_info, persist=True)
 ```
 
 The process for this is explained in the data extractor [documentation](https://github.com/Recidiviz/pulse-data/tree/master/recidiviz/ingest/extractor/README.md) with examples.  In most cases the data extractor should suffice but if it does not, your `populate_data` function will manually have to walk the html and extract out the relevant fields into the `ingest_info` object.

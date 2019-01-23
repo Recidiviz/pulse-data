@@ -110,7 +110,8 @@ class BaseScraperTest:
         assert result == expected_result
 
     def validate_and_return_populate_data(
-            self, content, expected_result, task=None, info=None):
+            self, content, expected_ingest_info, expected_persist=True,
+            task=None, info=None):
         """This function runs populate_data and runs some extra validation
         on the output.
 
@@ -133,14 +134,16 @@ class BaseScraperTest:
         # Attempt to convert the result to the ingest info proto,
         # validate the proto, and finally attempt to convert the proto into
         # our entitiy/ objects (which includes parsing strings into types)
-        result_proto = ingest_utils.convert_ingest_info_to_proto(result)
+        result_proto = ingest_utils.convert_ingest_info_to_proto(
+            result.ingest_info)
         validate(result_proto)
         metadata = IngestMetadata(
             self.scraper.region, _FAKE_SCRAPER_START_TIME,
             self.scraper.get_enum_overrides())
         converter.convert(result_proto, metadata)
 
-        differences = diff_ingest_infos(expected_result, result)
+        differences = diff_ingest_infos(expected_ingest_info,
+                                        result.ingest_info)
 
         if differences:
             self.fail('IngestInfo objects do not match.\n'
@@ -148,9 +151,11 @@ class BaseScraperTest:
                       'Actual:\n{}\n'
                       'Differences:\n{}\n\n'
                       '(paste the following) scraped object:'
-                      '\n{}'.format(expected_result,
-                                    result,
+                      '\n{}'.format(expected_ingest_info,
+                                    result.ingest_info,
                                     '\n'.join(differences),
                                     repr(result)))
+
+        assert result.persist == expected_persist
 
         return result

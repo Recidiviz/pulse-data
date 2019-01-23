@@ -191,7 +191,7 @@ Finally, use the data extractor in the `populate_data` function:
 
 ```python
 def populate_data(self, content, params,
-                  ingest_info: IngestInfo) -> Optional[IngestInfo]:
+                  ingest_info: IngestInfo) -> Optional[ScrapedData]:
         """
         Populates the ingest info object from the content and params given
 
@@ -202,7 +202,7 @@ def populate_data(self, content, params,
         """
         data_extractor = HtmlDataExtractor(self.yaml_file)
         data_extractor.extract_and_populate_data(content, ingest_info)
-        return ingest_info
+        return ScrapedData(ingest_info=ingest_info, persist=True)
 ```
 
 The data extractor will have a properly formatted object that you shouldn't need to touch. Note:  In some cases you may need to do some additional work on the `ingest_info` object (if a field couldn't be extracted properly), but in most cases we prefer to expand the functionality of the data extractor to handle the case.

@@ -49,7 +49,7 @@ from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest import constants, ingest_utils
 from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.ingest.scraper import Scraper
-from recidiviz.ingest.task_params import Task, QueueRequest
+from recidiviz.ingest.task_params import QueueRequest, ScrapedData, Task
 from recidiviz.persistence import persistence
 
 
@@ -170,42 +170,47 @@ class BaseScraper(Scraper):
             if content == -1:
                 return -1
 
-        ingest_info = None
-
+        scraped_data = None
         if self.should_scrape_data(task.task_type):
             # If we want to scrape data, we should either create an ingest_info
             # object or get the one that already exists.
             logging.info('Scraping data for %s and endpoint: %s',
                          self.region.region_code, task.endpoint)
-            ingest_info = request.ingest_info or IngestInfo()
-            ingest_info = self.populate_data(content, task, ingest_info)
+            scraped_data = self.populate_data(
+                content, task, request.ingest_info or IngestInfo())
+
         if self.should_get_more_tasks(task.task_type):
             logging.info('Getting more tasks for %s and endpoint: %s',
                          self.region.region_code, task.endpoint)
+
+            # Only send along ingest info if it will not be persisted now.
+            ingest_info_to_send = None
+            if scraped_data is not None and not scraped_data.persist:
+                ingest_info_to_send = scraped_data.ingest_info
+
             next_tasks = self.get_more_tasks(content, task)
             for next_task in next_tasks:
                 self.add_task('_generic_scrape', QueueRequest(
                     scrape_type=request.scrape_type,
                     scraper_start_time=request.scraper_start_time,
                     next_task=next_task,
-                    # If we have an ingest info to work with, we need to pass
-                    # that along as well.
-                    ingest_info=ingest_info,
+                    ingest_info=ingest_info_to_send,
                 ))
-        # If we don't have any more tasks to scrape, we are at a leaf node and
-        # we are ready to populate the database.
-        else:
-            # Something is wrong if we get here but don't have ingest_info
-            # to work with.
-            if not ingest_info:
-                raise ValueError(
-                    'IngestInfo must be populated if there are no more tasks')
-            logging.info('Writing the ingest_info to the database for %s'
-                         '(logging at most 4 people):', self.region.region_code)
-            loop_count = min(
-                len(ingest_info.people), constants.MAX_PEOPLE_TO_LOG)
+
+        if scraped_data is not None and scraped_data.persist:
+            # Something is wrong if we get here but no fields are set in the
+            # ingest info.
+            if not scraped_data.ingest_info:
+                raise ValueError('IngestInfo must be populated')
+
+            logging.info(
+                'Writing ingest_info (%d people) to the database for %s',
+                len(scraped_data.ingest_info.people), self.region.region_code)
+            logging.info('Logging at most 4 people:')
+            loop_count = min(len(scraped_data.ingest_info.people),
+                             constants.MAX_PEOPLE_TO_LOG)
             for i in range(loop_count):
-                logging.info(ingest_info.people[i])
+                logging.info(scraped_data.ingest_info.people[i])
             logging.info('Last seen time of person being set as: %s',
                          request.scraper_start_time)
             metadata = IngestMetadata(self.region.region_code,
@@ -213,7 +218,7 @@ class BaseScraper(Scraper):
                                       self.get_enum_overrides())
             persistence.write(
                 ingest_utils.convert_ingest_info_to_proto(
-                    ingest_info), metadata)
+                    scraped_data.ingest_info), metadata)
         return None
 
     def is_initial_task(self, task_type):
@@ -268,7 +273,7 @@ class BaseScraper(Scraper):
 
     @abc.abstractmethod
     def populate_data(self, content, task: Task,
-                      ingest_info: IngestInfo) -> Optional[IngestInfo]:
+                      ingest_info: IngestInfo) -> Optional[ScrapedData]:
         """
         Populates the ingest info object from the content and task given
 
