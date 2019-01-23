@@ -29,7 +29,7 @@ from lxml import html
 
 from recidiviz.ingest.base_scraper import BaseScraper
 from recidiviz.ingest.models.ingest_info import IngestInfo
-from recidiviz.ingest.task_params import Task
+from recidiviz.ingest.task_params import ScrapedData, Task
 
 
 class Html5BaseScraper(BaseScraper):
@@ -49,5 +49,5 @@ class Html5BaseScraper(BaseScraper):
 
     @abc.abstractmethod
     def populate_data(self, content, task: Task,
-                      ingest_info: IngestInfo) -> Optional[IngestInfo]:
+                      ingest_info: IngestInfo) -> Optional[ScrapedData]:
         pass

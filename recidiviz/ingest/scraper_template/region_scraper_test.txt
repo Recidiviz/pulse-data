@@ -60,6 +60,6 @@ class Test${class_name}Scraper(BaseScraperTest, unittest.TestCase):
         # passed to the |populate_data| method, but this can be overriden by
         # supplying a |task| argument
         content = html.fromstring('person data page')
-        expected_result = IngestInfo()
+        expected_info = IngestInfo()
 
-        self.validate_and_return_populate_data(content, expected_result)
+        self.validate_and_return_populate_data(content, expected_info)

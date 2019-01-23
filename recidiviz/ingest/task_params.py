@@ -33,6 +33,17 @@ cattr.register_structure_hook(
     lambda serialized, desired_type: desired_type.fromisoformat(serialized))
 
 @attr.s(frozen=True)
+class ScrapedData:
+    """The data returned from a scrape"""
+
+    # The ingest info scraped from the content
+    ingest_info: IngestInfo = attr.ib()
+    # Whether to persist the `ingest_info` now. Set this to `False` if the data
+    # for a person or booking is spread across multiple pages and you need to
+    # pass this on to the next page instead of persisting it.
+    persist: bool = attr.ib(default=True)
+
+@attr.s(frozen=True)
 class Task:
     """Describes a scrape task to be performed"""
 
