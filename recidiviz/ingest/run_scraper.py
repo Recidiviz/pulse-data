@@ -19,6 +19,8 @@
 
 usage: run_scraper.py [-h] --region REGION [--num_tasks NUM_TASKS]
                       [--sleep_between_requests SLEEP_BETWEEN_REQUESTS]
+                      [--run_forever RUN_FOREVER] [--fail_fast FAIL_FAST]
+                      [--log LOG]
 
 Example:
 python -m recidiviz.ingest.run_scraper --region us_pa_greene
@@ -44,8 +46,15 @@ sleep_between_requests = 1
 # Number of people to scrape by default
 num_tasks_left = 5
 
+# Alternatively, if run_forever is true, ignore num_tasks and run to completion
+run_forever = False
+
 # Fail the first time we hit an error. Set to False to log errors and continue.
 fail_fast = True
+
+# Default logging level
+logging_level = logging.INFO
+
 
 # This function acts as a bound method to the scraper instance.  It is
 # overwriting the functionality of add_task to just run the task instead of
@@ -63,16 +72,18 @@ def add_task(self, task_name, params):
     # a CLI with all static functions, and the entrypoint is module level.
     global num_tasks_left
     global sleep_between_requests
-    num_tasks_left -= 1
-    # If we are done, we can exit.
-    if num_tasks_left == 0:
-        logging.info('Completed the test run!')
-        exit()
-    else:
+
+    if not run_forever:
+        num_tasks_left -= 1
+        # If we are done, we can exit.
+        if num_tasks_left == 0:
+            logging.info('Completed the test run!')
+            exit()
         logging.info('%s tasks left to complete', num_tasks_left)
-        logging.info('Sleeping %s seconds before sending another request',
-                     sleep_between_requests)
-        time.sleep(sleep_between_requests)
+
+    logging.info('Sleeping %s seconds before sending another request',
+                 sleep_between_requests)
+    time.sleep(sleep_between_requests)
     logging.info('***')
     fn = getattr(self, task_name)
     try:
@@ -97,6 +108,7 @@ def start_scrape(self, scrape_type):
 
 
 def _create_parser():
+    """Creates the CLI argument parser."""
     parser = argparse.ArgumentParser()
     parser.add_argument('--region', required=True, help='The region to test')
     parser.add_argument(
@@ -110,15 +122,24 @@ def _create_parser():
         help='The number of seconds to sleep in between requests,'
              'default is {}'.format(sleep_between_requests))
     parser.add_argument(
+        '-run_forever', required=False, action='store_true',
+        help='If set, ignore num_tasks and run until completion'
+    )
+    parser.add_argument(
         '--fail_fast', required=False, default=str(fail_fast),
         help='Stop running after an error, default is {}'.format(fail_fast)
+    )
+    parser.add_argument(
+        '--log', required=False, default=logging_level,
+        help='Set the logging level, default is '
+             '{}'.format(logging.getLevelName(logging_level))
     )
     return parser
 
 
-def _configure_logging():
+def _configure_logging(level):
     root = logging.getLogger()
-    root.setLevel(logging.INFO)
+    root.setLevel(level)
 
 
 if __name__ == "__main__":
@@ -127,9 +148,11 @@ if __name__ == "__main__":
 
     num_tasks_left = args.num_tasks
     sleep_between_requests = args.sleep_between_requests
+    run_forever = args.run_forever
     fail_fast = bool(strtobool(args.fail_fast))
+    logging_level = args.log
 
-    _configure_logging()
+    _configure_logging(logging_level)
 
     region = regions.Region(args.region)
     scraper = region.get_scraper()
