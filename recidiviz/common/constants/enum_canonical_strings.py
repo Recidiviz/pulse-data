@@ -131,6 +131,7 @@ sentence_relationship_type_consecutive = 'CONSECUTIVE'
 degree_first = 'FIRST'
 degree_second = 'SECOND'
 degree_third = 'THIRD'
+degree_fourth = 'FOURTH'
 
 charge_class_civil = 'CIVIL'
 charge_class_felony = 'FELONY'
