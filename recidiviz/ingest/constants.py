@@ -40,3 +40,4 @@ class ResponseType(enum.Enum):
     HTML = "html"
     JSON = "json"
     TEXT = "text"
+    RAW = "raw"
