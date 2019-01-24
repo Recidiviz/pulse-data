@@ -114,10 +114,12 @@ class BaseScraper(Scraper):
                 return -1
         if response_type is constants.ResponseType.TEXT:
             return response.text
+        if response_type == constants.ResponseType.RAW:
+            return response.content
+
         logging.error("Unexpected response type '%s' for endpoint '%s'",
                       response_type, endpoint)
         return -1
-
 
     def _parse_html_content(self, content_string: str) -> html.HtmlElement:
         """Parses a string into a structured HtmlElement.
