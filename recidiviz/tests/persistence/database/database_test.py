@@ -33,7 +33,7 @@ from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.persistence import entities
 from recidiviz.persistence.database import database, database_utils
 from recidiviz.persistence.database.schema import Booking, Person, \
-    FlCountyAggregate
+    FlCountyAggregate, FlFacilityAggregate
 from recidiviz.persistence.database.schema import (
     BookingHistory,
     Charge, ChargeHistory,
@@ -520,6 +520,63 @@ class TestDatabase(TestCase):
         self.assertEqual(result.report_date, DATE_SCRAPED)
         self.assertEqual(result.report_granularity,
                          enum_strings.monthly_granularity)
+
+    def testWriteDf_doesNotOverrideMatchingColumnNames(self):
+        # Arrange
+        subject = pd.DataFrame({
+            'county_name': ['Alachua', 'Baker', 'Bay', 'Bradford', 'Brevard'],
+            'county_population': [257062, 26965, 176016, 27440, 568919],
+            'average_daily_population': [799, 478, 1015, 141, 1547],
+            'date_reported': [pd.NaT, pd.NaT,
+                              datetime.datetime(year=2017, month=9, day=1),
+                              pd.NaT, pd.NaT],
+            'fips': ['0', '1', '2', '3', '4'],
+            'report_date': 5 * [DATE_SCRAPED],
+            'report_granularity': 5 * [enum_strings.monthly_granularity]
+        })
+        database.write_df(FlCountyAggregate, subject)
+
+        subject = pd.DataFrame({
+            'facility_name': ['One', 'Two', 'Three', 'Four', 'Five'],
+            'average_daily_population': [13, 14, 15, 16, 17],
+            'number_felony_pretrial': [23, 24, 25, 26, 27],
+            'number_misdemeanor_pretrial': 5 * [pd.NaT],
+            'fips': ['000', '111', '222', '333', '444'],
+            'report_date': 5 * [DATE_SCRAPED],
+            'report_granularity': 5 * [enum_strings.monthly_granularity]
+        })
+
+        # Act
+        database.write_df(FlFacilityAggregate, subject)
+
+        # Assert
+        query = Session() \
+            .query(FlCountyAggregate) \
+            .filter(FlCountyAggregate.county_name == 'Bay')
+        result = one(query.all())
+
+        fips_not_overridden_by_facility_table = '2'
+        self.assertEqual(result.county_name, 'Bay')
+        self.assertEqual(result.fips, fips_not_overridden_by_facility_table)
+
+    def testWriteDf_rowsWithSameColumnsThatMustBeUnique_onlyWritesOnce(self):
+        # Arrange
+        subject = pd.DataFrame({
+            'county_name': ['Alachua', 'Baker'],
+            'county_population': [257062, 26965],
+            'average_daily_population': [799, 478],
+            'date_reported': [pd.NaT, pd.NaT],
+            'fips': 2 * ['SAME_FIPS'],
+            'report_date': 2 * [DATE_SCRAPED],
+            'report_granularity': 2 * [enum_strings.monthly_granularity]
+        })
+
+        # Act
+        database.write_df(FlCountyAggregate, subject)
+
+        # Assert
+        query = Session().query(FlCountyAggregate)
+        self.assertEqual(len(query.all()), 1)
 
     def testWriteDf_OverlappingData_WritesNewAndIgnoresDuplicateRows(self):
         # Arrange
