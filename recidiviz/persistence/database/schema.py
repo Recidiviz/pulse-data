@@ -615,9 +615,6 @@ class _AggregateTableMixin:
     # (instead of setting these columns as a MultiColumn Primary Key) to allow
     # each row to be reference by an int directly.
     record_id = Column(Integer, primary_key=True)
-    __table_args__ = (
-        UniqueConstraint('fips', 'report_date', 'report_granularity'),
-    )
 
     # TODO(#689): Ensure that `fips` also supports facility level fips
     # TODO(#689): Consider adding fips_type to denote county vs facility
@@ -632,6 +629,9 @@ class _AggregateTableMixin:
 class FlCountyAggregate(Base, _AggregateTableMixin):
     """FL state-provided aggregate statistics."""
     __tablename__ = 'fl_county_aggregate'
+    __table_args__ = (
+        UniqueConstraint('fips', 'report_date', 'report_granularity'),
+    )
 
     county_name = Column(String(255))
     county_population = Column(Integer)
@@ -649,6 +649,9 @@ class FlFacilityAggregate(Base, _AggregateTableMixin):
     table for Pretrial information by Facility.
     """
     __tablename__ = 'fl_facility_aggregate'
+    __table_args__ = (
+        UniqueConstraint('fips', 'report_date', 'report_granularity'),
+    )
 
     facility_name = Column(String(255))
     average_daily_population = Column(Integer)
@@ -659,6 +662,9 @@ class FlFacilityAggregate(Base, _AggregateTableMixin):
 class GaCountyAggregate(Base, _AggregateTableMixin):
     """GA state-provided aggregate statistics."""
     __tablename__ = 'ga_county_aggregate'
+    __table_args__ = (
+        UniqueConstraint('fips', 'report_date', 'report_granularity'),
+    )
 
     county_name = Column(String(255))
     total_number_of_inmates_in_jail = Column(Integer)
@@ -673,6 +679,9 @@ class GaCountyAggregate(Base, _AggregateTableMixin):
 class HiFacilityAggregate(Base, _AggregateTableMixin):
     """HI state-provided aggregate statistics."""
     __tablename__ = 'hi_facility_aggregate'
+    __table_args__ = (
+        UniqueConstraint('fips', 'report_date', 'report_granularity'),
+    )
 
     facility_name = Column(String(255))
 
@@ -713,6 +722,9 @@ class HiFacilityAggregate(Base, _AggregateTableMixin):
 class KyCountyAggregate(Base, _AggregateTableMixin):
     """KY state-provided aggregate statistics."""
     __tablename__ = 'ky_county_aggregate'
+    __table_args__ = (
+        UniqueConstraint('fips', 'report_date', 'report_granularity'),
+    )
 
     county_name = Column(String(255))
 
@@ -744,6 +756,9 @@ class KyCountyAggregate(Base, _AggregateTableMixin):
 class NyFacilityAggregate(Base, _AggregateTableMixin):
     """NY state-provided aggregate statistics."""
     __tablename__ = 'ny_facility_aggregate'
+    __table_args__ = (
+        UniqueConstraint('fips', 'report_date', 'report_granularity'),
+    )
 
     facility_name = Column(String(255))
 
@@ -764,6 +779,9 @@ class NyFacilityAggregate(Base, _AggregateTableMixin):
 class TxCountyAggregate(Base, _AggregateTableMixin):
     """TX state-provided aggregate statistics."""
     __tablename__ = 'tx_county_aggregate'
+    __table_args__ = (
+        UniqueConstraint('fips', 'report_date', 'report_granularity'),
+    )
 
     county_name = Column(String(255))
 
@@ -799,6 +817,9 @@ class TxCountyAggregate(Base, _AggregateTableMixin):
 class DcFacilityAggregate(Base, _AggregateTableMixin):
     """DC state-provided aggregate statistics."""
     __tablename__ = 'dc_facility_aggregate'
+    __table_args__ = (
+        UniqueConstraint('fips', 'report_date', 'report_granularity'),
+    )
 
     facility_name = Column(String(255))
 
