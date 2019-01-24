@@ -230,6 +230,10 @@ class Scraper(metaclass=abc.ABCMeta):
             url: (string) URL to fetch content from
             headers: (dict) any headers to send in addition to the default
             post_data: dict of parameters to pass into the html POST request
+            json_data: dict of parameters in JSON format to pass into the html
+                       POST request
+            extra_headers: dict of parameters to add to the headers of this
+                           request
 
         Returns:
             The content if successful, -1 if fails.
