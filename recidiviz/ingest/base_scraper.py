@@ -150,9 +150,7 @@ class BaseScraper(Scraper):
         # we ended up with data, so no more requests are required,
         # just the content we already have.
         # TODO(#680): remove this
-        if task.endpoint is None:
-            if task.content is None:
-                raise ValueError('Content is required if there is no endpoint')
+        if task.content is not None:
             content = self._parse_html_content(task.content)
         else:
             post_data = task.post_data
