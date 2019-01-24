@@ -32,6 +32,7 @@ import recidiviz.ingest.us_ms_desoto
 import recidiviz.ingest.us_mt_gallatin
 import recidiviz.ingest.us_mo_stone
 import recidiviz.ingest.us_ny
+import recidiviz.ingest.us_nj_bergen
 import recidiviz.ingest.us_nc_guilford
 import recidiviz.ingest.us_pa
 import recidiviz.ingest.us_pa_dauphin
