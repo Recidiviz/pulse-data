@@ -98,6 +98,14 @@ class DataExtractor(metaclass=abc.ABCMeta):
                 # of class type we want to set
                 if is_multi_key and class_to_set in _PLURALS:
                     attr = getattr(parent, _PLURALS[class_to_set])
+                    parent_cls_to_set = _HIERARCHY_MAP[class_to_set][-1]
+                    if parent_cls_to_set in self.multi_key_classes:
+                        grandparent = self._find_parent_ingest_info(
+                            ingest_info, _HIERARCHY_MAP[parent_cls_to_set], i)
+                        create_name = 'create_' + parent_cls_to_set
+                        create_func = getattr(grandparent, create_name)
+                        if i != 0:
+                            parent = create_func()
                     if attr is not None \
                             and isinstance(attr, list) \
                             and len(attr) > i:

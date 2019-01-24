@@ -22,6 +22,8 @@ model and returned.
 
 import copy
 import warnings
+from typing import Optional
+
 from lxml.html import HtmlElement
 
 from recidiviz.ingest.extractor.data_extractor import DataExtractor
@@ -55,7 +57,7 @@ class HtmlDataExtractor(DataExtractor):
                 self._convert_key_to_cells(content, key)
 
         all_cells = content.xpath('//*[self::th or self::td]')
-        self.cells = filter(self._is_leaf_cell, all_cells)
+        self.cells = [cell for cell in all_cells if self._is_leaf_cell(cell)]
 
     def _is_leaf_cell(self, e):
         """
@@ -119,6 +121,24 @@ class HtmlDataExtractor(DataExtractor):
             warnings.warn("The following keys could not be found: %s" %
                           needed_keys)
         return ingest_info.prune()
+
+    def get_value(self, key: str) -> Optional[str]:
+        """
+        This function iterates through every cell on the page, searching for a
+        value that matches the provided |key|. Returns the string value if
+        present, otherwise returns None
+
+        Args:
+            key: A key on the web page, whose value should be returned
+
+        Returns:
+            The found value (if present), otherwise None.
+        """
+        for cell in self.cells:
+            cell_val = self._normalize_cell(cell)
+            if cell_val == key:
+                return self._get_value_cell(cell)
+        return None
 
     @staticmethod
     def _process_html(content):
