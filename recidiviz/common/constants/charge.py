@@ -87,6 +87,10 @@ _CHARGE_DEGREE_MAP = {
     'SECOND': ChargeDegree.SECOND,
     'THIRD': ChargeDegree.THIRD,
     'FOURTH': ChargeDegree.FOURTH,
+    '1': ChargeDegree.FIRST,
+    '2': ChargeDegree.SECOND,
+    '3': ChargeDegree.THIRD,
+    '4': ChargeDegree.FOURTH,
     'UNKNOWN': ChargeDegree.EXTERNAL_UNKNOWN,
 }
 
@@ -108,9 +112,11 @@ _CHARGE_STATUS_MAP = {
     'ACQUITTED': ChargeStatus.ACQUITTED,
     'COMPLETED SENTENCE': ChargeStatus.COMPLETED_SENTENCE,
     'CONVICTED': ChargeStatus.CONVICTED,
+    'DISMISSED': ChargeStatus.DROPPED,
     'DISMISSED BY DISTRICT ATTORNEY': ChargeStatus.DROPPED,
     'DROPPED': ChargeStatus.DROPPED,
     'NOT GUILTY': ChargeStatus.ACQUITTED,
+    'OPEN': ChargeStatus.PENDING,
     'PENDING': ChargeStatus.PENDING,
     'PRE-TRIAL': ChargeStatus.PRETRIAL,
     'PRETRIAL': ChargeStatus.PRETRIAL,
