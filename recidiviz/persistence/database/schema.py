@@ -747,7 +747,8 @@ class NyFacilityAggregate(Base, _AggregateTableMixin):
 
     facility_name = Column(String(255))
 
-    in_house = Column(Integer)  # This is ADP
+    census = Column(Integer)  # `In House` - `Boarded In` + `Boarded Out`
+    in_house = Column(Integer)  # ADP of people assigned to facility
     boarded_in = Column(Integer)  # This is held_for_other_jurisdiction_adp
     boarded_out = Column(Integer)  # sent_to_other_jurisdiction_adp
 
