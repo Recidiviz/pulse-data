@@ -59,6 +59,7 @@ BOND_TYPE_MAP = {
     'NO BOND': BondType.NO_BOND,
     'NO BOND ALLOWED': BondType.NO_BOND,
     'NONE SET': BondType.NO_BOND,
+    'RELEASED ON OWN RECOGNIZANCE': BondType.NO_BOND,
     'ROR': BondType.NO_BOND,
     'SECURED': BondType.SECURED,
     'SECURED BOND': BondType.SECURED,
