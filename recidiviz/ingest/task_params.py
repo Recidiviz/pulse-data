@@ -50,8 +50,7 @@ class Task:
     # The type of task, this controls which methods are called on the scraper
     task_type: constants.TaskType = attr.ib()
     # The endpoint used when sending the request
-    # TODO(#680): Make this not optional when we support `us_ny` use case
-    endpoint: Optional[str] = attr.ib()
+    endpoint: str = attr.ib()
 
     # The expected response type to be used when parsing the response
     response_type: constants.ResponseType = \
