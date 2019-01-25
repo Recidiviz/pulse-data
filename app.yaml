@@ -1,7 +1,10 @@
-runtime: python37
-instance_class: F4
-
-entrypoint: gunicorn -c gunicorn.conf.py -b :$PORT recidiviz.server:app
-
+runtime: custom
+env: flex
+resources:
+  cpu: 1
+  memory_gb: 0.5
+  disk_size_gb: 10
+beta_settings:
+  cloud_sql_instances: recidiviz-staging:us-east4:dev-data
 env_variables:
   RECIDIVIZ_ENV: production
