@@ -90,7 +90,7 @@ class Booking(Entity, BuildableAttr):
 
 @attr.s
 class Arrest(Entity, BuildableAttr):
-    date: Optional[datetime.date] = attr.ib()
+    arrest_date: Optional[datetime.date] = attr.ib()
     location: Optional[str] = attr.ib()
     agency: Optional[str] = attr.ib()
     officer_name: Optional[str] = attr.ib()
@@ -119,6 +119,7 @@ class Charge(Entity, BuildableAttr):
     case_number: Optional[str] = attr.ib()
     next_court_date: Optional[datetime.date] = attr.ib()
     judge_name: Optional[str] = attr.ib()
+    charge_notes: Optional[str] = attr.ib()
 
     charge_id: Optional[int] = attr.ib(default=None)
     bond: Optional['Bond'] = attr.ib(default=None)
@@ -141,6 +142,7 @@ class Bond(Entity, BuildableAttr):
     bond_type_raw_text: Optional[str] = attr.ib()
     status: Optional[BondStatus] = attr.ib()
     status_raw_text: Optional[str] = attr.ib()
+    bond_agent: Optional[str] = attr.ib()
 
     bond_id: Optional[int] = attr.ib(default=None)
 
