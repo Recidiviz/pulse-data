@@ -28,6 +28,7 @@ import recidiviz.ingest.us_fl_hendry
 import recidiviz.ingest.us_fl_nassau
 import recidiviz.ingest.us_fl_martin
 import recidiviz.ingest.us_fl_osceola
+import recidiviz.ingest.us_in_vigo
 import recidiviz.ingest.us_ms_desoto
 import recidiviz.ingest.us_mt_gallatin
 import recidiviz.ingest.us_mo_stone
