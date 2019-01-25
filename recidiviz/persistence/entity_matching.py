@@ -48,13 +48,38 @@ def match_entities(
         region: (str)
         ingested_people: List[entities.Person]
     """
-    if _has_external_ids(ingested_people):
-        db_people = database.read_people_by_external_ids(session, region,
-                                                         ingested_people)
-    else:
-        db_people = database.read_people_with_open_bookings(session, region,
-                                                            ingested_people)
+    with_external_ids = []
+    without_external_ids = []
 
+    for ingested_person in ingested_people:
+        if ingested_person.external_id:
+            with_external_ids.append(ingested_person)
+        else:
+            without_external_ids.append(ingested_person)
+
+    if with_external_ids:
+        match_people(
+            db_people=database.read_people_by_external_ids(
+                session, region, with_external_ids),
+            ingested_people=with_external_ids)
+    if without_external_ids:
+        match_people(
+            db_people=database.read_people_with_open_bookings(
+                session, region, without_external_ids),
+            ingested_people=without_external_ids)
+
+
+def match_people(
+        *, db_people: List[entities.Person],
+        ingested_people: List[entities.Person]) -> None:
+    """
+    Attempts to match all people from |ingested_people| with people from the
+    |db_people|. For any ingested person, if a matching person exists in
+    |db_people|, the primary key is updated on the ingested person.
+    Args:
+        ingested_people: List[entities.Person]
+        db_people: List[entities.Person]
+    """
     for db_person in db_people:
         ingested_person = _get_only_match(db_person, ingested_people,
                                           utils.is_person_match)
@@ -73,13 +98,6 @@ def match_entities(
             ingested_person.person_id = db_person.person_id
             match_bookings(db_person=db_person,
                            ingested_person=ingested_person)
-
-
-def _has_external_ids(ingested_people: List[entities.Person]) -> bool:
-    for ingested_person in ingested_people:
-        if ingested_person.external_id:
-            return True
-    return False
 
 
 def match_bookings(
@@ -129,20 +147,21 @@ def match_bookings(
             ingested_person.bookings.append(db_booking)
 
 
-def match_bonds(*, db_booking: entities.Booking,
-                ingested_booking: entities.Booking):
+def match_bonds(
+        *, db_booking: entities.Booking, ingested_booking: entities.Booking):
     _match_from_charges(db_booking=db_booking,
                         ingested_booking=ingested_booking, name='bond')
 
 
-def match_sentences(*, db_booking: entities.Booking,
-                    ingested_booking: entities.Booking):
+def match_sentences(
+        *, db_booking: entities.Booking, ingested_booking: entities.Booking):
     _match_from_charges(db_booking=db_booking,
                         ingested_booking=ingested_booking, name='sentence')
 
 
-def _build_maps_from_charges(charges: List[entities.Charge], obj_name: str) -> \
-        Tuple[Dict[str, Entity], Dict[str, Set[Entity]]]:
+def _build_maps_from_charges(
+        charges: List[entities.Charge], obj_name: str) \
+        -> Tuple[Dict[str, Entity], Dict[str, Set[Entity]]]:
     """Helper function that returns a pair of maps describing the relationships
     between charges and their children. The |object_map| maps ids, which may be
     temporary generated ids, to the objects they refer to. The
@@ -164,8 +183,9 @@ def _build_maps_from_charges(charges: List[entities.Charge], obj_name: str) -> \
     return object_map, object_relationships
 
 
-def _match_from_charges(*, db_booking: entities.Booking,
-                        ingested_booking: entities.Booking, name: str):
+def _match_from_charges(
+        *, db_booking: entities.Booking, ingested_booking: entities.Booking,
+        name: str):
     """Helper function that, within a booking, matches objects that are children
     of the booking's charges. |name| should be 'bond' or 'sentence'.
     """
@@ -302,9 +322,9 @@ def _drop_charge(charge: entities.Charge):
         charge.status = ChargeStatus.INFERRED_DROPPED
 
 
-def _get_next_available_match(db_entity: entities.Entity,
-                              ingested_entities: Sequence[entities.Entity],
-                              matcher: Callable):
+def _get_next_available_match(
+        db_entity: entities.Entity,
+        ingested_entities: Sequence[entities.Entity], matcher: Callable):
     id_name = db_entity.__class__.__name__.lower() + '_id'
 
     for ingested_entity in ingested_entities:
@@ -314,9 +334,9 @@ def _get_next_available_match(db_entity: entities.Entity,
     return None
 
 
-def _get_only_match(db_entity: entities.Entity,
-                    ingested_entities: Sequence[entities.Entity],
-                    matcher: Callable):
+def _get_only_match(
+        db_entity: entities.Entity,
+        ingested_entities: Sequence[entities.Entity], matcher: Callable):
     """
     Finds the entity in |ingested_entites| that matches the |db_entity|.
     Args:
@@ -339,8 +359,8 @@ def _get_only_match(db_entity: entities.Entity,
     return matches[0] if matches else None
 
 
-def _get_all_matches(db_entity: entities.Entity,
-                     ingested_entities: Sequence[entities.Entity],
-                     matcher: Callable):
+def _get_all_matches(
+        db_entity: entities.Entity,
+        ingested_entities: Sequence[entities.Entity], matcher: Callable):
     return [ingested_entity for ingested_entity in ingested_entities
             if matcher(db_entity=db_entity, ingested_entity=ingested_entity)]

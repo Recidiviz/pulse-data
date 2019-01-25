@@ -93,64 +93,59 @@ class TestEntityMatching(TestCase):
 
     def test_matchPerson(self):
         schema_booking = schema.Booking(
-            external_id=_EXTERNAL_ID, admission_date=_DATE_2,
-            booking_id=_BOOKING_ID,
+            admission_date=_DATE_2, booking_id=_BOOKING_ID,
             custody_status=CustodyStatus.IN_CUSTODY.value, last_seen_time=_DATE)
 
         schema_person = schema.Person(
-            person_id=_PERSON_ID, external_id=_EXTERNAL_ID,
+            person_id=_PERSON_ID, full_name=_FULL_NAME, birthdate=_DATE,
+            place_of_residence=_PLACE_1, region=_REGION,
+            bookings=[schema_booking])
+
+        schema_booking_external_id = schema.Booking(
+            admission_date=_DATE_2, booking_id=_BOOKING_ID_ANOTHER,
+            release_date=_DATE, custody_status=CustodyStatus.RELEASED.value,
+            last_seen_time=_DATE)
+
+        schema_person_external_id = schema.Person(
+            person_id=_PERSON_ID_ANOTHER, external_id=_EXTERNAL_ID,
             full_name=_FULL_NAME, birthdate=_DATE, place_of_residence=_PLACE_1,
-            region=_REGION, bookings=[schema_booking])
+            region=_REGION, bookings=[schema_booking_external_id])
 
         session = Session()
         session.add(schema_person)
+        session.add(schema_person_external_id)
         session.commit()
 
         ingested_booking = attr.evolve(
             database_utils.convert_booking(schema_booking), booking_id=None,
             custody_status=CustodyStatus.RELEASED)
-
         ingested_person = attr.evolve(
             database_utils.convert_person(schema_person), person_id=None,
             place_of_residence=_PLACE_2, bookings=[ingested_booking])
 
+        ingested_booking_external_id = attr.evolve(
+            database_utils.convert_booking(schema_booking_external_id),
+            booking_id=None, facility=_FACILITY)
+        ingested_person_external_id = attr.evolve(
+            database_utils.convert_person(schema_person_external_id),
+            person_id=None, bookings=[ingested_booking_external_id])
+
         expected_booking = attr.evolve(ingested_booking, booking_id=_BOOKING_ID)
-        expected_person = attr.evolve(ingested_person, person_id=_PERSON_ID,
-                                      bookings=[expected_booking])
-        entity_matching.match_entities(Session(), _REGION, [ingested_person])
+        expected_person = attr.evolve(
+            ingested_person, person_id=_PERSON_ID, bookings=[expected_booking])
 
-        assert ingested_person == expected_person
+        expected_booking_external_id = attr.evolve(
+            ingested_booking_external_id, booking_id=_BOOKING_ID_ANOTHER)
+        expected_person_external_id = attr.evolve(
+            ingested_person_external_id,
+            person_id=_PERSON_ID_ANOTHER,
+            bookings=[expected_booking_external_id])
 
-    def test_matchPerson_externalIds(self):
-        closed_schema_booking = schema.Booking(
-            admission_date=_DATE_2, booking_id=_BOOKING_ID, release_date=_DATE,
-            custody_status=CustodyStatus.RELEASED.value, last_seen_time=_DATE)
+        ingested_people = [ingested_person, ingested_person_external_id]
+        entity_matching.match_entities(Session(), _REGION, ingested_people)
 
-        schema_person = schema.Person(
-            person_id=_PERSON_ID, external_id=_EXTERNAL_ID,
-            full_name=_FULL_NAME, birthdate=_DATE, place_of_residence=_PLACE_1,
-            region=_REGION, bookings=[closed_schema_booking])
-
-        session = Session()
-        session.add(schema_person)
-        session.commit()
-
-        ingested_closed_booking = database_utils.convert_booking(
-            closed_schema_booking)
-        ingested_closed_booking.booking_id = None
-        ingested_closed_booking.facility = _FACILITY
-
-        ingested_person = database_utils.convert_person(schema_person)
-        ingested_person.person_id = None
-        ingested_person.bookings = [ingested_closed_booking]
-
-        entity_matching.match_entities(Session(), _REGION, [ingested_person])
-
-        expected_closed_booking = attr.evolve(ingested_closed_booking)
-        expected_person = attr.evolve(ingested_person,
-                                      bookings=[expected_closed_booking])
-
-        assert ingested_person == expected_person
+        self.assertCountEqual(ingested_people,
+                              [expected_person, expected_person_external_id])
 
     def test_matchBooking_duplicateMatch_throws(self):
         db_booking = entities.Booking.new_with_defaults(
