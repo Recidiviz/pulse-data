@@ -38,5 +38,7 @@ import recidiviz.ingest.us_ny
 import recidiviz.ingest.us_pa
 import recidiviz.ingest.us_pa_dauphin
 import recidiviz.ingest.us_pa_greene
+import recidiviz.ingest.us_tx_brown
+import recidiviz.ingest.us_tx_cooke
 import recidiviz.ingest.us_vt
 import recidiviz.ingest.worker
