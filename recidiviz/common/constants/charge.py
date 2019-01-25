@@ -99,6 +99,7 @@ _CHARGE_CLASS_MAP = {
     'CIVIL': ChargeClass.CIVIL,
     'FELONY': ChargeClass.FELONY,
     'F': ChargeClass.FELONY,
+    'I': ChargeClass.INFRACTION,
     'INFRACTION': ChargeClass.INFRACTION,
     'MISDEMEANOR': ChargeClass.MISDEMEANOR,
     'M': ChargeClass.MISDEMEANOR,
@@ -118,6 +119,7 @@ _CHARGE_STATUS_MAP = {
     'NOT GUILTY': ChargeStatus.ACQUITTED,
     'OPEN': ChargeStatus.PENDING,
     'PENDING': ChargeStatus.PENDING,
+    'PRE TRIAL': ChargeStatus.PRETRIAL,
     'PRE-TRIAL': ChargeStatus.PRETRIAL,
     'PRETRIAL': ChargeStatus.PRETRIAL,
     'PROBATION': ChargeStatus.SENTENCED,
@@ -129,9 +131,12 @@ _CHARGE_STATUS_MAP = {
 
 _COURT_TYPE_MAP = {
     'CIRCUIT': CourtType.CIRCUIT,
+    'CIRCUIT COURT': CourtType.CIRCUIT,
     'DISTRICT': CourtType.DISTRICT,
+    'DISTRICT COURT': CourtType.DISTRICT,
     'CRIMINAL': CourtType.DISTRICT,
     'OTHER': CourtType.OTHER,
     'SUPERIOR': CourtType.SUPERIOR,
+    'SUPERIOR COURT': CourtType.SUPERIOR,
     'UNKNOWN': CourtType.EXTERNAL_UNKNOWN,
 }
