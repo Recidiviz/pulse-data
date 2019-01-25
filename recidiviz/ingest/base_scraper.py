@@ -74,22 +74,29 @@ class BaseScraper(Scraper):
     # but any scraper can override this and treat it as a different type of
     # endpoint like an API endpoint for example.
     def _fetch_content(self, endpoint, response_type, headers=None,
-                       post_data=None, json_data=None):
+                       cookies=None, post_data=None, json_data=None):
         """Returns the page content.
 
         Args:
             endpoint: the endpoint to make a request to.
             headers: dict of headers to send in the request.
+            cookies: dict of cookies to send in the request.
             post_data: dict of parameters to pass into the html request.
 
         Returns:
-            Returns the content of the page or -1.
+            Returns a tuple of the content of the page (or -1) and a dict
+            of cookies (or None).
         """
         logging.info('Fetching content with endpoint: %s', endpoint)
-        response = self.fetch_page(endpoint, headers=headers,
+
+        # Create cookie jar to pass to fetch
+        response = self.fetch_page(endpoint, headers=headers, cookies=cookies,
                                    post_data=post_data, json_data=json_data)
         if response == -1:
             return -1
+
+        # Extract any cookies from the response and convert back to dict.
+        cookies.update(response.cookies.get_dict())
 
         # If the character set was not explicitly set in the response, use the
         # detected encoding instead of defaulting to 'ISO-8859-1'. See
@@ -100,26 +107,24 @@ class BaseScraper(Scraper):
 
         if response_type is constants.ResponseType.HTML:
             try:
-                return self._parse_html_content(response.text)
+                return self._parse_html_content(response.text), cookies
             except XMLSyntaxError as e:
                 logging.error("Error parsing page. Error: %s\nPage:\n\n%s",
                               e, response.text)
-                return -1
+                return -1, None
         if response_type is constants.ResponseType.JSON:
             try:
-                return json.loads(response.text)
+                return json.loads(response.text), cookies
             except json.JSONDecodeError as e:
                 logging.error("Error parsing page. Error: %s\nPage:\n\n%s",
                               e, response.text)
-                return -1
+                return -1, None
         if response_type is constants.ResponseType.TEXT:
-            return response.text
-        if response_type == constants.ResponseType.RAW:
-            return response.content
-
+            return response.text, cookies
         logging.error("Unexpected response type '%s' for endpoint '%s'",
                       response_type, endpoint)
-        return -1
+        return -1, None
+
 
     def _parse_html_content(self, content_string: str) -> html.HtmlElement:
         """Parses a string into a structured HtmlElement.
@@ -164,9 +169,9 @@ class BaseScraper(Scraper):
             # We always fetch some content before doing anything.
             # Note that we use get here for the post_data to return a
             # default value of None if this scraper doesn't set it.
-            content = self._fetch_content(
+            content, cookies = self._fetch_content(
                 task.endpoint, task.response_type, headers=task.headers,
-                post_data=post_data, json_data=task.json)
+                cookies=task.cookies, post_data=post_data, json_data=task.json)
             if content == -1:
                 return -1
 
@@ -190,6 +195,9 @@ class BaseScraper(Scraper):
 
             next_tasks = self.get_more_tasks(content, task)
             for next_task in next_tasks:
+                # Add any cookies supplied by child scraper
+                cookies.update(next_task.cookies)
+                next_task = Task.evolve(next_task, cookies=cookies)
                 self.add_task('_generic_scrape', QueueRequest(
                     scrape_type=request.scrape_type,
                     scraper_start_time=request.scraper_start_time,

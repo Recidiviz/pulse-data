@@ -221,7 +221,8 @@ class Scraper(metaclass=abc.ABCMeta):
                                    next_task=self.get_initial_task()))
 
     @staticmethod
-    def fetch_page(url, headers=None, post_data=None, json_data=None):
+    def fetch_page(url, headers=None, cookies=None,
+                   post_data=None, json_data=None):
         """Fetch content from a URL. If data is None (the default), we perform
         a GET for the page. If the data is set, it must be a dict of parameters
         to use as POST data in a POST request to the url.
@@ -229,6 +230,7 @@ class Scraper(metaclass=abc.ABCMeta):
         Args:
             url: (string) URL to fetch content from
             headers: (dict) any headers to send in addition to the default
+            cookies: (dict) any cookies to send in the request.
             post_data: dict of parameters to pass into the html POST request
             json_data: dict of parameters in JSON format to pass into the html
                        POST request
@@ -245,10 +247,12 @@ class Scraper(metaclass=abc.ABCMeta):
 
         try:
             if post_data is None and json_data is None:
-                page = requests.get(url, proxies=proxies, headers=headers)
+                page = requests.get(
+                    url, proxies=proxies, headers=headers, cookies=cookies)
             else:
-                page = requests.post(url, proxies=proxies, headers=headers,
-                                     data=post_data, json=json_data)
+                page = requests.post(
+                    url, proxies=proxies, headers=headers, cookies=cookies,
+                    data=post_data, json=json_data)
             page.raise_for_status()
         except requests.exceptions.RequestException as ce:
             log_error = "Error: {0}".format(ce)
