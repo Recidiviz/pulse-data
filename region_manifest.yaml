@@ -155,6 +155,14 @@ regions:
     base_url: http://hcso.online
     scraper_package: us_fl_hendry
     timezone: America/New_York
+  us_nc_buncombe:
+    agency_name: Buncombe County Sheriff's Office
+    region_code: us_nc_buncombe
+    agency_type: jail
+    queue: us-nc-buncombe-scraper
+    base_url: https://bcsdp2c.buncombecounty.org
+    scraper_package: us_nc_buncombe
+    timezone: America/New_York
   us_ms_desoto:
     agency_name: Desoto county
     region_code: us_ms_desoto
