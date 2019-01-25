@@ -216,7 +216,7 @@ cron:
     job_age_limit: 9h
 
 - description: Start us fl hendry county background scraper every day at 9pm
-  url: /scraper/start?region=us_pa_hendry&scrape_type=background
+  url: /scraper/start?region=us_fl_hendry&scrape_type=background
   schedule: every day 21:00
   timezone: America/New_York
   retry_parameters:
@@ -226,6 +226,132 @@ cron:
 
 - description: Stop us fl hendry scraper every day at 9am
   url: /scraper/stop?region=us_fl_hendry&scrape_type=background
+  schedule: every day 09:00
+  timezone: America/New_York
+  retry_parameters:
+    min_backoff_seconds: 2.5
+    max_doublings: 5
+    job_age_limit: 9h
+
+- description: Start us nj bergen county background scraper every day at 9pm
+  url: /scraper/start?region=us_nj_bergen&scrape_type=background
+  schedule: every day 21:00
+  timezone: America/New_York
+  retry_parameters:
+    min_backoff_seconds: 2.5
+    max_doublings: 5
+    job_age_limit: 9h
+
+- description: Stop us nj bergen scraper every day at 9am
+  url: /scraper/stop?region=us_nj_bergen&scrape_type=background
+  schedule: every day 09:00
+  timezone: America/New_York
+  retry_parameters:
+    min_backoff_seconds: 2.5
+    max_doublings: 5
+    job_age_limit: 9h
+
+- description: Start us pa background scraper every day at 9pm
+  url: /scraper/start?region=us_pa&scrape_type=background
+  schedule: every day 21:00
+  timezone: America/New_York
+  retry_parameters:
+    min_backoff_seconds: 2.5
+    max_doublings: 5
+    job_age_limit: 9h
+
+- description: Stop us pa scraper every day at 9am
+  url: /scraper/stop?region=us_pa&scrape_type=background
+  schedule: every day 09:00
+  timezone: America/New_York
+  retry_parameters:
+    min_backoff_seconds: 2.5
+    max_doublings: 5
+    job_age_limit: 9h
+
+- description: Start us in vigo county background scraper every day at 9pm
+  url: /scraper/start?region=us_in_vigo&scrape_type=background
+  schedule: every day 21:00
+  timezone: America/New_York
+  retry_parameters:
+    min_backoff_seconds: 2.5
+    max_doublings: 5
+    job_age_limit: 9h
+
+- description: Stop us in vigo scraper every day at 9am
+  url: /scraper/stop?region=us_in_vigo&scrape_type=background
+  schedule: every day 09:00
+  timezone: America/New_York
+  retry_parameters:
+    min_backoff_seconds: 2.5
+    max_doublings: 5
+    job_age_limit: 9h
+
+- description: Start us tx brown county background scraper every day at 9pm
+  url: /scraper/start?region=us_tx_brown&scrape_type=background
+  schedule: every day 21:00
+  timezone: America/New_York
+  retry_parameters:
+    min_backoff_seconds: 2.5
+    max_doublings: 5
+    job_age_limit: 9h
+
+- description: Stop us tx brown scraper every day at 9am
+  url: /scraper/stop?region=us_tx_brown&scrape_type=background
+  schedule: every day 09:00
+  timezone: America/New_York
+  retry_parameters:
+    min_backoff_seconds: 2.5
+    max_doublings: 5
+    job_age_limit: 9h
+
+- description: Start us nc buncombe county background scraper every day at 9pm
+  url: /scraper/start?region=us_nc_buncombe&scrape_type=background
+  schedule: every day 21:00
+  timezone: America/New_York
+  retry_parameters:
+    min_backoff_seconds: 2.5
+    max_doublings: 5
+    job_age_limit: 9h
+
+- description: Stop us nc buncombe scraper every day at 9am
+  url: /scraper/stop?region=us_nc_buncombe&scrape_type=background
+  schedule: every day 09:00
+  timezone: America/New_York
+  retry_parameters:
+    min_backoff_seconds: 2.5
+    max_doublings: 5
+    job_age_limit: 9h
+
+- description: Start us ms desoto county background scraper every day at 9pm
+  url: /scraper/start?region=us_ms_desoto&scrape_type=background
+  schedule: every day 21:00
+  timezone: America/New_York
+  retry_parameters:
+    min_backoff_seconds: 2.5
+    max_doublings: 5
+    job_age_limit: 9h
+
+- description: Stop us ms desoto scraper every day at 9am
+  url: /scraper/stop?region=us_ms_desoto&scrape_type=background
+  schedule: every day 09:00
+  timezone: America/New_York
+  retry_parameters:
+    min_backoff_seconds: 2.5
+    max_doublings: 5
+    job_age_limit: 9h
+
+- description: Start us tx cooke county background scraper every day at 9pm
+  url: /scraper/start?region=us_tx_cooke&scrape_type=background
+  schedule: every day 21:00
+  timezone: America/New_York
+  retry_parameters:
+    min_backoff_seconds: 2.5
+    max_doublings: 5
+    job_age_limit: 9h
+
+- description: Stop us tx cooke scraper every day at 9am
+  url: /scraper/stop?region=us_tx_cooke&scrape_type=background
   schedule: every day 09:00
   timezone: America/New_York
   retry_parameters:
