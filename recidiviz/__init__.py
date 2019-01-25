@@ -32,14 +32,13 @@ db_engine: Optional[Engine]
 if environment.in_prod():
     db_user = secrets.get_secret('sqlalchemy_db_user')
     db_password = secrets.get_secret('sqlalchemy_db_password')
-    db_host = secrets.get_secret('sqlalchemy_db_host')
     db_name = secrets.get_secret('sqlalchemy_db_name')
     cloudsql_instance_id = secrets.get_secret('cloudsql_instance_id')
 
     sqlalchemy_url = \
-        ('postgresql://{db_user}:{db_password}@{db_host}/{'
-         'db_name}?host=/cloudsql/{cloudsql_instance_id}') \
-            .format(db_user=db_user, db_password=db_password, db_host=db_host,
+        ('postgresql://{db_user}:{db_password}@/{db_name}'
+         '?host=/cloudsql/{cloudsql_instance_id}') \
+            .format(db_user=db_user, db_password=db_password,
                     db_name=db_name, cloudsql_instance_id=cloudsql_instance_id)
     db_engine = sqlalchemy.create_engine(sqlalchemy_url)
     Base.metadata.create_all(db_engine)
