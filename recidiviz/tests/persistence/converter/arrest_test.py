@@ -43,7 +43,7 @@ class ArrestConverterTest(unittest.TestCase):
         # Assert
         expected_result = entities.Arrest(
             external_id='ARREST_ID',
-            date=date(year=1111, month=1, day=2),
+            arrest_date=date(year=1111, month=1, day=2),
             location='FAKE_LOCATION',
             officer_name='FAKE_NAME',
             officer_id='FAKE_ID',

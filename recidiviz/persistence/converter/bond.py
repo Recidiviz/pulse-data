@@ -45,4 +45,7 @@ def convert(proto, metadata: IngestMetadata) -> entities.Bond:
                     metadata.enum_overrides, default=inferred_status)
     new.status_raw_text = fn(normalize, 'status', proto)
 
+    # TODO(745): convert once field exists on proto
+    new.bond_agent = None
+
     return new.build()

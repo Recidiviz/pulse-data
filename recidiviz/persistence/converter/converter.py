@@ -142,6 +142,7 @@ def _charges_pointing_to_total_bond(bond_amount, bond_type, bond_status,
         bond_type_raw_text=None,
         status=bond_status,
         status_raw_text=None,
+        bond_agent=None,
     )
 
     if not charges:

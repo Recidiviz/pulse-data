@@ -359,7 +359,7 @@ class Arrest(Base, DatabaseEntity):
     booking_id = Column(
         Integer, ForeignKey('booking.booking_id'), nullable=False)
     external_id = Column(String(255), index=True)
-    date = Column(Date)
+    arrest_date = Column(Date)
     location = Column(String(255))
     agency = Column(String(255))
     officer_name = Column(String(255))
@@ -381,7 +381,7 @@ class ArrestHistory(Base, DatabaseEntity):
     valid_to = Column(DateTime)
     booking_id = Column(Integer, nullable=False, index=True)
     external_id = Column(String(255), index=True)
-    date = Column(Date)
+    arrest_date = Column(Date)
     location = Column(String(255))
     agency = Column(String(255))
     officer_name = Column(String(255))
@@ -399,6 +399,7 @@ class Bond(Base, DatabaseEntity):
     bond_type_raw_text = Column(String(255))
     status = Column(bond_status, nullable=False)
     status_raw_text = Column(String(255))
+    bond_agent = Column(String(255))
 
     charges = relationship('Charge', back_populates='bond')
 
@@ -420,6 +421,7 @@ class BondHistory(Base, DatabaseEntity):
     bond_type_raw_text = Column(String(255))
     status = Column(bond_status, nullable=False)
     status_raw_text = Column(String(255))
+    bond_agent = Column(String(255))
 
 
 class Sentence(Base, DatabaseEntity):
@@ -552,6 +554,7 @@ class Charge(Base, DatabaseEntity):
     case_number = Column(String(255))
     next_court_date = Column(Date)
     judge_name = Column(String(255))
+    charge_notes = Column(Text)
 
     booking = relationship('Booking', back_populates='charges')
     bond = relationship('Bond', back_populates='charges')
@@ -592,6 +595,7 @@ class ChargeHistory(Base, DatabaseEntity):
     case_number = Column(String(255))
     next_court_date = Column(Date)
     judge_name = Column(String(255))
+    charge_notes = Column(Text)
 
 
 # ==================== Aggregate Tables ====================
