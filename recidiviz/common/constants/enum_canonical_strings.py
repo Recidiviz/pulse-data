@@ -151,6 +151,7 @@ charge_status_pretrial = 'PRETRIAL'
 charge_status_sentenced = 'SENTENCED'
 
 court_type_circuit = 'CIRCUIT'
+court_type_civil = 'CIVIL'
 court_type_district = 'DISTRICT'
 court_type_other = 'OTHER'
 court_type_superior = 'SUPERIOR'

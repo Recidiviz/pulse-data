@@ -68,6 +68,7 @@ class ChargeStatus(MappableEnum):
 
 class CourtType(MappableEnum):
     CIRCUIT = enum_strings.court_type_circuit
+    CIVIL = enum_strings.court_type_civil
     DISTRICT = enum_strings.court_type_district
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
     OTHER = enum_strings.court_type_other
@@ -79,18 +80,18 @@ class CourtType(MappableEnum):
 
 
 _CHARGE_DEGREE_MAP = {
+    '1': ChargeDegree.FIRST,
     '1ST': ChargeDegree.FIRST,
+    '2': ChargeDegree.SECOND,
     '2ND': ChargeDegree.SECOND,
+    '3': ChargeDegree.THIRD,
     '3RD': ChargeDegree.THIRD,
+    '4': ChargeDegree.FOURTH,
     '4TH': ChargeDegree.FOURTH,
     'FIRST': ChargeDegree.FIRST,
+    'FOURTH': ChargeDegree.FOURTH,
     'SECOND': ChargeDegree.SECOND,
     'THIRD': ChargeDegree.THIRD,
-    'FOURTH': ChargeDegree.FOURTH,
-    '1': ChargeDegree.FIRST,
-    '2': ChargeDegree.SECOND,
-    '3': ChargeDegree.THIRD,
-    '4': ChargeDegree.FOURTH,
     'UNKNOWN': ChargeDegree.EXTERNAL_UNKNOWN,
 }
 
@@ -132,9 +133,10 @@ _CHARGE_STATUS_MAP = {
 _COURT_TYPE_MAP = {
     'CIRCUIT': CourtType.CIRCUIT,
     'CIRCUIT COURT': CourtType.CIRCUIT,
+    'CIVIL': CourtType.CIVIL,
+    'CRIMINAL': CourtType.DISTRICT,
     'DISTRICT': CourtType.DISTRICT,
     'DISTRICT COURT': CourtType.DISTRICT,
-    'CRIMINAL': CourtType.DISTRICT,
     'OTHER': CourtType.OTHER,
     'SUPERIOR': CourtType.SUPERIOR,
     'SUPERIOR COURT': CourtType.SUPERIOR,

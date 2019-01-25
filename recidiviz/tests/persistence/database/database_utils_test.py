@@ -76,7 +76,7 @@ _PERSON = entities.Person(
         arrest=entities.Arrest(
             arrest_id=4567,
             external_id="external_id",
-            date=date(year=2000, month=1, day=6),
+            arrest_date=date(year=2000, month=1, day=6),
             location="location",
             agency="agency",
             officer_name="officer_name",
@@ -103,6 +103,7 @@ _PERSON = entities.Person(
             case_number="case_number",
             next_court_date=date(year=2000, month=1, day=7),
             judge_name="judge_name",
+            charge_notes='notes',
 
             bond=entities.Bond(
                 bond_id=6789,
@@ -111,7 +112,8 @@ _PERSON = entities.Person(
                 bond_type=BondType.CASH,
                 bond_type_raw_text='CASH',
                 status=BondStatus.SET,
-                status_raw_text='SET'
+                status_raw_text='SET',
+                bond_agent='bond_agent',
             ),
             sentence=entities.Sentence(
                 sentence_id=7890,

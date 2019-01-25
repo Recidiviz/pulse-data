@@ -25,7 +25,7 @@ def convert(proto) -> entities.Arrest:
     new = entities.Arrest.builder()
 
     new.external_id = fn(parse_external_id, 'arrest_id', proto)
-    new.date = fn(parse_date, 'date', proto)
+    new.arrest_date = fn(parse_date, 'date', proto)
     new.location = fn(normalize, 'location', proto)
     new.agency = fn(normalize, 'agency', proto)
     new.officer_name = fn(normalize, 'officer_name', proto)
