@@ -40,7 +40,7 @@ In order to subclass this the following functions must be implemented:
 import abc
 import json
 import logging
-from typing import List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from lxml import html
 from lxml.etree import XMLSyntaxError  # pylint:disable=no-name-in-module
@@ -74,7 +74,8 @@ class BaseScraper(Scraper):
     # but any scraper can override this and treat it as a different type of
     # endpoint like an API endpoint for example.
     def _fetch_content(self, endpoint, response_type, headers=None,
-                       cookies=None, post_data=None, json_data=None):
+                       cookies=None, post_data=None,
+                       json_data=None) -> Tuple[Any, Optional[Dict[str, str]]]:
         """Returns the page content.
 
         Args:
@@ -93,7 +94,7 @@ class BaseScraper(Scraper):
         response = self.fetch_page(endpoint, headers=headers, cookies=cookies,
                                    post_data=post_data, json_data=json_data)
         if response == -1:
-            return -1
+            return -1, None
 
         # Extract any cookies from the response and convert back to dict.
         cookies.update(response.cookies.get_dict())
@@ -195,9 +196,10 @@ class BaseScraper(Scraper):
 
             next_tasks = self.get_more_tasks(content, task)
             for next_task in next_tasks:
-                # Add any cookies supplied by child scraper
-                cookies.update(next_task.cookies)
-                next_task = Task.evolve(next_task, cookies=cookies)
+                # Include cookies received from response, if any
+                if cookies:
+                    cookies.update(next_task.cookies)
+                    next_task = Task.evolve(next_task, cookies=cookies)
                 self.add_task('_generic_scrape', QueueRequest(
                     scrape_type=request.scrape_type,
                     scraper_start_time=request.scraper_start_time,
