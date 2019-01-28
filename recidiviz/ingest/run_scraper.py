@@ -20,7 +20,7 @@
 usage: run_scraper.py [-h] --region REGION [--num_tasks NUM_TASKS]
                       [--sleep_between_requests SLEEP_BETWEEN_REQUESTS]
                       [--run_forever RUN_FOREVER] [--no_fail_fast]
-                      [--log LOG]
+                      [--log LOG] [--lifo]
 
 Example:
 python -m recidiviz.ingest.run_scraper --region us_pa_greene
@@ -89,7 +89,10 @@ def run_scraper(args):
                      'infinite' if args.run_forever else args.num_tasks)
 
         # run the task
-        method, request = task_queue.popleft()
+        if args.lifo:
+            method, request = task_queue.pop()
+        else:
+            method, request = task_queue.popleft()
         try:
             getattr(scraper, method)(request)
         except Exception as e:
@@ -130,6 +133,12 @@ def _create_parser():
     parser.add_argument(
         '--log', required=False, default='INFO', type=logging.getLevelName,
         help='Set the logging level'
+    )
+    parser.add_argument(
+        '--lifo', required=False, action='store_true',
+        help="If true uses a last-in-first-out queue for webpage navigation ("
+             "as opposed to first-in-first-out). This can be used to enforce "
+             "depth first navigation"
     )
     return parser
 
