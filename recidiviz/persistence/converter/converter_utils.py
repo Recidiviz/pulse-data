@@ -16,6 +16,8 @@
 # ============================================================================
 """Utils for converting individual data fields."""
 import datetime
+import locale
+
 from distutils.util import strtobool  # pylint: disable=no-name-in-module
 
 import dateparser
@@ -25,6 +27,7 @@ from recidiviz.common.constants.bond import \
     BondStatus, BondType, BOND_TYPE_MAP, BOND_STATUS_MAP
 from recidiviz.common.constants.person import Ethnicity, Race
 
+locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
 
 def fn(func, field_name, proto, *additional_func_args, default=None):
     """Return the result of applying the given function to the field on the
@@ -181,14 +184,11 @@ def parse_dollars(dollar_string):
     Return:
         (int) whole number of dollars converted from input
     """
-    if dollar_string == '' or dollar_string.isspace():
+    clean_string = dollar_string.strip(' ').strip('$')
+    if not clean_string:
         return 0
     try:
-        clean_string = ''.join(
-            dollar_string.replace('$', '').replace(',', '').split())
-        if not clean_string:
-            return 0
-        return int(float(clean_string))
+        return int(locale.atof(clean_string))
     except Exception:
         raise ValueError('cannot parse dollar value: %s' % dollar_string)
 
