@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Parse the NY Aggregated Statistics PDF."""
-import calendar
 import datetime
 import itertools
 import locale
@@ -149,14 +148,8 @@ def _parse_report_date(report_date: str) -> datetime.date:
 
     Example: "12/2018" -> 12/31/2018
     """
-    parsed_datetime = dateutil.parser.parse(report_date)
-
-    day = _last_day_of_month(parsed_datetime.year, parsed_datetime.month)
-    return parsed_datetime.replace(day=day).date()
-
-
-def _last_day_of_month(year: int, month: int) -> int:
-    return calendar.monthrange(year, month)[1]
+    parsed_date = dateutil.parser.parse(report_date).date()
+    return aggregate_ingest_utils.on_last_day_of_month(parsed_date)
 
 
 def _setup() -> None:
