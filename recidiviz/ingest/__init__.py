@@ -28,6 +28,7 @@ import recidiviz.ingest.us_fl_hendry
 import recidiviz.ingest.us_fl_nassau
 import recidiviz.ingest.us_fl_martin
 import recidiviz.ingest.us_fl_osceola
+import recidiviz.ingest.us_ga_berrien
 import recidiviz.ingest.us_in_vigo
 import recidiviz.ingest.us_ms_desoto
 import recidiviz.ingest.us_mt_gallatin
@@ -39,6 +40,7 @@ import recidiviz.ingest.us_ny
 import recidiviz.ingest.us_pa
 import recidiviz.ingest.us_pa_dauphin
 import recidiviz.ingest.us_pa_greene
+import recidiviz.ingest.us_tn_mcminn
 import recidiviz.ingest.us_tx_brown
 import recidiviz.ingest.us_tx_cooke
 import recidiviz.ingest.us_vt

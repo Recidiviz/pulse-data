@@ -50,7 +50,7 @@ class JsonDataExtractor(DataExtractor):
     def _extract(self, content, ingest_info, current_key=None):
         """Recursively walks |content| and adds data to |ingest_info|."""
         if isinstance(content, list):
-            self._extract_list(content, ingest_info)
+            self._extract_list(content, ingest_info, current_key)
         elif isinstance(content, dict):
             for k, v in content.items():
                 lookup_key = '{}.{}'.format(current_key,
@@ -79,7 +79,7 @@ class JsonDataExtractor(DataExtractor):
 
     def _extract_list(self, content, ingest_info, current_key=None):
         for value in content:
-            if not isinstance(value, list) and not isinstance(value, dict):
-                logging.error('JSON value was not an object or array: %s',
-                              value)
-            self._extract(value, ingest_info, current_key)
+            if isinstance(value, (list, dict)):
+                self._extract(value, ingest_info, current_key)
+            else:
+                self._extract({current_key: value}, ingest_info)

@@ -88,9 +88,10 @@ message Charge {
     optional string case_number = 14;
     optional string next_court_date = 15;
     optional string judge_name = 16;
+    optional string charge_notes = 17;
 
-    optional string bond_id = 17;
-    optional string sentence_id = 18;
+    optional string bond_id = 18;
+    optional string sentence_id = 19;
 }
 
 message Hold {

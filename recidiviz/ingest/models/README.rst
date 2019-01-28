@@ -254,6 +254,8 @@ The Charge object holds information on a single charge. Each booking may have se
 
                      -  Circuit
 
+                     -  Civil
+
                      -  District
 
                      -  Other
@@ -264,6 +266,7 @@ The Charge object holds information on a single charge. Each booking may have se
 **case_number**      Court case number for this charge.
 **next_court_date**  Date of the next scheduled court appearance on this charge.
 **judge_name**       Name of the judge who will hear this case.
+**charge_notes**     Free text containing other information about a charge.
 **bond**             A link to the Bond object associated with this charge.
 **sentence**         A link to the Sentence object associated with this charge.
 ==================== ====================================================================================================================================
