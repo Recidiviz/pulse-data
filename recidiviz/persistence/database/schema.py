@@ -172,6 +172,7 @@ charge_status_values = (enum_strings.charge_status_acquitted,
                         enum_strings.unknown_removed_from_source)
 
 court_type_values = (enum_strings.court_type_circuit,
+                     enum_strings.court_type_civil,
                      enum_strings.court_type_district,
                      enum_strings.external_unknown,
                      enum_strings.court_type_other,

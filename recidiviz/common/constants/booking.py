@@ -102,6 +102,7 @@ _CUSTODY_STATUS_MAP = {
     'HELD ELSEWHERE': CustodyStatus.HELD_ELSEWHERE,
     'OUT TO COURT': CustodyStatus.HELD_ELSEWHERE,
     'IN CUSTODY': CustodyStatus.IN_CUSTODY,
+    'CURRENTLY BOOKED': CustodyStatus.IN_CUSTODY,
     'DISCHARGED': CustodyStatus.RELEASED,
     'RELEASED': CustodyStatus.RELEASED,
     'TEMP RELEASE': CustodyStatus.RELEASED,

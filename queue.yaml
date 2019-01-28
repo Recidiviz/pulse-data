@@ -210,8 +210,32 @@ queue:
     task_age_limit: 3d
     task_retry_limit: 5
 
+# us-tn-mcminn-scraper - McMinn County, Tennessee
+- name: us-tn-mcminn-scraper
+  mode: push
+  rate: 5/m
+  bucket_size: 2
+  max_concurrent_requests: 3
+  retry_parameters:
+    min_backoff_seconds: 5
+    max_backoff_seconds: 300
+    task_age_limit: 3d
+    task_retry_limit: 5
+
 # us-in-vigo-scraper - Vigo County, Indiana
 - name: us-in-vigo-scraper
+  mode: push
+  rate: 5/m
+  bucket_size: 2
+  max_concurrent_requests: 3
+  retry_parameters:
+    min_backoff_seconds: 5
+    max_backoff_seconds: 300
+    task_age_limit: 3d
+    task_retry_limit: 5
+
+# us-ga-berrien-scraper - Berrien County, Georgia
+- name: us-ga-berrien-scraper
   mode: push
   rate: 5/m
   bucket_size: 2
