@@ -80,8 +80,8 @@ class TestConverterUtils(TestCase):
             converter_utils.parse_bool('ABC')
 
     def test_parseEnum(self):
-        assert Gender.from_str('Male') == Gender.MALE
+        assert Gender.parse('Male', {}) == Gender.MALE
 
     def test_parseBadEnum(self):
         with pytest.raises(EnumParsingError):
-            Gender.from_str('ABD')
+            Gender.parse('ABD', {})

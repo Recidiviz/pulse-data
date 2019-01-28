@@ -23,7 +23,6 @@ import dateparser
 from recidiviz.common import common_utils
 from recidiviz.common.constants.bond import \
     BondStatus, BondType, BOND_TYPE_MAP, BOND_STATUS_MAP
-from recidiviz.common.constants.mappable_enum import EnumParsingError
 from recidiviz.common.constants.person import Ethnicity, Race
 
 
@@ -64,25 +63,14 @@ def normalize(s):
     return ' '.join(s.split()).upper()
 
 
-def race_is_actually_ethnicity(ingest_person):
+def race_is_actually_ethnicity(ingest_person, enum_overrides):
     if ingest_person.HasField('ethnicity'):
         return False
     if not ingest_person.HasField('race'):
         return False
 
-    try:
-        Ethnicity.from_str(ingest_person.race)
-        race_is_ethnicity = True
-    except EnumParsingError:
-        race_is_ethnicity = False
-
-    try:
-        Race.from_str(ingest_person.race)
-        race_is_already_set_correctly = True
-    except EnumParsingError:
-        race_is_already_set_correctly = False
-
-    return race_is_ethnicity and not race_is_already_set_correctly
+    return Ethnicity.can_parse(ingest_person.race, enum_overrides) and \
+        not Race.can_parse(ingest_person.race, enum_overrides)
 
 
 def parse_datetime(date_string):
