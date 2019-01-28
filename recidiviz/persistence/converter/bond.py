@@ -35,13 +35,13 @@ def convert(proto, metadata: IngestMetadata) -> entities.Bond:
         default=(None, None, BondStatus.UNKNOWN_FOUND_IN_SOURCE))
     # |inferred_bond_type| defaults to CASH unless the bond amount contains
     # information about the type (i.e. NO_BOND or BOND_DENIED)
-    new.bond_type = fn(BondType.from_str, 'bond_type', proto,
+    new.bond_type = fn(BondType.parse, 'bond_type', proto,
                        metadata.enum_overrides, default=inferred_bond_type)
     new.bond_type_raw_text = fn(normalize, 'bond_type', proto)
 
     # |inferred_bond_status| defaults to UNKNOWN_FOUND_IN_SOURCE unless the bond
     # amount contains information about the status (i.e. BOND_DENIED)
-    new.status = fn(BondStatus.from_str, 'status', proto,
+    new.status = fn(BondStatus.parse, 'status', proto,
                     metadata.enum_overrides, default=inferred_status)
     new.status_raw_text = fn(normalize, 'status', proto)
 
