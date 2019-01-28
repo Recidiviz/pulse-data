@@ -48,7 +48,7 @@ _BIRTHDATE = datetime.date(year=2012, month=1, day=2)
 _LAST_SEEN_TIME = datetime.datetime(year=2020, month=7, day=4)
 _FACILITY = 'facility'
 
-DATE_SCRAPED = datetime.datetime(year=2019, month=1, day=1)
+DATE_SCRAPED = datetime.date(year=2019, month=1, day=1)
 
 
 class TestDatabase(TestCase):
@@ -515,7 +515,7 @@ class TestDatabase(TestCase):
         self.assertEqual(result.county_population, 176016)
         self.assertEqual(result.average_daily_population, 1015)
         self.assertEqual(result.date_reported,
-                         datetime.datetime(year=2017, month=9, day=1))
+                         datetime.date(year=2017, month=9, day=1))
         self.assertEqual(result.fips, '2')
         self.assertEqual(result.report_date, DATE_SCRAPED)
         self.assertEqual(result.report_granularity,
