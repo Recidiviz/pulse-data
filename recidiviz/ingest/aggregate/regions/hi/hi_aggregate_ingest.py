@@ -51,7 +51,7 @@ _COLUMN_NAMES = [
 ]
 
 
-def parse(filename: str, date_scraped: datetime.datetime) \
+def parse(filename: str, date_scraped: datetime.date) \
         -> Dict[DeclarativeMeta, pd.DataFrame]:
     table = _parse_table(filename)
 
