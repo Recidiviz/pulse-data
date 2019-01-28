@@ -110,7 +110,7 @@ class TestFlAggregateIngest(TestCase):
         self.assertEqual(hernando_row.county_population, 179503)
         self.assertEqual(hernando_row.average_daily_population, 632)
         self.assertEqual(hernando_row.date_reported,
-                         datetime.datetime(year=2017, month=9, day=1))
+                         datetime.date(year=2017, month=9, day=1))
 
     def testWrite_CalculatesCountyPopulationSum(self):
         # Act

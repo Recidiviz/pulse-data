@@ -29,7 +29,7 @@ from recidiviz.persistence.database.schema import FlCountyAggregate, \
     FlFacilityAggregate
 
 
-def parse(filename: str, date_scraped: datetime.datetime) \
+def parse(filename: str, date_scraped: datetime.date) \
         -> Dict[DeclarativeMeta, pd.DataFrame]:
     _setup()
 
