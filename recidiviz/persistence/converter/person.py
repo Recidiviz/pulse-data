@@ -97,7 +97,7 @@ def _parse_race_and_ethnicity(proto, enum_overrides):
         race = None
         ethnicity = fn(Ethnicity.from_str, 'race', proto, enum_overrides)
     else:
-        race = fn(Race.from_str, 'race', proto)
+        race = fn(Race.from_str, 'race', proto, enum_overrides)
         ethnicity = fn(Ethnicity.from_str, 'ethnicity', proto, enum_overrides)
 
     return race, ethnicity
