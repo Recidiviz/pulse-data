@@ -122,6 +122,8 @@ class BaseScraper(Scraper):
                 return -1, None
         if response_type is constants.ResponseType.TEXT:
             return response.text, cookies
+        if response_type is constants.ResponseType.RAW:
+            return response.content, cookies
         logging.error("Unexpected response type '%s' for endpoint '%s'",
                       response_type, endpoint)
         return -1, None
