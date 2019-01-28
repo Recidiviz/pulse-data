@@ -27,7 +27,7 @@ from recidiviz.ingest.aggregate import aggregate_ingest_utils
 from recidiviz.persistence.database.schema import TxCountyAggregate
 
 
-def parse(filename: str, date_scraped: datetime.datetime) \
+def parse(filename: str, date_scraped: datetime.date) \
         -> Dict[DeclarativeMeta, pd.DataFrame]:
     table = _parse_table(filename)
 
