@@ -41,7 +41,7 @@ def copy_fields_to_builder(person_builder, proto, metadata):
                                                         metadata.enum_overrides)
     new.race_raw_text = fn(normalize, 'race', proto)
     new.ethnicity_raw_text = fn(normalize, 'ethnicity', proto)
-    new.gender = fn(Gender.from_str, 'gender', proto, metadata.enum_overrides)
+    new.gender = fn(Gender.parse, 'gender', proto, metadata.enum_overrides)
     new.gender_raw_text = fn(normalize, 'gender', proto)
     new.place_of_residence = fn(normalize, 'place_of_residence', proto)
 
@@ -93,11 +93,11 @@ def _parse_birthdate(proto):
 
 
 def _parse_race_and_ethnicity(proto, enum_overrides):
-    if converter_utils.race_is_actually_ethnicity(proto):
+    if converter_utils.race_is_actually_ethnicity(proto, enum_overrides):
         race = None
-        ethnicity = fn(Ethnicity.from_str, 'race', proto, enum_overrides)
+        ethnicity = fn(Ethnicity.parse, 'race', proto, enum_overrides)
     else:
-        race = fn(Race.from_str, 'race', proto, enum_overrides)
-        ethnicity = fn(Ethnicity.from_str, 'ethnicity', proto, enum_overrides)
+        race = fn(Race.parse, 'race', proto, enum_overrides)
+        ethnicity = fn(Ethnicity.parse, 'ethnicity', proto, enum_overrides)
 
     return race, ethnicity

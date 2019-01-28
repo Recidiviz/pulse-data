@@ -35,10 +35,9 @@ class MappableEnum(Enum):
     """
 
     @classmethod
-    def from_str(cls,
-                 label: str,
-                 override_map: Dict[str, Optional['MappableEnum']] = None) \
-            -> Optional['MappableEnum']:
+    def parse(cls, label: str,
+              override_map: Dict[str, Optional['MappableEnum']]) \
+              -> Optional['MappableEnum']:
 
         label = label.strip().upper()
         if not override_map:
@@ -54,6 +53,21 @@ class MappableEnum(Enum):
         complete_map.update(cls_override_map)
 
         return cls._parse_to_enum(label, complete_map)
+
+    @classmethod
+    def can_parse(
+            cls, label: str,
+            override_map: Dict[str, Optional['MappableEnum']]) -> bool:
+        """Checks if the given string will parse into this enum.
+
+        Convenience method to be used by a child scraper to tell if a given
+        string should be used for this field.
+        """
+        try:
+            cls.parse(label, override_map)
+            return True
+        except EnumParsingError:
+            return False
 
     @classmethod
     def _parse_to_enum(cls, label, complete_map):

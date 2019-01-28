@@ -32,18 +32,19 @@ def copy_fields_to_builder(booking_builder, proto, metadata):
     # 1-to-1 mappings
     new.external_id = fn(parse_external_id, 'booking_id', proto)
     new.projected_release_date = fn(parse_date, 'projected_release_date', proto)
-    new.admission_reason = fn(AdmissionReason.from_str, 'admission_reason',
+    new.admission_reason = fn(AdmissionReason.parse, 'admission_reason',
                               proto, metadata.enum_overrides)
     new.admission_reason_raw_text = fn(normalize, 'admission_reason', proto)
-    new.release_reason = fn(ReleaseReason.from_str, 'release_reason', proto,
+    new.release_reason = fn(ReleaseReason.parse, 'release_reason', proto,
                             metadata.enum_overrides)
     new.release_reason_raw_text = fn(normalize, 'release_reason', proto)
     new.custody_status = fn(
-        CustodyStatus.from_str, 'custody_status', proto,
+        CustodyStatus.parse, 'custody_status', proto,
         metadata.enum_overrides, default=CustodyStatus.UNKNOWN_FOUND_IN_SOURCE)
     new.custody_status_raw_text = fn(normalize, 'custody_status', proto)
     new.facility = fn(normalize, 'facility', proto)
-    new.classification = fn(Classification.from_str, 'classification', proto)
+    new.classification = fn(Classification.parse, 'classification', proto,
+                            metadata.enum_overrides)
     new.classification_raw_text = fn(normalize, 'classification', proto)
 
     # Inferred attributes
