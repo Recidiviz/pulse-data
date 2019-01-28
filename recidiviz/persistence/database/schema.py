@@ -625,7 +625,7 @@ class _AggregateTableMixin:
     # TODO(#689): Consider adding fips_type to denote county vs facility
     fips = Column(String(255))
 
-    report_date = Column(DateTime)
+    report_date = Column(Date)
     report_granularity = Column(
         Enum(*report_granularity_values, name='report_granularity'),
     )
@@ -644,7 +644,7 @@ class FlCountyAggregate(Base, _AggregateTableMixin):
 
     # If a county fails to send updated statistics to FL State, date_reported
     # will be set with the last time valid data was add to this report.
-    date_reported = Column(DateTime)
+    date_reported = Column(Date)
 
 
 class FlFacilityAggregate(Base, _AggregateTableMixin):
