@@ -13,4 +13,4 @@ echo "Starting deploy of queue.yaml"
 gcloud app deploy queue.yaml --project=recidiviz-123
 
 echo "Starting deploy of main app"
-gcloud app deploy --project=recidiviz-123
+gcloud app deploy prod.yaml --project=recidiviz-123
