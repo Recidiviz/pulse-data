@@ -15,6 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Common utility functions used across aggregated_ingest."""
+import calendar
+import datetime
 from typing import Dict
 
 import pandas as pd
@@ -42,3 +44,8 @@ def rename_columns_and_select(df: pd.DataFrame,
     rename operation as described in |rename_dict|."""
     df = df.rename(columns=rename_dict)
     return df[list(rename_dict.values())]
+
+
+def on_last_day_of_month(date: datetime.date) -> datetime.date:
+    last_day_of_month = calendar.monthrange(date.year, date.month)[1]
+    return date.replace(day=last_day_of_month)
