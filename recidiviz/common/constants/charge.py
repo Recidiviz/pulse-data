@@ -95,7 +95,6 @@ _CHARGE_DEGREE_MAP = {
     'UNKNOWN': ChargeDegree.EXTERNAL_UNKNOWN,
 }
 
-
 _CHARGE_CLASS_MAP = {
     'CIVIL': ChargeClass.CIVIL,
     'FELONY': ChargeClass.FELONY,
@@ -104,11 +103,12 @@ _CHARGE_CLASS_MAP = {
     'INFRACTION': ChargeClass.INFRACTION,
     'MISDEMEANOR': ChargeClass.MISDEMEANOR,
     'M': ChargeClass.MISDEMEANOR,
+    'O': ChargeClass.OTHER,
+    'OTHER': ChargeClass.OTHER,
     'PAROLE VIOLATION': ChargeClass.PAROLE_VIOLATION,
     'PROBATION VIOLATION': ChargeClass.PROBATION_VIOLATION,
     'UNKNOWN': ChargeClass.EXTERNAL_UNKNOWN
 }
-
 
 _CHARGE_STATUS_MAP = {
     'ACQUITTED': ChargeStatus.ACQUITTED,
@@ -124,20 +124,25 @@ _CHARGE_STATUS_MAP = {
     'PRE-TRIAL': ChargeStatus.PRETRIAL,
     'PRETRIAL': ChargeStatus.PRETRIAL,
     'PROBATION': ChargeStatus.SENTENCED,
+    'REVOKED': ChargeStatus.DROPPED,
     'SENTENCED': ChargeStatus.SENTENCED,
     'TIME SERVED': ChargeStatus.COMPLETED_SENTENCE,
     'UNKNOWN': ChargeStatus.EXTERNAL_UNKNOWN,
 }
 
-
 _COURT_TYPE_MAP = {
     'CIRCUIT': CourtType.CIRCUIT,
     'CIRCUIT COURT': CourtType.CIRCUIT,
+    'CITY': CourtType.DISTRICT,
     'CIVIL': CourtType.CIVIL,
+    'CHANCERY': CourtType.CIVIL,
     'CRIMINAL': CourtType.DISTRICT,
     'DISTRICT': CourtType.DISTRICT,
     'DISTRICT COURT': CourtType.DISTRICT,
+    'MAGISTRATE': CourtType.DISTRICT,
+    'MUNICIPAL': CourtType.DISTRICT,
     'OTHER': CourtType.OTHER,
+    'STATE': CourtType.SUPERIOR,
     'SUPERIOR': CourtType.SUPERIOR,
     'SUPERIOR COURT': CourtType.SUPERIOR,
     'UNKNOWN': CourtType.EXTERNAL_UNKNOWN,

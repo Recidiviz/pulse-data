@@ -187,6 +187,22 @@ regions:
     base_url: https://jail.desotosheriff.org/DCN/inmates
     scraper_package: us_ms_desoto
     timezone: America/Chicago
+  us_tn_mcminn:
+    agency_name: McMinn County Sheriff's Office
+    region_code: us_tn_mcminn
+    agency_type: jail
+    queue: us-tn-mcminn-scraper
+    base_url: http://mcminncotn.offenderindex.com
+    scraper_package: us_tn_mcminn
+    timezone: America/Chicago
+  us_ga_berrien:
+    agency_name: Berrien County Sheriff's Office
+    region_code: us_ga_berrien
+    agency_type: jail
+    queue: us-ga-berrien-scraper
+    base_url: http://berriencoga.offenderindex.com
+    scraper_package: us_ga_berrien
+    timezone: America/New_York
   us_tx_cooke:
     agency_name: Cooke County Sheriff's Office
     region_code: us_tx_cooke

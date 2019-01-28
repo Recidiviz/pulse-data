@@ -146,6 +146,7 @@ def _sanitize_charge(charge: entities.Charge) -> entities.Charge:
     sanitized.sentence = None
     sanitized.next_court_date = None
     sanitized.judge_name = None
+    sanitized.charge_notes = None
 
     if charge.bond:
         sanitized.bond = _sanitize_bond(charge.bond)

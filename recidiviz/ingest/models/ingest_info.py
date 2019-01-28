@@ -205,7 +205,7 @@ class _Charge(IngestObject):
             charging_entity=None, status=None,
             number_of_counts=None, court_type=None,
             case_number=None, next_court_date=None, judge_name=None,
-            bond=None, sentence=None):
+            bond=None, sentence=None, charge_notes=None):
         self.charge_id: Optional[str] = charge_id
         self.offense_date: Optional[str] = offense_date
         self.statute: Optional[str] = statute
@@ -222,6 +222,7 @@ class _Charge(IngestObject):
         self.case_number: Optional[str] = case_number
         self.next_court_date: Optional[str] = next_court_date
         self.judge_name: Optional[str] = judge_name
+        self.charge_notes: Optional[str] = charge_notes
 
         self.bond: Optional[_Bond] = bond
         self.sentence: Optional[_Sentence] = sentence
@@ -335,6 +336,8 @@ def to_repr(obj):
 
 
 def restricted_setattr(self, last_field, name, value):
+    if isinstance(value, str) and (value == '' or value.isspace()):
+        value = None
     if hasattr(self, last_field) and not hasattr(self, name):
         raise AttributeError('No field {} in object {}'.format(name,
                                                                type(self)))

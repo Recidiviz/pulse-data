@@ -54,6 +54,4 @@ def copy_fields_to_builder(
     new.case_number = fn(normalize, 'case_number', proto)
     new.next_court_date = fn(parse_date, 'next_court_date', proto)
     new.judge_name = fn(normalize, 'judge_name', proto)
-
-    # TODO(745): convert once field exists on proto
-    new.charge_notes = None
+    new.charge_notes = fn(normalize, 'charge_notes', proto)
