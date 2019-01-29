@@ -19,18 +19,20 @@ import datetime
 import locale
 from typing import Dict, Optional
 
+import dateparser
 import pandas as pd
 import tabula
 from sqlalchemy.ext.declarative import DeclarativeMeta
+from PyPDF2 import PdfFileReader
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 from recidiviz.ingest.aggregate import aggregate_ingest_utils
+from recidiviz.ingest.aggregate.Errors import AggregateDateParsingError
 from recidiviz.persistence.database.schema import FlCountyAggregate, \
     FlFacilityAggregate
 
 
-def parse(filename: str, date_scraped: datetime.date) \
-        -> Dict[DeclarativeMeta, pd.DataFrame]:
+def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
     _setup()
 
     # TODO(#698): Set county fips based on the county_name
@@ -46,6 +48,7 @@ def parse(filename: str, date_scraped: datetime.date) \
         FlFacilityAggregate: fl_facility_table
     }
 
+    date_scraped = _parse_date(filename)
     for table in result.values():
         table['report_date'] = date_scraped
         table['report_granularity'] = enum_strings.monthly_granularity
@@ -127,6 +130,24 @@ def _parse_facility_table(filename: str) -> pd.DataFrame:
         result[column_name] = result[column_name].apply(_to_int)
 
     return result
+
+
+def _parse_date(filename: str) -> datetime.date:
+    with open(filename, 'rb') as file:
+        pdf = PdfFileReader(file)
+        text = pdf.getPage(0).extractText()
+
+        lines = iter(text.split('\n'))
+        for line in lines:
+            # We know the date always follows this line
+            if 'Average Inmate Population' not in line:
+                continue
+
+            date_string = next(lines)
+            parsed_date = dateparser.parse(date_string).date()
+            return aggregate_ingest_utils.on_last_day_of_month(parsed_date)
+
+    raise AggregateDateParsingError()
 
 
 def _use_stale_adp(adp_str: str) -> str:
