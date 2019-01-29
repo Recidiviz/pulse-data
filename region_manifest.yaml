@@ -211,3 +211,123 @@ regions:
     base_url: https://www.cookecountyonline.net/bok/cgibok108.html
     scraper_package: us_tx_cooke
     timezone: America/Chicago
+  us_tx_cochran:
+    agency_name: Cochran County
+    region_code: us_tx_cochran
+    agency_type: jail
+    queue: us-tx-cochran-scraper
+    base_url: http://166.102.192.53/bok/cgibok108.html
+    scraper_package: us_tx_cochran
+    timezone: America/Chicago
+  us_tx_hockley:
+    agency_name: Hockley County Sheriff's Office
+    region_code: us_tx_hockley
+    agency_type: jail
+    queue: us-tx-hockley-scraper
+    base_url: http://www.hockleycountyonline.net/bok/cgibok108.html
+    scraper_package: us_tx_hockley
+    timezone: America/Chicago
+  us_tx_hopkins:
+    agency_name: County of Hopkins Sheriff's Office
+    region_code: us_tx_hopkins
+    agency_type: jail
+    queue: us-tx-hopkins-scraper
+    base_url: http://www.hopkinscountyonline.net/bok/cgibok108.html
+    scraper_package: us_tx_hopkins
+    timezone: America/Chicago
+  us_tx_liberty:
+    agency_name: Liberty County Sheriff's Office
+    region_code: us_tx_liberty
+    agency_type: jail
+    queue: us-tx-liberty-scraper
+    base_url: http://74.81.132.22/bok/cgibok108.html
+    scraper_package: us_tx_liberty
+    timezone: America/Chicago
+  us_tx_red_river:
+    agency_name: Red River County
+    region_code: us_tx_red_river
+    agency_type: jail
+    queue: us-tx-red-river-scraper
+    base_url: https://netweb.netdatacorp.net/REDR/bok/cgibok108todate.html
+    scraper_package: us_tx_red_river
+    timezone: America/Chicago
+  us_tx_titus:
+    agency_name: Titus County Sheriff's Office
+    region_code: us_tx_titus
+    agency_type: jail
+    queue: us-tx-titus-scraper
+    base_url: http://tituscountyonline.net/bok/cgibok108.html
+    scraper_package: us_tx_titus
+    timezone: America/Chicago
+  us_tx_upshur:
+    agency_name: Upshur County
+    region_code: us_tx_upshur
+    agency_type: jail
+    queue: us-tx-upshur-scraper
+    base_url: https://netweb.netdatacorp.net/CLOUD/BOK/cgibokupsh.html
+    scraper_package: us_tx_upshur
+    timezone: America/Chicago
+  us_tx_van_zandt:
+    agency_name: Van Zandt County
+    region_code: us_tx_van_zandt
+    agency_type: jail
+    queue: us-tx-van-zandt-scraper
+    base_url: https://netweb.netdatacorp.net/VANZ/bok/CGIBOK108.html
+    scraper_package: us_tx_van_zandt
+    timezone: America/Chicago
+  us_tx_erath:
+    agency_name: Erath County Sheriff's Office
+    region_code: us_tx_erath
+    agency_type: jail
+    queue: us-tx-erath-scraper
+    base_url: http://65.115.205.214/bok/cgibok108.html
+    scraper_package: us_tx_erath
+    timezone: America/Chicago
+  us_tx_wilson:
+    agency_name: Wilson County Sheriff's Office
+    region_code: us_tx_wilson
+    agency_type: jail
+    queue: us-tx-wilson-scraper
+    base_url: http://24.153.246.44/BOK/CGIBOK108.html
+    scraper_package: us_tx_wilson
+    timezone: America/Chicago
+  us_tx_rusk:
+    agency_name: Rusk County Sheriff's Office
+    region_code: us_tx_rusk
+    agency_type: jail
+    queue: us-tx-rusk-scraper
+    base_url: http://66.76.26.155/bok/cgibok108.html
+    scraper_package: us_tx_rusk
+    timezone: America/Chicago
+  us_tx_coleman:
+    agency_name: Coleman County
+    region_code: us_tx_coleman
+    agency_type: jail
+    queue: us-tx-coleman-scraper
+    base_url: https://netweb.netdatacorp.net/COLE/bok/cgibok108.html
+    scraper_package: us_tx_coleman
+    timezone: America/Chicago
+  us_tx_freestone:
+    agency_name: Freestone County Sheriff's Office
+    region_code: us_tx_freestone
+    agency_type: jail
+    queue: us-tx-freestone-scraper
+    base_url: https://netweb.netdatacorp.net/CLOUD/BOK/cgibokfree.html
+    scraper_package: us_tx_freestone
+    timezone: America/Chicago
+  us_tx_ochiltree:
+    agency_name: Ochiltree County Sheriff's Office
+    region_code: us_tx_ochiltree
+    agency_type: jail
+    queue: us-tx-ochiltree-scraper
+    base_url: https://netweb.netdatacorp.net/OCHI/bok/cgibok108.html
+    scraper_package: us_tx_ochiltree
+    timezone: America/Chicago
+  us_tx_young:
+    agency_name: Young County Sheriff's Office
+    region_code: us_tx_young
+    agency_type: jail
+    queue: us-tx-young-scraper
+    base_url: https://netweb.netdatacorp.net/YOUN/bok/cgibok108.html
+    scraper_package: us_tx_young
+    timezone: America/Chicago
