@@ -21,11 +21,12 @@ from typing import Dict, Any, Optional
 import attr
 
 from recidiviz.common.buildable_attr import BuildableAttr
+from recidiviz.common.common_utils import normalize
 from recidiviz.common.constants.mappable_enum import MappableEnum
 
 
 def _normalize_keys(dictionary: Dict[str, Any]) -> Dict[str, Any]:
-    return {k.upper(): v for k, v in dictionary.items()}
+    return {normalize(k): v for k, v in dictionary.items()}
 
 
 @attr.s(frozen=True)

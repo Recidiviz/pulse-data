@@ -23,11 +23,13 @@ from distutils.util import strtobool  # pylint: disable=no-name-in-module
 import dateparser
 
 from recidiviz.common import common_utils
+from recidiviz.common.common_utils import normalize
 from recidiviz.common.constants.bond import \
     BondStatus, BondType, BOND_TYPE_MAP, BOND_STATUS_MAP
 from recidiviz.common.constants.person import Ethnicity, Race
 
 locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
+
 
 def fn(func, field_name, proto, *additional_func_args, default=None):
     """Return the result of applying the given function to the field on the
@@ -46,24 +48,6 @@ def parse_external_id(id_str):
     if common_utils.is_generated_id(id_str):
         return None
     return normalize(id_str)
-
-
-def normalize(s):
-    """
-    Normalizes whitespace within the provided string by converting all groups
-    of whitespaces into ' '.
-
-    Args:
-        s: The string to be normalized
-
-    Return:
-        (str): Normalized string
-    """
-    if s is None or s == '' or s.isspace():
-        raise ValueError(
-            'function normalize should never be called with None or an empty '
-            'string')
-    return ' '.join(s.split()).upper()
 
 
 def race_is_actually_ethnicity(ingest_person, enum_overrides):

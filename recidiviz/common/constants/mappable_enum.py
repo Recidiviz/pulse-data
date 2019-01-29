@@ -19,6 +19,8 @@
 from enum import Enum
 from typing import Dict, Optional
 
+from recidiviz.common.common_utils import normalize
+
 
 class EnumParsingError(Exception):
     """Raised if an MappableEnum can't be built from the provided string."""
@@ -39,7 +41,7 @@ class MappableEnum(Enum):
               override_map: Dict[str, Optional['MappableEnum']]) \
               -> Optional['MappableEnum']:
 
-        label = label.strip().upper()
+        label = normalize(label)
         if not override_map:
             return cls._parse_to_enum(label, cls._get_default_map())
 
