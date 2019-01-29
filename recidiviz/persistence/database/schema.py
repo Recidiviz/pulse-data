@@ -618,7 +618,7 @@ class _AggregateTableMixin:
 
     # Use a synthetic primary key and enforce uniqueness over a set of columns
     # (instead of setting these columns as a MultiColumn Primary Key) to allow
-    # each row to be reference by an int directly.
+    # each row to be referenced by an int directly.
     record_id = Column(Integer, primary_key=True)
 
     # TODO(#689): Ensure that `fips` also supports facility level fips
