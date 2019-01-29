@@ -21,9 +21,17 @@ from typing import Optional
 _GENERATED_ID_SUFFIX = "_GENERATE"
 
 
-def create_generated_id(obj):
+def create_generated_id(obj) -> str:
     return str(id(obj)) + _GENERATED_ID_SUFFIX
 
 
 def is_generated_id(id_str: Optional[str]) -> bool:
     return id_str is not None and id_str.endswith(_GENERATED_ID_SUFFIX)
+
+
+def normalize(s: str) -> str:
+    """Normalizes whitespace within the provided string by converting all groups
+    of whitespaces into ' ', and uppercases the string."""
+    if s is None or s == '' or s.isspace():
+        raise ValueError('Cannot normalize None or empty/whitespace string')
+    return ' '.join(s.split()).upper()
