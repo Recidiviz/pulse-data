@@ -31,11 +31,10 @@ from recidiviz.persistence.database.schema import TxCountyAggregate
 from recidiviz.tests.ingest import fixtures
 from recidiviz.tests.utils import fakes
 
-DATE_SCRAPED = datetime.date(year=2019, month=1, day=1)
-
+DATE_SCRAPED = datetime.date(year=2017, month=12, day=1)
 # Cache the parsed pdf between tests since it's expensive to compute
 PARSED_PDF = tx_aggregate_ingest.parse(
-    fixtures.as_filepath('Abbreviated Pop Rpt Dec 2017.pdf'), DATE_SCRAPED)
+    fixtures.as_filepath('Abbreviated Pop Rpt Dec 2017.pdf'))
 
 
 class TestTxAggregateIngest(TestCase):

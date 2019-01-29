@@ -32,11 +32,11 @@ from recidiviz.persistence.database.schema import HiFacilityAggregate
 from recidiviz.tests.ingest import fixtures
 from recidiviz.tests.utils import fakes
 
-DATE_SCRAPED = datetime.date(year=2019, month=1, day=1)
+DATE_SCRAPED = datetime.date(year=2018, month=11, day=30)
 
 # Cache the parsed pdf between tests since it's expensive to compute
 PARSED_PDF = hi_aggregate_ingest.parse(
-    fixtures.as_filepath('Pop-Reports-EOM-2018-11-30.pdf'), DATE_SCRAPED)
+    fixtures.as_filepath('Pop-Reports-EOM-2018-11-30.pdf'))
 
 
 class TestHiAggregateIngest(TestCase):

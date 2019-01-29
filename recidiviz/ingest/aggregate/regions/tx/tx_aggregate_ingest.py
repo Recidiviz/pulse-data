@@ -15,30 +15,50 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Parse the TX Aggregated Statistics PDF."""
-import datetime
 from typing import Dict
+import datetime
+import dateparser
 
 import pandas as pd
+from PyPDF2 import PdfFileReader
 import tabula
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 from recidiviz.ingest.aggregate import aggregate_ingest_utils
+from recidiviz.ingest.aggregate.Errors import AggregateDateParsingError
 from recidiviz.persistence.database.schema import TxCountyAggregate
 
+DATE_PARSE_ANCHOR = 'Abbreviated Population Report for'
 
-def parse(filename: str, date_scraped: datetime.date) \
-        -> Dict[DeclarativeMeta, pd.DataFrame]:
+
+def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
     table = _parse_table(filename)
 
     # TODO(#698): Set county fips based on the county_name
     table['fips'] = None
-    table['report_date'] = date_scraped
+    table['report_date'] = _parse_date(filename)
     table['report_granularity'] = enum_strings.monthly_granularity
 
     return {
         TxCountyAggregate: table
     }
+
+
+def _parse_date(filename: str) -> datetime.date:
+    with open(filename, 'rb') as f:
+        try:
+            pdf = PdfFileReader(f)
+            page = pdf.getPage(0)
+            text = page.extractText()
+            lines = text.split('\n')
+        except Exception as e:
+            AggregateDateParsingError(str(e))
+        for index, line in enumerate(lines):
+            if DATE_PARSE_ANCHOR in line:
+                # The date is on the next line if anchor is present on the line
+                return dateparser.parse(lines[index+1]).date()
+        raise AggregateDateParsingError('Could not extract date')
 
 
 def _parse_table(filename: str) -> pd.DataFrame:
