@@ -15,14 +15,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Parse the HI Aggregated Statistics PDF."""
-import datetime
 from typing import Dict
+import datetime
+import dateparser
 
 import pandas as pd
 import tabula
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
+from recidiviz.ingest.aggregate.Errors import AggregateDateParsingError
 from recidiviz.persistence.database.schema import HiFacilityAggregate
 
 _COLUMN_NAMES = [
@@ -51,18 +53,29 @@ _COLUMN_NAMES = [
 ]
 
 
-def parse(filename: str, date_scraped: datetime.date) \
-        -> Dict[DeclarativeMeta, pd.DataFrame]:
+def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
     table = _parse_table(filename)
 
     # TODO(#698): Set county fips based on the county_name
     table['fips'] = None
-    table['report_date'] = date_scraped
+    table['report_date'] = _parse_date(filename)
     table['report_granularity'] = enum_strings.monthly_granularity
 
     return {
         HiFacilityAggregate: table
     }
+
+
+def _parse_date(filename: str) -> datetime.date:
+    # PyPD2 can't extract text properly from hawaii, so we use the filename
+    # instead.
+    try:
+        prefix_to_remove = 'Pop-Reports-EOM-'
+        filename = filename.split('/')[-1]
+        date_str = filename.strip('.pdf').strip(prefix_to_remove)
+    except Exception as e:
+        raise AggregateDateParsingError(str(e))
+    return dateparser.parse(date_str).date()
 
 
 def _parse_table(filename: str) -> pd.DataFrame:
