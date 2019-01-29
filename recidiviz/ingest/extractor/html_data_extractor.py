@@ -103,14 +103,16 @@ class HtmlDataExtractor(DataExtractor):
             # keys that map to the same value ('hi' and 'hi:' both map to the
             # same thing) but that is a more expensive preprocessing calculation
             cell_val = self._normalize_cell(cell)
+            lookup_keys = (self.keys.get(cell_val) or
+                           self.multi_keys.get(cell_val))
+            if not lookup_keys:
+                continue
             values = None
             if cell_val in self.keys:
                 values = [self._get_value_cell(cell)]
             elif cell_val in self.multi_keys:
                 values = self._get_values_below_cell(cell)
             if values:
-                lookup_keys = (self.keys.get(cell_val) or
-                               self.multi_keys.get(cell_val))
                 self._set_or_create_object(ingest_info, lookup_keys, values)
                 if cell_val in needed_keys:
                     needed_keys.remove(cell_val)
