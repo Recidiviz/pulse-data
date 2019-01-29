@@ -14,16 +14,17 @@ before_install:
   -y
 install:
 - pip install --upgrade setuptools
-- pip install -r requirements.txt
+- pip install pipenv
+- pipenv sync
 before_script:
 - gcloud beta emulators datastore start --no-store-on-disk --consistency 1.0 --project
   test-project > ds_emulator.out 2> ds_emulator.err &
 - gcloud beta emulators pubsub start --project test-project > ps_emulator.out 2> ps_emulator.err
   &
 script:
-- pylint *.py recidiviz
-- pytest recidiviz/tests/ --with-emulator
-- mypy recidiviz
+- pipenv run pylint *.py recidiviz
+- pipenv run pytest recidiviz/tests/ --with-emulator
+- pipenv run mypy recidiviz
 after_success:
 - coveralls
 deploy:
