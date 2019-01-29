@@ -24,8 +24,8 @@ import abc
 import xml.etree.ElementTree
 from typing import List, Optional
 
-import html5lib
 from lxml import html
+import html5lib
 
 from recidiviz.ingest.base_scraper import BaseScraper
 from recidiviz.ingest.models.ingest_info import IngestInfo
