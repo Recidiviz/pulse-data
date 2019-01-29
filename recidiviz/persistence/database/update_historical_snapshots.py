@@ -15,12 +15,8 @@ def update_historical_snapshots(session, entity, snapshot_time):
     NOTE: This method makes 2 assumptions about the historical tables:
     1) The table ORM class names are: <ENTITY> and <ENTITY>History (e.g. Person
         and PersonHistory)
-    2) The ORM class for the master entity, the ORM class for the historical
-        snapshot, the table for the master entity, and the table for the
-        historical snapshot all use the same name to refer to the persistent
-        stable identifier for an object over time (e.g. all these locations
-        will use "person_id" to refer to the stable identifier representing
-        a single person over time).
+    2) The primary key column of the master table and the foreign key column
+        on the historical table pointing to the master table have the same name.
     If either of these assumptions are broken, this method will not behave as
     expected.
 
@@ -36,8 +32,8 @@ def update_historical_snapshots(session, entity, snapshot_time):
     master_table_class_name = type(entity).__name__
     historical_table_class_name = '{}History'.format(master_table_class_name)
     historical_table_class = getattr(schema, historical_table_class_name)
-    key_column_name = _get_primary_key_column_name(entity.__table__)
-    master_entity_id = getattr(entity, key_column_name)
+    key_column_name = type(entity).get_primary_key_column_name()
+    master_entity_id = entity.get_primary_key()
 
     logging.info(
         'Fetching last historical snapshot for entity: %s %s',
@@ -65,7 +61,13 @@ def update_historical_snapshots(session, entity, snapshot_time):
     _copy_entity_fields_to_historical_snapshot(
         entity, new_historical_snapshot)
     new_historical_snapshot.valid_from = snapshot_time
-    setattr(new_historical_snapshot, key_column_name, master_entity_id)
+
+    # Master foreign key column on historical table is assumed to have the same
+    # name as the primary key column on the master table
+    historical_master_key_property_name = \
+        historical_table_class.get_property_name_by_column_name(key_column_name)
+    setattr(new_historical_snapshot, historical_master_key_property_name,
+            master_entity_id)
 
     logging.info(
         'Finished setting last historical snapshot for entity: %s %s',
@@ -96,8 +98,7 @@ def _get_most_recent_historical_snapshot(session, entity,
     one exists, otherwise returns (None).
     """
 
-    key_column_name = _get_primary_key_column_name(entity.__table__)
-    master_entity_id = getattr(entity, key_column_name)
+    key_column_name = type(entity).get_primary_key_column_name()
 
     # Get name of historical table in database (as distinct from name of ORM
     # class representing historical table in code)
@@ -107,26 +108,12 @@ def _get_most_recent_historical_snapshot(session, entity,
         '{historical_table}.{master_foreign_key} = {master_entity_id}'.format(
             historical_table=historical_table_name,
             master_foreign_key=key_column_name,
-            master_entity_id=master_entity_id)
+            master_entity_id=entity.get_primary_key())
 
     return session.query(historical_table_class) \
         .filter(text(filter_statement)) \
         .order_by(historical_table_class.valid_from.desc()) \
         .first()
-
-
-def _get_primary_key_column_name(table):
-    """Returns the name of the primary key column for |table|.
-
-    NOTE: This returns the *column* name. This is not guaranteed to be equal to
-    the *attribute* name on the ORM object, but this module assumes they will be
-    equal. If this assumption is violated, callers of this method will not
-    behave as expected.
-    """
-
-    # table.primary_key returns a PrimaryKeyConstraint containing a single
-    # column
-    return table.primary_key.columns.values()[0].name
 
 
 def _does_entity_match_historical_snapshot(entity, historical_snapshot):
