@@ -1,0 +1,78 @@
+# Recidiviz - a platform for tracking granular recidivism metrics in real time
+# Copyright (C) 2019 Recidiviz, Inc.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# =============================================================================
+
+"""Exposes API to parse and store state aggregates."""
+
+from http import HTTPStatus
+import datetime
+import logging
+import os
+import tempfile
+from flask import Blueprint, request
+import gcsfs
+
+from recidiviz.ingest.aggregate.regions.fl import fl_aggregate_ingest
+from recidiviz.ingest.aggregate.regions.ga import ga_aggregate_ingest
+from recidiviz.ingest.aggregate.regions.hi import hi_aggregate_ingest
+from recidiviz.ingest.aggregate.regions.ny import ny_aggregate_ingest
+from recidiviz.ingest.aggregate.regions.tx import tx_aggregate_ingest
+from recidiviz.persistence.database import database
+from recidiviz.utils.auth import authenticate_request
+from recidiviz.utils.params import get_value
+
+cloud_functions_blueprint = Blueprint('cloud_functions', __name__)
+
+
+class StateAggregateError(Exception):
+    """Errors thrown in the state aggregate endpoint"""
+
+
+@cloud_functions_blueprint.route('/state_aggregate')
+@authenticate_request
+def state_aggregate():
+    """Calls state aggregates"""
+    state_to_parser = {
+        'florida': fl_aggregate_ingest.parse,
+        'georgia': ga_aggregate_ingest.parse,
+        'hawaii': hi_aggregate_ingest,
+        'new_york': ny_aggregate_ingest,
+        'texas': tx_aggregate_ingest.parse,
+    }
+
+    bucket = get_value('bucket', request.args)
+    state = get_value('state', request.args)
+    filename = get_value('filename', request.args)
+    if not bucket or not state or not filename:
+        raise StateAggregateError(
+            'All of state, bucket, and filename must be provided')
+    path = os.path.join(bucket, state, filename)
+    parser = state_to_parser[state]
+    fs = gcsfs.GCSFileSystem(project=os.environ.get('GCP_PROJECT'))
+
+    # Providing a stream buffer to tabula reader does not work because it
+    # tries to load the file into the local filesystem, since appengine is a
+    # read only filesystem (except for the tmpdir) we download the file into
+    # the local tmpdir and pass that in.
+    tmpdir_path = os.path.join(tempfile.gettempdir(), filename)
+    fs.get(path, tmpdir_path)
+    logging.info('Successfully downloaded file from gcs: %s', path)
+
+    result = parser(tmpdir_path, datetime.datetime.now())
+    for table, df in result.items():
+        database.write_df(table, df)
+
+    return '', HTTPStatus.OK
