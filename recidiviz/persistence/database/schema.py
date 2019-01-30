@@ -722,16 +722,14 @@ class HiFacilityAggregate(Base, _AggregateTableMixin):
     probation_violation_female_population = Column(Integer)
 
 
-# To get counts from the PDF, sum secure/non-secure. For example:
-# male_population = male_population (secure) + male_population (unsecure)
-class KyCountyAggregate(Base, _AggregateTableMixin):
+class KyFacilityAggregate(Base, _AggregateTableMixin):
     """KY state-provided aggregate statistics."""
     __tablename__ = 'ky_county_aggregate'
     __table_args__ = (
         UniqueConstraint('fips', 'report_date', 'report_granularity'),
     )
 
-    county_name = Column(String(255))
+    facility_name = Column(String(255))
 
     total_jail_beds = Column(Integer)
     reported_population = Column(Integer)  # TODO: Is this adp or population
