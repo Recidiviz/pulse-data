@@ -21,12 +21,24 @@
 from http import HTTPStatus
 import json
 import logging
+import pprint
 
 from flask import Blueprint, request
 
 from recidiviz.ingest.task_params import QueueRequest
 from recidiviz.utils import regions
 from recidiviz.utils.auth import authenticate_request
+
+class RequestProcessingError(Exception):
+    """Exception containing the request that failed to process"""
+    _MAX_REQUEST_STRING_SIZE = 50 * 1024  # 50 KiB
+
+    def __init__(self, region: str, task: str, queue_request: QueueRequest):
+        request_string = pprint.pformat(queue_request.to_serializable())
+        request_string = request_string[:self._MAX_REQUEST_STRING_SIZE]
+        msg = "Error when running '{}' for '{}' with request:\n{}".format(
+            task, region, request_string)
+        super(RequestProcessingError, self).__init__(msg)
 
 worker = Blueprint('worker', __name__)
 
@@ -93,6 +105,8 @@ def work():
         # it retry.
         logging.info("--- Request timed out, re-queuing task. ---")
         result = -1
+    except:
+        raise RequestProcessingError(region, task, params)
 
     # Respond to the task queue to mark this task as done, or re-queue if
     # error result
