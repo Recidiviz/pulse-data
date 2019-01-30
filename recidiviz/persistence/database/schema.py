@@ -126,6 +126,7 @@ bond_status_values = (enum_strings.bond_status_denied,
                       enum_strings.unknown_found_in_source,
                       enum_strings.bond_status_inferred_set,
                       enum_strings.bond_status_not_required,
+                      enum_strings.bond_status_pending,
                       enum_strings.bond_status_posted,
                       enum_strings.unknown_removed_from_source,
                       enum_strings.bond_status_set)

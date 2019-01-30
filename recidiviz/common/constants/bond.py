@@ -38,6 +38,7 @@ class BondStatus(MappableEnum):
     DENIED = enum_strings.bond_status_denied
     INFERRED_SET = enum_strings.bond_status_inferred_set
     NOT_REQUIRED = enum_strings.bond_status_not_required
+    PENDING = enum_strings.bond_status_pending
     POSTED = enum_strings.bond_status_posted
     SET = enum_strings.bond_status_set
     UNKNOWN_FOUND_IN_SOURCE = enum_strings.unknown_found_in_source
@@ -85,6 +86,7 @@ BOND_STATUS_MAP = {
     'NO BOND ALLOWED': BondStatus.DENIED,
     'NONE SET': BondStatus.NOT_REQUIRED,
     'NOT REQUIRED': BondStatus.NOT_REQUIRED,
+    'PENDING': BondStatus.PENDING,
     'POSTED': BondStatus.POSTED,
     'SET': BondStatus.SET,
 }
