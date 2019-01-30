@@ -17,7 +17,8 @@
 """Common utility functions used across aggregated_ingest."""
 import calendar
 import datetime
-from typing import Dict
+import itertools
+from typing import Dict, Iterable, Any
 
 import pandas as pd
 
@@ -44,6 +45,18 @@ def rename_columns_and_select(df: pd.DataFrame,
     rename operation as described in |rename_dict|."""
     df = df.rename(columns=rename_dict)
     return df[list(rename_dict.values())]
+
+
+def pairwise(iterable: Iterable[Any]) -> Iterable[Any]:
+    """
+    Iterate over the elements in |iterable| in pairs (aka a sliding window of
+    size 2).
+
+    Example: s -> (s0,s1), (s1,s2), (s2, s3), ...
+    """
+    a, b = itertools.tee(iterable)
+    next(b, None)
+    return zip(a, b)
 
 
 def on_last_day_of_month(date: datetime.date) -> datetime.date:
