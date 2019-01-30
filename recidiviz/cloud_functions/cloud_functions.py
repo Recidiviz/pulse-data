@@ -18,7 +18,6 @@
 """Exposes API to parse and store state aggregates."""
 
 from http import HTTPStatus
-import datetime
 import logging
 import os
 import tempfile
@@ -75,7 +74,7 @@ def state_aggregate():
     fs.get(path, tmpdir_path)
     logging.info('Successfully downloaded file from gcs: %s', path)
 
-    result = parser(tmpdir_path, datetime.datetime.now())
+    result = parser(tmpdir_path)
     for table, df in result.items():
         database.write_df(table, df)
 
