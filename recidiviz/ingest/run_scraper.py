@@ -65,11 +65,31 @@ def start_scrape(queue, self, scrape_type):
 
 
 def run_scraper(args):
+    region_codes = args.region.split(',')
+    failed_regions = []
+    for region_code in region_codes:
+        logging.info('***')
+        logging.info('***')
+        logging.info('Starting scraper for region: %s', region_code)
+        logging.info('***')
+        logging.info('***')
+        try:
+            run_scraper_for_region(regions.Region(region_code), args)
+        except Exception as e:
+            print(e)
+            failed_regions.append(region_code)
+
+    if failed_regions:
+        logging.info('***')
+        logging.info('The following regions raised Errors during scraping: %s',
+                     failed_regions)
+
+
+def run_scraper_for_region(region, args):
     """Runs the scraper for the given region
 
     Creates and manages an in-memory FIFO queue to replicate production.
     """
-    region = regions.Region(args.region)
     scraper = region.get_scraper()
 
     task_queue = deque()
@@ -113,7 +133,8 @@ def _create_parser():
     """Creates the CLI argument parser."""
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--region', required=True, help='The region to test')
+    parser.add_argument('--region', required=True,
+                        help='The comma separated list of regions to test')
     parser.add_argument(
         '--num_tasks', required=False, default=5, type=int,
         help='The number of tasks to complete'
