@@ -37,12 +37,12 @@ class HtmlDataExtractor(DataExtractor):
         super().__init__(key_mapping_file)
 
         self.css_keys = self.manifest.get('css_key_mappings', {})
-        keys_to_ignore = self.manifest.get('keys_to_ignore', [])
+        self.keys_to_ignore = self.manifest.get('keys_to_ignore', [])
 
         self.keys.update(self.css_keys)
 
         self.all_keys = set(self.keys.keys()) | \
-            set(self.multi_keys.keys()) | set(keys_to_ignore)
+            set(self.multi_keys.keys()) | set(self.keys_to_ignore)
 
     def _set_all_cells(self, content):
         """Finds all leaf cells on a page and sets them.
@@ -168,6 +168,9 @@ class HtmlDataExtractor(DataExtractor):
         # results from the xpath call are references, so modifying them changes
         # |content|.
         for match in matches:
+            if match.text in self.keys_to_ignore:
+                continue
+
             # Only convert elements that are not already table cells.
             if match.tag == 'td' or match.tag == 'th':
                 continue
