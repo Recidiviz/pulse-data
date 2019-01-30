@@ -75,13 +75,13 @@ def run_scraper(args):
         logging.info('***')
         try:
             run_scraper_for_region(regions.Region(region_code), args)
-        except Exception as e:
-            print(e)
+        except Exception:
+            print(traceback.format_exc())
             failed_regions.append(region_code)
 
     if failed_regions:
         logging.info('***')
-        logging.info('The following regions raised Errors during scraping: %s',
+        logging.info('The following regions raised errors during scraping: %s',
                      failed_regions)
 
 
