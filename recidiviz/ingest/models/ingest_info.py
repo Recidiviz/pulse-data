@@ -46,17 +46,17 @@ class IngestInfo(IngestObject):
     """Class for information about multiple people."""
 
     def __init__(self, people=None):
-        self.people: List[_Person] = people or []
+        self.people: List[Person] = people or []
 
     def __setattr__(self, name, value):
         restricted_setattr(self, 'people', name, value)
 
-    def create_person(self, **kwargs) -> '_Person':
-        person = _Person(**kwargs)
+    def create_person(self, **kwargs) -> 'Person':
+        person = Person(**kwargs)
         self.people.append(person)
         return person
 
-    def get_recent_person(self) -> Optional['_Person']:
+    def get_recent_person(self) -> Optional['Person']:
         if self.people:
             return self.people[-1]
         return None
@@ -66,7 +66,7 @@ class IngestInfo(IngestObject):
         return self
 
 
-class _Person(IngestObject):
+class Person(IngestObject):
     """Class for information about a person.
     Referenced from IngestInfo.
     """
@@ -89,28 +89,28 @@ class _Person(IngestObject):
         self.ethnicity: Optional[str] = ethnicity
         self.place_of_residence: Optional[str] = place_of_residence
 
-        self.bookings: List[_Booking] = bookings or []
+        self.bookings: List[Booking] = bookings or []
 
     def __setattr__(self, name, value):
         restricted_setattr(self, 'bookings', name, value)
 
-    def create_booking(self, **kwargs) -> '_Booking':
-        booking = _Booking(**kwargs)
+    def create_booking(self, **kwargs) -> 'Booking':
+        booking = Booking(**kwargs)
         self.bookings.append(booking)
         return booking
 
-    def get_recent_booking(self) -> Optional['_Booking']:
+    def get_recent_booking(self) -> Optional['Booking']:
         if self.bookings:
             return self.bookings[-1]
         return None
 
-    def prune(self) -> '_Person':
+    def prune(self) -> 'Person':
         self.bookings = [booking.prune() \
                          for booking in self.bookings if booking]
         return self
 
 
-class _Booking(IngestObject):
+class Booking(IngestObject):
     """Class for information about a booking.
     Referenced from Person.
     """
@@ -132,41 +132,41 @@ class _Booking(IngestObject):
         self.classification: Optional[str] = classification
         self.total_bond_amount: Optional[str] = total_bond_amount
 
-        self.arrest: Optional[_Arrest] = arrest
-        self.charges: List[_Charge] = charges or []
-        self.holds: List[_Hold] = holds or []
+        self.arrest: Optional[Arrest] = arrest
+        self.charges: List[Charge] = charges or []
+        self.holds: List[Hold] = holds or []
 
     def __setattr__(self, name, value):
         restricted_setattr(self, 'holds', name, value)
 
-    def create_arrest(self, **kwargs) -> '_Arrest':
-        self.arrest = _Arrest(**kwargs)
+    def create_arrest(self, **kwargs) -> 'Arrest':
+        self.arrest = Arrest(**kwargs)
         return self.arrest
 
-    def create_charge(self, **kwargs) -> '_Charge':
-        charge = _Charge(**kwargs)
+    def create_charge(self, **kwargs) -> 'Charge':
+        charge = Charge(**kwargs)
         self.charges.append(charge)
         return charge
 
-    def create_hold(self, **kwargs) -> '_Hold':
-        hold = _Hold(**kwargs)
+    def create_hold(self, **kwargs) -> 'Hold':
+        hold = Hold(**kwargs)
         self.holds.append(hold)
         return hold
 
-    def get_recent_charge(self) -> Optional['_Charge']:
+    def get_recent_charge(self) -> Optional['Charge']:
         if self.charges:
             return self.charges[-1]
         return None
 
-    def get_recent_hold(self) -> Optional['_Hold']:
+    def get_recent_hold(self) -> Optional['Hold']:
         if self.holds:
             return self.holds[-1]
         return None
 
-    def get_recent_arrest(self) -> Optional['_Arrest']:
+    def get_recent_arrest(self) -> Optional['Arrest']:
         return self.arrest
 
-    def prune(self) -> '_Booking':
+    def prune(self) -> 'Booking':
         self.charges = [charge.prune() for charge in self.charges if charge]
         self.holds = [hold for hold in self.holds if hold]
         if not self.arrest:
@@ -174,7 +174,7 @@ class _Booking(IngestObject):
         return self
 
 
-class _Arrest(IngestObject):
+class Arrest(IngestObject):
     """Class for information about an arrest.
     Referenced from Booking.
     """
@@ -193,7 +193,7 @@ class _Arrest(IngestObject):
         restricted_setattr(self, 'agency', name, value)
 
 
-class _Charge(IngestObject):
+class Charge(IngestObject):
     """Class for information about a charge.
     Referenced from Booking.
     """
@@ -224,27 +224,27 @@ class _Charge(IngestObject):
         self.judge_name: Optional[str] = judge_name
         self.charge_notes: Optional[str] = charge_notes
 
-        self.bond: Optional[_Bond] = bond
-        self.sentence: Optional[_Sentence] = sentence
+        self.bond: Optional[Bond] = bond
+        self.sentence: Optional[Sentence] = sentence
 
     def __setattr__(self, name, value):
         restricted_setattr(self, 'sentence', name, value)
 
-    def create_bond(self, **kwargs) -> '_Bond':
-        self.bond = _Bond(**kwargs)
+    def create_bond(self, **kwargs) -> 'Bond':
+        self.bond = Bond(**kwargs)
         return self.bond
 
-    def create_sentence(self, **kwargs) -> '_Sentence':
-        self.sentence = _Sentence(**kwargs)
+    def create_sentence(self, **kwargs) -> 'Sentence':
+        self.sentence = Sentence(**kwargs)
         return self.sentence
 
-    def get_recent_bond(self) -> Optional['_Bond']:
+    def get_recent_bond(self) -> Optional['Bond']:
         return self.bond
 
-    def get_recent_sentence(self) -> Optional['_Sentence']:
+    def get_recent_sentence(self) -> Optional['Sentence']:
         return self.sentence
 
-    def prune(self) -> '_Charge':
+    def prune(self) -> 'Charge':
         if not self.bond:
             self.bond = None
         if not self.sentence:
@@ -252,7 +252,7 @@ class _Charge(IngestObject):
         return self
 
 
-class _Hold(IngestObject):
+class Hold(IngestObject):
     """Class for information about a hold.
     Referenced from Booking.
     """
@@ -266,7 +266,7 @@ class _Hold(IngestObject):
         restricted_setattr(self, 'status', name, value)
 
 
-class _Bond(IngestObject):
+class Bond(IngestObject):
     """Class for information about a bond.
     Referenced from Charge.
     """
@@ -281,7 +281,7 @@ class _Bond(IngestObject):
         restricted_setattr(self, 'status', name, value)
 
 
-class _Sentence(IngestObject):
+class Sentence(IngestObject):
     """Class for information about a sentence.
     Referenced from Charge.
     """
