@@ -118,6 +118,7 @@ _CHARGE_STATUS_MAP = {
     'DISMISSED BY DISTRICT ATTORNEY': ChargeStatus.DROPPED,
     'DROPPED': ChargeStatus.DROPPED,
     'NOT GUILTY': ChargeStatus.ACQUITTED,
+    'AWAITING TRIAL': ChargeStatus.PENDING,
     'OPEN': ChargeStatus.PENDING,
     'PENDING': ChargeStatus.PENDING,
     'PRE TRIAL': ChargeStatus.PRETRIAL,

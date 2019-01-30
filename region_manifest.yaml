@@ -331,3 +331,11 @@ regions:
     base_url: https://netweb.netdatacorp.net/YOUN/bok/cgibok108.html
     scraper_package: us_tx_young
     timezone: America/Chicago
+  us_nc_alamance:
+    agency_name: Alamance County Sheriff's Office
+    region_code: us_nc_alamance
+    agency_type: jail
+    queue: us-nc-alamance-scraper
+    base_url: https://apps.alamance-nc.com/p2c
+    scraper_package: us_nc_alamance
+    timezone: America/New_York
