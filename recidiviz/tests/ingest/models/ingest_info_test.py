@@ -19,8 +19,8 @@
 
 import unittest
 
-from recidiviz.ingest.models.ingest_info import IngestInfo, _Person, \
-    _Booking, _Charge, _Arrest, _Sentence, _Bond, _Hold
+from recidiviz.ingest.models import ingest_info
+from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.ingest.models.ingest_info_pb2 import Person, Booking, Charge, \
     Hold, Arrest, Sentence, Bond
 
@@ -56,20 +56,13 @@ class TestIngestInfo(unittest.TestCase):
                                  'arrest', 'charges', 'holds']
         charge_fields_ignore = ['bond_id', 'sentence_id', 'bond', 'sentence']
 
-        person = IngestInfo().create_person()
-        booking = person.create_booking()
-        charge = booking.create_charge()
-        hold = booking.create_hold()
-        arrest = booking.create_arrest()
-        sentence = charge.create_sentence()
-        bond = charge.create_bond()
-        _verify_fields(Person, person, person_fields_ignore)
-        _verify_fields(Booking, booking, booking_fields_ignore)
-        _verify_fields(Charge, charge, charge_fields_ignore)
-        _verify_fields(Hold, hold)
-        _verify_fields(Arrest, arrest)
-        _verify_fields(Sentence, sentence)
-        _verify_fields(Bond, bond)
+        _verify_fields(Person, ingest_info.Person(), person_fields_ignore)
+        _verify_fields(Booking, ingest_info.Booking(), booking_fields_ignore)
+        _verify_fields(Charge, ingest_info.Charge(), charge_fields_ignore)
+        _verify_fields(Hold, ingest_info.Hold())
+        _verify_fields(Arrest, ingest_info.Arrest())
+        _verify_fields(Sentence, ingest_info.Sentence())
+        _verify_fields(Bond, ingest_info.Bond())
         return True
 
     def test_bool_falsy(self):
@@ -88,21 +81,26 @@ class TestIngestInfo(unittest.TestCase):
 
     def test_prune(self):
         ii = IngestInfo(people=[
-            _Person(),
-            _Person(bookings=[
-                _Booking(),
-                _Booking(arrest=_Arrest(), charges=[
-                    _Charge(),
-                    _Charge(bond=_Bond(), sentence=_Sentence()),
-                    _Charge(bond=_Bond(), sentence=_Sentence(is_life='False'))
+            ingest_info.Person(),
+            ingest_info.Person(bookings=[
+                ingest_info.Booking(),
+                ingest_info.Booking(arrest=ingest_info.Arrest(), charges=[
+                    ingest_info.Charge(),
+                    ingest_info.Charge(bond=ingest_info.Bond(),
+                                       sentence=ingest_info.Sentence()),
+                    ingest_info.Charge(bond=ingest_info.Bond(),
+                                       sentence=ingest_info.Sentence(
+                                           is_life='False'))
                 ], holds=[
-                    _Hold(), _Hold(hold_id=1)
+                    ingest_info.Hold(), ingest_info.Hold(hold_id=1)
                 ])
             ])
         ])
 
         expected = IngestInfo(people=[
-            _Person(bookings=[
-                _Booking(charges=[_Charge(sentence=_Sentence(is_life='False'))],
-                         holds=[_Hold(hold_id=1)])])])
+            ingest_info.Person(bookings=[
+                ingest_info.Booking(
+                    charges=[ingest_info.Charge(
+                        sentence=ingest_info.Sentence(is_life='False'))],
+                    holds=[ingest_info.Hold(hold_id=1)])])])
         self.assertEqual(ii.prune(), expected)
