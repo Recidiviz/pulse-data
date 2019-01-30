@@ -28,6 +28,7 @@ import gcsfs
 from recidiviz.ingest.aggregate.regions.fl import fl_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.ga import ga_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.hi import hi_aggregate_ingest
+from recidiviz.ingest.aggregate.regions.ky import ky_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.ny import ny_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.tx import tx_aggregate_ingest
 from recidiviz.persistence.database import database
@@ -45,10 +46,13 @@ class StateAggregateError(Exception):
 @authenticate_request
 def state_aggregate():
     """Calls state aggregates"""
+
+    # Please add new states in alphabetical order
     state_to_parser = {
         'florida': fl_aggregate_ingest.parse,
         'georgia': ga_aggregate_ingest.parse,
         'hawaii': hi_aggregate_ingest,
+        'kentucky': ky_aggregate_ingest.parse,
         'new_york': ny_aggregate_ingest,
         'texas': tx_aggregate_ingest.parse,
     }
