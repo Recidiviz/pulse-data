@@ -556,3 +556,159 @@ queue:
     max_backoff_seconds: 300
     task_age_limit: 3d
     task_retry_limit: 5
+
+# us-ar-boone-scraper - Boone County, Arkansas
+- name: us-ar-boone-scraper
+  mode: push
+  rate: 5/m
+  bucket_size: 2
+  max_concurrent_requests: 3
+  retry_parameters:
+    min_backoff_seconds: 5
+    max_backoff_seconds: 300
+    task_age_limit: 3d
+    task_retry_limit: 5
+
+# us-ar-craighead-scraper - Craighead County, Arkansas
+- name: us-ar-craighead-scraper
+  mode: push
+  rate: 5/m
+  bucket_size: 2
+  max_concurrent_requests: 3
+  retry_parameters:
+    min_backoff_seconds: 5
+    max_backoff_seconds: 300
+    task_age_limit: 3d
+    task_retry_limit: 5
+
+# us-ar-faulkner-scraper - Faulkner County, Arkansas
+- name: us-ar-faulkner-scraper
+  mode: push
+  rate: 5/m
+  bucket_size: 2
+  max_concurrent_requests: 3
+  retry_parameters:
+    min_backoff_seconds: 5
+    max_backoff_seconds: 300
+    task_age_limit: 3d
+    task_retry_limit: 5
+
+# us-ar-hempstead-scraper - Hempstead County, Arkansas
+- name: us-ar-hempstead-scraper
+  mode: push
+  rate: 5/m
+  bucket_size: 2
+  max_concurrent_requests: 3
+  retry_parameters:
+    min_backoff_seconds: 5
+    max_backoff_seconds: 300
+    task_age_limit: 3d
+    task_retry_limit: 5
+
+# us-ar-jefferson-scraper - Jefferson County, Arkansas
+- name: us-ar-jefferson-scraper
+  mode: push
+  rate: 5/m
+  bucket_size: 2
+  max_concurrent_requests: 3
+  retry_parameters:
+    min_backoff_seconds: 5
+    max_backoff_seconds: 300
+    task_age_limit: 3d
+    task_retry_limit: 5
+
+# us-ar-johnson-scraper - Johnson County, Arkansas
+- name: us-ar-johnson-scraper
+  mode: push
+  rate: 5/m
+  bucket_size: 2
+  max_concurrent_requests: 3
+  retry_parameters:
+    min_backoff_seconds: 5
+    max_backoff_seconds: 300
+    task_age_limit: 3d
+    task_retry_limit: 5
+
+# us-ar-lonoke-scraper - Lonoke County, Arkansas
+- name: us-ar-lonoke-scraper
+  mode: push
+  rate: 5/m
+  bucket_size: 2
+  max_concurrent_requests: 3
+  retry_parameters:
+    min_backoff_seconds: 5
+    max_backoff_seconds: 300
+    task_age_limit: 3d
+    task_retry_limit: 5
+
+# us-ar-marion-scraper - Marion County, Arkansas
+- name: us-ar-marion-scraper
+  mode: push
+  rate: 5/m
+  bucket_size: 2
+  max_concurrent_requests: 3
+  retry_parameters:
+    min_backoff_seconds: 5
+    max_backoff_seconds: 300
+    task_age_limit: 3d
+    task_retry_limit: 5
+
+# us-ar-monroe-scraper - Monroe County, Arkansas
+- name: us-ar-monroe-scraper
+  mode: push
+  rate: 5/m
+  bucket_size: 2
+  max_concurrent_requests: 3
+  retry_parameters:
+    min_backoff_seconds: 5
+    max_backoff_seconds: 300
+    task_age_limit: 3d
+    task_retry_limit: 5
+
+# us-ar-nevada-scraper - Nevada County, Arkansas
+- name: us-ar-nevada-scraper
+  mode: push
+  rate: 5/m
+  bucket_size: 2
+  max_concurrent_requests: 3
+  retry_parameters:
+    min_backoff_seconds: 5
+    max_backoff_seconds: 300
+    task_age_limit: 3d
+    task_retry_limit: 5
+
+# us-ar-poinsett-scraper - Poinsett County, Arkansas
+- name: us-ar-poinsett-scraper
+  mode: push
+  rate: 5/m
+  bucket_size: 2
+  max_concurrent_requests: 3
+  retry_parameters:
+    min_backoff_seconds: 5
+    max_backoff_seconds: 300
+    task_age_limit: 3d
+    task_retry_limit: 5
+
+# us-ar-saline-scraper - Saline County, Arkansas
+- name: us-ar-saline-scraper
+  mode: push
+  rate: 5/m
+  bucket_size: 2
+  max_concurrent_requests: 3
+  retry_parameters:
+    min_backoff_seconds: 5
+    max_backoff_seconds: 300
+    task_age_limit: 3d
+    task_retry_limit: 5
+
+# us-ar-stone-scraper - Stone County, Arkansas
+- name: us-ar-stone-scraper
+  mode: push
+  rate: 5/m
+  bucket_size: 2
+  max_concurrent_requests: 3
+  retry_parameters:
+    min_backoff_seconds: 5
+    max_backoff_seconds: 300
+    task_age_limit: 3d
+    task_retry_limit: 5
