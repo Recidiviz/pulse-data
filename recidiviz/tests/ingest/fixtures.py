@@ -34,10 +34,12 @@ def as_string(region_directory, filename):
     Returns:
         The contents of the fixture file as a string
     """
-    return open(os.path.join(os.path.dirname(__file__),
-                             region_directory,
-                             'fixtures',
-                             filename)).read()
+    with open(os.path.join(os.path.dirname(__file__),
+                           region_directory,
+                           'fixtures',
+                           filename)) as fixture_file:
+        string = fixture_file.read()
+    return string
 
 
 def as_dict(region_directory, filename):
