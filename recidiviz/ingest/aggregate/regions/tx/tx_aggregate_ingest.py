@@ -26,7 +26,7 @@ from sqlalchemy.ext.declarative import DeclarativeMeta
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 from recidiviz.ingest.aggregate import aggregate_ingest_utils
-from recidiviz.ingest.aggregate.Errors import AggregateDateParsingError
+from recidiviz.ingest.aggregate.errors import AggregateDateParsingError
 from recidiviz.persistence.database.schema import TxCountyAggregate
 
 DATE_PARSE_ANCHOR = 'Abbreviated Population Report for'

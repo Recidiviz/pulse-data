@@ -27,7 +27,7 @@ from PyPDF2 import PdfFileReader
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 from recidiviz.ingest.aggregate import aggregate_ingest_utils
-from recidiviz.ingest.aggregate.Errors import AggregateDateParsingError
+from recidiviz.ingest.aggregate.errors import AggregateDateParsingError
 from recidiviz.persistence.database.schema import FlCountyAggregate, \
     FlFacilityAggregate
 
