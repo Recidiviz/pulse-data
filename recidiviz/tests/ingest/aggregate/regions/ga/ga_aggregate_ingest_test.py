@@ -20,11 +20,12 @@ from unittest import TestCase
 
 import pandas as pd
 from pandas.util.testing import assert_frame_equal
+import pytest
 from more_itertools import one
 from sqlalchemy import func
 
-from recidiviz import Session
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
+from recidiviz import Session
 from recidiviz.ingest.aggregate.regions.ga import ga_aggregate_ingest
 from recidiviz.persistence.database import database
 from recidiviz.persistence.database.schema import GaCountyAggregate
@@ -34,10 +35,13 @@ from recidiviz.tests.utils import fakes
 DATE_SCRAPED = datetime.date(year=2018, month=6, day=7)
 
 # Cache the parsed pdf between tests since it's expensive to compute
-PARSED_PDF = ga_aggregate_ingest.parse(
-    fixtures.as_filepath('jailreport_june18.pdf'))
+@pytest.fixture(scope="class")
+def parsed_pdf(request):
+    request.cls.parsed_pdf = ga_aggregate_ingest.parse(
+        fixtures.as_filepath('jailreport_june18.pdf'))
 
 
+@pytest.mark.usefixtures("parsed_pdf")
 class TestGaAggregateIngest(TestCase):
     """Test that ga_aggregate_ingest correctly parses the GA PDF."""
 
@@ -45,7 +49,7 @@ class TestGaAggregateIngest(TestCase):
         fakes.use_in_memory_sqlite_database()
 
     def testParse_ParsesHeadAndTail(self):
-        result = PARSED_PDF[GaCountyAggregate]
+        result = self.parsed_pdf[GaCountyAggregate]
 
         # Assert Head
         expected_head = pd.DataFrame({
@@ -79,7 +83,7 @@ class TestGaAggregateIngest(TestCase):
 
     def testWrite_CalculatesSum(self):
         # Act
-        for table, df in PARSED_PDF.items():
+        for table, df in self.parsed_pdf.items():
             database.write_df(table, df)
 
         # Assert
