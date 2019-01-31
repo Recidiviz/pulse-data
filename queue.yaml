@@ -448,3 +448,111 @@ queue:
     max_backoff_seconds: 300
     task_age_limit: 3d
     task_retry_limit: 5
+
+# us-al-autauga-scraper - Autauga County, Alabama
+- name: us-al-autauga-scraper
+  mode: push
+  rate: 5/m
+  bucket_size: 2
+  max_concurrent_requests: 3
+  retry_parameters:
+    min_backoff_seconds: 5
+    max_backoff_seconds: 300
+    task_age_limit: 3d
+    task_retry_limit: 5
+
+# us-al-cherokee-scraper - Cherokee County, Alabama
+- name: us-al-cherokee-scraper
+  mode: push
+  rate: 5/m
+  bucket_size: 2
+  max_concurrent_requests: 3
+  retry_parameters:
+    min_backoff_seconds: 5
+    max_backoff_seconds: 300
+    task_age_limit: 3d
+    task_retry_limit: 5
+
+# us-al-dale-scraper - Dale County, Alabama
+- name: us-al-dale-scraper
+  mode: push
+  rate: 5/m
+  bucket_size: 2
+  max_concurrent_requests: 3
+  retry_parameters:
+    min_backoff_seconds: 5
+    max_backoff_seconds: 300
+    task_age_limit: 3d
+    task_retry_limit: 5
+
+# us-al-dekalb-scraper - Dekalb County, Alabama
+- name: us-al-dekalb-scraper
+  mode: push
+  rate: 5/m
+  bucket_size: 2
+  max_concurrent_requests: 3
+  retry_parameters:
+    min_backoff_seconds: 5
+    max_backoff_seconds: 300
+    task_age_limit: 3d
+    task_retry_limit: 5
+
+# us-al-fayette-scraper - Fayette County, Alabama
+- name: us-al-fayette-scraper
+  mode: push
+  rate: 5/m
+  bucket_size: 2
+  max_concurrent_requests: 3
+  retry_parameters:
+    min_backoff_seconds: 5
+    max_backoff_seconds: 300
+    task_age_limit: 3d
+    task_retry_limit: 5
+
+# us-al-franklin-scraper - Franklin County, Alabama
+- name: us-al-franklin-scraper
+  mode: push
+  rate: 5/m
+  bucket_size: 2
+  max_concurrent_requests: 3
+  retry_parameters:
+    min_backoff_seconds: 5
+    max_backoff_seconds: 300
+    task_age_limit: 3d
+    task_retry_limit: 5
+
+# us-al-jackson-scraper - Jackson County, Alabama
+- name: us-al-jackson-scraper
+  mode: push
+  rate: 5/m
+  bucket_size: 2
+  max_concurrent_requests: 3
+  retry_parameters:
+    min_backoff_seconds: 5
+    max_backoff_seconds: 300
+    task_age_limit: 3d
+    task_retry_limit: 5
+
+# us-al-marion-scraper - Marion County, Alabama
+- name: us-al-marion-scraper
+  mode: push
+  rate: 5/m
+  bucket_size: 2
+  max_concurrent_requests: 3
+  retry_parameters:
+    min_backoff_seconds: 5
+    max_backoff_seconds: 300
+    task_age_limit: 3d
+    task_retry_limit: 5
+
+# us-al-pike-scraper - Pike County, Alabama
+- name: us-al-pike-scraper
+  mode: push
+  rate: 5/m
+  bucket_size: 2
+  max_concurrent_requests: 3
+  retry_parameters:
+    min_backoff_seconds: 5
+    max_backoff_seconds: 300
+    task_age_limit: 3d
+    task_retry_limit: 5

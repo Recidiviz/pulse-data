@@ -339,3 +339,75 @@ regions:
     base_url: https://apps.alamance-nc.com/p2c
     scraper_package: us_nc_alamance
     timezone: America/New_York
+  us_al_autauga:
+    agency_name: Autauga County Sheriff's Office
+    region_code: us_al_autauga
+    agency_type: jail
+    queue: us-al-autauga-scraper
+    base_url: https://www.autaugasheriff.org/roster.php
+    scraper_package: us_al_autauga
+    timezone: America/Chicago
+  us_al_cherokee:
+    agency_name: Cherokee County Sheriff's Office
+    region_code: us_al_cherokee
+    agency_type: jail
+    queue: us-al-cherokee-scraper
+    base_url: https://www.cherokeecountyalsheriff.com/roster.php?
+    scraper_package: us_al_cherokee
+    timezone: America/Chicago
+  us_al_dale:
+    agency_name: Dale County Sheriff's Office
+    region_code: us_al_dale
+    agency_type: jail
+    queue: us-al-dale-scraper
+    base_url: http://www.daleso.com/roster.php
+    scraper_package: us_al_dale
+    timezone: America/Chicago
+  us_al_dekalb:
+    agency_name: Dekalb County Sheriff's Office
+    region_code: us_al_dekalb
+    agency_type: jail
+    queue: us-al-dekalb-scraper
+    base_url: https://www.dekalbcountysheriff.org/roster.php
+    scraper_package: us_al_dekalb
+    timezone: America/Chicago
+  us_al_fayette:
+    agency_name: Fayette County Sheriff's Office
+    region_code: us_al_fayette
+    agency_type: jail
+    queue: us-al-fayette-scraper
+    base_url: http://www.fayetteso.com/roster.php
+    scraper_package: us_al_fayette
+    timezone: America/Chicago
+  us_al_franklin:
+    agency_name: Franklin County Sheriff's Office
+    region_code: us_al_franklin
+    agency_type: jail
+    queue: us-al-franklin-scraper
+    base_url: https://www.franklinsheriff.org/roster.php
+    scraper_package: us_al_franklin
+    timezone: America/Chicago
+  us_al_jackson:
+    agency_name: Jackson County Sheriff's Office
+    region_code: us_al_jackson
+    agency_type: jail
+    queue: us-al-jackson-scraper
+    base_url: https://www.jacksoncountysheriffal.org/roster.php
+    scraper_package: us_al_jackson
+    timezone: America/Chicago
+  us_al_marion:
+    agency_name: Marion County Sheriff's Office
+    region_code: us_al_marion
+    agency_type: jail
+    queue: us-al-marion-scraper
+    base_url: http://www.marionsoal.com/roster.php
+    scraper_package: us_al_marion
+    timezone: America/Chicago
+  us_al_pike:
+    agency_name: Pike County Sheriff's Office
+    region_code: us_al_pike
+    agency_type: jail
+    queue: us-al-pike-scraper
+    base_url: http://www.pikecountyalsheriff.com/roster.php
+    scraper_package: us_al_pike
+    timezone: America/Chicago

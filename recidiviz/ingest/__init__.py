@@ -22,6 +22,15 @@ normalizing, and storing records ingested from various criminal justice data
 sources.
 """
 
+import recidiviz.ingest.us_al_autauga
+import recidiviz.ingest.us_al_cherokee
+import recidiviz.ingest.us_al_dale
+import recidiviz.ingest.us_al_dekalb
+import recidiviz.ingest.us_al_fayette
+import recidiviz.ingest.us_al_franklin
+import recidiviz.ingest.us_al_jackson
+import recidiviz.ingest.us_al_marion
+import recidiviz.ingest.us_al_pike
 import recidiviz.ingest.us_ar_van_buren
 import recidiviz.ingest.us_co_mesa
 import recidiviz.ingest.us_fl_hendry
