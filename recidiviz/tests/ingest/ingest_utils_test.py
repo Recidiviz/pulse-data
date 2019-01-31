@@ -27,6 +27,15 @@ def test_validate_regions_one_ok():
 
 def test_validate_regions_one_all():
     assert set(ingest_utils.validate_regions(["all"])) == {
+        'us_al_autauga',
+        'us_al_cherokee',
+        'us_al_dale',
+        'us_al_dekalb',
+        'us_al_fayette',
+        'us_al_franklin',
+        'us_al_jackson',
+        'us_al_marion',
+        'us_al_pike',
         "us_ar_van_buren",
         "us_co_mesa",
         "us_fl_hendry",
@@ -83,6 +92,15 @@ def test_validate_regions_multiple_invalid():
 
 def test_validate_regions_multiple_all():
     assert set(ingest_utils.validate_regions(["us_pa", "all"])) == {
+        'us_al_autauga',
+        'us_al_cherokee',
+        'us_al_dale',
+        'us_al_dekalb',
+        'us_al_fayette',
+        'us_al_franklin',
+        'us_al_jackson',
+        'us_al_marion',
+        'us_al_pike',
         "us_ar_van_buren",
         "us_co_mesa",
         "us_fl_hendry",
