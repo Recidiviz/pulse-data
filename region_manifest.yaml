@@ -411,3 +411,107 @@ regions:
     base_url: http://www.pikecountyalsheriff.com/roster.php
     scraper_package: us_al_pike
     timezone: America/Chicago
+  us_ar_boone:
+    agency_name: Boone County Sheriff's Office
+    region_code: us_ar_boone
+    agency_type: jail
+    queue: us-ar-boone-scraper
+    base_url: https://www.boonesheriff.com/roster.php
+    scraper_package: us_ar_boone
+    timezone: America/Chicago
+  us_ar_craighead:
+    agency_name: Craighead County Sheriff's Office
+    region_code: us_ar_craighead
+    agency_type: jail
+    queue: us-ar-craighead-scraper
+    base_url: https://www.craigheadso.org/roster_custom.php
+    scraper_package: us_ar_craighead
+    timezone: America/Chicago
+  us_ar_faulkner:
+    agency_name: Faulkner County Sheriff's Office
+    region_code: us_ar_faulkner
+    agency_type: jail
+    queue: us-ar-faulkner-scraper
+    base_url: https://www.fcso.ar.gov/roster.php
+    scraper_package: us_ar_faulkner
+    timezone: America/Chicago
+  us_ar_hempstead:
+    agency_name: Hempstead County Sheriff's Office
+    region_code: us_ar_hempstead
+    agency_type: jail
+    queue: us-ar-hempstead-scraper
+    base_url: https://www.hempsteadcountysheriff.org/roster.php
+    scraper_package: us_ar_hempstead
+    timezone: America/Chicago
+  us_ar_jefferson:
+    agency_name: Jefferson County Sheriff's Office
+    region_code: us_ar_jefferson
+    agency_type: jail
+    queue: us-ar-jefferson-scraper
+    base_url: http://www.jeffcoso.org/roster.php
+    scraper_package: us_ar_jefferson
+    timezone: America/Chicago
+  us_ar_johnson:
+    agency_name: Johnson County Sheriff's Office
+    region_code: us_ar_johnson
+    agency_type: jail
+    queue: us-ar-johnson-scraper
+    base_url: https://www.johnsoncosheriff.com/roster.php
+    scraper_package: us_ar_johnson
+    timezone: America/Chicago
+  us_ar_lonoke:
+    agency_name: Lonoke County Sheriff's Office
+    region_code: us_ar_lonoke
+    agency_type: jail
+    queue: us-ar-lonoke-scraper
+    base_url: https://www.lonokeso.com/roster.php
+    scraper_package: us_ar_lonoke
+    timezone: America/Chicago
+  us_ar_marion:
+    agency_name: Marion County Sheriff's Office
+    region_code: us_ar_marion
+    agency_type: jail
+    queue: us-ar-marion-scraper
+    base_url: https://www.marioncountysheriffar.com/roster.php
+    scraper_package: us_ar_marion
+    timezone: America/Chicago
+  us_ar_monroe:
+    agency_name: Monroe County Sheriff's Office
+    region_code: us_ar_monroe
+    agency_type: jail
+    queue: us-ar-monroe-scraper
+    base_url: https://www.monroecountysheriffar.com/roster.php
+    scraper_package: us_ar_monroe
+    timezone: America/Chicago
+  us_ar_nevada:
+    agency_name: Nevada County Sheriff's Office
+    region_code: us_ar_nevada
+    agency_type: jail
+    queue: us-ar-nevada-scraper
+    base_url: https://www.nevadasheriff.org/inmate-roster
+    scraper_package: us_ar_nevada
+    timezone: America/Chicago
+  us_ar_poinsett:
+    agency_name: Poinsett County Sheriff's Office
+    region_code: us_ar_poinsett
+    agency_type: jail
+    queue: us-ar-poinsett-scraper
+    base_url: https://www.poinsettcountysheriff.org/roster.php
+    scraper_package: us_ar_poinsett
+    timezone: America/Chicago
+  us_ar_saline:
+    agency_name: Saline County Sheriff's Office
+    region_code: us_ar_saline
+    agency_type: jail
+    queue: us-ar-saline-scraper
+    base_url: https://www.scsosheriff.org/roster.php
+    scraper_package: us_ar_saline
+    timezone: America/Chicago
+  us_ar_stone:
+    agency_name: Stone County Sheriff's Office
+    region_code: us_ar_stone
+    agency_type: jail
+    queue: us-ar-stone-scraper
+    base_url: https://www.stonecountysheriff.com/roster.php
+    scraper_package: us_ar_stone
+    timezone: America/Chicago
