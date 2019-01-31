@@ -17,29 +17,32 @@
 """Tests for fl_aggregate_ingest.py."""
 import datetime
 from unittest import TestCase
-import numpy as np
 
+import numpy as np
 import pandas as pd
 from pandas.util.testing import assert_frame_equal
+import pytest
 from more_itertools import one
 from sqlalchemy import func
 
-from recidiviz import Session
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
+from recidiviz import Session
 from recidiviz.ingest.aggregate.regions.fl import fl_aggregate_ingest
 from recidiviz.persistence.database import database
-from recidiviz.persistence.database.schema import FlCountyAggregate, \
-    FlFacilityAggregate
+from recidiviz.persistence.database.schema import (FlCountyAggregate,
+                                                   FlFacilityAggregate)
 from recidiviz.tests.ingest import fixtures
 from recidiviz.tests.utils import fakes
 
 DATE_SCRAPED = datetime.date(year=2018, month=1, day=31)
 
 # Cache the parsed pdf between tests since it's expensive to compute
-PARSED_PDF = fl_aggregate_ingest.parse(
-    fixtures.as_filepath('jails-2018-01.pdf'))
+@pytest.fixture(scope="class")
+def parsed_pdf(request):
+    request.cls.parsed_pdf = fl_aggregate_ingest.parse(
+        fixtures.as_filepath('jails-2018-01.pdf'))
 
-
+@pytest.mark.usefixtures("parsed_pdf")
 class TestFlAggregateIngest(TestCase):
     """Test that fl_aggregate_ingest correctly parses the FL PDF."""
 
@@ -49,7 +52,7 @@ class TestFlAggregateIngest(TestCase):
     # ==================== TABLE 1 TESTS ====================
 
     def testParseCountyAdp_parsesHeadAndTail(self):
-        result = PARSED_PDF[FlCountyAggregate]
+        result = self.parsed_pdf[FlCountyAggregate]
 
         # Assert Head
         expected_head = pd.DataFrame({
@@ -78,7 +81,7 @@ class TestFlAggregateIngest(TestCase):
         assert_frame_equal(result.tail(), expected_tail)
 
     def testParseCountyAdp_parsesDateReported(self):
-        result = PARSED_PDF[FlCountyAggregate]
+        result = self.parsed_pdf[FlCountyAggregate]
 
         # Specifically verify Row 43 since it has 'Date Reported' set
         expected_row_43 = pd.DataFrame({
@@ -96,7 +99,7 @@ class TestFlAggregateIngest(TestCase):
 
     def testWrite_CorrectlyReadsHernandoCounty(self):
         # Act
-        for table, df in PARSED_PDF.items():
+        for table, df in self.parsed_pdf.items():
             database.write_df(table, df)
 
         # Assert
@@ -114,7 +117,7 @@ class TestFlAggregateIngest(TestCase):
 
     def testWrite_CalculatesCountyPopulationSum(self):
         # Act
-        for table, df in PARSED_PDF.items():
+        for table, df in self.parsed_pdf.items():
             database.write_df(table, df)
 
         # Assert
@@ -127,7 +130,7 @@ class TestFlAggregateIngest(TestCase):
     # ==================== TABLE 2 TESTS ====================
 
     def testParseFacilityAggregates_parsesHeadAndTail(self):
-        result = PARSED_PDF[FlFacilityAggregate]
+        result = self.parsed_pdf[FlFacilityAggregate]
 
         # Assert Head
         expected_head = pd.DataFrame({
@@ -164,7 +167,7 @@ class TestFlAggregateIngest(TestCase):
         assert_frame_equal(result.tail(), expected_tail)
 
     def testParseFacilityAdp_parsesMissingDataAsNone(self):
-        result = PARSED_PDF[FlFacilityAggregate]
+        result = self.parsed_pdf[FlFacilityAggregate]
 
         # Specifically verify Row 43 since it has 'Date Reported' set
         expected_row_40 = pd.DataFrame({
@@ -182,7 +185,7 @@ class TestFlAggregateIngest(TestCase):
 
     def testWrite_CalculatesFacilityAdpSum(self):
         # Act
-        for table, df in PARSED_PDF.items():
+        for table, df in self.parsed_pdf.items():
             database.write_df(table, df)
 
         # Assert
