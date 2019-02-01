@@ -17,7 +17,20 @@
 
 """Represents data scraped for a single individual."""
 from abc import abstractmethod
-from typing import List, Optional
+from typing import List, Optional, Iterable, Dict
+
+HIERARCHY_MAP: Dict[str, Iterable] = {
+    'person': (),
+    'booking': ('person',),
+    'arrest': ('person', 'booking'),
+    'charge': ('person', 'booking'),
+    'hold': ('person', 'booking'),
+    'bond': ('person', 'booking', 'charge'),
+    'sentence': ('person', 'booking', 'charge')
+}
+
+PLURALS = {'person': 'people', 'booking': 'bookings', 'charge': 'charges',
+           'hold': 'holds'}
 
 
 class IngestObject:

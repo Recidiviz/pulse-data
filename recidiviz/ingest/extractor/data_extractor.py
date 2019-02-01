@@ -23,18 +23,7 @@ model and returned.
 import abc
 import yaml
 
-_HIERARCHY_MAP = {
-    'person': (),
-    'booking': ('person',),
-    'arrest': ('person', 'booking'),
-    'charge': ('person', 'booking'),
-    'hold': ('person', 'booking'),
-    'bond': ('person', 'booking', 'charge'),
-    'sentence': ('person', 'booking', 'charge')
-}
-
-_PLURALS = {'person': 'people', 'booking': 'bookings', 'charge': 'charges',
-            'hold': 'holds'}
+from recidiviz.ingest.models.ingest_info import HIERARCHY_MAP, PLURALS
 
 
 class DataExtractor(metaclass=abc.ABCMeta):
@@ -59,7 +48,6 @@ class DataExtractor(metaclass=abc.ABCMeta):
                 value.split('.')[0] if isinstance(value, str)
                 else value[0].split('.')[0]
                 for value in self.multi_keys.values())
-
 
     @abc.abstractmethod
     def extract_and_populate_data(self, content, ingest_info=None):
@@ -90,18 +78,18 @@ class DataExtractor(metaclass=abc.ABCMeta):
                     continue
                 # The first task is to find the parent.
                 parent = self._find_parent_ingest_info(
-                    ingest_info, _HIERARCHY_MAP[class_to_set], i)
+                    ingest_info, HIERARCHY_MAP[class_to_set], i)
 
                 get_recent_name = 'get_recent_' + class_to_set
                 object_to_set = getattr(parent, get_recent_name)()
                 # If we are in multikey, we need to pull out the correct index
                 # of class type we want to set
-                if is_multi_key and class_to_set in _PLURALS:
-                    attr = getattr(parent, _PLURALS[class_to_set])
-                    parent_cls_to_set = _HIERARCHY_MAP[class_to_set][-1]
+                if is_multi_key and class_to_set in PLURALS:
+                    attr = getattr(parent, PLURALS[class_to_set])
+                    parent_cls_to_set = HIERARCHY_MAP[class_to_set][-1]
                     if parent_cls_to_set in self.multi_key_classes:
                         grandparent = self._find_parent_ingest_info(
-                            ingest_info, _HIERARCHY_MAP[parent_cls_to_set], i)
+                            ingest_info, HIERARCHY_MAP[parent_cls_to_set], i)
                         create_name = 'create_' + parent_cls_to_set
                         create_func = getattr(grandparent, create_name)
                         if i != 0:
@@ -140,8 +128,8 @@ class DataExtractor(metaclass=abc.ABCMeta):
             # object as a parent, we use the index of the value we found, if it
             # exists.
             if hier_class in self.multi_key_classes and \
-                    len(getattr(parent, _PLURALS[hier_class])) > val_index:
-                parent = getattr(parent, _PLURALS[hier_class])[val_index]
+                    len(getattr(parent, PLURALS[hier_class])) > val_index:
+                parent = getattr(parent, PLURALS[hier_class])[val_index]
             else:
                 get_recent_name = 'get_recent_' + hier_class
                 create_func = 'create_' + hier_class
