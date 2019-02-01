@@ -222,6 +222,30 @@ queue:
     task_age_limit: 3d
     task_retry_limit: 5
 
+# us-fl-bradford-scraper - Bradford County, Florida
+- name: us-fl-bradford-scraper
+  mode: push
+  rate: 5/m
+  bucket_size: 2
+  max_concurrent_requests: 3
+  retry_parameters:
+    min_backoff_seconds: 5
+    max_backoff_seconds: 300
+    task_age_limit: 3d
+    task_retry_limit: 5
+
+# us-fl-columbia-scraper - Columbia County, Florida
+- name: us-fl-columbia-scraper
+  mode: push
+  rate: 5/m
+  bucket_size: 2
+  max_concurrent_requests: 3
+  retry_parameters:
+    min_backoff_seconds: 5
+    max_backoff_seconds: 300
+    task_age_limit: 3d
+    task_retry_limit: 5
+
 # us-tn-mcminn-scraper - McMinn County, Tennessee
 - name: us-tn-mcminn-scraper
   mode: push
@@ -258,6 +282,19 @@ queue:
     task_age_limit: 3d
     task_retry_limit: 5
 
+# us-ga-gwinnett-scraper - Gwinnett County, Georgia
+- name: us-ga-gwinnett-scraper
+  mode: push
+  rate: 5/m
+  bucket_size: 2
+  max_concurrent_requests: 3
+  retry_parameters:
+    min_backoff_seconds: 5
+    max_backoff_seconds: 300
+    task_age_limit: 3d
+    task_retry_limit: 5
+
+# us-tx-cooke-scraper - Cooke County, Texas
 - name: us-tx-cooke-scraper
   mode: push
   rate: 5/m

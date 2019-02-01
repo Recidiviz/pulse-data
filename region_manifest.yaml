@@ -187,6 +187,30 @@ regions:
     base_url: https://jail.desotosheriff.org/DCN/inmates
     scraper_package: us_ms_desoto
     timezone: America/Chicago
+  us_fl_bradford:
+    agency_name: Bradford County Sheriff's Office
+    region_code: us_fl_bradford
+    agency_type: jail
+    queue: us-fl-bradford-scraper
+    base_url: http://smartweb.bradfordsheriff.org/smartwebclient/Jail.aspx
+    scraper_package: us_fl_bradford
+    timezone: America/New_York
+  us_fl_columbia:
+    agency_name: Columbia County Sheriff's Office
+    region_code: us_fl_columbia
+    agency_type: jail
+    queue: us-fl-columbia-scraper
+    base_url: http://50.201.159.194/smartwebclient/jail.aspx
+    scraper_package: us_fl_columbia
+    timezone: America/New_York
+  us_ga_gwinnett:
+    agency_name: Gwinnett County Detention Center
+    region_code: us_ga_gwinnett
+    agency_type: jail
+    queue: us-ga-gwinnett-scraper
+    base_url: http://www.gwinnettcountysheriff.com/smartwebclient/jail.aspx
+    scraper_package: us_ga_gwinnett
+    timezone: America/New_York
   us_tn_mcminn:
     agency_name: McMinn County Sheriff's Office
     region_code: us_tn_mcminn
