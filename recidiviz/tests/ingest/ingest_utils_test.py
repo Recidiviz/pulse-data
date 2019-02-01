@@ -39,6 +39,7 @@ def test_validate_regions_one_all():
         'us_ar_boone',
         'us_ar_craighead',
         'us_ar_faulkner',
+        "us_ar_garland",
         'us_ar_hempstead',
         'us_ar_jefferson',
         'us_ar_johnson',
@@ -85,6 +86,7 @@ def test_validate_regions_one_all():
         "us_tx_upshur",
         "us_tx_van_zandt",
         "us_tx_wilson",
+        "us_tx_wichita",
         "us_tx_young",
         "us_vt",
     }
@@ -117,6 +119,7 @@ def test_validate_regions_multiple_all():
         'us_ar_boone',
         'us_ar_craighead',
         'us_ar_faulkner',
+        "us_ar_garland",
         'us_ar_hempstead',
         'us_ar_jefferson',
         'us_ar_johnson',
@@ -163,6 +166,7 @@ def test_validate_regions_multiple_all():
         "us_tx_upshur",
         "us_tx_van_zandt",
         "us_tx_wilson",
+        "us_tx_wichita",
         "us_tx_young",
         "us_vt",
     }
