@@ -42,6 +42,26 @@ def test_good_table():
     info = extractor.extract_and_populate_data(html_contents)
     assert expected_info == info
 
+
+def test_good_table_with_link():
+    """Tests a well modelled table."""
+    key_mapping_file = '../testdata/data_extractor/yaml/good_table.yaml'
+    key_mapping_file = os.path.join(os.path.dirname(__file__), key_mapping_file)
+    extractor = HtmlDataExtractor(key_mapping_file)
+
+    expected_info = IngestInfo()
+    person = expected_info.create_person()
+    person.birthdate = '1/15/2048'
+
+    html_contents = html.fromstring(
+        fixtures.as_string('testdata/data_extractor/html',
+                           'good_table_links.html'))
+
+    info = extractor.extract_and_populate_data(html_contents)
+    assert expected_info == info
+
+
+
 def test_nested_good_table():
     """Tests a well modelled nested table."""
     key_mapping_file = '../testdata/data_extractor/yaml/nested_good_table.yaml'
@@ -80,6 +100,7 @@ def test_nested_good_table():
 
     info = extractor.extract_and_populate_data(html_contents)
     assert info == expected_info
+
 
 def test_bad_table():
     """Tests a table with an unusual cell layout."""
@@ -125,6 +146,7 @@ def test_bad_table():
     # know how to ignore this somehow
     info.people[0].bookings[0].charges.pop()
     assert info == expected_info
+
 
 def test_multiple_people_with_maybe_charges():
     """Tests for a page with many people, each with possibly a set of charges"""
@@ -206,6 +228,7 @@ def test_multiple_people_with_maybe_charges():
 
     assert info == expected_info
 
+
 def test_bad_lookup():
     """Tests a yaml file with a lookup key that doesn't exist on the page."""
     key_mapping_file = '../testdata/data_extractor/yaml/bad_lookup.yaml'
@@ -217,6 +240,7 @@ def test_bad_lookup():
 
     with pytest.warns(UserWarning):
         extractor.extract_and_populate_data(html_contents)
+
 
 def test_bad_object():
     """Tests a yaml file with a db object that doesn't exist."""
@@ -230,6 +254,7 @@ def test_bad_object():
     with pytest.raises(KeyError):
         extractor.extract_and_populate_data(html_contents)
 
+
 def test_bad_attr():
     """Tests a yaml file with a db attribute that doesn't exist."""
     key_mapping_file = '../testdata/data_extractor/yaml/bad_attr.yaml'
@@ -241,6 +266,7 @@ def test_bad_attr():
 
     with pytest.raises(AttributeError):
         extractor.extract_and_populate_data(html_contents)
+
 
 def test_partial_table():
     """Tests a page with a table as well as unstructured data."""
@@ -267,6 +293,7 @@ def test_partial_table():
 
     info = extractor.extract_and_populate_data(html_contents)
     assert expected_info == info
+
 
 def test_labeled_fields():
     """Tests a page with field values in <span>s labeled by <label>s."""
@@ -296,6 +323,7 @@ def test_labeled_fields():
     info = extractor.extract_and_populate_data(html_contents)
     assert expected_info == info
 
+
 def test_bad_labels():
     """Tests a page with field values in <span>s labeled by nested <label>s."""
     key_mapping_file = '../testdata/data_extractor/yaml/bad_labels.yaml'
@@ -322,6 +350,7 @@ def test_bad_labels():
 
     info = extractor.extract_and_populate_data(html_contents)
     assert expected_info == info
+
 
 def test_text_label():
     """Tests a page with a key/value pair in plain text."""
@@ -380,6 +409,7 @@ def test_th_rows():
     info = extractor.extract_and_populate_data(html_contents)
     assert expected_info == info
 
+
 def test_content_is_not_modified():
     """Tests that the HtmlDataExtractor does not mutate |content|."""
     key_mapping_file = '../testdata/data_extractor/yaml/text_label.yaml'
@@ -396,6 +426,7 @@ def test_content_is_not_modified():
 
     assert expected_info == info
     assert html_contents.cssselect('td') == []
+
 
 def test_cell_ordering():
     """Tests that the HtmlDataExtractor handles 'th' and 'td' cells in the
