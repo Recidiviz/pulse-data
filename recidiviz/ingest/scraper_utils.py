@@ -23,6 +23,8 @@ that does not depend on member data.
 import base64
 import zlib
 
+from recidiviz.ingest.models.ingest_info import IngestInfo, IngestObject, \
+    HIERARCHY_MAP, PLURALS
 from recidiviz.utils import environment
 from recidiviz.utils import secrets
 
@@ -51,6 +53,36 @@ def get_value_from_html_tree(html_tree, attribute_value, attribute_name='id'):
     if html_obj:
         return html_obj[0].get('value')
     return None
+
+
+def _one(ingest_object: str, parent: IngestObject):
+    if ingest_object in PLURALS:
+        lst = getattr(parent, PLURALS[ingest_object])
+        if len(lst) != 1:
+            raise ValueError('IngestInfo did not have exactly one {} as '
+                             'expected'.format(ingest_object))
+        return lst[0]
+    elt = getattr(parent, ingest_object)
+    if elt is None:
+        raise ValueError('IngestInfo did not have exactly one {} as '
+                         'expected'.format(ingest_object))
+    return elt
+
+
+def one(ingest_object: str, ingest_info: IngestInfo):
+    """Convenience function to return the single descendant of an IngestInfo
+    object. For example, |one('arrest', ingest_info)| returns the single arrest
+    of the single booking of the single person in |ingest_info| and raises an
+    error if there are zero or multiple people, bookings, or arrests."""
+    if ingest_object not in HIERARCHY_MAP:
+        raise ValueError(
+            'Cannot find ingest object with name {}'.format(ingest_object))
+
+    parent = ingest_info
+    for hier_class in HIERARCHY_MAP[ingest_object]:
+        parent = _one(hier_class, parent)
+
+    return _one(ingest_object, parent)
 
 
 def get_proxies(use_test=False):
