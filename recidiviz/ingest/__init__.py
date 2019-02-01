@@ -47,11 +47,14 @@ import recidiviz.ingest.us_ar_saline
 import recidiviz.ingest.us_ar_stone
 import recidiviz.ingest.us_ar_van_buren
 import recidiviz.ingest.us_co_mesa
+import recidiviz.ingest.us_fl_bradford
+import recidiviz.ingest.us_fl_columbia
 import recidiviz.ingest.us_fl_hendry
 import recidiviz.ingest.us_fl_nassau
 import recidiviz.ingest.us_fl_martin
 import recidiviz.ingest.us_fl_osceola
 import recidiviz.ingest.us_ga_berrien
+import recidiviz.ingest.us_ga_gwinnett
 import recidiviz.ingest.us_in_vigo
 import recidiviz.ingest.us_ms_desoto
 import recidiviz.ingest.us_mt_gallatin

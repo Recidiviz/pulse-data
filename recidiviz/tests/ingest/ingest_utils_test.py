@@ -52,10 +52,13 @@ def test_validate_regions_one_all():
         'us_ar_stone',
         "us_ar_van_buren",
         "us_co_mesa",
+        "us_fl_bradford",
+        "us_fl_columbia",
         "us_fl_hendry",
         "us_fl_martin",
         "us_fl_osceola",
         "us_ga_berrien",
+        "us_ga_gwinnett",
         "us_in_vigo",
         "us_mo_stone",
         "us_ms_desoto",
@@ -132,10 +135,13 @@ def test_validate_regions_multiple_all():
         'us_ar_stone',
         "us_ar_van_buren",
         "us_co_mesa",
+        "us_fl_bradford",
+        "us_fl_columbia",
         "us_fl_hendry",
         "us_fl_martin",
         "us_fl_osceola",
         "us_ga_berrien",
+        "us_ga_gwinnett",
         "us_in_vigo",
         "us_mo_stone",
         "us_ms_desoto",
@@ -300,6 +306,7 @@ def test_convert_ingest_info_one_charge_to_one_bond():
 
     proto = ingest_utils.convert_ingest_info_to_proto(info)
     assert expected_proto == proto
+
 
 def test_convert_ingest_info_many_charge_to_one_bond():
     info = ingest_info.IngestInfo()
