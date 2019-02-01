@@ -54,6 +54,7 @@ import recidiviz.ingest.us_fl_nassau
 import recidiviz.ingest.us_fl_martin
 import recidiviz.ingest.us_fl_osceola
 import recidiviz.ingest.us_ga_berrien
+import recidiviz.ingest.us_ga_douglas
 import recidiviz.ingest.us_ga_gwinnett
 import recidiviz.ingest.us_in_vigo
 import recidiviz.ingest.us_ms_desoto

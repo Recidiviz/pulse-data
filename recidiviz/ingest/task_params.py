@@ -63,7 +63,7 @@ class Task:
     # Any post data to send in the request (forces a POST request)
     post_data: Optional[Dict[str, Optional[str]]] = attr.ib(default=None)
     # Any json data to be sent in the request (forces a POST request)
-    json: Optional[Dict[str, Optional[str]]] = attr.ib(default=None)
+    json: Optional[Dict[str, Any]] = attr.ib(default=None)
 
     # Can be used by the child scraper to store extra information they need
     custom: Dict[Any, Any] = attr.ib(factory=dict)
