@@ -555,3 +555,11 @@ regions:
     base_url: https://www.stonecountysheriff.com/roster.php
     scraper_package: us_ar_stone
     timezone: America/Chicago
+  us_ga_douglas:
+    agency_name: Douglas County Sheriff's Office
+    region_code: us_ga_douglas
+    agency_type: jail
+    queue: us-ga-douglas-scraper
+    base_url: https://douglas-so-ga.zuercherportal.com
+    scraper_package: us_ga_douglas
+    timezone: America/New_York
