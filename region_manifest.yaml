@@ -339,6 +339,22 @@ regions:
     base_url: https://apps.alamance-nc.com/p2c
     scraper_package: us_nc_alamance
     timezone: America/New_York
+  us_ar_garland:
+    agency_name: Garland County Sheriff Department
+    region_code: us_ar_garland
+    agency_type: jail
+    queue: us-ar-garland-scraper
+    base_url: http://www.garlandcountysheriff.com/inmate-roster.php
+    scraper_package: us_ar_garland
+    timezone: America/Chicago
+  us_tx_wichita:
+    agency_name: Wichita County Sheriff's Office
+    region_code: us_tx_wichita
+    agency_type: jail
+    queue: us-tx-wichita-scraper
+    base_url: http://wichitacountysheriffsoffice.org/inmate-roster
+    scraper_package: us_tx_wichita
+    timezone: America/Chicago
   us_al_autauga:
     agency_name: Autauga County Sheriff's Office
     region_code: us_al_autauga

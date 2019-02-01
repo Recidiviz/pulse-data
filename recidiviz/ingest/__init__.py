@@ -34,6 +34,7 @@ import recidiviz.ingest.us_al_pike
 import recidiviz.ingest.us_ar_boone
 import recidiviz.ingest.us_ar_craighead
 import recidiviz.ingest.us_ar_faulkner
+import recidiviz.ingest.us_ar_garland
 import recidiviz.ingest.us_ar_hempstead
 import recidiviz.ingest.us_ar_jefferson
 import recidiviz.ingest.us_ar_johnson
@@ -80,6 +81,7 @@ import recidiviz.ingest.us_tx_titus
 import recidiviz.ingest.us_tx_upshur
 import recidiviz.ingest.us_tx_van_zandt
 import recidiviz.ingest.us_tx_wilson
+import recidiviz.ingest.us_tx_wichita
 import recidiviz.ingest.us_tx_young
 import recidiviz.ingest.us_vt
 import recidiviz.ingest.worker
