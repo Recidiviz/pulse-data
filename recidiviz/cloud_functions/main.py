@@ -45,7 +45,7 @@ def parse_state_aggregate(data, _):
     state, filename = data['name'].split('/')
     project_id = os.environ.get('GCP_PROJECT')
     logging.info(
-        'Running cloud function for bucket %s, state %s, and filename %s',
+        'Running cloud function for bucket %s, state %s, filename %s',
         bucket, state, filename)
     url = _CLOUD_FUNCTION_URL.format(
         project_id, bucket, state, filename)

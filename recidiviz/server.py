@@ -27,6 +27,8 @@ from opencensus.trace.exporters.transports.background_thread \
     import BackgroundThreadTransport
 from opencensus.trace.ext.flask.flask_middleware import FlaskMiddleware
 
+from recidiviz.ingest.aggregate.scrape_aggregate_reports import\
+    scrape_aggregate_reports_blueprint
 from recidiviz.cloud_functions.cloud_functions import cloud_functions_blueprint
 from recidiviz.ingest.infer_release import infer_release_blueprint
 from recidiviz.ingest.scraper_control import scraper_control
@@ -61,6 +63,8 @@ app.register_blueprint(worker, url_prefix='/scraper')
 app.register_blueprint(actions, url_prefix='/ingest')
 app.register_blueprint(infer_release_blueprint, url_prefix='/infer_release')
 app.register_blueprint(cloud_functions_blueprint, url_prefix='/cloud_function')
+app.register_blueprint(
+    scrape_aggregate_reports_blueprint, url_prefix='/scrape_aggregate_reports')
 if not environment.in_prod():
     app.register_blueprint(test_populator, url_prefix='/test_populator')
 
