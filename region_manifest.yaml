@@ -563,6 +563,62 @@ regions:
     base_url: https://douglas-so-ga.zuercherportal.com
     scraper_package: us_ga_douglas
     timezone: America/New_York
+  us_mo_barry:
+    agency_name: Barry County Sheriff's Office
+    region_code: us_mo_barry
+    agency_type: jail
+    queue: us-mo-barry-scraper
+    base_url: http://www.barrycountysheriff.com/roster.php
+    scraper_package: us_mo_barry
+    timezone: America/Chicago
+  us_mo_cape_girardeau:
+    agency_name: Cape Girardeau County Sheriff's Office
+    region_code: us_mo_cape_girardeau
+    agency_type: jail
+    queue: us-mo-cape-girardeau-scraper
+    base_url: https://www.capecountysheriff.org/roster.php
+    scraper_package: us_mo_cape_girardeau
+    timezone: America/Chicago
+  us_mo_johnson:
+    agency_name: Johnson County Sheriff's Office
+    region_code: us_mo_johnson
+    agency_type: jail
+    queue: us-mo-johnson-scraper
+    base_url: https://www.jocomosheriff.org/roster.php
+    scraper_package: us_mo_johnson
+    timezone: America/Chicago
+  us_mo_lawrence:
+    agency_name: Lawrence County Sheriff's Office
+    region_code: us_mo_lawrence
+    agency_type: jail
+    queue: us-mo-lawrence-scraper
+    base_url: https://www.lawrencecosheriff.com/roster.php
+    scraper_package: us_mo_lawrence
+    timezone: America/Chicago
+  us_mo_livingston:
+    agency_name: Livingston County Sheriff's Office
+    region_code: us_mo_livingston
+    agency_type: jail
+    queue: us-mo-livingston-scraper
+    base_url: https://www.livcoso.org/roster.php
+    scraper_package: us_mo_livingston
+    timezone: America/Chicago
+  us_mo_morgan:
+    agency_name: Morgan County Sheriff's Office
+    region_code: us_mo_morgan
+    agency_type: jail
+    queue: us-mo-morgan-scraper
+    base_url: http://www.morgancountymoso.org/roster.php
+    scraper_package: us_mo_morgan
+    timezone: America/Chicago
+  us_ok_rogers:
+    agency_name: Rogers County Sheriff's Office
+    region_code: us_ok_rogers
+    agency_type: jail
+    queue: us-ok-rogers-scraper
+    base_url: http://www.rcsheriff.org/roster.php
+    scraper_package: us_ok_rogers
+    timezone: America/Chicago
   us_in_jackson:
     agency_name: Jackson County Sheriff's Office
     region_code: us_in_jackson
