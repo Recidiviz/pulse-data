@@ -563,3 +563,67 @@ regions:
     base_url: https://douglas-so-ga.zuercherportal.com
     scraper_package: us_ga_douglas
     timezone: America/New_York
+  us_in_jackson:
+    agency_name: Jackson County Sheriff's Office
+    region_code: us_in_jackson
+    agency_type: jail
+    queue: us-in-jackson-scraper
+    base_url: https://www.jacksoncountysheriffin.org/roster.php
+    scraper_package: us_in_jackson
+    timezone: America/Indiana/Indianapolis
+  us_in_scott:
+    agency_name: Scott County Sheriff's Office
+    region_code: us_in_scott
+    agency_type: jail
+    queue: us-in-scott-scraper
+    base_url: https://www.scottcountysheriff.org/roster.php
+    scraper_package: us_in_scott
+    timezone: America/Indiana/Indianapolis
+  us_ks_cherokee:
+    agency_name: Cherokee County Sheriff's Office
+    region_code: us_ks_cherokee
+    agency_type: jail
+    queue: us-ks-cherokee-scraper
+    base_url: https://www.cherokeecountykssheriff.com/roster.php
+    scraper_package: us_ks_cherokee
+    timezone: America/Chicago
+  us_ks_jefferson:
+    agency_name: Jefferson County Sheriff's Office
+    region_code: us_ks_jefferson
+    agency_type: jail
+    queue: us-ks-jefferson-scraper
+    base_url: http://www.jeffersoncountykssheriff.com/roster.php
+    scraper_package: us_ks_jefferson
+    timezone: America/Chicago
+  us_ks_pratt:
+    agency_name: Pratt County Sheriff's Office
+    region_code: us_ks_pratt
+    agency_type: jail
+    queue: us-ks-pratt-scraper
+    base_url: https://www.prattcountysheriff.com/roster.php
+    scraper_package: us_ks_pratt
+    timezone: America/Chicago
+  us_ms_clay:
+    agency_name: Clay County Sheriff's Office
+    region_code: us_ms_clay
+    agency_type: jail
+    queue: us-ms-clay-scraper
+    base_url: http://www.claysheriffms.org/roster.php
+    scraper_package: us_ms_clay
+    timezone: America/Chicago
+  us_ms_kemper:
+    agency_name: Kemper County Sheriff's Office
+    region_code: us_ms_kemper
+    agency_type: jail
+    queue: us-ms-kemper-scraper
+    base_url: https://www.kempercountysheriff.com/roster.php
+    scraper_package: us_ms_kemper
+    timezone: America/Chicago
+  us_ms_tunica:
+    agency_name: Tunica County Sheriff's Office
+    region_code: us_ms_tunica
+    agency_type: jail
+    queue: us-ms-tunica-scraper
+    base_url: https://www.tunicamssheriff.com/roster.php
+    scraper_package: us_ms_tunica
+    timezone: America/Chicago
