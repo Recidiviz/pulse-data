@@ -16,15 +16,48 @@
 # =============================================================================
 
 """Tests for ingest/scraper_utils.py."""
-
+import unittest
 
 from mock import patch
 import pytest
 
 from recidiviz.ingest import scraper_utils
+from recidiviz.ingest.models.ingest_info import IngestInfo
 
 
-class TestGetProxies:
+class TestOne(unittest.TestCase):
+    """Tests for the |one| method in the module."""
+    def test_onePerson_passes(self):
+        ii = IngestInfo()
+        p = ii.create_person()
+        self.assertIs(p, scraper_utils.one('person', ii))
+
+    def test_twoPeople_raises(self):
+        ii = IngestInfo()
+        ii.create_person().create_booking()
+        ii.create_person()
+        with self.assertRaises(ValueError):
+            scraper_utils.one('booking', ii)
+
+    def test_noSentence_raises(self):
+        ii = IngestInfo()
+        ii.create_person().create_booking().create_charge().create_bond()
+        with self.assertRaises(ValueError):
+            scraper_utils.one('sentence', ii)
+
+    def test_oneBooking_passes(self):
+        ii = IngestInfo()
+        b = ii.create_person().create_booking()
+        b.create_arrest()
+        self.assertIs(b, scraper_utils.one('booking', ii))
+
+    def test_oneBond_passes(self):
+        ii = IngestInfo()
+        b = ii.create_person().create_booking().create_charge().create_bond()
+        self.assertIs(b, scraper_utils.one('bond', ii))
+
+
+class TestGetProxies(unittest.TestCase):
     """Tests for the get_proxies method in the module."""
 
     @patch('recidiviz.utils.secrets.get_secret')
