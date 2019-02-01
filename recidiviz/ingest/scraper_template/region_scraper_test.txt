@@ -21,6 +21,7 @@ from lxml import html
 
 from recidiviz.ingest import constants
 from recidiviz.ingest.models.ingest_info import IngestInfo
+from recidiviz.ingest.task_params import Task
 from recidiviz.ingest.$region.${region}_scraper import ${class_name}Scraper
 from recidiviz.tests.utils.base_scraper_test import BaseScraperTest
 
