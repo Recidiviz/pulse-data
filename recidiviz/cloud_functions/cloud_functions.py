@@ -23,6 +23,7 @@ import os
 import tempfile
 from flask import Blueprint, request
 import gcsfs
+from recidiviz.utils import metadata
 
 from recidiviz.ingest.aggregate.regions.fl import fl_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.ga import ga_aggregate_ingest
@@ -41,6 +42,9 @@ class StateAggregateError(Exception):
     """Errors thrown in the state aggregate endpoint"""
 
 
+HISTORICAL_BUCKET = '{}-processed-state-aggregates'
+
+
 @cloud_functions_blueprint.route('/state_aggregate')
 @authenticate_request
 def state_aggregate():
@@ -50,21 +54,23 @@ def state_aggregate():
     state_to_parser = {
         'florida': fl_aggregate_ingest.parse,
         'georgia': ga_aggregate_ingest.parse,
-        'hawaii': hi_aggregate_ingest,
+        'hawaii': hi_aggregate_ingest.parse,
         'kentucky': ky_aggregate_ingest.parse,
-        'new_york': ny_aggregate_ingest,
+        'new_york': ny_aggregate_ingest.parse,
         'texas': tx_aggregate_ingest.parse,
     }
 
     bucket = get_value('bucket', request.args)
     state = get_value('state', request.args)
     filename = get_value('filename', request.args)
+    project_id = metadata.project_id()
+    logging.info('The project id is %s', project_id)
     if not bucket or not state or not filename:
         raise StateAggregateError(
             'All of state, bucket, and filename must be provided')
     path = os.path.join(bucket, state, filename)
     parser = state_to_parser[state]
-    fs = gcsfs.GCSFileSystem(project=os.environ.get('GCP_PROJECT'))
+    fs = gcsfs.GCSFileSystem(project=project_id)
 
     # Providing a stream buffer to tabula reader does not work because it
     # tries to load the file into the local filesystem, since appengine is a
@@ -77,5 +83,13 @@ def state_aggregate():
     result = parser(tmpdir_path)
     for table, df in result.items():
         database.write_df(table, df)
+
+    # If we are successful, we want to move the file out of the cloud function
+    # triggered directory, and into the historical path.
+    historical_path = os.path.join(
+        HISTORICAL_BUCKET.format(project_id),
+        state, filename
+    )
+    fs.mv(path, historical_path)
 
     return '', HTTPStatus.OK
