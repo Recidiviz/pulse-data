@@ -52,7 +52,7 @@ class TestTxAggregateIngest(TestCase):
 
         # Assert Head
         expected_head = pd.DataFrame({
-            'county_name': ['Anderson', 'Andrews', 'Angelina'],
+            'facility_name': ['Anderson', 'Andrews', 'Angelina'],
             'pretrial_felons': [90, 20, 105],
             'convicted_felons': [2, 11, 26],
             'convicted_felons_sentenced_to_county_jail': [2, 0, 1],
@@ -70,7 +70,7 @@ class TestTxAggregateIngest(TestCase):
             'total_population': [168, 26, 212],
             'total_capacity': [300, 50, 279],
             'available_beds': [102, 19, 39],
-            'fips': 3 * [None],
+            'fips': [48001, 48003, 48005],
             'report_date': 3 * [DATE_SCRAPED],
             'report_granularity': 3 * [enum_strings.monthly_granularity]
         })
@@ -78,7 +78,7 @@ class TestTxAggregateIngest(TestCase):
 
         # Assert Tail
         expected_tail = pd.DataFrame({
-            'county_name': ['Zapata', 'Zavala', 'Zavala (P)'],
+            'facility_name': ['Zapata', 'Zavala', 'Zavala (P)'],
             'pretrial_felons': [9, 16, 0],
             'convicted_felons': [3, 5, 0],
             'convicted_felons_sentenced_to_county_jail': [0, 0, 0],
@@ -96,7 +96,7 @@ class TestTxAggregateIngest(TestCase):
             'total_population': [150, 42, 0],
             'total_capacity': [240, 66, 515],
             'available_beds': [66, 17, 464],
-            'fips': 3 * [None],
+            'fips': [48505, 48507, 48507],
             'report_date': 3 * [DATE_SCRAPED],
             'report_granularity': 3 * [enum_strings.monthly_granularity]
         }, index=range(264, 267))
