@@ -42,7 +42,7 @@ class HtmlDataExtractor(DataExtractor):
         self.keys.update(self.css_keys)
 
         self.all_keys = set(self.keys.keys()) | \
-            set(self.multi_keys.keys()) | set(self.keys_to_ignore)
+                        set(self.multi_keys.keys()) | set(self.keys_to_ignore)
 
     def _set_all_cells(self, content):
         """Finds all leaf cells on a page and sets them.
@@ -254,6 +254,23 @@ class HtmlDataExtractor(DataExtractor):
         text = self._get_text_from_element(key_element).strip()
         if text.startswith(key):
             if self._insert_cells_from_text(key, text, key_element):
+                return True
+
+        # <foo><bar>key</bar></foo><baz>value</baz>
+        # Finds the oldest ancestor with the same text as the key, then sets
+        # the key element and the ancestor's next element to td cells,
+        # if a next element with text exists.
+        parent = key_element.getparent()
+        grand_parent = parent.getparent() if parent is not None else None
+        while grand_parent is not None and key_element.text == \
+                self._get_text_from_element(grand_parent):
+            grand_parent = grand_parent.getparent()
+        if parent is not None and key_element.text == \
+                self._get_text_from_element(parent):
+            next_cell = parent.getnext()
+            if next_cell is not None and next_cell.text:
+                key_element.tag = 'td'
+                next_cell.tag = 'td'
                 return True
 
         return False
