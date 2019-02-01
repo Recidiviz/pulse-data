@@ -784,10 +784,12 @@ class TxCountyAggregate(Base, _AggregateTableMixin):
     """TX state-provided aggregate statistics."""
     __tablename__ = 'tx_county_aggregate'
     __table_args__ = (
-        UniqueConstraint('fips', 'report_date', 'report_granularity'),
+        UniqueConstraint(
+            'fips', 'facility_name', 'report_date', 'report_granularity'
+        ),
     )
 
-    county_name = Column(String(255))
+    facility_name = Column(String(255))
 
     pretrial_felons = Column(Integer)
 

@@ -20,12 +20,13 @@ import datetime
 import dateparser
 
 import pandas as pd
+import us
 from PyPDF2 import PdfFileReader
 import tabula
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
-from recidiviz.ingest.aggregate import aggregate_ingest_utils
+from recidiviz.ingest.aggregate import aggregate_ingest_utils, fips
 from recidiviz.ingest.aggregate.errors import AggregateDateParsingError
 from recidiviz.persistence.database.schema import TxCountyAggregate
 
@@ -35,8 +36,9 @@ DATE_PARSE_ANCHOR = 'Abbreviated Population Report for'
 def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
     table = _parse_table(filename)
 
-    # TODO(#698): Set county fips based on the county_name
-    table['fips'] = None
+    county_names = table.facility_name.map(_pretend_facility_is_county)
+    table = fips.add_column_to_df(table, county_names, us.states.TX)
+
     table['report_date'] = _parse_date(filename)
     table['report_granularity'] = enum_strings.monthly_granularity
 
@@ -100,7 +102,7 @@ def _parse_table(filename: str) -> pd.DataFrame:
     result = result.append(last_page, ignore_index=True)
 
     result = aggregate_ingest_utils.rename_columns_and_select(result, {
-        'County': 'county_name',
+        'County': 'facility_name',
         'Pretrial Felons': 'pretrial_felons',
         'Conv. Felons': 'convicted_felons',
         'Sentenced to County Jail time':
@@ -121,7 +123,12 @@ def _parse_table(filename: str) -> pd.DataFrame:
         'Available Beds': 'available_beds'
     })
 
-    for column_name in set(result.columns) - {'county_name'}:
+    for column_name in set(result.columns) - {'facility_name'}:
         result[column_name] = result[column_name].astype(int)
 
     return result
+
+
+def _pretend_facility_is_county(facility_name: str) -> str:
+    """Format facility_name like a county_name to match each to a fips."""
+    return facility_name.replace('(P)', '')

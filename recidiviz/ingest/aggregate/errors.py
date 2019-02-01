@@ -19,3 +19,7 @@
 
 class AggregateDateParsingError(Exception):
     """Raised when a Date can't be parsed from an Aggregate Report."""
+
+
+class FipsMergingError(Exception):
+    """Raised when a scraped county_name can't be assigned a fips."""
