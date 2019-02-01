@@ -106,6 +106,11 @@ class HtmlDataExtractor(DataExtractor):
             lookup_keys = (self.keys.get(cell_val) or
                            self.multi_keys.get(cell_val))
             if not lookup_keys:
+                # Users can specify a key with no value associated and then use
+                # |get_value()| later. We shouldn't warn, even though we
+                # won't find values for these keys.
+                if cell_val in needed_keys:
+                    needed_keys.remove(cell_val)
                 continue
             values = None
             if cell_val in self.keys:
