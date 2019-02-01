@@ -98,12 +98,13 @@ _CLASSIFICATION_MAP = {
 }
 
 _CUSTODY_STATUS_MAP = {
-    'ESCAPED': CustodyStatus.ESCAPED,
-    'HELD ELSEWHERE': CustodyStatus.HELD_ELSEWHERE,
-    'OUT TO COURT': CustodyStatus.HELD_ELSEWHERE,
-    'IN CUSTODY': CustodyStatus.IN_CUSTODY,
     'CURRENTLY BOOKED': CustodyStatus.IN_CUSTODY,
     'DISCHARGED': CustodyStatus.RELEASED,
+    'ESCAPED': CustodyStatus.ESCAPED,
+    'HELD ELSEWHERE': CustodyStatus.HELD_ELSEWHERE,
+    'IN CUSTODY': CustodyStatus.IN_CUSTODY,
+    'IN JAIL': CustodyStatus.IN_CUSTODY,
+    'OUT TO COURT': CustodyStatus.HELD_ELSEWHERE,
     'RELEASED': CustodyStatus.RELEASED,
     'TEMP RELEASE': CustodyStatus.RELEASED,
 }
