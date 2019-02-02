@@ -20,12 +20,13 @@ import datetime
 import dateparser
 
 import pandas as pd
+import us
 from PyPDF2 import PdfFileReader
 import tabula
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
-from recidiviz.ingest.aggregate import aggregate_ingest_utils
+from recidiviz.ingest.aggregate import aggregate_ingest_utils, fips
 from recidiviz.ingest.aggregate.errors import AggregateDateParsingError
 from recidiviz.persistence.database.schema import GaCountyAggregate
 
@@ -33,15 +34,17 @@ DATE_PARSE_ANCHOR = 'DATA SUMMARY'
 
 
 def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
-    ga_county_table = _parse_table(filename)
+    table = _parse_table(filename)
 
-    # TODO(#698): Set county fips based on the county_name
-    ga_county_table['fips'] = None
-    ga_county_table['report_date'] = _parse_date(filename)
-    ga_county_table['report_granularity'] = enum_strings.monthly_granularity
+    # Fuzzy match each facility_name to a county fips
+    county_names = table.county_name.map(_sanitize_county_name)
+    table = fips.add_column_to_df(table, county_names, us.states.GA)
+
+    table['report_date'] = _parse_date(filename)
+    table['report_granularity'] = enum_strings.monthly_granularity
 
     return {
-        GaCountyAggregate: ga_county_table
+        GaCountyAggregate: table
     }
 
 
@@ -113,6 +116,10 @@ def _parse_table(filename: str) -> pd.DataFrame:
     })
 
     return result
+
+
+def _sanitize_county_name(county_name: str) -> str:
+    return county_name.replace('NO JAIL', '').rstrip(' ')
 
 
 def _header_on_each_page(index: int) -> bool:
