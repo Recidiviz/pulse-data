@@ -54,7 +54,8 @@ class TestHiAggregateIngest(TestCase):
 
         # Assert Head
         expected_head = pd.DataFrame({
-            'facility_name': ['HCCC', 'SNF'],
+            'facility_name': ['Hawaii Community Correctional Center',
+                              'Halawa Correctional Facility - Special Needs'],
             'design_bed_capacity': [206., 90.],
             'operation_bed_capacity': [226., 132.],
             'total_population': [387, 125],
@@ -76,7 +77,7 @@ class TestHiAggregateIngest(TestCase):
             'parole_violation_female_population': [4, 0],
             'probation_violation_male_population': [42, 0],
             'probation_violation_female_population': [12, 0],
-            'fips': 2 * [None],
+            'fips': [15001, 15003],
             'report_date': 2 * [DATE_SCRAPED],
             'report_granularity': 2 * [enum_strings.monthly_granularity]
         })
@@ -84,7 +85,8 @@ class TestHiAggregateIngest(TestCase):
 
         # Assert Tail
         expected_tail = pd.DataFrame({
-            'facility_name': ['SAGUARO CC, AZ', 'FEDERAL DET. CTR.'],
+            'facility_name': ['Saguaro Correctional Center, AZ',
+                              'Federal Detention Center, Honolulu'],
             'design_bed_capacity': [NaN, NaN],
             'operation_bed_capacity': [NaN, NaN],
             'total_population': [1459, 159],
@@ -106,7 +108,7 @@ class TestHiAggregateIngest(TestCase):
             'parole_violation_female_population': [0, 0],
             'probation_violation_male_population': [0, 105],
             'probation_violation_female_population': [0, 8],
-            'fips': 2 * [None],
+            'fips': [4021, 15003],
             'report_date': 2 * [DATE_SCRAPED],
             'report_granularity': 2 * [enum_strings.monthly_granularity]
         }, index=range(10, 12))

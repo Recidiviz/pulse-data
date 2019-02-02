@@ -22,19 +22,22 @@ import dateparser
 import numpy as np
 import pandas as pd
 import tabula
+import us
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
-from recidiviz.ingest.aggregate import aggregate_ingest_utils
+from recidiviz.ingest.aggregate import aggregate_ingest_utils, fips
 from recidiviz.persistence.database.schema import KyFacilityAggregate
 
 
 def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
     table = _parse_table(filename)
 
-    # TODO(#698): Set county fips based on the county_name
+    # Fuzzy match each facility_name to a county fips
+    county_names = table.facility_name.map(_pretend_facility_is_county)
+    table = fips.add_column_to_df(table, county_names, us.states.KY)
+
     table['report_date'] = _parse_date(filename)
-    table['fips'] = None
     table['report_granularity'] = enum_strings.monthly_granularity
 
     return {
@@ -174,3 +177,11 @@ def _parse_date(filename: str) -> datetime.date:
     filename = filename.split('/')[-1]
     date_string = filename.strip('.pdf')
     return dateparser.parse(date_string).date()
+
+
+def _pretend_facility_is_county(facility_name: str):
+    """Format facility_name like a county_name to match each to a fips."""
+    if facility_name == 'Three Forks (Lee)':
+        return 'lee county'
+
+    return facility_name.split(' ')[0]

@@ -22,11 +22,12 @@ from typing import Dict, Optional
 import dateparser
 import pandas as pd
 import tabula
+import us
 from sqlalchemy.ext.declarative import DeclarativeMeta
 from PyPDF2 import PdfFileReader
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
-from recidiviz.ingest.aggregate import aggregate_ingest_utils
+from recidiviz.ingest.aggregate import aggregate_ingest_utils, fips
 from recidiviz.ingest.aggregate.errors import AggregateDateParsingError
 from recidiviz.persistence.database.schema import FlCountyAggregate, \
     FlFacilityAggregate
@@ -35,13 +36,15 @@ from recidiviz.persistence.database.schema import FlCountyAggregate, \
 def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
     _setup()
 
-    # TODO(#698): Set county fips based on the county_name
     fl_county_table = _parse_county_table(filename)
-    fl_county_table['fips'] = None
+    fl_county_table = fips.add_column_to_df(
+        fl_county_table, fl_county_table.county_name, us.states.FL)
 
-    # TODO(#698, #689): Set facility fips based on facility_name
+    # TODO(#689): Also set the facility_fips
     fl_facility_table = _parse_facility_table(filename)
-    fl_facility_table['fips'] = None
+    names = fl_facility_table.facility_name.apply(_pretend_facility_is_county)
+    fl_facility_table = fips.add_column_to_df(
+        fl_facility_table, names, us.states.FL)
 
     result = {
         FlCountyAggregate: fl_county_table,
@@ -162,6 +165,15 @@ def _to_int(int_str: str) -> Optional[int]:
     except ValueError:
         # Values containing a '-' have no reported data, so just return None
         return None
+
+
+def _pretend_facility_is_county(facility_name: str):
+    """Format facility_name like a county_name to match each to a fips."""
+    words_before_county_name = ['County', 'Conte', 'CSO', 'Central']
+    for delimiter in words_before_county_name:
+        facility_name = facility_name.split(delimiter)[0]
+
+    return facility_name
 
 
 def _setup() -> None:

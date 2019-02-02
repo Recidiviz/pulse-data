@@ -17,6 +17,10 @@
 """Errors raised by Aggregate Ingest."""
 
 
+class AggregateIngestError(Exception):
+    """Generic error when aggregate ingest fails."""
+
+
 class AggregateDateParsingError(Exception):
     """Raised when a Date can't be parsed from an Aggregate Report."""
 
