@@ -60,7 +60,7 @@ class TestGaAggregateIngest(TestCase):
             'number_of_inmates_awaiting_trial': [49, 15, 0],
             'number_of_inmates_serving_county_sentence': [7, 0, 42],
             'number_of_other_inmates': [17, 0, 11],
-            'fips': 3 * [None],
+            'fips': [13001, 13003, 13005],
             'report_date': 3 * [DATE_SCRAPED],
             'report_granularity': 3 * [enum_strings.monthly_granularity]
         })
@@ -75,7 +75,7 @@ class TestGaAggregateIngest(TestCase):
             'number_of_inmates_awaiting_trial': [23, 30, 43],
             'number_of_inmates_serving_county_sentence': [3, 0, 4],
             'number_of_other_inmates': [6, 4, 0],
-            'fips': 3 * [None],
+            'fips': [13317, 13319, 13321],
             'report_date': 3 * [DATE_SCRAPED],
             'report_granularity': 3 * [enum_strings.monthly_granularity]
         }, index=range(156, 159))

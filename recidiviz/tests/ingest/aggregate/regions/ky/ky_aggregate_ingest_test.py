@@ -70,8 +70,8 @@ class TestKyAggregateIngest(TestCase):
             'controlled_intake_female_population': [1, 0],
             'parole_violators_female_population': [0, 0],
             'federal_female_population': [0, 0],
+            'fips': [21001, 21001],
             'report_date': DATE_SCRAPED,
-            'fips': 2 * [None],
             'report_granularity': 2 * [enum_strings.monthly_granularity]
         })
         assert_frame_equal(result.head(n=2), expected_head, check_names=False)
@@ -95,8 +95,8 @@ class TestKyAggregateIngest(TestCase):
             'controlled_intake_female_population': [3, 0],
             'parole_violators_female_population': [1, 0],
             'federal_female_population': [2, 0],
+            'fips': [21239, 21239],
             'report_date': DATE_SCRAPED,
-            'fips': 2 * [None],
             'report_granularity': 2 * [enum_strings.monthly_granularity]
         }, index=range(122, 124))
         assert_frame_equal(result.tail(n=2), expected_tail, check_names=False)

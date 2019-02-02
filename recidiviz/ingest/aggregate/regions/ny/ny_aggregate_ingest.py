@@ -24,10 +24,11 @@ import dateutil.parser
 import numpy as np
 import pandas as pd
 import tabula
+import us
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
-from recidiviz.ingest.aggregate import aggregate_ingest_utils
+from recidiviz.ingest.aggregate import aggregate_ingest_utils, fips
 from recidiviz.persistence.database.schema import NyFacilityAggregate
 
 
@@ -36,8 +37,10 @@ def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
 
     table = _parse_table(filename)
 
-    # TODO(#698): Set county fips based on the county_name
-    table['fips'] = None
+    # Fuzzy match each facility_name to a county fips
+    county_names = table.facility_name.map(_pretend_facility_is_county)
+    table = fips.add_column_to_df(table, county_names, us.states.NY)
+
     table['report_granularity'] = enum_strings.monthly_granularity
 
     return {
@@ -150,6 +153,11 @@ def _parse_report_date(report_date: str) -> datetime.date:
     """
     parsed_date = dateutil.parser.parse(report_date).date()
     return aggregate_ingest_utils.on_last_day_of_month(parsed_date)
+
+
+def _pretend_facility_is_county(facility_name: str):
+    """Format facility_name like a county_name to match each to a fips."""
+    return facility_name.split(' ')[0] + ' ' + facility_name.split(' ')[1]
 
 
 def _setup() -> None:

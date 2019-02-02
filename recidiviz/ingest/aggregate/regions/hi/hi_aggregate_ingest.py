@@ -24,7 +24,8 @@ import tabula
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
-from recidiviz.ingest.aggregate.errors import AggregateDateParsingError
+from recidiviz.ingest.aggregate.errors import AggregateDateParsingError, \
+    FipsMergingError, AggregateIngestError
 from recidiviz.persistence.database.schema import HiFacilityAggregate
 
 _COLUMN_NAMES = [
@@ -52,12 +53,40 @@ _COLUMN_NAMES = [
     'probation_violation_female_population'
 ]
 
+_FACILITY_ACRONYM_TO_NAME = {
+    'HCCC': 'Hawaii Community Correctional Center',
+    'SNF': 'Halawa Correctional Facility - Special Needs',
+    'HMSF': 'Halawa Correctional Facility - Medium Security',
+    'KCCC': 'Kauai Community Correctional Center',
+    'KCF': ' Kulani Correctional Facility',
+    'MCCC': 'Maui Community Correctional Center',
+    'OCCC': 'Oahu Community Correctional Center',
+    'WCCC': 'Women’s Community Correctional Center',
+    'WCF': 'Waiawa Correctional Facility',
+    'RED ROCK CC, AZ': 'Red Rock Correctional Center, AZ',
+    'SAGUARO CC, AZ': 'Saguaro Correctional Center, AZ',
+    'FEDERAL DET. CTR.': 'Federal Detention Center, Honolulu',
+}
+
+_FACILITY_ACRONYM_TO_FIPS = {
+    'HCCC': 15001,  # Hawaii
+    'SNF': 15003,  # Honolulu
+    'HMSF': 15003,  # Honolulu
+    'KCCC': 15007,  # Kauai
+    'KCF': 15001,  # Hawaii
+    'MCCC': 15009,  # Maui
+    'OCCC': 15003,  # Honolulu
+    'WCCC': 15003,  # Honolulu
+    'WCF': 15003,  # Honolulu
+    'RED ROCK CC, AZ': 4021,  # Pinal
+    'SAGUARO CC, AZ': 4021,  # Pinal
+    'FEDERAL DET. CTR.': 15003,  # Honolulu
+}
+
 
 def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
     table = _parse_table(filename)
 
-    # TODO(#698): Set county fips based on the county_name
-    table['fips'] = None
     table['report_date'] = _parse_date(filename)
     table['report_granularity'] = enum_strings.monthly_granularity
 
@@ -97,6 +126,10 @@ def _parse_table(filename: str) -> pd.DataFrame:
 
     result = head_count_ending_df.append(contracted_facilities_df,
                                          ignore_index=True)
+
+    result['fips'] = result.facility_name.map(_facility_acronym_to_fips)
+    result['facility_name'] = \
+        result.facility_name.map(_facility_acronym_to_name)
 
     # Rows that may be NaN need to be cast as a float, otherwise use int
     string_columns = {'facility_name'}
@@ -148,3 +181,21 @@ def _format_contracted_facilities(df: pd.DataFrame) -> pd.DataFrame:
     df.columns = _COLUMN_NAMES
 
     return df
+
+
+def _facility_acronym_to_name(facility_acronym: str) -> str:
+    if facility_acronym not in _FACILITY_ACRONYM_TO_FIPS:
+        raise AggregateIngestError(
+            'Failed to match facility acronym "{}" to facility_name'.format(
+                facility_acronym))
+
+    return _FACILITY_ACRONYM_TO_NAME[facility_acronym]
+
+
+def _facility_acronym_to_fips(facility_acronym: str) -> int:
+    if facility_acronym not in _FACILITY_ACRONYM_TO_FIPS:
+        raise FipsMergingError(
+            'Failed to match facility acronym "{}" to fips'.format(
+                facility_acronym))
+
+    return _FACILITY_ACRONYM_TO_FIPS[facility_acronym]

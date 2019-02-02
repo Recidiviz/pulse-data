@@ -624,11 +624,12 @@ class _AggregateTableMixin:
 
     # TODO(#689): Ensure that `fips` also supports facility level fips
     # TODO(#689): Consider adding fips_type to denote county vs facility
-    fips = Column(String(255))
+    fips = Column(String(255), nullable=False)
 
-    report_date = Column(Date)
+    report_date = Column(Date, nullable=False)
     report_granularity = Column(
         Enum(*report_granularity_values, name='report_granularity'),
+        nullable=False
     )
 
 
@@ -639,7 +640,7 @@ class FlCountyAggregate(Base, _AggregateTableMixin):
         UniqueConstraint('fips', 'report_date', 'report_granularity'),
     )
 
-    county_name = Column(String(255))
+    county_name = Column(String(255), nullable=False)
     county_population = Column(Integer)
     average_daily_population = Column(Integer)
 
@@ -656,10 +657,12 @@ class FlFacilityAggregate(Base, _AggregateTableMixin):
     """
     __tablename__ = 'fl_facility_aggregate'
     __table_args__ = (
-        UniqueConstraint('fips', 'report_date', 'report_granularity'),
+        UniqueConstraint(
+            'fips', 'facility_name', 'report_date', 'report_granularity'
+        ),
     )
 
-    facility_name = Column(String(255))
+    facility_name = Column(String(255), nullable=False)
     average_daily_population = Column(Integer)
     number_felony_pretrial = Column(Integer)
     number_misdemeanor_pretrial = Column(Integer)
@@ -672,7 +675,7 @@ class GaCountyAggregate(Base, _AggregateTableMixin):
         UniqueConstraint('fips', 'report_date', 'report_granularity'),
     )
 
-    county_name = Column(String(255))
+    county_name = Column(String(255), nullable=False)
     total_number_of_inmates_in_jail = Column(Integer)
     jail_capacity = Column(Integer)
 
@@ -686,10 +689,12 @@ class HiFacilityAggregate(Base, _AggregateTableMixin):
     """HI state-provided aggregate statistics."""
     __tablename__ = 'hi_facility_aggregate'
     __table_args__ = (
-        UniqueConstraint('fips', 'report_date', 'report_granularity'),
+        UniqueConstraint(
+            'fips', 'facility_name', 'report_date', 'report_granularity'
+        ),
     )
 
-    facility_name = Column(String(255))
+    facility_name = Column(String(255), nullable=False)
 
     design_bed_capacity = Column(Integer)
     operation_bed_capacity = Column(Integer)
@@ -727,10 +732,12 @@ class KyFacilityAggregate(Base, _AggregateTableMixin):
     """KY state-provided aggregate statistics."""
     __tablename__ = 'ky_county_aggregate'
     __table_args__ = (
-        UniqueConstraint('fips', 'report_date', 'report_granularity'),
+        UniqueConstraint(
+            'fips', 'facility_name', 'report_date', 'report_granularity'
+        ),
     )
 
-    facility_name = Column(String(255))
+    facility_name = Column(String(255), nullable=False)
 
     total_jail_beds = Column(Integer)
     reported_population = Column(Integer)  # TODO: Is this adp or population
@@ -761,10 +768,12 @@ class NyFacilityAggregate(Base, _AggregateTableMixin):
     """NY state-provided aggregate statistics."""
     __tablename__ = 'ny_facility_aggregate'
     __table_args__ = (
-        UniqueConstraint('fips', 'report_date', 'report_granularity'),
+        UniqueConstraint(
+            'fips', 'facility_name', 'report_date', 'report_granularity'
+        ),
     )
 
-    facility_name = Column(String(255))
+    facility_name = Column(String(255), nullable=False)
 
     census = Column(Integer)  # `In House` - `Boarded In` + `Boarded Out`
     in_house = Column(Integer)  # ADP of people assigned to facility
@@ -789,7 +798,7 @@ class TxCountyAggregate(Base, _AggregateTableMixin):
         ),
     )
 
-    facility_name = Column(String(255))
+    facility_name = Column(String(255), nullable=False)
 
     pretrial_felons = Column(Integer)
 
@@ -827,7 +836,7 @@ class DcFacilityAggregate(Base, _AggregateTableMixin):
         UniqueConstraint('fips', 'report_date', 'report_granularity'),
     )
 
-    facility_name = Column(String(255))
+    facility_name = Column(String(255), nullable=False)
 
     total_population = Column(Integer)
     male_population = Column(Integer)
