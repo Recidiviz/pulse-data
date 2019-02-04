@@ -17,9 +17,9 @@
 
 """Represents data scraped for a single individual."""
 from abc import abstractmethod
-from typing import List, Optional, Iterable, Dict
+from typing import List, Optional, Dict, Sequence
 
-HIERARCHY_MAP: Dict[str, Iterable] = {
+HIERARCHY_MAP: Dict[str, Sequence[str]] = {
     'person': (),
     'booking': ('person',),
     'arrest': ('person', 'booking'),

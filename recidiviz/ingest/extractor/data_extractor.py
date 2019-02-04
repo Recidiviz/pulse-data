@@ -21,9 +21,13 @@ model and returned.
 """
 
 import abc
-import yaml
+from typing import Union, List, Optional, Sequence
 
-from recidiviz.ingest.models.ingest_info import HIERARCHY_MAP, PLURALS
+import yaml
+from lxml.html import HtmlElement
+
+from recidiviz.ingest.models.ingest_info import HIERARCHY_MAP, PLURALS, \
+    IngestInfo, IngestObject
 
 
 class DataExtractor(metaclass=abc.ABCMeta):
@@ -50,10 +54,13 @@ class DataExtractor(metaclass=abc.ABCMeta):
                 for value in self.multi_keys.values())
 
     @abc.abstractmethod
-    def extract_and_populate_data(self, content, ingest_info=None):
+    def extract_and_populate_data(self, content: HtmlElement,
+                                  ingest_info: IngestInfo = None) -> IngestInfo:
         pass
 
-    def _set_or_create_object(self, ingest_info, lookup_keys, values):
+    def _set_or_create_object(self, ingest_info: IngestInfo,
+                              lookup_keys: Union[str, List[str]],
+                              values: List[Optional[str]]) -> None:
         """Contains the logic to set or create a field on an ingest object.
         The logic here is that we check if we have a most recent class already
         to check if the field is already set.  If the field we care about is
@@ -74,7 +81,7 @@ class DataExtractor(metaclass=abc.ABCMeta):
             class_to_set, ingest_key = lookup_key.split('.')
             is_multi_key = class_to_set in self.multi_key_classes
             for i, value in enumerate(values):
-                if value == '' or value.isspace():
+                if value is None or value == '' or value.isspace():
                     continue
                 # The first task is to find the parent.
                 parent = self._find_parent_ingest_info(
@@ -110,7 +117,9 @@ class DataExtractor(metaclass=abc.ABCMeta):
 
                 setattr(object_to_set, ingest_key, value)
 
-    def _find_parent_ingest_info(self, ingest_info, hierarchy, val_index):
+    def _find_parent_ingest_info(self, ingest_info: IngestInfo,
+                                 hierarchy: Sequence[str],
+                                 val_index: int) -> IngestObject:
         """Find the parent object to set the value on
 
         Args:

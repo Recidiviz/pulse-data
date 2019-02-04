@@ -22,7 +22,7 @@ model and returned.
 
 import copy
 import warnings
-from typing import Optional
+from typing import Optional, Iterator, List
 
 from lxml.html import HtmlElement
 
@@ -44,7 +44,7 @@ class HtmlDataExtractor(DataExtractor):
         self.all_keys = set(self.keys.keys()) | \
                         set(self.multi_keys.keys()) | set(self.keys_to_ignore)
 
-    def _set_all_cells(self, content):
+    def _set_all_cells(self, content: HtmlElement) -> None:
         """Finds all leaf cells on a page and sets them.
 
         Args:
@@ -59,7 +59,7 @@ class HtmlDataExtractor(DataExtractor):
         all_cells = content.xpath('//*[self::th or self::td]')
         self.cells = [cell for cell in all_cells if self._is_leaf_cell(cell)]
 
-    def _is_leaf_cell(self, e):
+    def _is_leaf_cell(self, e: HtmlElement) -> bool:
         """
         Args:
             e: an Element with tag 'th' or 'td'
@@ -69,7 +69,8 @@ class HtmlDataExtractor(DataExtractor):
         """
         return not e.findall('.//th') and not e.findall('.//td')
 
-    def extract_and_populate_data(self, content, ingest_info=None):
+    def extract_and_populate_data(self, content: HtmlElement,
+                                  ingest_info: IngestInfo = None) -> IngestInfo:
         """This function does all the work of taking the users yaml file
         and content and returning a populated data class.  This function
         iterates through every cell on the page and builds a model based on
@@ -112,7 +113,7 @@ class HtmlDataExtractor(DataExtractor):
                 if cell_val in needed_keys:
                     needed_keys.remove(cell_val)
                 continue
-            values = None
+            values: List[Optional[str]] = []
             if cell_val in self.keys:
                 values = [self._get_value_cell(cell)]
             elif cell_val in self.multi_keys:
@@ -148,7 +149,7 @@ class HtmlDataExtractor(DataExtractor):
         return None
 
     @staticmethod
-    def _process_html(content):
+    def _process_html(content: HtmlElement) -> None:
         """Cleans up the provided content."""
         # Remove <script> elements
         for script in content.xpath('//script'):
@@ -160,7 +161,7 @@ class HtmlDataExtractor(DataExtractor):
         for br in content.xpath('//br'):
             br.tail = '\n' + br.tail if br.tail else '\n'
 
-    def _convert_key_to_cells(self, content, key):
+    def _convert_key_to_cells(self, content: HtmlElement, key: str) -> None:
         """Searches for elements in |content| that match a |key| and converts
         those elements, along with their adjacent text, as table cells.
 
@@ -188,7 +189,7 @@ class HtmlDataExtractor(DataExtractor):
             if not remaining or not remaining[0].isalpha():
                 self._key_element_to_cell(key, match)
 
-    def _css_key_to_cell(self, content, css_key):
+    def _css_key_to_cell(self, content: HtmlElement, css_key: str) -> None:
         matches = content.cssselect(css_key)
 
         for match in matches:
@@ -197,10 +198,10 @@ class HtmlDataExtractor(DataExtractor):
             match.tag = 'td'
             match.addprevious(key_cell)
 
-    def _get_text_from_element(self, element):
+    def _get_text_from_element(self, element: HtmlElement) -> str:
         return element.text if element.text else element.text_content()
 
-    def _key_element_to_cell(self, key, key_element):
+    def _key_element_to_cell(self, key: str, key_element: HtmlElement) -> bool:
         """Converts a |key_element| Element to a table cell and tries to modify
         the corresponding value to a cell.
 
@@ -290,7 +291,7 @@ class HtmlDataExtractor(DataExtractor):
             return True
         return False
 
-    def _below(self, cell):
+    def _below(self, cell: HtmlElement) -> Iterator[HtmlElement]:
         """Yields all cells below the given cell and breaks if it finds a key.
 
         Args:
@@ -316,7 +317,7 @@ class HtmlDataExtractor(DataExtractor):
                 yield next_row[index]
             next_row = next_row.getnext()
 
-    def _get_below(self, cell):
+    def _get_below(self, cell: HtmlElement) -> Optional[HtmlElement]:
         """Gets the cell below the given |cell|.
 
         Args:
@@ -326,7 +327,7 @@ class HtmlDataExtractor(DataExtractor):
         """
         return next(self._below(cell), None)
 
-    def _get_all_below(self, cell):
+    def _get_all_below(self, cell: HtmlElement) -> List[HtmlElement]:
         """Gets all the cells below the given |cell|.
 
         Args:
@@ -336,7 +337,7 @@ class HtmlDataExtractor(DataExtractor):
         """
         return list(self._below(cell))
 
-    def _get_value_cell(self, cell):
+    def _get_value_cell(self, cell: HtmlElement) -> Optional[str]:
         """Tries to find a value of a given cell.
 
         Args:
@@ -353,7 +354,7 @@ class HtmlDataExtractor(DataExtractor):
             cell = cell.getparent()
         return None
 
-    def _get_values_below_cell(self, cell):
+    def _get_values_below_cell(self, cell: HtmlElement) -> List[Optional[str]]:
         """Tries to find a list of values given cell.
 
         Args:
@@ -368,7 +369,7 @@ class HtmlDataExtractor(DataExtractor):
             cell = cell.getparent()
         return []
 
-    def _get_value_from_cell(self, cell):
+    def _get_value_from_cell(self, cell: HtmlElement) -> Optional[str]:
         """Gets the value for a given |cell| by checking the cells to the right
         and below.
 
@@ -391,12 +392,12 @@ class HtmlDataExtractor(DataExtractor):
             return right.text_content().strip()
 
         below = self._get_below(cell)
-        if self._is_viable(below):
+        if below is not None and self._is_viable(below):
             return below.text_content().strip()
 
         return None
 
-    def _normalize_cell(self, cell):
+    def _normalize_cell(self, cell: HtmlElement) -> str:
         """ Given a cell, normalize the text content to compare to key mappings.
 
         Args:
@@ -404,7 +405,7 @@ class HtmlDataExtractor(DataExtractor):
         """
         return cell.text_content().strip().strip(':').strip()
 
-    def _element_contains_key_descendant(self, e):
+    def _element_contains_key_descendant(self, e: HtmlElement) -> bool:
         """Returns True if Element |e| or a descendant has a key as its text
         content.
 
@@ -416,7 +417,7 @@ class HtmlDataExtractor(DataExtractor):
                 return True
         return False
 
-    def _is_viable(self, value_cell):
+    def _is_viable(self, value_cell: HtmlElement) -> bool:
         """Returns True if the text in |value_cell| could be the value for a
         field. The text should be non-empty and the cell should not contain a
         key in any of its descendants.
