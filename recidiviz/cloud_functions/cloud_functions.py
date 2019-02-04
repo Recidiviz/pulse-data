@@ -25,6 +25,7 @@ from flask import Blueprint, request
 import gcsfs
 from recidiviz.utils import metadata
 
+from recidiviz.ingest.aggregate.regions.ca import ca_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.fl import fl_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.ga import ga_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.hi import hi_aggregate_ingest
@@ -52,6 +53,7 @@ def state_aggregate():
 
     # Please add new states in alphabetical order
     state_to_parser = {
+        'california': ca_aggregate_ingest.parse,
         'florida': fl_aggregate_ingest.parse,
         'georgia': ga_aggregate_ingest.parse,
         'hawaii': hi_aggregate_ingest.parse,
