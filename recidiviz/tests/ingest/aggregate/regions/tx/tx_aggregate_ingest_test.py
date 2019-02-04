@@ -32,23 +32,39 @@ from recidiviz.persistence.database.schema import TxCountyAggregate
 from recidiviz.tests.ingest import fixtures
 from recidiviz.tests.utils import fakes
 
-DATE_SCRAPED = datetime.date(year=2017, month=12, day=1)
+DATE_SCRAPED_AFTER_1996 = datetime.date(year=2017, month=12, day=1)
+DATE_SCRAPED_1996 = datetime.date(year=1996, month=6, day=1)
+DATE_SCRAPED_BEFORE_1996 = datetime.date(year=1994, month=3, day=1)
 # Cache the parsed pdf between tests since it's expensive to compute
 @pytest.fixture(scope="class")
-def parsed_pdf(request):
-    request.cls.parsed_pdf = tx_aggregate_ingest.parse(
+def parsed_pdf_after_1996(request):
+    request.cls.parsed_pdf_after_1996 = tx_aggregate_ingest.parse(
         fixtures.as_filepath('Abbreviated Pop Rpt Dec 2017.pdf'))
 
+# Cache the parsed pdf between tests since it's expensive to compute
+@pytest.fixture(scope="class")
+def parsed_pdf_1996(request):
+    request.cls.parsed_pdf_1996 = tx_aggregate_ingest.parse(
+        fixtures.as_filepath('texas_url_abbreviated pop rpt June 1996.pdf'))
 
-@pytest.mark.usefixtures("parsed_pdf")
+# Cache the parsed pdf between tests since it's expensive to compute
+@pytest.fixture(scope="class")
+def parsed_pdf_before_1996(request):
+    request.cls.parsed_pdf_before_1996 = tx_aggregate_ingest.parse(
+        fixtures.as_filepath('abbreviated pop rpt march 1994.pdf'))
+
+
+@pytest.mark.usefixtures("parsed_pdf_after_1996")
+@pytest.mark.usefixtures("parsed_pdf_before_1996")
+@pytest.mark.usefixtures("parsed_pdf_1996")
 class TestTxAggregateIngest(TestCase):
     """Test that tx_aggregate_ingest correctly parses the TX PDF."""
 
     def setup_method(self, _test_method):
         fakes.use_in_memory_sqlite_database()
 
-    def testParse_ParsesHeadAndTail(self):
-        result = self.parsed_pdf[TxCountyAggregate]
+    def testParse_ParsesHeadAndTail_After_1996(self):
+        result = self.parsed_pdf_after_1996[TxCountyAggregate]
 
         # Assert Head
         expected_head = pd.DataFrame({
@@ -71,7 +87,7 @@ class TestTxAggregateIngest(TestCase):
             'total_capacity': [300, 50, 279],
             'available_beds': [102, 19, 39],
             'fips': [48001, 48003, 48005],
-            'report_date': 3 * [DATE_SCRAPED],
+            'report_date': 3 * [DATE_SCRAPED_AFTER_1996],
             'report_granularity': 3 * [enum_strings.monthly_granularity]
         })
         assert_frame_equal(result.head(n=3), expected_head)
@@ -97,14 +113,13 @@ class TestTxAggregateIngest(TestCase):
             'total_capacity': [240, 66, 515],
             'available_beds': [66, 17, 464],
             'fips': [48505, 48507, 48507],
-            'report_date': 3 * [DATE_SCRAPED],
+            'report_date': 3 * [DATE_SCRAPED_AFTER_1996],
             'report_granularity': 3 * [enum_strings.monthly_granularity]
         }, index=range(264, 267))
         assert_frame_equal(result.tail(n=3), expected_tail)
 
-    def testWrite_CalculatesSum(self):
-        # Act
-        for table, df in self.parsed_pdf.items():
+    def testWrite_CalculatesSum_After_1996(self):
+        for table, df in self.parsed_pdf_after_1996.items():
             database.write_df(table, df)
 
         # Assert
@@ -113,3 +128,122 @@ class TestTxAggregateIngest(TestCase):
 
         expected_sum_available_beds = 20315
         self.assertEqual(result, expected_sum_available_beds)
+
+    def testParse_ParsesHeadAndTail_1996(self):
+        result = self.parsed_pdf_1996[TxCountyAggregate]
+
+        # Assert Head
+        expected_head = pd.DataFrame({
+            'facility_name': ['ANDERSON', 'ANDREWS'],
+            'pretrial_felons': [32, 10],
+            'convicted_felons': [4, 0],
+            'convicted_felons_sentenced_to_county_jail': [2, 1],
+            'parole_violators': [8, 2],
+            'parole_violators_with_new_charge': [2, 1],
+            'pretrial_misdemeanor': [10, 3],
+            'convicted_misdemeanor': [3, 1],
+            'bench_warrants': [5, 0],
+            'federal': [0, 0],
+            'total_other': [0, 1],
+            'total_contract': [0, 0],
+            'total_population': [67, 22],
+            'total_capacity': [129, 50],
+            'available_beds': [49, 23],
+            'fips': [48001, 48003],
+            'report_date': 2 * [DATE_SCRAPED_1996],
+            'report_granularity': 2 * [enum_strings.monthly_granularity]
+        })
+        assert_frame_equal(result.head(n=2), expected_head)
+
+        # Assert Tail
+        expected_tail = pd.DataFrame({
+            'facility_name': ['CRYSTL CTY (P', 'ZAVALA'],
+            'pretrial_felons': [0, 16],
+            'convicted_felons': [0, 7],
+            'convicted_felons_sentenced_to_county_jail': [0, 0],
+            'parole_violators': [0, 0],
+            'parole_violators_with_new_charge': [0, 0],
+            'pretrial_misdemeanor': [0, 3],
+            'convicted_misdemeanor': [0, 0],
+            'bench_warrants': [0, 1],
+            'federal': [0, 0],
+            'total_other': [432, 0],
+            'total_contract': [432, 0],
+            'total_population': [432, 27],
+            'total_capacity': [467, 66],
+            'available_beds': [0, 32],
+            'fips': [48507, 48507],
+            'report_date': 2 * [DATE_SCRAPED_1996],
+            'report_granularity': 2 * [enum_strings.monthly_granularity]
+        }, index=range(259, 261))
+        assert_frame_equal(result.tail(n=2), expected_tail)
+
+    def testWrite_CalculatesSum_1996(self):
+        for table, df in self.parsed_pdf_1996.items():
+            database.write_df(table, df)
+
+        # Assert
+        query = Session().query(func.sum(TxCountyAggregate.pretrial_felons))
+        result = one(one(query.all()))
+
+        expected_pretrial_felons = 14140
+        self.assertEqual(result, expected_pretrial_felons)
+
+    def testParse_ParsesHeadAndTail_before_1996(self):
+        result = self.parsed_pdf_before_1996[TxCountyAggregate]
+
+        # Assert Head
+        expected_head = pd.DataFrame({
+            'facility_name': ['ANDERSON', 'ANDREWS'],
+            'pretrial_felons': [43, 14],
+            'convicted_felons': [81, 15],
+            'parole_violators': [3, 0],
+            'parole_violators_with_new_charge': [6, 1],
+            'pretrial_misdemeanor': [4, 6],
+            'convicted_misdemeanor': [5, 3],
+            'bench_warrants': [0, 0],
+            'federal': [0, 0],
+            'total_other': [0, 0],
+            'total_contract': [0, 4],
+            'total_population': [142, 43],
+            'total_capacity': [129, 50],
+            'available_beds': [0, 0],
+            'fips': [48001, 48003],
+            'report_date': 2 * [DATE_SCRAPED_BEFORE_1996],
+            'report_granularity': 2 * [enum_strings.monthly_granularity]
+        })
+        assert_frame_equal(result.head(n=2), expected_head)
+
+        # Assert Tail
+        expected_tail = pd.DataFrame({
+            'facility_name': ['ZAPATA', 'ZAVALA'],
+            'pretrial_felons': [4, 10],
+            'convicted_felons': [0, 1],
+            'parole_violators': [0, 1],
+            'parole_violators_with_new_charge': [0, 0],
+            'pretrial_misdemeanor': [0, 0],
+            'convicted_misdemeanor': [0, 0],
+            'bench_warrants': [0, 0],
+            'federal': [0, 10],
+            'total_other': [0, 1],
+            'total_contract': [0, 39],
+            'total_population': [0, 52],
+            'total_capacity': [12, 67],
+            'available_beds': [11, 0],
+            'fips': [48505, 48507],
+            'report_date': 2 * [DATE_SCRAPED_BEFORE_1996],
+            'report_granularity': 2 * [enum_strings.monthly_granularity]
+        }, index=range(257, 259))
+        assert_frame_equal(result.tail(n=2), expected_tail)
+
+    def testWrite_CalculatesSum_before_1996(self):
+
+        for table, df in self.parsed_pdf_before_1996.items():
+            database.write_df(table, df)
+
+        # Assert
+        query = Session().query(func.sum(TxCountyAggregate.pretrial_felons))
+        result = one(one(query.all()))
+
+        expected_pretrial_felons = 14727
+        self.assertEqual(result, expected_pretrial_felons)

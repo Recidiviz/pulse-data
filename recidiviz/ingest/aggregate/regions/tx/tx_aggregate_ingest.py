@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Parse the TX Aggregated Statistics PDF."""
+from collections import OrderedDict
 from typing import Dict
 import datetime
 import dateparser
@@ -31,15 +32,17 @@ from recidiviz.ingest.aggregate.errors import AggregateDateParsingError
 from recidiviz.persistence.database.schema import TxCountyAggregate
 
 DATE_PARSE_ANCHOR = 'Abbreviated Population Report for'
+DATE_PARSE_ANCHOR_FILENAME = 'abbreviated pop rpt'
 
 
 def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
-    table = _parse_table(filename)
+    report_date = _parse_date(filename)
+    table = _parse_table(filename, report_date)
 
     county_names = table.facility_name.map(_pretend_facility_is_county)
     table = fips.add_column_to_df(table, county_names, us.states.TX)
 
-    table['report_date'] = _parse_date(filename)
+    table['report_date'] = report_date
     table['report_granularity'] = enum_strings.monthly_granularity
 
     return {
@@ -60,68 +63,62 @@ def _parse_date(filename: str) -> datetime.date:
             if DATE_PARSE_ANCHOR in line:
                 # The date is on the next line if anchor is present on the line
                 return dateparser.parse(lines[index+1]).date()
+        # If this doesn't work, try scraping it from the url name
+        filename_date = filename.lower()
+        if DATE_PARSE_ANCHOR_FILENAME in filename_date:
+            # The names can be a few formats, the most robust way is to take
+            # all of the text after the anchor.
+            # (eg. report Jan 2017.pdf)
+            start = filename_date.index(DATE_PARSE_ANCHOR_FILENAME)\
+                    + len(DATE_PARSE_ANCHOR_FILENAME)
+            date_str = filename_date[start:].strip('.pdf')
+            return dateparser.parse(date_str).date().replace(day=1)
         raise AggregateDateParsingError('Could not extract date')
 
 
-def _parse_table(filename: str) -> pd.DataFrame:
+def _parse_table(filename: str, report_date: datetime.date) -> pd.DataFrame:
     """Parses the TX County Table in the PDF."""
     num_pages = 9
+    columns_to_schema = _get_column_names(report_date)
 
     pages = []
-    for page in range(1, num_pages):
-        page = tabula.read_pdf(
+    for page_num in range(1, num_pages+1):
+        # Each page has 1 or more tables on it with the last table being the
+        # one with the data on it.  The headers are poorly read by tabula and
+        # some years have different responses to this call so we generally
+        # just get all of the tables and consider only the one with numbers on
+        # it.  That lets us clean it up by dropping nonsense columns and rows,
+        # and then assigning our own columns names to them.
+        df = tabula.read_pdf(
             filename,
-            pages=page,
-            pandas_options={
-                'header': [1, 2, 3, 4, 5],
-            }
+            multiple_tables=True,
+            pages=page_num,
         )
-        pages.append(page)
-
-    _, _, last_page = tabula.read_pdf(
-        filename,
-        multiple_tables=True,
-        pages=num_pages,
-        pandas_options={
-            'header': [1, 2, 3, 4, 5],
-        }
-    )
-
-    # Drop empty column created by the 'Totals' section
-    last_page = last_page.drop(columns=1)
+        df = df[-1]
+        df = df.dropna(axis='columns', thresh=5)
+        # We want to remove all of the rows and columns that have no data.
+        numeric_elements = df.apply(pd.to_numeric, errors='coerce').notnull()
+        rows_containing_data = numeric_elements.any(axis='columns')
+        df = df.loc[rows_containing_data]
+        pages.append(df)
 
     # Drop last rows since it's the 'Totals' section
-    last_page = last_page.drop(last_page.tail(1).index)
+    pages[-1] = pages[-1].drop(pages[-1].tail(1).index)
 
-    # Build result for all the pages (excluding the last_page)
+    # Build result for all the pages.  We rename the columns before calling
+    # concat because the column names might all be different.  Renaming them
+    # allows concat to pass happily.
+    columns_to_drop = ['percent_capacity', 'total_local']
+    for i, page in enumerate(pages):
+        page.columns = columns_to_schema.keys()
+        page = aggregate_ingest_utils.rename_columns_and_select(
+            page, columns_to_schema)
+        # We don't care about % of capacity and total_local so we drop these
+        # columns.
+        page = page.drop(columns_to_drop, axis='columns')
+        pages[i] = page
+
     result = pd.concat(pages, ignore_index=True)
-    result.columns = aggregate_ingest_utils.collapse_header(result.columns)
-
-    # Add the last_page to the result
-    last_page.columns = result.columns
-    result = result.append(last_page, ignore_index=True)
-
-    result = aggregate_ingest_utils.rename_columns_and_select(result, {
-        'County': 'facility_name',
-        'Pretrial Felons': 'pretrial_felons',
-        'Conv. Felons': 'convicted_felons',
-        'Sentenced to County Jail time':
-            'convicted_felons_sentenced_to_county_jail',
-        'Parole Violators': 'parole_violators',
-        'Violators with a New Charge': 'parole_violators_with_new_charge',
-        'Pretrial Misd.': 'pretrial_misdemeanor',
-        'Conv. Misd.': 'convicted_misdemeanor',
-        'Bench Warrants': 'bench_warrants',
-        'Federal': 'federal',
-        'Pretrial SJF': 'pretrial_sjf',
-        'Sentenced to Co. Jail Time': 'convicted_sjf_sentenced_to_county_jail',
-        'SJF Sentenced to State Jail': 'convicted_sjf_sentenced_to_state_jail',
-        'Total Others': 'total_other',
-        'Total Contract': 'total_contract',
-        'Total Population': 'total_population',
-        'Total Capacity': 'total_capacity',
-        'Available Beds': 'available_beds'
-    })
 
     for column_name in set(result.columns) - {'facility_name'}:
         result[column_name] = result[column_name].astype(int)
@@ -129,6 +126,51 @@ def _parse_table(filename: str) -> pd.DataFrame:
     return result
 
 
+def _get_column_names(report_date):
+    """Returns the correct column names based on the report date."""
+    columns_to_schema = OrderedDict([
+        ('County', 'facility_name'),
+        ('Pretrial Felons', 'pretrial_felons'),
+        ('Conv. Felons', 'convicted_felons'),
+        ('Conv. Felons Sentenced to County Jail time',
+         'convicted_felons_sentenced_to_county_jail'),
+        ('Parole Violators', 'parole_violators'),
+        ('Parole Violators with a New Charge',
+         'parole_violators_with_new_charge'),
+        ('Pretrial Misd.', 'pretrial_misdemeanor'),
+        ('Conv. Misd.', 'convicted_misdemeanor'),
+        ('Bench Warrants', 'bench_warrants'),
+        ('Federal', 'federal'),
+        ('Pretrial SJF', 'pretrial_sjf'),
+        ('Conv. Sentenced to Co. Jail Time',
+         'convicted_sjf_sentenced_to_county_jail'),
+        ('Conv. SJF Sentenced to State Jail',
+         'convicted_sjf_sentenced_to_state_jail'),
+        ('Total Others', 'total_other'),
+        ('Total Local', 'total_local'),
+        ('Total Contract', 'total_contract'),
+        ('Total Population', 'total_population'),
+        ('Total Capacity', 'total_capacity'),
+        ('% of Capacity', 'percent_capacity'),
+        ('Available Beds', 'available_beds'),
+    ])
+    if report_date.year < 1996:
+        del columns_to_schema['Conv. Felons Sentenced to County Jail time']
+        del columns_to_schema['Pretrial SJF']
+        del columns_to_schema['Conv. Sentenced to Co. Jail Time']
+        del columns_to_schema['Conv. SJF Sentenced to State Jail']
+    elif report_date.year == 1996:
+        del columns_to_schema['Pretrial SJF']
+        del columns_to_schema['Conv. Sentenced to Co. Jail Time']
+        del columns_to_schema['Conv. SJF Sentenced to State Jail']
+
+    return columns_to_schema
+
+
 def _pretend_facility_is_county(facility_name: str) -> str:
     """Format facility_name like a county_name to match each to a fips."""
+    if facility_name.lower().startswith('crystl'):
+        return 'Zavala'
+    if facility_name.lower().startswith('odessa'):
+        return 'Ector'
     return facility_name.replace('(P)', '')
