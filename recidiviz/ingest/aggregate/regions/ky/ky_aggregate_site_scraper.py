@@ -16,12 +16,24 @@
 # =============================================================================
 
 """Scrapes the kentucky aggregate site and finds pdfs to download."""
-from typing import List
+from typing import Set
+from lxml import html
+import requests
 
 STATE_AGGREGATE_URL = ('https://corrections.ky.gov/About/researchandstats/'
                        'Pages/WeeklyJail.aspx')
+BASE_URL = 'https://corrections.ky.gov{}'
 
 
-# TODO #804: fill this in with logic to scrape and return the URLs.
-def get_urls_to_download() -> List[str]:
-    pass
+def get_urls_to_download() -> Set[str]:
+    page = requests.get(STATE_AGGREGATE_URL).text
+    html_tree = html.fromstring(page)
+    links = html_tree.xpath('//a/@href')
+
+    aggregate_report_urls = set()
+    for link in links:
+        if ('weekly jail' in link.lower() or 'weekly%20jail' in link.lower())\
+                and 'pdf' in link.lower():
+            url = BASE_URL.format(link)
+            aggregate_report_urls.add(url)
+    return aggregate_report_urls
