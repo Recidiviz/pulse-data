@@ -25,6 +25,8 @@ Also accepts the following optional arguments:
   - names_file: a file with a names list for this scraper
   - timezone: the timezone, e.g. America/New York
   - url: the initial url of the roster
+  - vendor: create a vendor scraper. Available vendors:
+    - `jailtracker`
 
 If the flag -tests_only is set, will only create test files.
 """
@@ -43,10 +45,18 @@ def populate_file(template_path, target_path, subs):
         target.write(contents)
 
 
-def create_scraper_files(subs):
+def create_scraper_files(subs, vendor=''):
     """Creates __init__.py, region_name_scraper.py, and region_name.yaml files
     in recidiviz/ingest/region_name
     """
+    def create_scraper(template):
+        target = os.path.join(target_dir, subs['region'] + '_scraper.py')
+        populate_file(template, target, subs)
+
+    def create_yaml(template):
+        target = os.path.join(target_dir, subs['region'] + '.yaml')
+        populate_file(template, target, subs)
+
     ingest_dir = os.path.join(os.path.dirname(__file__), 'recidiviz/ingest/')
     if not os.path.exists(ingest_dir):
         raise OSError('Couldn\'t find directory recidiviz/ingest. Run this ' +
@@ -61,16 +71,19 @@ def create_scraper_files(subs):
     init_target = os.path.join(target_dir, '__init__.py')
     populate_file(init_template, init_target, subs)
 
-    scraper_template = os.path.join(template_dir, 'region_scraper.txt')
-    scraper_target = os.path.join(target_dir, subs['region'] + '_scraper.py')
-    populate_file(scraper_template, scraper_target, subs)
+    scraper_template = os.path.join(template_dir, vendor, 'region_scraper.txt')
+    create_scraper(scraper_template)
 
-    yaml_template = os.path.join(template_dir, 'region.txt')
-    yaml_target = os.path.join(target_dir, subs['region'] + '.yaml')
-    populate_file(yaml_template, yaml_target, subs)
+    if not vendor:
+        yaml_template = os.path.join(template_dir, 'region.txt')
+        create_yaml(yaml_template)
 
 
-def create_test_files(subs):
+def create_test_files(subs, vendor=''):
+    def create_test(template):
+        test_target_file_name = subs['region'] + '_scraper_test.py'
+        test_target = os.path.join(target_test_dir, test_target_file_name)
+        populate_file(template, test_target, subs)
     ingest_dir = os.path.join(os.path.dirname(__file__), 'recidiviz/ingest/')
     test_dir = os.path.join(os.path.dirname(__file__),
                             'recidiviz/tests/ingest/')
@@ -84,10 +97,9 @@ def create_test_files(subs):
     os.mkdir(target_test_dir)
 
     template_dir = os.path.join(ingest_dir, 'scraper_template')
-    test_template = os.path.join(template_dir, 'region_scraper_test.txt')
-    test_target = os.path.join(target_test_dir,
-                               subs['region'] + '_scraper_test.py')
-    populate_file(test_template, test_target, subs)
+    test_template = os.path.join(template_dir, vendor,
+                                 'region_scraper_test.txt')
+    create_test(test_template)
 
 
 def append_to_config_files(subs):
@@ -141,6 +153,9 @@ if __name__ == '__main__':
         'url']
     for optional_arg in optional_args:
         parser.add_argument('--' + optional_arg)
+    parser.add_argument('--vendor', required=False,
+                        help='Create a vendor scraper.',
+                        choices=['jailtracker'])
     parser.add_argument('-tests_only', required=False, action='store_true',
                         help='If set, only create test files.')
     args = parser.parse_args()
@@ -167,6 +182,6 @@ if __name__ == '__main__':
             substitutions[optional_arg] = arg_value
 
     if not args.tests_only:
-        create_scraper_files(substitutions)
+        create_scraper_files(substitutions, args.vendor)
         append_to_config_files(substitutions)
-    create_test_files(substitutions)
+    create_test_files(substitutions, args.vendor)
