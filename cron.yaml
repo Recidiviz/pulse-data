@@ -1185,7 +1185,7 @@ cron:
   - description: Start GA douglas background scraper every day at 9pm
     url: /scraper/start?region=us_ga_douglas&scrape_type=background
     schedule: every day 21:00
-    timezone: America/New York
+    timezone: America/New_York
     retry_parameters:
       min_backoff_seconds: 2.5
       max_doublings: 5
@@ -1194,7 +1194,7 @@ cron:
   - description: Stop GA douglas scraper every day at 9am
     url: /scraper/stop?region=us_ga_douglas&scrape_type=background
     schedule: every day 09:00
-    timezone: America/New York
+    timezone: America/New_York
     retry_parameters:
       min_backoff_seconds: 2.5
       max_doublings: 5
