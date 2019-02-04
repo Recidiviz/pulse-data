@@ -28,6 +28,8 @@ Multi-word counties should be enclosed in quotes:
  - `agency`: the name of the agency, e.g. `Foo County Sheriff's Office`
  - `timezone`: the timezone, e.g. `America/New York`
  - `url`: the initial url of the roster
+ - `vendor`: create a vendor scraper. Available vendors:
+   - `jailtracker`
 
 For example:
 `python create_scraper.py lake indiana jail --timezone='America/Chicago'`
@@ -53,6 +55,7 @@ You will need to manually edit the following files:
  - In [`recidiviz/tests/ingest/ingest_utils_test.py`](/recidiviz/tests/ingest/ingest_utils_test.py),
    add your region to `test_validate_regions_multiple_all` and `test_validate_regions_one_all`
 
+Note: Calling `create_scraper.py` with the `--vendor` option will generate a slightly different setup according to the vendor type. Explore the generated files for pertinent instructions.
 
 Writing the main scraper file
 =============================
