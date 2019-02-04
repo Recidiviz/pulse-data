@@ -34,6 +34,8 @@ import argparse
 import os
 from datetime import datetime
 from string import Template
+from typing import Optional
+
 import us
 
 
@@ -45,7 +47,7 @@ def populate_file(template_path, target_path, subs):
         target.write(contents)
 
 
-def create_scraper_files(subs, vendor=''):
+def create_scraper_files(subs, vendor: Optional[str]):
     """Creates __init__.py, region_name_scraper.py, and region_name.yaml files
     in recidiviz/ingest/region_name
     """
@@ -71,7 +73,9 @@ def create_scraper_files(subs, vendor=''):
     init_target = os.path.join(target_dir, '__init__.py')
     populate_file(init_template, init_target, subs)
 
-    scraper_template = os.path.join(template_dir, vendor, 'region_scraper.txt')
+    if vendor:
+        template_dir = os.path.join(template_dir, vendor)
+    scraper_template = os.path.join(template_dir, 'region_scraper.txt')
     create_scraper(scraper_template)
 
     if not vendor:
@@ -79,7 +83,7 @@ def create_scraper_files(subs, vendor=''):
         create_yaml(yaml_template)
 
 
-def create_test_files(subs, vendor=''):
+def create_test_files(subs, vendor: Optional[str]):
     def create_test(template):
         test_target_file_name = subs['region'] + '_scraper_test.py'
         test_target = os.path.join(target_test_dir, test_target_file_name)
@@ -97,8 +101,9 @@ def create_test_files(subs, vendor=''):
     os.mkdir(target_test_dir)
 
     template_dir = os.path.join(ingest_dir, 'scraper_template')
-    test_template = os.path.join(template_dir, vendor,
-                                 'region_scraper_test.txt')
+    if vendor:
+        template_dir = os.path.join(template_dir, vendor)
+    test_template = os.path.join(template_dir, 'region_scraper_test.txt')
     create_test(test_template)
 
 
