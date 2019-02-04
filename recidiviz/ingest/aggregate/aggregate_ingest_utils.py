@@ -18,9 +18,11 @@
 import calendar
 import datetime
 import itertools
-from typing import Dict, Iterable, Any
+from typing import Dict, Iterable, Any, Optional, Set
 
 import pandas as pd
+
+from recidiviz.ingest.aggregate.errors import DataFrameCastError
 
 
 def collapse_header(columns: pd.MultiIndex) -> pd.MultiIndex:
@@ -59,6 +61,53 @@ def pairwise(iterable: Iterable[Any]) -> Iterable[Any]:
     return zip(a, b)
 
 
+def cast_columns_to_int(
+        df: pd.DataFrame, *, ignore_columns: Optional[Set[str]] = None,
+        nullable_int_columns: Optional[Set[str]] = None) -> pd.DataFrame:
+    """Casts every column in |df| to an int, unless otherwise specified.
+
+    If a column is listed in |ignore_columns| then it will be left as is (likely
+    as an object or string).
+
+    If a column is listed in |nullable_int_columns| then it will be cast to a
+    float.
+
+    Note: If a column contains ints and NaN, then the column must be cast using
+    nullable_int_columns. This is because np.NaN is a float.
+    """
+    ignore_columns = ignore_columns or set()
+    nullable_int_columns = nullable_int_columns or set()
+
+    _validate_column_names(df, ignore_columns | nullable_int_columns)
+
+    for column_name in df.columns:
+        if column_name in ignore_columns:
+            continue
+        elif column_name in nullable_int_columns:
+            # Since NaN is a float, we must cast the whole column to floats
+            df[column_name] = df[column_name].astype(float)
+        else:
+            df[column_name] = df[column_name].astype(int)
+
+    return df
+
+
+def _validate_column_names(df: pd.DataFrame, column_names: Iterable[str]):
+    """Verify that all column_names exist as columns in |df|."""
+    for column_name in column_names:
+        if column_name not in df.columns:
+            raise DataFrameCastError(
+                "Invalid column_name when casting: {}".format(column_name))
+
+
 def on_last_day_of_month(date: datetime.date) -> datetime.date:
-    last_day_of_month = calendar.monthrange(date.year, date.month)[1]
-    return date.replace(day=last_day_of_month)
+    return date.replace(day=_last_day_of_month(date.year, date.month))
+
+
+def last_date_of_month(year: int, month: int) -> datetime.date:
+    day = _last_day_of_month(year, month)
+    return datetime.date(year=year, month=month, day=day)
+
+
+def _last_day_of_month(year: int, month: int) -> int:
+    return calendar.monthrange(year, month)[1]

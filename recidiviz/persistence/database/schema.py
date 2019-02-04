@@ -634,6 +634,24 @@ class _AggregateTableMixin:
     )
 
 
+class CaFacilityAggregate(Base, _AggregateTableMixin):
+    """CA state-provided aggregate statistics."""
+    __tablename__ = 'ca_facility_aggregate'
+    __table_args__ = (
+        UniqueConstraint(
+            'fips', 'facility_name', 'report_date', 'report_granularity'
+        ),
+    )
+
+    jurisdiction_name = Column(String(255))
+    facility_name = Column(String(255))
+    average_daily_population = Column(String(255))
+    unsentenced_male_adp = Column(String(255))
+    unsentenced_female_adp = Column(String(255))
+    sentenced_male_adp = Column(String(255))
+    sentenced_female_adp = Column(String(255))
+
+
 class FlCountyAggregate(Base, _AggregateTableMixin):
     """FL state-provided aggregate statistics."""
     __tablename__ = 'fl_county_aggregate'
