@@ -21,7 +21,7 @@ import unittest
 from mock import patch
 import pytest
 
-from recidiviz.ingest import scraper_utils
+from recidiviz.ingest.scrape import scraper_utils
 from recidiviz.ingest.models.ingest_info import IngestInfo
 
 

@@ -25,7 +25,8 @@ import pytz
 from google.cloud import datastore
 from mock import patch
 
-from recidiviz.ingest import constants, sessions
+from recidiviz.ingest import sessions
+from recidiviz.ingest.scrape import constants
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.sessions import ScrapeSession
 

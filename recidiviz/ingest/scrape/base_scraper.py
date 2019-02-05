@@ -46,10 +46,11 @@ from lxml import html
 from lxml.etree import XMLSyntaxError  # pylint:disable=no-name-in-module
 
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.ingest import constants, ingest_utils
+from recidiviz.ingest import ingest_utils
+from recidiviz.ingest.scrape import constants
 from recidiviz.ingest.models.ingest_info import IngestInfo
-from recidiviz.ingest.scraper import Scraper
-from recidiviz.ingest.task_params import QueueRequest, ScrapedData, Task
+from recidiviz.ingest.scrape.scraper import Scraper
+from recidiviz.ingest.scrape.task_params import QueueRequest, ScrapedData, Task
 from recidiviz.persistence import persistence
 
 

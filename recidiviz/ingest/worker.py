@@ -25,7 +25,7 @@ import pprint
 
 from flask import Blueprint, request
 
-from recidiviz.ingest.task_params import QueueRequest
+from recidiviz.ingest.scrape.task_params import QueueRequest
 from recidiviz.utils import regions
 from recidiviz.utils.auth import authenticate_request
 

@@ -23,7 +23,7 @@ from typing import Any, Dict, Optional
 import attr
 import cattr
 
-from recidiviz.ingest import constants
+from recidiviz.ingest.scrape import constants
 from recidiviz.ingest.models.ingest_info import IngestInfo
 
 cattr.register_unstructure_hook(datetime.datetime,

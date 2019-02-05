@@ -23,7 +23,8 @@ import json
 import pytest
 from mock import patch
 
-from recidiviz.ingest import constants, docket
+from recidiviz.ingest import docket
+from recidiviz.ingest.scrape import constants
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 
 REGIONS = ["us_ny", "us_va"]
