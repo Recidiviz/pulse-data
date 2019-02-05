@@ -24,8 +24,8 @@ import tabula
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
-from recidiviz.ingest.aggregate.errors import AggregateDateParsingError, \
-    FipsMergingError, AggregateIngestError
+from recidiviz.ingest.aggregate.errors import FipsMergingError,\
+    AggregateIngestError
 from recidiviz.persistence.database.schema import HiFacilityAggregate
 
 _COLUMN_NAMES = [
@@ -98,20 +98,16 @@ def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
 
 
 def _parse_date(filename: str) -> datetime.date:
-    # PyPD2 can't extract text properly from hawaii, so we use the filename
-    # instead.
-    try:
-        filename_date = filename.lower()
-        if DATE_PARSE_ANCHOR_FILENAME in filename_date:
-            # The names can be a few formats, the most robust way is to take
-            # all of the text after the anchor.
-            # (eg. report Jan 2017.pdf)
-            start = filename_date.index(DATE_PARSE_ANCHOR_FILENAME) \
-                    + len(DATE_PARSE_ANCHOR_FILENAME)
-            date_str = filename_date[start:].strip('.pdf')
-    except Exception as e:
-        raise AggregateDateParsingError(str(e))
-    return dateparser.parse(date_str).date()
+    end = filename.index('.pdf')
+    start = end - 10
+    d = dateparser.parse(filename[start:end])
+    # There are two formats for hawaiis dates:
+    # _wp-content_uploads_2018_12_pop-reports-eom-2018-11-30.pdf and
+    # _wp-content_uploads_2017_10_pop-reports-eom-2017-09-30-17.pdf
+    if not d:
+        start = end - 8
+        d = dateparser.parse(filename[start:end])
+    return d.date()
 
 
 def _parse_table(filename: str) -> pd.DataFrame:
