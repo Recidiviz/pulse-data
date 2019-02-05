@@ -683,3 +683,11 @@ regions:
     base_url: https://www.tunicamssheriff.com/roster.php
     scraper_package: us_ms_tunica
     timezone: America/Chicago
+  us_ga_floyd:
+    agency_name: Floyd County Sheriff's Office
+    region_code: us_ga_floyd
+    agency_type: jail
+    queue: us-ga-floyd-scraper
+    base_url: https://floyd-so-ga.zuercherportal.com
+    scraper_package: us_ga_floyd
+    timezone: America/New_York
