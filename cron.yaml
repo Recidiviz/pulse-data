@@ -369,7 +369,7 @@ cron:
       job_age_limit: 9h
 
   - description: Start TN mcminn background scraper every day at 9pm
-    url: /scraper/start?region=us_tx_brown&scrape_type=background
+    url: /scraper/start?region=us_tn_mcminn&scrape_type=background
     schedule: every day 21:00
     timezone: America/Chicago
     retry_parameters:
@@ -378,7 +378,7 @@ cron:
       job_age_limit: 9h
 
   - description: Stop TN mcminn scraper every day at 9am
-    url: /scraper/stop?region=us_tx_brown&scrape_type=background
+    url: /scraper/stop?region=us_tn_mcminn&scrape_type=background
     schedule: every day 09:00
     timezone: America/Chicago
     retry_parameters:
@@ -1472,3 +1472,38 @@ cron:
       max_doublings: 5
       job_age_limit: 9h
 
+  - description: Start GA floyd background scraper every day at 9pm
+    url: /scraper/start?region=us_ga_floyd&scrape_type=background
+    schedule: every day 21:00
+    timezone: America/New_York
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
+
+  - description: Stop GA floyd scraper every day at 9am
+    url: /scraper/stop?region=us_ga_floyd&scrape_type=background
+    schedule: every day 09:00
+    timezone: America/New_York
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
+
+  - description: Start GA lumpkin background scraper every day at 9pm
+    url: /scraper/start?region=us_ga_lumpkin&scrape_type=background
+    schedule: every day 21:00
+    timezone: America/New_York
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
+
+  - description: Stop GA lumpkin scraper every day at 9am
+    url: /scraper/stop?region=us_ga_lumpkin&scrape_type=background
+    schedule: every day 09:00
+    timezone: America/New_York
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
