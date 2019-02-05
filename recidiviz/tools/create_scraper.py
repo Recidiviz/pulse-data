@@ -125,7 +125,6 @@ def append_to_config_files(subs):
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 """
     with open(os.path.join(top_level_path, 'queue.yaml'), 'a') as queue_file:
