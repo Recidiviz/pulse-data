@@ -31,7 +31,7 @@ from recidiviz.ingest.aggregate.regions.fl import fl_aggregate_site_scraper
 from recidiviz.ingest.aggregate.regions.ga import ga_aggregate_site_scraper
 from recidiviz.ingest.aggregate.regions.hi import hi_aggregate_site_scraper
 from recidiviz.ingest.aggregate.regions.ky import ky_aggregate_site_scraper
-# from recidiviz.ingest.aggregate.regions.ny import ny_aggregate_site_scraper
+from recidiviz.ingest.aggregate.regions.ny import ny_aggregate_site_scraper
 from recidiviz.ingest.aggregate.regions.tx import tx_aggregate_site_scraper
 from recidiviz.utils import metadata
 from recidiviz.utils.auth import authenticate_request
@@ -62,10 +62,13 @@ def scrape_aggregate_reports():
         'georgia': ga_aggregate_site_scraper.get_urls_to_download,
         'hawaii': hi_aggregate_site_scraper.get_urls_to_download,
         'kentucky': ky_aggregate_site_scraper.get_urls_to_download,
-        # 'new_york': ny_aggregate_site_scraper.get_urls_to_download,
+        'new_york': ny_aggregate_site_scraper.get_urls_to_download,
         'texas': tx_aggregate_site_scraper.get_urls_to_download,
     }
     state = get_value('state', request.args)
+    # We want to always download the pdf if it is NY because they always have
+    # the same name.
+    always_download = (state == 'new_york')
     urls = state_to_scraper[state]()
     gcp_project = metadata.project_id()
     historical_bucket = HISTORICAL_BUCKET.format(gcp_project)
@@ -77,7 +80,7 @@ def scrape_aggregate_reports():
         pdf_name = urlparse(url).path.replace('/', '_').lower()
         historical_path = os.path.join(historical_bucket, state, pdf_name)
         file_to_upload = _get_file_to_upload(
-            historical_path, fs, url, pdf_name)
+            historical_path, fs, url, pdf_name, always_download)
         if file_to_upload:
             upload_path = os.path.join(upload_bucket, state, pdf_name)
             fs.put(file_to_upload, upload_path)
@@ -90,13 +93,14 @@ def scrape_aggregate_reports():
 
 
 def _get_file_to_upload(
-        path: str, fs: gcsfs.GCSFileSystem, url: str, pdf_name: str) \
+        path: str, fs: gcsfs.GCSFileSystem, url: str, pdf_name: str,
+        always_download: bool) \
         -> Optional[str]:
     """This function checks first whether it needs to download, and then
     returns the locally downloaded pdf"""
     # First check if the path doesn't exist at all
     path_to_download = None
-    if not fs.exists(path):
+    if always_download or not fs.exists(path):
         response = requests.get(url)
         if response.status_code == 200:
             path_to_download = os.path.join(tempfile.gettempdir(), pdf_name)
