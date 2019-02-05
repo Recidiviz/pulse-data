@@ -115,6 +115,12 @@ def _parse_table(filename: str) -> pd.DataFrame:
             'number_of_other_inmates'
     })
 
+    # Tabula may parse extra empty rows
+    result = result.dropna()
+
+    aggregate_ingest_utils.cast_columns_to_int(
+        result, ignore_columns={'county_name'})
+
     return result
 
 
