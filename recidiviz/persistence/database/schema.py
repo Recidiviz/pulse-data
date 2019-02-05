@@ -25,7 +25,9 @@ and should not be referenced by any other table. The key which should be used
 to reference a historical table is the key shared with the master table. For
 the historical table, this key is non-unique. This is necessary to allow the
 desired temporal table behavior. Because of this non-uniqueness, any foreign key
-pointing to a historical table does NOT have a foreign key constraint.
+pointing to a historical table does NOT have a foreign key constraint. As a
+result of this difference in constraints, foreign key columns cannot be shared
+between tables in the "SharedColumn" mixins.
 """
 from sqlalchemy import Boolean, Column, Date, DateTime, Enum, ForeignKey, \
     Integer, String, Text, UniqueConstraint
@@ -210,15 +212,21 @@ sentence_relationship_type = Enum(
 sentence_status = Enum(*sentence_status_values, name='sentence_status')
 
 
-class Person(Base, DatabaseEntity):
-    """Represents a person in the SQL schema"""
-    __tablename__ = 'person'
+class _PersonSharedColumns:
+    """A mixin which defines all columns common to Person and PersonHistory"""
 
-    person_id = Column(Integer, primary_key=True)
+    # Consider this class a mixin and only allow instantiating subclasses
+    def __new__(cls, *_, **__):
+        if cls is _PersonSharedColumns:
+            raise Exception('_PersonSharedColumns cannot be instantiated')
+        return super().__new__(cls)
+
+    # NOTE: PersonHistory does not contain full_name or birthdate columns. This
+    # is to ensure that PII is only stored in a single location (on the master
+    # table) and can be easily deleted when it should no longer be stored for a
+    # given individual.
+
     external_id = Column(String(255), index=True)
-    full_name = Column(String(255), index=True)
-    birthdate = Column(Date, index=True)
-    birthdate_inferred_from_age = Column(Boolean)
     gender = Column(gender)
     gender_raw_text = Column(String(255))
     race = Column(race)
@@ -228,17 +236,22 @@ class Person(Base, DatabaseEntity):
     place_of_residence = Column(String(255))
     region = Column(String(255), nullable=False, index=True)
 
+
+class Person(Base, DatabaseEntity, _PersonSharedColumns):
+    """Represents a person in the SQL schema"""
+    __tablename__ = 'person'
+
+    person_id = Column(Integer, primary_key=True)
+    full_name = Column(String(255), index=True)
+    birthdate = Column(Date, index=True)
+    birthdate_inferred_from_age = Column(Boolean)
+
     bookings = relationship('Booking', back_populates='person')
 
 
-class PersonHistory(Base, DatabaseEntity):
+class PersonHistory(Base, DatabaseEntity, _PersonSharedColumns):
     """Represents the historical state of a person"""
     __tablename__ = 'person_history'
-
-    # NOTE: PersonHistory does not contain full_name or birthdate columns. This
-    # is to ensure that PII is only stored in a single location (on the master
-    # table) and can be easily deleted when it should no longer be stored for a
-    # given individual.
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
@@ -247,24 +260,21 @@ class PersonHistory(Base, DatabaseEntity):
     person_id = Column(Integer, nullable=False, index=True)
     valid_from = Column(DateTime, nullable=False)
     valid_to = Column(DateTime)
-    external_id = Column(String(255))
-    gender = Column(gender)
-    gender_raw_text = Column(String(255))
-    race = Column(race)
-    race_raw_text = Column(String(255))
-    ethnicity = Column(ethnicity)
-    ethnicity_raw_text = Column(String(255))
-    place_of_residence = Column(String(255))
-    region = Column(String(255), nullable=False)
 
 
-class Booking(Base, DatabaseEntity):
-    """Represents a booking in the SQL schema"""
-    __tablename__ = 'booking'
+class _BookingSharedColumns:
+    """A mixin which defines all columns common to Booking and BookingHistory"""
 
-    booking_id = Column(Integer, primary_key=True)
+    # Consider this class a mixin and only allow instantiating subclasses
+    def __new__(cls, *_, **__):
+        if cls is _BookingSharedColumns:
+            raise Exception('_BookingSharedColumns cannot be instantiated')
+        return super().__new__(cls)
 
-    person_id = Column(Integer, ForeignKey('person.person_id'), nullable=False)
+    # NOTE: BookingHistory does not contain last_seen_time column. This is to
+    # avoid needing to create a new BookingHistory entity when a booking is
+    # re-scraped and no values have changed except last_scraped_date.
+
     external_id = Column(String(255), index=True)
     admission_date = Column(Date)
     admission_reason = Column(admission_reason)
@@ -280,6 +290,14 @@ class Booking(Base, DatabaseEntity):
     facility = Column(String(255))
     classification = Column(classification)
     classification_raw_text = Column(String(255))
+
+
+class Booking(Base, DatabaseEntity, _BookingSharedColumns):
+    """Represents a booking in the SQL schema"""
+    __tablename__ = 'booking'
+
+    booking_id = Column(Integer, primary_key=True)
+    person_id = Column(Integer, ForeignKey('person.person_id'), nullable=False)
     last_seen_time = Column(DateTime, nullable=False)
 
     person = relationship('Person', back_populates='bookings')
@@ -288,13 +306,9 @@ class Booking(Base, DatabaseEntity):
     charges = relationship('Charge', back_populates='booking')
 
 
-class BookingHistory(Base, DatabaseEntity):
+class BookingHistory(Base, DatabaseEntity, _BookingSharedColumns):
     """Represents the historical state of a booking"""
     __tablename__ = 'booking_history'
-
-    # NOTE: BookingHistory does not contain last_seen_time column. This is to
-    # avoid needing to create a new BookingHistory entity when a booking is
-    # re-scraped and no values have changed except last_scraped_date.
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
@@ -304,39 +318,35 @@ class BookingHistory(Base, DatabaseEntity):
     valid_from = Column(DateTime, nullable=False)
     valid_to = Column(DateTime)
     person_id = Column(Integer, nullable=False, index=True)
+
+
+class _HoldSharedColumns:
+    """A mixin which defines all columns common to Hold and HoldHistory"""
+
+    # Consider this class a mixin and only allow instantiating subclasses
+    def __new__(cls, *_, **__):
+        if cls is _HoldSharedColumns:
+            raise Exception('_HoldSharedColumns cannot be instantiated')
+        return super().__new__(cls)
+
     external_id = Column(String(255), index=True)
-    admission_date = Column(Date)
-    admission_date_inferred = Column(Boolean)
-    admission_reason = Column(admission_reason)
-    admission_reason_raw_text = Column(String(255))
-    release_date = Column(Date)
-    release_date_inferred = Column(Boolean)
-    projected_release_date = Column(Date)
-    release_reason = Column(release_reason)
-    release_reason_raw_text = Column(String(255))
-    custody_status = Column(custody_status, nullable=False)
-    custody_status_raw_text = Column(String(255))
-    facility = Column(String(255))
-    classification = Column(classification)
-    classification_raw_text = Column(String(255))
+    jurisdiction_name = Column(String(255))
+    status = Column(hold_status, nullable=False)
+    status_raw_text = Column(String(255))
 
 
-class Hold(Base, DatabaseEntity):
+class Hold(Base, DatabaseEntity, _HoldSharedColumns):
     """Represents a hold from another jurisdiction against a booking"""
     __tablename__ = 'hold'
 
     hold_id = Column(Integer, primary_key=True)
     booking_id = Column(
         Integer, ForeignKey('booking.booking_id'), nullable=False)
-    external_id = Column(String(255), index=True)
-    jurisdiction_name = Column(String(255))
-    status = Column(hold_status, nullable=False)
-    status_raw_text = Column(String(255))
 
     booking = relationship('Booking', back_populates='holds')
 
 
-class HoldHistory(Base, DatabaseEntity):
+class HoldHistory(Base, DatabaseEntity, _HoldSharedColumns):
     """Represents the historical state of a hold"""
     __tablename__ = 'hold_history'
 
@@ -348,19 +358,17 @@ class HoldHistory(Base, DatabaseEntity):
     valid_from = Column(DateTime, nullable=False)
     valid_to = Column(DateTime)
     booking_id = Column(Integer, nullable=False, index=True)
-    external_id = Column(String(255), index=True)
-    jurisdiction_name = Column(String(255))
-    status = Column(hold_status, nullable=False)
-    status_raw_text = Column(String(255))
 
 
-class Arrest(Base, DatabaseEntity):
-    """Represents an arrest in the SQL schema"""
-    __tablename__ = 'arrest'
+class _ArrestSharedColumns:
+    """A mixin which defines all columns common to Arrest and ArrestHistory"""
 
-    arrest_id = Column(Integer, primary_key=True)
-    booking_id = Column(
-        Integer, ForeignKey('booking.booking_id'), nullable=False)
+    # Consider this class a mixin and only allow instantiating subclasses
+    def __new__(cls, *_, **__):
+        if cls is _ArrestSharedColumns:
+            raise Exception('_ArrestSharedColumns cannot be instantiated')
+        return super().__new__(cls)
+
     external_id = Column(String(255), index=True)
     arrest_date = Column(Date)
     location = Column(String(255))
@@ -368,10 +376,19 @@ class Arrest(Base, DatabaseEntity):
     officer_name = Column(String(255))
     officer_id = Column(String(255))
 
+
+class Arrest(Base, DatabaseEntity, _ArrestSharedColumns):
+    """Represents an arrest in the SQL schema"""
+    __tablename__ = 'arrest'
+
+    arrest_id = Column(Integer, primary_key=True)
+    booking_id = Column(
+        Integer, ForeignKey('booking.booking_id'), nullable=False)
+
     booking = relationship('Booking', back_populates='arrest')
 
 
-class ArrestHistory(Base, DatabaseEntity):
+class ArrestHistory(Base, DatabaseEntity, _ArrestSharedColumns):
     """Represents the historical state of an arrest"""
     __tablename__ = 'arrest_history'
 
@@ -383,19 +400,17 @@ class ArrestHistory(Base, DatabaseEntity):
     valid_from = Column(DateTime, nullable=False)
     valid_to = Column(DateTime)
     booking_id = Column(Integer, nullable=False, index=True)
-    external_id = Column(String(255), index=True)
-    arrest_date = Column(Date)
-    location = Column(String(255))
-    agency = Column(String(255))
-    officer_name = Column(String(255))
-    officer_id = Column(String(255))
 
 
-class Bond(Base, DatabaseEntity):
-    """Represents a bond in the SQL schema"""
-    __tablename__ = 'bond'
+class _BondSharedColumns:
+    """A mixin which defines all columns common to Bond and BondHistory"""
 
-    bond_id = Column(Integer, primary_key=True)
+    # Consider this class a mixin and only allow instantiating subclasses
+    def __new__(cls, *_, **__):
+        if cls is _BondSharedColumns:
+            raise Exception('_BondSharedColumns cannot be instantiated')
+        return super().__new__(cls)
+
     external_id = Column(String(255), index=True)
     amount_dollars = Column(Integer)
     bond_type = Column(bond_type)
@@ -404,10 +419,17 @@ class Bond(Base, DatabaseEntity):
     status_raw_text = Column(String(255))
     bond_agent = Column(String(255))
 
+
+class Bond(Base, DatabaseEntity, _BondSharedColumns):
+    """Represents a bond in the SQL schema"""
+    __tablename__ = 'bond'
+
+    bond_id = Column(Integer, primary_key=True)
+
     charges = relationship('Charge', back_populates='bond')
 
 
-class BondHistory(Base, DatabaseEntity):
+class BondHistory(Base, DatabaseEntity, _BondSharedColumns):
     """Represents the historical state of a bond"""
     __tablename__ = 'bond_history'
 
@@ -418,20 +440,19 @@ class BondHistory(Base, DatabaseEntity):
     bond_id = Column(Integer, nullable=False, index=True)
     valid_from = Column(DateTime, nullable=False)
     valid_to = Column(DateTime)
-    external_id = Column(String(255), index=True)
-    amount_dollars = Column(Integer)
-    bond_type = Column(bond_type)
-    bond_type_raw_text = Column(String(255))
-    status = Column(bond_status, nullable=False)
-    status_raw_text = Column(String(255))
-    bond_agent = Column(String(255))
 
 
-class Sentence(Base, DatabaseEntity):
-    """Represents a sentence in the SQL schema"""
-    __tablename__ = 'sentence'
+class _SentenceSharedColumns:
+    """A mixin which defines all columns common to Sentence and
+    SentenceHistory
+    """
 
-    sentence_id = Column(Integer, primary_key=True)
+    # Consider this class a mixin and only allow instantiating subclasses
+    def __new__(cls, *_, **__):
+        if cls is _SentenceSharedColumns:
+            raise Exception('_SentenceSharedColumns cannot be instantiated')
+        return super().__new__(cls)
+
     external_id = Column(String(255), index=True)
     status = Column(sentence_status, nullable=False)
     status_raw_text = Column(String(255))
@@ -444,6 +465,13 @@ class Sentence(Base, DatabaseEntity):
     fine_dollars = Column(Integer)
     parole_possible = Column(Boolean)
     post_release_supervision_length_days = Column(Integer)
+
+
+class Sentence(Base, DatabaseEntity, _SentenceSharedColumns):
+    """Represents a sentence in the SQL schema"""
+    __tablename__ = 'sentence'
+
+    sentence_id = Column(Integer, primary_key=True)
 
     charges = relationship('Charge', back_populates='sentence')
 
@@ -457,7 +485,7 @@ class Sentence(Base, DatabaseEntity):
         'b_sentence_relations', 'sentence_b')
 
 
-class SentenceHistory(Base, DatabaseEntity):
+class SentenceHistory(Base, DatabaseEntity, _SentenceSharedColumns):
     """Represents the historical state of a sentence"""
     __tablename__ = 'sentence_history'
 
@@ -468,21 +496,27 @@ class SentenceHistory(Base, DatabaseEntity):
     sentence_id = Column(Integer, nullable=False, index=True)
     valid_from = Column(DateTime, nullable=False)
     valid_to = Column(DateTime)
-    external_id = Column(String(255), index=True)
-    status = Column(sentence_status, nullable=False)
-    status_raw_text = Column(String(255))
-    sentencing_region = Column(String(255))
-    min_length_days = Column(Integer)
-    max_length_days = Column(Integer)
-    is_life = Column(Boolean)
-    is_probation = Column(Boolean)
-    is_suspended = Column(Boolean)
-    fine_dollars = Column(Integer)
-    parole_possible = Column(Boolean)
-    post_release_supervision_length_days = Column(Integer)
 
 
-class SentenceRelationship(Base, DatabaseEntity):
+class _SentenceRelationshipSharedColumns:
+    """A mixin which defines all columns common to SentenceRelationship and
+    SentenceRelationshipHistory
+    """
+
+    # Consider this class a mixin and only allow instantiating subclasses
+    def __new__(cls, *_, **__):
+        if cls is _SentenceRelationshipSharedColumns:
+            raise Exception(
+                '_SentenceRelationshipSharedColumns cannot be instantiated')
+        return super().__new__(cls)
+
+    # Manually set name to avoid conflict with Python reserved keyword
+    sentence_relationship_type = Column('type', sentence_relationship_type)
+    sentence_relation_type_raw_text = Column(String(255))
+
+
+class SentenceRelationship(Base, DatabaseEntity,
+                           _SentenceRelationshipSharedColumns):
     """Represents the relationship between two sentences"""
     __tablename__ = 'sentence_relationship'
 
@@ -494,9 +528,6 @@ class SentenceRelationship(Base, DatabaseEntity):
         Integer, ForeignKey('sentence.sentence_id'), nullable=False)
     sentence_b_id = Column(
         Integer, ForeignKey('sentence.sentence_id'), nullable=False)
-    # Manually set name to avoid conflict with Python reserved keyword
-    sentence_relationship_type = Column('type', sentence_relationship_type)
-    sentence_relation_type_raw_text = Column(String(255))
 
     sentence_a = relationship(
         'Sentence',
@@ -508,7 +539,8 @@ class SentenceRelationship(Base, DatabaseEntity):
         primaryjoin='Sentence.sentence_id==SentenceRelationship.sentence_a_id')
 
 
-class SentenceRelationshipHistory(Base, DatabaseEntity):
+class SentenceRelationshipHistory(Base, DatabaseEntity,
+                                  _SentenceRelationshipSharedColumns):
     """Represents the historical state of the relationship between two sentences
     """
     __tablename__ = 'sentence_relationship_history'
@@ -522,21 +554,17 @@ class SentenceRelationshipHistory(Base, DatabaseEntity):
     valid_to = Column(DateTime)
     sentence_a_id = Column(Integer, nullable=False, index=True)
     sentence_b_id = Column(Integer, nullable=False, index=True)
-    # Manually set name to avoid conflict with Python reserved keyword
-    sentence_relationship_type = Column('type', sentence_relationship_type)
-    sentence_relation_type_raw_text = Column(String(255))
 
 
-class Charge(Base, DatabaseEntity):
-    """Represents a charge in the SQL schema"""
-    __tablename__ = 'charge'
+class _ChargeSharedColumns:
+    """A mixin which defines all columns common to Charge and ChargeHistory"""
 
-    charge_id = Column(Integer, primary_key=True)
-    booking_id = Column(
-        Integer, ForeignKey('booking.booking_id'), nullable=False)
-    bond_id = Column(Integer, ForeignKey('bond.bond_id'))
-    sentence_id = Column(
-        Integer, ForeignKey('sentence.sentence_id'))
+    # Consider this class a mixin and only allow instantiating subclasses
+    def __new__(cls, *_, **__):
+        if cls is _ChargeSharedColumns:
+            raise Exception('_ChargeSharedColumns cannot be instantiated')
+        return super().__new__(cls)
+
     external_id = Column(String(255), index=True)
     offense_date = Column(Date)
     statute = Column(String(255))
@@ -559,12 +587,24 @@ class Charge(Base, DatabaseEntity):
     judge_name = Column(String(255))
     charge_notes = Column(Text)
 
+
+class Charge(Base, DatabaseEntity, _ChargeSharedColumns):
+    """Represents a charge in the SQL schema"""
+    __tablename__ = 'charge'
+
+    charge_id = Column(Integer, primary_key=True)
+    booking_id = Column(
+        Integer, ForeignKey('booking.booking_id'), nullable=False)
+    bond_id = Column(Integer, ForeignKey('bond.bond_id'))
+    sentence_id = Column(
+        Integer, ForeignKey('sentence.sentence_id'))
+
     booking = relationship('Booking', back_populates='charges')
     bond = relationship('Bond', back_populates='charges')
     sentence = relationship('Sentence', back_populates='charges')
 
 
-class ChargeHistory(Base, DatabaseEntity):
+class ChargeHistory(Base, DatabaseEntity, _ChargeSharedColumns):
     """Represents the historical state of a charge"""
     __tablename__ = 'charge_history'
 
@@ -578,27 +618,6 @@ class ChargeHistory(Base, DatabaseEntity):
     booking_id = Column(Integer, nullable=False, index=True)
     bond_id = Column(Integer, index=True)
     sentence_id = Column(Integer, index=True)
-    external_id = Column(String(255), index=True)
-    offense_date = Column(Date)
-    statute = Column(String(255))
-    name = Column(Text)
-    attempted = Column(Boolean)
-    degree = Column(degree)
-    degree_raw_text = Column(String(255))
-    # Manually set name to avoid conflict with Python reserved keyword
-    charge_class = Column('class', charge_class)
-    class_raw_text = Column(String(255))
-    level = Column(String(255))
-    fee_dollars = Column(Integer)
-    charging_entity = Column(String(255))
-    status = Column(charge_status, nullable=False)
-    status_raw_text = Column(String(255))
-    court_type = Column(court_type)
-    court_type_raw_text = Column(String(255))
-    case_number = Column(String(255))
-    next_court_date = Column(Date)
-    judge_name = Column(String(255))
-    charge_notes = Column(Text)
 
 
 # ==================== Aggregate Tables ====================

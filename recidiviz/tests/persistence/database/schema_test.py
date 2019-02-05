@@ -30,7 +30,16 @@ from recidiviz.persistence.database.schema import (
 
 
 class SchemaTest(TestCase):
-    """Test matching columns in master and historical tables for each entity"""
+    """Test matching columns in master and historical tables for each entity
+
+    NOTE: This constraint is primarily enforced by the used of "SharedColumn"
+    mixins between the master and historical schema objects. However, as
+    foreign key columns cannot be shared in that manner (because foreign keys
+    on the master tables point to unique entities and foreign keys on the
+    historical tables do not, and therefore foreign key constraints can only
+    be enforced on the former), this test still serves as a useful catch for
+    those cases.
+    """
 
 
     def testMasterAndHistoryColumnsMatch_Arrest(self):
