@@ -3,15 +3,16 @@ Creating a Scraper
 Before doing anything, setup your environment by running `pipenv install` in the top level directory.
 Enter your environment with `pipenv shell `. Finally, test that your system is all setup for scraper
 development by running an existing scraper using, say
-`python -m recidiviz.ingest.run_scraper --region us_pa_greene`.
+`python3 -m recidiviz.tools.run_scraper --region us_pa_greene`.
 
 Next you'll be ready to create the scraper.
 
-From the top level `pulse-data` directory, run the `create_scraper.py`
+From the top level `pulse-data` directory, run the
+`recidiviz.tools.create_scraper`
 script to create the relevant files for a new scraper.
 
 ### Usage
-`python create_scraper.py <county> <state> <county_type>`
+`python3 -m recidiviz.tools.create_scraper <county> <state> <county_type>`
 
 County type describes the type of data the website has, and can be one of the following:
 1. `jail` (majority of scrapers will be for jails)
@@ -19,10 +20,10 @@ County type describes the type of data the website has, and can be one of the fo
 1. `unified` - contains both jail and prison data
 
 For example:
-`python create_scraper.py kings ny jail`
+`python3 -m recidiviz.tools.create_scraper kings ny jail`
 
 Multi-word counties should be enclosed in quotes:
-`python create_scraper.py 'prince william' virginia jail`
+`python3 -m recidiviz.tools.create_scraper 'prince william' virginia jail`
 
 ###### Optional Arguments
  - `agency`: the name of the agency, e.g. `Foo County Sheriff's Office`
@@ -32,19 +33,19 @@ Multi-word counties should be enclosed in quotes:
    - `jailtracker`
 
 For example:
-`python create_scraper.py lake indiana jail --timezone='America/Chicago'`
+`python3 -m recidiviz.tools.create_scraper lake indiana jail --timezone='America/Chicago'`
 
 
 Initial Setup
 =============
 The script will create the following files in the directory
-`recidiviz/ingest/<region_code>`:
+`recidiviz/ingest/scrape/regions/<region_code>`:
  - `<region_code>_scraper.py`
  - `__init__.py`
  - `<region_code>.yaml`
 
 It will also create a test file
-`recidiviz/tests/ingest/<region_code>/<region_code>_scraper_test.py`.
+`recidiviz/tests/ingest/scrape/regions/<region_code>/<region_code>_scraper_test.py`.
 
 In addition, the script will append the region to [queue.yaml](/queue.yaml),
 [region_manifest.yaml](/region_manifest.yaml) and [cron.yaml](/cron.yaml).
@@ -55,7 +56,7 @@ You will need to manually edit the following files:
  - In [`recidiviz/tests/ingest/ingest_utils_test.py`](/recidiviz/tests/ingest/ingest_utils_test.py),
    add your region to `test_validate_regions_multiple_all` and `test_validate_regions_one_all`
 
-Note: Calling `create_scraper.py` with the `--vendor` option will generate a slightly different setup according to the vendor type. Explore the generated files for pertinent instructions.
+Note: Calling `create_scraper` with the `--vendor` option will generate a slightly different setup according to the vendor type. Explore the generated files for pertinent instructions.
 
 Writing the main scraper file
 =============================
@@ -135,7 +136,7 @@ To test what your scraper might look like in production, use the `run_scraper` s
 
 To use it simply run:
 ```shell
-$ python -m recidiviz.ingest.run_scraper --region region_name
+$ python -m recidiviz.tools.run_scraper --region region_name
 ```
 Optional fields are:
 * num_tasks: The number of tasks to try before ending the run. The default is 5.
