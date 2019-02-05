@@ -15,16 +15,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Parse the HI Aggregated Statistics PDF."""
-from typing import Dict
 import datetime
-import dateparser
+from typing import Dict, List, Iterable
 
+import dateparser
+import more_itertools
 import pandas as pd
 import tabula
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
-from recidiviz.ingest.aggregate.errors import FipsMergingError,\
+from recidiviz.ingest.aggregate.errors import FipsMergingError, \
     AggregateIngestError
 from recidiviz.persistence.database.schema import HiFacilityAggregate
 
@@ -120,15 +121,15 @@ def _parse_table(filename: str) -> pd.DataFrame:
             'header': [0, 1],
         })
 
-    head_count_ending_df = all_dfs[1]
+    head_count_ending_df = _df_matching_substring(
+        all_dfs, {'total', 'head count ending'})
     head_count_ending_df = _format_head_count_ending(head_count_ending_df)
 
-    contracted_facilities_df = all_dfs[3]
-    contracted_facilities_df = _format_contracted_facilities(
-        contracted_facilities_df)
+    facilities_df = _df_matching_substring(
+        all_dfs, {'contracted facilities'})
+    facilities_df = _format_contracted_facilities(facilities_df)
 
-    result = head_count_ending_df.append(contracted_facilities_df,
-                                         ignore_index=True)
+    result = head_count_ending_df.append(facilities_df, ignore_index=True)
 
     result['fips'] = result.facility_name.map(_facility_acronym_to_fips)
     result['facility_name'] = \
@@ -145,6 +146,24 @@ def _parse_table(filename: str) -> pd.DataFrame:
         result[column_name] = result[column_name].astype(float)
 
     return result
+
+
+def _df_matching_substring(dfs: List[pd.DataFrame], strings: Iterable[str]) \
+        -> pd.DataFrame:
+    """Get the one df containing all the matching substrings."""
+    matches: List[pd.DataFrame] = []
+    for df in dfs:
+        if all([_df_contains_substring(df, string) for string in strings]):
+            matches.append(df)
+
+    return more_itertools.one(matches)
+
+
+def _df_contains_substring(df: pd.DataFrame, substring: str) -> bool:
+    """Returns True if any entity in |df| contains the substring."""
+    df_contains_str_mask = df.applymap(
+        lambda element: substring.lower() in str(element).lower())
+    return df_contains_str_mask.any().any()
 
 
 def _format_head_count_ending(df: pd.DataFrame) -> pd.DataFrame:
