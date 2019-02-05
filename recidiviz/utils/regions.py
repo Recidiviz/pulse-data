@@ -90,11 +90,13 @@ class Region:
             N/A
 
         Returns:
-            Scraper module (e.g., recidiviz.ingest.us_ny)
+            Scraper module (e.g., recidiviz.ingest.scrape.regions.us_ny)
         """
         top_level = __import__("recidiviz")
         ingest_module = getattr(top_level, "ingest")
-        scraper_module = getattr(ingest_module, self.scraper_package)
+        scrape_module = getattr(ingest_module, "scrape")
+        regions_module = getattr(scrape_module, "regions")
+        scraper_module = getattr(regions_module, self.scraper_package)
 
         return scraper_module
 
