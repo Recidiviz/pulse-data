@@ -20,7 +20,8 @@
 from flask import Flask
 from mock import call, patch
 
-from recidiviz.ingest import constants, scraper_control
+from recidiviz.ingest import scraper_control
+from recidiviz.ingest.scrape import constants
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 
 APP_ID = "recidiviz-worker-test"

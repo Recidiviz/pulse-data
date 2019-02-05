@@ -24,8 +24,9 @@ import json
 from flask import Flask
 from mock import patch
 
-from recidiviz.ingest import constants, worker
-from recidiviz.ingest.task_params import QueueRequest, Task
+from recidiviz.ingest import worker
+from recidiviz.ingest.scrape import constants
+from recidiviz.ingest.scrape.task_params import QueueRequest, Task
 
 PATH = "/work"
 FAKE_QUEUE_PARAMS = QueueRequest(

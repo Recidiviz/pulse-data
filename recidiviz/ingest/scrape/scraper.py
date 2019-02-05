@@ -26,14 +26,13 @@ from datetime import datetime
 
 import requests
 
-from recidiviz.ingest import constants
-from recidiviz.ingest import scraper_utils
+from recidiviz.ingest.scrape import scraper_utils, constants
 from recidiviz.ingest import sessions
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest import queues
 from recidiviz.ingest import tracker
 from recidiviz.utils.regions import Region
-from recidiviz.ingest.task_params import Task, QueueRequest
+from recidiviz.ingest.scrape.task_params import Task, QueueRequest
 
 
 class Scraper(metaclass=abc.ABCMeta):

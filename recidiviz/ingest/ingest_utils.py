@@ -21,7 +21,7 @@ import logging
 from typing import List
 
 from recidiviz.common import common_utils
-from recidiviz.ingest import constants
+from recidiviz.ingest.scrape import constants
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
 from recidiviz.utils import regions
 
