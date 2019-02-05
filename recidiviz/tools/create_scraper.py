@@ -35,8 +35,9 @@ import os
 from datetime import datetime
 from string import Template
 from typing import Optional
-
 import us
+
+import recidiviz
 
 
 def populate_file(template_path, target_path, subs):
@@ -60,13 +61,12 @@ def create_scraper_files(subs, vendor: Optional[str]):
         target = os.path.join(target_dir, subs['region'] + '.yaml')
         populate_file(template, target, subs)
 
-    regions_dir = os.path.join(os.path.dirname(__file__),
-                               'recidiviz/ingest/scrape/regions')
+    regions_dir = os.path.join(os.path.dirname(recidiviz.__file__),
+                               'ingest/scrape/regions')
     if not os.path.exists(regions_dir):
-        raise OSError("Couldn't find directory recidiviz/ingest/scrape/regions."
-                      " Run this script from the top level pulse-data "
-                      "directory.")
-    template_dir = os.path.join(regions_dir, 'scraper_template')
+        raise OSError("Couldn't find directory "
+                      "recidiviz/ingest/scrape/regions.")
+    template_dir = os.path.join(os.path.dirname(__file__), 'scraper_template')
     target_dir = os.path.join(regions_dir, subs['region'])
     if os.path.exists(target_dir):
         raise OSError('directory %s already exists' % target_dir)
@@ -92,21 +92,19 @@ def create_test_files(subs, vendor: Optional[str]):
         test_target = os.path.join(target_test_dir, test_target_file_name)
         populate_file(template, test_target, subs)
 
-    ingest_dir = os.path.join(os.path.dirname(__file__),
-                              'recidiviz/ingest/scrape/regions')
-    test_dir = os.path.join(os.path.dirname(__file__),
-                            'recidiviz/tests/ingest/scrape/regions')
+    ingest_dir = os.path.join(os.path.dirname(recidiviz.__file__),
+                              'ingest/scrape/regions')
+    test_dir = os.path.join(os.path.dirname(recidiviz.__file__),
+                            'tests/ingest/scrape/regions')
     if not os.path.exists(ingest_dir):
         raise OSError('Couldn\'t find directory '
-                      'recidiviz/tests/ingest/scrape/regions. Run '
-                      'this script from the top level pulse-data '
-                      'directory.')
+                      'recidiviz/tests/ingest/scrape/regions.')
     target_test_dir = os.path.join(test_dir, subs['region'])
     if os.path.exists(target_test_dir):
         raise OSError('directory %s already exists' % target_test_dir)
     os.mkdir(target_test_dir)
 
-    template_dir = os.path.join(ingest_dir, 'scraper_template')
+    template_dir = os.path.join(os.path.dirname(__file__), 'scraper_template')
     if vendor:
         template_dir = os.path.join(template_dir, vendor)
     test_template = os.path.join(template_dir, 'region_scraper_test.txt')
