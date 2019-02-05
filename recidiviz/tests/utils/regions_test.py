@@ -134,7 +134,8 @@ class TestRegions(TestCase):
     def test_get_scraper_module(self):
         region = with_manifest(regions.Region, 'us_ny')
         module = region.get_scraper_module()
-        assert module.__name__ == 'recidiviz.ingest.us_ny'
+        assert module.__name__ == \
+               'recidiviz.ingest.scrape.regions.us_ny'
 
     def test_get_scraper(self):
         region = with_manifest(regions.Region, 'us_ny')
@@ -143,7 +144,8 @@ class TestRegions(TestCase):
 
     def test_region_class(self):
         region = with_manifest(regions.Region, 'us_ny')
-        assert region.get_scraper_module().__name__ == 'recidiviz.ingest.us_ny'
+        assert region.get_scraper_module().__name__ == \
+               'recidiviz.ingest.scrape.regions.us_ny'
         assert not region.params
         assert region.queue == 'us-ny-scraper'
         assert region.scraper_class == 'us_ny_scraper'

@@ -49,8 +49,9 @@ def populate_file(template_path, target_path, subs):
 
 def create_scraper_files(subs, vendor: Optional[str]):
     """Creates __init__.py, region_name_scraper.py, and region_name.yaml files
-    in recidiviz/ingest/region_name
+    in recidiviz/ingest/scrape/regions/region_name
     """
+
     def create_scraper(template):
         target = os.path.join(target_dir, subs['region'] + '_scraper.py')
         populate_file(template, target, subs)
@@ -59,12 +60,14 @@ def create_scraper_files(subs, vendor: Optional[str]):
         target = os.path.join(target_dir, subs['region'] + '.yaml')
         populate_file(template, target, subs)
 
-    ingest_dir = os.path.join(os.path.dirname(__file__), 'recidiviz/ingest/')
-    if not os.path.exists(ingest_dir):
-        raise OSError('Couldn\'t find directory recidiviz/ingest. Run this ' +
-                      'script from the top level pulse-data directory.')
-    template_dir = os.path.join(ingest_dir, 'scraper_template')
-    target_dir = os.path.join(ingest_dir, subs['region'])
+    regions_dir = os.path.join(os.path.dirname(__file__),
+                               'recidiviz/ingest/scrape/regions')
+    if not os.path.exists(regions_dir):
+        raise OSError("Couldn't find directory recidiviz/ingest/scrape/regions."
+                      " Run this script from the top level pulse-data "
+                      "directory.")
+    template_dir = os.path.join(regions_dir, 'scraper_template')
+    target_dir = os.path.join(regions_dir, subs['region'])
     if os.path.exists(target_dir):
         raise OSError('directory %s already exists' % target_dir)
     os.mkdir(target_dir)
@@ -88,12 +91,15 @@ def create_test_files(subs, vendor: Optional[str]):
         test_target_file_name = subs['region'] + '_scraper_test.py'
         test_target = os.path.join(target_test_dir, test_target_file_name)
         populate_file(template, test_target, subs)
-    ingest_dir = os.path.join(os.path.dirname(__file__), 'recidiviz/ingest/')
+
+    ingest_dir = os.path.join(os.path.dirname(__file__),
+                              'recidiviz/ingest/scrape/regions')
     test_dir = os.path.join(os.path.dirname(__file__),
-                            'recidiviz/tests/ingest/')
+                            'recidiviz/tests/ingest/scrape/regions')
     if not os.path.exists(ingest_dir):
-        raise OSError('Couldn\'t find directory recidiviz/tests/ingest. Run ' +
-                      'this script from the top level pulse-data ' +
+        raise OSError('Couldn\'t find directory '
+                      'recidiviz/tests/ingest/scrape/regions. Run '
+                      'this script from the top level pulse-data '
                       'directory.')
     target_test_dir = os.path.join(test_dir, subs['region'])
     if os.path.exists(target_test_dir):

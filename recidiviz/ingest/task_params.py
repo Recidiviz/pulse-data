@@ -61,7 +61,7 @@ class Task:
     # will be sent automatically along with any supplied manually.
     cookies: Dict[str, str] = attr.ib(factory=dict)
     # Any post data to send in the request (forces a POST request)
-    post_data: Optional[Dict[str, Optional[str]]] = attr.ib(default=None)
+    post_data: Optional[Dict[str, Any]] = attr.ib(default=None)
     # Any json data to be sent in the request (forces a POST request)
     json: Optional[Dict[str, Any]] = attr.ib(default=None)
 
