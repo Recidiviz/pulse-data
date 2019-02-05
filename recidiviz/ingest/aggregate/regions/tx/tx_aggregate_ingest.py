@@ -100,6 +100,20 @@ def _parse_table(filename: str, report_date: datetime.date) -> pd.DataFrame:
         numeric_elements = df.apply(pd.to_numeric, errors='coerce').notnull()
         rows_containing_data = numeric_elements.any(axis='columns')
         df = df.loc[rows_containing_data]
+        # Next we finally break up some of the columns that were incorrectly
+        # concatenated.
+        for column in df.columns[1:]:
+            # By this point we should only have numeric data in the rows,
+            # if this happens it means some columns were concatenated and they
+            # must be split.  If the columns are concatenated, we need only
+            # check one of the rows for a space because they are all
+            # concatenated.
+            if ' ' in df[column].iloc[0]:
+                index_to_insert = df.columns.get_loc(column)
+                df_temp = pd.DataFrame(
+                    df.pop(column).str.split(n=1, expand=True))
+                df.insert(index_to_insert, str(column)+'_a', df_temp[0])
+                df.insert(index_to_insert+1, str(column) + '_b', df_temp[1])
         pages.append(df)
 
     # Drop last rows since it's the 'Totals' section
