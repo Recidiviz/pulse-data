@@ -691,3 +691,11 @@ regions:
     base_url: https://floyd-so-ga.zuercherportal.com
     scraper_package: us_ga_floyd
     timezone: America/New_York
+  us_ga_lumpkin:
+    agency_name: Lumpkin County Sheriff's Office
+    region_code: us_ga_lumpkin
+    agency_type: jail
+    queue: us-ga-lumpkin-scraper
+    base_url: https://lumpkin-so-ga.zuercherportal.com
+    scraper_package: us_ga_lumpkin
+    timezone: America/New_York
