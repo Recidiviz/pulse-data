@@ -34,10 +34,8 @@ class TestKyAggregateSiteScraper(TestCase):
         mockget.return_value = mockresponse
         mockresponse.text = REPORTS_HTML
         url1 = ('https://corrections.ky.gov/About/researchandstats/Documents/'
-                'Weekly%20Jail/2018/01-18-18.pdf')
-        url2 = ('https://corrections.ky.gov/about/researchandstats/documents/'
-                'weekly jail/2017/12-28-17.pdf')
-        expected_urls = {url1, url2}
+                'Weekly%20Jail/2018/08-18-18.pdf')
+        expected_urls = {url1}
 
         urls = ky_aggregate_site_scraper.get_urls_to_download()
         self.assertEqual(expected_urls, urls)

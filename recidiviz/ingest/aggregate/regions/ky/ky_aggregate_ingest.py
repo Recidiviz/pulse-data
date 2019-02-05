@@ -37,7 +37,7 @@ def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
     county_names = table.facility_name.map(_pretend_facility_is_county)
     table = fips.add_column_to_df(table, county_names, us.states.KY)
 
-    table['report_date'] = _parse_date(filename)
+    table['report_date'] = parse_date(filename)
     table['report_granularity'] = enum_strings.monthly_granularity
 
     return {
@@ -169,7 +169,7 @@ def _collapse_by_gender_rows(df: pd.DataFrame, gender: str) -> pd.DataFrame:
     return df.reset_index(drop=True)
 
 
-def _parse_date(filename: str) -> datetime.date:
+def parse_date(filename: str) -> datetime.date:
     """
     Parse the report_date from the filename since the PDF contents can't
     easily be parsed for the date.

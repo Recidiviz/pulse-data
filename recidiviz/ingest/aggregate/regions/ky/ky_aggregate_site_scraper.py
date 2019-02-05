@@ -16,13 +16,17 @@
 # =============================================================================
 
 """Scrapes the kentucky aggregate site and finds pdfs to download."""
+import datetime
 from typing import Set
 from lxml import html
 import requests
 
+from recidiviz.ingest.aggregate.regions.ky.ky_aggregate_ingest import parse_date
+
 STATE_AGGREGATE_URL = ('https://corrections.ky.gov/About/researchandstats/'
                        'Pages/WeeklyJail.aspx')
 BASE_URL = 'https://corrections.ky.gov{}'
+ACCEPTABLE_DATE = datetime.date(year=2018, month=8, day=9)
 
 
 def get_urls_to_download() -> Set[str]:
@@ -34,6 +38,10 @@ def get_urls_to_download() -> Set[str]:
     for link in links:
         if ('weekly jail' in link.lower() or 'weekly%20jail' in link.lower())\
                 and 'pdf' in link.lower():
-            url = BASE_URL.format(link)
-            aggregate_report_urls.add(url)
+            # Make sure we only take things after Aug 9th 2018 as the format
+            # changed before that.
+            d = parse_date(link)
+            if d >= ACCEPTABLE_DATE:
+                url = BASE_URL.format(link)
+                aggregate_report_urls.add(url)
     return aggregate_report_urls
