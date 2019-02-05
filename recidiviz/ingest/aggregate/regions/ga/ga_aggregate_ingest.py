@@ -98,7 +98,8 @@ def _parse_table(filename: str) -> pd.DataFrame:
         pandas_options={
             'names': column_names,
             'skiprows': _header_on_each_page,
-            'skipfooter': 1  # The last row is the grand totals
+            'skipfooter': 1,  # The last row is the grand totals
+            'engine': 'python'  # Only python engine supports 'skipfooter'
         })
 
     result = aggregate_ingest_utils.rename_columns_and_select(result, {

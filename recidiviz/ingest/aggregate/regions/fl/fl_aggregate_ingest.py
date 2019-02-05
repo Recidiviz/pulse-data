@@ -72,7 +72,8 @@ def _parse_county_table(filename: str) -> pd.DataFrame:
         pages=[4],
         pandas_options={
             'header': [0, 1],
-            'skipfooter': 1  # The last row is the total
+            'skipfooter': 1,  # The last row is the total
+            'engine': 'python'  # Only python engine supports 'skipfooter'
         })
     result = part1.append(part2, ignore_index=True)
 
@@ -115,7 +116,8 @@ def _parse_facility_table(filename: str) -> pd.DataFrame:
             'skiprows': [0, 1, 2],
             'usecols': [0, 2, 3, 4, 5],  # Column 1 contains no data
             'names': column_names,
-            'skipfooter': 2  # The last 2 rows are the totals
+            'skipfooter': 2,  # The last 2 rows are the totals
+            'engine': 'python'  # Only python engine supports 'skipfooter'
         })
     result = part1.append(part2, ignore_index=True)
 
