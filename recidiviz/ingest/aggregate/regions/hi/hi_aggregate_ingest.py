@@ -83,6 +83,8 @@ _FACILITY_ACRONYM_TO_FIPS = {
     'FEDERAL DET. CTR.': 15003,  # Honolulu
 }
 
+DATE_PARSE_ANCHOR_FILENAME = 'pop-reports-eom-'
+
 
 def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
     table = _parse_table(filename)
@@ -99,9 +101,14 @@ def _parse_date(filename: str) -> datetime.date:
     # PyPD2 can't extract text properly from hawaii, so we use the filename
     # instead.
     try:
-        prefix_to_remove = 'Pop-Reports-EOM-'
-        filename = filename.split('/')[-1]
-        date_str = filename.strip('.pdf').strip(prefix_to_remove)
+        filename_date = filename.lower()
+        if DATE_PARSE_ANCHOR_FILENAME in filename_date:
+            # The names can be a few formats, the most robust way is to take
+            # all of the text after the anchor.
+            # (eg. report Jan 2017.pdf)
+            start = filename_date.index(DATE_PARSE_ANCHOR_FILENAME) \
+                    + len(DATE_PARSE_ANCHOR_FILENAME)
+            date_str = filename_date[start:].strip('.pdf')
     except Exception as e:
         raise AggregateDateParsingError(str(e))
     return dateparser.parse(date_str).date()

@@ -16,11 +16,12 @@
 # =============================================================================
 
 """Scrapes the new york aggregate site and finds pdfs to download."""
-from typing import List
+from typing import Set
 
-STATE_AGGREGATE_URL = ''
+STATE_AGGREGATE_URL = ('https://www.criminaljustice.ny.gov/crimnet/ojsa/'
+                       'jail_population.pdf')
 
 
-# TODO #804: fill this in with logic to scrape and return the URLs.
-def get_urls_to_download() -> List[str]:
-    pass
+def get_urls_to_download() -> Set[str]:
+    # NY just has one years worth of data in one table.
+    return {STATE_AGGREGATE_URL}

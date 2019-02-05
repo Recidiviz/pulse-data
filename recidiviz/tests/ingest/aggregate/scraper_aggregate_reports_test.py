@@ -27,6 +27,7 @@ import gcsfs
 import pytz
 
 from recidiviz.ingest.aggregate import scrape_aggregate_reports
+from recidiviz.ingest.aggregate.regions.ny import ny_aggregate_site_scraper
 from recidiviz.ingest.aggregate.regions.tx import tx_aggregate_site_scraper
 from recidiviz.tests.ingest import fixtures
 from recidiviz.utils import metadata
@@ -98,6 +99,35 @@ class TestScraperAggregateReports(TestCase):
             os.path.join(self.historical_bucket, 'texas', EXISTING_PDF_NAME))
         self.assertEqual(mock_fs_return.put.called, False)
         self.assertEqual(mock_open.called, False)
+
+    @patch.object(metadata, 'project_id')
+    @patch.object(gcsfs, 'GCSFileSystem')
+    @patch.object(requests, 'get')
+    @patch.object(builtins, 'open')
+    @patch.object(ny_aggregate_site_scraper, 'get_urls_to_download')
+    def testExistsIsNyUpload(
+            self, mock_get_all_tx, mock_open, mock_get, mock_fs, mock_env):
+        upload_bucket = os.path.join(
+            self.upload_bucket, 'new_york', EXISTING_PDF_NAME)
+        temploc = os.path.join(tempfile.gettempdir(), EXISTING_PDF_NAME)
+        mock_env.return_value = TEST_ENV
+        # Make the info call return an older modified time than the server time.
+        mock_fs_return = Mock()
+        mock_fs.return_value = mock_fs_return
+        mock_fs_return.exists.return_value = True
+        mock_get_all_tx.return_value = {EXISTING_TEST_URL}
+        mock_get.side_effect = _MockGet
+
+        headers = {'X-Appengine-Cron': "test-cron"}
+        response = self.client.get(
+            '/scrape_state?state=new_york', headers=headers)
+        self.assertEqual(response.status_code, 200)
+
+        mock_fs.assert_called_with(project=TEST_ENV)
+        self.assertFalse(mock_fs_return.exists.called)
+        mock_fs_return.put.assert_called_with(temploc, upload_bucket)
+        mock_open.assert_called_with(temploc, 'wb')
+        mock_get.assert_called_with(EXISTING_TEST_URL)
 
     @patch.object(metadata, 'project_id')
     @patch.object(gcsfs, 'GCSFileSystem')
