@@ -37,8 +37,8 @@ from collections import deque
 from datetime import datetime
 from functools import partial
 
-from recidiviz.ingest import constants
-from recidiviz.ingest.task_params import QueueRequest
+from recidiviz.ingest.scrape import constants
+from recidiviz.ingest.scrape.task_params import QueueRequest
 from recidiviz.utils import regions
 
 

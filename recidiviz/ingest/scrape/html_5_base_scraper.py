@@ -27,9 +27,9 @@ from typing import List, Optional
 from lxml import html
 import html5lib
 
-from recidiviz.ingest.base_scraper import BaseScraper
+from recidiviz.ingest.scrape.base_scraper import BaseScraper
 from recidiviz.ingest.models.ingest_info import IngestInfo
-from recidiviz.ingest.task_params import ScrapedData, Task
+from recidiviz.ingest.scrape.task_params import ScrapedData, Task
 
 
 class Html5BaseScraper(BaseScraper):

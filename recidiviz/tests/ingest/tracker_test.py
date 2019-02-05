@@ -28,7 +28,8 @@ from google.cloud.pubsub_v1 import types
 from google.protobuf import timestamp_pb2  # pylint: disable=no-name-in-module
 from mock import call, patch
 
-from recidiviz.ingest import constants, docket, sessions, tracker
+from recidiviz.ingest import docket, sessions, tracker
+from recidiviz.ingest.scrape import constants
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 
 

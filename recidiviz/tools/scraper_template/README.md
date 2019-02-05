@@ -61,7 +61,7 @@ Note: Calling `create_scraper` with the `--vendor` option will generate a slight
 Writing the main scraper file
 =============================
 You will write most of the scraping logic in `<region_code>_scraper.py`. The
-scraper should inherit from [BaseScraper](../base_scraper.py) or a
+scraper should inherit from [BaseScraper](../scrape/base_scraper.py) or a
 [vendor scraper](../scrape/vendors) and must implement the following functions:
  - `__init__(self, region_name, mapping_filepath=None)`
  - `get_more_tasks(self, content, task: Task) -> List[Task]`
@@ -81,9 +81,9 @@ in the `Tasks` that are returned. A `Task` requires the following fields:
 * `endpoint`: The url endpoint of the next page to hit
 * `task_type`: Defines the type of action we will take on the next page
 
-By default this will cause a GET request against the given endpoint. Other fields, such as `post_data`, can be set in the `Task` to modify the requst that is sent. The user can set custom key/values that are useful to them in the `custom` field which will be passed along to the next tasks. See [`Task`](../task_params.py) for information about all of the fields.
+By default this will cause a GET request against the given endpoint. Other fields, such as `post_data`, can be set in the `Task` to modify the requst that is sent. The user can set custom key/values that are useful to them in the `custom` field which will be passed along to the next tasks. See [`Task`](../scrape/task_params.py) for information about all of the fields.
 
-The different types of tasks are found in the [Constants](../constants.py) file and they are:
+The different types of tasks are found in the [Constants](../scrape/constants.py) file and they are:
 * <strong>INITIAL</strong> - This is the first request that is made.
 * <strong>GET_MORE_TASKS</strong> - This indicates that the page has more navigation that needs to be done.  In this case, the function `get_more_tasks` is called and it is the job of the method to return a list of params that was extracted from that page.
 * <strong>SCRAPE_DATA</strong> - This indicates that the page has information on it that we care about and need to scrape.  In this case `populate_data` is called and it is the users job to walk the page and populate the `ingest_info` object.

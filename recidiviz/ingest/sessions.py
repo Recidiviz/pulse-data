@@ -24,7 +24,7 @@ from datetime import datetime
 
 from google.cloud import datastore
 
-from recidiviz.ingest import constants
+from recidiviz.ingest.scrape import constants
 from recidiviz.utils import environment
 
 _ds = None
