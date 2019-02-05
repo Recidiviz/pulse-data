@@ -22,7 +22,6 @@ import dateparser
 
 import pandas as pd
 import us
-from PyPDF2 import PdfFileReader
 import tabula
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
@@ -51,29 +50,17 @@ def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
 
 
 def _parse_date(filename: str) -> datetime.date:
-    with open(filename, 'rb') as f:
-        try:
-            pdf = PdfFileReader(f)
-            page = pdf.getPage(0)
-            text = page.extractText()
-            lines = text.split('\n')
-        except Exception as e:
-            AggregateDateParsingError(str(e))
-        for index, line in enumerate(lines):
-            if DATE_PARSE_ANCHOR in line:
-                # The date is on the next line if anchor is present on the line
-                return dateparser.parse(lines[index+1]).date()
-        # If this doesn't work, try scraping it from the url name
-        filename_date = filename.lower()
-        if DATE_PARSE_ANCHOR_FILENAME in filename_date:
-            # The names can be a few formats, the most robust way is to take
-            # all of the text after the anchor.
-            # (eg. report Jan 2017.pdf)
-            start = filename_date.index(DATE_PARSE_ANCHOR_FILENAME)\
-                    + len(DATE_PARSE_ANCHOR_FILENAME)
-            date_str = filename_date[start:].strip('.pdf')
-            return dateparser.parse(date_str).date().replace(day=1)
-        raise AggregateDateParsingError('Could not extract date')
+    # If this doesn't work, try scraping it from the url name
+    filename_date = filename.lower()
+    if DATE_PARSE_ANCHOR_FILENAME in filename_date:
+        # The names can be a few formats, the most robust way is to take
+        # all of the text after the anchor.
+        # (eg. report Jan 2017.pdf)
+        start = filename_date.index(DATE_PARSE_ANCHOR_FILENAME)\
+                + len(DATE_PARSE_ANCHOR_FILENAME)
+        date_str = filename_date[start:].strip('.pdf')
+        return dateparser.parse(date_str).date().replace(day=1)
+    raise AggregateDateParsingError('Could not extract date')
 
 
 def _parse_table(filename: str, report_date: datetime.date) -> pd.DataFrame:
