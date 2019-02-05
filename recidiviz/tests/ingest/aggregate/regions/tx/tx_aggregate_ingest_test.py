@@ -35,6 +35,7 @@ from recidiviz.tests.utils import fakes
 DATE_SCRAPED_AFTER_1996 = datetime.date(year=2017, month=12, day=1)
 DATE_SCRAPED_1996 = datetime.date(year=1996, month=6, day=1)
 DATE_SCRAPED_BEFORE_1996 = datetime.date(year=1994, month=3, day=1)
+DATE_SCRAPED_CONCAT = datetime.date(year=2003, month=10, day=1)
 # Cache the parsed pdf between tests since it's expensive to compute
 @pytest.fixture(scope="class")
 def parsed_pdf_after_1996(request):
@@ -53,10 +54,17 @@ def parsed_pdf_before_1996(request):
     request.cls.parsed_pdf_before_1996 = tx_aggregate_ingest.parse(
         fixtures.as_filepath('abbreviated pop rpt march 1994.pdf'))
 
+@pytest.fixture(scope="class")
+def parsed_pdf_concat(request):
+    request.cls.parsed_pdf_concat = tx_aggregate_ingest.parse(
+        fixtures.as_filepath(
+            'docs_abbreviatedpopreports_abbreviated pop rpt oct 2003.pdf'))
+
 
 @pytest.mark.usefixtures("parsed_pdf_after_1996")
 @pytest.mark.usefixtures("parsed_pdf_before_1996")
 @pytest.mark.usefixtures("parsed_pdf_1996")
+@pytest.mark.usefixtures("parsed_pdf_concat")
 class TestTxAggregateIngest(TestCase):
     """Test that tx_aggregate_ingest correctly parses the TX PDF."""
 
@@ -127,6 +135,72 @@ class TestTxAggregateIngest(TestCase):
         result = one(one(query.all()))
 
         expected_sum_available_beds = 20315
+        self.assertEqual(result, expected_sum_available_beds)
+
+    def testParse_ParsesHeadAndTail_Concat(self):
+        result = self.parsed_pdf_concat[TxCountyAggregate]
+
+        # Assert Head
+        expected_head = pd.DataFrame({
+            'facility_name': ['Anderson', 'Andrews'],
+            'pretrial_felons': [77, 15],
+            'convicted_felons': [12, 4],
+            'convicted_felons_sentenced_to_county_jail': [0, 2],
+            'parole_violators': [9, 0],
+            'parole_violators_with_new_charge': [13, 0],
+            'pretrial_misdemeanor': [13, 2],
+            'convicted_misdemeanor': [7, 4],
+            'bench_warrants': [0, 0],
+            'federal': [0, 0],
+            'pretrial_sjf': [0, 0],
+            'convicted_sjf_sentenced_to_county_jail': [0, 1],
+            'convicted_sjf_sentenced_to_state_jail': [1, 0],
+            'total_other': [0, 1],
+            'total_contract': [0, 0],
+            'total_population': [132, 29],
+            'total_capacity': [129, 50],
+            'available_beds': [0, 16],
+            'fips': [48001, 48003],
+            'report_date': 2 * [DATE_SCRAPED_CONCAT],
+            'report_granularity': 2 * [enum_strings.monthly_granularity]
+        })
+        assert_frame_equal(result.head(n=2), expected_head)
+
+        # Assert Tail
+        expected_tail = pd.DataFrame({
+            'facility_name': ['Zapata', 'Zavala'],
+            'pretrial_felons': [10, 12],
+            'convicted_felons': [3, 3],
+            'convicted_felons_sentenced_to_county_jail': [0, 0],
+            'parole_violators': [1, 0],
+            'parole_violators_with_new_charge': [1, 1],
+            'pretrial_misdemeanor': [14, 1],
+            'convicted_misdemeanor': [1, 0],
+            'bench_warrants': [0, 0],
+            'federal': [166, 44],
+            'pretrial_sjf': [4, 0],
+            'convicted_sjf_sentenced_to_county_jail': [0, 0],
+            'convicted_sjf_sentenced_to_state_jail': [1, 1],
+            'total_other': [0, 1],
+            'total_contract': [166, 44],
+            'total_population': [201, 63],
+            'total_capacity': [240, 66],
+            'available_beds': [15, 0],
+            'fips': [48505, 48507],
+            'report_date': 2 * [DATE_SCRAPED_CONCAT],
+            'report_granularity': 2 * [enum_strings.monthly_granularity]
+        }, index=range(262, 264))
+        assert_frame_equal(result.tail(n=2), expected_tail)
+
+    def testWrite_CalculatesSum_Concat(self):
+        for table, df in self.parsed_pdf_concat.items():
+            database.write_df(table, df)
+
+        # Assert
+        query = Session().query(func.sum(TxCountyAggregate.available_beds))
+        result = one(one(query.all()))
+
+        expected_sum_available_beds = 7044
         self.assertEqual(result, expected_sum_available_beds)
 
     def testParse_ParsesHeadAndTail_1996(self):
