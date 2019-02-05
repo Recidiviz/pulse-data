@@ -61,7 +61,7 @@ Writing the main scraper file
 =============================
 You will write most of the scraping logic in `<region_code>_scraper.py`. The
 scraper should inherit from [BaseScraper](../base_scraper.py) or a
-[vendor scraper](../vendors) and must implement the following functions:
+[vendor scraper](../scrape/vendors) and must implement the following functions:
  - `__init__(self, region_name, mapping_filepath=None)`
  - `get_more_tasks(self, content, task: Task) -> List[Task]`
  - `populate_data(self, content, task: Task, ingest_info: IngestInfo) -> Optional[IngestInfo]`
@@ -99,7 +99,7 @@ these scrapers:
  - Data about multiple people on a single page:
    [UsFlMartinScraper](https://github.com/Recidiviz/pulse-data/tree/master/recidiviz/ingest/us_fl_martin)
  - Multiple results pages with links to individual people:
-   [BrooksJeffreyScraper](../vendors/brooks_jeffrey/brooks_jeffrey_scraper.py)
+   [BrooksJeffreyScraper](../scrape/vendors/brooks_jeffrey/brooks_jeffrey_scraper.py)
  - Data about an individual person spread across multiple pages:
    [TODO(210): link to VT](https://github.com/Recidiviz/pulse-data/issues/210)
 

@@ -34,7 +34,14 @@ def as_string(region_directory, filename):
     Returns:
         The contents of the fixture file as a string
     """
+    subdir = 'scrape/regions'
+    if 'vendor' in region_directory:
+        subdir = 'scrape'
+    elif 'aggregate' in region_directory or 'extractor' in region_directory:
+        subdir = ''
+
     with open(os.path.join(os.path.dirname(__file__),
+                           subdir,
                            region_directory,
                            'fixtures',
                            filename)) as fixture_file:
