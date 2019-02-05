@@ -175,9 +175,9 @@ def parse_date(filename: str) -> datetime.date:
     Parse the report_date from the filename since the PDF contents can't
     easily be parsed for the date.
     """
-    filename = filename.split('/')[-1]
-    date_string = filename.strip('.pdf')
-    return dateparser.parse(date_string).date()
+    end = filename.index('.pdf')
+    start = end - 8
+    return dateparser.parse(filename[start:end]).date()
 
 
 def _pretend_facility_is_county(facility_name: str):

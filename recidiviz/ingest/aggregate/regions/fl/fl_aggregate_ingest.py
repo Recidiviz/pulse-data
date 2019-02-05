@@ -24,11 +24,9 @@ import pandas as pd
 import tabula
 import us
 from sqlalchemy.ext.declarative import DeclarativeMeta
-from PyPDF2 import PdfFileReader
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 from recidiviz.ingest.aggregate import aggregate_ingest_utils, fips
-from recidiviz.ingest.aggregate.errors import AggregateDateParsingError
 from recidiviz.persistence.database.schema import FlCountyAggregate, \
     FlFacilityAggregate
 
@@ -138,21 +136,10 @@ def _parse_facility_table(filename: str) -> pd.DataFrame:
 
 
 def _parse_date(filename: str) -> datetime.date:
-    with open(filename, 'rb') as file:
-        pdf = PdfFileReader(file)
-        text = pdf.getPage(0).extractText()
-
-        lines = iter(text.split('\n'))
-        for line in lines:
-            # We know the date always follows this line
-            if 'Average Inmate Population' not in line:
-                continue
-
-            date_string = next(lines)
-            parsed_date = dateparser.parse(date_string).date()
-            return aggregate_ingest_utils.on_last_day_of_month(parsed_date)
-
-    raise AggregateDateParsingError()
+    end = filename.index('.pdf')
+    start = end - 7
+    d = dateparser.parse(filename[start:end]).date()
+    return aggregate_ingest_utils.on_last_day_of_month(d)
 
 
 def _use_stale_adp(adp_str: str) -> str:
