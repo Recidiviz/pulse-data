@@ -22,10 +22,10 @@ import yaml
 
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest import ingest_utils
-from recidiviz.ingest import constants
+from recidiviz.ingest.scrape import constants
 from recidiviz.ingest.models import ingest_info
 from recidiviz.ingest.models.ingest_info_diff import diff_ingest_infos
-from recidiviz.ingest.task_params import Task
+from recidiviz.ingest.scrape.task_params import Task
 from recidiviz.persistence.converter import converter
 from recidiviz.persistence.validator import validate
 

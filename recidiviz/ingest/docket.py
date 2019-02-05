@@ -70,7 +70,7 @@ import logging
 from google.api_core import exceptions  # pylint: disable=no-name-in-module
 from google.cloud import pubsub
 
-from recidiviz.ingest import constants
+from recidiviz.ingest.scrape import constants
 from recidiviz.utils import environment, metadata, regions
 
 SNAPSHOT_BATCH_SIZE = 100

@@ -20,7 +20,7 @@
 
 import pytest
 
-from recidiviz.ingest import constants
+from recidiviz.ingest.scrape import constants
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 
 

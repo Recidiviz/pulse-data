@@ -19,7 +19,7 @@
 
 
 from werkzeug.datastructures import MultiDict
-from recidiviz.ingest import constants
+from recidiviz.ingest.scrape import constants
 from recidiviz.utils import params
 
 

@@ -22,11 +22,11 @@ import datetime
 import requests
 from mock import patch
 
-from recidiviz.ingest import constants
+from recidiviz.ingest.scrape import constants
 from recidiviz.ingest.models.scrape_key import ScrapeKey
-from recidiviz.ingest.scraper import Scraper
+from recidiviz.ingest.scrape.scraper import Scraper
 from recidiviz.ingest.sessions import ScrapeSession
-from recidiviz.ingest.task_params import QueueRequest, Task
+from recidiviz.ingest.scrape.task_params import QueueRequest, Task
 
 _DATETIME = datetime.datetime(2018, 12, 6)
 
@@ -53,7 +53,7 @@ class TestAbstractScraper:
 class TestStartScrape:
     """Tests for the Scraper.start_scrape method."""
 
-    @patch('recidiviz.ingest.scraper.datetime')
+    @patch('recidiviz.ingest.scrape.scraper.datetime')
     @patch("recidiviz.ingest.queues.create_task")
     @patch("recidiviz.ingest.tracker.iterate_docket_item")
     @patch("recidiviz.utils.regions.get_region_manifest")
@@ -93,7 +93,7 @@ class TestStartScrape:
             queue_name=queue_name,
             body=request_body)
 
-    @patch('recidiviz.ingest.scraper.datetime')
+    @patch('recidiviz.ingest.scrape.scraper.datetime')
     @patch("recidiviz.ingest.queues.create_task")
     @patch("recidiviz.ingest.tracker.iterate_docket_item")
     @patch("recidiviz.utils.regions.get_region_manifest")
@@ -238,7 +238,7 @@ class TestStopScraper:
 class TestResumeScrape:
     """Tests for the Scraper.resume_scrape method."""
 
-    @patch('recidiviz.ingest.scraper.datetime')
+    @patch('recidiviz.ingest.scrape.scraper.datetime')
     @patch("recidiviz.ingest.queues.create_task")
     @patch("recidiviz.ingest.sessions.get_recent_sessions")
     @patch("recidiviz.utils.regions.get_region_manifest")
@@ -319,7 +319,7 @@ class TestResumeScrape:
         mock_region.assert_called_with(region)
         mock_sessions.assert_called_with(ScrapeKey(region, scrape_type))
 
-    @patch('recidiviz.ingest.scraper.datetime')
+    @patch('recidiviz.ingest.scrape.scraper.datetime')
     @patch("recidiviz.ingest.queues.create_task")
     @patch("recidiviz.ingest.tracker.iterate_docket_item")
     @patch("recidiviz.utils.regions.get_region_manifest")
@@ -384,8 +384,8 @@ class TestResumeScrape:
 class TestFetchPage:
     """Tests for the Scraper.fetch_page method."""
 
-    @patch("recidiviz.ingest.scraper_utils.get_headers")
-    @patch("recidiviz.ingest.scraper_utils.get_proxies")
+    @patch("recidiviz.ingest.scrape.scraper_utils.get_headers")
+    @patch("recidiviz.ingest.scrape.scraper_utils.get_proxies")
     @patch("recidiviz.utils.regions.get_region_manifest")
     def test_fetch_page(self, mock_region, mock_proxies, mock_headers):
         """Tests that fetch_page returns the fetched data payload."""
@@ -415,8 +415,8 @@ class TestFetchPage:
         mock_headers.assert_called_with()
 
     @patch("requests.post")
-    @patch("recidiviz.ingest.scraper_utils.get_headers")
-    @patch("recidiviz.ingest.scraper_utils.get_proxies")
+    @patch("recidiviz.ingest.scrape.scraper_utils.get_headers")
+    @patch("recidiviz.ingest.scrape.scraper_utils.get_proxies")
     @patch("recidiviz.utils.regions.get_region_manifest")
     def test_fetch_page_post(self, mock_region, mock_proxies, mock_headers,
                              mock_requests):
@@ -452,8 +452,8 @@ class TestFetchPage:
             data=body, json=json_data)
 
     @patch("requests.get")
-    @patch("recidiviz.ingest.scraper_utils.get_headers")
-    @patch("recidiviz.ingest.scraper_utils.get_proxies")
+    @patch("recidiviz.ingest.scrape.scraper_utils.get_headers")
+    @patch("recidiviz.ingest.scrape.scraper_utils.get_proxies")
     @patch("recidiviz.utils.regions.get_region_manifest")
     def test_fetch_page_error(self, mock_region, mock_proxies, mock_headers,
                               mock_requests):
