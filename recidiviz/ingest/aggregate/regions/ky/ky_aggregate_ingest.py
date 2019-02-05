@@ -52,7 +52,8 @@ def _parse_table(filename: str) -> pd.DataFrame:
         pages='all',
         lattice=True,
         pandas_options={
-            'skipfooter': 5  # Last rows are totals
+            'skipfooter': 5,  # Last rows are totals
+            'engine': 'python'  # Only python engine supports 'skipfooter'
         })
 
     whole_df = _shift_headers(whole_df)
