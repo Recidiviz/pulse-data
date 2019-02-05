@@ -12,7 +12,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us_co_mesa - Mesa County, Colorado
@@ -24,7 +23,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us_mo_stone - Stone County, Missouri
@@ -36,7 +34,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us_mt_gallatin - Gallatin County, Montana
@@ -48,7 +45,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us_ny - New York (state)
@@ -60,7 +56,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us_pa_greene - Greene County, Pennsylvania
@@ -72,7 +67,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-pa-dauphin-scraper - Dauphin County, Pennsylvania
@@ -84,13 +78,7 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
-
-# Recidivism Calculation queue
-- name: recidivism-calculator-mr
-  mode: push
-  rate: 20/s
 
 # us-pa-scraper - Pennsylvania (state)
 - name: us-pa-scraper
@@ -101,7 +89,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us_nc_guilford - Guilford County, NC
@@ -113,9 +100,9 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
+    task_retry_limit: 5
 
-    # us_nc_guilford - Guilford County, NC
+# us_fl_hendry - Hendry County, Florida
 - name: us-fl-hendry-scraper
   mode: push
   rate: 5/m
@@ -124,7 +111,7 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
+    task_retry_limit: 5
 
 # us-fl-martin-scraper - Martin County, Florida
 - name: us-fl-martin-scraper
@@ -135,7 +122,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-fl-osceola - Osceola County, Florida
@@ -147,7 +133,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-vt-scraper -  County, Vermont
@@ -159,19 +144,17 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-fl-nassau-scraper - Nassau County County, Florida
 - name: us-fl-nassau-scraper
   mode: push
   rate: 5/m
-  bucket_size: 1
+  bucket_size: 2
   max_concurrent_requests: 3
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-tx-brown-scraper - Brown County, Texas
@@ -183,7 +166,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-nc-buncombe-scraper - Buncombe County, North Carolina
@@ -195,7 +177,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-nc-alamance-scraper - Alamance County, North Carolina
@@ -207,7 +188,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-ms-desoto-scraper - Desoto County, Mississippi
@@ -219,7 +199,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-fl-bradford-scraper - Bradford County, Florida
@@ -231,7 +210,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-fl-columbia-scraper - Columbia County, Florida
@@ -243,7 +221,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-tn-mcminn-scraper - McMinn County, Tennessee
@@ -255,7 +232,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-in-vigo-scraper - Vigo County, Indiana
@@ -267,7 +243,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-ga-berrien-scraper - Berrien County, Georgia
@@ -279,7 +254,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-ga-gwinnett-scraper - Gwinnett County, Georgia
@@ -291,7 +265,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-tx-cooke-scraper - Cooke County, Texas
@@ -303,7 +276,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-tx-cochran-scraper - Cochran County, Texas
@@ -315,7 +287,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-tx-hockley-scraper - Hockley County, Texas
@@ -327,7 +298,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-tx-hopkins-scraper - Hopkins County, Texas
@@ -339,7 +309,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-tx-liberty-scraper - Liberty County, Texas
@@ -351,7 +320,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-tx-red-river-scraper - Red River County, Texas
@@ -363,7 +331,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-tx-titus-scraper - Titus County, Texas
@@ -375,7 +342,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-tx-upshur-scraper - Upshur County, Texas
@@ -387,7 +353,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-tx-van-zandt-scraper - Van Zandt County, Texas
@@ -399,7 +364,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-tx-erath-scraper - Erath County, Texas
@@ -411,7 +375,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-tx-wilson-scraper - Wilson County, Texas
@@ -423,7 +386,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-tx-rusk-scraper - Rusk County, Texas
@@ -435,7 +397,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-tx-coleman-scraper - Coleman County, Texas
@@ -447,7 +408,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-tx-freestone-scraper - Freestone County, Texas
@@ -459,7 +419,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-tx-ochiltree-scraper - Ochiltree County, Texas
@@ -471,7 +430,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-tx-young-scraper - Young County, Texas
@@ -483,7 +441,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-ar-garland-scraper - Garland County, Arkansas
@@ -495,7 +452,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-al-autauga-scraper - Autauga County, Alabama
@@ -507,7 +463,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-tx-wichita-scraper - Wichita County, Texas
@@ -519,7 +474,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-al-cherokee-scraper - Cherokee County, Alabama
@@ -531,7 +485,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-al-dale-scraper - Dale County, Alabama
@@ -543,7 +496,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-al-dekalb-scraper - Dekalb County, Alabama
@@ -555,7 +507,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-al-fayette-scraper - Fayette County, Alabama
@@ -567,7 +518,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-al-franklin-scraper - Franklin County, Alabama
@@ -579,7 +529,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-al-jackson-scraper - Jackson County, Alabama
@@ -591,7 +540,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-al-marion-scraper - Marion County, Alabama
@@ -603,7 +551,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-al-pike-scraper - Pike County, Alabama
@@ -615,7 +562,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-ar-boone-scraper - Boone County, Arkansas
@@ -627,7 +573,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-ar-craighead-scraper - Craighead County, Arkansas
@@ -639,7 +584,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-ar-faulkner-scraper - Faulkner County, Arkansas
@@ -651,7 +595,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-ar-hempstead-scraper - Hempstead County, Arkansas
@@ -663,7 +606,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-ar-jefferson-scraper - Jefferson County, Arkansas
@@ -675,7 +617,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-ar-johnson-scraper - Johnson County, Arkansas
@@ -687,7 +628,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-ar-lonoke-scraper - Lonoke County, Arkansas
@@ -699,7 +639,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-ar-marion-scraper - Marion County, Arkansas
@@ -711,7 +650,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-ar-monroe-scraper - Monroe County, Arkansas
@@ -723,7 +661,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-ar-nevada-scraper - Nevada County, Arkansas
@@ -735,7 +672,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-ar-poinsett-scraper - Poinsett County, Arkansas
@@ -747,7 +683,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-ar-saline-scraper - Saline County, Arkansas
@@ -759,7 +694,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-ar-stone-scraper - Stone County, Arkansas
@@ -771,7 +705,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-ga-douglas-scraper - Douglas County, Georgia
@@ -783,7 +716,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-mo-barry-scraper - Barry County, Missouri
@@ -795,7 +727,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-mo-cape-girardeau-scraper - Cape Girardeau County, Missouri
@@ -807,7 +738,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-mo-johnson-scraper - Johnson County, Missouri
@@ -819,7 +749,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-mo-lawrence-scraper - Lawrence County, Missouri
@@ -831,7 +760,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-mo-livingston-scraper - Livingston County, Missouri
@@ -843,7 +771,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-mo-morgan-scraper - Morgan County, Missouri
@@ -855,7 +782,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-ok-rogers-scraper - Rogers County, Oklahoma
@@ -867,7 +793,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-in-jackson-scraper - Jackson County, Indiana
@@ -879,7 +804,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-in-scott-scraper - Scott County, Indiana
@@ -891,7 +815,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-ks-cherokee-scraper - Cherokee County, Kansas
@@ -903,7 +826,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-ks-jefferson-scraper - Jefferson County, Kansas
@@ -915,7 +837,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-ks-pratt-scraper - Pratt County, Kansas
@@ -927,7 +848,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-ms-clay-scraper - Clay County, Mississippi
@@ -939,7 +859,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-ms-kemper-scraper - Kemper County, Mississippi
@@ -951,7 +870,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-ms-tunica-scraper - Tunica County, Mississippi
@@ -963,7 +881,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-ga-floyd-scraper - Floyd County, Georgia
@@ -975,7 +892,6 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
 
 # us-ga-lumpkin-scraper - Lumpkin County, Georgia
@@ -987,5 +903,4 @@ queue:
   retry_parameters:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
-    task_age_limit: 3d
     task_retry_limit: 5
