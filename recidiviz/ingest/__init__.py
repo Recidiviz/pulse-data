@@ -57,6 +57,7 @@ import recidiviz.ingest.us_ga_berrien
 import recidiviz.ingest.us_ga_douglas
 import recidiviz.ingest.us_ga_floyd
 import recidiviz.ingest.us_ga_gwinnett
+import recidiviz.ingest.us_ga_lumpkin
 import recidiviz.ingest.us_in_jackson
 import recidiviz.ingest.us_in_scott
 import recidiviz.ingest.us_in_vigo
