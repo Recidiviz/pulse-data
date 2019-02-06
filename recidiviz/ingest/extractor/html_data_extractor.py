@@ -69,8 +69,9 @@ class HtmlDataExtractor(DataExtractor):
         """
         return not e.findall('.//th') and not e.findall('.//td')
 
-    def extract_and_populate_data(self, content: HtmlElement,
-                                  ingest_info: IngestInfo = None) -> IngestInfo:
+    def extract_and_populate_data(
+            self, content: HtmlElement,
+            ingest_info: IngestInfo = None) -> IngestInfo:
         """This function does all the work of taking the users yaml file
         and content and returning a populated data class.  This function
         iterates through every cell on the page and builds a model based on
@@ -151,7 +152,9 @@ class HtmlDataExtractor(DataExtractor):
     @staticmethod
     def _process_html(content: HtmlElement) -> None:
         """Cleans up the provided content."""
-        # Remove <script> elements
+        _remove_from_content(content, '//script')
+        _remove_from_content(content, '//comment()')
+
         for script in content.xpath('//script'):
             parent = script.getparent()
             if parent is not None:
@@ -185,9 +188,10 @@ class HtmlDataExtractor(DataExtractor):
             if match.tag == 'td' or match.tag == 'th':
                 continue
             # Ensure no individual words in |content| was split when matching.
-            remaining = ' '.join(text.split()).replace(key, '')
-            if not remaining or not remaining[0].isalpha():
-                self._key_element_to_cell(key, match)
+            if text:
+                remaining = ' '.join(text.split()).replace(key, '')
+                if not remaining or not remaining[0].isalpha():
+                    self._key_element_to_cell(key, match)
 
     def _css_key_to_cell(self, content: HtmlElement, css_key: str) -> None:
         matches = content.cssselect(css_key)
@@ -198,8 +202,12 @@ class HtmlDataExtractor(DataExtractor):
             match.tag = 'td'
             match.addprevious(key_cell)
 
-    def _get_text_from_element(self, element: HtmlElement) -> str:
-        return element.text if element.text else element.text_content()
+    def _get_text_from_element(self, element: HtmlElement) -> Optional[str]:
+        if element.text and element.text.strip():
+            return element.text.strip()
+        if element.text_content() and element.text_content().strip():
+            return element.text_content().strip()
+        return None
 
     def _key_element_to_cell(self, key: str, key_element: HtmlElement) -> bool:
         """Converts a |key_element| Element to a table cell and tries to modify
@@ -252,26 +260,9 @@ class HtmlDataExtractor(DataExtractor):
 
         # <foo>key : value</foo>
         # Create new td elements for the key and the value and insert them.
-        text = self._get_text_from_element(key_element).strip()
-        if text.startswith(key):
+        text = self._get_text_from_element(key_element)
+        if text and text.startswith(key):
             if self._insert_cells_from_text(key, text, key_element):
-                return True
-
-        # <foo><bar>key</bar></foo><baz>value</baz>
-        # Finds the oldest ancestor with the same text as the key, then sets
-        # the key element and the ancestor's next element to td cells,
-        # if a next element with text exists.
-        parent = key_element.getparent()
-        grand_parent = parent.getparent() if parent is not None else None
-        while grand_parent is not None and key_element.text == \
-                self._get_text_from_element(grand_parent):
-            grand_parent = grand_parent.getparent()
-        if parent is not None and key_element.text == \
-                self._get_text_from_element(parent):
-            next_cell = parent.getnext()
-            if next_cell is not None and next_cell.text:
-                key_element.tag = 'td'
-                next_cell.tag = 'td'
                 return True
 
         return False
@@ -432,3 +423,10 @@ class HtmlDataExtractor(DataExtractor):
         if self._element_contains_key_descendant(value_cell):
             return False
         return True
+
+
+def _remove_from_content(content, xpath: str) -> None:
+    for elem in content.xpath(xpath):
+        parent = elem.getparent()
+        if parent is not None:
+            parent.remove(elem)
