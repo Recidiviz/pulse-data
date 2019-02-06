@@ -5,6 +5,19 @@ Revises: 13c8052e2cf8
 Create Date: 2019-01-29 16:59:08.066919
 
 """
+
+# Hackity hack to get around the fact that alembic runs this file as a
+# top-level module rather than a child of the recidiviz module
+import sys
+import os
+module_path = os.path.abspath(__file__)
+# Walk up directories to reach main package
+while not module_path.split('/')[-1] == 'pulse-data':
+    if module_path == '/':
+        raise RuntimeError('Top-level recidiviz package not found')
+    module_path = os.path.dirname(module_path)
+sys.path.insert(0, module_path)
+
 from alembic import op
 from datetime import date
 import sqlalchemy as sa

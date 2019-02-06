@@ -1,6 +1,18 @@
 """Manages alembic and sqlalchemy environments."""
 
 import os
+
+# Hackity hack to get around the fact that alembic runs this file as a top-level
+# module rather than a child of the recidiviz module
+import sys
+module_path = os.path.abspath(__file__)
+# Walk up directories to reach main package
+while not module_path.split('/')[-1] == 'pulse-data':
+    if module_path == '/':
+        raise RuntimeError('Top-level recidiviz package not found')
+    module_path = os.path.dirname(module_path)
+sys.path.insert(0, module_path)
+
 from logging.config import fileConfig
 
 from sqlalchemy import create_engine
