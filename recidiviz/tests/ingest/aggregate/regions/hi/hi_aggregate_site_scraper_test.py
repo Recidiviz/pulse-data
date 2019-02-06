@@ -35,9 +35,7 @@ class TestHiAggregateSiteScraper(TestCase):
         mockresponse.text = REPORTS_HTML
         url1 = ('https://dps.hawaii.gov/wp-content/uploads/2019/01/'
                 'Pop-Reports-EOM-2018-12-31.pdf')
-        url2 = ('http://dps.hawaii.gov/wp-content/uploads/2016/01/'
-                'Pop-Reports-EOM-2014-12-31.pdf')
-        expected_urls = {url1, url2}
+        expected_urls = {url1}
 
         urls = hi_aggregate_site_scraper.get_urls_to_download()
         self.assertEqual(expected_urls, urls)
