@@ -106,4 +106,4 @@ import recidiviz.ingest.scrape.regions.us_tx_wilson
 import recidiviz.ingest.scrape.regions.us_tx_wichita
 import recidiviz.ingest.scrape.regions.us_tx_young
 import recidiviz.ingest.scrape.regions.us_vt
-import recidiviz.ingest.worker
+import recidiviz.ingest.scrape.worker

@@ -17,8 +17,7 @@
 
 """Tests for ingest/ingest_utils.py."""
 
-from recidiviz.ingest import ingest_utils
-from recidiviz.ingest.scrape import constants
+from recidiviz.ingest.scrape import constants, ingest_utils
 from recidiviz.ingest.models import ingest_info_pb2, ingest_info
 
 

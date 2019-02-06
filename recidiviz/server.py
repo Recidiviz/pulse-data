@@ -30,9 +30,9 @@ from opencensus.trace.ext.flask.flask_middleware import FlaskMiddleware
 from recidiviz.ingest.aggregate.scrape_aggregate_reports import\
     scrape_aggregate_reports_blueprint
 from recidiviz.cloud_functions.cloud_functions import cloud_functions_blueprint
-from recidiviz.ingest.infer_release import infer_release_blueprint
-from recidiviz.ingest.scraper_control import scraper_control
-from recidiviz.ingest.worker import worker
+from recidiviz.ingest.scrape.infer_release import infer_release_blueprint
+from recidiviz.ingest.scrape.scraper_control import scraper_control
+from recidiviz.ingest.scrape.worker import worker
 from recidiviz.persistence.actions import actions
 from recidiviz.tests.utils.populate_test_db import test_populator
 from recidiviz.utils import environment, metadata
