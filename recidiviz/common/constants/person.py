@@ -92,6 +92,7 @@ _RACE_MAP = {
     'W': Race.WHITE,
     'WHITE': Race.WHITE,
     'WHITE/EURP/ N.AFR/MID EAS': Race.WHITE,
+    'WHITE / EURP / N.AFR': Race.WHITE,
 }
 
 _ETHNICITY_MAP = {
