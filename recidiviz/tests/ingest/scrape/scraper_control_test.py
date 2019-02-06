@@ -20,8 +20,7 @@
 from flask import Flask
 from mock import call, patch
 
-from recidiviz.ingest import scraper_control
-from recidiviz.ingest.scrape import constants
+from recidiviz.ingest.scrape import constants, scraper_control
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 
 APP_ID = "recidiviz-worker-test"
@@ -40,9 +39,9 @@ class TestScraperStart:
 
     @patch("recidiviz.utils.regions.get_supported_region_codes")
     @patch("recidiviz.utils.regions.Region")
-    @patch("recidiviz.ingest.sessions.create_session")
-    @patch("recidiviz.ingest.tracker.purge_docket_and_session")
-    @patch("recidiviz.ingest.docket.load_target_list")
+    @patch("recidiviz.ingest.scrape.sessions.create_session")
+    @patch("recidiviz.ingest.scrape.tracker.purge_docket_and_session")
+    @patch("recidiviz.ingest.scrape.docket.load_target_list")
     def test_start(self, mock_docket, mock_tracker, mock_sessions, mock_region,
                    mock_supported):
         """Tests that the start operation chains together the correct calls."""
@@ -95,7 +94,7 @@ class TestScraperStop:
 
     @patch("recidiviz.utils.regions.get_supported_region_codes")
     @patch("recidiviz.utils.regions.Region")
-    @patch("recidiviz.ingest.sessions.end_session")
+    @patch("recidiviz.ingest.scrape.sessions.end_session")
     def test_stop(self, mock_sessions, mock_region, mock_supported):
         mock_sessions.return_value = None
         mock_region.return_value = FakeRegion(FakeScraper())
@@ -141,7 +140,7 @@ class TestScraperResume:
 
     @patch("recidiviz.utils.regions.get_supported_region_codes")
     @patch("recidiviz.utils.regions.Region")
-    @patch("recidiviz.ingest.sessions.create_session")
+    @patch("recidiviz.ingest.scrape.sessions.create_session")
     def test_resume(self, mock_sessions, mock_region, mock_supported):
         mock_sessions.return_value = None
         mock_region.return_value = FakeRegion(FakeScraper())
