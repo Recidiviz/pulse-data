@@ -482,19 +482,3 @@ def test_one_to_many():
     html_contents = html.fromstring('<td>Sentence Length</td><td>1 day</td>')
     info = extractor.extract_and_populate_data(html_contents)
     assert expected_info == info
-
-
-def test_nested_key():
-    """Tests a key that is nested relative to its value, i.e.
-    <foo><bar>key</bar></foo><baz>value</baz>"""
-    key_mapping_file = '../testdata/data_extractor/yaml/nested_keys.yaml'
-    key_mapping_file = os.path.join(os.path.dirname(__file__), key_mapping_file)
-    extractor = HtmlDataExtractor(key_mapping_file)
-
-    expected_info = IngestInfo()
-    expected_info.create_person().create_booking(booking_id='12345')
-
-    html_contents = html.fromstring(fixtures.as_string(
-        'testdata/data_extractor/html', 'nested_keys.html'))
-    info = extractor.extract_and_populate_data(html_contents)
-    assert expected_info == info
