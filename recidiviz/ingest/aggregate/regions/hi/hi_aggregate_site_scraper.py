@@ -16,11 +16,16 @@
 # =============================================================================
 
 """Scrapes the hawaii aggregate site and finds pdfs to download."""
+import datetime
 from typing import Set
 from lxml import html
 import requests
 
+from recidiviz.ingest.aggregate.regions.hi.hi_aggregate_ingest import\
+    parse_date
+
 STATE_AGGREGATE_URL = 'http://dps.hawaii.gov/about/divisions/corrections/'
+ACCEPTABLE_DATE = datetime.date(year=2017, month=8, day=31)
 
 
 def get_urls_to_download() -> Set[str]:
@@ -31,5 +36,7 @@ def get_urls_to_download() -> Set[str]:
     aggregate_report_urls = set()
     for link in links:
         if 'Pop-Reports-EOM' in link and link.endswith('.pdf'):
-            aggregate_report_urls.add(link)
+            d = parse_date(link)
+            if d >= ACCEPTABLE_DATE:
+                aggregate_report_urls.add(link)
     return aggregate_report_urls
