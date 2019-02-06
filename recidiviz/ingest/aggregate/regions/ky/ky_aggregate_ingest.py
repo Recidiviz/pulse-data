@@ -175,8 +175,12 @@ def parse_date(filename: str) -> datetime.date:
     Parse the report_date from the filename since the PDF contents can't
     easily be parsed for the date.
     """
-    end = filename.index('.pdf')
-    start = end - 8
+    if 'revised' in filename:
+        end = filename.index(' revised')
+        start = end - 9
+    else:
+        end = filename.index('.pdf')
+        start = end - 8
     return dateparser.parse(filename[start:end]).date()
 
 
