@@ -79,8 +79,16 @@ import recidiviz.ingest.scrape.regions.us_mo_morgan
 import recidiviz.ingest.scrape.regions.us_mo_stone
 import recidiviz.ingest.scrape.regions.us_nc_alamance
 import recidiviz.ingest.scrape.regions.us_nj_bergen
+import recidiviz.ingest.scrape.regions.us_nc_alamance
 import recidiviz.ingest.scrape.regions.us_nc_buncombe
+import recidiviz.ingest.scrape.regions.us_nc_cabarrus
+import recidiviz.ingest.scrape.regions.us_nc_cleveland
+import recidiviz.ingest.scrape.regions.us_nc_forsyth
 import recidiviz.ingest.scrape.regions.us_nc_guilford
+import recidiviz.ingest.scrape.regions.us_nc_lincoln
+import recidiviz.ingest.scrape.regions.us_nc_new_hanover
+import recidiviz.ingest.scrape.regions.us_nc_rowan
+import recidiviz.ingest.scrape.regions.us_nc_wake
 import recidiviz.ingest.scrape.regions.us_ny
 import recidiviz.ingest.scrape.regions.us_ok_rogers
 import recidiviz.ingest.scrape.regions.us_pa
