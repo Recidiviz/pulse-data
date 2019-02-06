@@ -24,7 +24,7 @@ import pytest
 import yaml
 
 import recidiviz
-from recidiviz.ingest import docket, sessions
+from recidiviz.ingest.scrape import sessions, docket
 from recidiviz.utils import secrets
 
 

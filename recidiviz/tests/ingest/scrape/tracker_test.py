@@ -28,16 +28,16 @@ from google.cloud.pubsub_v1 import types
 from google.protobuf import timestamp_pb2  # pylint: disable=no-name-in-module
 from mock import call, patch
 
-from recidiviz.ingest import docket, sessions, tracker
-from recidiviz.ingest.scrape import constants
+from recidiviz.ingest.scrape import constants, sessions, tracker, docket
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 
 
 class TestTracker:
     """Tests for the methods in the module."""
 
-    @patch('recidiviz.ingest.docket.get_new_docket_item')
-    @patch('recidiviz.ingest.sessions.add_docket_item_to_current_session')
+    @patch('recidiviz.ingest.scrape.docket.get_new_docket_item')
+    @patch('recidiviz.ingest.scrape.sessions'
+           '.add_docket_item_to_current_session')
     def test_iterate_docket_item(self, mock_session, mock_docket):
         mock_session.return_value = True
         mock_docket.return_value = create_pubsub_message(get_payload())
@@ -46,8 +46,9 @@ class TestTracker:
             ScrapeKey("us_ny", constants.ScrapeType.BACKGROUND))
         assert payload == get_payload()
 
-    @patch('recidiviz.ingest.docket.get_new_docket_item')
-    @patch('recidiviz.ingest.sessions.add_docket_item_to_current_session')
+    @patch('recidiviz.ingest.scrape.docket.get_new_docket_item')
+    @patch('recidiviz.ingest.scrape.sessions'
+           '.add_docket_item_to_current_session')
     def test_iterate_docket_item_no_open_session_to_update(
             self, mock_session, mock_docket):
         mock_session.return_value = False
@@ -57,7 +58,7 @@ class TestTracker:
             ScrapeKey("us_ny", constants.ScrapeType.BACKGROUND))
         assert not payload
 
-    @patch('recidiviz.ingest.docket.get_new_docket_item')
+    @patch('recidiviz.ingest.scrape.docket.get_new_docket_item')
     def test_iterate_docket_item_no_matching_items(self, mock_docket):
         mock_docket.return_value = None
 
@@ -65,9 +66,9 @@ class TestTracker:
             ScrapeKey("us_fl", constants.ScrapeType.BACKGROUND))
         assert not payload
 
-    @patch('recidiviz.ingest.docket.ack_docket_item')
-    @patch('recidiviz.ingest.sessions.remove_docket_item_from_session')
-    @patch('recidiviz.ingest.sessions.get_current_session')
+    @patch('recidiviz.ingest.scrape.docket.ack_docket_item')
+    @patch('recidiviz.ingest.scrape.sessions.remove_docket_item_from_session')
+    @patch('recidiviz.ingest.scrape.sessions.get_current_session')
     def test_remove_item_from_session_and_docket(
             self, mock_current, mock_remove, mock_ack):
         scrape_key = ScrapeKey("us_va", constants.ScrapeType.BACKGROUND)
@@ -79,9 +80,9 @@ class TestTracker:
 
         mock_ack.assert_called_with(scrape_key, 'a')
 
-    @patch('recidiviz.ingest.docket.ack_docket_item')
-    @patch('recidiviz.ingest.sessions.remove_docket_item_from_session')
-    @patch('recidiviz.ingest.sessions.get_current_session')
+    @patch('recidiviz.ingest.scrape.docket.ack_docket_item')
+    @patch('recidiviz.ingest.scrape.sessions.remove_docket_item_from_session')
+    @patch('recidiviz.ingest.scrape.sessions.get_current_session')
     def test_remove_item_from_session_and_docket_no_open_sessions(
             self, mock_current, mock_remove, mock_ack):
         scrape_key = ScrapeKey("us_va", constants.ScrapeType.BACKGROUND)
@@ -92,9 +93,10 @@ class TestTracker:
 
         mock_ack.assert_not_called()
 
-    @patch('recidiviz.ingest.docket.purge_query_docket')
-    @patch('recidiviz.ingest.sessions.remove_docket_item_from_session')
-    @patch('recidiviz.ingest.sessions.get_sessions_with_leased_docket_items')
+    @patch('recidiviz.ingest.scrape.docket.purge_query_docket')
+    @patch('recidiviz.ingest.scrape.sessions.remove_docket_item_from_session')
+    @patch('recidiviz.ingest.scrape.sessions'
+           '.get_sessions_with_leased_docket_items')
     def test_purge_docket_and_session(
             self, mock_sessions, mock_remove, mock_purge):
         scrape_key = ScrapeKey("us_va", constants.ScrapeType.BACKGROUND)

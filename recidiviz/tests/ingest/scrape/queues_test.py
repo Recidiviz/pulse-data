@@ -21,7 +21,7 @@ import json
 import unittest
 from mock import patch
 
-from recidiviz.ingest import queues
+from recidiviz.ingest.scrape import queues
 from recidiviz.utils import metadata
 
 

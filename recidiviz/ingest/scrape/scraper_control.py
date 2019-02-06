@@ -29,8 +29,7 @@ import time
 
 from flask import Blueprint, request
 
-from recidiviz.ingest import docket, sessions, tracker
-from recidiviz.ingest import ingest_utils
+from recidiviz.ingest.scrape import sessions, ingest_utils, tracker, docket
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.utils import regions
 from recidiviz.utils.auth import authenticate_request

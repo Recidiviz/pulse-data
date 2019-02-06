@@ -23,7 +23,7 @@ import logging
 from flask import Blueprint
 
 from recidiviz.common.constants.booking import CustodyStatus
-from recidiviz.ingest import sessions
+from recidiviz.ingest.scrape import sessions
 from recidiviz.utils.auth import authenticate_request
 from recidiviz.persistence import persistence
 from recidiviz.utils.regions import Region, RemovedFromWebsite, \

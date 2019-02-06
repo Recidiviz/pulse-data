@@ -23,8 +23,8 @@ from flask import Flask
 from mock import call, patch
 
 from recidiviz.common.constants.booking import CustodyStatus
-from recidiviz.ingest import infer_release
-from recidiviz.ingest.sessions import ScrapeSession
+from recidiviz.ingest.scrape import infer_release
+from recidiviz.ingest.scrape.sessions import ScrapeSession
 
 APP_ID = "recidiviz-infer-release-test"
 
@@ -75,7 +75,7 @@ class TestInferRelease(TestCase):
 
     @patch("recidiviz.persistence.persistence.infer_release_on_open_bookings")
     @patch("recidiviz.utils.regions.get_full_manifest")
-    @patch("recidiviz.ingest.sessions.get_most_recent_completed_session")
+    @patch("recidiviz.ingest.scrape.sessions.get_most_recent_completed_session")
     def test_infer_release(
             self, mock_get_most_recent_session, mock_full_manifest,
             mock_infer_release):

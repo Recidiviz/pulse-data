@@ -21,8 +21,7 @@
 import json
 import logging
 
-from recidiviz.ingest import docket
-from recidiviz.ingest import sessions
+from recidiviz.ingest.scrape import sessions, docket
 
 
 def iterate_docket_item(scrape_key, return_immediately=False):
