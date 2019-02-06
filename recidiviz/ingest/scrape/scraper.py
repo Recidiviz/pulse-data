@@ -26,11 +26,9 @@ from datetime import datetime
 
 import requests
 
-from recidiviz.ingest.scrape import scraper_utils, constants
-from recidiviz.ingest import sessions
+from recidiviz.ingest.scrape import (scraper_utils, constants, sessions,
+                                     tracker, queues)
 from recidiviz.ingest.models.scrape_key import ScrapeKey
-from recidiviz.ingest import queues
-from recidiviz.ingest import tracker
 from recidiviz.utils.regions import Region
 from recidiviz.ingest.scrape.task_params import Task, QueueRequest
 
@@ -55,8 +53,8 @@ class Scraper(metaclass=abc.ABCMeta):
         """
 
         self.region = Region(region_name)
-        self.fail_counter = (
-            self.get_region().region_code + "_next_page_fail_counter")
+        self.fail_counter = (self.get_region().region_code +
+                             "_next_page_fail_counter")
         self.scraper_work_url = '/scraper/work'
 
     def person_id_to_record_id(self, _person_id):

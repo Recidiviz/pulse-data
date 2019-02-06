@@ -25,10 +25,9 @@ import pytz
 from google.cloud import datastore
 from mock import patch
 
-from recidiviz.ingest import sessions
-from recidiviz.ingest.scrape import constants
+from recidiviz.ingest.scrape import constants, sessions
 from recidiviz.ingest.models.scrape_key import ScrapeKey
-from recidiviz.ingest.sessions import ScrapeSession
+from recidiviz.ingest.scrape.sessions import ScrapeSession
 
 fixed_now = datetime(2000, 1, 1)
 
@@ -44,7 +43,7 @@ class TestWriteSessions:
         sessions.clear_ds()
 
     @patch('google.cloud.datastore.Client')
-    @patch('recidiviz.ingest.sessions.datetime')
+    @patch('recidiviz.ingest.scrape.sessions.datetime')
     def test_create_session(self, mock_datetime, mock_client):
         mock_datetime.now.return_value = fixed_now
 
@@ -65,7 +64,7 @@ class TestWriteSessions:
 
     @patch('google.cloud.datastore.Query')
     @patch('google.cloud.datastore.Client')
-    @patch('recidiviz.ingest.sessions.datetime')
+    @patch('recidiviz.ingest.scrape.sessions.datetime')
     def test_create_session_with_existing(
             self, mock_datetime, mock_client, mock_query
     ):
@@ -96,7 +95,7 @@ class TestWriteSessions:
 
     @patch('google.cloud.datastore.Query')
     @patch('google.cloud.datastore.Client')
-    @patch('recidiviz.ingest.sessions.datetime')
+    @patch('recidiviz.ingest.scrape.sessions.datetime')
     def test_update_session(self, mock_datetime, mock_client, mock_query):
         mock_datetime.now.return_value = fixed_now
 
