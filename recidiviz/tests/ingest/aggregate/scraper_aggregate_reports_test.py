@@ -94,7 +94,7 @@ class TestScraperAggregateReports(TestCase):
             '/scrape_state?state=texas', headers=headers)
         self.assertEqual(response.status_code, 200)
 
-        mock_fs.assert_called_with(project=TEST_ENV)
+        mock_fs.assert_called_with(project=TEST_ENV, cache_timeout=-1)
         mock_fs_return.exists.assert_called_with(
             os.path.join(self.historical_bucket, 'texas', EXISTING_PDF_NAME))
         self.assertEqual(mock_fs_return.put.called, False)
@@ -123,7 +123,7 @@ class TestScraperAggregateReports(TestCase):
             '/scrape_state?state=new_york', headers=headers)
         self.assertEqual(response.status_code, 200)
 
-        mock_fs.assert_called_with(project=TEST_ENV)
+        mock_fs.assert_called_with(project=TEST_ENV, cache_timeout=-1)
         self.assertFalse(mock_fs_return.exists.called)
         mock_fs_return.put.assert_called_with(temploc, upload_bucket)
         mock_open.assert_called_with(temploc, 'wb')
@@ -152,7 +152,7 @@ class TestScraperAggregateReports(TestCase):
             '/scrape_state?state=texas', headers=headers)
         self.assertEqual(response.status_code, 200)
 
-        mock_fs.assert_called_with(project=TEST_ENV)
+        mock_fs.assert_called_with(project=TEST_ENV, cache_timeout=-1)
         mock_fs_return.exists.assert_called_with(
             os.path.join(self.historical_bucket, 'texas', EXISTING_PDF_NAME))
         mock_fs_return.put.assert_called_with(temploc, upload_bucket)
@@ -185,7 +185,7 @@ class TestScraperAggregateReports(TestCase):
             '/scrape_state?state=texas', headers=headers)
         self.assertEqual(response.status_code, 200)
 
-        mock_fs.assert_called_with(project=TEST_ENV)
+        mock_fs.assert_called_with(project=TEST_ENV, cache_timeout=-1)
         self.assertEqual(mock_fs.call_count, 1)
         expected_exists_calls = [
             call(os.path.join(
@@ -238,7 +238,7 @@ class TestScraperAggregateReports(TestCase):
             '/scrape_state?state=texas', headers=headers)
         self.assertEqual(response.status_code, 200)
 
-        mock_fs.assert_called_with(project=TEST_ENV)
+        mock_fs.assert_called_with(project=TEST_ENV, cache_timeout=-1)
         self.assertEqual(mock_fs.call_count, 1)
         expected_exists_calls = [
             call(historical_path1),

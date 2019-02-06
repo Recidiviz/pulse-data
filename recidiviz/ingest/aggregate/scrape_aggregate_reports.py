@@ -73,7 +73,7 @@ def scrape_aggregate_reports():
     gcp_project = metadata.project_id()
     historical_bucket = HISTORICAL_BUCKET.format(gcp_project)
     upload_bucket = UPLOAD_BUCKET.format(gcp_project)
-    fs = gcsfs.GCSFileSystem(project=gcp_project)
+    fs = gcsfs.GCSFileSystem(project=gcp_project, cache_timeout=-1)
     logging.info('Scraping all pdfs for %s', state)
 
     for url in urls:
