@@ -67,6 +67,7 @@ _FACILITY_ACRONYM_TO_NAME = {
     'RED ROCK CC, AZ': 'Red Rock Correctional Center, AZ',
     'SAGUARO CC, AZ': 'Saguaro Correctional Center, AZ',
     'FEDERAL DET. CTR.': 'Federal Detention Center, Honolulu',
+    'FEDERAL DET. CTR. 1': 'Federal Detention Center, Honolulu',
 }
 
 _FACILITY_ACRONYM_TO_FIPS = {
@@ -82,6 +83,7 @@ _FACILITY_ACRONYM_TO_FIPS = {
     'RED ROCK CC, AZ': 4021,  # Pinal
     'SAGUARO CC, AZ': 4021,  # Pinal
     'FEDERAL DET. CTR.': 15003,  # Honolulu
+    'FEDERAL DET. CTR. 1': 15003,  # Honolulu
 }
 
 DATE_PARSE_ANCHOR_FILENAME = 'pop-reports-eom-'
@@ -90,7 +92,7 @@ DATE_PARSE_ANCHOR_FILENAME = 'pop-reports-eom-'
 def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
     table = _parse_table(filename)
 
-    table['report_date'] = _parse_date(filename)
+    table['report_date'] = parse_date(filename)
     table['report_granularity'] = enum_strings.monthly_granularity
 
     return {
@@ -98,7 +100,7 @@ def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
     }
 
 
-def _parse_date(filename: str) -> datetime.date:
+def parse_date(filename: str) -> datetime.date:
     end = filename.index('.pdf')
     start = end - 10
     d = dateparser.parse(filename[start:end])
@@ -192,12 +194,13 @@ def _format_contracted_facilities(df: pd.DataFrame) -> pd.DataFrame:
     # The pdf leaves an empty cell when nobody exists for that section
     df = df.fillna(0)
 
-    # The last column is parsed but is always empty
-    df = df.drop(df.columns[-1], axis='columns')
-
     # Design/Operational Bed Capacity is never set for Contracted Facilities
     df.insert(1, 'design_bed_capacity', None)
     df.insert(2, 'operation_bed_capacity', None)
+
+    # The last column is sometimes empty
+    if len(df.columns) == len(_COLUMN_NAMES) + 1:
+        df = df.drop(df.columns[-1], axis='columns')
 
     # Since we can't parse the column_headers, just set them ourselves
     df.columns = _COLUMN_NAMES
