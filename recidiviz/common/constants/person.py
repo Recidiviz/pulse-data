@@ -89,6 +89,7 @@ _RACE_MAP = {
     'U': Race.EXTERNAL_UNKNOWN,
     'UNKNOWN': Race.EXTERNAL_UNKNOWN,
     'CAUCASIAN': Race.WHITE,
+    'MIDDLE EASTERN': Race.WHITE,
     'W': Race.WHITE,
     'WHITE': Race.WHITE,
     'WHITE/EURP/ N.AFR/MID EAS': Race.WHITE,
