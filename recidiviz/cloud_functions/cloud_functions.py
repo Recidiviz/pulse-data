@@ -72,7 +72,8 @@ def state_aggregate():
             'All of state, bucket, and filename must be provided')
     path = os.path.join(bucket, state, filename)
     parser = state_to_parser[state]
-    fs = gcsfs.GCSFileSystem(project=project_id)
+    # Don't use the gcsfs cache
+    fs = gcsfs.GCSFileSystem(project=project_id, cache_timeout=-1)
     logging.info('The path to download from is %s', path)
     bucket_path = os.path.join(bucket, state)
     logging.info('The files in the directory are:')
