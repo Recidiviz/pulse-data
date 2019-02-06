@@ -363,6 +363,14 @@ regions:
     base_url: https://apps.alamance-nc.com/p2c
     scraper_package: us_nc_alamance
     timezone: America/New_York
+  us_nc_cabarrus:
+    agency_name: Sheriff's Office of Cabarrus County
+    region_code: us_nc_cabarrus
+    agency_type: jail
+    queue: us-nc-cabarrus-scraper
+    base_url: http://onlineservices.cabarruscounty.us/p2c
+    scraper_package: us_nc_cabarrus
+    timezone: America/New_York
   us_ar_garland:
     agency_name: Garland County Sheriff Department
     region_code: us_ar_garland
@@ -698,4 +706,60 @@ regions:
     queue: us-ga-lumpkin-scraper
     base_url: https://lumpkin-so-ga.zuercherportal.com
     scraper_package: us_ga_lumpkin
+    timezone: America/New_York
+  us_nc_cleveland:
+    agency_name: Cleveland County Sheriff's Office
+    region_code: us_nc_cleveland
+    agency_type: jail
+    queue: us-nc-cleveland-scraper
+    base_url: http://74.218.167.200/p2c
+    scraper_package: us_nc_cleveland
+    timezone: America/New_York
+  us_nc_forsyth:
+    agency_name: Forsyth County Sheriff's Office
+    region_code: us_nc_forsyth
+    agency_type: jail
+    queue: us-nc-forsyth-scraper
+    base_url: https://p2c.fcso.us
+    scraper_package: us_nc_forsyth
+    timezone: America/New_York
+  us_nc_lincoln:
+    agency_name: Lincoln County Sheriff's Office
+    region_code: us_nc_lincoln
+    agency_type: jail
+    queue: us-nc-lincoln-scraper
+    base_url: http://www.lincolnsheriff.org/p2c
+    scraper_package: us_nc_lincoln
+    timezone: America/New_York
+  us_nc_new_hanover:
+    agency_name: New Hanover County Sheriff's Office
+    region_code: us_nc_new_hanover
+    agency_type: jail
+    queue: us-nc-new-hanover-scraper
+    base_url: http://p2c.nhcgov.com/p2c
+    scraper_package: us_nc_new_hanover
+    timezone: America/New_York
+  us_nc_rowan:
+    agency_name: Rowan County Sheriff's Office
+    region_code: us_nc_rowan
+    agency_type: jail
+    queue: us-nc-rowan-scraper
+    base_url: https://ossip2c.rowancountync.gov/p2c
+    scraper_package: us_nc_rowan
+    timezone: America/New_York
+  us_nc_union:
+    agency_name: Union County Sheriff's Office
+    region_code: us_nc_union
+    agency_type: jail
+    queue: us-nc-union-scraper
+    base_url: http://sheriff.co.union.nc.us
+    scraper_package: us_nc_union
+    timezone: America/New_York
+  us_nc_wake:
+    agency_name: Wake County Sheriff's Office
+    region_code: us_nc_wake
+    agency_type: jail
+    queue: us-nc-wake-scraper
+    base_url: http://p2c.wakeso.net
+    scraper_package: us_nc_wake
     timezone: America/New_York

@@ -509,7 +509,7 @@ def mock_region_manifest(region_code, queue_name):
         'names_file': 'names.txt',
         'params': {},
         'scraper_class': 'fake_scraper',
-        'scraper_package': 'recidiviz.tests.ingest',
+        'scraper_package': 'recidiviz.tests.ingest.scrape.',
         'timezone': 'America/Cleveland'
     }
 
