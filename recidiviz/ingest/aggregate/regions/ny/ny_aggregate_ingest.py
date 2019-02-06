@@ -18,9 +18,10 @@
 import datetime
 import itertools
 import locale
-from typing import Dict, Tuple, Union
+from typing import Dict, Generator
 
 import dateutil.parser
+import numpy
 import numpy as np
 import pandas as pd
 import tabula
@@ -62,17 +63,15 @@ def _parse_table(filename: str) -> pd.DataFrame:
     # Trim unnecessary tables
     all_dfs = all_dfs[3:-1]
 
-    split_dfs_in_tuples = [_split_page(df_for_page) for df_for_page in all_dfs]
-    split_dfs = list(itertools.chain.from_iterable(split_dfs_in_tuples))
+    dfs_split_by_page = [_split_page(df_for_page) for df_for_page in all_dfs]
+    all_split_dfs = list(itertools.chain.from_iterable(dfs_split_by_page))
 
-    results = [_format_df(df) for df in split_dfs]
+    results = [_format_df(df) for df in all_split_dfs]
     return pd.concat(results, ignore_index=True)
 
 
-def _split_page(df: pd.DataFrame) -> \
-        Union[Tuple[pd.DataFrame], Tuple[pd.DataFrame, pd.DataFrame]]:
-    """Each page contains 1 table which includes information for 2 facility.
-    Split out a new DataFrame for each of the 2 facilities."""
+def _split_page(df: pd.DataFrame) -> Generator[pd.DataFrame, None, None]:
+    """Create a new DataFrame for each facility listed on a page."""
     df = df.dropna(how='all')
 
     # bottom_df is parsed offset by one column and needs to be shifted
@@ -83,18 +82,12 @@ def _split_page(df: pd.DataFrame) -> \
     # Recombine top_df and bottom_df since it's not the correct table division
     aligned_df = pd.concat([top_df, bottom_df], ignore_index=True)
 
-    # The second table starts when a new facility is listed
+    # New table starts when a new facility is listed
     table_starts = np.where(aligned_df['FACILITY'].notnull())[0]
+    table_starts_and_end = numpy.append(table_starts, len(aligned_df))
 
-    # If only 1 'FACILITY' is found, then it's the last page with only 1 table
-    if len(table_starts) == 1:
-        return (aligned_df,)
-
-    first_start, second_start = np.where(aligned_df['FACILITY'].notnull())[0]
-    first_df = aligned_df[first_start:second_start]
-    second_df = aligned_df[second_start:]
-
-    return first_df, second_df
+    for start, end in aggregate_ingest_utils.pairwise(table_starts_and_end):
+        yield aligned_df[start:end]
 
 
 def _format_df(df: pd.DataFrame) -> pd.DataFrame:
