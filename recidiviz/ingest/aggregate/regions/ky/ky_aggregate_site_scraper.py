@@ -18,6 +18,7 @@
 """Scrapes the kentucky aggregate site and finds pdfs to download."""
 import datetime
 from typing import Set
+from urllib.parse import unquote
 from lxml import html
 import requests
 
@@ -36,8 +37,8 @@ def get_urls_to_download() -> Set[str]:
 
     aggregate_report_urls = set()
     for link in links:
-        if ('weekly jail' in link.lower() or 'weekly%20jail' in link.lower())\
-                and 'pdf' in link.lower():
+        link = unquote(link)
+        if 'weekly jail' in link.lower() and 'pdf' in link.lower():
             # Make sure we only take things after Aug 9th 2018 as the format
             # changed before that.
             d = parse_date(link)
