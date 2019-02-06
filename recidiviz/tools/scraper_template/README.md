@@ -31,6 +31,7 @@ Multi-word counties should be enclosed in quotes:
  - `url`: the initial url of the roster
  - `vendor`: create a vendor scraper. Available vendors:
    - `jailtracker`
+   - `superion`
 
 For example:
 `python3 -m recidiviz.tools.create_scraper lake indiana jail --timezone='America/Chicago'`

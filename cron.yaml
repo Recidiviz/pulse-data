@@ -1507,3 +1507,147 @@ cron:
       min_backoff_seconds: 2.5
       max_doublings: 5
       job_age_limit: 9h
+
+  - description: Start NC cabarrus background scraper every day at 9pm
+    url: /scraper/start?region=us_nc_cabarrus&scrape_type=background
+    schedule: every day 21:00
+    timezone: America/New_York
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
+
+  - description: Stop NC cabarrus scraper every day at 9am
+    url: /scraper/start?region=us_nc_cabarrus&scrape_type=background
+    schedule: every day 09:00
+    timezone: America/New_York
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
+
+  - description: Start NC cleveland background scraper every day at 9pm
+    url: /scraper/start?region=us_nc_cleveland&scrape_type=background
+    schedule: every day 21:00
+    timezone: America/New_York
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
+
+  - description: Stop NC cleveland scraper every day at 9am
+    url: /scraper/start?region=us_nc_cleveland&scrape_type=background
+    schedule: every day 09:00
+    timezone: America/New_York
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
+
+  - description: Start NC forsyth background scraper every day at 9pm
+    url: /scraper/start?region=us_nc_forsyth&scrape_type=background
+    schedule: every day 21:00
+    timezone: America/New_York
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
+
+  - description: Stop NC forsyth scraper every day at 9am
+    url: /scraper/start?region=us_nc_forsyth&scrape_type=background
+    schedule: every day 09:00
+    timezone: America/New_York
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
+
+  - description: Start NC lincoln background scraper every day at 9pm
+    url: /scraper/start?region=us_nc_lincoln&scrape_type=background
+    schedule: every day 21:00
+    timezone: America/New_York
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
+
+  - description: Stop NC lincoln scraper every day at 9am
+    url: /scraper/start?region=us_nc_lincoln&scrape_type=background
+    schedule: every day 09:00
+    timezone: America/New_York
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
+
+  - description: Start NC new_hanover background scraper every day at 9pm
+    url: /scraper/start?region=us_nc_new_hanover&scrape_type=background
+    schedule: every day 21:00
+    timezone: America/New_York
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
+
+  - description: Stop NC new_hanover scraper every day at 9am
+    url: /scraper/start?region=us_nc_new_hanover&scrape_type=background
+    schedule: every day 09:00
+    timezone: America/New_York
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
+
+  - description: Start NC rowan background scraper every day at 9pm
+    url: /scraper/start?region=us_nc_rowan&scrape_type=background
+    schedule: every day 21:00
+    timezone: America/New_York
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
+
+  - description: Stop NC rowan scraper every day at 9am
+    url: /scraper/start?region=us_nc_rowan&scrape_type=background
+    schedule: every day 09:00
+    timezone: America/New_York
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
+
+  - description: Start NC union background scraper every day at 9pm
+    url: /scraper/start?region=us_nc_union&scrape_type=background
+    schedule: every day 21:00
+    timezone: America/New_York
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
+
+  - description: Stop NC union scraper every day at 9am
+    url: /scraper/start?region=us_nc_union&scrape_type=background
+    schedule: every day 09:00
+    timezone: America/New_York
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
+
+  - description: Start NC wake background scraper every day at 9pm
+    url: /scraper/start?region=us_nc_wake&scrape_type=background
+    schedule: every day 21:00
+    timezone: America/New_York
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
+
+  - description: Stop NC wake scraper every day at 9am
+    url: /scraper/start?region=us_nc_wake&scrape_type=background
+    schedule: every day 09:00
+    timezone: America/New_York
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
