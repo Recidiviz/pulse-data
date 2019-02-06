@@ -117,8 +117,12 @@ class BaseScraperTest:
 
         Args:
             content: the content of the page to pass into get_more_tasks
-            params: the params to pass into get_more_tasks
-            expected_result: the result we expect from the call
+            expected_ingest_info: the ingest info expected to be returned from
+                `populate_data`. If `expected_ingest_info` is `None`, then
+                expects the return value of `populate_data` to be `None`.
+            expected_persist: the expected value of persist to be returned from
+                `populate_data`.
+            task: the task that is being processed, optional.
             info: an ingest_info to use if provided.
 
         Returns:
@@ -130,6 +134,10 @@ class BaseScraperTest:
                             endpoint='')
 
         result = self.scraper.populate_data(content, task, info)
+
+        if expected_ingest_info is None:
+            assert result == expected_ingest_info
+            return result
 
         # Attempt to convert the result to the ingest info proto,
         # validate the proto, and finally attempt to convert the proto into
