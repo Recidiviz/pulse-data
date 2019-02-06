@@ -19,6 +19,7 @@
 import logging
 from datetime import datetime
 from typing import List
+from more_itertools import one
 
 import pandas as pd
 from sqlalchemy.exc import IntegrityError
@@ -140,108 +141,49 @@ def _query_people_and_open_bookings(session, region):
         .filter(Booking.release_date.is_(None))
 
 
-def write_people(session, people):
+def write_people(session: Session, people: List[Person]) -> List[Person]:
+    """Converts the given |people| into schema.Person objects and persists their
+    corresponding record trees. Returns the list of persisted (Person) objects
     """
-    Converts the given |people| into schema.Person objects and adds the
-    schema objects into the given |session|.
-
-    Args:
-        session: (Session)
-        people:  List[entities.Person]
-    """
-    for person in people:
-        write_person(session, person)
+    return _save_record_trees(
+        session, [database_utils.convert_person(person) for person in people])
 
 
-def write_person(session, person):
+def write_person(session: Session, person: Person) -> Person:
     """Converts the given |person| into a schema.Person object and persists the
-    record tree rooted at that |person|.
-
-    Args:
-        session: (Session)
-        person:  entities.Person
-
-    Returns:
-        persisted Person schema object
+    record tree rooted at that |person|. Returns the persisted (Person)
     """
-    return _save_record_tree(session, database_utils.convert_person(person))
+    persisted_people = _save_record_trees(
+        session, [database_utils.convert_person(person)])
+    # persisted_people will only contain the single person passed in
+    return one(persisted_people)
 
 
-def _save_record_tree(session, person):
-    """Persists the record tree rooted at |person|.
-
-    Args:
-        session: (Session)
-        person: Person schema object
-
-    Returns:
-        persisted Person schema object
+def _save_record_trees(session: Session,
+                       root_people: List[Person]) -> List[Person]:
+    """Persists all record trees rooted at |root_people|. Also performs any
+    historical snapshot updates required for any entities in any of these
+    record trees. Returns the list of persisted (Person) objects
     """
 
-    logging.info('Starting merge and flush for record tree')
-
-    # Merge includes all related entities, so this persists the master record
-    # tree
-    person = session.merge(person)
-
-    logging.info('Merge complete')
-
-    # Flush ensures all master entities, including newly created ones, have
-    # primary keys set before creating historical snapshots
+    # Merge is recursive for all related entities, so this persists all master
+    # entities in all record trees
+    #
+    # Merge and flush is required to ensure all master entities, including
+    # newly created ones, have primary keys set before performing historical
+    # snapshot operations
+    root_people = [session.merge(root_person) for root_person in root_people]
     session.flush()
 
-    logging.info('Flush complete for person: %s', person.person_id)
-
     # All historical snapshot changes should be given the same timestamp
+
+    # TODO: replace with scraper_start_time
     snapshot_time = datetime.now()
 
-    # Traverse all relationships on the record tree and save historical
-    # snapshots where needed
-    #
-    # Some entities in the record tree can be reached by more than one
-    # relationship path, so we need to track which ones have already been
-    # processed
-    #
-    # As the number of entities in a given record tree is expected to be small,
-    # we use lists here for ease of readability
-    logging.info(
-        'Starting record tree traversal for person: %s',
-        person.person_id)
+    update_snapshots.update_historical_snapshots(
+        session, root_people, snapshot_time)
 
-    unprocessed = [person]
-    processed = []
-    while unprocessed:
-        entity = unprocessed.pop()
-
-        update_snapshots.update_historical_snapshots(
-            session, entity, snapshot_time)
-        processed.append(entity)
-
-        unprocessed.extend(
-            _get_unexplored_related_entities(entity, processed, unprocessed))
-
-    logging.info(
-        'Record tree traversal finished for person: %s',
-        person.person_id)
-
-    return person
-
-
-def _get_unexplored_related_entities(entity, processed, unprocessed):
-    unexplored = []
-
-    for relationship_name in entity.get_relationship_property_names():
-        related = getattr(entity, relationship_name)
-
-        # Relationship can return either a list or a single item
-        if isinstance(related, list):
-            unexplored.extend(related)
-        elif related is not None:
-            unexplored.append(related)
-
-    return [entity for entity in unexplored
-            if entity not in processed
-            and entity not in unprocessed]
+    return root_people
 
 
 def write_df(table: DeclarativeMeta, df: pd.DataFrame) -> None:
