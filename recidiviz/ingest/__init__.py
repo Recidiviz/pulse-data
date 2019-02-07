@@ -51,6 +51,7 @@ import recidiviz.ingest.scrape.regions.us_ar_st_francis
 import recidiviz.ingest.scrape.regions.us_ar_stone
 import recidiviz.ingest.scrape.regions.us_ar_van_buren
 import recidiviz.ingest.scrape.regions.us_co_mesa
+import recidiviz.ingest.scrape.regions.us_fl_alachua
 import recidiviz.ingest.scrape.regions.us_fl_bradford
 import recidiviz.ingest.scrape.regions.us_fl_columbia
 import recidiviz.ingest.scrape.regions.us_fl_hendry

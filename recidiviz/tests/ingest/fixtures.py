@@ -16,10 +16,13 @@
 # =============================================================================
 
 """Utilities for working with fixture data in ingest unit testing."""
+
+import os
 import inspect
 import json
-import os
-
+import xml
+import html5lib
+from lxml import html
 
 def as_string(region_directory, filename):
     """Returns the contents of the given fixture file as a string.
@@ -80,3 +83,10 @@ def as_filepath(filename: str, subdir: str = 'fixtures') -> str:
 
     return os.path.abspath(
         os.path.join(caller_filepath, '..', subdir, filename))
+
+
+def as_html5(region_directory, filename):
+    content_string = as_string(region_directory, filename)
+    html5_etree = html5lib.parse(content_string)
+    html5_string = xml.etree.ElementTree.tostring(html5_etree)
+    return html.fromstring(html5_string)
