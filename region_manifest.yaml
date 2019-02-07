@@ -155,6 +155,14 @@ regions:
     base_url: http://hcso.online
     scraper_package: us_fl_hendry
     timezone: America/New_York
+  us_fl_alachua:
+    agency_name: Alachua County Sheriffs Office
+    region_code: us_fl_alachua
+    agency_type: $agency_type
+    queue: us-fl-alachua-scraper
+    base_url: http://oldweb.circuit8.org/inmatelist.php
+    scraper_package: us_fl_alachua
+    timezone: America/Florida
   us_in_vigo:
     agency_name: Vigo County Sheriff’s Office
     region_code: us_in_vigo
