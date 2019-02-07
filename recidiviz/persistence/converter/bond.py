@@ -32,17 +32,21 @@ def convert(proto, metadata: IngestMetadata) -> entities.Bond:
         converter_utils.parse_bond_amount_and_check_for_type_and_status_info,
         'amount',
         proto,
-        default=(None, None, BondStatus.UNKNOWN_FOUND_IN_SOURCE))
-    # |inferred_bond_type| defaults to CASH unless the bond amount contains
-    # information about the type (i.e. NO_BOND or BOND_DENIED)
-    new.bond_type = fn(BondType.parse, 'bond_type', proto,
-                       metadata.enum_overrides, default=inferred_bond_type)
+        default=(None, None, None))
+    # If there is a bond amount we infer the bond type is CASH unless the bond
+    # amount contains information about the type (i.e. NO_BOND or BOND_DENIED).
+    # If there is not a bond amount, the bond type defaults to None.
+    new.bond_type = fn(
+        BondType.parse, 'bond_type', proto, metadata.enum_overrides,
+        default=inferred_bond_type or None)
     new.bond_type_raw_text = fn(normalize, 'bond_type', proto)
 
-    # |inferred_bond_status| defaults to UNKNOWN_FOUND_IN_SOURCE unless the bond
-    # amount contains information about the status (i.e. BOND_DENIED)
-    new.status = fn(BondStatus.parse, 'status', proto,
-                    metadata.enum_overrides, default=inferred_status)
+    # The bond status is set to UNKNOWN_FOUND_IN_SOURCE unless a different bond
+    # status is provided or the bond amount contains information about the
+    # status (i.e. BOND_DENIED).
+    new.status = fn(
+        BondStatus.parse, 'status', proto, metadata.enum_overrides,
+        default=inferred_status or BondStatus.UNKNOWN_FOUND_IN_SOURCE)
     new.status_raw_text = fn(normalize, 'status', proto)
 
     # TODO(745): convert once field exists on proto
