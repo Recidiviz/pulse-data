@@ -55,7 +55,7 @@ class Person(Entity, BuildableAttr):
     gender_raw_text: Optional[str] = attr.ib()
     race: Optional[Race] = attr.ib()
     race_raw_text: Optional[str] = attr.ib()
-    region: Optional[str] = attr.ib()
+    region: str = attr.ib()  # non-nullable
     ethnicity: Optional[Ethnicity] = attr.ib()
     ethnicity_raw_text: Optional[str] = attr.ib()
     place_of_residence: Optional[str] = attr.ib()
@@ -75,12 +75,12 @@ class Booking(Entity, BuildableAttr):
     projected_release_date: Optional[datetime.date] = attr.ib()
     release_reason: Optional[ReleaseReason] = attr.ib()
     release_reason_raw_text: Optional[str] = attr.ib()
-    custody_status: Optional[CustodyStatus] = attr.ib()
+    custody_status: CustodyStatus = attr.ib()  # non-nullable
     custody_status_raw_text: Optional[str] = attr.ib()
     facility: Optional[str] = attr.ib()
     classification: Optional[Classification] = attr.ib()
     classification_raw_text: Optional[str] = attr.ib()
-    last_seen_time: datetime.datetime = attr.ib()
+    last_seen_time: datetime.datetime = attr.ib()  # non-nullable
 
     booking_id: Optional[int] = attr.ib(default=None)
     holds: List['Hold'] = attr.ib(factory=list)
@@ -112,7 +112,7 @@ class Charge(Entity, BuildableAttr):
     level: Optional[str] = attr.ib()
     fee_dollars: Optional[int] = attr.ib()
     charging_entity: Optional[str] = attr.ib()
-    status: Optional[ChargeStatus] = attr.ib()
+    status: ChargeStatus = attr.ib()  # non-nullable
     status_raw_text: Optional[str] = attr.ib()
     court_type: Optional[CourtType] = attr.ib()
     court_type_raw_text: Optional[str] = attr.ib()
@@ -129,7 +129,7 @@ class Charge(Entity, BuildableAttr):
 @attr.s
 class Hold(Entity, BuildableAttr):
     jurisdiction_name: Optional[str] = attr.ib()
-    status: Optional[HoldStatus] = attr.ib()
+    status: HoldStatus = attr.ib()  # non-nullable
     status_raw_text: Optional[str] = attr.ib()
 
     hold_id: Optional[int] = attr.ib(default=None)
@@ -140,7 +140,7 @@ class Bond(Entity, BuildableAttr):
     amount_dollars: Optional[int] = attr.ib()
     bond_type: Optional[BondType] = attr.ib()
     bond_type_raw_text: Optional[str] = attr.ib()
-    status: Optional[BondStatus] = attr.ib()
+    status: BondStatus = attr.ib()  # non-nullable
     status_raw_text: Optional[str] = attr.ib()
     bond_agent: Optional[str] = attr.ib()
 
@@ -150,7 +150,7 @@ class Bond(Entity, BuildableAttr):
 @attr.s
 class Sentence(Entity, BuildableAttr):
     sentencing_region: Optional[str] = attr.ib()
-    status: Optional[SentenceStatus] = attr.ib()
+    status: SentenceStatus = attr.ib()  # non-nullable
     status_raw_text: Optional[str] = attr.ib()
     min_length_days: Optional[int] = attr.ib()
     max_length_days: Optional[int] = attr.ib()
