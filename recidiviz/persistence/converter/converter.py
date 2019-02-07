@@ -18,6 +18,8 @@
 from copy import deepcopy
 from typing import List
 
+import more_itertools
+
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.persistence import entities
 from recidiviz.persistence.converter import arrest, sentence, \
@@ -77,9 +79,11 @@ class _Converter:
             fn(lambda i: arrest.convert(self.arrests[i]),
                'arrest_id', ingest_booking)
 
-        booking_builder.holds = [hold.convert(self.holds[hold_id],
-                                              self.metadata)
-                                 for hold_id in ingest_booking.hold_ids]
+        converted_holds = [
+            hold.convert(self.holds[hold_id], self.metadata) for hold_id in
+            ingest_booking.hold_ids]
+        booking_builder.holds = list(
+            more_itertools.unique_everseen(converted_holds))
 
         ingest_charges = [self.charges[c] for c in ingest_booking.charge_ids]
         charges = self._convert_charges(ingest_charges)
@@ -130,8 +134,8 @@ class _Converter:
         return charge_builder.build()
 
 
-def _charges_pointing_to_total_bond(bond_amount, bond_type, bond_status,
-                                    charges):
+def _charges_pointing_to_total_bond(
+        bond_amount, bond_type, bond_status, charges):
     """Infers a bond from the total_bond field and creates a copy of all charges
     updated to point to the inferred bond. If no charges exist, then also infer
     a charge."""
