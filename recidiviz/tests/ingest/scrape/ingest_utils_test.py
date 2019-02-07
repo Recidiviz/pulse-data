@@ -22,40 +22,18 @@ from recidiviz.ingest.models import ingest_info_pb2, ingest_info
 
 
 def test_validate_regions_one_ok():
-    assert ingest_utils.validate_regions(["us_ny"]) == ["us_ny"]
+    assert ingest_utils.validate_regions(['us_ny']) == ['us_ny']
 
 
 def test_validate_regions_one_all():
-    assert set(ingest_utils.validate_regions(["all"])) == {
-        'us_al_autauga',
-        'us_al_cherokee',
-        'us_al_dale',
-        'us_al_dekalb',
-        'us_al_fayette',
-        'us_al_franklin',
-        'us_al_jackson',
-        'us_al_marion',
-        'us_al_pike',
-        'us_ar_boone',
-        'us_ar_craighead',
-        'us_ar_faulkner',
-        "us_ar_garland",
-        'us_ar_hempstead',
-        'us_ar_jefferson',
-        'us_ar_johnson',
-        'us_ar_lonoke',
-        'us_ar_marion',
-        'us_ar_monroe',
-        'us_ar_nevada',
-        'us_ar_poinsett',
-        'us_ar_saline',
-        'us_ar_stone',
+    assert set(ingest_utils.validate_regions(['all'])) == {
         "us_ar_van_buren",
         "us_co_mesa",
         "us_fl_bradford",
         "us_fl_columbia",
         "us_fl_hendry",
         "us_fl_martin",
+        "us_fl_nassau",
         "us_fl_osceola",
         "us_ga_berrien",
         "us_ga_douglas",
@@ -80,18 +58,9 @@ def test_validate_regions_one_all():
         "us_ms_kemper",
         "us_ms_tunica",
         "us_mt_gallatin",
-        "us_fl_nassau",
         "us_nc_alamance",
         "us_nc_buncombe",
-        "us_nc_cabarrus",
-        "us_nc_cleveland",
-        "us_nc_forsyth",
         "us_nc_guilford",
-        "us_nc_lincoln",
-        "us_nc_new_hanover",
-        "us_nc_rowan",
-        "us_nc_union",
-        "us_nc_wake",
         "us_nj_bergen",
         "us_ny",
         "us_ok_rogers",
@@ -114,57 +83,71 @@ def test_validate_regions_one_all():
         "us_tx_titus",
         "us_tx_upshur",
         "us_tx_van_zandt",
-        "us_tx_wilson",
         "us_tx_wichita",
+        "us_tx_wilson",
         "us_tx_young",
         "us_vt",
+        'us_al_autauga',
+        'us_al_cherokee',
+        'us_al_dale',
+        'us_al_dekalb',
+        'us_al_fayette',
+        'us_al_franklin',
+        'us_al_jackson',
+        'us_al_marion',
+        'us_al_pike',
+        'us_ar_baxter',
+        'us_ar_boone',
+        'us_ar_columbia',
+        'us_ar_craighead',
+        'us_ar_cross',
+        'us_ar_faulkner',
+        'us_ar_garland',
+        'us_ar_hempstead',
+        'us_ar_jefferson',
+        'us_ar_johnson',
+        'us_ar_lonoke',
+        'us_ar_marion',
+        'us_ar_monroe',
+        'us_ar_nevada',
+        'us_ar_poinsett',
+        'us_ar_saline',
+        'us_ar_st_francis',
+        'us_ar_stone',
+        'us_nc_cabarrus',
+        'us_nc_cleveland',
+        'us_nc_forsyth',
+        'us_nc_lincoln',
+        'us_nc_new_hanover',
+        'us_nc_rowan',
+        'us_nc_union',
+        'us_nc_wake',
+        'us_tx_tom_green',
     }
 
 
 def test_validate_regions_one_invalid():
-    assert not ingest_utils.validate_regions(["ca_bc"])
+    assert not ingest_utils.validate_regions(['ca_bc'])
 
 
 def test_validate_regions_multiple_ok():
-    assert ingest_utils.validate_regions(["us_pa", "us_ny"]) == ["us_pa",
-                                                                 "us_ny"]
+    assert ingest_utils.validate_regions(['us_pa', 'us_ny']) == ['us_pa',
+                                                                 'us_ny']
 
 
 def test_validate_regions_multiple_invalid():
-    assert not ingest_utils.validate_regions(["us_pa", "invalid"])
+    assert not ingest_utils.validate_regions(['us_pa', 'invalid'])
 
 
 def test_validate_regions_multiple_all():
-    assert set(ingest_utils.validate_regions(["us_pa", "all"])) == {
-        'us_al_autauga',
-        'us_al_cherokee',
-        'us_al_dale',
-        'us_al_dekalb',
-        'us_al_fayette',
-        'us_al_franklin',
-        'us_al_jackson',
-        'us_al_marion',
-        'us_al_pike',
-        'us_ar_boone',
-        'us_ar_craighead',
-        'us_ar_faulkner',
-        "us_ar_garland",
-        'us_ar_hempstead',
-        'us_ar_jefferson',
-        'us_ar_johnson',
-        'us_ar_lonoke',
-        'us_ar_marion',
-        'us_ar_monroe',
-        'us_ar_nevada',
-        'us_ar_poinsett',
-        'us_ar_saline',
-        'us_ar_stone',
+    assert set(ingest_utils.validate_regions(['us_pa', 'all'])) == {
         "us_ar_van_buren",
         "us_co_mesa",
         "us_fl_bradford",
         "us_fl_columbia",
         "us_fl_hendry",
         "us_fl_martin",
+        "us_fl_nassau",
         "us_fl_osceola",
         "us_ga_berrien",
         "us_ga_douglas",
@@ -189,18 +172,9 @@ def test_validate_regions_multiple_all():
         "us_ms_kemper",
         "us_ms_tunica",
         "us_mt_gallatin",
-        "us_fl_nassau",
         "us_nc_alamance",
         "us_nc_buncombe",
-        "us_nc_cabarrus",
-        "us_nc_cleveland",
-        "us_nc_forsyth",
         "us_nc_guilford",
-        "us_nc_lincoln",
-        "us_nc_new_hanover",
-        "us_nc_rowan",
-        "us_nc_union",
-        "us_nc_wake",
         "us_nj_bergen",
         "us_ny",
         "us_ok_rogers",
@@ -223,15 +197,51 @@ def test_validate_regions_multiple_all():
         "us_tx_titus",
         "us_tx_upshur",
         "us_tx_van_zandt",
-        "us_tx_wilson",
         "us_tx_wichita",
+        "us_tx_wilson",
         "us_tx_young",
         "us_vt",
+        'us_al_autauga',
+        'us_al_cherokee',
+        'us_al_dale',
+        'us_al_dekalb',
+        'us_al_fayette',
+        'us_al_franklin',
+        'us_al_jackson',
+        'us_al_marion',
+        'us_al_pike',
+        'us_ar_baxter',
+        'us_ar_boone',
+        'us_ar_columbia',
+        'us_ar_craighead',
+        'us_ar_cross',
+        'us_ar_faulkner',
+        'us_ar_garland',
+        'us_ar_hempstead',
+        'us_ar_jefferson',
+        'us_ar_johnson',
+        'us_ar_lonoke',
+        'us_ar_marion',
+        'us_ar_monroe',
+        'us_ar_nevada',
+        'us_ar_poinsett',
+        'us_ar_saline',
+        'us_ar_st_francis',
+        'us_ar_stone',
+        'us_nc_cabarrus',
+        'us_nc_cleveland',
+        'us_nc_forsyth',
+        'us_nc_lincoln',
+        'us_nc_new_hanover',
+        'us_nc_rowan',
+        'us_nc_union',
+        'us_nc_wake',
+        'us_tx_tom_green',
     }
 
 
 def test_validate_regions_multiple_all_invalid():
-    assert not ingest_utils.validate_regions(["all", "invalid"])
+    assert not ingest_utils.validate_regions(['all', 'invalid'])
 
 
 def test_validate_regions_empty():
@@ -245,12 +255,12 @@ def test_validate_scrape_types_one_ok():
 
 
 def test_validate_scrape_types_one_all():
-    assert ingest_utils.validate_scrape_types(["all"]) == [
+    assert ingest_utils.validate_scrape_types(['all']) == [
         constants.ScrapeType.BACKGROUND, constants.ScrapeType.SNAPSHOT]
 
 
 def test_validate_scrape_types_one_invalid():
-    assert not ingest_utils.validate_scrape_types(["When You Were Young"])
+    assert not ingest_utils.validate_scrape_types(['When You Were Young'])
 
 
 def test_validate_scrape_types_multiple_ok():
@@ -262,17 +272,17 @@ def test_validate_scrape_types_multiple_ok():
 
 def test_validate_scrape_types_multiple_invalid():
     assert not ingest_utils.validate_scrape_types(
-        [constants.ScrapeType.BACKGROUND.value, "invalid"])
+        [constants.ScrapeType.BACKGROUND.value, 'invalid'])
 
 
 def test_validate_scrape_types_multiple_all():
     assert ingest_utils.validate_scrape_types(
-        [constants.ScrapeType.BACKGROUND.value, "all"]) == \
+        [constants.ScrapeType.BACKGROUND.value, 'all']) == \
            [constants.ScrapeType.BACKGROUND, constants.ScrapeType.SNAPSHOT]
 
 
 def test_validate_scrape_types_multiple_all_invalid():
-    assert not ingest_utils.validate_scrape_types(["all", "invalid"])
+    assert not ingest_utils.validate_scrape_types(['all', 'invalid'])
 
 
 def test_validate_scrape_types_empty():
