@@ -1651,3 +1651,94 @@ cron:
       min_backoff_seconds: 2.5
       max_doublings: 5
       job_age_limit: 9h
+
+
+  - description: Start TX Tom Green scraper every day at 9pm
+    url: /scraper/start?region=us_tx_tom_green&scrape_type=background
+    schedule: every day 21:00
+    timezone: America/Chicago
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
+
+  - description: Stop TX Tom Green scraper every day at 9am
+    url: /scraper/stop?region=us_tx_tom_green&scrape_type=background
+    schedule: every day 09:00
+    timezone: America/Chicago
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
+
+  - description: Start AR Baxter scraper every day at 9pm
+    url: /scraper/start?region=us_ar_baxter&scrape_type=background
+    schedule: every day 21:00
+    timezone: America/Chicago
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
+
+  - description: Stop AR Baxter scraper every day at 9am
+    url: /scraper/stop?region=us_ar_baxter&scrape_type=background
+    schedule: every day 09:00
+    timezone: America/Chicago
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
+
+  - description: Start AR Columbia scraper every day at 9pm
+    url: /scraper/start?region=us_ar_columbia&scrape_type=background
+    schedule: every day 21:00
+    timezone: America/Chicago
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
+
+  - description: Stop AR Columbia scraper every day at 9am
+    url: /scraper/stop?region=us_ar_columbia&scrape_type=background
+    schedule: every day 09:00
+    timezone: America/Chicago
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
+
+  - description: Start AR Cross scraper every day at 9pm
+    url: /scraper/start?region=us_ar_cross&scrape_type=background
+    schedule: every day 21:00
+    timezone: America/Chicago
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
+
+  - description: Stop AR Cross scraper every day at 9am
+    url: /scraper/stop?region=us_ar_cross&scrape_type=background
+    schedule: every day 09:00
+    timezone: America/Chicago
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
+
+  - description: Start AR St Francis scraper every day at 9pm
+    url: /scraper/start?region=us_ar_st_francis&scrape_type=background
+    schedule: every day 21:00
+    timezone: America/Chicago
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
+
+  - description: Stop AR St Francis scraper every day at 9am
+    url: /scraper/stop?region=us_ar_st_francis&scrape_type=background
+    schedule: every day 09:00
+    timezone: America/Chicago
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h

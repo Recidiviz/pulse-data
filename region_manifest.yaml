@@ -707,6 +707,46 @@ regions:
     base_url: https://lumpkin-so-ga.zuercherportal.com
     scraper_package: us_ga_lumpkin
     timezone: America/New_York
+  us_tx_tom_green:
+    agency_name: Tom Green County Sheriff's Office
+    region_code: us_tx_tom_green
+    agency_type: jail
+    queue: us-tx-tom-green-scraper
+    base_url: https://www.tomgreencountysheriff.org/roster.php
+    scraper_package: us_tx_tom_green
+    timezone: America/Chicago
+  us_ar_baxter:
+    agency_name: Baxter County Sheriff's Office
+    region_code: us_ar_baxter
+    agency_type: jail
+    queue: us-ar-baxter-scraper
+    base_url: https://www.baxtercountysheriff.com/roster.php
+    scraper_package: us_ar_baxter
+    timezone: America/Chicago
+  us_ar_columbia:
+    agency_name: Columbia County Sheriff's Office
+    region_code: us_ar_columbia
+    agency_type: jail
+    queue: us-ar-columbia-scraper
+    base_url: https://www.columbiacountysheriffar.org/roster.php
+    scraper_package: us_ar_columbia
+    timezone: America/Chicago
+  us_ar_cross:
+    agency_name: Cross County Sheriff's Office
+    region_code: us_ar_cross
+    agency_type: jail
+    queue: us-ar-cross-scraper
+    base_url: https://www.crosscountysheriff.org/roster.php
+    scraper_package: us_ar_cross
+    timezone: America/Chicago
+  us_ar_st_francis:
+    agency_name: St. Francis County Sheriff's Office
+    region_code: us_ar_st_francis
+    agency_type: jail
+    queue: us-ar-st-francis-scraper
+    base_url: https://www.stfranciscountysheriff.org/roster.php
+    scraper_package: us_ar_st_francis
+    timezone: America/Chicago
   us_nc_cleveland:
     agency_name: Cleveland County Sheriff's Office
     region_code: us_nc_cleveland
