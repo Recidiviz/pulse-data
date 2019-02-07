@@ -157,6 +157,17 @@ queue:
     max_backoff_seconds: 300
     task_retry_limit: 5
 
+# us-fl-alachua-scraper - Alachua County, Florida
+- name: us-fl-alachua-scraper
+  mode: push
+  rate: 5/m
+  bucket_size: 2
+  max_concurrent_requests: 3
+  retry_parameters:
+    min_backoff_seconds: 5
+    max_backoff_seconds: 300
+    task_retry_limit: 5
+
 # us-tx-brown-scraper - Brown County, Texas
 - name: us-tx-brown-scraper
   mode: push
