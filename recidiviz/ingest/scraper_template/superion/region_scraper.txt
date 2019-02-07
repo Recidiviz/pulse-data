@@ -16,7 +16,8 @@
 # =============================================================================
 
 """Scraper implementation for $region."""
-from recidiviz.ingest.vendors.superion.superion_scraper import SuperionScraper
+from recidiviz.ingest.scrape.vendors.superion.superion_scraper import \
+    SuperionScraper
 
 
 class ${class_name}Scraper(SuperionScraper):
