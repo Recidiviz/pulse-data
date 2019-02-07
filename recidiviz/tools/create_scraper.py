@@ -115,7 +115,7 @@ def create_test_files(subs, vendor: Optional[str]):
 def append_to_config_files(subs):
     """Updates queue.yaml and region_manifest.yaml with the new region.
     """
-    top_level_path = os.path.dirname(__file__)
+    top_level_path = os.path.join(os.path.dirname(recidiviz.__file__), "..")
     queue_text = """
 # $region_dashes-scraper - $county County, $state
 - name: $region_dashes-scraper
