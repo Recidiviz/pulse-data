@@ -17,4 +17,4 @@
 
 """$region specific regional functionality.
 """
-from recidiviz.ingest.$region import ${region}_scraper
+from recidiviz.ingest.scrape.regions.$region import ${region}_scraper
