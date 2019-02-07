@@ -21,6 +21,7 @@ import datetime
 from typing import Callable, Optional
 
 from recidiviz.persistence import entities
+from recidiviz.common.constants.bond import BondStatus
 
 
 # '*' catches positional arguments, making our arguments named and required.
@@ -173,7 +174,7 @@ def is_bond_match(
 def _sanitize_bond(bond: entities.Bond) -> entities.Bond:
     sanitized = copy.deepcopy(bond)
     sanitized.bond_id = None
-    sanitized.status = None
+    sanitized.status = BondStatus.UNKNOWN_REMOVED_FROM_SOURCE
     return sanitized
 
 

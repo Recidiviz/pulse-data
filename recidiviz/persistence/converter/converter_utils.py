@@ -33,13 +33,13 @@ locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
 
 def fn(func, field_name, proto, *additional_func_args, default=None):
     """Return the result of applying the given function to the field on the
-    proto, returning |default| if the proto field is unset.
+    proto, returning |default| if the proto field is unset or the function
+    returns None.
     """
-    if not proto.HasField(field_name):
-        return default
-    if not additional_func_args:
-        return func(getattr(proto, field_name))
-    return func(getattr(proto, field_name), *additional_func_args)
+    value = None
+    if proto.HasField(field_name):
+        value = func(getattr(proto, field_name), *additional_func_args)
+    return value if value is not None else default
 
 
 def parse_external_id(id_str):
