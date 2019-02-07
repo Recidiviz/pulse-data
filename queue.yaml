@@ -905,6 +905,61 @@ queue:
     max_backoff_seconds: 300
     task_retry_limit: 5
 
+  # us-tx-tom-green-scraper - Tom Green County, Texas
+- name: us-tx-tom-green-scraper
+  mode: push
+  rate: 5/m
+  bucket_size: 2
+  max_concurrent_requests: 3
+  retry_parameters:
+    min_backoff_seconds: 5
+    max_backoff_seconds: 300
+    task_retry_limit: 5
+
+  # us-ar-baxter-scraper - Baxter County, Arkansas
+- name: us-ar-baxter-scraper
+  mode: push
+  rate: 5/m
+  bucket_size: 2
+  max_concurrent_requests: 3
+  retry_parameters:
+    min_backoff_seconds: 5
+    max_backoff_seconds: 300
+    task_retry_limit: 5
+
+  # us-ar-columbia-scraper - Columbia County, Arkansas
+- name: us-ar-columbia-scraper
+  mode: push
+  rate: 5/m
+  bucket_size: 2
+  max_concurrent_requests: 3
+  retry_parameters:
+    min_backoff_seconds: 5
+    max_backoff_seconds: 300
+    task_retry_limit: 5
+
+  # us-ar-cross-scraper - Cross County, Arkansas
+- name: us-ar-cross-scraper
+  mode: push
+  rate: 5/m
+  bucket_size: 2
+  max_concurrent_requests: 3
+  retry_parameters:
+    min_backoff_seconds: 5
+    max_backoff_seconds: 300
+    task_retry_limit: 5
+
+  # us-ar-st-francis-scraper - St Francis County, Arkansas
+- name: us-ar-st-francis-scraper
+  mode: push
+  rate: 5/m
+  bucket_size: 2
+  max_concurrent_requests: 3
+  retry_parameters:
+    min_backoff_seconds: 5
+    max_backoff_seconds: 300
+    task_retry_limit: 5
+
 # us-nc-cabarrus-scraper - Cabarrus County, North Carolina
 - name: us-nc-cabarrus-scraper
   mode: push
