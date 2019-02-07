@@ -174,4 +174,8 @@ def _pretend_facility_is_county(facility_name: str) -> str:
         return 'Zavala'
     if facility_name.lower().startswith('odessa'):
         return 'Ector'
+    if facility_name.lower().startswith('littlefield'):
+        return 'Lamb'
+    if facility_name.lower().startswith('reeves'):
+        return 'Reeves'
     return facility_name.replace('(P)', '')
