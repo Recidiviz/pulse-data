@@ -51,10 +51,6 @@ It will also create a test file
 In addition, the script will append the region to [queue.yaml](/queue.yaml),
 [region_manifest.yaml](/region_manifest.yaml) and [cron.yaml](/cron.yaml).
 
-You will need to manually edit the following file:
- - In [`recidiviz/ingest/__init__.py`](/recidiviz/ingest/__init__.py), add an
-   `import` statement for your scraper.
-
 Note: Calling `create_scraper` with the `--vendor` option will generate a slightly different setup according to the vendor type. Explore the generated files for pertinent instructions.
 
 Writing the main scraper file
