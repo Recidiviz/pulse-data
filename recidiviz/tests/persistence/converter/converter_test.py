@@ -21,12 +21,13 @@ import unittest
 from recidiviz.common.constants.bond import BondType, BondStatus
 from recidiviz.common.constants.booking import CustodyStatus
 from recidiviz.common.constants.charge import ChargeStatus
+from recidiviz.common.constants.hold import HoldStatus
 from recidiviz.common.constants.sentences import SentenceStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
 from recidiviz.persistence.converter import converter
 from recidiviz.persistence.entities import Person, Booking, Arrest, Charge, \
-    Bond, Sentence
+    Bond, Sentence, Hold
 
 
 class TestConverter(unittest.TestCase):
@@ -92,7 +93,13 @@ class TestConverter(unittest.TestCase):
                                booking_ids=['BOOKING_ID_GENERATE'])
         ingest_info.bookings.add(booking_id='BOOKING_ID_GENERATE',
                                  arrest_id='ARREST_ID_GENERATE',
+                                 hold_ids=['HOLD_ID_1_GENERATE',
+                                           'HOLD_ID_2_GENERATE'],
                                  charge_ids=['CHARGE_ID_GENERATE'])
+        ingest_info.holds.add(
+            hold_id='HOLD_ID_1_GENERATE', jurisdiction_name='jurisdiction')
+        ingest_info.holds.add(
+            hold_id='HOLD_ID_2_GENERATE', jurisdiction_name='jurisdiction')
         ingest_info.arrests.add(arrest_id='ARREST_ID_GENERATE', agency='PD')
         ingest_info.charges.add(charge_id='CHARGE_ID_GENERATE', name='DUI',
                                 bond_id='BOND_ID_GENERATE',
@@ -113,6 +120,10 @@ class TestConverter(unittest.TestCase):
                 last_seen_time='LAST_SEEN_TIME',
                 custody_status=CustodyStatus.UNKNOWN_FOUND_IN_SOURCE,
                 arrest=Arrest.new_with_defaults(agency='PD'),
+                holds=[
+                    Hold.new_with_defaults(
+                        jurisdiction_name='JURISDICTION',
+                        status=HoldStatus.UNKNOWN_FOUND_IN_SOURCE)],
                 charges=[Charge.new_with_defaults(
                     status=ChargeStatus.UNKNOWN_FOUND_IN_SOURCE,
                     name='DUI',
