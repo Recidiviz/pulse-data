@@ -50,14 +50,24 @@ def _parse_table(filename: str) -> pd.DataFrame:
     whole_df = tabula.read_pdf(
         filename,
         pages='all',
-        lattice=True,
-        pandas_options={
-            'skipfooter': 5,  # Last rows are totals
-            'engine': 'python'  # Only python engine supports 'skipfooter'
-        })
+        lattice=True
+    )
+
+    # Remove totals separate from parsing since it's a variable length
+    totals_start_index = np.where(whole_df['Date'].str.contains('Totals'))[0][0]
+    whole_df = whole_df[:totals_start_index]
+
+    # Some rows are parsed including the date, which shift them 1 too far right
+    shifted_rows = whole_df['County'].astype(str).str.contains('Secure')
+    whole_df[shifted_rows] = whole_df[shifted_rows].shift(-1, axis='columns')
+
+    whole_df = whole_df[whole_df['County'].astype(str) != 'County']
+
+    whole_df.reset_index(drop=True)
 
     whole_df = _shift_headers(whole_df)
     whole_df.columns = whole_df.columns.str.replace('\n', ' ')
+    whole_df.columns = whole_df.columns.str.replace('\r', ' ')
 
     # Each block of county data starts with a filled in 'Total Jail Beds'
     start_of_county_indices = np.where(whole_df['Total Jail Beds'].notnull())[0]
@@ -65,6 +75,11 @@ def _parse_table(filename: str) -> pd.DataFrame:
 
     dfs_grouped_by_gender = []
     for df in dfs_split_by_county:
+        # Cast everything to int before summing below
+        df = df.fillna(0)
+        df = aggregate_ingest_utils.cast_columns_to_int(
+            df, ignore_columns={'County', 'Facility Security', 'Inmate Cusody'})
+
         df['Gender'] = None
         df = _collapse_by_gender_rows(df, 'Male')
         df = _collapse_by_gender_rows(df, 'Female')
@@ -81,8 +96,8 @@ def _parse_table(filename: str) -> pd.DataFrame:
     df_by_gender = pd.concat(dfs_grouped_by_gender)
 
     # Split into male_df and female_df to independently set column headers
-    male_df = df_by_gender.loc[df_by_gender['Gender'] == 'Male']
-    female_df = df_by_gender.loc[df_by_gender['Gender'] == 'Female']
+    male_df = df_by_gender[df_by_gender['Gender'] == 'Male']
+    female_df = df_by_gender[df_by_gender['Gender'] == 'Female']
 
     # Since both male_df and female_df contain shared data, pick arbitrarily
     shared_df = aggregate_ingest_utils.rename_columns_and_select(female_df, {
@@ -120,9 +135,6 @@ def _parse_table(filename: str) -> pd.DataFrame:
     result = result.join(female_df.set_index('facility_name'),
                          on='facility_name')
 
-    for column_name in set(result.columns) - {'facility_name'}:
-        result[column_name] = result[column_name].astype(int)
-
     return result.reset_index(drop=True)
 
 
@@ -156,11 +168,11 @@ def _collapse_by_gender_rows(df: pd.DataFrame, gender: str) -> pd.DataFrame:
     by the 'Gender' column. This has the effect of combining both Secure and
     Non-Secure groups.
     """
-    matching_rows = df['County'].str.contains(gender)
+    matching_rows = df['County'].str.contains(gender).fillna(False)
 
     # To get counts from the PDF, sum secure/non-secure. For example:
     # male_population = male_population (secure) + male_population (unsecure)
-    collapsed_row = df.loc[matching_rows].sum(axis='rows')
+    collapsed_row = df[matching_rows].sum(axis='rows')
 
     collapsed_row['Gender'] = gender
 
