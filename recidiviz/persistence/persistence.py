@@ -56,8 +56,6 @@ errors_persisted_view = view.View("recidiviz/persistence/num_errors",
 monitoring.register_views([people_persisted_view, errors_persisted_view])
 
 
-class PersistenceError(Exception):
-    """Raised when an error with the persistence layer is encountered."""
 
 
 def infer_release_on_open_bookings(region, last_ingest_time, custody_status):
