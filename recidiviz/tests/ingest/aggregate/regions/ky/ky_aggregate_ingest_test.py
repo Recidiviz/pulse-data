@@ -33,12 +33,15 @@ from recidiviz.tests.ingest import fixtures
 from recidiviz.tests.utils import fakes
 
 DATE_SCRAPED = datetime.date(year=2018, month=12, day=20)
+DATE_SCRAPED_2 = datetime.date(year=2018, month=8, day=23)
 
 # Cache the parsed pdf between tests since it's expensive to compute
 @pytest.fixture(scope="class")
 def parsed_pdf(request):
     request.cls.parsed_pdf = ky_aggregate_ingest.parse(
         fixtures.as_filepath('12-20-18.pdf'))
+    request.cls.parsed_pdf_2 = ky_aggregate_ingest.parse(
+        fixtures.as_filepath('08-23-18.pdf'))
 
 
 @pytest.mark.usefixtures("parsed_pdf")
@@ -71,7 +74,7 @@ class TestKyAggregateIngest(TestCase):
             'parole_violators_female_population': [0, 0],
             'federal_female_population': [0, 0],
             'fips': [21001, 21001],
-            'report_date': DATE_SCRAPED,
+            'report_date': 2 * [DATE_SCRAPED],
             'report_granularity': 2 * [enum_strings.monthly_granularity]
         })
         assert_frame_equal(result.head(n=2), expected_head, check_names=False)
@@ -96,7 +99,60 @@ class TestKyAggregateIngest(TestCase):
             'parole_violators_female_population': [1, 0],
             'federal_female_population': [2, 0],
             'fips': [21239, 21239],
-            'report_date': DATE_SCRAPED,
+            'report_date': 2 * [DATE_SCRAPED],
+            'report_granularity': 2 * [enum_strings.monthly_granularity]
+        }, index=range(122, 124))
+        assert_frame_equal(result.tail(n=2), expected_tail, check_names=False)
+
+    def testParse2_ParsesHeadAndTail(self):
+        result = self.parsed_pdf_2[KyFacilityAggregate]
+
+        # Assert Head
+        expected_head = pd.DataFrame({
+            'facility_name': ['Adair', 'Adair RCC'],
+            'total_jail_beds': [51, 31],
+            'reported_population': [132, 31],
+            'male_population': [104, 31],
+            'class_d_male_population': [6, 28],
+            'community_custody_male_population': [0, 3],
+            'alternative_sentence_male_population': [3, 0],
+            'controlled_intake_male_population': [17, 0],
+            'parole_violators_male_population': [6, 0],
+            'federal_male_population': [0, 0],
+            'female_population': [28, 0],
+            'class_d_female_population': [1, 0],
+            'community_custody_female_population': [0, 0],
+            'alternative_sentence_female_population': [0, 0],
+            'controlled_intake_female_population': [2, 0],
+            'parole_violators_female_population': [2, 0],
+            'federal_female_population': [0, 0],
+            'fips': [21001, 21001],
+            'report_date': 2 * [DATE_SCRAPED_2],
+            'report_granularity': 2 * [enum_strings.monthly_granularity]
+        })
+        assert_frame_equal(result.head(n=2), expected_head, check_names=False)
+
+        # Assert Tail
+        expected_tail = pd.DataFrame({
+            'facility_name': ['Woodford', 'Woodford JRC'],
+            'total_jail_beds': [63, 32],
+            'reported_population': [103, 37],
+            'male_population': [88, 37],
+            'class_d_male_population': [1, 22],
+            'community_custody_male_population': [0, 15],
+            'alternative_sentence_male_population': [0, 0],
+            'controlled_intake_male_population': [4, 0],
+            'parole_violators_male_population': [3, 0],
+            'federal_male_population': [43, 0],
+            'female_population': [15, 0],
+            'class_d_female_population': [3, 0],
+            'community_custody_female_population': [0, 0],
+            'alternative_sentence_female_population': [0, 0],
+            'controlled_intake_female_population': [1, 0],
+            'parole_violators_female_population': [0, 0],
+            'federal_female_population': [2, 0],
+            'fips': [21239, 21239],
+            'report_date': 2 * [DATE_SCRAPED_2],
             'report_granularity': 2 * [enum_strings.monthly_granularity]
         }, index=range(122, 124))
         assert_frame_equal(result.tail(n=2), expected_tail, check_names=False)
