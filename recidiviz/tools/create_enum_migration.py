@@ -1,15 +1,13 @@
 """Script to generate an alembic migration for adding a new value to an enum
 
-NOTE: The environment variables required by the alembic migration script must
-be set before running this script
-
 Usage:
-    python create_enum_migration.py --master_table <master table name> \
-        --historical_table <historical table name> --type <enum type name> \
-        --column <column name> --migration_name <name for migration>
+    python -m recidiviz.tools.create_enum_migration --master_table \
+        <master table name> --historical_table <historical table name> \
+        --type <enum type name> --column <column name> --migration_name \
+        <name for migration>
 
 Example:
-    python create_enum_migration.py --master_table person \
+    python -m recidiviz.tools.create_enum_migration --master_table person \
         --historical_table person_history --type race --column race \
         --migration_name add_race_lizardperson
 """
