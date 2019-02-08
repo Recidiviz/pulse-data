@@ -106,6 +106,7 @@ hold_status_inferred_dropped = 'INFERRED_DROPPED'
 
 bond_type_cash = 'CASH'
 bond_type_no_bond = 'NO_BOND'
+bond_type_partial_cash = 'PARTIAL_CASH'
 bond_type_secured = 'SECURED'
 bond_type_unsecured = 'UNSECURED'
 

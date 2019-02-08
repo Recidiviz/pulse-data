@@ -25,6 +25,7 @@ class BondType(MappableEnum):
     CASH = enum_strings.bond_type_cash
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
     NO_BOND = enum_strings.bond_type_no_bond
+    PARTIAL_CASH = enum_strings.bond_type_partial_cash
     SECURED = enum_strings.bond_type_secured
     UNKNOWN_REMOVED_FROM_SOURCE = enum_strings.unknown_removed_from_source
     UNSECURED = enum_strings.bond_type_unsecured
@@ -74,6 +75,7 @@ BOND_TYPE_MAP = {
     'ROR': BondType.NO_BOND,
     'WRITTEN PROMISE': BondType.NO_BOND,
     'WRITTEN PROMISE TO APPEAR': BondType.NO_BOND,
+    'PARTIAL CASH': BondType.PARTIAL_CASH,
     'SECURED': BondType.SECURED,
     'SECURE BOND': BondType.SECURED,
     'SECURED BOND': BondType.SECURED,
