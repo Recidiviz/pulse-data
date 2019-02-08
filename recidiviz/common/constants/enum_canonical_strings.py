@@ -114,6 +114,7 @@ bond_status_inferred_set = 'INFERRED_SET'
 bond_status_not_required = 'NOT_REQUIRED'
 bond_status_pending = 'PENDING'
 bond_status_posted = 'POSTED'
+bond_status_revoked = 'REVOKED'
 bond_status_set = 'SET'
 
 # Sentence

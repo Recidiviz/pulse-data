@@ -40,6 +40,7 @@ class BondStatus(MappableEnum):
     NOT_REQUIRED = enum_strings.bond_status_not_required
     PENDING = enum_strings.bond_status_pending
     POSTED = enum_strings.bond_status_posted
+    REVOKED = enum_strings.bond_status_revoked
     SET = enum_strings.bond_status_set
     UNKNOWN_FOUND_IN_SOURCE = enum_strings.unknown_found_in_source
     UNKNOWN_REMOVED_FROM_SOURCE = enum_strings.unknown_removed_from_source
@@ -92,5 +93,6 @@ BOND_STATUS_MAP = {
     'NOT REQUIRED': BondStatus.NOT_REQUIRED,
     'PENDING': BondStatus.PENDING,
     'POSTED': BondStatus.POSTED,
+    'REVOKED': BondStatus.REVOKED,
     'SET': BondStatus.SET,
 }
