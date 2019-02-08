@@ -30,6 +30,17 @@ app.register_blueprint(scraper_control.scraper_control)
 app.config['TESTING'] = True
 
 
+def _MockSupported(timezone=None):
+    if not timezone:
+        regions = ['us_ut', 'us_wy']
+    elif timezone == 'america/new_york':
+        regions = ['us_ut']
+    else:
+        regions = ['us_wy']
+    return regions
+
+
+
 class TestScraperStart:
     """Tests for requests to the Scraper Start API."""
 
@@ -50,13 +61,12 @@ class TestScraperStart:
         mock_sessions.return_value = None
         fake_scraper = FakeScraper()
         mock_region.return_value = FakeRegion(fake_scraper)
-        mock_supported.return_value = ['us_ut', 'us_wy']
+        mock_supported.side_effect = _MockSupported
 
         region = 'us_ut'
         scrape_type = constants.ScrapeType.BACKGROUND
         scrape_key = ScrapeKey(region, scrape_type)
         request_args = {'region': region, 'scrape_type': scrape_type.value}
-        print(request_args)
         headers = {'X-Appengine-Cron': "test-cron"}
         response = self.client.get('/start',
                                    query_string=request_args,
@@ -67,7 +77,39 @@ class TestScraperStart:
         mock_tracker.assert_called_with(scrape_key)
         mock_sessions.assert_called_with(scrape_key)
         mock_region.assert_called_with('us_ut')
-        mock_supported.assert_called_with()
+        mock_supported.assert_called_with(timezone=None)
+
+    @patch("recidiviz.utils.regions.get_supported_region_codes")
+    @patch("recidiviz.utils.regions.Region")
+    @patch("recidiviz.ingest.scrape.sessions.create_session")
+    @patch("recidiviz.ingest.scrape.tracker.purge_docket_and_session")
+    @patch("recidiviz.ingest.scrape.docket.load_target_list")
+    def test_start_timezone(self, mock_docket, mock_tracker, mock_sessions,
+                            mock_region, mock_supported):
+        """Tests that the start operation chains together the correct calls."""
+        mock_docket.return_value = None
+        mock_tracker.return_value = None
+        mock_sessions.return_value = None
+        fake_scraper = FakeScraper()
+        mock_region.return_value = FakeRegion(fake_scraper)
+        mock_supported.side_effect = _MockSupported
+
+        region = 'all'
+        scrape_type = constants.ScrapeType.BACKGROUND
+        scrape_key = ScrapeKey('us_wy', scrape_type)
+        request_args = {'region': region, 'scrape_type': scrape_type.value,
+                        'timezone': 'america/los_angeles'}
+        headers = {'X-Appengine-Cron': "test-cron"}
+        response = self.client.get('/start',
+                                   query_string=request_args,
+                                   headers=headers)
+        assert response.status_code == 200
+
+        mock_docket.assert_called_with(scrape_key, '', '')
+        mock_tracker.assert_called_with(scrape_key)
+        mock_sessions.assert_called_with(scrape_key)
+        mock_region.assert_called_with('us_wy')
+        mock_supported.assert_called_with(timezone='america/los_angeles')
 
     @patch("recidiviz.utils.regions.get_supported_region_codes")
     def test_start_unsupported_region(self, mock_supported):
@@ -82,7 +124,7 @@ class TestScraperStart:
         assert response.get_data().decode() == \
             "Missing or invalid parameters, see service logs."
 
-        mock_supported.assert_called_with()
+        mock_supported.assert_called_with(timezone=None)
 
 
 class TestScraperStop:
@@ -113,7 +155,32 @@ class TestScraperStop:
             call(ScrapeKey('us_ut', constants.ScrapeType.BACKGROUND)),
             call(ScrapeKey('us_ut', constants.ScrapeType.SNAPSHOT))])
         mock_region.assert_has_calls([call('us_ca'), call('us_ut')])
-        mock_supported.assert_called_with()
+        mock_supported.assert_called_with(timezone=None)
+
+    @patch("recidiviz.utils.regions.get_supported_region_codes")
+    @patch("recidiviz.utils.regions.Region")
+    @patch("recidiviz.ingest.scrape.sessions.end_session")
+    def test_stop_timezone(self, mock_sessions, mock_region, mock_supported):
+        mock_sessions.return_value = None
+        mock_region.return_value = FakeRegion(FakeScraper())
+        mock_supported.side_effect = _MockSupported
+
+        request_args = {
+            'region': 'all',
+            'scrape_type': 'all',
+            'timezone': 'America/New_York'
+        }
+        headers = {'X-Appengine-Cron': "test-cron"}
+        response = self.client.get('/stop',
+                                   query_string=request_args,
+                                   headers=headers)
+        assert response.status_code == 200
+
+        mock_sessions.assert_has_calls([
+            call(ScrapeKey('us_ut', constants.ScrapeType.BACKGROUND)),
+            call(ScrapeKey('us_ut', constants.ScrapeType.SNAPSHOT))])
+        mock_region.assert_has_calls([call('us_ut')])
+        mock_supported.assert_called_with(timezone='america/new_york')
 
     @patch("recidiviz.utils.regions.get_supported_region_codes")
     def test_stop_unsupported_region(self, mock_supported):
@@ -128,7 +195,7 @@ class TestScraperStop:
         assert response.get_data().decode() == \
             "Missing or invalid parameters, see service logs."
 
-        mock_supported.assert_called_with()
+        mock_supported.assert_called_with(timezone=None)
 
 
 class TestScraperResume:
@@ -158,7 +225,7 @@ class TestScraperResume:
             [call(ScrapeKey(region, constants.ScrapeType.BACKGROUND)),
              call(ScrapeKey(region, constants.ScrapeType.SNAPSHOT))])
         mock_region.assert_called_with(region)
-        mock_supported.assert_called_with()
+        mock_supported.assert_called_with(timezone=None)
 
     @patch("recidiviz.utils.regions.get_supported_region_codes")
     def test_resume_unsupported_region(self, mock_supported):
@@ -173,7 +240,7 @@ class TestScraperResume:
         assert response.get_data().decode() == \
             "Missing or invalid parameters, see service logs."
 
-        mock_supported.assert_called_with()
+        mock_supported.assert_called_with(timezone=None)
 
 
 class FakeRegion:
