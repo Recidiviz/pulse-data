@@ -74,7 +74,7 @@ def parse_datetime(date_string):
         return None
     parsed_date = dateparser.parse(date_string)
     if not parsed_date:
-        raise ValueError('cannot parse date: %s' % parsed_date)
+        raise ValueError('cannot parse date: %s' % date_string)
     return parsed_date
 
 
