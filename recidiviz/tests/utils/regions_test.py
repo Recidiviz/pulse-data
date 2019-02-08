@@ -49,6 +49,19 @@ MANIFEST_CONTENTS = """
         scraper_class: a_different_scraper
         scraper_package: us_fl
         timezone: America/New_York
+      us_ca:
+        agency_name: Corrections
+        agency_type: jail
+        base_url: test
+        names_file: us_ca_names.csv
+        params:
+          foo: bar
+          sha: baz
+        queue: us-ca-scraper
+        region_code: us_ca
+        scraper_class: a_different_scraper_2
+        scraper_package: us_ca
+        timezone: America/Los_Angeles
     """
 
 FULL_MANIFEST = {
@@ -78,6 +91,21 @@ FULL_MANIFEST = {
             'scraper_class': 'a_different_scraper',
             'scraper_package': 'us_fl',
             'timezone': 'America/New_York'
+        },
+        'us_ca': {
+            'agency_name': 'Corrections',
+            'agency_type': 'jail',
+            'base_url': 'test',
+            'names_file': 'us_ca_names.csv',
+            'params': {
+                'foo': 'bar',
+                'sha': 'baz'
+            },
+            'queue': 'us-ca-scraper',
+            'region_code': 'us_ca',
+            'scraper_class': 'a_different_scraper_2',
+            'scraper_package': 'us_ca',
+            'timezone': 'America/Los_Angeles'
         }
     }
 }
@@ -114,11 +142,17 @@ class TestRegions(TestCase):
         supported_regions = with_manifest(regions.get_supported_regions)
         self.assertCountEqual(
             [region.region_code for region in supported_regions],
-            ['us_ny', 'us_fl'])
+            ['us_ny', 'us_fl', 'us_ca'])
 
     def test_get_supported_region_codes(self):
         supported_regions = with_manifest(regions.get_supported_region_codes)
-        assert supported_regions == ['us_ny', 'us_fl']
+        assert supported_regions == ['us_ny', 'us_fl', 'us_ca']
+
+    def test_get_supported_region_codes_timezone(self):
+        supported_regions = with_manifest(
+            regions.get_supported_region_codes, timezone='america/los_angeles')
+        assert supported_regions == ['us_ca']
+
 
     def test_get_supported_region_codes_full_manifest(self):
         supported_regions = with_manifest(regions.get_supported_region_codes,

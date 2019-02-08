@@ -186,30 +186,6 @@ def append_to_config_files(subs):
     with open(manifest_path, 'a') as region_file:
         region_file.write(Template(region_text).safe_substitute(subs))
 
-    cron_text = """
-  - description: Start $state_abbr $county scraper every day at 9pm
-    url: /scraper/start?region=$region&scrape_type=background
-    schedule: every day 21:00
-    timezone: $timezone
-    retry_parameters:
-      min_backoff_seconds: 2.5
-      max_doublings: 5
-      job_age_limit: 9h
-
-  - description: Stop $state_abbr $county scraper every day at 9am
-    url: /scraper/stop?region=$region&scrape_type=background
-    schedule: every day 09:00
-    timezone: $timezone
-    retry_parameters:
-      min_backoff_seconds: 2.5
-      max_doublings: 5
-      job_age_limit: 9h
-"""
-
-    cron_path = os.path.join(top_level_path, 'cron.yaml')
-    with open(cron_path, 'a') as cron_file:
-        cron_file.write(Template(cron_text).safe_substitute(subs))
-
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

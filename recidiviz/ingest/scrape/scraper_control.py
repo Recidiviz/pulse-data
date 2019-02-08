@@ -51,6 +51,7 @@ def scraper_start():
     URL parameters:
         region: (string) Region to take action for, or 'all'
         scrape_type: (string) Type of scrape to take action for, or 'all'
+        timezone: (string) The timezone to scrape.
         surname: (string, optional) Name to start scrape at. Required if
             given_names provided
         given_names: (string, optional) Name to start scrape at
@@ -61,8 +62,40 @@ def scraper_start():
     Returns:
         N/A
     """
-    scrape_regions = ingest_utils.validate_regions(get_values("region",
-                                                              request.args))
+    def _start_scraper(region, scrape_type):
+        scrape_key = ScrapeKey(region, scrape_type)
+        logging.info("Starting new scraper for: %s", scrape_key)
+
+        scraper = regions.Region(region).get_scraper()
+
+        sessions.create_session(scrape_key)
+
+        # Help avoid race condition with new session info
+        # vs updating that w/first task.
+        time.sleep(1)
+
+        # Clear prior query docket for this scrape type and start adding new
+        # items in a background thread. In the case that there is a large
+        # names list, loading it can take some time. Loading it in the
+        # background allows us to start the scraper before it is fully
+        # loaded.
+        tracker.purge_docket_and_session(scrape_key)
+        load_docket_thread = threading.Thread(
+            target=docket.load_target_list,
+            args=(scrape_key, given_names, surname))
+        load_docket_thread.start()
+
+        # Start scraper, if the docket is empty this will wait for a bounded
+        # period of time for an item to be published (~90 seconds).
+        logging.info("Starting %s/%s scrape...", region, scrape_type)
+        scraper.start_scrape(scrape_type)
+
+        # Wait for the docket to be loaded
+        load_docket_thread.join()
+
+    timezone = get_value("timezone", request.args, None)
+    scrape_regions = ingest_utils.validate_regions(
+        get_values("region", request.args), timezone=timezone)
     scrape_types = ingest_utils.validate_scrape_types(get_values("scrape_type",
                                                                  request.args))
 
@@ -73,38 +106,22 @@ def scraper_start():
     given_names = get_value("given_names", request.args, "")
     surname = get_value("surname", request.args, "")
 
-    for region in scrape_regions:
+    start_scraper_threads = []
+    for region_name in scrape_regions:
+        for scraper_type in scrape_types:
+            # If timezone wasn't provided, return all but if it was, only
+            # return regions that match the timezone.
+            start_scraper_thread = threading.Thread(
+                target=_start_scraper,
+                args=(region_name, scraper_type)
+            )
+            start_scraper_thread.start()
+            start_scraper_threads.append(start_scraper_thread)
 
-        for scrape_type in scrape_types:
-            scrape_key = ScrapeKey(region, scrape_type)
-            logging.info("Starting new scraper for: %s", scrape_key)
-
-            scraper = regions.Region(region).get_scraper()
-
-            sessions.create_session(scrape_key)
-
-            # Help avoid race condition with new session info
-            # vs updating that w/first task.
-            time.sleep(5)
-
-            # Clear prior query docket for this scrape type and start adding new
-            # items in a background thread. In the case that there is a large
-            # names list, loading it can take some time. Loading it in the
-            # background allows us to start the scraper before it is fully
-            # loaded.
-            tracker.purge_docket_and_session(scrape_key)
-            load_docket_thread = threading.Thread(
-                target=docket.load_target_list,
-                args=(scrape_key, given_names, surname))
-            load_docket_thread.start()
-
-            # Start scraper, if the docket is empty this will wait for a bounded
-            # period of time for an item to be published (~90 seconds).
-            logging.info("Starting %s/%s scrape...", region, scrape_type)
-            scraper.start_scrape(scrape_type)
-
-            # Wait for the docket to be loaded
-            load_docket_thread.join()
+    # Once everything is started, lets wait for everything to end before
+    # returning.
+    for start_scraper_thread in start_scraper_threads:
+        start_scraper_thread.join()
 
     return ('', HTTPStatus.OK)
 
@@ -142,23 +159,37 @@ def scraper_stop():
     Returns:
         N/A
     """
-    scrape_regions = ingest_utils.validate_regions(get_values("region",
-                                                              request.args))
+    timezone = get_value("timezone", request.args, None)
+    scrape_regions = ingest_utils.validate_regions(
+        get_values("region", request.args), timezone=timezone)
     scrape_types = ingest_utils.validate_scrape_types(get_values("scrape_type",
                                                                  request.args))
+
+    def _stop_scraper(region):
+        for scrape_type in scrape_types:
+            sessions.end_session(ScrapeKey(region, scrape_type))
+
+        region_scraper = regions.Region(region).get_scraper()
+        region_scraper.stop_scrape(scrape_types)
 
     if not scrape_regions or not scrape_types:
         return ('Missing or invalid parameters, see service logs.',
                 HTTPStatus.BAD_REQUEST)
 
-    for region in scrape_regions:
-        logging.info("Stopping %s scrapes for %s.", scrape_types, region)
+    stop_scraper_threads = []
+    for region_name in scrape_regions:
+        logging.info("Stopping %s scrapes for %s.", scrape_types, region_name)
 
-        for scrape_type in scrape_types:
-            sessions.end_session(ScrapeKey(region, scrape_type))
+        stop_scraper_thread = threading.Thread(
+            target=_stop_scraper,
+            args=[region_name]
+        )
+        stop_scraper_thread.start()
+        stop_scraper_threads.append(stop_scraper_thread)
 
-        scraper = regions.Region(region).get_scraper()
-        scraper.stop_scrape(scrape_types)
+    for stop_scraper_thread in stop_scraper_threads:
+        stop_scraper_thread.join()
+
 
     return ('', HTTPStatus.OK)
 
