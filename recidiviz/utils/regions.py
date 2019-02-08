@@ -114,13 +114,14 @@ class Region:
         return scraper_class()
 
 
-def get_supported_region_codes(full_manifest=False):
+def get_supported_region_codes(full_manifest=False, timezone=None):
     """Retrieve a list of known scraper regions / region codes
 
     See region_manifest.yaml for full list of fields available for each region.
 
     Args:
         full_manifest: (bool) If True, return full manifest
+        timezone: (str) If set, return only regions in the right timezone
 
     Returns:
         If full_manifest: Dictionary of regions, with each region mapped to a
@@ -129,6 +130,11 @@ def get_supported_region_codes(full_manifest=False):
     """
     manifest = get_full_manifest()
     supported_regions = manifest["regions"]
+
+    if timezone:
+        supported_regions = {region: info for region, info in
+                             supported_regions.items() if
+                             timezone == info['timezone'].lower()}
 
     if not full_manifest:
         supported_regions = list(supported_regions)
