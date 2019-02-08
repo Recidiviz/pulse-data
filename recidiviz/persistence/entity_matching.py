@@ -29,10 +29,7 @@ from recidiviz.common.constants.sentences import SentenceStatus
 from recidiviz.persistence.database import database
 from recidiviz.persistence import entity_matching_utils as utils, entities
 from recidiviz.persistence.entities import Entity
-
-
-class EntityMatchingError(Exception):
-    """Raised when an error with entity matching is encountered."""
+from recidiviz.persistence.errors import EntityMatchingError
 
 
 def match_entities(
