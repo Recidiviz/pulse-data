@@ -58,7 +58,7 @@ Your mileage may vary here. If you've installed via the interactive installer an
 `google-cloud-sdk/platform/`, then you will need to install google_appengine separately by doing:
 `gcloud components install app-engine-python`
 
-Then install project dependencies with [`pipenv`](https://pipenv.readthedocs.io/en/latest/): `pipenv install`. Activate the environment with `pipenv shell`.
+Then install project dependencies with [`pipenv`](https://pipenv.readthedocs.io/en/latest/): `pipenv install --dev`. Activate the environment with `pipenv shell`.
 
 To generate a production environment `requirements.txt`, run: `pipenv lock --requirements > requirements.txt`
 
