@@ -22,6 +22,7 @@ normalizing, and storing records ingested from various criminal justice data
 sources.
 """
 
+import recidiviz.ingest.scrape.regions.us_fl_glades
 import recidiviz.ingest.scrape.regions.us_al_autauga
 import recidiviz.ingest.scrape.regions.us_al_cherokee
 import recidiviz.ingest.scrape.regions.us_al_dale
