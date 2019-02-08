@@ -74,7 +74,7 @@ class BaseScraper(Scraper):
     # but any scraper can override this and treat it as a different type of
     # endpoint like an API endpoint for example.
     def _fetch_content(self, endpoint, response_type, headers=None,
-                       cookies=None, post_data=None,
+                       cookies=None, params=None, post_data=None,
                        json_data=None) -> Tuple[Any, Optional[Dict[str, str]]]:
         """Returns the page content.
 
@@ -82,6 +82,7 @@ class BaseScraper(Scraper):
             endpoint: the endpoint to make a request to.
             headers: dict of headers to send in the request.
             cookies: dict of cookies to send in the request.
+            params: dict of url params to send in the request.
             post_data: dict of parameters to pass into the html request.
 
         Returns:
@@ -91,8 +92,9 @@ class BaseScraper(Scraper):
         logging.info('Fetching content with endpoint: %s', endpoint)
 
         # Create cookie jar to pass to fetch
-        response = self.fetch_page(endpoint, headers=headers, cookies=cookies,
-                                   post_data=post_data, json_data=json_data)
+        response = self.fetch_page(
+            endpoint, headers=headers, cookies=cookies, params=params,
+            post_data=post_data, json_data=json_data)
         if response == -1:
             return -1, None
 
@@ -174,7 +176,8 @@ class BaseScraper(Scraper):
             # default value of None if this scraper doesn't set it.
             content, cookies = self._fetch_content(
                 task.endpoint, task.response_type, headers=task.headers,
-                cookies=task.cookies, post_data=post_data, json_data=task.json)
+                cookies=task.cookies, params=task.params, post_data=post_data,
+                json_data=task.json)
             if content == -1:
                 return -1
 
