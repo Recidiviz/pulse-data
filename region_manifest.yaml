@@ -819,3 +819,11 @@ regions:
     base_url: http://p2c.wakeso.net
     scraper_package: us_nc_wake
     timezone: America/New_York
+  us_ga_toombs:
+    agency_name: Toombs County Sheriff's Office
+    region_code: us_ga_toombs
+    agency_type: jail
+    queue: us-ga-toombs-scraper
+    base_url: https://toombs-so-ga.zuercherportal.com
+    scraper_package: us_ga_toombs
+    timezone: America/New_York

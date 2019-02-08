@@ -1069,3 +1069,14 @@ queue:
     min_backoff_seconds: 5
     max_backoff_seconds: 300
     task_retry_limit: 5
+
+# us-ga-toombs-scraper - Toombs County, Georgia
+- name: us-ga-toombs-scraper
+  mode: push
+  rate: 5/m
+  bucket_size: 2
+  max_concurrent_requests: 3
+  retry_parameters:
+    min_backoff_seconds: 5
+    max_backoff_seconds: 300
+    task_retry_limit: 5
