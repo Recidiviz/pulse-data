@@ -64,6 +64,7 @@ import recidiviz.ingest.scrape.regions.us_ga_douglas
 import recidiviz.ingest.scrape.regions.us_ga_floyd
 import recidiviz.ingest.scrape.regions.us_ga_gwinnett
 import recidiviz.ingest.scrape.regions.us_ga_lumpkin
+import recidiviz.ingest.scrape.regions.us_ga_toombs
 import recidiviz.ingest.scrape.regions.us_in_jackson
 import recidiviz.ingest.scrape.regions.us_in_scott
 import recidiviz.ingest.scrape.regions.us_in_vigo
