@@ -20,8 +20,9 @@ import copy
 import datetime
 from typing import Callable, Optional
 
-from recidiviz.persistence import entities
 from recidiviz.common.constants.bond import BondStatus
+from recidiviz.persistence import entities
+from recidiviz.persistence.errors import EntityMatchingError
 
 
 # '*' catches positional arguments, making our arguments named and required.
@@ -43,7 +44,9 @@ def is_person_match(
         return False
 
     return db_entity.full_name == ingested_entity.full_name \
-           and _is_birthdate_match(db_entity, ingested_entity)
+           and _is_birthdate_match(db_entity, ingested_entity) \
+           and _db_open_booking_matches_ingested_booking(
+               db_entity=db_entity, ingested_entity=ingested_entity)
 
 
 def _is_birthdate_match(a: entities.Person, b: entities.Person) -> bool:
@@ -55,6 +58,28 @@ def _is_birthdate_match(a: entities.Person, b: entities.Person) -> bool:
         return a.birthdate == b.birthdate
 
     return False
+
+
+def _db_open_booking_matches_ingested_booking(
+        *, db_entity: entities.Person,
+        ingested_entity: entities.Person) -> bool:
+    """Returns True if the external id on the open booking in the database
+    matches any of the external ids of the bookings on the ingested person.
+    If there is no open booking in the db, return True as well.
+
+    Note: if the same person has been rebooked on subsequent scrapes, and the
+    ingested person doesn't have historical bookings, we will not match the
+    person entities. This is the same behavior as if the person is rebooked on
+    non-consecutive days.
+    """
+    db_open_bookings = [b for b in db_entity.bookings if _is_active(b)]
+    if not db_open_bookings:
+        return True
+    if len(db_open_bookings) > 1:
+        raise EntityMatchingError('db person {} has more than one open '
+                                  'booking'.format(db_entity.person_id))
+    return any(db_open_bookings[0].external_id == ingested_booking.external_id
+               for ingested_booking in ingested_entity.bookings)
 
 
 def _is_inferred_birthdate_match(
