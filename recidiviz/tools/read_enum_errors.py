@@ -33,8 +33,8 @@ def enum_errors_from_logs(filename: str) -> Dict[Tuple[str, str, str], Any]:
                 if line.startswith('recidiviz.common.constants.mappable_enum.'
                                    'EnumParsingError'):
                     enum_type, enum_string = extract_enum_string_type(line)
-                if line.startswith(
-                        'recidiviz.ingest.worker.RequestProcessingError'):
+                if line.startswith('recidiviz.ingest.scrape.worker.'
+                                   'RequestProcessingError'):
                     region = extract_region(line)
                     # Keep the rest of the lines containing the request in the
                     # iterator.
