@@ -26,7 +26,7 @@ from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
 from recidiviz.utils import regions
 
 
-def validate_regions(region_list):
+def validate_regions(region_list, timezone=None):
     """Validates the region arguments.
 
     If any region in |region_list| is "all", then all supported regions will be
@@ -34,6 +34,7 @@ def validate_regions(region_list):
 
     Args:
         region_list: List of regions from URL parameters
+        timezone: If set, returns only regions in the matching timezone
 
     Returns:
         False if invalid regions
@@ -41,7 +42,7 @@ def validate_regions(region_list):
     """
     regions_list_output = region_list
 
-    supported_regions = regions.get_supported_region_codes()
+    supported_regions = regions.get_supported_region_codes(timezone=timezone)
     for region in region_list:
         if region == "all":
             regions_list_output = supported_regions
