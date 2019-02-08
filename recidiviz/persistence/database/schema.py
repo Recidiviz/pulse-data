@@ -121,6 +121,7 @@ hold_status_values = (enum_strings.hold_status_active,
 bond_type_values = (enum_strings.external_unknown,
                     enum_strings.bond_type_cash,
                     enum_strings.bond_type_no_bond,
+                    enum_strings.bond_type_partial_cash,
                     enum_strings.bond_type_secured,
                     enum_strings.bond_type_unsecured)
 
