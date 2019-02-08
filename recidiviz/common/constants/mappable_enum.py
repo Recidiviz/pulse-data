@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains logic related to MappableEnums"""
-
+import string
 from enum import Enum
 from typing import Dict, Optional
 
@@ -25,8 +25,9 @@ from recidiviz.common.common_utils import normalize
 class EnumParsingError(Exception):
     """Raised if an MappableEnum can't be built from the provided string."""
 
-    def __init__(self, cls: type, string: str):
-        msg = "Could not parse {0} when building {1}".format(string, cls)
+    def __init__(self, cls: type, string_to_parse: str):
+        msg = "Could not parse {0} when building {1}".format(string_to_parse,
+                                                             cls)
         super().__init__(msg)
 
 
@@ -39,9 +40,15 @@ class MappableEnum(Enum):
     @classmethod
     def parse(cls, label: str,
               override_map: Dict[str, Optional['MappableEnum']]) \
-              -> Optional['MappableEnum']:
+            -> Optional['MappableEnum']:
+        """Attempts to parse |label| using the default map of |cls| and the
+        provided |override_map|. Ignores punctuation by treating punctuation as
+        a separator, e.g. `(N/A)` will map to the same value as `N A`."""
+        remove_punct = str.maketrans(dict.fromkeys(string.punctuation, ' '))
+        label_without_punctuation = label.translate(remove_punct)
+        label = normalize(label if label_without_punctuation.isspace() else
+                          label_without_punctuation)
 
-        label = normalize(label)
         if not override_map:
             return cls._parse_to_enum(label, cls._get_default_map())
 

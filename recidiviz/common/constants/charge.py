@@ -78,7 +78,9 @@ class CourtType(MappableEnum):
     def _get_default_map():
         return _COURT_TYPE_MAP
 
-
+# MappableEnum.parse will strip punctuation and separate tokens with a single
+# space. Add mappings here using a single space between words and numbers.
+# For example, `N/A` can be written as `N A` and `(10%)` can be written as `10`.
 _CHARGE_DEGREE_MAP = {
     '1': ChargeDegree.FIRST,
     '1ST': ChargeDegree.FIRST,
@@ -95,6 +97,9 @@ _CHARGE_DEGREE_MAP = {
     'UNKNOWN': ChargeDegree.EXTERNAL_UNKNOWN,
 }
 
+# MappableEnum.parse will strip punctuation and separate tokens with a single
+# space. Add mappings here using a single space between words and numbers.
+# For example, `N/A` can be written as `N A` and `(10%)` can be written as `10`.
 _CHARGE_CLASS_MAP = {
     'CIVIL': ChargeClass.CIVIL,
     'FELONY': ChargeClass.FELONY,
@@ -110,6 +115,9 @@ _CHARGE_CLASS_MAP = {
     'UNKNOWN': ChargeClass.EXTERNAL_UNKNOWN
 }
 
+# MappableEnum.parse will strip punctuation and separate tokens with a single
+# space. Add mappings here using a single space between words and numbers.
+# For example, `N/A` can be written as `N A` and `(10%)` can be written as `10`.
 _CHARGE_STATUS_MAP = {
     'WRIT OF HABEAS CORPUS': None,
     'ACQUITTED': ChargeStatus.ACQUITTED,
@@ -126,16 +134,16 @@ _CHARGE_STATUS_MAP = {
     'AWAITING TRIAL': ChargeStatus.PENDING,
     'OPEN': ChargeStatus.PENDING,
     'PENDING': ChargeStatus.PENDING,
-    'FILED, PENDING TRIAL': ChargeStatus.PRETRIAL,
+    'PRE TRIAL': ChargeStatus.PRETRIAL,
+    'FILED PENDING TRIAL': ChargeStatus.PRETRIAL,
     'FTA': ChargeStatus.PRETRIAL,
-    'PRE-TRIAL': ChargeStatus.PRETRIAL,
     'PRETRIAL': ChargeStatus.PRETRIAL,
     'TRUE BILL OF INDICTMENT': ChargeStatus.PRETRIAL,
     'UNSENTENCED': ChargeStatus.PRETRIAL,
     'WAITING FOR TRIAL': ChargeStatus.PRETRIAL,
     'GUILTY': ChargeStatus.SENTENCED,
-    'PAROLE/PROBATION REINSTATED': ChargeStatus.SENTENCED,
-    'PAROLE/PROBATION REVOKED': ChargeStatus.SENTENCED,
+    'PAROLE PROBATION REINSTATED': ChargeStatus.SENTENCED,
+    'PAROLE PROBATION REVOKED': ChargeStatus.SENTENCED,
     'PROBATION': ChargeStatus.SENTENCED,
     'REPORT IN': ChargeStatus.SENTENCED,
     'REVOKED': ChargeStatus.SENTENCED,
@@ -147,6 +155,9 @@ _CHARGE_STATUS_MAP = {
     'UNKNOWN': ChargeStatus.EXTERNAL_UNKNOWN,
 }
 
+# MappableEnum.parse will strip punctuation and separate tokens with a single
+# space. Add mappings here using a single space between words and numbers.
+# For example, `N/A` can be written as `N A` and `(10%)` can be written as `10`.
 _COURT_TYPE_MAP = {
     'CIRCUIT': CourtType.CIRCUIT,
     'CIRCUIT COURT': CourtType.CIRCUIT,

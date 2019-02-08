@@ -33,6 +33,9 @@ class SentenceStatus(MappableEnum):
         return _SENTENCE_STATUS_MAP
 
 
+# MappableEnum.parse will strip punctuation and separate tokens with a single
+# space. Add mappings here using a single space between words and numbers.
+# For example, `N/A` can be written as `N A` and `(10%)` can be written as `10`.
 _SENTENCE_STATUS_MAP = {
     'COMMUTED': SentenceStatus.COMMUTED,
     'COMPLETED': SentenceStatus.COMPLETED,
