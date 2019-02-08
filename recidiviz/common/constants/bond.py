@@ -50,6 +50,10 @@ class BondStatus(MappableEnum):
         return BOND_STATUS_MAP
 
 
+# MappableEnum.parse will strip punctuation and separate tokens with a single
+# space. Add mappings here using a single space between words and numbers.
+# For example, `N/A` can be written as `N A` and `(10%)` can be written as `10`.
+
 # Not marked as private so it can be used in
 # persistence/converter/converter_utils
 BOND_TYPE_MAP = {
@@ -58,8 +62,8 @@ BOND_TYPE_MAP = {
     'CASH': BondType.CASH,
     'CASH BOND': BondType.CASH,
     'PURGE PAYMENT': BondType.CASH,
-    'U.S. CURRENCY': BondType.CASH,
-    'N/A': BondType.NO_BOND,
+    'U S CURRENCY': BondType.CASH,
+    'N A': BondType.NO_BOND,
     'NO BOND': BondType.NO_BOND,
     'NO BOND ALLOWED': BondType.NO_BOND,
     'NONE SET': BondType.NO_BOND,
@@ -80,6 +84,10 @@ BOND_TYPE_MAP = {
     'UNSECURE BOND': BondType.UNSECURED,
     'UNSECURED': BondType.UNSECURED,
 }
+
+# MappableEnum.parse will strip punctuation and separate tokens with a single
+# space. Add mappings here using a single space between words and numbers.
+# For example, `N/A` can be written as `N A` and `(10%)` can be written as `10`.
 
 # Not marked as private so it can be used in
 # persistence/converter/converter_utils

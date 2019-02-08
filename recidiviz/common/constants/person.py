@@ -57,33 +57,36 @@ class Ethnicity(MappableEnum):
         return _ETHNICITY_MAP
 
 
+# MappableEnum.parse will strip punctuation and separate tokens with a single
+# space. Add mappings here using a single space between words and numbers.
+# For example, `N/A` can be written as `N A` and `(10%)` can be written as `10`.
 _GENDER_MAP = {
     'F': Gender.FEMALE,
     'FEMALE': Gender.FEMALE,
     'M': Gender.MALE,
     'MALE': Gender.MALE,
     'OTHER': Gender.OTHER,
-    'TRANS FEMALE/TRANS WOMAN': Gender.TRANS_FEMALE,
-    'TRANS MALE/TRANS MAN': Gender.TRANS_MALE,
+    'TRANS FEMALE TRANS WOMAN': Gender.TRANS_FEMALE,
+    'TRANS MALE TRANS MAN': Gender.TRANS_MALE,
     'UNKNOWN': Gender.EXTERNAL_UNKNOWN,
 }
 
+# MappableEnum.parse will strip punctuation and separate tokens with a single
+# space. Add mappings here using a single space between words and numbers.
+# For example, `N/A` can be written as `N A` and `(10%)` can be written as `10`.
 _RACE_MAP = {
     'AMERICAN INDIAN': Race.AMERICAN_INDIAN_ALASKAN_NATIVE,
-    'AMERICAN INDIAN/ALASKAN NATIVE': Race.AMERICAN_INDIAN_ALASKAN_NATIVE,
-    'AMERICAN INDIAN / ALASKAN NATIVE': Race.AMERICAN_INDIAN_ALASKAN_NATIVE,
+    'AMERICAN INDIAN ALASKAN NATIVE': Race.AMERICAN_INDIAN_ALASKAN_NATIVE,
     'NATIVE AM': Race.AMERICAN_INDIAN_ALASKAN_NATIVE,
     'I': Race.AMERICAN_INDIAN_ALASKAN_NATIVE,
     'INDIAN': Race.AMERICAN_INDIAN_ALASKAN_NATIVE,
     'ASIAN': Race.ASIAN,
-    'ASIAN/PACIFIC ISLANDER': Race.ASIAN,
-    'ASIAN / PACIFIC ISLANDER': Race.ASIAN,
-    'ASIAN / PACIFIC ISLANDER/': Race.ASIAN,
+    'ASIAN PACIFIC ISLANDER': Race.ASIAN,
     'AFRICAN AMERICAN': Race.BLACK,
     'B': Race.BLACK,
     'BLACK': Race.BLACK,
-    'BLACK-ORIGINS OF AFRICA': Race.BLACK,
-    'NATIVE HAWAIIAN/PACIFIC ISLANDER': Race.NATIVE_HAWAIIAN_PACIFIC_ISLANDER,
+    'BLACK ORIGINS OF AFRICA': Race.BLACK,
+    'NATIVE HAWAIIAN PACIFIC ISLANDER': Race.NATIVE_HAWAIIAN_PACIFIC_ISLANDER,
     'ALL OTHERS': Race.OTHER,
     'OTHER': Race.OTHER,
     'U': Race.EXTERNAL_UNKNOWN,
@@ -92,10 +95,13 @@ _RACE_MAP = {
     'MIDDLE EASTERN': Race.WHITE,
     'W': Race.WHITE,
     'WHITE': Race.WHITE,
-    'WHITE/EURP/ N.AFR/MID EAS': Race.WHITE,
-    'WHITE / EURP / N.AFR': Race.WHITE,
+    'WHITE EURP N AFR MID EAS': Race.WHITE,
+    'WHITE EURP N AFR': Race.WHITE,
 }
 
+# MappableEnum.parse will strip punctuation and separate tokens with a single
+# space. Add mappings here using a single space between words and numbers.
+# For example, `N/A` can be written as `N A` and `(10%)` can be written as `10`.
 _ETHNICITY_MAP = {
     'HISPANIC': Ethnicity.HISPANIC,
     'H': Ethnicity.HISPANIC,

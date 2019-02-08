@@ -37,22 +37,26 @@ class FakeMappableEnum(MappableEnum):
 class MappableEnumTest(unittest.TestCase):
     """Tests for MappableEnum class."""
 
-    def testFromStr_InvalidString_throwsEnumParsingError(self):
+    def testParse_InvalidString_throwsEnumParsingError(self):
         with self.assertRaises(EnumParsingError):
             FakeMappableEnum.parse('invalid', {})
 
-    def testFromStr_NoOverrides_UsesDefaultMap(self):
+    def testParse_NoOverrides_UsesDefaultMap(self):
         self.assertEqual(FakeMappableEnum.parse('banana', {}),
                          FakeMappableEnum.BANANA)
 
-    def testFromStr_WithNoneOverride_IgnoresDefaultMap(self):
+    def testParse_WithNoneOverride_IgnoresDefaultMap(self):
         overrides = {'BANANA': None}
         self.assertEqual(FakeMappableEnum.parse('banana', overrides), None)
 
-    def testFromStr_WithOverrides_UsesOverrides(self):
+    def testParse_WithOverrides_UsesOverrides(self):
         overrides = {'BAN': FakeMappableEnum.BANANA}
         self.assertEqual(FakeMappableEnum.parse('ban', overrides),
                          FakeMappableEnum.BANANA)
+
+    def testParse_WithPunctuation(self):
+        self.assertEqual(FakeMappableEnum.parse('"PASSION"-FRUIT.', {}),
+                         FakeMappableEnum.PASSION_FRUIT)
 
     def testParses_Invalid(self):
         self.assertFalse(FakeMappableEnum.can_parse('invalid', {}))
@@ -64,6 +68,6 @@ class MappableEnumTest(unittest.TestCase):
         overrides = {'BANANA': None}
         self.assertTrue(FakeMappableEnum.can_parse('banana', overrides))
 
-    def testFromStr_WithOverrides(self):
+    def testParses_WithOverrides(self):
         overrides = {'BAN': FakeMappableEnum.BANANA}
         self.assertTrue(FakeMappableEnum.can_parse('ban', overrides))

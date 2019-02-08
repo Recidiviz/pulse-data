@@ -78,7 +78,9 @@ class ReleaseReason(MappableEnum):
     def _get_default_map():
         return _RELEASE_REASON_MAP
 
-
+# MappableEnum.parse will strip punctuation and separate tokens with a single
+# space. Add mappings here using a single space between words and numbers.
+# For example, `N/A` can be written as `N A` and `(10%)` can be written as `10`.
 _ADMISSION_REASON_MAP = {
     'ESCAPE': AdmissionReason.ESCAPE,
     'NEW COMMITMENT': AdmissionReason.NEW_COMMITMENT,
@@ -87,6 +89,9 @@ _ADMISSION_REASON_MAP = {
     'TRANSFER': AdmissionReason.TRANSFER,
 }
 
+# MappableEnum.parse will strip punctuation and separate tokens with a single
+# space. Add mappings here using a single space between words and numbers.
+# For example, `N/A` can be written as `N A` and `(10%)` can be written as `10`.
 _CLASSIFICATION_MAP = {
     'HIGH': Classification.HIGH,
     'LOW': Classification.LOW,
@@ -97,6 +102,9 @@ _CLASSIFICATION_MAP = {
     'WORK RELEASE': Classification.WORK_RELEASE,
 }
 
+# MappableEnum.parse will strip punctuation and separate tokens with a single
+# space. Add mappings here using a single space between words and numbers.
+# For example, `N/A` can be written as `N A` and `(10%)` can be written as `10`.
 _CUSTODY_STATUS_MAP = {
     'CURRENTLY BOOKED': CustodyStatus.IN_CUSTODY,
     'DISCHARGED': CustodyStatus.RELEASED,
@@ -109,6 +117,9 @@ _CUSTODY_STATUS_MAP = {
     'TEMP RELEASE': CustodyStatus.RELEASED,
 }
 
+# MappableEnum.parse will strip punctuation and separate tokens with a single
+# space. Add mappings here using a single space between words and numbers.
+# For example, `N/A` can be written as `N A` and `(10%)` can be written as `10`.
 _RELEASE_REASON_MAP = {
     'ACQUITTAL': ReleaseReason.ACQUITTAL,
     'BOND': ReleaseReason.BOND,
