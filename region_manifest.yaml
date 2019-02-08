@@ -467,6 +467,14 @@ regions:
     base_url: http://www.pikecountyalsheriff.com/roster.php
     scraper_package: us_al_pike
     timezone: America/Chicago
+  us_fl_glades:
+    agency_name: Glades County Sheriff's Office
+    region_code: us_fl_glades
+    agency_type: jail
+    queue: us-fl-glades-scraper
+    base_url: http://www.gladessheriff.org
+    scraper_package: us_fl_glades
+    timezone: America/New_York
   us_ar_boone:
     agency_name: Boone County Sheriff's Office
     region_code: us_ar_boone
