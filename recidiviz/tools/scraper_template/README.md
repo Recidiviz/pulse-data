@@ -30,8 +30,10 @@ Multi-word counties should be enclosed in quotes:
  - `timezone`: the timezone, e.g. `America/New York`
  - `url`: the initial url of the roster
  - `vendor`: create a vendor scraper. Available vendors:
-   - `jailtracker`
+   - `jailtracker` (When using jailtracker also specify `--lifo` to quickly see person page scrapes)
    - `superion`
+ - `lifo`: Process tasks in last-in-first-out order (depth first). If unset, defaults to first-in-first-out.
+
 
 For example:
 `python3 -m recidiviz.tools.create_scraper lake indiana jail --timezone='America/Chicago'`
