@@ -18,11 +18,12 @@
 # pylint: disable=unused-import,wrong-import-order
 
 """Tests for utils/regions.py."""
+import builtins
 from unittest import TestCase
 
 import pytest
+from mock import mock_open, patch
 
-from mock import patch, mock_open
 from recidiviz.utils import regions
 
 MANIFEST_CONTENTS = """
@@ -36,19 +37,19 @@ MANIFEST_CONTENTS = """
         region_code: us_ny
         scraper_package: us_ny
         timezone: America/New_York
-      us_fl:
+      us_in:
         agency_name: Department of Corrections
         agency_type: prison
-        base_url: http://www.dc.state.fl.us/OffenderSearch/Search.aspx
-        names_file: us_fl_names.csv
+        base_url: https://www.in.gov/apps/indcorrection/ofs/ofs
+        names_file: us_in_names.csv
         params:
           foo: bar
           sha: baz
-        queue: us-fl-scraper
-        region_code: us_fl
+        queue: us-in-scraper
+        region_code: us_in
         scraper_class: a_different_scraper
-        scraper_package: us_fl
-        timezone: America/New_York
+        scraper_package: us_in
+        timezone: America/Indiana/Indianapolis
       us_ca:
         agency_name: Corrections
         agency_type: jail
@@ -77,20 +78,20 @@ FULL_MANIFEST = {
             'scraper_package': 'us_ny',
             'timezone': 'America/New_York'
         },
-        'us_fl': {
+        'us_in': {
             'agency_name': 'Department of Corrections',
             'agency_type': 'prison',
-            'base_url': 'http://www.dc.state.fl.us/OffenderSearch/Search.aspx',
-            'names_file': 'us_fl_names.csv',
+            'base_url': 'https://www.in.gov/apps/indcorrection/ofs/ofs',
+            'names_file': 'us_in_names.csv',
             'params': {
                 'foo': 'bar',
                 'sha': 'baz'
             },
-            'queue': 'us-fl-scraper',
-            'region_code': 'us_fl',
+            'queue': 'us-in-scraper',
+            'region_code': 'us_in',
             'scraper_class': 'a_different_scraper',
-            'scraper_package': 'us_fl',
-            'timezone': 'America/New_York'
+            'scraper_package': 'us_in',
+            'timezone': 'America/Indiana/Indianapolis'
         },
         'us_ca': {
             'agency_name': 'Corrections',
@@ -142,17 +143,16 @@ class TestRegions(TestCase):
         supported_regions = with_manifest(regions.get_supported_regions)
         self.assertCountEqual(
             [region.region_code for region in supported_regions],
-            ['us_ny', 'us_fl', 'us_ca'])
+            ['us_ny', 'us_in', 'us_ca'])
 
     def test_get_supported_region_codes(self):
         supported_regions = with_manifest(regions.get_supported_region_codes)
-        assert supported_regions == ['us_ny', 'us_fl', 'us_ca']
+        assert supported_regions == ['us_ny', 'us_in', 'us_ca']
 
     def test_get_supported_region_codes_timezone(self):
         supported_regions = with_manifest(
-            regions.get_supported_region_codes, timezone='america/los_angeles')
-        assert supported_regions == ['us_ca']
-
+            regions.get_supported_region_codes, timezone='America/New_York')
+        assert supported_regions == ['us_ny', 'us_in']
 
     def test_get_supported_region_codes_full_manifest(self):
         supported_regions = with_manifest(regions.get_supported_region_codes,
@@ -160,7 +160,7 @@ class TestRegions(TestCase):
         assert supported_regions == FULL_MANIFEST['regions']
 
     def test_validate_region_code_valid(self):
-        assert with_manifest(regions.validate_region_code, 'us_fl')
+        assert with_manifest(regions.validate_region_code, 'us_in')
 
     def test_validate_region_code_invalid(self):
         assert not with_manifest(regions.validate_region_code, 'us_az')
@@ -186,16 +186,18 @@ class TestRegions(TestCase):
         assert region.names_file == 'us_ny_names.csv'
 
     def test_region_class_with_scraper_class(self):
-        region = with_manifest(regions.Region, 'us_fl')
+        region = with_manifest(regions.Region, 'us_in')
         assert region.params == {'foo': 'bar', 'sha': 'baz'}
-        assert region.queue == 'us-fl-scraper'
+        assert region.queue == 'us-in-scraper'
         assert region.scraper_class == 'a_different_scraper'
 
+def mock_manifest_open(filename, mode):
+    if filename == 'region_manifest.yaml':
+        file_object = mock_open(read_data=MANIFEST_CONTENTS).return_value
+        file_object.__iter__.return_value = MANIFEST_CONTENTS.splitlines(True)
+        return file_object
+    return open(filename, mode)
 
 def with_manifest(func, *args, **kwargs):
-    with patch("builtins.open",
-               mock_open(read_data=MANIFEST_CONTENTS)) \
-            as mock_file:
-        value = func(*args, **kwargs)
-        mock_file.assert_called_with('region_manifest.yaml', 'r')
-        return value
+    with patch("recidiviz.utils.regions.open", new=mock_manifest_open):
+        return func(*args, **kwargs)

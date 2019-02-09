@@ -93,7 +93,7 @@ def scraper_start():
         # Wait for the docket to be loaded
         load_docket_thread.join()
 
-    timezone = get_value("timezone", request.args, None)
+    timezone = request.args.get("timezone")
     scrape_regions = ingest_utils.validate_regions(
         get_values("region", request.args), timezone=timezone)
     scrape_types = ingest_utils.validate_scrape_types(get_values("scrape_type",
@@ -159,7 +159,7 @@ def scraper_stop():
     Returns:
         N/A
     """
-    timezone = get_value("timezone", request.args, None)
+    timezone = request.args.get("timezone")
     scrape_regions = ingest_utils.validate_regions(
         get_values("region", request.args), timezone=timezone)
     scrape_types = ingest_utils.validate_scrape_types(get_values("scrape_type",
