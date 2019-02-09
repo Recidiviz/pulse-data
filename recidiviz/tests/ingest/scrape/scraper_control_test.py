@@ -33,7 +33,7 @@ app.config['TESTING'] = True
 def _MockSupported(timezone=None):
     if not timezone:
         regions = ['us_ut', 'us_wy']
-    elif timezone == 'america/new_york':
+    elif timezone == 'America/New_York':
         regions = ['us_ut']
     else:
         regions = ['us_wy']
@@ -98,7 +98,7 @@ class TestScraperStart:
         scrape_type = constants.ScrapeType.BACKGROUND
         scrape_key = ScrapeKey('us_wy', scrape_type)
         request_args = {'region': region, 'scrape_type': scrape_type.value,
-                        'timezone': 'america/los_angeles'}
+                        'timezone': 'America/Los_Angeles'}
         headers = {'X-Appengine-Cron': "test-cron"}
         response = self.client.get('/start',
                                    query_string=request_args,
@@ -109,7 +109,7 @@ class TestScraperStart:
         mock_tracker.assert_called_with(scrape_key)
         mock_sessions.assert_called_with(scrape_key)
         mock_region.assert_called_with('us_wy')
-        mock_supported.assert_called_with(timezone='america/los_angeles')
+        mock_supported.assert_called_with(timezone='America/Los_Angeles')
 
     @patch("recidiviz.utils.regions.get_supported_region_codes")
     def test_start_unsupported_region(self, mock_supported):
@@ -180,7 +180,7 @@ class TestScraperStop:
             call(ScrapeKey('us_ut', constants.ScrapeType.BACKGROUND)),
             call(ScrapeKey('us_ut', constants.ScrapeType.SNAPSHOT))])
         mock_region.assert_has_calls([call('us_ut')])
-        mock_supported.assert_called_with(timezone='america/new_york')
+        mock_supported.assert_called_with(timezone='America/New_York')
 
     @patch("recidiviz.utils.regions.get_supported_region_codes")
     def test_stop_unsupported_region(self, mock_supported):
