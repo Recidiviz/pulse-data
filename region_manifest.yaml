@@ -819,6 +819,14 @@ regions:
     base_url: http://p2c.wakeso.net
     scraper_package: us_nc_wake
     timezone: America/New_York
+  us_ky_grant:
+    agency_name: Grant County Sheriff's Office
+    region_code: us_ky_grant
+    agency_type: jail
+    queue: us-ky-grant-scraper
+    base_url: https://omsweb.public-safety-cloud.com/jtclientweb/(S(tx2rnumxplr5ygg1hzlk3pqq))/jailtracker/index/Grant_County_Ky
+    scraper_package: us_ky_grant
+    timezone: America/New_York
   us_ky_campbell:
     agency_name: Campbell County Sheriff's Office
     region_code: us_ky_campbell
