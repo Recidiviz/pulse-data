@@ -31,6 +31,7 @@ from recidiviz.common.constants.booking import CustodyStatus
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.hold import HoldStatus
 from recidiviz.common.constants.sentences import SentenceStatus
+from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.scrape.constants import MAX_PEOPLE_TO_LOG
 from recidiviz.persistence import entity_matching, entities
 from recidiviz.persistence.converter import converter
@@ -86,7 +87,8 @@ def infer_release_on_open_bookings(region, last_ingest_time, custody_status):
         for person in people:
             _infer_release_date_for_bookings(person.bookings, last_ingest_time,
                                              custody_status)
-        database.write_people(session, people)
+        database.write_people(session, people, IngestMetadata(
+            region, last_ingest_time, {}))
         session.commit()
     except Exception:
         session.rollback()
@@ -162,7 +164,7 @@ def write(ingest_info, metadata):
             logging.info('Starting entity matching')
             entity_matching.match_entities(session, metadata.region, people)
             logging.info('Successfully completed entity matching')
-            database.write_people(session, people)
+            database.write_people(session, people, metadata)
             logging.info('Successfully wrote to the database')
             session.commit()
             persisted = True

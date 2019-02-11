@@ -317,8 +317,8 @@ class TestPersistence(TestCase):
             bookings=[booking_open_most_recent_scrape])
 
         session = Session()
-        database.write_person(session, person)
-        database.write_person(session, person_unmatched)
+        database.write_person(session, person, DEFAULT_METADATA)
+        database.write_person(session, person_unmatched, DEFAULT_METADATA)
         session.commit()
         session.close()
 

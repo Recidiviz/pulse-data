@@ -29,6 +29,7 @@ from recidiviz.common.constants import enum_canonical_strings as enum_strings
 from recidiviz.common.constants.booking import CustodyStatus
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.person import Race
+from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.persistence import entities
 from recidiviz.persistence.database import database, database_utils
@@ -194,7 +195,9 @@ class TestDatabase(TestCase):
             status=ChargeStatus.PRETRIAL)
         booking.charges = [charge_1, charge_2]
 
-        persisted_person = database.write_person(act_session, person)
+        persisted_person = database.write_person(
+            act_session, person, IngestMetadata(
+                "default_region", _LAST_SEEN_TIME, {}))
         act_session.commit()
 
         person_id = persisted_person.person_id
@@ -325,7 +328,9 @@ class TestDatabase(TestCase):
             name=charge_name_2)
         ingested_booking.charges = [ingested_charge]
 
-        database.write_person(act_session, ingested_person)
+        database.write_person(
+            act_session, ingested_person, IngestMetadata(
+                "default_region", _LAST_SEEN_TIME, {}))
         act_session.commit()
         act_session.close()
 
@@ -442,7 +447,9 @@ class TestDatabase(TestCase):
             name=charge_name)
         ingested_booking.charges = [ingested_charge]
 
-        persisted_person = database.write_person(act_session, ingested_person)
+        persisted_person = database.write_person(
+            act_session, ingested_person, IngestMetadata(
+                "default_region", _LAST_SEEN_TIME, {}))
         act_session.commit()
 
         charge_id = persisted_person.bookings[0].charges[0].charge_id

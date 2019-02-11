@@ -17,7 +17,6 @@
 """Contains logic for communicating with a SQL Database."""
 
 import logging
-from datetime import datetime
 from typing import List
 from more_itertools import one
 
@@ -30,6 +29,7 @@ import recidiviz
 import recidiviz.persistence.database.update_historical_snapshots as \
     update_snapshots
 from recidiviz.common.constants.mappable_enum import MappableEnum
+from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence import entities
 from recidiviz.persistence.database import database_utils
 from recidiviz.persistence.database.schema import Person, Booking
@@ -141,26 +141,31 @@ def _query_people_and_open_bookings(session, region):
         .filter(Booking.release_date.is_(None))
 
 
-def write_people(session: Session, people: List[Person]) -> List[Person]:
+def write_people(session: Session, people: List[Person],
+                 metadata: IngestMetadata) -> List[Person]:
     """Converts the given |people| into schema.Person objects and persists their
     corresponding record trees. Returns the list of persisted (Person) objects
     """
     return _save_record_trees(
-        session, [database_utils.convert_person(person) for person in people])
+        session,
+        [database_utils.convert_person(person) for person in people],
+        metadata)
 
 
-def write_person(session: Session, person: Person) -> Person:
+def write_person(session: Session, person: Person,
+                 metadata: IngestMetadata) -> Person:
     """Converts the given |person| into a schema.Person object and persists the
     record tree rooted at that |person|. Returns the persisted (Person)
     """
     persisted_people = _save_record_trees(
-        session, [database_utils.convert_person(person)])
+        session, [database_utils.convert_person(person)], metadata)
     # persisted_people will only contain the single person passed in
     return one(persisted_people)
 
 
 def _save_record_trees(session: Session,
-                       root_people: List[Person]) -> List[Person]:
+                       root_people: List[Person],
+                       metadata: IngestMetadata) -> List[Person]:
     """Persists all record trees rooted at |root_people|. Also performs any
     historical snapshot updates required for any entities in any of these
     record trees. Returns the list of persisted (Person) objects
@@ -175,13 +180,8 @@ def _save_record_trees(session: Session,
     root_people = [session.merge(root_person) for root_person in root_people]
     session.flush()
 
-    # All historical snapshot changes should be given the same timestamp
-
-    # TODO: replace with scraper_start_time
-    snapshot_time = datetime.now()
-
     update_snapshots.update_historical_snapshots(
-        session, root_people, snapshot_time)
+        session, root_people, metadata.last_seen_time)
 
     return root_people
 
