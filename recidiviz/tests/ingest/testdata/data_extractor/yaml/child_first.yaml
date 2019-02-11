@@ -1,0 +1,5 @@
+key_mappings:
+
+multi_key_mapping:
+  Charge: charge.name
+  Book Date: booking.admission_date
