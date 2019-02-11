@@ -819,6 +819,14 @@ regions:
     base_url: http://p2c.wakeso.net
     scraper_package: us_nc_wake
     timezone: America/New_York
+  us_ky_harlan:
+    agency_name: Harlan County Sheriff's Department
+    region_code: us_ky_harlan
+    agency_type: jail
+    queue: us-ky-harlan-scraper
+    base_url: https://omsweb.public-safety-cloud.com/jtclientweb/(S(ccqy5rn4j5o1p2ehmm5gqwgm))/jailtracker/index/HARLAN_COUNTY_KY
+    scraper_package: us_ky_harlan
+    timezone: America/New_York
   us_ga_toombs:
     agency_name: Toombs County Sheriff's Office
     region_code: us_ga_toombs
