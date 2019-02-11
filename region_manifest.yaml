@@ -819,6 +819,14 @@ regions:
     base_url: http://p2c.wakeso.net
     scraper_package: us_nc_wake
     timezone: America/New_York
+  us_ky_campbell:
+    agency_name: Campbell County Sheriff's Office
+    region_code: us_ky_campbell
+    agency_type: jail
+    queue: us-ky-campbell-scraper
+    base_url: https://omsweb.public-safety-cloud.com/jtclientweb/(S(snmrvnoaxgkfjrmsyazsbekk))/jailtracker/index/Campbell_County_KY
+    scraper_package: us_ky_campbell
+    timezone: America/New_York
   us_ky_harlan:
     agency_name: Harlan County Sheriff's Department
     region_code: us_ky_harlan
