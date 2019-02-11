@@ -372,3 +372,13 @@ class HtmlDataExtractorTest(unittest.TestCase):
             '<td>Sentence Length</td><td>1 day</td>')
         info = extractor.extract_and_populate_data(html_contents)
         self.assertEqual(expected_info, info)
+
+    def test_child_first(self):
+        """Tests that in multi_key mappings (columns in a table), parent
+        objects are created where needed."""
+        expected_info = IngestInfo()
+        p = expected_info.create_person()
+        p.create_booking(admission_date='111').create_charge(name='AAA')
+        p.create_booking(admission_date='222').create_charge(name='BBB')
+        info = self.extract('child_first.html', 'child_first.yaml')
+        self.assertEqual(expected_info, info)

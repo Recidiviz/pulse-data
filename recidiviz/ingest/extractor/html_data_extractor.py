@@ -39,6 +39,8 @@ class HtmlDataExtractor(DataExtractor):
         self.css_keys = self.manifest.get('css_key_mappings', {})
         self.keys_to_ignore = self.manifest.get('keys_to_ignore', [])
 
+        if not self.keys:
+            self.keys = {}
         self.keys.update(self.css_keys)
 
         self.all_keys = set(self.keys.keys()) | \
