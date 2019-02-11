@@ -247,11 +247,11 @@ class Scraper(metaclass=abc.ABCMeta):
             if post_data is None and json_data is None:
                 page = requests.get(
                     url, proxies=proxies, headers=headers, cookies=cookies,
-                    params=params)
+                    params=params, verify=False)
             elif params is None:
                 page = requests.post(
                     url, proxies=proxies, headers=headers, cookies=cookies,
-                    data=post_data, json=json_data)
+                    data=post_data, json=json_data, verify=False)
             else:
                 raise ValueError(
                     'Both params ({}) for a GET request and either post_data '
