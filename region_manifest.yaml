@@ -819,6 +819,14 @@ regions:
     base_url: http://p2c.wakeso.net
     scraper_package: us_nc_wake
     timezone: America/New_York
+  us_ky_marion:
+    agency_name: Marion County Sheriff's Office
+    region_code: us_ky_marion
+    agency_type: jail
+    queue: us-ky-marion-scraper
+    base_url: https://omsweb.public-safety-cloud.com/jtclientweb/(S(au5l0p13wyuksrodrqf2szbj))/jailtracker/index/MARION_COUNTY_KY
+    scraper_package: us_ky_marion
+    timezone: America/New_York
   us_ky_grant:
     agency_name: Grant County Sheriff's Office
     region_code: us_ky_grant
