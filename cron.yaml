@@ -79,3 +79,57 @@ cron:
       min_backoff_seconds: 2.5
       max_doublings: 5
       job_age_limit: 9h
+
+  - description: Run texas aggregate report
+    url: /scrape_aggregate_reports/scrape_state?state=texas
+    schedule: every day 09:00
+    timezone: America/Denver
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
+
+  - description: Run florida aggregate report
+    url: /scrape_aggregate_reports/scrape_state?state=florida
+    schedule: every day 09:00
+    timezone: America/New_York
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
+
+  - description: Run georgia aggregate report
+    url: /scrape_aggregate_reports/scrape_state?state=georgia
+    schedule: every day 09:00
+    timezone: America/New_York
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
+
+  - description: Run hawaii aggregate report
+    url: /scrape_aggregate_reports/scrape_state?state=hawaii
+    schedule: every day 09:00
+    timezone: America/Honolulu
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
+
+  - description: Run kentucky aggregate report
+    url: /scrape_aggregate_reports/scrape_state?state=kentucky
+    schedule: every day 09:00
+    timezone: America/New_York
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
+
+  - description: Run new_york aggregate report
+    url: /scrape_aggregate_reports/scrape_state?state=new_york
+    schedule: every day 09:00
+    timezone: America/New_York
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
