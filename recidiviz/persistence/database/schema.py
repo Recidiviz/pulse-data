@@ -259,7 +259,8 @@ class PersonHistory(Base, DatabaseEntity, _PersonSharedColumns):
     # requires every table to have a unique primary key.
     person_history_id = Column(Integer, primary_key=True)
 
-    person_id = Column(Integer, ForeignKey('person.person_id'), nullable=False)
+    person_id = Column(
+        Integer, ForeignKey('person.person_id'), nullable=False, index=True)
     valid_from = Column(DateTime, nullable=False)
     valid_to = Column(DateTime)
 
@@ -317,7 +318,7 @@ class BookingHistory(Base, DatabaseEntity, _BookingSharedColumns):
     booking_history_id = Column(Integer, primary_key=True)
 
     booking_id = Column(
-        Integer, ForeignKey('booking.booking_id'), nullable=False)
+        Integer, ForeignKey('booking.booking_id'), nullable=False, index=True)
     valid_from = Column(DateTime, nullable=False)
     valid_to = Column(DateTime)
     person_id = Column(Integer, nullable=False, index=True)
@@ -357,7 +358,8 @@ class HoldHistory(Base, DatabaseEntity, _HoldSharedColumns):
     # requires every table to have a unique primary key.
     hold_history_id = Column(Integer, primary_key=True)
 
-    hold_id = Column(Integer, ForeignKey('hold.hold_id'), nullable=False)
+    hold_id = Column(
+        Integer, ForeignKey('hold.hold_id'), nullable=False, index=True)
     valid_from = Column(DateTime, nullable=False)
     valid_to = Column(DateTime)
     booking_id = Column(Integer, nullable=False, index=True)
@@ -399,7 +401,8 @@ class ArrestHistory(Base, DatabaseEntity, _ArrestSharedColumns):
     # requires every table to have a unique primary key.
     arrest_history_id = Column(Integer, primary_key=True)
 
-    arrest_id = Column(Integer, ForeignKey('arrest.arrest_id'), nullable=False)
+    arrest_id = Column(
+        Integer, ForeignKey('arrest.arrest_id'), nullable=False, index=True)
     valid_from = Column(DateTime, nullable=False)
     valid_to = Column(DateTime)
     booking_id = Column(Integer, nullable=False, index=True)
@@ -440,7 +443,8 @@ class BondHistory(Base, DatabaseEntity, _BondSharedColumns):
     # requires every table to have a unique primary key.
     bond_history_id = Column(Integer, primary_key=True)
 
-    bond_id = Column(Integer, ForeignKey('bond.bond_id'), nullable=False)
+    bond_id = Column(
+        Integer, ForeignKey('bond.bond_id'), nullable=False, index=True)
     valid_from = Column(DateTime, nullable=False)
     valid_to = Column(DateTime)
 
@@ -497,7 +501,10 @@ class SentenceHistory(Base, DatabaseEntity, _SentenceSharedColumns):
     sentence_history_id = Column(Integer, primary_key=True)
 
     sentence_id = Column(
-        Integer, ForeignKey('sentence.sentence_id'), nullable=False)
+        Integer,
+        ForeignKey('sentence.sentence_id'),
+        nullable=False,
+        index=True)
     valid_from = Column(DateTime, nullable=False)
     valid_to = Column(DateTime)
 
@@ -556,7 +563,8 @@ class SentenceRelationshipHistory(Base, DatabaseEntity,
     sentence_relationship_id = Column(
         Integer,
         ForeignKey('sentence_relationship.sentence_relationship_id'),
-        nullable=False)
+        nullable=False,
+        index=True)
     valid_from = Column(DateTime, nullable=False)
     valid_to = Column(DateTime)
     sentence_a_id = Column(Integer, nullable=False, index=True)
@@ -619,7 +627,8 @@ class ChargeHistory(Base, DatabaseEntity, _ChargeSharedColumns):
     # requires every table to have a unique primary key.
     charge_history_id = Column(Integer, primary_key=True)
 
-    charge_id = Column(Integer, ForeignKey('charge.charge_id'), nullable=False)
+    charge_id = Column(
+        Integer, ForeignKey('charge.charge_id'), nullable=False, index=True)
     valid_from = Column(DateTime, nullable=False)
     valid_to = Column(DateTime)
     booking_id = Column(Integer, nullable=False, index=True)
