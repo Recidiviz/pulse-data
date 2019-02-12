@@ -24,6 +24,7 @@ from typing import List, Tuple
 from unittest import TestCase
 
 import pytest
+import pytz
 from mock import Mock, PropertyMock, mock_open, patch
 
 from recidiviz.utils import regions
@@ -118,7 +119,8 @@ class TestRegions(TestCase):
            return_value=fake_modules('us_ny', 'us_in', 'us_ca'))
     def test_get_supported_region_codes_timezone(self, _mock_modules):
         supported_regions = with_manifest(
-            regions.get_supported_region_codes, timezone='America/New_York')
+            regions.get_supported_region_codes,
+            timezone=pytz.timezone('America/New_York'))
         assert supported_regions == {'us_ny', 'us_in'}
 
     @patch('pkgutil.iter_modules',
