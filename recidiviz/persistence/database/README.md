@@ -1,95 +1,227 @@
 # Database
 
+## Overview
+
+The database is a vanilla SQL database with application-time temporal tables.
+
+### Temporal tables
+
+An application-time temporal table is a table that tracks the changes over time to an entity reflected in another table (the "master table"). E.g., `person_history` tracks the changes over time to a given person in the `person` table.
+
+Each row in the temporal table (a "snapshot") contains the state of that entity for a certain period of time, along with `valid_from` and `valid_to` timestamp columns defining the period over which that state is valid. The most recent snapshot is always identical to the current state of the entity on the master table, and has a `valid_to` value of `NULL`.
+
+These tables are designed to be queried both vertically (the complete state of the database, including all relationships, at a given historical point in time) and horizontally (the changes to one entity over time).
+
+The valid period columns reflect the state of the entity in the **real world** (to our best approximation), **not** the state of the entity in the database. E.g., if historical data for a sentence that was imposed in 2005 are ingested into the system, the corresponding historical snapshot will be dated to 2005 (the time the event happened in the real world), not the time the data were recorded in the database.
+
+As part of the temporal table design, no rows are ever deleted from the master tables. Any event corresponding to a delete is instead indicated by updating a status value. This makes it easier to keep track of all entities that might ever have been related to a given entity at any point in its history, even if some of those entities are no longer valid at some later date.
+
+## Querying
+
+Do not query `prod-data` directly. `prod-data` should only be queried to validate migrations, as detailed below. All other queries should be run against the BigQuery export of `prod-data`.
+
+TODO(garciaz): find appropriate documentation from rasmi@ about querying BigQuery to link to here
+
 ## Migrations
 
-### General Warnings
+### Migration warnings and constraints
 
-- Do not make any changes to the schema file without also updating the database according to the workflow below. The schema and the database must not be out of sync.
+- Do not make any changes to `schema.py` without also running a migration to update the database. All jobs will fail for any release in which `schema.py` does not match the database.
 
 - A migration should consist of a single change to the schema (a single change meaning a single conceptual change, which may consist of multiple update statements). Do not group changes.
 
-- It is the responsibility of the person making the migration to ensure that the prod release and the database are compatible at each step of the migration. This may require performing the migration in stages (e.g. temporarily allowing double writes while replacing a column with a new one).
+- Do not share foreign key columns between master and historical tables. Master table foreign key columns point to other master tables, and should have foreign key constraints. Historical table foreign key columns point to other historical tables, and cannot have foreign key constraints (because the IDs they reference are not unique on the historical table).
 
-### Database Constraints
+- For historical tables, the primary key exists only due to requirements of SQLAlchemy, and should never be referenced elsewhere in the schema.
 
-- For historical tables, the primary key exists only due to requirements of SQLAlchemy, and should never be used or referenced by another table.
-
-- If a column is added or removed from a table, it must also be added or removed from the corresponding historical table.
-
-- Foreign key constraints cannot reference historical tables because their keys are not unique.
-
-- If adding a column of type `String`, the length must be specified (this keeps the schema portable, as certain SQL implementations require an explicit length for `String` columns).
+- If adding a column of type String, the length must be specified (this keeps the schema portable, as certain SQL implementations require an explicit length for String columns).
 
 - Do not explicitly set the column name argument for a column unless it is required to give a column the same name as a Python reserved keyword.
 
-### Migration Workflow
+### Running migrations
 
-#### TL;WR
+All migrations should be run from the `prod-data-client` VM, which is accessed by `gcloud compute ssh prod-data-client`. Then follow the steps below according to the type of migration.
 
-1. Get dev database schema in sync with prod database schema.
+If it is your **first time logging in to the VM**, run `initial-setup` from your home directory. This will set up the git repository, pip environment, and SSL certificates you will need to run migrations.
 
-2. Generate the migration against the prod database.
+#### Generating the migration
 
-3. Run the migration against the dev database. Make sure it looks as expected.
+##### Adding a value to an enum
 
-4. Check in the schema file changes and migration.
+1. Run `readonly-prod-psql` and get the current set of values for the enum using `SELECT enum_range(NULL::<enum_name>);`.
 
-5.
-    - For adding column/value: run migration against prod database, then cut a new prod release.
-    - For removing column/value: cut a new prod release, then run migration against prod database.
+2. Run `recidiviz/tools/create_enum_migration.py` according to the instructions in its file docstring.
 
-6. Give yourself a pat on the head.
+3. Update the generated migration according to the included comments using the enum values from the query.
 
-#### Environment Variables
+##### Adding or dropping a column or table
 
-Environment variables required for interacting with the **DEV** database:
+1. Update `schema.py`.
 
-- `SQLALCHEMY_USE_SSL`: must be set to 0
+2. Run `generate-auto-migration -m <migration name>`. (Note: This does not detect changes to enum values, which is why enum value migrations require the separate process outlined above.)
 
-- `SQLALCHEMY_DB_USER`: name of database role with privileges to update schema
+3. Check that the generated migration looks right.
 
-- `SQLALCHEMY_DB_PASSWORD`: password for that role
+##### Changing the type or format of existing data
 
-- `SQLALCHEMY_DB_HOST`: IP address of database instance
+1. Run `generate-empty-migration -m <migration name>`.
 
-- `SQLALCHEMY_DB_NAME`: name of database within database instance
+2. Follow the example in [change\_aggregate\_datetime\_to\_date](https://github.com/Recidiviz/pulse-data/blob/master/recidiviz/persistence/database/migrations/versions/997ed5aca81f_change_aggregate_datetime_to_date.py) for how to apply a transformation to existing data.
 
-Environment variables required for interacting with the **PROD** database:
+#### Applying the migration
 
-- `SQLALCHEMY_USE_SSL`: must be set to 1
+TODO(garciaz): work with rasmi@ and arian487@ on how this should be timed with creating a new release
 
-- All other fields required by dev database
+1. Send a PR containing the migration for review.
 
-- `SQLALCHEMY_SSL_KEY_PATH`: path to location of SSL key on local machine
+2. Incorporate any review changes. Do not merge the PR yet.
 
-- `SQLALCHEMY_SSL_CERT_PATH`: path to location of SSL certificate on local machine
+3. Check `alembic_version` in both dev and prod and ensure they have the same value. If they don't, check "Troubleshooting Alembic version issues" below.
 
-#### Workflow
+4. Apply the migration to dev by running `migrate-dev-to-head`. Run `dev-psql` to verify that the outcome of the migration was successful.
 
-NOTE: All commands below should be run from `recidiviz/persistence/database` directory, where `alembic.ini` is located.
+5. Merge the PR.
 
-1. Set environment variables to point to **DEV** database. Run `alembic revision --autogenerate -m "<MIGRATION_NAME>"`. This will generate an initial migration to resolve any differences between the dev and prod schemas.
+6. Apply the migration to prod by running `migrate-prod-to-head`. Run `readonly-prod-psql` to verify that the outcome of the migration was successful.
 
-2. Run `alembic upgrade head`. This will update the dev database to match the prod schema.
+#### Troubleshooting Alembic version issues
 
-3. In `recidiviz/persistence/database/migrations/versions`, delete the migration that was just run. As a temporary migration used to update dev only, it should not be checked in.
+Alembic automatically manages a table called `alembic_version`. This table contains a single row containing the hash ID of the most recent migration run against the database. When you attempt to autogenerate or run a migration, if alembic does not see a migration file corresponding to this hash in the `versions` folder, the attempted action will fail.
 
-4. Update `recidiviz/persistence/database/schema.py` with the schema change.
+If the above process is always followed, the `alembic_version` values in both `dev-data` and `prod-data` should always match both each other and the latest migration file in `versions`. If they don't, there could be a number of reasons:
 
-5. Set environment variables to point to **PROD** database. Run `alembic revision --autogenerate -m "<MIGRATION_NAME>"`. This will generate the prod migration for the new schema change.
+- A local manual migration was run against dev without being run against prod, presumably for testing purposes (this is fine). In this case, bring dev back into sync with prod via the steps in "Syncing dev via manual local migration" below.
 
-6. In `recidiviz/persistence/database/migrations/versions`, inspect the new migration to ensure the autogenerated code is correct.
+- Someone ran the above workflow but didn't merge their PR before running against prod (this is mostly fine). In this case, just have them merge the PR, then pull the latest migration file locally.
 
-7. Set environment variables to point to **DEV** database. Run `alembic upgrade head` to run the prod migration against the dev database. Inspect the dev database and ensure the change ran as expected.
+- A checked-in migration was run against prod without being run against dev first (this is bad). In this case, do a manual check of prod via `readonly-prod-psql` to see if any issues were introduced by the migration. If not, bring dev up to date with prod via the steps in "Syncing dev via manual local migration" below.
 
-8. Check in schema file change and migration for review. **NOTE**: Once this change is checked in, additional prod releases are blocked until the remainder of the workflow is completed.
+- A local manual migration was run against prod without being checked in (this is very bad). Fixing this may require separately syncing both dev and prod with `schema.py` and then overwriting their `alembic_version` values, depending on what changes were made by the migration.
 
-The order of the last two steps depends on the type of migration.
+##### Syncing dev via manual local migration
 
-- For **adding** a column or value:
+This process can be used to get `dev-data` back into sync with `prod-data` and the `versions` folder if it gets out of sync.
 
-    1. Ensure local branch is up-to-date (specifically confirming that no other migrations have been checked in). Set environment variables to point to **PROD** database. Run `alembic upgrade head` to update the prod database with the schema change.
+1. Manually overwrite the `alembic_version` value in `dev-data` to match `prod-data` and the `versions` folder.
 
-    2. Make a new prod release containing the updated schema file.
+2. Autogenerate a migration using dev (rather than prod) as the reference with `set-alembic-dev-env && alembic -c recidiviz/persistence/database/alembic.ini revision --autogenerate -m <migration name>`.
 
-- For **removing** a column or value, perform the same steps in reverse order (i.e. make the new prod release before running the migration against the prod database).
+3. Run `migrate-dev-to-head` to apply the local migration.
+
+4. Delete the migration file.
+
+5. Manually overwrite the `alembic_version` value again, to undo the hash update caused by running the local migration.
+
+### Setting up the VM
+
+If a new `prod-data-client` VM needs to be created, follow the below process:
+
+Create a Compute Engine VM in GCP running the latest version of Ubuntu. (Wait some time after creation before trying to SSH in; various setup processes will still hold needed locks.)
+
+SSH in using `gcloud compute ssh <VM name>`
+
+Run the following commands:
+
+```bash
+# Add repository for python3.7, which is currently not provided by Ubuntu
+sudo add-apt-repository ppa:deadsnakes/ppa
+sudo apt update
+sudo apt upgrade
+# Should include all requirements installed by the project Dockerfile, plus
+# postgresql-client
+sudo apt install locales git libxml2-dev libxslt1-dev python3.7-dev \
+    python3-pip default-jre postgresql-client
+sudo pip3 install pipenv
+```
+
+Through the GCP console for the `prod-data` database, create a set of SSL certs for the VM to use. Whitelist the IP of the VM to connect for both `dev-data` and `prod-data`.
+
+Save `server-ca.pem` and `client-cert.pem` in `/etc/ssl/certs`, and save `client-key.pem` in `/etc/ssl/private`.
+
+Create `/usr/local/sbin/initial-setup` with the below content, and `chmod` it to be executable.
+
+```bash
+# Clone the repo and set up pipenv
+git clone https://github.com/Recidiviz/pulse-data && \
+cd pulse-data && pipenv sync
+
+# Make local copies of certs owned by user (to avoid issues with needing
+# sudo to access shared certs)
+mkdir ~/prod_data_certs/ && cp /etc/ssl/certs/server-ca.pem \
+~/prod_data_certs/server-ca.pem && cp /etc/ssl/certs/client-cert.pem \
+~/prod_data_certs/client-cert.pem && sudo cp /etc/ssl/private/client-key.pem \
+~/prod_data_certs/client-key.pem && sudo chmod 0600 \
+~/prod_data_certs/client-key.pem && sudo chown $USER: \
+~/prod_data_certs/client-key.pem
+```
+
+Create `/etc/profile.d/.env` with the below content:
+
+```bash
+# These should match the ENV values set in the Dockerfile
+export LC_ALL=en_US.UTF-8
+export LC_CTYPE=en_US.UTF-8
+export LANG=en_US.UTF-8
+export TZ=America/New_York
+
+export SERVER_CA_PATH=~/prod_data_certs/server-ca.pem
+export CLIENT_CERT_PATH=~/prod_data_certs/client-cert.pem
+export CLIENT_KEY_PATH=~/prod_data_certs/client-key.pem
+
+export DEV_DATA_IP=<dev-data IP>
+export DEV_DATA_PASSWORD=<dev-data password>
+export DEV_DATA_USER=<dev-data username>
+export DEV_DATA_DB_NAME=<dev-data database name>
+
+export PROD_DATA_IP=<prod-data IP>
+export PROD_DATA_PASSWORD=<prod-data password>
+export PROD_DATA_USER=<prod-data username>
+export PROD_DATA_DB_NAME=<prod-data database name>
+```
+
+Create `/etc/profile.d/prod-data-aliases.sh` with the below content:
+
+```bash
+source /etc/profile.d/.env
+
+alias dev-psql="psql \"sslmode=disable hostaddr=$DEV_DATA_IP \
+user=$DEV_DATA_USER dbname=$DEV_DATA_DB_NAME\""
+
+alias readonly-prod-psql="psql \"sslmode=verify-ca \
+sslrootcert=$SERVER_CA_PATH sslcert=$CLIENT_CERT_PATH \
+sslkey=$CLIENT_KEY_PATH hostaddr=$PROD_DATA_IP \
+user=$PROD_DATA_USER dbname=$PROD_DATA_DB_NAME\""
+
+alias set-alembic-dev-env="export SQLALCHEMY_DB_NAME=$DEV_DATA_DB_NAME \
+&& export SQLALCHEMY_DB_HOST=$DEV_DATA_IP \
+&& export SQLALCHEMY_DB_PASSWORD=$DEV_DATA_PASSWORD \
+&& export SQLALCHEMY_DB_USER=$DEV_DATA_USER \
+&& export SQLALCHEMY_USE_SSL=0"
+
+alias set-alembic-prod-env="export SQLALCHEMY_DB_NAME=$PROD_DATA_DB_NAME \
+&& export SQLALCHEMY_DB_HOST=$PROD_DATA_IP \
+&& export SQLALCHEMY_DB_PASSWORD=$PROD_DATA_PASSWORD \
+&& export SQLALCHEMY_DB_USER=$PROD_DATA_USER \
+&& export SQLALCHEMY_USE_SSL=1 \
+&& export SQLALCHEMY_SSL_CERT_PATH=$CLIENT_CERT_PATH \
+&& export SQLALCHEMY_SSL_KEY_PATH=$CLIENT_KEY_PATH"
+
+alias generate-empty-migration="alembic -c \
+recidiviz/persistence/database/alembic.ini revision"
+
+alias generate-auto-migration="set-alembic-prod-env && alembic -c \
+recidiviz/persistence/database/alembic.ini revision --autogenerate"
+
+alias migrate-dev-to-head="set-alembic-dev-env && alembic -c \
+recidiviz/persistence/database/alembic.ini upgrade head"
+
+alias migrate-prod-to-head="set-alembic-prod-env && alembic -c \
+recidiviz/persistence/database/alembic.ini upgrade head"
+```
+
+At the end of `/etc/bash.bashrc`, add the below line. This makes aliases available in both interactive and login shells.
+
+```bash
+source /etc/profile.d/prod-data-aliases.sh
+```
+
