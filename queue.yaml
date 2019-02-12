@@ -1103,7 +1103,8 @@ queue:
     max_backoff_seconds: 300
     task_retry_limit: 5
 
-- name: us-ky-marion-scraper
+# us-ky-greenup-scraper - Greenup County, Kentucky
+- name: us-ky-greenup-scraper
   mode: push
   rate: 5/m
   bucket_size: 2
@@ -1114,6 +1115,17 @@ queue:
     task_retry_limit: 5
  
 - name: us-ky-grant-scraper
+  mode: push
+  rate: 5/m
+  bucket_size: 2
+  max_concurrent_requests: 3
+  retry_parameters:
+    min_backoff_seconds: 5
+    max_backoff_seconds: 300
+    task_retry_limit: 5
+
+# us-ky-marion-scraper - Marion County, Kentucky
+- name: us-ky-marion-scraper
   mode: push
   rate: 5/m
   bucket_size: 2
