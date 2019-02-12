@@ -18,7 +18,10 @@
 """Utils file for ingest module"""
 
 import logging
-from typing import List
+from datetime import tzinfo
+from typing import List, Optional
+
+import pytz
 
 from recidiviz.common import common_utils
 from recidiviz.ingest.scrape import constants
@@ -26,7 +29,11 @@ from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
 from recidiviz.utils import regions
 
 
-def validate_regions(region_list, timezone=None):
+def lookup_timezone(timezone: Optional[str]) -> Optional[tzinfo]:
+    return pytz.timezone(timezone) if timezone else None
+
+
+def validate_regions(region_list, timezone: tzinfo = None):
     """Validates the region arguments.
 
     If any region in |region_list| is "all", then all supported regions will be
