@@ -90,8 +90,8 @@ class Region:
                 region=self.region_code
             )
         scraper_module = importlib.import_module(scraper_module_name)
-        scraper_class = getattr(scraper_module, ''.join(
-            [s.title() for s in self.region_code.split('_')] + ['Scraper']))
+        scraper_class = getattr(scraper_module,
+                                scraper_class_name(self.region_code))
 
         return scraper_class()
 
@@ -162,3 +162,7 @@ def validate_region_code(region_code):
         False if invalid region
     """
     return region_code in get_supported_region_codes()
+
+def scraper_class_name(region_code: str) -> str:
+    """Returns the class name for a given region_code)"""
+    return ''.join(s.title() for s in region_code.split('_')) + 'Scraper'

@@ -42,6 +42,7 @@ import us
 import recidiviz.ingest
 import recidiviz.ingest.scrape.regions
 import recidiviz.tests.ingest.scrape.regions
+from recidiviz.utils import regions
 
 
 def populate_file(template_path, target_path, subs, allow_missing_keys=False):
@@ -141,11 +142,12 @@ if __name__ == '__main__':
     if state is None:
         raise ValueError('Couldn\'t parse state "%s"' % args.state)
     region = ('us', state.abbr.lower()) + tuple(args.county.lower().split())
+    region_code = '_'.join(region)
 
     substitutions = {
-        'class_name': ''.join(s.title() for s in region),
+        'class_name': regions.scraper_class_name(region_code),
         'county': args.county.title(),
-        'region': '_'.join(region),
+        'region': region_code,
         'region_dashes': '-'.join(region),
         'agency_type': args.agency_type,
         'state': state.name,
