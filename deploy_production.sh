@@ -10,6 +10,7 @@ echo "Starting deploy of cron.yaml"
 gcloud app deploy cron.yaml --project=recidiviz-123
 
 echo "Starting deploy of queue.yaml"
+python -m recidiviz.tools.build_queue_config
 gcloud app deploy queue.yaml --project=recidiviz-123
 
 echo "Starting deploy of main app"

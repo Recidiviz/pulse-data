@@ -49,7 +49,7 @@ class TestScraperStart:
         self.client = app.test_client()
 
     @patch("recidiviz.utils.regions.get_supported_region_codes")
-    @patch("recidiviz.utils.regions.Region")
+    @patch("recidiviz.utils.regions.get_region")
     @patch("recidiviz.ingest.scrape.sessions.create_session")
     @patch("recidiviz.ingest.scrape.tracker.purge_docket_and_session")
     @patch("recidiviz.ingest.scrape.docket.load_target_list")
@@ -80,7 +80,7 @@ class TestScraperStart:
         mock_supported.assert_called_with(timezone=None)
 
     @patch("recidiviz.utils.regions.get_supported_region_codes")
-    @patch("recidiviz.utils.regions.Region")
+    @patch("recidiviz.utils.regions.get_region")
     @patch("recidiviz.ingest.scrape.sessions.create_session")
     @patch("recidiviz.ingest.scrape.tracker.purge_docket_and_session")
     @patch("recidiviz.ingest.scrape.docket.load_target_list")
@@ -135,7 +135,7 @@ class TestScraperStop:
         self.client = app.test_client()
 
     @patch("recidiviz.utils.regions.get_supported_region_codes")
-    @patch("recidiviz.utils.regions.Region")
+    @patch("recidiviz.utils.regions.get_region")
     @patch("recidiviz.ingest.scrape.sessions.end_session")
     def test_stop(self, mock_sessions, mock_region, mock_supported):
         mock_sessions.return_value = None
@@ -158,7 +158,7 @@ class TestScraperStop:
         mock_supported.assert_called_with(timezone=None)
 
     @patch("recidiviz.utils.regions.get_supported_region_codes")
-    @patch("recidiviz.utils.regions.Region")
+    @patch("recidiviz.utils.regions.get_region")
     @patch("recidiviz.ingest.scrape.sessions.end_session")
     def test_stop_timezone(self, mock_sessions, mock_region, mock_supported):
         mock_sessions.return_value = None
@@ -206,7 +206,7 @@ class TestScraperResume:
         self.client = app.test_client()
 
     @patch("recidiviz.utils.regions.get_supported_region_codes")
-    @patch("recidiviz.utils.regions.Region")
+    @patch("recidiviz.utils.regions.get_region")
     @patch("recidiviz.ingest.scrape.sessions.create_session")
     def test_resume(self, mock_sessions, mock_region, mock_supported):
         mock_sessions.return_value = None
