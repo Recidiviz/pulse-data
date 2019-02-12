@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Converts an ingest_info proto Sentence to a persistence entity."""
-from recidiviz.common.constants.sentences import SentenceStatus
+from recidiviz.common.constants.sentence import SentenceStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence import entities
 from recidiviz.persistence.converter.converter_utils import normalize, \

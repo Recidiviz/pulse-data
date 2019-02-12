@@ -18,10 +18,10 @@
 """Constants related to a booking entity."""
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
-from recidiviz.common.constants.mappable_enum import MappableEnum
+from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
-class AdmissionReason(MappableEnum):
+class AdmissionReason(EntityEnum, metaclass=EntityEnumMeta):
     ESCAPE = enum_strings.admission_reason_escape
     NEW_COMMITMENT = enum_strings.admission_reason_new_commitment
     PAROLE_VIOLATION = enum_strings.admission_reason_parole_violation
@@ -33,7 +33,7 @@ class AdmissionReason(MappableEnum):
         return _ADMISSION_REASON_MAP
 
 
-class Classification(MappableEnum):
+class Classification(EntityEnum, metaclass=EntityEnumMeta):
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
     HIGH = enum_strings.classification_high
     LOW = enum_strings.classification_low
@@ -47,7 +47,7 @@ class Classification(MappableEnum):
         return _CLASSIFICATION_MAP
 
 
-class CustodyStatus(MappableEnum):
+class CustodyStatus(EntityEnum, metaclass=EntityEnumMeta):
     ESCAPED = enum_strings.custody_status_escaped
     HELD_ELSEWHERE = enum_strings.custody_status_elsewhere
     IN_CUSTODY = enum_strings.custody_status_in_custody
@@ -61,7 +61,7 @@ class CustodyStatus(MappableEnum):
         return _CUSTODY_STATUS_MAP
 
 
-class ReleaseReason(MappableEnum):
+class ReleaseReason(EntityEnum, metaclass=EntityEnumMeta):
     ACQUITTAL = enum_strings.release_reason_acquittal
     BOND = enum_strings.release_reason_bond
     CASE_DISMISSED = enum_strings.release_reason_case_dismissed
@@ -77,6 +77,7 @@ class ReleaseReason(MappableEnum):
     @staticmethod
     def _get_default_map():
         return _RELEASE_REASON_MAP
+
 
 # MappableEnum.parse will strip punctuation and separate tokens with a single
 # space. Add mappings here using a single space between words and numbers.

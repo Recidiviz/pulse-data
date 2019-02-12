@@ -25,7 +25,7 @@ from recidiviz.common import common_utils
 from recidiviz.common.constants.bond import BondStatus
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.hold import HoldStatus
-from recidiviz.common.constants.sentences import SentenceStatus
+from recidiviz.common.constants.sentence import SentenceStatus
 from recidiviz.persistence.database import database
 from recidiviz.persistence import entity_matching_utils as utils, entities
 from recidiviz.persistence.entities import Entity
