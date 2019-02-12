@@ -30,7 +30,7 @@ class ArrestConverterTest(unittest.TestCase):
         # Arrange
         ingest_arrest = ingest_info_pb2.Arrest(
             arrest_id='ARREST_ID',
-            date='1/2/1111',
+            arrest_date='1/2/1111',
             location='FAKE_LOCATION',
             officer_name='FAKE_NAME',
             officer_id='FAKE_ID',

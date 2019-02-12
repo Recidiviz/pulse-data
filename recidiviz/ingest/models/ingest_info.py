@@ -193,10 +193,10 @@ class Arrest(IngestObject):
     """
 
     def __init__(
-            self, arrest_id=None, date=None, location=None,
+            self, arrest_id=None, arrest_date=None, location=None,
             officer_name=None, officer_id=None, agency=None):
         self.arrest_id: Optional[str] = arrest_id
-        self.date: Optional[str] = date
+        self.arrest_date: Optional[str] = arrest_date
         self.location: Optional[str] = location
         self.officer_name: Optional[str] = officer_name
         self.officer_id: Optional[str] = officer_id
@@ -284,10 +284,13 @@ class Bond(IngestObject):
     Referenced from Charge.
     """
 
-    def __init__(self, bond_id=None, amount=None, bond_type=None, status=None):
+    def __init__(
+            self, bond_id=None, amount=None, bond_type=None, status=None,
+            bond_agent=None):
         self.bond_id: Optional[str] = bond_id
         self.amount: Optional[str] = amount
         self.bond_type: Optional[str] = bond_type
+        self.bond_agent: Optional[str] = bond_agent
         self.status: Optional[str] = status
 
     def __setattr__(self, name, value):

@@ -75,7 +75,7 @@ class TestIngestInfo(unittest.TestCase):
     def test_bool_truthy(self):
         ii = IngestInfo()
         person = ii.create_person()
-        person.create_booking().create_arrest(date='1/2/3')
+        person.create_booking().create_arrest(arrest_date='1/2/3')
         person.create_booking()
         self.assertTrue(ii)
 
