@@ -26,6 +26,7 @@ Also accepts the following optional arguments:
   - timezone: the timezone, e.g. America/New York
   - url: the initial url of the roster
   - vendor: create a vendor scraper. Available vendors:
+    - `brooks_jeffrey`
     - `jailtracker`
     - `superion`
 
@@ -131,7 +132,7 @@ if __name__ == '__main__':
         parser.add_argument('--' + optional_arg)
     parser.add_argument('--vendor', required=False,
                         help='Create a vendor scraper.',
-                        choices=['jailtracker', 'superion'])
+                        choices=['brooks_jeffrey', 'jailtracker', 'superion'])
     parser.add_argument('-tests_only', required=False, action='store_true',
                         help='If set, only create test files.')
     args = parser.parse_args()
