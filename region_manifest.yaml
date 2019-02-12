@@ -819,6 +819,14 @@ regions:
     base_url: http://p2c.wakeso.net
     scraper_package: us_nc_wake
     timezone: America/New_York
+  us_in_whitley:
+    agency_name: Whitley County Sheriff's Department
+    region_code: us_in_whitley
+    agency_type: jail
+    queue: us-in-whitley-scraper
+    base_url: https://omsweb.public-safety-cloud.com/jtclientweb/(S(rva54fdvvhaouo2hquhfzn3f))/jailtracker/index/Whitley_County_In
+    scraper_package: us_in_whitley
+    timezone: America/Indiana/Indianapolis
   us_ky_barren:
     agency_name: Barren County Jail
     region_code: us_ky_barren

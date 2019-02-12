@@ -68,6 +68,7 @@ import recidiviz.ingest.scrape.regions.us_ga_toombs
 import recidiviz.ingest.scrape.regions.us_in_jackson
 import recidiviz.ingest.scrape.regions.us_in_scott
 import recidiviz.ingest.scrape.regions.us_in_vigo
+import recidiviz.ingest.scrape.regions.us_in_whitley
 import recidiviz.ingest.scrape.regions.us_ks_cherokee
 import recidiviz.ingest.scrape.regions.us_ks_jefferson
 import recidiviz.ingest.scrape.regions.us_ks_pratt
