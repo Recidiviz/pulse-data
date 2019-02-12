@@ -74,7 +74,7 @@ def run_scraper(args):
         logging.info('***')
         logging.info('***')
         try:
-            run_scraper_for_region(regions.Region(region_code), args)
+            run_scraper_for_region(regions.get_region(region_code), args)
         except Exception:
             print(traceback.format_exc())
             failed_regions.append(region_code)
