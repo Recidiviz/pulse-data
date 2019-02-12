@@ -23,7 +23,7 @@ criminal justice data and calculate metrics.
 import importlib
 import os
 import pkgutil
-from datetime import datetime
+from datetime import datetime, tzinfo
 from enum import Enum
 from typing import Any, Dict, Optional, Set
 
@@ -66,7 +66,7 @@ class Region:
     agency_name: str = attr.ib()
     agency_type: str = attr.ib()
     base_url: str = attr.ib()
-    timezone: str = attr.ib()
+    timezone: tzinfo = attr.ib(converter=pytz.timezone)
     shared_queue: Optional[str] = attr.ib(default=None)
     queue: Optional[Dict[str, Any]] = attr.ib(default=None)
     removed_from_website: RemovedFromWebsite = \
@@ -127,7 +127,7 @@ def get_region_manifest(region_code: str) -> Dict[str, Any]:
         return yaml.load(region_manifest)
 
 
-def get_supported_region_codes(timezone: str = None) -> Set[str]:
+def get_supported_region_codes(timezone: tzinfo = None) -> Set[str]:
     """Retrieve a list of known scraper regions / region codes
 
     Args:
@@ -141,15 +141,9 @@ def get_supported_region_codes(timezone: str = None) -> Set[str]:
     if timezone:
         dt = datetime.now()
         return {region_code for region_code in all_region_codes
-                if timezones_share_offset(
-                    timezone, get_region(region_code).timezone, dt)}
+                if timezone.utcoffset(dt) == \
+                    get_region(region_code).timezone.utcoffset(dt)}
     return all_region_codes
-
-
-def timezones_share_offset(tz_name1: str, tz_name2: str, dt: datetime) -> bool:
-    tz1 = pytz.timezone(tz_name1)
-    tz2 = pytz.timezone(tz_name2)
-    return tz1.utcoffset(dt) == tz2.utcoffset(dt)
 
 
 def get_supported_regions():

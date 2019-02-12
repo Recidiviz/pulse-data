@@ -506,7 +506,7 @@ def mock_region(region_code, queue_name=None):
         agency_type='benevolent',
         base_url='localhost:3000',
         names_file='names.txt',
-        timezone='America/Cleveland',
+        timezone='America/New_York',
     )
 
 FAKE_TASK = Task(task_type=constants.TaskType.INITIAL, endpoint='fake')
