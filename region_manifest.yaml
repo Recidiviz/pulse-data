@@ -819,6 +819,14 @@ regions:
     base_url: http://p2c.wakeso.net
     scraper_package: us_nc_wake
     timezone: America/New_York
+  us_ky_greenup:
+    agency_name: Greenup County Sheriff's Department
+    region_code: us_ky_greenup
+    agency_type: jail
+    queue: us-ky-greenup-scraper
+    base_url: https://omsweb.public-safety-cloud.com/jtclientweb/(S(55aabt5mtcz1rluisjg5aefb))/jailtracker/index/Greenup_County_Ky
+    scraper_package: us_ky_greenup
+    timezone: America/New_York
   us_ky_marion:
     agency_name: Marion County Sheriff's Office
     region_code: us_ky_marion
@@ -859,3 +867,5 @@ regions:
     base_url: https://toombs-so-ga.zuercherportal.com
     scraper_package: us_ga_toombs
     timezone: America/New_York
+
+   
