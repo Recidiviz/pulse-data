@@ -178,7 +178,7 @@ class TestDatabase(TestCase):
                            [person_match_full_name]]
         self.assertCountEqual(people, expected_people)
 
-    def testWriteRecordTree_noExistingSnapshots_createsSnapshots(self):
+    def testWritePerson_noExistingSnapshots_createsSnapshots(self):
         act_session = Session()
 
         person = entities.Person.new_with_defaults(
@@ -245,7 +245,7 @@ class TestDatabase(TestCase):
 
         assert_session.close()
 
-    def testWriteRecordTree_allExistingSnapshots_onlyUpdatesOnChange(self):
+    def testWritePerson_allExistingSnapshots_onlyUpdatesOnChange(self):
         charge_name_1 = 'charge_name_1'
         charge_name_2 = 'charge_name_2'
         updated_last_seen_time = datetime.datetime(year=2020, month=7, day=6)
@@ -379,7 +379,7 @@ class TestDatabase(TestCase):
 
         assert_session.close()
 
-    def testWriteRecordTree_someExistingSnapshots_createsAndExtends(self):
+    def testWritePerson_someExistingSnapshots_createsAndExtends(self):
         charge_name = 'charge_name'
         updated_last_seen_time = datetime.datetime(year=2020, month=7, day=6)
         # Pick a date in the past so the assigned snapshot date will always be
@@ -494,6 +494,24 @@ class TestDatabase(TestCase):
         self.assertIsNone(charge_snapshot.valid_to)
 
         assert_session.close()
+
+    def testWritePeople_duplicatePeople_raisesError(self):
+        shared_id = 48
+        session = Session()
+
+        person_1 = entities.Person.new_with_defaults(
+            region=_REGION, race=Race.OTHER, person_id=shared_id)
+        person_2 = entities.Person.new_with_defaults(
+            region=_REGION, race=Race.EXTERNAL_UNKNOWN, person_id=shared_id)
+
+        self.assertRaises(
+            AssertionError,
+            database.write_people,
+            session,
+            [person_1, person_2],
+            IngestMetadata("default_region", _LAST_SEEN_TIME, {}))
+
+        session.close()
 
     def testWriteDf(self):
         # Arrange

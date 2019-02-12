@@ -14,7 +14,7 @@ as expected.
 
 from datetime import datetime
 import logging
-from typing import Any, Callable, List, Optional, Type
+from typing import Any, Callable, List, Optional, Set, Type
 
 import attr
 from sqlalchemy.orm import Session
@@ -45,6 +45,8 @@ def update_historical_snapshots(session: Session,
     logging.info(
         "Beginning historical snapshot updates for %s record tree(s)",
         len(root_people))
+
+    _assert_all_record_trees_unique(root_people)
 
     context_registry = _SnapshotContextRegistry()
 
@@ -130,6 +132,19 @@ def _update_snapshots_from_context(session, context, snapshot_time):
     if context.most_recent_snapshot is not None:
         context.most_recent_snapshot.valid_to = snapshot_time
         session.merge(context.most_recent_snapshot)
+
+
+def _assert_all_record_trees_unique(root_people: List[schema.Person]) -> None:
+    """Raises (AssertionError) if any person in |root_people| does not have a
+    unique primary key
+    """
+    keys: Set[int] = set()
+    for person in root_people:
+        key = person.get_primary_key()
+        if key in keys:
+            raise AssertionError(
+                'Multiple record trees passed for person ID: {}'.format(key))
+        keys.add(key)
 
 
 def _execute_action_for_all_entities(root_people: List[schema.Person],
