@@ -131,12 +131,6 @@ class TestRegions(TestCase):
     def test_validate_region_code_invalid(self, _mock_modules):
         assert not with_manifest(regions.validate_region_code, 'us_az')
 
-    def test_get_scraper_module(self):
-        region = with_manifest(regions.get_region, 'us_ny')
-        module = region.get_scraper_module()
-        assert module.__name__ == \
-               'recidiviz.ingest.scrape.regions.us_ny'
-
     def test_get_scraper(self):
         region = with_manifest(regions.get_region, 'us_ny')
         scraper = region.get_scraper()
