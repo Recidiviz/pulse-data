@@ -17,35 +17,32 @@
 
 """Tests for ingest/ingest_utils.py."""
 
-from mock import patch, mock_open
+from mock import Mock, PropertyMock, patch
 
 from recidiviz.ingest.models import ingest_info, ingest_info_pb2
 from recidiviz.ingest.scrape import constants, ingest_utils
-from recidiviz.utils import regions
 
-REGIONS = """
-    regions:
-        us_ny: 1
-        us_pa: 2
-        us_vt: 3
-        us_pa_greene: 4
-"""
+
+def fake_modules(*names):
+    modules = []
+    for name in names:
+        fake_module = Mock()
+        type(fake_module).name = PropertyMock(return_value=name)
+        modules.append(fake_module)
+    return modules
+
 
 class TestIngestUtils:
     """Tests for regions.py."""
 
-    def setup_method(self, _test_method):
-        regions.MANIFEST = None
-
-    def teardown_method(self, _test_method):
-        regions.MANIFEST = None
-
-    @patch('builtins.open', mock_open(read_data=REGIONS))
-    def test_validate_regions_one_ok(self):
+    @patch('pkgutil.iter_modules',
+           return_value=fake_modules('us_ny', 'us_pa', 'us_vt', 'us_pa_greene'))
+    def test_validate_regions_one_ok(self, _mock_modules):
         assert ingest_utils.validate_regions(['us_ny']) == ['us_ny']
 
-    @patch('builtins.open', mock_open(read_data=REGIONS))
-    def test_validate_regions_one_all(self):
+    @patch('pkgutil.iter_modules',
+           return_value=fake_modules('us_ny', 'us_pa', 'us_vt', 'us_pa_greene'))
+    def test_validate_regions_one_all(self, _mock_modules):
         assert set(ingest_utils.validate_regions(['all'])) == {
             'us_ny',
             'us_pa',
@@ -53,21 +50,25 @@ class TestIngestUtils:
             'us_pa_greene',
         }
 
-    @patch('builtins.open', mock_open(read_data=REGIONS))
-    def test_validate_regions_one_invalid(self):
+    @patch('pkgutil.iter_modules',
+           return_value=fake_modules('us_ny', 'us_pa', 'us_vt', 'us_pa_greene'))
+    def test_validate_regions_one_invalid(self, _mock_modules):
         assert not ingest_utils.validate_regions(['ca_bc'])
 
-    @patch('builtins.open', mock_open(read_data=REGIONS))
-    def test_validate_regions_multiple_ok(self):
+    @patch('pkgutil.iter_modules',
+           return_value=fake_modules('us_ny', 'us_pa', 'us_vt', 'us_pa_greene'))
+    def test_validate_regions_multiple_ok(self, _mock_modules):
         assert ingest_utils.validate_regions(['us_pa', 'us_ny']) == ['us_pa',
                                                                      'us_ny']
 
-    @patch('builtins.open', mock_open(read_data=REGIONS))
-    def test_validate_regions_multiple_invalid(self):
+    @patch('pkgutil.iter_modules',
+           return_value=fake_modules('us_ny', 'us_pa', 'us_vt', 'us_pa_greene'))
+    def test_validate_regions_multiple_invalid(self, _mock_modules):
         assert not ingest_utils.validate_regions(['us_pa', 'invalid'])
 
-    @patch('builtins.open', mock_open(read_data=REGIONS))
-    def test_validate_regions_multiple_all(self):
+    @patch('pkgutil.iter_modules',
+           return_value=fake_modules('us_ny', 'us_pa', 'us_vt', 'us_pa_greene'))
+    def test_validate_regions_multiple_all(self, _mock_modules):
         assert set(ingest_utils.validate_regions(['us_pa', 'all'])) == {
             'us_ny',
             'us_pa',
@@ -75,12 +76,14 @@ class TestIngestUtils:
             'us_pa_greene',
         }
 
-    @patch('builtins.open', mock_open(read_data=REGIONS))
-    def test_validate_regions_multiple_all_invalid(self):
+    @patch('pkgutil.iter_modules',
+           return_value=fake_modules('us_ny', 'us_pa', 'us_vt', 'us_pa_greene'))
+    def test_validate_regions_multiple_all_invalid(self, _mock_modules):
         assert not ingest_utils.validate_regions(['all', 'invalid'])
 
-    @patch('builtins.open', mock_open(read_data=REGIONS))
-    def test_validate_regions_empty(self):
+    @patch('pkgutil.iter_modules',
+           return_value=fake_modules('us_ny', 'us_pa', 'us_vt', 'us_pa_greene'))
+    def test_validate_regions_empty(self, _mock_modules):
         assert ingest_utils.validate_regions([]) == []
 
     def test_validate_scrape_types_one_ok(self):

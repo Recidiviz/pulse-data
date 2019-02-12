@@ -20,9 +20,13 @@
 Regions represent geographic areas/legal jurisdictions from which we ingest
 criminal justice data and calculate metrics.
 """
+import os
+import pkgutil
 from datetime import datetime
 from enum import Enum
+from typing import Any, Dict, Optional, Set
 
+import attr
 import pytz
 import yaml
 
@@ -32,6 +36,7 @@ class RemovedFromWebsite(Enum):
     UNKNOWN_SIGNIFICANCE = 'UNKNOWN_SIGNIFICANCE'
 
 
+@attr.s(frozen=True)
 class Region:
     """Constructs region entity with attributes and helper functions
 
@@ -39,42 +44,39 @@ class Region:
     and has helper functions to get region-specific configuration info.
 
     Attributes:
+        region_code: (string) Region code
         agency_name: (string) Human-readable agency name
         agency_type: (string) 'prison' or 'jail'
         base_url: (string) Base URL for scraping
-        names_file: (string) Optional filename of names file for this region
-        params: (dict) Optional mapping of key-value pairs specific to region
-        queue: (string) Name of the queue for this region
-        region_code: (string) Region code
-        scraper_class: (string) Optional name of the class for this region's
-            scraper. If absent, assumes the scraper is `[region_code]_scraper`.
-        scraper_package: (string) Name of the package with this region's scraper
         timezone: (string) Timezone in which this region resides. If the region
             is in multiple timezones, this is the timezone in which most of the
             region resides, where "most" is whatever is most useful for that
             region, e.g. population count versus land size.
+        shared_queue: (string) The name of an existing queue to use instead of
+            creating one for this region.
+        queue: (dict) Any parameters to override when creating the queue for
+            this region.
+        removed_from_website: (string) Value to use when a person is removed
+            from a website (converted to `RemovedFromWebsite`).
+        names_file: (string) Optional filename of names file for this region
     """
 
-    def __init__(self, region_code):
-        # Attempt to load region info from region_manifest
-        region_config = get_region_manifest(region_code)
+    region_code: str = attr.ib()
+    agency_name: str = attr.ib()
+    agency_type: str = attr.ib()
+    base_url: str = attr.ib()
+    timezone: str = attr.ib()
+    shared_queue: Optional[str] = attr.ib(default=None)
+    queue: Optional[Dict[str, Any]] = attr.ib(default=None)
+    removed_from_website: RemovedFromWebsite = \
+        attr.ib(default=RemovedFromWebsite.RELEASED,
+                converter=RemovedFromWebsite)
+    names_file: Optional[str] = attr.ib(default=None)
 
-        self.agency_name = region_config["agency_name"]
-        self.agency_type = region_config["agency_type"]
-        self.base_url = region_config["base_url"]
-        self.region_code = region_config["region_code"]
-        self.names_file = region_config.get("names_file", None)
-        self.params = region_config.get("params", {})
-        self.queue = region_config["queue"]
-        self.scraper_class = region_config.get("scraper_class",
-                                               self.region_code + "_scraper")
-        self.scraper_package = region_config["scraper_package"]
-        self.timezone = region_config["timezone"]
-        if "removed_from_website" in region_config.keys():
-            self.removed_from_website = RemovedFromWebsite(
-                region_config["removed_from_website"])
-        else:
-            self.removed_from_website = RemovedFromWebsite.RELEASED
+    def __attrs_post_init__(self):
+        if self.queue and self.shared_queue:
+            raise ValueError(
+                'Only one of `queue` and `shared_queue` can be set.')
 
     def get_scraper_module(self):
         """Return the scraper module for this region
@@ -98,7 +100,7 @@ class Region:
         ingest_module = getattr(top_level, "ingest")
         scrape_module = getattr(ingest_module, "scrape")
         regions_module = getattr(scrape_module, "regions")
-        scraper_module = getattr(regions_module, self.scraper_package)
+        scraper_module = getattr(regions_module, self.region_code)
 
         return scraper_module
 
@@ -108,43 +110,63 @@ class Region:
         Returns:
             An instance of the region's scraper class (e.g., UsNyScraper)
         """
+        scraper_string = '{}_scraper'.format(self.region_code)
         scraper_module = self.get_scraper_module()
-        scraper = getattr(scraper_module, self.scraper_class)
+        scraper = getattr(scraper_module, scraper_string)
         scraper_class = getattr(scraper, ''.join(
-            [s.title() for s in self.scraper_class.split('_')]))
+            [s.title() for s in scraper_string.split('_')]))
 
         return scraper_class()
 
+    def get_queue_name(self):
+        """Returns the name of the queue to be used for the region"""
+        return self.shared_queue if self.shared_queue \
+            else '{}-scraper'.format(self.region_code.replace('_', '-'))
 
-def get_supported_region_codes(full_manifest=False, timezone=None):
-    """Retrieve a list of known scraper regions / region codes
+# Cache of the `Region` objects.
+REGIONS: Dict[str, 'Region'] = {}
+def get_region(region_code: str) -> Region:
+    global REGIONS
+    if not region_code in REGIONS:
+        REGIONS[region_code] = Region(region_code=region_code,
+                                      **get_region_manifest(region_code))
+    return REGIONS[region_code]
 
-    See region_manifest.yaml for full list of fields available for each region.
+
+BASE_REGION_PATH = 'recidiviz/ingest/scrape/regions'
+MANIFEST_NAME = 'manifest.yaml'
+
+def get_region_manifest(region_code: str) -> Dict[str, Any]:
+    """Gets manifest for a specific region
 
     Args:
-        full_manifest: (bool) If True, return full manifest
+        region_code: (string) Region code
+
+    Returns:
+        Region manifest as dictionary
+    """
+    with open(os.path.join(BASE_REGION_PATH, region_code, MANIFEST_NAME)) \
+            as region_manifest:
+        return yaml.load(region_manifest)
+
+
+def get_supported_region_codes(timezone: str = None) -> Set[str]:
+    """Retrieve a list of known scraper regions / region codes
+
+    Args:
         timezone: (str) If set, return only regions in the right timezone
 
     Returns:
-        If full_manifest: Dictionary of regions, with each region mapped to a
-            dict of key/value pairs for configuration for that region.
-        If not full manifest: List of region codes (strings)
+        Set of region codes (strings)
     """
-    manifest = get_full_manifest()
-    supported_regions = manifest["regions"]
-    dt = datetime.now()
-
+    all_region_codes = {region_module.name for region_module
+                        in pkgutil.iter_modules([BASE_REGION_PATH])}
     if timezone:
-        supported_regions = {
-            region: info
-            for region, info in supported_regions.items()
-            if timezones_share_offset(timezone, info['timezone'], dt)
-        }
-
-    if not full_manifest:
-        supported_regions = list(supported_regions)
-
-    return supported_regions
+        dt = datetime.now()
+        return {region_code for region_code in all_region_codes
+                if timezones_share_offset(
+                    timezone, get_region(region_code).timezone, dt)}
+    return all_region_codes
 
 
 def timezones_share_offset(tz_name1: str, tz_name2: str, dt: datetime) -> bool:
@@ -154,40 +176,8 @@ def timezones_share_offset(tz_name1: str, tz_name2: str, dt: datetime) -> bool:
 
 
 def get_supported_regions():
-    return [Region(region_code) for region_code in get_supported_region_codes()]
-
-
-MANIFEST = None
-
-
-def get_full_manifest():
-    """Gets the full region manifest
-
-    If the manifest has not yet been loaded, loads it from disk.
-
-    Returns:
-        Manifest as dictionary
-    """
-    global MANIFEST
-    if not MANIFEST:
-        with open("region_manifest.yaml", 'r') as ymlfile:
-            MANIFEST = yaml.load(ymlfile)
-    return MANIFEST
-
-
-def get_region_manifest(region_code):
-    """Gets manifest for a specific region
-
-    Args:
-        region_code: (string) Region code
-
-    Returns:
-        Region manifest as dictionary
-    """
-    try:
-        return get_full_manifest()["regions"][region_code]
-    except KeyError:
-        raise Exception("Region '%s' not found in manifest." % region_code)
+    return [get_region(region_code)
+            for region_code in get_supported_region_codes()]
 
 
 def validate_region_code(region_code):

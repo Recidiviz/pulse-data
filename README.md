@@ -119,10 +119,11 @@ has more information about running locally.
 ### Deployment
 
 ### Deploying a scraper
-To deploy a scraper, simply edit the [cron](./cron.yaml).  The release engineer
-that week should check for all of the newly added scrapers and manually test them.
+The release engineer should check for all of the newly added scrapers and manually test them.
 
 The release engineer oncall should go through the following steps:
+
+Note: The `queue.yaml` file is now generated using `python -m recidiviz.tools.build_queue_config`.
 
 #### Push to staging
 Typically on Monday morning the release engineer should:

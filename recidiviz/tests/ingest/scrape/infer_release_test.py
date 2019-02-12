@@ -25,6 +25,7 @@ from mock import call, patch
 from recidiviz.common.constants.booking import CustodyStatus
 from recidiviz.ingest.scrape import infer_release
 from recidiviz.ingest.scrape.sessions import ScrapeSession
+from recidiviz.utils import regions
 
 APP_ID = "recidiviz-infer-release-test"
 
@@ -32,38 +33,29 @@ app = Flask(__name__)
 app.register_blueprint(infer_release.infer_release_blueprint)
 app.config['TESTING'] = True
 
-_FULL_MANIFEST = {
-    'regions': {
-        'us_ut': {
-            'agency_name': 'agency_name',
-            'agency_type': 'jail',
-            'base_url': 'base_url',
-            'queue': 'queue',
-            'region_code': 'us_ut',
-            'scraper_package': 'us_ut',
-            'timezone': 'America/New_York',
-        },
-        'us_wy': {
-            'agency_name': 'agency_name',
-            'agency_type': 'jail',
-            'base_url': 'base_url',
-            'queue': 'queue',
-            'region_code': 'us_wy',
-            'scraper_package': 'us_wy',
-            'timezone': 'America/New_York',
-            'removed_from_website': 'UNKNOWN_SIGNIFICANCE'
-        },
-        'us_nc': {
-            'agency_name': 'agency_name',
-            'agency_type': 'prison',
-            'base_url': 'base_url',
-            'queue': 'queue',
-            'region_code': 'us_nc',
-            'scraper_package': 'us_nc',
-            'timezone': 'America/New_York'
-        }
-    }
-}
+_REGIONS = [
+    regions.Region(
+        region_code='us_ut',
+        agency_name='agency_name',
+        agency_type='jail',
+        base_url='base_url',
+        queue={'rate': '5/m'},
+        timezone='America/New_York',
+    ), regions.Region(
+        region_code='us_wy',
+        agency_name='agency_name',
+        agency_type='jail',
+        base_url='base_url',
+        timezone='America/New_York',
+        removed_from_website='UNKNOWN_SIGNIFICANCE',
+    ), regions.Region(
+        region_code='us_nc',
+        agency_name='agency_name',
+        agency_type='prison',
+        base_url='base_url',
+        timezone='America/New_York',
+    ),
+]
 
 
 class TestInferRelease(TestCase):
@@ -74,14 +66,17 @@ class TestInferRelease(TestCase):
         self.client = app.test_client()
 
     @patch("recidiviz.persistence.persistence.infer_release_on_open_bookings")
-    @patch("recidiviz.utils.regions.get_full_manifest")
+    @patch("recidiviz.utils.regions.get_region")
+    @patch("recidiviz.utils.regions.get_supported_region_codes")
     @patch("recidiviz.ingest.scrape.sessions.get_most_recent_completed_session")
     def test_infer_release(
-            self, mock_get_most_recent_session, mock_full_manifest,
-            mock_infer_release):
+            self, mock_get_most_recent_session, mock_supported_regions,
+            mock_region, mock_infer_release):
         headers = {'X-Appengine-Cron': "test-cron"}
         time = datetime(2014, 8, 31)
-        mock_full_manifest.return_value = _FULL_MANIFEST
+        mock_supported_regions.return_value = [region.region_code
+                                               for region in _REGIONS]
+        mock_region.side_effect = _REGIONS
         mock_get_most_recent_session.return_value = \
             ScrapeSession.new(key=None, start=time)
 

@@ -45,12 +45,12 @@ The script will create the following files in the directory
  - `<region_code>_scraper.py`
  - `__init__.py`
  - `<region_code>.yaml`
+ - `manifest.yaml`
 
 It will also create a test file
 `recidiviz/tests/ingest/scrape/regions/<region_code>/<region_code>_scraper_test.py`.
 
-In addition, the script will append the region to [queue.yaml](/queue.yaml),
-[region_manifest.yaml](/region_manifest.yaml) and [cron.yaml](/cron.yaml).
+The parameters provided in `manifest.yaml` are used to build a [Region](/recidiviz/utils/regions.py). See the docstring for a full list of what can be provided.
 
 Note: Calling `create_scraper` with the `--vendor` option will generate a slightly different setup according to the vendor type. Explore the generated files for pertinent instructions.
 
@@ -90,7 +90,7 @@ The different types of tasks are found in the [Constants](/recidiviz/ingest/scra
 * <strong>GET_MORE_TASKS</strong> - This indicates that the page has more navigation that needs to be done.  In this case, the function `get_more_tasks` is called and it is the job of the method to return a list of params that was extracted from that page.
 * <strong>SCRAPE_DATA</strong> - This indicates that the page has information on it that we care about and need to scrape.  In this case `populate_data` is called and it is the users job to walk the page and populate the `ingest_info` object.
 
-By default, the first task is of `INITIAL_AND_MORE` type so that `get_more_tasks` is called for the `INITIAL` task as well. It also navigates to the `base_url` defined in [region_manifest.yaml](/region_manifest.yaml) by default. A different endpoint or other request parameters for the initial task can be provided by overriding `get_initial_task`.
+By default, the first task is of `INITIAL_AND_MORE` type so that `get_more_tasks` is called for the `INITIAL` task as well. It also navigates to the `base_url` defined in `manifest.yaml` by default. A different endpoint or other request parameters for the initial task can be provided by overriding `get_initial_task`.
 
 For convenience, there also exists `SCRAPE_DATA_AND_MORE` which calls both `get_more_tasks` as well as `populate_data`.  This can be used when a persons information is spread across multiple pages.  For example their booking data is on one page, and the user must click a link to reach the pages there the charges information is displayed.
 
