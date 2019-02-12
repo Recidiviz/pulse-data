@@ -69,11 +69,6 @@ def create_scraper_files(subs, vendor: Optional[str]):
         target = os.path.join(target_dir, 'manifest.yaml')
         populate_file(template, target, subs, allow_missing_keys=True)
 
-    ingest_init_file = recidiviz.ingest.__file__
-    region_import_statement = 'import {}.{}'.format(
-        recidiviz.ingest.scrape.regions.__name__, subs['region'])
-    _rewrite_init_file(ingest_init_file, region_import_statement)
-
     regions_dir = os.path.dirname(recidiviz.ingest.scrape.regions.__file__)
     if not os.path.exists(regions_dir):
         raise OSError("Couldn't find directory "
@@ -97,40 +92,6 @@ def create_scraper_files(subs, vendor: Optional[str]):
     if not vendor:
         yaml_template = os.path.join(template_dir, 'region.txt')
         create_extractor_yaml(yaml_template)
-
-def _rewrite_init_file(filename, import_statement):
-    """rewrites recidiviz/ingest/__init__.py to include the new import
-    statement."""
-    gpl = []
-    docstring = []
-    imports = [import_statement + '\n']
-    with open(filename) as f:
-        stage = 'LICENSE'
-        for line in f.readlines():
-            if line == '\n':
-                continue
-            if line.startswith('#'):
-                gpl.append(line)
-                assert stage == 'LICENSE'
-            elif line.startswith('"""'):
-                if stage == 'LICENSE':
-                    stage = 'DOCSTRING'
-                elif stage == 'DOCSTRING':
-                    stage = 'IMPORTS'
-                docstring.append(line)
-            elif line.startswith('import'):
-                assert stage == 'IMPORTS'
-                imports.append(line)
-            else:
-                assert stage == 'DOCSTRING'
-                docstring.append(line)
-
-    with open(filename, 'w') as f:
-        f.writelines(gpl)
-        f.write('\n')
-        f.writelines(docstring)
-        f.write('\n')
-        f.writelines(sorted(imports))
 
 
 def create_test_files(subs, vendor: Optional[str]):
