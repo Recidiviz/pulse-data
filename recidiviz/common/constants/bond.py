@@ -62,6 +62,7 @@ BOND_TYPE_MAP = {
     'HOLD WITHOUT BAIL': BondType.NO_BOND,
     'CASH': BondType.CASH,
     'CASH BOND': BondType.CASH,
+    'PAY AND RELEASE': BondType.CASH,
     'PURGE PAYMENT': BondType.CASH,
     'U S CURRENCY': BondType.CASH,
     'N A': BondType.NO_BOND,
