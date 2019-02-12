@@ -35,7 +35,8 @@ class BondConverterTest(unittest.TestCase):
             bond_id='BOND_ID',
             bond_type='CASH',
             amount='$125.00',
-            status='ACTIVE'
+            status='ACTIVE',
+            bond_agent='AGENT',
         )
 
         # Act
@@ -49,8 +50,7 @@ class BondConverterTest(unittest.TestCase):
             amount_dollars=125,
             status=BondStatus.SET,
             status_raw_text='ACTIVE',
-            # TODO(745): include this in conversion when field is added to proto
-            bond_agent=None,
+            bond_agent='AGENT',
         )
 
         self.assertEqual(result, expected_result)

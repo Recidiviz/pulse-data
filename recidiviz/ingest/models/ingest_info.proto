@@ -64,7 +64,7 @@ message Booking {
 
 message Arrest {
     optional string arrest_id = 1;
-    optional string date = 2;
+    optional string arrest_date = 2;
     optional string location= 3;
     optional string officer_name = 4;
     optional string officer_id = 5;
@@ -105,6 +105,7 @@ message Bond {
     optional string amount = 2;
     optional string bond_type = 3;
     optional string status = 4;
+    optional string bond_agent = 5;
 }
 
 message Sentence {

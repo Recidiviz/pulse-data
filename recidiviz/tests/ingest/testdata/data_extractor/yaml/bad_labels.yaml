@@ -26,7 +26,7 @@ multi_key_mapping:
   Statute Code: charge.statute
   Description: charge.name
   CaseNumber: charge.case_number
-  Arrest DateTime: arrest.date
+  Arrest DateTime: arrest.arrest_date
   Bond Amount: bond.amount
   Bond Type: bond.bond_type
   Next Court Date: charge.next_court_date
