@@ -28,7 +28,7 @@ from sqlalchemy.orm import Session
 import recidiviz
 import recidiviz.persistence.database.update_historical_snapshots as \
     update_snapshots
-from recidiviz.common.constants.mappable_enum import MappableEnum
+from recidiviz.common.constants.entity_enum import EntityEnum
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence import entities
 from recidiviz.persistence.database import database_utils
@@ -218,7 +218,7 @@ def _write_df_only_successful_rows(
 def _convert_enums_to_strings(dictionary):
     result = {}
     for k, v in dictionary.items():
-        if issubclass(type(v), MappableEnum):
+        if issubclass(type(v), EntityEnum):
             result[k] = v.value
         else:
             result[k] = v

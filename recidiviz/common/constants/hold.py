@@ -17,10 +17,10 @@
 
 """Constants related to a hold entity."""
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
-from recidiviz.common.constants.mappable_enum import MappableEnum
+from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
-class HoldStatus(MappableEnum):
+class HoldStatus(EntityEnum, metaclass=EntityEnumMeta):
     ACTIVE = enum_strings.hold_status_active
     INACTIVE = enum_strings.hold_status_inactive
     INFERRED_DROPPED = enum_strings.hold_status_inferred_dropped
