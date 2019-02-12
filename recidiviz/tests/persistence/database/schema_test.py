@@ -17,6 +17,7 @@
 """Tests for schema.py."""
 
 from unittest import TestCase
+from sqlalchemy.inspection import inspect
 
 from recidiviz.persistence.database.schema import (
     Arrest, ArrestHistory,
@@ -133,11 +134,10 @@ class SchemaTest(TestCase):
         if table_b_exclusions is None:
             table_b_exclusions = []
 
-        # Strip leading table name from column names
-        table_a_column_names = {str(column).split('.')[1] for column in
-                                table_a.__table__.columns}
-        table_b_column_names = {str(column).split('.')[1] for column in
-                                table_b.__table__.columns}
+        table_a_column_names = {column[0] for column
+                                in inspect(table_a).columns.items()}
+        table_b_column_names = {column[0] for column
+                                in inspect(table_b).columns.items()}
 
         # Remove all exclusions. This is done for each exclusion separately
         # rather than using a list comprehension so that an error can be thrown
