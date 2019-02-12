@@ -71,6 +71,7 @@ import recidiviz.ingest.scrape.regions.us_in_vigo
 import recidiviz.ingest.scrape.regions.us_ks_cherokee
 import recidiviz.ingest.scrape.regions.us_ks_jefferson
 import recidiviz.ingest.scrape.regions.us_ks_pratt
+import recidiviz.ingest.scrape.regions.us_ky_crittenden
 import recidiviz.ingest.scrape.regions.us_ky_greenup
 import recidiviz.ingest.scrape.regions.us_ky_marion
 import recidiviz.ingest.scrape.regions.us_ky_grant
