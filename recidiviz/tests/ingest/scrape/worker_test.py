@@ -49,7 +49,7 @@ class TestWorker:
     def setup_method(self, _test_method):
         self.client = app.test_client()
 
-    @patch("recidiviz.utils.regions.Region")
+    @patch("recidiviz.utils.regions.get_region")
     def test_post_work(self, mock_region):
         mock_region.return_value = FakeRegion(FakeScraper(1))
 
@@ -60,7 +60,7 @@ class TestWorker:
         response = self.client.post(PATH, data=form_encoded, headers=headers)
         assert response.status_code == 200
 
-    @patch("recidiviz.utils.regions.Region")
+    @patch("recidiviz.utils.regions.get_region")
     def test_post_work_params(self, mock_region):
         mock_region.return_value = FakeRegion(FakeScraper(1))
 
@@ -71,7 +71,7 @@ class TestWorker:
         response = self.client.post(PATH, data=form_encoded, headers=headers)
         assert response.status_code == 200
 
-    @patch("recidiviz.utils.regions.Region")
+    @patch("recidiviz.utils.regions.get_region")
     def test_post_work_error(self, mock_region):
         mock_region.return_value = FakeRegion(FakeScraper(-1))
 
@@ -85,7 +85,7 @@ class TestWorker:
         response = self.client.post(PATH, data=form_encoded, headers=headers)
         assert response.status_code == 500
 
-    @patch("recidiviz.utils.regions.Region")
+    @patch("recidiviz.utils.regions.get_region")
     def test_post_work_timeout(self, mock_region):
         mock_region.return_value = FakeRegion(FakeScraper(1))
 

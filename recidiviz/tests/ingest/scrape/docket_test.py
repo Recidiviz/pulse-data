@@ -51,7 +51,7 @@ class TestDocket:
         for i, item in enumerate(items):
             assert item.message.data.decode() == json.dumps(get_payload()[i])
 
-    @patch('recidiviz.utils.regions.Region')
+    @patch('recidiviz.utils.regions.get_region')
     def test_load_target_list_background_no_names_file(self, mock_region):
         mock_region.return_value.names_file = None
         scrape_key = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
@@ -61,7 +61,7 @@ class TestDocket:
         item = docket.get_new_docket_item(scrape_key)
         assert item.message.data.decode() == json.dumps('empty')
 
-    @patch('recidiviz.utils.regions.Region')
+    @patch('recidiviz.utils.regions.get_region')
     def test_load_target_list_last_names(self, mock_region):
         mock_region.return_value.names_file = \
             '../recidiviz/tests/ingest/testdata/docket/names/last_only.csv'
@@ -90,7 +90,7 @@ class TestDocket:
         ]
         assert not docket.get_new_docket_item(scrape_key)
 
-    @patch('recidiviz.utils.regions.Region')
+    @patch('recidiviz.utils.regions.get_region')
     def test_load_target_list_last_names_with_query(self, mock_region):
         mock_region.return_value.names_file = \
             '../recidiviz/tests/ingest/testdata/docket/names/last_only.csv'
@@ -110,7 +110,7 @@ class TestDocket:
         ]
         assert not docket.get_new_docket_item(scrape_key)
 
-    @patch('recidiviz.utils.regions.Region')
+    @patch('recidiviz.utils.regions.get_region')
     def test_load_target_list_last_names_with_bad_query(self, mock_region):
         mock_region.return_value.names_file = \
             '../recidiviz/tests/ingest/testdata/docket/names/last_only.csv'
@@ -122,7 +122,7 @@ class TestDocket:
         assert item.message.data.decode() == json.dumps(('GARBAGE', ''))
         assert not docket.get_new_docket_item(scrape_key)
 
-    @patch('recidiviz.utils.regions.Region')
+    @patch('recidiviz.utils.regions.get_region')
     def test_load_target_list_full_names(self, mock_region):
         mock_region.return_value.names_file = \
             '../recidiviz/tests/ingest/testdata/docket/names/last_and_first.csv'

@@ -28,6 +28,11 @@ script:
 after_success:
 - coveralls
 deploy:
+- provider: script
+  script: python -m recidiviz.tools.build_queue_config
+  on:
+    all_branches: true
+    condition: $TRAVIS_TAG =~ ^v[0-9]+\.[0-9]+\.[0-9]+
 - provider: gae
   keyfile: client-secret-staging.json
   project: recidiviz-staging

@@ -26,11 +26,11 @@ from datetime import datetime
 
 import requests
 
-from recidiviz.ingest.scrape import (scraper_utils, constants, sessions,
-                                     tracker, queues)
 from recidiviz.ingest.models.scrape_key import ScrapeKey
-from recidiviz.utils.regions import Region
-from recidiviz.ingest.scrape.task_params import Task, QueueRequest
+from recidiviz.ingest.scrape import (constants, queues, scraper_utils,
+                                     sessions, tracker)
+from recidiviz.ingest.scrape.task_params import QueueRequest, Task
+from recidiviz.utils import regions
 
 
 class Scraper(metaclass=abc.ABCMeta):
@@ -52,7 +52,7 @@ class Scraper(metaclass=abc.ABCMeta):
 
         """
 
-        self.region = Region(region_name)
+        self.region = regions.get_region(region_name)
         self.fail_counter = (self.get_region().region_code +
                              "_next_page_fail_counter")
         self.scraper_work_url = '/scraper/work'
@@ -139,7 +139,7 @@ class Scraper(metaclass=abc.ABCMeta):
             N/A
 
         """
-        queues.purge_queue(self.get_region().queue)
+        queues.purge_queue(self.get_region().get_queue_name())
 
         # Check for other running scrapes, and if found kick off a delayed
         # resume for them since the taskqueue purge will kill them.
@@ -303,7 +303,7 @@ class Scraper(metaclass=abc.ABCMeta):
         """
         queues.create_task(
             url=self.scraper_work_url,
-            queue_name=self.get_region().queue,
+            queue_name=self.get_region().get_queue_name(),
             body={
                 'region': self.get_region().region_code,
                 'task': task_name,
