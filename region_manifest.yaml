@@ -819,6 +819,14 @@ regions:
     base_url: http://p2c.wakeso.net
     scraper_package: us_nc_wake
     timezone: America/New_York
+  us_ky_crittenden:
+    agency_name: Crittenden County Sheriff
+    region_code: us_ky_crittenden
+    agency_type: jail
+    queue: us-ky-crittenden-scraper
+    base_url: https://omsweb.public-safety-cloud.com/jtclientweb/(S(pv3zbq0gcrpltd0hscmhxv05))/jailtracker/index/CRITTENDEN_COUNTY_KY
+    scraper_package: us_ky_crittenden
+    timezone: America/New_York
   us_ky_greenup:
     agency_name: Greenup County Sheriff's Department
     region_code: us_ky_greenup
@@ -868,4 +876,3 @@ regions:
     scraper_package: us_ga_toombs
     timezone: America/New_York
 
-   
