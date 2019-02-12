@@ -819,6 +819,14 @@ regions:
     base_url: http://p2c.wakeso.net
     scraper_package: us_nc_wake
     timezone: America/New_York
+  us_ky_barren:
+    agency_name: Barren County Jail
+    region_code: us_ky_barren
+    agency_type: jail
+    queue: us-ky-barren-scraper
+    base_url: https://omsweb.public-safety-cloud.com/jtclientweb/(S(d30x5ormsksqobxzt3zrgoad))/jailtracker/index/BARREN_COUNTY_KY
+    scraper_package: us_ky_barren
+    timezone: America/New_York
   us_ky_crittenden:
     agency_name: Crittenden County Sheriff
     region_code: us_ky_crittenden
