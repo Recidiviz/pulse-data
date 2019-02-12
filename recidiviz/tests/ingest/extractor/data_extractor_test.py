@@ -285,7 +285,7 @@ class HtmlDataExtractorTest(unittest.TestCase):
         booking.total_bond_amount = '00000000'
         booking.facility = 'Southwest Detention Center'
         arrest = booking.create_arrest()
-        arrest.date = '01/01/2001 09:01'
+        arrest.arrest_date = '01/01/2001 09:01'
         arrest.agency = 'Hemet PD'
         charge1 = booking.create_charge()
         charge1.statute = '245(A)(1)'

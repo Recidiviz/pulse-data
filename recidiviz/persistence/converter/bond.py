@@ -28,6 +28,7 @@ def convert(proto, metadata: IngestMetadata) -> entities.Bond:
     new = entities.Bond.builder()
 
     new.external_id = fn(parse_external_id, 'bond_id', proto)
+    new.bond_agent = fn(normalize, 'bond_agent', proto)
     new.amount_dollars, inferred_bond_type, inferred_status = fn(
         converter_utils.parse_bond_amount_and_check_for_type_and_status_info,
         'amount',
@@ -48,8 +49,5 @@ def convert(proto, metadata: IngestMetadata) -> entities.Bond:
         BondStatus.parse, 'status', proto, metadata.enum_overrides,
         default=inferred_status or BondStatus.UNKNOWN_FOUND_IN_SOURCE)
     new.status_raw_text = fn(normalize, 'status', proto)
-
-    # TODO(745): convert once field exists on proto
-    new.bond_agent = None
 
     return new.build()
