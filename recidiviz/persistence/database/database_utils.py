@@ -22,7 +22,7 @@ from typing import Optional, Union, Type
 import attr
 
 from recidiviz import Base
-from recidiviz.common.constants.mappable_enum import MappableEnum
+from recidiviz.common.constants.entity_enum import EntityEnum
 from recidiviz.persistence import entities
 from recidiviz.persistence.database import schema
 from recidiviz.persistence.entities import Entity
@@ -173,10 +173,10 @@ def _convert_enum(src, field, attr_type, direction):
     return getattr(src, field).value
 
 
-def _get_enum_cls(attr_type) -> Optional[Type[MappableEnum]]:
+def _get_enum_cls(attr_type) -> Optional[Type[EntityEnum]]:
     """Return the MappableEnum cls from the provided type attribute,
     or None if the type can't be a MappableEnum"""
-    if inspect.isclass(attr_type) and issubclass(attr_type, MappableEnum):
+    if inspect.isclass(attr_type) and issubclass(attr_type, EntityEnum):
         return attr_type
 
     if _is_union(attr_type):
@@ -190,7 +190,7 @@ def _is_union(attr_type) -> bool:
 
 
 def _extract_mappable_enum_from_union(union: Union) \
-        -> Optional[Type[MappableEnum]]:
+        -> Optional[Type[EntityEnum]]:
     """Extracts a MappableEnum from a Union.
 
     This method throws an Error if multiple Enums exist and returns None if no
@@ -198,7 +198,7 @@ def _extract_mappable_enum_from_union(union: Union) \
     """
     result = set()
     for type_in_union in union.__args__:  # type: ignore
-        if issubclass(type_in_union, MappableEnum):
+        if issubclass(type_in_union, EntityEnum):
             result.add(type_in_union)
 
     if not result:

@@ -18,56 +18,55 @@
 
 import unittest
 
-from recidiviz.common.constants.mappable_enum import MappableEnum, \
-    EnumParsingError
+from recidiviz.common.constants.entity_enum import EntityEnum, EnumParsingError
 
 
-class FakeMappableEnum(MappableEnum):
+class FakeEntityEnum(EntityEnum):
     BANANA = 'banana'
     STRAWBERRY = 'strawberry'
     PASSION_FRUIT = 'passion fruit'
 
     @staticmethod
     def _get_default_map():
-        return {'BANANA': FakeMappableEnum.BANANA,
-                'STRAWBERRY': FakeMappableEnum.STRAWBERRY,
-                'PASSION FRUIT': FakeMappableEnum.PASSION_FRUIT}
+        return {'BANANA': FakeEntityEnum.BANANA,
+                'STRAWBERRY': FakeEntityEnum.STRAWBERRY,
+                'PASSION FRUIT': FakeEntityEnum.PASSION_FRUIT}
 
 
-class MappableEnumTest(unittest.TestCase):
+class EntityEnumTest(unittest.TestCase):
     """Tests for MappableEnum class."""
 
     def testParse_InvalidString_throwsEnumParsingError(self):
         with self.assertRaises(EnumParsingError):
-            FakeMappableEnum.parse('invalid', {})
+            FakeEntityEnum.parse('invalid', {})
 
     def testParse_NoOverrides_UsesDefaultMap(self):
-        self.assertEqual(FakeMappableEnum.parse('banana', {}),
-                         FakeMappableEnum.BANANA)
+        self.assertEqual(FakeEntityEnum.parse('banana', {}),
+                         FakeEntityEnum.BANANA)
 
     def testParse_WithNoneOverride_IgnoresDefaultMap(self):
         overrides = {'BANANA': None}
-        self.assertEqual(FakeMappableEnum.parse('banana', overrides), None)
+        self.assertEqual(FakeEntityEnum.parse('banana', overrides), None)
 
     def testParse_WithOverrides_UsesOverrides(self):
-        overrides = {'BAN': FakeMappableEnum.BANANA}
-        self.assertEqual(FakeMappableEnum.parse('ban', overrides),
-                         FakeMappableEnum.BANANA)
+        overrides = {'BAN': FakeEntityEnum.BANANA}
+        self.assertEqual(FakeEntityEnum.parse('ban', overrides),
+                         FakeEntityEnum.BANANA)
 
     def testParse_WithPunctuation(self):
-        self.assertEqual(FakeMappableEnum.parse('"PASSION"-FRUIT.', {}),
-                         FakeMappableEnum.PASSION_FRUIT)
+        self.assertEqual(FakeEntityEnum.parse('"PASSION"-FRUIT.', {}),
+                         FakeEntityEnum.PASSION_FRUIT)
 
     def testParses_Invalid(self):
-        self.assertFalse(FakeMappableEnum.can_parse('invalid', {}))
+        self.assertFalse(FakeEntityEnum.can_parse('invalid', {}))
 
     def testParses_Valid(self):
-        self.assertTrue(FakeMappableEnum.can_parse('banana', {}))
+        self.assertTrue(FakeEntityEnum.can_parse('banana', {}))
 
     def testParses_WithNoneOverride(self):
         overrides = {'BANANA': None}
-        self.assertTrue(FakeMappableEnum.can_parse('banana', overrides))
+        self.assertTrue(FakeEntityEnum.can_parse('banana', overrides))
 
     def testParses_WithOverrides(self):
-        overrides = {'BAN': FakeMappableEnum.BANANA}
-        self.assertTrue(FakeMappableEnum.can_parse('ban', overrides))
+        overrides = {'BAN': FakeEntityEnum.BANANA}
+        self.assertTrue(FakeEntityEnum.can_parse('ban', overrides))

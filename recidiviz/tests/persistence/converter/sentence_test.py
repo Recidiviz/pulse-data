@@ -17,7 +17,7 @@
 """Tests for converting sentences."""
 import unittest
 
-from recidiviz.common.constants.sentences import SentenceStatus
+from recidiviz.common.constants.sentence import SentenceStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence import entities

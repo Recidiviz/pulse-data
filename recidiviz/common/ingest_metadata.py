@@ -22,7 +22,7 @@ import attr
 
 from recidiviz.common.buildable_attr import BuildableAttr
 from recidiviz.common.common_utils import normalize
-from recidiviz.common.constants.mappable_enum import MappableEnum
+from recidiviz.common.constants.entity_enum import EntityEnum
 
 
 def _normalize_keys(dictionary: Dict[str, Any]) -> Dict[str, Any]:
@@ -41,5 +41,5 @@ class IngestMetadata(BuildableAttr):
     last_seen_time: datetime = attr.ib()
 
     # Region specific mapping which takes precedence over the global mapping.
-    enum_overrides: Dict[str, Optional[MappableEnum]] = attr.ib(
+    enum_overrides: Dict[str, Optional[EntityEnum]] = attr.ib(
         factory=dict, converter=_normalize_keys)

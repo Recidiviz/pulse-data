@@ -18,10 +18,10 @@
 """Constants related to a charge entity."""
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
-from recidiviz.common.constants.mappable_enum import MappableEnum
+from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
-class ChargeDegree(MappableEnum):
+class ChargeDegree(EntityEnum, metaclass=EntityEnumMeta):
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
     FIRST = enum_strings.degree_first
     SECOND = enum_strings.degree_second
@@ -33,7 +33,7 @@ class ChargeDegree(MappableEnum):
         return _CHARGE_DEGREE_MAP
 
 
-class ChargeClass(MappableEnum):
+class ChargeClass(EntityEnum, metaclass=EntityEnumMeta):
     CIVIL = enum_strings.charge_class_civil
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
     FELONY = enum_strings.charge_class_felony
@@ -48,7 +48,7 @@ class ChargeClass(MappableEnum):
         return _CHARGE_CLASS_MAP
 
 
-class ChargeStatus(MappableEnum):
+class ChargeStatus(EntityEnum, metaclass=EntityEnumMeta):
     ACQUITTED = enum_strings.charge_status_acquitted
     COMPLETED_SENTENCE = enum_strings.charge_status_completed
     CONVICTED = enum_strings.charge_status_convicted
@@ -66,7 +66,7 @@ class ChargeStatus(MappableEnum):
         return _CHARGE_STATUS_MAP
 
 
-class CourtType(MappableEnum):
+class CourtType(EntityEnum, metaclass=EntityEnumMeta):
     CIRCUIT = enum_strings.court_type_circuit
     CIVIL = enum_strings.court_type_civil
     DISTRICT = enum_strings.court_type_district
@@ -77,6 +77,7 @@ class CourtType(MappableEnum):
     @staticmethod
     def _get_default_map():
         return _COURT_TYPE_MAP
+
 
 # MappableEnum.parse will strip punctuation and separate tokens with a single
 # space. Add mappings here using a single space between words and numbers.

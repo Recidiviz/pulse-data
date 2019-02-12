@@ -30,7 +30,7 @@ from recidiviz.common.constants.bond import BondStatus
 from recidiviz.common.constants.booking import CustodyStatus
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.hold import HoldStatus
-from recidiviz.common.constants.sentences import SentenceStatus
+from recidiviz.common.constants.sentence import SentenceStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.scrape.constants import MAX_PEOPLE_TO_LOG
 from recidiviz.persistence import entity_matching, entities
