@@ -27,6 +27,7 @@ import gcsfs
 import pytz
 
 from recidiviz.ingest.aggregate import scrape_aggregate_reports
+from recidiviz.ingest.aggregate.regions.ca import ca_aggregate_site_scraper
 from recidiviz.ingest.aggregate.regions.ny import ny_aggregate_site_scraper
 from recidiviz.ingest.aggregate.regions.tx import tx_aggregate_site_scraper
 from recidiviz.tests.ingest import fixtures
@@ -45,9 +46,12 @@ SERVER_MODIFIED_TIME = datetime.datetime(
     year=2019, month=1, day=1, tzinfo=pytz.UTC)
 EXISTING_TEST_URL = 'http://test.com/url_test/Existing.pdf'
 EXISTING_TEST_URL2 = 'http://test.com/url_test/Existing2.pdf'
+EXISTING_TEST_URL_CA = 'http://test.com'
+CA_POST_DATA = {'year': 1996, 'testing': '1'}
 NONEXISTING_TEST_URL = 'url_test/nonexisting.pdf'
 EXISTING_PDF_NAME = '_url_test_existing.pdf'
 EXISTING_PDF_NAME2 = '_url_test_existing2.pdf'
+EXISTING_CA_NAME = 'california1996'
 NONEXISTING_PDF_NAME = '_url_test_nonexisting.pdf'
 TEST_CONTENT = 'test_content'
 TEST_ENV = 'recidiviz-test'
@@ -55,7 +59,7 @@ TEST_ENV = 'recidiviz-test'
 
 def _MockGet(url, **_):
     ret = Mock()
-    if url in (EXISTING_TEST_URL, EXISTING_TEST_URL2):
+    if url in (EXISTING_TEST_URL, EXISTING_TEST_URL2, EXISTING_TEST_URL_CA):
         ret.status_code = 200
         ret.content = TEST_CONTENT
     else:
@@ -158,6 +162,40 @@ class TestScraperAggregateReports(TestCase):
         mock_fs_return.put.assert_called_with(temploc, upload_bucket)
         mock_open.assert_called_with(temploc, 'wb')
         mock_get.assert_called_with(EXISTING_TEST_URL)
+
+    @patch.object(metadata, 'project_id')
+    @patch.object(metadata, 'project_number')
+    @patch.object(gcsfs, 'GCSFileSystem')
+    @patch.object(requests, 'post')
+    @patch.object(builtins, 'open')
+    @patch.object(ca_aggregate_site_scraper, 'get_urls_to_download')
+    def testCaNoExistsUpload200(
+            self, mock_get_all_ca, mock_open, mock_post, mock_fs,
+            mock_number, mock_env):
+        upload_bucket = os.path.join(
+            self.upload_bucket, 'california', EXISTING_CA_NAME)
+        temploc = os.path.join(tempfile.gettempdir(), EXISTING_CA_NAME)
+        mock_env.return_value = TEST_ENV
+        mock_number.return_value = TEST_ENV
+        # Make the info call return an older modified time than the server time.
+        mock_fs_return = Mock()
+        mock_fs.return_value = mock_fs_return
+        mock_fs_return.exists.return_value = False
+        mock_get_all_ca.return_value = [(EXISTING_TEST_URL_CA, CA_POST_DATA)]
+        mock_post.side_effect = _MockGet
+
+        headers = {'X-Appengine-Cron': "test-cron"}
+        response = self.client.get(
+            '/scrape_state?state=california', headers=headers)
+        self.assertEqual(response.status_code, 200)
+
+        mock_fs.assert_called_with(project=TEST_ENV, cache_timeout=-1)
+        mock_fs_return.exists.assert_called_with(
+            os.path.join(
+                self.historical_bucket, 'california', EXISTING_CA_NAME))
+        mock_fs_return.put.assert_called_with(temploc, upload_bucket)
+        mock_open.assert_called_with(temploc, 'wb')
+        mock_post.assert_called_with(EXISTING_TEST_URL_CA, data=CA_POST_DATA)
 
     @patch.object(metadata, 'project_id')
     @patch.object(gcsfs, 'GCSFileSystem')
