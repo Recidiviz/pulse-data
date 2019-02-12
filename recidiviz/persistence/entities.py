@@ -33,7 +33,7 @@ from recidiviz.common.constants.charge import ChargeClass, ChargeDegree, \
     ChargeStatus, CourtType
 from recidiviz.common.constants.hold import HoldStatus
 from recidiviz.common.constants.person import Race, Ethnicity, Gender
-from recidiviz.common.constants.sentences import SentenceStatus
+from recidiviz.common.constants.sentence import SentenceStatus
 
 
 @attr.s

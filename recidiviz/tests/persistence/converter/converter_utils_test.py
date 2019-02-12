@@ -22,7 +22,7 @@ from unittest import TestCase
 import pytest
 from mock import patch
 
-from recidiviz.common.constants.mappable_enum import EnumParsingError
+from recidiviz.common.constants.entity_enum import EnumParsingError
 from recidiviz.common.constants.person import Gender
 from recidiviz.persistence.converter import converter_utils
 

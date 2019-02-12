@@ -28,7 +28,7 @@ from recidiviz.common.constants.charge import ChargeDegree, ChargeClass, \
     ChargeStatus, CourtType
 from recidiviz.common.constants.hold import HoldStatus
 from recidiviz.common.constants.person import Gender, Race, Ethnicity
-from recidiviz.common.constants.sentences import SentenceStatus
+from recidiviz.common.constants.sentence import SentenceStatus
 from recidiviz.persistence import entities
 from recidiviz.persistence.database import schema
 from recidiviz.persistence.database.database_utils import convert_person

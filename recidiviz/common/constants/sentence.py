@@ -18,10 +18,10 @@
 """Constants related to a sentence entity."""
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
-from recidiviz.common.constants.mappable_enum import MappableEnum
+from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
-class SentenceStatus(MappableEnum):
+class SentenceStatus(EntityEnum, metaclass=EntityEnumMeta):
     COMMUTED = enum_strings.sentence_status_commuted
     COMPLETED = enum_strings.sentence_status_completed
     SERVING = enum_strings.sentence_status_serving
