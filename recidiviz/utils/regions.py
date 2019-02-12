@@ -20,6 +20,7 @@
 Regions represent geographic areas/legal jurisdictions from which we ingest
 criminal justice data and calculate metrics.
 """
+import importlib
 import os
 import pkgutil
 from datetime import datetime
@@ -78,43 +79,19 @@ class Region:
             raise ValueError(
                 'Only one of `queue` and `shared_queue` can be set.')
 
-    def get_scraper_module(self):
-        """Return the scraper module for this region
-
-        Note that this is only the module containing the scraper and/or entity
-        subclasses/models, not the scraper itself (use get_scraper() to get an
-        instance of the scraper class).
-
-        Some regions will use a general-purpose scraper that is not in the same
-        package as the entity sub-kinds for that region. For such a region, you
-        would pass different args into this method to get the scraper class
-        versus the entity classes.
-
-        Args:
-            N/A
-
-        Returns:
-            Scraper module (e.g., recidiviz.ingest.scrape.regions.us_ny)
-        """
-        top_level = __import__("recidiviz")
-        ingest_module = getattr(top_level, "ingest")
-        scrape_module = getattr(ingest_module, "scrape")
-        regions_module = getattr(scrape_module, "regions")
-        scraper_module = getattr(regions_module, self.region_code)
-
-        return scraper_module
-
     def get_scraper(self):
         """Retrieve a scraper object for a particular region
 
         Returns:
             An instance of the region's scraper class (e.g., UsNyScraper)
         """
-        scraper_string = '{}_scraper'.format(self.region_code)
-        scraper_module = self.get_scraper_module()
-        scraper = getattr(scraper_module, scraper_string)
-        scraper_class = getattr(scraper, ''.join(
-            [s.title() for s in scraper_string.split('_')]))
+        scraper_module_name = \
+            'recidiviz.ingest.scrape.regions.{region}.{region}_scraper'.format(
+                region=self.region_code
+            )
+        scraper_module = importlib.import_module(scraper_module_name)
+        scraper_class = getattr(scraper_module, ''.join(
+            [s.title() for s in self.region_code.split('_')] + ['Scraper']))
 
         return scraper_class()
 
