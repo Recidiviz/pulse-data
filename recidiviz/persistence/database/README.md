@@ -44,6 +44,8 @@ All migrations should be run from the `prod-data-client` VM, which is accessed b
 
 If it is your **first time logging in to the VM**, run `initial-setup` from your home directory. This will set up the git repository, pip environment, and SSL certificates you will need to run migrations.
 
+NOTE: All commands below assume you are running in your pip environment. To launch it, run `pipenv shell` from the top-level package of the git repository.
+
 #### Generating the migration
 
 ##### Adding a value to an enum
@@ -76,7 +78,7 @@ TODO(garciaz): work with rasmi@ and arian487@ on how this should be timed with c
 
 2. Incorporate any review changes. Do not merge the PR yet.
 
-3. Check `alembic_version` in both dev and prod and ensure they have the same value. If they don't, check "Troubleshooting Alembic version issues" below.
+3. Check the value in the `alembic_version` table in both dev and prod and ensure it's the same in both. If it isn't, check "Troubleshooting Alembic version issues" below.
 
 4. Apply the migration to dev by running `migrate-dev-to-head`. Run `dev-psql` to verify that the outcome of the migration was successful.
 
@@ -175,7 +177,8 @@ export DEV_DATA_DB_NAME=<dev-data database name>
 
 export PROD_DATA_IP=<prod-data IP>
 export PROD_DATA_PASSWORD=<prod-data password>
-export PROD_DATA_USER=<prod-data username>
+export PROD_DATA_READONLY_USER=<prod-data readonly username>
+export PROD_DATA_MIGRATION_USER=<prod-data migration username>
 export PROD_DATA_DB_NAME=<prod-data database name>
 ```
 
@@ -190,7 +193,7 @@ user=$DEV_DATA_USER dbname=$DEV_DATA_DB_NAME\""
 alias readonly-prod-psql="psql \"sslmode=verify-ca \
 sslrootcert=$SERVER_CA_PATH sslcert=$CLIENT_CERT_PATH \
 sslkey=$CLIENT_KEY_PATH hostaddr=$PROD_DATA_IP \
-user=$PROD_DATA_USER dbname=$PROD_DATA_DB_NAME\""
+user=$PROD_DATA_READONLY_USER dbname=$PROD_DATA_DB_NAME\""
 
 alias set-alembic-dev-env="export SQLALCHEMY_DB_NAME=$DEV_DATA_DB_NAME \
 && export SQLALCHEMY_DB_HOST=$DEV_DATA_IP \
@@ -201,7 +204,7 @@ alias set-alembic-dev-env="export SQLALCHEMY_DB_NAME=$DEV_DATA_DB_NAME \
 alias set-alembic-prod-env="export SQLALCHEMY_DB_NAME=$PROD_DATA_DB_NAME \
 && export SQLALCHEMY_DB_HOST=$PROD_DATA_IP \
 && export SQLALCHEMY_DB_PASSWORD=$PROD_DATA_PASSWORD \
-&& export SQLALCHEMY_DB_USER=$PROD_DATA_USER \
+&& export SQLALCHEMY_DB_USER=$PROD_DATA_MIGRATION_USER \
 && export SQLALCHEMY_USE_SSL=1 \
 && export SQLALCHEMY_SSL_CERT_PATH=$CLIENT_CERT_PATH \
 && export SQLALCHEMY_SSL_KEY_PATH=$CLIENT_KEY_PATH"
