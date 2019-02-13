@@ -18,9 +18,11 @@
 import calendar
 import datetime
 import itertools
-from typing import Dict, Iterable, Any, Optional, Set
+import re
+from typing import Dict, Iterable, Any, Optional, Set, Pattern
 
 import pandas as pd
+from more_itertools import one
 
 from recidiviz.ingest.aggregate.errors import DataFrameCastError
 
@@ -41,12 +43,35 @@ def _should_keep_word_in_tabula_header(word: str) -> bool:
     return 'Unnamed' not in word
 
 
-def rename_columns_and_select(df: pd.DataFrame,
-                              rename_dict: Dict[str, str]) -> pd.DataFrame:
+def rename_columns_and_select(
+        df: pd.DataFrame, rename_dict: Dict[str, str], *,
+        use_regex: bool = False) -> pd.DataFrame:
     """Selects only the DataFrame columns listed in |rename_dict| and performs a
-    rename operation as described in |rename_dict|."""
+    rename operation as described in |rename_dict|.
+
+    |rename_dict| keys may be the exact |df| column_name or a unique regex.
+    """
+    if use_regex:
+        rename_dict = _create_rename_dict_from_regex(df, rename_dict)
+
     df = df.rename(columns=rename_dict)
     return df[list(rename_dict.values())]
+
+
+def _create_rename_dict_from_regex(
+        df: pd.DataFrame, regex_rename_dict: Dict[str, str]) -> Dict[str, str]:
+    """Converts a Dict[regex, new_column_name] to a Dict[existing_column_name,
+    new_column_name]."""
+    rename_dict = {}
+    for regex in regex_rename_dict:
+        actual_column_name = _get_match(df.columns, re.compile(regex))
+        rename_dict[actual_column_name] = regex_rename_dict[regex]
+
+    return rename_dict
+
+
+def _get_match(iterable: Iterable[str], regex: Pattern) -> str:
+    return one([item for item in iterable if regex.match(item)])
 
 
 def pairwise(iterable: Iterable[Any]) -> Iterable[Any]:
