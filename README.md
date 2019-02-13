@@ -43,24 +43,107 @@ best way to get it done.
 Development
 ------
 
-### Why AppEngine?
-AppEngine is both easy to rapidly build out services, and easy to scale up and down as needed. It also comes with
-helpful utilities like [TaskQueues](https://cloud.google.com/appengine/docs/standard/python/taskqueue/push/) built-in,
-so we don't have to worry about creating that functionality from scratch. Error handling is straight forward.
+If you are contributing to this repository regularly for an extended period of time, [request GitHub collaborator access](mailto:team@recidiviz.com?subject=GitHub%20collaborator%20request&body=) to commit directly to the main repository. If you are contributing on occasion, [fork this repository](https://github.com/Recidiviz/pulse-data/fork) before making any commits.
 
 ### Local Development
 
-#### Getting set up
-Install the GCloud SDK (we recommend using the [interactive installer](https://cloud.google.com/sdk/downloads#interactive)),
-and clone the recidiviz repo from Github.
+#### Environment setup
 
-Your mileage may vary here. If you've installed via the interactive installer and cannot find `google_appengine` inside of
-`google-cloud-sdk/platform/`, then you will need to install google_appengine separately by doing:
-`gcloud components install app-engine-python`
+##### Option 1: Local Python installation
 
-Then install project dependencies with [`pipenv`](https://pipenv.readthedocs.io/en/latest/): `pipenv install --dev`. Activate the environment with `pipenv shell`.
+If you can install `python3.7` locally, do so. 
 
-To generate a production environment `requirements.txt`, run: `pipenv lock --requirements > requirements.txt`
+On a Mac with [Homebrew](https://brew.sh/), you can install `python3.7` with:
+```
+brew install python3
+```
+
+On Ubuntu 18.04, you can install `python3.7` with:
+```
+apt update -y && apt install -y python3.7-dev python3-pip
+```
+
+Upgrade your `pip` to the latest version:
+```
+pip install -U pip
+```
+
+Install [`pipenv`](https://pipenv.readthedocs.io/en/latest/):
+```
+pip install pipenv
+```
+
+[Fork this repository](https://github.com/Recidiviz/pulse-data/fork), clone it locally, and enter its directory: 
+```
+git clone git@github.com:your_github_username/pulse-data.git
+cd pulse-data
+```
+
+Create a new pipenv environment and install all project and development dependencies:
+```
+pipenv sync --dev
+```
+
+To activate your pipenv environment, run:
+```
+pipenv shell
+```
+
+Finally, run `pytest`. If no tests fail, you are ready to develop!
+
+
+##### Option 2: Docker container
+
+If you can't install `python3.7` locally, you can use Docker instead.
+
+Follow these instructions to install Docker on Linux:
+* [Debian](https://docs.docker.com/install/linux/docker-ce/debian/#install-using-the-repository)
+* [Ubuntu](https://docs.docker.com/install/linux/docker-ce/ubuntu/#install-using-the-repository)
+
+Click the following links to directly download Docker installation binaries for Mac and Windows:
+ * [Mac](https://download.docker.com/mac/stable/Docker.dmg)
+ * [Windows](https://download.docker.com/win/stable/Docker%20for%20Windows%20Installer.exe)
+
+Once Docker is installed, [fork this repository](https://github.com/Recidiviz/pulse-data/fork), clone it locally, and enter its directory: 
+```
+git clone git@github.com:your_github_username/pulse-data.git
+cd pulse-data
+```
+
+Build the image:
+```
+docker build -t recidiviz-image .
+```
+
+Stop and delete previous instances of the image if they exist:
+```
+docker stop recidiviz && docker rm recidiviz
+```
+
+Run a new instance, mounting the local working directory within the image:
+```
+docker run --name recidiviz -d -t -v $(pwd):/app recidiviz-image
+```
+
+Open a `bash` shell within the instance:
+```
+docker exec -it recidiviz bash
+```
+
+Once in the instance's `bash` shell, update your pipenv environment:
+```
+pipenv sync --dev
+```
+
+To activate your pipenv environment, run:
+```
+pipenv shell
+```
+
+Finally, run `pytest`. If no tests fail, you are ready to develop! 
+
+Using this Docker container, you can edit your local repository files and use `git` as usual within your local shell environment, but execute code and run tests within the Docker container's shell environment.
+
 
 #### Adding secrets
 Recidiviz depends on sensitive information to run. This data is stored in datastore, which should be added
@@ -118,6 +201,8 @@ has more information about running locally.
 
 ### Deployment
 
+Install the GCloud SDK using the [interactive installer](https://cloud.google.com/sdk/docs/downloads-interactive).
+
 ### Deploying a scraper
 The release engineer should check for all of the newly added scrapers and manually test them.
 
@@ -128,8 +213,8 @@ Note: The `queue.yaml` file is now generated using `python -m recidiviz.tools.bu
 #### Push to staging
 Typically on Monday morning the release engineer should:
 
-1. Verify that the tests are all passing in [Travis](https://travis-ci.org/Recidiviz/pulse-data).
-1. The release engineer should tag a commit with "va.b.c" following the [semver](www.semver.org) for numbering. This will trigger a release to staging.
+1. Verify that the tests in `master` are all passing in [Travis](https://travis-ci.org/Recidiviz/pulse-data/branches).
+1. Tag a commit with "va.b.c" following [semver](https://semver.org) for numbering. This will trigger a release to staging.
 1. Once the release is complete, run `https://recidiviz-staging.appspot.com/scraper/start?region=us_fl_martin` [TODO #623](https://github.com/Recidiviz/pulse-data/issues/623)
 and verify that it is happy by looking at the monitoring page [TODO #59](https://github.com/Recidiviz/pulse-data/issues/59) and also checking the logs for errors.
 1. Manually check to see which set of scrapers have been added to the cron.yaml since last release and manually run all of those scrapers as well.
@@ -143,7 +228,3 @@ Typically on Wednesday morning the release engineer should:
 over the last two days.  Check the monitoring page to see if anything is fishy.
 1.  Once you are ready to release to production, run `./deploy_production <release_tag>` to finally release the code to production.  This will checkout the given tag and deploy that to production.
 1.  Validate that the release is happy.  Over the next two days check the monitoring page to make sure nothing is broken.
-
-
-
-
