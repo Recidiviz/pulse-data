@@ -34,7 +34,7 @@ class FakeEntityEnum(EntityEnum):
 
 
 class EntityEnumTest(unittest.TestCase):
-    """Tests for MappableEnum class."""
+    """Tests for EntityEnum class."""
 
     def testParse_InvalidString_throwsEnumParsingError(self):
         with self.assertRaises(EnumParsingError):
