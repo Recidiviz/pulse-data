@@ -66,6 +66,46 @@ class ChargeConverterTest(unittest.TestCase):
 
         self.assertEqual(result, expected_result)
 
+    def testParseCharge_classInName(self):
+        # Arrange
+        ingest_charge = ingest_info_pb2.Charge(
+            name='Felony Murder'
+        )
+
+        # Act
+        charge.copy_fields_to_builder(self.subject, ingest_charge,
+                                      _EMPTY_METADATA)
+        result = self.subject.build()
+
+        # Assert
+        expected_result = entities.Charge.new_with_defaults(
+            name='FELONY MURDER',
+            charge_class=ChargeClass.FELONY,
+            status=ChargeStatus.UNKNOWN_FOUND_IN_SOURCE,
+        )
+
+        self.assertEqual(result, expected_result)
+
+    def testParseCharge_classWithSpaceInName(self):
+        # Arrange
+        ingest_charge = ingest_info_pb2.Charge(
+            name='Failed Drug Test - Probation Violation'
+        )
+
+        # Act
+        charge.copy_fields_to_builder(self.subject, ingest_charge,
+                                      _EMPTY_METADATA)
+        result = self.subject.build()
+
+        # Assert
+        expected_result = entities.Charge.new_with_defaults(
+            name='FAILED DRUG TEST - PROBATION VIOLATION',
+            charge_class=ChargeClass.PROBATION_VIOLATION,
+            status=ChargeStatus.UNKNOWN_FOUND_IN_SOURCE,
+        )
+
+        self.assertEqual(result, expected_result)
+
     def testParseCharge_SetsDefaults(self):
         # Arrange
         ingest_charge = ingest_info_pb2.Charge()
