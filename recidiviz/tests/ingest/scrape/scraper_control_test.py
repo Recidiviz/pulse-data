@@ -16,6 +16,7 @@
 # =============================================================================
 
 """Tests for ingest/scraper_control.py."""
+from unittest import TestCase
 
 import pytz
 from flask import Flask
@@ -41,27 +42,29 @@ def _MockSupported(timezone=None):
     return regions
 
 
-
-class TestScraperStart:
+class TestScraperStart(TestCase):
     """Tests for requests to the Scraper Start API."""
 
     # noinspection PyAttributeOutsideInit
     def setup_method(self, _test_method):
         self.client = app.test_client()
 
+    @patch("recidiviz.utils.environment.get_gae_environment")
     @patch("recidiviz.utils.regions.get_supported_region_codes")
     @patch("recidiviz.utils.regions.get_region")
     @patch("recidiviz.ingest.scrape.sessions.create_session")
     @patch("recidiviz.ingest.scrape.tracker.purge_docket_and_session")
     @patch("recidiviz.ingest.scrape.docket.load_target_list")
     def test_start(self, mock_docket, mock_tracker, mock_sessions, mock_region,
-                   mock_supported):
+                   mock_supported, mock_environment):
         """Tests that the start operation chains together the correct calls."""
         mock_docket.return_value = None
         mock_tracker.return_value = None
         mock_sessions.return_value = None
         fake_scraper = FakeScraper()
-        mock_region.return_value = FakeRegion(fake_scraper)
+        mock_region.return_value = FakeRegion(
+            fake_scraper, environment='production')
+        mock_environment.return_value = 'production'
         mock_supported.side_effect = _MockSupported
 
         region = 'us_ut'
@@ -80,19 +83,22 @@ class TestScraperStart:
         mock_region.assert_called_with('us_ut')
         mock_supported.assert_called_with(timezone=None)
 
+    @patch("recidiviz.utils.environment.get_gae_environment")
     @patch("recidiviz.utils.regions.get_supported_region_codes")
     @patch("recidiviz.utils.regions.get_region")
     @patch("recidiviz.ingest.scrape.sessions.create_session")
     @patch("recidiviz.ingest.scrape.tracker.purge_docket_and_session")
     @patch("recidiviz.ingest.scrape.docket.load_target_list")
     def test_start_timezone(self, mock_docket, mock_tracker, mock_sessions,
-                            mock_region, mock_supported):
+                            mock_region, mock_supported, mock_environment):
         """Tests that the start operation chains together the correct calls."""
         mock_docket.return_value = None
         mock_tracker.return_value = None
         mock_sessions.return_value = None
+        mock_environment.return_value = 'production'
         fake_scraper = FakeScraper()
-        mock_region.return_value = FakeRegion(fake_scraper)
+        mock_region.return_value = FakeRegion(
+            fake_scraper, environment='production')
         mock_supported.side_effect = _MockSupported
 
         region = 'all'
@@ -113,6 +119,40 @@ class TestScraperStart:
         mock_supported.assert_called_with(
             timezone=pytz.timezone('America/Los_Angeles'))
 
+    @patch("recidiviz.utils.environment.get_gae_environment")
+    @patch("recidiviz.utils.regions.get_supported_region_codes")
+    @patch("recidiviz.utils.regions.get_region")
+    @patch("recidiviz.ingest.scrape.sessions.create_session")
+    @patch("recidiviz.ingest.scrape.tracker.purge_docket_and_session")
+    @patch("recidiviz.ingest.scrape.docket.load_target_list")
+    def test_start_all_diff_environment(
+            self, mock_docket, mock_tracker, mock_sessions, mock_region,
+            mock_supported, mock_environment):
+        """Tests that the start operation chains together the correct calls."""
+        mock_docket.return_value = None
+        mock_tracker.return_value = None
+        mock_sessions.return_value = None
+        mock_environment.return_value = 'staging'
+        fake_scraper = FakeScraper()
+        mock_region.return_value = FakeRegion(
+            fake_scraper, environment='production')
+        mock_supported.side_effect = _MockSupported
+
+        region = 'all'
+        scrape_type = constants.ScrapeType.BACKGROUND
+        request_args = {'region': region, 'scrape_type': scrape_type.value}
+        headers = {'X-Appengine-Cron': "test-cron"}
+        response = self.client.get('/start',
+                                   query_string=request_args,
+                                   headers=headers)
+        self.assertEqual(response.status_code, 400)
+
+        self.assertFalse(mock_docket.called)
+        self.assertFalse(mock_tracker.called)
+        self.assertFalse(mock_sessions.called)
+        mock_region.assert_called_with('us_wy')
+        mock_supported.assert_called_with(timezone=None)
+
     @patch("recidiviz.utils.regions.get_supported_region_codes")
     def test_start_unsupported_region(self, mock_supported):
         mock_supported.return_value = ['us_ny', 'us_pa']
@@ -124,7 +164,7 @@ class TestScraperStart:
                                    headers=headers)
         assert response.status_code == 400
         assert response.get_data().decode() == \
-            "Missing or invalid parameters, see service logs."
+            "Missing or invalid parameters, or no regions found, see logs."
 
         mock_supported.assert_called_with(timezone=None)
 
@@ -248,8 +288,9 @@ class TestScraperResume:
 
 class FakeRegion:
     """A fake region to be returned from mocked out calls to Region"""
-    def __init__(self, scraper):
+    def __init__(self, scraper, environment='local'):
         self.scraper = scraper
+        self.environment = environment
 
     def get_scraper(self):
         return self.scraper
