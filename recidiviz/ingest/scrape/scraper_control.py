@@ -94,13 +94,14 @@ def scraper_start():
         load_docket_thread.join()
 
     timezone = ingest_utils.lookup_timezone(request.args.get("timezone"))
+    region_value = get_values("region", request.args)
     scrape_regions = ingest_utils.validate_regions(
-        get_values("region", request.args), timezone=timezone)
+        region_value, timezone=timezone)
     scrape_types = ingest_utils.validate_scrape_types(get_values("scrape_type",
                                                                  request.args))
 
     if not scrape_regions or not scrape_types:
-        return ('Missing or invalid parameters, see service logs.',
+        return ('Missing or invalid parameters, or no regions found, see logs.',
                 HTTPStatus.BAD_REQUEST)
 
     given_names = get_value("given_names", request.args, "")

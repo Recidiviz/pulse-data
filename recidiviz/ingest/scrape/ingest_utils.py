@@ -26,7 +26,7 @@ import pytz
 from recidiviz.common import common_utils
 from recidiviz.ingest.scrape import constants
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
-from recidiviz.utils import regions
+from recidiviz.utils import regions, environment
 
 
 def lookup_timezone(timezone: Optional[str]) -> Optional[tzinfo]:
@@ -52,6 +52,14 @@ def validate_regions(region_list, timezone: tzinfo = None):
     supported_regions = regions.get_supported_region_codes(timezone=timezone)
     for region in region_list:
         if region == "all":
+            # If we got all regions, we only want to start them in the right
+            # environment.  We only do this if all is passed to still allow
+            # people to manually run any scrapers they wish.
+            supported_regions = set(
+                filter(
+                    lambda x: regions.get_region(x).environment ==
+                    environment.get_gae_environment(),
+                    supported_regions))
             regions_list_output = supported_regions
         elif region not in supported_regions:
             logging.error("Region '%s' not recognized.", region)

@@ -32,7 +32,7 @@ def stats():
         # TODO(#59): When we want to test this, we will have to remove the
         # `in_test` check. It is currently in place so that this isn't triggered
         # even when `in_prod` is mocked out in other unit tests.
-        if environment.in_prod() and not environment.in_test():
+        if environment.in_gae() and not environment.in_test():
             exporter = stackdriver.new_stats_exporter(stackdriver.Options(
                 project_id=metadata.project_id(),
             ))
@@ -42,7 +42,7 @@ def stats():
 
 def register_views(views):
     # TODO(#59): Same as above.
-    if environment.in_prod() and not environment.in_test():
+    if environment.in_gae() and not environment.in_test():
         for view in views:
             stats().view_manager.register_view(view)
 

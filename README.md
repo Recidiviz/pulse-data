@@ -204,7 +204,6 @@ has more information about running locally.
 Install the GCloud SDK using the [interactive installer](https://cloud.google.com/sdk/docs/downloads-interactive).
 
 ### Deploying a scraper
-The release engineer should check for all of the newly added scrapers and manually test them.
 
 The release engineer oncall should go through the following steps:
 
@@ -217,14 +216,11 @@ Typically on Monday morning the release engineer should:
 1. Tag a commit with "va.b.c" following [semver](https://semver.org) for numbering. This will trigger a release to staging.
 1. Once the release is complete, run `https://recidiviz-staging.appspot.com/scraper/start?region=us_fl_martin` [TODO #623](https://github.com/Recidiviz/pulse-data/issues/623)
 and verify that it is happy by looking at the monitoring page [TODO #59](https://github.com/Recidiviz/pulse-data/issues/59) and also checking the logs for errors.
-1. Manually check to see which set of scrapers have been added to the cron.yaml since last release and manually run all of those scrapers as well.
-1. Every morning until Wednesday, rerun all of the to be deployed scrapers manually and make sure there aren't any failures.
-1. For the next two days periodically check to make sure the build is happy and monitoring is good for all of the regions.  If there are errors try to fix them or contact the scraper writer to fix them.
+1. If it runs successfully, trigger a release to production by running `./deploy_production <release_tag>`
 
 #### Push to prod
 Typically on Wednesday morning the release engineer should:
 
-1.  Verify that the scraper crons as well as the `infer_release` cron ran successfully in staging over the last two days.
-over the last two days.  Check the monitoring page to see if anything is fishy.
-1.  Once you are ready to release to production, run `./deploy_production <release_tag>` to finally release the code to production.  This will checkout the given tag and deploy that to production.
-1.  Validate that the release is happy.  Over the next two days check the monitoring page to make sure nothing is broken.
+1.  For every region that has `environment: staging` set, check the logs and monitoring in staging periodically to verify that they run successfully.
+1.  For all regions that look good, set their environment to `production` and they will be ready to be deployed for the next week
+1.  Be sure to file bugs/fixes for any errors that exist for other scrapers, and hold off on promoting them to production.

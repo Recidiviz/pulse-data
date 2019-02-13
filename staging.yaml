@@ -10,4 +10,4 @@ automatic_scaling:
 beta_settings:
   cloud_sql_instances: recidiviz-staging:us-east4:dev-data
 env_variables:
-  RECIDIVIZ_ENV: production
+  RECIDIVIZ_ENV: staging

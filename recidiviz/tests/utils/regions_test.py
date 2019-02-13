@@ -37,6 +37,7 @@ US_NY_MANIFEST_CONTENTS = """
     queue:
       rate: 18/m
     timezone: America/New_York
+    environment: production
     """
 US_IN_MANIFEST_CONTENTS = """
     agency_name: Department of Corrections
@@ -45,12 +46,14 @@ US_IN_MANIFEST_CONTENTS = """
     names_file: us_in_names.csv
     shared_queue: some-vendor-queue
     timezone: America/Indiana/Indianapolis
+    environment: production
     """
 US_CA_MANIFEST_CONTENTS = """
     agency_name: Corrections
     agency_type: jail
     base_url: test
     timezone: America/Los_Angeles
+    environment: production
     """
 BAD_QUEUE_MANIFEST_CONTENTS = """
     agency_name: Corrections
@@ -58,6 +61,7 @@ BAD_QUEUE_MANIFEST_CONTENTS = """
     base_url: test
     timezone: America/Los_Angeles
     shared_queue: some-vendor-queue
+    environment: production
     queue:
       rate: 18/m
     """
@@ -94,7 +98,8 @@ class TestRegions(TestCase):
             'base_url': 'http://nysdoccslookup.doccs.ny.gov',
             'names_file': 'us_ny_names.csv',
             'queue': {'rate': '18/m'},
-            'timezone': 'America/New_York'
+            'timezone': 'America/New_York',
+            'environment': 'production',
         }
 
     def test_get_region_manifest_not_found(self):
