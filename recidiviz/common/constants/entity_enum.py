@@ -14,7 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Contains logic related to MappableEnums"""
+
+"""Contains logic related to EntityEnums."""
+
 import re
 import string
 from enum import Enum, EnumMeta
