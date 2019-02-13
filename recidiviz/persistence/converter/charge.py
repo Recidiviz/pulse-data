@@ -33,16 +33,14 @@ def copy_fields_to_builder(
     new.external_id = fn(parse_external_id, 'charge_id', proto)
     new.offense_date = fn(parse_date, 'offense_date', proto)
     new.statute = fn(normalize, 'statute', proto)
-    new.name = charge_name = fn(normalize, 'name', proto)
+    new.name = fn(normalize, 'name', proto)
     new.attempted = fn(parse_bool, 'attempted', proto)
     new.degree = fn(ChargeDegree.parse, 'degree', proto,
                     metadata.enum_overrides)
     new.degree_raw_text = fn(normalize, 'degree', proto)
-
-    charge_class_from_name = ChargeClass.find_in_string(charge_name)
     new.charge_class = fn(ChargeClass.parse, 'charge_class', proto,
                           metadata.enum_overrides,
-                          default=charge_class_from_name or None)
+                          default=ChargeClass.find_in_string(new.name) or None)
     new.class_raw_text = fn(normalize, 'charge_class', proto)
     new.level = fn(normalize, 'level', proto)
     new.fee_dollars = fn(parse_dollars, 'fee_dollars', proto)
