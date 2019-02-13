@@ -32,13 +32,13 @@ from ..context import utils
 @patch("os.getenv")
 def test_in_prod_false(mock_os):
     mock_os.return_value = 'not production'
-    assert not environment.in_prod()
+    assert not environment.in_gae()
 
 
 @patch("os.getenv")
 def test_in_prod_true(mock_os):
     mock_os.return_value = 'production'
-    assert environment.in_prod()
+    assert environment.in_gae()
 
 
 def test_local_only_is_local():

@@ -105,7 +105,7 @@ def get_proxies(use_test=False):
         proceed without this
 
     """
-    if not environment.in_prod() or use_test:
+    if not environment.in_gae() or use_test:
         return None
 
     user_var = "proxy_user"
@@ -149,7 +149,7 @@ def get_headers():
         proceed without this
 
     """
-    in_prod = environment.in_prod()
+    in_prod = environment.in_gae()
     if not in_prod:
         user_agent_string = ('For any issues, concerns, or rate constraints,'
                              'e-mail alerts@recidiviz.com')

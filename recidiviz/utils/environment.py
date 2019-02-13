@@ -32,7 +32,7 @@ from functools import wraps
 import recidiviz
 
 
-def in_prod():
+def in_gae():
     """ Check whether we're currently running on local dev machine or in prod
 
     Checks whether the current instance is running hosted on GAE (if not, likely
@@ -45,7 +45,19 @@ def in_prod():
         True if on hosted GAE instance
         False if not
     """
-    return os.getenv('RECIDIVIZ_ENV', '') == 'production'
+    return (os.getenv('RECIDIVIZ_ENV', '') == 'production' or
+            os.getenv('RECIDIVIZ_ENV', '') == 'staging')
+
+def get_gae_environment():
+    """Get the environment we are running in
+
+    Args:
+        N/A
+
+    Returns:
+        The gae instance we are running in, or local if it is not set
+    """
+    return os.getenv('RECIDIVIZ_ENV', 'local')
 
 
 def local_only(func):
@@ -77,7 +89,7 @@ def local_only(func):
             HTTP 500 and error logs, if running in prod
         """
 
-        deployed = in_prod()
+        deployed = in_gae()
 
         if deployed:
             # Production environment - fail

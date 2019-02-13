@@ -44,6 +44,7 @@ def split_manifest(region_to_use: Optional[str] = None):
             'agency_type': old_manifest['agency_type'],
             'base_url': old_manifest['base_url'],
             'timezone': old_manifest['timezone'],
+            'environment': 'staging',
         }
         if old_manifest['queue'] == \
                 '{}-scraper'.format(region.replace('_', '-')):

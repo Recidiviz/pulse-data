@@ -133,7 +133,7 @@ def _mark_children_removed_from_source(booking: entities.Booking):
 
 
 def _should_persist():
-    return bool(environment.in_prod() or \
+    return bool(environment.in_gae() or \
                 strtobool((os.environ.get('PERSIST_LOCALLY', 'false'))))
 
 

@@ -41,6 +41,7 @@ _REGIONS = [
         base_url='base_url',
         queue={'rate': '5/m'},
         timezone='America/New_York',
+        environment='production'
     ), regions.Region(
         region_code='us_wy',
         agency_name='agency_name',
@@ -48,12 +49,14 @@ _REGIONS = [
         base_url='base_url',
         timezone='America/New_York',
         removed_from_website='UNKNOWN_SIGNIFICANCE',
+        environment='production'
     ), regions.Region(
         region_code='us_nc',
         agency_name='agency_name',
         agency_type='prison',
         base_url='base_url',
         timezone='America/New_York',
+        environment='production'
     ),
 ]
 

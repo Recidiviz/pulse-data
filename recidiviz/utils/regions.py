@@ -48,6 +48,7 @@ class Region:
         region_code: (string) Region code
         agency_name: (string) Human-readable agency name
         agency_type: (string) 'prison' or 'jail'
+        environment: (string) The environment the region is allowed to run in.
         base_url: (string) Base URL for scraping
         timezone: (string) Timezone in which this region resides. If the region
             is in multiple timezones, this is the timezone in which most of the
@@ -65,6 +66,7 @@ class Region:
     region_code: str = attr.ib()
     agency_name: str = attr.ib()
     agency_type: str = attr.ib()
+    environment: str = attr.ib()
     base_url: str = attr.ib()
     timezone: tzinfo = attr.ib(converter=pytz.timezone)
     shared_queue: Optional[str] = attr.ib(default=None)

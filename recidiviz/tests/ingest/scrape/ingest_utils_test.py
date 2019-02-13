@@ -42,7 +42,12 @@ class TestIngestUtils:
 
     @patch('pkgutil.iter_modules',
            return_value=fake_modules('us_ny', 'us_pa', 'us_vt', 'us_pa_greene'))
-    def test_validate_regions_one_all(self, _mock_modules):
+    @patch("recidiviz.utils.regions.get_region")
+    def test_validate_regions_one_all(self, mock_get_region, _mock_modules):
+        fake_region = Mock()
+        mock_get_region.return_value = fake_region
+        fake_region.environment = 'local'
+
         assert set(ingest_utils.validate_regions(['all'])) == {
             'us_ny',
             'us_pa',
@@ -68,7 +73,12 @@ class TestIngestUtils:
 
     @patch('pkgutil.iter_modules',
            return_value=fake_modules('us_ny', 'us_pa', 'us_vt', 'us_pa_greene'))
-    def test_validate_regions_multiple_all(self, _mock_modules):
+    @patch("recidiviz.utils.regions.get_region")
+    def test_validate_regions_multiple_all(self, mock_region, _mock_modules):
+        fake_region = Mock()
+        mock_region.return_value = fake_region
+        fake_region.environment = 'local'
+
         assert set(ingest_utils.validate_regions(['us_pa', 'all'])) == {
             'us_ny',
             'us_pa',
@@ -78,7 +88,12 @@ class TestIngestUtils:
 
     @patch('pkgutil.iter_modules',
            return_value=fake_modules('us_ny', 'us_pa', 'us_vt', 'us_pa_greene'))
-    def test_validate_regions_multiple_all_invalid(self, _mock_modules):
+    @patch("recidiviz.utils.regions.get_region")
+    def test_validate_regions_multiple_all_invalid(
+            self, mock_get_region, _mock_modules):
+        fake_region = Mock()
+        mock_get_region.return_value = fake_region
+        fake_region.environment = 'local'
         assert not ingest_utils.validate_regions(['all', 'invalid'])
 
     @patch('pkgutil.iter_modules',
