@@ -46,6 +46,12 @@ class BuildableAttr:
         def __setattr__(self, key, value):
             self.fields[key] = value
 
+        def __getattr__(self, key):
+            if key in self.fields:
+                return self.fields[key]
+            raise AttributeError('{} object has no attribute {}'.format(
+                self.__class__.__name__, key))
+
         def build(self):
             """Builds the given Attr class after verifying that all fields
             without a default value are set and that no extra fields are set."""
