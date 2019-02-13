@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains logic related to MappableEnums"""
+import re
 import string
 from enum import Enum, EnumMeta
 from typing import Dict, Optional
@@ -81,6 +82,15 @@ class EntityEnum(Enum, metaclass=EntityEnumMeta):
             return True
         except EnumParsingError:
             return False
+
+    @classmethod
+    def find_in_string(cls, text: Optional[str]) -> Optional['EntityEnum']:
+        if not text:
+            return None
+        for inst in cls:
+            if re.search(inst.value.replace('_', ' '), text, re.I):
+                return inst
+        return None
 
     @classmethod
     def _parse_to_enum(cls, label, complete_map):
