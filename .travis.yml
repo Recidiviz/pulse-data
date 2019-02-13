@@ -27,13 +27,12 @@ script:
 - pipenv run mypy recidiviz
 after_success:
 - coveralls
+before_deploy:
+- git stash --all
+- python -m recidiviz.tools.build_queue_config
 deploy:
-- provider: script
-  script: python -m recidiviz.tools.build_queue_config
-  on:
-    all_branches: true
-    condition: $TRAVIS_TAG =~ ^v[0-9]+\.[0-9]+\.[0-9]+
 - provider: gae
+  skip_cleanup: true
   keyfile: client-secret-staging.json
   project: recidiviz-staging
   on:
@@ -41,6 +40,7 @@ deploy:
     condition: $TRAVIS_TAG =~ ^v[0-9]+\.[0-9]+\.[0-9]+
   config: queue.yaml
 - provider: gae
+  skip_cleanup: true
   keyfile: client-secret-staging.json
   project: recidiviz-staging
   on:
