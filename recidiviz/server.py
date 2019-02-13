@@ -40,7 +40,7 @@ from recidiviz.utils import environment, metadata
 logger = logging.getLogger()
 
 # Create cloud logging client
-if environment.in_prod():
+if environment.in_gae():
     client = Client()
     client.setup_logging(log_level=logging.DEBUG)
     for handler in logger.handlers:
@@ -65,11 +65,11 @@ app.register_blueprint(infer_release_blueprint, url_prefix='/infer_release')
 app.register_blueprint(cloud_functions_blueprint, url_prefix='/cloud_function')
 app.register_blueprint(
     scrape_aggregate_reports_blueprint, url_prefix='/scrape_aggregate_reports')
-if not environment.in_prod():
+if not environment.in_gae():
     app.register_blueprint(test_populator, url_prefix='/test_populator')
 
 # Setup tracing of requests not traced by default
-if environment.in_prod():
+if environment.in_gae():
     exporter = stackdriver_exporter.StackdriverExporter(
         project_id=metadata.project_id(), transport=BackgroundThreadTransport)
 else:
