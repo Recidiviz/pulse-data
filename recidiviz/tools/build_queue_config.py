@@ -17,7 +17,7 @@
 """Builds queue.yaml from the region manifests"""
 import yaml
 
-from recidiviz.utils import regions
+from recidiviz.utils import regions, vendors
 
 BASE_QUEUE_CONFIG = {
     'mode': 'push',
@@ -37,6 +37,14 @@ class NoAliasDumper(yaml.Dumper):
 
 def build_queues():
     queues = []
+    for vendor in vendors.get_vendors():
+        queue_params = vendors.get_vendor_queue_params(vendor)
+        if queue_params is None:
+            continue
+        queues.append({
+            'name': 'vendor-{}-scraper'.format(vendor.replace('_', '-')),
+            **BASE_QUEUE_CONFIG, **queue_params
+        })
     for region in regions.get_supported_regions():
         if region.shared_queue:
             continue
