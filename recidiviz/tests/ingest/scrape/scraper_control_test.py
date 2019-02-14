@@ -191,12 +191,14 @@ class TestScraperStop:
                                    headers=headers)
         assert response.status_code == 200
 
-        mock_sessions.assert_has_calls([
-            call(ScrapeKey('us_ca', constants.ScrapeType.BACKGROUND)),
-            call(ScrapeKey('us_ca', constants.ScrapeType.SNAPSHOT)),
-            call(ScrapeKey('us_ut', constants.ScrapeType.BACKGROUND)),
-            call(ScrapeKey('us_ut', constants.ScrapeType.SNAPSHOT))])
-        mock_region.assert_has_calls([call('us_ca'), call('us_ut')])
+        mock_sessions.assert_has_calls(
+            [call(ScrapeKey('us_ca', constants.ScrapeType.BACKGROUND)),
+             call(ScrapeKey('us_ca', constants.ScrapeType.SNAPSHOT)),
+             call(ScrapeKey('us_ut', constants.ScrapeType.BACKGROUND)),
+             call(ScrapeKey('us_ut', constants.ScrapeType.SNAPSHOT))],
+            any_order=True)
+        mock_region.assert_has_calls([call('us_ca'), call('us_ut')],
+                                     any_order=True)
         mock_supported.assert_called_with(timezone=None)
 
     @patch("recidiviz.utils.regions.get_supported_region_codes")
