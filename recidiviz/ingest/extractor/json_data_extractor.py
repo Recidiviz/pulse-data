@@ -20,6 +20,7 @@ pairs that a user might care about. The extracted information is put into the
 ingest data model and returned.
 """
 import logging
+from collections import defaultdict
 
 from recidiviz.ingest.extractor.data_extractor import DataExtractor
 from recidiviz.ingest.models.ingest_info import IngestInfo
@@ -44,42 +45,42 @@ class JsonDataExtractor(DataExtractor):
         """
         if ingest_info is None:
             ingest_info = IngestInfo()
-        self._extract(content, ingest_info)
+        self._extract(content, ingest_info, defaultdict(set))
         return ingest_info.prune()
 
-    def _extract(self, content, ingest_info, current_key=None):
+    def _extract(self, content, ingest_info, seen_map, current_key=None):
         """Recursively walks |content| and adds data to |ingest_info|."""
         if isinstance(content, list):
-            self._extract_list(content, ingest_info, current_key)
+            self._extract_list(content, ingest_info, seen_map, current_key)
         elif isinstance(content, dict):
             for k, v in content.items():
                 lookup_key = '{}.{}'.format(current_key,
                                             k) if current_key else k
-                if v is None:
-                    continue
+                if v is None or isinstance(v, str):
+                    self._set_value_if_key_exists(lookup_key, v, ingest_info,
+                                                  seen_map)
                 elif isinstance(v, dict):
-                    self._extract(v, ingest_info, lookup_key)
+                    self._extract(v, ingest_info, seen_map, lookup_key)
                 elif isinstance(v, list):
-                    self._extract_list(v, ingest_info, lookup_key)
-                elif isinstance(v, str):
-                    self._set_value_if_key_exists(lookup_key, v, ingest_info)
+                    self._extract_list(v, ingest_info, seen_map, lookup_key)
                 elif isinstance(v, (float, int)):
                     self._set_value_if_key_exists(
-                        lookup_key, str(v), ingest_info)
+                        lookup_key, str(v), ingest_info, seen_map)
                 else:
                     logging.error('JSON value was not an object, array, int, '
                                   'float, or string: %s', v)
         else:
             logging.error('%s is not a valid JSON value', content)
 
-    def _set_value_if_key_exists(self, lookup_key, value, ingest_info):
+    def _set_value_if_key_exists(self, lookup_key, value, ingest_info,
+                                 seen_map):
         if lookup_key in self.keys:
             self._set_or_create_object(ingest_info, self.keys[lookup_key],
-                                       [value])
+                                       [value], seen_map)
 
-    def _extract_list(self, content, ingest_info, current_key=None):
+    def _extract_list(self, content, ingest_info, seen_map, current_key=None):
         for value in content:
             if isinstance(value, (list, dict)):
-                self._extract(value, ingest_info, current_key)
+                self._extract(value, ingest_info, seen_map, current_key)
             else:
-                self._extract({current_key: value}, ingest_info)
+                self._extract({current_key: value}, ingest_info, seen_map)

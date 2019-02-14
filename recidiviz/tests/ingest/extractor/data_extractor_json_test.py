@@ -19,13 +19,14 @@ import os
 import unittest
 
 from recidiviz.ingest.extractor.json_data_extractor import JsonDataExtractor
-from recidiviz.ingest.models.ingest_info import IngestInfo
+from recidiviz.ingest.models.ingest_info import Booking, Charge, IngestInfo
 from recidiviz.tests.ingest import fixtures
 
 _JT_PERSON = fixtures.as_dict('extractor', 'jailtracker_person.json')
 _JT_BOOKING = fixtures.as_dict('extractor', 'jailtracker_booking.json')
 _PERSON_WITH_CHARGES = fixtures.as_dict('extractor', 'person_with_charges.json')
 _PERSON_WITH_HOLDS = fixtures.as_dict('extractor', 'person_with_holds.json')
+_SKIP_EMPTY = fixtures.as_dict('extractor', 'skip_empty.json')
 
 
 class DataExtractorJsonTest(unittest.TestCase):
@@ -109,3 +110,32 @@ class DataExtractorJsonTest(unittest.TestCase):
 
         result = extractor.extract_and_populate_data(_PERSON_WITH_HOLDS)
         self.assertEqual(result, expected_result)
+
+    def test_skip_empty(self):
+        key_mapping_file = os.path.join(os.path.dirname(__file__),
+                                        'fixtures/skip_empty.yaml')
+        extractor = JsonDataExtractor(key_mapping_file)
+
+        expected = IngestInfo()
+        expected.create_person(
+            full_name='skip empty',
+            bookings=[Booking(
+                custody_status='in custody',
+                booking_id='1',
+                charges=[Charge(
+                    name="battery",
+                ), Charge(
+                    name="assault",
+                    charge_class='misdemeanor',
+                ), ],
+            ), Booking(
+                booking_id='2',
+                charges=[Charge(
+                    name='robbery',
+                    charge_class='felony',
+                ), ],
+            ), ],
+        )
+
+        result = extractor.extract_and_populate_data(_SKIP_EMPTY)
+        self.assertEqual(result, expected)
