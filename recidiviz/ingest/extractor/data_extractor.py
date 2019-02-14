@@ -21,7 +21,7 @@ model and returned.
 """
 
 import abc
-from typing import Union, List, Optional, Sequence
+from typing import Union, List, Optional, Sequence, Dict, Set
 
 import yaml
 from lxml.html import HtmlElement
@@ -60,7 +60,8 @@ class DataExtractor(metaclass=abc.ABCMeta):
 
     def _set_or_create_object(self, ingest_info: IngestInfo,
                               lookup_keys: Union[str, List[str]],
-                              values: List[Optional[str]]) -> None:
+                              values: List[Optional[str]],
+                              seen_map: Dict[int, Set[str]]) -> None:
         """Contains the logic to set or create a field on an ingest object.
         The logic here is that we check if we have a most recent class already
         to check if the field is already set.  If the field we care about is
@@ -74,6 +75,11 @@ class DataExtractor(metaclass=abc.ABCMeta):
             values: The list of values that the field name will be set to.
                 Each element of the list is a different write and might incur
                 objects being created/updated.
+            seen_map: A dict keyed by object ids, containing sets of field
+            names that have already been set on the object. We mark fields as
+            set on objects so that setting the field again will create a new
+            object, even if the last object's field was set to None. This method
+            modifies the map when it sets fields.
         """
         lookup_keys = lookup_keys if isinstance(lookup_keys, list) \
             else [lookup_keys]
@@ -81,8 +87,6 @@ class DataExtractor(metaclass=abc.ABCMeta):
             class_to_set, ingest_key = lookup_key.split('.')
             is_multi_key = class_to_set in self.multi_key_classes
             for i, value in enumerate(values):
-                if value is None or value == '' or value.isspace():
-                    continue
                 # The first task is to find the parent.
                 parent = self._find_parent_ingest_info(
                     ingest_info, HIERARCHY_MAP[class_to_set], i)
@@ -110,11 +114,12 @@ class DataExtractor(metaclass=abc.ABCMeta):
                 # If the object we are trying to operate on is None, or it has
                 # already set the ingest_key then we know we need to create a
                 # new one.
-                if (object_to_set is None or
-                        getattr(object_to_set, ingest_key) is not None):
+                if object_to_set is None or \
+                        ingest_key in seen_map[id(object_to_set)]:
                     object_to_set = create_func()
 
                 setattr(object_to_set, ingest_key, value)
+                seen_map[id(object_to_set)].add(ingest_key)
 
     def _find_parent_ingest_info(self, ingest_info: IngestInfo,
                                  hierarchy: Sequence[str],
