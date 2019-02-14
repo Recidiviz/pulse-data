@@ -185,6 +185,9 @@ general code score out of 10. Fix any new violations in your commit. If you beli
 e.g. if you believe a particular rule is inappropriate in the codebase, then submit that change as part of your
 inbound pull request.
 
+#### Static type checking
+Run Mypy across all code to check for static type errors: `mypy recidiviz`.
+
 ### Running the app
 There are two ways to run the app - on your local machine, or deployed to the cloud.
 
