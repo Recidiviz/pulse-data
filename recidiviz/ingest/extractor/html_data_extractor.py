@@ -22,7 +22,8 @@ model and returned.
 
 import copy
 import warnings
-from typing import Optional, Iterator, List
+from collections import defaultdict
+from typing import Optional, Iterator, List, Dict, Set
 
 from lxml.html import HtmlElement
 
@@ -92,6 +93,7 @@ class HtmlDataExtractor(DataExtractor):
         self._set_all_cells(content_copy)
         if ingest_info is None:
             ingest_info = IngestInfo()
+        seen_map: Dict[int, Set[str]] = defaultdict(set)
 
         # We use this set to keep track of keys we have seen, by the end of this
         # function it should be the empty set.  If not we throw an error to let
@@ -122,7 +124,8 @@ class HtmlDataExtractor(DataExtractor):
             elif cell_val in self.multi_keys:
                 values = self._get_values_below_cell(cell)
             if values:
-                self._set_or_create_object(ingest_info, lookup_keys, values)
+                self._set_or_create_object(ingest_info, lookup_keys, values,
+                                           seen_map)
                 if cell_val in needed_keys:
                     needed_keys.remove(cell_val)
         # If at the end of everything there are some keys we haven't found on
