@@ -26,15 +26,17 @@ from sqlalchemy import func
 
 from recidiviz import Session
 from recidiviz.common.constants import enum_canonical_strings as enum_strings
+from recidiviz.common.constants.bond import BondStatus
 from recidiviz.common.constants.booking import CustodyStatus
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.person import Race
+from recidiviz.common.constants.sentence import SentenceStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.persistence import entities
 from recidiviz.persistence.database import database, database_utils
-from recidiviz.persistence.database.schema import Booking, Person, \
-    FlCountyAggregate, FlFacilityAggregate
+from recidiviz.persistence.database.schema import Bond, Booking, Person, \
+    Sentence, FlCountyAggregate, FlFacilityAggregate
 from recidiviz.persistence.database.schema import (
     BookingHistory,
     Charge, ChargeHistory,
@@ -512,6 +514,114 @@ class TestDatabase(TestCase):
             IngestMetadata("default_region", _LAST_SEEN_TIME, {}))
 
         session.close()
+
+    def test_removeBondFromCharge_shouldNotOrphanOldBond(self):
+        arrange_session = Session()
+
+        person = entities.Person.new_with_defaults(
+            region=_REGION, race=Race.OTHER)
+        booking = entities.Booking.new_with_defaults(
+            custody_status=CustodyStatus.IN_CUSTODY,
+            last_seen_time=_LAST_SEEN_TIME)
+        person.bookings = [booking]
+        charge = entities.Charge.new_with_defaults(
+            status=ChargeStatus.PENDING)
+        booking.charges = [charge]
+        bond = entities.Bond.new_with_defaults(
+            status=BondStatus.UNKNOWN_FOUND_IN_SOURCE)
+        charge.bond = bond
+
+        persisted_person = database.write_person(
+            arrange_session, person, IngestMetadata(
+                "default_region",
+                datetime.datetime(year=2020, month=7, day=6),
+                {}))
+        arrange_session.commit()
+        persisted_person_id = persisted_person.person_id
+        persisted_booking_id = persisted_person.bookings[0].booking_id
+        arrange_session.close()
+
+        act_session = Session()
+        person_query = act_session.query(Person) \
+            .filter(Person.person_id == persisted_person_id)
+        fetched_person = database_utils.convert_person(person_query.first())
+        # Remove bond from charge so bond is no longer directly associated
+        # with ORM copy of the record tree
+        fetched_charge = fetched_person.bookings[0].charges[0]
+        fetched_charge.bond = None
+        database.write_person(
+            act_session, fetched_person, IngestMetadata(
+                "default_region",
+                datetime.datetime(year=2020, month=7, day=7),
+                {}))
+        act_session.commit()
+        act_session.close()
+
+        assert_session = Session()
+
+        # Bond should still be associated with booking, even though it is no
+        # longer associated with the charge
+        bonds = assert_session.query(Bond) \
+            .filter(Bond.booking_id == persisted_booking_id) \
+            .all()
+        self.assertEqual(len(bonds), 1)
+
+        assert_session.commit()
+        assert_session.close()
+
+    def test_removeSentenceFromCharge_shouldNotOrphanOldSentence(self):
+        arrange_session = Session()
+
+        person = entities.Person.new_with_defaults(
+            region=_REGION, race=Race.OTHER)
+        booking = entities.Booking.new_with_defaults(
+            custody_status=CustodyStatus.IN_CUSTODY,
+            last_seen_time=_LAST_SEEN_TIME)
+        person.bookings = [booking]
+        charge = entities.Charge.new_with_defaults(
+            status=ChargeStatus.PENDING)
+        booking.charges = [charge]
+        sentence = entities.Sentence.new_with_defaults(
+            status=SentenceStatus.UNKNOWN_FOUND_IN_SOURCE)
+        charge.sentence = sentence
+
+        persisted_person = database.write_person(
+            arrange_session, person, IngestMetadata(
+                "default_region",
+                datetime.datetime(year=2020, month=7, day=6),
+                {}))
+        arrange_session.commit()
+        persisted_person_id = persisted_person.person_id
+        persisted_booking_id = persisted_person.bookings[0].booking_id
+        arrange_session.close()
+
+        act_session = Session()
+        person_query = act_session.query(Person) \
+            .filter(Person.person_id == persisted_person_id)
+        fetched_person = database_utils.convert_person(person_query.first())
+        # Remove sentence from charge so sentence is no longer directly
+        # associated with ORM copy of the record tree
+        fetched_charge = fetched_person.bookings[0].charges[0]
+        fetched_charge.sentence = None
+        database.write_person(
+            act_session, fetched_person, IngestMetadata(
+                "default_region",
+                datetime.datetime(year=2020, month=7, day=7),
+                {}))
+        act_session.commit()
+        act_session.close()
+
+        assert_session = Session()
+
+        # Sentence should still be associated with booking, even though it is no
+        # longer associated with the charge
+        sentences = assert_session.query(Sentence) \
+            .filter(Sentence.booking_id == persisted_booking_id) \
+            .all()
+        self.assertEqual(len(sentences), 1)
+
+        assert_session.commit()
+        assert_session.close()
 
     def testWriteDf(self):
         # Arrange
