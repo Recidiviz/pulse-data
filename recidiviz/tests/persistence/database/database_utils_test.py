@@ -114,6 +114,7 @@ _PERSON = entities.Person(
                 status=BondStatus.SET,
                 status_raw_text='SET',
                 bond_agent='bond_agent',
+                booking_id=2345
             ),
             sentence=entities.Sentence(
                 sentence_id=7890,
@@ -129,6 +130,7 @@ _PERSON = entities.Person(
                 fine_dollars=5,
                 parole_possible=True,
                 post_release_supervision_length_days=0,
+                booking_id=2345,
                 related_sentences=[]
             )
         )]

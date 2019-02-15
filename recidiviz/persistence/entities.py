@@ -145,6 +145,7 @@ class Bond(Entity, BuildableAttr):
     bond_agent: Optional[str] = attr.ib()
 
     bond_id: Optional[int] = attr.ib(default=None)
+    booking_id: Optional[int] = attr.ib(default=None)
 
 
 @attr.s
@@ -162,6 +163,7 @@ class Sentence(Entity, BuildableAttr):
     post_release_supervision_length_days: Optional[int] = attr.ib()
 
     sentence_id: Optional[int] = attr.ib(default=None)
+    booking_id: Optional[int] = attr.ib(default=None)
 
     # To avoid recursive references, store only 1 level of related_sentences
     # (ie. don't store related_sentences of these related_sentences).

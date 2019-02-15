@@ -287,10 +287,12 @@ class TestPersistence(TestCase):
             hold_id=ID, status=HoldStatus.ACTIVE, status_raw_text='ACTIVE')
         sentence = entities.Sentence.new_with_defaults(
             sentence_id=ID, status=SentenceStatus.SERVING,
-            status_raw_text='SERVING')
+            status_raw_text='SERVING',
+            booking_id=ID)
         bond = entities.Bond.new_with_defaults(
             bond_id=ID, status=BondStatus.NOT_REQUIRED,
-            status_raw_text='NOT_REQUIRED')
+            status_raw_text='NOT_REQUIRED',
+            booking_id=ID)
         charge = entities.Charge.new_with_defaults(
             charge_id=ID, status=ChargeStatus.PENDING,
             status_raw_text='PENDING', sentence=sentence, bond=bond)
