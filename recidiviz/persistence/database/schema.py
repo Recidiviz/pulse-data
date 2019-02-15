@@ -422,6 +422,13 @@ class Bond(Base, DatabaseEntity, _BondSharedColumns):
     __tablename__ = 'bond'
 
     bond_id = Column(Integer, primary_key=True)
+    # This foreign key is usually redundant, as a bond can be linked to a
+    # booking through a charge. This foreign key serves to prevent orphaning
+    # a bond if all charges that point to it are updated to point to other
+    # bonds. It does not have a corresponding SQLAlchemy relationship, to avoid
+    # redundant relationships.
+    booking_id = Column(
+        Integer, ForeignKey('booking.booking_id'), nullable=False)
 
     charges = relationship('Charge', back_populates='bond')
 
@@ -438,6 +445,7 @@ class BondHistory(Base, DatabaseEntity, _BondSharedColumns):
         Integer, ForeignKey('bond.bond_id'), nullable=False, index=True)
     valid_from = Column(DateTime, nullable=False)
     valid_to = Column(DateTime)
+    booking_id = Column(Integer, nullable=False)
 
 
 class _SentenceSharedColumns:
@@ -470,6 +478,13 @@ class Sentence(Base, DatabaseEntity, _SentenceSharedColumns):
     __tablename__ = 'sentence'
 
     sentence_id = Column(Integer, primary_key=True)
+    # This foreign key is usually redundant, as a sentence can be linked to a
+    # booking through a charge. This foreign key serves to prevent orphaning
+    # a sentence if all charges that point to it are updated to point to other
+    # sentences. It does not have a corresponding SQLAlchemy relationship, to
+    # avoid redundant relationships.
+    booking_id = Column(
+        Integer, ForeignKey('booking.booking_id'), nullable=False)
 
     charges = relationship('Charge', back_populates='sentence')
 
@@ -498,6 +513,7 @@ class SentenceHistory(Base, DatabaseEntity, _SentenceSharedColumns):
         index=True)
     valid_from = Column(DateTime, nullable=False)
     valid_to = Column(DateTime)
+    booking_id = Column(Integer, nullable=False)
 
 
 class _SentenceRelationshipSharedColumns:
