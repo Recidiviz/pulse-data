@@ -154,18 +154,60 @@ Resolving Enum Parsing Errors
 ==================
 Although we are populating all fields in `IngestInfo` with scraped strings, later several of those strings are converted into Enums. When running your scraper (either Unit Tests or End to End Tests), you may have encountered an `EnumParsingError: Could not parse X when building <enum Y>` during this process. This indicates that the scraped string could not be parsed into an Enum, in which case you have two options:
 
+Note: for both options 1. and 2., strings are matched without regard to 
+whitespace, punctuation, or capitalization. For example, if you want to add 
+the string `N A` to either map, it will catch `N\nA`, `(N/A)`, etc.
+
 ### 1. Adding to the default map
 If you suspect the new string->Enum mapping should be shared across all scrapers, you should add it to the enum's default map. Enums with their default maps are in the [recidiviz/common/constants/](/recidiviz/common/constants) directory.
 
 ex. [#522](https://github.com/Recidiviz/pulse-data/pull/522/)
 
 ### 2. Adding a region-specific override
-If you suspect the new string->Enum mapping is region-specific and should NOT be shared across all scrapers, you should add an override mapping to your specific scraper by implementing `scraper.get_enum_overrides()`. This method returns a `Dict[str, Enum]`, which contains all mappings specific to the region, regardless of the Enum type. Default maps and Enum values can both be found in [recidiviz/common/constants/](/recidiviz/common/constants).
+If you suspect the new string->Enum mapping is region-specific and should NOT
+be shared across all scrapers, you should add an override mapping to your 
+specific scraper by implementing `scraper.get_enum_overrides()`. This method
+returns an [`EnumOverrides`](recidiviz/common/constants/enum_overrides.py)
+object, which contains all mappings specific to the region, regardless of the
+Enum type. Default maps and Enum values can both be found in
+[recidiviz/common/constants/](/recidiviz/common/constants).
 
+The `EnumOverrides` object should be built via its `EnumOverrides.Builder`, 
+which has two methods, `add` and `ignore`.
+* `add(label_or_predicate, mapped_enum)` takes either a string label or a 
+Callable predicate (i.e. a function that takes a string and returns a boolean),
+indicating that the scraper should map the string label or strings matching 
+the predicate to `mapped_enum`.
+* `ignore(label, enum_class=None)` takes a string label and optionally an
+`EntityEnumMeta` class, indicating that the scraper should ignore the string 
+label when it exists in the field corresponding to `enum_class`. If 
+`enum_class` is not set, the scraper will ignore the string label in all enum
+fields.
 
-If a string should NOT be mapped to any Enum value, you can map it to None.
+If the scraper inherits from another scraper with its own overrides (e.g. a 
+vendor scraper), be sure to retrieve the parent class' overrides by calling 
+`super()`.
 
-ex. [#525](https://github.com/Recidiviz/pulse-data/pull/525/files#diff-e67a771abc537872ae10c6e6aa7fd717)
+For example:
+```python
+def get_enum_overrides(self) -> EnumOverrides:
+    overrides_builder = super(MyRegionScraper,
+                              self).get_enum_overrides().to_builder()
+    
+    # When charge.charge_class is 'A', this is a misdemeanor charge.
+    overrides_builder.add('A', ChargeClass.MISDEMEANOR)
+    
+    # When bond.status starts with 'PENDING', the status is pending.
+    is_pending = lambda s: return s.startswith('PENDING')
+    overrides_builder.add(is_pending, BondStatus.PENDING)
+    
+    # When charge.charge_class is 'X', clear the field.
+    overrides_builder.ignore('X', ChargeClass)
+    
+    # Ignore 'N/A' for all values.
+    overrides_builder.ignore('N/A')
+    return overrides_builder.build()
+```
 
 Example Flow
 ==================

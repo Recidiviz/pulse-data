@@ -21,6 +21,8 @@ from typing import Callable, Set, Union
 from typing import Dict, Optional
 
 import attr
+
+from recidiviz.common.common_utils import normalize
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
@@ -38,11 +40,13 @@ class EnumOverrides:
     _global_ignores: Set[str] = attr.ib()
 
     def should_ignore(self, label: str, enum_class: EntityEnumMeta) -> bool:
+        label = normalize(label, remove_punctuation=True)
         return label in self._ignores[enum_class] | self._global_ignores
 
     def parse(self,
               label: str,
               enum_class: EntityEnumMeta) -> Optional[EntityEnum]:
+        label = normalize(label, remove_punctuation=True)
         if self.should_ignore(label, enum_class):
             return None
 
@@ -68,6 +72,10 @@ class EnumOverrides:
         builder._ignores = self._ignores
         builder._global_ignores = self._global_ignores
         return builder
+
+    @classmethod
+    def empty(cls) -> 'EnumOverrides':
+        return cls.Builder().build()
 
     class Builder:
         """Builder for EnumOverrides objects."""
@@ -99,7 +107,7 @@ class EnumOverrides:
             #  |mapped_enum|'s class
             enum_class = mapped_enum.__class__
             if isinstance(label_or_predicate, str):
-                label = label_or_predicate
+                label = normalize(label_or_predicate, remove_punctuation=True)
                 self._maps[enum_class][label] = mapped_enum
             else:
                 predicate = label_or_predicate
@@ -110,6 +118,7 @@ class EnumOverrides:
             """Marks strings exactly matching |label| as ignored values for
             |enum_class|. If |enum_class| is None, ignore |label| for all
             enums."""
+            label = normalize(label, remove_punctuation=True)
             if enum_class:
                 self._ignores[enum_class].add(label)
             else:

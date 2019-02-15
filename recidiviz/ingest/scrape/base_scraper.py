@@ -45,6 +45,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from lxml import html
 from lxml.etree import XMLSyntaxError  # pylint:disable=no-name-in-module
 
+from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.scrape import constants, ingest_utils
 from recidiviz.ingest.models.ingest_info import IngestInfo
@@ -298,7 +299,7 @@ class BaseScraper(Scraper):
             ingest_info: The IngestInfo object to populate
         """
 
-    def get_enum_overrides(self):
+    def get_enum_overrides(self) -> EnumOverrides:
         """
         Returns a dict that contains all string to enum mappings that are
         region specific. These overrides have a higher precedence than the
@@ -307,7 +308,7 @@ class BaseScraper(Scraper):
         Note: Before overriding this method, consider directly adding each
         mapping directly into the respective global mappings instead.
         """
-        return {}
+        return EnumOverrides.empty()
 
     def transform_post_data(self, data):
         """If the child needs to transform the data in any way before it sends
