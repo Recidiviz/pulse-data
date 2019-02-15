@@ -67,7 +67,7 @@ def _parse_admission(proto, metadata):
     admission_date = fn(parse_date, 'admission_date', proto)
 
     if admission_date is None:
-        admission_date = metadata.last_seen_time
+        admission_date = metadata.last_seen_time.date()
         admission_date_inferred = True
     else:
         admission_date_inferred = False
