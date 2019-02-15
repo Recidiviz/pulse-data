@@ -35,6 +35,9 @@ from recidiviz.persistence.database import database_utils
 from recidiviz.persistence.database.schema import Person, Booking
 
 
+_DUMMY_BOOKING_ID = -1
+
+
 def read_people(session, full_name=None, birthdate=None):
     """
     Read all people matching the optional surname and birthdate. If neither
@@ -171,6 +174,8 @@ def _save_record_trees(session: Session,
     record trees. Returns the list of persisted (Person) objects
     """
 
+    _set_dummy_booking_ids(root_people)
+
     # Merge is recursive for all related entities, so this persists all master
     # entities in all record trees
     #
@@ -180,10 +185,45 @@ def _save_record_trees(session: Session,
     root_people = [session.merge(root_person) for root_person in root_people]
     session.flush()
 
+    _overwrite_dummy_booking_ids(root_people)
+
     update_snapshots.update_historical_snapshots(
         session, root_people, metadata.last_seen_time)
 
     return root_people
+
+
+def _set_dummy_booking_ids(root_people: List[Person]) -> None:
+    """Horrible hack to allow flushing new bookings. If the booking is new, it
+    won't have a primary key until it is flushed. However, that flush will fail
+    if the booking has child bonds or sentences, which require the booking_id
+    column to be set. To get around this, temporarily set a dummy value on the
+    bonds and sentences of new bookings, to be overwritten after the flush
+    generates the booking ID
+    """
+    for person in root_people:
+        for booking in person.bookings:
+            if booking.booking_id is None:
+                for charge in booking.charges:
+                    if charge.bond is not None:
+                        charge.bond.booking_id = _DUMMY_BOOKING_ID
+                    if charge.sentence is not None:
+                        charge.sentence.booking_id = _DUMMY_BOOKING_ID
+
+
+def _overwrite_dummy_booking_ids(root_people: List[Person]) -> None:
+    """Overwrites the dummy booking ID for any bonds and sentences that have
+    it set with the real ID of their parent booking
+    """
+    for person in root_people:
+        for booking in person.bookings:
+            for charge in booking.charges:
+                if charge.bond is not None \
+                        and charge.bond.booking_id == _DUMMY_BOOKING_ID:
+                    charge.bond.booking_id = booking.booking_id
+                if charge.sentence is not None \
+                        and charge.sentence.booking_id == _DUMMY_BOOKING_ID:
+                    charge.sentence.booking_id = booking.booking_id
 
 
 def write_df(table: DeclarativeMeta, df: pd.DataFrame) -> None:
