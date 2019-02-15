@@ -77,11 +77,13 @@ _GENDER_MAP = {
 _RACE_MAP = {
     'AMERICAN INDIAN': Race.AMERICAN_INDIAN_ALASKAN_NATIVE,
     'AMERICAN INDIAN ALASKAN NATIVE': Race.AMERICAN_INDIAN_ALASKAN_NATIVE,
+    'AMERICAN INDIAN OR ALASKAN NATIVE': Race.AMERICAN_INDIAN_ALASKAN_NATIVE,
     'NATIVE AM': Race.AMERICAN_INDIAN_ALASKAN_NATIVE,
     'I': Race.AMERICAN_INDIAN_ALASKAN_NATIVE,
     'INDIAN': Race.AMERICAN_INDIAN_ALASKAN_NATIVE,
     'ASIAN': Race.ASIAN,
     'ASIAN PACIFIC ISLANDER': Race.ASIAN,
+    'ASIAN OR PACIFIC ISLANDER': Race.ASIAN,
     'AFRICAN AMERICAN': Race.BLACK,
     'B': Race.BLACK,
     'BLACK': Race.BLACK,
@@ -103,8 +105,9 @@ _RACE_MAP = {
 # space. Add mappings here using a single space between words and numbers.
 # For example, `N/A` can be written as `N A` and `(10%)` can be written as `10`.
 _ETHNICITY_MAP = {
-    'HISPANIC': Ethnicity.HISPANIC,
     'H': Ethnicity.HISPANIC,
+    'HISPANIC': Ethnicity.HISPANIC,
+    'HISPANIC OR LATINO': Ethnicity.HISPANIC,
     'L': Ethnicity.HISPANIC,
     'NOT HISPANIC': Ethnicity.NOT_HISPANIC,
     'N': Ethnicity.NOT_HISPANIC,
