@@ -12,9 +12,10 @@ If either of these assumptions are broken, this module will not behave
 as expected.
 """
 
+from collections import defaultdict
 from datetime import datetime
 import logging
-from typing import Any, Callable, List, Optional, Set, Type
+from typing import Any, Callable, Dict, List, Optional, Set, Type
 
 import attr
 from sqlalchemy.orm import Session
@@ -67,37 +68,71 @@ def _fetch_most_recent_snapshots_for_all_entities(
     """Returns a list containing the most recent snapshot for each entity in
     all record trees rooted at |root_people|, if one exists.
     """
-    snapshots: List[Any] = []
 
-    # TODO: replace with pre-collecting IDs and making 1 query per table
+    # Consolidate all master entity IDs for each type, so that each historical
+    # table only needs to be queried once
+    ids_by_entity_type_name: Dict[str, Set[int]] = defaultdict(set)
     _execute_action_for_all_entities(
-        root_people, _fetch_snapshot, session, snapshots)
+        root_people,
+        lambda entity: ids_by_entity_type_name[type(entity).__name__] \
+            .add(entity.get_primary_key()))
 
+    snapshots: List[Any] = []
+    for type_name, ids in ids_by_entity_type_name.items():
+        master_class = getattr(schema, type_name)
+        snapshots.extend(_fetch_most_recent_snapshots_for_entity_type(
+            session, master_class, ids))
     return snapshots
 
 
-# TODO: replace with method to fetch all snapshots at once
-# pylint: disable=missing-docstring
-def _fetch_snapshot(entity, session, snapshots):
+def _fetch_most_recent_snapshots_for_entity_type(
+        session: Session, master_class: Type,
+        entity_ids: Set[int]) -> List[Any]:
+    """Returns a list containing the most recent snapshot for each ID in
+    |entity_ids| with type |master_class|
+    """
+
     # Get name of historical table in database (as distinct from name of ORM
     # class representing historical table in code)
-    historical_class = _get_historical_class(type(entity))
+    historical_class = _get_historical_class(master_class)
     historical_table_name = historical_class.__table__.name
 
+    # Get snapshot IDs in a separate query. The subquery logic here is ugly and
+    # easier to do as a raw string query than through the ORM query, but the
+    # return type of a raw string query is just a collection of values rather
+    # than an ORM model. Doing this step as a separate query enables passing
+    # just the IDs to the second request, which allows proper ORM models to be
+    # returned as a result.
+    snapshot_ids_query = '''
+    SELECT history.{primary_key_column}
+    FROM {historical_table} history
+    JOIN (
+      SELECT {master_key_column}, MAX(valid_from) AS valid_from
+      FROM {historical_table}
+      WHERE {master_key_column} IN ({ids_list})
+      GROUP BY {master_key_column}
+    ) AS most_recent_valid_from
+    ON history.{master_key_column} = most_recent_valid_from.{master_key_column}
+    WHERE history.valid_from = most_recent_valid_from.valid_from;
+    '''.format(
+        primary_key_column=historical_class.get_primary_key_column_name(),
+        historical_table=historical_table_name,
+        # See module assumption #2
+        master_key_column=master_class.get_primary_key_column_name(),
+        ids_list=', '.join([str(id) for id in entity_ids]))
+
+    snapshot_id_items = session.execute(text(snapshot_ids_query)).fetchall()
+    snapshot_ids = [item[0] for item in snapshot_id_items]
+
     filter_statement = \
-        '{historical_table}.{master_foreign_key} = {master_entity_id}'.format(
+        '{historical_table}.{primary_key_column} IN ({ids_list})'.format(
             historical_table=historical_table_name,
-            # See module assumption #2
-            master_foreign_key=type(entity).get_primary_key_column_name(),
-            master_entity_id=entity.get_primary_key())
+            primary_key_column=historical_class.get_primary_key_column_name(),
+            ids_list=', '.join([str(id) for id in snapshot_ids]))
 
-    snapshot = session.query(historical_class) \
+    return session.query(historical_class) \
         .filter(text(filter_statement)) \
-        .order_by(historical_class.valid_from.desc()) \
-        .first()
-
-    if snapshot is not None:
-        snapshots.append(snapshot)
+        .all()
 
 
 # TODO: replace with method that takes into account provided period values
