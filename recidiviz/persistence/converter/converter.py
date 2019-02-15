@@ -21,6 +21,7 @@ from typing import List
 import more_itertools
 
 from recidiviz.common.constants.charge import ChargeStatus
+from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence import entities
 from recidiviz.persistence.converter import arrest, sentence, \
     charge, bond, booking, person, hold
@@ -61,10 +62,15 @@ class _Converter:
         person.copy_fields_to_builder(
             person_builder, ingest_person, self.metadata)
 
-        person_builder.bookings = [
-            self._convert_booking(self.bookings[booking_id])
-            for booking_id in ingest_person.booking_ids
-        ]
+        converted_bookings = [self._convert_booking(self.bookings[booking_id])
+                              for booking_id in ingest_person.booking_ids]
+
+        # If no bookings were ingested, create booking to house inferred data.
+        if not converted_bookings:
+            inferred_booking = self._convert_booking(ingest_info_pb2.Booking())
+            converted_bookings = [inferred_booking]
+
+        person_builder.bookings = converted_bookings
 
         return person_builder.build()
 
