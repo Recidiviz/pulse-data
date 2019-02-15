@@ -54,10 +54,10 @@ gender_other = 'OTHER'
 gender_trans_female = 'TRANS_FEMALE'
 gender_trans_male = 'TRANS_MALE'
 
-race_american_indian = 'AMERICAN_INDIAN/ALASKAN_NATIVE'
+race_american_indian = 'AMERICAN_INDIAN_ALASKAN_NATIVE'
 race_asian = 'ASIAN'
 race_black = 'BLACK'
-race_hawaiian = 'NATIVE_HAWAIIAN/PACIFIC_ISLANDER'
+race_hawaiian = 'NATIVE_HAWAIIAN_PACIFIC_ISLANDER'
 race_other = 'OTHER'
 race_white = 'WHITE'
 

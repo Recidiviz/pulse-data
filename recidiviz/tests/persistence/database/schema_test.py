@@ -17,8 +17,17 @@
 """Tests for schema.py."""
 
 from unittest import TestCase
+
+import sqlalchemy
 from sqlalchemy.inspection import inspect
 
+import recidiviz.common.constants.bond as bond
+import recidiviz.common.constants.booking as booking
+import recidiviz.common.constants.charge as charge
+import recidiviz.common.constants.hold as hold
+import recidiviz.common.constants.person as person
+import recidiviz.common.constants.sentence as sentence
+import recidiviz.persistence.database.schema as schema
 from recidiviz.persistence.database.schema import (
     Arrest, ArrestHistory,
     Bond, BondHistory,
@@ -31,17 +40,18 @@ from recidiviz.persistence.database.schema import (
 
 
 class SchemaTest(TestCase):
-    """Test matching columns in master and historical tables for each entity
+    """Test validating schema file"""
 
-    NOTE: This constraint is primarily enforced by the used of "SharedColumn"
-    mixins between the master and historical schema objects. However, as
-    foreign key columns cannot be shared in that manner (because foreign keys
-    on the master tables point to unique entities and foreign keys on the
-    historical tables do not, and therefore foreign key constraints can only
-    be enforced on the former), this test still serves as a useful catch for
-    those cases.
-    """
+    # Test cases matching columns in master and historical tables for each
+    # entity type
 
+    # NOTE: This constraint is primarily enforced by the used of "SharedColumn"
+    # mixins between the master and historical schema objects. However, as
+    # foreign key columns cannot be shared in that manner (because foreign keys
+    # on the master tables point to unique entities and foreign keys on the
+    # historical tables do not, and therefore foreign key constraints can only
+    # be enforced on the former), this test still serves as a useful catch for
+    # those cases.
 
     def testMasterAndHistoryColumnsMatch_Arrest(self):
         self._assert_columns_match(Arrest,
@@ -120,6 +130,48 @@ class SchemaTest(TestCase):
                                        'valid_to'])
 
 
+    # Test case ensuring enum values match between persistence layer enums and
+    # schema enums
+    def testPersistenceAndSchemaEnumsMatch(self):
+        # Mapping between name of schema enum and persistence layer enum. This
+        # map controls which pairs of enums are tested.
+        #
+        # If a schema enum does not correspond to a persistence layer enum,
+        # it should be mapped to None.
+        test_mapping = {
+            'gender': person.Gender,
+            'race': person.Race,
+            'ethnicity': person.Ethnicity,
+            'admission_reason': booking.AdmissionReason,
+            'classification': booking.Classification,
+            'custody_status': booking.CustodyStatus,
+            'release_reason': booking.ReleaseReason,
+            'hold_status': hold.HoldStatus,
+            'bond_type': bond.BondType,
+            'bond_status': bond.BondStatus,
+            'sentence_status': sentence.SentenceStatus,
+            'sentence_relationship_type': None,
+            'degree': charge.ChargeDegree,
+            'charge_class': charge.ChargeClass,
+            'charge_status': charge.ChargeStatus,
+            'court_type': charge.CourtType,
+            'report_granularity': None
+        }
+
+        schema_enums_by_name = {}
+        for attribute_name in dir(schema):
+            attribute = getattr(schema, attribute_name)
+            if isinstance(attribute, sqlalchemy.Enum):
+                schema_enums_by_name[attribute_name] = attribute
+
+        for schema_enum_name, schema_enum in schema_enums_by_name.items():
+            # This will throw a KeyError if a schema enum is not mapped to
+            # a persistence layer enum to be tested against
+            persistence_enum = test_mapping[schema_enum_name]
+            if persistence_enum is not None:
+                self._assert_enum_values_match(schema_enum, persistence_enum)
+
+
     def _assert_columns_match(self, table_a, table_b, table_a_exclusions=None,
                               table_b_exclusions=None):
         """Asserts that each column in table_a has a corresponding column with
@@ -158,3 +210,21 @@ class SchemaTest(TestCase):
             table_b_column_names.remove(exclusion)
 
         self.assertEqual(table_a_column_names, table_b_column_names)
+
+
+    # This test method currently does not account for situations where either
+    # enum should have values that are excluded from comparison. If a situation
+    # like that arises, this test case can be extended to have hard-coded
+    # exclusions in the same way as the master/historical column comparison
+    # tests.
+    def _assert_enum_values_match(self, schema_enum, persistence_enum):
+        schema_enum_values = set(schema_enum.enums)
+        # pylint: disable=protected-access
+        persistence_enum_values = set(persistence_enum._member_names_)
+        self.assertEqual(
+            schema_enum_values,
+            persistence_enum_values,
+            msg='Values of schema enum "{schema_enum}" did not match values of '
+                'persistence enum "{persistence_enum}"'.format(
+                    schema_enum=schema_enum.name,
+                    persistence_enum=persistence_enum.__name__))
