@@ -25,6 +25,7 @@ from recidiviz import Session
 from recidiviz.common.constants.bond import BondStatus
 from recidiviz.common.constants.booking import CustodyStatus
 from recidiviz.common.constants.charge import ChargeStatus
+from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.hold import HoldStatus
 from recidiviz.common.constants.sentence import SentenceStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
@@ -63,8 +64,9 @@ SCRAPER_START_DATETIME = datetime(year=2018, month=8, day=6)
 SENTENCE_STATUS = 'SERVING'
 FULL_NAME_1 = 'TEST_FULL_NAME_1'
 FULL_NAME_2 = 'TEST_FULL_NAME_2'
-DEFAULT_METADATA = IngestMetadata(
-    "default_region", datetime(year=1000, month=1, day=1), {})
+DEFAULT_METADATA = IngestMetadata("default_region",
+                                  datetime(year=1000, month=1, day=1),
+                                  EnumOverrides.empty())
 ID = 1
 ID_2 = 2
 ID_3 = 3
