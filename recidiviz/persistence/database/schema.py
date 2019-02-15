@@ -38,180 +38,171 @@ from sqlalchemy.orm import relationship
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 
+
 # Base class for all table classes
 Base: DeclarativeMeta = declarative_base()
 
-# Enum values. Exposed separately from the SQLAlchemy Enum that owns them for
-# easier access to the values.
-#
-# These values should not be used directly by application code, but should be
-# mapped to application layer enums in order to maintain decoupling between
-# the application and schema.
-#
-# TODO(176): replace with Python enums after converting to Python 3. The enum
-# values should be the canonical string representations used here.
-
-# Person
-
-gender_values = (enum_strings.external_unknown,
-                 enum_strings.gender_female,
-                 enum_strings.gender_male,
-                 enum_strings.gender_other,
-                 enum_strings.gender_trans_female,
-                 enum_strings.gender_trans_male)
-
-race_values = (enum_strings.race_american_indian,
-               enum_strings.race_asian,
-               enum_strings.race_black,
-               enum_strings.external_unknown,
-               enum_strings.race_hawaiian,
-               enum_strings.race_other,
-               enum_strings.race_white)
-
-ethnicity_values = (enum_strings.external_unknown,
-                    enum_strings.ethnicity_hispanic,
-                    enum_strings.ethnicity_not_hispanic)
-
-# Booking
-
-admission_reason_values = (enum_strings.admission_reason_escape,
-                           enum_strings.admission_reason_new_commitment,
-                           enum_strings.admission_reason_parole_violation,
-                           enum_strings.admission_reason_probation_violation,
-                           enum_strings.admission_reason_transfer)
-
-release_reason_values = (enum_strings.release_reason_acquittal,
-                         enum_strings.release_reason_bond,
-                         enum_strings.release_reason_case_dismissed,
-                         enum_strings.release_reason_death,
-                         enum_strings.release_reason_escape,
-                         enum_strings.release_reason_expiration,
-                         enum_strings.external_unknown,
-                         enum_strings.release_reason_recognizance,
-                         enum_strings.release_reason_parole,
-                         enum_strings.release_reason_probation,
-                         enum_strings.release_reason_transfer)
-
-custody_status_values = (enum_strings.custody_status_escaped,
-                         enum_strings.custody_status_elsewhere,
-                         enum_strings.custody_status_in_custody,
-                         enum_strings.custody_status_inferred_release,
-                         enum_strings.custody_status_released,
-                         enum_strings.unknown_found_in_source,
-                         enum_strings.unknown_removed_from_source)
-
-classification_values = (enum_strings.external_unknown,
-                         enum_strings.classification_high,
-                         enum_strings.classification_low,
-                         enum_strings.classification_maximum,
-                         enum_strings.classification_medium,
-                         enum_strings.classification_minimum,
-                         enum_strings.classification_work_release)
-
-# Hold
-
-hold_status_values = (enum_strings.hold_status_active,
-                      enum_strings.hold_status_inactive,
-                      enum_strings.hold_status_inferred_dropped,
-                      enum_strings.unknown_found_in_source,
-                      enum_strings.unknown_removed_from_source)
-
-# Bond
-
-bond_type_values = (enum_strings.external_unknown,
-                    enum_strings.bond_type_cash,
-                    enum_strings.bond_type_no_bond,
-                    enum_strings.bond_type_partial_cash,
-                    enum_strings.bond_type_secured,
-                    enum_strings.bond_type_unsecured)
-
-bond_status_values = (enum_strings.bond_status_denied,
-                      enum_strings.unknown_found_in_source,
-                      enum_strings.bond_status_inferred_set,
-                      enum_strings.bond_status_not_required,
-                      enum_strings.bond_status_pending,
-                      enum_strings.bond_status_posted,
-                      enum_strings.bond_status_revoked,
-                      enum_strings.unknown_removed_from_source,
-                      enum_strings.bond_status_set)
-
-# Sentence
-
-sentence_status_values = (enum_strings.sentence_status_commuted,
-                          enum_strings.sentence_status_completed,
-                          enum_strings.sentence_status_serving,
-                          enum_strings.unknown_found_in_source,
-                          enum_strings.unknown_removed_from_source)
-
-# SentenceRelationship
-
-sentence_relationship_type_values = (
-    enum_strings.sentence_relationship_type_concurrent,
-    enum_strings.sentence_relationship_type_consecutive)
-
-# Charge
-
-degree_values = (enum_strings.external_unknown,
-                 enum_strings.degree_first,
-                 enum_strings.degree_second,
-                 enum_strings.degree_third)
-
-charge_class_values = (enum_strings.charge_class_civil,
-                       enum_strings.external_unknown,
-                       enum_strings.charge_class_felony,
-                       enum_strings.charge_class_infraction,
-                       enum_strings.charge_class_misdemeanor,
-                       enum_strings.charge_class_other,
-                       enum_strings.charge_class_parole_violation,
-                       enum_strings.charge_class_probation_violation)
-
-charge_status_values = (enum_strings.charge_status_acquitted,
-                        enum_strings.charge_status_completed,
-                        enum_strings.charge_status_convicted,
-                        enum_strings.charge_status_dropped,
-                        enum_strings.charge_status_inferred_dropped,
-                        enum_strings.external_unknown,
-                        enum_strings.charge_status_pending,
-                        enum_strings.charge_status_pretrial,
-                        enum_strings.charge_status_sentenced,
-                        enum_strings.unknown_found_in_source,
-                        enum_strings.unknown_removed_from_source)
-
-court_type_values = (enum_strings.court_type_circuit,
-                     enum_strings.court_type_civil,
-                     enum_strings.court_type_district,
-                     enum_strings.external_unknown,
-                     enum_strings.court_type_other,
-                     enum_strings.court_type_superior)
-
-# Aggregate enums
-report_granularity_values = (enum_strings.daily_granularity,
-                             enum_strings.weekly_granularity,
-                             enum_strings.monthly_granularity)
 
 # SQLAlchemy enums. Created separately from the tables so they can be shared
 # between the master and historical tables for each entity.
 
-# TODO(176): pass values_callable to all enum constructors so the canonical
-# string representation, rather than the enum name, is passed to the DB.
+# Person
 
-admission_reason = Enum(*admission_reason_values, name='admission_reason')
-bond_status = Enum(*bond_status_values, name='bond_status')
-bond_type = Enum(*bond_type_values, name='bond_type')
-charge_class = Enum(*charge_class_values, name='charge_class')
-charge_status = Enum(*charge_status_values, name='charge_status')
-classification = Enum(*classification_values, name='classification')
-court_type = Enum(*court_type_values, name='court_type')
-custody_status = Enum(*custody_status_values, name='custody_status')
-degree = Enum(*degree_values, name='degree')
-ethnicity = Enum(*ethnicity_values, name='ethnicity')
-gender = Enum(*gender_values, name='gender')
-hold_status = Enum(*hold_status_values, name='hold_status')
-race = Enum(*race_values, name='race')
-release_reason = Enum(*release_reason_values, name='release_reason')
+gender = Enum(enum_strings.external_unknown,
+              enum_strings.gender_female,
+              enum_strings.gender_male,
+              enum_strings.gender_other,
+              enum_strings.gender_trans_female,
+              enum_strings.gender_trans_male,
+              name='gender')
+
+race = Enum(enum_strings.race_american_indian,
+            enum_strings.race_asian,
+            enum_strings.race_black,
+            enum_strings.external_unknown,
+            enum_strings.race_hawaiian,
+            enum_strings.race_other,
+            enum_strings.race_white,
+            name='race')
+
+ethnicity = Enum(enum_strings.external_unknown,
+                 enum_strings.ethnicity_hispanic,
+                 enum_strings.ethnicity_not_hispanic,
+                 name='ethnicity')
+
+# Booking
+
+admission_reason = Enum(enum_strings.admission_reason_escape,
+                        enum_strings.admission_reason_new_commitment,
+                        enum_strings.admission_reason_parole_violation,
+                        enum_strings.admission_reason_probation_violation,
+                        enum_strings.admission_reason_transfer,
+                        name='admission_reason')
+
+release_reason = Enum(enum_strings.release_reason_acquittal,
+                      enum_strings.release_reason_bond,
+                      enum_strings.release_reason_case_dismissed,
+                      enum_strings.release_reason_death,
+                      enum_strings.release_reason_escape,
+                      enum_strings.release_reason_expiration,
+                      enum_strings.external_unknown,
+                      enum_strings.release_reason_recognizance,
+                      enum_strings.release_reason_parole,
+                      enum_strings.release_reason_probation,
+                      enum_strings.release_reason_transfer,
+                      name='release_reason')
+
+custody_status = Enum(enum_strings.custody_status_escaped,
+                      enum_strings.custody_status_elsewhere,
+                      enum_strings.custody_status_in_custody,
+                      enum_strings.custody_status_inferred_release,
+                      enum_strings.custody_status_released,
+                      enum_strings.unknown_found_in_source,
+                      enum_strings.unknown_removed_from_source,
+                      name='custody_status')
+
+classification = Enum(enum_strings.external_unknown,
+                      enum_strings.classification_high,
+                      enum_strings.classification_low,
+                      enum_strings.classification_maximum,
+                      enum_strings.classification_medium,
+                      enum_strings.classification_minimum,
+                      enum_strings.classification_work_release,
+                      name='classification')
+
+# Hold
+
+hold_status = Enum(enum_strings.hold_status_active,
+                   enum_strings.hold_status_inactive,
+                   enum_strings.hold_status_inferred_dropped,
+                   enum_strings.unknown_found_in_source,
+                   enum_strings.unknown_removed_from_source,
+                   name='hold_status')
+
+# Bond
+
+bond_type = Enum(enum_strings.external_unknown,
+                 enum_strings.bond_type_cash,
+                 enum_strings.bond_type_no_bond,
+                 enum_strings.bond_type_partial_cash,
+                 enum_strings.bond_type_secured,
+                 enum_strings.unknown_removed_from_source,
+                 enum_strings.bond_type_unsecured,
+                 name='bond_type')
+
+bond_status = Enum(enum_strings.bond_status_denied,
+                   enum_strings.unknown_found_in_source,
+                   enum_strings.bond_status_inferred_set,
+                   enum_strings.bond_status_not_required,
+                   enum_strings.bond_status_pending,
+                   enum_strings.bond_status_posted,
+                   enum_strings.bond_status_revoked,
+                   enum_strings.unknown_removed_from_source,
+                   enum_strings.bond_status_set,
+                   name='bond_status')
+
+# Sentence
+
+sentence_status = Enum(enum_strings.sentence_status_commuted,
+                       enum_strings.sentence_status_completed,
+                       enum_strings.sentence_status_serving,
+                       enum_strings.unknown_found_in_source,
+                       enum_strings.unknown_removed_from_source,
+                       name='sentence_status')
+
+# SentenceRelationship
+
 sentence_relationship_type = Enum(
-    *sentence_relationship_type_values, name='sentence_relationship_type')
-sentence_status = Enum(*sentence_status_values, name='sentence_status')
+    enum_strings.sentence_relationship_type_concurrent,
+    enum_strings.sentence_relationship_type_consecutive,
+    name='sentence_relationship_type')
+
+# Charge
+
+degree = Enum(enum_strings.external_unknown,
+              enum_strings.degree_first,
+              enum_strings.degree_fourth,
+              enum_strings.degree_second,
+              enum_strings.degree_third,
+              name='degree')
+
+charge_class = Enum(enum_strings.charge_class_civil,
+                    enum_strings.external_unknown,
+                    enum_strings.charge_class_felony,
+                    enum_strings.charge_class_infraction,
+                    enum_strings.charge_class_misdemeanor,
+                    enum_strings.charge_class_other,
+                    enum_strings.charge_class_parole_violation,
+                    enum_strings.charge_class_probation_violation,
+                    name='charge_class')
+
+charge_status = Enum(enum_strings.charge_status_acquitted,
+                     enum_strings.charge_status_completed,
+                     enum_strings.charge_status_convicted,
+                     enum_strings.charge_status_dropped,
+                     enum_strings.charge_status_inferred_dropped,
+                     enum_strings.external_unknown,
+                     enum_strings.charge_status_pending,
+                     enum_strings.charge_status_pretrial,
+                     enum_strings.charge_status_sentenced,
+                     enum_strings.unknown_found_in_source,
+                     enum_strings.unknown_removed_from_source,
+                     name='charge_status')
+
+court_type = Enum(enum_strings.court_type_circuit,
+                  enum_strings.court_type_civil,
+                  enum_strings.court_type_district,
+                  enum_strings.external_unknown,
+                  enum_strings.court_type_other,
+                  enum_strings.court_type_superior,
+                  name='court_type')
+
+# Aggregate
+
+report_granularity = Enum(enum_strings.daily_granularity,
+                          enum_strings.weekly_granularity,
+                          enum_strings.monthly_granularity,
+                          name='report_granularity')
 
 
 class _PersonSharedColumns:
@@ -663,10 +654,7 @@ class _AggregateTableMixin:
     fips = Column(String(255), nullable=False)
 
     report_date = Column(Date, nullable=False)
-    report_granularity = Column(
-        Enum(*report_granularity_values, name='report_granularity'),
-        nullable=False
-    )
+    report_granularity = Column(report_granularity, nullable=False)
 
 
 class CaFacilityAggregate(Base, _AggregateTableMixin):
