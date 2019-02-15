@@ -16,6 +16,7 @@
 # =============================================================================
 
 "Utils to be shared across recidiviz project"
+import string
 from typing import Optional
 
 _GENERATED_ID_SUFFIX = "_GENERATE"
@@ -29,9 +30,15 @@ def is_generated_id(id_str: Optional[str]) -> bool:
     return id_str is not None and id_str.endswith(_GENERATED_ID_SUFFIX)
 
 
-def normalize(s: str) -> str:
+def normalize(s: str, remove_punctuation: bool = False) -> str:
     """Normalizes whitespace within the provided string by converting all groups
     of whitespaces into ' ', and uppercases the string."""
+    if remove_punctuation:
+        translation = str.maketrans(dict.fromkeys(string.punctuation, ' '))
+        label_without_punctuation = s.translate(translation)
+        if not label_without_punctuation.isspace():
+            s = label_without_punctuation
+
     if s is None or s == '' or s.isspace():
         raise ValueError('Cannot normalize None or empty/whitespace string')
     return ' '.join(s.split()).upper()

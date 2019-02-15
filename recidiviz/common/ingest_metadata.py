@@ -16,17 +16,11 @@
 # ============================================================================
 """Metadata used to construct entity objects from ingest_info objects."""
 from datetime import datetime
-from typing import Dict, Any, Optional
 
 import attr
 
 from recidiviz.common.buildable_attr import BuildableAttr
-from recidiviz.common.common_utils import normalize
-from recidiviz.common.constants.entity_enum import EntityEnum
-
-
-def _normalize_keys(dictionary: Dict[str, Any]) -> Dict[str, Any]:
-    return {normalize(k): v for k, v in dictionary.items()}
+from recidiviz.common.constants.enum_overrides import EnumOverrides
 
 
 @attr.s(frozen=True)
@@ -41,5 +35,4 @@ class IngestMetadata(BuildableAttr):
     last_seen_time: datetime = attr.ib()
 
     # Region specific mapping which takes precedence over the global mapping.
-    enum_overrides: Dict[str, Optional[EntityEnum]] = attr.ib(
-        factory=dict, converter=_normalize_keys)
+    enum_overrides: EnumOverrides = attr.ib(factory=EnumOverrides.empty)

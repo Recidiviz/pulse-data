@@ -23,6 +23,7 @@ import pytest
 from mock import patch
 
 from recidiviz.common.constants.entity_enum import EnumParsingError
+from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.person import Gender
 from recidiviz.persistence.converter import converter_utils
 
@@ -80,8 +81,8 @@ class TestConverterUtils(TestCase):
             converter_utils.parse_bool('ABC')
 
     def test_parseEnum(self):
-        assert Gender.parse('Male', {}) == Gender.MALE
+        assert Gender.parse('Male', EnumOverrides.empty()) == Gender.MALE
 
     def test_parseBadEnum(self):
         with pytest.raises(EnumParsingError):
-            Gender.parse('ABD', {})
+            Gender.parse('ABD', EnumOverrides.empty())

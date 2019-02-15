@@ -19,6 +19,7 @@
 import unittest
 
 from recidiviz.common.constants.entity_enum import EntityEnum, EnumParsingError
+from recidiviz.common.constants.enum_overrides import EnumOverrides
 
 
 class FakeEntityEnum(EntityEnum):
@@ -38,35 +39,46 @@ class EntityEnumTest(unittest.TestCase):
 
     def testParse_InvalidString_throwsEnumParsingError(self):
         with self.assertRaises(EnumParsingError):
-            FakeEntityEnum.parse('invalid', {})
+            FakeEntityEnum.parse('invalid', EnumOverrides.empty())
 
     def testParse_NoOverrides_UsesDefaultMap(self):
-        self.assertEqual(FakeEntityEnum.parse('banana', {}),
+        self.assertEqual(FakeEntityEnum.parse('banana', EnumOverrides.empty()),
                          FakeEntityEnum.BANANA)
 
     def testParse_WithNoneOverride_IgnoresDefaultMap(self):
-        overrides = {'BANANA': None}
+        overrides_builder = EnumOverrides.Builder()
+        overrides_builder.ignore('BANANA')
+        overrides = overrides_builder.build()
         self.assertEqual(FakeEntityEnum.parse('banana', overrides), None)
 
     def testParse_WithOverrides_UsesOverrides(self):
-        overrides = {'BAN': FakeEntityEnum.BANANA}
+        overrides_builder = EnumOverrides.Builder()
+        overrides_builder.add('BAN', FakeEntityEnum.BANANA)
+        overrides = overrides_builder.build()
         self.assertEqual(FakeEntityEnum.parse('ban', overrides),
                          FakeEntityEnum.BANANA)
 
     def testParse_WithPunctuation(self):
-        self.assertEqual(FakeEntityEnum.parse('"PASSION"-FRUIT.', {}),
+        self.assertEqual(FakeEntityEnum.parse('"PASSION"-FRUIT.',
+                                              EnumOverrides.empty()),
                          FakeEntityEnum.PASSION_FRUIT)
 
-    def testParses_Invalid(self):
-        self.assertFalse(FakeEntityEnum.can_parse('invalid', {}))
+    def testCanParse_Invalid(self):
+        self.assertFalse(
+            FakeEntityEnum.can_parse('invalid', EnumOverrides.empty()))
 
-    def testParses_Valid(self):
-        self.assertTrue(FakeEntityEnum.can_parse('banana', {}))
+    def testCanParse_Valid(self):
+        self.assertTrue(
+            FakeEntityEnum.can_parse('banana', EnumOverrides.empty()))
 
-    def testParses_WithNoneOverride(self):
-        overrides = {'BANANA': None}
+    def testCanParse_WithNoneOverride(self):
+        overrides_builder = EnumOverrides.Builder()
+        overrides_builder.ignore('BANANA')
+        overrides = overrides_builder.build()
         self.assertTrue(FakeEntityEnum.can_parse('banana', overrides))
 
-    def testParses_WithOverrides(self):
-        overrides = {'BAN': FakeEntityEnum.BANANA}
+    def testCanParse_WithOverrides(self):
+        overrides_builder = EnumOverrides.Builder()
+        overrides_builder.ignore('BAN')
+        overrides = overrides_builder.build()
         self.assertTrue(FakeEntityEnum.can_parse('ban', overrides))

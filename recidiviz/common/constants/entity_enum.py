@@ -18,7 +18,6 @@
 """Contains logic related to EntityEnums."""
 
 import re
-import string
 from enum import Enum, EnumMeta
 from typing import Dict, Optional
 
@@ -45,42 +44,31 @@ class EntityEnum(Enum, metaclass=EntityEnumMeta):
     """
 
     @classmethod
-    def parse(cls, label: str,
-              override_map: Dict[str, Optional['EntityEnum']]) \
-            -> Optional['EntityEnum']:
+    def parse(cls,
+              label: str,
+              enum_overrides: 'EnumOverrides') -> Optional['EntityEnum']:
         """Attempts to parse |label| using the default map of |cls| and the
         provided |override_map|. Ignores punctuation by treating punctuation as
         a separator, e.g. `(N/A)` will map to the same value as `N A`."""
-        remove_punct = str.maketrans(dict.fromkeys(string.punctuation, ' '))
-        label_without_punctuation = label.translate(remove_punct)
-        label = normalize(label if label_without_punctuation.isspace() else
-                          label_without_punctuation)
-
-        if not override_map:
-            return cls._parse_to_enum(label, cls._get_default_map())
-
-        fields_to_ignore = {k for k, v in override_map.items() if not v}
-        if label in fields_to_ignore:
+        label = normalize(label, remove_punctuation=True)
+        if enum_overrides.should_ignore(label, cls):
             return None
 
-        cls_override_map = {k: v for k, v in override_map.items()
-                            if isinstance(v, cls)}
-        complete_map = cls._get_default_map().copy()
-        complete_map.update(cls_override_map)
+        overridden_value = enum_overrides.parse(label, cls)
+        if isinstance(overridden_value, cls):
+            return overridden_value
 
-        return cls._parse_to_enum(label, complete_map)
+        return cls._parse_to_enum(label, cls._get_default_map())
 
     @classmethod
-    def can_parse(
-            cls, label: str,
-            override_map: Dict[str, Optional['EntityEnum']]) -> bool:
+    def can_parse(cls, label: str, enum_overrides: 'EnumOverrides') -> bool:
         """Checks if the given string will parse into this enum.
 
         Convenience method to be used by a child scraper to tell if a given
         string should be used for this field.
         """
         try:
-            cls.parse(label, override_map)
+            cls.parse(label, enum_overrides)
             return True
         except EnumParsingError:
             return False
