@@ -198,7 +198,7 @@ def get_enum_overrides(self) -> EnumOverrides:
     overrides_builder.add('A', ChargeClass.MISDEMEANOR)
     
     # When bond.status starts with 'PENDING', the status is pending.
-    is_pending = lambda s: return s.startswith('PENDING')
+    is_pending = lambda s: s.startswith('PENDING')
     overrides_builder.add(is_pending, BondStatus.PENDING)
     
     # When charge.charge_class is 'X', clear the field.
