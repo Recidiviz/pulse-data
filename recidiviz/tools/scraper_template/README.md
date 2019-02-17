@@ -167,7 +167,7 @@ ex. [#522](https://github.com/Recidiviz/pulse-data/pull/522/)
 If you suspect the new string->Enum mapping is region-specific and should NOT
 be shared across all scrapers, you should add an override mapping to your 
 specific scraper by implementing `scraper.get_enum_overrides()`. This method
-returns an [`EnumOverrides`](recidiviz/common/constants/enum_overrides.py)
+returns an [`EnumOverrides`](/recidiviz/common/constants/enum_overrides.py)
 object, which contains all mappings specific to the region, regardless of the
 Enum type. Default maps and Enum values can both be found in
 [recidiviz/common/constants/](/recidiviz/common/constants).
