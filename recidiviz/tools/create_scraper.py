@@ -23,7 +23,7 @@ files in recidiviz/ingest/scrape/regions/region_name.
 Also accepts the following optional arguments:
   - agency: the name of the agency
   - names_file: a file with a names list for this scraper
-  - timezone: the timezone, e.g. America/New York
+  - timezone: the timezone, e.g. America/New_York
   - url: the initial url of the roster
   - vendor: create a vendor scraper. Available vendors:
     - `brooks_jeffrey`
