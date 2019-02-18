@@ -1,6 +1,6 @@
 Creating a Scraper
 ==================
-Before doing anything, setup your environment by running `pipenv install` in the top level directory.
+Before doing anything, setup your environment by running `pipenv install --dev` in the top level directory.
 Enter your environment with `pipenv shell`. Finally, test that your system is all setup for scraper
 development by running an existing scraper using, say
 `python -m recidiviz.tools.run_scraper --region us_pa_greene`.
@@ -26,7 +26,7 @@ Multi-word counties should be enclosed in quotes:
 
 ###### Optional Arguments
  - `agency`: the name of the agency, e.g. `Foo County Sheriff's Office`
- - `timezone`: the timezone, e.g. `America/New York`
+ - `timezone`: the timezone, e.g. `America/New_York`
  - `url`: the initial url of the roster
  - `vendor`: create a vendor scraper. Available vendors:
    - `jailtracker` (When using jailtracker, specify `--lifo` when using 
