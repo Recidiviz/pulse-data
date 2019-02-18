@@ -284,7 +284,7 @@ jurisdiction "has a hold on" the individual.
 **hold_id**           Unique identifier for a hold.
 **jurisdiction_name** The name of the jurisdiction that the hold originates
                       from.
-**hold_status**       Status of the hold.
+**status**            Status of the hold.
 
                       Valid values:
 
