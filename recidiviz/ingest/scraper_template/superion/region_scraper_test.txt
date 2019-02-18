@@ -18,7 +18,7 @@
 """Scraper tests for ${region}."""
 import unittest
 
-from recidiviz.ingest.${region}.${region}_scraper import ${class_name}Scraper
+from recidiviz.ingest.scrape.regions.${region}.${region}_scraper import ${class_name}Scraper
 from recidiviz.tests.ingest.vendors.superion.superion_scraper_test import \
     SuperionScraperTest
 
