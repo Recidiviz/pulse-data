@@ -18,6 +18,7 @@
 from datetime import datetime
 from unittest import TestCase
 
+import attr
 from dateutil.relativedelta import relativedelta
 
 from recidiviz.common.constants.bond import BondType, BondStatus
@@ -197,6 +198,23 @@ class TestEntityMatchingUtils(TestCase):
         self.assertTrue(entity_matching_utils.is_charge_match(
             db_entity=db_charge, ingested_entity=ingested_charge))
         ingested_charge.name = _CHARGE_NAME_2
+        self.assertFalse(entity_matching_utils.is_charge_match(
+            db_entity=db_charge, ingested_entity=ingested_charge))
+
+    def test_charge_match_on_children(self):
+        db_bond = entities.Bond.new_with_defaults(
+            bond_id=_BOND_ID, external_id=_EXTERNAL_ID)
+        db_bond_another = entities.Bond.new_with_defaults(
+            bond_id=_BOND_ID_OTHER, external_id=_EXTERNAL_ID_OTHER)
+        db_charge = entities.Charge.new_with_defaults(
+            charge_id=_CHARGE_ID, bond=db_bond)
+
+        ingested_charge = entities.Charge.new_with_defaults(
+            bond=attr.evolve(db_bond, bond_id=None))
+
+        self.assertTrue(entity_matching_utils.is_charge_match(
+            db_entity=db_charge, ingested_entity=ingested_charge))
+        ingested_charge.bond = db_bond_another
         self.assertFalse(entity_matching_utils.is_charge_match(
             db_entity=db_charge, ingested_entity=ingested_charge))
 
