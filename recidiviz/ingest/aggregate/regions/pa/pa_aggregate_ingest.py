@@ -1,0 +1,100 @@
+# Recidiviz - a platform for tracking granular recidivism metrics in real time
+# Copyright (C) 2019 Recidiviz, Inc.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# =============================================================================
+"""Parse PA Aggregated Statistics."""
+import datetime
+from typing import Dict
+
+import pandas as pd
+import us
+from numpy import NaN
+from sqlalchemy.ext.declarative import DeclarativeMeta
+
+import recidiviz.common.constants.enum_canonical_strings as enum_strings
+from recidiviz.ingest.aggregate import aggregate_ingest_utils, fips
+from recidiviz.persistence.database.schema import PaFacilityPopAggregate
+
+
+def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
+    table_1 = _parse_tab_1(filename)
+
+    return {
+        PaFacilityPopAggregate: table_1
+    }
+
+
+def _parse_tab_1(filename: str) -> pd.DataFrame:
+    """Parses the first tab in the PA aggregate report."""
+    column_names = {
+        r'County Name': 'facility_name',
+        r'Bed Capacity': 'bed_capacity',
+        r'.*Community Corrections Beds.*':
+            'work_release_community_corrections_beds',
+        r'.*In-House Daily Pop.*': 'in_house_adp',
+        r'.*Housed Elsewhere Daily Pop.*': 'housed_elsewhere_adp',
+        r'.*In-House Work Release.*': 'work_release_adp',
+        r'Admissions': 'admissions',
+        r'Discharge': 'discharge'
+    }
+
+    # Parse everything directly to allow us to correctly map "N/A" and "N/R"
+    keep_default_na = False
+    df = pd.read_excel(filename, sheet_name=0, header=1,
+                       keep_default_na=keep_default_na)
+
+    # Drop "F/T" and "P/T" line
+    df = df[1:]
+
+    # Drop Totals footer
+    df = df[:-9]
+
+    df.columns = df.columns.map(lambda name: name.rstrip(' '))
+    df = aggregate_ingest_utils.rename_columns_and_select(
+        df, column_names, use_regex=True)
+
+    # Some cells have extra '*'
+    df = df.applymap(lambda e: str(e).rstrip(' *'))
+
+    df = df.apply(_to_numeric)
+
+    df['report_date'] = _report_date(filename)
+    df = fips.add_column_to_df(df, df['facility_name'], us.states.PA)
+    df['report_granularity'] = enum_strings.yearly_granularity
+
+    return df.reset_index(drop=True)
+
+
+def _to_numeric(column):
+    # Skip columns that shouldn't be numeric
+    if column.name == 'facility_name':
+        return column
+
+    # "N/A" means a value could never be set, so set it explicitly to 0
+    column = column.map(lambda cell: 0 if cell == 'N/A' else cell)
+
+    # "N/R" means "Not Reported", so write null to the database with NaN
+    column = column.map(lambda cell: NaN if cell == 'N/R' else cell)
+
+    return pd.to_numeric(column)
+
+
+def _report_date(filename):
+    df = pd.read_excel(filename, sheet_name=0, header=None)
+
+    # The first cell contains the data
+    year = int(df[0][0].replace(' Statistics', ''))
+
+    return datetime.date(year=year, month=1, day=1)

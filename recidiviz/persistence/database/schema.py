@@ -202,6 +202,7 @@ court_type = Enum(enum_strings.court_type_circuit,
 report_granularity = Enum(enum_strings.daily_granularity,
                           enum_strings.weekly_granularity,
                           enum_strings.monthly_granularity,
+                          enum_strings.yearly_granularity,
                           name='report_granularity')
 
 
@@ -908,3 +909,22 @@ class DcFacilityAggregate(Base, _AggregateTableMixin):
 
     juvenile_male_population = Column(Integer)
     juvenile_female_population = Column(Integer)
+
+
+class PaFacilityPopAggregate(Base, _AggregateTableMixin):
+    """PA state-provided aggregate population statistics."""
+    __tablename__ = 'pa_facility_pop_aggregate'
+    __table_args__ = (
+        UniqueConstraint(
+            'fips', 'facility_name', 'report_date', 'report_granularity'
+        ),
+    )
+
+    facility_name = Column(Integer)
+    bed_capacity = Column(Integer)
+    work_release_community_corrections_beds = Column(Integer)
+    in_house_adp = Column(Integer)
+    housed_elsewhere_adp = Column(Integer)
+    work_release_adp = Column(Integer)
+    admissions = Column(Integer)
+    discharge = Column(Integer)

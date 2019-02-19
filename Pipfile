@@ -54,6 +54,7 @@ google-api-core = "*"
 protobuf = "*"
 "psycopg2" = "*"
 cryptography = "*"
+xlrd = "*"
 
 [requires]
 python_version = "3.7"
