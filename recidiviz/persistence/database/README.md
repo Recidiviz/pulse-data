@@ -145,7 +145,7 @@ Create `/usr/local/sbin/initial-setup` with the below content, and `chmod` it to
 ```bash
 # Clone the repo and set up pipenv
 git clone https://github.com/Recidiviz/pulse-data && \
-cd pulse-data && pipenv sync
+cd pulse-data && pipenv sync --dev
 
 # Make local copies of certs owned by user (to avoid issues with needing
 # sudo to access shared certs)
