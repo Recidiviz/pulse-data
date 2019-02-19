@@ -218,8 +218,16 @@ recidiviz/persistence/database/alembic.ini revision --autogenerate"
 alias migrate-dev-to-head="set-alembic-dev-env && alembic -c \
 recidiviz/persistence/database/alembic.ini upgrade head"
 
-alias migrate-prod-to-head="set-alembic-prod-env && alembic -c \
-recidiviz/persistence/database/alembic.ini upgrade head"
+function migrate-prod-to-head {
+  read -p "Are you sure? (y to continue, any other key to exit): " response
+  if [[ $response == "y" ]]
+  then
+    set-alembic-prod-env && alembic -c \
+        recidiviz/persistence/database/alembic.ini upgrade head
+  else
+    echo "Cancelled"
+  fi
+}
 ```
 
 At the end of `/etc/bash.bashrc`, add the below line. This makes aliases available in both interactive and login shells.
