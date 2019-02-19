@@ -43,10 +43,10 @@ def is_person_match(
     if not all([db_entity.full_name, ingested_entity.full_name]):
         return False
 
-    return db_entity.full_name == ingested_entity.full_name \
-           and _is_birthdate_match(db_entity, ingested_entity) \
-           and _db_open_booking_matches_ingested_booking(
-               db_entity=db_entity, ingested_entity=ingested_entity)
+    return (db_entity.full_name == ingested_entity.full_name
+            and _is_birthdate_match(db_entity, ingested_entity)
+            and _db_open_booking_matches_ingested_booking(
+                db_entity=db_entity, ingested_entity=ingested_entity))
 
 
 def _is_birthdate_match(a: entities.Person, b: entities.Person) -> bool:
@@ -162,7 +162,18 @@ def is_charge_match(
         ingested_entity: (entities.Charge)
     Returns: (bool)
     """
-    return _is_match(db_entity, ingested_entity, _sanitize_charge)
+
+    if db_entity.external_id or ingested_entity.external_id:
+        return db_entity.external_id == ingested_entity.external_id
+
+    sentences_match = is_sentence_match(
+        db_entity=db_entity.sentence, ingested_entity=ingested_entity.sentence)
+    bonds_match = is_bond_match(
+        db_entity=db_entity.bond, ingested_entity=ingested_entity.bond)
+
+    return (sentences_match and
+            bonds_match and
+            _sanitize_charge(db_entity) == _sanitize_charge(ingested_entity))
 
 
 def _sanitize_charge(charge: entities.Charge) -> entities.Charge:
@@ -183,7 +194,8 @@ def _sanitize_charge(charge: entities.Charge) -> entities.Charge:
 
 # '*' catches positional arguments, making our arguments named and required.
 def is_bond_match(
-        *, db_entity: entities.Bond, ingested_entity: entities.Bond) -> bool:
+        *, db_entity: Optional[entities.Bond],
+        ingested_entity: Optional[entities.Bond]) -> bool:
     """
     Given a database bond and an ingested bond, determine if they should be
     considered the same bond. Should only be used to compare bonds for the same
@@ -205,8 +217,8 @@ def _sanitize_bond(bond: entities.Bond) -> entities.Bond:
 
 # '*' catches positional arguments, making our arguments named and required.
 def is_sentence_match(
-        *, db_entity: entities.Sentence, ingested_entity: entities.Sentence) \
-        -> bool:
+        *, db_entity: Optional[entities.Sentence],
+        ingested_entity: Optional[entities.Sentence]) -> bool:
     """
     Given a database sentence and an ingested sentence, determine if they
     should be considered the same sentence. Should only be used to compare
@@ -228,8 +240,13 @@ def _sanitize_sentence(sentence: entities.Sentence) -> entities.Sentence:
     return sanitized
 
 
-def _is_match(db_entity: entities.Entity, ingested_entity: entities.Entity,
-              sanitize_fn: Callable) -> bool:
+def _is_match(
+        db_entity: Optional[entities.Entity],
+        ingested_entity: Optional[entities.Entity],
+        sanitize_fn: Callable) -> bool:
+    if not db_entity or not ingested_entity:
+        return db_entity == ingested_entity
+
     if db_entity.external_id or ingested_entity.external_id:
         return db_entity.external_id == ingested_entity.external_id
 
