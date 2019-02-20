@@ -152,6 +152,9 @@ class TestIngestUtils:
         proto = ingest_utils.convert_ingest_info_to_proto(info)
         assert proto == expected_proto
 
+        info_back = ingest_utils.convert_proto_to_ingest_info(proto)
+        assert info_back == info
+
     def test_convert_ingest_info_id_is_not_generated(self):
         info = ingest_info.IngestInfo()
         person = info.create_person()
@@ -172,6 +175,9 @@ class TestIngestUtils:
 
         proto = ingest_utils.convert_ingest_info_to_proto(info)
         assert expected_proto == proto
+
+        info_back = ingest_utils.convert_proto_to_ingest_info(proto)
+        assert info_back == info
 
     def test_convert_ingest_info_one_charge_to_one_bond(self):
         info = ingest_info.IngestInfo()
@@ -212,6 +218,9 @@ class TestIngestUtils:
         proto = ingest_utils.convert_ingest_info_to_proto(info)
         assert expected_proto == proto
 
+        info_back = ingest_utils.convert_proto_to_ingest_info(proto)
+        assert info_back == info
+
     def test_convert_ingest_info_many_charge_to_one_bond(self):
         info = ingest_info.IngestInfo()
         person = info.create_person()
@@ -246,3 +255,27 @@ class TestIngestUtils:
 
         proto = ingest_utils.convert_ingest_info_to_proto(info)
         assert expected_proto == proto
+
+        info_back = ingest_utils.convert_proto_to_ingest_info(proto)
+        assert info_back == info
+
+    def test_serialize_deserialize(self):
+        info = ingest_info.IngestInfo()
+        person = info.create_person()
+        person.person_id = 'id1'
+
+        booking = person.create_booking()
+        booking.booking_id = 'id1'
+        charge = booking.create_charge()
+        charge.charge_id = 'id1'
+        bond1 = charge.create_bond()
+        bond1.amount = '$1'
+        charge = booking.create_charge()
+        charge.charge_id = 'id2'
+        bond2 = charge.create_bond()
+        bond2.amount = '$1'
+
+        converted_info = ingest_utils.deserialize_ingest_info(
+            ingest_utils.serialize_ingest_info(info))
+
+        assert converted_info == info
