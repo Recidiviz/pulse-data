@@ -259,7 +259,7 @@ class TestIngestUtils:
         info_back = ingest_utils.convert_proto_to_ingest_info(proto)
         assert info_back == info
 
-    def test_serialize_deserialize(self):
+    def test_serializable(self):
         info = ingest_info.IngestInfo()
         person = info.create_person()
         person.person_id = 'id1'
@@ -275,7 +275,7 @@ class TestIngestUtils:
         bond2 = charge.create_bond()
         bond2.amount = '$1'
 
-        converted_info = ingest_utils.deserialize_ingest_info(
-            ingest_utils.serialize_ingest_info(info))
+        converted_info = ingest_utils.ingest_info_from_serializable(
+            ingest_utils.ingest_info_to_serializable(info))
 
         assert converted_info == info
