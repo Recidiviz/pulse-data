@@ -448,8 +448,10 @@ class TestEntityMatching(TestCase):
             charges=[ingested_charge_4, ingested_charge_2, ingested_charge_1,
                      ingested_charge_3])
 
-        expected_matched_bond = attr.evolve(db_bond_shared)
-        expected_unmatched_bond = attr.evolve(ingested_bond_newly_shared)
+        expected_matched_bond = attr.evolve(ingested_bond_shared,
+                                            bond_id=_BOND_ID)
+        expected_unmatched_bond = attr.evolve(ingested_bond_newly_shared,
+                                              bond_id=_BOND_ID_ANOTHER)
 
         expected_charge_1 = entities.Charge.new_with_defaults(
             charge_id=_CHARGE_ID, bond=expected_matched_bond)
