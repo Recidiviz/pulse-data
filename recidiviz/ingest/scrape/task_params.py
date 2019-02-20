@@ -32,11 +32,12 @@ cattr.register_structure_hook(
     datetime.datetime,
     lambda serialized, desired_type: desired_type.fromisoformat(serialized))
 
-cattr.register_unstructure_hook(IngestInfo, ingest_utils.serialize_ingest_info)
 cattr.register_unstructure_hook(
+    IngestInfo, ingest_utils.ingest_info_to_serializable)
+cattr.register_structure_hook(
     IngestInfo,
-    lambda serialized, desired_type:
-        ingest_utils.deserialize_ingest_info(serialized))
+    lambda serializable, desired_type:
+        ingest_utils.ingest_info_from_serializable(serializable))
 
 @attr.s(frozen=True)
 class ScrapedData:
