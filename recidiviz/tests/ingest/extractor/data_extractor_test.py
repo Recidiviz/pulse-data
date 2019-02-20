@@ -382,3 +382,21 @@ class HtmlDataExtractorTest(unittest.TestCase):
         p.create_booking(admission_date='222').create_charge(name='BBB')
         info = self.extract('child_first.html', 'child_first.yaml')
         self.assertEqual(expected_info, info)
+
+    def test_single_page_roster(self):
+        """Tests that bookings are not treated as multi-key classes,
+        i.e. we assume that a person has at most one booking if they are
+        listed in columns."""
+        expected_info = IngestInfo()
+        p1 = expected_info.create_person(full_name='PERSON ONE',
+                                         birthdate='1/1/1111')
+        p1.create_booking(booking_id='NUMBER ONE')
+        p2 = expected_info.create_person(full_name='PERSON TWO',
+                                         birthdate='2/2/2222')
+        p2.create_booking(booking_id='NUMBER TWO')
+        p3 = expected_info.create_person(full_name='PERSON THREE',
+                                         birthdate='3/3/3333')
+        p3.create_booking(booking_id='NUMBER THREE')
+        info = self.extract('single_page_roster.html',
+                            'single_page_roster.yaml')
+        self.assertEqual(expected_info, info)
