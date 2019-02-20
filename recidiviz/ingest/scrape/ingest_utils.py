@@ -19,8 +19,9 @@
 
 import logging
 from datetime import tzinfo
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
+from google.protobuf import json_format
 import pytz
 
 from recidiviz.common import common_utils
@@ -275,11 +276,12 @@ def _copy_fields(source, dest, descriptor):
             setattr(dest, field, val)
 
 
-def serialize_ingest_info(ii: ingest_info.IngestInfo) -> bytes:
-    return convert_ingest_info_to_proto(ii).SerializeToString()
+def ingest_info_to_serializable(ii: ingest_info.IngestInfo) -> Dict[Any, Any]:
+    proto = convert_ingest_info_to_proto(ii)
+    return json_format.MessageToDict(proto)
 
 
-def deserialize_ingest_info(serialized: bytes) -> ingest_info.IngestInfo:
-    proto = ingest_info_pb2.IngestInfo()
-    proto.ParseFromString(serialized)
+def ingest_info_from_serializable(serializable: Dict[Any, Any]) \
+        -> ingest_info.IngestInfo:
+    proto = json_format.ParseDict(serializable, ingest_info_pb2.IngestInfo())
     return convert_proto_to_ingest_info(proto)
