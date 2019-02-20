@@ -23,7 +23,7 @@ from typing import Any, Dict, Optional
 import attr
 import cattr
 
-from recidiviz.ingest.scrape import constants
+from recidiviz.ingest.scrape import constants, ingest_utils
 from recidiviz.ingest.models.ingest_info import IngestInfo
 
 cattr.register_unstructure_hook(datetime.datetime,
@@ -31,6 +31,12 @@ cattr.register_unstructure_hook(datetime.datetime,
 cattr.register_structure_hook(
     datetime.datetime,
     lambda serialized, desired_type: desired_type.fromisoformat(serialized))
+
+cattr.register_unstructure_hook(IngestInfo, ingest_utils.serialize_ingest_info)
+cattr.register_unstructure_hook(
+    IngestInfo,
+    lambda serialized, desired_type:
+        ingest_utils.deserialize_ingest_info(serialized))
 
 @attr.s(frozen=True)
 class ScrapedData:
@@ -98,7 +104,6 @@ class QueueRequest:
 
     # In the case that a person's information is spread across multiple pages
     # this is used to pass it along to the next page.
-    # TODO(697): Cannot be used until we hookup serialization for `IngestInfo`
     ingest_info: Optional[IngestInfo] = attr.ib(default=None)
 
     def to_serializable(self):
