@@ -24,13 +24,16 @@ class IngestInfo(google___protobuf___message___Message):
     def bookings(self) -> google___protobuf___internal___containers___RepeatedCompositeFieldContainer[Booking]: ...
 
     @property
+    def arrests(self) -> google___protobuf___internal___containers___RepeatedCompositeFieldContainer[Arrest]: ...
+
+    @property
     def charges(self) -> google___protobuf___internal___containers___RepeatedCompositeFieldContainer[Charge]: ...
 
     @property
-    def bonds(self) -> google___protobuf___internal___containers___RepeatedCompositeFieldContainer[Bond]: ...
+    def holds(self) -> google___protobuf___internal___containers___RepeatedCompositeFieldContainer[Hold]: ...
 
     @property
-    def arrests(self) -> google___protobuf___internal___containers___RepeatedCompositeFieldContainer[Arrest]: ...
+    def bonds(self) -> google___protobuf___internal___containers___RepeatedCompositeFieldContainer[Bond]: ...
 
     @property
     def sentences(self) -> google___protobuf___internal___containers___RepeatedCompositeFieldContainer[Sentence]: ...
@@ -38,9 +41,10 @@ class IngestInfo(google___protobuf___message___Message):
     def __init__(self,
         people : typing___Optional[typing___Iterable[Person]] = None,
         bookings : typing___Optional[typing___Iterable[Booking]] = None,
-        charges : typing___Optional[typing___Iterable[Charge]] = None,
-        bonds : typing___Optional[typing___Iterable[Bond]] = None,
         arrests : typing___Optional[typing___Iterable[Arrest]] = None,
+        charges : typing___Optional[typing___Iterable[Charge]] = None,
+        holds : typing___Optional[typing___Iterable[Hold]] = None,
+        bonds : typing___Optional[typing___Iterable[Bond]] = None,
         sentences : typing___Optional[typing___Iterable[Sentence]] = None,
         ) -> None: ...
     @classmethod
@@ -59,6 +63,7 @@ class Person(google___protobuf___message___Message):
     ethnicity = ... # type: typing___Text
     place_of_residence = ... # type: typing___Text
     full_name = ... # type: typing___Text
+    middle_names = ... # type: typing___Text
     booking_ids = ... # type: google___protobuf___internal___containers___RepeatedScalarFieldContainer[typing___Text]
 
     def __init__(self,
@@ -72,6 +77,7 @@ class Person(google___protobuf___message___Message):
         ethnicity : typing___Optional[typing___Text] = None,
         place_of_residence : typing___Optional[typing___Text] = None,
         full_name : typing___Optional[typing___Text] = None,
+        middle_names : typing___Optional[typing___Text] = None,
         booking_ids : typing___Optional[typing___Iterable[typing___Text]] = None,
         ) -> None: ...
     @classmethod
@@ -82,30 +88,32 @@ class Person(google___protobuf___message___Message):
 class Booking(google___protobuf___message___Message):
     booking_id = ... # type: typing___Text
     admission_date = ... # type: typing___Text
+    admission_reason = ... # type: typing___Text
     projected_release_date = ... # type: typing___Text
     release_date = ... # type: typing___Text
     release_reason = ... # type: typing___Text
     custody_status = ... # type: typing___Text
-    hold = ... # type: typing___Text
     facility = ... # type: typing___Text
     classification = ... # type: typing___Text
     total_bond_amount = ... # type: typing___Text
     arrest_id = ... # type: typing___Text
     charge_ids = ... # type: google___protobuf___internal___containers___RepeatedScalarFieldContainer[typing___Text]
+    hold_ids = ... # type: google___protobuf___internal___containers___RepeatedScalarFieldContainer[typing___Text]
 
     def __init__(self,
         booking_id : typing___Optional[typing___Text] = None,
         admission_date : typing___Optional[typing___Text] = None,
+        admission_reason : typing___Optional[typing___Text] = None,
         projected_release_date : typing___Optional[typing___Text] = None,
         release_date : typing___Optional[typing___Text] = None,
         release_reason : typing___Optional[typing___Text] = None,
         custody_status : typing___Optional[typing___Text] = None,
-        hold : typing___Optional[typing___Text] = None,
         facility : typing___Optional[typing___Text] = None,
         classification : typing___Optional[typing___Text] = None,
         total_bond_amount : typing___Optional[typing___Text] = None,
         arrest_id : typing___Optional[typing___Text] = None,
         charge_ids : typing___Optional[typing___Iterable[typing___Text]] = None,
+        hold_ids : typing___Optional[typing___Iterable[typing___Text]] = None,
         ) -> None: ...
     @classmethod
     def FromString(cls, s: bytes) -> Booking: ...
@@ -114,7 +122,7 @@ class Booking(google___protobuf___message___Message):
 
 class Arrest(google___protobuf___message___Message):
     arrest_id = ... # type: typing___Text
-    date = ... # type: typing___Text
+    arrest_date = ... # type: typing___Text
     location = ... # type: typing___Text
     officer_name = ... # type: typing___Text
     officer_id = ... # type: typing___Text
@@ -122,7 +130,7 @@ class Arrest(google___protobuf___message___Message):
 
     def __init__(self,
         arrest_id : typing___Optional[typing___Text] = None,
-        date : typing___Optional[typing___Text] = None,
+        arrest_date : typing___Optional[typing___Text] = None,
         location : typing___Optional[typing___Text] = None,
         officer_name : typing___Optional[typing___Text] = None,
         officer_id : typing___Optional[typing___Text] = None,
@@ -150,6 +158,7 @@ class Charge(google___protobuf___message___Message):
     case_number = ... # type: typing___Text
     next_court_date = ... # type: typing___Text
     judge_name = ... # type: typing___Text
+    charge_notes = ... # type: typing___Text
     bond_id = ... # type: typing___Text
     sentence_id = ... # type: typing___Text
 
@@ -170,6 +179,7 @@ class Charge(google___protobuf___message___Message):
         case_number : typing___Optional[typing___Text] = None,
         next_court_date : typing___Optional[typing___Text] = None,
         judge_name : typing___Optional[typing___Text] = None,
+        charge_notes : typing___Optional[typing___Text] = None,
         bond_id : typing___Optional[typing___Text] = None,
         sentence_id : typing___Optional[typing___Text] = None,
         ) -> None: ...
@@ -178,17 +188,34 @@ class Charge(google___protobuf___message___Message):
     def MergeFrom(self, other_msg: google___protobuf___message___Message) -> None: ...
     def CopyFrom(self, other_msg: google___protobuf___message___Message) -> None: ...
 
+class Hold(google___protobuf___message___Message):
+    hold_id = ... # type: typing___Text
+    jurisdiction_name = ... # type: typing___Text
+    status = ... # type: typing___Text
+
+    def __init__(self,
+        hold_id : typing___Optional[typing___Text] = None,
+        jurisdiction_name : typing___Optional[typing___Text] = None,
+        status : typing___Optional[typing___Text] = None,
+        ) -> None: ...
+    @classmethod
+    def FromString(cls, s: bytes) -> Hold: ...
+    def MergeFrom(self, other_msg: google___protobuf___message___Message) -> None: ...
+    def CopyFrom(self, other_msg: google___protobuf___message___Message) -> None: ...
+
 class Bond(google___protobuf___message___Message):
     bond_id = ... # type: typing___Text
     amount = ... # type: typing___Text
     bond_type = ... # type: typing___Text
     status = ... # type: typing___Text
+    bond_agent = ... # type: typing___Text
 
     def __init__(self,
         bond_id : typing___Optional[typing___Text] = None,
         amount : typing___Optional[typing___Text] = None,
         bond_type : typing___Optional[typing___Text] = None,
         status : typing___Optional[typing___Text] = None,
+        bond_agent : typing___Optional[typing___Text] = None,
         ) -> None: ...
     @classmethod
     def FromString(cls, s: bytes) -> Bond: ...
@@ -197,7 +224,6 @@ class Bond(google___protobuf___message___Message):
 
 class Sentence(google___protobuf___message___Message):
     sentence_id = ... # type: typing___Text
-    date_imposed = ... # type: typing___Text
     min_length = ... # type: typing___Text
     max_length = ... # type: typing___Text
     is_life = ... # type: typing___Text
@@ -207,10 +233,10 @@ class Sentence(google___protobuf___message___Message):
     parole_possible = ... # type: typing___Text
     post_release_supervision_length = ... # type: typing___Text
     sentencing_region = ... # type: typing___Text
+    status = ... # type: typing___Text
 
     def __init__(self,
         sentence_id : typing___Optional[typing___Text] = None,
-        date_imposed : typing___Optional[typing___Text] = None,
         min_length : typing___Optional[typing___Text] = None,
         max_length : typing___Optional[typing___Text] = None,
         is_life : typing___Optional[typing___Text] = None,
@@ -220,6 +246,7 @@ class Sentence(google___protobuf___message___Message):
         parole_possible : typing___Optional[typing___Text] = None,
         post_release_supervision_length : typing___Optional[typing___Text] = None,
         sentencing_region : typing___Optional[typing___Text] = None,
+        status : typing___Optional[typing___Text] = None,
         ) -> None: ...
     @classmethod
     def FromString(cls, s: bytes) -> Sentence: ...
