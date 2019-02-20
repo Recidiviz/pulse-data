@@ -38,10 +38,8 @@ from sqlalchemy.orm import relationship
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 
-
 # Base class for all table classes
 Base: DeclarativeMeta = declarative_base()
-
 
 # SQLAlchemy enums. Created separately from the tables so they can be shared
 # between the master and historical tables for each entity.
@@ -240,7 +238,7 @@ class Person(Base, DatabaseEntity, _PersonSharedColumns):
     birthdate = Column(Date, index=True)
     birthdate_inferred_from_age = Column(Boolean)
 
-    bookings = relationship('Booking', back_populates='person')
+    bookings = relationship('Booking', back_populates='person', lazy='joined')
 
 
 class PersonHistory(Base, DatabaseEntity, _PersonSharedColumns):
@@ -296,9 +294,11 @@ class Booking(Base, DatabaseEntity, _BookingSharedColumns):
     last_seen_time = Column(DateTime, nullable=False)
 
     person = relationship('Person', back_populates='bookings')
-    holds = relationship('Hold', back_populates='booking')
-    arrest = relationship('Arrest', uselist=False, back_populates='booking')
-    charges = relationship('Charge', back_populates='booking')
+
+    holds = relationship('Hold', back_populates='booking', lazy='joined')
+    arrest = relationship('Arrest', uselist=False, back_populates='booking',
+                          lazy='joined')
+    charges = relationship('Charge', back_populates='booking', lazy='joined')
 
 
 class BookingHistory(Base, DatabaseEntity, _BookingSharedColumns):
@@ -623,8 +623,8 @@ class Charge(Base, DatabaseEntity, _ChargeSharedColumns):
         Integer, ForeignKey('sentence.sentence_id'))
 
     booking = relationship('Booking', back_populates='charges')
-    bond = relationship('Bond', back_populates='charges')
-    sentence = relationship('Sentence', back_populates='charges')
+    bond = relationship('Bond', back_populates='charges', lazy='joined')
+    sentence = relationship('Sentence', back_populates='charges', lazy='joined')
 
 
 class ChargeHistory(Base, DatabaseEntity, _ChargeSharedColumns):
