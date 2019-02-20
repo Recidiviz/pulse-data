@@ -198,8 +198,11 @@ def _match_from_charges(
         matcher = getattr(utils, 'is_{}_match'.format(name))
         obj_match = matcher(db_entity=db_entity,
                             ingested_entity=ingested_entity)
-        relationship_match = ing_relationship_map[ing_entity_id] == \
-                             db_relationship_map[db_entity_id]
+        # The relationships "match" if new relationships have been added
+        # since the last scrape, but not if relationships have been removed.
+        relationship_match = db_relationship_map[db_entity_id].issubset(
+            ing_relationship_map[ing_entity_id])
+
         return obj_match and relationship_match
 
     dropped_objs = []
