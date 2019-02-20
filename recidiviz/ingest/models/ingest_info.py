@@ -78,6 +78,33 @@ class IngestInfo(IngestObject):
         self.people = [person.prune() for person in self.people if person]
         return self
 
+    def get_all_people(self, predicate=lambda _: True) -> List['Person']:
+        return [person for person in self.people if predicate(person)]
+
+    def get_all_bookings(self, predicate=lambda _: True) -> List['Booking']:
+        return [booking for person in self.get_all_people()
+                for booking in person.bookings if predicate(booking)]
+
+    def get_all_arrests(self, predicate=lambda _: True) -> List['Arrest']:
+        return [booking.arrest for booking in self.get_all_bookings()
+                if booking.arrest is not None and predicate(booking.arrest)]
+
+    def get_all_charges(self, predicate=lambda _: True) -> List['Charge']:
+        return [charge for booking in self.get_all_bookings()
+                for charge in booking.charges if predicate(charge)]
+
+    def get_all_holds(self, predicate=lambda _: True) -> List['Hold']:
+        return [hold for booking in self.get_all_bookings()
+                for hold in booking.holds if predicate(hold)]
+
+    def get_all_bonds(self, predicate=lambda _: True) -> List['Bond']:
+        return [charge.bond for charge in self.get_all_charges()
+                if charge.bond is not None and predicate(charge.bond)]
+
+    def get_all_sentences(self, predicate=lambda _: True) -> List['Sentence']:
+        return [charge.sentence for charge in self.get_all_charges()
+                if charge.sentence is not None and predicate(charge.sentence)]
+
 
 class Person(IngestObject):
     """Class for information about a person.
