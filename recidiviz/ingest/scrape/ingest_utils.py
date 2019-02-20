@@ -19,14 +19,14 @@
 
 import logging
 from datetime import tzinfo
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 import pytz
 
 from recidiviz.common import common_utils
+from recidiviz.ingest.models import ingest_info, ingest_info_pb2
 from recidiviz.ingest.scrape import constants
-from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
-from recidiviz.utils import regions, environment
+from recidiviz.utils import environment, regions
 
 
 def lookup_timezone(timezone: Optional[str]) -> Optional[tzinfo]:
@@ -100,7 +100,8 @@ def validate_scrape_types(
     return list(constants.ScrapeType) if all_types else scrape_types_output
 
 
-def convert_ingest_info_to_proto(ingest_info):
+def convert_ingest_info_to_proto(
+        ingest_info_py: ingest_info.IngestInfo) -> ingest_info_pb2.IngestInfo:
     """Converts an ingest_info python object to an ingest info proto.
 
     Args:
@@ -108,15 +109,15 @@ def convert_ingest_info_to_proto(ingest_info):
     Returns:
         An IngestInfo proto.
     """
-    proto = IngestInfo()
+    proto = ingest_info_pb2.IngestInfo()
 
-    person_map = {}
-    booking_map = {}
-    charge_map = {}
-    hold_map = {}
-    arrest_map = {}
-    bond_map = {}
-    sentence_map = {}
+    person_map: Dict[str, ingest_info.Person] = {}
+    booking_map: Dict[str, ingest_info.Booking] = {}
+    charge_map: Dict[str, ingest_info.Charge] = {}
+    hold_map: Dict[str, ingest_info.Hold] = {}
+    arrest_map: Dict[str, ingest_info.Arrest] = {}
+    bond_map: Dict[str, ingest_info.Bond] = {}
+    sentence_map: Dict[str, ingest_info.Sentence] = {}
 
     def _populate_proto(proto_name, ingest_info_source, id_name, proto_map):
         """Populates all of the proto fields from an IngestInfo object.
@@ -159,7 +160,7 @@ def convert_ingest_info_to_proto(ingest_info):
         proto_map[obj_id] = proto_to_populate
         return proto_to_populate
 
-    for person in ingest_info.people:
+    for person in ingest_info_py.people:
         proto_person = _populate_proto(
             'people', person, 'person_id', person_map)
         for booking in person.bookings:
