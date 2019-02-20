@@ -146,17 +146,12 @@ def convert_ingest_info_to_proto(
         # and use the built in proto map.
         if obj_id in proto_map:
             return proto_map[obj_id]
+
         proto_to_populate = getattr(proto, proto_name).add()
         setattr(proto_to_populate, id_name, obj_id)
-        # Since we expect all of the fields to exist in both the destination
-        # and the source, we can just run through all of the fields in the proto
-        # and use python magic to retrieve the value from the source and set
-        # them on the destination.
-        field_names = [i.name for i in proto_to_populate.DESCRIPTOR.fields]
-        for field in field_names:
-            val = getattr(ingest_info_source, field, None)
-            if val is not None:
-                setattr(proto_to_populate, field, val)
+        _copy_fields(ingest_info_source, proto_to_populate,
+                     proto_to_populate.DESCRIPTOR)
+
         proto_map[obj_id] = proto_to_populate
         return proto_to_populate
 
@@ -195,3 +190,96 @@ def convert_ingest_info_to_proto(
                     proto_charge.sentence_id = proto_sentence.sentence_id
 
     return proto
+
+
+def convert_proto_to_ingest_info(
+        proto: ingest_info_pb2.IngestInfo) -> ingest_info.IngestInfo:
+    """Populates an `IngestInfo` python object from the given proto """
+
+    person_map: Dict[str, ingest_info.Person] = \
+        dict(_proto_to_py(person, ingest_info.Person, 'person_id')
+             for person in proto.people)
+    booking_map: Dict[str, ingest_info.Booking] = \
+        dict(_proto_to_py(booking, ingest_info.Booking, 'booking_id')
+             for booking in proto.bookings)
+    charge_map: Dict[str, ingest_info.Charge] = \
+        dict(_proto_to_py(charge, ingest_info.Charge, 'charge_id')
+             for charge in proto.charges)
+    hold_map: Dict[str, ingest_info.Hold] = \
+        dict(_proto_to_py(hold, ingest_info.Hold, 'hold_id')
+             for hold in proto.holds)
+    arrest_map: Dict[str, ingest_info.Arrest] = \
+        dict(_proto_to_py(arrest, ingest_info.Arrest, 'arrest_id')
+             for arrest in proto.arrests)
+    bond_map: Dict[str, ingest_info.Bond] = \
+        dict(_proto_to_py(bond, ingest_info.Bond, 'bond_id')
+             for bond in proto.bonds)
+    sentence_map: Dict[str, ingest_info.Sentence] = \
+        dict(_proto_to_py(sentence, ingest_info.Sentence, 'sentence_id')
+             for sentence in proto.sentences)
+
+    # Wire bonds and sentences to respective charges
+    for proto_charge in proto.charges:
+        charge = charge_map[proto_charge.charge_id]
+        if proto_charge.bond_id:
+            charge.bond = bond_map[proto_charge.bond_id]
+        if proto_charge.sentence_id:
+            charge.sentence = sentence_map[proto_charge.sentence_id]
+
+    # Wire arrests, charges, and holds to respective bookings
+    for proto_booking in proto.bookings:
+        booking = booking_map[proto_booking.booking_id]
+        if proto_booking.arrest_id:
+            booking.arrest = arrest_map[proto_booking.arrest_id]
+        booking.charges = [charge_map[proto_id]
+                           for proto_id in proto_booking.charge_ids]
+        booking.holds = [hold_map[proto_id]
+                         for proto_id in proto_booking.hold_ids]
+
+    # Wire bookings to respective people
+    for proto_person in proto.people:
+        person = person_map[proto_person.person_id]
+        person.bookings = [booking_map[proto_id]
+                           for proto_id in proto_person.booking_ids]
+
+    # Wire people to ingest info
+    ii = ingest_info.IngestInfo()
+    ii.people.extend(person_map.values())
+    return ii
+
+def _proto_to_py(proto, py_type, id_name):
+    py_obj = py_type()
+    _copy_fields(proto, py_obj, proto.DESCRIPTOR)
+
+    obj_id = getattr(proto, id_name)
+    if not common_utils.is_generated_id(obj_id):
+        setattr(py_obj, id_name, obj_id)
+
+    return obj_id, py_obj
+
+
+def _copy_fields(source, dest, descriptor):
+    """Copies all fields except ids from the source to the destination
+
+    Since we expect all of the fields to exist in both the destination
+    and the source, we can just run through all of the fields in the proto
+    and use python magic to retrieve the value from the source and set
+    them on the destination.
+    """
+    field_names = [i.name for i in descriptor.fields]
+    for field in field_names:
+        if field.endswith('id') or field.endswith('ids'):
+            continue
+        val = getattr(source, field, None)
+        if val is not None:
+            setattr(dest, field, val)
+
+
+def serialize_ingest_info(ii: ingest_info.IngestInfo) -> bytes:
+    return convert_ingest_info_to_proto(ii).SerializeToString()
+
+
+def deserialize_ingest_info(serialized: bytes) -> ingest_info.IngestInfo:
+    proto = ingest_info_pb2.IngestInfo()
+    proto.ParseFromString(serialized)
+    return convert_proto_to_ingest_info(proto)
