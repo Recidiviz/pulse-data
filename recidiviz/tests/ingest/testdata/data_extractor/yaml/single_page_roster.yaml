@@ -1,0 +1,7 @@
+key_mappings:
+
+multi_key_mapping:
+  Name: person.full_name
+  DOB: person.birthdate
+  "Booking#": booking.booking_id
+  Commitment Date: booking.admission_date
