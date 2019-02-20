@@ -87,39 +87,53 @@ class DataExtractor(metaclass=abc.ABCMeta):
             class_to_set, ingest_key = lookup_key.split('.')
             is_multi_key = class_to_set in self.multi_key_classes
             for i, value in enumerate(values):
-                # The first task is to find the parent.
-                parent = self._find_parent_ingest_info(
-                    ingest_info, HIERARCHY_MAP[class_to_set], i)
-
-                get_recent_name = 'get_recent_' + class_to_set
-                object_to_set = getattr(parent, get_recent_name)()
-                # If we are in multikey, we need to pull out the correct index
-                # of class type we want to set
-                if is_multi_key and class_to_set in PLURALS:
-                    attr = getattr(parent, PLURALS[class_to_set])
-                    parent_cls_to_set = HIERARCHY_MAP[class_to_set][-1]
-                    if i != 0 and parent_cls_to_set in self.multi_key_classes:
-                        grandparent = self._find_parent_ingest_info(
-                            ingest_info, HIERARCHY_MAP[parent_cls_to_set], i)
-                        create_name = 'create_' + parent_cls_to_set
-                        create_func = getattr(grandparent, create_name)
-                        parent = create_func()
-                    if attr is not None \
-                            and isinstance(attr, list) \
-                            and len(attr) > i:
-                        object_to_set = attr[i]
-
-                create_name = 'create_' + class_to_set
-                create_func = getattr(parent, create_name)
+                parent = self._get_parent(ingest_info, class_to_set, i,
+                                          is_multi_key)
+                object_to_set = self._get_object_to_set(class_to_set, parent,
+                                                        i, is_multi_key)
                 # If the object we are trying to operate on is None, or it has
                 # already set the ingest_key then we know we need to create a
                 # new one.
                 if object_to_set is None or \
                         ingest_key in seen_map[id(object_to_set)]:
+                    create_name = 'create_' + class_to_set
+                    create_func = getattr(parent, create_name)
                     object_to_set = create_func()
 
                 setattr(object_to_set, ingest_key, value)
                 seen_map[id(object_to_set)].add(ingest_key)
+
+    def _get_parent(
+            self, ingest_info: IngestInfo, class_to_set: str, index: int,
+            is_multi_key: bool) -> IngestObject:
+        """Finds or creates the parent of the object we are going to set, which
+        may need to have its own parent created if it is a hold or charge in a
+        multi-key column."""
+        if is_multi_key and class_to_set in PLURALS and \
+                class_to_set not in ('person', 'booking'):
+            parent_cls_to_set = HIERARCHY_MAP[class_to_set][-1]
+            if index != 0 and parent_cls_to_set in self.multi_key_classes:
+                grandparent = self._find_parent_ingest_info(
+                    ingest_info, HIERARCHY_MAP[parent_cls_to_set], index)
+                create_name = 'create_' + parent_cls_to_set
+                create_func = getattr(grandparent, create_name)
+                return create_func()
+        return self._find_parent_ingest_info(ingest_info,
+                                             HIERARCHY_MAP[class_to_set], index)
+
+    def _get_object_to_set(
+            self, class_to_set: str, parent: IngestObject, index: int,
+            is_multi_key: bool) -> IngestObject:
+        """Finds or creates the object we are going to set, which may already
+        exist in the multi-key case."""
+        if is_multi_key and class_to_set in PLURALS:
+            list_of_class_to_set = getattr(parent, PLURALS[class_to_set])
+            if list_of_class_to_set is not None \
+                    and isinstance(list_of_class_to_set, list) \
+                    and len(list_of_class_to_set) > index:
+                return list_of_class_to_set[index]
+        get_recent_name = 'get_recent_' + class_to_set
+        return getattr(parent, get_recent_name)()
 
     def _find_parent_ingest_info(self, ingest_info: IngestInfo,
                                  hierarchy: Sequence[str],
