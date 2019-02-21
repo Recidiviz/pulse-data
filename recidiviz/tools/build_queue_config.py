@@ -15,6 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Builds queue.yaml from the region manifests"""
+import argparse
+from typing import Any, Dict, List
+
 import yaml
 
 from recidiviz.utils import regions, vendors
@@ -35,8 +38,8 @@ class NoAliasDumper(yaml.Dumper):
     def ignore_aliases(self, data):
         return True
 
-def build_queues():
-    queues = []
+def build_queues(environment: str):
+    queues: List[Dict[str, Any]] = []
     for vendor in vendors.get_vendors():
         queue_params = vendors.get_vendor_queue_params(vendor)
         if queue_params is None:
@@ -46,7 +49,7 @@ def build_queues():
             **BASE_QUEUE_CONFIG, **queue_params
         })
     for region in regions.get_supported_regions():
-        if region.shared_queue:
+        if region.shared_queue or not region.environment == environment:
             continue
         queues.append({
             'name': region.get_queue_name(),
@@ -58,4 +61,10 @@ def build_queues():
 
 
 if __name__ == '__main__':
-    build_queues()
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('--environment', required=True,
+                        choices=['staging', 'production'],
+                        help='Includes queues for regions in `environment`.')
+    args = parser.parse_args()
+    build_queues(args.environment)

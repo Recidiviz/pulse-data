@@ -26,7 +26,7 @@ after_success:
 - coveralls
 before_deploy:
 - git stash --all
-- python -m recidiviz.tools.build_queue_config
+- python -m recidiviz.tools.build_queue_config --environment staging
 - openssl aes-256-cbc -K $encrypted_f7b0b16e1068_key -iv $encrypted_f7b0b16e1068_iv
   -in client-secret-staging.json.enc -out client-secret-staging.json -d
 deploy:
