@@ -49,11 +49,14 @@ def upgrade():
         sa.Column('booking_id', sa.Integer()),
         extend_existing=True)
     for bond in connection.execute(bond_table_view.select()):
-        # Get any charge that links to this bond, since all charges will have
-        # the same booking ID
+        # Get any charge history that links to this bond, since every charge
+        # history snapshot will have the same booking ID. Use charge history
+        # instead of charge since even bonds that are orphaned on master will
+        # still be pointed to from charge history.
         booking_id = connection.execute(
-            'SELECT charge.booking_id FROM charge WHERE charge.bond_id = {} '
-            'LIMIT 1'.format(bond.bond_id)).first()[0]
+            'SELECT charge_history.booking_id FROM charge_history WHERE '
+            'charge_history.bond_id = {} LIMIT 1'.format(
+                bond.bond_id)).first()[0]
         connection.execute(
             'UPDATE bond SET booking_id = {} WHERE bond_id = {}'.format(
                 booking_id, bond.bond_id))
@@ -76,11 +79,14 @@ def upgrade():
         sa.Column('booking_id', sa.Integer()),
         extend_existing=True)
     for bond_history in connection.execute(bond_history_table_view.select()):
-        # Get any charge that links to the master bond, since all charges will
-        # have the same booking ID
+        # Get any charge history that links to this bond, since every charge
+        # history snapshot will have the same booking ID. Use charge history
+        # instead of charge since even bonds that are orphaned on master will
+        # still be pointed to from charge history.
         booking_id = connection.execute(
-            'SELECT charge.booking_id FROM charge WHERE charge.bond_id = {} '
-            'LIMIT 1'.format(bond_history.bond_id)).first()[0]
+            'SELECT charge_history.booking_id FROM charge_history WHERE '
+            'charge_history.bond_id = {} LIMIT 1'.format(
+                bond_history.bond_id)).first()[0]
         connection.execute(
             'UPDATE bond_history SET booking_id = {} '
             'WHERE bond_history_id = {}'.format(
