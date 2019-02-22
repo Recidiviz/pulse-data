@@ -49,73 +49,18 @@ class _Direction(Enum):
             "Unable to convert class {0}".format(src_cls))
 
 
-def convert_people(people_src):
-    """Converts the given list of people to the correct objects
+def convert_all(src):
+    """Converts the given list of objects into their entity/schema counterparts
 
     Args:
-        people_src: list of schema.Person or entities.Person
+        src: list of schema objects or entity objects
     Returns:
-        The converted list, a schema.Person or entities.Person
+        The converted list, a schema or entity list.
     """
-    return [convert_person(p) for p in people_src]
+    return [convert(s) for s in src]
 
 
-def convert_person(src):
-    """Converts the given person to the correct object.
-
-    Args:
-        src: A schema Person or entity Person object
-    Returns:
-        The converted object, a schema or entity object.
-    """
-    return _convert(src)
-
-
-def convert_bookings(bookings_src):
-    """Converts the given list of bookings to the correct objects
-
-    Args:
-        bookings_src: list of schema.Booking or entities.Booking
-    Returns:
-        The converted list, a schema.Booking or entities.Booking
-    """
-    return [convert_booking(b) for b in bookings_src]
-
-
-def convert_booking(src):
-    """Converts the given booking to the correct object.
-
-    Args:
-        src: A schema Booking or entity Booking object
-    Returns:
-        The converted object, a schema or entity object
-    """
-    return _convert(src)
-
-
-def convert_charge(src):
-    """Converts the given charge to the correct object.
-
-    Args:
-        src: A schema Charge or entity Charge object
-    Returns:
-        The converted object, a schema or entity object
-    """
-    return _convert(src)
-
-
-def convert_sentence(src):
-    """Converts the given sentence to the correct object.
-
-    Args:
-        src: A schema Sentence or entity Sentence object
-    Returns:
-        The converted object, a schema or entity object
-    """
-    return _convert(src)
-
-
-def _convert(src):
+def convert(src):
     """Converts the given src object to its entity/schema counterpart."""
     if not src:
         return None
@@ -132,17 +77,17 @@ def _convert(src):
 
     for field, attribute in attr.fields_dict(entity_cls).items():
         if field == 'bookings':
-            dst.bookings = [_convert(b) for b in src.bookings]
+            dst.bookings = [convert(b) for b in src.bookings]
         elif field == 'holds':
-            dst.holds = [_convert(h) for h in src.holds]
+            dst.holds = [convert(h) for h in src.holds]
         elif field == 'arrest':
-            dst.arrest = _convert(src.arrest)
+            dst.arrest = convert(src.arrest)
         elif field == 'charges':
-            dst.charges = [_convert(c) for c in src.charges]
+            dst.charges = [convert(c) for c in src.charges]
         elif field == 'bond':
-            dst.bond = _convert(src.bond)
+            dst.bond = convert(src.bond)
         elif field == 'sentence':
-            dst.sentence = _convert(src.sentence)
+            dst.sentence = convert(src.sentence)
         elif field == 'related_sentences':
             # TODO(441): Correctly convert related_sentences once schema for
             # this field is finalized.
