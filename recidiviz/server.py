@@ -20,16 +20,14 @@ import logging
 
 from flask import Flask
 from google.cloud.logging import Client, handlers
+from opencensus.common.transports.async_ import AsyncTransport
 from opencensus.trace import config_integration
-from opencensus.trace.exporters import file_exporter
-from opencensus.trace.exporters import stackdriver_exporter
-from opencensus.trace.exporters.transports.background_thread \
-    import BackgroundThreadTransport
+from opencensus.trace.exporters import file_exporter, stackdriver_exporter
 from opencensus.trace.ext.flask.flask_middleware import FlaskMiddleware
 
-from recidiviz.ingest.aggregate.scrape_aggregate_reports import\
-    scrape_aggregate_reports_blueprint
 from recidiviz.cloud_functions.cloud_functions import cloud_functions_blueprint
+from recidiviz.ingest.aggregate.scrape_aggregate_reports import \
+    scrape_aggregate_reports_blueprint
 from recidiviz.ingest.scrape.infer_release import infer_release_blueprint
 from recidiviz.ingest.scrape.scraper_control import scraper_control
 from recidiviz.ingest.scrape.worker import worker
@@ -71,7 +69,7 @@ if not environment.in_gae():
 # Setup tracing of requests not traced by default
 if environment.in_gae():
     exporter = stackdriver_exporter.StackdriverExporter(
-        project_id=metadata.project_id(), transport=BackgroundThreadTransport)
+        project_id=metadata.project_id(), transport=AsyncTransport)
 else:
     exporter = file_exporter.FileExporter(file_name='traces')
 # TODO(596): This is a no-op until the next release of `opencensus`.
