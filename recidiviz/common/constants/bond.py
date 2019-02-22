@@ -71,6 +71,7 @@ BOND_TYPE_MAP = {
     'NO BOND': BondType.NO_BOND,
     'NO BOND ALLOWED': BondType.NO_BOND,
     'NONE SET': BondType.NO_BOND,
+    'NONE': BondType.NO_BOND,
     'OTHER': BondType.NO_BOND,
     'OWN RECOGNIZANCE': BondType.NO_BOND,
     'PARTIAL CASH': BondType.PARTIAL_CASH,
