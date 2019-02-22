@@ -10,12 +10,14 @@ map them to the correct fields in the `ingest_info` object.  The result is a
 structured, typed, populated object containing the information that exists on a
 page.
 
-There are currently two classes of data extractors:
+There are currently three classes of data extractors:
  - [HtmlDataExtractor](/recidiviz/ingest/extractor/html_data_extractor.py),
    which takes a webpage and walks tables, labeled elements and elements
    identified by css selectors.
  - [JsonDataExtractor](/recidiviz/ingest/extractor/json_data_extractor.py),
    which takes a JSON object or array and looks for the provided fields.
+ - [CsvDataExtractor](/recidiviz/ingest/extractor/csv_data_extractor.py),
+   which takes CSV-formatted text and looks for the provided columns.
 
 ## How To Use the HtmlDataExtractor
 
@@ -121,9 +123,10 @@ Note that we added Offense DateTime and Arrest DateTime to the ignored keys beca
 
 ## How To Use the JsonDataExtractor
 
-The JsonDataExtractor works like the HtmlDataExtractor, but only requires one
-field in the yaml. All keys will be listed under `key_mappings` and will 
-contain the full path to the field in the JSON object or array.
+The `JsonDataExtractor` works like the `HtmlDataExtractor`, but
+only requires one field in the yaml. All keys will be listed under
+`key_mappings` and will contain the full path to the field in the JSON
+object or array.
 
 For example, consider the following JSON object:
 ```json
@@ -164,9 +167,44 @@ example, since `bookings.charges` is a list, charge IDs are located at
 `object['bookings']['charges'][1]['id']`, but the left side can omit the indices
 and just write `bookings.charges.id`.
 
-The right side of each line should contain the name of the IngestInfo object
+The right side of each line should contain the name of the `IngestInfo`
+object and the name of that object's field, separated by a dot (`.`). This
+is the same as in the `HtmlDataExtractor`.
+
+## How To Use the CsvDataExtractor
+
+The `CsvDataExtractor` is also similar other extractors, but is fairly
+simple at this point. It assumes that each row contains an entry about
+a single person. All keys will be listed under `key_mappings` and will
+contain the name of the column in the CSV text.
+
+For example, consider the following CSV text:
+```
+First,Middle,Last,Admission date,Some extra field
+A,B,C,1/1/1111,Junk
+X,Y,Z,2/2/1111,
+```
+
+The yaml file for this object is as follows:
+```yaml
+key_mappings:
+  First: person.given_names
+  Middle: person.middle_names
+  Last: person.surname
+  "Admission date": booking.admission_date
+
+keys_to_ignore:
+  - "Some extra field"
+```
+
+The left side of each line should match one of the headers in the CSV text.
+
+The right side of each line should contain the name of the `IngestInfo` object
 and the name of that object's field, separated by a dot (`.`). This is the
-same as in the HtmlDataExtractor.
+same as other data extractors.
+
+All columns in the CSV file must be accounted for, so to explicitly skip
+a column, list it as part of `keys_to_ignore` (as in the above example).
 
 ## The Code
 
@@ -177,6 +215,10 @@ from recidiviz.ingest.extractor.html_data_extractor import HtmlDataExtractor
 or
 ```python
 from recidiviz.ingest.extractor.json_data_extractor import JsonDataExtractor
+```
+or
+```python
+from recidiviz.ingest.extractor.csv_data_extractor import CsvDataExtractor
 ```
 
 
