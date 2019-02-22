@@ -22,7 +22,7 @@ For example:
 `python3 -m recidiviz.tools.create_scraper kings ny jail`
 
 Multi-word counties should be enclosed in quotes:
-`python3 -m recidiviz.tools.create_scraper 'prince william' virginia jail`
+`python3 -m recidiviz.tools.create_scraper 'prince william' va jail`
 
 ###### Optional Arguments
  - `agency`: the name of the agency, e.g. `Foo County Sheriff's Office`
