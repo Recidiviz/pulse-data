@@ -68,83 +68,14 @@ import json
 import logging
 
 from google.api_core import exceptions  # pylint: disable=no-name-in-module
-from google.cloud import pubsub
 
 from recidiviz.ingest.scrape import constants
-from recidiviz.utils import environment, metadata, regions
+from recidiviz.utils import environment, pubsub_helper, regions
 
 SNAPSHOT_BATCH_SIZE = 100
 SNAPSHOT_DISTANCE_YEARS = 10
 FILENAME_PREFIX = "./name_lists/"
-
-# We only lease tasks for 5min, so that they pop back into the queue
-# if we pause or stop the scrape for very long.
-# Note: This may be the right number for us_ny snapshot scraping, but
-#   if reused with another scraper the background scrapes might need
-#   more time depending on e.g. # results for query 'John Doe'.
-ACK_DEADLINE_SECONDS = 300
-
-_publisher = None
-def publisher():
-    global _publisher
-    if not _publisher:
-        _publisher = pubsub.PublisherClient()
-    return _publisher
-
-
-@environment.test_only
-def clear_publisher():
-    global _publisher
-    _publisher = None
-
-
-_subscriber = None
-def subscriber():
-    global _subscriber
-    if not _subscriber:
-        _subscriber = pubsub.SubscriberClient()
-    return _subscriber
-
-
-@environment.test_only
-def clear_subscriber():
-    global _subscriber
-    _subscriber = None
-
-
-def _docket_topic_path(scrape_key):
-    return publisher().topic_path(
-        metadata.project_id(),
-        "v1.{}-{}".format(scrape_key.region_code, scrape_key.scrape_type))
-
-
-def _docket_subscription_path(scrape_key):
-    return subscriber().subscription_path(
-        metadata.project_id(),
-        "v1.{}-{}".format(scrape_key.region_code, scrape_key.scrape_type))
-
-
-@environment.test_only
-def create_topic_and_subscription(scrape_key):
-    _create_topic_and_subscription(scrape_key)
-
-
-def _create_topic_and_subscription(scrape_key):
-    topic_path = _docket_topic_path(scrape_key)
-    try:
-        logging.info("Creating pubsub topic: '%s'", topic_path)
-        publisher().create_topic(topic_path)
-    except exceptions.AlreadyExists:
-        logging.info("Topic already exists")
-
-    subscription_path = _docket_subscription_path(scrape_key)
-    try:
-        logging.info("Creating pubsub subscription: '%s'", subscription_path)
-        subscriber().create_subscription(
-            subscription_path, topic_path,
-            ack_deadline_seconds=ACK_DEADLINE_SECONDS)
-    except exceptions.AlreadyExists:
-        logging.info("Subscription already exists")
+PUBSUB_TYPE = 'docket'
 
 
 # ##################### #
@@ -210,7 +141,8 @@ def load_background_target_list(scrape_key, name_file, query_name):
     # provided then all names should be written.
     should_write_names = not bool(query_name)
 
-    _create_topic_and_subscription(scrape_key)
+    pubsub_helper.create_topic_and_subscription(
+        scrape_key, pubsub_type=PUBSUB_TYPE)
 
     with open(name_file, 'r') as csvfile:
         names_reader = csv.reader(csvfile)
@@ -282,22 +214,14 @@ def _add_to_query_docket(scrape_key, item):
     """
     logging.debug("Attempting to add item to '%s' docket: %s",
                   scrape_key, item)
-    return publisher().publish(_docket_topic_path(scrape_key),
-                               data=json.dumps(item).encode())
+    return pubsub_helper.get_publisher().publish(
+        pubsub_helper.get_topic_path(scrape_key, pubsub_type=PUBSUB_TYPE),
+        data=json.dumps(item).encode())
 
 
 # ########################## #
 # Retrieving from the docket #
 # ########################## #
-
-
-def _retry_with_create(scrape_key, fn):
-    try:
-        result = fn()
-    except exceptions.NotFound:
-        _create_topic_and_subscription(scrape_key)
-        result = fn()
-    return result
 
 
 def get_new_docket_item(scrape_key, return_immediately=False):
@@ -320,11 +244,15 @@ def get_new_docket_item(scrape_key, return_immediately=False):
     """
     docket_message = None
 
-    subscription_path = _docket_subscription_path(scrape_key)
+    subscription_path = pubsub_helper.get_subscription_path(
+        scrape_key, pubsub_type=PUBSUB_TYPE)
+
     def inner():
-        return subscriber().pull(subscription_path, max_messages=1,
-                                 return_immediately=return_immediately)
-    response = _retry_with_create(scrape_key, inner)
+        return pubsub_helper.get_subscriber().pull(
+            subscription_path, max_messages=1,
+            return_immediately=return_immediately)
+    response = pubsub_helper.retry_with_create(
+        scrape_key, inner, pubsub_type=PUBSUB_TYPE)
 
     if response.received_messages:
         docket_message = response.received_messages[0]
@@ -361,11 +289,14 @@ def purge_query_docket(scrape_key):
     # TODO(#342): Use subscriber().seek(subscription_path, time=timestamp)
     # once available on the emulator.
     try:
-        subscriber().delete_subscription(_docket_subscription_path(scrape_key))
+        pubsub_helper.get_subscriber().delete_subscription(
+            pubsub_helper.get_subscription_path(
+                scrape_key, pubsub_type=PUBSUB_TYPE))
     except exceptions.NotFound:
         pass
 
-    _create_topic_and_subscription(scrape_key)
+    pubsub_helper.create_topic_and_subscription(
+        scrape_key, pubsub_type=PUBSUB_TYPE)
 
 
 def ack_docket_item(scrape_key, ack_id):
@@ -381,6 +312,7 @@ def ack_docket_item(scrape_key, ack_id):
         N/A
     """
     def inner():
-        subscriber().acknowledge(_docket_subscription_path(scrape_key),
-                                 [ack_id])
-    _retry_with_create(scrape_key, inner)
+        pubsub_helper.get_subscriber().acknowledge(
+            pubsub_helper.get_subscription_path(
+                scrape_key, pubsub_type=PUBSUB_TYPE), [ack_id])
+    pubsub_helper.retry_with_create(scrape_key, inner, pubsub_type=PUBSUB_TYPE)
