@@ -107,7 +107,7 @@ class TestDatabase(TestCase):
             session, person.region, most_recent_scrape_date)
 
         # Assert
-        self.assertEqual(people, [database_utils.convert_person(person)])
+        self.assertEqual(people, [database_utils.convert(person)])
 
     def test_readPeopleByExternalId(self):
         admission_date = datetime.datetime(2018, 6, 20)
@@ -135,7 +135,7 @@ class TestDatabase(TestCase):
                                                       [ingested_person])
 
         expected_people = [
-            database_utils.convert_person(person_match_external_id)]
+            database_utils.convert(person_match_external_id)]
         self.assertCountEqual(people, expected_people)
 
     def test_readPeopleWithOpenBookings(self):
@@ -157,9 +157,6 @@ class TestDatabase(TestCase):
         person_match_full_name = Person(person_id=2, region=_REGION,
                                         bookings=[deepcopy(open_booking)],
                                         full_name=_FULL_NAME)
-        person_match_birthdate = Person(person_id=5, region=_REGION,
-                                        bookings=[deepcopy(open_booking)],
-                                        birthdate=_BIRTHDATE)
         person_no_open_bookings = Person(person_id=6, region=_REGION,
                                          full_name=_FULL_NAME,
                                          bookings=[closed_booking])
@@ -168,7 +165,6 @@ class TestDatabase(TestCase):
         session.add(person_no_match)
         session.add(person_no_open_bookings)
         session.add(person_match_full_name)
-        session.add(person_match_birthdate)
         session.commit()
 
         info = IngestInfo()
@@ -176,7 +172,7 @@ class TestDatabase(TestCase):
         people = database.read_people_with_open_bookings(session, _REGION,
                                                          info.people)
 
-        expected_people = [database_utils.convert_person(p) for p in
+        expected_people = [database_utils.convert(p) for p in
                            [person_match_full_name]]
         self.assertCountEqual(people, expected_people)
 
@@ -544,7 +540,7 @@ class TestDatabase(TestCase):
         act_session = Session()
         person_query = act_session.query(Person) \
             .filter(Person.person_id == persisted_person_id)
-        fetched_person = database_utils.convert_person(person_query.first())
+        fetched_person = database_utils.convert(person_query.first())
         # Remove bond from charge so bond is no longer directly associated
         # with ORM copy of the record tree
         fetched_charge = fetched_person.bookings[0].charges[0]
@@ -598,7 +594,7 @@ class TestDatabase(TestCase):
         act_session = Session()
         person_query = act_session.query(Person) \
             .filter(Person.person_id == persisted_person_id)
-        fetched_person = database_utils.convert_person(person_query.first())
+        fetched_person = database_utils.convert(person_query.first())
         # Remove sentence from charge so sentence is no longer directly
         # associated with ORM copy of the record tree
         fetched_charge = fetched_person.bookings[0].charges[0]

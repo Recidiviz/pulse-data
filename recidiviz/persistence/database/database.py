@@ -56,7 +56,7 @@ def read_people(session, full_name=None, birthdate=None):
     if birthdate is not None:
         query = query.filter(Person.birthdate == birthdate)
 
-    return database_utils.convert_people(query.all())
+    return database_utils.convert_all(query.all())
 
 
 def read_bookings(session):
@@ -68,7 +68,7 @@ def read_bookings(session):
     Return:
         List of all bookings
     """
-    return database_utils.convert_bookings(session.query(Booking).all())
+    return database_utils.convert_all(session.query(Booking).all())
 
 
 def read_people_by_external_ids(
@@ -89,7 +89,7 @@ def read_people_by_external_ids(
         .filter(Person.region == region) \
         .filter(Person.external_id.in_(external_ids))
 
-    return [database_utils.convert_person(p) for p in query.all()]
+    return [database_utils.convert(p) for p in query.all()]
 
 
 def read_people_with_open_bookings(session, region, ingested_people):
@@ -108,8 +108,7 @@ def read_people_with_open_bookings(session, region, ingested_people):
 
     full_names = {p.full_name for p in ingested_people}
     query = query.filter(Person.full_name.in_(full_names))
-
-    return [database_utils.convert_person(person) for person, _ in query.all()]
+    return [database_utils.convert(person) for person, _ in query.all()]
 
 
 def read_people_with_open_bookings_scraped_before_time(session, region, time):
@@ -127,7 +126,7 @@ def read_people_with_open_bookings_scraped_before_time(session, region, time):
     """
     query = _query_people_and_open_bookings(session, region) \
         .filter(Booking.last_seen_time < time)
-    return [database_utils.convert_booking(person) for person, _ in query.all()]
+    return [database_utils.convert(person) for person, _ in query.all()]
 
 
 def _query_people_and_open_bookings(session, region):
@@ -151,7 +150,7 @@ def write_people(session: Session, people: List[Person],
     """
     return _save_record_trees(
         session,
-        [database_utils.convert_person(person) for person in people],
+        [database_utils.convert(person) for person in people],
         metadata)
 
 
@@ -161,7 +160,7 @@ def write_person(session: Session, person: Person,
     record tree rooted at that |person|. Returns the persisted (Person)
     """
     persisted_people = _save_record_trees(
-        session, [database_utils.convert_person(person)], metadata)
+        session, [database_utils.convert(person)], metadata)
     # persisted_people will only contain the single person passed in
     return one(persisted_people)
 
