@@ -31,7 +31,7 @@ from recidiviz.common.constants.person import Gender, Race, Ethnicity
 from recidiviz.common.constants.sentence import SentenceStatus
 from recidiviz.persistence import entities
 from recidiviz.persistence.database import schema
-from recidiviz.persistence.database.database_utils import convert_person
+from recidiviz.persistence.database.database_utils import convert
 from recidiviz.tests.utils import fakes
 
 _PERSON = entities.Person(
@@ -144,11 +144,11 @@ class TestDatabaseUtils(TestCase):
         fakes.use_in_memory_sqlite_database()
 
     def test_convert_person(self):
-        schema_person = convert_person(_PERSON)
+        schema_person = convert(_PERSON)
         session = Session()
         session.add(schema_person)
         session.commit()
 
         people = session.query(schema.Person).all()
         self.assertEqual(len(people), 1)
-        self.assertEqual(convert_person(one(people)), _PERSON)
+        self.assertEqual(convert(one(people)), _PERSON)

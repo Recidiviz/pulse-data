@@ -79,11 +79,11 @@ class TestEntityMatching(TestCase):
         session.commit()
 
         ingested_booking = attr.evolve(
-            database_utils.convert_booking(schema_booking), booking_id=None,
+            database_utils.convert(schema_booking), booking_id=None,
             custody_status=CustodyStatus.RELEASED)
 
         ingested_person = attr.evolve(
-            database_utils.convert_person(schema_person), person_id=None,
+            database_utils.convert(schema_person), person_id=None,
             bookings=[ingested_booking])
         ingested_person_another = attr.evolve(ingested_person)
 
@@ -117,17 +117,17 @@ class TestEntityMatching(TestCase):
         session.commit()
 
         ingested_booking = attr.evolve(
-            database_utils.convert_booking(schema_booking), booking_id=None)
+            database_utils.convert(schema_booking), booking_id=None)
 
         ingested_person = attr.evolve(
-            database_utils.convert_person(schema_person), person_id=None,
+            database_utils.convert(schema_person), person_id=None,
             bookings=[ingested_booking])
 
         ingested_booking_another = attr.evolve(
-            database_utils.convert_booking(schema_booking_another),
+            database_utils.convert(schema_booking_another),
             booking_id=None)
         ingested_person_another = attr.evolve(
-            database_utils.convert_person(schema_person_another),
+            database_utils.convert(schema_person_another),
             person_id=None,
             bookings=[ingested_booking_another])
 
@@ -172,17 +172,17 @@ class TestEntityMatching(TestCase):
         session.commit()
 
         ingested_booking = attr.evolve(
-            database_utils.convert_booking(schema_booking), booking_id=None,
+            database_utils.convert(schema_booking), booking_id=None,
             custody_status=CustodyStatus.RELEASED)
         ingested_person = attr.evolve(
-            database_utils.convert_person(schema_person), person_id=None,
+            database_utils.convert(schema_person), person_id=None,
             place_of_residence=_PLACE_2, bookings=[ingested_booking])
 
         ingested_booking_external_id = attr.evolve(
-            database_utils.convert_booking(schema_booking_external_id),
+            database_utils.convert(schema_booking_external_id),
             booking_id=None, facility=_FACILITY)
         ingested_person_external_id = attr.evolve(
-            database_utils.convert_person(schema_person_external_id),
+            database_utils.convert(schema_person_external_id),
             person_id=None, bookings=[ingested_booking_external_id])
 
         expected_booking = attr.evolve(ingested_booking, booking_id=_BOOKING_ID)
