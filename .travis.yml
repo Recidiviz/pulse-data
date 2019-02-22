@@ -78,6 +78,13 @@ after_script:
   # Cache the newly built docker image for the next Travis run
   - docker save recidiviz-image | gzip -c > ~/docker-images/recidiviz-image.tgz
 
+# Reduce the workload on travis by only whitelisting 'push' builds on master (ie. Run a build for every merge into
+# master but not pushes to other branches). Note: If running all pushes on master (ie. PR merges) overloads Travis, we
+# could switch to periodically running builds on master via a Travis cron.
+branches:
+  only:
+  - master
+
 cache:
   directories:
     - ~/docker-images
