@@ -1,0 +1,5 @@
+key_mappings:
+
+multi_key_mapping:
+  Bond ID: bond.bond_id
+  Amount: bond.amount

@@ -1,0 +1,8 @@
+key_mappings:
+
+multi_key_mapping:
+  Offense: charge.name
+  Bond Amount: bond.amount
+  Bondsman: bond.bond_agent
+  Book Date: booking.admission_date
+  Release Date: booking.release_date
