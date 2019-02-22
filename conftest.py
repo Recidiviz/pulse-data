@@ -24,8 +24,8 @@ import pytest
 import yaml
 
 import recidiviz
-from recidiviz.ingest.scrape import sessions, docket
-from recidiviz.utils import secrets
+from recidiviz.ingest.scrape import sessions
+from recidiviz.utils import secrets, pubsub_helper
 
 
 def pytest_configure():
@@ -55,15 +55,15 @@ def emulator(request):
     prior_environs = write_emulator_environs()
     sessions.clear_ds()
     secrets.clear_ds()
-    docket.clear_publisher()
-    docket.clear_subscriber()
+    pubsub_helper.clear_publisher()
+    pubsub_helper.clear_subscriber()
 
     def cleanup():
         restore_environs(prior_environs)
         sessions.clear_ds()
         secrets.clear_ds()
-        docket.clear_publisher()
-        docket.clear_subscriber()
+        pubsub_helper.clear_publisher()
+        pubsub_helper.clear_subscriber()
 
     request.addfinalizer(cleanup)
 
