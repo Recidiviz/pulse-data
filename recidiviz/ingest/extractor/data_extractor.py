@@ -96,9 +96,7 @@ class DataExtractor(metaclass=abc.ABCMeta):
                 # new one.
                 if object_to_set is None or \
                         ingest_key in seen_map[id(object_to_set)]:
-                    create_name = 'create_' + class_to_set
-                    create_func = getattr(parent, create_name)
-                    object_to_set = create_func()
+                    object_to_set = _create(parent, class_to_set)
 
                 setattr(object_to_set, ingest_key, value)
                 seen_map[id(object_to_set)].add(ingest_key)
@@ -109,15 +107,35 @@ class DataExtractor(metaclass=abc.ABCMeta):
         """Finds or creates the parent of the object we are going to set, which
         may need to have its own parent created if it is a hold or charge in a
         multi-key column."""
-        if is_multi_key and class_to_set in PLURALS and \
-                class_to_set not in ('person', 'booking'):
+        # Multi-keys may need to be indexed by their parent, i.e. a bond at
+        # index 3 has the parent charge at index 3.
+        if is_multi_key and class_to_set != 'person':
             parent_cls_to_set = HIERARCHY_MAP[class_to_set][-1]
-            if index != 0 and parent_cls_to_set in self.multi_key_classes:
-                grandparent = self._find_parent_ingest_info(
-                    ingest_info, HIERARCHY_MAP[parent_cls_to_set], index)
-                create_name = 'create_' + parent_cls_to_set
-                create_func = getattr(grandparent, create_name)
-                return create_func()
+            grandparent_cls_to_set = HIERARCHY_MAP[parent_cls_to_set][-1] if \
+                HIERARCHY_MAP[parent_cls_to_set] else None
+            grandparent = self._find_parent_ingest_info(
+                ingest_info, HIERARCHY_MAP[parent_cls_to_set], index)
+            recent = _get_recent(grandparent, parent_cls_to_set)
+
+            # If |index| was used to index the grandparent, use the most
+            # recent parent if one exists.
+            if parent_cls_to_set in self.multi_key_classes \
+                    and grandparent_cls_to_set in self.multi_key_classes \
+                    and recent:
+                return recent
+
+            # If |index| should be used to index the parent, find the parent.
+            if class_to_set not in PLURALS or class_to_set == 'booking':
+                list_of_parents = getattr(grandparent,
+                                          PLURALS[parent_cls_to_set])
+                if index < len(list_of_parents):
+                    return list_of_parents[index]
+
+            # If the parent doesn't exist, create it.
+            if class_to_set not in PLURALS or \
+                    parent_cls_to_set in self.multi_key_classes:
+                return _create(grandparent, parent_cls_to_set)
+
         return self._find_parent_ingest_info(ingest_info,
                                              HIERARCHY_MAP[class_to_set], index)
 
@@ -132,8 +150,7 @@ class DataExtractor(metaclass=abc.ABCMeta):
                     and isinstance(list_of_class_to_set, list) \
                     and len(list_of_class_to_set) > index:
                 return list_of_class_to_set[index]
-        get_recent_name = 'get_recent_' + class_to_set
-        return getattr(parent, get_recent_name)()
+        return _get_recent(parent, class_to_set)
 
     def _find_parent_ingest_info(self, ingest_info: IngestInfo,
                                  hierarchy: Sequence[str],
@@ -158,10 +175,17 @@ class DataExtractor(metaclass=abc.ABCMeta):
                     len(getattr(parent, PLURALS[hier_class])) > val_index:
                 parent = getattr(parent, PLURALS[hier_class])[val_index]
             else:
-                get_recent_name = 'get_recent_' + hier_class
-                create_func = 'create_' + hier_class
                 old_parent = parent
-                parent = getattr(old_parent, get_recent_name)()
+                parent = _get_recent(old_parent, hier_class)
                 if parent is None:
-                    parent = getattr(old_parent, create_func)()
+                    parent = _create(old_parent, hier_class)
         return parent
+
+
+def _get_recent(
+        parent: IngestObject, class_name: str):
+    return getattr(parent, 'get_recent_' + class_name)()
+
+
+def _create(parent: IngestObject, class_name: str):
+    return getattr(parent, 'create_' + class_name)()
