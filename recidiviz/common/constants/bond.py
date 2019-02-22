@@ -103,6 +103,7 @@ BOND_TYPE_MAP = {
 BOND_STATUS_MAP = {
     'ACTIVE': BondStatus.SET,
     'BOND DENIED': BondStatus.DENIED,
+    'BOND REVOCATION': BondStatus.REVOKED,
     'DENIED': BondStatus.DENIED,
     'HOLD WITHOUT BAIL': BondStatus.DENIED,
     'NO BOND ALLOWED': BondStatus.DENIED,
