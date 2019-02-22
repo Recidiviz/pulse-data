@@ -29,7 +29,7 @@ _ds = None
 def ds():
     global _ds
     if not _ds:
-        _ds = datastore.Client()
+        _ds = environment.get_datastore_client()
     return _ds
 
 

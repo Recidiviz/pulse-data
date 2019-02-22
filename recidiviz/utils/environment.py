@@ -29,6 +29,9 @@ import logging
 import os
 from functools import wraps
 
+import requests
+from google.cloud import datastore, environment_vars
+
 import recidiviz
 
 
@@ -58,6 +61,16 @@ def get_gae_environment():
         The gae instance we are running in, or local if it is not set
     """
     return os.getenv('RECIDIVIZ_ENV', 'local')
+
+
+def get_datastore_client() -> datastore.Client:
+    # If we're running with the datastore emulator, we must specify `_https` due
+    # to a bug in the datastore client.
+    # See: https://github.com/googleapis/google-cloud-python/issues/5738
+    if os.environ.get(environment_vars.GCD_HOST):
+        return datastore.Client(_http=requests.Session)
+
+    return datastore.Client()
 
 
 def local_only(func):
