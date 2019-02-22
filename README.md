@@ -129,7 +129,7 @@ cd pulse-data
 
 Build the image:
 ```
-docker build -t recidiviz-image .
+docker build -t recidiviz-image . --build-arg DEV_MODE=True
 ```
 
 Stop and delete previous instances of the image if they exist:
