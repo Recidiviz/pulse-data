@@ -1,59 +1,89 @@
-language: python
-cache: pip
-python:
-- 3.7-dev
-before_install:
-- export CLOUD_SDK_REPO="cloud-sdk-$(lsb_release -c -s)" && echo "deb http://packages.cloud.google.com/apt
-  $CLOUD_SDK_REPO main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
-  && curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add
-  - && sudo apt-get update -y && sudo apt-get install google-cloud-sdk -y && sudo
-  apt-get install google-cloud-sdk-datastore-emulator -y && sudo apt-get install google-cloud-sdk-pubsub-emulator
-  -y
+# Don't define a language since we run all tests in docker
+language: generic
+
+services:
+  - docker
+
+# Note, this caching design is based off: https://gist.github.com/hc2p/9e284cee3d585eefbc59454e44cc247a
+# We decided to cache the docker image even though the majority of the docker build steps are downloading dependencies
+# from the web. We acknowledge that the time needed to download the cached docker image is nearly the same as the time
+# needed to download the dependencies directly. However, testing has shown that using the cache is still faster than
+# building the image from scratch each time. If this changes, we should stop caching the docker image.
 install:
-- pip install --upgrade setuptools
-- pip install pipenv
-- pipenv sync --dev
+  # First try to read the most recent docker image from cache
+  - mkdir -p ~/docker-images
+  - if [ -f ~/docker-images/recidiviz-image.tgz ]; then docker load -i ~/docker-images/recidiviz-image.tgz; fi
+
+  # Build the new docker image, sharing layers from the cached docker image
+  # Specifying `DEV_MODE=True` installs dev dependencies (eg. pytest)
+  - docker build -t recidiviz-image . --cache-from recidiviz-image:latest --build-arg DEV_MODE=True
+
 before_script:
-- gcloud beta emulators datastore start --no-store-on-disk --consistency 1.0 --project
-  test-project > ds_emulator.out 2> ds_emulator.err &
-- gcloud beta emulators pubsub start --project test-project > ps_emulator.out 2> ps_emulator.err
-  &
+  # Finally, run our docker application
+  - docker run --name recidiviz -d -t recidiviz-image
+
+  # Start gcloud emulators (eg. fake datastore, fake pubsub)
+  # Note: Exec docker with `-d` (detached) to ensure gcloud emulators stay running after the docker command finishes
+  - docker exec -d recidiviz sh -c 'gcloud beta emulators datastore start --no-store-on-disk --consistency 1.0 --project test-project > ds_emulator.out 2> ds_emulator.err'
+  - docker exec -d recidiviz sh -c 'gcloud beta emulators pubsub start --project test-project > ps_emulator.out 2> ps_emulator.err'
+
 script:
-- pipenv run pylint *.py recidiviz
-- pipenv run pytest recidiviz/tests/ --with-emulator
-- pipenv run mypy recidiviz
+  # Order test commands with fastest first to ensure we fail fast
+  # Note: Pass `-it` to docker to display the test result to the travis output (ie. web ui)
+  - docker exec -it recidiviz pipenv run mypy recidiviz
+  - docker exec -it recidiviz pipenv run pylint recidiviz
+  - docker exec -it recidiviz pipenv run pytest recidiviz --with-emulator
+
 after_success:
-- coveralls
+  - coveralls
+
 before_deploy:
-- git stash --all
-- python -m recidiviz.tools.build_queue_config --environment staging
-- openssl aes-256-cbc -K $encrypted_f7b0b16e1068_key -iv $encrypted_f7b0b16e1068_iv
-  -in client-secret-staging.json.enc -out client-secret-staging.json -d
+  # Generate queue.yaml
+  - docker exec -it recidiviz pipenv run python -m recidiviz.tools.build_queue_config --environment staging
+  - docker cp recidiviz:/app/queue.yaml .
+
+  # Create encryption keys used to authenticate with GAE
+  - openssl aes-256-cbc -K $encrypted_f7b0b16e1068_key -iv $encrypted_f7b0b16e1068_iv
+    -in client-secret-staging.json.enc -out client-secret-staging.json -d
+
+# Enable skip_cleanup when deploying to ensure queue.yaml is available to deploy
 deploy:
-- provider: gae
-  skip_cleanup: true
-  keyfile: client-secret-staging.json
-  project: recidiviz-staging
-  on:
-    all_branches: true
-    condition: $TRAVIS_TAG =~ ^v[0-9]+\.[0-9]+\.[0-9]+
-  config: queue.yaml
-- provider: gae
-  skip_cleanup: true
-  keyfile: client-secret-staging.json
-  project: recidiviz-staging
-  on:
-    all_branches: true
-    condition: $TRAVIS_TAG =~ ^v[0-9]+\.[0-9]+\.[0-9]+
-  config: staging.yaml
-- provider: gae
-  keyfile: client-secret-staging.json
-  project: recidiviz-staging
-  on:
-    all_branches: true
-    condition: $TRAVIS_TAG =~ ^v[0-9]+\.[0-9]+\.[0-9]+
-  config: cron.yaml
+  # Deploy queue.yaml to staging
+  - provider: gae
+    skip_cleanup: true
+    keyfile: client-secret-staging.json
+    project: recidiviz-staging
+    on:
+      condition: $TRAVIS_TAG =~ ^v[0-9]+\.[0-9]+\.[0-9]+
+    config: queue.yaml
+
+  # Deploy full application to staging
+  - provider: gae
+    skip_cleanup: true
+    keyfile: client-secret-staging.json
+    project: recidiviz-staging
+    on:
+      condition: $TRAVIS_TAG =~ ^v[0-9]+\.[0-9]+\.[0-9]+
+    config: staging.yaml
+
+  # Deploy cron.yaml to staging
+  - provider: gae
+    keyfile: client-secret-staging.json
+    project: recidiviz-staging
+    on:
+      condition: $TRAVIS_TAG =~ ^v[0-9]+\.[0-9]+\.[0-9]+
+    config: cron.yaml
+
+after_script:
+  # Cache the newly built docker image for the next Travis run
+  - docker save recidiviz-image | gzip -c > ~/docker-images/recidiviz-image.tgz
+
+cache:
+  directories:
+    - ~/docker-images
+
 notifications:
   slack:
-    secure: RRx5Klgwfr2ggUxugs2nBOt2atYoKDrv+RfVY2OeINsZqPeZoxpfKntpIctfdUfPIZofyNUfPFfIFjZdNWBwXHKTu1/3KkCslBDUoPW9En1np5RTrVUmZJJy7no+J19PuDUDQYcDRCcEw41PbjcE7NPfK12bTI7jCGKw3ZTX1tLWlXDz70BOIsJxW3gLrgopFo0mNGWKbIVBU4VeUxhOpxB3RzegtCNrTIcfiEpnuNcyNvzhTpzlQdinW4rXQjv5p7oxCEkMGTfywtVrUVLfrSMCCVde1rv2RUBJPmShmFbJjfWuozMMlVK82vXMjj+z3HrIYPAYMmbVM9zqn/SDjdwzfzbmldol8yKcW4DTmlH4phfw9qWGa/UdpcHPT5vUoNzg3QVvVTYwV8sG8O6XeO341BSelSdfmbFq6YJvgfgHgDXbjbP8ME2DqUP/0RE21FEXReaV8Ln3FvneMFK1MnKV3czKOOwh6m48M7zFcdQr1OFto2+aIdF8IS7nke3btzUW1HL7ppn+wlLdOGsYuTPsMUQ/ykVSMTvB9Iolj083mtGm/QOu316JKgZMbH82e9p6FbXil44i1UGc8H2j9RVri4U0m2sEps4MnHbuBRhejzh6fO4k7pbAKTn35sH7TEgfacCIzBOI8t3crPB1AaK8fmMGEiZo07WalWT/MS0=
-    secure: HvKmG9uhMisA/WZOcqm/0fjgSbn/8IPCbLhqi2CvYhkiL413CBzU8ncnViMDSbOeOBqmhIUASRJjxwjvCEWnGyXVzAvq8XhxHbQMpQFgxftHyh/YsnmfH8aHZAUJSBYlNt/DuW5mTXH4lH7r+LtJz3L6bqQXMu9R4jpsOPS0HVKUzimNHeNjsO0E2HkVCw1M/nzOtFqSZtol8/dZxfwzdxu/yTw8zQGYO9g14/p6hm/V2ZcDq3YVswuPt1EgJQ41TohVXBVo/HPpo2sD6UODoonc5/0EvxOBmG1AH//5wcIUqYmIQSHxfK8WRvBnVWPk6o4KeOYAccBT1H3W5HXQL6iQuNhQzTKAjsuxN1dW+Rqpf+/G5IX/3TrztEaREpuSGl2xF2uq8g/zFpFGVxRxRFhSiFFAXBDfEKVC+Q7yuYEdSOAPMTF+6egI6MD8n5lV3vbeFTARBSvBF7NwT1m/V9+dsaGgY9m3LMIV3vsWJQ02ELvTFwRu8Wkohp5Q0iF56eiZ/Aq2ZumUeCFvQnedV+RI29VBxrz7v/ux+VgVRBBGbNCu4KkcOaZN1xDdNDMWF3TPu4WUg90AjfAD7P69vOJ9DK5vFZfHVafn1r31ydIhee4pxwsQwt4vqP0biGOTaJeGbn+vLo49iq1U21GY/J3cOPkl1eoyWrGS4DN4PxI=
+    rooms:
+      - secure: "RRx5Klgwfr2ggUxugs2nBOt2atYoKDrv+RfVY2OeINsZqPeZoxpfKntpIctfdUfPIZofyNUfPFfIFjZdNWBwXHKTu1/3KkCslBDUoPW9En1np5RTrVUmZJJy7no+J19PuDUDQYcDRCcEw41PbjcE7NPfK12bTI7jCGKw3ZTX1tLWlXDz70BOIsJxW3gLrgopFo0mNGWKbIVBU4VeUxhOpxB3RzegtCNrTIcfiEpnuNcyNvzhTpzlQdinW4rXQjv5p7oxCEkMGTfywtVrUVLfrSMCCVde1rv2RUBJPmShmFbJjfWuozMMlVK82vXMjj+z3HrIYPAYMmbVM9zqn/SDjdwzfzbmldol8yKcW4DTmlH4phfw9qWGa/UdpcHPT5vUoNzg3QVvVTYwV8sG8O6XeO341BSelSdfmbFq6YJvgfgHgDXbjbP8ME2DqUP/0RE21FEXReaV8Ln3FvneMFK1MnKV3czKOOwh6m48M7zFcdQr1OFto2+aIdF8IS7nke3btzUW1HL7ppn+wlLdOGsYuTPsMUQ/ykVSMTvB9Iolj083mtGm/QOu316JKgZMbH82e9p6FbXil44i1UGc8H2j9RVri4U0m2sEps4MnHbuBRhejzh6fO4k7pbAKTn35sH7TEgfacCIzBOI8t3crPB1AaK8fmMGEiZo07WalWT/MS0="
+      - secure: "HvKmG9uhMisA/WZOcqm/0fjgSbn/8IPCbLhqi2CvYhkiL413CBzU8ncnViMDSbOeOBqmhIUASRJjxwjvCEWnGyXVzAvq8XhxHbQMpQFgxftHyh/YsnmfH8aHZAUJSBYlNt/DuW5mTXH4lH7r+LtJz3L6bqQXMu9R4jpsOPS0HVKUzimNHeNjsO0E2HkVCw1M/nzOtFqSZtol8/dZxfwzdxu/yTw8zQGYO9g14/p6hm/V2ZcDq3YVswuPt1EgJQ41TohVXBVo/HPpo2sD6UODoonc5/0EvxOBmG1AH//5wcIUqYmIQSHxfK8WRvBnVWPk6o4KeOYAccBT1H3W5HXQL6iQuNhQzTKAjsuxN1dW+Rqpf+/G5IX/3TrztEaREpuSGl2xF2uq8g/zFpFGVxRxRFhSiFFAXBDfEKVC+Q7yuYEdSOAPMTF+6egI6MD8n5lV3vbeFTARBSvBF7NwT1m/V9+dsaGgY9m3LMIV3vsWJQ02ELvTFwRu8Wkohp5Q0iF56eiZ/Aq2ZumUeCFvQnedV+RI29VBxrz7v/ux+VgVRBBGbNCu4KkcOaZN1xDdNDMWF3TPu4WUg90AjfAD7P69vOJ9DK5vFZfHVafn1r31ydIhee4pxwsQwt4vqP0biGOTaJeGbn+vLo49iq1U21GY/J3cOPkl1eoyWrGS4DN4PxI="
