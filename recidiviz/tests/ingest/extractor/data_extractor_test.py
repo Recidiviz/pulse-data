@@ -400,3 +400,31 @@ class HtmlDataExtractorTest(unittest.TestCase):
         info = self.extract('single_page_roster.html',
                             'single_page_roster.yaml')
         self.assertEqual(expected_info, info)
+
+    def test_bond_multi_key(self):
+        expected_info = IngestInfo()
+        booking = expected_info.create_person().create_booking()
+        booking.create_charge().create_bond(bond_id='1', amount='10')
+        booking.create_charge().create_bond(bond_id='2', amount='20')
+        booking.create_charge().create_bond(bond_id='3', amount='30')
+
+        info = self.extract('bonds.html', 'bonds.yaml')
+        self.assertEqual(expected_info, info)
+
+    def test_three_levels_multi_key(self):
+        expected_info = IngestInfo()
+        p = expected_info.create_person()
+        b1 = p.create_booking(admission_date='01/01/2011',
+                              release_date='02/02/2012')
+        b1.create_charge(name='Charge1').create_bond(amount='$1.00',
+                                                     bond_agent='AGENT 1')
+        b2 = p.create_booking(admission_date='03/03/2013')
+        b2.create_charge(name='Charge2').create_bond(amount='$2.00')
+        b3 = p.create_booking(admission_date='03/03/2013')
+        b3.create_charge(name='Charge3').create_bond(amount='$3.00')
+        b4 = p.create_booking(admission_date='03/03/2013')
+        b4.create_charge(name='Charge4').create_bond(amount='$4.00')
+
+        info = self.extract('three_levels_multi_key.html',
+                            'three_levels_multi_key.yaml')
+        self.assertEqual(expected_info, info)
