@@ -72,7 +72,7 @@ def parse_datetime(date_string):
     """
     if date_string == '' or date_string.isspace():
         return None
-    parsed_date = dateparser.parse(date_string)
+    parsed_date = dateparser.parse(date_string, languages=['en'])
     if not parsed_date:
         raise ValueError('cannot parse date: %s' % date_string)
     return parsed_date
