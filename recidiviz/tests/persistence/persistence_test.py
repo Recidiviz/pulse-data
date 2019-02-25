@@ -20,7 +20,12 @@ from datetime import date, datetime, timedelta
 from unittest import TestCase
 
 import attr
+import pytest
+
 from mock import patch, Mock
+
+import recidiviz.ingest.models.ingest_info as ii
+
 from recidiviz import Session
 from recidiviz.common.constants.bond import BondStatus
 from recidiviz.common.constants.booking import CustodyStatus
@@ -31,8 +36,10 @@ from recidiviz.common.constants.sentence import SentenceStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo, Charge, \
     Sentence
+from recidiviz.ingest.scrape.ingest_utils import convert_ingest_info_to_proto
 from recidiviz.persistence import persistence, entities
 from recidiviz.persistence.database import database, schema
+from recidiviz.persistence.errors import DataValidationError
 from recidiviz.tests.utils import fakes
 
 BIRTHDATE_1 = '11/15/1993'
@@ -45,6 +52,7 @@ BOOKING_ID = 19
 CHARGE_NAME_1 = 'TEST_CHARGE_1'
 CHARGE_NAME_2 = 'TEST_CHARGE_2'
 CHARGE_STATUS = 'Pending'
+DATE_RAW = '1/1/2011'
 DATE = date(year=2019, day=1, month=2)
 DATE_2 = date(year=2020, day=1, month=2)
 EXTERNAL_PERSON_ID = 'EXTERNAL_PERSON_ID'
@@ -107,6 +115,16 @@ class TestPersistence(TestCase):
             # Assert
             assert len(result) == 1
             assert result[0].full_name == FULL_NAME_1
+
+    def test_multipleOpenBookings_raisesDataValidationError(self):
+        ingest_info = ii.IngestInfo()
+        person = ingest_info.create_person(full_name=FULL_NAME_1)
+        person.create_booking(admission_date=DATE_RAW)
+        person.create_booking(admission_date=DATE_RAW)
+
+        with pytest.raises(DataValidationError):
+            persistence.write(convert_ingest_info_to_proto(ingest_info),
+                              DEFAULT_METADATA)
 
     def test_twoDifferentPeople_persistsBoth(self):
         # Arrange
