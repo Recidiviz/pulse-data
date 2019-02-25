@@ -36,6 +36,7 @@ from recidiviz.ingest.scrape.constants import MAX_PEOPLE_TO_LOG
 from recidiviz.persistence import entity_matching, entities
 from recidiviz.persistence.converter import converter
 from recidiviz.persistence.database import database
+from recidiviz.persistence.errors import DataValidationError
 from recidiviz.utils import environment, monitoring
 
 m_people = measure.MeasureInt("persistence/num_people",
@@ -55,8 +56,6 @@ errors_persisted_view = view.View("recidiviz/persistence/num_errors",
                                   m_errors,
                                   aggregation.SumAggregation())
 monitoring.register_views([people_persisted_view, errors_persisted_view])
-
-
 
 
 def infer_release_on_open_bookings(region, last_ingest_time, custody_status):
@@ -137,6 +136,17 @@ def _should_persist():
                 strtobool((os.environ.get('PERSIST_LOCALLY', 'false'))))
 
 
+# Note: If we ever want to validate more than the existence of multiple open
+# bookings, we should make validation an entirely separate module/step.
+def validate_one_open_booking(people: List[entities.Person]) -> None:
+    for person in people:
+        open_bookings = [booking for booking in person.bookings if
+                         not booking.release_date]
+        if len(open_bookings) > 1:
+            raise DataValidationError(
+                'Multiple open bookings found for person: ', person)
+
+
 def write(ingest_info, metadata):
     """
     If in prod or if 'PERSIST_LOCALLY' is set to true, persist each person in
@@ -149,7 +159,12 @@ def write(ingest_info, metadata):
              monitoring.TagKey.SHOULD_PERSIST: _should_persist()}
     with monitoring.measurements(mtags) as measurements:
         people = converter.convert(ingest_info, metadata)
-        logging.info('Successfully converted proto(logging max 4 people):')
+        validate_one_open_booking(people)
+        logging.info(
+            'Successfully converted and validated proto with %d people.'
+            '(logging max %d people):',
+            len(people), MAX_PEOPLE_TO_LOG)
+
         loop_count = min(len(people), MAX_PEOPLE_TO_LOG)
         for i in range(loop_count):
             logging.info(people[i])
