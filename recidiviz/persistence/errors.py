@@ -23,3 +23,7 @@ class PersistenceError(Exception):
 
 class EntityMatchingError(Exception):
     """Raised when an error with entity matching is encountered."""
+
+
+class DataValidationError(Exception):
+    """Raised when an assumption about incoming data is violated"""
