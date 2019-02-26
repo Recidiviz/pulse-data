@@ -304,7 +304,9 @@ class HtmlDataExtractor(DataExtractor):
         grand_parent = parent.getparent()
         # If |cell| is inside a <thead>, the |next_row| is inside a <tbody>.
         if grand_parent is not None and grand_parent.tag == 'thead':
-            next_row = grand_parent.getnext()[0]
+            tbody = grand_parent.getnext()
+            if tbody:
+                next_row = next(tbody.iterchildren(), None)
 
         while next_row is not None:
             if next_row.tag == 'tr' and index < len(next_row):
