@@ -238,7 +238,7 @@ class Person(Base, DatabaseEntity, _PersonSharedColumns):
     birthdate = Column(Date, index=True)
     birthdate_inferred_from_age = Column(Boolean)
 
-    bookings = relationship('Booking', back_populates='person', lazy='joined')
+    bookings = relationship('Booking', lazy='joined')
 
 
 class PersonHistory(Base, DatabaseEntity, _PersonSharedColumns):
@@ -293,12 +293,9 @@ class Booking(Base, DatabaseEntity, _BookingSharedColumns):
     person_id = Column(Integer, ForeignKey('person.person_id'), nullable=False)
     last_seen_time = Column(DateTime, nullable=False)
 
-    person = relationship('Person', back_populates='bookings')
-
-    holds = relationship('Hold', back_populates='booking', lazy='joined')
-    arrest = relationship('Arrest', uselist=False, back_populates='booking',
-                          lazy='joined')
-    charges = relationship('Charge', back_populates='booking', lazy='joined')
+    holds = relationship('Hold', lazy='joined')
+    arrest = relationship('Arrest', uselist=False, lazy='joined')
+    charges = relationship('Charge', lazy='joined')
 
 
 class BookingHistory(Base, DatabaseEntity, _BookingSharedColumns):
@@ -338,8 +335,6 @@ class Hold(Base, DatabaseEntity, _HoldSharedColumns):
     hold_id = Column(Integer, primary_key=True)
     booking_id = Column(
         Integer, ForeignKey('booking.booking_id'), nullable=False)
-
-    booking = relationship('Booking', back_populates='holds')
 
 
 class HoldHistory(Base, DatabaseEntity, _HoldSharedColumns):
@@ -381,8 +376,6 @@ class Arrest(Base, DatabaseEntity, _ArrestSharedColumns):
     arrest_id = Column(Integer, primary_key=True)
     booking_id = Column(
         Integer, ForeignKey('booking.booking_id'), nullable=False)
-
-    booking = relationship('Booking', back_populates='arrest')
 
 
 class ArrestHistory(Base, DatabaseEntity, _ArrestSharedColumns):
@@ -430,8 +423,6 @@ class Bond(Base, DatabaseEntity, _BondSharedColumns):
     # redundant relationships.
     booking_id = Column(
         Integer, ForeignKey('booking.booking_id'), nullable=False)
-
-    charges = relationship('Charge', back_populates='bond')
 
 
 class BondHistory(Base, DatabaseEntity, _BondSharedColumns):
@@ -486,8 +477,6 @@ class Sentence(Base, DatabaseEntity, _SentenceSharedColumns):
     # avoid redundant relationships.
     booking_id = Column(
         Integer, ForeignKey('booking.booking_id'), nullable=False)
-
-    charges = relationship('Charge', back_populates='sentence')
 
     # Due to the SQLAlchemy requirement that both halves of an association pair
     # be represented by different relationships, a sentence must have two sets
@@ -622,9 +611,8 @@ class Charge(Base, DatabaseEntity, _ChargeSharedColumns):
     sentence_id = Column(
         Integer, ForeignKey('sentence.sentence_id'))
 
-    booking = relationship('Booking', back_populates='charges')
-    bond = relationship('Bond', back_populates='charges', lazy='joined')
-    sentence = relationship('Sentence', back_populates='charges', lazy='joined')
+    bond = relationship('Bond', lazy='joined')
+    sentence = relationship('Sentence', lazy='joined')
 
 
 class ChargeHistory(Base, DatabaseEntity, _ChargeSharedColumns):
