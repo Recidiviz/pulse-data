@@ -6,8 +6,15 @@ __pycache__/
 # C extensions
 *.so
 
-# Emacs backup files
+# Emacs files
 *~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
 
 # Vim backup files
 *.sw[op]
