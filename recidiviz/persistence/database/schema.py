@@ -422,7 +422,13 @@ class Bond(Base, DatabaseEntity, _BondSharedColumns):
     # bonds. It does not have a corresponding SQLAlchemy relationship, to avoid
     # redundant relationships.
     booking_id = Column(
-        Integer, ForeignKey('booking.booking_id'), nullable=False)
+        Integer,
+        # Because this key does not correspond to a SQLAlchemy relationship, it
+        # needs to be manually set. To avoid raising an error during any
+        # transient invalid states during processing, the constraint must be
+        # deferred to only be checked at commit time.
+        ForeignKey('booking.booking_id', deferrable=True, initially='DEFERRED'),
+        nullable=False)
 
 
 class BondHistory(Base, DatabaseEntity, _BondSharedColumns):
@@ -476,7 +482,13 @@ class Sentence(Base, DatabaseEntity, _SentenceSharedColumns):
     # sentences. It does not have a corresponding SQLAlchemy relationship, to
     # avoid redundant relationships.
     booking_id = Column(
-        Integer, ForeignKey('booking.booking_id'), nullable=False)
+        Integer,
+        # Because this key does not correspond to a SQLAlchemy relationship, it
+        # needs to be manually set. To avoid raising an error during any
+        # transient invalid states during processing, the constraint must be
+        # deferred to only be checked at commit time.
+        ForeignKey('booking.booking_id', deferrable=True, initially='DEFERRED'),
+        nullable=False)
 
     # Due to the SQLAlchemy requirement that both halves of an association pair
     # be represented by different relationships, a sentence must have two sets
