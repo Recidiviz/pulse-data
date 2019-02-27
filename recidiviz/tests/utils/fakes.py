@@ -32,5 +32,12 @@ def use_in_memory_sqlite_database() -> None:
     3. Bind the global SessionMaker to the new fake database engine
     """
     recidiviz.db_engine = sqlalchemy.create_engine('sqlite:///:memory:')
+    sqlalchemy.event.listen(
+        recidiviz.db_engine, 'connect', _enforce_foreign_key_constraints)
     Base.metadata.create_all(recidiviz.db_engine)
     Session.configure(bind=recidiviz.db_engine)
+
+
+def _enforce_foreign_key_constraints(connection, _) -> None:
+    """Configures SQLite to enforce foreign key constraints"""
+    connection.execute('PRAGMA foreign_keys = ON;')
