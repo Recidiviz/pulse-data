@@ -54,7 +54,7 @@ deploy:
     keyfile: client-secret-staging.json
     project: recidiviz-staging
     on:
-      condition: $TRAVIS_TAG =~ ^v[0-9]+\.[0-9]+\.[0-9]+
+      branch: /^v[0-9]+\.[0-9]+\.[0-9]+$/
     config: queue.yaml
 
   # Deploy full application to staging
@@ -63,7 +63,7 @@ deploy:
     keyfile: client-secret-staging.json
     project: recidiviz-staging
     on:
-      condition: $TRAVIS_TAG =~ ^v[0-9]+\.[0-9]+\.[0-9]+
+      branch: /^v[0-9]+\.[0-9]+\.[0-9]+$/
     config: staging.yaml
 
   # Deploy cron.yaml to staging
@@ -71,7 +71,7 @@ deploy:
     keyfile: client-secret-staging.json
     project: recidiviz-staging
     on:
-      condition: $TRAVIS_TAG =~ ^v[0-9]+\.[0-9]+\.[0-9]+
+      branch: /^v[0-9]+\.[0-9]+\.[0-9]+$/
     config: cron.yaml
 
 after_script:
