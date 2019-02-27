@@ -25,7 +25,7 @@ from recidiviz.ingest.scrape.task_params import ScrapedData, Task
 
 class ${class_name}(BaseScraper):
     """Scraper implementation for $region."""
-    def __init__(self, mapping_filepath=None):
+    def __init__(self):
         super(${class_name}, self).__init__('$region')
 
     def populate_data(self, content, task: Task,
