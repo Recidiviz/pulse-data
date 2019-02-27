@@ -95,6 +95,8 @@ class TestDatabase(TestCase):
 
         session = Session()
         session.add(person)
+        session.add(person_resolved_booking)
+        session.add(person_most_recent_scrape)
         session.add(person_wrong_region)
         session.add(open_booking_before_last_scrape)
         session.add(open_booking_incorrect_region)
@@ -295,6 +297,7 @@ class TestDatabase(TestCase):
         existing_booking.charges = [existing_charge]
 
         arrange_session.add(existing_person)
+        arrange_session.flush()
         # Snapshots must be added separately, as they are not included in ORM
         # relationships
         arrange_session.add(existing_person_snapshot)
@@ -415,6 +418,7 @@ class TestDatabase(TestCase):
         existing_person.bookings = [existing_booking]
 
         arrange_session.add(existing_person)
+        arrange_session.flush()
         # Snapshots must be added separately, as they are not included in ORM
         # relationships
         arrange_session.add(existing_person_snapshot)
