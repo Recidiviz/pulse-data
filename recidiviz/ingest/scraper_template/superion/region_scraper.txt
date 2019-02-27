@@ -22,5 +22,5 @@ from recidiviz.ingest.scrape.vendors.superion.superion_scraper import \
 
 class ${class_name}Scraper(SuperionScraper):
     """Scraper implementation for $region."""
-    def __init__(self, mapping_filepath=None):
+    def __init__(self):
         super(${class_name}Scraper, self).__init__('$region')
