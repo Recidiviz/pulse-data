@@ -20,8 +20,8 @@ import datetime
 from copy import deepcopy
 from unittest import TestCase
 
-import pandas as pd
 from more_itertools import one
+import pandas as pd
 from sqlalchemy import func
 
 from recidiviz import Session
@@ -622,6 +622,58 @@ class TestDatabase(TestCase):
 
         assert_session.commit()
         assert_session.close()
+
+    def test_addBondToExistingBooking_shouldSetBookingIdOnBond(self):
+        arrange_session = Session()
+
+        person = entities.Person.new_with_defaults(
+            region=_REGION, race=Race.OTHER)
+        booking = entities.Booking.new_with_defaults(
+            custody_status=CustodyStatus.IN_CUSTODY,
+            last_seen_time=_LAST_SEEN_TIME)
+        person.bookings = [booking]
+        charge = entities.Charge.new_with_defaults(
+            status=ChargeStatus.PENDING)
+        booking.charges = [charge]
+
+        persisted_person = database.write_person(
+            arrange_session, person, IngestMetadata(
+                "default_region",
+                datetime.datetime(year=2020, month=7, day=6),
+                {}))
+        arrange_session.commit()
+        persisted_person_id = persisted_person.person_id
+        persisted_booking_id = persisted_person.bookings[0].booking_id
+        arrange_session.close()
+
+        act_session = Session()
+        person_query = act_session.query(Person) \
+            .filter(Person.person_id == persisted_person_id)
+        fetched_person = database_utils.convert(person_query.first())
+        new_bond = entities.Bond.new_with_defaults(
+            status=BondStatus.UNKNOWN_FOUND_IN_SOURCE)
+        fetched_person.bookings[0].charges[0].bond = new_bond
+        database.write_person(
+            act_session, fetched_person, IngestMetadata(
+                "default_region",
+                datetime.datetime(year=2020, month=7, day=7),
+                {}))
+        act_session.commit()
+        act_session.close()
+
+        assert_session = Session()
+
+        assert_person_query = assert_session.query(Person) \
+            .filter(Person.person_id == persisted_person_id)
+        final_fetched_person = database_utils.convert(
+            assert_person_query.first())
+        self.assertEqual(
+            final_fetched_person.bookings[0].charges[0].bond.booking_id,
+            persisted_booking_id)
+
+        assert_session.commit()
+        assert_session.close()
+
 
     def testWriteDf(self):
         # Arrange
