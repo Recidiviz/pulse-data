@@ -19,13 +19,8 @@ install:
   - docker build -t recidiviz-image . --cache-from recidiviz-image:latest --build-arg DEV_MODE=True
 
 before_script:
-  # Finally, run our docker application
+  # Run our docker application so we can `exec` our tests against it
   - docker run --name recidiviz -d -t recidiviz-image
-
-  # Start gcloud emulators (eg. fake datastore, fake pubsub)
-  # Note: Exec docker with `-d` (detached) to ensure gcloud emulators stay running after the docker command finishes
-  - docker exec -d recidiviz sh -c 'gcloud beta emulators datastore start --no-store-on-disk --consistency 1.0 --project test-project > ds_emulator.out 2> ds_emulator.err'
-  - docker exec -d recidiviz sh -c 'gcloud beta emulators pubsub start --project test-project > ps_emulator.out 2> ps_emulator.err'
 
 script:
   # Order test commands with fastest first to ensure we fail fast

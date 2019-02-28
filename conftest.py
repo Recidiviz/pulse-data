@@ -16,9 +16,12 @@
 # =============================================================================
 
 """Custom configuration for how pytest should run."""
-
-
 import os
+import shlex
+import signal
+import subprocess
+from time import sleep
+from typing import Tuple
 
 import pytest
 import yaml
@@ -48,8 +51,10 @@ def pytest_runtest_setup(item):
 
 
 # TODO(263): return the datastore client from this fixture
-@pytest.fixture(scope='class')
+@pytest.fixture(scope='session')
 def emulator(request):
+    datastore_emulator, pubsub_emulator = _start_emulators()
+
     # These environment variables can only be set while these tests are
     # running as they also impact ndb/testbed behavior
     prior_environs = write_emulator_environs()
@@ -59,6 +64,9 @@ def emulator(request):
     pubsub_helper.clear_subscriber()
 
     def cleanup():
+        os.killpg(datastore_emulator.pid, signal.SIGTERM)
+        os.killpg(pubsub_emulator.pid, signal.SIGTERM)
+
         restore_environs(prior_environs)
         sessions.clear_ds()
         secrets.clear_ds()
@@ -68,9 +76,33 @@ def emulator(request):
     request.addfinalizer(cleanup)
 
 
-def write_emulator_environs():
-    old_environs = {}
+def _start_emulators() -> Tuple[subprocess.Popen, subprocess.Popen]:
+    """Start gcloud datastore and pubsub emulators."""
+    # Create a new process group for each subprocess to enable killing each
+    # subprocess and their subprocesses without killing ourselves
+    preexec_fn = os.setsid
 
+    datastore_emulator = subprocess.Popen(
+        shlex.split('gcloud beta emulators datastore start --no-store-on-disk '
+                    '--consistency=1.0 --project=test-project'),
+        preexec_fn=preexec_fn)
+    pubsub_emulator = subprocess.Popen(
+        shlex.split('gcloud beta emulators pubsub start '
+                    '--project=test-project'),
+        preexec_fn=preexec_fn)
+
+    # Sleep to ensure emulators successfully start
+    sleep(5)
+
+    if datastore_emulator.poll() or pubsub_emulator.poll():
+        os.killpg(datastore_emulator.pid, signal.SIGTERM)
+        os.killpg(pubsub_emulator.pid, signal.SIGTERM)
+        raise Exception('Failed to start gcloud emulators!')
+
+    return datastore_emulator, pubsub_emulator
+
+
+def write_emulator_environs():
     # Note: If multiple emulator environments contain the same key, the last one
     # wins
     emulator_names = ['datastore', 'pubsub']
