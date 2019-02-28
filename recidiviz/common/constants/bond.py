@@ -59,6 +59,7 @@ class BondStatus(EntityEnum, metaclass=EntityEnumMeta):
 # persistence/converter/converter_utils
 BOND_TYPE_MAP = {
     '10 BOND': BondType.PARTIAL_CASH,
+    'BAIL DENIED': BondType.NO_BOND,
     'BOND DENIED': BondType.NO_BOND,
     'CASH': BondType.CASH,
     'CASH BOND': BondType.CASH,
