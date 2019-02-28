@@ -86,7 +86,29 @@ TODO(garciaz): work with rasmi@ and arian487@ on how this should be timed with c
 
 6. Apply the migration to prod by running `migrate-prod-to-head`. Run `readonly-prod-psql` to verify that the outcome of the migration was successful.
 
-#### Troubleshooting Alembic version issues
+#### Migration troubleshooting
+
+##### Re-using existing enums for new columns
+
+If you generate a migration that adds a new column that should use an existing enum type, Alembic by default will attempt to re-create that existing type, which will cause an error during migration.
+
+To avoid this, you need to update the migration to ensure Alembic knows to re-use the existing type:
+
+Import the `postgresql` dialect, since the migration must reference a PostgreSQL enum type.
+
+```python
+from sqlalchemy.dialects import postgresql
+```
+
+Then in the `sa.Column` constructor for the relevant column, change `sa.Enum` to `postgresql.ENUM` and add `create_type=False` to the enum constructor, e.g.:
+
+```python
+sa.Column(
+    'some_column',
+    postgresql.ENUM('VALUE_A', 'VALUE_B', create_type=False, name='enum_name'))
+```
+
+##### Alembic version issues
 
 Alembic automatically manages a table called `alembic_version`. This table contains a single row containing the hash ID of the most recent migration run against the database. When you attempt to autogenerate or run a migration, if alembic does not see a migration file corresponding to this hash in the `versions` folder, the attempted action will fail.
 
@@ -114,7 +136,23 @@ This process can be used to get `dev-data` back into sync with `prod-data` and t
 
 5. Manually overwrite the `alembic_version` value again, to undo the hash update caused by running the local migration.
 
-### Setting up the VM
+## Restoring backups
+
+Cloud SQL automatically saves backups of all database instances. To restore the database to an earlier state in the case of a major error, visit the "Backups" tab for the `prod-data` instance on GCP, select a backup, and select "Restore". This will revert the database to its state at the time of that backup.
+
+## Manual intervention
+
+In the (extremely rare) case where manual operations need to be performed directly on `prod-data` (which you shouldn't do), you can run the below command (but please don't) on `prod-data-client` to access the database with full permissions:
+
+```bash
+psql "sslmode=verify-ca sslrootcert=$SERVER_CA_PATH sslcert=$CLIENT_CERT_PATH \
+sslkey=$CLIENT_KEY_PATH hostaddr=$PROD_DATA_IP user=$PROD_DATA_MIGRATION_USER \
+dbname=$PROD_DATA_DB_NAME"
+```
+
+The `dev-psql` command always gives full permissions on `dev-data`, so manual operations there can be done freely.
+
+## Setting up the VM
 
 If a new `prod-data-client` VM needs to be created, follow the below process:
 
