@@ -102,6 +102,7 @@ class Region:
         return self.shared_queue if self.shared_queue \
             else '{}-scraper'.format(self.region_code.replace('_', '-'))
 
+
 # Cache of the `Region` objects.
 REGIONS: Dict[str, 'Region'] = {}
 def get_region(region_code: str) -> Region:
@@ -114,6 +115,7 @@ def get_region(region_code: str) -> Region:
 
 BASE_REGION_PATH = 'recidiviz/ingest/scrape/regions'
 MANIFEST_NAME = 'manifest.yaml'
+
 
 def get_region_manifest(region_code: str) -> Dict[str, Any]:
     """Gets manifest for a specific region
