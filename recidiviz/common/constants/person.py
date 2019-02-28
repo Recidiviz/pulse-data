@@ -109,6 +109,7 @@ _RACE_MAP = {
     'WHITE': Race.WHITE,
     'WHITE EURP N AFR MID EAS': Race.WHITE,
     'WHITE EURP N AFR': Race.WHITE,
+    'WHITE OR HISPANIC': Race.WHITE,
 }
 
 # MappableEnum.parse will strip punctuation and separate tokens with a single
