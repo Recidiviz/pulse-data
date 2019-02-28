@@ -28,6 +28,7 @@ Also accepts the following optional arguments:
   - vendor: create a vendor scraper. Available vendors:
     - `brooks_jeffrey`
     - `jailtracker`
+    - `smart_cop`
     - `superion`
 
 If the flag -tests_only is set, will only create test files.
@@ -133,7 +134,10 @@ if __name__ == '__main__':
         parser.add_argument('--' + optional_arg)
     parser.add_argument('--vendor', required=False,
                         help='Create a vendor scraper.',
-                        choices=['brooks_jeffrey', 'jailtracker', 'superion'])
+                        choices=['brooks_jeffrey',
+                                 'jailtracker',
+                                 'smart_cop',
+                                 'superion'])
     parser.add_argument('-tests_only', required=False, action='store_true',
                         help='If set, only create test files.')
     args = parser.parse_args()
