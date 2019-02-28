@@ -55,6 +55,7 @@ protobuf = "*"
 "psycopg2" = "*"
 cryptography = "*"
 xlrd = "*"
+grequests = "*"
 
 [requires]
 python_version = "3.7"
