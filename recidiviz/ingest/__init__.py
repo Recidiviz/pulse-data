@@ -16,7 +16,6 @@
 # =============================================================================
 
 """The ingest portion of the Recidiviz data platform.
-
 This includes infrastructure, logic, and models for ingesting, validating,
 normalizing, and storing records ingested from various criminal justice data
 sources.
