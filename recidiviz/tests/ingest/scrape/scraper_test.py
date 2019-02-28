@@ -90,8 +90,9 @@ class TestStartScrape:
         }
 
         mock_create_task.assert_called_with(
-            url=scraper.scraper_work_url,
+            region_code=region,
             queue_name=queue_name,
+            url=scraper.scraper_work_url,
             body=request_body)
 
     @patch('recidiviz.ingest.scrape.scraper.datetime')
@@ -130,8 +131,9 @@ class TestStartScrape:
         }
 
         mock_create_task.assert_called_with(
-            url=scraper.scraper_work_url,
+            region_code=region,
             queue_name=queue_name,
+            url=scraper.scraper_work_url,
             body=request_body)
 
     @patch("recidiviz.ingest.scrape.sessions.end_session")
@@ -281,8 +283,9 @@ class TestResumeScrape:
         }
 
         mock_create_task.assert_called_with(
-            url=scraper.scraper_work_url,
+            region_code=region,
             queue_name=queue_name,
+            url=scraper.scraper_work_url,
             body=request_body)
 
     @patch("recidiviz.ingest.scrape.sessions.get_recent_sessions")
@@ -356,8 +359,9 @@ class TestResumeScrape:
         }
 
         mock_create_task.assert_called_with(
-            url=scraper.scraper_work_url,
+            region_code=region,
             queue_name=queue_name,
+            url=scraper.scraper_work_url,
             body=request_body)
 
     @patch("recidiviz.ingest.scrape.sessions.end_session")

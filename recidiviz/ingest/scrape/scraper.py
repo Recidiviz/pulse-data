@@ -302,8 +302,9 @@ class Scraper(metaclass=abc.ABCMeta):
             The content if successful, -1 if fails.
         """
         queues.create_task(
-            url=self.scraper_work_url,
+            region_code=self.get_region().region_code,
             queue_name=self.get_region().get_queue_name(),
+            url=self.scraper_work_url,
             body={
                 'region': self.get_region().region_code,
                 'task': task_name,
