@@ -196,18 +196,18 @@ def _set_dummy_booking_ids(root_people: List[Person]) -> None:
     """Horrible hack to allow flushing new bookings. If the booking is new, it
     won't have a primary key until it is flushed. However, that flush will fail
     if the booking has child bonds or sentences, which require the booking_id
-    column to be set. To get around this, temporarily set a dummy value on the
-    bonds and sentences of new bookings, to be overwritten after the flush
-    generates the booking ID
+    column to be set. To get around this, temporarily set a dummy value on all
+    bonds and sentences without booking IDs, to be overwritten after the flush
+    ensures all bookings have IDs
     """
     for person in root_people:
         for booking in person.bookings:
-            if booking.booking_id is None:
-                for charge in booking.charges:
-                    if charge.bond is not None:
-                        charge.bond.booking_id = _DUMMY_BOOKING_ID
-                    if charge.sentence is not None:
-                        charge.sentence.booking_id = _DUMMY_BOOKING_ID
+            for charge in booking.charges:
+                if charge.bond is not None and charge.bond.booking_id is None:
+                    charge.bond.booking_id = _DUMMY_BOOKING_ID
+                if charge.sentence is not None and \
+                        charge.sentence.booking_id is None:
+                    charge.sentence.booking_id = _DUMMY_BOOKING_ID
 
 
 def _overwrite_dummy_booking_ids(root_people: List[Person]) -> None:
