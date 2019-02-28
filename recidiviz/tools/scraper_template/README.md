@@ -1,9 +1,6 @@
 Creating a Scraper
 ==================
-Before doing anything, setup your environment by running `pipenv install --dev` in the top level directory.
-Enter your environment with `pipenv shell`. Finally, test that your system is all setup for scraper
-development by running an existing scraper using, say
-`python -m recidiviz.tools.run_scraper --region us_pa_greene`.
+Before doing anything, set up your environment according to [the top-level README](../../../README.md).
 
 Next you'll be ready to create the scraper.
 

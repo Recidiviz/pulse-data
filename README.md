@@ -63,6 +63,8 @@ On Ubuntu 18.04, you can install `python3.7` with:
 apt update -y && apt install -y python3.7-dev python3-pip
 ```
 
+You do not need to change your default python version, as `pipenv` will look for 3.7.
+
 Upgrade your `pip` to the latest version:
 ```
 pip install -U pip
