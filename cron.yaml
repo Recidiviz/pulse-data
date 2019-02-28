@@ -79,7 +79,6 @@ cron:
       min_backoff_seconds: 2.5
       max_doublings: 5
       job_age_limit: 9h
-
   - description: Run texas aggregate report
     url: /scrape_aggregate_reports/scrape_state?state=texas
     schedule: every day 09:00
@@ -133,4 +132,3 @@ cron:
       min_backoff_seconds: 2.5
       max_doublings: 5
       job_age_limit: 9h
-
