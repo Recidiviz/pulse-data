@@ -789,7 +789,7 @@ class HiFacilityAggregate(Base, _AggregateTableMixin):
 
 class KyFacilityAggregate(Base, _AggregateTableMixin):
     """KY state-provided aggregate statistics."""
-    __tablename__ = 'ky_county_aggregate'
+    __tablename__ = 'ky_facility_aggregate'
     __table_args__ = (
         UniqueConstraint(
             'fips', 'facility_name', 'report_date', 'report_granularity'
