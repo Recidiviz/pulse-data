@@ -68,23 +68,40 @@ class TestInferRelease(TestCase):
     def setup_method(self, _test_method):
         self.client = app.test_client()
 
-    @patch("recidiviz.persistence.persistence.infer_release_on_open_bookings")
-    @patch("recidiviz.utils.regions.get_region")
-    @patch("recidiviz.utils.regions.get_supported_region_codes")
-    @patch("recidiviz.ingest.scrape.sessions.get_most_recent_completed_session")
-    def test_infer_release(
-            self, mock_get_most_recent_session, mock_supported_regions,
-            mock_region, mock_infer_release):
+    @patch("recidiviz.ingest.scrape.infer_release._queue_region_tasks")
+    @patch("recidiviz.ingest.scrape.infer_release.validate_regions")
+    @patch("recidiviz.ingest.scrape.infer_release.get_region")
+    def test_infer_release_all(
+            self, mock_get_region, mock_validate_regions, mock_queue_tasks):
         headers = {'X-Appengine-Cron': "test-cron"}
+        mock_validate_regions.return_value = ['us_ut', 'us_wy', 'us_nc']
+        mock_get_region.side_effect = _REGIONS
+        response = self.client.get('/release?region=all', headers=headers)
+
+        assert response.status_code == 200
+        expected_urls = [
+            'https://recidiviz-123.appspot.com/infer_release/release/us_ut',
+            'https://recidiviz-123.appspot.com/infer_release/release/us_wy',
+        ]
+        mock_queue_tasks.assert_has_calls([call(expected_urls)])
+
+    @patch("recidiviz.persistence.persistence.infer_release_on_open_bookings")
+    @patch("recidiviz.ingest.scrape.sessions.get_most_recent_completed_session")
+    @patch("recidiviz.ingest.scrape.infer_release.validate_regions")
+    @patch("recidiviz.ingest.scrape.infer_release.get_region")
+    def test_infer_release_for_regions(
+            self, mock_get_region, mock_validate_regions,
+            mock_get_most_recent_session,
+            mock_infer_release):
+        headers = {'X-Appengine-Cron': "test-cron"}
+        mock_get_region.side_effect = [_REGIONS[0]]
+        mock_validate_regions.return_value = ['us_ut']
         time = datetime(2014, 8, 31)
-        mock_supported_regions.return_value = [region.region_code
-                                               for region in _REGIONS]
-        mock_region.side_effect = _REGIONS
         mock_get_most_recent_session.return_value = \
             ScrapeSession.new(key=None, start=time)
 
-        response = self.client.get('/release', headers=headers)
+        response = self.client.get('/release?region=us_ut&region=us_wy',
+                                   headers=headers)
         assert response.status_code == 200
         mock_infer_release.assert_has_calls(
-            [call('us_ut', time, CustodyStatus.INFERRED_RELEASE),
-             call('us_wy', time, CustodyStatus.UNKNOWN_REMOVED_FROM_SOURCE)])
+            [call('us_ut', time, CustodyStatus.INFERRED_RELEASE)])
