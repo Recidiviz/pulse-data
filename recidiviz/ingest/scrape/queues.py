@@ -18,6 +18,7 @@
 """Cloud Tasks queue helper functions."""
 
 import json
+import uuid
 
 from google.cloud import tasks_v2beta3
 
@@ -51,6 +52,20 @@ def format_queue_path(queue_name):
     return full_queue_path
 
 
+def format_task_path(queue_name: str, region_code: str, task_id: str):
+    """Creates a task path out of the necessary parts.
+
+    Task path is of the form:
+        '/projects/{project}/locations/{location}'
+        '/queues/{queue}/tasks/{region_code}-{task_id}'
+    """
+    return client().task_path(
+        metadata.project_id(),
+        metadata.region(),
+        queue_name,
+        '{}-{}'.format(region_code, task_id))
+
+
 def purge_queue(queue_name):
     """Purge a queue.
 
@@ -61,7 +76,7 @@ def purge_queue(queue_name):
     client().purge_queue(queue_path)
 
 
-def create_task(url, queue_name, body):
+def create_task(*, region_code, queue_name, url, body):
     """Create a task in a queue.
 
     Args:
@@ -71,6 +86,7 @@ def create_task(url, queue_name, body):
     """
     body_encoded = json.dumps(body).encode()
     task = {
+        'name': format_task_path(queue_name, region_code, uuid.uuid4()),
         'app_engine_http_request': {
             'relative_uri': url,
             'body': body_encoded

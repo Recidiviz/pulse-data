@@ -43,11 +43,15 @@ class QueuesTest(unittest.TestCase):
         params = {'a': 'hello'}
         queue_path = queue_name + '-path'
         mock_client.return_value.queue_path.return_value = queue_path
+        task_path = queue_path + '/us_ny-12345'
+        mock_client.return_value.task_path.return_value = task_path
 
-        queues.create_task(url, queue_name, params)
+        queues.create_task(
+            region_code='us_ny', queue_name=queue_name, url=url, body=params)
 
         body_encoded = json.dumps(params).encode()
         task = {
+            'name': task_path,
             'app_engine_http_request': {
                 'relative_uri': url,
                 'body': body_encoded
@@ -56,8 +60,8 @@ class QueuesTest(unittest.TestCase):
 
         mock_client.return_value.queue_path.assert_called_with(
             metadata.project_id(), metadata.region(), queue_name)
-        mock_client.return_value.create_task.assert_called_with(queue_path,
-                                                                task)
+        mock_client.return_value.create_task.assert_called_with(
+            queue_path, task)
 
 
     @patch('google.cloud.tasks_v2beta3.CloudTasksClient')
