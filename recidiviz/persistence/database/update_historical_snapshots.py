@@ -124,6 +124,11 @@ def _fetch_most_recent_snapshots_for_entity_type(
     snapshot_id_items = session.execute(text(snapshot_ids_query)).fetchall()
     snapshot_ids = [item[0] for item in snapshot_id_items]
 
+    # Removing the below early return will pass in tests but fail in production,
+    # because SQLite allows "IN ()" but Postgres does not
+    if not snapshot_ids:
+        return []
+
     filter_statement = \
         '{historical_table}.{primary_key_column} IN ({ids_list})'.format(
             historical_table=historical_table_name,
