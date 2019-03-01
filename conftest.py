@@ -57,7 +57,7 @@ def emulator(request):
 
     # These environment variables can only be set while these tests are
     # running as they also impact ndb/testbed behavior
-    prior_environs = write_emulator_environs()
+    prior_environs = _write_emulator_environs()
     sessions.clear_ds()
     secrets.clear_ds()
     pubsub_helper.clear_publisher()
@@ -67,7 +67,7 @@ def emulator(request):
         os.killpg(datastore_emulator.pid, signal.SIGTERM)
         os.killpg(pubsub_emulator.pid, signal.SIGTERM)
 
-        restore_environs(prior_environs)
+        _restore_environs(prior_environs)
         sessions.clear_ds()
         secrets.clear_ds()
         pubsub_helper.clear_publisher()
@@ -102,7 +102,7 @@ def _start_emulators() -> Tuple[subprocess.Popen, subprocess.Popen]:
     return datastore_emulator, pubsub_emulator
 
 
-def write_emulator_environs():
+def _write_emulator_environs():
     # Note: If multiple emulator environments contain the same key, the last one
     # wins
     emulator_names = ['datastore', 'pubsub']
@@ -125,7 +125,7 @@ def write_emulator_environs():
     return old_environs
 
 
-def restore_environs(prior_environs):
+def _restore_environs(prior_environs):
     for key, value in prior_environs.items():
         if value:
             os.environ[key] = value
