@@ -22,13 +22,13 @@ preprocess HTML content that may only be accepted in the HTML5 spec.
 
 import abc
 import xml.etree.ElementTree
-from typing import List, Optional
+from typing import Optional
 
-from lxml import html
 import html5lib
+from lxml import html
 
-from recidiviz.ingest.scrape.base_scraper import BaseScraper
 from recidiviz.ingest.models.ingest_info import IngestInfo
+from recidiviz.ingest.scrape.base_scraper import BaseScraper
 from recidiviz.ingest.scrape.task_params import ScrapedData, Task
 
 
@@ -42,10 +42,6 @@ class Html5BaseScraper(BaseScraper):
         html5_etree = html5lib.parse(content_string)
         html5_string = xml.etree.ElementTree.tostring(html5_etree)
         return html.fromstring(html5_string)
-
-    @abc.abstractmethod
-    def get_more_tasks(self, content, task: Task) -> List[Task]:
-        pass
 
     @abc.abstractmethod
     def populate_data(self, content, task: Task,
