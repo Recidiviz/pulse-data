@@ -149,6 +149,18 @@ def _sanitize_hold(hold: entities.Hold) -> entities.Hold:
     return sanitized
 
 
+def is_charge_match_with_children(
+        *, db_entity: entities.Charge, ingested_entity: entities.Charge) \
+        -> bool:
+    sentences_match = is_sentence_match(
+        db_entity=db_entity.sentence, ingested_entity=ingested_entity.sentence)
+    bonds_match = is_bond_match(
+        db_entity=db_entity.bond, ingested_entity=ingested_entity.bond)
+
+    return sentences_match and bonds_match and is_charge_match(
+        db_entity=db_entity, ingested_entity=ingested_entity)
+
+
 # '*' catches positional arguments, making our arguments named and required.
 def is_charge_match(
         *, db_entity: entities.Charge, ingested_entity: entities.Charge) \
@@ -166,14 +178,7 @@ def is_charge_match(
     if db_entity.external_id or ingested_entity.external_id:
         return db_entity.external_id == ingested_entity.external_id
 
-    sentences_match = is_sentence_match(
-        db_entity=db_entity.sentence, ingested_entity=ingested_entity.sentence)
-    bonds_match = is_bond_match(
-        db_entity=db_entity.bond, ingested_entity=ingested_entity.bond)
-
-    return (sentences_match and
-            bonds_match and
-            _sanitize_charge(db_entity) == _sanitize_charge(ingested_entity))
+    return _sanitize_charge(db_entity) == _sanitize_charge(ingested_entity)
 
 
 def _sanitize_charge(charge: entities.Charge) -> entities.Charge:
@@ -184,11 +189,6 @@ def _sanitize_charge(charge: entities.Charge) -> entities.Charge:
     sanitized.next_court_date = None
     sanitized.judge_name = None
     sanitized.charge_notes = None
-
-    if charge.bond:
-        sanitized.bond = _sanitize_bond(charge.bond)
-    if charge.sentence:
-        sanitized.sentence = _sanitize_sentence(charge.sentence)
     return sanitized
 
 
