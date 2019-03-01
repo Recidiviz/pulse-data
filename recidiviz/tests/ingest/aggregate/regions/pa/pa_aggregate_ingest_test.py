@@ -28,7 +28,8 @@ import recidiviz.common.constants.enum_canonical_strings as enum_strings
 from recidiviz import Session
 from recidiviz.ingest.aggregate.regions.pa import pa_aggregate_ingest
 from recidiviz.persistence.database import database
-from recidiviz.persistence.database.schema import PaFacilityPopAggregate
+from recidiviz.persistence.database.schema import PaFacilityPopAggregate, \
+    PaCountyPreSentencedAggregate
 from recidiviz.tests.ingest import fixtures
 from recidiviz.tests.utils import fakes
 
@@ -45,7 +46,7 @@ class TestPaAggregateIngest(TestCase):
     def setup_method(self, _test_method):
         fakes.use_in_memory_sqlite_database()
 
-    def testParse_ParsesHeadAndTail(self):
+    def testParse_Table1_ParsesHeadAndTail(self):
         result = PARSED_RESULT[PaFacilityPopAggregate]
 
         # Assert Head
@@ -80,7 +81,32 @@ class TestPaAggregateIngest(TestCase):
         }, index=range(65, 67))
         assert_frame_equal(result.tail(n=2), expected_tail)
 
-    def testWrite_CalculatesSum(self):
+    def testParse_Table2_ParsesHeadAndTail(self):
+        result = PARSED_RESULT[PaCountyPreSentencedAggregate]
+
+        # Assert Head
+        expected_head = pd.DataFrame({
+            'report_date': [datetime.date(year=2017, month=1, day=31),
+                            datetime.date(year=2017, month=4, day=30)],
+            'county_name': ['Adams', 'Adams'],
+            'pre_sentenced_population': [111., 127.],
+            'fips': [42001, 42001],
+            'report_granularity': 2 * [enum_strings.quarterly_granularity]
+        })
+        assert_frame_equal(result.head(n=2), expected_head)
+
+        # Assert Tail
+        expected_tail = pd.DataFrame({
+            'report_date': [datetime.date(year=2017, month=8, day=31),
+                            datetime.date(year=2017, month=12, day=31)],
+            'county_name': ['York', 'York'],
+            'pre_sentenced_population': [715., 687.],
+            'fips': [42133, 42133],
+            'report_granularity': 2 * [enum_strings.quarterly_granularity]
+        }, index=range(246, 248))
+        assert_frame_equal(result.tail(n=2), expected_tail)
+
+    def testWrite_Table1_CalculatesSums(self):
         # Act
         for table, df in PARSED_RESULT.items():
             database.write_df(table, df)
@@ -93,3 +119,16 @@ class TestPaAggregateIngest(TestCase):
         # Note: This report contains fractional averages
         expected_housed_elsewhere_adp = 1564.0257
         self.assertEqual(result, expected_housed_elsewhere_adp)
+
+    def testWrite_Table2_CalculateSum(self):
+        # Act
+        for table, df in PARSED_RESULT.items():
+            database.write_df(table, df)
+
+        # Assert
+        query = Session().query(
+            func.sum(PaCountyPreSentencedAggregate.pre_sentenced_population))
+        result = one(one(query.all()))
+
+        expected_pretrial_population = 82521
+        self.assertEqual(result, expected_pretrial_population)
