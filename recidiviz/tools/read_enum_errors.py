@@ -1,10 +1,13 @@
 """Parses enum errors from logs.
 
-Run the following to generate an input file:
+Run the following to generate an input from production logs:
 $ gcloud logging read \
 'resource.type="gae_app"
 logName="projects/recidiviz-123/logs/app"
-"EnumParsingError"' --project recidiviz-123 --format json > logs.json
+"EnumParsingError"' --project recidiviz-123 --format json > FILE
+
+Note to look at staging errors replace all 'recidiviz-123's with
+'recidiviz-staging'
 
 Then run this against the file:
 $ python -m recidiviz.tools.read_enum_errors --file FILE [--include-request]
@@ -30,7 +33,7 @@ def enum_errors_from_logs(filename: str) -> Dict[Tuple[str, str, str], Any]:
             line_iter = iter(lines)
             while True:
                 line = next(line_iter)
-                if line.startswith('recidiviz.common.constants.mappable_enum.'
+                if line.startswith('recidiviz.common.constants.entity_enum.'
                                    'EnumParsingError'):
                     enum_type, enum_string = extract_enum_string_type(line)
                 if line.startswith('recidiviz.ingest.scrape.worker.'
@@ -48,10 +51,12 @@ def enum_errors_from_logs(filename: str) -> Dict[Tuple[str, str, str], Any]:
                 errors[error] = request
     return errors
 
+
 def extract_region(line: str) -> str:
     _, text = map(str.strip, line.split(':', 1))
     text = text[text.find('for') + len('for'):].strip()
     return text[:text.find('with')].strip().strip('\'')
+
 
 def extract_enum_string_type(line: str) -> Tuple[str, str]:
     _, text = map(str.strip, line.split(':', 1))
@@ -60,6 +65,7 @@ def extract_enum_string_type(line: str) -> Tuple[str, str]:
     enum_string = text[:text.find(' when building ')].strip()
     enum_type = text.split("'")[-2].strip()
     return enum_type, enum_string
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
