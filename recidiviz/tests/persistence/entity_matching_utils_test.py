@@ -184,24 +184,24 @@ class TestEntityMatchingUtils(TestCase):
         self.assertFalse(entity_matching_utils.is_charge_match(
             db_entity=db_charge, ingested_entity=ingested_charge))
 
-    def test_charge_match(self):
+    def test_charge_match_without_children(self):
         db_charge = entities.Charge.new_with_defaults(
             charge_id=_CHARGE_ID,
             name=_CHARGE_NAME,
             judge_name=_JUDGE_NAME,
-            bond=entities.Bond.new_with_defaults(bond_id=_BOND_ID))
+            bond=entities.Bond.new_with_defaults(bond_type=BondType.NO_BOND))
         ingested_charge = entities.Charge.new_with_defaults(
             charge_id=_CHARGE_ID_OTHER,
             name=_CHARGE_NAME,
             judge_name=_JUDGE_NAME_OTHER,
-            bond=entities.Bond.new_with_defaults(bond_id=_BOND_ID_OTHER))
+            bond=entities.Bond.new_with_defaults(bond_type=BondType.CASH))
         self.assertTrue(entity_matching_utils.is_charge_match(
             db_entity=db_charge, ingested_entity=ingested_charge))
         ingested_charge.name = _CHARGE_NAME_2
         self.assertFalse(entity_matching_utils.is_charge_match(
             db_entity=db_charge, ingested_entity=ingested_charge))
 
-    def test_charge_match_on_children(self):
+    def test_charge_match_with_children(self):
         db_bond = entities.Bond.new_with_defaults(
             bond_id=_BOND_ID, external_id=_EXTERNAL_ID)
         db_bond_another = entities.Bond.new_with_defaults(
@@ -212,10 +212,10 @@ class TestEntityMatchingUtils(TestCase):
         ingested_charge = entities.Charge.new_with_defaults(
             bond=attr.evolve(db_bond, bond_id=None))
 
-        self.assertTrue(entity_matching_utils.is_charge_match(
+        self.assertTrue(entity_matching_utils.is_charge_match_with_children(
             db_entity=db_charge, ingested_entity=ingested_charge))
         ingested_charge.bond = db_bond_another
-        self.assertFalse(entity_matching_utils.is_charge_match(
+        self.assertFalse(entity_matching_utils.is_charge_match_with_children(
             db_entity=db_charge, ingested_entity=ingested_charge))
 
     def test_bond_match_external_ids(self):

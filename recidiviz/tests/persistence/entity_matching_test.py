@@ -411,6 +411,92 @@ class TestEntityMatching(TestCase):
             [expected_matched_charge, expected_new_charge,
              expected_dropped_charge])
 
+    def test_matchCharges_bondRemoved(self):
+        db_bond = entities.Bond.new_with_defaults(bond_id=_ID,
+                                                  status=BondStatus.PENDING)
+        db_charge = entities.Charge.new_with_defaults(charge_id=_ID, name=_NAME,
+                                                      bond=db_bond)
+
+        ingested_charge = attr.evolve(db_charge, charge_id=None, bond=None)
+
+        expected_matched_charge = attr.evolve(
+            ingested_charge, charge_id=db_charge.charge_id)
+
+        db_booking = entities.Booking.new_with_defaults(charges=[db_charge])
+        ingested_booking = entities.Booking.new_with_defaults(
+            charges=[ingested_charge])
+
+        entity_matching.match_charges(
+            db_booking=db_booking, ingested_booking=ingested_booking)
+        self.assertCountEqual(ingested_booking.charges,
+                              [expected_matched_charge])
+
+    def test_matchCharges_disambiguateByChildren(self):
+        db_bond = entities.Bond.new_with_defaults(
+            bond_id=_ID, external_id=_EXTERNAL_ID_ANOTHER,
+            status=BondStatus.PENDING)
+        db_bond_another = entities.Bond.new_with_defaults(
+            bond_id=_ID_ANOTHER, external_id=_EXTERNAL_ID,
+            status=BondStatus.PENDING)
+
+        db_charge = entities.Charge.new_with_defaults(
+            charge_id=_ID, name=_NAME, bond=db_bond)
+        db_charge_another = entities.Charge.new_with_defaults(
+            charge_id=_ID_ANOTHER, name=_NAME, bond=db_bond_another)
+
+        ingested_charge = attr.evolve(
+            db_charge, judge_name=_NAME, charge_id=None,
+            bond=attr.evolve(db_bond, bond_id=None))
+        ingested_charge_another = attr.evolve(
+            db_charge_another, judge_name=_NAME_2, charge_id=None,
+            bond=attr.evolve(db_bond_another, bond_id=None))
+
+        expected_charge = attr.evolve(
+            ingested_charge, charge_id=db_charge.charge_id)
+        expected_charge_another = attr.evolve(
+            ingested_charge_another, charge_id=db_charge_another.charge_id)
+
+        db_booking = entities.Booking.new_with_defaults(
+            charges=[db_charge, db_charge_another])
+        ingested_booking = entities.Booking.new_with_defaults(
+            charges=[ingested_charge_another, ingested_charge])
+
+        entity_matching.match_charges(
+            db_booking=db_booking, ingested_booking=ingested_booking)
+        self.assertCountEqual(
+            ingested_booking.charges,
+            [expected_charge, expected_charge_another])
+
+    def test_matchCharges_matchChargesWithChildrenFirst(self):
+        db_bond = entities.Bond.new_with_defaults(bond_id=_ID,
+                                                  status=BondStatus.PENDING)
+        db_charge = entities.Charge.new_with_defaults(
+            charge_id=_ID_ANOTHER, name=_NAME)
+        db_charge_with_bond = entities.Charge.new_with_defaults(
+            charge_id=_ID, name=_NAME, bond=db_bond)
+
+        ingested_charge = entities.Charge.new_with_defaults(name=_NAME,
+                                                            judge_name=_NAME)
+        ingested_charge_with_bond = entities.Charge.new_with_defaults(
+            name=_NAME, bond=attr.evolve(db_bond, bond_id=None),
+            judge_name=_NAME_2)
+
+        expected_matched_charge = attr.evolve(
+            ingested_charge, charge_id=db_charge.charge_id)
+        expected_charge_with_bond = attr.evolve(
+            ingested_charge_with_bond, charge_id=db_charge_with_bond.charge_id)
+
+        db_booking = entities.Booking.new_with_defaults(
+            charges=[db_charge, db_charge_with_bond])
+        ingested_booking = entities.Booking.new_with_defaults(
+            charges=[ingested_charge_with_bond, ingested_charge])
+
+        entity_matching.match_charges(
+            db_booking=db_booking, ingested_booking=ingested_booking)
+        self.assertCountEqual(
+            ingested_booking.charges,
+            [expected_matched_charge, expected_charge_with_bond])
+
     def test_matchBonds(self):
         db_bond_shared = entities.Bond.new_with_defaults(
             bond_id=_BOND_ID, amount_dollars=12)
