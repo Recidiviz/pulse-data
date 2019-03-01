@@ -40,10 +40,6 @@ def match_entities(
     matching person exists in the database, the primary key is updated on the
     ingested person.
     TODO: document how matches are determined in docstring or README.
-    Args:
-        session: (Session)
-        region: (str)
-        ingested_people: List[entities.Person]
     """
     with_external_ids = []
     without_external_ids = []
@@ -73,9 +69,6 @@ def match_people(
     Attempts to match all people from |ingested_people| with people from the
     |db_people|. For any ingested person, if a matching person exists in
     |db_people|, the primary key is updated on the ingested person.
-    Args:
-        ingested_people: List[entities.Person]
-        db_people: List[entities.Person]
     """
     for db_person in db_people:
         ingested_person = _get_only_match(db_person, ingested_people,
@@ -103,9 +96,6 @@ def match_bookings(
     Attempts to match all bookings on the |ingested_person| with bookings on
     the |db_person|. For any ingested booking, if a matching booking exists on
     |db_person|, the primary key is updated on the ingested booking.
-    Args:
-        ingested_person: (entities.Person)
-        db_person: (entities.Person)
     """
     for db_booking in db_person.bookings:
         ingested_booking = _get_only_match(db_booking, ingested_person.bookings,
@@ -251,9 +241,6 @@ def match_holds(
     |db_booking|, the primary key is updated on the ingested hold. All
     db holds that are not matched to an ingested hold are marked dropped and
     added to the |ingested_booking|.
-    Args:
-        ingested_booking: (entities.Booking)
-        db_booking: (entities.Booking)
     """
     dropped_holds = []
 
@@ -287,6 +274,11 @@ def _drop_hold(hold: entities.Hold):
         hold.status = HoldStatus.INFERRED_DROPPED
 
 
+def _charge_relationship_count(charge: entities.Charge) -> int:
+    """Return the number of children that the supplied |charge| contains"""
+    return sum([bool(charge.bond), bool(charge.sentence)])
+
+
 # TODO(573): what do we do with orphaned bonds/sentences?
 def match_charges(
         *, db_booking: entities.Booking, ingested_booking: entities.Booking):
@@ -296,15 +288,55 @@ def match_charges(
     |db_booking|, the primary key is updated on the ingested charge. All
     db charges that are not matched to an ingested charge are marked dropped and
     added to the |ingested_booking|.
-    Args:
-        ingested_booking: (entities.Booking)
-        db_booking: (entities.Booking)
+
+    Note about charge matching:
+
+    Our matching scheme here is designed to reduce turnover with our charge,
+    sentence, an bond entities (i.e. preferring to update entities rather than
+    replacing old ones).
+
+    If possible, we match db_charges to ingested_charges while considering
+    the equality of their children (bonds/sentences). If we cannot match
+    db_charge while considering its children, we attempt to match it only
+    based on the charge fields. If the db_charge still has no match, it will
+    be marked dropped.
+
+    Because we can match two charges whose children are not equal, we sort our
+    db_charges, attempting to match those with more children before those with
+    fewer or none.
+
+    Examples:
+        1. Two identical charges are in our DB, one with a bond (A) and one
+        without (B). The same data is scraped the next day so that we have
+        corresponding ingested charges C (with a bond) and D (without a bond).
+
+        Because B could match either C or D, we sort our db charges by the
+        number of children, so that we always attempt to match A before B. This
+        ensures A matches to C, and then B matches to D.
+
+        If we attempted to match B before A, B could match to C, causing a new
+        bond to be added to B. Then A would match to D, and its bond would be
+        dropped. This turnover is not desired.
+
+        2. There is one charge in our DB (A) and we scrape the same charge
+        on the website (B), but the ingested charge now has a bond. In this case
+        we'll first try to match B considering the child bond, and when no
+        matches are found, we'll match just considering the charge fields. At
+        this point B matches to A, and A gets a new bond created in the DB.
     """
     dropped_charges = []
-    for db_charge in db_booking.charges:
-        ingested_charge = _get_next_available_match(db_charge,
-                                                    ingested_booking.charges,
-                                                    utils.is_charge_match)
+    db_charges_sorted_by_child_count = sorted(
+        db_booking.charges, key=_charge_relationship_count, reverse=True)
+
+    for db_charge in db_charges_sorted_by_child_count:
+        ingested_charge = _get_next_available_match(
+            db_charge, ingested_booking.charges,
+            utils.is_charge_match_with_children)
+
+        if not ingested_charge:
+            ingested_charge = _get_next_available_match(
+                db_charge, ingested_booking.charges, utils.is_charge_match)
+
         if ingested_charge:
             logging.info('Successfully matched charge with ID %s',
                          db_charge.charge_id)
