@@ -25,14 +25,17 @@ from sqlalchemy.ext.declarative import DeclarativeMeta
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 from recidiviz.ingest.aggregate import aggregate_ingest_utils, fips
-from recidiviz.persistence.database.schema import PaFacilityPopAggregate
+from recidiviz.persistence.database.schema import PaFacilityPopAggregate, \
+    PaCountyPreSentencedAggregate
 
 
 def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
     table_1 = _parse_tab_1(filename)
+    table_2 = _parse_tab_2(filename)
 
     return {
-        PaFacilityPopAggregate: table_1
+        PaFacilityPopAggregate: table_1,
+        PaCountyPreSentencedAggregate: table_2
     }
 
 
@@ -70,11 +73,46 @@ def _parse_tab_1(filename: str) -> pd.DataFrame:
 
     df = df.apply(_to_numeric)
 
-    df['report_date'] = _report_date(filename)
+    df['report_date'] = _report_date_tab_1(filename)
     df = fips.add_column_to_df(df, df['facility_name'], us.states.PA)
     df['report_granularity'] = enum_strings.yearly_granularity
 
     return df.reset_index(drop=True)
+
+
+def _report_date_tab_1(filename):
+    df = pd.read_excel(filename, sheet_name=0, header=None)
+
+    # The first cell contains the date
+    year = int(df[0][0].replace(' Statistics', ''))
+
+    return datetime.date(year=year, month=1, day=1)
+
+
+def _parse_tab_2(filename: str):
+    df = pd.read_excel(filename, sheet_name=1, header=1)
+
+    # Drop Totals footer
+    df = df[:-4]
+
+    # Set index/columns with correct names
+    df = df.rename({df.columns[0]: 'county_name'}, axis='columns')
+    df = df.set_index('county_name')
+    df = df.rename_axis('report_date', axis='columns')
+
+    # Collapse each column into a new row
+    df = df.unstack()
+    df = df.rename('pre_sentenced_population')
+    df = df.reset_index()
+
+    df['county_name'] = df['county_name'].str.rstrip(' ')
+    df['report_date'] = df['report_date'].dt.date
+    df['pre_sentenced_population'] = _to_numeric(df['pre_sentenced_population'])
+
+    df = fips.add_column_to_df(df, df['county_name'], us.states.PA)
+    df['report_granularity'] = enum_strings.quarterly_granularity
+
+    return df
 
 
 def _to_numeric(column):
@@ -89,12 +127,3 @@ def _to_numeric(column):
     column = column.map(lambda cell: NaN if cell == 'N/R' else cell)
 
     return pd.to_numeric(column)
-
-
-def _report_date(filename):
-    df = pd.read_excel(filename, sheet_name=0, header=None)
-
-    # The first cell contains the data
-    year = int(df[0][0].replace(' Statistics', ''))
-
-    return datetime.date(year=year, month=1, day=1)

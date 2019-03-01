@@ -200,6 +200,7 @@ court_type = Enum(enum_strings.court_type_circuit,
 report_granularity = Enum(enum_strings.daily_granularity,
                           enum_strings.weekly_granularity,
                           enum_strings.monthly_granularity,
+                          enum_strings.quarterly_granularity,
                           enum_strings.yearly_granularity,
                           name='report_granularity')
 
@@ -928,3 +929,16 @@ class PaFacilityPopAggregate(Base, _AggregateTableMixin):
     work_release_adp = Column(Integer)
     admissions = Column(Integer)
     discharge = Column(Integer)
+
+
+class PaCountyPreSentencedAggregate(Base, _AggregateTableMixin):
+    """PA state-provided pre-sentenced statistics."""
+    __tablename__ = 'pa_county_pre_sentenced_aggregate'
+    __table_args__ = (
+        UniqueConstraint(
+            'fips', 'report_date', 'report_granularity'
+        ),
+    )
+
+    county_name = Column(Integer)
+    pre_sentenced_population = Column(Integer)
