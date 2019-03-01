@@ -16,7 +16,6 @@
 # =============================================================================
 
 """Tests for ingest/extractor/html_data_extractor.py"""
-
 import os
 import unittest
 
@@ -197,12 +196,6 @@ class HtmlDataExtractorTest(unittest.TestCase):
                             'multiple_people_sometimes_charges.yaml')
         self.assertEqual(expected_info, info)
 
-    def test_bad_lookup(self):
-        """Tests a yaml file with a lookup key that doesn't exist on the
-        page."""
-        with self.assertWarns(UserWarning):
-            self.extract('good_table.html', 'bad_lookup.yaml')
-
     def test_bad_object(self):
         """Tests a yaml file with a db object that doesn't exist."""
         with self.assertRaises(KeyError):
@@ -325,8 +318,7 @@ class HtmlDataExtractorTest(unittest.TestCase):
         person.birthdate = '1/1/1111'
 
         html_contents = html.fromstring('<html><div>DOB: 1/1/1111</div></html>')
-        with self.assertWarns(UserWarning):
-            info = extractor.extract_and_populate_data(html_contents)
+        info = extractor.extract_and_populate_data(html_contents)
 
         self.assertEqual(expected_info, info)
         self.assertFalse(html_contents.cssselect('td'))
@@ -354,8 +346,7 @@ class HtmlDataExtractorTest(unittest.TestCase):
         # The extractor will warn that 'Charge Description' cannot be found.
         # This is necessary because we need a field under multi_key_mappings
         # so that charge is treated as a multi_key class.
-        with self.assertWarns(UserWarning):
-            info = self.extract('no_charges.html', 'charge_multi_key.yaml')
+        info = self.extract('no_charges.html', 'charge_multi_key.yaml')
         self.assertEqual(expected_info, info)
 
     def test_one_to_many(self):
