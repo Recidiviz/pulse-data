@@ -21,7 +21,7 @@ model and returned.
 """
 
 import copy
-import warnings
+import logging
 from collections import defaultdict
 from typing import Optional, Iterator, List, Dict, Set
 
@@ -131,8 +131,7 @@ class HtmlDataExtractor(DataExtractor):
         # If at the end of everything there are some keys we haven't found on
         # page we should complain.
         if needed_keys:
-            # TODO 183: actually have real warning codes
-            warnings.warn("The following keys could not be found: %s" %
+            logging.debug("The following keys could not be found: %s",
                           needed_keys)
         return ingest_info.prune()
 
@@ -305,7 +304,7 @@ class HtmlDataExtractor(DataExtractor):
         # If |cell| is inside a <thead>, the |next_row| is inside a <tbody>.
         if grand_parent is not None and grand_parent.tag == 'thead':
             tbody = grand_parent.getnext()
-            if tbody:
+            if tbody is not None:
                 next_row = next(tbody.iterchildren(), None)
 
         while next_row is not None:
