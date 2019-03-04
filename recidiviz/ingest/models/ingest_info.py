@@ -113,14 +113,14 @@ class Person(IngestObject):
 
     def __init__(
             self, person_id=None, full_name=None, surname=None,
-            given_names=None, middle_names=None, birthdate=None,
-            gender=None, age=None, race=None, ethnicity=None,
-            place_of_residence=None,
-            bookings=None):
+            given_names=None, middle_names=None, name_suffix=None,
+            birthdate=None, gender=None, age=None, race=None, ethnicity=None,
+            place_of_residence=None, bookings=None):
         self.person_id: Optional[str] = person_id
         self.surname: Optional[str] = surname
         self.given_names: Optional[str] = given_names
         self.middle_names: Optional[str] = middle_names
+        self.name_suffix: Optional[str] = name_suffix
         self.full_name: Optional[str] = full_name
         self.birthdate: Optional[str] = birthdate
         self.gender: Optional[str] = gender
