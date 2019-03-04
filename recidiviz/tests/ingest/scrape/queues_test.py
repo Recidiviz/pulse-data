@@ -76,3 +76,24 @@ class QueuesTest(unittest.TestCase):
         mock_client.return_value.queue_path.assert_called_with(
             metadata.project_id(), metadata.region(), queue_name)
         mock_client.return_value.purge_queue.assert_called_with(queue_path)
+
+    @patch('google.cloud.tasks_v2beta3.CloudTasksClient')
+    def test_list_tasks(self, mock_client):
+        queue_name = 'testqueue'
+        queue_path = queue_name + '-path'
+
+        mock_client.return_value.queue_path.return_value = queue_path
+        mock_client.return_value.list_tasks.return_value = [
+            {'name': 'us_ny-123', 'value': '1'},
+            {'name': 'us_pa-456', 'value': '2'},
+            {'name': 'us_ny-789', 'value': '3'}
+        ]
+
+        tasks = queues.list_tasks(region_code='us_ny', queue_name=queue_name)
+
+        assert tasks == [{'name': 'us_ny-123', 'value': '1'},
+                         {'name': 'us_ny-789', 'value': '3'}]
+
+        mock_client.return_value.queue_path.assert_called_with(
+            metadata.project_id(), metadata.region(), queue_name)
+        mock_client.return_value.list_tasks.assert_called_with(queue_path)
