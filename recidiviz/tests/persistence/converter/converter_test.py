@@ -87,6 +87,60 @@ class TestConverter(unittest.TestCase):
 
         self.assertEqual(result, expected_result)
 
+    def testConvert_FullIngestInfo_usingPop(self):
+        # Arrange
+        metadata = IngestMetadata('REGION', _LAST_SEEN_TIME)
+
+        ingest_info = IngestInfo()
+        ingest_info.people.add(person_id='PERSON_ID',
+                               booking_ids=['BOOKING_ID'])
+        ingest_info.bookings.add(booking_id='BOOKING_ID',
+                                 arrest_id='ARREST_ID',
+                                 charge_ids=['CHARGE_ID'])
+        ingest_info.arrests.add(arrest_id='ARREST_ID', agency='PD')
+        ingest_info.charges.add(charge_id='CHARGE_ID', name='DUI',
+                                bond_id='BOND_ID', sentence_id='SENTENCE_ID')
+        ingest_info.bonds.add(bond_id='BOND_ID')
+        ingest_info.sentences.add(sentence_id='SENTENCE_ID', is_life='True')
+
+        # Act
+        ii_converter = converter.Converter(ingest_info, metadata)
+        result = []
+        while not ii_converter.is_complete():
+            result.append(ii_converter.convert_and_pop())
+
+        # Assert
+        expected_result = [Person.new_with_defaults(
+            external_id='PERSON_ID',
+            region='REGION',
+            bookings=[Booking.new_with_defaults(
+                external_id='BOOKING_ID',
+                admission_date=_LAST_SEEN_TIME.date(),
+                admission_date_inferred=True,
+                last_seen_time=_LAST_SEEN_TIME,
+                custody_status=CustodyStatus.UNKNOWN_FOUND_IN_SOURCE,
+                arrest=Arrest.new_with_defaults(
+                    external_id='ARREST_ID',
+                    agency='PD'
+                ),
+                charges=[Charge.new_with_defaults(
+                    external_id='CHARGE_ID',
+                    status=ChargeStatus.UNKNOWN_FOUND_IN_SOURCE,
+                    name='DUI',
+                    bond=Bond.new_with_defaults(
+                        external_id='BOND_ID',
+                        status=BondStatus.UNKNOWN_FOUND_IN_SOURCE
+                    ),
+                    sentence=Sentence.new_with_defaults(
+                        status=SentenceStatus.UNKNOWN_FOUND_IN_SOURCE,
+                        external_id='SENTENCE_ID',
+                        is_life=True
+                    )
+                )]
+            )])]
+
+        self.assertEqual(result, expected_result)
+
     def testConvert_FullIngestInfo_GeneratedIds(self):
         # Arrange
         metadata = IngestMetadata('REGION', _LAST_SEEN_TIME)

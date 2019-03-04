@@ -18,4 +18,16 @@
 
 
 class ScraperError(Exception):
-    """Raised when a scraper runs into an error"""
+    """Raised when a scraper runs into an error."""
+
+
+class ScraperGetMoreTasksError(Exception):
+    """Raised when the get_more_tasks of a scraper fails."""
+
+
+class ScraperPopulateDataError(Exception):
+    """Raised when the populate_data of a scraper fails."""
+
+
+class ScraperFetchError(Exception):
+    """Raised when a transient error occurs in fetching a webpage."""
