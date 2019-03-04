@@ -126,7 +126,14 @@ def get_region_manifest(region_code: str) -> Dict[str, Any]:
     """
     with open(os.path.join(BASE_REGION_PATH, region_code, MANIFEST_NAME)) \
             as region_manifest:
-        return yaml.load(region_manifest)
+        yaml_dict = yaml.load(region_manifest)
+        # TODO(#386): Require jurisdiction_id once supported in codebase
+        try:
+            yaml_dict.pop('jurisdiction_id')
+        except KeyError:
+            pass
+
+        return yaml_dict
 
 
 def get_supported_region_codes(timezone: tzinfo = None) -> Set[str]:
