@@ -64,6 +64,7 @@ class Person(google___protobuf___message___Message):
     place_of_residence = ... # type: typing___Text
     full_name = ... # type: typing___Text
     middle_names = ... # type: typing___Text
+    name_suffix = ... # type: typing___Text
     booking_ids = ... # type: google___protobuf___internal___containers___RepeatedScalarFieldContainer[typing___Text]
 
     def __init__(self,
@@ -78,6 +79,7 @@ class Person(google___protobuf___message___Message):
         place_of_residence : typing___Optional[typing___Text] = None,
         full_name : typing___Optional[typing___Text] = None,
         middle_names : typing___Optional[typing___Text] = None,
+        name_suffix : typing___Optional[typing___Text] = None,
         booking_ids : typing___Optional[typing___Iterable[typing___Text]] = None,
         ) -> None: ...
     @classmethod

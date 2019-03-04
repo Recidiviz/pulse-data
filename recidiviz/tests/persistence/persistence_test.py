@@ -114,7 +114,7 @@ class TestPersistence(TestCase):
 
             # Assert
             assert len(result) == 1
-            assert result[0].full_name == FULL_NAME_1
+            assert result[0].full_name == _format_full_name(FULL_NAME_1)
 
     def test_multipleOpenBookings_raisesDataValidationError(self):
         ingest_info = ii.IngestInfo()
@@ -138,8 +138,8 @@ class TestPersistence(TestCase):
 
         # Assert
         assert len(result) == 2
-        assert result[0].full_name == FULL_NAME_1
-        assert result[1].full_name == FULL_NAME_2
+        assert result[0].full_name == _format_full_name(FULL_NAME_1)
+        assert result[1].full_name == _format_full_name(FULL_NAME_2)
 
     # TODO: test entity matching end to end
 
@@ -151,11 +151,12 @@ class TestPersistence(TestCase):
 
         # Act
         persistence.write(ingest_info, DEFAULT_METADATA)
-        result = database.read_people(Session(), full_name=FULL_NAME_1)
+        result = database.read_people(
+            Session(), full_name=_format_full_name(FULL_NAME_1))
 
         # Assert
         assert len(result) == 1
-        assert result[0].full_name == FULL_NAME_1
+        assert result[0].full_name == _format_full_name(FULL_NAME_1)
         assert result[0].birthdate == BIRTHDATE_1_DATE
 
     # TODO: Rewrite this test to directly test __eq__ between the two People
@@ -224,7 +225,7 @@ class TestPersistence(TestCase):
         # Assert
         assert len(result) == 1
         result_person = result[0]
-        assert result_person.full_name == FULL_NAME_1
+        assert result_person.full_name == _format_full_name(FULL_NAME_1)
 
         assert len(result_person.bookings) == 1
         result_booking = result_person.bookings[0]
@@ -295,7 +296,7 @@ class TestPersistence(TestCase):
             person_id=PERSON_ID,
             external_id=EXTERNAL_PERSON_ID,
             region=REGION_1,
-            full_name=FULL_NAME_1,
+            full_name=_format_full_name(FULL_NAME_1),
             bookings=[expected_booking])
         self.assertEqual([expected_person], database.read_people(Session()))
 
@@ -373,3 +374,6 @@ class TestPersistence(TestCase):
         # Assert
         people = database.read_people(Session())
         self.assertCountEqual(people, [expected_person, person_unmatched])
+
+def _format_full_name(full_name: str) -> str:
+    return '{{"full_name": "{}"}}'.format(full_name)
