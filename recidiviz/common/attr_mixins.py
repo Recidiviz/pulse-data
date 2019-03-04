@@ -18,22 +18,52 @@
 import attr
 
 
-class BuildableAttr:
-    """Abstract base class for Attr objects that can be built with a Builder."""
+class DefaultableAttr:
+    """Mixin to add method to attr class that creates default object"""
 
-    # Consider BuildableAttr abstract and only allow instantiating subclasses
-    # pylint: disable=unused-argument
-    def __new__(cls, *args, **kwargs):
-        if cls is BuildableAttr:
-            raise Exception('Abstract class cannot be instantiated')
+    # DefaultableAttr can only be mixed in with an attr class
+    def __new__(cls, *_args, **_kwargs):
+        if not attr.has(cls):
+            raise Exception('Parent class must be an attr class')
         return super().__new__(cls)
 
-    class BuilderException(Exception):
-        """Exception raised if the Attr object cannot be built."""
+    @classmethod
+    def new_with_defaults(cls, **kwargs):
+        """Create a new object with default values if set, otherwise None.
 
-        def __init__(self, cls, required_fields, fields_with_value):
-            message = _error_message(cls, required_fields, fields_with_value)
-            super().__init__(message)
+        Note: This method should only be used in tests. In prod you should
+        always use the Attr's __init__ or builder which will verify that all
+        fields on the Attr are set.
+
+        Arguments:
+            kwargs: The kwargs to pass to Attr object's __init__, the rest of
+            the attributes are set to their default or None if a default is
+            unspecified.
+        """
+        for field, attribute in attr.fields_dict(cls).items():
+            default = attribute.default
+
+            # Don't set a default if the field is already set
+            if field in kwargs:
+                continue
+
+            # Ignore Factories to allow them to render into a default value
+            if isinstance(default, attr.Factory):
+                continue
+
+            kwargs[field] = None if default is attr.NOTHING else default
+
+        return cls(**kwargs)
+
+
+class BuildableAttr:
+    """Mixin used to make attr object buildable"""
+
+    # BuildableAttr can only be mixed in with an attr class
+    def __new__(cls, *_args, **_kwargs):
+        if not attr.has(cls):
+            raise Exception('Parent class must be an attr class')
+        return super().__new__(cls)
 
     class Builder:
         """Builder used to build the specified |cls| Attr object."""
@@ -72,40 +102,20 @@ class BuildableAttr:
             fields_with_value = fields_provided | fields_with_defaults
 
             if not required_fields == fields_with_value:
-                raise self.cls.BuilderException(
+                raise BuilderException(
                     self.cls, required_fields, fields_with_value)
 
     @classmethod
     def builder(cls):
         return cls.Builder(cls)
 
-    @classmethod
-    def new_with_defaults(cls, **kwargs):
-        """Create a new object with default values if set, otherwise None.
 
-        Note: This method should only be used in tests. In prod you should
-        always use the Attr's __init__ or builder which will verify that all
-        fields on the Attr are set.
+class BuilderException(Exception):
+    """Exception raised if the Attr object cannot be built."""
 
-        Arguments:
-            kwargs: The kwargs to pass to Attr object's __init__, the rest of
-            the attributes are set to their default or None if a default is
-            unspecified.
-        """
-        for field, attribute in attr.fields_dict(cls).items():
-            default = attribute.default
-
-            # Don't set a default if the field is already set
-            if field in kwargs:
-                continue
-
-            # Ignore Factories to allow them to render into a default value
-            if isinstance(default, attr.Factory):
-                continue
-
-            kwargs[field] = None if default is attr.NOTHING else default
-
-        return cls(**kwargs)
+    def __init__(self, cls, required_fields, fields_with_value):
+        message = _error_message(cls, required_fields, fields_with_value)
+        super().__init__(message)
 
 
 def _error_message(cls, required_fields, fields_with_value):

@@ -223,7 +223,7 @@ no-docstring-rgx=__.*__|test.*
 
 # Minimum line length for functions/classes that require docstrings, shorter
 # ones are exempt.
-docstring-min-length=25
+docstring-min-length=30
 
 [DESIGN]
 

@@ -20,13 +20,22 @@ import unittest
 
 import attr
 
-from recidiviz.common.buildable_attr import BuildableAttr
+from recidiviz.common.attr_mixins import BuilderException, BuildableAttr, \
+    DefaultableAttr
 
 
 @attr.s
 class FakeBuildableAttr(BuildableAttr):
     required_field = attr.ib()
     field_with_default = attr.ib(factory=list)
+
+
+@attr.s
+class FakeDefaultableAttr(DefaultableAttr):
+    field = attr.ib()
+    field_another = attr.ib()
+    field_with_default = attr.ib(default=1)
+    factory_field = attr.ib(factory=list)
 
 
 class BuildableAttrTests(unittest.TestCase):
@@ -53,7 +62,7 @@ class BuildableAttrTests(unittest.TestCase):
         subject = FakeBuildableAttr.builder()
 
         # Act + Assert
-        with self.assertRaises(FakeBuildableAttr.BuilderException):
+        with self.assertRaises(BuilderException):
             subject.build()
 
     def testBuild_ExtraField_RaisesException(self):
@@ -63,9 +72,24 @@ class BuildableAttrTests(unittest.TestCase):
         subject.not_a_real_field = "TEST_2"
 
         # Act + Assert
-        with self.assertRaises(FakeBuildableAttr.BuilderException):
+        with self.assertRaises(BuilderException):
             subject.build()
 
     def testInstantiateAbstractBuildableAttr_RaisesException(self):
         with self.assertRaises(Exception):
             BuildableAttr()
+
+    def testNewWithDefaults(self):
+        # Arrange
+        subject = FakeDefaultableAttr.new_with_defaults(field="field")
+
+        # Assert
+        expected_result = FakeDefaultableAttr(
+            field='field', field_another=None, field_with_default=1,
+            factory_field=[])
+
+        self.assertEqual(subject, expected_result)
+
+    def testInstantiateDefaultableAttr_RaisesException(self):
+        with self.assertRaises(Exception):
+            DefaultableAttr()
