@@ -35,7 +35,7 @@ from recidiviz.common.constants.person import PROTECTED_CLASSES
 from recidiviz.common.constants.sentence import SentenceStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.scrape.constants import MAX_PEOPLE_TO_LOG
-from recidiviz.persistence import entity_matching, entities
+from recidiviz.persistence import entity_matching, entities, persistence_utils
 from recidiviz.persistence.converter import converter
 from recidiviz.persistence.database import database
 from recidiviz.persistence.errors import PersistenceError
@@ -89,6 +89,7 @@ def infer_release_on_open_bookings(region, last_ingest_time, custody_status):
             'Found %s people with bookings that will be inferred released',
             len(people))
         for person in people:
+            persistence_utils.remove_pii_for_person(person)
             _infer_release_date_for_bookings(person.bookings, last_ingest_time,
                                              custody_status)
         database.write_people(session, people, IngestMetadata(
