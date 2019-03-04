@@ -1,5 +1,5 @@
 # Recidiviz - a platform for tracking granular recidivism metrics in real time
-# Copyright (C) 2018 Recidiviz, Inc.
+# Copyright (C) 2019 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -46,14 +46,14 @@ import recidiviz.tests.ingest.scrape.regions
 from recidiviz.utils import regions
 
 
-def populate_file(template_path, target_path, subs, allow_missing_keys=False):
+def populate_file(template_path, target_path, subs):
     with open(template_path) as template:
         template = Template(template.read())
-        contents = template.safe_substitute(subs) if allow_missing_keys \
-                   else template.substitute(subs)
+        contents = template.substitute(subs)
 
     with open(target_path, 'w') as target:
         target.write(contents)
+
 
 def create_scraper_files(subs, vendor: Optional[str]):
     """Creates __init__.py, region_name_scraper.py, and region_name.yaml files
@@ -70,7 +70,7 @@ def create_scraper_files(subs, vendor: Optional[str]):
 
     def create_manifest_yaml(template):
         target = os.path.join(target_dir, 'manifest.yaml')
-        populate_file(template, target, subs, allow_missing_keys=True)
+        populate_file(template, target, subs)
 
     regions_dir = os.path.dirname(recidiviz.ingest.scrape.regions.__file__)
     if not os.path.exists(regions_dir):
@@ -162,8 +162,7 @@ if __name__ == '__main__':
 
     for optional_arg in optional_args:
         arg_value = vars(args)[optional_arg]
-        if arg_value is not None:
-            substitutions[optional_arg] = arg_value
+        substitutions[optional_arg] = arg_value if arg_value is not None else ''
 
     if not args.tests_only:
         create_scraper_files(substitutions, args.vendor)
