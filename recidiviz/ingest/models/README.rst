@@ -40,6 +40,9 @@ The ingest_info object is just a container that holds a list of Person objects. 
 **middle_names**       A person’s middle name(s) or initial.
 
                        Only use this when a middle names or initials are given in a separate field. Use full_name when they are in a single field
+**name_suffix**        A person’s name suffix(s).
+
+                       Only use this when a suffix is given in a separate field. Use full_name when they are in a single field
 **birthdate**          Date the person was born.
 
                        Use this when it is known. When a person’s age but not birthdate is reported, use age instead.

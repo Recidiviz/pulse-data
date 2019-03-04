@@ -52,7 +52,7 @@ class PersonConverterTest(unittest.TestCase):
 
         # Assert
         expected_result = entities.Person.new_with_defaults(
-            full_name='FULL_NAME',
+            full_name='{{"full_name": "{}"}}'.format('FULL_NAME'),
             birthdate=date(year=1999, month=12, day=31),
             birthdate_inferred_from_age=False,
             gender=Gender.MALE,
@@ -79,7 +79,7 @@ class PersonConverterTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             person.copy_fields_to_builder(self.subject, ingest_person, metadata)
 
-    def testParsePerson_WithSurnameAndGivenNames_UsesFullNameAsCsv(self):
+    def testParsePerson_WithSurnameAndGivenNames_UsesFullNameAsJson(self):
         # Arrange
         metadata = IngestMetadata.new_with_defaults()
         ingest_person = ingest_info_pb2.Person(
@@ -93,11 +93,28 @@ class PersonConverterTest(unittest.TestCase):
         result = self.subject.build()
 
         # Assert
-        expected_escaped_surname = '"UNESCAPED,SURNAME""WITH-CHARS"""'
+        expected_full_name = \
+            '{{"given_names": "{}", "middle_names": "{}", "surname": "{}"}}'\
+                .format('GIVEN_NAMES', 'MIDDLE_NAMES',
+                        'UNESCAPED,SURNAME\\"WITH-CHARS\\"')
         expected_result = entities.Person.new_with_defaults(
-            full_name='{},{},{}'.format('GIVEN_NAMES', 'MIDDLE_NAMES',
-                                        expected_escaped_surname),
+            full_name=expected_full_name)
+
+        self.assertEqual(result, expected_result)
+
+    def testParsePerson_NoNames_FullNameIsNone(self):
+        # Arrange
+        metadata = IngestMetadata.new_with_defaults()
+        ingest_person = ingest_info_pb2.Person(
+            person_id='1234'
         )
+
+        # Act
+        person.copy_fields_to_builder(self.subject, ingest_person, metadata)
+        result = self.subject.build()
+
+        # Assert
+        expected_result = entities.Person.new_with_defaults(external_id='1234')
 
         self.assertEqual(result, expected_result)
 

@@ -15,15 +15,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Converts an ingest_info proto Person to a persistence entity."""
-import csv
-import io
+import json
+from typing import Optional
 
-from typing import Optional, List
+import attr
 
-from recidiviz.common.constants.person import Ethnicity, Race, Gender
+from recidiviz.common.constants.person import Ethnicity, Gender, Race
 from recidiviz.persistence.converter import converter_utils
-from recidiviz.persistence.converter.converter_utils import fn, normalize, \
-    parse_date, calculate_birthdate_from_age, parse_external_id
+from recidiviz.persistence.converter.converter_utils import \
+    calculate_birthdate_from_age, fn, normalize, parse_date, parse_external_id
 
 
 def copy_fields_to_builder(person_builder, proto, metadata):
@@ -50,30 +50,45 @@ def copy_fields_to_builder(person_builder, proto, metadata):
 
 def _parse_name(proto) -> Optional[str]:
     """Parses name into a single string."""
-    full_name = fn(normalize, 'full_name', proto)
-    given_names = fn(normalize, 'given_names', proto)
-    middle_names = fn(normalize, 'middle_names', proto)
-    surname = fn(normalize, 'surname', proto)
-
-    if full_name and (given_names or middle_names or surname):
-        raise ValueError('Cannot have full_name and surname/middle/given_names')
-
-    if full_name:
-        return full_name
-    if given_names or middle_names or surname:
-        return _to_csv([given_names, middle_names, surname])
-    return None
+    names = Names(
+        full_name=fn(normalize, 'full_name', proto),
+        given_names=fn(normalize, 'given_names', proto),
+        middle_names=fn(normalize, 'middle_names', proto),
+        surname=fn(normalize, 'surname', proto),
+        name_suffix=fn(normalize, 'name_suffix', proto))
+    return names.combine()
 
 
-def _to_csv(strings: List[str]) -> str:
-    """Convert the provided strings to a CSV string.
+@attr.s(auto_attribs=True, frozen=True)
+class Names():
+    """Holds the various name fields"""
+    full_name: Optional[str]
+    given_names: Optional[str]
+    middle_names: Optional[str]
+    surname: Optional[str]
+    name_suffix: Optional[str]
 
-    Note: We use the csv.writer library to ensure that commas are correctly
-    escaped in the event that a comma exists within a provided string.
-    """
-    string_buffer = io.StringIO()
-    csv.writer(string_buffer).writerow(strings)
-    return string_buffer.getvalue().strip()
+    def __attrs_post_init__(self):
+        if self.full_name and any((self.given_names, self.middle_names,
+                                   self.surname, self.name_suffix)):
+            raise ValueError('Cannot have full_name and surname/middle/'
+                             'given_names/name_suffix')
+
+        if any((self.middle_names, self.name_suffix)) and \
+                not any((self.given_names, self.surname)):
+            raise ValueError('Cannot set only middle_names/name_suffix.')
+
+    def combine(self) -> Optional[str]:
+        """Writes the names out as a json string, skipping fields that are None.
+
+        Note: We don't have any need for parsing these back into their parts,
+        but this gives us other advantages. It handles escaping the names, and
+        allows us to add fields in the future without changing the serialization
+        of existing names.
+        """
+        filled_names = attr.asdict(self, filter=lambda a, v: v is not None)
+        return json.dumps(filled_names, sort_keys=True) \
+               if filled_names else None
 
 
 def _parse_birthdate(proto):

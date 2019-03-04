@@ -41,6 +41,7 @@ message Person {
     optional string place_of_residence = 9;
     optional string full_name = 10;
     optional string middle_names = 11;
+    optional string name_suffix = 13;
 
     repeated string booking_ids = 12;
 }
