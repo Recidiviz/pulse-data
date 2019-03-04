@@ -32,34 +32,62 @@ from recidiviz.persistence.entities import Entity
 from recidiviz.persistence.errors import EntityMatchingError
 
 
-def match_entities(
-        session: Session, region: str, ingested_people: List[entities.Person]):
-    """
-    Finds all people in the given |region| and database |session| and attempts
-    to match them to the |ingested_people|. For any ingested person, if a
-    matching person exists in the database, the primary key is updated on the
-    ingested person.
-    TODO: document how matches are determined in docstring or README.
-    """
-    with_external_ids = []
-    without_external_ids = []
+class EntityMatching:
+    """Class to handle entity matching state."""
+    def __init__(
+            self, session: Session,
+            region: str, ingested_people: List[entities.Person]):
+        """
+        Finds all people in the given |region| and database |session| and
+        attempts to match them to the |ingested_people|. For any ingested
+        person, if a matching person exists in the database, the primary key is
+        updated on the ingested person.
+        TODO: document how matches are determined in docstring or README.
+        """
+        with_external_ids = []
+        without_external_ids = []
+        self.db_people_ext = None
+        self.db_people_no_ext = None
 
-    for ingested_person in ingested_people:
-        if ingested_person.external_id:
-            with_external_ids.append(ingested_person)
+        for ingested_person in ingested_people:
+            if ingested_person.external_id:
+                with_external_ids.append(ingested_person)
+            else:
+                without_external_ids.append(ingested_person)
+
+        if with_external_ids:
+            self.db_people_ext = database.read_people_by_external_ids(
+                session, region, with_external_ids)
+            self.ingested_people_ext = with_external_ids
+        if without_external_ids:
+            self.db_people_no_ext = database.read_people_with_open_bookings(
+                session, region, without_external_ids)
+            self.ingested_people_no_ext = without_external_ids
+
+    def match_and_pop(self):
+        if self.db_people_ext:
+            match_people(
+                db_people=[self.db_people_ext.pop()],
+                ingested_people=self.ingested_people_ext)
         else:
-            without_external_ids.append(ingested_person)
+            match_people(
+                db_people=[self.db_people_no_ext.pop()],
+                ingested_people=self.ingested_people_no_ext)
 
-    if with_external_ids:
-        match_people(
-            db_people=database.read_people_by_external_ids(
-                session, region, with_external_ids),
-            ingested_people=with_external_ids)
-    if without_external_ids:
-        match_people(
-            db_people=database.read_people_with_open_bookings(
-                session, region, without_external_ids),
-            ingested_people=without_external_ids)
+    def match_all(self):
+        if self.db_people_ext:
+            match_people(
+                db_people=self.db_people_ext,
+                ingested_people=self.ingested_people_ext)
+        if self.db_people_no_ext:
+            match_people(
+                db_people=self.db_people_no_ext,
+                ingested_people=self.ingested_people_no_ext)
+
+    def is_complete(self):
+        if self.db_people_ext or self.db_people_no_ext:
+            return False
+        return True
 
 
 def match_people(

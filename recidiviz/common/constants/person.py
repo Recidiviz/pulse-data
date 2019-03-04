@@ -16,6 +16,7 @@
 # =============================================================================
 
 """Constants related to a person entity."""
+
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
@@ -55,6 +56,9 @@ class Ethnicity(EntityEnum, metaclass=EntityEnumMeta):
     @staticmethod
     def _get_default_map():
         return _ETHNICITY_MAP
+
+
+PROTECTED_CLASSES = (Race, Ethnicity, Gender)
 
 
 # MappableEnum.parse will strip punctuation and separate tokens with a single
