@@ -61,7 +61,7 @@ class PersonConverterTest(unittest.TestCase):
             race_raw_text='WHITE',
             ethnicity=Ethnicity.HISPANIC,
             ethnicity_raw_text='HISPANIC',
-            place_of_residence='NNN STREET ZIP',
+            # TODO(769): Note that place_of_residence is not stored
             region='REGION',
         )
 
