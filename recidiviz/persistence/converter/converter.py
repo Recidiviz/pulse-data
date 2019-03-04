@@ -23,7 +23,7 @@ import more_itertools
 
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.ingest.models import ingest_info_pb2
-from recidiviz.persistence import entities
+from recidiviz.persistence import entities, persistence_utils
 from recidiviz.persistence.converter import arrest, sentence, \
     charge, bond, booking, person, hold
 from recidiviz.persistence.converter.converter_utils import fn, \
@@ -84,7 +84,14 @@ class Converter:
 
         person_builder.bookings = converted_bookings
 
-        return person_builder.build()
+        converted_person = person_builder.build()
+
+        # If every booking for the person has a release date, then scrub pii
+        if all(converted_booking.release_date for converted_booking in
+               converted_person.bookings):
+            persistence_utils.remove_pii_for_person(converted_person)
+
+        return converted_person
 
     def _convert_booking(self, ingest_booking):
         """Converts an ingest_info proto Booking to a persistence entity."""

@@ -1,5 +1,5 @@
 # Recidiviz - a platform for tracking granular recidivism metrics in real time
-# Copyright (C) 2018 Recidiviz, Inc.
+# Copyright (C) 2019 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,23 +14,23 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for methods in common_utils.py."""
-import unittest
 
-from recidiviz.common.common_utils import create_generated_id, is_generated_id
+"""Exposes an endpoint to scrape all of the county websites."""
+import datetime
+
+from recidiviz.persistence import entities
 
 
-class CommonUtilsTest(unittest.TestCase):
-    """Tests for common_utils.py."""
+def remove_pii_for_person(person: entities.Person) -> None:
+    """Removes all of the PII for a person
 
-    def test_create_generated_id(self):
-        generated_id = create_generated_id(object())
-        self.assertTrue(generated_id.endswith("_GENERATE"))
-
-    def test_is_generated_id(self):
-        id_str = "id_str_GENERATE"
-        self.assertTrue(is_generated_id(id_str))
-
-    def test_is_not_generated_id(self):
-        id_str = "id_str"
-        self.assertFalse(is_generated_id(id_str))
+    Args:
+        person: (entities.Person) The entity object to scrub.
+    """
+    person.full_name = None
+    if person.birthdate:
+        person.birthdate = datetime.date(
+            year=person.birthdate.year,
+            month=1,
+            day=1,
+        )
