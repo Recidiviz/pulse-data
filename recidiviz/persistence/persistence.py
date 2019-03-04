@@ -19,7 +19,7 @@ import datetime
 import logging
 import os
 from distutils.util import strtobool  # pylint: disable=no-name-in-module
-from typing import List
+from typing import List, Tuple
 
 from opencensus.stats import aggregation
 from opencensus.stats import measure
@@ -29,14 +29,16 @@ from recidiviz import Session
 from recidiviz.common.constants.bond import BondStatus
 from recidiviz.common.constants.booking import CustodyStatus
 from recidiviz.common.constants.charge import ChargeStatus
+from recidiviz.common.constants.entity_enum import EnumParsingError
 from recidiviz.common.constants.hold import HoldStatus
+from recidiviz.common.constants.person import PROTECTED_CLASSES
 from recidiviz.common.constants.sentence import SentenceStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.scrape.constants import MAX_PEOPLE_TO_LOG
 from recidiviz.persistence import entity_matching, entities
 from recidiviz.persistence.converter import converter
 from recidiviz.persistence.database import database
-from recidiviz.persistence.errors import DataValidationError
+from recidiviz.persistence.errors import PersistenceError
 from recidiviz.utils import environment, monitoring
 
 m_people = measure.MeasureInt("persistence/num_people",
@@ -56,6 +58,9 @@ errors_persisted_view = view.View("recidiviz/persistence/num_errors",
                                   m_errors,
                                   aggregation.SumAggregation())
 monitoring.register_views([people_persisted_view, errors_persisted_view])
+
+
+ERROR_THRESHOLD = 0.5
 
 
 def infer_release_on_open_bookings(region, last_ingest_time, custody_status):
@@ -136,15 +141,79 @@ def _should_persist():
                 strtobool((os.environ.get('PERSIST_LOCALLY', 'false'))))
 
 
+# TODO 1094: Consider moving the error counting to the respective converter
+#   and entity matching code.
+
+
+def _convert_and_count_errors(ingest_info, metadata):
+    people = []
+    protected_class_errors = 0
+    enum_parsing_errors = 0
+    ii_converter = converter.Converter(ingest_info, metadata)
+    while not ii_converter.is_complete():
+        try:
+            people.append(ii_converter.convert_and_pop())
+        except EnumParsingError as e:
+            logging.error(str(e))
+            if e.entity_type in PROTECTED_CLASSES:
+                protected_class_errors += 1
+            else:
+                enum_parsing_errors += 1
+        except Exception as e:
+            logging.error(str(e))
+            enum_parsing_errors += 1
+    return people, enum_parsing_errors, protected_class_errors
+
+
+def _entity_match_and_count_errors(session, region, people):
+    entity_matching_errors = 0
+    entity_matcher = entity_matching.EntityMatching(session, region, people)
+    while not entity_matcher.is_complete():
+        try:
+            entity_matcher.match_and_pop()
+        except Exception as e:
+            logging.error(str(e))
+            entity_matching_errors += 1
+    return entity_matching_errors
+
+
+def _abort_or_continue(
+        total_people,
+        enum_parsing_errors=0,
+        entity_matching_errors=0,
+        protected_class_errors=0,
+        data_validation_errors=0):
+    # TODO: finalize the logic in here.
+    if protected_class_errors:
+        raise PersistenceError(
+            'Aborting because there was an error regarding a protected class')
+    if (enum_parsing_errors + entity_matching_errors +
+            data_validation_errors) / total_people >= ERROR_THRESHOLD:
+        raise PersistenceError(
+            'Aborting because we exceeded the error threshold of {} with {} '
+            'enum_parsing errors, {} entity_matching_errors, and {} '
+            'data_validation_errors'.format(ERROR_THRESHOLD,
+                                            enum_parsing_errors,
+                                            entity_matching_errors,
+                                            data_validation_errors))
+
+
 # Note: If we ever want to validate more than the existence of multiple open
 # bookings, we should make validation an entirely separate module/step.
-def validate_one_open_booking(people: List[entities.Person]) -> None:
+def validate_one_open_booking(people: List[entities.Person]) ->\
+        Tuple[List[entities.Person], int]:
+    data_validation_errors = 0
+    validated_people = []
     for person in people:
         open_bookings = [booking for booking in person.bookings if
                          not booking.release_date]
         if len(open_bookings) > 1:
-            raise DataValidationError(
-                'Multiple open bookings found for person: ', person)
+            logging.error(
+                'Multiple open bookings found for person: %s', person.person_id)
+            data_validation_errors += 1
+        else:
+            validated_people.append(person)
+    return validated_people, data_validation_errors
 
 
 def write(ingest_info, metadata):
@@ -157,18 +226,28 @@ def write(ingest_info, metadata):
     """
     mtags = {monitoring.TagKey.REGION: metadata.region,
              monitoring.TagKey.SHOULD_PERSIST: _should_persist()}
+    total_people = len(ingest_info.people)
     with monitoring.measurements(mtags) as measurements:
-        people = converter.convert(ingest_info, metadata)
-        validate_one_open_booking(people)
-        logging.info(
-            'Successfully converted and validated proto with %d people.'
-            '(logging max %d people):',
-            len(people), MAX_PEOPLE_TO_LOG)
 
+        # Convert the people one at a time and count the errors as they happen.
+        people, enum_parsing_errors, protected_class_errors =\
+            _convert_and_count_errors(ingest_info, metadata)
+        people, data_validation_errors = validate_one_open_booking(people)
+        logging.info('Converted %s people with %s enum_parsing_errors, %s'
+                     ' protected_class_errors and %s data_validation_errors, '
+                     '(logging max %d people):',
+                     len(people), enum_parsing_errors, protected_class_errors,
+                     data_validation_errors, MAX_PEOPLE_TO_LOG)
         loop_count = min(len(people), MAX_PEOPLE_TO_LOG)
         for i in range(loop_count):
             logging.info(people[i])
         measurements.measure_int_put(m_people, len(people))
+
+        _abort_or_continue(
+            total_people=total_people,
+            enum_parsing_errors=enum_parsing_errors,
+            protected_class_errors=protected_class_errors,
+            data_validation_errors=data_validation_errors)
 
         if not _should_persist():
             return
@@ -177,8 +256,16 @@ def write(ingest_info, metadata):
         session = Session()
         try:
             logging.info('Starting entity matching')
-            entity_matching.match_entities(session, metadata.region, people)
-            logging.info('Successfully completed entity matching')
+            entity_matching_errors = _entity_match_and_count_errors(
+                session, metadata.region, people)
+            logging.info(
+                'Completed entity matching with %s errors',
+                entity_matching_errors)
+            _abort_or_continue(
+                total_people=total_people,
+                enum_parsing_errors=enum_parsing_errors,
+                entity_matching_errors=entity_matching_errors,
+                data_validation_errors=data_validation_errors)
             database.write_people(session, people, metadata)
             logging.info('Successfully wrote to the database')
             session.commit()
