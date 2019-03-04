@@ -39,7 +39,7 @@ from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo, Charge, \
 from recidiviz.ingest.scrape.ingest_utils import convert_ingest_info_to_proto
 from recidiviz.persistence import persistence, entities
 from recidiviz.persistence.database import database, schema
-from recidiviz.persistence.errors import DataValidationError
+from recidiviz.persistence.errors import PersistenceError
 from recidiviz.tests.utils import fakes
 
 BIRTHDATE_1 = '11/15/1993'
@@ -72,6 +72,7 @@ SCRAPER_START_DATETIME = datetime(year=2018, month=8, day=6)
 SENTENCE_STATUS = 'SERVING'
 FULL_NAME_1 = 'TEST_FULL_NAME_1'
 FULL_NAME_2 = 'TEST_FULL_NAME_2'
+FULL_NAME_3 = 'TEST_FULL_NAME_3'
 DEFAULT_METADATA = IngestMetadata("default_region",
                                   datetime(year=1000, month=1, day=1),
                                   EnumOverrides.empty())
@@ -116,13 +117,13 @@ class TestPersistence(TestCase):
             assert len(result) == 1
             assert result[0].full_name == _format_full_name(FULL_NAME_1)
 
-    def test_multipleOpenBookings_raisesDataValidationError(self):
+    def test_multipleOpenBookings_raisesPersistenceError(self):
         ingest_info = ii.IngestInfo()
         person = ingest_info.create_person(full_name=FULL_NAME_1)
         person.create_booking(admission_date=DATE_RAW)
         person.create_booking(admission_date=DATE_RAW)
 
-        with pytest.raises(DataValidationError):
+        with pytest.raises(PersistenceError):
             persistence.write(convert_ingest_info_to_proto(ingest_info),
                               DEFAULT_METADATA)
 
@@ -138,7 +139,64 @@ class TestPersistence(TestCase):
 
         # Assert
         assert len(result) == 2
-        assert result[0].full_name == _format_full_name(FULL_NAME_1)
+
+        assert result[0].full_name == _format_full_name(FULL_NAME_2)
+        assert result[1].full_name == _format_full_name(FULL_NAME_1)
+
+    def test_twoDifferentPeople_persistsNoneProtectedError(self):
+        # Arrange
+        ingest_info = IngestInfo()
+        ingest_info.people.add(full_name=FULL_NAME_1)
+        ingest_info.people.add(full_name=FULL_NAME_2, gender='X')
+
+        # Act
+        with self.assertRaises(PersistenceError):
+            persistence.write(ingest_info, DEFAULT_METADATA)
+        result = database.read_people(Session())
+
+        # Assert
+        assert not result
+
+    def test_twoDifferentPeople_persistsNoneErrorThreshold(self):
+        # Arrange
+        ingest_info = IngestInfo()
+        ingest_info.people.add(full_name=FULL_NAME_2)
+        ingest_info.people.add(full_name=FULL_NAME_1,
+                               person_id=EXTERNAL_PERSON_ID,
+                               booking_ids=[EXTERNAL_BOOKING_ID])
+        ingest_info.bookings.add(
+            booking_id=EXTERNAL_BOOKING_ID,
+            custody_status='NO EXIST',
+        )
+
+        # Act
+        with self.assertRaises(PersistenceError):
+            persistence.write(ingest_info, DEFAULT_METADATA)
+        result = database.read_people(Session())
+
+        # Assert
+        assert not result
+
+    def test_threeDifferentPeople_persistsTwoBelowThreshold(self):
+        # Arrange
+        ingest_info = IngestInfo()
+        ingest_info.people.add(full_name=FULL_NAME_2)
+        ingest_info.people.add(full_name=FULL_NAME_3)
+        ingest_info.people.add(full_name=FULL_NAME_1,
+                               person_id=EXTERNAL_PERSON_ID,
+                               booking_ids=[EXTERNAL_BOOKING_ID])
+        ingest_info.bookings.add(
+            booking_id=EXTERNAL_BOOKING_ID,
+            custody_status='NO EXIST',
+        )
+
+        # Act
+        persistence.write(ingest_info, DEFAULT_METADATA)
+        result = database.read_people(Session())
+
+        # Assert
+        assert len(result) == 2
+        assert result[0].full_name == _format_full_name(FULL_NAME_3)
         assert result[1].full_name == _format_full_name(FULL_NAME_2)
 
     # TODO: test entity matching end to end

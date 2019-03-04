@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Converts scraped IngestInfo data to the persistence layer entity."""
+import copy
 from copy import deepcopy
 from typing import List
 
@@ -35,14 +36,14 @@ def convert(ingest_info, metadata):
     Returns:
         A list of entities.Person
     """
-    return _Converter(ingest_info, metadata).convert()
+    return Converter(ingest_info, metadata).convert_all()
 
 
-class _Converter:
+class Converter:
     """Converts between ingest_info objects and persistence layer entity."""
 
     def __init__(self, ingest_info, metadata):
-        self.ingest_info = ingest_info
+        self.ingest_info = copy.deepcopy(ingest_info)
         self.metadata = metadata
 
         self.bookings = {b.booking_id: b for b in ingest_info.bookings}
@@ -52,8 +53,19 @@ class _Converter:
         self.bonds = {b.bond_id: b for b in ingest_info.bonds}
         self.sentences = {s.sentence_id: s for s in ingest_info.sentences}
 
-    def convert(self):
-        return [self._convert_person(p) for p in self.ingest_info.people]
+    def convert_all(self):
+        people = []
+        while not self.is_complete():
+            people.append(self.convert_and_pop())
+        return people
+
+    def convert_and_pop(self):
+        return self._convert_person(self.ingest_info.people.pop())
+
+    def is_complete(self):
+        if self.ingest_info.people:
+            return False
+        return True
 
     def _convert_person(self, ingest_person):
         """Converts an ingest_info proto Person to a persistence entity."""

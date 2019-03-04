@@ -30,6 +30,7 @@ class EnumParsingError(Exception):
     def __init__(self, cls: type, string_to_parse: str):
         msg = "Could not parse {0} when building {1}".format(string_to_parse,
                                                              cls)
+        self.entity_type = cls
         super().__init__(msg)
 
 
