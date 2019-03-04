@@ -17,21 +17,30 @@
 
 """Utility methods for fetching app engine related metadata."""
 import logging
+from typing import Dict
+
 import requests
 
 BASE_METADATA_URL = 'http://metadata/computeMetadata/v1/'
 HEADERS = {'Metadata-Flavor': 'Google'}
 TIMEOUT = 2
 
-def _get_metadata(url):
+metadata_cache: Dict[str, str] = {}
+
+def _get_metadata(url: str):
+    if url in metadata_cache:
+        return metadata_cache[url]
+
     try:
         r = requests.get(
             BASE_METADATA_URL + url,
             headers=HEADERS,
             timeout=TIMEOUT)
+        r.raise_for_status()
+        metadata_cache[url] = r.text
         return r.text
-    except requests.RequestException:
-        logging.info('Metadata server could not be reached, assuming local.')
+    except Exception as e:
+        logging.error('Failed to fetch metadata \'%s\': \'%s\'', url, e)
         return None
 
 def project_number():
