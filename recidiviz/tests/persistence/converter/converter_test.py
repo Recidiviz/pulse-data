@@ -17,7 +17,7 @@
 """Tests for data converter."""
 
 import unittest
-from datetime import datetime
+import datetime
 
 from recidiviz.common.constants.bond import BondType, BondStatus
 from recidiviz.common.constants.booking import CustodyStatus
@@ -30,7 +30,10 @@ from recidiviz.persistence.converter import converter
 from recidiviz.persistence.entities import Person, Booking, Arrest, Charge, \
     Bond, Sentence, Hold
 
-_LAST_SEEN_TIME = datetime(year=2019, month=2, day=13, hour=12)
+_LAST_SEEN_TIME = datetime.datetime(year=2019, month=2, day=13, hour=12)
+_RELEASE_DATE = datetime.date(year=2018, month=3, day=1)
+_BIRTHDATE = datetime.date(1990, 3, 5)
+_BIRTHDATE_SCRUBBED = datetime.date(1990, 1, 1)
 
 
 class TestConverter(unittest.TestCase):
@@ -117,6 +120,63 @@ class TestConverter(unittest.TestCase):
                 external_id='BOOKING_ID',
                 admission_date=_LAST_SEEN_TIME.date(),
                 admission_date_inferred=True,
+                last_seen_time=_LAST_SEEN_TIME,
+                custody_status=CustodyStatus.UNKNOWN_FOUND_IN_SOURCE,
+                arrest=Arrest.new_with_defaults(
+                    external_id='ARREST_ID',
+                    agency='PD'
+                ),
+                charges=[Charge.new_with_defaults(
+                    external_id='CHARGE_ID',
+                    status=ChargeStatus.UNKNOWN_FOUND_IN_SOURCE,
+                    name='DUI',
+                    bond=Bond.new_with_defaults(
+                        external_id='BOND_ID',
+                        status=BondStatus.UNKNOWN_FOUND_IN_SOURCE
+                    ),
+                    sentence=Sentence.new_with_defaults(
+                        status=SentenceStatus.UNKNOWN_FOUND_IN_SOURCE,
+                        external_id='SENTENCE_ID',
+                        is_life=True
+                    )
+                )]
+            )])]
+
+        self.assertEqual(result, expected_result)
+
+    def testConvert_FullIngestInfo_NoOpenBookings(self):
+        # Arrange
+        metadata = IngestMetadata('REGION', _LAST_SEEN_TIME)
+
+        ingest_info = IngestInfo()
+        ingest_info.people.add(person_id='PERSON_ID', full_name='TEST',
+                               birthdate=str(_BIRTHDATE),
+                               booking_ids=['BOOKING_ID'])
+        ingest_info.bookings.add(booking_id='BOOKING_ID',
+                                 arrest_id='ARREST_ID',
+                                 release_date=str(_RELEASE_DATE),
+                                 charge_ids=['CHARGE_ID'])
+        ingest_info.arrests.add(arrest_id='ARREST_ID', agency='PD')
+        ingest_info.charges.add(charge_id='CHARGE_ID', name='DUI',
+                                bond_id='BOND_ID', sentence_id='SENTENCE_ID')
+        ingest_info.bonds.add(bond_id='BOND_ID')
+        ingest_info.sentences.add(sentence_id='SENTENCE_ID', is_life='True')
+
+        # Act
+        result = converter.convert(ingest_info, metadata)
+
+        # Assert
+        expected_result = [Person.new_with_defaults(
+            external_id='PERSON_ID',
+            region='REGION',
+            birthdate=_BIRTHDATE_SCRUBBED,
+            birthdate_inferred_from_age=False,
+            bookings=[Booking.new_with_defaults(
+                external_id='BOOKING_ID',
+                admission_date=_LAST_SEEN_TIME.date(),
+                admission_date_inferred=True,
+                release_date=_RELEASE_DATE,
+                release_date_inferred=False,
                 last_seen_time=_LAST_SEEN_TIME,
                 custody_status=CustodyStatus.UNKNOWN_FOUND_IN_SOURCE,
                 arrest=Arrest.new_with_defaults(

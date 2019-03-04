@@ -14,23 +14,23 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for methods in common_utils.py."""
+"""Tests for persistence.py."""
+import datetime
 import unittest
 
-from recidiviz.common.common_utils import create_generated_id, is_generated_id
+from recidiviz.persistence import entities
+from recidiviz.persistence.persistence_utils import remove_pii_for_person
 
 
-class CommonUtilsTest(unittest.TestCase):
+class PersistenceUtilsTest(unittest.TestCase):
     """Tests for common_utils.py."""
 
-    def test_create_generated_id(self):
-        generated_id = create_generated_id(object())
-        self.assertTrue(generated_id.endswith("_GENERATE"))
+    def test_remove_pii_for_person(self):
+        person = entities.Person.new_with_defaults(
+            full_name='TEST', birthdate=datetime.date(1990, 3, 12))
 
-    def test_is_generated_id(self):
-        id_str = "id_str_GENERATE"
-        self.assertTrue(is_generated_id(id_str))
+        remove_pii_for_person(person)
+        expected_date = datetime.date(1990, 1, 1)
 
-    def test_is_not_generated_id(self):
-        id_str = "id_str"
-        self.assertFalse(is_generated_id(id_str))
+        self.assertEqual(person.birthdate, expected_date)
+        self.assertIsNone(person.full_name)
