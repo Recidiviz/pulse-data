@@ -30,6 +30,7 @@ from recidiviz.ingest.aggregate.scrape_aggregate_reports import \
     scrape_aggregate_reports_blueprint
 from recidiviz.ingest.scrape.infer_release import infer_release_blueprint
 from recidiviz.ingest.scrape.scraper_control import scraper_control
+from recidiviz.ingest.scrape.scraper_status import scraper_status
 from recidiviz.ingest.scrape.worker import worker
 from recidiviz.persistence.actions import actions
 from recidiviz.tests.utils.populate_test_db import test_populator
@@ -57,6 +58,7 @@ if logger.handlers:
 
 app = Flask(__name__)
 app.register_blueprint(scraper_control, url_prefix='/scraper')
+app.register_blueprint(scraper_status, url_prefix='/scraper')
 app.register_blueprint(worker, url_prefix='/scraper')
 app.register_blueprint(actions, url_prefix='/ingest')
 app.register_blueprint(infer_release_blueprint, url_prefix='/infer_release')
