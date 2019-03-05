@@ -32,11 +32,10 @@ import us
 from more_itertools import one
 
 import recidiviz.ingest.scrape.regions
-from recidiviz.ingest.aggregate import fips
+from recidiviz.common import fips
 
 _REGIONS_DIR = os.path.dirname(recidiviz.ingest.scrape.regions.__file__)
-_DATA_SETS_DIR = os.path.dirname(
-    recidiviz.ingest.aggregate.__file__) + '/data_sets'
+_DATA_SETS_DIR = os.path.dirname(recidiviz.common.__file__) + '/data_sets'
 
 _JID = pd.read_csv(_DATA_SETS_DIR + '/jid.csv')
 
