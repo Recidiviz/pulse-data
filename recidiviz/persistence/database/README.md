@@ -138,7 +138,45 @@ This process can be used to get `dev-data` back into sync with `prod-data` and t
 
 ## Restoring backups
 
-Cloud SQL automatically saves backups of all database instances. To restore the database to an earlier state in the case of a major error, visit the "Backups" tab for the `prod-data` instance on GCP, select a backup, and select "Restore". This will revert the database to its state at the time of that backup.
+Cloud SQL automatically saves backups of all database instances.
+
+### Full restore
+
+To restore the database to an earlier state in the case of a major error, visit the "Backups" tab for the `prod-data` instance on GCP, select a backup, and select "Restore". This will revert the database to its state at the time of that backup.
+
+### Partial restore
+
+> Lasciate ogni speranza, voi ch'entrate
+
+In some cases, such as a scraper writing bad data to a single region without being detected for a long period of time, you may want to restore only some subset of rows, columns, or tables, rather than reverting the entire database to some earlier state.
+
+This process is fairly finicky, especially for more complex restores. You should probably do a practice run against `dev-data` before trying to do this on prod.
+
+1. On the "Backups" tab, make a manual backup of the current state of `prod-data`, to ensure the initial state can be restored if the process goes awry.
+
+2. On GCP, create a new Cloud SQL instance with Postgres.
+
+3. On the "Connections" tab of the new Cloud SQL instance, add `prod-data-client` as an authorized network.
+
+4. On the "Backups" tab of `prod-data`, choose the appropriate backup and select "Restore". Update the target instance to the temporary Cloud SQL instance (**NOT** the regular `prod-data` instance), and execute the restore.
+
+5. On `prod-data-client`, connect to the temporary instance with: `psql "sslmode=disable hostaddr=<IP of temporary Cloud SQL instance> user=postgres dbname=postgres"`
+
+6. Export the data to be restored with: `\copy (<query for desired data>) TO '<filename>'`
+
+7. Using the command in the "Manual intervention" section below, connect to `prod-data` with manual intervention permissions.
+
+8. Create a temporary empty copy of the table you are restoring to: `CREATE TEMP TABLE <temp table name> AS SELECT <whichever columns you need> FROM <original table> LIMIT 0;`
+
+9. Copy from the file you created previously to the temporary table: `\copy <temp table name> FROM '<filename>'`
+
+10. Perform whatever standard SQL operations are required to copy the desired rows/columns from the temporary table to the regular table.
+
+11. Repeat steps 5-10 for any other tables that need to be restored.
+
+12. Delete the temporary Cloud SQL instance.
+
+13. Delete the manual backup of `prod-data`.
 
 ## Manual intervention
 
