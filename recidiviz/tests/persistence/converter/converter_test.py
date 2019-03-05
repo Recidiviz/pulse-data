@@ -178,7 +178,7 @@ class TestConverter(unittest.TestCase):
                 release_date=_RELEASE_DATE,
                 release_date_inferred=False,
                 last_seen_time=_LAST_SEEN_TIME,
-                custody_status=CustodyStatus.UNKNOWN_FOUND_IN_SOURCE,
+                custody_status=CustodyStatus.RELEASED,
                 arrest=Arrest.new_with_defaults(
                     external_id='ARREST_ID',
                     agency='PD'

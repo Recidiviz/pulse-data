@@ -51,9 +51,16 @@ def copy_fields_to_builder(booking_builder, proto, metadata):
     new.admission_date, new.admission_date_inferred = \
         _parse_admission(proto, metadata)
     new.release_date, new.release_date_inferred = _parse_release_date(proto)
+    _set_custody_status_if_needed(new)
 
     # Metadata
     new.last_seen_time = metadata.last_seen_time
+
+
+def _set_custody_status_if_needed(new):
+    if (new.release_date and new.custody_status
+            is CustodyStatus.UNKNOWN_FOUND_IN_SOURCE):
+        new.custody_status = CustodyStatus.RELEASED
 
 
 def _parse_release_date(proto):

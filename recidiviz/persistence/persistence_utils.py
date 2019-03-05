@@ -18,6 +18,7 @@
 """Exposes an endpoint to scrape all of the county websites."""
 import datetime
 
+from recidiviz.common.constants.booking import CustodyStatus
 from recidiviz.persistence import entities
 
 
@@ -34,3 +35,10 @@ def remove_pii_for_person(person: entities.Person) -> None:
             month=1,
             day=1,
         )
+
+
+def is_booking_active(booking: entities.Booking) -> bool:
+    """Determines whether or not a booking is active"""
+    if booking.custody_status in CustodyStatus.get_released_statuses():
+        return False
+    return True
