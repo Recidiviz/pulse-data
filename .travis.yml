@@ -4,6 +4,10 @@ language: generic
 services:
   - docker
 
+env:
+  # App engine doesn't allow '.' in the version name
+  - VERSION=$(echo $TRAVIS_TAG | tr '.' '-')
+
 # Note, this caching design is based off: https://gist.github.com/hc2p/9e284cee3d585eefbc59454e44cc247a
 # We decided to cache the docker image even though the majority of the docker build steps are downloading dependencies
 # from the web. We acknowledge that the time needed to download the cached docker image is nearly the same as the time
