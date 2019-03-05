@@ -22,6 +22,7 @@ import attr
 from dateutil.relativedelta import relativedelta
 
 from recidiviz.common.constants.bond import BondType, BondStatus
+from recidiviz.common.constants.booking import CustodyStatus
 from recidiviz.persistence import entities, entity_matching_utils
 
 _PERSON_ID = 2
@@ -145,7 +146,7 @@ class TestEntityMatchingUtils(TestCase):
         ingested_booking = entities.Booking.new_with_defaults()
         self.assertTrue(entity_matching_utils.is_booking_match(
             db_entity=db_booking, ingested_entity=ingested_booking))
-        ingested_booking.release_date = _DATE
+        ingested_booking.custody_status = CustodyStatus.RELEASED
         self.assertFalse(entity_matching_utils.is_booking_match(
             db_entity=db_booking, ingested_entity=ingested_booking))
 
