@@ -30,7 +30,6 @@ from recidiviz.utils import metadata, environment
 
 ACK_DEADLINE_SECONDS = 300
 
-
 _publisher = None
 _subscriber = None
 
