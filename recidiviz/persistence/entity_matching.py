@@ -176,7 +176,7 @@ def match_sentences(
 
 def _build_maps_from_charges(
         charges: List[entities.Charge], obj_name: str) \
-        -> Tuple[Dict[str, Entity], Dict[str, Set[Entity]]]:
+        -> Tuple[Dict[str, Entity], Dict[str, Set[Entity]], Dict[int, str]]:
     """Helper function that returns a pair of maps describing the relationships
     between charges and their children. The |object_map| maps ids, which may be
     temporary generated ids, to the objects they refer to. The
@@ -186,16 +186,19 @@ def _build_maps_from_charges(
     child."""
     object_map = {}
     object_relationships: Dict[str, set] = defaultdict(set)
+    id_to_generated: Dict[int, str] = {}
 
     for charge in charges:
         obj = getattr(charge, obj_name)
         if obj:
             obj_id = getattr(obj, obj_name + '_id')
             if not obj_id:
-                obj_id = common_utils.create_generated_id(obj)
+                obj_id = id_to_generated.get(id(obj)) or \
+                         common_utils.create_generated_id()
+                id_to_generated[id(obj)] = obj_id
             object_map[obj_id] = obj
             object_relationships[obj_id].add(charge.charge_id)
-    return object_map, object_relationships
+    return object_map, object_relationships, id_to_generated
 
 
 def _match_from_charges(
@@ -205,13 +208,13 @@ def _match_from_charges(
     of the booking's charges. |name| should be 'bond' or 'sentence'.
     """
     id_name = name + '_id'
-    db_obj_map, db_relationship_map = _build_maps_from_charges(
+    db_obj_map, db_relationship_map, _ = _build_maps_from_charges(
         db_booking.charges, name)
-    ing_obj_map, ing_relationship_map = _build_maps_from_charges(
-        ingested_booking.charges, name)
+    ing_obj_map, ing_relationship_map, id_to_generated =\
+        _build_maps_from_charges(ingested_booking.charges, name)
 
     def _is_match_with_relationships(*, db_entity, ingested_entity):
-        ing_entity_id = common_utils.create_generated_id(ingested_entity)
+        ing_entity_id = id_to_generated[id(ingested_entity)]
         db_entity_id = getattr(db_entity, id_name)
         matcher = getattr(utils, 'is_{}_match'.format(name))
         obj_match = matcher(db_entity=db_entity,

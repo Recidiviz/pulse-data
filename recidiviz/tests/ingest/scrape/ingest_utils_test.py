@@ -19,6 +19,7 @@
 
 from mock import Mock, PropertyMock, patch
 
+from recidiviz.common import common_utils
 from recidiviz.ingest.models import ingest_info, ingest_info_pb2
 from recidiviz.ingest.scrape import constants, ingest_utils
 
@@ -34,6 +35,13 @@ def fake_modules(*names):
 
 class TestIngestUtils:
     """Tests for regions.py."""
+
+    def _create_generated_id(self):
+        self.counter += 1
+        return str(self.counter) + common_utils.GENERATED_ID_SUFFIX
+
+    def setup_method(self, _):
+        self.counter = 0
 
     @patch('pkgutil.iter_modules',
            return_value=fake_modules('us_ny', 'us_pa', 'us_vt', 'us_pa_greene'))
@@ -135,18 +143,20 @@ class TestIngestUtils:
         assert ingest_utils.validate_scrape_types(
             []) == [constants.ScrapeType.BACKGROUND]
 
-    def test_convert_ingest_info_id_is_generated(self):
+    @patch("recidiviz.common.common_utils.create_generated_id")
+    def test_convert_ingest_info_id_is_generated(self, mock_create):
+        mock_create.side_effect = self._create_generated_id
         info = ingest_info.IngestInfo()
         person = info.create_person()
         person.surname = 'testname'
-        booking = person.create_booking()
+        person.create_booking()
 
         expected_proto = ingest_info_pb2.IngestInfo()
         proto_person = expected_proto.people.add()
         proto_person.surname = 'testname'
-        proto_person.person_id = str(id(person)) + '_GENERATE'
+        proto_person.person_id = '1_GENERATE'
         proto_booking = expected_proto.bookings.add()
-        proto_booking.booking_id = str(id(booking)) + '_GENERATE'
+        proto_booking.booking_id = '2_GENERATE'
         proto_person.booking_ids.append(proto_booking.booking_id)
 
         proto = ingest_utils.convert_ingest_info_to_proto(info)
@@ -179,7 +189,9 @@ class TestIngestUtils:
         info_back = ingest_utils.convert_proto_to_ingest_info(proto)
         assert info_back == info
 
-    def test_convert_ingest_info_one_charge_to_one_bond(self):
+    @patch("recidiviz.common.common_utils.create_generated_id")
+    def test_convert_ingest_info_one_charge_to_one_bond(self, mock_create):
+        mock_create.side_effect = self._create_generated_id
         info = ingest_info.IngestInfo()
         person = info.create_person()
         person.person_id = 'id1'
@@ -206,13 +218,13 @@ class TestIngestUtils:
         charge.charge_id = 'id1'
         proto_bond1 = expected_proto.bonds.add()
         proto_bond1.amount = '$1'
-        proto_bond1.bond_id = str(id(bond1)) + '_GENERATE'
+        proto_bond1.bond_id = '1_GENERATE'
         charge.bond_id = proto_bond1.bond_id
         charge = expected_proto.charges.add()
         charge.charge_id = 'id2'
         proto_bond2 = expected_proto.bonds.add()
         proto_bond2.amount = '$1'
-        proto_bond2.bond_id = str(id(bond2)) + '_GENERATE'
+        proto_bond2.bond_id = '2_GENERATE'
         charge.bond_id = proto_bond2.bond_id
 
         proto = ingest_utils.convert_ingest_info_to_proto(info)
@@ -221,7 +233,9 @@ class TestIngestUtils:
         info_back = ingest_utils.convert_proto_to_ingest_info(proto)
         assert info_back == info
 
-    def test_convert_ingest_info_many_charge_to_one_bond(self):
+    @patch("recidiviz.common.common_utils.create_generated_id")
+    def test_convert_ingest_info_many_charge_to_one_bond(self, mock_create):
+        mock_create.side_effect = self._create_generated_id
         info = ingest_info.IngestInfo()
         person = info.create_person()
         person.person_id = 'id1'
@@ -247,13 +261,14 @@ class TestIngestUtils:
         charge.charge_id = 'id1'
         proto_bond = expected_proto.bonds.add()
         proto_bond.amount = '$1'
-        proto_bond.bond_id = str(id(bond1)) + '_GENERATE'
+        proto_bond.bond_id = '1_GENERATE'
         charge.bond_id = proto_bond.bond_id
         charge = expected_proto.charges.add()
         charge.charge_id = 'id2'
         charge.bond_id = proto_bond.bond_id
 
         proto = ingest_utils.convert_ingest_info_to_proto(info)
+        assert len(proto.bonds) == 1
         assert expected_proto == proto
 
         info_back = ingest_utils.convert_proto_to_ingest_info(proto)

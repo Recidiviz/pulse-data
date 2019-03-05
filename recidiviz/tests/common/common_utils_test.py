@@ -24,7 +24,7 @@ class CommonUtilsTest(unittest.TestCase):
     """Tests for common_utils.py."""
 
     def test_create_generated_id(self):
-        generated_id = create_generated_id(object())
+        generated_id = create_generated_id()
         self.assertTrue(generated_id.endswith("_GENERATE"))
 
     def test_is_generated_id(self):
