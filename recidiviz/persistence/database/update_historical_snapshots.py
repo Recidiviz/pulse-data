@@ -47,6 +47,8 @@ def update_historical_snapshots(session: Session,
         "Beginning historical snapshot updates for %s record tree(s)",
         len(root_people))
 
+    _assert_all_record_trees_well_formed(root_people)
+
     _assert_all_record_trees_unique(root_people)
 
     context_registry = _SnapshotContextRegistry()
@@ -185,6 +187,111 @@ def _assert_all_record_trees_unique(root_people: List[schema.Person]) -> None:
             raise AssertionError(
                 'Multiple record trees passed for person ID: {}'.format(key))
         keys.add(key)
+
+
+# TODO(1125): either delete this or clean this up after #1125 is debugged
+def _assert_all_record_trees_well_formed(
+        root_people: List[schema.Person]) -> None:
+    """Raises (AssertionError) if there are any duplicate entities within any
+    record tree or between any record trees.
+    """
+    person_ids: Set[int] = set()
+    for person in root_people:
+        person_id = person.get_primary_key()
+        if person_id in person_ids:
+            raise AssertionError(
+                'Duplicate people with person ID: {}'.format(person_id))
+        person_ids.add(person_id)
+
+    booking_ids_with_ancestors: Dict[int, List[int]] = {}
+    for person in root_people:
+        for booking in person.bookings:
+            booking_id = booking.get_primary_key()
+            if booking_id in booking_ids_with_ancestors.keys():
+                person_id_a = booking_ids_with_ancestors[booking_id][0]
+                person_id_b = person.get_primary_key()
+                raise AssertionError(
+                    'Duplicate bookings with booking ID: {}, one with '
+                    'parent person ID {} and one with parent person ID {}' \
+                    .format(booking_id, person_id_a, person_id_b))
+            booking_ids_with_ancestors[booking_id] = [person.get_primary_key()]
+
+    charge_ids_with_ancestors: Dict[int, List[int]] = {}
+    for person in root_people:
+        for booking in person.bookings:
+            for charge in booking.charges:
+                charge_id = charge.get_primary_key()
+                if charge_id in charge_ids_with_ancestors.keys():
+                    person_id_a = charge_ids_with_ancestors[charge_id][0]
+                    booking_id_a = charge_ids_with_ancestors[charge_id][1]
+                    person_id_b = person.get_primary_key()
+                    booking_id_b = booking.get_primary_key()
+                    raise AssertionError(
+                        'Duplicate charges with charge ID: {}, one with '
+                        'parent person ID {} and parent booking ID {}, and '
+                        'one with parent person ID {} and parent booking ID '
+                        '{}'.format(charge_id, person_id_a, booking_id_a,
+                                    person_id_b, booking_id_b))
+                charge_ids_with_ancestors[charge_id] = \
+                    [person.get_primary_key(), booking.get_primary_key()]
+
+    bond_ids_with_ancestors: Dict[int, List[int]] = {}
+    for person in root_people:
+        for booking in person.bookings:
+            for charge in booking.charges:
+                if charge.bond is not None:
+                    bond = charge.bond
+                    bond_id = bond.get_primary_key()
+                    if bond_id in bond_ids_with_ancestors.keys():
+                        person_id_a = bond_ids_with_ancestors[bond_id][0]
+                        booking_id_a = bond_ids_with_ancestors[bond_id][1]
+                        charge_id_a = bond_ids_with_ancestors[bond_id][2]
+                        person_id_b = person.get_primary_key()
+                        booking_id_b = booking.get_primary_key()
+                        charge_id_b = charge.get_primary_key()
+                        raise AssertionError(
+                            'Duplicate bonds with bond ID: {}, one with '
+                            'parent person ID {}, parent booking ID {}, and '
+                            'parent charge ID {}, and one with parent person '
+                            'ID {}, parent booking ID {}, and parent charge '
+                            'ID {}'.format(bond_id, person_id_a, booking_id_a,
+                                           charge_id_a, person_id_b,
+                                           booking_id_b, charge_id_b))
+                    bond_ids_with_ancestors[bond_id] = \
+                        [person.get_primary_key(),
+                         booking.get_primary_key(),
+                         charge.get_primary_key()]
+
+    sentence_ids_with_ancestors: Dict[int, List[int]] = {}
+    for person in root_people:
+        for booking in person.bookings:
+            for charge in booking.charges:
+                if charge.sentence is not None:
+                    sentence = charge.sentence
+                    sentence_id = sentence.get_primary_key()
+                    if sentence_id in sentence_ids_with_ancestors.keys():
+                        person_id_a = \
+                            sentence_ids_with_ancestors[sentence_id][0]
+                        booking_id_a = \
+                            sentence_ids_with_ancestors[sentence_id][1]
+                        charge_id_a = \
+                            sentence_ids_with_ancestors[sentence_id][2]
+                        person_id_b = person.get_primary_key()
+                        booking_id_b = booking.get_primary_key()
+                        charge_id_b = charge.get_primary_key()
+                        raise AssertionError(
+                            'Duplicate sentences with sentence ID: {}, one '
+                            'with parent person ID {}, parent booking ID {}, '
+                            'and parent charge ID {}, and one with parent '
+                            'person ID {}, parent booking ID {}, and '
+                            'parent charge ID {}'.format(
+                                sentence_id, person_id_a, booking_id_a,
+                                charge_id_a, person_id_b, booking_id_b,
+                                charge_id_b))
+                    sentence_ids_with_ancestors[sentence_id] = \
+                        [person.get_primary_key(),
+                         booking.get_primary_key(),
+                         charge.get_primary_key()]
 
 
 def _execute_action_for_all_entities(root_people: List[schema.Person],
