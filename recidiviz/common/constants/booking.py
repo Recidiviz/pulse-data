@@ -60,6 +60,13 @@ class CustodyStatus(EntityEnum, metaclass=EntityEnumMeta):
     def _get_default_map():
         return _CUSTODY_STATUS_MAP
 
+    @staticmethod
+    def get_released_statuses():
+        return [
+            CustodyStatus.RELEASED,
+            CustodyStatus.INFERRED_RELEASE,
+            CustodyStatus.UNKNOWN_REMOVED_FROM_SOURCE
+        ]
 
 class ReleaseReason(EntityEnum, metaclass=EntityEnumMeta):
     ACQUITTAL = enum_strings.release_reason_acquittal
