@@ -176,6 +176,15 @@ project.
 _Note: Recidiviz team members and partners can download a pre-populated `secrets.yaml` for local development - check
 your onboarding document for details._
 
+#### Data model updates
+The two main data models used in the system are the [`IngestInfo`](recidiviz/ingest/models/ingest_info.proto) object and the database [`schema`](recidiviz/persistence/database/schema.py).
+
+When updating [`IngestInfo`](recidiviz/ingest/models/ingest_info.proto) be sure to update both the proto and the [python object](recidiviz/ingest/models/ingest_info.py). Then, re-generate the proto source: `protoc recidiviz/ingest/models/ingest_info.proto --python_out . --mypy_out .`. Be sure that `mypy-protobuf` is installed when compiling the protos. If it is not then pull it in from the dev packages using `pipenv install --dev`.
+
+When updating the [`schema`](recidiviz/persistence/database/schema.py) follow the directions in the [database readme](recidiviz/persistence/database/README.md#migrations) to create a schema migration.
+
+When updating either, it may be necessary to update the [`converter`](recidiviz/persistence/converter/) code that handles converting between the two models.
+
 #### Running tests
 Individual tests can be run via `pytest filename.py`. To run all tests, go to the root directory and run `pytest recidiviz`.
 
