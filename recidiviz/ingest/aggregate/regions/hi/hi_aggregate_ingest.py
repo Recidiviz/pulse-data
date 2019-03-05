@@ -25,8 +25,8 @@ import tabula
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
-from recidiviz.ingest.aggregate.errors import FipsMergingError, \
-    AggregateIngestError
+from recidiviz.ingest.aggregate.errors import AggregateIngestError
+from recidiviz.common.errors import FipsMergingError
 from recidiviz.persistence.database.schema import HiFacilityAggregate
 
 _COLUMN_NAMES = [

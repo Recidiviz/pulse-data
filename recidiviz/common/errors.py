@@ -1,5 +1,5 @@
 # Recidiviz - a platform for tracking granular recidivism metrics in real time
-# Copyright (C) 2018 Recidiviz, Inc.
+# Copyright (C) 2019 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,16 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Errors raised by Aggregate Ingest."""
+"""Errors raised by Common Utils."""
 
 
-class AggregateIngestError(Exception):
-    """Generic error when aggregate ingest fails."""
-
-
-class AggregateDateParsingError(Exception):
-    """Raised when a Date can't be parsed from an Aggregate Report."""
-
-
-class DataFrameCastError(Exception):
-    """Raised when attempting to cast a non-existent DataFrame column."""
+class FipsMergingError(Exception):
+    """Raised when a scraped county_name can't be assigned a fips."""

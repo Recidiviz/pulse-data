@@ -21,8 +21,8 @@ import pandas as pd
 from pandas.util.testing import assert_frame_equal
 import us
 
-from recidiviz.ingest.aggregate import fips
-from recidiviz.ingest.aggregate.errors import FipsMergingError
+from recidiviz.common import fips
+from recidiviz.common.errors import FipsMergingError
 
 _DUPAGE_COUNTY_FIPS = 17043  # "DuPage County"
 _EFFINGHAM_COUNTY_FIPS = 17049  # "Effingham County"
