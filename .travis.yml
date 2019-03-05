@@ -47,6 +47,9 @@ before_deploy:
   - openssl aes-256-cbc -K $encrypted_f7b0b16e1068_key -iv $encrypted_f7b0b16e1068_iv
     -in client-secret-staging.json.enc -out client-secret-staging.json -d
 
+  # App engine doesn't allow '.' in the version name
+  - VERSION=$(echo $TRAVIS_TAG | tr '.' '-')
+
 # Enable skip_cleanup when deploying to ensure queue.yaml is available to deploy
 deploy:
   # Deploy queue.yaml to staging
@@ -69,7 +72,7 @@ deploy:
       condition: $TRAVIS_TAG =~ ^v[0-9]+\.[0-9]+\.[0-9]+
     config: staging.yaml
     docker_build: local
-    version: $TRAVIS_TAG
+    version: $VERSION
 
   # Deploy cron.yaml to staging
   - provider: gae
