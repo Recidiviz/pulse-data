@@ -17,17 +17,18 @@
 
 "Utils to be shared across recidiviz project"
 import string
+import uuid
 from typing import Optional
 
-_GENERATED_ID_SUFFIX = "_GENERATE"
+GENERATED_ID_SUFFIX = "_GENERATE"
 
 
-def create_generated_id(obj) -> str:
-    return str(id(obj)) + _GENERATED_ID_SUFFIX
+def create_generated_id() -> str:
+    return str(uuid.uuid4()) + GENERATED_ID_SUFFIX
 
 
 def is_generated_id(id_str: Optional[str]) -> bool:
-    return id_str is not None and id_str.endswith(_GENERATED_ID_SUFFIX)
+    return id_str is not None and id_str.endswith(GENERATED_ID_SUFFIX)
 
 
 def normalize(s: str, remove_punctuation: bool = False) -> str:
