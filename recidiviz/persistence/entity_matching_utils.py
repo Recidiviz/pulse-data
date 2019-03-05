@@ -26,6 +26,9 @@ from recidiviz.persistence.errors import EntityMatchingError
 
 
 # '*' catches positional arguments, making our arguments named and required.
+from recidiviz.persistence.persistence_utils import is_booking_active
+
+
 def is_person_match(
         *, db_entity: entities.Person, ingested_entity: entities.Person) \
         -> bool:
@@ -72,7 +75,7 @@ def _db_open_booking_matches_ingested_booking(
     person entities. This is the same behavior as if the person is rebooked on
     non-consecutive days.
     """
-    db_open_bookings = [b for b in db_entity.bookings if _is_active(b)]
+    db_open_bookings = [b for b in db_entity.bookings if is_booking_active(b)]
     if not db_open_bookings:
         return True
     if len(db_open_bookings) > 1:
@@ -113,18 +116,7 @@ def is_booking_match(
 
     # TODO(612): Determine if we need to match a newly released ingested booking
     # with an open db booking
-    return _is_active(db_entity) and _is_active(ingested_entity)
-
-
-def _is_active(booking: entities.Booking) -> bool:
-    """
-    Returns True if a booking is active/open. This is true when the booking
-    does not have a release date.
-    Args:
-        booking: (entities.Booking)
-    Returns: (bool)
-    """
-    return not booking.release_date
+    return is_booking_active(db_entity) and is_booking_active(ingested_entity)
 
 
 # '*' catches positional arguments, making our arguments named and required.
