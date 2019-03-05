@@ -155,6 +155,16 @@ Note: for both options 1. and 2., strings are matched without regard to
 whitespace, punctuation, or capitalization. For example, if you want to add 
 the string `N A` to either map, it will catch `N\nA`, `(N/A)`, etc.
 
+**NOTE**: Many of the enums contain one or both of the values `EXTERNAL_UNKNOWN` or `OTHER`. Each of these values should **only** be used to cover one specific case:
+
+- `EXTERNAL_UNKNOWN`: the scraped site explicitly lists a given value as "unknown". (This can occasionally also cover the value "N/A", but that will depend on context.)
+- `OTHER`: the scraped site explicitly lists a given value as "other".
+
+These values should **NOT** be used if:
+
+- The scraped site does not provide the given field at all: In these cases, the value in the data should simply be left unpopulated.
+- The scraped site contains a value that does not correspond to any of the existing enum values: In this case, the enum should be extended to include a value covering the new value. If you think you've encountered a case that requires a new enum value, post a request to [scraper-writers-discuss](https://groups.google.com/forum/#!forum/scraper-writers-discuss)
+
 ### 1. Adding to the default map
 If you suspect the new string->Enum mapping should be shared across all scrapers, you should add it to the enum's default map. Enums with their default maps are in the [recidiviz/common/constants/](/recidiviz/common/constants) directory.
 
