@@ -25,6 +25,7 @@ before_script:
 script:
   # Order test commands with fastest first to ensure we fail fast
   # Note: Pass `-it` to docker to display the test result to the travis output (ie. web ui)
+  - docker exec -it recidiviz pipenv run python -m recidiviz.tools.validate_source_modifications --commit-range $TRAVIS_COMMIT_RANGE
   - docker exec -it recidiviz pipenv run mypy recidiviz
   - docker exec -it recidiviz pipenv run pylint recidiviz
   - docker exec -it recidiviz pipenv run pytest recidiviz --with-emulator

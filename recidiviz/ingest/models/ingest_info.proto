@@ -19,6 +19,15 @@ syntax = "proto2";
 
 package recidiviz.ingest.models;
 
+// To regenerate, ensure `mypy-protobuf` is installed:
+// ```bash
+// pipenv install --dev
+// ```
+// and then re-generate the python files including type information:
+// ```bash
+// protoc recidiviz/ingest/models/ingest_info.proto --python_out . --mypy_out .
+// ```
+
 message IngestInfo {
     repeated Person people = 1;
     repeated Booking bookings = 2;
