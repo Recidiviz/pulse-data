@@ -931,17 +931,17 @@ class PaFacilityPopAggregate(Base, _AggregateTableMixin):
     discharge = Column(Integer)
 
 
-# class PaCountyPreSentencedAggregate(Base, _AggregateTableMixin):
-#     """PA state-provided pre-sentenced statistics."""
-#     __tablename__ = 'pa_county_pre_sentenced_aggregate'
-#     __table_args__ = (
-#         UniqueConstraint(
-#             'fips', 'report_date', 'report_granularity'
-#         ),
-#     )
-#
-#     county_name = Column(Integer)
-#     pre_sentenced_population = Column(Integer)
+class PaCountyPreSentencedAggregate(Base, _AggregateTableMixin):
+    """PA state-provided pre-sentenced statistics."""
+    __tablename__ = 'pa_county_pre_sentenced_aggregate'
+    __table_args__ = (
+        UniqueConstraint(
+            'fips', 'report_date', 'report_granularity'
+        ),
+    )
+
+    county_name = Column(Integer)
+    pre_sentenced_population = Column(Integer)
 
 
 class TnFacilityAggregate(Base, _AggregateTableMixin):
