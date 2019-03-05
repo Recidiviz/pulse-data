@@ -27,7 +27,8 @@ import tabula
 import us
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
-from recidiviz.ingest.aggregate import aggregate_ingest_utils, fips
+from recidiviz.ingest.aggregate import aggregate_ingest_utils
+from recidiviz.common import fips
 from recidiviz.persistence.database.schema import TnFacilityAggregate
 
 

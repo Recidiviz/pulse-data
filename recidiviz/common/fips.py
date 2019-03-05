@@ -35,7 +35,7 @@ from typing import Iterable
 import pandas as pd
 import us
 
-from recidiviz.ingest.aggregate.errors import FipsMergingError
+from recidiviz.common.errors import FipsMergingError
 from recidiviz.tests.ingest.fixtures import as_filepath
 
 # Float between [0, 1] which sets the required fuzzy matching certainty
