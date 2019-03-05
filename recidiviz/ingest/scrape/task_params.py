@@ -73,6 +73,9 @@ class Task:
         """Convenience so that other modules don't need to import attr."""
         return attr.evolve(next_task, **kwds)
 
+    def to_serializable(self):
+        return cattr.unstructure(self)
+
 @attr.s(frozen=True)
 class QueueRequest:
     """A wrapper around `Task` with some extra information to run the request

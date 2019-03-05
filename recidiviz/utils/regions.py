@@ -97,6 +97,10 @@ class Region:
 
         return scraper_class()
 
+    def get_enum_overrides(self):
+        """Retrieves the overrides object of a region"""
+        return self.get_scraper().get_enum_overrides()
+
     def get_queue_name(self):
         """Returns the name of the queue to be used for the region"""
         return self.shared_queue if self.shared_queue \
