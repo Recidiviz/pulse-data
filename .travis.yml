@@ -63,6 +63,7 @@ deploy:
       condition: $TRAVIS_TAG =~ ^v[0-9]+\.[0-9]+\.[0-9]+
     config: staging.yaml
     docker_build: local
+    version: $TRAVIS_TAG
 
   # Deploy cron.yaml to staging
   - provider: gae
