@@ -330,12 +330,14 @@ class Sentence(IngestObject):
     """
 
     def __init__(
-            self, sentence_id=None, status=None,
+            self, sentence_id=None, date_imposed=None, status=None,
             sentencing_region=None, min_length=None, max_length=None,
             is_life=None, is_probation=None, is_suspended=None,
             fine_dollars=None, parole_possible=None,
-            post_release_supervision_length=None):
+            post_release_supervision_length=None, completion_date=None,
+            projected_completion_date=None):
         self.sentence_id: Optional[str] = sentence_id
+        self.date_imposed: Optional[str] = date_imposed
         self.status: Optional[str] = status
         self.sentencing_region: Optional[str] = sentencing_region
         self.min_length: Optional[str] = min_length
@@ -345,6 +347,9 @@ class Sentence(IngestObject):
         self.is_suspended: Optional[str] = is_suspended
         self.fine_dollars: Optional[str] = fine_dollars
         self.parole_possible: Optional[str] = parole_possible
+        self.completion_date: Optional[str] = completion_date
+        self.projected_completion_date: Optional[str] = \
+            projected_completion_date
 
         self.post_release_supervision_length: Optional[str] = \
             post_release_supervision_length

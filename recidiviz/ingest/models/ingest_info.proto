@@ -130,4 +130,7 @@ message Sentence {
     optional string post_release_supervision_length = 9;
     optional string sentencing_region = 10;
     optional string status = 11;
+    optional string date_imposed = 12;
+    optional string completion_date = 13;
+    optional string projected_completion_date = 14;
 }
