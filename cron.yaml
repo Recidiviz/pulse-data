@@ -1,6 +1,6 @@
 cron:
   - description: Infer release of all people not seen in completed scrapes
-    url: /infer_release/release
+    url: /infer_release/release?region=all
     schedule: every day 09:30
     timezone: Pacific/Honolulu
     retry_parameters:
