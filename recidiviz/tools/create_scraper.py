@@ -22,7 +22,6 @@ Creates __init__.py, region_name_scraper.py, region_name.yaml, and manifest.yaml
 files in recidiviz/ingest/scrape/regions/region_name.
 Also accepts the following optional arguments:
   - agency: the name of the agency
-  - names_file: a file with a names list for this scraper
   - timezone: the timezone, e.g. America/New_York
   - url: the initial url of the roster
   - vendor: create a vendor scraper. Available vendors:
@@ -31,7 +30,7 @@ Also accepts the following optional arguments:
     - `smart_cop`
     - `superion`
 
-If the flag -tests_only is set, will only create test files.
+If the flag --tests_only is set, will only create test files.
 """
 import argparse
 import os
@@ -48,25 +47,7 @@ from recidiviz.utils import regions
 
 def main():
     """Main entry point for create_scraper."""
-    parser = argparse.ArgumentParser()
-    parser.add_argument('county')
-    parser.add_argument('state')
-    parser.add_argument('agency_type')
-    optional_args = [
-        'agency',
-        'names_file',
-        'timezone',
-        'url']
-    for optional_arg in optional_args:
-        parser.add_argument('--' + optional_arg)
-    parser.add_argument('--vendor', required=False,
-                        help='Create a vendor scraper.',
-                        choices=['brooks_jeffrey',
-                                 'jailtracker',
-                                 'smart_cop',
-                                 'superion'])
-    parser.add_argument('-tests_only', required=False, action='store_true',
-                        help='If set, only create test files.')
+    parser = _create_parser()
     args = parser.parse_args()
 
     state = us.states.lookup(args.state)
@@ -80,20 +61,40 @@ def main():
         'county': args.county.title(),
         'region': region_code,
         'region_dashes': '-'.join(region),
+        'agency': args.agency,
         'agency_type': args.agency_type,
         'state': state.name,
         'state_abbr': state.abbr,
         'timezone': args.timezone or state.capital_tz,
+        'url': args.url,
         'year': datetime.now().year,
     }
-
-    for optional_arg in optional_args:
-        arg_value = vars(args)[optional_arg]
-        substitutions[optional_arg] = arg_value if arg_value is not None else ''
 
     if not args.tests_only:
         _create_scraper_files(substitutions, args.vendor)
     _create_test_files(substitutions, args.vendor)
+
+
+def _create_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser()
+    parser.add_argument('county')
+    parser.add_argument('state')
+    parser.add_argument('agency_type')
+    optional_args = [
+        'agency',
+        'timezone',
+        'url']
+    for optional_arg in optional_args:
+        parser.add_argument('--' + optional_arg, nargs='?', const=1, default='')
+    parser.add_argument('--vendor', required=False,
+                        help='Create a vendor scraper.',
+                        choices=['brooks_jeffrey',
+                                 'jailtracker',
+                                 'smart_cop',
+                                 'superion'])
+    parser.add_argument('--tests_only', required=False, action='store_true',
+                        help='If set, only create test files.')
+    return parser
 
 
 def _create_scraper_files(subs, vendor: Optional[str]):
