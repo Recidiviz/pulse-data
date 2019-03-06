@@ -80,7 +80,7 @@ TODO(garciaz): work with rasmi@ and arian487@ on how this should be timed with c
 
 3. Check the value in the `alembic_version` table in both dev and prod and ensure it's the same in both. If it isn't, check "Troubleshooting Alembic version issues" below.
 
-4. Apply the migration to dev by running `migrate-dev-to-head`. Run `dev-psql` to verify that the outcome of the migration was successful.
+4. Apply the migration to dev by running `migrate-dev-to-head`. Run `dev-psql` to verify that the outcome of the migration was successful. (If the migration failed but still completed (i.e. the change was committed but was incorrect, rather than failing and rolling back the transaction), **do not** try to manually undo the change. Just restore `dev-data` from its most recent daily backup, fix the migration script, and try again.)
 
 5. Merge the PR.
 
