@@ -69,21 +69,23 @@ class TestInferRelease(TestCase):
         self.client = app.test_client()
 
     @patch("recidiviz.persistence.persistence.infer_release_on_open_bookings")
-    @patch("recidiviz.utils.regions.get_region")
-    @patch("recidiviz.utils.regions.get_supported_region_codes")
     @patch("recidiviz.ingest.scrape.sessions.get_most_recent_completed_session")
+    @patch("recidiviz.ingest.scrape.infer_release.validate_regions")
+    @patch("recidiviz.ingest.scrape.infer_release.get_region")
     def test_infer_release(
-            self, mock_get_most_recent_session, mock_supported_regions,
-            mock_region, mock_infer_release):
+            self, mock_get_region, mock_validate_regions,
+            mock_get_most_recent_session,
+            mock_infer_release):
         headers = {'X-Appengine-Cron': "test-cron"}
+        mock_validate_regions.return_value = [r.region_code for r in _REGIONS]
+        mock_get_region.side_effect = _REGIONS
+
         time = datetime(2014, 8, 31)
-        mock_supported_regions.return_value = [region.region_code
-                                               for region in _REGIONS]
-        mock_region.side_effect = _REGIONS
         mock_get_most_recent_session.return_value = \
             ScrapeSession.new(key=None, start=time)
 
-        response = self.client.get('/release', headers=headers)
+        response = self.client.get('/release?region=us_ut&region=us_wy',
+                                   headers=headers)
         assert response.status_code == 200
         mock_infer_release.assert_has_calls(
             [call('us_ut', time, CustodyStatus.INFERRED_RELEASE),
