@@ -47,7 +47,6 @@ class TestAbstractScraper:
         mock_get_region.assert_called_with(region)
         assert scraper.region.region_code == region
         assert scraper.region.get_queue_name() == queue_name
-        assert scraper.fail_counter == "us_nd_next_page_fail_counter"
         assert scraper.scraper_work_url == "/scraper/work"
 
 
@@ -94,69 +93,6 @@ class TestStartScrape:
             queue_name=queue_name,
             url=scraper.scraper_work_url,
             body=request_body)
-
-    @patch('recidiviz.ingest.scrape.scraper.datetime')
-    @patch("recidiviz.ingest.scrape.queues.create_task")
-    @patch("recidiviz.ingest.scrape.tracker.iterate_docket_item")
-    @patch("recidiviz.utils.regions.get_region")
-    def test_start_scrape_snapshot(self, mock_get_region, mock_tracker,
-                                   mock_create_task, mock_datetime):
-        docket_item = (41620, ["daft", "punk"])
-        region = "us_nd"
-        scrape_type = constants.ScrapeType.SNAPSHOT
-        queue_name = "us_nd_scraper"
-        initial_task = "break_it"
-
-        mock_get_region.return_value = mock_region(region, queue_name)
-        mock_tracker.return_value = docket_item
-        mock_create_task.return_value = None
-        mock_datetime.now.return_value = _DATETIME
-
-        scraper = FakeScraper(region, initial_task)
-        scraper.start_scrape(scrape_type)
-
-        mock_get_region.assert_called_with(region)
-        mock_tracker.assert_called_with(ScrapeKey(region, scrape_type))
-
-        queue_params = QueueRequest(
-            scrape_type=scrape_type.value,
-            scraper_start_time=_DATETIME,
-            next_task=FAKE_TASK,
-            # content=(83240, ["daft", "punk"]),
-        )
-        request_body = {
-            'region': region,
-            'task': initial_task,
-            'params': queue_params.to_serializable()
-        }
-
-        mock_create_task.assert_called_with(
-            region_code=region,
-            queue_name=queue_name,
-            url=scraper.scraper_work_url,
-            body=request_body)
-
-    @patch("recidiviz.ingest.scrape.sessions.end_session")
-    @patch("recidiviz.ingest.scrape.tracker.iterate_docket_item")
-    @patch("recidiviz.utils.regions.get_region")
-    def test_start_scrape_no_record_id(self, mock_get_region,
-                                       mock_tracker, mock_sessions):
-        docket_item = (-1, ["human", "after", "all"])
-        region = "us_nd"
-        scrape_type = constants.ScrapeType.SNAPSHOT
-        queue_name = "us_nd_scraper"
-        initial_task = "fix_it"
-
-        mock_get_region.return_value = mock_region(region, queue_name)
-        mock_tracker.return_value = docket_item
-        mock_sessions.return_value = None
-
-        scraper = FakeScraper(region, initial_task)
-        scraper.start_scrape(scrape_type)
-
-        mock_get_region.assert_called_with(region)
-        mock_tracker.assert_called_with(ScrapeKey(region, scrape_type))
-        mock_sessions.assert_called_with(ScrapeKey(region, scrape_type))
 
     @patch("recidiviz.ingest.scrape.sessions.end_session")
     @patch("recidiviz.ingest.scrape.tracker.iterate_docket_item")
@@ -521,11 +457,6 @@ class FakeScraper(Scraper):
     def __init__(self, region_name, initial_task_method):
         super(FakeScraper, self).__init__(region_name)
         self.initial_task_method = initial_task_method
-
-    def person_id_to_record_id(self, person_id):
-        if person_id < 0:
-            return None
-        return person_id * 2
 
     def get_initial_task_method(self):
         return self.initial_task_method

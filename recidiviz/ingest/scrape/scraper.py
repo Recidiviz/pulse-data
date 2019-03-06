@@ -53,21 +53,7 @@ class Scraper(metaclass=abc.ABCMeta):
         """
 
         self.region = regions.get_region(region_name)
-        self.fail_counter = (self.get_region().region_code +
-                             "_next_page_fail_counter")
         self.scraper_work_url = '/scraper/work'
-
-    def person_id_to_record_id(self, _person_id):
-        """Abstract method for child classes to map a person ID to a DB
-        record ID.
-
-        Args: (any type) the person ID to transform
-
-        Returns:
-            A record id mapped from the given person id.
-
-        """
-        return None
 
     @abc.abstractmethod
     def get_initial_task_method(self):
@@ -325,7 +311,6 @@ class Scraper(metaclass=abc.ABCMeta):
             False if there was any failure to retrieve a new docket item.
             If successful:
                 Background scrape: ("surname", "given names")
-                Snapshot scrape:   ("record_id", ["records to ignore", ...])
         """
 
         item_content = tracker.iterate_docket_item(
@@ -333,19 +318,5 @@ class Scraper(metaclass=abc.ABCMeta):
 
         if item_content is None:
             return False
-
-        if scrape_type is constants.ScrapeType.SNAPSHOT:
-            # Content will be in the form (person ID, [list of records
-            # to ignore]); allow the child class to convert person to
-            # record
-            # pylint:disable=assignment-from-none
-            record_id = self.person_id_to_record_id(item_content[0])
-
-            if not record_id:
-                logging.error("Couldn't convert docket item [%s] to record",
-                              str(item_content))
-                return False
-
-            return record_id, item_content[1]
 
         return item_content
