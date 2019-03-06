@@ -1,4 +1,5 @@
 """Manages alembic and sqlalchemy environments."""
+# pylint: disable=wrong-import-position
 
 import os
 
@@ -45,11 +46,10 @@ def get_sqlalchemy_url():
 
     if use_ssl == 1:
         return _get_sqlalchemy_url_with_ssl()
-    elif use_ssl == 0:
+    if use_ssl == 0:
         return _get_sqlalchemy_url_without_ssl()
-    else:
-        raise RuntimeError('Invalid value for use_ssl: {use_ssl}'.format(
-            use_ssl=use_ssl))
+    raise RuntimeError('Invalid value for use_ssl: {use_ssl}'.format(
+        use_ssl=use_ssl))
 
 
 def run_migrations_offline():

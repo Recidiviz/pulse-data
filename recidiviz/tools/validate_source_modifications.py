@@ -34,9 +34,14 @@ import sys
 from typing import FrozenSet, List, Tuple
 
 from recidiviz.ingest.models import ingest_info, ingest_info_pb2
+from recidiviz.persistence.database import migrations, schema
 
-# New sets of files can be added to this set. This will cause the check to be
-# performed for that new set as well.
+# Sets of prefixes to check. For each set, if the changes modify a file matching
+# any prefix in the set, then it must also modify files matching all other
+# prefixes in that set.
+#
+# New sets of file prefixes can be added to this set. This will cause the check
+# to be performed for that new set as well.
 MODIFIED_FILE_ASSERTIONS = frozenset((
     # ingest info files
     frozenset((
@@ -45,16 +50,27 @@ MODIFIED_FILE_ASSERTIONS = frozenset((
         os.path.relpath(ingest_info_pb2.__file__),  # generated proto source
         os.path.relpath(ingest_info_pb2.__file__) + 'i',  # proto type hints
     )),
+    # schema
+    frozenset((
+        os.path.relpath(schema.__file__),  # schema
+        os.path.relpath(migrations.__file__[:-len('__init__.py')])  # migrations
+    ))
 ))
+
+def match_assertions(modified_files: FrozenSet[str],
+                     assertion_prefixes: FrozenSet[str]) -> FrozenSet[str]:
+    return frozenset(file_prefix for file_prefix in assertion_prefixes
+                     if any(modified_file.startswith(file_prefix)
+                            for modified_file in modified_files))
 
 def check_assertions(modified_files: FrozenSet[str]) \
         -> List[Tuple[FrozenSet[str], FrozenSet[str]]]:
     failed_assertion_files: List[Tuple[FrozenSet[str], FrozenSet[str]]] = []
-    for assertion in MODIFIED_FILE_ASSERTIONS:
-        modified_assertion_files = assertion & modified_files
-        if frozenset() < modified_assertion_files < assertion:
+    for assertion_prefixes in MODIFIED_FILE_ASSERTIONS:
+        matched_prefixes = match_assertions(modified_files, assertion_prefixes)
+        if frozenset() < matched_prefixes < assertion_prefixes:
             failed_assertion_files.append((
-                modified_assertion_files, assertion - modified_assertion_files))
+                matched_prefixes, assertion_prefixes - matched_prefixes))
     return failed_assertion_files
 
 
