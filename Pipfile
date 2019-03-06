@@ -26,8 +26,9 @@ pandas = "*"
 more-itertools = "*"
 lxml = "*"
 cattrs = "*"
-# TODO(569): Upgrade to next pypi opencensus version that includes necessary exporter fixes
-opencensus = {ref = "85b462069440db7fe9455af4ce65752fe50acee5",git = "https://github.com/census-instrumentation/opencensus-python.git",editable = true}
+opencensus = {ref = "d37b6d267307a136631881e593c2bc8921a786b6",git = "https://github.com/census-instrumentation/opencensus-python.git", editable = true}
+opencensus-correlation = {ref = "d37b6d267307a136631881e593c2bc8921a786b6",git = "https://github.com/census-instrumentation/opencensus-python.git", editable = true, subdirectory = "contrib/opencensus-correlation"}
+opencensus-ext-flask = {ref = "d37b6d267307a136631881e593c2bc8921a786b6",git = "https://github.com/census-instrumentation/opencensus-python.git", editable = true, subdirectory = "contrib/opencensus-ext-flask"}
 alembic = "*"
 sqlalchemy = "*"
 flask = "*"
