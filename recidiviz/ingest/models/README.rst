@@ -344,6 +344,7 @@ A Sentence object holds information about a sentence imposed for one or more cha
 =================================== ========================================================================================
 **sentence_id**                     Unique identifier for a sentence. If not specified, one will be generated automatically.
 **date_imposed**                    Sentencing date.
+**status**                          Sentencing status.
 **sentencing_region**               https://github.com/Recidiviz/pulse-data/issues/419
 
                                     The place that imposed the sentence.
@@ -355,4 +356,7 @@ A Sentence object holds information about a sentence imposed for one or more cha
 **fine_dollars**                    Fine amount imposed as part of this sentence.
 **parole_possible**                 Flag indicating whether parole is a possibility
 **post_release_supervision_length** Duration of community supervision to be served after release from incarceration.
+**projected_completion_date**       The date the sentence is expected to have been completed.
+                                    This value is valid while someone is incarcerated, but completion_date is filled in when someone is actually released. These values may be different.
+**completion_date**                 The date this sentence was completed. This should only be filled in if it is in the past.
 =================================== ========================================================================================
