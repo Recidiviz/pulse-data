@@ -96,12 +96,11 @@ def make_iap_request(url: str, client_id: str, method='GET', **kwargs):
         raise Exception('Service account {} does not have permission to '
                         'access the IAP-protected application.'.format(
                             signer_email))
-    elif response.status_code != 200:
+    if response.status_code != 200:
         raise Exception(
             'Bad response from application: {!r} / {!r} / {!r}'.format(
                 response.status_code, response.headers, response.text))
-    else:
-        return response
+    return response
 
 
 def get_google_open_id_connect_token(
