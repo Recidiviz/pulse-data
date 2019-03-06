@@ -54,6 +54,10 @@ MODIFIED_FILE_ASSERTIONS = frozenset((
     frozenset((
         os.path.relpath(schema.__file__),  # schema
         os.path.relpath(migrations.__file__[:-len('__init__.py')])  # migrations
+    )),
+    # pipfile
+    frozenset((
+        'Pipfile', 'Pipfile.lock'
     ))
 ))
 
