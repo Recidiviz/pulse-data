@@ -13,5 +13,6 @@ echo "Starting deploy of queue.yaml"
 python -m recidiviz.tools.build_queue_config --environment production
 gcloud app deploy queue.yaml --project=recidiviz-123
 
+VERSION=$(echo $1 | tr '.' '-')
 echo "Starting deploy of main app"
-gcloud app deploy prod.yaml --project=recidiviz-123 --version=$1
+gcloud app deploy prod.yaml --project=recidiviz-123 --version=$VERSION
