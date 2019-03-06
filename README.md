@@ -234,6 +234,8 @@ has more information about running locally.
 
 Install the GCloud SDK using the [interactive installer](https://cloud.google.com/sdk/docs/downloads-interactive).
 
+Note: make sure the installer did not add `google-cloud-sdk/platform/google_appengine` or subdirectories thereof to your `$PYTHONPATH`, e.g. in your bash profile. This could break attempts to run tests within the `pipenv shell` by hijacking certain dependencies.   
+
 ### Deploying a scraper
 
 The release engineer oncall should go through the following steps:
