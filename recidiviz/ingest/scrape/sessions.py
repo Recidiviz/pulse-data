@@ -21,6 +21,7 @@
 import logging
 import time
 from datetime import datetime
+from typing import List
 
 from google.cloud import datastore
 
@@ -122,7 +123,7 @@ def create_session(scrape_key):
         logging.warning("Couldn't create new session entity:\n%s", e)
 
 
-def end_session(scrape_key):
+def end_session(scrape_key) -> List[ScrapeSession]:
     """Ends any open session for the given scraper.
 
     Resets relevant session info after a scraping session is concluded and
@@ -131,20 +132,23 @@ def end_session(scrape_key):
 
     Args:
         scrape_key: (ScrapeKey) The scraper to clean up session info for
+
+    Returns: list of the scrape sessions which were closed
     """
     open_sessions = get_sessions(scrape_key.region_code,
                                  include_closed=False,
                                  scrape_type=scrape_key.scrape_type)
 
+    closed_sessions = []
     for session in open_sessions:
         session.update({'end':  datetime.now()})
         try:
             ds().put(session.to_entity())
         except Exception as e:
             logging.warning("Couldn't set end time on prior sessions:\n%s", e)
-            return
+        closed_sessions.append(session)
 
-    return
+    return closed_sessions
 
 
 def update_session(last_scraped, scrape_key):
