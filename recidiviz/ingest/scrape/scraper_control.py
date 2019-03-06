@@ -167,8 +167,12 @@ def scraper_stop():
                                                                  request.args))
 
     def _stop_scraper(region):
+        closed_sessions = []
         for scrape_type in scrape_types:
-            sessions.end_session(ScrapeKey(region, scrape_type))
+            closed_sessions.extend(
+                sessions.end_session(ScrapeKey(region, scrape_type)))
+        if not closed_sessions:
+            return
 
         region_scraper = regions.get_region(region).get_scraper()
         region_scraper.stop_scrape(scrape_types)
