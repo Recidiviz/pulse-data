@@ -38,6 +38,7 @@ from datetime import datetime
 from functools import partial
 
 from recidiviz.ingest.scrape import constants
+from recidiviz.ingest.scrape.ingest_utils import validate_regions
 from recidiviz.ingest.scrape.task_params import QueueRequest
 from recidiviz.utils import regions
 
@@ -65,7 +66,12 @@ def start_scrape(queue, self, scrape_type):
 
 
 def run_scraper(args):
-    region_codes = args.region.split(',')
+    if args.region == 'all':
+        region_codes = [r.region_code for r in regions.get_supported_regions()]
+    else:
+        region_codes = validate_regions(args.region.split(','))
+        if not region_codes:
+            exit()
     failed_regions = []
     for region_code in region_codes:
         logging.info('***')
@@ -134,7 +140,8 @@ def _create_parser():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--region', required=True,
-                        help='The comma separated list of regions to test')
+                        help='The comma separated list of regions to test, or'
+                             '"all" to test all regions')
     parser.add_argument(
         '--num_tasks', required=False, default=5, type=int,
         help='The number of tasks to complete'
