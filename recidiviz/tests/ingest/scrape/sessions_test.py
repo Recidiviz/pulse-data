@@ -118,6 +118,33 @@ class TestWriteSessions:
         scrape_key = ScrapeKey("us_sd", constants.ScrapeType.BACKGROUND)
         assert not sessions.update_session("VONNEGUT, KURT", scrape_key)
 
+    @patch('google.cloud.datastore.Query')
+    @patch('google.cloud.datastore.Client')
+    @patch('recidiviz.ingest.scrape.sessions.datetime')
+    def test_end_session(self, mock_datetime, mock_client, mock_query):
+        mock_datetime.now.return_value = fixed_now
+
+        key = datastore.key.Key('session', 'key', project=0)
+        session = ScrapeSession.new(
+            key, start=fixed_now, scrape_type=constants.ScrapeType.SNAPSHOT,
+            region='us_sd'
+        )
+
+        wire_sessions_to_query(mock_client, mock_query, [session])
+        session.update({'end_time': fixed_now})
+
+        scrape_key = ScrapeKey("us_sd", constants.ScrapeType.SNAPSHOT)
+        assert to_entities(sessions.end_session(scrape_key)) == \
+            to_entities([session])
+
+        mock_client.return_value.put.assert_called_with(session.to_entity())
+
+    @patch('google.cloud.datastore.Client')
+    def test_end_session_nothing_current(self, _mock_client):
+        scrape_key = ScrapeKey("us_sd", constants.ScrapeType.BACKGROUND)
+        assert not sessions.end_session(scrape_key)
+
+
 
 class TestAddDocketItemToCurrentSession:
     """Tests for the add_docket_item_to_current_session method in the module."""
