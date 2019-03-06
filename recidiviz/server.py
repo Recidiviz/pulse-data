@@ -21,9 +21,9 @@ import logging
 from flask import Flask
 from google.cloud.logging import Client, handlers
 from opencensus.common.transports.async_ import AsyncTransport
+from opencensus.ext.flask.flask_middleware import FlaskMiddleware
 from opencensus.trace import config_integration
 from opencensus.trace.exporters import file_exporter, stackdriver_exporter
-from opencensus.trace.ext.flask.flask_middleware import FlaskMiddleware
 
 from recidiviz.cloud_functions.cloud_functions import cloud_functions_blueprint
 from recidiviz.ingest.aggregate.scrape_aggregate_reports import \
