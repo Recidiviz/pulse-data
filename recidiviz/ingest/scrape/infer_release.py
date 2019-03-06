@@ -20,14 +20,15 @@
 from http import HTTPStatus
 import logging
 
-from flask import Blueprint
+from flask import Blueprint, request
 
 from recidiviz.common.constants.booking import CustodyStatus
 from recidiviz.ingest.scrape import sessions
+from recidiviz.ingest.scrape.ingest_utils import validate_regions
 from recidiviz.utils.auth import authenticate_request
 from recidiviz.persistence import persistence
-from recidiviz.utils.regions import Region, RemovedFromWebsite, \
-    get_supported_regions
+from recidiviz.utils.params import get_values
+from recidiviz.utils.regions import Region, RemovedFromWebsite, get_region
 
 infer_release_blueprint = Blueprint('infer_release', __name__)
 
@@ -35,7 +36,8 @@ infer_release_blueprint = Blueprint('infer_release', __name__)
 @infer_release_blueprint.route('/release')
 @authenticate_request
 def infer_release():
-    regions = get_supported_regions()
+    region_codes = validate_regions(get_values('region', request.args))
+    regions = [get_region(region_code) for region_code in region_codes]
 
     for region in regions:
         if region.agency_type != 'jail':
