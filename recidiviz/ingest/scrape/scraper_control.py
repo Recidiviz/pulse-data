@@ -22,15 +22,16 @@ Attributes:
     SCRAPE_TYPES: (list(string)) the list of acceptable scrape types
 """
 
-from http import HTTPStatus
 import logging
 import threading
 import time
+from http import HTTPStatus
 
-from flask import Blueprint, request
+from flask import Blueprint, copy_current_request_context, request, url_for
 
-from recidiviz.ingest.scrape import sessions, ingest_utils, tracker, docket
 from recidiviz.ingest.models.scrape_key import ScrapeKey
+from recidiviz.ingest.scrape import (docket, ingest_utils, queues, scrape_phase,
+                                     sessions, tracker)
 from recidiviz.utils import regions
 from recidiviz.utils.auth import authenticate_request
 from recidiviz.utils.params import get_value, get_values
@@ -166,7 +167,8 @@ def scraper_stop():
     scrape_types = ingest_utils.validate_scrape_types(get_values("scrape_type",
                                                                  request.args))
 
-    def _stop_scraper(region):
+    @copy_current_request_context
+    def _stop_scraper(region: str):
         closed_sessions = []
         for scrape_type in scrape_types:
             closed_sessions.extend(
@@ -176,6 +178,11 @@ def scraper_stop():
 
         region_scraper = regions.get_region(region).get_scraper()
         region_scraper.stop_scrape(scrape_types)
+
+        next_phase = scrape_phase.next_phase(request.endpoint)
+        if next_phase:
+            queues.enqueue_scraper_phase(
+                region_code=region, url=url_for(next_phase))
 
     if not scrape_regions or not scrape_types:
         return ('Missing or invalid parameters, see service logs.',
