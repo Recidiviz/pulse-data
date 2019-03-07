@@ -119,11 +119,11 @@ class TestStartScrape:
 class TestStopScraper:
     """Tests for the Scraper.stop_scrape method."""
 
-    @patch("recidiviz.ingest.scrape.queues.purge_queue")
+    @patch("recidiviz.ingest.scrape.queues.purge_tasks")
     @patch("recidiviz.ingest.scrape.sessions.get_sessions")
     @patch("recidiviz.utils.regions.get_region")
     def test_stop_scrape(
-            self, mock_get_region, mock_sessions, mock_purge_queue):
+            self, mock_get_region, mock_sessions, mock_purge_tasks):
         region = "us_sd"
         scrape_type = constants.ScrapeType.BACKGROUND
         queue_name = "us_sd_scraper"
@@ -134,22 +134,23 @@ class TestStopScraper:
             key=None, scrape_type=scrape_type, region=region,
         )
         mock_sessions.return_value = [open_session]
-        mock_purge_queue.return_value = None
+        mock_purge_tasks.return_value = None
 
         scraper = FakeScraper(region, initial_task)
         scraper.stop_scrape([scrape_type])
 
         mock_get_region.assert_called_with(region)
         mock_sessions.assert_called_with(region, include_closed=False)
-        mock_purge_queue.assert_called_with(queue_name)
+        mock_purge_tasks.assert_called_with(
+            region_code=region, queue_name=queue_name)
 
-    @patch("recidiviz.ingest.scrape.queues.purge_queue")
+    @patch("recidiviz.ingest.scrape.queues.purge_tasks")
     @patch("recidiviz.ingest.scrape.sessions.get_sessions")
     @patch("recidiviz.utils.regions.get_region")
     @patch.object(Scraper, "resume_scrape")
     def test_stop_scrape_resume_other_scrapes(
             self, mock_resume, mock_get_region, mock_sessions,
-            mock_purge_queue):
+            mock_purge_tasks):
         """Tests that the stop_scrape method will launch other scrape types we
         didn't mean to stop."""
         region = "us_sd"
@@ -165,7 +166,7 @@ class TestStopScraper:
             key=None, scrape_type=constants.ScrapeType.BACKGROUND,
         )
         mock_sessions.return_value = [open_session_other, open_session_matching]
-        mock_purge_queue.return_value = None
+        mock_purge_tasks.return_value = None
 
         scraper = FakeScraper(region, initial_task)
         scraper.stop_scrape([scrape_type])
@@ -173,7 +174,8 @@ class TestStopScraper:
         mock_get_region.assert_called_with(region)
         mock_sessions.assert_called_with(region, include_closed=False)
         mock_resume.assert_called_with(constants.ScrapeType.SNAPSHOT)
-        mock_purge_queue.assert_called_with(queue_name)
+        mock_purge_tasks.assert_called_with(
+            region_code=region, queue_name=queue_name)
 
 
 class TestResumeScrape:
