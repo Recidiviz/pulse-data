@@ -40,9 +40,9 @@ _REGION = 'region'
 _EXTERNAL_ID = 'external_id'
 _EXTERNAL_ID_OTHER = 'external_id_another'
 _FACILITY = 'facility'
-_FULL_NAME = 'full_name'
 _PLACE_1 = 'place'
 _PLACE_2 = 'another'
+_FULL_NAME = 'full_name'
 _DATE = datetime(2018, 12, 13)
 _DATE_OTHER = datetime(2017, 12, 13)
 _CHARGE_NAME = "Charge1"
@@ -57,9 +57,9 @@ class TestEntityMatchingUtils(TestCase):
 
     def test_person_match_name(self):
         db_person = entities.Person.new_with_defaults(
-            full_name=_FULL_NAME, place_of_residence=_PLACE_1)
+            full_name=_FULL_NAME, resident_of_region=True)
         ingested_person = entities.Person.new_with_defaults(
-            full_name=_FULL_NAME, place_of_residence=_PLACE_2)
+            full_name=_FULL_NAME, resident_of_region=False)
         self.assertTrue(entity_matching_utils.is_person_match(
             db_entity=db_person, ingested_entity=ingested_person))
 

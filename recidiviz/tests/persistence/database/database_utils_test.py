@@ -27,7 +27,8 @@ from recidiviz.common.constants.booking import CustodyStatus, ReleaseReason, \
 from recidiviz.common.constants.charge import ChargeDegree, ChargeClass, \
     ChargeStatus, CourtType
 from recidiviz.common.constants.hold import HoldStatus
-from recidiviz.common.constants.person import Gender, Race, Ethnicity
+from recidiviz.common.constants.person import Gender, Race, Ethnicity, \
+    ResidencyStatus
 from recidiviz.common.constants.sentence import SentenceStatus
 from recidiviz.persistence import entities
 from recidiviz.persistence.database import schema
@@ -46,7 +47,8 @@ _PERSON = entities.Person(
     region="region",
     ethnicity=Ethnicity.NOT_HISPANIC,
     ethnicity_raw_text='NOT HISPANIC',
-    place_of_residence="residence",
+    residency_status=ResidencyStatus.PERMANENT,
+    resident_of_region=True,
     person_id=1234,
     bookings=[entities.Booking(
         booking_id=2345,
