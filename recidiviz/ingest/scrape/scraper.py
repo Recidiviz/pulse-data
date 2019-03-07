@@ -125,13 +125,15 @@ class Scraper(metaclass=abc.ABCMeta):
             N/A
 
         """
-        queues.purge_queue(self.get_region().get_queue_name())
+        region = self.get_region()
+        queues.purge_tasks(region_code=region.region_code,
+                           queue_name=region.get_queue_name())
 
         # Check for other running scrapes, and if found kick off a delayed
         # resume for them since the taskqueue purge will kill them.
         other_scrapes = set([])
 
-        open_sessions = sessions.get_sessions(self.get_region().region_code,
+        open_sessions = sessions.get_sessions(region.region_code,
                                               include_closed=False)
         for session in open_sessions:
             if session.scrape_type not in scrape_types:

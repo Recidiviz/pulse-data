@@ -19,7 +19,9 @@
 
 import json
 import unittest
-from mock import patch
+from mock import call, patch
+
+from google.cloud.tasks_v2beta3.types import Task
 
 from recidiviz.ingest.scrape import queues
 from recidiviz.utils import metadata
@@ -50,13 +52,13 @@ class QueuesTest(unittest.TestCase):
             region_code='us_ny', queue_name=queue_name, url=url, body=params)
 
         body_encoded = json.dumps(params).encode()
-        task = {
-            'name': task_path,
-            'app_engine_http_request': {
+        task = Task(
+            name=task_path,
+            app_engine_http_request={
                 'relative_uri': url,
                 'body': body_encoded
             }
-        }
+        )
 
         mock_client.return_value.queue_path.assert_called_with(
             metadata.project_id(), metadata.region(), queue_name)
@@ -65,17 +67,20 @@ class QueuesTest(unittest.TestCase):
 
 
     @patch('google.cloud.tasks_v2beta3.CloudTasksClient')
-    def test_purge_queue(self, mock_client):
-        """Tests that a queue is purged."""
+    def test_purge_tasks(self, mock_client):
         queue_name = 'testqueue'
         queue_path = queue_name + '-path'
         mock_client.return_value.queue_path.return_value = queue_path
+        mock_client.return_value.list_tasks.return_value = [
+            Task(name='us_ny-123'),
+            Task(name='us_pa-456'),
+            Task(name='us_ny-789')
+        ]
 
-        queues.purge_queue(queue_name)
+        queues.purge_tasks(region_code='us_ny', queue_name=queue_name)
 
-        mock_client.return_value.queue_path.assert_called_with(
-            metadata.project_id(), metadata.region(), queue_name)
-        mock_client.return_value.purge_queue.assert_called_with(queue_path)
+        mock_client.return_value.delete_task.assert_has_calls([
+            call('us_ny-123'), call('us_ny-789')])
 
     @patch('google.cloud.tasks_v2beta3.CloudTasksClient')
     def test_list_tasks(self, mock_client):
@@ -84,15 +89,14 @@ class QueuesTest(unittest.TestCase):
 
         mock_client.return_value.queue_path.return_value = queue_path
         mock_client.return_value.list_tasks.return_value = [
-            {'name': 'us_ny-123', 'value': '1'},
-            {'name': 'us_pa-456', 'value': '2'},
-            {'name': 'us_ny-789', 'value': '3'}
+            Task(name='us_ny-123'),
+            Task(name='us_pa-456'),
+            Task(name='us_ny-789')
         ]
 
         tasks = queues.list_tasks(region_code='us_ny', queue_name=queue_name)
 
-        assert tasks == [{'name': 'us_ny-123', 'value': '1'},
-                         {'name': 'us_ny-789', 'value': '3'}]
+        assert tasks == [Task(name='us_ny-123'), Task(name='us_ny-789')]
 
         mock_client.return_value.queue_path.assert_called_with(
             metadata.project_id(), metadata.region(), queue_name)
