@@ -1,13 +1,4 @@
 cron:
-  - description: Infer release of all people not seen in completed scrapes
-    url: /infer_release/release?region=all
-    schedule: every day 09:30
-    timezone: Pacific/Honolulu
-    retry_parameters:
-      min_backoff_seconds: 2.5
-      max_doublings: 5
-      job_age_limit: 9h
-
   - description: Checks for finished scrapers and kicks off next steps
     url: /scraper/check_finished?region=all
     schedule: every 10 mins

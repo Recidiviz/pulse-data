@@ -16,13 +16,15 @@
 # ============================================================================
 """Checks the status of scrapers to detect when they have completed."""
 
-from http import HTTPStatus
 import logging
 import threading
+from http import HTTPStatus
 
-from flask import Blueprint, request
+from flask import Blueprint, copy_current_request_context, request, url_for
 
-from recidiviz.ingest.scrape import ingest_utils, queues
+from recidiviz.ingest.models.scrape_key import ScrapeKey
+from recidiviz.ingest.scrape import (constants, ingest_utils, queues,
+                                     scrape_phase, sessions)
 from recidiviz.utils import regions
 from recidiviz.utils.auth import authenticate_request
 from recidiviz.utils.params import get_values
@@ -34,10 +36,20 @@ scraper_status = Blueprint('scraper_status', __name__)
 def check_for_finished_scrapers():
     """Checks for any finished scrapers and kicks off next processes."""
 
+    @copy_current_request_context
     def _check_finished(region_code: str):
+        # If there are no open sessions, nothing to check.
+        if not sessions.get_current_session(
+                ScrapeKey(region_code, constants.ScrapeType.BACKGROUND)):
+            return
+
         if is_scraper_finished(region_code):
-            # TODO: create task to stop scraper, kick off batch write
-            logging.info('Region \'%s\' has completed.', region_code)
+            logging.info('Region \'%s\' has finished scraping.', region_code)
+
+            next_phase = scrape_phase.next_phase(request.endpoint)
+            if next_phase:
+                queues.enqueue_scraper_phase(
+                    region_code=region_code, url=url_for(next_phase))
 
     region_codes = ingest_utils.validate_regions(
         get_values('region', request.args))
