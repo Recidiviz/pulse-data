@@ -16,21 +16,26 @@
 # =============================================================================
 
 """Tests for ingest/scraper_control.py."""
-from unittest import TestCase
-
+import pytest
 import pytz
 from flask import Flask
 from mock import call, create_autospec, patch
 
+from recidiviz.ingest.scrape import constants, infer_release, scraper_control
 from recidiviz.ingest.models.scrape_key import ScrapeKey
-from recidiviz.ingest.scrape import constants, scraper_control
 from recidiviz.utils.regions import Region
 
-APP_ID = "recidiviz-worker-test"
 
-app = Flask(__name__)
-app.register_blueprint(scraper_control.scraper_control)
-app.config['TESTING'] = True
+# pylint: disable=redefined-outer-name
+@pytest.fixture
+def client():
+    app = Flask(__name__)
+    app.register_blueprint(scraper_control.scraper_control)
+    # Include so that flask can get the url of `infer_release`.
+    app.register_blueprint(infer_release.infer_release_blueprint)
+    app.config['TESTING'] = True
+
+    yield app.test_client()
 
 
 def _MockSupported(timezone=None):
@@ -43,12 +48,8 @@ def _MockSupported(timezone=None):
     return regions
 
 
-class TestScraperStart(TestCase):
+class TestScraperStart:
     """Tests for requests to the Scraper Start API."""
-
-    # noinspection PyAttributeOutsideInit
-    def setup_method(self, _test_method):
-        self.client = app.test_client()
 
     @patch("recidiviz.utils.environment.get_gae_environment")
     @patch("recidiviz.utils.regions.get_supported_region_codes")
@@ -56,8 +57,9 @@ class TestScraperStart(TestCase):
     @patch("recidiviz.ingest.scrape.sessions.create_session")
     @patch("recidiviz.ingest.scrape.tracker.purge_docket_and_session")
     @patch("recidiviz.ingest.scrape.docket.load_target_list")
-    def test_start(self, mock_docket, mock_tracker, mock_sessions, mock_region,
-                   mock_supported, mock_environment):
+    def test_start(
+            self, mock_docket, mock_tracker, mock_sessions, mock_region,
+            mock_supported, mock_environment, client):
         """Tests that the start operation chains together the correct calls."""
         mock_docket.return_value = None
         mock_tracker.return_value = None
@@ -71,9 +73,9 @@ class TestScraperStart(TestCase):
         scrape_key = ScrapeKey(region, scrape_type)
         request_args = {'region': region, 'scrape_type': scrape_type.value}
         headers = {'X-Appengine-Cron': "test-cron"}
-        response = self.client.get('/start',
-                                   query_string=request_args,
-                                   headers=headers)
+        response = client.get('/start',
+                              query_string=request_args,
+                              headers=headers)
         assert response.status_code == 200
 
         mock_docket.assert_called_with(scrape_key, '', '')
@@ -88,8 +90,9 @@ class TestScraperStart(TestCase):
     @patch("recidiviz.ingest.scrape.sessions.create_session")
     @patch("recidiviz.ingest.scrape.tracker.purge_docket_and_session")
     @patch("recidiviz.ingest.scrape.docket.load_target_list")
-    def test_start_timezone(self, mock_docket, mock_tracker, mock_sessions,
-                            mock_region, mock_supported, mock_environment):
+    def test_start_timezone(
+            self, mock_docket, mock_tracker, mock_sessions,
+            mock_region, mock_supported, mock_environment, client):
         """Tests that the start operation chains together the correct calls."""
         mock_docket.return_value = None
         mock_tracker.return_value = None
@@ -104,9 +107,9 @@ class TestScraperStart(TestCase):
         request_args = {'region': region, 'scrape_type': scrape_type.value,
                         'timezone': 'America/Los_Angeles'}
         headers = {'X-Appengine-Cron': "test-cron"}
-        response = self.client.get('/start',
-                                   query_string=request_args,
-                                   headers=headers)
+        response = client.get('/start',
+                              query_string=request_args,
+                              headers=headers)
         assert response.status_code == 200
 
         mock_docket.assert_called_with(scrape_key, '', '')
@@ -124,7 +127,7 @@ class TestScraperStart(TestCase):
     @patch("recidiviz.ingest.scrape.docket.load_target_list")
     def test_start_all_diff_environment(
             self, mock_docket, mock_tracker, mock_sessions, mock_region,
-            mock_supported, mock_environment):
+            mock_supported, mock_environment, client):
         """Tests that the start operation chains together the correct calls."""
         mock_docket.return_value = None
         mock_tracker.return_value = None
@@ -137,26 +140,26 @@ class TestScraperStart(TestCase):
         scrape_type = constants.ScrapeType.BACKGROUND
         request_args = {'region': region, 'scrape_type': scrape_type.value}
         headers = {'X-Appengine-Cron': "test-cron"}
-        response = self.client.get('/start',
-                                   query_string=request_args,
-                                   headers=headers)
-        self.assertEqual(response.status_code, 400)
+        response = client.get('/start',
+                              query_string=request_args,
+                              headers=headers)
+        assert response.status_code == 400
 
-        self.assertFalse(mock_docket.called)
-        self.assertFalse(mock_tracker.called)
-        self.assertFalse(mock_sessions.called)
+        assert not mock_docket.called
+        assert not mock_tracker.called
+        assert not mock_sessions.called
         mock_region.assert_called_with('us_wy')
         mock_supported.assert_called_with(timezone=None)
 
     @patch("recidiviz.utils.regions.get_supported_region_codes")
-    def test_start_unsupported_region(self, mock_supported):
+    def test_start_unsupported_region(self, mock_supported, client):
         mock_supported.return_value = ['us_ny', 'us_pa']
 
         request_args = {'region': 'us_ca', 'scrape_type': 'all'}
         headers = {'X-Appengine-Cron': "test-cron"}
-        response = self.client.get('/start',
-                                   query_string=request_args,
-                                   headers=headers)
+        response = client.get('/start',
+                              query_string=request_args,
+                              headers=headers)
         assert response.status_code == 400
         assert response.get_data().decode() == \
             "Missing or invalid parameters, or no regions found, see logs."
@@ -167,23 +170,22 @@ class TestScraperStart(TestCase):
 class TestScraperStop:
     """Tests for requests to the Scraper Stop API."""
 
-    # noinspection PyAttributeOutsideInit
-    def setup_method(self, _test_method):
-        self.client = app.test_client()
-
     @patch("recidiviz.utils.regions.get_supported_region_codes")
     @patch("recidiviz.utils.regions.get_region")
+    @patch("recidiviz.ingest.scrape.queues.enqueue_scraper_phase")
     @patch("recidiviz.ingest.scrape.sessions.end_session")
-    def test_stop(self, mock_sessions, mock_region, mock_supported):
+    def test_stop(
+            self, mock_sessions, mock_enqueue, mock_region, mock_supported,
+            client):
         mock_sessions.return_value = ['open_session']
         mock_region.return_value = fake_region()
         mock_supported.return_value = ['us_ca', 'us_ut']
 
         request_args = {'region': 'all', 'scrape_type': 'all'}
         headers = {'X-Appengine-Cron': "test-cron"}
-        response = self.client.get('/stop',
-                                   query_string=request_args,
-                                   headers=headers)
+        response = client.get('/stop',
+                              query_string=request_args,
+                              headers=headers)
         assert response.status_code == 200
 
         mock_sessions.assert_has_calls(
@@ -199,20 +201,27 @@ class TestScraperStop:
                   constants.ScrapeType.SNAPSHOT])
         ])
         mock_supported.assert_called_with(timezone=None)
+        mock_enqueue.assert_has_calls([
+            call(region_code='us_ca', url='/release'),
+            call(region_code='us_ut', url='/release'),
+        ], any_order=True)
 
     @patch("recidiviz.utils.regions.get_supported_region_codes")
     @patch("recidiviz.utils.regions.get_region")
+    @patch("recidiviz.ingest.scrape.queues.enqueue_scraper_phase")
     @patch("recidiviz.ingest.scrape.sessions.end_session")
-    def test_stop_no_session(self, mock_sessions, mock_region, mock_supported):
+    def test_stop_no_session(
+            self, mock_sessions, mock_enqueue, mock_region, mock_supported,
+            client):
         mock_sessions.return_value = []
         mock_region.return_value = fake_region()
         mock_supported.return_value = ['us_ca', 'us_ut']
 
         request_args = {'region': 'all', 'scrape_type': 'all'}
         headers = {'X-Appengine-Cron': "test-cron"}
-        response = self.client.get('/stop',
-                                   query_string=request_args,
-                                   headers=headers)
+        response = client.get('/stop',
+                              query_string=request_args,
+                              headers=headers)
         assert response.status_code == 200
 
         mock_sessions.assert_has_calls(
@@ -223,11 +232,15 @@ class TestScraperStop:
             any_order=True)
         assert not mock_region.return_value.get_scraper().stop_scrape.called
         mock_supported.assert_called_with(timezone=None)
+        assert not mock_enqueue.called
 
     @patch("recidiviz.utils.regions.get_supported_region_codes")
     @patch("recidiviz.utils.regions.get_region")
+    @patch("recidiviz.ingest.scrape.queues.enqueue_scraper_phase")
     @patch("recidiviz.ingest.scrape.sessions.end_session")
-    def test_stop_timezone(self, mock_sessions, mock_region, mock_supported):
+    def test_stop_timezone(
+            self, mock_sessions, mock_enqueue, mock_region, mock_supported,
+            client):
         mock_sessions.return_value = ['open_session']
         mock_region.return_value = fake_region()
         mock_supported.side_effect = _MockSupported
@@ -238,9 +251,9 @@ class TestScraperStop:
             'timezone': 'America/New_York'
         }
         headers = {'X-Appengine-Cron': "test-cron"}
-        response = self.client.get('/stop',
-                                   query_string=request_args,
-                                   headers=headers)
+        response = client.get('/stop',
+                              query_string=request_args,
+                              headers=headers)
         assert response.status_code == 200
 
         mock_sessions.assert_has_calls([
@@ -252,34 +265,34 @@ class TestScraperStop:
         ])
         mock_supported.assert_called_with(
             timezone=pytz.timezone('America/New_York'))
+        mock_enqueue.assert_called_with(region_code='us_ut', url='/release')
 
+    @patch("recidiviz.ingest.scrape.queues.enqueue_scraper_phase")
     @patch("recidiviz.utils.regions.get_supported_region_codes")
-    def test_stop_unsupported_region(self, mock_supported):
+    def test_stop_unsupported_region(
+            self, mock_supported, mock_enqueue, client):
         mock_supported.return_value = ['us_ny', 'us_pa']
 
         request_args = {'region': 'us_ca', 'scrape_type': 'all'}
         headers = {'X-Appengine-Cron': "test-cron"}
-        response = self.client.get('/stop',
-                                   query_string=request_args,
-                                   headers=headers)
+        response = client.get('/stop',
+                              query_string=request_args,
+                              headers=headers)
         assert response.status_code == 400
         assert response.get_data().decode() == \
             "Missing or invalid parameters, see service logs."
 
         mock_supported.assert_called_with(timezone=None)
+        assert not mock_enqueue.called
 
 
 class TestScraperResume:
     """Tests for requests to the Scraper Resume API."""
 
-    # noinspection PyAttributeOutsideInit
-    def setup_method(self, _test_method):
-        self.client = app.test_client()
-
     @patch("recidiviz.utils.regions.get_supported_region_codes")
     @patch("recidiviz.utils.regions.get_region")
     @patch("recidiviz.ingest.scrape.sessions.create_session")
-    def test_resume(self, mock_sessions, mock_region, mock_supported):
+    def test_resume(self, mock_sessions, mock_region, mock_supported, client):
         mock_sessions.return_value = None
         mock_region.return_value = fake_region()
         mock_supported.return_value = ['us_ca']
@@ -287,9 +300,9 @@ class TestScraperResume:
         region = 'us_ca'
         request_args = {'region': region, 'scrape_type': 'all'}
         headers = {'X-Appengine-Cron': "test-cron"}
-        response = self.client.get('/resume',
-                                   query_string=request_args,
-                                   headers=headers)
+        response = client.get('/resume',
+                              query_string=request_args,
+                              headers=headers)
         assert response.status_code == 200
 
         mock_sessions.assert_has_calls(
@@ -299,14 +312,14 @@ class TestScraperResume:
         mock_supported.assert_called_with(timezone=None)
 
     @patch("recidiviz.utils.regions.get_supported_region_codes")
-    def test_resume_unsupported_region(self, mock_supported):
+    def test_resume_unsupported_region(self, mock_supported, client):
         mock_supported.return_value = ['us_ny', 'us_pa']
 
         request_args = {'region': 'us_ca', 'scrape_type': 'all'}
         headers = {'X-Appengine-Cron': "test-cron"}
-        response = self.client.get('/resume',
-                                   query_string=request_args,
-                                   headers=headers)
+        response = client.get('/resume',
+                              query_string=request_args,
+                              headers=headers)
         assert response.status_code == 400
         assert response.get_data().decode() == \
             "Missing or invalid parameters, see service logs."

@@ -20,6 +20,7 @@ from typing import Any, Dict, List
 
 import yaml
 
+from recidiviz.ingest.scrape import queues
 from recidiviz.utils import regions, vendors
 
 BASE_QUEUE_CONFIG = {
@@ -39,24 +40,26 @@ class NoAliasDumper(yaml.Dumper):
         return True
 
 def build_queues(environment: str):
-    queues: List[Dict[str, Any]] = []
+    qs: List[Dict[str, Any]] = []
+    qs.append({'name': queues.SCRAPER_PHASE_QUEUE,
+               **BASE_QUEUE_CONFIG, 'rate': '1/s'})
     for vendor in vendors.get_vendors():
         queue_params = vendors.get_vendor_queue_params(vendor)
         if queue_params is None:
             continue
-        queues.append({
+        qs.append({
             'name': 'vendor-{}-scraper'.format(vendor.replace('_', '-')),
             **BASE_QUEUE_CONFIG, **queue_params
         })
     for region in regions.get_supported_regions():
         if region.shared_queue or not region.environment == environment:
             continue
-        queues.append({
+        qs.append({
             'name': region.get_queue_name(),
             **BASE_QUEUE_CONFIG, **(region.queue or {})
         })
     with open('queue.yaml', 'w') as queue_manifest:
-        yaml.dump({'queue': queues}, queue_manifest,
+        yaml.dump({'queue': qs}, queue_manifest,
                   default_flow_style=False, Dumper=NoAliasDumper)
 
 

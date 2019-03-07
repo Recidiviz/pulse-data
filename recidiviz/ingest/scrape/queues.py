@@ -96,6 +96,25 @@ def create_task(*, region_code, queue_name, url, body):
     queue_path = format_queue_path(queue_name)
     client().create_task(queue_path, task)
 
+SCRAPER_PHASE_QUEUE = 'scraper-phase'
+
+def enqueue_scraper_phase(*, region_code, url):
+    """Add a task to trigger the next phase of a scrape.
+
+    This triggers the phase at the given url for an individual region, passing
+    the `region_code` as a url parameter. For example, this can trigger stopping
+    a scraper or inferring release for a particular region.
+    """
+    task = {
+        'app_engine_http_request': {
+            'http_method': 'GET',
+            'relative_uri': '{url}?region={region_code}'.format(
+                url=url, region_code=region_code
+            ),
+        }
+    }
+    client().create_task(format_queue_path(SCRAPER_PHASE_QUEUE), task)
+
 def list_tasks(*, region_code: str, queue_name: str):
     """List tasks for the given region and queue"""
     return [task for task in client().list_tasks(format_queue_path(queue_name))

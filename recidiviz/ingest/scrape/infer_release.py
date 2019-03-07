@@ -20,10 +20,10 @@
 from http import HTTPStatus
 import logging
 
-from flask import Blueprint, request
+from flask import Blueprint, request, url_for
 
 from recidiviz.common.constants.booking import CustodyStatus
-from recidiviz.ingest.scrape import sessions
+from recidiviz.ingest.scrape import queues, scrape_phase, sessions
 from recidiviz.ingest.scrape.ingest_utils import validate_regions
 from recidiviz.utils.auth import authenticate_request
 from recidiviz.persistence import persistence
@@ -50,6 +50,11 @@ def infer_release():
                 region.region_code, session.start)
             persistence.infer_release_on_open_bookings(
                 region.region_code, session.start, _get_custody_status(region))
+
+        next_phase = scrape_phase.next_phase(request.endpoint)
+        if next_phase:
+            queues.enqueue_scraper_phase(
+                region_code=region.region_code, url=url_for(next_phase))
     return '', HTTPStatus.OK
 
 
