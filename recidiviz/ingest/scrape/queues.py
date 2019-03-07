@@ -19,8 +19,10 @@
 
 import json
 import uuid
+from typing import List
 
 from google.cloud import tasks_v2beta3
+from google.cloud.tasks_v2beta3.types import Task
 
 from recidiviz.utils import environment, metadata
 
@@ -66,35 +68,41 @@ def format_task_path(queue_name: str, region_code: str, task_id: str):
         '{}-{}'.format(region_code, task_id))
 
 
-def purge_queue(queue_name):
-    """Purge a queue.
+def purge_tasks(*, region_code: str, queue_name: str):
+    """Purge tasks for a given region from its queue.
 
     Args:
+        region_code: `str` region code.
         queue_name: `str` queue name.
     """
-    queue_path = format_queue_path(queue_name)
-    client().purge_queue(queue_path)
+    for task in list_tasks(region_code=region_code, queue_name=queue_name):
+        client().delete_task(task.name)
+
+
+def list_tasks(*, region_code: str, queue_name: str) -> List[Task]:
+    """List tasks for the given region and queue"""
+    return [task for task in client().list_tasks(format_queue_path(queue_name))
+            if task.name.startswith(region_code)]
 
 
 def create_task(*, region_code, queue_name, url, body):
     """Create a task in a queue.
 
     Args:
-        url: `str` App Engine worker url.
+        region_code: `str` region code.
         queue_name: `str` queue name.
+        url: `str` App Engine worker url.
         body: `dict` task body to be passed to worker.
     """
-    body_encoded = json.dumps(body).encode()
-    task = {
-        'name': format_task_path(queue_name, region_code, uuid.uuid4()),
-        'app_engine_http_request': {
+    task = Task(
+        name=format_task_path(queue_name, region_code, uuid.uuid4()),
+        app_engine_http_request={
             'relative_uri': url,
-            'body': body_encoded
+            'body': json.dumps(body).encode()
         }
-    }
+    )
 
-    queue_path = format_queue_path(queue_name)
-    client().create_task(queue_path, task)
+    client().create_task(format_queue_path(queue_name), task)
 
 SCRAPER_PHASE_QUEUE = 'scraper-phase'
 
@@ -105,17 +113,12 @@ def enqueue_scraper_phase(*, region_code, url):
     the `region_code` as a url parameter. For example, this can trigger stopping
     a scraper or inferring release for a particular region.
     """
-    task = {
-        'app_engine_http_request': {
+    task = Task(
+        app_engine_http_request={
             'http_method': 'GET',
             'relative_uri': '{url}?region={region_code}'.format(
                 url=url, region_code=region_code
             ),
         }
-    }
+    )
     client().create_task(format_queue_path(SCRAPER_PHASE_QUEUE), task)
-
-def list_tasks(*, region_code: str, queue_name: str):
-    """List tasks for the given region and queue"""
-    return [task for task in client().list_tasks(format_queue_path(queue_name))
-            if task['name'].startswith(region_code)]

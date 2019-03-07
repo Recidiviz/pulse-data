@@ -22,10 +22,11 @@ import datetime
 import json
 
 from flask import Flask
-from mock import patch
+from mock import create_autospec, patch
 
 from recidiviz.ingest.scrape import constants, worker
 from recidiviz.ingest.scrape.task_params import QueueRequest, Task
+from recidiviz.utils.regions import Region
 
 PATH = "/work"
 FAKE_QUEUE_PARAMS = QueueRequest(
@@ -50,8 +51,11 @@ class TestWorker:
         self.client = app.test_client()
 
     @patch("recidiviz.utils.regions.get_region")
-    def test_post_work(self, mock_region):
-        mock_region.return_value = FakeRegion(FakeScraper(1))
+    @patch("recidiviz.ingest.scrape.sessions.get_current_session")
+    def test_post_work(self, mock_session, mock_region):
+        mock_session.return_value = 'session'
+        region = create_autospec(Region)
+        mock_region.return_value = region
 
         form = {'region': 'us_ca', 'task': 'fake_task',
                 'params': FAKE_QUEUE_PARAMS.to_serializable()}
@@ -60,20 +64,30 @@ class TestWorker:
         response = self.client.post(PATH, data=form_encoded, headers=headers)
         assert response.status_code == 200
 
-    @patch("recidiviz.utils.regions.get_region")
-    def test_post_work_params(self, mock_region):
-        mock_region.return_value = FakeRegion(FakeScraper(1))
+        region.get_scraper().fake_task.assert_called_with(FAKE_QUEUE_PARAMS)
 
-        form = {'region': 'us_ca', 'task': 'fake_task_params',
+    @patch("recidiviz.utils.regions.get_region")
+    @patch("recidiviz.ingest.scrape.sessions.get_current_session")
+    def test_post_work_no_session(self, mock_session, mock_region):
+        mock_session.return_value = None
+
+        form = {'region': 'us_ca', 'task': 'fake_task',
                 'params': FAKE_QUEUE_PARAMS.to_serializable()}
         form_encoded = json.dumps(form).encode()
         headers = {'X-Appengine-QueueName': "test-queue"}
         response = self.client.post(PATH, data=form_encoded, headers=headers)
         assert response.status_code == 200
 
+        assert not mock_region.called
+
     @patch("recidiviz.utils.regions.get_region")
-    def test_post_work_error(self, mock_region):
-        mock_region.return_value = FakeRegion(FakeScraper(-1))
+    @patch("recidiviz.ingest.scrape.sessions.get_current_session")
+    def test_post_work_error(self, mock_session, mock_region):
+        mock_session.return_value = 'session'
+        region = create_autospec(Region)
+        # TODO: use exceptions instead of -1
+        region.get_scraper().fake_task.return_value = -1
+        mock_region.return_value = region
 
         form = {
             'region': 'us_ca',
@@ -85,19 +99,27 @@ class TestWorker:
         response = self.client.post(PATH, data=form_encoded, headers=headers)
         assert response.status_code == 500
 
+        region.get_scraper().fake_task.assert_called_with(FAKE_QUEUE_PARAMS)
+
     @patch("recidiviz.utils.regions.get_region")
-    def test_post_work_timeout(self, mock_region):
-        mock_region.return_value = FakeRegion(FakeScraper(1))
+    @patch("recidiviz.ingest.scrape.sessions.get_current_session")
+    def test_post_work_timeout(self, mock_session, mock_region):
+        mock_session.return_value = 'session'
+        region = create_autospec(Region)
+        region.get_scraper().fake_task.side_effect = TimeoutError()
+        mock_region.return_value = region
 
         form = {
             'region': 'us_ca',
-            'task': 'fake_task_timeout',
+            'task': 'fake_task',
             'params': FAKE_QUEUE_PARAMS.to_serializable(),
         }
         form_encoded = json.dumps(form).encode()
         headers = {'X-Appengine-QueueName': "test-queue"}
         response = self.client.post(PATH, data=form_encoded, headers=headers)
         assert response.status_code == 500
+
+        region.get_scraper().fake_task.assert_called_with(FAKE_QUEUE_PARAMS)
 
     @patch("recidiviz.utils.validate_jwt.validate_iap_jwt_from_app_engine")
     def test_post_work_not_from_task(self, mock_jwt):
@@ -106,30 +128,3 @@ class TestWorker:
         headers = {'x-goog-iap-jwt-assertion': '1234'}
         response = self.client.post(PATH, headers=headers)
         assert response.status_code == 500
-
-
-class FakeRegion:
-    """A fake region to be returned from mocked out calls to Region"""
-    def __init__(self, scraper):
-        self.scraper = scraper
-
-    def get_scraper(self):
-        return self.scraper
-
-
-class FakeScraper:
-    """A fake scraper to be returned from mocked out calls to
-    Region.get_scraper."""
-
-    def __init__(self, return_value):
-        self.return_value = return_value
-
-    def fake_task(self, _params):
-        return self.return_value
-
-    def fake_task_params(self, params):
-        assert params is not None
-        return self.return_value
-
-    def fake_task_timeout(self, params):
-        raise TimeoutError()
