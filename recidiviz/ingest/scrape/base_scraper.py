@@ -51,7 +51,7 @@ from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.scrape import constants, ingest_utils
 from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.ingest.scrape.errors import ScraperFetchError, \
-    ScraperGetMoreTasksError, ScraperPopulateDataError
+    ScraperGetMoreTasksError, ScraperPopulateDataError, ScraperError
 from recidiviz.ingest.scrape.scraper import Scraper
 from recidiviz.ingest.scrape.task_params import QueueRequest, ScrapedData,\
     Task
@@ -170,6 +170,7 @@ class BaseScraper(Scraper):
             # TODO(#680): remove this
             if task.content is not None:
                 content = self._parse_html_content(task.content)
+                cookies = None
             else:
                 post_data = task.post_data
 
@@ -234,7 +235,7 @@ class BaseScraper(Scraper):
                 # Something is wrong if we get here but no fields are set in the
                 # ingest info.
                 if not scraped_data.ingest_info:
-                    raise ValueError('IngestInfo must be populated')
+                    raise ScraperError('IngestInfo must be populated')
 
                 logging.info(
                     'Writing ingest_info (%d people) to the database for %s',
