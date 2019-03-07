@@ -68,6 +68,11 @@ ethnicity = Enum(enum_strings.external_unknown,
                  enum_strings.ethnicity_not_hispanic,
                  name='ethnicity')
 
+residency_status = Enum(enum_strings.residency_status_homeless,
+                        enum_strings.residency_status_permanent,
+                        enum_strings.residency_status_transient,
+                        name='residency_status')
+
 # Booking
 
 admission_reason = Enum(enum_strings.admission_reason_escape,
@@ -226,7 +231,8 @@ class _PersonSharedColumns:
     race_raw_text = Column(String(255))
     ethnicity = Column(ethnicity)
     ethnicity_raw_text = Column(String(255))
-    place_of_residence = Column(String(255))
+    residency_status = Column(residency_status)
+    resident_of_region = Column(Boolean)
     region = Column(String(255), nullable=False, index=True)
 
 
