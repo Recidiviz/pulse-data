@@ -18,7 +18,7 @@
 """Utils file for ingest module"""
 import logging
 from datetime import tzinfo
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set, Union
 
 from google.protobuf import json_format
 import pytz
@@ -33,39 +33,47 @@ def lookup_timezone(timezone: Optional[str]) -> Optional[tzinfo]:
     return pytz.timezone(timezone) if timezone else None
 
 
-def validate_regions(region_list, timezone: tzinfo = None):
+def _regions_matching_environment(region_codes: Set[str]) -> Set[str]:
+    """Filter to regions with the matching environment.
+
+    If we are running locally, include all supported regions.
+    """
+    if not environment.in_gae():
+        return region_codes
+    gae_env = environment.get_gae_environment()
+    return  {region_code for region_code in region_codes
+             if regions.get_region(region_code).environment == gae_env}
+
+
+def validate_regions(region_codes: List[str],
+                     timezone: tzinfo = None) -> Union[Set[str], bool]:
     """Validates the region arguments.
 
-    If any region in |region_list| is "all", then all supported regions will be
+    If any region in |region_codes| is "all", then all supported regions will be
     returned.
 
     Args:
-        region_list: List of regions from URL parameters
+        region_codes: List of regions from URL parameters
         timezone: If set, returns only regions in the matching timezone
 
     Returns:
         False if invalid regions
         List of regions to scrape if successful
     """
-    regions_list_output = region_list
+    region_codes_output = set(region_codes)
 
     supported_regions = regions.get_supported_region_codes(timezone=timezone)
-    for region in region_list:
+    for region in region_codes:
         if region == "all":
-            # If we got all regions, we only want to start them in the right
-            # environment.  We only do this if all is passed to still allow
-            # people to manually run any scrapers they wish.
-            supported_regions = set(
-                filter(
-                    lambda x: regions.get_region(x).environment ==
-                    environment.get_gae_environment(),
-                    supported_regions))
-            regions_list_output = supported_regions
+            # We only do this if all is passed to still allow people to manually
+            # run any scrapers they wish.
+            region_codes_output = _regions_matching_environment(
+                supported_regions)
         elif region not in supported_regions:
             logging.error("Region '%s' not recognized.", region)
             return False
 
-    return regions_list_output
+    return region_codes_output
 
 
 def validate_scrape_types(
