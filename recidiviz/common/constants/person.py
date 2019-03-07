@@ -58,6 +58,16 @@ class Ethnicity(EntityEnum, metaclass=EntityEnumMeta):
         return _ETHNICITY_MAP
 
 
+class ResidencyStatus(EntityEnum, metaclass=EntityEnumMeta):
+    HOMELESS = enum_strings.residency_status_homeless
+    PERMANENT = enum_strings.residency_status_permanent
+    TRANSIENT = enum_strings.residency_status_transient
+
+    @staticmethod
+    def _get_default_map():
+        raise RuntimeError('ResidencyStatus is not mapped directly')
+
+
 PROTECTED_CLASSES = (Race, Ethnicity, Gender)
 
 

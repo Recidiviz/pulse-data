@@ -71,7 +71,7 @@ class TestEntityMatching(TestCase):
 
         schema_person = schema.Person(
             person_id=_PERSON_ID, external_id=_EXTERNAL_ID,
-            full_name=_FULL_NAME, birthdate=_DATE, place_of_residence=_PLACE_1,
+            full_name=_FULL_NAME, birthdate=_DATE,
             region=_REGION, bookings=[schema_booking])
 
         session = Session()
@@ -214,8 +214,7 @@ class TestEntityMatching(TestCase):
 
         schema_person = schema.Person(
             person_id=_PERSON_ID, full_name=_FULL_NAME, birthdate=_DATE,
-            place_of_residence=_PLACE_1, region=_REGION,
-            bookings=[schema_booking])
+            region=_REGION, bookings=[schema_booking])
 
         schema_booking_external_id = schema.Booking(
             admission_date=_DATE_2, booking_id=_BOOKING_ID_ANOTHER,
@@ -224,7 +223,7 @@ class TestEntityMatching(TestCase):
 
         schema_person_external_id = schema.Person(
             person_id=_PERSON_ID_ANOTHER, external_id=_EXTERNAL_ID,
-            full_name=_FULL_NAME, birthdate=_DATE, place_of_residence=_PLACE_1,
+            full_name=_FULL_NAME, birthdate=_DATE,
             region=_REGION, bookings=[schema_booking_external_id])
 
         session = Session()
@@ -237,7 +236,7 @@ class TestEntityMatching(TestCase):
             custody_status=CustodyStatus.RELEASED)
         ingested_person = attr.evolve(
             database_utils.convert(schema_person), person_id=None,
-            place_of_residence=_PLACE_2, bookings=[ingested_booking])
+            bookings=[ingested_booking])
 
         ingested_booking_external_id = attr.evolve(
             database_utils.convert(schema_booking_external_id),
