@@ -64,6 +64,10 @@ race_white = 'WHITE'
 ethnicity_hispanic = 'HISPANIC'
 ethnicity_not_hispanic = 'NOT_HISPANIC'
 
+residency_status_homeless = 'HOMELESS'
+residency_status_permanent = 'PERMANENT'
+residency_status_transient = 'TRANSIENT'
+
 # Booking
 
 admission_reason_escape = 'ESCAPE'

@@ -142,6 +142,7 @@ class SchemaTest(TestCase):
             'gender': person.Gender,
             'race': person.Race,
             'ethnicity': person.Ethnicity,
+            'residency_status': person.ResidencyStatus,
             'admission_reason': booking.AdmissionReason,
             'classification': booking.Classification,
             'custody_status': booking.CustodyStatus,

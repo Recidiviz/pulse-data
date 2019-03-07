@@ -44,7 +44,8 @@ def copy_fields_to_builder(person_builder, proto, metadata):
     new.gender = fn(Gender.parse, 'gender', proto, metadata.enum_overrides)
     new.gender_raw_text = fn(normalize, 'gender', proto)
     # TODO(769): Store place_of_residence only if it can be anonymized
-    new.place_of_residence = None
+    new.residency_status = None
+    new.resident_of_region = None
 
     new.region = metadata.region
 

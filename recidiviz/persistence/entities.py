@@ -32,7 +32,8 @@ from recidiviz.common.constants.booking import ReleaseReason, CustodyStatus, \
 from recidiviz.common.constants.charge import ChargeClass, ChargeDegree, \
     ChargeStatus, CourtType
 from recidiviz.common.constants.hold import HoldStatus
-from recidiviz.common.constants.person import Race, Ethnicity, Gender
+from recidiviz.common.constants.person import Race, Ethnicity, Gender, \
+    ResidencyStatus
 from recidiviz.common.constants.sentence import SentenceStatus
 
 
@@ -59,7 +60,8 @@ class Person(Entity, BuildableAttr, DefaultableAttr):
     region: str = attr.ib()  # non-nullable
     ethnicity: Optional[Ethnicity] = attr.ib()
     ethnicity_raw_text: Optional[str] = attr.ib()
-    place_of_residence: Optional[str] = attr.ib()
+    residency_status: Optional[ResidencyStatus] = attr.ib()
+    resident_of_region: Optional[bool] = attr.ib()
 
     person_id: Optional[int] = attr.ib(default=None)
     bookings: List['Booking'] = attr.ib(factory=list)
