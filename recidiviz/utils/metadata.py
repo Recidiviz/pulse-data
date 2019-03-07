@@ -17,6 +17,7 @@
 
 """Utility methods for fetching app engine related metadata."""
 import logging
+import os
 from typing import Dict
 
 import requests
@@ -52,9 +53,12 @@ def project_number():
 def project_id():
     """Gets the project_id for this instance from the Compute Engine metadata
     server. If the metadata server is unavailable, it assumes that the
-    application is running locally.
+    application is running locally and falls back to the GOOGLE_CLOUD_PROJECT
+    environment variable.
     """
-    return _get_metadata('project/project-id')
+    return (
+        _get_metadata('project/project-id') or os.getenv('GOOGLE_CLOUD_PROJECT')
+    )
 
 def instance_id():
     """Returns the GCP instnance ID of the current instance."""
