@@ -63,6 +63,7 @@ def scraper_start():
     Returns:
         N/A
     """
+    @copy_current_request_context
     def _start_scraper(region, scrape_type):
         scrape_key = ScrapeKey(region, scrape_type)
         logging.info("Starting new scraper for: %s", scrape_key)
@@ -81,6 +82,9 @@ def scraper_start():
         # background allows us to start the scraper before it is fully
         # loaded.
         tracker.purge_docket_and_session(scrape_key)
+        # Note, the request context isn't copied when launching this thread, so
+        # any logs from within `load_target_list` will not be associated with
+        # the start scraper request.
         load_docket_thread = threading.Thread(
             target=docket.load_target_list,
             args=(scrape_key, given_names, surname))
