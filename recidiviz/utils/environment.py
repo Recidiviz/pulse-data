@@ -48,8 +48,7 @@ def in_gae():
         True if on hosted GAE instance
         False if not
     """
-    return (os.getenv('RECIDIVIZ_ENV', '') == 'production' or
-            os.getenv('RECIDIVIZ_ENV', '') == 'staging')
+    return get_gae_environment() in {'production', 'staging'}
 
 def get_gae_environment():
     """Get the environment we are running in
@@ -58,9 +57,9 @@ def get_gae_environment():
         N/A
 
     Returns:
-        The gae instance we are running in, or local if it is not set
+        The gae instance we are running in, or None if it is not set
     """
-    return os.getenv('RECIDIVIZ_ENV', 'local')
+    return os.getenv('RECIDIVIZ_ENV')
 
 
 def get_datastore_client() -> datastore.Client:

@@ -30,6 +30,7 @@ python -m recidiviz.ingest.run_scraper --region us_pa_greene --num_tasks 10
 import argparse
 import json
 import logging
+import sys
 import time
 import traceback
 import types
@@ -66,12 +67,9 @@ def start_scrape(queue, self, scrape_type):
 
 
 def run_scraper(args):
-    if args.region == 'all':
-        region_codes = [r.region_code for r in regions.get_supported_regions()]
-    else:
-        region_codes = validate_regions(args.region.split(','))
-        if not region_codes:
-            exit()
+    region_codes = validate_regions(args.region.split(','))
+    if not region_codes:
+        sys.exit(1)
     failed_regions = []
     for region_code in region_codes:
         logging.info('***')
