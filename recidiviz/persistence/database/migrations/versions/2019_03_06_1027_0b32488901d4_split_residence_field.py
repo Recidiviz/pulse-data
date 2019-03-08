@@ -59,8 +59,8 @@ def get_is_resident(place_of_residence, region):
                 normalized_residence_county[:-(suffix_length + 1)])
     for county_name in possible_county_names:
         if normalized_region_county == county_name:
-            return True 
-    return False 
+            return True
+    return False
 
 
 # Returns residency status if it can be determined, and None otherwise

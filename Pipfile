@@ -26,9 +26,9 @@ pandas = "*"
 more-itertools = "*"
 lxml = "*"
 cattrs = "*"
-opencensus = {ref = "d37b6d267307a136631881e593c2bc8921a786b6",git = "https://github.com/census-instrumentation/opencensus-python.git", editable = true}
-opencensus-correlation = {ref = "d37b6d267307a136631881e593c2bc8921a786b6",git = "https://github.com/census-instrumentation/opencensus-python.git", editable = true, subdirectory = "contrib/opencensus-correlation"}
-opencensus-ext-flask = {ref = "d37b6d267307a136631881e593c2bc8921a786b6",git = "https://github.com/census-instrumentation/opencensus-python.git", editable = true, subdirectory = "contrib/opencensus-ext-flask"}
+opencensus = {ref = "d37b6d267307a136631881e593c2bc8921a786b6",git = "https://github.com/census-instrumentation/opencensus-python.git",editable = true}
+opencensus-correlation = {ref = "d37b6d267307a136631881e593c2bc8921a786b6",git = "https://github.com/census-instrumentation/opencensus-python.git",editable = true,subdirectory = "contrib/opencensus-correlation"}
+opencensus-ext-flask = {ref = "d37b6d267307a136631881e593c2bc8921a786b6",git = "https://github.com/census-instrumentation/opencensus-python.git",editable = true,subdirectory = "contrib/opencensus-ext-flask"}
 alembic = "*"
 sqlalchemy = "*"
 flask = "*"
@@ -56,6 +56,7 @@ protobuf = "*"
 "psycopg2" = "*"
 cryptography = "*"
 xlrd = "*"
+uszipcode = "*"
 
 [requires]
 python_version = "3.7"
