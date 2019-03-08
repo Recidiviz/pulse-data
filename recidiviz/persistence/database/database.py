@@ -17,7 +17,7 @@
 """Contains logic for communicating with a SQL Database."""
 
 import logging
-from typing import List
+from typing import List, Set
 from more_itertools import one
 
 import pandas as pd
@@ -55,8 +55,7 @@ def read_people(session, full_name=None, birthdate=None):
         query = query.filter(Person.full_name == full_name)
     if birthdate is not None:
         query = query.filter(Person.birthdate == birthdate)
-
-    return database_utils.convert_all(query.all())
+    return _convert_and_normalize_record_trees(query.all())
 
 
 def read_bookings(session):
@@ -88,8 +87,7 @@ def read_people_by_external_ids(
     query = session.query(Person) \
         .filter(Person.region == region) \
         .filter(Person.external_id.in_(external_ids))
-
-    return [database_utils.convert(p) for p in query.all()]
+    return _convert_and_normalize_record_trees(query.all())
 
 
 def read_people_with_open_bookings(session, region, ingested_people):
@@ -108,7 +106,8 @@ def read_people_with_open_bookings(session, region, ingested_people):
 
     full_names = {p.full_name for p in ingested_people}
     query = query.filter(Person.full_name.in_(full_names))
-    return [database_utils.convert(person) for person, _ in query.all()]
+    return _convert_and_normalize_record_trees(
+        [person for person, _ in query.all()])
 
 
 def read_people_with_open_bookings_scraped_before_time(session, region, time):
@@ -126,7 +125,8 @@ def read_people_with_open_bookings_scraped_before_time(session, region, time):
     """
     query = _query_people_and_open_bookings(session, region) \
         .filter(Booking.last_seen_time < time)
-    return [database_utils.convert(person) for person, _ in query.all()]
+    return _convert_and_normalize_record_trees(
+        [person for person, _ in query.all()])
 
 
 def _query_people_and_open_bookings(session, region):
@@ -141,6 +141,20 @@ def _query_people_and_open_bookings(session, region):
         .filter(Person.person_id == Booking.person_id) \
         .filter(Person.region == region) \
         .filter(Booking.release_date.is_(None))
+
+
+def _convert_and_normalize_record_trees(
+        people: List[Person]) -> List[entities.Person]:
+    """Converts schema record trees to persistence layer models and removes
+    any duplicates created by how SQLAlchemy handles joins
+    """
+    converted_people: List[entities.Person] = []
+    ids: Set[int] = set()
+    for person in people:
+        if person.person_id not in ids:
+            converted_people.append(database_utils.convert(person))
+            ids.add(person.person_id)
+    return converted_people
 
 
 def write_people(session: Session, people: List[Person],

@@ -178,6 +178,35 @@ class TestDatabase(TestCase):
                            [person_match_full_name]]
         self.assertCountEqual(people, expected_people)
 
+    def test_personWithMultipleBookings_shouldNotReturnDuplicatePeople(self):
+        person = Person(person_id=1, region=_REGION, full_name=_FULL_NAME)
+
+        booking_1 = Booking(
+            custody_status=CustodyStatus.UNKNOWN_FOUND_IN_SOURCE.value,
+            admission_date=datetime.datetime(2019, 1, 10),
+            last_seen_time=datetime.datetime(2019, 1, 10))
+        booking_2 = Booking(
+            custody_status=CustodyStatus.UNKNOWN_FOUND_IN_SOURCE.value,
+            admission_date=datetime.datetime(2019, 2, 10),
+            last_seen_time=datetime.datetime(2019, 2, 10))
+
+        person.bookings.extend([booking_1, booking_2])
+
+        arrange_session = Session()
+        arrange_session.add(person)
+        arrange_session.commit()
+        arrange_session.close()
+
+        act_session = Session()
+        info = IngestInfo()
+        info.create_person(full_name=_FULL_NAME)
+        people = database.read_people_with_open_bookings(
+            act_session, _REGION, info.people)
+        act_session.commit()
+        act_session.close()
+
+        self.assertEqual(len(people), 1)
+
     def testWritePerson_noExistingSnapshots_createsSnapshots(self):
         act_session = Session()
 
