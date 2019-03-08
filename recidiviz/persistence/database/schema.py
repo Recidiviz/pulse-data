@@ -538,7 +538,8 @@ class _SentenceRelationshipSharedColumns:
         return super().__new__(cls)
 
     # Manually set name to avoid conflict with Python reserved keyword
-    sentence_relationship_type = Column('type', sentence_relationship_type)
+    sentence_relationship_type = Column(
+        'type', sentence_relationship_type, nullable=False)
     sentence_relation_type_raw_text = Column(String(255))
 
 
@@ -547,8 +548,15 @@ class SentenceRelationship(Base, DatabaseEntity,
     """Represents the relationship between two sentences"""
     __tablename__ = 'sentence_relationship'
 
-    # NOTE: (A,B) is equal to (B,A). There should only be one
-    # SentenceRelationship for any pair of sentences.
+    # NOTE: A sentence relationship is undirected: if sentence A is served
+    # concurrently with sentence B, sentence B is served concurrently with
+    # sentence A. However, due to the limits of a standard SQL table, we have
+    # to define the relationship directionally here, by arbitrarily choosing one
+    # sentence to label as A and one to label as B. This choice of (A,B) is
+    # equal to the other arbitrary choice of (B,A), so there should only be one
+    # SentenceRelationship defined for any pair of sentences. (I.e. don't
+    # create both (A,B) and (B,A) SentenceRelationships for one pair of
+    # sentences.)
 
     sentence_relationship_id = Column(Integer, primary_key=True)
     sentence_a_id = Column(

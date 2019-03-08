@@ -55,13 +55,14 @@ class TestIngestInfo(unittest.TestCase):
         booking_fields_ignore = ['arrest_id', 'charge_ids', 'hold_ids',
                                  'arrest', 'charges', 'holds']
         charge_fields_ignore = ['bond_id', 'sentence_id', 'bond', 'sentence']
+        sentence_fields_ignore = ['sentence_relationships']
 
         _verify_fields(Person, ingest_info.Person(), person_fields_ignore)
         _verify_fields(Booking, ingest_info.Booking(), booking_fields_ignore)
         _verify_fields(Charge, ingest_info.Charge(), charge_fields_ignore)
         _verify_fields(Hold, ingest_info.Hold())
         _verify_fields(Arrest, ingest_info.Arrest())
-        _verify_fields(Sentence, ingest_info.Sentence())
+        _verify_fields(Sentence, ingest_info.Sentence(), sentence_fields_ignore)
         _verify_fields(Bond, ingest_info.Bond())
         return True
 
