@@ -138,3 +138,10 @@ _ETHNICITY_MAP = {
     'N': Ethnicity.NOT_HISPANIC,
     'UNKNOWN': Ethnicity.EXTERNAL_UNKNOWN,
 }
+
+
+RESIDENCY_STATUS_SUBSTRING_MAP = {
+    'HOMELESS': ResidencyStatus.HOMELESS,
+    'PERMANENT': ResidencyStatus.PERMANENT,
+    'TRANSIENT': ResidencyStatus.TRANSIENT
+}
