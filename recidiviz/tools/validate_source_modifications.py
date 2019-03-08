@@ -34,7 +34,8 @@ import sys
 from typing import FrozenSet, List, Tuple
 
 from recidiviz.ingest.models import ingest_info, ingest_info_pb2
-from recidiviz.persistence.database import migrations, schema
+from recidiviz.persistence.database import schema
+from recidiviz.persistence.database.migrations import versions
 
 # Sets of prefixes to check. For each set, if the changes modify a file matching
 # any prefix in the set, then it must also modify files matching all other
@@ -53,7 +54,7 @@ MODIFIED_FILE_ASSERTIONS = frozenset((
     # schema
     frozenset((
         os.path.relpath(schema.__file__),  # schema
-        os.path.relpath(migrations.__file__[:-len('__init__.py')])  # migrations
+        os.path.relpath(versions.__file__[:-len('__init__.py')])  # versions
     )),
     # pipfile
     frozenset((
