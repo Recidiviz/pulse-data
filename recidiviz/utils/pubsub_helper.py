@@ -22,6 +22,7 @@
 #   if reused with another scraper the background scrapes might need
 #   more time depending on e.g. # results for query 'John Doe'.
 import logging
+import time
 
 from google.api_core import exceptions  # pylint: disable=no-name-in-module
 from google.cloud import pubsub
@@ -82,6 +83,9 @@ def create_topic_and_subscription(scrape_key, pubsub_type):
     except exceptions.AlreadyExists:
         logging.info("Topic already exists")
 
+    # A race condition exists sometimes where the topic doesn't exist yet and
+    # therefore fails to make the subscription.
+    time.sleep(1)
     subscription_path = get_subscription_path(scrape_key, pubsub_type)
     try:
         logging.info("Creating pubsub subscription: '%s'", subscription_path)
