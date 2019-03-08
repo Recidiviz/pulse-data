@@ -34,6 +34,7 @@ class ScrapeType(enum.Enum):
     SNAPSHOT = "snapshot"
 
 MAX_PEOPLE_TO_LOG = 4
+PUBSUB_TYPE = 'scraper_batch'
 
 @enum.unique
 class ResponseType(enum.Enum):
