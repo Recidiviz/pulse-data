@@ -25,10 +25,19 @@ Also accepts the following optional arguments:
   - timezone: the timezone, e.g. America/New_York
   - url: the initial url of the roster
   - vendor: create a vendor scraper. Available vendors:
+    - `archonix`
     - `brooks_jeffrey`
     - `jailtracker`
     - `smart_cop`
     - `superion`
+    - `dcn`
+    - `eagle_advantage`
+    - `iml`
+    - `inmate_search`
+    - `justice_solutions`
+    - `net_data`
+    - `newworld`
+    - `zuercher`
 
 If the flag --tests_only is set, will only create test files.
 """
@@ -88,10 +97,19 @@ def _create_parser() -> argparse.ArgumentParser:
         parser.add_argument('--' + optional_arg, nargs='?', const=1, default='')
     parser.add_argument('--vendor', required=False,
                         help='Create a vendor scraper.',
-                        choices=['brooks_jeffrey',
+                        choices=['archonix',
+                                 'brooks_jeffrey',
                                  'jailtracker',
                                  'smart_cop',
-                                 'superion'])
+                                 'superion',
+                                 'dcn',
+                                 'eagle_advantage',
+                                 'iml',
+                                 'inmate_search',
+                                 'justice_solutions',
+                                 'net_data',
+                                 'newworld',
+                                 'zuercher'])
     parser.add_argument('--tests_only', required=False, action='store_true',
                         help='If set, only create test files.')
     return parser
