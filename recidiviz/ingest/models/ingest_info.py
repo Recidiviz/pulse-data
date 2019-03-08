@@ -335,7 +335,7 @@ class Sentence(IngestObject):
             is_life=None, is_probation=None, is_suspended=None,
             fine_dollars=None, parole_possible=None,
             post_release_supervision_length=None, completion_date=None,
-            projected_completion_date=None):
+            projected_completion_date=None, sentence_relationships=None):
         self.sentence_id: Optional[str] = sentence_id
         self.date_imposed: Optional[str] = date_imposed
         self.status: Optional[str] = status
@@ -354,8 +354,39 @@ class Sentence(IngestObject):
         self.post_release_supervision_length: Optional[str] = \
             post_release_supervision_length
 
+        self.sentence_relationships: List[SentenceRelationship] = \
+            sentence_relationships or []
+
     def __setattr__(self, name, value):
-        restricted_setattr(self, 'post_release_supervision_length', name, value)
+        restricted_setattr(self, 'sentence_relationships', name, value)
+
+    def create_sentence_relationship(
+            self, other_sentence, relationship_type) -> 'SentenceRelationship':
+        relationship = SentenceRelationship(
+            sentence_a=self, sentence_b=other_sentence,
+            relationship_type=relationship_type)
+        self.sentence_relationships.append(relationship)
+        return relationship
+
+
+# TODO(1145): add logic to convert to SentenceRelationship proto (and also add
+# normalization logic to remove duplicates where A->B and B->A relationships
+# are both provided)
+class SentenceRelationship(IngestObject):
+    """Class for information about the relationship between two sentences.
+    Referenced from Sentence.
+    """
+
+    def __init__(
+            self, sentence_relationship_id=None, sentence_a=None,
+            sentence_b=None, relationship_type=None):
+        self.sentence_relationship_id: Optional[str] = sentence_relationship_id
+        self.sentence_a: Optional[Sentence] = sentence_a
+        self.sentence_b: Optional[Sentence] = sentence_b
+        self.relationship_type: Optional[str] = relationship_type
+
+    def __setattr__(self, name, value):
+        restricted_setattr(self, 'relationship_type', name, value)
 
 
 def to_bool(obj):
