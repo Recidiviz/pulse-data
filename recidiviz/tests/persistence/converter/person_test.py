@@ -20,7 +20,8 @@ from datetime import date, datetime
 
 from mock import patch
 
-from recidiviz.common.constants.person import Gender, Race, Ethnicity
+from recidiviz.common.constants.person import Gender, Race, Ethnicity, \
+    ResidencyStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence import entities
@@ -61,7 +62,7 @@ class PersonConverterTest(unittest.TestCase):
             race_raw_text='WHITE',
             ethnicity=Ethnicity.HISPANIC,
             ethnicity_raw_text='HISPANIC',
-            # TODO(769): Note that place_of_residence is not stored
+            residency_status=ResidencyStatus.PERMANENT,
             region='REGION',
         )
 
@@ -151,5 +152,128 @@ class PersonConverterTest(unittest.TestCase):
             ethnicity=Ethnicity.HISPANIC,
             race_raw_text='HISPANIC',
         )
+
+        self.assertEqual(result, expected_result)
+
+    def testParsePerson_ResidentOfCounty(self):
+        # Arrange
+        metadata = IngestMetadata.new_with_defaults(region='us_ky_allen')
+        # 42164 is in Allen
+        ingest_person = ingest_info_pb2.Person(
+            place_of_residence='123 Main 42164')
+
+        # Act
+        person.copy_fields_to_builder(self.subject, ingest_person, metadata)
+        result = self.subject.build()
+
+        # Assert
+        expected_result = entities.Person.new_with_defaults(
+            resident_of_region=True, residency_status=ResidencyStatus.PERMANENT,
+            region='us_ky_allen')
+
+        self.assertEqual(result, expected_result)
+
+    def testParsePerson_NotResidentOfCounty(self):
+        # Arrange
+        metadata = IngestMetadata.new_with_defaults(region='us_ky_allen')
+        # 40601 is in Frankfort
+        ingest_person = ingest_info_pb2.Person(
+            place_of_residence='123 Main 40601')
+
+        # Act
+        person.copy_fields_to_builder(self.subject, ingest_person, metadata)
+        result = self.subject.build()
+
+        # Assert
+        expected_result = entities.Person.new_with_defaults(
+            resident_of_region=False,
+            residency_status=ResidencyStatus.PERMANENT, region='us_ky_allen')
+
+        self.assertEqual(result, expected_result)
+
+    def testParsePerson_ResidentOfState(self):
+        # Arrange
+        metadata = IngestMetadata.new_with_defaults(region='us_ky')
+        # 42164 is in Allen
+        ingest_person = ingest_info_pb2.Person(
+            place_of_residence='123 Main 42164')
+
+        # Act
+        person.copy_fields_to_builder(self.subject, ingest_person, metadata)
+        result = self.subject.build()
+
+        # Assert
+        expected_result = entities.Person.new_with_defaults(
+            resident_of_region=True, residency_status=ResidencyStatus.PERMANENT,
+            region='us_ky')
+
+        self.assertEqual(result, expected_result)
+
+    def testParsePerson_NotResidentOfState(self):
+        # Arrange
+        metadata = IngestMetadata.new_with_defaults(region='us_ky')
+        # 10011 is in New York
+        ingest_person = ingest_info_pb2.Person(
+            place_of_residence='123 Main 10011')
+
+        # Act
+        person.copy_fields_to_builder(self.subject, ingest_person, metadata)
+        result = self.subject.build()
+
+        # Assert
+        expected_result = entities.Person.new_with_defaults(
+            resident_of_region=False,
+            residency_status=ResidencyStatus.PERMANENT, region='us_ky')
+
+        self.assertEqual(result, expected_result)
+
+    def testParsePerson_TakesLastZipCodeMatch(self):
+        # Arrange
+        metadata = IngestMetadata.new_with_defaults(region='us_ky_allen')
+        # 5-digit address could be mistaken for a zip code
+        ingest_person = ingest_info_pb2.Person(
+            place_of_residence='12345 Main 42164')
+
+        # Act
+        person.copy_fields_to_builder(self.subject, ingest_person, metadata)
+        result = self.subject.build()
+
+        # Assert
+        expected_result = entities.Person.new_with_defaults(
+            resident_of_region=True, residency_status=ResidencyStatus.PERMANENT,
+            region='us_ky_allen')
+
+        self.assertEqual(result, expected_result)
+
+    def testParsePerson_NoiseInPlaceOfResidence_ParsesResidencyStatus(self):
+        # Arrange
+        metadata = IngestMetadata.new_with_defaults(region='us_ky_allen')
+        ingest_person = ingest_info_pb2.Person(
+            place_of_residence='transient moves around')
+
+        # Act
+        person.copy_fields_to_builder(self.subject, ingest_person, metadata)
+        result = self.subject.build()
+
+        # Assert
+        expected_result = entities.Person.new_with_defaults(
+            residency_status=ResidencyStatus.TRANSIENT, region='us_ky_allen')
+
+        self.assertEqual(result, expected_result)
+
+    def testParsePerson_ResidenceAndStatusCombined(self):
+        # Arrange
+        metadata = IngestMetadata.new_with_defaults(region='us_ky_allen')
+        ingest_person = ingest_info_pb2.Person(
+            place_of_residence='42164 homeless')
+
+        # Act
+        person.copy_fields_to_builder(self.subject, ingest_person, metadata)
+        result = self.subject.build()
+
+        # Assert
+        expected_result = entities.Person.new_with_defaults(
+            resident_of_region=True, residency_status=ResidencyStatus.HOMELESS,
+            region='us_ky_allen')
 
         self.assertEqual(result, expected_result)

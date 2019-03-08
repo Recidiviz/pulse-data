@@ -16,14 +16,32 @@
 # ============================================================================
 """Converts an ingest_info proto Person to a persistence entity."""
 import json
+import re
 from typing import Optional
 
 import attr
+from uszipcode import SearchEngine
 
-from recidiviz.common.constants.person import Ethnicity, Gender, Race
+from recidiviz.common.constants.person import Ethnicity, Gender, Race, \
+    ResidencyStatus, RESIDENCY_STATUS_SUBSTRING_MAP
 from recidiviz.persistence.converter import converter_utils
 from recidiviz.persistence.converter.converter_utils import \
     calculate_birthdate_from_age, fn, normalize, parse_date, parse_external_id
+
+
+# Suffixes used in county names in uszipcode library
+USZIPCODE_COUNTY_SUFFIXES = [
+    'BOROUGH',
+    'CENSUS AREA',
+    'CITY',
+    'CITY AND BOROUGH',
+    'COUNTY',
+    'MUNICIPIO',
+    'PARISH'
+]
+
+
+ZIP_CODE_SEARCH = SearchEngine(simple_zipcode=True)
 
 
 def copy_fields_to_builder(person_builder, proto, metadata):
@@ -43,9 +61,10 @@ def copy_fields_to_builder(person_builder, proto, metadata):
     new.ethnicity_raw_text = fn(normalize, 'ethnicity', proto)
     new.gender = fn(Gender.parse, 'gender', proto, metadata.enum_overrides)
     new.gender_raw_text = fn(normalize, 'gender', proto)
-    # TODO(769): Store place_of_residence only if it can be anonymized
-    new.residency_status = None
-    new.resident_of_region = None
+    new.residency_status = fn(
+        _parse_residency_status, 'place_of_residence', proto)
+    new.resident_of_region = fn(
+        _parse_is_resident, 'place_of_residence', proto, metadata.region)
 
     new.region = metadata.region
 
@@ -118,3 +137,72 @@ def _parse_race_and_ethnicity(proto, enum_overrides):
         ethnicity = fn(Ethnicity.parse, 'ethnicity', proto, enum_overrides)
 
     return race, ethnicity
+
+
+def _parse_is_resident(place_of_residence: str, region: str) -> Optional[bool]:
+    """Returns (True) if person is resident of |region|, (False) if they are
+    not, and (None) if it cannot be determined
+    """
+
+    zip_code = None
+    zip_code_matches = re.findall(r'\d{5}', place_of_residence)
+    if not zip_code_matches:
+        return None
+    # If more than one match is present, take the last one (to account for
+    # cases where there is a 5-digit address)
+    zip_code = zip_code_matches[-1]
+
+    # Region code us_xx is state, us_xx_xxx... is county
+    if len(region) == 5:
+        return _parse_is_state_resident(zip_code, region)
+    return _parse_is_county_resident(zip_code, region)
+
+
+def _parse_is_county_resident(
+        residence_zip_code: str, region: str) -> Optional[bool]:
+    # Remove 'us_xx_' prefix
+    region_county = region[6:]
+    # Replace underscores with spaces because uszipcode uses spaces
+    normalized_region_county = region_county.upper().replace('_', ' ')
+
+    residence_county = ZIP_CODE_SEARCH.by_zipcode(residence_zip_code).county
+    if not residence_county:
+        return None
+
+    # uszipcode county names only contain hyphens and periods as special
+    # characters
+    normalized_residence_county = \
+        residence_county.upper().replace('-', ' ').replace('.', '')
+
+    # Compare region county to base version of residence county, as well as
+    # residence county with any matching suffixes stripped
+    possible_county_names = {normalized_residence_county}
+    for suffix in USZIPCODE_COUNTY_SUFFIXES:
+        suffix_length = len(suffix)
+        if normalized_residence_county[-(suffix_length):] == suffix:
+            possible_county_names.add(
+                normalized_residence_county[:-(suffix_length + 1)])
+    for county_name in possible_county_names:
+        if normalized_region_county == county_name:
+            return True
+    return False
+
+
+def _parse_is_state_resident(
+        residence_zip_code: str, region: str) -> Optional[bool]:
+    region_state_code = region[-2:].upper()
+    residence_state_code = \
+        ZIP_CODE_SEARCH.by_zipcode(residence_zip_code).state.upper()
+    if not residence_state_code:
+        return None
+    return region_state_code == residence_state_code
+
+
+def _parse_residency_status(place_of_residence: str) -> ResidencyStatus:
+    normalized_place_of_residence = place_of_residence.upper()
+    for substring, residency_status in RESIDENCY_STATUS_SUBSTRING_MAP.items():
+        if substring in normalized_place_of_residence:
+            return residency_status
+    # If place of residence is provided and no other status is explicitly
+    # provided, assumed to be permanent
+    return ResidencyStatus.PERMANENT
