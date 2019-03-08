@@ -22,13 +22,14 @@ from typing import Optional
 
 import attr
 import cattr
-from flask import Blueprint, request
+from flask import Blueprint, request, url_for
 
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.ingest.models.scrape_key import ScrapeKey
-from recidiviz.ingest.scrape import ingest_utils
+from recidiviz.ingest.scrape import ingest_utils, sessions, scrape_phase, queues
+from recidiviz.ingest.scrape.constants import ScrapeType
 from recidiviz.ingest.scrape.task_params import Task
 from recidiviz.persistence import persistence
 from recidiviz.utils import pubsub_helper, regions
@@ -221,20 +222,24 @@ def persist_to_database(region, scrape_type, scraper_start_time):
     persistence.write(proto, metadata)
 
 
-@batch_blueprint.route('/read_and_persist', methods=['POST'])
+@batch_blueprint.route('/read_and_persist')
 @authenticate_request
 def read_and_persist():
     """Reads all of the messages on the pubsub queue for a region and persists
     them to the database.
     """
-    json_data = request.get_data(as_text=True)
-    data = json.loads(json_data)
-
-    region = data['region']
-    scrape_type = data['scrape_type']
-    scraper_start_time = data['scraper_start_time']
+    region = request.args.get('region')
+    session = sessions.get_most_recent_completed_session(
+        region, ScrapeType.BACKGROUND)
+    scrape_type = session.scrape_type
+    scraper_start_time = session.start
 
     persist_to_database(region, scrape_type, scraper_start_time)
+
+    next_phase = scrape_phase.next_phase(request.endpoint)
+    if next_phase:
+        queues.enqueue_scraper_phase(
+            region_code=region, url=url_for(next_phase))
 
     # TODO: queue up infer release before returning
     return '', HTTPStatus.OK

@@ -62,7 +62,7 @@ class BaseScraper(Scraper):
     """Generic class for scrapers."""
 
     # TODO 1055: Remove this when batch reader is complete.
-    BATCH_WRITES = False
+    BATCH_WRITES = True
 
     def __init__(self, region_name):
         super(BaseScraper, self).__init__(region_name)
