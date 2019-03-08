@@ -24,6 +24,7 @@ from mock import patch
 
 from recidiviz.ingest.scrape import constants
 from recidiviz.ingest.models.scrape_key import ScrapeKey
+from recidiviz.ingest.scrape.constants import PUBSUB_TYPE
 from recidiviz.ingest.scrape.scraper import Scraper
 from recidiviz.ingest.scrape.sessions import ScrapeSession
 from recidiviz.ingest.scrape.task_params import QueueRequest, Task
@@ -57,8 +58,10 @@ class TestStartScrape:
     @patch("recidiviz.ingest.scrape.queues.create_task")
     @patch("recidiviz.ingest.scrape.tracker.iterate_docket_item")
     @patch("recidiviz.utils.regions.get_region")
-    def test_start_scrape_background(self, mock_get_region, mock_tracker,
-                                     mock_create_task, mock_datetime):
+    @patch('recidiviz.utils.pubsub_helper.create_topic_and_subscription')
+    def test_start_scrape_background(self, mock_pubsub, mock_get_region,
+                                     mock_tracker, mock_create_task,
+                                     mock_datetime):
         docket_item = ("Dog", "Cat")
         region = "us_nd"
         scrape_type = constants.ScrapeType.BACKGROUND
@@ -75,6 +78,8 @@ class TestStartScrape:
 
         mock_get_region.assert_called_with(region)
         mock_tracker.assert_called_with(ScrapeKey(region, scrape_type))
+        mock_pubsub.assert_called_with(
+            ScrapeKey(region, scrape_type), PUBSUB_TYPE)
 
         queue_params = QueueRequest(
             scrape_type=scrape_type.value,
@@ -97,7 +102,8 @@ class TestStartScrape:
     @patch("recidiviz.ingest.scrape.sessions.end_session")
     @patch("recidiviz.ingest.scrape.tracker.iterate_docket_item")
     @patch("recidiviz.utils.regions.get_region")
-    def test_start_scrape_no_docket_item(self, mock_get_region,
+    @patch('recidiviz.utils.pubsub_helper.create_topic_and_subscription')
+    def test_start_scrape_no_docket_item(self, mock_pubsub, mock_get_region,
                                          mock_tracker, mock_sessions):
         region = "us_nd"
         scrape_type = constants.ScrapeType.BACKGROUND
@@ -114,6 +120,8 @@ class TestStartScrape:
         mock_get_region.assert_called_with(region)
         mock_tracker.assert_called_with(ScrapeKey(region, scrape_type))
         mock_sessions.assert_called_with(ScrapeKey(region, scrape_type))
+        mock_pubsub.assert_called_with(
+            ScrapeKey(region, scrape_type), PUBSUB_TYPE)
 
 
 class TestStopScraper:
