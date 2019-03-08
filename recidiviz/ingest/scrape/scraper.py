@@ -29,8 +29,9 @@ import requests
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.scrape import (constants, queues, scraper_utils,
                                      sessions, tracker)
+from recidiviz.ingest.scrape.constants import PUBSUB_TYPE
 from recidiviz.ingest.scrape.task_params import QueueRequest, Task
-from recidiviz.utils import regions
+from recidiviz.utils import regions, pubsub_helper
 
 
 class Scraper(metaclass=abc.ABCMeta):
@@ -92,11 +93,13 @@ class Scraper(metaclass=abc.ABCMeta):
 
         """
         docket_item = self.iterate_docket_item(scrape_type)
+        scrape_key = ScrapeKey(self.get_region().region_code, scrape_type)
+        # Ensure that the topic and subscription are created on start.
+        pubsub_helper.create_topic_and_subscription(scrape_key, PUBSUB_TYPE)
         if not docket_item:
             logging.error("Found no %s docket items for %s, shutting down.",
                           scrape_type, self.get_region().region_code)
-            sessions.end_session(ScrapeKey(self.get_region().region_code,
-                                           scrape_type))
+            sessions.end_session(scrape_key)
             return
 
         self.add_task(self.get_initial_task_method(),

@@ -29,13 +29,13 @@ from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.scrape import ingest_utils, sessions, scrape_phase, queues
-from recidiviz.ingest.scrape.constants import ScrapeType
+from recidiviz.ingest.scrape.constants import ScrapeType, PUBSUB_TYPE
 from recidiviz.ingest.scrape.task_params import Task
 from recidiviz.persistence import persistence
 from recidiviz.utils import pubsub_helper, regions
 from recidiviz.utils.auth import authenticate_request
 
-PUBSUB_TYPE = 'scraper_batch'
+
 BATCH_READ_SIZE = 500
 FAILED_TASK_THRESHOLD = 1
 batch_blueprint = Blueprint('batch', __name__)
@@ -141,6 +141,7 @@ def _get_proto_from_messages(messages):
     successful_tasks = set()
     failed_tasks = set()
     for message in messages:
+        logging.info('Message has an ack id of %s', message.ack_id)
         batch_message = BatchMessage.from_serializable(
             json.loads(message.message.data.decode()))
         # We do this because dicts are not hashable in python and we want to
@@ -161,6 +162,7 @@ def _get_proto_from_messages(messages):
             # don't want to fail on that when we see the failed ones.
             if task_hash not in successful_tasks:
                 failed_tasks.add(task_hash)
+    logging.info('Generated proto for %s people', len(base_proto.people))
     return base_proto, failed_tasks
 
 
@@ -206,20 +208,24 @@ def persist_to_database(region, scrape_type, scraper_start_time):
     scrape_key = ScrapeKey(region, scrape_type)
 
     messages = _get_batch_messages(scrape_key)
-    proto, failed_tasks = _get_proto_from_messages(messages)
-    # Only acknowledge if the above code passed.
-    _ack_messages(messages, scrape_key)
+    logging.info('Received %s messages', len(messages))
+    if messages:
+        proto, failed_tasks = _get_proto_from_messages(messages)
+        # Only acknowledge if the above code passed.
+        _ack_messages(messages, scrape_key)
 
-    if _should_abort(failed_tasks):
-        raise BatchPersistError(
-            'Too many scraper tasks failed({}), aborting write'.format(
-                len(failed_tasks)))
+        if _should_abort(failed_tasks):
+            raise BatchPersistError(
+                'Too many scraper tasks failed({}), aborting write'.format(
+                    len(failed_tasks)))
 
-    metadata = IngestMetadata(
-        region=region, last_seen_time=scraper_start_time,
-        enum_overrides=overrides)
+        metadata = IngestMetadata(
+            region=region, last_seen_time=scraper_start_time,
+            enum_overrides=overrides)
 
-    persistence.write(proto, metadata)
+        persistence.write(proto, metadata)
+    else:
+        raise BatchPersistError('No messages received from pubpub')
 
 
 @batch_blueprint.route('/read_and_persist')
