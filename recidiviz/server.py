@@ -57,6 +57,7 @@ fr = logging.Formatter(log_format)
 if logger.handlers:
     logger.handlers[0].setFormatter(fr)
 
+
 app = Flask(__name__)
 app.register_blueprint(scraper_control, url_prefix='/scraper')
 app.register_blueprint(scraper_status, url_prefix='/scraper')

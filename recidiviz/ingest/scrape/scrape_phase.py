@@ -21,7 +21,8 @@ from typing import Optional
 _next_phase = {
     'scraper_status.check_for_finished_scrapers':
         'scraper_control.scraper_stop',
-    'scraper_control.scraper_stop': 'infer_release.infer_release',
+    'scraper_control.scraper_stop': 'batch.read_and_persist',
+    'batch.read_and_persist': 'infer_release.infer_release',
     'infer_release.infer_release': None,
 }
 
