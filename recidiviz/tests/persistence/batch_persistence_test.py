@@ -20,13 +20,14 @@ import json
 from unittest import TestCase
 
 import pytest
+from flask import Flask
 
 from google.api_core import exceptions  # pylint: disable=no-name-in-module
-from mock import patch
+from mock import patch, Mock
 
 from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.ingest.models.scrape_key import ScrapeKey
-from recidiviz.ingest.scrape import constants, ingest_utils
+from recidiviz.ingest.scrape import constants, ingest_utils, infer_release
 from recidiviz.ingest.scrape.task_params import Task
 from recidiviz.persistence import batch_persistence
 from recidiviz.persistence.batch_persistence import PUBSUB_TYPE, BatchMessage
@@ -39,6 +40,17 @@ TEST_ID = '1'
 TEST_ENDPOINT = 'www.test.com'
 TEST_ERROR = 'TestError'
 TEST_PARAMS = {'test': 'value'}
+
+
+@pytest.fixture(scope="class")
+def client(request):
+    app = Flask(__name__)
+    app.register_blueprint(infer_release.infer_release_blueprint)
+    # Include so that flask can get the url of `infer_release`.
+    app.register_blueprint(batch_persistence.batch_blueprint)
+    app.config['TESTING'] = True
+
+    request.cls.client = app.test_client()
 
 
 # pylint: disable=protected-access
@@ -356,3 +368,31 @@ class TestBatchPersistence(TestCase):
         result_proto = mock_write.call_args[0][0]
         self.assertEqual(result_proto, expected_proto)
         self.assertEqual(mock_write.call_count, 2)
+
+
+@pytest.mark.usefixtures("client")
+class TestReadAndPersist(TestCase):
+    """Tests read and persist"""
+
+    @patch("recidiviz.ingest.scrape.queues.enqueue_scraper_phase")
+    @patch("recidiviz.ingest.scrape.sessions.get_most_recent_completed_session")
+    @patch("recidiviz.persistence.batch_persistence.persist_to_database")
+    def test_read_and_persist(
+            self, mock_persist, mock_session_return, mock_enqueue):
+        mock_session = Mock()
+        mock_session.region = 'test'
+        mock_session.scrape_type = constants.ScrapeType.BACKGROUND
+        session_start = datetime.datetime.now()
+        mock_session.start = session_start
+        mock_session_return.return_value = mock_session
+
+        request_args = {'region': 'test'}
+        headers = {'X-Appengine-Cron': "test-cron"}
+        response = self.client.get('/read_and_persist',
+                                   query_string=request_args,
+                                   headers=headers)
+        self.assertEqual(response.status_code, 200)
+
+        mock_persist.assert_called_once_with(
+            'test', constants.ScrapeType.BACKGROUND, session_start)
+        mock_enqueue.assert_called_once_with(region_code='test', url='/release')
