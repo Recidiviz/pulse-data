@@ -32,7 +32,8 @@ between tables in the "SharedColumn" mixins.
 from sqlalchemy import Boolean, Column, Date, DateTime, Enum, ForeignKey, \
     Integer, String, Text, UniqueConstraint
 from sqlalchemy.ext.associationproxy import association_proxy
-from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta
+from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta, \
+    declared_attr
 from sqlalchemy.orm import relationship
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
@@ -291,13 +292,16 @@ class _BookingSharedColumns:
     classification = Column(classification)
     classification_raw_text = Column(String(255))
 
+    @declared_attr
+    def person_id(self):
+        return Column(Integer, ForeignKey('person.person_id'), nullable=False)
+
 
 class Booking(Base, DatabaseEntity, _BookingSharedColumns):
     """Represents a booking in the SQL schema"""
     __tablename__ = 'booking'
 
     booking_id = Column(Integer, primary_key=True)
-    person_id = Column(Integer, ForeignKey('person.person_id'), nullable=False)
     last_seen_time = Column(DateTime, nullable=False)
 
     holds = relationship('Hold', lazy='joined')
@@ -317,7 +321,6 @@ class BookingHistory(Base, DatabaseEntity, _BookingSharedColumns):
         Integer, ForeignKey('booking.booking_id'), nullable=False, index=True)
     valid_from = Column(DateTime, nullable=False)
     valid_to = Column(DateTime)
-    person_id = Column(Integer, nullable=False, index=True)
 
 
 class _HoldSharedColumns:
@@ -334,14 +337,17 @@ class _HoldSharedColumns:
     status = Column(hold_status, nullable=False)
     status_raw_text = Column(String(255))
 
+    @declared_attr
+    def booking_id(self):
+        return Column(
+            Integer, ForeignKey('booking.booking_id'), nullable=False)
+
 
 class Hold(Base, DatabaseEntity, _HoldSharedColumns):
     """Represents a hold from another jurisdiction against a booking"""
     __tablename__ = 'hold'
 
     hold_id = Column(Integer, primary_key=True)
-    booking_id = Column(
-        Integer, ForeignKey('booking.booking_id'), nullable=False)
 
 
 class HoldHistory(Base, DatabaseEntity, _HoldSharedColumns):
@@ -356,7 +362,6 @@ class HoldHistory(Base, DatabaseEntity, _HoldSharedColumns):
         Integer, ForeignKey('hold.hold_id'), nullable=False, index=True)
     valid_from = Column(DateTime, nullable=False)
     valid_to = Column(DateTime)
-    booking_id = Column(Integer, nullable=False, index=True)
 
 
 class _ArrestSharedColumns:
@@ -375,14 +380,17 @@ class _ArrestSharedColumns:
     officer_name = Column(String(255))
     officer_id = Column(String(255))
 
+    @declared_attr
+    def booking_id(self):
+        return Column(
+            Integer, ForeignKey('booking.booking_id'), nullable=False)
+
 
 class Arrest(Base, DatabaseEntity, _ArrestSharedColumns):
     """Represents an arrest in the SQL schema"""
     __tablename__ = 'arrest'
 
     arrest_id = Column(Integer, primary_key=True)
-    booking_id = Column(
-        Integer, ForeignKey('booking.booking_id'), nullable=False)
 
 
 class ArrestHistory(Base, DatabaseEntity, _ArrestSharedColumns):
@@ -397,7 +405,6 @@ class ArrestHistory(Base, DatabaseEntity, _ArrestSharedColumns):
         Integer, ForeignKey('arrest.arrest_id'), nullable=False, index=True)
     valid_from = Column(DateTime, nullable=False)
     valid_to = Column(DateTime)
-    booking_id = Column(Integer, nullable=False, index=True)
 
 
 class _BondSharedColumns:
@@ -417,25 +424,29 @@ class _BondSharedColumns:
     status_raw_text = Column(String(255))
     bond_agent = Column(String(255))
 
+    # This foreign key is usually redundant, as a bond can be linked to a
+    # booking through a charge. This foreign key serves to prevent orphaning
+    # a bond if all charges that point to it are updated to point to other
+    # bonds. It does not have a corresponding SQLAlchemy relationship, to avoid
+    # redundant relationships.
+    @declared_attr
+    def booking_id(self):
+        return Column(
+            Integer,
+            # Because this key does not correspond to a SQLAlchemy
+            # relationship, it needs to be manually set. To avoid raising an
+            # error during any transient invalid states during processing, the
+            # constraint must be deferred to only be checked at commit time.
+            ForeignKey(
+                'booking.booking_id', deferrable=True, initially='DEFERRED'),
+            nullable=False)
+
 
 class Bond(Base, DatabaseEntity, _BondSharedColumns):
     """Represents a bond in the SQL schema"""
     __tablename__ = 'bond'
 
     bond_id = Column(Integer, primary_key=True)
-    # This foreign key is usually redundant, as a bond can be linked to a
-    # booking through a charge. This foreign key serves to prevent orphaning
-    # a bond if all charges that point to it are updated to point to other
-    # bonds. It does not have a corresponding SQLAlchemy relationship, to avoid
-    # redundant relationships.
-    booking_id = Column(
-        Integer,
-        # Because this key does not correspond to a SQLAlchemy relationship, it
-        # needs to be manually set. To avoid raising an error during any
-        # transient invalid states during processing, the constraint must be
-        # deferred to only be checked at commit time.
-        ForeignKey('booking.booking_id', deferrable=True, initially='DEFERRED'),
-        nullable=False)
 
 
 class BondHistory(Base, DatabaseEntity, _BondSharedColumns):
@@ -450,7 +461,6 @@ class BondHistory(Base, DatabaseEntity, _BondSharedColumns):
         Integer, ForeignKey('bond.bond_id'), nullable=False, index=True)
     valid_from = Column(DateTime, nullable=False)
     valid_to = Column(DateTime)
-    booking_id = Column(Integer, nullable=False)
 
 
 class _SentenceSharedColumns:
@@ -477,25 +487,30 @@ class _SentenceSharedColumns:
     parole_possible = Column(Boolean)
     post_release_supervision_length_days = Column(Integer)
 
+    # This foreign key is usually redundant, as a sentence can be linked to a
+    # booking through a charge. This foreign key serves to prevent orphaning
+    # a sentence if all charges that point to it are updated to point to other
+    # sentences. It does not have a corresponding SQLAlchemy relationship, to
+    # avoid redundant relationships.
+    @declared_attr
+    def booking_id(self):
+        return Column(
+            Integer,
+            # Because this key does not correspond to a SQLAlchemy
+            # relationship, it needs to be manually set. To avoid raising an
+            # error during any transient invalid states during processing, the
+            # constraint must be deferred to only be checked at commit time.
+            ForeignKey(
+                'booking.booking_id', deferrable=True, initially='DEFERRED'),
+            nullable=False)
+
+
 
 class Sentence(Base, DatabaseEntity, _SentenceSharedColumns):
     """Represents a sentence in the SQL schema"""
     __tablename__ = 'sentence'
 
     sentence_id = Column(Integer, primary_key=True)
-    # This foreign key is usually redundant, as a sentence can be linked to a
-    # booking through a charge. This foreign key serves to prevent orphaning
-    # a sentence if all charges that point to it are updated to point to other
-    # sentences. It does not have a corresponding SQLAlchemy relationship, to
-    # avoid redundant relationships.
-    booking_id = Column(
-        Integer,
-        # Because this key does not correspond to a SQLAlchemy relationship, it
-        # needs to be manually set. To avoid raising an error during any
-        # transient invalid states during processing, the constraint must be
-        # deferred to only be checked at commit time.
-        ForeignKey('booking.booking_id', deferrable=True, initially='DEFERRED'),
-        nullable=False)
 
     # Due to the SQLAlchemy requirement that both halves of an association pair
     # be represented by different relationships, a sentence must have two sets
@@ -522,7 +537,6 @@ class SentenceHistory(Base, DatabaseEntity, _SentenceSharedColumns):
         index=True)
     valid_from = Column(DateTime, nullable=False)
     valid_to = Column(DateTime)
-    booking_id = Column(Integer, nullable=False)
 
 
 class _SentenceRelationshipSharedColumns:
@@ -542,12 +556,6 @@ class _SentenceRelationshipSharedColumns:
         'type', sentence_relationship_type, nullable=False)
     sentence_relation_type_raw_text = Column(String(255))
 
-
-class SentenceRelationship(Base, DatabaseEntity,
-                           _SentenceRelationshipSharedColumns):
-    """Represents the relationship between two sentences"""
-    __tablename__ = 'sentence_relationship'
-
     # NOTE: A sentence relationship is undirected: if sentence A is served
     # concurrently with sentence B, sentence B is served concurrently with
     # sentence A. However, due to the limits of a standard SQL table, we have
@@ -558,11 +566,23 @@ class SentenceRelationship(Base, DatabaseEntity,
     # create both (A,B) and (B,A) SentenceRelationships for one pair of
     # sentences.)
 
+    @declared_attr
+    def sentence_a_id(self):
+        return Column(
+            Integer, ForeignKey('sentence.sentence_id'), nullable=False)
+
+    @declared_attr
+    def sentence_b_id(self):
+        return Column(
+            Integer, ForeignKey('sentence.sentence_id'), nullable=False)
+
+
+class SentenceRelationship(Base, DatabaseEntity,
+                           _SentenceRelationshipSharedColumns):
+    """Represents the relationship between two sentences"""
+    __tablename__ = 'sentence_relationship'
+
     sentence_relationship_id = Column(Integer, primary_key=True)
-    sentence_a_id = Column(
-        Integer, ForeignKey('sentence.sentence_id'), nullable=False)
-    sentence_b_id = Column(
-        Integer, ForeignKey('sentence.sentence_id'), nullable=False)
 
     sentence_a = relationship(
         'Sentence',
@@ -591,8 +611,6 @@ class SentenceRelationshipHistory(Base, DatabaseEntity,
         index=True)
     valid_from = Column(DateTime, nullable=False)
     valid_to = Column(DateTime)
-    sentence_a_id = Column(Integer, nullable=False, index=True)
-    sentence_b_id = Column(Integer, nullable=False, index=True)
 
 
 class _ChargeSharedColumns:
@@ -626,17 +644,25 @@ class _ChargeSharedColumns:
     judge_name = Column(String(255))
     charge_notes = Column(Text)
 
+    @declared_attr
+    def booking_id(self):
+        return Column(
+            Integer, ForeignKey('booking.booking_id'), nullable=False)
+
+    @declared_attr
+    def bond_id(self):
+        return Column(Integer, ForeignKey('bond.bond_id'))
+
+    @declared_attr
+    def sentence_id(self):
+        return Column(Integer, ForeignKey('sentence.sentence_id'))
+
 
 class Charge(Base, DatabaseEntity, _ChargeSharedColumns):
     """Represents a charge in the SQL schema"""
     __tablename__ = 'charge'
 
     charge_id = Column(Integer, primary_key=True)
-    booking_id = Column(
-        Integer, ForeignKey('booking.booking_id'), nullable=False)
-    bond_id = Column(Integer, ForeignKey('bond.bond_id'))
-    sentence_id = Column(
-        Integer, ForeignKey('sentence.sentence_id'))
 
     bond = relationship('Bond', lazy='joined')
     sentence = relationship('Sentence', lazy='joined')
@@ -654,9 +680,6 @@ class ChargeHistory(Base, DatabaseEntity, _ChargeSharedColumns):
         Integer, ForeignKey('charge.charge_id'), nullable=False, index=True)
     valid_from = Column(DateTime, nullable=False)
     valid_to = Column(DateTime)
-    booking_id = Column(Integer, nullable=False, index=True)
-    bond_id = Column(Integer, index=True)
-    sentence_id = Column(Integer, index=True)
 
 
 # ==================== Aggregate Tables ====================
