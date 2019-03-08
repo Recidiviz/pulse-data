@@ -21,8 +21,9 @@ import pytz
 from flask import Flask
 from mock import call, create_autospec, patch
 
-from recidiviz.ingest.scrape import constants, infer_release, scraper_control
+from recidiviz.ingest.scrape import constants, scraper_control
 from recidiviz.ingest.models.scrape_key import ScrapeKey
+from recidiviz.persistence import batch_persistence
 from recidiviz.utils.regions import Region
 
 
@@ -32,7 +33,7 @@ def client():
     app = Flask(__name__)
     app.register_blueprint(scraper_control.scraper_control)
     # Include so that flask can get the url of `infer_release`.
-    app.register_blueprint(infer_release.infer_release_blueprint)
+    app.register_blueprint(batch_persistence.batch_blueprint)
     app.config['TESTING'] = True
 
     yield app.test_client()
@@ -202,8 +203,8 @@ class TestScraperStop:
         ])
         mock_supported.assert_called_with(timezone=None)
         mock_enqueue.assert_has_calls([
-            call(region_code='us_ca', url='/release'),
-            call(region_code='us_ut', url='/release'),
+            call(region_code='us_ca', url='/read_and_persist'),
+            call(region_code='us_ut', url='/read_and_persist'),
         ], any_order=True)
 
     @patch("recidiviz.utils.regions.get_supported_region_codes")
@@ -265,7 +266,8 @@ class TestScraperStop:
         ])
         mock_supported.assert_called_with(
             timezone=pytz.timezone('America/New_York'))
-        mock_enqueue.assert_called_with(region_code='us_ut', url='/release')
+        mock_enqueue.assert_called_with(
+            region_code='us_ut', url='/read_and_persist')
 
     @patch("recidiviz.ingest.scrape.queues.enqueue_scraper_phase")
     @patch("recidiviz.utils.regions.get_supported_region_codes")

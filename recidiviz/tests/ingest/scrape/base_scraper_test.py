@@ -23,6 +23,7 @@ from mock import patch, Mock
 
 from recidiviz import IngestInfo
 from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.scrape import constants
 from recidiviz.ingest.scrape.base_scraper import BaseScraper
 from recidiviz.ingest.scrape.errors import ScraperGetMoreTasksError, \
@@ -78,8 +79,34 @@ class TestBaseScraper(TestCase):
             scraper_start_time=datetime.datetime.now()
         )
         scraper = FakeScraper('test')
+        scraper.BATCH_WRITES = False
         with self.assertRaises(ScraperGetMoreTasksError):
             scraper._generic_scrape(req)
+
+    @patch('recidiviz.persistence.batch_persistence.write_error')
+    @patch.object(BaseScraper, '_fetch_content')
+    @patch.object(BaseScraper, 'get_more_tasks')
+    def test_get_more_tasks_failure_batch(
+            self, mock_get_more, mock_fetch, mock_batch_error):
+        mock_fetch.return_value = ('TEST', {})
+        mock_get_more.side_effect = ValueError('TEST ERROR')
+
+        req = QueueRequest(
+            scrape_type=constants.ScrapeType.BACKGROUND,
+            next_task=TEST_TASK,
+            scraper_start_time=datetime.datetime.now()
+        )
+        scraper = FakeScraper('test')
+        with self.assertRaises(ScraperGetMoreTasksError):
+            scraper._generic_scrape(req)
+        self.assertEqual(mock_batch_error.call_count, 1)
+        scrape_key = ScrapeKey(
+            region_code='test', scrape_type=constants.ScrapeType.BACKGROUND)
+        mock_batch_error.assert_called_once_with(
+            error=ScraperGetMoreTasksError.__name__,
+            task=TEST_TASK,
+            scrape_key=scrape_key
+        )
 
     @patch.object(BaseScraper, '_fetch_content')
     def test_fetch_failure(self, mock_fetch):
@@ -91,6 +118,7 @@ class TestBaseScraper(TestCase):
             scraper_start_time=datetime.datetime.now()
         )
         scraper = FakeScraper('test')
+        scraper.BATCH_WRITES = False
         with self.assertRaises(ScraperFetchError):
             scraper._generic_scrape(req)
 
@@ -106,6 +134,7 @@ class TestBaseScraper(TestCase):
             scraper_start_time=start_time
         )
         scraper = FakeScraper('test')
+        scraper.BATCH_WRITES = False
         scraper._generic_scrape(req)
 
         expected_tasks = [req]
@@ -128,6 +157,7 @@ class TestBaseScraper(TestCase):
         t = Task.evolve(TEST_TASK, cookies={1: 1})
 
         scraper = FakeScraper('test')
+        scraper.BATCH_WRITES = False
         scraper._generic_scrape(req)
 
         expected_tasks = [QueueRequest(
@@ -151,6 +181,7 @@ class TestBaseScraper(TestCase):
         )
 
         scraper = FakeScraper('test')
+        scraper.BATCH_WRITES = False
         scraper._generic_scrape(req)
 
         expected_tasks = [QueueRequest(
@@ -178,6 +209,7 @@ class TestBaseScraper(TestCase):
         )
 
         scraper = FakeScraper('test')
+        scraper.BATCH_WRITES = False
         scraper._generic_scrape(req)
 
         expected_tasks = [QueueRequest(
@@ -214,6 +246,7 @@ class TestBaseScraper(TestCase):
         )
 
         scraper = FakeScraper('test')
+        scraper.BATCH_WRITES = False
         scraper._generic_scrape(req)
 
         # Should send the ii since we chose not to persist.
@@ -254,6 +287,7 @@ class TestBaseScraper(TestCase):
         )
 
         scraper = FakeScraper('test')
+        scraper.BATCH_WRITES = False
         scraper._generic_scrape(req)
 
         # Should send the ii since we chose not to persist.
@@ -309,6 +343,7 @@ class TestBaseScraper(TestCase):
         )
 
         scraper = FakeScraper('test')
+        scraper.BATCH_WRITES = False
         scraper._generic_scrape(req)
 
         # Should send the ii since we chose not to persist.
@@ -351,6 +386,7 @@ class TestBaseScraper(TestCase):
         )
 
         scraper = FakeScraper('test')
+        scraper.BATCH_WRITES = False
         scraper._generic_scrape(req)
 
         expected_metadata = IngestMetadata(
@@ -364,4 +400,40 @@ class TestBaseScraper(TestCase):
         self.assertEqual(mock_populate.call_count, 1)
         self.assertEqual(mock_write.call_count, 1)
         mock_write.assert_called_once_with(expected_proto, expected_metadata)
+        self.assertEqual(len(scraper.tasks), 0)
+
+    @patch('recidiviz.persistence.batch_persistence.write')
+    @patch('recidiviz.persistence.persistence.write')
+    @patch.object(BaseScraper, 'populate_data')
+    @patch.object(BaseScraper, '_fetch_content')
+    @patch.object(BaseScraper, 'get_more_tasks')
+    def test_scrape_data_no_more_tasks_batch(
+            self, mock_get_more, mock_fetch, mock_populate, mock_write,
+            mock_batch_write):
+        mock_fetch.return_value = (TEST_HTML, {})
+        mock_populate.return_value = ScrapedData(
+            ingest_info=self.ii,
+            persist=True,
+        )
+        start_time = datetime.datetime.now()
+        t = Task.evolve(
+            TEST_TASK, task_type=constants.TaskType.SCRAPE_DATA)
+        req = QueueRequest(
+            scrape_type=constants.ScrapeType.BACKGROUND,
+            next_task=t,
+            scraper_start_time=start_time
+        )
+
+        scraper = FakeScraper('test')
+        scraper._generic_scrape(req)
+
+        scrape_key = ScrapeKey('test', constants.ScrapeType.BACKGROUND)
+        self.assertEqual(mock_get_more.call_count, 0)
+        self.assertEqual(mock_populate.call_count, 1)
+        self.assertEqual(mock_write.call_count, 0)
+        mock_batch_write.assert_called_once_with(
+            ingest_info=self.ii,
+            task=t,
+            scrape_key=scrape_key
+        )
         self.assertEqual(len(scraper.tasks), 0)
