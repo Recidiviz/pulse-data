@@ -36,6 +36,7 @@ message IngestInfo {
     repeated Hold holds = 5;
     repeated Bond bonds = 6;
     repeated Sentence sentences = 7;
+    repeated SentenceRelationship sentence_relationships = 8;
 }
 
 message Person {
@@ -133,4 +134,11 @@ message Sentence {
     optional string date_imposed = 12;
     optional string completion_date = 13;
     optional string projected_completion_date = 14;
+}
+
+message SentenceRelationship {
+    optional string sentence_relationship_id = 1;
+    optional string sentence_a_id = 2;
+    optional string sentence_b_id = 3;
+    optional string relationship_type = 4;
 }

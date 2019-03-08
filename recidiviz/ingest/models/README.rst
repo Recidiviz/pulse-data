@@ -360,3 +360,25 @@ A Sentence object holds information about a sentence imposed for one or more cha
                                     This value is valid while someone is incarcerated, but completion_date is filled in when someone is actually released. These values may be different.
 **completion_date**                 The date this sentence was completed. This should only be filled in if it is in the past.
 =================================== ========================================================================================
+
+SentenceRelationship
+--------------------
+
+A SentenceRelationship object holds information about the relationship between two sentences.
+
+============================ =====================================================================================================
+**Field Name**               **Description**
+============================ =====================================================================================================
+**sentence_relationship_id** Unique identifier for a sentence relationship. If not specified, one will be generated automatically.
+**sentence_a**               A link to one of the two sentences in the relationship (order does not matter).
+**sentence_b**               A link to the other of the two sentences in the relationship (order does not matter).
+**relationship_type**        The type of relationship between the two sentences.
+
+                             Valid values:
+
+                             - Concurrent
+
+                             - Consecutive
+============================ =====================================================================================================
+
+
