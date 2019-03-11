@@ -32,12 +32,15 @@ import us
 from more_itertools import one
 
 import recidiviz.ingest.scrape.regions
-from recidiviz.common import fips
+from recidiviz.common import fips, fips_fuzzy_matching
 
 _REGIONS_DIR = os.path.dirname(recidiviz.ingest.scrape.regions.__file__)
 _DATA_SETS_DIR = os.path.dirname(recidiviz.common.__file__) + '/data_sets'
 
 _JID = pd.read_csv(_DATA_SETS_DIR + '/jid.csv')
+
+# Float between [0, 1] which sets the required fuzzy matching certainty
+_FUZZY_MATCH_CUTOFF = 0.75
 
 
 def main():
@@ -72,10 +75,10 @@ def main():
 def _to_county_fips(manifest_county_name: str, state: us.states) -> int:
     """Lookup fips by manifest_county_name, filtering within the given state"""
     # pylint: disable=protected-access
-    fips_for_state = fips._get_fips_for(state)
+    fips_for_state = fips.get_fips_for(state)
     # pylint: disable=protected-access
-    actual_county_name = fips._best_match(manifest_county_name,
-                                          fips_for_state.index)
+    actual_county_name = fips_fuzzy_matching.best_match(
+        manifest_county_name, fips_for_state.index, _FUZZY_MATCH_CUTOFF)
 
     return fips_for_state.at[actual_county_name, 'fips']
 
