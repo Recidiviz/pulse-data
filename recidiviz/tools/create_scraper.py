@@ -150,8 +150,11 @@ def _create_scraper_files(subs, vendor: Optional[str]):
         template_dir = os.path.join(template_dir, vendor)
     scraper_template = os.path.join(template_dir, 'region_scraper.txt')
     create_scraper(scraper_template)
-    create_manifest_yaml(os.path.join(template_dir, 'manifest.txt'))
-
+    manifest_path = os.path.join(template_dir, 'manifest.txt')
+    if os.path.exists(manifest_path):
+        create_manifest_yaml(manifest_path)
+    else:
+        create_manifest_yaml(os.path.join(template_dir, '../manifest.txt'))
     if not vendor:
         yaml_template = os.path.join(template_dir, 'region.txt')
         create_extractor_yaml(yaml_template)
