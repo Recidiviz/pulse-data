@@ -28,6 +28,7 @@ from sqlalchemy.orm import Session
 import recidiviz
 import recidiviz.persistence.database.update_historical_snapshots as \
     update_snapshots
+from recidiviz.common.constants.booking import CustodyStatus
 from recidiviz.common.constants.entity_enum import EntityEnum
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence import entities
@@ -140,7 +141,8 @@ def _query_people_and_open_bookings(session, region):
     return session.query(Person, Booking) \
         .filter(Person.person_id == Booking.person_id) \
         .filter(Person.region == region) \
-        .filter(Booking.release_date.is_(None))
+        .filter(Booking.custody_status.notin_(
+            CustodyStatus.get_raw_released_statuses()))
 
 
 def _convert_and_normalize_record_trees(

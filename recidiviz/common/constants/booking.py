@@ -68,6 +68,11 @@ class CustodyStatus(EntityEnum, metaclass=EntityEnumMeta):
             CustodyStatus.UNKNOWN_REMOVED_FROM_SOURCE
         ]
 
+    @staticmethod
+    def get_raw_released_statuses():
+        return [cs.value for cs in CustodyStatus.get_released_statuses()]
+
+
 class ReleaseReason(EntityEnum, metaclass=EntityEnumMeta):
     ACQUITTAL = enum_strings.release_reason_acquittal
     BOND = enum_strings.release_reason_bond
