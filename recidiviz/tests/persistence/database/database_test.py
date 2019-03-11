@@ -89,7 +89,7 @@ class TestDatabase(TestCase):
             last_seen_time=most_recent_scrape_date)
         resolved_booking = Booking(
             person_id=person_resolved_booking.person_id,
-            custody_status=CustodyStatus.IN_CUSTODY.value,
+            custody_status=CustodyStatus.RELEASED.value,
             release_date=release_date,
             last_seen_time=date_in_past)
 
@@ -149,7 +149,7 @@ class TestDatabase(TestCase):
             admission_date=admission_date,
             last_seen_time=admission_date)
         closed_booking = Booking(
-            custody_status=CustodyStatus.IN_CUSTODY.value,
+            custody_status=CustodyStatus.RELEASED.value,
             admission_date=admission_date,
             release_date=release_date,
             last_seen_time=admission_date)
