@@ -16,8 +16,9 @@
 # =============================================================================
 """Contains logic for communicating with a SQL Database."""
 
+from collections import defaultdict
 import logging
-from typing import List, Set
+from typing import List, Dict
 from more_itertools import one
 
 import pandas as pd
@@ -148,14 +149,24 @@ def _query_people_and_open_bookings(session, region):
 def _convert_and_normalize_record_trees(
         people: List[Person]) -> List[entities.Person]:
     """Converts schema record trees to persistence layer models and removes
-    any duplicates created by how SQLAlchemy handles joins
+    any duplicate people created by how SQLAlchemy handles joins
     """
     converted_people: List[entities.Person] = []
-    ids: Set[int] = set()
+    count_by_id: Dict[int, int] = defaultdict(lambda: 0)
     for person in people:
-        if person.person_id not in ids:
+        if count_by_id[person.person_id] == 0:
             converted_people.append(database_utils.convert(person))
-            ids.add(person.person_id)
+        count_by_id[person.person_id] += 1
+
+    duplicates = [(person_id, count) for person_id, count
+                  in count_by_id.items() if count > 1]
+    if duplicates:
+        id_counts = '\n'.join(
+            ['ID {} with count {}'.format(duplicate[0], duplicate[1])
+             for duplicate in duplicates])
+        logging.error(
+            'Duplicate records returned for person IDs:\n%s', id_counts)
+
     return converted_people
 
 
