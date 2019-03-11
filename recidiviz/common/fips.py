@@ -22,20 +22,19 @@ county in the United States. Mapping scraped data to a FIPS county code is
 important because it provides a universal junction for joining multiple data
 sets.
 
-The `data_sets/fips.csv` file contains a mapping of (county_name, state)
-to FIPS county code. It's important to note that when joining scraped data with
-a FIPS county code, we must take the county's state into account since
-multiple states share the same county names.
+The `data_sets/fips.csv` file contains a mapping of (county_name, state) to FIPS
+county code. It's important to note that when joining scraped data with a FIPS
+county code, we must take the county's state into account since multiple states
+share the same county names.
 
 More info: https://en.wikipedia.org/wiki/FIPS_county_code
 """
-import difflib
-from typing import Iterable
 
 import pandas as pd
 import us
 
 from recidiviz.common.errors import FipsMergingError
+from recidiviz.common.fips_fuzzy_matching import fuzzy_join
 from recidiviz.tests.ingest.fixtures import as_filepath
 
 # Float between [0, 1] which sets the required fuzzy matching certainty
@@ -54,13 +53,13 @@ def add_column_to_df(df: pd.DataFrame, county_names: pd.Series,
     old_index = df.index
     df.index = county_names.apply(_sanitize_county_name)
 
-    df = _fuzzy_join(df, _get_fips_for(state))
+    df = fuzzy_join(df, get_fips_for(state), _FUZZY_MATCH_CUTOFF)
 
     df.index = old_index
     return df
 
 
-def _get_fips_for(state: us.states) -> pd.DataFrame:
+def get_fips_for(state: us.states) -> pd.DataFrame:
     """Get the [county_name, fips] df, filtering for the given |state|."""
 
     # Copy _FIPS to allow mutating the view created after filtering by state
@@ -79,25 +78,3 @@ def _get_fips_for(state: us.states) -> pd.DataFrame:
 def _sanitize_county_name(county_name: str) -> str:
     """To ease fuzzy matching, ensure county_names fit a common shape."""
     return county_name.lower().replace(' county', '')
-
-
-def _fuzzy_join(df1: pd.DataFrame, df2: pd.DataFrame):
-    """Merges df1 to df2 by choosing the closest index (fuzzy) to join on."""
-    df1.index = df1.index.map(lambda x: _best_match(x, df2.index))
-    return df1.join(df2)
-
-
-def _best_match(county_name: str, known_county_names: Iterable[str]) -> str:
-    """Returns the closest match of |county_name| in |known_county_names|."""
-    close_matches = difflib.get_close_matches(county_name, known_county_names,
-                                              n=1, cutoff=_FUZZY_MATCH_CUTOFF)
-
-    if not close_matches:
-        raise FipsMergingError(
-            'Failed to fuzzy match "{}" to known county_names in the state: '
-            '{}'.format(county_name, known_county_names))
-
-    best_match = close_matches[0]
-
-    # Cast to a str since `difflib.get_close_matches` returns a Sequence[str]
-    return str(best_match)
