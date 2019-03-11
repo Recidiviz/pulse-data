@@ -71,32 +71,38 @@ class QueuesTest(unittest.TestCase):
         queue_name = 'testqueue'
         queue_path = queue_name + '-path'
         mock_client.return_value.queue_path.return_value = queue_path
+        task_path = queue_path + '/us_ny'
+        mock_client.return_value.task_path.return_value = task_path
+
         mock_client.return_value.list_tasks.return_value = [
-            Task(name='us_ny-123'),
-            Task(name='us_pa-456'),
-            Task(name='us_ny-789')
+            Task(name=queue_path + '/us_ny-123'),
+            Task(name=queue_path + '/us_pa-456'),
+            Task(name=queue_path + '/us_ny-789')
         ]
 
         queues.purge_tasks(region_code='us_ny', queue_name=queue_name)
 
         mock_client.return_value.delete_task.assert_has_calls([
-            call('us_ny-123'), call('us_ny-789')])
+            call(queue_path + '/us_ny-123'), call(queue_path + '/us_ny-789')])
 
     @patch('google.cloud.tasks_v2beta3.CloudTasksClient')
     def test_list_tasks(self, mock_client):
         queue_name = 'testqueue'
         queue_path = queue_name + '-path'
-
         mock_client.return_value.queue_path.return_value = queue_path
+        task_path = queue_path + '/us_ny'
+        mock_client.return_value.task_path.return_value = task_path
+
         mock_client.return_value.list_tasks.return_value = [
-            Task(name='us_ny-123'),
-            Task(name='us_pa-456'),
-            Task(name='us_ny-789')
+            Task(name=queue_path + '/us_ny-123'),
+            Task(name=queue_path + '/us_pa-456'),
+            Task(name=queue_path + '/us_ny-789')
         ]
 
         tasks = queues.list_tasks(region_code='us_ny', queue_name=queue_name)
 
-        assert tasks == [Task(name='us_ny-123'), Task(name='us_ny-789')]
+        assert tasks == [Task(name=queue_path + '/us_ny-123'),
+                         Task(name=queue_path + '/us_ny-789')]
 
         mock_client.return_value.queue_path.assert_called_with(
             metadata.project_id(), metadata.region(), queue_name)
