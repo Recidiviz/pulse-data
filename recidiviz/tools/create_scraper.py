@@ -46,11 +46,14 @@ import os
 from datetime import datetime
 from string import Template
 from typing import Optional
+
 import us
 
 import recidiviz.ingest
 import recidiviz.ingest.scrape.regions
 import recidiviz.tests.ingest.scrape.regions
+from recidiviz.common import jid
+from recidiviz.common.errors import FipsMergingError
 from recidiviz.utils import regions
 
 
@@ -59,17 +62,16 @@ def main():
     parser = _create_parser()
     args = parser.parse_args()
 
-    state = us.states.lookup(args.state)
-    if state is None:
-        raise ValueError('Couldn\'t parse state "%s"' % args.state)
-    region = ('us', state.abbr.lower()) + tuple(args.county.lower().split())
-    region_code = '_'.join(region)
+    county_name = args.county.title()
+    state = _get_state(args.state)
+    jurisdiction_id = _get_jurisdiction_id(county_name, state)
 
     substitutions = {
-        'class_name': regions.scraper_class_name(region_code),
-        'county': args.county.title(),
-        'region': region_code,
-        'region_dashes': '-'.join(region),
+        'class_name': regions.scraper_class_name(
+            _gen_region_name(county_name, state, delimiter='_')),
+        'county': county_name,
+        'region': _gen_region_name(county_name, state, delimiter='_'),
+        'region_dashes': _gen_region_name(county_name, state, delimiter='-'),
         'agency': args.agency,
         'agency_type': args.agency_type,
         'state': state.name,
@@ -77,6 +79,7 @@ def main():
         'timezone': args.timezone or state.capital_tz,
         'url': args.url,
         'year': datetime.now().year,
+        'jurisdiction_id': jurisdiction_id
     }
 
     if not args.tests_only:
@@ -190,6 +193,28 @@ def _populate_file(template_path, target_path, substitutions):
 
     with open(target_path, 'w') as target:
         target.write(contents)
+
+
+def _get_state(state_arg) -> us.states:
+    state = us.states.lookup(state_arg)
+    if state is None:
+        raise ValueError('Couldn\'t parse state "%s"' % state_arg)
+
+    return state
+
+
+def _gen_region_name(county_name: str, state: us.states, *,
+                     delimiter: str) -> str:
+    parts = ('us', state.abbr.lower()) + tuple(county_name.lower().split())
+    return delimiter.join(parts)
+
+
+def _get_jurisdiction_id(county_name: str, state: us.states) -> str:
+    try:
+        return jid.get(county_name, state)
+    except FipsMergingError:
+        # If no 1:1 mapping, leave jurisdiction_id blank to be caught by tests
+        return ''
 
 
 if __name__ == '__main__':
