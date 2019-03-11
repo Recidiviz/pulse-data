@@ -81,8 +81,9 @@ def purge_tasks(*, region_code: str, queue_name: str):
 
 def list_tasks(*, region_code: str, queue_name: str) -> List[Task]:
     """List tasks for the given region and queue"""
+    region_task_prefix = format_task_path(queue_name, region_code, '')
     return [task for task in client().list_tasks(format_queue_path(queue_name))
-            if task.name.startswith(region_code)]
+            if task.name.startswith(region_task_prefix)]
 
 
 def create_task(*, region_code, queue_name, url, body):
