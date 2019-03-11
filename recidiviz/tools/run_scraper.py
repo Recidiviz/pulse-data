@@ -95,7 +95,7 @@ def run_scraper_for_region(region, args):
     Creates and manages an in-memory FIFO queue to replicate production.
     """
     scraper = region.get_scraper()
-
+    scraper.BATCH_WRITES = False
     task_queue = deque()
 
     # We use this to bind the method to the instance.
