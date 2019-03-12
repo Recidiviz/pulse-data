@@ -34,8 +34,9 @@ def write_record():
     ingest_info = None
     last_scraped_time = None
     region = None
+    jurisdiction_id = None
 
-    metadata = IngestMetadata(region, last_scraped_time)
+    metadata = IngestMetadata(region, jurisdiction_id, last_scraped_time)
 
     persistence.write(ingest_info, metadata)
 

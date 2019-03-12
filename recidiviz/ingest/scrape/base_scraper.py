@@ -53,7 +53,7 @@ from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.ingest.scrape.errors import ScraperFetchError, \
     ScraperGetMoreTasksError, ScraperPopulateDataError, ScraperError
 from recidiviz.ingest.scrape.scraper import Scraper
-from recidiviz.ingest.scrape.task_params import QueueRequest, ScrapedData,\
+from recidiviz.ingest.scrape.task_params import QueueRequest, ScrapedData, \
     Task
 from recidiviz.persistence import batch_persistence, persistence
 
@@ -249,6 +249,7 @@ class BaseScraper(Scraper):
                 logging.info('Last seen time of person being set as: %s',
                              request.scraper_start_time)
                 metadata = IngestMetadata(self.region.region_code,
+                                          self.region.jurisdiction_id,
                                           request.scraper_start_time,
                                           self.get_enum_overrides())
                 if self.BATCH_WRITES:

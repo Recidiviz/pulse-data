@@ -52,9 +52,10 @@ _PLACE_2 = 'another'
 _DATE = datetime(2018, 12, 13)
 _DATE_2 = datetime(2019, 12, 13)
 _DATE_3 = datetime(2020, 12, 13)
-_NAME = "name_1"
-_NAME_2 = "name_2"
-_NAME_3 = "name_3"
+_NAME = 'name_1'
+_NAME_2 = 'name_2'
+_NAME_3 = 'name_3'
+_JURISDICTION_ID = 'jurisdiction_id'
 
 
 class TestEntityMatching(TestCase):
@@ -71,6 +72,7 @@ class TestEntityMatching(TestCase):
 
         schema_person = schema.Person(
             person_id=_PERSON_ID, external_id=_EXTERNAL_ID,
+            jurisdiction_id=_JURISDICTION_ID,
             full_name=_FULL_NAME, birthdate=_DATE,
             region=_REGION, bookings=[schema_booking])
 
@@ -100,6 +102,7 @@ class TestEntityMatching(TestCase):
 
         schema_person = schema.Person(person_id=_PERSON_ID,
                                       full_name=_FULL_NAME,
+                                      jurisdiction_id=_JURISDICTION_ID,
                                       region=_REGION, bookings=[schema_booking])
 
         schema_booking_another = schema.Booking(
@@ -109,6 +112,7 @@ class TestEntityMatching(TestCase):
 
         schema_person_another = schema.Person(person_id=_PERSON_ID_ANOTHER,
                                               full_name=_FULL_NAME,
+                                              jurisdiction_id=_JURISDICTION_ID,
                                               region=_REGION,
                                               bookings=[schema_booking_another])
 
@@ -157,6 +161,7 @@ class TestEntityMatching(TestCase):
 
         schema_person = schema.Person(person_id=_PERSON_ID,
                                       full_name=_FULL_NAME,
+                                      jurisdiction_id=_JURISDICTION_ID,
                                       region=_REGION, bookings=[schema_booking])
 
         schema_booking_another = schema.Booking(
@@ -166,6 +171,7 @@ class TestEntityMatching(TestCase):
 
         schema_person_another = schema.Person(person_id=_PERSON_ID_ANOTHER,
                                               full_name=_FULL_NAME,
+                                              jurisdiction_id=_JURISDICTION_ID,
                                               region=_REGION,
                                               bookings=[schema_booking_another])
 
@@ -214,7 +220,8 @@ class TestEntityMatching(TestCase):
 
         schema_person = schema.Person(
             person_id=_PERSON_ID, full_name=_FULL_NAME, birthdate=_DATE,
-            region=_REGION, bookings=[schema_booking])
+            jurisdiction_id=_JURISDICTION_ID, region=_REGION,
+            bookings=[schema_booking])
 
         schema_booking_external_id = schema.Booking(
             admission_date=_DATE_2, booking_id=_BOOKING_ID_ANOTHER,
@@ -224,7 +231,8 @@ class TestEntityMatching(TestCase):
         schema_person_external_id = schema.Person(
             person_id=_PERSON_ID_ANOTHER, external_id=_EXTERNAL_ID,
             full_name=_FULL_NAME, birthdate=_DATE,
-            region=_REGION, bookings=[schema_booking_external_id])
+            jurisdiction_id=_JURISDICTION_ID, region=_REGION,
+            bookings=[schema_booking_external_id])
 
         session = Session()
         session.add(schema_person)

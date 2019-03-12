@@ -38,6 +38,7 @@ US_NY_MANIFEST_CONTENTS = """
       rate: 18/m
     timezone: America/New_York
     environment: production
+    jurisdiction_id: jid_ny
     """
 US_IN_MANIFEST_CONTENTS = """
     agency_name: Department of Corrections
@@ -47,6 +48,7 @@ US_IN_MANIFEST_CONTENTS = """
     shared_queue: some-vendor-queue
     timezone: America/Indiana/Indianapolis
     environment: production
+    jurisdiction_id: jid_in
     """
 US_CA_MANIFEST_CONTENTS = """
     agency_name: Corrections
@@ -54,6 +56,7 @@ US_CA_MANIFEST_CONTENTS = """
     base_url: test
     timezone: America/Los_Angeles
     environment: production
+    jurisdiction_id: jid_ca
     """
 BAD_QUEUE_MANIFEST_CONTENTS = """
     agency_name: Corrections
@@ -64,6 +67,7 @@ BAD_QUEUE_MANIFEST_CONTENTS = """
     environment: production
     queue:
       rate: 18/m
+    jurisdiction_id: jid_bad
     """
 REGION_TO_MANIFEST = {
     'us_ny': US_NY_MANIFEST_CONTENTS,
@@ -100,6 +104,7 @@ class TestRegions(TestCase):
             'queue': {'rate': '18/m'},
             'timezone': 'America/New_York',
             'environment': 'production',
+            'jurisdiction_id': 'jid_ny',
         }
 
     def test_get_region_manifest_not_found(self):

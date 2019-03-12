@@ -30,7 +30,6 @@ from recidiviz import Session
 from recidiviz.common.constants.bond import BondStatus
 from recidiviz.common.constants.booking import CustodyStatus
 from recidiviz.common.constants.charge import ChargeStatus
-from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.hold import HoldStatus
 from recidiviz.common.constants.sentence import SentenceStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
@@ -73,9 +72,11 @@ SENTENCE_STATUS = 'SERVING'
 FULL_NAME_1 = 'TEST_FULL_NAME_1'
 FULL_NAME_2 = 'TEST_FULL_NAME_2'
 FULL_NAME_3 = 'TEST_FULL_NAME_3'
-DEFAULT_METADATA = IngestMetadata("default_region",
-                                  datetime(year=1000, month=1, day=1),
-                                  EnumOverrides.empty())
+JURISDICTION_ID = 'JURISDICTION_ID'
+DEFAULT_METADATA = IngestMetadata.new_with_defaults(
+    region='region_code',
+    jurisdiction_id='jid',
+    last_seen_time=datetime(year=1000, month=1, day=1))
 ID = 1
 ID_2 = 2
 ID_3 = 3
@@ -224,6 +225,7 @@ class TestPersistence(TestCase):
         # Arrange
         metadata = IngestMetadata.new_with_defaults(
             region=REGION_1,
+            jurisdiction_id=JURISDICTION_ID,
             last_seen_time=SCRAPER_START_DATETIME)
 
         ingest_info = IngestInfo()
@@ -314,6 +316,7 @@ class TestPersistence(TestCase):
         most_recent_scrape_time = (SCRAPER_START_DATETIME + timedelta(days=1))
         metadata = IngestMetadata.new_with_defaults(
             region=REGION_1,
+            jurisdiction_id=JURISDICTION_ID,
             last_seen_time=most_recent_scrape_time)
 
         schema_booking = schema.Booking(
@@ -324,6 +327,7 @@ class TestPersistence(TestCase):
             last_seen_time=SCRAPER_START_DATETIME)
         schema_person = schema.Person(
             person_id=PERSON_ID,
+            jurisdiction_id=JURISDICTION_ID,
             external_id=EXTERNAL_PERSON_ID,
             region=REGION_1,
             bookings=[schema_booking])
@@ -356,6 +360,7 @@ class TestPersistence(TestCase):
             person_id=PERSON_ID,
             external_id=EXTERNAL_PERSON_ID,
             region=REGION_1,
+            jurisdiction_id=JURISDICTION_ID,
             full_name=_format_full_name(FULL_NAME_1),
             bookings=[expected_booking])
         self.assertEqual([expected_person], database.read_people(Session()))
@@ -393,10 +398,10 @@ class TestPersistence(TestCase):
             last_seen_time=SCRAPER_START_DATETIME, charges=[], holds=[])
 
         person = entities.Person.new_with_defaults(
-            person_id=ID, region=REGION_1,
+            person_id=ID, region=REGION_1, jurisdiction_id=JURISDICTION_ID,
             bookings=[booking_open, booking_resolved])
         person_unmatched = entities.Person.new_with_defaults(
-            person_id=ID_2, region=REGION_1,
+            person_id=ID_2, region=REGION_1, jurisdiction_id=JURISDICTION_ID,
             bookings=[booking_open_most_recent_scrape])
 
         session = Session()
