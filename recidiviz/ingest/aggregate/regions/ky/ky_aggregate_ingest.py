@@ -18,7 +18,6 @@
 import datetime
 from typing import Dict, List
 
-import dateparser
 import numpy as np
 import pandas as pd
 import tabula
@@ -26,8 +25,9 @@ import us
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
+from recidiviz.common import date, fips
 from recidiviz.ingest.aggregate import aggregate_ingest_utils
-from recidiviz.common import fips
+from recidiviz.ingest.aggregate.errors import AggregateDateParsingError
 from recidiviz.persistence.database.schema import KyFacilityAggregate
 
 
@@ -194,7 +194,10 @@ def parse_date(filename: str) -> datetime.date:
     else:
         end = filename.index('.pdf')
         start = end - 8
-    return dateparser.parse(filename[start:end]).date()
+    parsed_date = date.parse_date(filename[start:end])
+    if parsed_date:
+        return parsed_date
+    raise AggregateDateParsingError('Could not extract date')
 
 
 def _pretend_facility_is_county(facility_name: str):
