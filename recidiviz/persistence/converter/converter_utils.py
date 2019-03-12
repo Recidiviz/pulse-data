@@ -17,19 +17,16 @@
 """Utils for converting individual data fields."""
 import datetime
 import locale
-
 from distutils.util import strtobool  # pylint: disable=no-name-in-module
+from typing import Optional
 
-import dateparser
-
-from recidiviz.common import common_utils
+from recidiviz.common import common_utils, date
 from recidiviz.common.common_utils import normalize
-from recidiviz.common.constants.bond import \
-    BondStatus, BondType, BOND_TYPE_MAP, BOND_STATUS_MAP
+from recidiviz.common.constants.bond import (BOND_STATUS_MAP, BOND_TYPE_MAP,
+                                             BondStatus, BondType)
 from recidiviz.common.constants.person import Ethnicity, Race
 
 locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
-
 
 def fn(func, field_name, proto, *additional_func_args, default=None):
     """Return the result of applying the given function to the field on the
@@ -60,37 +57,6 @@ def race_is_actually_ethnicity(ingest_person, enum_overrides):
         not Race.can_parse(ingest_person.race, enum_overrides)
 
 
-def parse_datetime(date_string):
-    """
-    Parses a string into a datetime object.
-
-    Args:
-        date_string: The string to be parsed.
-
-    Return:
-        (datetime) Datetime representation of the provided string.
-    """
-    if date_string == '' or date_string.isspace():
-        return None
-    parsed_date = dateparser.parse(date_string, languages=['en'])
-    if not parsed_date:
-        raise ValueError('cannot parse date: %s' % date_string)
-    return parsed_date
-
-
-def parse_date(date_string):
-    """
-    Parses a string into a datetime object.
-
-    Args:
-        date_string: The string to be parsed.
-
-    Return:
-        (date) Date representation of the provided string.
-    """
-    return parse_datetime(date_string).date()
-
-
 def calculate_birthdate_from_age(age):
     """
     Creates a birthdate from the given year. We estimate a person's birthdate by
@@ -112,12 +78,13 @@ def calculate_birthdate_from_age(age):
         raise ValueError('cannot parse age: %s' % age)
 
 
-def parse_days(time_string):
+def parse_days(time_string: str, from_dt: Optional[datetime.datetime] = None):
     """
     Converts the given string into an int number number of days
 
     Args:
         time_string: The string to convert into int.
+        from_dt: Datetime to use as base for any relative dates.
 
     Return:
         (int) number of days converted from time_string
@@ -127,11 +94,11 @@ def parse_days(time_string):
     try:
         return int(time_string)
     except ValueError:
-        # dateparser.parse interprets the string '1 YEAR 2 DAYS' to mean the
-        # datetime 1 year and 2 days ago.
-        date_ago = dateparser.parse(time_string)
-        if date_ago:
-            return (datetime.datetime.now() - date_ago).days
+        # Parses the string '1 YEAR 2 DAYS' to mean 1 year and 2 days prior.
+        current_dt = from_dt or datetime.datetime.now()
+        past_dt = date.parse_datetime(time_string, from_dt=current_dt)
+        if past_dt:
+            return (current_dt - past_dt).days
 
     raise ValueError('cannot parse time duration: %s' % time_string)
 

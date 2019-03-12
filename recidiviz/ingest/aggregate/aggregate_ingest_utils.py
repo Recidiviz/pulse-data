@@ -136,3 +136,14 @@ def last_date_of_month(year: int, month: int) -> datetime.date:
 
 def _last_day_of_month(year: int, month: int) -> int:
     return calendar.monthrange(year, month)[1]
+
+
+def subtract_month(date: datetime.date) -> datetime.date:
+    if date.month == 1:
+        year = date.year - 1
+        month = 12
+    else:
+        year = date.year
+        month = date.month - 1
+    day = min(date.day, _last_day_of_month(year, month))
+    return datetime.date(year=year, month=month, day=day)

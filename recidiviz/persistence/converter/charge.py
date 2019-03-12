@@ -15,12 +15,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Converts an ingest_info proto Arrest to a persistence entity."""
-from recidiviz.common.constants.charge import ChargeDegree, ChargeClass, \
-    ChargeStatus, CourtType
+from recidiviz.common.constants.charge import (ChargeClass, ChargeDegree,
+                                               ChargeStatus, CourtType)
+from recidiviz.common.date import parse_date
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence import entities
-from recidiviz.persistence.converter.converter_utils import normalize, fn, \
-    parse_date, parse_bool, parse_dollars, parse_external_id
+from recidiviz.persistence.converter.converter_utils import (fn, normalize,
+                                                             parse_bool,
+                                                             parse_dollars,
+                                                             parse_external_id)
 
 
 def copy_fields_to_builder(

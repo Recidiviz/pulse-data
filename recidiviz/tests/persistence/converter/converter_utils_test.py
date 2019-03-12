@@ -33,18 +33,6 @@ _NOW = datetime.datetime(2000, 1, 1)
 class TestConverterUtils(TestCase):
     """Test conversion util methods."""
 
-    def test_parseDateTime(self):
-        assert converter_utils.parse_datetime('Jan 1, 2018 1:40') == \
-               datetime.datetime(year=2018, month=1, day=1, hour=1, minute=40)
-
-    def test_parseDate(self):
-        assert converter_utils.parse_date('Jan 1, 2018') == \
-               datetime.date(year=2018, month=1, day=1)
-
-    def test_parseBadDate(self):
-        with pytest.raises(ValueError):
-            converter_utils.parse_datetime('ABC')
-
     @patch('recidiviz.persistence.converter.converter_utils.datetime.datetime')
     def test_parseAge(self, mock_datetime):
         mock_datetime.now.return_value = _NOW
@@ -58,8 +46,14 @@ class TestConverterUtils(TestCase):
         with pytest.raises(ValueError):
             converter_utils.calculate_birthdate_from_age('ABC')
 
-    def test_parseTimeDuration(self):
+    def test_parseTimeDurationDays(self):
         assert converter_utils.parse_days('10') == 10
+
+    def test_parseTimeDurationFormat(self):
+        source_date = datetime.datetime(2001, 1, 1)
+        # 2000 was a leap year
+        assert converter_utils.parse_days(
+            '1 YEAR 2 DAYS', from_dt=source_date) == 368
 
     def test_parseBadTimeDuration(self):
         with pytest.raises(ValueError):

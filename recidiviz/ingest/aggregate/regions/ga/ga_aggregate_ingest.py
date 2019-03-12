@@ -15,19 +15,18 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Parse the GA Aggregated Statistics PDF."""
-from typing import Dict
 import datetime
-import dateparser
+from typing import Dict
 
 import pandas as pd
+import tabula
 import us
 from PyPDF2 import PdfFileReader
-import tabula
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
+from recidiviz.common import date, fips
 from recidiviz.ingest.aggregate import aggregate_ingest_utils
-from recidiviz.common import fips
 from recidiviz.ingest.aggregate.errors import AggregateDateParsingError
 from recidiviz.persistence.database.schema import GaCountyAggregate
 
@@ -61,7 +60,9 @@ def _parse_date(filename: str) -> datetime.date:
         for index, line in enumerate(lines):
             if DATE_PARSE_ANCHOR in line:
                 # The date is on the next line if anchor is present on the line
-                return dateparser.parse(lines[index+1]).date()
+                parsed_date = date.parse_date(lines[index+1])
+                if parsed_date:
+                    return parsed_date
         raise AggregateDateParsingError('Could not extract date')
 
 

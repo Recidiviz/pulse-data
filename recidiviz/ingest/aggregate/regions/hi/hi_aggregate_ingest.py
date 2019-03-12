@@ -16,17 +16,18 @@
 # =============================================================================
 """Parse the HI Aggregated Statistics PDF."""
 import datetime
-from typing import Dict, List, Iterable
+from typing import Dict, Iterable, List
 
-import dateparser
 import more_itertools
 import pandas as pd
 import tabula
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
-from recidiviz.ingest.aggregate.errors import AggregateIngestError
+from recidiviz.common import date
 from recidiviz.common.errors import FipsMergingError
+from recidiviz.ingest.aggregate.errors import (AggregateDateParsingError,
+                                               AggregateIngestError)
 from recidiviz.persistence.database.schema import HiFacilityAggregate
 
 _COLUMN_NAMES = [
@@ -102,15 +103,18 @@ def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
 
 def parse_date(filename: str) -> datetime.date:
     end = filename.index('.pdf')
-    start = end - 10
-    d = dateparser.parse(filename[start:end])
     # There are two formats for hawaiis dates:
     # _wp-content_uploads_2018_12_pop-reports-eom-2018-11-30.pdf and
     # _wp-content_uploads_2017_10_pop-reports-eom-2017-09-30-17.pdf
-    if not d:
+    try:
+        start = end - 10
+        d = date.parse_date(filename[start:end])
+    except ValueError:
         start = end - 8
-        d = dateparser.parse(filename[start:end])
-    return d.date()
+        d = date.parse_date(filename[start:end])
+    if d:
+        return d
+    raise AggregateDateParsingError('Could not extract date')
 
 
 def _parse_table(filename: str) -> pd.DataFrame:

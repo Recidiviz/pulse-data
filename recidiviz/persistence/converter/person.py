@@ -22,12 +22,13 @@ from typing import Optional
 import attr
 from uszipcode import SearchEngine
 
-from recidiviz.common.constants.person import Ethnicity, Gender, Race, \
-    ResidencyStatus, RESIDENCY_STATUS_SUBSTRING_MAP
+from recidiviz.common.constants.person import (RESIDENCY_STATUS_SUBSTRING_MAP,
+                                               Ethnicity, Gender, Race,
+                                               ResidencyStatus)
+from recidiviz.common.date import parse_date
 from recidiviz.persistence.converter import converter_utils
-from recidiviz.persistence.converter.converter_utils import \
-    calculate_birthdate_from_age, fn, normalize, parse_date, parse_external_id
-
+from recidiviz.persistence.converter.converter_utils import (
+    calculate_birthdate_from_age, fn, normalize, parse_external_id)
 
 # Suffixes used in county names in uszipcode library
 USZIPCODE_COUNTY_SUFFIXES = [
