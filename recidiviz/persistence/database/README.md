@@ -30,8 +30,6 @@ TODO(garciaz): find appropriate documentation from rasmi@ about querying BigQuer
 
 - A migration should consist of a single change to the schema (a single change meaning a single conceptual change, which may consist of multiple update statements). Do not group changes.
 
-- Do not share foreign key columns between master and historical tables. Master table foreign key columns point to other master tables, and should have foreign key constraints. Historical table foreign key columns point to other historical tables, and cannot have foreign key constraints (because the IDs they reference are not unique on the historical table).
-
 - For historical tables, the primary key exists only due to requirements of SQLAlchemy, and should never be referenced elsewhere in the schema.
 
 - If adding a column of type String, the length must be specified (this keeps the schema portable, as certain SQL implementations require an explicit length for String columns).
@@ -68,7 +66,7 @@ NOTE: All commands below assume you are running in your pip environment. To laun
 
 1. Run `generate-empty-migration -m <migration name>`.
 
-2. Follow the example in [change\_aggregate\_datetime\_to\_date](https://github.com/Recidiviz/pulse-data/blob/master/recidiviz/persistence/database/migrations/versions/997ed5aca81f_change_aggregate_datetime_to_date.py) for how to apply a transformation to existing data.
+2. Follow the example in [split\_residence\_field](https://github.com/Recidiviz/pulse-data/blob/master/recidiviz/persistence/database/migrations/versions/2019_03_06_1027_0b32488901d4_split_residence_field.py) for how to apply a transformation to existing data.
 
 #### Applying the migration
 
@@ -112,7 +110,11 @@ sa.Column(
 
 Alembic automatically manages a table called `alembic_version`. This table contains a single row containing the hash ID of the most recent migration run against the database. When you attempt to autogenerate or run a migration, if alembic does not see a migration file corresponding to this hash in the `versions` folder, the attempted action will fail.
 
-If the above process is always followed, the `alembic_version` values in both `dev-data` and `prod-data` should always match both each other and the latest migration file in `versions`. If they don't, there could be a number of reasons:
+Issues will arise if either your local copy of the `versions` folder does not match the `alembic_version` hash in the database, or if the `alembic_version` hashes in dev and prod don't match each other.
+
+If your local copy of `versions` doesn't match the database, this is likely because someone else has run and merged a migration in the interim. In this case, move your migration file out of `versions`, merge the new migration from HEAD, use `generate-empty-migration -m <migration name>` to create a new empty migration file (to ensure it follows the most recent migration in sequence), and copy the changes from your old copy of the file to the new one.
+
+If the `alembic_version` values in `dev-data` and `prod-data` don't match each other, there could be a number of reasons:
 
 - A local manual migration was run against dev without being run against prod, presumably for testing purposes (this is fine). In this case, bring dev back into sync with prod via the steps in "Syncing dev via manual local migration" below.
 
