@@ -130,8 +130,8 @@ class TestPersistence(TestCase):
     def test_twoDifferentPeople_persistsBoth(self):
         # Arrange
         ingest_info = IngestInfo()
-        ingest_info.people.add(full_name=FULL_NAME_1)
-        ingest_info.people.add(full_name=FULL_NAME_2)
+        ingest_info.people.add(person_id='1', full_name=FULL_NAME_1)
+        ingest_info.people.add(person_id='2', full_name=FULL_NAME_2)
 
         # Act
         persistence.write(ingest_info, DEFAULT_METADATA)
@@ -146,8 +146,8 @@ class TestPersistence(TestCase):
     def test_twoDifferentPeople_persistsNoneProtectedError(self):
         # Arrange
         ingest_info = IngestInfo()
-        ingest_info.people.add(full_name=FULL_NAME_1)
-        ingest_info.people.add(full_name=FULL_NAME_2, gender='X')
+        ingest_info.people.add(person_id='1', full_name=FULL_NAME_1)
+        ingest_info.people.add(person_id='2', full_name=FULL_NAME_2, gender='X')
 
         # Act
         with self.assertRaises(PersistenceError):
@@ -180,10 +180,10 @@ class TestPersistence(TestCase):
     def test_threeDifferentPeople_persistsTwoBelowThreshold(self):
         # Arrange
         ingest_info = IngestInfo()
-        ingest_info.people.add(full_name=FULL_NAME_2)
-        ingest_info.people.add(full_name=FULL_NAME_3)
-        ingest_info.people.add(full_name=FULL_NAME_1,
-                               person_id=EXTERNAL_PERSON_ID,
+        ingest_info.people.add(person_id='1', full_name=FULL_NAME_2)
+        ingest_info.people.add(person_id='2', full_name=FULL_NAME_3)
+        ingest_info.people.add(person_id=EXTERNAL_PERSON_ID,
+                               full_name=FULL_NAME_1,
                                booking_ids=[EXTERNAL_BOOKING_ID])
         ingest_info.bookings.add(
             booking_id=EXTERNAL_BOOKING_ID,
@@ -204,8 +204,10 @@ class TestPersistence(TestCase):
     def test_readSinglePersonByName(self):
         # Arrange
         ingest_info = IngestInfo()
-        ingest_info.people.add(full_name=FULL_NAME_1, birthdate=BIRTHDATE_1)
-        ingest_info.people.add(full_name=FULL_NAME_2, birthdate=BIRTHDATE_2)
+        ingest_info.people.add(
+            person_id='1', full_name=FULL_NAME_1, birthdate=BIRTHDATE_1)
+        ingest_info.people.add(
+            person_id='2', full_name=FULL_NAME_2, birthdate=BIRTHDATE_2)
 
         # Act
         persistence.write(ingest_info, DEFAULT_METADATA)
@@ -432,6 +434,7 @@ class TestPersistence(TestCase):
         # Assert
         people = database.read_people(Session())
         self.assertCountEqual(people, [expected_person, person_unmatched])
+
 
 def _format_full_name(full_name: str) -> str:
     return '{{"full_name": "{}"}}'.format(full_name)
