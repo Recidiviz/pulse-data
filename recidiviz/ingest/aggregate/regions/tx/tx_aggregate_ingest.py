@@ -15,19 +15,18 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Parse the TX Aggregated Statistics PDF."""
+import datetime
 from collections import OrderedDict
 from typing import Dict
-import datetime
-import dateparser
 
 import pandas as pd
-import us
 import tabula
+import us
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
+from recidiviz.common import date, fips
 from recidiviz.ingest.aggregate import aggregate_ingest_utils
-from recidiviz.common import fips
 from recidiviz.ingest.aggregate.errors import AggregateDateParsingError
 from recidiviz.persistence.database.schema import TxCountyAggregate
 
@@ -60,7 +59,9 @@ def _parse_date(filename: str) -> datetime.date:
         start = filename_date.index(DATE_PARSE_ANCHOR_FILENAME)\
                 + len(DATE_PARSE_ANCHOR_FILENAME)
         date_str = filename_date[start:].strip('.pdf')
-        return dateparser.parse(date_str).date().replace(day=1)
+        parsed_date = date.parse_date(date_str)
+        if parsed_date:
+            return parsed_date.replace(day=1)
     raise AggregateDateParsingError('Could not extract date')
 
 

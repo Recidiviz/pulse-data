@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for aggregate_ingest_utils."""
+import datetime
 from unittest import TestCase
 
 import pandas as pd
@@ -79,3 +80,23 @@ class TestAggregateIngestUtils(TestCase):
         })
 
         assert_frame_equal(result, expected_result)
+
+    def test_subtractMonth(self):
+        result = aggregate_ingest_utils.subtract_month(
+            datetime.date(year=2019, month=3, day=15))
+        assert result == datetime.date(year=2019, month=2, day=15)
+
+    def test_subtractMonth_truncatesDay(self):
+        result = aggregate_ingest_utils.subtract_month(
+            datetime.date(year=2019, month=3, day=29))
+        assert result == datetime.date(year=2019, month=2, day=28)
+
+    def test_subtractMonth_priorYear(self):
+        result = aggregate_ingest_utils.subtract_month(
+            datetime.date(year=2019, month=1, day=29))
+        assert result == datetime.date(year=2018, month=12, day=29)
+
+    def test_subtractMonth_firstDay(self):
+        result = aggregate_ingest_utils.subtract_month(
+            datetime.date(year=2019, month=3, day=1))
+        assert result == datetime.date(year=2019, month=2, day=1)
