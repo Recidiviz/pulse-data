@@ -60,11 +60,12 @@ errors_persisted_view = view.View("recidiviz/persistence/num_errors",
                                   aggregation.SumAggregation())
 monitoring.register_views([people_persisted_view, errors_persisted_view])
 
-
 ERROR_THRESHOLD = 0.5
 
 
-def infer_release_on_open_bookings(region, last_ingest_time, custody_status):
+def infer_release_on_open_bookings(
+        region_code: str, last_ingest_time: datetime.datetime,
+        custody_status: CustodyStatus):
     """
    Look up all open bookings whose last_seen_time is earlier than the
    provided last_ingest_time in the provided region, update those
@@ -72,7 +73,7 @@ def infer_release_on_open_bookings(region, last_ingest_time, custody_status):
    last_ingest_time.
 
    Args:
-       region: the region
+       region_code: the region_code
        last_ingest_time: The last time complete data was ingested for this
            region. In the normal ingest pipeline, this is the last start time
            of a background scrape for the region.
@@ -85,7 +86,7 @@ def infer_release_on_open_bookings(region, last_ingest_time, custody_status):
         logging.info('Reading all bookings that happened before %s',
                      last_ingest_time)
         people = database.read_people_with_open_bookings_scraped_before_time(
-            session, region, last_ingest_time)
+            session, region_code, last_ingest_time)
         logging.info(
             'Found %s people with bookings that will be inferred released',
             len(people))
@@ -93,8 +94,11 @@ def infer_release_on_open_bookings(region, last_ingest_time, custody_status):
             persistence_utils.remove_pii_for_person(person)
             _infer_release_date_for_bookings(person.bookings, last_ingest_time,
                                              custody_status)
+        # TODO(#1172): Only pass in last_seen_time to write_people instead of
+        # dummy object with half-filled values
         database.write_people(session, people, IngestMetadata(
-            region, last_ingest_time, {}))
+            region=region_code, jurisdiction_id='',
+            last_seen_time=last_ingest_time))
         session.commit()
     except Exception:
         session.rollback()
@@ -202,7 +206,7 @@ def _abort_or_continue(
 
 # Note: If we ever want to validate more than the existence of multiple open
 # bookings, we should make validation an entirely separate module/step.
-def validate_one_open_booking(people: List[entities.Person]) ->\
+def validate_one_open_booking(people: List[entities.Person]) -> \
         Tuple[List[entities.Person], int]:
     data_validation_errors = 0
     validated_people = []
@@ -234,7 +238,7 @@ def write(ingest_info, metadata):
     with monitoring.measurements(mtags) as measurements:
 
         # Convert the people one at a time and count the errors as they happen.
-        people, enum_parsing_errors, protected_class_errors =\
+        people, enum_parsing_errors, protected_class_errors = \
             _convert_and_count_errors(ingest_info, metadata)
         people, data_validation_errors = validate_one_open_booking(people)
         logging.info('Converted %s people with %s enum_parsing_errors, %s'

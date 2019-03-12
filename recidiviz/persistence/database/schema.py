@@ -236,6 +236,7 @@ class _PersonSharedColumns:
     residency_status = Column(residency_status)
     resident_of_region = Column(Boolean)
     region = Column(String(255), nullable=False, index=True)
+    jurisdiction_id = Column(String(255))
 
 
 class Person(Base, DatabaseEntity, _PersonSharedColumns):

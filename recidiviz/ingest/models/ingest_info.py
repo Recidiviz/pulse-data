@@ -115,7 +115,7 @@ class Person(IngestObject):
             self, person_id=None, full_name=None, surname=None,
             given_names=None, middle_names=None, name_suffix=None,
             birthdate=None, gender=None, age=None, race=None, ethnicity=None,
-            place_of_residence=None, bookings=None):
+            place_of_residence=None, jurisdiction_id=None, bookings=None):
         self.person_id: Optional[str] = person_id
         self.surname: Optional[str] = surname
         self.given_names: Optional[str] = given_names
@@ -128,6 +128,7 @@ class Person(IngestObject):
         self.race: Optional[str] = race
         self.ethnicity: Optional[str] = ethnicity
         self.place_of_residence: Optional[str] = place_of_residence
+        self.jurisdiction_id: Optional[str] = jurisdiction_id
 
         self.bookings: List[Booking] = bookings or []
 

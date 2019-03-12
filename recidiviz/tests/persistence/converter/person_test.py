@@ -38,7 +38,8 @@ class PersonConverterTest(unittest.TestCase):
 
     def testParsesPerson(self):
         # Arrange
-        metadata = IngestMetadata.new_with_defaults(region='REGION')
+        metadata = IngestMetadata.new_with_defaults(
+            region='REGION', jurisdiction_id='JURISDICTION_ID')
         ingest_person = ingest_info_pb2.Person(
             full_name='FULL_NAME',
             birthdate='12-31-1999',
@@ -64,6 +65,7 @@ class PersonConverterTest(unittest.TestCase):
             ethnicity_raw_text='HISPANIC',
             residency_status=ResidencyStatus.PERMANENT,
             region='REGION',
+            jurisdiction_id='JURISDICTION_ID',
         )
 
         self.assertEqual(result, expected_result)
