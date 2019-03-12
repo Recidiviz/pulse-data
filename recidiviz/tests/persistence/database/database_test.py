@@ -23,6 +23,7 @@ from unittest import TestCase
 from more_itertools import one
 import pandas as pd
 from sqlalchemy import func
+from sqlalchemy.sql import text
 
 from recidiviz import Session
 from recidiviz.common.constants import enum_canonical_strings as enum_strings
@@ -525,6 +526,76 @@ class TestDatabase(TestCase):
         self.assertIsNone(charge_snapshot.valid_to)
 
         assert_session.close()
+
+    def testWritePerson_overlappingSnapshots_doesNotRaiseError(self):
+        name = 'Steve Fakename'
+        birthdate = datetime.date(year=1980, month=1, day=1)
+
+        arrange_session = Session()
+
+        person = Person(
+            person_id=1, full_name=name, birthdate=birthdate,
+            region=_REGION, race=Race.OTHER.value)
+        booking = Booking(
+            booking_id=2, custody_status=CustodyStatus.IN_CUSTODY.value,
+            last_seen_time=datetime.datetime(year=2020, month=7, day=6))
+        person.bookings.append(booking)
+        charge = Charge(
+            charge_id=3, status=ChargeStatus.PENDING.value)
+        booking.charges.append(charge)
+        bond = Bond(
+            bond_id=4, status=BondStatus.UNKNOWN_FOUND_IN_SOURCE.value,
+            booking_id=2)
+        charge.bond = bond
+
+        arrange_session.add(person)
+        arrange_session.flush()
+
+        snapshot_time = '2020-07-06 00:00:00'
+
+        arrange_session.execute(text(
+            'INSERT INTO person_history (person_id, region, race, valid_from) '
+            'VALUES ({}, \'{}\', \'{}\', \'{}\');'.format(
+                1, _REGION, Race.OTHER.value, snapshot_time)))
+        arrange_session.execute(text(
+            'INSERT INTO booking_history '
+            '(booking_id, person_id, custody_status, valid_from) '
+            'VALUES ({}, {}, \'{}\', \'{}\');'.format(
+                2, 1, CustodyStatus.IN_CUSTODY.value, snapshot_time)))
+        arrange_session.execute(text(
+            'INSERT INTO bond_history '
+            '(bond_id, booking_id, status, valid_from) '
+            'VALUES ({}, {}, \'{}\', \'{}\');'.format(
+                4, 2, BondStatus.UNKNOWN_FOUND_IN_SOURCE.value, snapshot_time)))
+
+        # Create instantaneous closed charge snapshot and open charge snapshot
+        arrange_session.execute(text(
+            'INSERT INTO charge_history '
+            '(charge_id, booking_id, bond_id, status, valid_from, valid_to) '
+            'VALUES '
+            '({}, {}, {}, \'{}\', \'{valid_from}\', \'{valid_to}\');'.format(
+                3, 2, 4, ChargeStatus.PENDING.value, valid_from=snapshot_time,
+                valid_to=snapshot_time)))
+        arrange_session.execute(text(
+            'INSERT INTO charge_history '
+            '(charge_id, booking_id, bond_id, status, valid_from) '
+            'VALUES ({}, {}, {}, \'{}\', \'{}\');'.format(
+                3, 2, 4, ChargeStatus.PENDING.value, snapshot_time)))
+
+        arrange_session.commit()
+        arrange_session.close()
+
+        assert_session = Session()
+
+        ingest_person = database.read_people(
+            assert_session, full_name=name, birthdate=birthdate)[0]
+        ingest_person.bookings[0].custody_status = CustodyStatus.RELEASED
+
+        try:
+            database.write_person(assert_session, ingest_person, IngestMetadata(
+                _REGION, datetime.datetime(year=2020, month=7, day=8), {}))
+        except Exception as e:
+            self.fail('Writing person failed with error: {}'.format(e))
 
     def testWritePeople_duplicatePeople_raisesError(self):
         shared_id = 48
