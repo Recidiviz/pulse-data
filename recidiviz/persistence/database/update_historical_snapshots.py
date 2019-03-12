@@ -106,7 +106,10 @@ def _fetch_most_recent_snapshots_for_entity_type(
     # just the IDs to the second request, which allows proper ORM models to be
     # returned as a result.
     snapshot_ids_query = '''
-    SELECT history.{primary_key_column}
+    SELECT
+      history.{primary_key_column},
+      history.{master_key_column},
+      history.valid_to
     FROM {historical_table} history
     JOIN (
       SELECT {master_key_column}, MAX(valid_from) AS valid_from
@@ -123,8 +126,24 @@ def _fetch_most_recent_snapshots_for_entity_type(
         master_key_column=master_class.get_primary_key_column_name(),
         ids_list=', '.join([str(id) for id in entity_ids]))
 
-    snapshot_id_items = session.execute(text(snapshot_ids_query)).fetchall()
-    snapshot_ids = [item[0] for item in snapshot_id_items]
+    results = session.execute(text(snapshot_ids_query)).fetchall()
+
+    # TODO(899): remove this once zero-duration snapshots stop being written
+    results_by_master_key: Dict[int, List] = defaultdict(list)
+    for result in results:
+        results_by_master_key[result[1]].append(result)
+    overlapping_snapshot_entities = [str(master_key) for master_key, results
+                                     in results_by_master_key.items()
+                                     if len(results) > 1]
+    if overlapping_snapshot_entities:
+        logging.error('Overlapping historical snapshots found in table %s '
+                      'for master entity IDs %s', historical_table_name,
+                      ', '.join(overlapping_snapshot_entities))
+
+    # Use only results where valid_to is None to exclude any overlapping
+    # non-open snapshots
+    snapshot_ids = [snapshot_id for snapshot_id, master_id, valid_to
+                    in results if valid_to is None]
 
     # Removing the below early return will pass in tests but fail in production,
     # because SQLite allows "IN ()" but Postgres does not
