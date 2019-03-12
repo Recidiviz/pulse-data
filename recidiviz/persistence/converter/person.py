@@ -67,6 +67,9 @@ def copy_fields_to_builder(person_builder, proto, metadata):
     new.resident_of_region = fn(
         _parse_is_resident, 'place_of_residence', proto, metadata.region)
 
+    new.jurisdiction_id = fn(normalize, 'jurisdiction_id', proto,
+                             default=metadata.jurisdiction_id)
+
     new.region = metadata.region
 
 
@@ -110,7 +113,7 @@ class Names():
         """
         filled_names = attr.asdict(self, filter=lambda a, v: v is not None)
         return json.dumps(filled_names, sort_keys=True) \
-               if filled_names else None
+            if filled_names else None
 
 
 def _parse_birthdate(proto):

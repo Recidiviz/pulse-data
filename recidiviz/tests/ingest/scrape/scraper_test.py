@@ -458,6 +458,7 @@ def mock_region(region_code, queue_name=None):
         names_file='names.txt',
         timezone='America/New_York',
         environment='production',
+        jurisdiction_id='jurisdiction_id',
     )
 
 FAKE_TASK = Task(task_type=constants.TaskType.INITIAL, endpoint='fake')

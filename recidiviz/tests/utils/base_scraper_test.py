@@ -146,7 +146,9 @@ class BaseScraperTest:
             result.ingest_info)
         validate(result_proto)
         metadata = IngestMetadata(
-            self.scraper.region.region_code, _FAKE_SCRAPER_START_TIME,
+            self.scraper.region.region_code,
+            self.scraper.region.jurisdiction_id,
+            _FAKE_SCRAPER_START_TIME,
             self.scraper.get_enum_overrides())
         converted_people = converter.convert(result_proto, metadata)
         validate_one_open_booking(converted_people)

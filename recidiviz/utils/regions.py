@@ -64,6 +64,7 @@ class Region:
     """
 
     region_code: str = attr.ib()
+    jurisdiction_id: str = attr.ib()
     agency_name: str = attr.ib()
     agency_type: str = attr.ib()
     environment: str = attr.ib()
@@ -130,14 +131,7 @@ def get_region_manifest(region_code: str) -> Dict[str, Any]:
     """
     with open(os.path.join(BASE_REGION_PATH, region_code, MANIFEST_NAME)) \
             as region_manifest:
-        yaml_dict = yaml.load(region_manifest)
-        # TODO(#386): Require jurisdiction_id once supported in codebase
-        try:
-            yaml_dict.pop('jurisdiction_id')
-        except KeyError:
-            pass
-
-        return yaml_dict
+        return yaml.load(region_manifest)
 
 
 def get_supported_region_codes(timezone: tzinfo = None) -> Set[str]:

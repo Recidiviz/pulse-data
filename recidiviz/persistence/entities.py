@@ -60,6 +60,7 @@ class Person(Entity, BuildableAttr, DefaultableAttr):
     region: str = attr.ib()  # non-nullable
     ethnicity: Optional[Ethnicity] = attr.ib()
     ethnicity_raw_text: Optional[str] = attr.ib()
+    jurisdiction_id: str = attr.ib()  # non-nullable
     residency_status: Optional[ResidencyStatus] = attr.ib()
     resident_of_region: Optional[bool] = attr.ib()
 

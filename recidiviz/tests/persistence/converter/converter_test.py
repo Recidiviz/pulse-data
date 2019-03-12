@@ -34,6 +34,7 @@ _LAST_SEEN_TIME = datetime.datetime(year=2019, month=2, day=13, hour=12)
 _RELEASE_DATE = datetime.date(year=2018, month=3, day=1)
 _BIRTHDATE = datetime.date(1990, 3, 5)
 _BIRTHDATE_SCRUBBED = datetime.date(1990, 1, 1)
+_JURISDICTION_ID = 'JURISDICTION_ID'
 
 
 class TestConverter(unittest.TestCase):
@@ -41,7 +42,7 @@ class TestConverter(unittest.TestCase):
 
     def testConvert_FullIngestInfo(self):
         # Arrange
-        metadata = IngestMetadata('REGION', _LAST_SEEN_TIME)
+        metadata = IngestMetadata('REGION', _JURISDICTION_ID, _LAST_SEEN_TIME)
 
         ingest_info = IngestInfo()
         ingest_info.people.add(person_id='PERSON_ID',
@@ -62,6 +63,7 @@ class TestConverter(unittest.TestCase):
         expected_result = [Person.new_with_defaults(
             external_id='PERSON_ID',
             region='REGION',
+            jurisdiction_id='JURISDICTION_ID',
             bookings=[Booking.new_with_defaults(
                 external_id='BOOKING_ID',
                 admission_date=_LAST_SEEN_TIME.date(),
@@ -92,7 +94,7 @@ class TestConverter(unittest.TestCase):
 
     def testConvert_FullIngestInfo_usingPop(self):
         # Arrange
-        metadata = IngestMetadata('REGION', _LAST_SEEN_TIME)
+        metadata = IngestMetadata('REGION', _JURISDICTION_ID, _LAST_SEEN_TIME)
 
         ingest_info = IngestInfo()
         ingest_info.people.add(person_id='PERSON_ID',
@@ -116,6 +118,7 @@ class TestConverter(unittest.TestCase):
         expected_result = [Person.new_with_defaults(
             external_id='PERSON_ID',
             region='REGION',
+            jurisdiction_id='JURISDICTION_ID',
             bookings=[Booking.new_with_defaults(
                 external_id='BOOKING_ID',
                 admission_date=_LAST_SEEN_TIME.date(),
@@ -146,7 +149,7 @@ class TestConverter(unittest.TestCase):
 
     def testConvert_FullIngestInfo_NoOpenBookings(self):
         # Arrange
-        metadata = IngestMetadata('REGION', _LAST_SEEN_TIME)
+        metadata = IngestMetadata('REGION', _JURISDICTION_ID, _LAST_SEEN_TIME)
 
         ingest_info = IngestInfo()
         ingest_info.people.add(person_id='PERSON_ID', full_name='TEST',
@@ -169,6 +172,7 @@ class TestConverter(unittest.TestCase):
         expected_result = [Person.new_with_defaults(
             external_id='PERSON_ID',
             region='REGION',
+            jurisdiction_id='JURISDICTION_ID',
             birthdate=_BIRTHDATE_SCRUBBED,
             birthdate_inferred_from_age=False,
             bookings=[Booking.new_with_defaults(
@@ -203,7 +207,7 @@ class TestConverter(unittest.TestCase):
 
     def testConvert_FullIngestInfo_GeneratedIds(self):
         # Arrange
-        metadata = IngestMetadata('REGION', _LAST_SEEN_TIME)
+        metadata = IngestMetadata('REGION', _JURISDICTION_ID, _LAST_SEEN_TIME)
 
         ingest_info = IngestInfo()
         ingest_info.people.add(person_id='PERSON_ID_GENERATE',
@@ -231,6 +235,7 @@ class TestConverter(unittest.TestCase):
         # Assert
         expected_result = [Person.new_with_defaults(
             region='REGION',
+            jurisdiction_id='JURISDICTION_ID',
             bookings=[Booking.new_with_defaults(
                 admission_date=_LAST_SEEN_TIME.date(),
                 admission_date_inferred=True,

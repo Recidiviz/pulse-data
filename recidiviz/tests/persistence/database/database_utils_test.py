@@ -50,6 +50,7 @@ _PERSON = entities.Person(
     residency_status=ResidencyStatus.PERMANENT,
     resident_of_region=True,
     person_id=1234,
+    jurisdiction_id='jurisdiction_id',
     bookings=[entities.Booking(
         booking_id=2345,
         external_id="external_id",

@@ -35,7 +35,6 @@ from recidiviz.persistence import persistence
 from recidiviz.utils import pubsub_helper, regions
 from recidiviz.utils.auth import authenticate_request
 
-
 BATCH_READ_SIZE = 500
 FAILED_TASK_THRESHOLD = 1
 batch_blueprint = Blueprint('batch', __name__)
@@ -73,6 +72,7 @@ class BatchMessage:
 def _publish_batch_message(
         batch_message: BatchMessage, scrape_key: ScrapeKey):
     """Publishes the ingest info BatchMessage."""
+
     def publish():
         serialized = batch_message.to_serializable()
         response = pubsub_helper.get_publisher().publish(
@@ -80,6 +80,7 @@ def _publish_batch_message(
                                          pubsub_type=PUBSUB_TYPE),
             data=json.dumps(serialized).encode())
         response.result()
+
     pubsub_helper.retry_with_create(scrape_key, publish, PUBSUB_TYPE)
 
 
@@ -93,6 +94,7 @@ def _get_batch_messages(scrape_key):
         A list of messages (ReceivedMessaged) containing the message data
         and the ack_id.
     """
+
     def inner():
         return pubsub_helper.get_subscriber().pull(
             pubsub_helper.get_subscription_path(scrape_key,
@@ -100,6 +102,7 @@ def _get_batch_messages(scrape_key):
             max_messages=BATCH_READ_SIZE,
             return_immediately=True
         )
+
     messages = []
     while True:
         response = pubsub_helper.retry_with_create(
@@ -200,12 +203,13 @@ def write_error(error: str, task: Task, scrape_key: ScrapeKey):
     _publish_batch_message(batch_message, scrape_key)
 
 
-def persist_to_database(region, scrape_type, scraper_start_time):
+def persist_to_database(region_code, scrape_type, scraper_start_time):
     """Reads all of the messages on the pubsub queue for a region and persists
     them to the database.
     """
-    overrides = regions.get_region(region).get_enum_overrides()
-    scrape_key = ScrapeKey(region, scrape_type)
+    region = regions.get_region(region_code)
+    overrides = region.get_enum_overrides()
+    scrape_key = ScrapeKey(region_code, scrape_type)
 
     messages = _get_batch_messages(scrape_key)
     logging.info('Received %s messages', len(messages))
@@ -220,7 +224,8 @@ def persist_to_database(region, scrape_type, scraper_start_time):
                     len(failed_tasks)))
 
         metadata = IngestMetadata(
-            region=region, last_seen_time=scraper_start_time,
+            region=region_code, jurisdiction_id=region.jurisdiction_id,
+            last_seen_time=scraper_start_time,
             enum_overrides=overrides)
 
         persistence.write(proto, metadata)

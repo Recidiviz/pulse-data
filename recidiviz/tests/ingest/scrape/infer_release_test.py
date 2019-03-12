@@ -41,6 +41,7 @@ _REGIONS = [
         base_url='base_url',
         queue={'rate': '5/m'},
         timezone='America/New_York',
+        jurisdiction_id='jid',
         environment='production'
     ), regions.Region(
         region_code='us_wy',
@@ -49,6 +50,7 @@ _REGIONS = [
         base_url='base_url',
         timezone='America/New_York',
         removed_from_website='UNKNOWN_SIGNIFICANCE',
+        jurisdiction_id='jid',
         environment='production'
     ), regions.Region(
         region_code='us_nc',
@@ -56,6 +58,7 @@ _REGIONS = [
         agency_type='prison',
         base_url='base_url',
         timezone='America/New_York',
+        jurisdiction_id='jid',
         environment='production'
     ),
 ]
