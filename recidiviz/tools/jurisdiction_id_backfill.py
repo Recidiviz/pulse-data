@@ -29,6 +29,7 @@ from typing import Optional
 
 import pandas as pd
 import us
+import yaml
 from more_itertools import one
 
 import recidiviz.ingest.scrape.regions
@@ -44,6 +45,8 @@ _FUZZY_MATCH_CUTOFF = 0.75
 
 
 def main():
+    """Script to backfill jurisdiction ids on manifest files"""
+
     all_manifests_filenames = glob.glob(_REGIONS_DIR + '/**/manifest.yaml')
 
     errors = set()
@@ -59,11 +62,17 @@ def main():
 
         county_fips = _to_county_fips(county_name,
                                       us.states.lookup(state_name))
+
+        with open(manifest_filename, 'r') as yaml_read_file:
+            y_dict = yaml.load(yaml_read_file)
+            if 'jurisdiction_id' in y_dict:
+                continue
+
         with open(manifest_filename, 'a') as yaml_file:
             jid = _to_jurisdiction_id(county_fips)
 
             if not jid:
-                errors.add(county_name)
+                errors.add(str(county_fips) + ':' + county_name)
                 continue
 
             yaml_file.write('jurisdiction_id: ' + str(jid) + '\n')
@@ -87,10 +96,6 @@ def _to_jurisdiction_id(county_fips: int) -> Optional[str]:
     """Lookup jurisdction_id by manifest_agency_name, filtering within the
     given county_fips"""
     jids_matching_county_fips = _JID.loc[_JID['fips'] == county_fips]
-
-    # Some jurisdictions in jid.csv have no listed names.
-    jids_matching_county_fips = \
-        jids_matching_county_fips.dropna(subset=['name'])
 
     # If only one jurisdiction in the county, assume it's a match
     if len(jids_matching_county_fips) == 1:
