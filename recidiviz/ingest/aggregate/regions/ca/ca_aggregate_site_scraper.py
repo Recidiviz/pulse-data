@@ -17,9 +17,13 @@
 
 """Scrapes the California aggregate site and finds pdfs to download."""
 import re
-from typing import Dict, Tuple, List
-import dateparser
+import datetime
+from typing import Dict, List, Tuple
+
 import requests
+
+from recidiviz.common import date
+from recidiviz.ingest.aggregate import aggregate_ingest_utils
 
 LANDING_PAGE = 'https://app.bscc.ca.gov/joq//jps/query.asp?action=v'
 DATE_RANGE_RE = r'(.*) through (.*)'
@@ -72,11 +76,13 @@ def get_urls_to_download() -> List[Tuple[str, Dict]]:
     end = start + 50
     match = re.match(DATE_RANGE_RE, page[start:end])
     if match:
-        date_from = dateparser.parse(match.group(1))
-        date_to = dateparser.parse(match.group(2))
-    else:
-        date_from = 1
-        date_to = 12
+        date_from = date.parse_date(match.group(1))
+        date_to = date.parse_date(match.group(2))
+
+    if not (match and date_from and date_to):
+        date_from = datetime.date(year=1995, month=9, day=5)
+        date_to = aggregate_ingest_utils.subtract_month(
+            datetime.date.today().replace(day=1))
 
     aggregate_urls = []
     for i in range(date_from.year, date_to.year+1):

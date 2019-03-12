@@ -16,21 +16,19 @@
 # =============================================================================
 """Ingest TN aggregate jail data.
 """
+import datetime
 import os
 from typing import Dict
 
-import datetime
-import dateparser
 import pandas as pd
-from sqlalchemy.ext.declarative import DeclarativeMeta
 import tabula
 import us
+from sqlalchemy.ext.declarative import DeclarativeMeta
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
+from recidiviz.common import date, fips
 from recidiviz.ingest.aggregate import aggregate_ingest_utils
-from recidiviz.common import fips
 from recidiviz.persistence.database.schema import TnFacilityAggregate
-
 
 _MANUAL_FACILITY_TO_COUNTY_MAP = {
     'Johnson City (F)': 'Washington',
@@ -72,7 +70,7 @@ def _parse_date(filename: str) -> datetime.date:
     base_filename = os.path.basename(filename)
     end = base_filename.index('.pdf')
     start = 4
-    d = dateparser.parse(base_filename[start:end]).date()
+    d = date.parse_date(base_filename[start:end])
     return aggregate_ingest_utils.on_last_day_of_month(d)
 
 

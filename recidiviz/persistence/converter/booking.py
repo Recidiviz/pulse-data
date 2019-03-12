@@ -15,10 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Converts an ingest_info proto Booking to a persistence entity."""
-from recidiviz.common.constants.booking import ReleaseReason, CustodyStatus, \
-    Classification, AdmissionReason
-from recidiviz.persistence.converter.converter_utils import fn, normalize, \
-    parse_date, parse_external_id
+from recidiviz.common.constants.booking import (AdmissionReason,
+                                                Classification, CustodyStatus,
+                                                ReleaseReason)
+from recidiviz.common.date import parse_date
+from recidiviz.persistence.converter.converter_utils import (fn, normalize,
+                                                             parse_external_id)
 
 
 def copy_fields_to_builder(booking_builder, proto, metadata):
