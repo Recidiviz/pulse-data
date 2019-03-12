@@ -35,7 +35,8 @@ from recidiviz.common.constants.person import PROTECTED_CLASSES
 from recidiviz.common.constants.sentence import SentenceStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.scrape.constants import MAX_PEOPLE_TO_LOG
-from recidiviz.persistence import entity_matching, entities, persistence_utils
+from recidiviz.persistence import entity_matching, entities, \
+    persistence_utils, validator
 from recidiviz.persistence.converter import converter
 from recidiviz.persistence.database import database
 from recidiviz.persistence.errors import PersistenceError
@@ -225,6 +226,8 @@ def write(ingest_info, metadata):
 
     Otherwise, simply log the given ingest_infos for debugging
     """
+    validator.validate(ingest_info)
+
     mtags = {monitoring.TagKey.REGION: metadata.region,
              monitoring.TagKey.SHOULD_PERSIST: _should_persist()}
     total_people = len(ingest_info.people)

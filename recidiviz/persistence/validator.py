@@ -27,7 +27,8 @@ class ValidationError(Exception):
     """Raised when encountering an error with ingest_info validation."""
 
     def __init__(self, errors):
-        super(ValidationError, self).__init__()
+        # TODO(#1261): Return errors to caller instead of printing in exception
+        super(ValidationError, self).__init__(errors)
         self.errors = errors
 
 
