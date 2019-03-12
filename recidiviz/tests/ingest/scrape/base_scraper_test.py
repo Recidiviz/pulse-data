@@ -315,6 +315,7 @@ class TestBaseScraper(TestCase):
 
         expected_metadata = IngestMetadata(
             scraper.region.region_code,
+            scraper.region.jurisdiction_id,
             start_time,
             scraper.get_enum_overrides(),
         )
@@ -354,6 +355,7 @@ class TestBaseScraper(TestCase):
         )]
         expected_metadata = IngestMetadata(
             scraper.region.region_code,
+            scraper.region.jurisdiction_id,
             start_time,
             scraper.get_enum_overrides(),
         )
@@ -391,6 +393,7 @@ class TestBaseScraper(TestCase):
 
         expected_metadata = IngestMetadata(
             scraper.region.region_code,
+            scraper.region.jurisdiction_id,
             start_time,
             scraper.get_enum_overrides(),
         )

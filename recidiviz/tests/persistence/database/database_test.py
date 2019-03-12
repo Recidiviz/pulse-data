@@ -46,11 +46,15 @@ from recidiviz.tests.utils import fakes
 
 _REGION = 'region'
 _REGION_ANOTHER = 'wrong region'
+_JURISDICTION_ID = 'jid'
 _FULL_NAME = 'full_name'
 _EXTERNAL_ID = 'external_id'
 _BIRTHDATE = datetime.date(year=2012, month=1, day=2)
 _LAST_SEEN_TIME = datetime.datetime(year=2020, month=7, day=4)
 _FACILITY = 'facility'
+_DEFAULT_METADATA = IngestMetadata.new_with_defaults(
+    region='default_region', jurisdiction_id='jid',
+    last_seen_time=_LAST_SEEN_TIME, enum_overrides={})
 
 DATE_SCRAPED = datetime.date(year=2019, month=1, day=1)
 
@@ -64,10 +68,14 @@ class TestDatabase(TestCase):
 
     def test_readPeopleWithOpenBookingsBeforeDate(self):
         # Arrange
-        person = Person(person_id=8, region=_REGION)
-        person_resolved_booking = Person(person_id=9, region=_REGION)
-        person_most_recent_scrape = Person(person_id=10, region=_REGION)
-        person_wrong_region = Person(person_id=11, region=_REGION_ANOTHER)
+        person = Person(person_id=8, region=_REGION,
+                        jurisdiction_id=_JURISDICTION_ID)
+        person_resolved_booking = Person(person_id=9, region=_REGION,
+                                         jurisdiction_id=_JURISDICTION_ID)
+        person_most_recent_scrape = Person(person_id=10, region=_REGION,
+                                           jurisdiction_id=_JURISDICTION_ID)
+        person_wrong_region = Person(person_id=11, region=_REGION_ANOTHER,
+                                     jurisdiction_id=_JURISDICTION_ID)
 
         release_date = datetime.date(2018, 7, 20)
         most_recent_scrape_date = datetime.datetime(2018, 6, 20)
@@ -122,8 +130,10 @@ class TestDatabase(TestCase):
             last_seen_time=admission_date)
 
         person_no_match = Person(person_id=1, region=_REGION,
+                                 jurisdiction_id=_JURISDICTION_ID,
                                  bookings=[deepcopy(closed_booking)])
         person_match_external_id = Person(person_id=2, region=_REGION,
+                                          jurisdiction_id=_JURISDICTION_ID,
                                           bookings=[closed_booking],
                                           external_id=_EXTERNAL_ID)
 
@@ -156,11 +166,14 @@ class TestDatabase(TestCase):
             last_seen_time=admission_date)
 
         person_no_match = Person(person_id=1, region=_REGION,
+                                 jurisdiction_id=_JURISDICTION_ID,
                                  bookings=[deepcopy(open_booking)])
         person_match_full_name = Person(person_id=2, region=_REGION,
+                                        jurisdiction_id=_JURISDICTION_ID,
                                         bookings=[deepcopy(open_booking)],
                                         full_name=_FULL_NAME)
         person_no_open_bookings = Person(person_id=6, region=_REGION,
+                                         jurisdiction_id=_JURISDICTION_ID,
                                          full_name=_FULL_NAME,
                                          bookings=[closed_booking])
 
@@ -180,7 +193,8 @@ class TestDatabase(TestCase):
         self.assertCountEqual(people, expected_people)
 
     def test_personWithMultipleBookings_shouldNotReturnDuplicatePeople(self):
-        person = Person(person_id=1, region=_REGION, full_name=_FULL_NAME)
+        person = Person(person_id=1, region=_REGION, full_name=_FULL_NAME,
+                        jurisdiction_id=_JURISDICTION_ID)
 
         booking_1 = Booking(
             custody_status=CustodyStatus.UNKNOWN_FOUND_IN_SOURCE.value,
@@ -212,7 +226,7 @@ class TestDatabase(TestCase):
         act_session = Session()
 
         person = entities.Person.new_with_defaults(
-            region=_REGION, race=Race.OTHER)
+            region=_REGION, race=Race.OTHER, jurisdiction_id=_JURISDICTION_ID)
 
         booking = entities.Booking.new_with_defaults(
             custody_status=CustodyStatus.IN_CUSTODY,
@@ -226,8 +240,7 @@ class TestDatabase(TestCase):
         booking.charges = [charge_1, charge_2]
 
         persisted_person = database.write_person(
-            act_session, person, IngestMetadata(
-                "default_region", _LAST_SEEN_TIME, {}))
+            act_session, person, _DEFAULT_METADATA)
         act_session.commit()
 
         person_id = persisted_person.person_id
@@ -291,11 +304,13 @@ class TestDatabase(TestCase):
         existing_person = Person(
             person_id=existing_person_id,
             region=_REGION,
+            jurisdiction_id=_JURISDICTION_ID,
             race=Race.OTHER.value)
         existing_person_snapshot = PersonHistory(
             person_history_id=1000,
             person_id=existing_person_id,
             region=_REGION,
+            jurisdiction_id=_JURISDICTION_ID,
             race=Race.OTHER.value,
             valid_from=valid_from)
 
@@ -342,6 +357,7 @@ class TestDatabase(TestCase):
         ingested_person = entities.Person.new_with_defaults(
             person_id=existing_person_id,
             region=_REGION,
+            jurisdiction_id=_JURISDICTION_ID,
             race=Race.EXTERNAL_UNKNOWN)
 
         # Ingested booking has new last_seen_time but this is ignored, as it
@@ -360,8 +376,7 @@ class TestDatabase(TestCase):
         ingested_booking.charges = [ingested_charge]
 
         database.write_person(
-            act_session, ingested_person, IngestMetadata(
-                "default_region", _LAST_SEEN_TIME, {}))
+            act_session, ingested_person, _DEFAULT_METADATA)
         act_session.commit()
         act_session.close()
 
@@ -425,11 +440,13 @@ class TestDatabase(TestCase):
         existing_person = Person(
             person_id=existing_person_id,
             region=_REGION,
+            jurisdiction_id=_JURISDICTION_ID,
             race=Race.OTHER.value)
         existing_person_snapshot = PersonHistory(
             person_history_id=1000,
             person_id=existing_person_id,
             region=_REGION,
+            jurisdiction_id=_JURISDICTION_ID,
             race=Race.OTHER.value,
             valid_from=valid_from)
 
@@ -463,6 +480,7 @@ class TestDatabase(TestCase):
         ingested_person = entities.Person.new_with_defaults(
             person_id=existing_person_id,
             region=_REGION,
+            jurisdiction_id=_JURISDICTION_ID,
             race=Race.EXTERNAL_UNKNOWN)
 
         # Ingested booking has new last_seen_time but this is ignored, as it
@@ -480,8 +498,7 @@ class TestDatabase(TestCase):
         ingested_booking.charges = [ingested_charge]
 
         persisted_person = database.write_person(
-            act_session, ingested_person, IngestMetadata(
-                "default_region", _LAST_SEEN_TIME, {}))
+            act_session, ingested_person, _DEFAULT_METADATA)
         act_session.commit()
 
         charge_id = persisted_person.bookings[0].charges[0].charge_id
@@ -535,7 +552,8 @@ class TestDatabase(TestCase):
 
         person = Person(
             person_id=1, full_name=name, birthdate=birthdate,
-            region=_REGION, race=Race.OTHER.value)
+            region=_REGION, jurisdiction_id=_JURISDICTION_ID,
+            race=Race.OTHER.value)
         booking = Booking(
             booking_id=2, custody_status=CustodyStatus.IN_CUSTODY.value,
             last_seen_time=datetime.datetime(year=2020, month=7, day=6))
@@ -554,9 +572,10 @@ class TestDatabase(TestCase):
         snapshot_time = '2020-07-06 00:00:00'
 
         arrange_session.execute(text(
-            'INSERT INTO person_history (person_id, region, race, valid_from) '
-            'VALUES ({}, \'{}\', \'{}\', \'{}\');'.format(
-                1, _REGION, Race.OTHER.value, snapshot_time)))
+            'INSERT INTO person_history (person_id, region, jurisdiction_id, '
+            'race, valid_from) '
+            'VALUES ({}, \'{}\', \'{}\', \'{}\', \'{}\');'.format(
+                1, _REGION, _JURISDICTION_ID, Race.OTHER.value, snapshot_time)))
         arrange_session.execute(text(
             'INSERT INTO booking_history '
             '(booking_id, person_id, custody_status, valid_from) '
@@ -593,7 +612,8 @@ class TestDatabase(TestCase):
 
         try:
             database.write_person(assert_session, ingest_person, IngestMetadata(
-                _REGION, datetime.datetime(year=2020, month=7, day=8), {}))
+                _REGION, _JURISDICTION_ID,
+                datetime.datetime(year=2020, month=7, day=8), {}))
         except Exception as e:
             self.fail('Writing person failed with error: {}'.format(e))
 
@@ -602,16 +622,18 @@ class TestDatabase(TestCase):
         session = Session()
 
         person_1 = entities.Person.new_with_defaults(
-            region=_REGION, race=Race.OTHER, person_id=shared_id)
+            region=_REGION, race=Race.OTHER, person_id=shared_id,
+            jurisdiction_id=_JURISDICTION_ID)
         person_2 = entities.Person.new_with_defaults(
-            region=_REGION, race=Race.EXTERNAL_UNKNOWN, person_id=shared_id)
+            region=_REGION, race=Race.EXTERNAL_UNKNOWN, person_id=shared_id,
+            jurisdiction_id=_JURISDICTION_ID)
 
         self.assertRaises(
             AssertionError,
             database.write_people,
             session,
             [person_1, person_2],
-            IngestMetadata("default_region", _LAST_SEEN_TIME, {}))
+            _DEFAULT_METADATA)
 
         session.close()
 
@@ -619,7 +641,7 @@ class TestDatabase(TestCase):
         arrange_session = Session()
 
         person = entities.Person.new_with_defaults(
-            region=_REGION, race=Race.OTHER)
+            region=_REGION, race=Race.OTHER, jurisdiction_id=_JURISDICTION_ID)
         booking = entities.Booking.new_with_defaults(
             custody_status=CustodyStatus.IN_CUSTODY,
             last_seen_time=_LAST_SEEN_TIME)
@@ -632,10 +654,10 @@ class TestDatabase(TestCase):
         charge.bond = bond
 
         persisted_person = database.write_person(
-            arrange_session, person, IngestMetadata(
-                "default_region",
-                datetime.datetime(year=2020, month=7, day=6),
-                {}))
+            arrange_session, person,
+            IngestMetadata.new_with_defaults(
+                region='default_region',
+                last_seen_time=datetime.datetime(year=2020, month=7, day=6)))
         arrange_session.commit()
         persisted_person_id = persisted_person.person_id
         persisted_booking_id = persisted_person.bookings[0].booking_id
@@ -650,10 +672,10 @@ class TestDatabase(TestCase):
         fetched_charge = fetched_person.bookings[0].charges[0]
         fetched_charge.bond = None
         database.write_person(
-            act_session, fetched_person, IngestMetadata(
-                "default_region",
-                datetime.datetime(year=2020, month=7, day=7),
-                {}))
+            act_session, fetched_person, IngestMetadata.new_with_defaults(
+                region='default_region',
+                last_seen_time=datetime.datetime(
+                    year=2020, month=7, day=7)))
         act_session.commit()
         act_session.close()
 
@@ -673,7 +695,7 @@ class TestDatabase(TestCase):
         arrange_session = Session()
 
         person = entities.Person.new_with_defaults(
-            region=_REGION, race=Race.OTHER)
+            region=_REGION, race=Race.OTHER, jurisdiction_id=_JURISDICTION_ID)
         booking = entities.Booking.new_with_defaults(
             custody_status=CustodyStatus.IN_CUSTODY,
             last_seen_time=_LAST_SEEN_TIME)
@@ -686,10 +708,9 @@ class TestDatabase(TestCase):
         charge.sentence = sentence
 
         persisted_person = database.write_person(
-            arrange_session, person, IngestMetadata(
-                "default_region",
-                datetime.datetime(year=2020, month=7, day=6),
-                {}))
+            arrange_session, person, IngestMetadata.new_with_defaults(
+                region='default_region',
+                last_seen_time=datetime.datetime(year=2020, month=7, day=6)))
         arrange_session.commit()
         persisted_person_id = persisted_person.person_id
         persisted_booking_id = persisted_person.bookings[0].booking_id
@@ -704,10 +725,9 @@ class TestDatabase(TestCase):
         fetched_charge = fetched_person.bookings[0].charges[0]
         fetched_charge.sentence = None
         database.write_person(
-            act_session, fetched_person, IngestMetadata(
-                "default_region",
-                datetime.datetime(year=2020, month=7, day=7),
-                {}))
+            act_session, fetched_person, IngestMetadata.new_with_defaults(
+                region='default_region',
+                last_seen_time=datetime.datetime(year=2020, month=7, day=7)))
         act_session.commit()
         act_session.close()
 
@@ -727,7 +747,7 @@ class TestDatabase(TestCase):
         arrange_session = Session()
 
         person = entities.Person.new_with_defaults(
-            region=_REGION, race=Race.OTHER)
+            region=_REGION, race=Race.OTHER, jurisdiction_id=_JURISDICTION_ID)
         booking = entities.Booking.new_with_defaults(
             custody_status=CustodyStatus.IN_CUSTODY,
             last_seen_time=_LAST_SEEN_TIME)
@@ -737,10 +757,9 @@ class TestDatabase(TestCase):
         booking.charges = [charge]
 
         persisted_person = database.write_person(
-            arrange_session, person, IngestMetadata(
-                "default_region",
-                datetime.datetime(year=2020, month=7, day=6),
-                {}))
+            arrange_session, person, IngestMetadata.new_with_defaults(
+                region='default_region',
+                last_seen_time=datetime.datetime(year=2020, month=7, day=6)))
         arrange_session.commit()
         persisted_person_id = persisted_person.person_id
         persisted_booking_id = persisted_person.bookings[0].booking_id
@@ -754,10 +773,9 @@ class TestDatabase(TestCase):
             status=BondStatus.UNKNOWN_FOUND_IN_SOURCE)
         fetched_person.bookings[0].charges[0].bond = new_bond
         database.write_person(
-            act_session, fetched_person, IngestMetadata(
-                "default_region",
-                datetime.datetime(year=2020, month=7, day=7),
-                {}))
+            act_session, fetched_person, IngestMetadata.new_with_defaults(
+                region='default_region',
+                last_seen_time=datetime.datetime(year=2020, month=7, day=7)))
         act_session.commit()
         act_session.close()
 
@@ -773,7 +791,6 @@ class TestDatabase(TestCase):
 
         assert_session.commit()
         assert_session.close()
-
 
     def testWriteDf(self):
         # Arrange
