@@ -28,8 +28,6 @@ from recidiviz.ingest.models.ingest_info import IngestInfo, IngestObject, \
 from recidiviz.utils import environment
 from recidiviz.utils import secrets
 
-DATETIME_STR_FORMAT = '%Y-%m-%d %H:%M:%S'
-
 
 def get_value_from_html_tree(html_tree, attribute_value, attribute_name='id'):
     """Retrieves the value of an html tag from the given html tree. The
