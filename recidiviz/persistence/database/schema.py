@@ -24,10 +24,11 @@ key of a historical table exists only due to the requirements of SQLAlchemy,
 and should not be referenced by any other table. The key which should be used
 to reference a historical table is the key shared with the master table. For
 the historical table, this key is non-unique. This is necessary to allow the
-desired temporal table behavior. Because of this non-uniqueness, any foreign key
-pointing to a historical table does NOT have a foreign key constraint. As a
-result of this difference in constraints, foreign key columns cannot be shared
-between tables in the "SharedColumn" mixins.
+desired temporal table behavior. Because of this, any foreign key column on a
+historical table must point to the *master* table (which has a unique key), not
+the historical table (which does not). Because the key is shared between the
+master and historical tables, this allows an indirect guarantee of referential
+integrity to the historical tables as well.
 """
 from sqlalchemy import Boolean, Column, Date, DateTime, Enum, ForeignKey, \
     Integer, String, Text, UniqueConstraint
