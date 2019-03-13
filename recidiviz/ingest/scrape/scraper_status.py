@@ -48,6 +48,8 @@ def check_for_finished_scrapers():
             logging.info('Region \'%s\' has finished scraping.', region_code)
 
             next_phase = scrape_phase.next_phase(request.endpoint)
+            logging.info('Enqueueing %s for region %s.',
+                         region_code, next_phase)
             if next_phase:
                 queues.enqueue_scraper_phase(
                     region_code=region_code, url=url_for(next_phase))

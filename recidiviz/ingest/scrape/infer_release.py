@@ -57,6 +57,8 @@ def infer_release():
 
             next_phase = scrape_phase.next_phase(request.endpoint)
             if next_phase:
+                logging.info('Enqueueing %s for region %s.',
+                             region.region_code, next_phase)
                 queues.enqueue_scraper_phase(
                     region_code=region.region_code, url=url_for(next_phase))
     return '', HTTPStatus.OK
