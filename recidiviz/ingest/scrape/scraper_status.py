@@ -25,7 +25,7 @@ from flask import Blueprint, copy_current_request_context, request, url_for
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.scrape import (constants, ingest_utils, queues,
                                      scrape_phase, sessions)
-from recidiviz.utils import regions
+from recidiviz.utils import monitoring, regions
 from recidiviz.utils.auth import authenticate_request
 from recidiviz.utils.params import get_values
 
@@ -37,6 +37,7 @@ def check_for_finished_scrapers():
     """Checks for any finished scrapers and kicks off next processes."""
 
     @copy_current_request_context
+    @monitoring.with_region_tag
     def _check_finished(region_code: str):
         # If there are no open sessions, nothing to check.
         if not sessions.get_current_session(

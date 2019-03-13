@@ -32,7 +32,7 @@ from flask import Blueprint, copy_current_request_context, request, url_for
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.scrape import (docket, ingest_utils, queues, scrape_phase,
                                      sessions, tracker)
-from recidiviz.utils import regions
+from recidiviz.utils import monitoring, regions
 from recidiviz.utils.auth import authenticate_request
 from recidiviz.utils.params import get_value, get_values
 
@@ -64,6 +64,7 @@ def scraper_start():
         N/A
     """
     @copy_current_request_context
+    @monitoring.with_region_tag
     def _start_scraper(region, scrape_type):
         scrape_key = ScrapeKey(region, scrape_type)
         logging.info("Starting new scraper for: %s", scrape_key)
@@ -172,6 +173,7 @@ def scraper_stop():
                                                                  request.args))
 
     @copy_current_request_context
+    @monitoring.with_region_tag
     def _stop_scraper(region: str):
         closed_sessions = []
         for scrape_type in scrape_types:
