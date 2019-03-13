@@ -53,7 +53,8 @@ def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
     date_scraped = _parse_date(filename)
     for table in result.values():
         table['report_date'] = date_scraped
-        table['report_granularity'] = enum_strings.monthly_granularity
+        table['aggregation_window'] = enum_strings.monthly_granularity
+        table['report_frequency'] = enum_strings.monthly_granularity
 
     return result
 

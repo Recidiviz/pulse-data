@@ -75,7 +75,8 @@ class TestNyAggregateIngest(TestCase):
                 'Albany County Jail'
             ],
             'fips': [36001, 36001, 36001],
-            'report_granularity': 3 * [enum_strings.monthly_granularity]
+            'aggregation_window': 3 * [enum_strings.monthly_granularity],
+            'report_frequency': 3 * [enum_strings.monthly_granularity]
         })
         assert_frame_equal(result.head(n=3), expected_head, check_names=False)
 
@@ -102,7 +103,8 @@ class TestNyAggregateIngest(TestCase):
                 'Yates County Jail'
             ],
             'fips': [36123, 36123, 36123],
-            'report_granularity': 3 * [enum_strings.monthly_granularity]
+            'aggregation_window': 3 * [enum_strings.monthly_granularity],
+            'report_frequency': 3 * [enum_strings.monthly_granularity]
         }, index=range(816, 819))
         assert_frame_equal(result.tail(n=3), expected_tail, check_names=False)
 
@@ -132,7 +134,8 @@ class TestNyAggregateIngest(TestCase):
                 'Albany County Jail'
             ],
             'fips': [36001, 36001, 36001],
-            'report_granularity': 3 * [enum_strings.monthly_granularity]
+            'aggregation_window': 3 * [enum_strings.monthly_granularity],
+            'report_frequency': 3 * [enum_strings.monthly_granularity]
         })
         assert_frame_equal(result.head(n=3), expected_head, check_names=False)
 
@@ -159,7 +162,8 @@ class TestNyAggregateIngest(TestCase):
                 'Yates County Jail'
             ],
             'fips': [36123, 36123, 36123],
-            'report_granularity': 3 * [enum_strings.monthly_granularity]
+            'aggregation_window': 3 * [enum_strings.monthly_granularity],
+            'report_frequency': 3 * [enum_strings.monthly_granularity]
         }, index=range(816, 819))
         assert_frame_equal(result.tail(n=3), expected_tail, check_names=False)
 
