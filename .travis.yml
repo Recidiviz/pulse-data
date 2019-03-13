@@ -44,7 +44,7 @@ after_success:
 
 before_deploy:
   # Generate queue.yaml
-  - docker exec -it recidiviz pipenv run python -m recidiviz.tools.build_queue_config --environment staging
+  - docker exec -it recidiviz pipenv run python -m recidiviz.tools.build_queue_config --environment all
   - docker cp recidiviz:/app/queue.yaml .
 
   # Create encryption keys used to authenticate with GAE
