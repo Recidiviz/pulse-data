@@ -40,6 +40,7 @@ TEST_ID = '1'
 TEST_ENDPOINT = 'www.test.com'
 TEST_ERROR = 'TestError'
 TEST_PARAMS = {'test': 'value'}
+TEST_TRACE = 'TEST TRACE'
 
 
 @pytest.fixture(scope="class")
@@ -153,9 +154,9 @@ class TestBatchPersistence(TestCase):
             response_type=constants.ResponseType.TEXT,
         )
 
-        expected_batch = BatchMessage(error=error, task=t)
+        expected_batch = BatchMessage(error=error, trace_id=TEST_TRACE, task=t)
 
-        batch_persistence.write_error(error, t, scrape_key)
+        batch_persistence.write_error(error, TEST_TRACE, t, scrape_key)
 
         messages = batch_persistence._get_batch_messages(scrape_key)
         self.assertEqual(len(messages), 1)
@@ -220,12 +221,11 @@ class TestBatchPersistence(TestCase):
         )
 
         batch_persistence.write(ii, t, scrape_key)
-        batch_persistence.write_error(TEST_ERROR, t2, scrape_key)
+        batch_persistence.write_error(TEST_ERROR, TEST_TRACE, t2, scrape_key)
 
         start_time = datetime.datetime.now()
-        with self.assertRaises(batch_persistence.BatchPersistError):
-            batch_persistence.persist_to_database(
-                scrape_key.region_code, scrape_key.scrape_type, start_time)
+        self.assertFalse(batch_persistence.persist_to_database(
+            scrape_key.region_code, scrape_key.scrape_type, start_time))
 
         self.assertEqual(mock_write.call_count, 0)
 
@@ -259,12 +259,12 @@ class TestBatchPersistence(TestCase):
         )
 
         batch_persistence.write(ii, t, scrape_key)
-        batch_persistence.write_error(TEST_ERROR, t2, scrape_key)
+        batch_persistence.write_error(TEST_ERROR, TEST_TRACE, t2, scrape_key)
 
         expected_proto = ingest_utils.convert_ingest_info_to_proto(ii)
         start_time = datetime.datetime.now()
-        batch_persistence.persist_to_database(
-            scrape_key.region_code, scrape_key.scrape_type, start_time)
+        self.assertTrue(batch_persistence.persist_to_database(
+            scrape_key.region_code, scrape_key.scrape_type, start_time))
 
         result_proto = mock_write.call_args[0][0]
         self.assertEqual(result_proto, expected_proto)
@@ -299,9 +299,9 @@ class TestBatchPersistence(TestCase):
         batch_persistence.write(ii, t, scrape_key)
         # Even though a task failed many times, we should still write because it
         # passes eventually.
-        batch_persistence.write_error(TEST_ERROR, t2, scrape_key)
-        batch_persistence.write_error(TEST_ERROR, t2, scrape_key)
-        batch_persistence.write_error(TEST_ERROR, t2, scrape_key)
+        batch_persistence.write_error(TEST_ERROR, TEST_TRACE, t2, scrape_key)
+        batch_persistence.write_error(TEST_ERROR, TEST_TRACE, t2, scrape_key)
+        batch_persistence.write_error(TEST_ERROR, TEST_TRACE, t2, scrape_key)
 
         expected_proto = ingest_utils.convert_ingest_info_to_proto(ii)
         start_time = datetime.datetime.now()
