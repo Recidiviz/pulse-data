@@ -147,10 +147,6 @@ def _should_persist():
                 strtobool((os.environ.get('PERSIST_LOCALLY', 'false'))))
 
 
-# TODO 1094: Consider moving the error counting to the respective converter
-#   and entity matching code.
-
-
 def _convert_and_count_errors(ingest_info, metadata):
     people = []
     protected_class_errors = 0
@@ -169,18 +165,6 @@ def _convert_and_count_errors(ingest_info, metadata):
             logging.error(str(e))
             enum_parsing_errors += 1
     return people, enum_parsing_errors, protected_class_errors
-
-
-def _entity_match_and_count_errors(session, region, people):
-    entity_matching_errors = 0
-    entity_matcher = entity_matching.EntityMatching(session, region, people)
-    while not entity_matcher.is_complete():
-        try:
-            entity_matcher.match_and_pop()
-        except Exception as e:
-            logging.error(str(e))
-            entity_matching_errors += 1
-    return entity_matching_errors
 
 
 def _abort_or_continue(
@@ -263,8 +247,10 @@ def write(ingest_info, metadata):
         session = Session()
         try:
             logging.info('Starting entity matching')
-            entity_matching_errors = _entity_match_and_count_errors(
-                session, metadata.region, people)
+            entity_matching_errors = \
+                entity_matching.match_and_return_error_count(session,
+                                                             metadata.region,
+                                                             people)
             logging.info(
                 'Completed entity matching with %s errors',
                 entity_matching_errors)
