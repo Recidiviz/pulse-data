@@ -21,7 +21,6 @@ from distutils.util import strtobool  # pylint: disable=no-name-in-module
 from typing import Optional
 
 from recidiviz.common import common_utils, date
-from recidiviz.common.common_utils import normalize
 from recidiviz.common.constants.bond import (BOND_STATUS_MAP, BOND_TYPE_MAP,
                                              BondStatus, BondType)
 from recidiviz.common.constants.person import Ethnicity, Race
@@ -44,7 +43,7 @@ def parse_external_id(id_str):
     returns the normalized version of the provided |id_str|"""
     if common_utils.is_generated_id(id_str):
         return None
-    return normalize(id_str)
+    return common_utils.normalize(id_str)
 
 
 def race_is_actually_ethnicity(ingest_person, enum_overrides):
@@ -155,6 +154,6 @@ def parse_bool(bool_string):
 def parse_int(int_string):
     """Parse a string and returns an int."""
     try:
-        return int(normalize(int_string))
+        return int(common_utils.normalize(int_string))
     except Exception:
         raise ValueError('cannot parse int value: %s' % int_string)
