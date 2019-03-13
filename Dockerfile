@@ -15,6 +15,10 @@ ENV LANG en_US.UTF-8
 
 ENV TZ America/New_York
 
+# Make stdout/stderr unbuffered. This prevents delay between output and cloud
+# logging collection.
+ENV PYTHONUNBUFFERED 1
+
 RUN pip3 install pipenv
 
 # If DEV_MODE="True", then install dependencies required for running tests

@@ -16,10 +16,7 @@
 # =============================================================================
 
 """Entrypoint for the application."""
-import logging
-
 from flask import Flask
-from google.cloud.logging import Client, handlers
 from opencensus.common.transports.async_ import AsyncTransport
 from opencensus.ext.flask.flask_middleware import FlaskMiddleware
 from opencensus.trace import config_integration
@@ -35,28 +32,9 @@ from recidiviz.ingest.scrape.worker import worker
 from recidiviz.persistence.actions import actions
 from recidiviz.persistence.batch_persistence import batch_blueprint
 from recidiviz.tests.utils.populate_test_db import test_populator
-from recidiviz.utils import environment, metadata
+from recidiviz.utils import environment, structured_logging, metadata
 
-logger = logging.getLogger()
-
-# Create cloud logging client
-if environment.in_gae():
-    client = Client()
-    client.setup_logging(log_level=logging.DEBUG)
-    for handler in logger.handlers:
-        if not isinstance(handler, (handlers.AppEngineHandler,
-                                    handlers.CloudLoggingHandler,
-                                    handlers.ContainerEngineHandler)):
-            logger.removeHandler(handler)
-else:
-    logging.basicConfig()
-
-# Override GAE logger to use our formatting
-log_format = "%(module)s/%(funcName)s : %(message)s"
-fr = logging.Formatter(log_format)
-if logger.handlers:
-    logger.handlers[0].setFormatter(fr)
-
+structured_logging.setup()
 
 app = Flask(__name__)
 app.register_blueprint(scraper_control, url_prefix='/scraper')
