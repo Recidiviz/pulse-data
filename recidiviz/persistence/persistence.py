@@ -232,8 +232,7 @@ def write(ingest_info, metadata):
     """
     validator.validate(ingest_info)
 
-    mtags = {monitoring.TagKey.REGION: metadata.region,
-             monitoring.TagKey.SHOULD_PERSIST: _should_persist()}
+    mtags = {monitoring.TagKey.SHOULD_PERSIST: _should_persist()}
     total_people = len(ingest_info.people)
     with monitoring.measurements(mtags) as measurements:
 

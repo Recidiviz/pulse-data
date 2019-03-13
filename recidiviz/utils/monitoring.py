@@ -17,8 +17,10 @@
 
 """Creates monitoring client for measuring and recording stats."""
 from contextlib import contextmanager
+from functools import wraps
+from typing import Any, Dict, Optional
 
-from opencensus.tags import TagMap
+from opencensus.tags import TagMap, execution_context
 from opencensus.stats import stats as stats_module
 from opencensus.stats.exporters import stackdriver_exporter as stackdriver
 
@@ -29,9 +31,6 @@ def stats():
     global _stats
     if not _stats:
         new_stats = stats_module.Stats()
-        # TODO(#59): When we want to test this, we will have to remove the
-        # `in_test` check. It is currently in place so that this isn't triggered
-        # even when `in_prod` is mocked out in other unit tests.
         if environment.in_gae() and not environment.in_test():
             exporter = stackdriver.new_stats_exporter(stackdriver.Options(
                 project_id=metadata.project_id(),
@@ -40,20 +39,68 @@ def stats():
         _stats = new_stats
     return _stats
 
+
+@environment.test_only
+def clear_stats():
+    global _stats
+    _stats = None
+
+
 def register_views(views):
-    # TODO(#59): Same as above.
     if environment.in_gae() and not environment.in_test():
         for view in views:
             stats().view_manager.register_view(view)
 
+
+def set_thread_local_tags(tags: Dict[str, Any]):
+    tag_map = execution_context.get_current_tag_map()
+    if not tag_map:
+        tag_map = TagMap()
+        execution_context.set_current_tag_map(tag_map)
+
+    for key, value in tags.items():
+        if value:
+            tag_map.insert(key, str(value))
+        else:
+            tag_map.delete(key)
+
+
+def thread_local_tags() -> Optional[TagMap]:
+    tag_map = execution_context.get_current_tag_map()
+    if tag_map:
+        return TagMap(tag_map.map)
+    return None
+
+
+@contextmanager
+def push_tags(tags: Dict[str, Any]):
+    set_thread_local_tags(tags)
+    try:
+        yield
+    finally:
+        set_thread_local_tags({key: None for key in tags})
+
+
+def with_region_tag(func):
+
+    @wraps(func)
+    def set_region_tag(region_code, *args, **kwargs):
+        with push_tags({TagKey.REGION: region_code}):
+            return func(region_code, *args, **kwargs)
+
+    return set_region_tag
+
+
 @contextmanager
 def measurements(tags=None):
     mmap = stats().stats_recorder.new_measurement_map()
-    yield mmap
-    tag_map = TagMap()
-    for key, value in tags.items():
-        tag_map.insert(key, str(value))
-    mmap.record(tag_map)
+    try:
+        yield mmap
+    finally:
+        tag_map = thread_local_tags() or TagMap()
+        for key, value in tags.items():
+            tag_map.insert(key, str(value))
+        mmap.record(tag_map)
 
 
 class TagKey:
