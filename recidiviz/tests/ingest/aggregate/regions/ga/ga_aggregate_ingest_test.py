@@ -66,7 +66,7 @@ class TestGaAggregateIngest(TestCase):
             'number_of_other_inmates': [17, 0, 11],
             'fips': [13001, 13003, 13005],
             'report_date': 3 * [DATE_SCRAPED],
-            'report_granularity': 3 * [enum_strings.monthly_granularity]
+            'report_granularity': 3 * [enum_strings.daily_granularity]
         })
         assert_frame_equal(result.head(n=3), expected_head)
 
@@ -81,7 +81,7 @@ class TestGaAggregateIngest(TestCase):
             'number_of_other_inmates': [6, 4, 0],
             'fips': [13317, 13319, 13321],
             'report_date': 3 * [DATE_SCRAPED],
-            'report_granularity': 3 * [enum_strings.monthly_granularity]
+            'report_granularity': 3 * [enum_strings.daily_granularity]
         }, index=range(156, 159))
         assert_frame_equal(result.tail(n=3), expected_tail)
 
@@ -99,7 +99,7 @@ class TestGaAggregateIngest(TestCase):
             'number_of_other_inmates': [13, 0, 1],
             'fips': [13001, 13003, 13005],
             'report_date': 3 * [DATE_SCRAPED_PDF_EXTRA_ROWS],
-            'report_granularity': 3 * [enum_strings.monthly_granularity]
+            'report_granularity': 3 * [enum_strings.daily_granularity]
         })
         assert_frame_equal(result.head(n=3), expected_head)
 
@@ -114,7 +114,7 @@ class TestGaAggregateIngest(TestCase):
             'number_of_other_inmates': [5, 32, 0],
             'fips': [13317, 13319, 13321],
             'report_date': 3 * [DATE_SCRAPED_PDF_EXTRA_ROWS],
-            'report_granularity': 3 * [enum_strings.monthly_granularity]
+            'report_granularity': 3 * [enum_strings.daily_granularity]
         }, index=range(156, 159))
         assert_frame_equal(result.tail(n=3), expected_tail)
 
