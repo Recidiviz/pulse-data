@@ -32,90 +32,80 @@ from recidiviz.persistence.entities import Entity
 from recidiviz.persistence.errors import EntityMatchingError
 
 
-class EntityMatching:
-    """Class to handle entity matching state."""
-    def __init__(
-            self, session: Session,
-            region: str, ingested_people: List[entities.Person]):
-        """
-        Finds all people in the given |region| and database |session| and
-        attempts to match them to the |ingested_people|. For any ingested
-        person, if a matching person exists in the database, the primary key is
-        updated on the ingested person.
-        TODO: document how matches are determined in docstring or README.
-        """
-        with_external_ids = []
-        without_external_ids = []
-        self.db_people_ext = None
-        self.db_people_no_ext = None
+def match_and_return_error_count(
+        session: Session, region: str,
+        ingested_people: List[entities.Person]) -> int:
+    """Attempts to match all people from |ingested_people| with corresponding
+    people in our database for the given |region|. For any ingested person, if a
+    matching person exists in the database, the primary key is updated on the
+    ingested person"""
 
-        for ingested_person in ingested_people:
-            if ingested_person.external_id:
-                with_external_ids.append(ingested_person)
-            else:
-                without_external_ids.append(ingested_person)
+    with_external_ids = []
+    without_external_ids = []
 
-        if with_external_ids:
-            self.db_people_ext = database.read_people_by_external_ids(
-                session, region, with_external_ids)
-            self.ingested_people_ext = with_external_ids
-        if without_external_ids:
-            self.db_people_no_ext = database.read_people_with_open_bookings(
-                session, region, without_external_ids)
-            self.ingested_people_no_ext = without_external_ids
-
-    def match_and_pop(self):
-        if self.db_people_ext:
-            match_people(
-                db_people=[self.db_people_ext.pop()],
-                ingested_people=self.ingested_people_ext)
+    for ingested_person in ingested_people:
+        if ingested_person.external_id:
+            with_external_ids.append(ingested_person)
         else:
-            match_people(
-                db_people=[self.db_people_no_ext.pop()],
-                ingested_people=self.ingested_people_no_ext)
+            without_external_ids.append(ingested_person)
 
-    def match_all(self):
-        if self.db_people_ext:
-            match_people(
-                db_people=self.db_people_ext,
-                ingested_people=self.ingested_people_ext)
-        if self.db_people_no_ext:
-            match_people(
-                db_people=self.db_people_no_ext,
-                ingested_people=self.ingested_people_no_ext)
+    error_count = 0
+    if with_external_ids:
+        db_people_with_external_ids = database.read_people_by_external_ids(
+            session, region, with_external_ids)
+        error_count += match_people_and_return_error_count(
+            db_people=db_people_with_external_ids,
+            ingested_people=with_external_ids)
 
-    def is_complete(self):
-        if self.db_people_ext or self.db_people_no_ext:
-            return False
-        return True
+    if without_external_ids:
+        db_people_without_external_ids = \
+            database.read_people_with_open_bookings(
+                session, region, without_external_ids)
+        error_count += match_people_and_return_error_count(
+            db_people=db_people_without_external_ids,
+            ingested_people=without_external_ids)
+    return error_count
 
 
-def match_people(
+def match_people_and_return_error_count(
         *, db_people: List[entities.Person],
-        ingested_people: List[entities.Person]) -> None:
+        ingested_people: List[entities.Person]) -> int:
     """
     Attempts to match all people from |ingested_people| with people from the
     |db_people|. For any ingested person, if a matching person exists in
     |db_people|, the primary key is updated on the ingested person.
     """
+    error_count = 0
     for db_person in db_people:
-        ingested_person = _get_only_match(db_person, ingested_people,
-                                          utils.is_person_match)
-        if ingested_person:
-            logging.info('Successfully matched person with ID %s',
-                         db_person.person_id)
-            # If the match was previously matched to a different database
-            # person, raise an error.
-            if ingested_person.person_id:
-                raise EntityMatchingError(
-                    'matched ingested person {} to both of the following '
-                    'database entities: '
-                    '[{}, {}]'.format(ingested_person,
-                                      ingested_person.person_id,
-                                      db_person.person_id))
-            ingested_person.person_id = db_person.person_id
-            match_bookings(db_person=db_person,
-                           ingested_person=ingested_person)
+        try:
+            match_person(db_person=db_person, ingested_people=ingested_people)
+        except Exception as e:
+            logging.error('Found error while matching db person with id %s: %s',
+                          db_person.person_id, str(e))
+            error_count += 1
+    return error_count
+
+
+def match_person(
+        *, db_person: entities.Person,
+        ingested_people: List[entities.Person]) -> None:
+    ingested_person = _get_only_match(db_person, ingested_people,
+                                      utils.is_person_match)
+    if ingested_person:
+        logging.info('Successfully matched person with ID %s',
+                     db_person.person_id)
+        # If the match was previously matched to a different database
+        # person, raise an error.
+        if ingested_person.person_id:
+            raise EntityMatchingError(
+                'matched ingested person {} to both of the following '
+                'database entities: '
+                '[{}, {}]'.format(ingested_person,
+                                  ingested_person.person_id,
+                                  db_person.person_id))
+        ingested_person.person_id = db_person.person_id
+        match_bookings(db_person=db_person,
+                       ingested_person=ingested_person)
 
 
 def match_bookings(
@@ -210,7 +200,7 @@ def _match_from_charges(
     id_name = name + '_id'
     db_obj_map, db_relationship_map, _ = _build_maps_from_charges(
         db_booking.charges, name)
-    ing_obj_map, ing_relationship_map, id_to_generated =\
+    ing_obj_map, ing_relationship_map, id_to_generated = \
         _build_maps_from_charges(ingested_booking.charges, name)
 
     def _is_match_with_relationships(*, db_entity, ingested_entity):
