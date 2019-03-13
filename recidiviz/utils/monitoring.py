@@ -66,10 +66,9 @@ def set_thread_local_tags(tags: Dict[str, Any]):
 
 
 def thread_local_tags() -> Optional[TagMap]:
+    """Returns a copy of the thread local TagMap"""
     tag_map = execution_context.get_current_tag_map()
-    if tag_map:
-        return TagMap(tag_map.map)
-    return None
+    return TagMap(tag_map.map if tag_map else None)
 
 
 @contextmanager
@@ -97,7 +96,7 @@ def measurements(tags=None):
     try:
         yield mmap
     finally:
-        tag_map = thread_local_tags() or TagMap()
+        tag_map = thread_local_tags()
         for key, value in tags.items():
             tag_map.insert(key, str(value))
         mmap.record(tag_map)
