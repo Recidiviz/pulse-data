@@ -16,12 +16,12 @@
 # ============================================================================
 """Builds queue.yaml from the region manifests"""
 import argparse
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Set
 
 import yaml
 
 from recidiviz.ingest.scrape import queues
-from recidiviz.utils import regions, vendors
+from recidiviz.utils import environment, regions, vendors
 
 BASE_QUEUE_CONFIG = {
     'mode': 'push',
@@ -39,7 +39,7 @@ class NoAliasDumper(yaml.Dumper):
     def ignore_aliases(self, data):
         return True
 
-def build_queues(environment: str):
+def build_queues(environments: Set[str]):
     qs: List[Dict[str, Any]] = []
     qs.append({'name': queues.SCRAPER_PHASE_QUEUE,
                **BASE_QUEUE_CONFIG, 'rate': '1/s'})
@@ -52,7 +52,7 @@ def build_queues(environment: str):
             **BASE_QUEUE_CONFIG, **queue_params
         })
     for region in regions.get_supported_regions():
-        if region.shared_queue or not region.environment == environment:
+        if region.shared_queue or region.environment not in environments:
             continue
         qs.append({
             'name': region.get_queue_name(),
@@ -67,7 +67,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--environment', required=True,
-                        choices=['staging', 'production'],
+                        choices=[*environment.GAE_ENVIRONMENTS, 'all'],
                         help='Includes queues for regions in `environment`.')
     args = parser.parse_args()
-    build_queues(args.environment)
+    build_queues(environment.GAE_ENVIRONMENTS
+                 if args.environment == 'all'
+                 else {args.environment})
