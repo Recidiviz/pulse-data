@@ -36,7 +36,7 @@ from recidiviz.utils import monitoring, pubsub_helper, regions
 from recidiviz.utils.auth import authenticate_request
 
 BATCH_READ_SIZE = 500
-FAILED_TASK_THRESHOLD = 1
+FAILED_TASK_THRESHOLD = 0.1
 batch_blueprint = Blueprint('batch', __name__)
 
 
@@ -60,6 +60,9 @@ class BatchMessage:
 
     # The error type of the task if it ended in failure.
     error: Optional[str] = attr.ib(default=None)
+
+    # The trace id of the failing request if it failed.  Used for debugging.
+    trace_id: Optional[str] = attr.ib(default=None)
 
     def to_serializable(self):
         return cattr.unstructure(self)
@@ -142,9 +145,8 @@ def _get_proto_from_messages(messages):
     logging.info('Starting generation of proto')
     base_proto = ingest_info_pb2.IngestInfo()
     successful_tasks = set()
-    failed_tasks = set()
+    failed_tasks = {}
     for message in messages:
-        logging.info('Message has an ack id of %s', message.ack_id)
         batch_message = BatchMessage.from_serializable(
             json.loads(message.message.data.decode()))
         # We do this because dicts are not hashable in python and we want to
@@ -155,7 +157,7 @@ def _get_proto_from_messages(messages):
         if not batch_message.error:
             successful_tasks.add(task_hash)
             if task_hash in failed_tasks:
-                failed_tasks.remove(task_hash)
+                del failed_tasks[task_hash]
             task_proto = ingest_utils.convert_ingest_info_to_proto(
                 batch_message.ingest_info)
             _append_to_proto(base_proto, task_proto)
@@ -164,13 +166,13 @@ def _get_proto_from_messages(messages):
             # because its possible a task ran 3 times before passing, meaning we
             # don't want to fail on that when we see the failed ones.
             if task_hash not in successful_tasks:
-                failed_tasks.add(task_hash)
+                failed_tasks[task_hash] = batch_message
     logging.info('Generated proto for %s people', len(base_proto.people))
     return base_proto, failed_tasks
 
 
-def _should_abort(failed_tasks):
-    if len(failed_tasks) >= FAILED_TASK_THRESHOLD:
+def _should_abort(failed_tasks, total_people):
+    if (failed_tasks / total_people) >= FAILED_TASK_THRESHOLD:
         return True
     return False
 
@@ -194,10 +196,12 @@ def write(ingest_info: IngestInfo, task: Task, scrape_key: ScrapeKey):
     _publish_batch_message(batch_message, scrape_key)
 
 
-def write_error(error: str, task: Task, scrape_key: ScrapeKey):
+def write_error(
+        error: str, trace_id: Optional[str], task: Task, scrape_key: ScrapeKey):
     """Batches up the errors using pubsub"""
     batch_message = BatchMessage(
         error=error,
+        trace_id=trace_id,
         task=task,
     )
     _publish_batch_message(batch_message, scrape_key)
@@ -218,10 +222,16 @@ def persist_to_database(region_code, scrape_type, scraper_start_time):
         # Only acknowledge if the above code passed.
         _ack_messages(messages, scrape_key)
 
-        if _should_abort(failed_tasks):
-            raise BatchPersistError(
-                'Too many scraper tasks failed({}), aborting write'.format(
-                    len(failed_tasks)))
+        for batch_message in failed_tasks.values():
+            logging.error(
+                'Task with trace_id %s failed with error %s',
+                batch_message.trace_id, batch_message.error
+            )
+        if _should_abort(len(failed_tasks), len(proto.people)):
+            logging.error(
+                'Too many scraper tasks failed(%s), aborting write',
+                len(failed_tasks))
+            return False
 
         metadata = IngestMetadata(
             region=region_code, jurisdiction_id=region.jurisdiction_id,
@@ -231,6 +241,7 @@ def persist_to_database(region_code, scrape_type, scraper_start_time):
         persistence.write(proto, metadata)
     else:
         raise BatchPersistError('No messages received from pubpub')
+    return True
 
 
 @batch_blueprint.route('/read_and_persist')
@@ -246,12 +257,13 @@ def read_and_persist():
         scrape_type = session.scrape_type
         scraper_start_time = session.start
 
-        persist_to_database(region, scrape_type, scraper_start_time)
+        did_persist = persist_to_database(
+            region, scrape_type, scraper_start_time)
 
-        next_phase = scrape_phase.next_phase(request.endpoint)
-        if next_phase:
-            queues.enqueue_scraper_phase(
-                region_code=region, url=url_for(next_phase))
+        if did_persist:
+            next_phase = scrape_phase.next_phase(request.endpoint)
+            if next_phase:
+                queues.enqueue_scraper_phase(
+                    region_code=region, url=url_for(next_phase))
 
-        # TODO: queue up infer release before returning
         return '', HTTPStatus.OK

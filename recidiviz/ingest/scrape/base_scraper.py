@@ -45,6 +45,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from lxml import html
 from lxml.etree import XMLSyntaxError  # pylint:disable=no-name-in-module
 
+from recidiviz.common.common_utils import get_trace_id_from_flask
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.scrape_key import ScrapeKey
@@ -191,7 +192,7 @@ class BaseScraper(Scraper):
                     if content == -1:
                         return -1
                 except Exception as e:
-                    raise ScraperFetchError() from e
+                    raise ScraperFetchError(str(e)) from e
 
             scraped_data = None
             if self.should_scrape_data(task.task_type):
@@ -203,7 +204,7 @@ class BaseScraper(Scraper):
                     scraped_data = self.populate_data(
                         content, task, request.ingest_info or IngestInfo())
                 except Exception as e:
-                    raise ScraperPopulateDataError() from e
+                    raise ScraperPopulateDataError(str(e)) from e
 
             if self.should_get_more_tasks(task.task_type):
                 logging.info('Getting more tasks for %s and endpoint: %s',
@@ -218,7 +219,7 @@ class BaseScraper(Scraper):
                     # pylint: disable=assignment-from-no-return
                     next_tasks = self.get_more_tasks(content, task)
                 except Exception as e:
-                    raise ScraperGetMoreTasksError() from e
+                    raise ScraperGetMoreTasksError(str(e)) from e
                 for next_task in next_tasks:
                     # Include cookies received from response, if any
                     if cookies:
@@ -270,7 +271,8 @@ class BaseScraper(Scraper):
                 scrape_key = ScrapeKey(
                     self.region.region_code, request.scrape_type)
                 batch_persistence.write_error(
-                    error=type(e).__name__,
+                    error=str(e),
+                    trace_id=get_trace_id_from_flask(),
                     task=task,
                     scrape_key=scrape_key,
                 )

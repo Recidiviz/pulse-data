@@ -19,6 +19,7 @@
 import datetime
 from unittest import TestCase
 
+import flask
 from mock import patch, Mock
 
 from recidiviz import IngestInfo
@@ -86,10 +87,14 @@ class TestBaseScraper(TestCase):
     @patch('recidiviz.persistence.batch_persistence.write_error')
     @patch.object(BaseScraper, '_fetch_content')
     @patch.object(BaseScraper, 'get_more_tasks')
+    @patch.object(flask, 'request')
     def test_get_more_tasks_failure_batch(
-            self, mock_get_more, mock_fetch, mock_batch_error):
+            self, mock_flask, mock_get_more, mock_fetch, mock_batch_error):
         mock_fetch.return_value = ('TEST', {})
         mock_get_more.side_effect = ValueError('TEST ERROR')
+        mock_flask_get = Mock()
+        mock_flask_get.return_value = 'TRACE ID'
+        mock_flask.headers.get = mock_flask_get
 
         req = QueueRequest(
             scrape_type=constants.ScrapeType.BACKGROUND,
@@ -100,10 +105,12 @@ class TestBaseScraper(TestCase):
         with self.assertRaises(ScraperGetMoreTasksError):
             scraper._generic_scrape(req)
         self.assertEqual(mock_batch_error.call_count, 1)
+
         scrape_key = ScrapeKey(
             region_code='test', scrape_type=constants.ScrapeType.BACKGROUND)
         mock_batch_error.assert_called_once_with(
-            error=ScraperGetMoreTasksError.__name__,
+            error='TEST ERROR',
+            trace_id='TRACE ID',
             task=TEST_TASK,
             scrape_key=scrape_key
         )
