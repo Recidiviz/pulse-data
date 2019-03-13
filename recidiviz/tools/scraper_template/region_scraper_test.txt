@@ -23,10 +23,10 @@ from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.ingest.scrape import constants
 from recidiviz.ingest.scrape.task_params import Task
 from recidiviz.ingest.scrape.regions.$region.${region}_scraper import ${class_name}
-from recidiviz.tests.utils.base_scraper_test import BaseScraperTest
+from recidiviz.tests.utils.common_scraper_test import CommonScraperTest
 
 
-class Test${class_name}(BaseScraperTest, unittest.TestCase):
+class Test${class_name}(CommonScraperTest, unittest.TestCase):
 
     def _init_scraper_and_yaml(self):
         # The scraper to be tested. Required.

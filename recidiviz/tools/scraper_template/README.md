@@ -127,7 +127,7 @@ The base logic decides to persist data to the database when we hit a task that s
 
 Unit Tests
 ==================
-The only two functions that need to be unit tested for your scraper are `get_more_tasks` and `populate_data`.  The unit tests inherit from `BaseScraperTest`. This provides two functions `validate_and_return_get_more_tasks` and `validate_and_return_populate_data`.  Both of these functions take content of a page, the params to send in, and the expected value to be returned.  In addition to calling the relevant function and validating its output against the expected output, it runs extra validations on the returned output to make sure the object is formatted correctly and has all of the required fields.
+The only two functions that need to be unit tested for your scraper are `get_more_tasks` and `populate_data`.  The unit tests inherit from `CommonScraperTest`. This provides two functions `validate_and_return_get_more_tasks` and `validate_and_return_populate_data`.  Both of these functions take content of a page, the params to send in, and the expected value to be returned.  In addition to calling the relevant function and validating its output against the expected output, it runs extra validations on the returned output to make sure the object is formatted correctly and has all of the required fields.
 
 End To End Tests
 ==================
