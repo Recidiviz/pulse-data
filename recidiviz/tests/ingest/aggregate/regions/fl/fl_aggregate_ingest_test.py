@@ -62,7 +62,8 @@ class TestFlAggregateIngest(TestCase):
             'date_reported': [pd.NaT, pd.NaT, pd.NaT, pd.NaT, pd.NaT],
             'fips': [12001, 12003, 12005, 12007, 12009],
             'report_date': 5 * [DATE_SCRAPED],
-            'report_granularity': 5 * [enum_strings.monthly_granularity]
+            'aggregation_window': 5 * [enum_strings.monthly_granularity],
+            'report_frequency': 5 * [enum_strings.monthly_granularity]
         })
         assert_frame_equal(result.head(), expected_head)
 
@@ -76,7 +77,8 @@ class TestFlAggregateIngest(TestCase):
             'date_reported': [pd.NaT, pd.NaT, pd.NaT, pd.NaT, pd.NaT],
             'fips': [12125, 12127, 12129, 12131, 12133],
             'report_date': 5 * [DATE_SCRAPED],
-            'report_granularity': 5 * [enum_strings.monthly_granularity]
+            'aggregation_window': 5 * [enum_strings.monthly_granularity],
+            'report_frequency': 5 * [enum_strings.monthly_granularity]
         }, index=range(62, 67))
         assert_frame_equal(result.tail(), expected_tail)
 
@@ -91,7 +93,8 @@ class TestFlAggregateIngest(TestCase):
             'date_reported': [datetime.datetime(day=1, month=9, year=2017)],
             'fips': [12087],
             'report_date': [DATE_SCRAPED],
-            'report_granularity': [enum_strings.monthly_granularity]
+            'aggregation_window': [enum_strings.monthly_granularity],
+            'report_frequency': [enum_strings.monthly_granularity]
         }, index=[43])
 
         result_row_43 = result.iloc[43:44]
@@ -145,7 +148,8 @@ class TestFlAggregateIngest(TestCase):
             'number_misdemeanor_pretrial': [45., 1, 15, 287, 9],
             'fips': [12001, 12001, 12003, 12005, 12007],
             'report_date': 5 * [DATE_SCRAPED],
-            'report_granularity': 5 * [enum_strings.monthly_granularity]
+            'aggregation_window': 5 * [enum_strings.monthly_granularity],
+            'report_frequency': 5 * [enum_strings.monthly_granularity]
         })
         assert_frame_equal(result.head(), expected_head)
 
@@ -162,7 +166,8 @@ class TestFlAggregateIngest(TestCase):
             'number_misdemeanor_pretrial': [42., 44, 8, 38, 7],
             'fips': [12127, 12127, 12129, 12131, 12133],
             'report_date': 5 * [DATE_SCRAPED],
-            'report_granularity': 5 * [enum_strings.monthly_granularity]
+            'aggregation_window': 5 * [enum_strings.monthly_granularity],
+            'report_frequency': 5 * [enum_strings.monthly_granularity]
         }, index=range(82, 87))
         assert_frame_equal(result.tail(), expected_tail)
 
@@ -177,7 +182,8 @@ class TestFlAggregateIngest(TestCase):
             'number_misdemeanor_pretrial': np.array([None]).astype(float),
             'fips': [12069],
             'report_date': [DATE_SCRAPED],
-            'report_granularity': [enum_strings.monthly_granularity]
+            'aggregation_window': [enum_strings.monthly_granularity],
+            'report_frequency': [enum_strings.monthly_granularity]
         }, index=[40])
 
         result_row_40 = result.iloc[40:41]

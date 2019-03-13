@@ -58,7 +58,7 @@ class SchemaTest(TestCase):
             'charge_class': charge.ChargeClass,
             'charge_status': charge.ChargeStatus,
             'court_type': charge.CourtType,
-            'report_granularity': None
+            'time_granularity': None
         }
 
         schema_enums_by_name = {}
