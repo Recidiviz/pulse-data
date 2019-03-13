@@ -91,7 +91,7 @@ class TestPaAggregateIngest(TestCase):
             'county_name': ['Adams', 'Adams'],
             'pre_sentenced_population': [111., 127.],
             'fips': [42001, 42001],
-            'report_granularity': 2 * [enum_strings.quarterly_granularity]
+            'report_granularity': 2 * [enum_strings.daily_granularity]
         })
         assert_frame_equal(result.head(n=2), expected_head)
 
@@ -102,7 +102,7 @@ class TestPaAggregateIngest(TestCase):
             'county_name': ['York', 'York'],
             'pre_sentenced_population': [715., 687.],
             'fips': [42133, 42133],
-            'report_granularity': 2 * [enum_strings.quarterly_granularity]
+            'report_granularity': 2 * [enum_strings.daily_granularity]
         }, index=range(246, 248))
         assert_frame_equal(result.tail(n=2), expected_tail)
 
