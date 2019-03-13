@@ -25,6 +25,7 @@ import requests
 from recidiviz.common import date
 from recidiviz.ingest.aggregate import aggregate_ingest_utils
 
+# Human landing page: https://app.bscc.ca.gov/joq//jps/QuerySelection.asp
 LANDING_PAGE = 'https://app.bscc.ca.gov/joq//jps/query.asp?action=v'
 DATE_RANGE_RE = r'(.*) through (.*)'
 PDF_URL = 'https://app.bscc.ca.gov/joq//jps/query.asp?action=q'

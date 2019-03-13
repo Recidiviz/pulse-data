@@ -61,7 +61,8 @@ class TestPaAggregateIngest(TestCase):
             'discharge': [2068, 14642],
             'report_date': 2 * [REPORT_DATE],
             'fips': [42001, 42003],
-            'report_granularity': 2 * [enum_strings.yearly_granularity]
+            'aggregation_window': 2 * [enum_strings.yearly_granularity],
+            'report_frequency': 2 * [enum_strings.yearly_granularity]
         })
         assert_frame_equal(result.head(n=2), expected_head)
 
@@ -77,7 +78,8 @@ class TestPaAggregateIngest(TestCase):
             'discharge': [513, 14132],
             'report_date': 2 * [REPORT_DATE],
             'fips': [42131, 42133],
-            'report_granularity': 2 * [enum_strings.yearly_granularity]
+            'aggregation_window': 2 * [enum_strings.yearly_granularity],
+            'report_frequency': 2 * [enum_strings.yearly_granularity]
         }, index=range(65, 67))
         assert_frame_equal(result.tail(n=2), expected_tail)
 
@@ -91,7 +93,9 @@ class TestPaAggregateIngest(TestCase):
             'county_name': ['Adams', 'Adams'],
             'pre_sentenced_population': [111., 127.],
             'fips': [42001, 42001],
-            'report_granularity': 2 * [enum_strings.daily_granularity]
+            'aggregation_window': 2 * [enum_strings.daily_granularity],
+            'report_frequency':
+                2 * [enum_strings.quarterly_granularity]
         })
         assert_frame_equal(result.head(n=2), expected_head)
 
@@ -102,7 +106,9 @@ class TestPaAggregateIngest(TestCase):
             'county_name': ['York', 'York'],
             'pre_sentenced_population': [715., 687.],
             'fips': [42133, 42133],
-            'report_granularity': 2 * [enum_strings.daily_granularity]
+            'aggregation_window': 2 * [enum_strings.daily_granularity],
+            'report_frequency':
+                2 * [enum_strings.quarterly_granularity]
         }, index=range(246, 248))
         assert_frame_equal(result.tail(n=2), expected_tail)
 

@@ -204,12 +204,12 @@ court_type = Enum(enum_strings.court_type_circuit,
 
 # Aggregate
 
-report_granularity = Enum(enum_strings.daily_granularity,
-                          enum_strings.weekly_granularity,
-                          enum_strings.monthly_granularity,
-                          enum_strings.quarterly_granularity,
-                          enum_strings.yearly_granularity,
-                          name='report_granularity')
+time_granularity = Enum(enum_strings.daily_granularity,
+                        enum_strings.weekly_granularity,
+                        enum_strings.monthly_granularity,
+                        enum_strings.quarterly_granularity,
+                        enum_strings.yearly_granularity,
+                        name='time_granularity')
 
 
 class _PersonSharedColumns:
@@ -711,7 +711,12 @@ class _AggregateTableMixin:
     fips = Column(String(255), nullable=False)
 
     report_date = Column(Date, nullable=False)
-    report_granularity = Column(report_granularity, nullable=False)
+
+    # The time range that the reported statistics are aggregated over
+    aggregation_window = Column(time_granularity, nullable=False)
+
+    # The expected time between snapshots of data
+    report_frequency = Column(time_granularity, nullable=False)
 
 
 class CaFacilityAggregate(Base, _AggregateTableMixin):
@@ -719,7 +724,7 @@ class CaFacilityAggregate(Base, _AggregateTableMixin):
     __tablename__ = 'ca_facility_aggregate'
     __table_args__ = (
         UniqueConstraint(
-            'fips', 'facility_name', 'report_date', 'report_granularity'
+            'fips', 'facility_name', 'report_date', 'aggregation_window'
         ),
     )
 
@@ -736,7 +741,7 @@ class FlCountyAggregate(Base, _AggregateTableMixin):
     """FL state-provided aggregate statistics."""
     __tablename__ = 'fl_county_aggregate'
     __table_args__ = (
-        UniqueConstraint('fips', 'report_date', 'report_granularity'),
+        UniqueConstraint('fips', 'report_date', 'aggregation_window'),
     )
 
     county_name = Column(String(255), nullable=False)
@@ -757,7 +762,7 @@ class FlFacilityAggregate(Base, _AggregateTableMixin):
     __tablename__ = 'fl_facility_aggregate'
     __table_args__ = (
         UniqueConstraint(
-            'fips', 'facility_name', 'report_date', 'report_granularity'
+            'fips', 'facility_name', 'report_date', 'aggregation_window'
         ),
     )
 
@@ -771,7 +776,7 @@ class GaCountyAggregate(Base, _AggregateTableMixin):
     """GA state-provided aggregate statistics."""
     __tablename__ = 'ga_county_aggregate'
     __table_args__ = (
-        UniqueConstraint('fips', 'report_date', 'report_granularity'),
+        UniqueConstraint('fips', 'report_date', 'aggregation_window'),
     )
 
     county_name = Column(String(255), nullable=False)
@@ -789,7 +794,7 @@ class HiFacilityAggregate(Base, _AggregateTableMixin):
     __tablename__ = 'hi_facility_aggregate'
     __table_args__ = (
         UniqueConstraint(
-            'fips', 'facility_name', 'report_date', 'report_granularity'
+            'fips', 'facility_name', 'report_date', 'aggregation_window'
         ),
     )
 
@@ -832,7 +837,7 @@ class KyFacilityAggregate(Base, _AggregateTableMixin):
     __tablename__ = 'ky_facility_aggregate'
     __table_args__ = (
         UniqueConstraint(
-            'fips', 'facility_name', 'report_date', 'report_granularity'
+            'fips', 'facility_name', 'report_date', 'aggregation_window'
         ),
     )
 
@@ -868,7 +873,7 @@ class NyFacilityAggregate(Base, _AggregateTableMixin):
     __tablename__ = 'ny_facility_aggregate'
     __table_args__ = (
         UniqueConstraint(
-            'fips', 'facility_name', 'report_date', 'report_granularity'
+            'fips', 'facility_name', 'report_date', 'aggregation_window'
         ),
     )
 
@@ -893,7 +898,7 @@ class TxCountyAggregate(Base, _AggregateTableMixin):
     __tablename__ = 'tx_county_aggregate'
     __table_args__ = (
         UniqueConstraint(
-            'fips', 'facility_name', 'report_date', 'report_granularity'
+            'fips', 'facility_name', 'report_date', 'aggregation_window'
         ),
     )
 
@@ -932,7 +937,7 @@ class DcFacilityAggregate(Base, _AggregateTableMixin):
     """DC state-provided aggregate statistics."""
     __tablename__ = 'dc_facility_aggregate'
     __table_args__ = (
-        UniqueConstraint('fips', 'report_date', 'report_granularity'),
+        UniqueConstraint('fips', 'report_date', 'aggregation_window'),
     )
 
     facility_name = Column(String(255), nullable=False)
@@ -956,7 +961,7 @@ class PaFacilityPopAggregate(Base, _AggregateTableMixin):
     __tablename__ = 'pa_facility_pop_aggregate'
     __table_args__ = (
         UniqueConstraint(
-            'fips', 'facility_name', 'report_date', 'report_granularity'
+            'fips', 'facility_name', 'report_date', 'aggregation_window'
         ),
     )
 
@@ -975,7 +980,7 @@ class PaCountyPreSentencedAggregate(Base, _AggregateTableMixin):
     __tablename__ = 'pa_county_pre_sentenced_aggregate'
     __table_args__ = (
         UniqueConstraint(
-            'fips', 'report_date', 'report_granularity'
+            'fips', 'report_date', 'aggregation_window'
         ),
     )
 
@@ -988,7 +993,7 @@ class TnFacilityAggregate(Base, _AggregateTableMixin):
     __tablename__ = 'tn_facility_aggregate'
     __table_args__ = (
         UniqueConstraint(
-            'fips', 'facility_name', 'report_date', 'report_granularity'
+            'fips', 'facility_name', 'report_date', 'aggregation_window'
         ),
     )
 
@@ -1009,7 +1014,7 @@ class TnFacilityFemaleAggregate(Base, _AggregateTableMixin):
     __tablename__ = 'tn_facility_female_aggregate'
     __table_args__ = (
         UniqueConstraint(
-            'fips', 'facility_name', 'report_date', 'report_granularity'
+            'fips', 'facility_name', 'report_date', 'aggregation_window'
         ),
     )
 

@@ -803,7 +803,8 @@ class TestDatabase(TestCase):
                               pd.NaT, pd.NaT],
             'fips': ['0', '1', '2', '3', '4'],
             'report_date': 5 * [DATE_SCRAPED],
-            'report_granularity': 5 * [enum_strings.monthly_granularity]
+            'aggregation_window': 5 * [enum_strings.monthly_granularity],
+            'report_frequency': 5 * [enum_strings.monthly_granularity]
         })
 
         # Act
@@ -822,7 +823,7 @@ class TestDatabase(TestCase):
                          datetime.date(year=2017, month=9, day=1))
         self.assertEqual(result.fips, '2')
         self.assertEqual(result.report_date, DATE_SCRAPED)
-        self.assertEqual(result.report_granularity,
+        self.assertEqual(result.aggregation_window,
                          enum_strings.monthly_granularity)
 
     def testWriteDf_doesNotOverrideMatchingColumnNames(self):
@@ -836,7 +837,8 @@ class TestDatabase(TestCase):
                               pd.NaT, pd.NaT],
             'fips': ['0', '1', '2', '3', '4'],
             'report_date': 5 * [DATE_SCRAPED],
-            'report_granularity': 5 * [enum_strings.monthly_granularity]
+            'aggregation_window': 5 * [enum_strings.monthly_granularity],
+            'report_frequency': 5 * [enum_strings.monthly_granularity]
         })
         database.write_df(FlCountyAggregate, subject)
 
@@ -847,7 +849,8 @@ class TestDatabase(TestCase):
             'number_misdemeanor_pretrial': 5 * [pd.NaT],
             'fips': ['000', '111', '222', '333', '444'],
             'report_date': 5 * [DATE_SCRAPED],
-            'report_granularity': 5 * [enum_strings.monthly_granularity]
+            'aggregation_window': 5 * [enum_strings.monthly_granularity],
+            'report_frequency': 5 * [enum_strings.monthly_granularity]
         })
 
         # Act
@@ -872,7 +875,8 @@ class TestDatabase(TestCase):
             'date_reported': [pd.NaT, pd.NaT],
             'fips': 2 * ['SAME_FIPS'],
             'report_date': 2 * [DATE_SCRAPED],
-            'report_granularity': 2 * [enum_strings.monthly_granularity]
+            'aggregation_window': 2 * [enum_strings.monthly_granularity],
+            'report_frequency': 2 * [enum_strings.monthly_granularity]
         })
 
         # Act
@@ -893,7 +897,8 @@ class TestDatabase(TestCase):
                               pd.NaT, pd.NaT],
             'fips': ['0', '1', '2', '3', '4'],
             'report_date': 5 * [DATE_SCRAPED],
-            'report_granularity': 5 * [enum_strings.monthly_granularity]
+            'aggregation_window': 5 * [enum_strings.monthly_granularity],
+            'report_frequency': 5 * [enum_strings.monthly_granularity]
         })
         database.write_df(FlCountyAggregate, initial_df)
 
@@ -904,7 +909,8 @@ class TestDatabase(TestCase):
             'date_reported': [pd.NaT, pd.NaT, pd.NaT],
             'fips': ['0', '1000', '2'],
             'report_date': 3 * [DATE_SCRAPED],
-            'report_granularity': 3 * [enum_strings.monthly_granularity]
+            'aggregation_window': 3 * [enum_strings.monthly_granularity],
+            'report_frequency': 3 * [enum_strings.monthly_granularity]
         })
 
         # Act
