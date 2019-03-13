@@ -57,7 +57,8 @@ class TestCaAggregateIngest(TestCase):
             'sentenced_female_adp': [0, 37],
             'report_date': 2 * [datetime.date(2017, 1, 31)],
             'fips': [6001, 6001],
-            'report_granularity': 2 * [enum_strings.monthly_granularity]
+            'aggregation_window': 2 * [enum_strings.monthly_granularity],
+            'report_frequency': 2 * [enum_strings.monthly_granularity]
         })
         assert_frame_equal(result.head(n=2), expected_head)
 
@@ -74,7 +75,8 @@ class TestCaAggregateIngest(TestCase):
             'report_date': [datetime.date(2017, 11, 30),
                             datetime.date(2017, 12, 31)],
             'fips': [6115, 6115],
-            'report_granularity': 2 * [enum_strings.monthly_granularity]
+            'aggregation_window': 2 * [enum_strings.monthly_granularity],
+            'report_frequency': 2 * [enum_strings.monthly_granularity]
         }, index=range(1435, 1437))
         assert_frame_equal(result.tail(n=2), expected_tail)
 

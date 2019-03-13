@@ -41,7 +41,8 @@ def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
     table = fips.add_column_to_df(table, county_names, us.states.GA)
 
     table['report_date'] = _parse_date(filename)
-    table['report_granularity'] = enum_strings.daily_granularity
+    table['aggregation_window'] = enum_strings.daily_granularity
+    table['report_frequency'] = enum_strings.monthly_granularity
 
     return {
         GaCountyAggregate: table

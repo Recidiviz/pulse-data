@@ -75,7 +75,8 @@ class TestKyAggregateIngest(TestCase):
             'federal_female_population': [0, 0],
             'fips': [21001, 21001],
             'report_date': 2 * [DATE_SCRAPED],
-            'report_granularity': 2 * [enum_strings.daily_granularity]
+            'aggregation_window': 2 * [enum_strings.daily_granularity],
+            'report_frequency': 2 * [enum_strings.weekly_granularity]
         })
         assert_frame_equal(result.head(n=2), expected_head, check_names=False)
 
@@ -100,7 +101,8 @@ class TestKyAggregateIngest(TestCase):
             'federal_female_population': [2, 0],
             'fips': [21239, 21239],
             'report_date': 2 * [DATE_SCRAPED],
-            'report_granularity': 2 * [enum_strings.daily_granularity]
+            'aggregation_window': 2 * [enum_strings.daily_granularity],
+            'report_frequency': 2 * [enum_strings.weekly_granularity]
         }, index=range(122, 124))
         assert_frame_equal(result.tail(n=2), expected_tail, check_names=False)
 
@@ -128,7 +130,8 @@ class TestKyAggregateIngest(TestCase):
             'federal_female_population': [0, 0],
             'fips': [21001, 21001],
             'report_date': 2 * [DATE_SCRAPED_2],
-            'report_granularity': 2 * [enum_strings.daily_granularity]
+            'aggregation_window': 2 * [enum_strings.daily_granularity],
+            'report_frequency': 2 * [enum_strings.weekly_granularity]
         })
         assert_frame_equal(result.head(n=2), expected_head, check_names=False)
 
@@ -153,7 +156,8 @@ class TestKyAggregateIngest(TestCase):
             'federal_female_population': [2, 0],
             'fips': [21239, 21239],
             'report_date': 2 * [DATE_SCRAPED_2],
-            'report_granularity': 2 * [enum_strings.daily_granularity]
+            'aggregation_window': 2 * [enum_strings.daily_granularity],
+            'report_frequency': 2 * [enum_strings.weekly_granularity]
         }, index=range(122, 124))
         assert_frame_equal(result.tail(n=2), expected_tail, check_names=False)
 

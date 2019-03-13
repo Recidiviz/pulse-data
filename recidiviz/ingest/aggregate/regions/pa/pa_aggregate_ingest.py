@@ -76,7 +76,8 @@ def _parse_tab_1(filename: str) -> pd.DataFrame:
 
     df['report_date'] = _report_date_tab_1(filename)
     df = fips.add_column_to_df(df, df['facility_name'], us.states.PA)
-    df['report_granularity'] = enum_strings.yearly_granularity
+    df['aggregation_window'] = enum_strings.yearly_granularity
+    df['report_frequency'] = enum_strings.yearly_granularity
 
     return df.reset_index(drop=True)
 
@@ -111,7 +112,8 @@ def _parse_tab_2(filename: str):
     df['pre_sentenced_population'] = _to_numeric(df['pre_sentenced_population'])
 
     df = fips.add_column_to_df(df, df['county_name'], us.states.PA)
-    df['report_granularity'] = enum_strings.daily_granularity
+    df['aggregation_window'] = enum_strings.daily_granularity
+    df['report_frequency'] = enum_strings.quarterly_granularity
 
     return df
 

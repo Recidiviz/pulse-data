@@ -43,7 +43,8 @@ def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
     county_names = table.facility_name.map(_pretend_facility_is_county)
     table = fips.add_column_to_df(table, county_names, us.states.NY)
 
-    table['report_granularity'] = enum_strings.monthly_granularity
+    table['aggregation_window'] = enum_strings.monthly_granularity
+    table['report_frequency'] = enum_strings.monthly_granularity
 
     return {
         NyFacilityAggregate: table

@@ -96,7 +96,8 @@ class TestTxAggregateIngest(TestCase):
             'available_beds': [102, 19, 39],
             'fips': [48001, 48003, 48005],
             'report_date': 3 * [DATE_SCRAPED_AFTER_1996],
-            'report_granularity': 3 * [enum_strings.daily_granularity]
+            'aggregation_window': 3 * [enum_strings.daily_granularity],
+            'report_frequency': 3 * [enum_strings.monthly_granularity]
         })
         assert_frame_equal(result.head(n=3), expected_head)
 
@@ -122,7 +123,8 @@ class TestTxAggregateIngest(TestCase):
             'available_beds': [66, 17, 464],
             'fips': [48505, 48507, 48507],
             'report_date': 3 * [DATE_SCRAPED_AFTER_1996],
-            'report_granularity': 3 * [enum_strings.daily_granularity]
+            'aggregation_window': 3 * [enum_strings.daily_granularity],
+            'report_frequency': 3 * [enum_strings.monthly_granularity]
         }, index=range(264, 267))
         assert_frame_equal(result.tail(n=3), expected_tail)
 
@@ -162,7 +164,8 @@ class TestTxAggregateIngest(TestCase):
             'available_beds': [0, 16],
             'fips': [48001, 48003],
             'report_date': 2 * [DATE_SCRAPED_CONCAT],
-            'report_granularity': 2 * [enum_strings.daily_granularity]
+            'aggregation_window': 2 * [enum_strings.daily_granularity],
+            'report_frequency': 2 * [enum_strings.monthly_granularity]
         })
         assert_frame_equal(result.head(n=2), expected_head)
 
@@ -188,7 +191,8 @@ class TestTxAggregateIngest(TestCase):
             'available_beds': [15, 0],
             'fips': [48505, 48507],
             'report_date': 2 * [DATE_SCRAPED_CONCAT],
-            'report_granularity': 2 * [enum_strings.daily_granularity]
+            'aggregation_window': 2 * [enum_strings.daily_granularity],
+            'report_frequency': 2 * [enum_strings.monthly_granularity]
         }, index=range(262, 264))
         assert_frame_equal(result.tail(n=2), expected_tail)
 
@@ -225,7 +229,8 @@ class TestTxAggregateIngest(TestCase):
             'available_beds': [49, 23],
             'fips': [48001, 48003],
             'report_date': 2 * [DATE_SCRAPED_1996],
-            'report_granularity': 2 * [enum_strings.daily_granularity]
+            'aggregation_window': 2 * [enum_strings.daily_granularity],
+            'report_frequency': 2 * [enum_strings.monthly_granularity]
         })
         assert_frame_equal(result.head(n=2), expected_head)
 
@@ -248,7 +253,8 @@ class TestTxAggregateIngest(TestCase):
             'available_beds': [0, 32],
             'fips': [48507, 48507],
             'report_date': 2 * [DATE_SCRAPED_1996],
-            'report_granularity': 2 * [enum_strings.daily_granularity]
+            'aggregation_window': 2 * [enum_strings.daily_granularity],
+            'report_frequency': 2 * [enum_strings.monthly_granularity]
         }, index=range(259, 261))
         assert_frame_equal(result.tail(n=2), expected_tail)
 
@@ -284,7 +290,8 @@ class TestTxAggregateIngest(TestCase):
             'available_beds': [0, 0],
             'fips': [48001, 48003],
             'report_date': 2 * [DATE_SCRAPED_BEFORE_1996],
-            'report_granularity': 2 * [enum_strings.daily_granularity]
+            'aggregation_window': 2 * [enum_strings.daily_granularity],
+            'report_frequency': 2 * [enum_strings.monthly_granularity]
         })
         assert_frame_equal(result.head(n=2), expected_head)
 
@@ -306,7 +313,8 @@ class TestTxAggregateIngest(TestCase):
             'available_beds': [11, 0],
             'fips': [48505, 48507],
             'report_date': 2 * [DATE_SCRAPED_BEFORE_1996],
-            'report_granularity': 2 * [enum_strings.daily_granularity]
+            'aggregation_window': 2 * [enum_strings.daily_granularity],
+            'report_frequency': 2 * [enum_strings.monthly_granularity]
         }, index=range(257, 259))
         assert_frame_equal(result.tail(n=2), expected_tail)
 
