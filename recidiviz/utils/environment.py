@@ -35,6 +35,7 @@ from google.cloud import datastore, environment_vars
 import recidiviz
 
 
+GAE_ENVIRONMENTS = {'production', 'staging'}
 def in_gae():
     """ Check whether we're currently running on local dev machine or in prod
 
@@ -48,7 +49,7 @@ def in_gae():
         True if on hosted GAE instance
         False if not
     """
-    return get_gae_environment() in {'production', 'staging'}
+    return get_gae_environment() in GAE_ENVIRONMENTS
 
 def get_gae_environment():
     """Get the environment we are running in
