@@ -15,10 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Converts an ingest_info proto Arrest to a persistence entity."""
+from recidiviz.common.common_utils import normalize
 from recidiviz.common.date import parse_date
 from recidiviz.persistence import entities
-from recidiviz.persistence.converter.converter_utils import normalize, \
-    fn, parse_external_id
+from recidiviz.persistence.converter.converter_utils import (fn,
+                                                             parse_external_id)
 
 
 def convert(proto) -> entities.Arrest:
