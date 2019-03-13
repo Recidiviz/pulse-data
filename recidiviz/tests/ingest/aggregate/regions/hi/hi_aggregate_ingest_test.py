@@ -83,7 +83,7 @@ class TestHiAggregateIngest(TestCase):
             'probation_violation_female_population': [12, 0],
             'fips': [15001, 15003],
             'report_date': 2 * [DATE_SCRAPED],
-            'report_granularity': 2 * [enum_strings.monthly_granularity]
+            'report_granularity': 2 * [enum_strings.daily_granularity]
         })
         assert_frame_equal(result.head(n=2), expected_head, check_names=False)
 
@@ -114,7 +114,7 @@ class TestHiAggregateIngest(TestCase):
             'probation_violation_female_population': [0, 8],
             'fips': [4021, 15003],
             'report_date': 2 * [DATE_SCRAPED],
-            'report_granularity': 2 * [enum_strings.monthly_granularity]
+            'report_granularity': 2 * [enum_strings.daily_granularity]
         }, index=range(10, 12))
         assert_frame_equal(result.tail(n=2), expected_tail, check_names=False)
 
@@ -148,7 +148,7 @@ class TestHiAggregateIngest(TestCase):
             'probation_violation_female_population': [16, 0],
             'fips': [15001, 15003],
             'report_date': 2 * [DATE_SCRAPED_2],
-            'report_granularity': 2 * [enum_strings.monthly_granularity]
+            'report_granularity': 2 * [enum_strings.daily_granularity]
         })
         assert_frame_equal(result.head(n=2), expected_head, check_names=False)
 
@@ -179,7 +179,7 @@ class TestHiAggregateIngest(TestCase):
             'probation_violation_female_population': [0, 4],
             'fips': [4021, 15003],
             'report_date': 2 * [DATE_SCRAPED_2],
-            'report_granularity': 2 * [enum_strings.monthly_granularity]
+            'report_granularity': 2 * [enum_strings.daily_granularity]
         }, index=range(10, 12))
         assert_frame_equal(result.tail(n=2), expected_tail, check_names=False)
 

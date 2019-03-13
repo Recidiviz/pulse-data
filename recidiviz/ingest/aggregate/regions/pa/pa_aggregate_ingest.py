@@ -111,7 +111,7 @@ def _parse_tab_2(filename: str):
     df['pre_sentenced_population'] = _to_numeric(df['pre_sentenced_population'])
 
     df = fips.add_column_to_df(df, df['county_name'], us.states.PA)
-    df['report_granularity'] = enum_strings.quarterly_granularity
+    df['report_granularity'] = enum_strings.daily_granularity
 
     return df
 

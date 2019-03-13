@@ -50,7 +50,7 @@ def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
     table = fips.add_column_to_df(table, names, us.states.TN)
 
     table['report_date'] = _parse_date(filename)
-    table['report_granularity'] = enum_strings.monthly_granularity
+    table['report_granularity'] = enum_strings.daily_granularity
 
     return {
         TnFacilityFemaleAggregate: table

@@ -94,7 +94,7 @@ def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
     table = _parse_table(filename)
 
     table['report_date'] = parse_date(filename)
-    table['report_granularity'] = enum_strings.monthly_granularity
+    table['report_granularity'] = enum_strings.daily_granularity
 
     return {
         HiFacilityAggregate: table
