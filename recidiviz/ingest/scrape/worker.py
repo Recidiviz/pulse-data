@@ -28,7 +28,7 @@ from flask import Blueprint, request
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.scrape import sessions
 from recidiviz.ingest.scrape.task_params import QueueRequest
-from recidiviz.utils import regions
+from recidiviz.utils import monitoring, regions
 from recidiviz.utils.auth import authenticate_request
 
 class RequestProcessingError(Exception):
@@ -93,27 +93,29 @@ def work():
     task = data['task']
     params = QueueRequest.from_serializable(data['params'])
 
-    if not sessions.get_current_session(ScrapeKey(region, params.scrape_type)):
-        logging.info("Queue %s, skipping task (%s) for %s.", queue_name, task,
-                     region)
-        return ('', HTTPStatus.OK)
-    logging.info("Queue %s, processing task (%s) for %s.", queue_name, task,
-                 region)
+    with monitoring.push_tags({monitoring.TagKey.REGION: region}):
+        if not sessions.get_current_session(
+                ScrapeKey(region, params.scrape_type)):
+            logging.info("Queue %s, skipping task (%s) for %s.",
+                         queue_name, task, region)
+            return ('', HTTPStatus.OK)
+        logging.info("Queue %s, processing task (%s) for %s.",
+                     queue_name, task, region)
 
-    scraper = regions.get_region(region).get_scraper()
-    scraper_task = getattr(scraper, task)
+        scraper = regions.get_region(region).get_scraper()
+        scraper_task = getattr(scraper, task)
 
-    try:
-        result = scraper_task(params)
-    except TimeoutError:
-        # Timeout errors happen occasionally, so just fail the task and let
-        # it retry.
-        logging.info("--- Request timed out, re-queuing task. ---")
-        result = -1
-    except:
-        raise RequestProcessingError(region, task, params)
+        try:
+            result = scraper_task(params)
+        except TimeoutError:
+            # Timeout errors happen occasionally, so just fail the task and let
+            # it retry.
+            logging.info("--- Request timed out, re-queuing task. ---")
+            result = -1
+        except:
+            raise RequestProcessingError(region, task, params)
 
-    # Respond to the task queue to mark this task as done, or re-queue if
-    # error result
-    return ('', HTTPStatus.INTERNAL_SERVER_ERROR if result == -1 \
-                                                 else HTTPStatus.OK)
+        # Respond to the task queue to mark this task as done, or re-queue if
+        # error result
+        return ('', HTTPStatus.INTERNAL_SERVER_ERROR if result == -1 \
+                                                    else HTTPStatus.OK)

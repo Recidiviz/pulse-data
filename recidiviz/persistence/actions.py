@@ -22,6 +22,7 @@ from flask import Blueprint
 
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence import persistence
+from recidiviz.utils import monitoring
 from recidiviz.utils.auth import authenticate_request
 
 actions = Blueprint('actions', __name__)
@@ -36,8 +37,9 @@ def write_record():
     region = None
     jurisdiction_id = None
 
-    metadata = IngestMetadata(region, jurisdiction_id, last_scraped_time)
+    with monitoring.push_tags({monitoring.TagKey.REGION: region}):
+        metadata = IngestMetadata(region, jurisdiction_id, last_scraped_time)
 
-    persistence.write(ingest_info, metadata)
+        persistence.write(ingest_info, metadata)
 
-    return '', HTTPStatus.NOT_IMPLEMENTED
+        return '', HTTPStatus.NOT_IMPLEMENTED

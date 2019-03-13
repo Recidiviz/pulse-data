@@ -32,7 +32,7 @@ from recidiviz.ingest.scrape import ingest_utils, sessions, scrape_phase, queues
 from recidiviz.ingest.scrape.constants import ScrapeType, PUBSUB_TYPE
 from recidiviz.ingest.scrape.task_params import Task
 from recidiviz.persistence import persistence
-from recidiviz.utils import pubsub_helper, regions
+from recidiviz.utils import monitoring, pubsub_helper, regions
 from recidiviz.utils.auth import authenticate_request
 
 BATCH_READ_SIZE = 500
@@ -240,17 +240,18 @@ def read_and_persist():
     them to the database.
     """
     region = request.args.get('region')
-    session = sessions.get_most_recent_completed_session(
-        region, ScrapeType.BACKGROUND)
-    scrape_type = session.scrape_type
-    scraper_start_time = session.start
+    with monitoring.push_tags({monitoring.TagKey.REGION: region}):
+        session = sessions.get_most_recent_completed_session(
+            region, ScrapeType.BACKGROUND)
+        scrape_type = session.scrape_type
+        scraper_start_time = session.start
 
-    persist_to_database(region, scrape_type, scraper_start_time)
+        persist_to_database(region, scrape_type, scraper_start_time)
 
-    next_phase = scrape_phase.next_phase(request.endpoint)
-    if next_phase:
-        queues.enqueue_scraper_phase(
-            region_code=region, url=url_for(next_phase))
+        next_phase = scrape_phase.next_phase(request.endpoint)
+        if next_phase:
+            queues.enqueue_scraper_phase(
+                region_code=region, url=url_for(next_phase))
 
-    # TODO: queue up infer release before returning
-    return '', HTTPStatus.OK
+        # TODO: queue up infer release before returning
+        return '', HTTPStatus.OK
