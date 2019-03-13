@@ -28,7 +28,9 @@ from sqlalchemy.ext.declarative import DeclarativeMeta
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 from recidiviz.common import date, fips
 from recidiviz.ingest.aggregate import aggregate_ingest_utils
-from recidiviz.persistence.database.schema import TnFacilityAggregate
+from recidiviz.persistence.database.schema import TnFacilityAggregate, \
+    TnFacilityFemaleAggregate
+
 
 _MANUAL_FACILITY_TO_COUNTY_MAP = {
     'Johnson City (F)': 'Washington',
@@ -37,7 +39,12 @@ _MANUAL_FACILITY_TO_COUNTY_MAP = {
 
 
 def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
-    table = _parse_table(filename)
+    # There are two types of reports, total jail population and female
+    # jail population. The reports are very similar, but need to be
+    # handled slightly differently.
+    is_female = 'Female' in filename
+
+    table = _parse_table(filename, is_female)
 
     names = table.facility_name.apply(_pretend_facility_is_county)
     table = fips.add_column_to_df(table, names, us.states.TN)
@@ -46,14 +53,16 @@ def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
     table['report_granularity'] = enum_strings.monthly_granularity
 
     return {
+        TnFacilityFemaleAggregate: table
+    } if is_female else {
         TnFacilityAggregate: table
     }
 
 
-def _parse_table(filename: str) -> pd.DataFrame:
+def _parse_table(filename: str, is_female: bool) -> pd.DataFrame:
     table = tabula.read_pdf(filename, pages=[2, 3, 4], multiple_tables=True)
 
-    formatted_dfs = [_format_table(df) for df in table]
+    formatted_dfs = [_format_table(df, is_female) for df in table]
 
     table = pd.concat(formatted_dfs, ignore_index=True)
 
@@ -67,47 +76,71 @@ def _parse_table(filename: str) -> pd.DataFrame:
 
 
 def _parse_date(filename: str) -> datetime.date:
-    base_filename = os.path.basename(filename)
+    base_filename = os.path.basename(filename).replace('Female', '')
     end = base_filename.index('.pdf')
     start = 4
     d = date.parse_date(base_filename[start:end])
     return aggregate_ingest_utils.on_last_day_of_month(d)
 
 
-def _format_table(df: pd.DataFrame) -> pd.DataFrame:
+def _format_table(df: pd.DataFrame, is_female: bool) -> pd.DataFrame:
     """Format the dataframe that comes from one page of the PDF."""
 
     # The first four rows are parsed containing the column names.
     df.columns = df.iloc[:4].apply(lambda rows: ' '.join(rows.dropna()).strip())
     df = df.iloc[4:]
 
-    rename = {
-        r'FACILITY': 'facility_name',
-        r'TDOC Backup.*': 'tdoc_backup_population',
-        r'Local': 'local_felons_population',
-        r'Other .* Conv.*': 'other_convicted_felons_population',
-        r'Conv\. Misd\.': 'convicted_misdemeanor_population',
-        r'Pre- trial Felony': 'pretrial_felony_population',
-        r'Pre- trial Misd\.': 'pretrial_misdemeanor_population',
-        r'Total Jail Pop\.': 'total_jail_population',
-        r'Total Beds\*\*': 'total_beds',
-    }
+    # Some columns get smashed together on parse due to column grouping.
+    smashed_columns_placeholder_name = 'smashed'
+    if is_female:
+        smashed_cols = [
+            'local_felons_population',
+            'other_convicted_felons_population',
+            'federal_and_other_population',
+            'convicted_misdemeanor_population',
+            'pretrial_felony_population',
+        ]
+
+        rename = {
+            r'FACILITY': 'facility_name',
+            r'TDOC Backup.*': 'tdoc_backup_population',
+            r'FEMALE POPULATION': smashed_columns_placeholder_name,
+            r'Pre- trial.*': 'pretrial_misdemeanor_population',
+            r'Female Jail Pop\.': 'female_jail_population',
+            r'Female Beds\*\*': 'female_beds',
+        }
+
+    else:
+        smashed_cols = [
+            'other_convicted_felons_population',
+            'federal_and_other_population',
+        ]
+
+        rename = {
+            r'FACILITY': 'facility_name',
+            r'TDOC Backup.*': 'tdoc_backup_population',
+            r'Local': 'local_felons_population',
+            r'Other .* Conv.*': smashed_columns_placeholder_name,
+            r'Conv\. Misd\.': 'convicted_misdemeanor_population',
+            r'Pre- trial Felony': 'pretrial_felony_population',
+            r'Pre- trial Misd\.': 'pretrial_misdemeanor_population',
+            r'Total Jail Pop\.': 'total_jail_population',
+            r'Total Beds\*\*': 'total_beds',
+        }
 
     df = aggregate_ingest_utils.rename_columns_and_select(
         df, rename, use_regex=True)
 
-    # Some rows are two rows tall because of notes. These are parsed
-    # into two rows, one of which is all null except some text in the
-    # notes, which we ignore anyhow.
+    # When the notes column has more than one line of text, tabula
+    # parses a row of null.
     df = df.dropna(how='all')
 
-    # Tablua smashes two columns together when parsing.
-    df['federal_and_other_population'] = df[
-        'other_convicted_felons_population'].map(
-            lambda element: element.split()[1])
-    df['other_convicted_felons_population'] = df[
-        'other_convicted_felons_population'].map(
-            lambda element: element.split()[0])
+    # Extract individual values from the smashed columns.
+    for ind, col_name in enumerate(smashed_cols):
+        df[col_name] = df[smashed_columns_placeholder_name].map(
+            lambda element, ind=ind: element.split()[ind])
+
+    df = df.drop(smashed_columns_placeholder_name, axis=1)
 
     return df
 

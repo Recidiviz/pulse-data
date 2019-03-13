@@ -1002,3 +1002,24 @@ class TnFacilityAggregate(Base, _AggregateTableMixin):
     pretrial_misdemeanor_population = Column(Integer)
     total_jail_population = Column(Integer)
     total_beds = Column(Integer)
+
+
+class TnFacilityFemaleAggregate(Base, _AggregateTableMixin):
+    """TN state-provided aggregate population statistics."""
+    __tablename__ = 'tn_facility_female_aggregate'
+    __table_args__ = (
+        UniqueConstraint(
+            'fips', 'facility_name', 'report_date', 'report_granularity'
+        ),
+    )
+
+    facility_name = Column(Integer)
+    tdoc_backup_population = Column(Integer)
+    local_felons_population = Column(Integer)
+    other_convicted_felons_population = Column(Integer)
+    federal_and_other_population = Column(Integer)
+    convicted_misdemeanor_population = Column(Integer)
+    pretrial_felony_population = Column(Integer)
+    pretrial_misdemeanor_population = Column(Integer)
+    female_jail_population = Column(Integer)
+    female_beds = Column(Integer)

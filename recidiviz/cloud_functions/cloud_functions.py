@@ -31,6 +31,7 @@ from recidiviz.ingest.aggregate.regions.ga import ga_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.hi import hi_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.ky import ky_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.ny import ny_aggregate_ingest
+from recidiviz.ingest.aggregate.regions.tn import tn_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.tx import tx_aggregate_ingest
 from recidiviz.persistence.database import database
 from recidiviz.utils.auth import authenticate_request
@@ -59,6 +60,7 @@ def state_aggregate():
         'hawaii': hi_aggregate_ingest.parse,
         'kentucky': ky_aggregate_ingest.parse,
         'new_york': ny_aggregate_ingest.parse,
+        'tennessee': tn_aggregate_ingest.parse,
         'texas': tx_aggregate_ingest.parse,
     }
 

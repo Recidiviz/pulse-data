@@ -33,6 +33,7 @@ from recidiviz.ingest.aggregate.regions.ga import ga_aggregate_site_scraper
 from recidiviz.ingest.aggregate.regions.hi import hi_aggregate_site_scraper
 from recidiviz.ingest.aggregate.regions.ky import ky_aggregate_site_scraper
 from recidiviz.ingest.aggregate.regions.ny import ny_aggregate_site_scraper
+from recidiviz.ingest.aggregate.regions.tn import tn_aggregate_site_scraper
 from recidiviz.ingest.aggregate.regions.tx import tx_aggregate_site_scraper
 from recidiviz.utils import metadata
 from recidiviz.utils.auth import authenticate_request
@@ -65,6 +66,7 @@ def scrape_aggregate_reports():
         'hawaii': hi_aggregate_site_scraper.get_urls_to_download,
         'kentucky': ky_aggregate_site_scraper.get_urls_to_download,
         'new_york': ny_aggregate_site_scraper.get_urls_to_download,
+        'tennessee': tn_aggregate_site_scraper.get_urls_to_download,
         'texas': tx_aggregate_site_scraper.get_urls_to_download,
     }
     state = get_value('state', request.args)
