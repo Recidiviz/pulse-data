@@ -15,11 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Converts an ingest_info proto Hold to a persistence entity."""
+from recidiviz.common.common_utils import normalize
 from recidiviz.common.constants.hold import HoldStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence import entities
-from recidiviz.persistence.converter.converter_utils import normalize, fn, \
-    parse_external_id
+from recidiviz.persistence.converter.converter_utils import (fn,
+                                                             parse_external_id)
 
 
 def convert(proto, metadata: IngestMetadata) -> entities.Hold:
