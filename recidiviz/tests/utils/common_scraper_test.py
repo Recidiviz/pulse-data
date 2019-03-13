@@ -32,7 +32,7 @@ from recidiviz.persistence.validator import validate
 _FAKE_SCRAPER_START_TIME = datetime(year=2019, month=1, day=2)
 
 
-class BaseScraperTest:
+class CommonScraperTest:
     """A base class for scraper tests which does extra validations."""
 
     def setUp(self):
