@@ -27,6 +27,7 @@ from recidiviz.ingest.scrape import queues, scrape_phase, sessions
 from recidiviz.ingest.scrape.ingest_utils import validate_regions
 from recidiviz.utils.auth import authenticate_request
 from recidiviz.persistence import persistence
+from recidiviz.utils import monitoring
 from recidiviz.utils.params import get_values
 from recidiviz.utils.regions import Region, RemovedFromWebsite, get_region
 
@@ -40,21 +41,24 @@ def infer_release():
     regions = [get_region(region_code) for region_code in region_codes]
 
     for region in regions:
-        if region.agency_type != 'jail':
-            continue
+        with monitoring.push_tags(
+                {monitoring.TagKey.REGION: region.region_code}):
+            if region.agency_type != 'jail':
+                continue
 
-        session = sessions.get_most_recent_completed_session(region.region_code)
-        if session:
-            logging.info(
-                'Got most recent completed session for %s with start time %s',
-                region.region_code, session.start)
-            persistence.infer_release_on_open_bookings(
-                region.region_code, session.start, _get_custody_status(region))
+            session = sessions.get_most_recent_completed_session(
+                region.region_code)
+            if session:
+                logging.info('Got most recent completed session for %s with '
+                             'start time %s', region.region_code, session.start)
+                persistence.infer_release_on_open_bookings(
+                    region.region_code, session.start,
+                    _get_custody_status(region))
 
-        next_phase = scrape_phase.next_phase(request.endpoint)
-        if next_phase:
-            queues.enqueue_scraper_phase(
-                region_code=region.region_code, url=url_for(next_phase))
+            next_phase = scrape_phase.next_phase(request.endpoint)
+            if next_phase:
+                queues.enqueue_scraper_phase(
+                    region_code=region.region_code, url=url_for(next_phase))
     return '', HTTPStatus.OK
 
 
