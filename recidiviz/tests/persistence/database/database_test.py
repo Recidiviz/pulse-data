@@ -39,6 +39,7 @@ from recidiviz.persistence.database import database, database_utils
 from recidiviz.persistence.database.schema import Bond, Booking, Person, \
     Sentence, FlCountyAggregate, FlFacilityAggregate
 from recidiviz.persistence.database.schema import (
+    BondHistory,
     BookingHistory,
     Charge, ChargeHistory,
     PersonHistory)
@@ -636,6 +637,168 @@ class TestDatabase(TestCase):
             _DEFAULT_METADATA)
 
         session.close()
+
+    def testWritePerson_backdatedBooking_backdatesSnapshot(self):
+        person_scrape_time = datetime.datetime(year=2020, month=6, day=1)
+        booking_scrape_time = datetime.datetime(year=2020, month=7, day=7)
+        booking_admission_date = datetime.datetime(year=2020, month=7, day=1)
+
+        arrange_session = Session()
+        person = entities.Person.new_with_defaults(
+            full_name=_FULL_NAME, birthdate=_BIRTHDATE, region=_REGION)
+        persisted_person = database.write_person(
+            arrange_session, person, IngestMetadata(
+                _REGION, _JURISDICTION_ID, person_scrape_time, {}))
+        arrange_session.commit()
+        person_id = persisted_person.person_id
+        arrange_session.close()
+
+        act_session = Session()
+        queried_person = one(database.read_people(
+            session=act_session, full_name=_FULL_NAME, birthdate=_BIRTHDATE))
+        booking = entities.Booking.new_with_defaults(
+            custody_status=CustodyStatus.IN_CUSTODY,
+            admission_date=booking_admission_date,
+            admission_date_inferred=False,
+            last_seen_time=booking_scrape_time)
+        queried_person.bookings = [booking]
+        updated_person = database.write_person(
+            act_session, queried_person, IngestMetadata(
+                _REGION, _JURISDICTION_ID, booking_scrape_time, {}))
+        act_session.commit()
+        booking_id = updated_person.bookings[0].booking_id
+        act_session.close()
+
+        assert_session = Session()
+
+        person_snapshot = one(assert_session.query(PersonHistory).filter(
+            PersonHistory.person_id == person_id).all())
+        booking_snapshot = one(assert_session.query(BookingHistory).filter(
+            BookingHistory.booking_id == booking_id).all())
+
+        self.assertEqual(person_snapshot.valid_from, person_scrape_time)
+        self.assertEqual(booking_snapshot.valid_from, booking_admission_date)
+
+        assert_session.commit()
+        assert_session.close()
+
+    def testWritePerson_admissionDateChanges_doesNotBackdateSnapshot(self):
+        initial_scrape_time = datetime.datetime(year=2020, month=6, day=1)
+        update_scrape_time = datetime.datetime(year=2020, month=7, day=7)
+        booking_admission_date = datetime.datetime(year=2020, month=7, day=1)
+
+        arrange_session = Session()
+        person = entities.Person.new_with_defaults(
+            full_name=_FULL_NAME, birthdate=_BIRTHDATE, region=_REGION)
+        booking = entities.Booking.new_with_defaults(
+            custody_status=CustodyStatus.IN_CUSTODY,
+            last_seen_time=initial_scrape_time)
+        person.bookings = [booking]
+        persisted_person = database.write_person(
+            arrange_session, person, IngestMetadata(
+                _REGION, _JURISDICTION_ID, initial_scrape_time, {}))
+        arrange_session.commit()
+        booking_id = persisted_person.bookings[0].booking_id
+        arrange_session.close()
+
+        act_session = Session()
+        queried_person = one(database.read_people(
+            session=act_session, full_name=_FULL_NAME, birthdate=_BIRTHDATE))
+        queried_person.bookings[0].admission_date = booking_admission_date
+        queried_person.bookings[0].admission_date_inferred = False
+        queried_person.bookings[0].last_seen_time = update_scrape_time
+        database.write_person(
+            act_session, queried_person, IngestMetadata(
+                _REGION, _JURISDICTION_ID, update_scrape_time, {}))
+        act_session.commit()
+        act_session.close()
+
+        assert_session = Session()
+
+        booking_snapshots = assert_session.query(BookingHistory).filter(
+            BookingHistory.booking_id == booking_id).all()
+        self.assertEqual(len(booking_snapshots), 2)
+        self.assertEqual(
+            booking_snapshots[0].valid_from, initial_scrape_time)
+        self.assertEqual(
+            booking_snapshots[1].valid_from, update_scrape_time)
+
+        assert_session.commit()
+        assert_session.close()
+
+    def testWritePerson_newPersonWithBackdatedBooking_backdatesPerson(self):
+        scrape_time = datetime.datetime(year=2020, month=7, day=7)
+        booking_admission_date = datetime.datetime(year=2020, month=7, day=1)
+
+        act_session = Session()
+        person = entities.Person.new_with_defaults(
+            full_name=_FULL_NAME, birthdate=_BIRTHDATE, region=_REGION)
+        booking = entities.Booking.new_with_defaults(
+            custody_status=CustodyStatus.IN_CUSTODY,
+            admission_date=booking_admission_date,
+            admission_date_inferred=False,
+            last_seen_time=scrape_time)
+        person.bookings = [booking]
+        persisted_person = database.write_person(
+            act_session, person, IngestMetadata(
+                _REGION, _JURISDICTION_ID, scrape_time, {}))
+        act_session.commit()
+        person_id = persisted_person.person_id
+        booking_id = persisted_person.bookings[0].booking_id
+        act_session.close()
+
+        assert_session = Session()
+
+        person_snapshot = one(assert_session.query(PersonHistory).filter(
+            PersonHistory.person_id == person_id).all())
+        booking_snapshot = one(assert_session.query(BookingHistory).filter(
+            BookingHistory.booking_id == booking_id).all())
+
+        self.assertEqual(person_snapshot.valid_from, booking_admission_date)
+        self.assertEqual(booking_snapshot.valid_from, booking_admission_date)
+
+        assert_session.commit()
+        assert_session.close()
+
+    def testWritePerson_backdatedBooking_backdatesChildEntities(self):
+        scrape_time = datetime.datetime(year=2020, month=7, day=7)
+        booking_admission_date = datetime.datetime(year=2020, month=7, day=1)
+
+        act_session = Session()
+        person = entities.Person.new_with_defaults(
+            full_name=_FULL_NAME, birthdate=_BIRTHDATE, region=_REGION)
+        booking = entities.Booking.new_with_defaults(
+            custody_status=CustodyStatus.IN_CUSTODY,
+            admission_date=booking_admission_date,
+            admission_date_inferred=False,
+            last_seen_time=scrape_time)
+        person.bookings = [booking]
+        charge = entities.Charge.new_with_defaults(
+            status=ChargeStatus.PENDING)
+        booking.charges = [charge]
+        bond = entities.Bond.new_with_defaults(
+            status=BondStatus.UNKNOWN_FOUND_IN_SOURCE)
+        charge.bond = bond
+        persisted_person = database.write_person(
+            act_session, person, IngestMetadata(
+                _REGION, _JURISDICTION_ID, scrape_time, {}))
+        act_session.commit()
+        charge_id = persisted_person.bookings[0].charges[0].charge_id
+        bond_id = persisted_person.bookings[0].charges[0].bond.bond_id
+        act_session.close()
+
+        assert_session = Session()
+
+        charge_snapshot = one(assert_session.query(ChargeHistory).filter(
+            ChargeHistory.charge_id == charge_id).all())
+        bond_snapshot = one(assert_session.query(BondHistory).filter(
+            BondHistory.bond_id == bond_id).all())
+
+        self.assertEqual(charge_snapshot.valid_from, booking_admission_date)
+        self.assertEqual(bond_snapshot.valid_from, booking_admission_date)
+
+        assert_session.commit()
+        assert_session.close()
 
     def test_removeBondFromCharge_shouldNotOrphanOldBond(self):
         arrange_session = Session()

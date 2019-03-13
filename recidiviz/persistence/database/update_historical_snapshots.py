@@ -13,7 +13,7 @@ as expected.
 """
 
 from collections import defaultdict
-from datetime import datetime
+from datetime import date, datetime
 import logging
 from typing import Any, Callable, Dict, List, Optional, Set, Type
 
@@ -44,7 +44,7 @@ def update_historical_snapshots(session: Session,
     If neither of these cases applies, no action will be taken on the entity.
     """
     logging.info(
-        "Beginning historical snapshot updates for %s record tree(s)",
+        'Beginning historical snapshot updates for %s record tree(s)',
         len(root_people))
 
     _assert_all_record_trees_well_formed(root_people)
@@ -56,13 +56,25 @@ def update_historical_snapshots(session: Session,
     _execute_action_for_all_entities(
         root_people, context_registry.register_entity)
 
+    logging.info('%s master entities registered for snapshot check',
+                 len(context_registry.all_contexts()))
+
     most_recent_snapshots = _fetch_most_recent_snapshots_for_all_entities(
         session, root_people)
     for snapshot in most_recent_snapshots:
         context_registry.add_snapshot(snapshot)
 
+    logging.info('%s registered entities with existing snapshots',
+                 len(most_recent_snapshots))
+
+    _set_provided_start_times(root_people, context_registry)
+
+    logging.info('Provided start times set for registered entities')
+
     for snapshot_context in context_registry.all_contexts():
-        _update_snapshots_from_context(session, snapshot_context, snapshot_time)
+        _write_snapshots(session, snapshot_context, snapshot_time)
+
+    logging.info('All historical snapshots written')
 
 
 def _fetch_most_recent_snapshots_for_all_entities(
@@ -161,9 +173,62 @@ def _fetch_most_recent_snapshots_for_entity_type(
         .all()
 
 
-# TODO: replace with method that takes into account provided period values
-# pylint: disable=missing-docstring
-def _update_snapshots_from_context(session, context, snapshot_time):
+def _set_provided_start_times(
+        root_people: List[schema.Person],
+        context_registry: '_SnapshotContextRegistry') -> None:
+    """For every entity in all record trees rooted at |root_people|, determines
+    if the entity has a provided start time (i.e. the time the entity was
+    created or otherwise began) and sets it on the |context_registry|
+    """
+    for person in root_people:
+        earliest_admission_date = None
+
+        for booking in person.bookings:
+            admission_date = None
+            # Don't include case where admission_date_inferred is None
+            if booking.admission_date and \
+                    booking.admission_date_inferred is False:
+                admission_date = booking.admission_date
+                context_registry.snapshot_context(booking) \
+                    .provided_start_time = _date_to_datetime(admission_date)
+                if earliest_admission_date is None \
+                        or admission_date < earliest_admission_date:
+                    earliest_admission_date = admission_date
+
+            _execute_action_for_all_entities(
+                [booking],
+                _set_provided_start_time_for_booking_descendant,
+                admission_date,
+                context_registry)
+
+        if earliest_admission_date:
+            context_registry.snapshot_context(person).provided_start_time = \
+                _date_to_datetime(earliest_admission_date)
+
+
+def _set_provided_start_time_for_booking_descendant(
+        entity: Any, parent_booking_admission_date: date,
+        context_registry: '_SnapshotContextRegistry') -> None:
+    """Sets |entity| provided start time on |context_registry| according to
+    type of |entity|
+    """
+
+    # TODO(1147): add type-specific logic
+    if parent_booking_admission_date:
+        context_registry.snapshot_context(entity).provided_start_time = \
+            _date_to_datetime(parent_booking_admission_date)
+
+def _write_snapshots(session: Session, context: '_SnapshotContext',
+                     snapshot_time: datetime) -> None:
+    """Writes snapshots for any new entities and any entities that have changes.
+
+    Will backdate the initial snapshot for any entity that has a provided start
+    time earlier than |snapshot_time|.
+
+    NOTE: This method does not yet support creating new snapshots for which
+    both start and end time are in the past.
+    """
+
     # Historical table does not need to be updated if entity is not new and
     # its current state matches its most recent historical snapshot
     if context.most_recent_snapshot is not None and \
@@ -175,14 +240,23 @@ def _update_snapshots_from_context(session, context, snapshot_time):
     new_historical_snapshot = historical_class()
     _copy_entity_fields_to_historical_snapshot(
         context.entity, new_historical_snapshot)
-    new_historical_snapshot.valid_from = snapshot_time
+
+    # Snapshot should only be backdated if there are no existing snapshots and
+    # the entity start time is earlier than the snapshot time
+    if context.provided_start_time and \
+            context.most_recent_snapshot is None and \
+            context.provided_start_time < snapshot_time:
+        new_historical_snapshot.valid_from = context.provided_start_time
+    else:
+        new_historical_snapshot.valid_from = snapshot_time
 
     # See module assumption #2
-    key_column_name = context.entity.get_primary_key_column_name()
+    key_column_name = \
+        context.entity.get_primary_key_column_name() # type: ignore
     historical_master_key_property_name = \
         historical_class.get_property_name_by_column_name(key_column_name)
     setattr(new_historical_snapshot, historical_master_key_property_name,
-            context.entity.get_primary_key())
+            context.entity.get_primary_key()) # type: ignore
 
     # Snapshot must be merged separately from record tree, as they are not
     # included in the ORM model relationships (to avoid needing to load
@@ -313,12 +387,12 @@ def _assert_all_record_trees_well_formed(
                          charge.get_primary_key()]
 
 
-def _execute_action_for_all_entities(root_people: List[schema.Person],
+def _execute_action_for_all_entities(start_entities: List[Any],
                                      action: Callable, *args) -> None:
-    """For every entity in every record tree rooted at one of |root_people|,
+    """For every entity in every graph reachable from |start_entities|,
     invokes |action|, passing the entity and |*args| as arguments"""
 
-    unprocessed = list(root_people)
+    unprocessed = list(start_entities)
     processed = []
     while unprocessed:
         entity = unprocessed.pop()
@@ -412,6 +486,10 @@ def _get_master_class(historical_class: Type) -> Type:
     return getattr(schema, master_class_name)
 
 
+def _date_to_datetime(d: date) -> datetime:
+    return datetime(d.year, d.month, d.day)
+
+
 @attr.s
 class _SnapshotContext:
     """Container for all data required for snapshot operations for a single
@@ -419,8 +497,7 @@ class _SnapshotContext:
     """
     entity: Optional[Any] = attr.ib(default=None)
     most_recent_snapshot: Optional[Any] = attr.ib(default=None)
-    provided_valid_from: Optional[datetime] = attr.ib(default=None)
-    provided_valid_to: Optional[datetime] = attr.ib(default=None)
+    provided_start_time: Optional[datetime] = attr.ib(default=None)
 
 
 class _SnapshotContextRegistry:
