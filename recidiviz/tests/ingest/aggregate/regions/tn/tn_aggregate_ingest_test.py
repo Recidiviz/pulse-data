@@ -68,7 +68,7 @@ class TestTnAggregateIngest(TestCase):
             'federal_and_other_population': [0, 1],
             'fips': [47001, 47003],
             'report_date': 2 * [_REPORT_DATE],
-            'report_granularity': 2 * [enum_strings.monthly_granularity]
+            'report_granularity': 2 * [enum_strings.daily_granularity]
         })
         assert_frame_equal(result.head(n=2), expected_head, check_names=False)
 
@@ -86,7 +86,7 @@ class TestTnAggregateIngest(TestCase):
             'federal_and_other_population': [0, 53],
             'fips': [47187, 47189],
             'report_date': 2 * [_REPORT_DATE],
-            'report_granularity': 2 * [enum_strings.monthly_granularity]
+            'report_granularity': 2 * [enum_strings.daily_granularity]
         }, index=[118, 119])
         assert_frame_equal(result.tail(n=2), expected_tail, check_names=False)
 
