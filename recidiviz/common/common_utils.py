@@ -20,6 +20,8 @@ import string
 import uuid
 from typing import Optional
 
+import flask
+
 GENERATED_ID_SUFFIX = "_GENERATE"
 
 
@@ -29,6 +31,22 @@ def create_generated_id() -> str:
 
 def is_generated_id(id_str: Optional[str]) -> bool:
     return id_str is not None and id_str.endswith(GENERATED_ID_SUFFIX)
+
+
+def get_trace_id_from_flask():
+    """Get trace_id from flask request headers.
+    """
+    if flask is None or not flask.request:
+        return None
+
+    header = flask.request.headers.get('X_CLOUD_TRACE_CONTEXT')
+
+    if header is None:
+        return None
+
+    trace_id = header.split("/", 1)[0]
+
+    return trace_id
 
 
 def normalize(s: str, remove_punctuation: bool = False) -> str:
