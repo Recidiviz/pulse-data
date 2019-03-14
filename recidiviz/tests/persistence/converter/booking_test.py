@@ -25,7 +25,7 @@ from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence import entities
 from recidiviz.persistence.converter import booking
 
-_LAST_SEEN_TIME = datetime(year=2019, month=2, day=18)
+_INGEST_TIME = datetime(year=2019, month=2, day=18)
 
 
 class BookingConverterTest(unittest.TestCase):
@@ -37,7 +37,7 @@ class BookingConverterTest(unittest.TestCase):
     def testParseBooking(self):
         # Arrange
         metadata = IngestMetadata.new_with_defaults(
-            last_seen_time=_LAST_SEEN_TIME
+            ingest_time=_INGEST_TIME
         )
 
         ingest_booking = ingest_info_pb2.Booking(
@@ -71,7 +71,7 @@ class BookingConverterTest(unittest.TestCase):
             custody_status_raw_text='HELD ELSEWHERE',
             classification=Classification.LOW,
             classification_raw_text='LOW',
-            last_seen_time=_LAST_SEEN_TIME,
+            last_seen_time=_INGEST_TIME,
         )
 
         self.assertEqual(result, expected_result)
@@ -79,7 +79,7 @@ class BookingConverterTest(unittest.TestCase):
     def testParseBooking_SetsDefaults(self):
         # Arrange
         metadata = IngestMetadata.new_with_defaults(
-            last_seen_time=_LAST_SEEN_TIME,
+            ingest_time=_INGEST_TIME,
         )
         ingest_booking = ingest_info_pb2.Booking()
 
@@ -89,9 +89,9 @@ class BookingConverterTest(unittest.TestCase):
 
         # Assert
         expected_result = entities.Booking.new_with_defaults(
-            admission_date=_LAST_SEEN_TIME.date(),
+            admission_date=_INGEST_TIME.date(),
             admission_date_inferred=True,
-            last_seen_time=_LAST_SEEN_TIME,
+            last_seen_time=_INGEST_TIME,
             custody_status=CustodyStatus.UNKNOWN_FOUND_IN_SOURCE
         )
 
