@@ -76,7 +76,7 @@ JURISDICTION_ID = 'JURISDICTION_ID'
 DEFAULT_METADATA = IngestMetadata.new_with_defaults(
     region='region_code',
     jurisdiction_id='jid',
-    last_seen_time=datetime(year=1000, month=1, day=1))
+    ingest_time=datetime(year=1000, month=1, day=1))
 ID = 1
 ID_2 = 2
 ID_3 = 3
@@ -226,7 +226,7 @@ class TestPersistence(TestCase):
         metadata = IngestMetadata.new_with_defaults(
             region=REGION_1,
             jurisdiction_id=JURISDICTION_ID,
-            last_seen_time=SCRAPER_START_DATETIME)
+            ingest_time=SCRAPER_START_DATETIME)
 
         ingest_info = IngestInfo()
         ingest_info.people.add(
@@ -317,7 +317,7 @@ class TestPersistence(TestCase):
         metadata = IngestMetadata.new_with_defaults(
             region=REGION_1,
             jurisdiction_id=JURISDICTION_ID,
-            last_seen_time=most_recent_scrape_time)
+            ingest_time=most_recent_scrape_time)
 
         schema_booking = schema.Booking(
             booking_id=BOOKING_ID,

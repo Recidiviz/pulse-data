@@ -33,9 +33,9 @@ class IngestMetadata(DefaultableAttr):
     # The jurisdiction id for the region that this ingest_info was scraped from.
     jurisdiction_id: str = attr.ib()
 
-    # The last time this ingest_info was seen from its data source. In the
-    # normal ingest pipeline, this is the scraper_start_time.
-    last_seen_time: datetime = attr.ib()
+    # The time the given ingest work started. In the normal ingest pipeline,
+    # this is the scraper_start_time.
+    ingest_time: datetime = attr.ib()
 
     # Region specific mapping which takes precedence over the global mapping.
     enum_overrides: EnumOverrides = attr.ib(factory=EnumOverrides.empty)

@@ -98,7 +98,7 @@ def infer_release_on_open_bookings(
         # dummy object with half-filled values
         database.write_people(session, people, IngestMetadata(
             region=region_code, jurisdiction_id='',
-            last_seen_time=last_ingest_time))
+            ingest_time=last_ingest_time))
         session.commit()
     except Exception:
         session.rollback()
