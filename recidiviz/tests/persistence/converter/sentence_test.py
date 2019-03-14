@@ -40,7 +40,7 @@ class SentenceConverterTest(unittest.TestCase):
         # Act
         result = sentence.convert(ingest_sentence,
                                   IngestMetadata.new_with_defaults(
-                                      last_seen_time=datetime.datetime(
+                                      ingest_time=datetime.datetime(
                                           year=2018, month=6, day=8)))
 
         # Assert
@@ -64,7 +64,7 @@ class SentenceConverterTest(unittest.TestCase):
         # Act
         result = sentence.convert(ingest_sentence,
                                   IngestMetadata.new_with_defaults(
-                                      last_seen_time=datetime.datetime(
+                                      ingest_time=datetime.datetime(
                                           year=2018, month=6, day=8)))
 
         # Assert
