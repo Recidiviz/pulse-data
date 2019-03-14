@@ -228,7 +228,7 @@ def _save_record_trees(session: Session,
     _overwrite_dummy_booking_ids(root_people)
 
     update_snapshots.update_historical_snapshots(
-        session, root_people, orphaned_entities, metadata.last_seen_time)
+        session, root_people, orphaned_entities, metadata.ingest_time)
 
     return root_people
 

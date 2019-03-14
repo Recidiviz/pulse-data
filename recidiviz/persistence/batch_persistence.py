@@ -235,7 +235,7 @@ def persist_to_database(region_code, scrape_type, scraper_start_time):
 
         metadata = IngestMetadata(
             region=region_code, jurisdiction_id=region.jurisdiction_id,
-            last_seen_time=scraper_start_time,
+            ingest_time=scraper_start_time,
             enum_overrides=overrides)
 
         persistence.write(proto, metadata)

@@ -30,7 +30,7 @@ from recidiviz.persistence.converter import converter
 from recidiviz.persistence.entities import Person, Booking, Arrest, Charge, \
     Bond, Sentence, Hold
 
-_LAST_SEEN_TIME = datetime.datetime(year=2019, month=2, day=13, hour=12)
+_INGEST_TIME = datetime.datetime(year=2019, month=2, day=13, hour=12)
 _RELEASE_DATE = datetime.date(year=2018, month=3, day=1)
 _BIRTHDATE = datetime.date(1990, 3, 5)
 _BIRTHDATE_SCRUBBED = datetime.date(1990, 1, 1)
@@ -42,7 +42,7 @@ class TestConverter(unittest.TestCase):
 
     def testConvert_FullIngestInfo(self):
         # Arrange
-        metadata = IngestMetadata('REGION', _JURISDICTION_ID, _LAST_SEEN_TIME)
+        metadata = IngestMetadata('REGION', _JURISDICTION_ID, _INGEST_TIME)
 
         ingest_info = IngestInfo()
         ingest_info.people.add(person_id='PERSON_ID',
@@ -66,9 +66,9 @@ class TestConverter(unittest.TestCase):
             jurisdiction_id='JURISDICTION_ID',
             bookings=[Booking.new_with_defaults(
                 external_id='BOOKING_ID',
-                admission_date=_LAST_SEEN_TIME.date(),
+                admission_date=_INGEST_TIME.date(),
                 admission_date_inferred=True,
-                last_seen_time=_LAST_SEEN_TIME,
+                last_seen_time=_INGEST_TIME,
                 custody_status=CustodyStatus.UNKNOWN_FOUND_IN_SOURCE,
                 arrest=Arrest.new_with_defaults(
                     external_id='ARREST_ID',
@@ -94,7 +94,7 @@ class TestConverter(unittest.TestCase):
 
     def testConvert_FullIngestInfo_usingPop(self):
         # Arrange
-        metadata = IngestMetadata('REGION', _JURISDICTION_ID, _LAST_SEEN_TIME)
+        metadata = IngestMetadata('REGION', _JURISDICTION_ID, _INGEST_TIME)
 
         ingest_info = IngestInfo()
         ingest_info.people.add(person_id='PERSON_ID',
@@ -121,9 +121,9 @@ class TestConverter(unittest.TestCase):
             jurisdiction_id='JURISDICTION_ID',
             bookings=[Booking.new_with_defaults(
                 external_id='BOOKING_ID',
-                admission_date=_LAST_SEEN_TIME.date(),
+                admission_date=_INGEST_TIME.date(),
                 admission_date_inferred=True,
-                last_seen_time=_LAST_SEEN_TIME,
+                last_seen_time=_INGEST_TIME,
                 custody_status=CustodyStatus.UNKNOWN_FOUND_IN_SOURCE,
                 arrest=Arrest.new_with_defaults(
                     external_id='ARREST_ID',
@@ -149,7 +149,7 @@ class TestConverter(unittest.TestCase):
 
     def testConvert_FullIngestInfo_NoOpenBookings(self):
         # Arrange
-        metadata = IngestMetadata('REGION', _JURISDICTION_ID, _LAST_SEEN_TIME)
+        metadata = IngestMetadata('REGION', _JURISDICTION_ID, _INGEST_TIME)
 
         ingest_info = IngestInfo()
         ingest_info.people.add(person_id='PERSON_ID', full_name='TEST',
@@ -177,11 +177,11 @@ class TestConverter(unittest.TestCase):
             birthdate_inferred_from_age=False,
             bookings=[Booking.new_with_defaults(
                 external_id='BOOKING_ID',
-                admission_date=_LAST_SEEN_TIME.date(),
+                admission_date=_INGEST_TIME.date(),
                 admission_date_inferred=True,
                 release_date=_RELEASE_DATE,
                 release_date_inferred=False,
-                last_seen_time=_LAST_SEEN_TIME,
+                last_seen_time=_INGEST_TIME,
                 custody_status=CustodyStatus.RELEASED,
                 arrest=Arrest.new_with_defaults(
                     external_id='ARREST_ID',
@@ -207,7 +207,7 @@ class TestConverter(unittest.TestCase):
 
     def testConvert_FullIngestInfo_GeneratedIds(self):
         # Arrange
-        metadata = IngestMetadata('REGION', _JURISDICTION_ID, _LAST_SEEN_TIME)
+        metadata = IngestMetadata('REGION', _JURISDICTION_ID, _INGEST_TIME)
 
         ingest_info = IngestInfo()
         ingest_info.people.add(person_id='PERSON_ID_GENERATE',
@@ -237,9 +237,9 @@ class TestConverter(unittest.TestCase):
             region='REGION',
             jurisdiction_id='JURISDICTION_ID',
             bookings=[Booking.new_with_defaults(
-                admission_date=_LAST_SEEN_TIME.date(),
+                admission_date=_INGEST_TIME.date(),
                 admission_date_inferred=True,
-                last_seen_time=_LAST_SEEN_TIME,
+                last_seen_time=_INGEST_TIME,
                 custody_status=CustodyStatus.UNKNOWN_FOUND_IN_SOURCE,
                 arrest=Arrest.new_with_defaults(agency='PD'),
                 holds=[
@@ -262,7 +262,7 @@ class TestConverter(unittest.TestCase):
     def testConvert_TotalBondNoCharge_CreatesChargeWithTotalBondAmount(self):
         # Arrange
         metadata = IngestMetadata.new_with_defaults(
-            last_seen_time=_LAST_SEEN_TIME)
+            ingest_time=_INGEST_TIME)
 
         ingest_info = IngestInfo()
         ingest_info.people.add(booking_ids=['BOOKING_ID'])
@@ -275,9 +275,9 @@ class TestConverter(unittest.TestCase):
         # Assert
         expected_result = [Person.new_with_defaults(
             bookings=[Booking.new_with_defaults(
-                admission_date=_LAST_SEEN_TIME.date(),
+                admission_date=_INGEST_TIME.date(),
                 admission_date_inferred=True,
-                last_seen_time=_LAST_SEEN_TIME,
+                last_seen_time=_INGEST_TIME,
                 external_id='BOOKING_ID',
                 custody_status=CustodyStatus.UNKNOWN_FOUND_IN_SOURCE,
                 charges=[Charge.new_with_defaults(
@@ -296,7 +296,7 @@ class TestConverter(unittest.TestCase):
     def testConvert_TotalBondWithCharge_SetsTotalBondOnCharge(self):
         # Arrange
         metadata = IngestMetadata.new_with_defaults(
-            last_seen_time=_LAST_SEEN_TIME
+            ingest_time=_INGEST_TIME
         )
 
         ingest_info = IngestInfo()
@@ -313,9 +313,9 @@ class TestConverter(unittest.TestCase):
         expected_result = [Person.new_with_defaults(
             bookings=[Booking.new_with_defaults(
                 external_id='BOOKING_ID',
-                admission_date=_LAST_SEEN_TIME.date(),
+                admission_date=_INGEST_TIME.date(),
                 admission_date_inferred=True,
-                last_seen_time=_LAST_SEEN_TIME,
+                last_seen_time=_INGEST_TIME,
                 custody_status=CustodyStatus.UNKNOWN_FOUND_IN_SOURCE,
                 charges=[Charge.new_with_defaults(
                     external_id='CHARGE_ID',
@@ -334,7 +334,7 @@ class TestConverter(unittest.TestCase):
     def testConvert_TotalBondWithMultipleBonds_ThrowsException(self):
         # Arrange
         metadata = IngestMetadata.new_with_defaults(
-            last_seen_time=_LAST_SEEN_TIME)
+            ingest_time=_INGEST_TIME)
 
         ingest_info = IngestInfo()
         ingest_info.people.add(booking_ids=['BOOKING_ID'])
@@ -353,7 +353,7 @@ class TestConverter(unittest.TestCase):
     def testConvert_MultipleCountsOfCharge_CreatesDuplicateCharges(self):
         # Arrange
         metadata = IngestMetadata.new_with_defaults(
-            last_seen_time=_LAST_SEEN_TIME)
+            ingest_time=_INGEST_TIME)
 
         ingest_info = IngestInfo()
         ingest_info.people.add(booking_ids=['BOOKING_ID'])
@@ -376,9 +376,9 @@ class TestConverter(unittest.TestCase):
         expected_result = [Person.new_with_defaults(
             bookings=[Booking.new_with_defaults(
                 external_id='BOOKING_ID',
-                last_seen_time=_LAST_SEEN_TIME,
+                last_seen_time=_INGEST_TIME,
                 admission_date_inferred=True,
-                admission_date=_LAST_SEEN_TIME.date(),
+                admission_date=_INGEST_TIME.date(),
                 custody_status=CustodyStatus.UNKNOWN_FOUND_IN_SOURCE,
                 charges=[
                     expected_duplicate_charge,
@@ -404,7 +404,7 @@ class TestConverter(unittest.TestCase):
     def testConvert_PersonInferredBooking(self):
         # Arrange
         metadata = IngestMetadata.new_with_defaults(
-            last_seen_time=_LAST_SEEN_TIME)
+            ingest_time=_INGEST_TIME)
 
         ingest_info = IngestInfo()
         ingest_info.people.add()
@@ -416,8 +416,8 @@ class TestConverter(unittest.TestCase):
         expected_result = [Person.new_with_defaults(
             bookings=[Booking.new_with_defaults(
                 admission_date_inferred=True,
-                last_seen_time=_LAST_SEEN_TIME,
-                admission_date=_LAST_SEEN_TIME.date(),
+                last_seen_time=_INGEST_TIME,
+                admission_date=_INGEST_TIME.date(),
                 custody_status=CustodyStatus.UNKNOWN_FOUND_IN_SOURCE,
             )]
         )]

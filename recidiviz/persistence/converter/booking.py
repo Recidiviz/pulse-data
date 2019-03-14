@@ -57,7 +57,7 @@ def copy_fields_to_builder(booking_builder, proto, metadata):
     _set_custody_status_if_needed(new)
 
     # Metadata
-    new.last_seen_time = metadata.last_seen_time
+    new.last_seen_time = metadata.ingest_time
 
 
 def _set_custody_status_if_needed(new):
@@ -77,7 +77,7 @@ def _parse_admission(proto, metadata):
     admission_date = fn(parse_date, 'admission_date', proto)
 
     if admission_date is None:
-        admission_date = metadata.last_seen_time.date()
+        admission_date = metadata.ingest_time.date()
         admission_date_inferred = True
     else:
         admission_date_inferred = False

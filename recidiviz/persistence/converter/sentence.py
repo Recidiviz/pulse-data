@@ -66,7 +66,7 @@ def _parse_completion_date(
     projected_completion_date = fn(
         parse_date, 'projected_completion_date', proto)
 
-    if completion_date and completion_date > metadata.last_seen_time.date():
+    if completion_date and completion_date > metadata.ingest_time.date():
         projected_completion_date = completion_date
         completion_date = None
 
