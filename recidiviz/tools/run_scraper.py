@@ -23,8 +23,8 @@ usage: run_scraper.py [-h] --region REGION [--num_tasks NUM_TASKS]
                       [--log LOG] [--lifo]
 
 Example:
-python -m recidiviz.ingest.run_scraper --region us_pa_greene
-python -m recidiviz.ingest.run_scraper --region us_pa_greene --num_tasks 10
+python -m recidiviz.tools.run_scraper --region us_pa_greene
+python -m recidiviz.tools.run_scraper --region us_pa_greene --num_tasks 10
 """
 
 import argparse
