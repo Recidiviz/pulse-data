@@ -29,9 +29,11 @@ _HISTORICAL_TABLE_CLASS_SUFFIX = 'History'
 
 def update_historical_snapshots(session: Session,
                                 root_people: List[schema.Person],
+                                orphaned_entities: List[schema.DatabaseEntity],
                                 snapshot_time: datetime) -> None:
-    """For all entities in all record trees rooted at |root_people|, performs
-    any required historical snapshot updates.
+    """For all entities in all record trees rooted at |root_people| and all
+    entities in |orphaned_entities|, performs any required historical snapshot
+    updates.
 
     If any entity has no existing historical snapshots, an initial snapshot will
     be created for it.
@@ -44,29 +46,38 @@ def update_historical_snapshots(session: Session,
     If neither of these cases applies, no action will be taken on the entity.
     """
     logging.info(
-        'Beginning historical snapshot updates for %s record tree(s)',
-        len(root_people))
+        'Beginning historical snapshot updates for %s record tree(s) and %s '
+        'orphaned entities',
+        len(root_people),
+        len(orphaned_entities))
 
+    # TODO(1125): delete once we've validated the double-registration bug is no
+    # longer occurring
     _assert_all_record_trees_well_formed(root_people)
 
-    _assert_all_record_trees_unique(root_people)
+    root_entities: List[Any] = root_people + orphaned_entities # type: ignore
+
+    _assert_all_root_entities_unique(root_entities)
 
     context_registry = _SnapshotContextRegistry()
 
     _execute_action_for_all_entities(
-        root_people, context_registry.register_entity)
+        root_entities, context_registry.register_entity)
 
     logging.info('%s master entities registered for snapshot check',
                  len(context_registry.all_contexts()))
 
     most_recent_snapshots = _fetch_most_recent_snapshots_for_all_entities(
-        session, root_people)
+        session, root_entities)
     for snapshot in most_recent_snapshots:
         context_registry.add_snapshot(snapshot)
 
     logging.info('%s registered entities with existing snapshots',
                  len(most_recent_snapshots))
 
+    # Provided start times only need to be set for root_people, not
+    # orphaned_entities, because orphaned entities by definition are already
+    # present in the database and therefore already have initial snapshots.
     _set_provided_start_times(root_people, context_registry)
 
     logging.info('Provided start times set for registered entities')
@@ -78,16 +89,16 @@ def update_historical_snapshots(session: Session,
 
 
 def _fetch_most_recent_snapshots_for_all_entities(
-        session: Session, root_people: List[schema.Person]) -> List[Any]:
+        session: Session, root_entities: List[Any]) -> List[Any]:
     """Returns a list containing the most recent snapshot for each entity in
-    all record trees rooted at |root_people|, if one exists.
+    all graphs reachable from |root_entities|, if one exists.
     """
 
     # Consolidate all master entity IDs for each type, so that each historical
     # table only needs to be queried once
     ids_by_entity_type_name: Dict[str, Set[int]] = defaultdict(set)
     _execute_action_for_all_entities(
-        root_people,
+        root_entities,
         lambda entity: ids_by_entity_type_name[type(entity).__name__] \
             .add(entity.get_primary_key()))
 
@@ -269,17 +280,20 @@ def _write_snapshots(session: Session, context: '_SnapshotContext',
         session.merge(context.most_recent_snapshot)
 
 
-def _assert_all_record_trees_unique(root_people: List[schema.Person]) -> None:
-    """Raises (AssertionError) if any person in |root_people| does not have a
-    unique primary key
+def _assert_all_root_entities_unique(
+        root_entities: List[schema.DatabaseEntity]) -> None:
+    """Raises (AssertionError) if any entity in |root_entities| does not
+    have a unique primary key for its type
     """
-    keys: Set[int] = set()
-    for person in root_people:
-        key = person.get_primary_key()
-        if key in keys:
+    keys_by_type: Dict[str, Set[int]] = defaultdict(set)
+    for entity in root_entities:
+        type_name = type(entity).__name__
+        key = entity.get_primary_key()
+        if key in keys_by_type[type_name]:
             raise AssertionError(
-                'Multiple record trees passed for person ID: {}'.format(key))
-        keys.add(key)
+                'Duplicate entities passed of type {} with ID {}'.format(
+                    type_name, key))
+        keys_by_type[type_name].add(key)
 
 
 # TODO(1125): either delete this or clean this up after #1125 is debugged
