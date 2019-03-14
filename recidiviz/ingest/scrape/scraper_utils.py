@@ -31,9 +31,7 @@ from recidiviz.utils import secrets
 
 
 # We add a random session in order to rotate the IPs from luminati.
-PROXY_USER_TEMPLATE = '{}-session-rand{}'
-# The number of IPs we have to rotate.
-IP_POOL_SIZE = 20000
+PROXY_USER_TEMPLATE = '{}-session-{}'
 
 
 def get_value_from_html_tree(html_tree, attribute_value, attribute_name='id'):
@@ -124,10 +122,9 @@ def get_proxies(use_test=False):
     # On the proxy side, a random ip is chosen for a session it has not seen
     # so collisions can still happen so we increase the integer to reduce the
     # odds.
-    random_session_number = random.randint(1, IP_POOL_SIZE * 10)
     base_proxy_user = secrets.get_secret(user_var)
     proxy_user = PROXY_USER_TEMPLATE.format(
-        base_proxy_user, random_session_number)
+        base_proxy_user, random.random())
     proxy_password = secrets.get_secret(pass_var)
 
     if (base_proxy_user is None) or (proxy_password is None):
@@ -136,7 +133,7 @@ def get_proxies(use_test=False):
     proxy_credentials = proxy_user + ":" + proxy_password
     proxy_request_url = 'http://' + proxy_credentials + "@" + proxy_url
 
-    proxies = {'http': proxy_request_url}
+    proxies = {'http': proxy_request_url, 'https': proxy_request_url}
 
     return proxies
 

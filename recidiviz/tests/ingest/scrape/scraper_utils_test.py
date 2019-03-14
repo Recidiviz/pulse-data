@@ -61,7 +61,7 @@ class TestGetProxies(unittest.TestCase):
     """Tests for the get_proxies method in the module."""
 
     @patch('recidiviz.utils.secrets.get_secret')
-    @patch('random.randint')
+    @patch('random.random')
     @patch('recidiviz.utils.environment.in_gae')
     def test_get_proxies_prod(self, mock_in_gae, mock_rand, mock_secret):
         mock_in_gae.return_value = True
@@ -75,7 +75,9 @@ class TestGetProxies(unittest.TestCase):
 
         proxies = scraper_utils.get_proxies()
         assert proxies == {
-            'http': 'http://real_user-session-rand10:real_password@proxy.net/'}
+            'http': 'http://real_user-session-10:real_password@proxy.net/',
+            'https': 'http://real_user-session-10:real_password@proxy.net/'
+        }
 
     @patch('recidiviz.utils.secrets.get_secret')
     @patch('recidiviz.utils.environment.in_gae')
