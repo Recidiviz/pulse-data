@@ -46,6 +46,8 @@ NOTE: All commands below assume you are running in your pip environment. To laun
 
 #### Generating the migration
 
+All the below options for generating a migration require you to specify a migration name. Use the same naming style as a Git branch, e.g. `add_bond_id_column`.
+
 ##### Adding a value to an enum
 
 1. Run `readonly-prod-psql` and get the current set of values for the enum using `SELECT enum_range(NULL::<enum_name>);`.
@@ -70,7 +72,7 @@ NOTE: All commands below assume you are running in your pip environment. To laun
 
 #### Applying the migration
 
-TODO(garciaz): work with rasmi@ and arian487@ on how this should be timed with creating a new release
+The migration and release process are tightly coupled. Once `schema.py` is updated, no new releases can be made until the database is migrated, and once the database is migrated, any new jobs on the current release (including both ingest jobs and BigQuery export jobs) will fail until a new release is made. Because of this, **do not merge a change to `schema.py` unless you can run the migration and deploy a new release before the next batch of jobs runs**.
 
 1. Send a PR containing the migration for review.
 
@@ -80,7 +82,7 @@ TODO(garciaz): work with rasmi@ and arian487@ on how this should be timed with c
 
 4. Apply the migration to dev by running `migrate-dev-to-head`. Run `dev-psql` to verify that the outcome of the migration was successful. (If the migration failed but still completed (i.e. the change was committed but was incorrect, rather than failing and rolling back the transaction), **do not** try to manually undo the change. Just restore `dev-data` from its most recent daily backup, fix the migration script, and try again.)
 
-5. Merge the PR.
+5. Merge the PR. As mentioned above, once you perform this step, you **must** run the migration and deploy a new release before the next batch of jobs runs, or all jobs will fail.
 
 6. Apply the migration to prod by running `migrate-prod-to-head`. Run `readonly-prod-psql` to verify that the outcome of the migration was successful.
 
