@@ -197,6 +197,47 @@ class TestBatchPersistence(TestCase):
         self.assertEqual(len(messages), 0)
 
     @patch('recidiviz.persistence.persistence.write')
+    def test_persist_to_db_multiple_same_tasks_one_write(self, mock_write):
+        scrape_key = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
+        pubsub_helper.create_topic_and_subscription(
+            scrape_key, PUBSUB_TYPE)
+
+        ii = IngestInfo()
+        ii.create_person(person_id=TEST_ID, full_name=TEST_NAME).create_booking(
+            booking_id=TEST_ID)
+        ii2 = IngestInfo()
+        ii2.create_person(
+            person_id=TEST_ID, full_name=TEST_NAME).create_booking(
+                booking_id=TEST_ID)
+
+        t = Task(
+            task_type=constants.TaskType.SCRAPE_DATA,
+            endpoint=TEST_ENDPOINT,
+            response_type=constants.ResponseType.TEXT,
+        )
+        t2 = Task(
+            endpoint=TEST_ENDPOINT,
+            task_type=constants.TaskType.SCRAPE_DATA,
+            response_type=constants.ResponseType.TEXT,
+        )
+
+        batch_persistence.write(ii, t, scrape_key)
+        batch_persistence.write(ii2, t2, scrape_key)
+
+        expected_proto = ingest_utils.convert_ingest_info_to_proto(ii)
+        start_time = datetime.datetime.now()
+        batch_persistence.persist_to_database(
+            scrape_key.region_code, scrape_key.scrape_type, start_time)
+
+        result_proto = mock_write.call_args[0][0]
+        self.assertEqual(result_proto, expected_proto)
+
+        # After we persist, the messages should no longer be on the queue since
+        # they should have been acked
+        messages = batch_persistence._get_batch_messages(scrape_key)
+        self.assertEqual(len(messages), 0)
+
+    @patch('recidiviz.persistence.persistence.write')
     def test_persist_to_db_failed_no_write(self, mock_write):
         scrape_key = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
         pubsub_helper.create_topic_and_subscription(
