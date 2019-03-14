@@ -21,12 +21,19 @@ that does not depend on member data.
 """
 
 import base64
+import random
 import zlib
 
 from recidiviz.ingest.models.ingest_info import IngestInfo, IngestObject, \
     HIERARCHY_MAP, PLURALS
 from recidiviz.utils import environment
 from recidiviz.utils import secrets
+
+
+# We add a random session in order to rotate the IPs from luminati.
+PROXY_USER_TEMPLATE = '{}-session-rand{}'
+# The number of IPs we have to rotate.
+IP_POOL_SIZE = 20000
 
 
 def get_value_from_html_tree(html_tree, attribute_value, attribute_name='id'):
@@ -114,10 +121,16 @@ def get_proxies(use_test=False):
     if proxy_url is None:
         raise Exception("No proxy url")
 
-    proxy_user = secrets.get_secret(user_var)
+    # On the proxy side, a random ip is chosen for a session it has not seen
+    # so collisions can still happen so we increase the integer to reduce the
+    # odds.
+    random_session_number = random.randint(1, IP_POOL_SIZE * 10)
+    base_proxy_user = secrets.get_secret(user_var)
+    proxy_user = PROXY_USER_TEMPLATE.format(
+        base_proxy_user, random_session_number)
     proxy_password = secrets.get_secret(pass_var)
 
-    if (proxy_user is None) or (proxy_password is None):
+    if (base_proxy_user is None) or (proxy_password is None):
         raise Exception("No proxy user/pass")
 
     proxy_credentials = proxy_user + ":" + proxy_password
