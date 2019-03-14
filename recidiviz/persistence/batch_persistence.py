@@ -154,7 +154,7 @@ def _get_proto_from_messages(messages):
         # which can be on the order of a million operations.
         task_hash = hash(json.dumps(batch_message.task.to_serializable(),
                                     sort_keys=True))
-        if not batch_message.error:
+        if not batch_message.error and task_hash not in successful_tasks:
             successful_tasks.add(task_hash)
             if task_hash in failed_tasks:
                 del failed_tasks[task_hash]
