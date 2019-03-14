@@ -34,7 +34,8 @@ from recidiviz.common.constants.entity_enum import EntityEnum
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence import entities
 from recidiviz.persistence.database import database_utils
-from recidiviz.persistence.database.schema import Person, Booking
+from recidiviz.persistence.database.schema import DatabaseEntity, Person, \
+    Booking
 
 
 _DUMMY_BOOKING_ID = -1
@@ -170,30 +171,42 @@ def _convert_and_normalize_record_trees(
     return converted_people
 
 
-def write_people(session: Session, people: List[Person],
-                 metadata: IngestMetadata) -> List[Person]:
+def write_people(session: Session, people: List[entities.Person],
+                 metadata: IngestMetadata,
+                 orphaned_entities: List[entities.Entity] = None) -> \
+                 List[Person]:
     """Converts the given |people| into schema.Person objects and persists their
     corresponding record trees. Returns the list of persisted (Person) objects
     """
+    if not orphaned_entities:
+        orphaned_entities = []
     return _save_record_trees(
         session,
         [database_utils.convert(person) for person in people],
+        [database_utils.convert(entity) for entity in orphaned_entities],
         metadata)
 
 
-def write_person(session: Session, person: Person,
-                 metadata: IngestMetadata) -> Person:
+def write_person(session: Session, person: entities.Person,
+                 metadata: IngestMetadata,
+                 orphaned_entities: List[entities.Entity] = None) -> Person:
     """Converts the given |person| into a schema.Person object and persists the
     record tree rooted at that |person|. Returns the persisted (Person)
     """
+    if not orphaned_entities:
+        orphaned_entities = []
     persisted_people = _save_record_trees(
-        session, [database_utils.convert(person)], metadata)
+        session,
+        [database_utils.convert(person)],
+        [database_utils.convert(entity) for entity in orphaned_entities],
+        metadata)
     # persisted_people will only contain the single person passed in
     return one(persisted_people)
 
 
 def _save_record_trees(session: Session,
                        root_people: List[Person],
+                       orphaned_entities: List[DatabaseEntity],
                        metadata: IngestMetadata) -> List[Person]:
     """Persists all record trees rooted at |root_people|. Also performs any
     historical snapshot updates required for any entities in any of these
@@ -209,12 +222,13 @@ def _save_record_trees(session: Session,
     # newly created ones, have primary keys set before performing historical
     # snapshot operations
     root_people = [session.merge(root_person) for root_person in root_people]
+    orphaned_entities = [session.merge(entity) for entity in orphaned_entities]
     session.flush()
 
     _overwrite_dummy_booking_ids(root_people)
 
     update_snapshots.update_historical_snapshots(
-        session, root_people, metadata.last_seen_time)
+        session, root_people, orphaned_entities, metadata.last_seen_time)
 
     return root_people
 

@@ -42,7 +42,8 @@ from recidiviz.persistence.database.schema import (
     BondHistory,
     BookingHistory,
     Charge, ChargeHistory,
-    PersonHistory)
+    PersonHistory,
+    SentenceHistory)
 from recidiviz.tests.utils import fakes
 
 _REGION = 'region'
@@ -902,6 +903,69 @@ class TestDatabase(TestCase):
             .filter(Sentence.booking_id == persisted_booking_id) \
             .all()
         self.assertEqual(len(sentences), 1)
+
+        assert_session.commit()
+        assert_session.close()
+
+    def test_orphanedEntities_shouldStillWriteSnapshots(self):
+        orphan_scrape_time = datetime.datetime(year=2020, month=7, day=8)
+
+        arrange_session = Session()
+
+        person = entities.Person.new_with_defaults(
+            region=_REGION, jurisdiction_id=_JURISDICTION_ID)
+        booking = entities.Booking.new_with_defaults(
+            custody_status=CustodyStatus.IN_CUSTODY,
+            last_seen_time=_LAST_SEEN_TIME)
+        person.bookings = [booking]
+        charge = entities.Charge.new_with_defaults(
+            status=ChargeStatus.PENDING)
+        booking.charges = [charge]
+        sentence = entities.Sentence.new_with_defaults(
+            status=SentenceStatus.UNKNOWN_FOUND_IN_SOURCE)
+        charge.sentence = sentence
+
+        persisted_person = database.write_person(
+            arrange_session, person, IngestMetadata.new_with_defaults(
+                region='default_region',
+                last_seen_time=datetime.datetime(year=2020, month=7, day=6)))
+        arrange_session.commit()
+        persisted_person_id = persisted_person.person_id
+        arrange_session.close()
+
+        act_session = Session()
+        person_query = act_session.query(Person) \
+            .filter(Person.person_id == persisted_person_id)
+        fetched_person = database_utils.convert(person_query.first())
+        # Remove sentence from charge so sentence is no longer directly
+        # associated with ORM copy of the record tree
+        fetched_charge = fetched_person.bookings[0].charges[0]
+        fetched_sentence = fetched_charge.sentence
+        fetched_charge.sentence = None
+        # Update sentence status so new snapshot will be required
+        fetched_sentence.status = SentenceStatus.UNKNOWN_REMOVED_FROM_SOURCE
+        database.write_person(
+            act_session,
+            fetched_person,
+            IngestMetadata.new_with_defaults(
+                region='default_region',
+                last_seen_time=orphan_scrape_time),
+            orphaned_entities=[fetched_sentence])
+        act_session.commit()
+        act_session.close()
+
+        assert_session = Session()
+
+        sentence_snapshot = assert_session.query(SentenceHistory) \
+            .filter(
+                SentenceHistory.sentence_id == fetched_sentence.sentence_id) \
+            .order_by(SentenceHistory.valid_from.desc()) \
+            .first()
+
+        self.assertEqual(sentence_snapshot.valid_from, orphan_scrape_time)
+        self.assertEqual(
+            sentence_snapshot.status,
+            SentenceStatus.UNKNOWN_REMOVED_FROM_SOURCE.value)
 
         assert_session.commit()
         assert_session.close()
