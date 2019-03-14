@@ -27,6 +27,11 @@ from recidiviz.persistence.database import schema
 _HISTORICAL_TABLE_CLASS_SUFFIX = 'History'
 
 
+_BOOKING_DESCENDANT_START_DATE_FIELD = {
+    schema.Sentence.__name__: 'date_imposed'
+}
+
+
 def update_historical_snapshots(session: Session,
                                 root_people: List[schema.Person],
                                 orphaned_entities: List[schema.DatabaseEntity],
@@ -224,10 +229,23 @@ def _set_provided_start_time_for_booking_descendant(
     type of |entity|
     """
 
-    # TODO(1147): add type-specific logic
+    start_time = None
+
+    # Unless a more specific start time is provided, booking descendants should
+    # be treated as having the same start time as the parent booking
     if parent_booking_admission_date:
+        start_time = _date_to_datetime(parent_booking_admission_date)
+
+    if type(entity).__name__ in _BOOKING_DESCENDANT_START_DATE_FIELD:
+        field_name = _BOOKING_DESCENDANT_START_DATE_FIELD[type(entity).__name__]
+        start_date = getattr(entity, field_name)
+        if start_date:
+            start_time = _date_to_datetime(start_date)
+
+    if start_time:
         context_registry.snapshot_context(entity).provided_start_time = \
-            _date_to_datetime(parent_booking_admission_date)
+            start_time
+
 
 def _write_snapshots(session: Session, context: '_SnapshotContext',
                      snapshot_time: datetime) -> None:

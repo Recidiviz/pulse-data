@@ -801,6 +801,49 @@ class TestDatabase(TestCase):
         assert_session.commit()
         assert_session.close()
 
+    def testWritePerson_backdatedBookingDescendant_usesProvidedStartTime(self):
+        scrape_time = datetime.datetime(year=2020, month=7, day=7)
+        booking_admission_date = datetime.datetime(year=2020, month=7, day=1)
+        sentence_date_imposed = datetime.datetime(year=2020, month=7, day=3)
+
+        act_session = Session()
+        person = entities.Person.new_with_defaults(
+            full_name=_FULL_NAME, birthdate=_BIRTHDATE, region=_REGION)
+        booking = entities.Booking.new_with_defaults(
+            custody_status=CustodyStatus.IN_CUSTODY,
+            admission_date=booking_admission_date,
+            admission_date_inferred=False,
+            last_seen_time=scrape_time)
+        person.bookings = [booking]
+        charge = entities.Charge.new_with_defaults(
+            status=ChargeStatus.PENDING)
+        booking.charges = [charge]
+        sentence = entities.Sentence.new_with_defaults(
+            status=SentenceStatus.UNKNOWN_FOUND_IN_SOURCE,
+            date_imposed=sentence_date_imposed)
+        charge.sentence = sentence
+        persisted_person = database.write_person(
+            act_session, person, IngestMetadata(
+                _REGION, _JURISDICTION_ID, scrape_time, {}))
+        act_session.commit()
+        booking_id = persisted_person.bookings[0].booking_id
+        sentence_id = \
+            persisted_person.bookings[0].charges[0].sentence.sentence_id
+        act_session.close()
+
+        assert_session = Session()
+
+        booking_snapshot = one(assert_session.query(BookingHistory).filter(
+            BookingHistory.booking_id == booking_id).all())
+        sentence_snapshot = one(assert_session.query(SentenceHistory).filter(
+            SentenceHistory.sentence_id == sentence_id).all())
+
+        self.assertEqual(booking_snapshot.valid_from, booking_admission_date)
+        self.assertEqual(sentence_snapshot.valid_from, sentence_date_imposed)
+
+        assert_session.commit()
+        assert_session.close()
+
     def test_removeBondFromCharge_shouldNotOrphanOldBond(self):
         arrange_session = Session()
 
