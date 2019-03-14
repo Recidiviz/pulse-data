@@ -77,7 +77,9 @@ def _parse_table(filename: str, is_female: bool) -> pd.DataFrame:
 
 
 def _parse_date(filename: str) -> datetime.date:
-    base_filename = os.path.basename(filename).replace('Female', '')
+    # Slashes are converted to underscores in the GCS bucket. This
+    # assumes there are no underscores in the URL basename.
+    base_filename = filename.split('_')[-1].replace('Female', '')
     end = base_filename.index('.pdf')
     start = 4
     d = date.parse_date(base_filename[start:end])
