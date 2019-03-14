@@ -274,7 +274,7 @@ def _write_snapshots(session: Session, context: '_SnapshotContext',
     # the entity start time is earlier than the snapshot time
     if context.provided_start_time and \
             context.most_recent_snapshot is None and \
-            context.provided_start_time < snapshot_time:
+            context.provided_start_time.date() < snapshot_time.date():
         new_historical_snapshot.valid_from = context.provided_start_time
     else:
         new_historical_snapshot.valid_from = snapshot_time
