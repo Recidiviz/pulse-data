@@ -247,10 +247,8 @@ def write(ingest_info, metadata):
         session = Session()
         try:
             logging.info('Starting entity matching')
-            entity_matching_errors = \
-                entity_matching.match_and_return_error_count(session,
-                                                             metadata.region,
-                                                             people)
+            entity_matching_errors, orphaned_entities = \
+                entity_matching.match(session, metadata.region, people)
             logging.info(
                 'Completed entity matching with %s errors',
                 entity_matching_errors)
@@ -259,7 +257,8 @@ def write(ingest_info, metadata):
                 enum_parsing_errors=enum_parsing_errors,
                 entity_matching_errors=entity_matching_errors,
                 data_validation_errors=data_validation_errors)
-            database.write_people(session, people, metadata)
+            database.write_people(
+                session, people, metadata, orphaned_entities=orphaned_entities)
             logging.info('Successfully wrote to the database')
             session.commit()
             persisted = True

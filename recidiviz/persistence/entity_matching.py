@@ -32,13 +32,21 @@ from recidiviz.persistence.entities import Entity
 from recidiviz.persistence.errors import EntityMatchingError
 
 
-def match_and_return_error_count(
+def match(
         session: Session, region: str,
-        ingested_people: List[entities.Person]) -> int:
+        ingested_people: List[entities.Person]) -> Tuple[int, List[Entity]]:
     """Attempts to match all people from |ingested_people| with corresponding
     people in our database for the given |region|. For any ingested person, if a
     matching person exists in the database, the primary key is updated on the
-    ingested person"""
+    ingested person.
+
+    Returns a tuple with the following:
+        - error count (int): The number of errors raised while entity matching
+            the provided |ingested_people|
+        - orphaned entities (List[Entity]): All entities that were orphaned
+            during matching. These will need to be added to the session
+            separately from the matched people.
+    """
 
     with_external_ids = []
     without_external_ids = []
@@ -50,12 +58,14 @@ def match_and_return_error_count(
             without_external_ids.append(ingested_person)
 
     error_count = 0
+    orphaned_entities: List[Entity] = []
     if with_external_ids:
         db_people_with_external_ids = database.read_people_by_external_ids(
             session, region, with_external_ids)
         error_count += match_people_and_return_error_count(
             db_people=db_people_with_external_ids,
-            ingested_people=with_external_ids)
+            ingested_people=with_external_ids,
+            orphaned_entities=orphaned_entities)
 
     if without_external_ids:
         db_people_without_external_ids = \
@@ -63,13 +73,16 @@ def match_and_return_error_count(
                 session, region, without_external_ids)
         error_count += match_people_and_return_error_count(
             db_people=db_people_without_external_ids,
-            ingested_people=without_external_ids)
-    return error_count
+            ingested_people=without_external_ids,
+            orphaned_entities=orphaned_entities)
+
+    return error_count, orphaned_entities
 
 
 def match_people_and_return_error_count(
         *, db_people: List[entities.Person],
-        ingested_people: List[entities.Person]) -> int:
+        ingested_people: List[entities.Person],
+        orphaned_entities: List[Entity]) -> int:
     """
     Attempts to match all people from |ingested_people| with people from the
     |db_people|. For any ingested person, if a matching person exists in
@@ -78,7 +91,8 @@ def match_people_and_return_error_count(
     error_count = 0
     for db_person in db_people:
         try:
-            match_person(db_person=db_person, ingested_people=ingested_people)
+            match_person(db_person=db_person, ingested_people=ingested_people,
+                         orphaned_entities=orphaned_entities)
         except Exception as e:
             logging.error('Found error while matching db person with id %s: %s',
                           db_person.person_id, str(e))
@@ -88,7 +102,8 @@ def match_people_and_return_error_count(
 
 def match_person(
         *, db_person: entities.Person,
-        ingested_people: List[entities.Person]) -> None:
+        ingested_people: List[entities.Person],
+        orphaned_entities: List[Entity]) -> None:
     ingested_person = _get_only_match(db_person, ingested_people,
                                       utils.is_person_match)
     if ingested_person:
@@ -104,12 +119,13 @@ def match_person(
                                   ingested_person.person_id,
                                   db_person.person_id))
         ingested_person.person_id = db_person.person_id
-        match_bookings(db_person=db_person,
-                       ingested_person=ingested_person)
+        match_bookings(db_person=db_person, ingested_person=ingested_person,
+                       orphaned_entities=orphaned_entities)
 
 
 def match_bookings(
-        *, db_person: entities.Person, ingested_person: entities.Person):
+        *, db_person: entities.Person, ingested_person: entities.Person,
+        orphaned_entities: List[Entity]):
     """
     Attempts to match all bookings on the |ingested_person| with bookings on
     the |db_person|. For any ingested booking, if a matching booking exists on
@@ -144,24 +160,30 @@ def match_bookings(
             match_charges(db_booking=db_booking,
                           ingested_booking=ingested_booking)
             match_bonds(db_booking=db_booking,
-                        ingested_booking=ingested_booking)
+                        ingested_booking=ingested_booking,
+                        orphaned_entities=orphaned_entities)
             match_sentences(db_booking=db_booking,
-                            ingested_booking=ingested_booking)
+                            ingested_booking=ingested_booking,
+                            orphaned_entities=orphaned_entities)
 
         else:
             ingested_person.bookings.append(db_booking)
 
 
 def match_bonds(
-        *, db_booking: entities.Booking, ingested_booking: entities.Booking):
+        *, db_booking: entities.Booking, ingested_booking: entities.Booking,
+        orphaned_entities: List[Entity]):
     _match_from_charges(db_booking=db_booking,
-                        ingested_booking=ingested_booking, name='bond')
+                        ingested_booking=ingested_booking, name='bond',
+                        orphaned_entities=orphaned_entities)
 
 
 def match_sentences(
-        *, db_booking: entities.Booking, ingested_booking: entities.Booking):
+        *, db_booking: entities.Booking, ingested_booking: entities.Booking,
+        orphaned_entities: List[Entity]):
     _match_from_charges(db_booking=db_booking,
-                        ingested_booking=ingested_booking, name='sentence')
+                        ingested_booking=ingested_booking, name='sentence',
+                        orphaned_entities=orphaned_entities)
 
 
 def _build_maps_from_charges(
@@ -193,9 +215,12 @@ def _build_maps_from_charges(
 
 def _match_from_charges(
         *, db_booking: entities.Booking, ingested_booking: entities.Booking,
-        name: str):
+        name: str, orphaned_entities: List[Entity]):
     """Helper function that, within a booking, matches objects that are children
     of the booking's charges. |name| should be 'bond' or 'sentence'.
+
+    Any entities that are orphaned as a part of this process are added to the
+    given |orphaned_entities|.
     """
     id_name = name + '_id'
     db_obj_map, db_relationship_map, _ = _build_maps_from_charges(
@@ -232,8 +257,7 @@ def _match_from_charges(
             drop_fn = globals()['_drop_' + name]
             drop_fn(db_obj)
             dropped_objs.append(db_obj)
-
-    # TODO: keep bonds/sentences around on booking after being dropped
+    orphaned_entities.extend(dropped_objs)
 
 
 def _drop_sentence(sentence: entities.Sentence):
