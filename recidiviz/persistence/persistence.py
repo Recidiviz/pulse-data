@@ -39,7 +39,6 @@ from recidiviz.persistence import entity_matching, entities, \
     persistence_utils, validator
 from recidiviz.persistence.converter import converter
 from recidiviz.persistence.database import database
-from recidiviz.persistence.errors import PersistenceError
 from recidiviz.utils import environment, monitoring
 
 m_people = measure.MeasureInt("persistence/num_people",
@@ -167,7 +166,7 @@ def _convert_and_count_errors(ingest_info, metadata):
     return people, enum_parsing_errors, protected_class_errors
 
 
-def _abort_or_continue(
+def _should_abort(
         total_people,
         enum_parsing_errors=0,
         entity_matching_errors=0,
@@ -175,17 +174,18 @@ def _abort_or_continue(
         data_validation_errors=0):
     # TODO: finalize the logic in here.
     if protected_class_errors:
-        raise PersistenceError(
+        logging.error(
             'Aborting because there was an error regarding a protected class')
+        return True
     if (enum_parsing_errors + entity_matching_errors +
             data_validation_errors) / total_people >= ERROR_THRESHOLD:
-        raise PersistenceError(
-            'Aborting because we exceeded the error threshold of {} with {} '
-            'enum_parsing errors, {} entity_matching_errors, and {} '
-            'data_validation_errors'.format(ERROR_THRESHOLD,
-                                            enum_parsing_errors,
-                                            entity_matching_errors,
-                                            data_validation_errors))
+        logging.error(
+            'Aborting because we exceeded the error threshold of %s with %s '
+            'enum_parsing errors, %s entity_matching_errors, and %s '
+            'data_validation_errors', ERROR_THRESHOLD, enum_parsing_errors,
+            entity_matching_errors, data_validation_errors)
+        return True
+    return False
 
 
 # Note: If we ever want to validate more than the existence of multiple open
@@ -234,14 +234,15 @@ def write(ingest_info, metadata):
             logging.info(people[i])
         measurements.measure_int_put(m_people, len(people))
 
-        _abort_or_continue(
-            total_people=total_people,
-            enum_parsing_errors=enum_parsing_errors,
-            protected_class_errors=protected_class_errors,
-            data_validation_errors=data_validation_errors)
+        if _should_abort(
+                total_people=total_people,
+                enum_parsing_errors=enum_parsing_errors,
+                protected_class_errors=protected_class_errors,
+                data_validation_errors=data_validation_errors):
+            return False
 
         if not _should_persist():
-            return
+            return True
 
         persisted = False
         session = Session()
@@ -252,11 +253,12 @@ def write(ingest_info, metadata):
             logging.info(
                 'Completed entity matching with %s errors',
                 entity_matching_errors)
-            _abort_or_continue(
-                total_people=total_people,
-                enum_parsing_errors=enum_parsing_errors,
-                entity_matching_errors=entity_matching_errors,
-                data_validation_errors=data_validation_errors)
+            if _should_abort(
+                    total_people=total_people,
+                    enum_parsing_errors=enum_parsing_errors,
+                    entity_matching_errors=entity_matching_errors,
+                    data_validation_errors=data_validation_errors):
+                return False
             database.write_people(
                 session, people, metadata, orphaned_entities=orphaned_entities)
             logging.info('Successfully wrote to the database')
@@ -271,3 +273,4 @@ def write(ingest_info, metadata):
         finally:
             session.close()
             mtags[monitoring.TagKey.PERSISTED] = persisted
+        return persisted
