@@ -21,6 +21,7 @@
 import datetime
 import json
 
+import pytest
 from flask import Flask
 from mock import create_autospec, patch
 
@@ -28,7 +29,7 @@ from recidiviz.ingest.scrape import constants, worker
 from recidiviz.ingest.scrape.task_params import QueueRequest, Task
 from recidiviz.utils.regions import Region
 
-PATH = "/work"
+PATH = "/work/us_ca"
 FAKE_QUEUE_PARAMS = QueueRequest(
     scrape_type=constants.ScrapeType.BACKGROUND,
     scraper_start_time=datetime.datetime.utcnow(),
@@ -128,3 +129,16 @@ class TestWorker:
         headers = {'x-goog-iap-jwt-assertion': '1234'}
         response = self.client.post(PATH, headers=headers)
         assert response.status_code == 500
+
+    def test_post_work_region_mismatch(self):
+        form = {
+            # different region
+            'region': 'us_nd',
+            'task': 'fake_task',
+            'params': FAKE_QUEUE_PARAMS.to_serializable(),
+        }
+        form_encoded = json.dumps(form).encode()
+        headers = {'X-Appengine-QueueName': "test-queue"}
+        with pytest.raises(ValueError) as exception:
+            _ = self.client.post(PATH, data=form_encoded, headers=headers)
+            assert exception.message.startswith('Region specified')
