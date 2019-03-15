@@ -238,10 +238,10 @@ def persist_to_database(region_code, scrape_type, scraper_start_time):
             ingest_time=scraper_start_time,
             enum_overrides=overrides)
 
-        persistence.write(proto, metadata)
-    else:
-        raise BatchPersistError('No messages received from pubpub')
-    return True
+        return persistence.write(proto, metadata)
+
+    logging.error('No messages received from pubpub')
+    return False
 
 
 @batch_blueprint.route('/read_and_persist')
@@ -266,5 +266,5 @@ def read_and_persist():
                 logging.info('Enqueueing %s for region %s.', region, next_phase)
                 queues.enqueue_scraper_phase(
                     region_code=region, url=url_for(next_phase))
-
-        return '', HTTPStatus.OK
+            return '', HTTPStatus.OK
+        return '', HTTPStatus.ACCEPTED
