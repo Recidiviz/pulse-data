@@ -733,11 +733,11 @@ class CaFacilityAggregate(Base, _AggregateTableMixin):
 
     jurisdiction_name = Column(String(255))
     facility_name = Column(String(255))
-    average_daily_population = Column(String(255))
-    unsentenced_male_adp = Column(String(255))
-    unsentenced_female_adp = Column(String(255))
-    sentenced_male_adp = Column(String(255))
-    sentenced_female_adp = Column(String(255))
+    average_daily_population = Column(Integer)
+    unsentenced_male_adp = Column(Integer)
+    unsentenced_female_adp = Column(Integer)
+    sentenced_male_adp = Column(Integer)
+    sentenced_female_adp = Column(Integer)
 
 
 class FlCountyAggregate(Base, _AggregateTableMixin):
