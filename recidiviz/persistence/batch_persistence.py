@@ -219,8 +219,6 @@ def persist_to_database(region_code, scrape_type, scraper_start_time):
     logging.info('Received %s messages', len(messages))
     if messages:
         proto, failed_tasks = _get_proto_from_messages(messages)
-        # Only acknowledge if the above code passed.
-        _ack_messages(messages, scrape_key)
 
         for batch_message in failed_tasks.values():
             logging.error(
@@ -238,7 +236,10 @@ def persist_to_database(region_code, scrape_type, scraper_start_time):
             ingest_time=scraper_start_time,
             enum_overrides=overrides)
 
-        return persistence.write(proto, metadata)
+        did_write = persistence.write(proto, metadata)
+        # Only acknowledge if the above code passed.
+        _ack_messages(messages, scrape_key)
+        return did_write
 
     logging.error('No messages received from pubpub')
     return False
