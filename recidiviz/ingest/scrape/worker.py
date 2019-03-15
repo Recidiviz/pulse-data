@@ -44,9 +44,10 @@ class RequestProcessingError(Exception):
 
 worker = Blueprint('worker', __name__)
 
-@worker.route("/work", methods=['POST'])
+# NB: Region is part of the url so that request logs can be filtered on it.
+@worker.route("/work/<region>", methods=['POST'])
 @authenticate_request
-def work():
+def work(region):
     """POST request handler to route chunk of scraper work
 
     Very thin shim to receive a chunk of work from the task queue, and call
@@ -89,9 +90,13 @@ def work():
 
     json_data = request.get_data(as_text=True)
     data = json.loads(json_data)
-    region = data['region']
     task = data['task']
     params = QueueRequest.from_serializable(data['params'])
+
+    if region != data['region']:
+        raise ValueError(
+            'Region specified in task {} does not match region from url {}.'\
+                .format(data['region'], region))
 
     with monitoring.push_tags({monitoring.TagKey.REGION: region}):
         if not sessions.get_current_session(

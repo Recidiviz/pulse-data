@@ -48,7 +48,7 @@ class TestAbstractScraper:
         mock_get_region.assert_called_with(region)
         assert scraper.region.region_code == region
         assert scraper.region.get_queue_name() == queue_name
-        assert scraper.scraper_work_url == "/scraper/work"
+        assert scraper.scraper_work_url == "/scraper/work/us_nd"
 
 
 class TestStartScrape:
