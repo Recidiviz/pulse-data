@@ -20,7 +20,7 @@ import logging
 import threading
 from http import HTTPStatus
 
-from flask import Blueprint, copy_current_request_context, request, url_for
+from flask import Blueprint, request, url_for
 
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.scrape import (constants, ingest_utils, queues,
@@ -36,7 +36,9 @@ scraper_status = Blueprint('scraper_status', __name__)
 def check_for_finished_scrapers():
     """Checks for any finished scrapers and kicks off next processes."""
 
-    @copy_current_request_context
+    next_phase = scrape_phase.next_phase(request.endpoint)
+    next_phase_url = url_for(next_phase) if next_phase else None
+
     @monitoring.with_region_tag
     def _check_finished(region_code: str):
         # If there are no open sessions, nothing to check.
@@ -47,12 +49,11 @@ def check_for_finished_scrapers():
         if is_scraper_finished(region_code):
             logging.info('Region \'%s\' has finished scraping.', region_code)
 
-            next_phase = scrape_phase.next_phase(request.endpoint)
-            logging.info('Enqueueing %s for region %s.',
-                         region_code, next_phase)
             if next_phase:
+                logging.info('Enqueueing %s for region %s.',
+                             next_phase, region_code)
                 queues.enqueue_scraper_phase(
-                    region_code=region_code, url=url_for(next_phase))
+                    region_code=region_code, url=next_phase_url)
 
     region_codes = ingest_utils.validate_regions(
         get_values('region', request.args))
