@@ -46,7 +46,7 @@ def copy_fields_to_builder(booking_builder, proto, metadata):
     new.release_reason_raw_text = fn(normalize, 'release_reason', proto)
     new.custody_status = fn(
         CustodyStatus.parse, 'custody_status', proto,
-        metadata.enum_overrides, default=CustodyStatus.UNKNOWN_FOUND_IN_SOURCE)
+        metadata.enum_overrides, default=CustodyStatus.PRESENT_WITHOUT_INFO)
     new.custody_status_raw_text = fn(normalize, 'custody_status', proto)
     new.facility = fn(normalize, 'facility', proto)
     new.classification = fn(Classification.parse, 'classification', proto,
@@ -66,7 +66,7 @@ def copy_fields_to_builder(booking_builder, proto, metadata):
 
 def _set_custody_status_if_needed(new):
     if (new.release_date and new.custody_status
-            is CustodyStatus.UNKNOWN_FOUND_IN_SOURCE):
+            is CustodyStatus.PRESENT_WITHOUT_INFO):
         new.custody_status = CustodyStatus.RELEASED
 
 

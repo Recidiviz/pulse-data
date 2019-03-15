@@ -50,7 +50,7 @@ def copy_fields_to_builder(
     new.charging_entity = fn(normalize, 'charging_entity', proto)
     new.status = fn(ChargeStatus.parse, 'status', proto,
                     metadata.enum_overrides,
-                    default=ChargeStatus.UNKNOWN_FOUND_IN_SOURCE)
+                    default=ChargeStatus.PRESENT_WITHOUT_INFO)
     new.status_raw_text = fn(normalize, 'status', proto)
     new.court_type = fn(CourtType.parse, 'court_type', proto,
                         metadata.enum_overrides)

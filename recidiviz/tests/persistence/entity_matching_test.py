@@ -136,7 +136,7 @@ class TestEntityMatching(TestCase):
         # Act
         expected_orphaned_bond = attr.evolve(
             database_utils.convert(schema_bond),
-            status=BondStatus.UNKNOWN_REMOVED_FROM_SOURCE)
+            status=BondStatus.REMOVED_WITHOUT_INFO)
         expected_charge = attr.evolve(
             ingested_charge_no_bond, charge_id=schema_charge.charge_id)
         expected_booking = attr.evolve(

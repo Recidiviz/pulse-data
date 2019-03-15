@@ -49,7 +49,7 @@ def convert(proto, metadata: IngestMetadata) -> entities.Sentence:
         proto, metadata)
     new.status = fn(SentenceStatus.parse, 'status', proto,
                     metadata.enum_overrides,
-                    default=SentenceStatus.UNKNOWN_FOUND_IN_SOURCE)
+                    default=SentenceStatus.PRESENT_WITHOUT_INFO)
     new.status_raw_text = fn(normalize, 'status', proto)
 
     return new.build()

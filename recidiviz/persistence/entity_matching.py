@@ -261,15 +261,15 @@ def _match_from_charges(
 
 
 def _drop_sentence(sentence: entities.Sentence):
-    if sentence.status != SentenceStatus.UNKNOWN_REMOVED_FROM_SOURCE:
+    if sentence.status != SentenceStatus.REMOVED_WITHOUT_INFO:
         logging.info('Removing sentence with id %s', sentence.sentence_id)
-        sentence.status = SentenceStatus.UNKNOWN_REMOVED_FROM_SOURCE
+        sentence.status = SentenceStatus.REMOVED_WITHOUT_INFO
 
 
 def _drop_bond(bond: entities.Bond):
-    if bond.status != BondStatus.UNKNOWN_REMOVED_FROM_SOURCE:
+    if bond.status != BondStatus.REMOVED_WITHOUT_INFO:
         logging.info('Removing bond with id %s', bond.bond_id)
-        bond.status = BondStatus.UNKNOWN_REMOVED_FROM_SOURCE
+        bond.status = BondStatus.REMOVED_WITHOUT_INFO
 
 
 def match_arrest(

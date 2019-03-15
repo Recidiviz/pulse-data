@@ -53,8 +53,8 @@ class CustodyStatus(EntityEnum, metaclass=EntityEnumMeta):
     IN_CUSTODY = enum_strings.custody_status_in_custody
     RELEASED = enum_strings.custody_status_released
     INFERRED_RELEASE = enum_strings.custody_status_inferred_release
-    UNKNOWN_FOUND_IN_SOURCE = enum_strings.unknown_found_in_source
-    UNKNOWN_REMOVED_FROM_SOURCE = enum_strings.unknown_removed_from_source
+    PRESENT_WITHOUT_INFO = enum_strings.present_without_info
+    REMOVED_WITHOUT_INFO = enum_strings.removed_without_info
 
     @staticmethod
     def _get_default_map():
@@ -65,7 +65,7 @@ class CustodyStatus(EntityEnum, metaclass=EntityEnumMeta):
         return [
             CustodyStatus.RELEASED,
             CustodyStatus.INFERRED_RELEASE,
-            CustodyStatus.UNKNOWN_REMOVED_FROM_SOURCE
+            CustodyStatus.REMOVED_WITHOUT_INFO
         ]
 
     @staticmethod

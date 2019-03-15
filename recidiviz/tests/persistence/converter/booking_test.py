@@ -92,7 +92,7 @@ class BookingConverterTest(unittest.TestCase):
             admission_date=_INGEST_TIME.date(),
             admission_date_inferred=True,
             last_seen_time=_INGEST_TIME,
-            custody_status=CustodyStatus.UNKNOWN_FOUND_IN_SOURCE
+            custody_status=CustodyStatus.PRESENT_WITHOUT_INFO
         )
 
         self.assertEqual(result, expected_result)
@@ -121,7 +121,7 @@ class BookingConverterTest(unittest.TestCase):
             release_date=None,
             release_date_inferred=None,
             projected_release_date=date(year=2020, month=1, day=2),
-            custody_status=CustodyStatus.UNKNOWN_FOUND_IN_SOURCE,
+            custody_status=CustodyStatus.PRESENT_WITHOUT_INFO,
             last_seen_time=_INGEST_TIME,
         )
 

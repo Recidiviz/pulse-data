@@ -27,7 +27,7 @@ class BondType(EntityEnum, metaclass=EntityEnumMeta):
     NO_BOND = enum_strings.bond_type_no_bond
     PARTIAL_CASH = enum_strings.bond_type_partial_cash
     SECURED = enum_strings.bond_type_secured
-    UNKNOWN_REMOVED_FROM_SOURCE = enum_strings.unknown_removed_from_source
+    REMOVED_WITHOUT_INFO = enum_strings.removed_without_info
     UNSECURED = enum_strings.bond_type_unsecured
 
     @staticmethod
@@ -43,8 +43,8 @@ class BondStatus(EntityEnum, metaclass=EntityEnumMeta):
     POSTED = enum_strings.bond_status_posted
     REVOKED = enum_strings.bond_status_revoked
     SET = enum_strings.bond_status_set
-    UNKNOWN_FOUND_IN_SOURCE = enum_strings.unknown_found_in_source
-    UNKNOWN_REMOVED_FROM_SOURCE = enum_strings.unknown_removed_from_source
+    PRESENT_WITHOUT_INFO = enum_strings.present_without_info
+    REMOVED_WITHOUT_INFO = enum_strings.removed_without_info
 
     @staticmethod
     def _get_default_map():

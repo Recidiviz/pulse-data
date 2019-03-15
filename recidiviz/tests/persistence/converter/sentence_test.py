@@ -49,7 +49,7 @@ class SentenceConverterTest(unittest.TestCase):
             min_length_days=1,
             post_release_supervision_length_days=0,
             date_imposed=datetime.date(year=2000, month=1, day=1),
-            status=SentenceStatus.UNKNOWN_FOUND_IN_SOURCE
+            status=SentenceStatus.PRESENT_WITHOUT_INFO
         )
 
         self.assertEqual(result, expected_result)
@@ -72,7 +72,7 @@ class SentenceConverterTest(unittest.TestCase):
             external_id='SENTENCE_ID',
             completion_date=None,
             projected_completion_date=datetime.date(year=2020, month=1, day=1),
-            status=SentenceStatus.UNKNOWN_FOUND_IN_SOURCE
+            status=SentenceStatus.PRESENT_WITHOUT_INFO
         )
 
         self.assertEqual(result, expected_result)
