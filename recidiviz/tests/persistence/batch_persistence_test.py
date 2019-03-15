@@ -280,6 +280,7 @@ class TestBatchPersistence(TestCase):
         scrape_key = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
         pubsub_helper.create_topic_and_subscription(
             scrape_key, PUBSUB_TYPE)
+        mock_write.return_value = True
 
         ii = IngestInfo()
         ii.create_person(person_id=TEST_ID, full_name=TEST_NAME).create_booking(

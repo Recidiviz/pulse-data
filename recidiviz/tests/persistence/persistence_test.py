@@ -20,7 +20,6 @@ from datetime import date, datetime, timedelta
 from unittest import TestCase
 
 import attr
-import pytest
 
 from mock import patch, Mock
 
@@ -38,7 +37,6 @@ from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo, Charge, \
 from recidiviz.ingest.scrape.ingest_utils import convert_ingest_info_to_proto
 from recidiviz.persistence import persistence, entities
 from recidiviz.persistence.database import database, schema
-from recidiviz.persistence.errors import PersistenceError
 from recidiviz.tests.utils import fakes
 
 BIRTHDATE_1 = '11/15/1993'
@@ -124,9 +122,8 @@ class TestPersistence(TestCase):
         person.create_booking(admission_date=DATE_RAW)
         person.create_booking(admission_date=DATE_RAW)
 
-        with pytest.raises(PersistenceError):
-            persistence.write(convert_ingest_info_to_proto(ingest_info),
-                              DEFAULT_METADATA)
+        self.assertFalse(persistence.write(
+            convert_ingest_info_to_proto(ingest_info), DEFAULT_METADATA))
 
     def test_twoDifferentPeople_persistsBoth(self):
         # Arrange
@@ -144,21 +141,20 @@ class TestPersistence(TestCase):
         assert result[0].full_name == _format_full_name(FULL_NAME_2)
         assert result[1].full_name == _format_full_name(FULL_NAME_1)
 
-    def test_twoDifferentPeople_persistsNoneProtectedError(self):
+    def test_twoDifferentPeople_persistsNone(self):
         # Arrange
         ingest_info = IngestInfo()
         ingest_info.people.add(person_id='1', full_name=FULL_NAME_1)
         ingest_info.people.add(person_id='2', full_name=FULL_NAME_2, gender='X')
 
         # Act
-        with self.assertRaises(PersistenceError):
-            persistence.write(ingest_info, DEFAULT_METADATA)
+        self.assertFalse(persistence.write(ingest_info, DEFAULT_METADATA))
         result = database.read_people(Session())
 
         # Assert
         assert not result
 
-    def test_twoDifferentPeople_persistsNoneErrorThreshold(self):
+    def test_twoDifferentPeopleWithBooking_persistsNone(self):
         # Arrange
         ingest_info = IngestInfo()
         ingest_info.people.add(full_name=FULL_NAME_2)
@@ -171,8 +167,7 @@ class TestPersistence(TestCase):
         )
 
         # Act
-        with self.assertRaises(PersistenceError):
-            persistence.write(ingest_info, DEFAULT_METADATA)
+        self.assertFalse(persistence.write(ingest_info, DEFAULT_METADATA))
         result = database.read_people(Session())
 
         # Assert
