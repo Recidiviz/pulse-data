@@ -27,7 +27,7 @@ import threading
 import time
 from http import HTTPStatus
 
-from flask import Blueprint, copy_current_request_context, request, url_for
+from flask import Blueprint, request, url_for
 
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.scrape import (docket, ingest_utils, queues, scrape_phase,
@@ -63,7 +63,6 @@ def scraper_start():
     Returns:
         N/A
     """
-    @copy_current_request_context
     @monitoring.with_region_tag
     def _start_scraper(region, scrape_type):
         scrape_key = ScrapeKey(region, scrape_type)
@@ -172,7 +171,9 @@ def scraper_stop():
     scrape_types = ingest_utils.validate_scrape_types(get_values("scrape_type",
                                                                  request.args))
 
-    @copy_current_request_context
+    next_phase = scrape_phase.next_phase(request.endpoint)
+    next_phase_url = url_for(next_phase) if next_phase else None
+
     @monitoring.with_region_tag
     def _stop_scraper(region: str):
         closed_sessions = []
@@ -185,11 +186,9 @@ def scraper_stop():
         region_scraper = regions.get_region(region).get_scraper()
         region_scraper.stop_scrape(scrape_types)
 
-        next_phase = scrape_phase.next_phase(request.endpoint)
         if next_phase:
-            logging.info('Enqueueing %s for region %s.', region, next_phase)
-            queues.enqueue_scraper_phase(
-                region_code=region, url=url_for(next_phase))
+            logging.info('Enqueueing %s for region %s.', next_phase, region)
+            queues.enqueue_scraper_phase(region_code=region, url=next_phase_url)
 
     if not scrape_regions or not scrape_types:
         return ('Missing or invalid parameters, see service logs.',

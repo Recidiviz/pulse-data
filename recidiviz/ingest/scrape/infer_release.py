@@ -37,8 +37,12 @@ infer_release_blueprint = Blueprint('infer_release', __name__)
 @infer_release_blueprint.route('/release')
 @authenticate_request
 def infer_release():
+    """Runs infer release for the given regions."""
     region_codes = validate_regions(get_values('region', request.args))
     regions = [get_region(region_code) for region_code in region_codes]
+
+    next_phase = scrape_phase.next_phase(request.endpoint)
+    next_phase_url = url_for(next_phase) if next_phase else None
 
     for region in regions:
         with monitoring.push_tags(
@@ -55,12 +59,12 @@ def infer_release():
                     region.region_code, session.start,
                     _get_custody_status(region))
 
-            next_phase = scrape_phase.next_phase(request.endpoint)
             if next_phase:
                 logging.info('Enqueueing %s for region %s.',
-                             region.region_code, next_phase)
+                             next_phase, region.region_code)
                 queues.enqueue_scraper_phase(
-                    region_code=region.region_code, url=url_for(next_phase))
+                    region_code=region.region_code, url=next_phase_url)
+
     return '', HTTPStatus.OK
 
 
