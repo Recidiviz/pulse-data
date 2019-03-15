@@ -15,11 +15,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Converts an ingest_info proto Booking to a persistence entity."""
+from datetime import date
+from typing import Optional, Tuple
+
 from recidiviz.common.common_utils import normalize
 from recidiviz.common.constants.booking import (AdmissionReason,
                                                 Classification, CustodyStatus,
                                                 ReleaseReason)
 from recidiviz.common.date import parse_date
+from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence.converter.converter_utils import (fn,
                                                              parse_external_id)
 
@@ -34,7 +38,6 @@ def copy_fields_to_builder(booking_builder, proto, metadata):
 
     # 1-to-1 mappings
     new.external_id = fn(parse_external_id, 'booking_id', proto)
-    new.projected_release_date = fn(parse_date, 'projected_release_date', proto)
     new.admission_reason = fn(AdmissionReason.parse, 'admission_reason',
                               proto, metadata.enum_overrides)
     new.admission_reason_raw_text = fn(normalize, 'admission_reason', proto)
@@ -53,7 +56,8 @@ def copy_fields_to_builder(booking_builder, proto, metadata):
     # Inferred attributes
     new.admission_date, new.admission_date_inferred = \
         _parse_admission(proto, metadata)
-    new.release_date, new.release_date_inferred = _parse_release_date(proto)
+    new.release_date, new.projected_release_date, new.release_date_inferred = \
+        _parse_release_date(proto, metadata)
     _set_custody_status_if_needed(new)
 
     # Metadata
@@ -66,11 +70,27 @@ def _set_custody_status_if_needed(new):
         new.custody_status = CustodyStatus.RELEASED
 
 
-def _parse_release_date(proto):
+def _parse_release_date(
+        proto,
+        metadata: IngestMetadata) -> \
+        Tuple[Optional[date], Optional[date], Optional[bool]]:
+    """Reads release_date and projected_release_date from |proto|.
+
+    If release_date is present on proto, sets release_date_inferred to (False).
+
+    If release_date is in the future relative to scrape time, will be treated
+    as projected_release_date instead.
+    """
     release_date = fn(parse_date, 'release_date', proto)
+    projected_release_date = fn(parse_date, 'projected_release_date', proto)
+
+    if release_date and release_date > metadata.ingest_time.date():
+        projected_release_date = release_date
+        release_date = None
+
     release_date_inferred = None if release_date is None else False
 
-    return release_date, release_date_inferred
+    return release_date, projected_release_date, release_date_inferred
 
 
 def _parse_admission(proto, metadata):
