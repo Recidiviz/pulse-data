@@ -411,16 +411,16 @@ class TestPersistence(TestCase):
         session.close()
 
         expected_hold = attr.evolve(
-            hold, status=HoldStatus.UNKNOWN_REMOVED_FROM_SOURCE,
+            hold, status=HoldStatus.REMOVED_WITHOUT_INFO,
             status_raw_text=None)
         expected_sentence = attr.evolve(
-            sentence, status=SentenceStatus.UNKNOWN_REMOVED_FROM_SOURCE,
+            sentence, status=SentenceStatus.REMOVED_WITHOUT_INFO,
             status_raw_text=None)
         expected_bond = attr.evolve(
-            bond, status=BondStatus.UNKNOWN_REMOVED_FROM_SOURCE,
+            bond, status=BondStatus.REMOVED_WITHOUT_INFO,
             status_raw_text=None)
         expected_charge = attr.evolve(
-            charge, status=ChargeStatus.UNKNOWN_REMOVED_FROM_SOURCE,
+            charge, status=ChargeStatus.REMOVED_WITHOUT_INFO,
             status_raw_text=None, bond=expected_bond,
             sentence=expected_sentence)
         expected_resolved_booking = attr.evolve(

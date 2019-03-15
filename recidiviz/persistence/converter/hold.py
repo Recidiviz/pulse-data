@@ -31,7 +31,7 @@ def convert(proto, metadata: IngestMetadata) -> entities.Hold:
     new.jurisdiction_name = fn(normalize, 'jurisdiction_name', proto)
     new.status = fn(HoldStatus.parse, 'status', proto,
                     metadata.enum_overrides,
-                    default=HoldStatus.UNKNOWN_FOUND_IN_SOURCE)
+                    default=HoldStatus.PRESENT_WITHOUT_INFO)
     new.status_raw_text = fn(normalize, 'status', proto)
 
     return new.build()

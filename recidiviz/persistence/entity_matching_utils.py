@@ -203,7 +203,7 @@ def is_bond_match(
 def _sanitize_bond(bond: entities.Bond) -> entities.Bond:
     sanitized = copy.deepcopy(bond)
     sanitized.bond_id = None
-    sanitized.status = BondStatus.UNKNOWN_REMOVED_FROM_SOURCE
+    sanitized.status = BondStatus.REMOVED_WITHOUT_INFO
     return sanitized
 
 
