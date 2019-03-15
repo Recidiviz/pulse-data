@@ -81,7 +81,7 @@ class ChargeConverterTest(unittest.TestCase):
         expected_result = entities.Charge.new_with_defaults(
             name='FELONY MURDER',
             charge_class=ChargeClass.FELONY,
-            status=ChargeStatus.UNKNOWN_FOUND_IN_SOURCE,
+            status=ChargeStatus.PRESENT_WITHOUT_INFO,
         )
 
         self.assertEqual(result, expected_result)
@@ -101,7 +101,7 @@ class ChargeConverterTest(unittest.TestCase):
         expected_result = entities.Charge.new_with_defaults(
             name='FAILED DRUG TEST - PROBATION VIOLATION',
             charge_class=ChargeClass.PROBATION_VIOLATION,
-            status=ChargeStatus.UNKNOWN_FOUND_IN_SOURCE,
+            status=ChargeStatus.PRESENT_WITHOUT_INFO,
         )
 
         self.assertEqual(result, expected_result)
@@ -117,6 +117,6 @@ class ChargeConverterTest(unittest.TestCase):
 
         # Assert
         expected_result = entities.Charge.new_with_defaults(
-            status=ChargeStatus.UNKNOWN_FOUND_IN_SOURCE
+            status=ChargeStatus.PRESENT_WITHOUT_INFO
         )
         self.assertEqual(result, expected_result)

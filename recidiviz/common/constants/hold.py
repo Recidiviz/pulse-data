@@ -24,8 +24,8 @@ class HoldStatus(EntityEnum, metaclass=EntityEnumMeta):
     ACTIVE = enum_strings.hold_status_active
     INACTIVE = enum_strings.hold_status_inactive
     INFERRED_DROPPED = enum_strings.hold_status_inferred_dropped
-    UNKNOWN_FOUND_IN_SOURCE = enum_strings.unknown_found_in_source
-    UNKNOWN_REMOVED_FROM_SOURCE = enum_strings.unknown_removed_from_source
+    PRESENT_WITHOUT_INFO = enum_strings.present_without_info
+    REMOVED_WITHOUT_INFO = enum_strings.removed_without_info
 
     @staticmethod
     def _get_default_map():

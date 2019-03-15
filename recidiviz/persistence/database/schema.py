@@ -102,8 +102,8 @@ custody_status = Enum(enum_strings.custody_status_escaped,
                       enum_strings.custody_status_in_custody,
                       enum_strings.custody_status_inferred_release,
                       enum_strings.custody_status_released,
-                      enum_strings.unknown_found_in_source,
-                      enum_strings.unknown_removed_from_source,
+                      enum_strings.present_without_info,
+                      enum_strings.removed_without_info,
                       name='custody_status')
 
 classification = Enum(enum_strings.external_unknown,
@@ -120,8 +120,8 @@ classification = Enum(enum_strings.external_unknown,
 hold_status = Enum(enum_strings.hold_status_active,
                    enum_strings.hold_status_inactive,
                    enum_strings.hold_status_inferred_dropped,
-                   enum_strings.unknown_found_in_source,
-                   enum_strings.unknown_removed_from_source,
+                   enum_strings.present_without_info,
+                   enum_strings.removed_without_info,
                    name='hold_status')
 
 # Bond
@@ -131,18 +131,18 @@ bond_type = Enum(enum_strings.external_unknown,
                  enum_strings.bond_type_no_bond,
                  enum_strings.bond_type_partial_cash,
                  enum_strings.bond_type_secured,
-                 enum_strings.unknown_removed_from_source,
+                 enum_strings.removed_without_info,
                  enum_strings.bond_type_unsecured,
                  name='bond_type')
 
 bond_status = Enum(enum_strings.bond_status_denied,
-                   enum_strings.unknown_found_in_source,
+                   enum_strings.present_without_info,
                    enum_strings.bond_status_inferred_set,
                    enum_strings.bond_status_not_required,
                    enum_strings.bond_status_pending,
                    enum_strings.bond_status_posted,
                    enum_strings.bond_status_revoked,
-                   enum_strings.unknown_removed_from_source,
+                   enum_strings.removed_without_info,
                    enum_strings.bond_status_set,
                    name='bond_status')
 
@@ -151,8 +151,8 @@ bond_status = Enum(enum_strings.bond_status_denied,
 sentence_status = Enum(enum_strings.sentence_status_commuted,
                        enum_strings.sentence_status_completed,
                        enum_strings.sentence_status_serving,
-                       enum_strings.unknown_found_in_source,
-                       enum_strings.unknown_removed_from_source,
+                       enum_strings.present_without_info,
+                       enum_strings.removed_without_info,
                        name='sentence_status')
 
 # SentenceRelationship
@@ -190,8 +190,8 @@ charge_status = Enum(enum_strings.charge_status_acquitted,
                      enum_strings.charge_status_pending,
                      enum_strings.charge_status_pretrial,
                      enum_strings.charge_status_sentenced,
-                     enum_strings.unknown_found_in_source,
-                     enum_strings.unknown_removed_from_source,
+                     enum_strings.present_without_info,
+                     enum_strings.removed_without_info,
                      name='charge_status')
 
 court_type = Enum(enum_strings.court_type_circuit,

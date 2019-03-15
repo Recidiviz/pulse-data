@@ -43,12 +43,12 @@ def convert(proto, metadata: IngestMetadata) -> entities.Bond:
         default=inferred_bond_type or None)
     new.bond_type_raw_text = fn(normalize, 'bond_type', proto)
 
-    # The bond status is set to UNKNOWN_FOUND_IN_SOURCE unless a different bond
+    # The bond status is set to PRESENT_WITHOUT_INFO unless a different bond
     # status is provided or the bond amount contains information about the
     # status (i.e. BOND_DENIED).
     new.status = fn(
         BondStatus.parse, 'status', proto, metadata.enum_overrides,
-        default=inferred_status or BondStatus.UNKNOWN_FOUND_IN_SOURCE)
+        default=inferred_status or BondStatus.PRESENT_WITHOUT_INFO)
     new.status_raw_text = fn(normalize, 'status', proto)
 
     return new.build()
