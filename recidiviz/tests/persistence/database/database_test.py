@@ -646,7 +646,8 @@ class TestDatabase(TestCase):
 
         arrange_session = Session()
         person = entities.Person.new_with_defaults(
-            full_name=_FULL_NAME, birthdate=_BIRTHDATE, region=_REGION)
+            full_name=_FULL_NAME, birthdate=_BIRTHDATE, region=_REGION,
+            jurisdiction_id=_JURISDICTION_ID)
         persisted_person = database.write_person(
             arrange_session, person, IngestMetadata(
                 _REGION, _JURISDICTION_ID, person_scrape_time, {}))
@@ -690,7 +691,8 @@ class TestDatabase(TestCase):
 
         arrange_session = Session()
         person = entities.Person.new_with_defaults(
-            full_name=_FULL_NAME, birthdate=_BIRTHDATE, region=_REGION)
+            full_name=_FULL_NAME, birthdate=_BIRTHDATE, region=_REGION,
+            jurisdiction_id=_JURISDICTION_ID)
         booking = entities.Booking.new_with_defaults(
             custody_status=CustodyStatus.IN_CUSTODY,
             last_seen_time=initial_scrape_time)
@@ -733,7 +735,8 @@ class TestDatabase(TestCase):
 
         act_session = Session()
         person = entities.Person.new_with_defaults(
-            full_name=_FULL_NAME, birthdate=_BIRTHDATE, region=_REGION)
+            full_name=_FULL_NAME, birthdate=_BIRTHDATE, region=_REGION,
+            jurisdiction_id=_JURISDICTION_ID)
         booking = entities.Booking.new_with_defaults(
             custody_status=CustodyStatus.IN_CUSTODY,
             admission_date=booking_admission_date,
@@ -767,7 +770,8 @@ class TestDatabase(TestCase):
 
         act_session = Session()
         person = entities.Person.new_with_defaults(
-            full_name=_FULL_NAME, birthdate=_BIRTHDATE, region=_REGION)
+            full_name=_FULL_NAME, birthdate=_BIRTHDATE, region=_REGION,
+            jurisdiction_id=_JURISDICTION_ID)
         booking = entities.Booking.new_with_defaults(
             custody_status=CustodyStatus.IN_CUSTODY,
             admission_date=booking_admission_date,
@@ -808,7 +812,8 @@ class TestDatabase(TestCase):
 
         act_session = Session()
         person = entities.Person.new_with_defaults(
-            full_name=_FULL_NAME, birthdate=_BIRTHDATE, region=_REGION)
+            full_name=_FULL_NAME, birthdate=_BIRTHDATE, region=_REGION,
+            jurisdiction_id=_JURISDICTION_ID)
         booking = entities.Booking.new_with_defaults(
             custody_status=CustodyStatus.IN_CUSTODY,
             admission_date=booking_admission_date,
