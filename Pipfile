@@ -57,6 +57,9 @@ protobuf = "*"
 cryptography = "*"
 xlrd = "*"
 uszipcode = "*"
+google-cloud-bigquery = "*"
+google-api-python-client = "*"
+google-auth = "*"
 
 [requires]
 python_version = "3.7"
