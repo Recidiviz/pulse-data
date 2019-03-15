@@ -59,7 +59,7 @@ class Scraper(metaclass=abc.ABCMeta):
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
         self.region = regions.get_region(region_name)
-        self.scraper_work_url = '/scraper/work'
+        self.scraper_work_url = '/scraper/work/{}'.format(region_name)
 
     @abc.abstractmethod
     def get_initial_task_method(self):
