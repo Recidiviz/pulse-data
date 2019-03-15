@@ -92,4 +92,4 @@ class TestInferRelease(TestCase):
         assert response.status_code == 200
         mock_infer_release.assert_has_calls(
             [call('us_ut', time, CustodyStatus.INFERRED_RELEASE),
-             call('us_wy', time, CustodyStatus.UNKNOWN_REMOVED_FROM_SOURCE)])
+             call('us_wy', time, CustodyStatus.REMOVED_WITHOUT_INFO)])

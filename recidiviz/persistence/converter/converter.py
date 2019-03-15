@@ -177,7 +177,7 @@ def _charges_pointing_to_total_bond(
     if not charges:
         inferred_charge = entities.Charge.new_with_defaults(
             bond=inferred_bond,
-            status=ChargeStatus.UNKNOWN_FOUND_IN_SOURCE
+            status=ChargeStatus.PRESENT_WITHOUT_INFO
         )
         return [inferred_charge]
 

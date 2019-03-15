@@ -112,15 +112,15 @@ def parse_bond_amount_and_check_for_type_and_status_info(amount):
     """
     bond_type = BOND_TYPE_MAP.get(amount.upper(), None)
     bond_status = BOND_STATUS_MAP.get(
-        amount.upper(), BondStatus.UNKNOWN_FOUND_IN_SOURCE)
+        amount.upper(), BondStatus.PRESENT_WITHOUT_INFO)
 
     if bond_type is not None \
-            or bond_status != BondStatus.UNKNOWN_FOUND_IN_SOURCE:
+            or bond_status != BondStatus.PRESENT_WITHOUT_INFO:
         return None, bond_type, bond_status
 
     parsed_amount = parse_dollars(amount)
     if int(parsed_amount) == 0:
-        return None, BondType.NO_BOND, BondStatus.UNKNOWN_FOUND_IN_SOURCE
+        return None, BondType.NO_BOND, BondStatus.PRESENT_WITHOUT_INFO
     return parsed_amount, BondType.CASH, BondStatus.INFERRED_SET
 
 

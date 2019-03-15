@@ -113,7 +113,7 @@ def _infer_release_date_for_bookings(
     """Marks the provided bookings with an inferred release date equal to the
     provided date. Updates the custody_status to the provided custody
     status. Also updates all children of the updated booking to have status
-    'UNKNOWN_REMOVED_FROM_SOURCE"""
+    'REMOVED_WITHOUT_INFO"""
 
     for booking in bookings:
         if persistence_utils.is_booking_active(booking):
@@ -128,17 +128,17 @@ def _infer_release_date_for_bookings(
 def _mark_children_removed_from_source(booking: entities.Booking):
     """Marks all children of a booking with the status 'REMOVED_FROM_SOURCE'"""
     for hold in booking.holds:
-        hold.status = HoldStatus.UNKNOWN_REMOVED_FROM_SOURCE
+        hold.status = HoldStatus.REMOVED_WITHOUT_INFO
         hold.status_raw_text = None
 
     for charge in booking.charges:
-        charge.status = ChargeStatus.UNKNOWN_REMOVED_FROM_SOURCE
+        charge.status = ChargeStatus.REMOVED_WITHOUT_INFO
         charge.status_raw_text = None
         if charge.sentence:
-            charge.sentence.status = SentenceStatus.UNKNOWN_REMOVED_FROM_SOURCE
+            charge.sentence.status = SentenceStatus.REMOVED_WITHOUT_INFO
             charge.sentence.status_raw_text = None
         if charge.bond:
-            charge.bond.status = BondStatus.UNKNOWN_REMOVED_FROM_SOURCE
+            charge.bond.status = BondStatus.REMOVED_WITHOUT_INFO
             charge.bond.status_raw_text = None
 
 

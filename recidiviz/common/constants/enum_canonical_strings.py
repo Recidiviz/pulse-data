@@ -40,11 +40,11 @@ external_unknown = 'EXTERNAL_UNKNOWN'
 # This value should not be used by scrapers directly. It is used by status
 # enums to denote that no status for an entity was provided by the source, but
 # the entity itself was found in the source.
-unknown_found_in_source = 'UNKNOWN_FOUND_IN_SOURCE'
+present_without_info = 'PRESENT_WITHOUT_INFO'
 # This value should not be used by scrapers directly. It is only used in the
 # situation that an entity is removed from the website, and we cannot infer
 # anything about what removal means (i.e. 'INFER_DROPPED')
-unknown_removed_from_source = 'UNKNOWN_REMOVED_FROM_SOURCE'
+removed_without_info = 'REMOVED_WITHOUT_INFO'
 
 # Person
 

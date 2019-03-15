@@ -69,21 +69,21 @@ class TestConverter(unittest.TestCase):
                 admission_date=_INGEST_TIME.date(),
                 admission_date_inferred=True,
                 last_seen_time=_INGEST_TIME,
-                custody_status=CustodyStatus.UNKNOWN_FOUND_IN_SOURCE,
+                custody_status=CustodyStatus.PRESENT_WITHOUT_INFO,
                 arrest=Arrest.new_with_defaults(
                     external_id='ARREST_ID',
                     agency='PD'
                 ),
                 charges=[Charge.new_with_defaults(
                     external_id='CHARGE_ID',
-                    status=ChargeStatus.UNKNOWN_FOUND_IN_SOURCE,
+                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
                     name='DUI',
                     bond=Bond.new_with_defaults(
                         external_id='BOND_ID',
-                        status=BondStatus.UNKNOWN_FOUND_IN_SOURCE
+                        status=BondStatus.PRESENT_WITHOUT_INFO
                     ),
                     sentence=Sentence.new_with_defaults(
-                        status=SentenceStatus.UNKNOWN_FOUND_IN_SOURCE,
+                        status=SentenceStatus.PRESENT_WITHOUT_INFO,
                         external_id='SENTENCE_ID',
                         is_life=True
                     )
@@ -124,21 +124,21 @@ class TestConverter(unittest.TestCase):
                 admission_date=_INGEST_TIME.date(),
                 admission_date_inferred=True,
                 last_seen_time=_INGEST_TIME,
-                custody_status=CustodyStatus.UNKNOWN_FOUND_IN_SOURCE,
+                custody_status=CustodyStatus.PRESENT_WITHOUT_INFO,
                 arrest=Arrest.new_with_defaults(
                     external_id='ARREST_ID',
                     agency='PD'
                 ),
                 charges=[Charge.new_with_defaults(
                     external_id='CHARGE_ID',
-                    status=ChargeStatus.UNKNOWN_FOUND_IN_SOURCE,
+                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
                     name='DUI',
                     bond=Bond.new_with_defaults(
                         external_id='BOND_ID',
-                        status=BondStatus.UNKNOWN_FOUND_IN_SOURCE
+                        status=BondStatus.PRESENT_WITHOUT_INFO
                     ),
                     sentence=Sentence.new_with_defaults(
-                        status=SentenceStatus.UNKNOWN_FOUND_IN_SOURCE,
+                        status=SentenceStatus.PRESENT_WITHOUT_INFO,
                         external_id='SENTENCE_ID',
                         is_life=True
                     )
@@ -189,14 +189,14 @@ class TestConverter(unittest.TestCase):
                 ),
                 charges=[Charge.new_with_defaults(
                     external_id='CHARGE_ID',
-                    status=ChargeStatus.UNKNOWN_FOUND_IN_SOURCE,
+                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
                     name='DUI',
                     bond=Bond.new_with_defaults(
                         external_id='BOND_ID',
-                        status=BondStatus.UNKNOWN_FOUND_IN_SOURCE
+                        status=BondStatus.PRESENT_WITHOUT_INFO
                     ),
                     sentence=Sentence.new_with_defaults(
-                        status=SentenceStatus.UNKNOWN_FOUND_IN_SOURCE,
+                        status=SentenceStatus.PRESENT_WITHOUT_INFO,
                         external_id='SENTENCE_ID',
                         is_life=True
                     )
@@ -240,19 +240,19 @@ class TestConverter(unittest.TestCase):
                 admission_date=_INGEST_TIME.date(),
                 admission_date_inferred=True,
                 last_seen_time=_INGEST_TIME,
-                custody_status=CustodyStatus.UNKNOWN_FOUND_IN_SOURCE,
+                custody_status=CustodyStatus.PRESENT_WITHOUT_INFO,
                 arrest=Arrest.new_with_defaults(agency='PD'),
                 holds=[
                     Hold.new_with_defaults(
                         jurisdiction_name='JURISDICTION',
-                        status=HoldStatus.UNKNOWN_FOUND_IN_SOURCE)],
+                        status=HoldStatus.PRESENT_WITHOUT_INFO)],
                 charges=[Charge.new_with_defaults(
-                    status=ChargeStatus.UNKNOWN_FOUND_IN_SOURCE,
+                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
                     name='DUI',
                     bond=Bond.new_with_defaults(
-                        status=BondStatus.UNKNOWN_FOUND_IN_SOURCE),
+                        status=BondStatus.PRESENT_WITHOUT_INFO),
                     sentence=Sentence.new_with_defaults(
-                        status=SentenceStatus.UNKNOWN_FOUND_IN_SOURCE,
+                        status=SentenceStatus.PRESENT_WITHOUT_INFO,
                         is_life=True)
                 )]
             )])]
@@ -279,9 +279,9 @@ class TestConverter(unittest.TestCase):
                 admission_date_inferred=True,
                 last_seen_time=_INGEST_TIME,
                 external_id='BOOKING_ID',
-                custody_status=CustodyStatus.UNKNOWN_FOUND_IN_SOURCE,
+                custody_status=CustodyStatus.PRESENT_WITHOUT_INFO,
                 charges=[Charge.new_with_defaults(
-                    status=ChargeStatus.UNKNOWN_FOUND_IN_SOURCE,
+                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
                     bond=Bond.new_with_defaults(
                         status=BondStatus.INFERRED_SET,
                         bond_type=BondType.CASH,
@@ -316,10 +316,10 @@ class TestConverter(unittest.TestCase):
                 admission_date=_INGEST_TIME.date(),
                 admission_date_inferred=True,
                 last_seen_time=_INGEST_TIME,
-                custody_status=CustodyStatus.UNKNOWN_FOUND_IN_SOURCE,
+                custody_status=CustodyStatus.PRESENT_WITHOUT_INFO,
                 charges=[Charge.new_with_defaults(
                     external_id='CHARGE_ID',
-                    status=ChargeStatus.UNKNOWN_FOUND_IN_SOURCE,
+                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
                     bond=Bond.new_with_defaults(
                         amount_dollars=100,
                         status=BondStatus.INFERRED_SET,
@@ -369,7 +369,7 @@ class TestConverter(unittest.TestCase):
         # Assert
         expected_duplicate_charge = Charge.new_with_defaults(
             external_id='CHARGE_ID',
-            status=ChargeStatus.UNKNOWN_FOUND_IN_SOURCE,
+            status=ChargeStatus.PRESENT_WITHOUT_INFO,
             name='CHARGE_NAME'
         )
 
@@ -379,7 +379,7 @@ class TestConverter(unittest.TestCase):
                 last_seen_time=_INGEST_TIME,
                 admission_date_inferred=True,
                 admission_date=_INGEST_TIME.date(),
-                custody_status=CustodyStatus.UNKNOWN_FOUND_IN_SOURCE,
+                custody_status=CustodyStatus.PRESENT_WITHOUT_INFO,
                 charges=[
                     expected_duplicate_charge,
                     expected_duplicate_charge,
@@ -418,7 +418,7 @@ class TestConverter(unittest.TestCase):
                 admission_date_inferred=True,
                 last_seen_time=_INGEST_TIME,
                 admission_date=_INGEST_TIME.date(),
-                custody_status=CustodyStatus.UNKNOWN_FOUND_IN_SOURCE,
+                custody_status=CustodyStatus.PRESENT_WITHOUT_INFO,
             )]
         )]
 

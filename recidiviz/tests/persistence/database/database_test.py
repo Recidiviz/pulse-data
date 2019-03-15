@@ -199,11 +199,11 @@ class TestDatabase(TestCase):
                         jurisdiction_id=_JURISDICTION_ID)
 
         booking_1 = Booking(
-            custody_status=CustodyStatus.UNKNOWN_FOUND_IN_SOURCE.value,
+            custody_status=CustodyStatus.PRESENT_WITHOUT_INFO.value,
             admission_date=datetime.datetime(2019, 1, 10),
             last_seen_time=datetime.datetime(2019, 1, 10))
         booking_2 = Booking(
-            custody_status=CustodyStatus.UNKNOWN_FOUND_IN_SOURCE.value,
+            custody_status=CustodyStatus.PRESENT_WITHOUT_INFO.value,
             admission_date=datetime.datetime(2019, 2, 10),
             last_seen_time=datetime.datetime(2019, 2, 10))
 
@@ -564,7 +564,7 @@ class TestDatabase(TestCase):
             charge_id=3, status=ChargeStatus.PENDING.value)
         booking.charges.append(charge)
         bond = Bond(
-            bond_id=4, status=BondStatus.UNKNOWN_FOUND_IN_SOURCE.value,
+            bond_id=4, status=BondStatus.PRESENT_WITHOUT_INFO.value,
             booking_id=2)
         charge.bond = bond
 
@@ -587,7 +587,7 @@ class TestDatabase(TestCase):
             'INSERT INTO bond_history '
             '(bond_id, booking_id, status, valid_from) '
             'VALUES ({}, {}, \'{}\', \'{}\');'.format(
-                4, 2, BondStatus.UNKNOWN_FOUND_IN_SOURCE.value, snapshot_time)))
+                4, 2, BondStatus.PRESENT_WITHOUT_INFO.value, snapshot_time)))
 
         # Create instantaneous closed charge snapshot and open charge snapshot
         arrange_session.execute(text(
@@ -782,7 +782,7 @@ class TestDatabase(TestCase):
             status=ChargeStatus.PENDING)
         booking.charges = [charge]
         bond = entities.Bond.new_with_defaults(
-            status=BondStatus.UNKNOWN_FOUND_IN_SOURCE)
+            status=BondStatus.PRESENT_WITHOUT_INFO)
         charge.bond = bond
         persisted_person = database.write_person(
             act_session, person, IngestMetadata(
@@ -824,7 +824,7 @@ class TestDatabase(TestCase):
             status=ChargeStatus.PENDING)
         booking.charges = [charge]
         sentence = entities.Sentence.new_with_defaults(
-            status=SentenceStatus.UNKNOWN_FOUND_IN_SOURCE,
+            status=SentenceStatus.PRESENT_WITHOUT_INFO,
             date_imposed=sentence_date_imposed)
         charge.sentence = sentence
         persisted_person = database.write_person(
@@ -862,7 +862,7 @@ class TestDatabase(TestCase):
             status=ChargeStatus.PENDING)
         booking.charges = [charge]
         bond = entities.Bond.new_with_defaults(
-            status=BondStatus.UNKNOWN_FOUND_IN_SOURCE)
+            status=BondStatus.PRESENT_WITHOUT_INFO)
         charge.bond = bond
 
         persisted_person = database.write_person(
@@ -916,7 +916,7 @@ class TestDatabase(TestCase):
             status=ChargeStatus.PENDING)
         booking.charges = [charge]
         sentence = entities.Sentence.new_with_defaults(
-            status=SentenceStatus.UNKNOWN_FOUND_IN_SOURCE)
+            status=SentenceStatus.PRESENT_WITHOUT_INFO)
         charge.sentence = sentence
 
         persisted_person = database.write_person(
@@ -970,7 +970,7 @@ class TestDatabase(TestCase):
             status=ChargeStatus.PENDING)
         booking.charges = [charge]
         sentence = entities.Sentence.new_with_defaults(
-            status=SentenceStatus.UNKNOWN_FOUND_IN_SOURCE)
+            status=SentenceStatus.PRESENT_WITHOUT_INFO)
         charge.sentence = sentence
 
         persisted_person = database.write_person(
@@ -991,7 +991,7 @@ class TestDatabase(TestCase):
         fetched_sentence = fetched_charge.sentence
         fetched_charge.sentence = None
         # Update sentence status so new snapshot will be required
-        fetched_sentence.status = SentenceStatus.UNKNOWN_REMOVED_FROM_SOURCE
+        fetched_sentence.status = SentenceStatus.REMOVED_WITHOUT_INFO
         database.write_person(
             act_session,
             fetched_person,
@@ -1013,7 +1013,7 @@ class TestDatabase(TestCase):
         self.assertEqual(sentence_snapshot.valid_from, orphan_scrape_time)
         self.assertEqual(
             sentence_snapshot.status,
-            SentenceStatus.UNKNOWN_REMOVED_FROM_SOURCE.value)
+            SentenceStatus.REMOVED_WITHOUT_INFO.value)
 
         assert_session.commit()
         assert_session.close()
@@ -1045,7 +1045,7 @@ class TestDatabase(TestCase):
             .filter(Person.person_id == persisted_person_id)
         fetched_person = database_utils.convert(person_query.first())
         new_bond = entities.Bond.new_with_defaults(
-            status=BondStatus.UNKNOWN_FOUND_IN_SOURCE)
+            status=BondStatus.PRESENT_WITHOUT_INFO)
         fetched_person.bookings[0].charges[0].bond = new_bond
         database.write_person(
             act_session, fetched_person, IngestMetadata.new_with_defaults(

@@ -25,8 +25,8 @@ class SentenceStatus(EntityEnum, metaclass=EntityEnumMeta):
     COMMUTED = enum_strings.sentence_status_commuted
     COMPLETED = enum_strings.sentence_status_completed
     SERVING = enum_strings.sentence_status_serving
-    UNKNOWN_FOUND_IN_SOURCE = enum_strings.unknown_found_in_source
-    UNKNOWN_REMOVED_FROM_SOURCE = enum_strings.unknown_removed_from_source
+    PRESENT_WITHOUT_INFO = enum_strings.present_without_info
+    REMOVED_WITHOUT_INFO = enum_strings.removed_without_info
 
     @staticmethod
     def _get_default_map():
