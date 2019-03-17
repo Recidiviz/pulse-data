@@ -20,7 +20,7 @@ from typing import Any, Dict, List, Set
 
 import yaml
 
-from recidiviz.ingest.scrape import queues
+from recidiviz.common import queues
 from recidiviz.utils import environment, regions, vendors
 
 BASE_QUEUE_CONFIG = {

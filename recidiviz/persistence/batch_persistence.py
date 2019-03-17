@@ -24,11 +24,12 @@ import attr
 import cattr
 from flask import Blueprint, request, url_for
 
+from recidiviz.common import queues
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.ingest.models.scrape_key import ScrapeKey
-from recidiviz.ingest.scrape import ingest_utils, sessions, scrape_phase, queues
+from recidiviz.ingest.scrape import ingest_utils, sessions, scrape_phase
 from recidiviz.ingest.scrape.constants import ScrapeType, PUBSUB_TYPE
 from recidiviz.ingest.scrape.task_params import Task
 from recidiviz.persistence import persistence

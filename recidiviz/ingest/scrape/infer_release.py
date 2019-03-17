@@ -22,8 +22,9 @@ import logging
 
 from flask import Blueprint, request, url_for
 
+from recidiviz.common import queues
 from recidiviz.common.constants.booking import CustodyStatus
-from recidiviz.ingest.scrape import queues, scrape_phase, sessions
+from recidiviz.ingest.scrape import scrape_phase, sessions
 from recidiviz.ingest.scrape.ingest_utils import validate_regions
 from recidiviz.utils.auth import authenticate_request
 from recidiviz.persistence import persistence

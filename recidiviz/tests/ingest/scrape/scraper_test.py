@@ -55,7 +55,7 @@ class TestStartScrape:
     """Tests for the Scraper.start_scrape method."""
 
     @patch('recidiviz.ingest.scrape.scraper.datetime')
-    @patch("recidiviz.ingest.scrape.queues.create_task")
+    @patch("recidiviz.common.queues.create_task")
     @patch("recidiviz.ingest.scrape.tracker.iterate_docket_item")
     @patch("recidiviz.utils.regions.get_region")
     @patch('recidiviz.utils.pubsub_helper.create_topic_and_subscription')
@@ -127,7 +127,7 @@ class TestStartScrape:
 class TestStopScraper:
     """Tests for the Scraper.stop_scrape method."""
 
-    @patch("recidiviz.ingest.scrape.queues.purge_tasks")
+    @patch("recidiviz.common.queues.purge_tasks")
     @patch("recidiviz.ingest.scrape.sessions.get_sessions")
     @patch("recidiviz.utils.regions.get_region")
     def test_stop_scrape(
@@ -152,7 +152,7 @@ class TestStopScraper:
         mock_purge_tasks.assert_called_with(
             region_code=region, queue_name=queue_name)
 
-    @patch("recidiviz.ingest.scrape.queues.purge_tasks")
+    @patch("recidiviz.common.queues.purge_tasks")
     @patch("recidiviz.ingest.scrape.sessions.get_sessions")
     @patch("recidiviz.utils.regions.get_region")
     @patch.object(Scraper, "resume_scrape")
@@ -190,7 +190,7 @@ class TestResumeScrape:
     """Tests for the Scraper.resume_scrape method."""
 
     @patch('recidiviz.ingest.scrape.scraper.datetime')
-    @patch("recidiviz.ingest.scrape.queues.create_task")
+    @patch("recidiviz.common.queues.create_task")
     @patch("recidiviz.ingest.scrape.sessions.get_recent_sessions")
     @patch("recidiviz.utils.regions.get_region")
     def test_resume_scrape_background(self, mock_get_region, mock_sessions,
@@ -271,7 +271,7 @@ class TestResumeScrape:
         mock_sessions.assert_called_with(ScrapeKey(region, scrape_type))
 
     @patch('recidiviz.ingest.scrape.scraper.datetime')
-    @patch("recidiviz.ingest.scrape.queues.create_task")
+    @patch("recidiviz.common.queues.create_task")
     @patch("recidiviz.ingest.scrape.tracker.iterate_docket_item")
     @patch("recidiviz.utils.regions.get_region")
     def test_resume_scrape_snapshot(self, mock_get_region, mock_tracker,

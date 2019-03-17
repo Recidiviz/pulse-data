@@ -27,8 +27,9 @@ from datetime import datetime
 import requests
 import urllib3
 
+from recidiviz.common import queues
 from recidiviz.ingest.models.scrape_key import ScrapeKey
-from recidiviz.ingest.scrape import (constants, queues, scraper_utils,
+from recidiviz.ingest.scrape import (constants, scraper_utils,
                                      sessions, tracker)
 from recidiviz.ingest.scrape.constants import PUBSUB_TYPE
 from recidiviz.ingest.scrape.task_params import QueueRequest, Task
