@@ -23,7 +23,7 @@ from mock import call, patch
 
 from google.cloud.tasks_v2beta3.types import Task
 
-from recidiviz.ingest.scrape import queues
+from recidiviz.common import queues
 from recidiviz.utils import metadata
 
 
