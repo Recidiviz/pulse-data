@@ -54,8 +54,8 @@ def format_queue_path(queue_name):
     return full_queue_path
 
 
-def format_task_path(queue_name: str, region_code: str, task_id: str):
-    """Creates a task path out of the necessary parts.
+def format_scrape_task_path(queue_name: str, region_code: str, task_id: str):
+    """Creates a scrape task path out of the necessary parts.
 
     Task path is of the form:
         '/projects/{project}/locations/{location}'
@@ -68,26 +68,27 @@ def format_task_path(queue_name: str, region_code: str, task_id: str):
         '{}-{}'.format(region_code, task_id))
 
 
-def purge_tasks(*, region_code: str, queue_name: str):
-    """Purge tasks for a given region from its queue.
+def purge_scrape_tasks(*, region_code: str, queue_name: str):
+    """Purge scrape tasks for a given region from its queue.
 
     Args:
         region_code: `str` region code.
         queue_name: `str` queue name.
     """
-    for task in list_tasks(region_code=region_code, queue_name=queue_name):
+    for task in list_scrape_tasks(
+            region_code=region_code, queue_name=queue_name):
         client().delete_task(task.name)
 
 
-def list_tasks(*, region_code: str, queue_name: str) -> List[Task]:
-    """List tasks for the given region and queue"""
-    region_task_prefix = format_task_path(queue_name, region_code, '')
+def list_scrape_tasks(*, region_code: str, queue_name: str) -> List[Task]:
+    """List scrape tasks for the given region and queue"""
+    region_task_prefix = format_scrape_task_path(queue_name, region_code, '')
     return [task for task in client().list_tasks(format_queue_path(queue_name))
             if task.name.startswith(region_task_prefix)]
 
 
-def create_task(*, region_code, queue_name, url, body):
-    """Create a task in a queue.
+def create_scrape_task(*, region_code, queue_name, url, body):
+    """Create a scrape task in a queue.
 
     Args:
         region_code: `str` region code.
@@ -96,7 +97,7 @@ def create_task(*, region_code, queue_name, url, body):
         body: `dict` task body to be passed to worker.
     """
     task = Task(
-        name=format_task_path(queue_name, region_code, uuid.uuid4()),
+        name=format_scrape_task_path(queue_name, region_code, uuid.uuid4()),
         app_engine_http_request={
             'relative_uri': url,
             'body': json.dumps(body).encode()
