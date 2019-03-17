@@ -55,12 +55,12 @@ class TestStartScrape:
     """Tests for the Scraper.start_scrape method."""
 
     @patch('recidiviz.ingest.scrape.scraper.datetime')
-    @patch("recidiviz.common.queues.create_task")
+    @patch("recidiviz.common.queues.create_scrape_task")
     @patch("recidiviz.ingest.scrape.tracker.iterate_docket_item")
     @patch("recidiviz.utils.regions.get_region")
     @patch('recidiviz.utils.pubsub_helper.create_topic_and_subscription')
     def test_start_scrape_background(self, mock_pubsub, mock_get_region,
-                                     mock_tracker, mock_create_task,
+                                     mock_tracker, mock_create_scrape_task,
                                      mock_datetime):
         docket_item = ("Dog", "Cat")
         region = "us_nd"
@@ -70,7 +70,7 @@ class TestStartScrape:
 
         mock_get_region.return_value = mock_region(region, queue_name)
         mock_tracker.return_value = docket_item
-        mock_create_task.return_value = None
+        mock_create_scrape_task.return_value = None
         mock_datetime.now.return_value = _DATETIME
 
         scraper = FakeScraper(region, initial_task)
@@ -93,7 +93,7 @@ class TestStartScrape:
             'params': queue_params.to_serializable()
         }
 
-        mock_create_task.assert_called_with(
+        mock_create_scrape_task.assert_called_with(
             region_code=region,
             queue_name=queue_name,
             url=scraper.scraper_work_url,
@@ -127,11 +127,11 @@ class TestStartScrape:
 class TestStopScraper:
     """Tests for the Scraper.stop_scrape method."""
 
-    @patch("recidiviz.common.queues.purge_tasks")
+    @patch("recidiviz.common.queues.purge_scrape_tasks")
     @patch("recidiviz.ingest.scrape.sessions.get_sessions")
     @patch("recidiviz.utils.regions.get_region")
     def test_stop_scrape(
-            self, mock_get_region, mock_sessions, mock_purge_tasks):
+            self, mock_get_region, mock_sessions, mock_purge_scrape_tasks):
         region = "us_sd"
         scrape_type = constants.ScrapeType.BACKGROUND
         queue_name = "us_sd_scraper"
@@ -142,23 +142,23 @@ class TestStopScraper:
             key=None, scrape_type=scrape_type, region=region,
         )
         mock_sessions.return_value = [open_session]
-        mock_purge_tasks.return_value = None
+        mock_purge_scrape_tasks.return_value = None
 
         scraper = FakeScraper(region, initial_task)
         scraper.stop_scrape([scrape_type])
 
         mock_get_region.assert_called_with(region)
         mock_sessions.assert_called_with(region, include_closed=False)
-        mock_purge_tasks.assert_called_with(
+        mock_purge_scrape_tasks.assert_called_with(
             region_code=region, queue_name=queue_name)
 
-    @patch("recidiviz.common.queues.purge_tasks")
+    @patch("recidiviz.common.queues.purge_scrape_tasks")
     @patch("recidiviz.ingest.scrape.sessions.get_sessions")
     @patch("recidiviz.utils.regions.get_region")
     @patch.object(Scraper, "resume_scrape")
     def test_stop_scrape_resume_other_scrapes(
             self, mock_resume, mock_get_region, mock_sessions,
-            mock_purge_tasks):
+            mock_purge_scrape_tasks):
         """Tests that the stop_scrape method will launch other scrape types we
         didn't mean to stop."""
         region = "us_sd"
@@ -174,7 +174,7 @@ class TestStopScraper:
             key=None, scrape_type=constants.ScrapeType.BACKGROUND,
         )
         mock_sessions.return_value = [open_session_other, open_session_matching]
-        mock_purge_tasks.return_value = None
+        mock_purge_scrape_tasks.return_value = None
 
         scraper = FakeScraper(region, initial_task)
         scraper.stop_scrape([scrape_type])
@@ -182,7 +182,7 @@ class TestStopScraper:
         mock_get_region.assert_called_with(region)
         mock_sessions.assert_called_with(region, include_closed=False)
         mock_resume.assert_called_with(constants.ScrapeType.SNAPSHOT)
-        mock_purge_tasks.assert_called_with(
+        mock_purge_scrape_tasks.assert_called_with(
             region_code=region, queue_name=queue_name)
 
 
@@ -190,11 +190,11 @@ class TestResumeScrape:
     """Tests for the Scraper.resume_scrape method."""
 
     @patch('recidiviz.ingest.scrape.scraper.datetime')
-    @patch("recidiviz.common.queues.create_task")
+    @patch("recidiviz.common.queues.create_scrape_task")
     @patch("recidiviz.ingest.scrape.sessions.get_recent_sessions")
     @patch("recidiviz.utils.regions.get_region")
     def test_resume_scrape_background(self, mock_get_region, mock_sessions,
-                                      mock_create_task, mock_datetime):
+                                      mock_create_scrape_task, mock_datetime):
         """Tests the resume_scrape flow for background scraping."""
         region = "us_nd"
         scrape_type = constants.ScrapeType.BACKGROUND
@@ -207,7 +207,7 @@ class TestResumeScrape:
             key=None, last_scraped="Bangalter, Thomas")
         mock_sessions.return_value = [recent_session_none_scraped,
                                       recent_session]
-        mock_create_task.return_value = None
+        mock_create_scrape_task.return_value = None
         mock_datetime.now.return_value = _DATETIME
 
         scraper = FakeScraper(region, initial_task)
@@ -228,7 +228,7 @@ class TestResumeScrape:
             'params': queue_params.to_serializable()
         }
 
-        mock_create_task.assert_called_with(
+        mock_create_scrape_task.assert_called_with(
             region_code=region,
             queue_name=queue_name,
             url=scraper.scraper_work_url,
@@ -271,11 +271,11 @@ class TestResumeScrape:
         mock_sessions.assert_called_with(ScrapeKey(region, scrape_type))
 
     @patch('recidiviz.ingest.scrape.scraper.datetime')
-    @patch("recidiviz.common.queues.create_task")
+    @patch("recidiviz.common.queues.create_scrape_task")
     @patch("recidiviz.ingest.scrape.tracker.iterate_docket_item")
     @patch("recidiviz.utils.regions.get_region")
     def test_resume_scrape_snapshot(self, mock_get_region, mock_tracker,
-                                    mock_create_task, mock_datetime):
+                                    mock_create_scrape_task, mock_datetime):
         docket_item = (41620, ["daft", "punk"])
         region = "us_nd"
         scrape_type = constants.ScrapeType.SNAPSHOT
@@ -284,7 +284,7 @@ class TestResumeScrape:
 
         mock_get_region.return_value = mock_region(region, queue_name)
         mock_tracker.return_value = docket_item
-        mock_create_task.return_value = None
+        mock_create_scrape_task.return_value = None
         mock_datetime.now.return_value = _DATETIME
 
         scraper = FakeScraper(region, initial_task)
@@ -304,7 +304,7 @@ class TestResumeScrape:
             'params': queue_params.to_serializable()
         }
 
-        mock_create_task.assert_called_with(
+        mock_create_scrape_task.assert_called_with(
             region_code=region,
             queue_name=queue_name,
             url=scraper.scraper_work_url,

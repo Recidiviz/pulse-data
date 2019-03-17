@@ -38,7 +38,7 @@ class QueuesTest(unittest.TestCase):
 
 
     @patch('google.cloud.tasks_v2beta3.CloudTasksClient')
-    def test_create_task(self, mock_client):
+    def test_create_scrape_task(self, mock_client):
         """Tests that a task is created."""
         url = '/test/work'
         queue_name = 'testqueue'
@@ -48,7 +48,7 @@ class QueuesTest(unittest.TestCase):
         task_path = queue_path + '/us_ny-12345'
         mock_client.return_value.task_path.return_value = task_path
 
-        queues.create_task(
+        queues.create_scrape_task(
             region_code='us_ny', queue_name=queue_name, url=url, body=params)
 
         body_encoded = json.dumps(params).encode()
@@ -67,7 +67,7 @@ class QueuesTest(unittest.TestCase):
 
 
     @patch('google.cloud.tasks_v2beta3.CloudTasksClient')
-    def test_purge_tasks(self, mock_client):
+    def test_purge_scrape_tasks(self, mock_client):
         queue_name = 'testqueue'
         queue_path = queue_name + '-path'
         mock_client.return_value.queue_path.return_value = queue_path
@@ -80,13 +80,13 @@ class QueuesTest(unittest.TestCase):
             Task(name=queue_path + '/us_ny-789')
         ]
 
-        queues.purge_tasks(region_code='us_ny', queue_name=queue_name)
+        queues.purge_scrape_tasks(region_code='us_ny', queue_name=queue_name)
 
         mock_client.return_value.delete_task.assert_has_calls([
             call(queue_path + '/us_ny-123'), call(queue_path + '/us_ny-789')])
 
     @patch('google.cloud.tasks_v2beta3.CloudTasksClient')
-    def test_list_tasks(self, mock_client):
+    def test_list_scrape_tasks(self, mock_client):
         queue_name = 'testqueue'
         queue_path = queue_name + '-path'
         mock_client.return_value.queue_path.return_value = queue_path
@@ -99,7 +99,8 @@ class QueuesTest(unittest.TestCase):
             Task(name=queue_path + '/us_ny-789')
         ]
 
-        tasks = queues.list_tasks(region_code='us_ny', queue_name=queue_name)
+        tasks = queues.list_scrape_tasks(
+            region_code='us_ny', queue_name=queue_name)
 
         assert tasks == [Task(name=queue_path + '/us_ny-123'),
                          Task(name=queue_path + '/us_ny-789')]
