@@ -29,8 +29,9 @@ from http import HTTPStatus
 
 from flask import Blueprint, request, url_for
 
+from recidiviz.common import queues
 from recidiviz.ingest.models.scrape_key import ScrapeKey
-from recidiviz.ingest.scrape import (docket, ingest_utils, queues, scrape_phase,
+from recidiviz.ingest.scrape import (docket, ingest_utils, scrape_phase,
                                      sessions, tracker)
 from recidiviz.utils import monitoring, regions
 from recidiviz.utils.auth import authenticate_request

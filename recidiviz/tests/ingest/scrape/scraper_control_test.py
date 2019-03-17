@@ -173,7 +173,7 @@ class TestScraperStop:
 
     @patch("recidiviz.utils.regions.get_supported_region_codes")
     @patch("recidiviz.utils.regions.get_region")
-    @patch("recidiviz.ingest.scrape.queues.enqueue_scraper_phase")
+    @patch("recidiviz.common.queues.enqueue_scraper_phase")
     @patch("recidiviz.ingest.scrape.sessions.end_session")
     def test_stop(
             self, mock_sessions, mock_enqueue, mock_region, mock_supported,
@@ -209,7 +209,7 @@ class TestScraperStop:
 
     @patch("recidiviz.utils.regions.get_supported_region_codes")
     @patch("recidiviz.utils.regions.get_region")
-    @patch("recidiviz.ingest.scrape.queues.enqueue_scraper_phase")
+    @patch("recidiviz.common.queues.enqueue_scraper_phase")
     @patch("recidiviz.ingest.scrape.sessions.end_session")
     def test_stop_no_session(
             self, mock_sessions, mock_enqueue, mock_region, mock_supported,
@@ -237,7 +237,7 @@ class TestScraperStop:
 
     @patch("recidiviz.utils.regions.get_supported_region_codes")
     @patch("recidiviz.utils.regions.get_region")
-    @patch("recidiviz.ingest.scrape.queues.enqueue_scraper_phase")
+    @patch("recidiviz.common.queues.enqueue_scraper_phase")
     @patch("recidiviz.ingest.scrape.sessions.end_session")
     def test_stop_timezone(
             self, mock_sessions, mock_enqueue, mock_region, mock_supported,
@@ -269,7 +269,7 @@ class TestScraperStop:
         mock_enqueue.assert_called_with(
             region_code='us_ut', url='/read_and_persist')
 
-    @patch("recidiviz.ingest.scrape.queues.enqueue_scraper_phase")
+    @patch("recidiviz.common.queues.enqueue_scraper_phase")
     @patch("recidiviz.utils.regions.get_supported_region_codes")
     def test_stop_unsupported_region(
             self, mock_supported, mock_enqueue, client):

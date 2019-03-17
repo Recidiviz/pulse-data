@@ -416,7 +416,7 @@ class TestBatchPersistence(TestCase):
 class TestReadAndPersist(TestCase):
     """Tests read and persist"""
 
-    @patch("recidiviz.ingest.scrape.queues.enqueue_scraper_phase")
+    @patch("recidiviz.common.queues.enqueue_scraper_phase")
     @patch("recidiviz.ingest.scrape.sessions.get_most_recent_completed_session")
     @patch("recidiviz.persistence.batch_persistence.persist_to_database")
     def test_read_and_persist(
