@@ -37,13 +37,13 @@ def client():
     yield app.test_client()
 
 @patch("recidiviz.common.queues.enqueue_scraper_phase")
-@patch("recidiviz.common.queues.list_tasks")
+@patch("recidiviz.common.queues.list_scrape_tasks")
 @patch("recidiviz.ingest.scrape.sessions.get_current_session")
 @patch("recidiviz.ingest.scrape.ingest_utils.validate_regions")
 @patch("recidiviz.utils.regions.get_region")
 def test_check_for_finished_scrapers(
-        mock_region, mock_validate_regions, mock_session, mock_list_tasks,
-        mock_enqueue, client):
+        mock_region, mock_validate_regions, mock_session,
+        mock_list_scrape_tasks, mock_enqueue, client):
     mock_validate_regions.return_value = ['region_x', 'region_y']
     mock_session.side_effect = ['region_x_session', None]
 
@@ -52,7 +52,7 @@ def test_check_for_finished_scrapers(
     fake_region_x.get_queue_name.return_value = 'queue'
     mock_region.side_effect = [fake_region_x]
 
-    mock_list_tasks.return_value = []
+    mock_list_scrape_tasks.return_value = []
 
     request_args = {'region': 'all'}
     headers = {'X-Appengine-Cron': "test-cron"}
@@ -67,18 +67,18 @@ def test_check_for_finished_scrapers(
         call(ScrapeKey('region_y', constants.ScrapeType.BACKGROUND)),
     ])
     mock_region.assert_called_with('region_x')
-    mock_list_tasks.assert_called_with(
+    mock_list_scrape_tasks.assert_called_with(
         region_code='region_x', queue_name='queue')
     mock_enqueue.assert_called_with(region_code='region_x', url='/stop')
 
 @patch("recidiviz.common.queues.enqueue_scraper_phase")
-@patch("recidiviz.common.queues.list_tasks")
+@patch("recidiviz.common.queues.list_scrape_tasks")
 @patch("recidiviz.ingest.scrape.sessions.get_current_session")
 @patch("recidiviz.ingest.scrape.ingest_utils.validate_regions")
 @patch("recidiviz.utils.regions.get_region")
 def test_check_for_finished_scrapers_not_done(
-        mock_region, mock_validate_regions, mock_session, mock_list_tasks,
-        mock_enqueue, client):
+        mock_region, mock_validate_regions, mock_session,
+        mock_list_scrape_tasks, mock_enqueue, client):
     region_code = 'region_x'
 
     mock_session.return_value = 'region_x_session'
@@ -89,7 +89,7 @@ def test_check_for_finished_scrapers_not_done(
     fake_region.get_queue_name.return_value = 'queue'
     mock_region.return_value = fake_region
 
-    mock_list_tasks.return_value = ['fake_task']
+    mock_list_scrape_tasks.return_value = ['fake_task']
 
     request_args = {'region': 'all'}
     headers = {'X-Appengine-Cron': "test-cron"}
@@ -102,6 +102,6 @@ def test_check_for_finished_scrapers_not_done(
     mock_session.assert_called_with(
         ScrapeKey('region_x', constants.ScrapeType.BACKGROUND))
     mock_region.assert_called_with(region_code)
-    mock_list_tasks.assert_called_with(region_code=region_code,
-                                       queue_name='queue')
+    mock_list_scrape_tasks.assert_called_with(region_code=region_code,
+                                              queue_name='queue')
     mock_enqueue.assert_not_called()

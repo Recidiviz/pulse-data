@@ -135,8 +135,8 @@ class Scraper(metaclass=abc.ABCMeta):
 
         """
         region = self.get_region()
-        queues.purge_tasks(region_code=region.region_code,
-                           queue_name=region.get_queue_name())
+        queues.purge_scrape_tasks(region_code=region.region_code,
+                                  queue_name=region.get_queue_name())
 
         # Check for other running scrapes, and if found kick off a delayed
         # resume for them since the taskqueue purge will kill them.
@@ -298,7 +298,7 @@ class Scraper(metaclass=abc.ABCMeta):
         Returns:
             The content if successful, -1 if fails.
         """
-        queues.create_task(
+        queues.create_scrape_task(
             region_code=self.get_region().region_code,
             queue_name=self.get_region().get_queue_name(),
             url=self.scraper_work_url,

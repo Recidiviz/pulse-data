@@ -78,5 +78,5 @@ def is_scraper_finished(region_code: str):
     region = regions.get_region(region_code)
     # Note: if listing the tasks repeatedly is too heavy weight, we could mark
     # the most recently enqueued task time on the session and check that first.
-    return not queues.list_tasks(region_code=region_code,
-                                 queue_name=region.get_queue_name())
+    return not queues.list_scrape_tasks(region_code=region_code,
+                                        queue_name=region.get_queue_name())
