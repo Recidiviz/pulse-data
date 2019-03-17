@@ -36,8 +36,8 @@ def client():
 
     yield app.test_client()
 
-@patch("recidiviz.ingest.scrape.queues.enqueue_scraper_phase")
-@patch("recidiviz.ingest.scrape.queues.list_tasks")
+@patch("recidiviz.common.queues.enqueue_scraper_phase")
+@patch("recidiviz.common.queues.list_tasks")
 @patch("recidiviz.ingest.scrape.sessions.get_current_session")
 @patch("recidiviz.ingest.scrape.ingest_utils.validate_regions")
 @patch("recidiviz.utils.regions.get_region")
@@ -71,8 +71,8 @@ def test_check_for_finished_scrapers(
         region_code='region_x', queue_name='queue')
     mock_enqueue.assert_called_with(region_code='region_x', url='/stop')
 
-@patch("recidiviz.ingest.scrape.queues.enqueue_scraper_phase")
-@patch("recidiviz.ingest.scrape.queues.list_tasks")
+@patch("recidiviz.common.queues.enqueue_scraper_phase")
+@patch("recidiviz.common.queues.list_tasks")
 @patch("recidiviz.ingest.scrape.sessions.get_current_session")
 @patch("recidiviz.ingest.scrape.ingest_utils.validate_regions")
 @patch("recidiviz.utils.regions.get_region")
