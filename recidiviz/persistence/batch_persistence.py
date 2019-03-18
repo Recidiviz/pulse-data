@@ -217,6 +217,9 @@ def persist_to_database(region_code, scrape_type, scraper_start_time):
     scrape_key = ScrapeKey(region_code, scrape_type)
 
     messages = _get_batch_messages(scrape_key)
+
+    # TODO(1339): Move this back to bottom of method pending scraper_start fix.
+    _ack_messages(messages, scrape_key)
     logging.info('Received %s messages', len(messages))
     if messages:
         proto, failed_tasks = _get_proto_from_messages(messages)
@@ -238,8 +241,6 @@ def persist_to_database(region_code, scrape_type, scraper_start_time):
             enum_overrides=overrides)
 
         did_write = persistence.write(proto, metadata)
-        # Only acknowledge if the above code passed.
-        _ack_messages(messages, scrape_key)
         return did_write
 
     logging.error('No messages received from pubpub')
