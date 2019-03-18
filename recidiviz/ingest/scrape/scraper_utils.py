@@ -23,12 +23,13 @@ that does not depend on member data.
 import base64
 import random
 import zlib
+from typing import Union, Optional
 
 from recidiviz.ingest.models.ingest_info import IngestInfo, IngestObject, \
     HIERARCHY_MAP, PLURALS
+from recidiviz.ingest.scrape.task_params import ScrapedData
 from recidiviz.utils import environment
 from recidiviz.utils import secrets
-
 
 # We add a random session in order to rotate the IPs from luminati.
 PROXY_USER_TEMPLATE = '{}-session-{}'
@@ -72,11 +73,19 @@ def _one(ingest_object: str, parent: IngestObject):
     return elt
 
 
-def one(ingest_object: str, ingest_info: IngestInfo):
+def one(ingest_object: str,
+        ingest_info_or_scraped_data: Union[IngestInfo, Optional[ScrapedData]]):
     """Convenience function to return the single descendant of an IngestInfo
     object. For example, |one('arrest', ingest_info)| returns the single arrest
     of the single booking of the single person in |ingest_info| and raises an
     error if there are zero or multiple people, bookings, or arrests."""
+    if ingest_info_or_scraped_data is None:
+        raise ValueError("No ScrapedData or IngestInfo was found.")
+    if isinstance(ingest_info_or_scraped_data, ScrapedData):
+        ingest_info = ingest_info_or_scraped_data.ingest_info
+    else:
+        ingest_info = ingest_info_or_scraped_data
+
     if ingest_object not in HIERARCHY_MAP:
         raise ValueError(
             'Cannot find ingest object with name {}'.format(ingest_object))
