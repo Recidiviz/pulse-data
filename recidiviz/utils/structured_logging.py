@@ -60,7 +60,7 @@ def setup():
     # ids are propogated and allows us to send structured messages.
     if environment.in_gae():
         client = Client()
-        client.setup_logging(log_level=logging.DEBUG)
+        client.setup_logging(log_level=logging.INFO)
         for handler in logger.handlers:
             if not isinstance(handler, CLOUD_HANDLERS):
                 logger.removeHandler(handler)

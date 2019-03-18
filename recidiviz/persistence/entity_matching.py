@@ -107,8 +107,8 @@ def match_person(
     ingested_person = _get_only_match(db_person, ingested_people,
                                       utils.is_person_match)
     if ingested_person:
-        logging.info('Successfully matched person with ID %s',
-                     db_person.person_id)
+        logging.debug('Successfully matched person with ID %s',
+                      db_person.person_id)
         # If the match was previously matched to a different database
         # person, raise an error.
         if ingested_person.person_id:
@@ -135,8 +135,8 @@ def match_bookings(
         ingested_booking = _get_only_match(db_booking, ingested_person.bookings,
                                            utils.is_booking_match)
         if ingested_booking:
-            logging.info('Successfully matched booking with ID %s',
-                         db_booking.booking_id)
+            logging.debug('Successfully matched booking with ID %s',
+                          db_booking.booking_id)
             # If the match was previously matched to a different database
             # booking, raise an error.
             if ingested_booking.booking_id:
@@ -248,12 +248,12 @@ def _match_from_charges(
             _is_match_with_relationships)
         if ingested_obj:
             db_id = getattr(db_obj, name + '_id')
-            logging.info('successfully matched %s with id %s',
-                         name, db_id)
+            logging.debug('successfully matched %s with id %s',
+                          name, db_id)
             setattr(ingested_obj, name + '_id', db_id)
         else:
-            logging.info('Did not match %s to any ingested %s, dropping',
-                         db_obj, name)
+            logging.debug('Did not match %s to any ingested %s, dropping',
+                          db_obj, name)
             drop_fn = globals()['_drop_' + name]
             drop_fn(db_obj)
             dropped_objs.append(db_obj)
@@ -262,13 +262,13 @@ def _match_from_charges(
 
 def _drop_sentence(sentence: entities.Sentence):
     if sentence.status != SentenceStatus.REMOVED_WITHOUT_INFO:
-        logging.info('Removing sentence with id %s', sentence.sentence_id)
+        logging.debug('Removing sentence with id %s', sentence.sentence_id)
         sentence.status = SentenceStatus.REMOVED_WITHOUT_INFO
 
 
 def _drop_bond(bond: entities.Bond):
     if bond.status != BondStatus.REMOVED_WITHOUT_INFO:
-        logging.info('Removing bond with id %s', bond.bond_id)
+        logging.debug('Removing bond with id %s', bond.bond_id)
         bond.status = BondStatus.REMOVED_WITHOUT_INFO
 
 
@@ -294,7 +294,7 @@ def match_holds(
             db_hold, ingested_booking.holds, utils.is_hold_match)
 
         if ingested_hold:
-            logging.info(
+            logging.debug(
                 'Successfully matched hold with ID %s', db_hold.hold_id)
             # If the match was previously matched to a different database
             # charge, raise an error.
@@ -315,7 +315,7 @@ def match_holds(
 
 def _drop_hold(hold: entities.Hold):
     if hold.status != HoldStatus.INFERRED_DROPPED:
-        logging.info('Dropping hold with id %s', hold.hold_id)
+        logging.debug('Dropping hold with id %s', hold.hold_id)
         hold.status = HoldStatus.INFERRED_DROPPED
 
 
@@ -383,8 +383,8 @@ def match_charges(
                 db_charge, ingested_booking.charges, utils.is_charge_match)
 
         if ingested_charge:
-            logging.info('Successfully matched charge with ID %s',
-                         db_charge.charge_id)
+            logging.debug('Successfully matched charge with ID %s',
+                          db_charge.charge_id)
             ingested_charge.charge_id = db_charge.charge_id
         else:
             _drop_charge(db_charge)
@@ -395,7 +395,7 @@ def match_charges(
 
 def _drop_charge(charge: entities.Charge):
     if charge.status != ChargeStatus.INFERRED_DROPPED:
-        logging.info('Dropping charge with id %s', charge.charge_id)
+        logging.debug('Dropping charge with id %s', charge.charge_id)
         charge.status = ChargeStatus.INFERRED_DROPPED
 
 
