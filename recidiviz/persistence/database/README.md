@@ -48,6 +48,8 @@ NOTE: All commands below assume you are running in your pip environment. To laun
 
 All the below options for generating a migration require you to specify a migration name. Use the same naming style as a Git branch, e.g. `add_bond_id_column`.
 
+NOTE: There is a strange behavior that sometimes occurs with enums and auto-generated migrations. Typically, alembic will not detect changes to an enum like adding or removing a value, which is why the `create_enum_migration` script is used. However, sometimes alembic will detect those changes, and will include statements to update the enum values in the auto-generated migration. However, when the migration is run, **these statements have no effect**. The migration will run to completion, but the enum values in the database will remain the same. Therefore if you change the values of a enum, you should always manually create a migration using the `create_enum_migration` script.
+
 ##### Adding a value to an enum
 
 1. Run `readonly-prod-psql` and get the current set of values for the enum using `SELECT enum_range(NULL::<enum_name>);`.
