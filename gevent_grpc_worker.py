@@ -14,18 +14,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Configures gunicorn"""
-import multiprocessing
-from gevent_grpc_worker import GeventGrpcWorker
+"""Provides a gevent worker that also patches grpc to be asynchronous.
 
-# http://docs.gunicorn.org/en/stable/design.html#how-many-workers
-workers = multiprocessing.cpu_count() * 2 + 1
-worker_connections = 10000
-# Use an asynchronous worker as most of the work is waiting for websites to load
-worker_class = '.'.join([GeventGrpcWorker.__module__,
-                         GeventGrpcWorker.__name__])
-timeout = 300
-loglevel = 'debug'
-accesslog = 'gunicorn-access.log'
-errorlog = 'gunicorn-error.log'
-keepalive = 650
+Note: This must be a the top level and called before any recidiviz code so that
+nothing is imported prior to being patched. If it is placed inside of the
+recidiviz directory, then the __init__.py file will be called first.
+"""
+from gunicorn.workers.ggevent import GeventWorker
+from grpc.experimental import gevent
+
+
+class GeventGrpcWorker(GeventWorker):
+    def patch(self):
+        super(GeventGrpcWorker, self).patch()
+        gevent.init_gevent()
+        self.log.info('patched grpc')
