@@ -20,8 +20,8 @@ import unittest
 
 from recidiviz.common.constants.booking import CustodyStatus
 from recidiviz.persistence import entities
-from recidiviz.persistence.persistence_utils import remove_pii_for_person,\
-    is_booking_active
+from recidiviz.persistence.persistence_utils import remove_pii_for_person, \
+    is_booking_active, has_active_booking
 
 
 class PersistenceUtilsTest(unittest.TestCase):
@@ -36,6 +36,17 @@ class PersistenceUtilsTest(unittest.TestCase):
 
         self.assertEqual(person.birthdate, expected_date)
         self.assertIsNone(person.full_name)
+
+    def test_has_active_booking(self):
+        person_inactive_booking = entities.Person.new_with_defaults(
+            bookings=[entities.Booking.new_with_defaults(
+                booking_id='1', custody_status=CustodyStatus.RELEASED)])
+        person_active_booking = entities.Person.new_with_defaults(
+            bookings=[entities.Booking.new_with_defaults(
+                booking_id='2')])
+
+        self.assertFalse(has_active_booking(person_inactive_booking))
+        self.assertTrue(has_active_booking(person_active_booking))
 
     def test_is_booking_active(self):
         inactive_booking = entities.Booking.new_with_defaults(
