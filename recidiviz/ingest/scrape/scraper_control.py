@@ -64,9 +64,17 @@ def scraper_start():
     Returns:
         N/A
     """
+
     @monitoring.with_region_tag
     def _start_scraper(region, scrape_type):
         scrape_key = ScrapeKey(region, scrape_type)
+
+        if sessions.get_current_session(scrape_key):
+            logging.error(
+                'Session already exists for region %s. Could not start new '
+                'session', region)
+            return
+
         logging.info("Starting new scraper for: %s", scrape_key)
 
         scraper = regions.get_region(region).get_scraper()
@@ -208,7 +216,6 @@ def scraper_stop():
 
     for stop_scraper_thread in stop_scraper_threads:
         stop_scraper_thread.join()
-
 
     return ('', HTTPStatus.OK)
 
