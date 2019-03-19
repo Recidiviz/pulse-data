@@ -369,7 +369,7 @@ class TestPersistence(TestCase):
             status_raw_text='SERVING',
             booking_id=ID)
         bond = entities.Bond.new_with_defaults(
-            bond_id=ID, status=BondStatus.NOT_REQUIRED,
+            bond_id=ID, status=BondStatus.SET,
             status_raw_text='NOT_REQUIRED',
             booking_id=ID)
         charge = entities.Charge.new_with_defaults(

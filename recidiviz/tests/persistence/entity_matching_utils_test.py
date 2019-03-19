@@ -190,7 +190,8 @@ class TestEntityMatchingUtils(TestCase):
             charge_id=_CHARGE_ID,
             name=_CHARGE_NAME,
             judge_name=_JUDGE_NAME,
-            bond=entities.Bond.new_with_defaults(bond_type=BondType.NO_BOND))
+            bond=entities.Bond.new_with_defaults(
+                bond_type=BondType.NOT_REQUIRED))
         ingested_charge = entities.Charge.new_with_defaults(
             charge_id=_CHARGE_ID_OTHER,
             name=_CHARGE_NAME,
