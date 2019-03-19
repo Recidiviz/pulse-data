@@ -103,7 +103,9 @@ class BqLoadTest(unittest.TestCase):
         """Test wait_for_table_load logs and exits if there is an error."""
         self.mock_load_job.result.side_effect = exceptions.NotFound('!')
         with self.assertLogs(level='ERROR'):
-            bq_load.wait_for_table_load(self.mock_load_job, self.mock_table)
+            success = bq_load.wait_for_table_load(
+                self.mock_load_job, self.mock_table)
+            self.assertFalse(success)
 
 
     @mock.patch('recidiviz.calculator.bq.bq_load.wait_for_table_load')
@@ -111,11 +113,14 @@ class BqLoadTest(unittest.TestCase):
     def test_start_table_load_and_wait(self, mock_start, mock_wait):
         """Test that start_table_load and wait_for_table_load are called."""
         mock_start.return_value = (self.mock_load_job, self.mock_table)
+        mock_wait.return_value = True
 
-        bq_load.start_table_load_and_wait(self.mock_dataset, self.mock_table_id)
+        success = bq_load.start_table_load_and_wait(
+            self.mock_dataset, self.mock_table_id)
 
         mock_start.assert_called()
         mock_wait.assert_called()
+        self.assertTrue(success)
 
 
     @mock.patch('recidiviz.calculator.bq.bq_load.wait_for_table_load')
@@ -125,10 +130,12 @@ class BqLoadTest(unittest.TestCase):
         Should be the case if start_table_load fails."""
         mock_start.return_value = None
 
-        bq_load.start_table_load_and_wait(self.mock_dataset, self.mock_table_id)
+        success = bq_load.start_table_load_and_wait(
+            self.mock_dataset, self.mock_table_id)
 
         mock_start.assert_called()
         mock_wait.assert_not_called()
+        self.assertFalse(success)
 
 
     @mock.patch('recidiviz.calculator.bq.bq_load.wait_for_table_load')

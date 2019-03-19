@@ -99,12 +99,14 @@ def start_table_load(
 
 def wait_for_table_load(
         load_job: bigquery.job.LoadJob,
-        table_ref: bigquery.table.TableReference):
+        table_ref: bigquery.table.TableReference) -> bool:
     """Wait for a table LoadJob to finish, and log its status.
 
     Args:
         load_job: BigQuery LoadJob whose result to wait for.
         table_ref: TableReference to retrieve final table status.
+    Returns:
+        True if no errors were raised, else False.
     """
     try:
         # Wait for table load job to complete.
@@ -121,24 +123,34 @@ def wait_for_table_load(
                      destination_table.project,
                      destination_table.dataset_id,
                      destination_table.table_id)
+        return True
     except (exceptions.NotFound, concurrent.futures.TimeoutError):
         logging.exception('Failed to load table %s.%s.%s',
                           table_ref.project,
                           table_ref.dataset_id,
                           table_ref.table_id)
+        return False
 
 
 def start_table_load_and_wait(
         dataset_ref: bigquery.dataset.DatasetReference,
-        table_name: str):
+        table_name: str) -> bool:
     """Loads a table from CSV data in GCS to BigQuery, waits until completion.
 
-    See start_table_load and wait_for_table_load for details."""
+    See start_table_load and wait_for_table_load for details.
+
+    Returns:
+        True if no errors were raised, else False.
+    """
 
     load_job_started = start_table_load(dataset_ref, table_name)
     if load_job_started:
         load_job, table_ref = load_job_started
-        wait_for_table_load(load_job, table_ref)
+        table_load_success = wait_for_table_load(load_job, table_ref)
+
+        return table_load_success
+
+    return False
 
 
 def load_all_tables_concurrently(
