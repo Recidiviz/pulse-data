@@ -819,11 +819,11 @@ class HiFacilityAggregate(Base, _AggregateTableMixin):
     sentenced_misdemeanor_male_population = Column(Integer)
     sentenced_misdemeanor_female_population = Column(Integer)
 
-    sentenced_pretrial_felony_male_population = Column(Integer)
-    sentenced_pretrial_felony_female_population = Column(Integer)
+    pretrial_felony_male_population = Column(Integer)
+    pretrial_felony_female_population = Column(Integer)
 
-    sentenced_pretrial_misdemeanor_male_population = Column(Integer)
-    sentenced_pretrial_misdemeanor_female_population = Column(Integer)
+    pretrial_misdemeanor_male_population = Column(Integer)
+    pretrial_misdemeanor_female_population = Column(Integer)
 
     held_for_other_jurisdiction_male_population = Column(Integer)
     held_for_other_jurisdiction_female_population = Column(Integer)
