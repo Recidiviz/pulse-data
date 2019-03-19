@@ -322,7 +322,7 @@ class TestEntityMatching(TestCase):
             booking_id=_ID, admission_date=_DATE_2,
             custody_status=CustodyStatus.IN_CUSTODY)
         db_booking_closed = entities.Booking.new_with_defaults(
-            booking_id=_ID, admission_date=_DATE,
+            booking_id=_ID_ANOTHER, admission_date=_DATE,
             custody_status=CustodyStatus.RELEASED, release_date=_DATE_2)
         ingested_booking_closed = entities.Booking.new_with_defaults(
             admission_date=_DATE_2, release_date=_DATE_3,

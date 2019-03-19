@@ -89,36 +89,38 @@ def match_people_and_return_error_count(
     |db_people|, the primary key is updated on the ingested person.
     """
     error_count = 0
-    for db_person in db_people:
+    matched_db_ids: Set[int] = set()
+    for ingested_person in ingested_people:
         try:
-            match_person(db_person=db_person, ingested_people=ingested_people,
-                         orphaned_entities=orphaned_entities)
-        except Exception as e:
-            logging.error('Found error while matching db person with id %s: %s',
-                          db_person.person_id, str(e))
+            match_person(ingested_person=ingested_person, db_people=db_people,
+                         orphaned_entities=orphaned_entities,
+                         matched_db_ids=matched_db_ids)
+        except Exception:
+            logging.exception(
+                'Found error while matching ingested person. \nPerson: %s',
+                ingested_person)
             error_count += 1
     return error_count
 
 
 def match_person(
-        *, db_person: entities.Person,
-        ingested_people: List[entities.Person],
-        orphaned_entities: List[Entity]) -> None:
-    ingested_person = _get_only_match(db_person, ingested_people,
-                                      utils.is_person_match)
-    if ingested_person:
-        logging.debug('Successfully matched person with ID %s',
+        *, ingested_person: entities.Person,
+        db_people: List[entities.Person],
+        orphaned_entities: List[Entity],
+        matched_db_ids: Set[int]) -> None:
+    db_person: entities.Person = _get_only_match(ingested_person, db_people,
+                                                 utils.is_person_match)
+    if db_person:
+        logging.debug('Successfully matched to person with ID %s',
                       db_person.person_id)
         # If the match was previously matched to a different database
         # person, raise an error.
-        if ingested_person.person_id:
+        if db_person.person_id in matched_db_ids:
             raise EntityMatchingError(
-                'matched ingested person {} to both of the following '
-                'database entities: '
-                '[{}, {}]'.format(ingested_person,
-                                  ingested_person.person_id,
-                                  db_person.person_id))
+                'matched db person {} to two ingested entities'.format(
+                    db_person.person_id))
         ingested_person.person_id = db_person.person_id
+        matched_db_ids.add(db_person.person_id)  # type: ignore
         match_bookings(db_person=db_person, ingested_person=ingested_person,
                        orphaned_entities=orphaned_entities)
 
@@ -131,21 +133,21 @@ def match_bookings(
     the |db_person|. For any ingested booking, if a matching booking exists on
     |db_person|, the primary key is updated on the ingested booking.
     """
-    for db_booking in db_person.bookings:
-        ingested_booking = _get_only_match(db_booking, ingested_person.bookings,
-                                           utils.is_booking_match)
-        if ingested_booking:
-            logging.debug('Successfully matched booking with ID %s',
+    matched_db_ids: Set[int] = set()
+    for ingested_booking in ingested_person.bookings:
+        db_booking: entities.Booking = \
+            _get_only_match(ingested_booking, db_person.bookings,
+                            utils.is_booking_match)
+        if db_booking:
+            logging.debug('Successfully matched to booking with ID %s',
                           db_booking.booking_id)
             # If the match was previously matched to a different database
             # booking, raise an error.
-            if ingested_booking.booking_id:
+            if db_booking.booking_id in matched_db_ids:
                 raise EntityMatchingError(
-                    'matched ingested booking {} to both of the following '
-                    'database entities: '
-                    '[{}, {}]'.format(ingested_booking,
-                                      ingested_booking.booking_id,
-                                      db_booking.booking_id))
+                    'matched db booking {} to two ingested bookings'.format(
+                        db_booking.booking_id))
+            matched_db_ids.add(db_booking.booking_id)  # type: ignore
             ingested_booking.booking_id = db_booking.booking_id
 
             if (db_booking.admission_date_inferred and
@@ -166,7 +168,8 @@ def match_bookings(
                             ingested_booking=ingested_booking,
                             orphaned_entities=orphaned_entities)
 
-        else:
+    for db_booking in db_person.bookings:
+        if db_booking.booking_id not in matched_db_ids:
             ingested_person.bookings.append(db_booking)
 
 
@@ -241,23 +244,25 @@ def _match_from_charges(
 
         return obj_match and relationship_match
 
-    dropped_objs = []
-    for db_obj in db_obj_map.values():
-        ingested_obj = _get_next_available_match(
-            db_obj, list(ing_obj_map.values()),
+    matched_db_ids: Set[int] = set()
+    for ing_obj in ing_obj_map.values():
+        db_obj = _get_next_available_match(
+            ing_obj, list(db_obj_map.values()), matched_db_ids,
             _is_match_with_relationships)
-        if ingested_obj:
+        if db_obj:
             db_id = getattr(db_obj, name + '_id')
-            logging.debug('successfully matched %s with id %s',
+            logging.debug('successfully matched to %s with id %s',
                           name, db_id)
-            setattr(ingested_obj, name + '_id', db_id)
-        else:
+            setattr(ing_obj, name + '_id', db_id)
+            matched_db_ids.add(db_id)  # type: ignore
+
+    for db_obj in db_obj_map.values():
+        if not getattr(db_obj, id_name) in matched_db_ids:
             logging.debug('Did not match %s to any ingested %s, dropping',
-                          db_obj, name)
+                          getattr(db_obj, id_name), name)
             drop_fn = globals()['_drop_' + name]
             drop_fn(db_obj)
-            dropped_objs.append(db_obj)
-    orphaned_entities.extend(dropped_objs)
+            orphaned_entities.append(db_obj)
 
 
 def _drop_sentence(sentence: entities.Sentence):
@@ -287,29 +292,31 @@ def match_holds(
     db holds that are not matched to an ingested hold are marked dropped and
     added to the |ingested_booking|.
     """
-    dropped_holds = []
 
-    for db_hold in db_booking.holds:
-        ingested_hold = _get_only_match(
-            db_hold, ingested_booking.holds, utils.is_hold_match)
+    matched_db_ids: Set[int] = set()
+    for ingested_hold in ingested_booking.holds:
+        db_hold: entities.Hold = _get_only_match(
+            ingested_hold, db_booking.holds, utils.is_hold_match)
 
-        if ingested_hold:
+        if db_hold:
             logging.debug(
-                'Successfully matched hold with ID %s', db_hold.hold_id)
+                'Successfully matched to hold with ID %s', db_hold.hold_id)
+
             # If the match was previously matched to a different database
             # charge, raise an error.
-            if ingested_hold.hold_id:
+            if db_hold.hold_id in matched_db_ids:
                 raise EntityMatchingError(
-                    'matched ingested hold {} to both of the following '
-                    'database entities: '
-                    '[{}, {}]'.format(ingested_hold,
-                                      ingested_hold.hold_id,
-                                      db_hold.hold_id))
+                    'matched db hold {} to multiple ingested holds'.format(
+                        db_hold.hold_id))
+
             ingested_hold.hold_id = db_hold.hold_id
-        else:
+            matched_db_ids.add(db_hold.hold_id)  # type: ignore
+
+    dropped_holds = []
+    for db_hold in db_booking.holds:
+        if db_hold.hold_id not in matched_db_ids:
             _drop_hold(db_hold)
             dropped_holds.append(db_hold)
-
     ingested_booking.holds.extend(dropped_holds)
 
 
@@ -324,7 +331,6 @@ def _charge_relationship_count(charge: entities.Charge) -> int:
     return sum([bool(charge.bond), bool(charge.sentence)])
 
 
-# TODO(573): what do we do with orphaned bonds/sentences?
 def match_charges(
         *, db_booking: entities.Booking, ingested_booking: entities.Booking):
     """
@@ -340,22 +346,22 @@ def match_charges(
     sentence, an bond entities (i.e. preferring to update entities rather than
     replacing old ones).
 
-    If possible, we match db_charges to ingested_charges while considering
-    the equality of their children (bonds/sentences). If we cannot match
-    db_charge while considering its children, we attempt to match it only
-    based on the charge fields. If the db_charge still has no match, it will
-    be marked dropped.
+    If possible, we match ingested_charges to db_charges while considering
+    the equality of their children (bonds/sentences). If we cannot match an
+    ingested_charge while considering its children, we attempt to match it only
+    based on the charge fields. If the ingested_charge still has no match,
+    it will be marked dropped.
 
     Because we can match two charges whose children are not equal, we sort our
-    db_charges, attempting to match those with more children before those with
-    fewer or none.
+    ingested_charges, attempting to match those with more children before
+    those with fewer or none.
 
     Examples:
-        1. Two identical charges are in our DB, one with a bond (A) and one
-        without (B). The same data is scraped the next day so that we have
-        corresponding ingested charges C (with a bond) and D (without a bond).
+        1. Two identical charges are ingested, one with a bond (A) and one
+        without (B). The same charges were also scraped yesterday, and are in
+        our DB as charge C (with a bond) and D (without a bond)
 
-        Because B could match either C or D, we sort our db charges by the
+        Because A could match either C or D, we sort our ingested charges by the
         number of children, so that we always attempt to match A before B. This
         ensures A matches to C, and then B matches to D.
 
@@ -363,33 +369,38 @@ def match_charges(
         bond to be added to B. Then A would match to D, and its bond would be
         dropped. This turnover is not desired.
 
-        2. There is one charge in our DB (A) and we scrape the same charge
-        on the website (B), but the ingested charge now has a bond. In this case
-        we'll first try to match B considering the child bond, and when no
-        matches are found, we'll match just considering the charge fields. At
-        this point B matches to A, and A gets a new bond created in the DB.
+        2. We scrape one charge from the website (A), and this charge is exactly
+        the same as a charge in our DB (B), except that the ingested charge A
+        now has a bond. In this case we'll first try to match A considering
+        the child bond, and when no matches are found, we'll match just
+        considering the charge fields. At this point A matches to B,
+        and B gets a new bond created in the DB.
     """
-    dropped_charges = []
-    db_charges_sorted_by_child_count = sorted(
-        db_booking.charges, key=_charge_relationship_count, reverse=True)
+    matched_db_ids: Set[int] = set()
+    ing_charges_sorted_by_child_count = sorted(
+        ingested_booking.charges, key=_charge_relationship_count, reverse=True)
 
-    for db_charge in db_charges_sorted_by_child_count:
-        ingested_charge = _get_next_available_match(
-            db_charge, ingested_booking.charges,
-            utils.is_charge_match_with_children)
+    for ingested_charge in ing_charges_sorted_by_child_count:
+        db_charge: entities.Charge = _get_next_available_match(
+            ingested_charge, db_booking.charges,
+            matched_db_ids, utils.is_charge_match_with_children)
 
-        if not ingested_charge:
-            ingested_charge = _get_next_available_match(
-                db_charge, ingested_booking.charges, utils.is_charge_match)
+        if not db_charge:
+            db_charge = _get_next_available_match(
+                ingested_charge, db_booking.charges, matched_db_ids,
+                utils.is_charge_match)
 
-        if ingested_charge:
-            logging.debug('Successfully matched charge with ID %s',
+        if db_charge:
+            logging.debug('Successfully matched to charge with ID %s',
                           db_charge.charge_id)
+            matched_db_ids.add(db_charge.charge_id)  # type: ignore
             ingested_charge.charge_id = db_charge.charge_id
-        else:
+
+    dropped_charges = []
+    for db_charge in db_booking.charges:
+        if db_charge.charge_id not in matched_db_ids:
             _drop_charge(db_charge)
             dropped_charges.append(db_charge)
-
     ingested_booking.charges.extend(dropped_charges)
 
 
@@ -400,44 +411,45 @@ def _drop_charge(charge: entities.Charge):
 
 
 def _get_next_available_match(
-        db_entity: entities.Entity,
-        ingested_entities: Sequence[entities.Entity], matcher: Callable):
-    id_name = db_entity.__class__.__name__.lower() + '_id'
+        ingested_entity: entities.Entity,
+        db_entities: Sequence[entities.Entity],
+        db_entities_matched_by_id: Set[int], matcher: Callable):
+    id_name = ingested_entity.__class__.__name__.lower() + '_id'
 
-    for ingested_entity in ingested_entities:
-        if not getattr(ingested_entity, id_name) and matcher(
-                db_entity=db_entity, ingested_entity=ingested_entity):
-            return ingested_entity
+    for db_entity in db_entities:
+        if not getattr(db_entity, id_name) in db_entities_matched_by_id and \
+                matcher(db_entity=db_entity, ingested_entity=ingested_entity):
+            return db_entity
     return None
 
 
 def _get_only_match(
-        db_entity: entities.Entity,
-        ingested_entities: Sequence[entities.Entity], matcher: Callable):
+        ingested_entity: entities.Entity,
+        db_entities: Sequence[entities.Entity], matcher: Callable):
     """
-    Finds the entity in |ingested_entites| that matches the |db_entity|.
-    Args:
-        db_entity: an entity
-        ingested_entities: List of entities. Entities in the list should be the
-            same type as |db_entity|.
-        matcher:
-            (db_entity, ingested_entity) -> (bool)
-    Returns:
-        The entity from |ingested_entities| that matches the |db_entity|, or
-        None if no match is found.
-    Raises:
-        EntityMatchingError: if more than one match is found.
-    """
-    matches = _get_all_matches(db_entity, ingested_entities, matcher)
+       Finds the entity in |db_entites| that matches the |ingested_entity|.
+       Args:
+           ingested_entity: an entity ingested from source (usually website)
+           db_entities: List of entities from our db that are potential matches
+               for the |ingested_entity|
+           matcher:
+               (db_entity, ingested_entity) -> (bool)
+       Returns:
+           The entity from |db_entities| that matches the |ingested_entity|,
+           or None if no match is found.
+       Raises:
+           EntityMatchingError: if more than one match is found.
+       """
+    matches = _get_all_matches(ingested_entity, db_entities, matcher)
     if len(matches) > 1:
-        raise EntityMatchingError('matched database entity {} to all of the '
-                                  'following ingested entities: '
-                                  '{}'.format(db_entity, matches))
+        raise EntityMatchingError('matched ingested entity {} to all of the '
+                                  'following db entities: '
+                                  '{}'.format(ingested_entity, matches))
     return matches[0] if matches else None
 
 
 def _get_all_matches(
-        db_entity: entities.Entity,
-        ingested_entities: Sequence[entities.Entity], matcher: Callable):
-    return [ingested_entity for ingested_entity in ingested_entities
+        ingested_entity: entities.Entity,
+        db_entities: Sequence[entities.Entity], matcher: Callable):
+    return [db_entity for db_entity in db_entities
             if matcher(db_entity=db_entity, ingested_entity=ingested_entity)]
