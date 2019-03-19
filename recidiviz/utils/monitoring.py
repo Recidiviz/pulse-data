@@ -16,6 +16,7 @@
 # =============================================================================
 
 """Creates monitoring client for measuring and recording stats."""
+import logging
 from contextlib import contextmanager
 from functools import wraps
 from typing import Any, Dict, Optional
@@ -99,6 +100,10 @@ def measurements(tags=None):
         tag_map = thread_local_tags()
         for key, value in tags.items():
             tag_map.insert(key, str(value))
+        # Log to see if region not getting set is our bug or an opencensus bug.
+        if not tag_map.map.get(TagKey.REGION):
+            logging.warning('No region set for metric, tags are: %s',
+                            tag_map.map)
         mmap.record(tag_map)
 
 
