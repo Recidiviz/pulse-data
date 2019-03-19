@@ -18,6 +18,7 @@
 """Constants file used by everyone."""
 import enum
 
+
 # These constants tell the generic scraper what functions to perform
 class TaskType(enum.Flag):
     INITIAL = enum.auto()
@@ -28,13 +29,16 @@ class TaskType(enum.Flag):
     INITIAL_AND_MORE = INITIAL | GET_MORE_TASKS
     SCRAPE_DATA_AND_MORE = SCRAPE_DATA | GET_MORE_TASKS
 
+
 @enum.unique
 class ScrapeType(enum.Enum):
     BACKGROUND = "background"
     SNAPSHOT = "snapshot"
 
+
 MAX_PEOPLE_TO_LOG = 4
-PUBSUB_TYPE = 'scraper_batch'
+BATCH_PUBSUB_TYPE = 'scraper_batch'
+
 
 @enum.unique
 class ResponseType(enum.Enum):
