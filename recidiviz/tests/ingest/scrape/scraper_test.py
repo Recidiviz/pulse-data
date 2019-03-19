@@ -24,7 +24,7 @@ from mock import patch
 
 from recidiviz.ingest.scrape import constants
 from recidiviz.ingest.models.scrape_key import ScrapeKey
-from recidiviz.ingest.scrape.constants import PUBSUB_TYPE
+from recidiviz.ingest.scrape.constants import BATCH_PUBSUB_TYPE
 from recidiviz.ingest.scrape.scraper import Scraper
 from recidiviz.ingest.scrape.sessions import ScrapeSession
 from recidiviz.ingest.scrape.task_params import QueueRequest, Task
@@ -79,7 +79,7 @@ class TestStartScrape:
         mock_get_region.assert_called_with(region)
         mock_tracker.assert_called_with(ScrapeKey(region, scrape_type))
         mock_pubsub.assert_called_with(
-            ScrapeKey(region, scrape_type), PUBSUB_TYPE)
+            ScrapeKey(region, scrape_type), BATCH_PUBSUB_TYPE)
 
         queue_params = QueueRequest(
             scrape_type=scrape_type.value,
@@ -121,7 +121,7 @@ class TestStartScrape:
         mock_tracker.assert_called_with(ScrapeKey(region, scrape_type))
         mock_sessions.assert_called_with(ScrapeKey(region, scrape_type))
         mock_pubsub.assert_called_with(
-            ScrapeKey(region, scrape_type), PUBSUB_TYPE)
+            ScrapeKey(region, scrape_type), BATCH_PUBSUB_TYPE)
 
 
 class TestStopScraper:
