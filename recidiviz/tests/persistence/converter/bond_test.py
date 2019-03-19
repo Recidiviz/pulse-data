@@ -82,3 +82,17 @@ class BondConverterTest(unittest.TestCase):
             status=BondStatus.SET
         )
         self.assertEqual(result, expected_result)
+
+    def testParseBond_OnlyAmount_InfersCash(self):
+        # Arrange
+        ingest_bond = ingest_info_pb2.Bond(amount='1,500')
+
+        # Act
+        result = bond.convert(ingest_bond, _EMPTY_METADATA)
+
+        # Assert
+        expected_result = entities.Bond.new_with_defaults(
+            bond_type=BondType.CASH,
+            status=BondStatus.PRESENT_WITHOUT_INFO,
+            amount_dollars=1500)
+        self.assertEqual(result, expected_result)
