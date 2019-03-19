@@ -103,5 +103,9 @@ class TestIngestInfo(unittest.TestCase):
                 ingest_info.Booking(
                     charges=[ingest_info.Charge(
                         sentence=ingest_info.Sentence(is_life='False'))],
-                    holds=[ingest_info.Hold(hold_id=1)])])])
+                    holds=[
+                        ingest_info.Hold(jurisdiction_name='UNSPECIFIED'),
+                        ingest_info.Hold(hold_id=1,
+                                         jurisdiction_name='UNSPECIFIED')
+                    ])])])
         self.assertEqual(ii.prune(), expected)
