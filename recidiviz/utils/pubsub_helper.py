@@ -27,6 +27,7 @@ import time
 from google.api_core import exceptions  # pylint: disable=no-name-in-module
 from google.cloud import pubsub
 
+from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.utils import metadata, environment
 
 ACK_DEADLINE_SECONDS = 300
@@ -104,3 +105,15 @@ def retry_with_create(scrape_key, fn, pubsub_type):
             scrape_key, pubsub_type=pubsub_type)
         result = fn()
     return result
+
+
+def purge(scrape_key: ScrapeKey, pubsub_type: str):
+    # TODO(#342): Use subscriber().seek(subscription_path, time=timestamp)
+    # once available on the emulator.
+    try:
+        get_subscriber().delete_subscription(
+            get_subscription_path(scrape_key, pubsub_type=pubsub_type))
+    except exceptions.NotFound:
+        pass
+
+    create_topic_and_subscription(scrape_key, pubsub_type=pubsub_type)

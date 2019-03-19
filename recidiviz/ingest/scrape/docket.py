@@ -67,8 +67,6 @@ import csv
 import json
 import logging
 
-from google.api_core import exceptions  # pylint: disable=no-name-in-module
-
 from recidiviz.ingest.scrape import constants
 from recidiviz.utils import environment, pubsub_helper, regions
 
@@ -285,18 +283,7 @@ def purge_query_docket(scrape_key):
         N/A
     """
     logging.info("Purging existing query docket for scraper: %s", scrape_key)
-
-    # TODO(#342): Use subscriber().seek(subscription_path, time=timestamp)
-    # once available on the emulator.
-    try:
-        pubsub_helper.get_subscriber().delete_subscription(
-            pubsub_helper.get_subscription_path(
-                scrape_key, pubsub_type=PUBSUB_TYPE))
-    except exceptions.NotFound:
-        pass
-
-    pubsub_helper.create_topic_and_subscription(
-        scrape_key, pubsub_type=PUBSUB_TYPE)
+    pubsub_helper.purge(scrape_key, PUBSUB_TYPE)
 
 
 def ack_docket_item(scrape_key, ack_id):

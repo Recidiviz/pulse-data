@@ -30,7 +30,7 @@ from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.scrape import ingest_utils, sessions, scrape_phase
-from recidiviz.ingest.scrape.constants import ScrapeType, PUBSUB_TYPE
+from recidiviz.ingest.scrape.constants import ScrapeType, BATCH_PUBSUB_TYPE
 from recidiviz.ingest.scrape.task_params import Task
 from recidiviz.persistence import persistence
 from recidiviz.utils import monitoring, pubsub_helper, regions
@@ -81,11 +81,11 @@ def _publish_batch_message(
         serialized = batch_message.to_serializable()
         response = pubsub_helper.get_publisher().publish(
             pubsub_helper.get_topic_path(scrape_key,
-                                         pubsub_type=PUBSUB_TYPE),
+                                         pubsub_type=BATCH_PUBSUB_TYPE),
             data=json.dumps(serialized).encode())
         response.result()
 
-    pubsub_helper.retry_with_create(scrape_key, publish, PUBSUB_TYPE)
+    pubsub_helper.retry_with_create(scrape_key, publish, BATCH_PUBSUB_TYPE)
 
 
 def _get_batch_messages(scrape_key):
@@ -102,7 +102,7 @@ def _get_batch_messages(scrape_key):
     def inner():
         return pubsub_helper.get_subscriber().pull(
             pubsub_helper.get_subscription_path(scrape_key,
-                                                pubsub_type=PUBSUB_TYPE),
+                                                pubsub_type=BATCH_PUBSUB_TYPE),
             max_messages=BATCH_READ_SIZE,
             return_immediately=True
         )
@@ -110,7 +110,7 @@ def _get_batch_messages(scrape_key):
     messages = []
     while True:
         response = pubsub_helper.retry_with_create(
-            scrape_key, inner, pubsub_type=PUBSUB_TYPE)
+            scrape_key, inner, pubsub_type=BATCH_PUBSUB_TYPE)
         if response.received_messages:
             messages.extend(response.received_messages)
         else:
@@ -131,7 +131,7 @@ def _ack_messages(messages, scrape_key):
     ack_ids = [message.ack_id for message in messages]
     pubsub_helper.get_subscriber().acknowledge(
         pubsub_helper.get_subscription_path(
-            scrape_key, pubsub_type=PUBSUB_TYPE), ack_ids)
+            scrape_key, pubsub_type=BATCH_PUBSUB_TYPE), ack_ids)
 
 
 def _get_proto_from_messages(messages):
