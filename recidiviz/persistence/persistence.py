@@ -21,6 +21,7 @@ import os
 from distutils.util import strtobool  # pylint: disable=no-name-in-module
 from typing import List, Tuple
 
+import more_itertools
 from opencensus.stats import aggregation
 from opencensus.stats import measure
 from opencensus.stats import view
@@ -223,6 +224,11 @@ def write(ingest_info, metadata):
         # Convert the people one at a time and count the errors as they happen.
         people, enum_parsing_errors, protected_class_errors = \
             _convert_and_count_errors(ingest_info, metadata)
+        deduped_people = list(more_itertools.unique_everseen(people))
+        if len(deduped_people) < len(people):
+            logging.info('Removed %d duplicate ingested people',
+                         len(people) - len(deduped_people))
+            people = deduped_people
         people, data_validation_errors = validate_one_open_booking(people)
         logging.info('Converted %s people with %s enum_parsing_errors, %s'
                      ' protected_class_errors and %s data_validation_errors, '
