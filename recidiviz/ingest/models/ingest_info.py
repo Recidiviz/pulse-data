@@ -296,9 +296,14 @@ class Charge(IngestObject):
 class Hold(IngestObject):
     """Class for information about a hold.
     Referenced from Booking.
+
+    Holds will default to the jurisdiction_name "UNSPECIFIED", since we may
+    only know that a booking has a hold. Then booking.create_hold() will create
+    a hold that doesn't get pruned later.
     """
 
-    def __init__(self, hold_id=None, jurisdiction_name=None, status=None):
+    def __init__(self, hold_id=None, jurisdiction_name='UNSPECIFIED',
+                 status=None):
         self.hold_id: Optional[str] = hold_id
         self.jurisdiction_name: Optional[str] = jurisdiction_name
         self.status: Optional[str] = status
