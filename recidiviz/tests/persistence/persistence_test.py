@@ -129,8 +129,8 @@ class TestPersistence(TestCase):
     def test_twoDifferentPeople_persistsBoth(self):
         # Arrange
         ingest_info = IngestInfo()
-        ingest_info.people.add(person_id='1', full_name=FULL_NAME_1)
-        ingest_info.people.add(person_id='2', full_name=FULL_NAME_2)
+        ingest_info.people.add(person_id='1_GENERATE', full_name=FULL_NAME_1)
+        ingest_info.people.add(person_id='2_GENERATE', full_name=FULL_NAME_2)
 
         # Act
         persistence.write(ingest_info, DEFAULT_METADATA)
@@ -177,8 +177,8 @@ class TestPersistence(TestCase):
     def test_threeDifferentPeople_persistsTwoBelowThreshold(self):
         # Arrange
         ingest_info = IngestInfo()
-        ingest_info.people.add(person_id='1', full_name=FULL_NAME_2)
-        ingest_info.people.add(person_id='2', full_name=FULL_NAME_3)
+        ingest_info.people.add(person_id='1_GENERATE', full_name=FULL_NAME_2)
+        ingest_info.people.add(person_id='2_GENERATE', full_name=FULL_NAME_3)
         ingest_info.people.add(person_id=EXTERNAL_PERSON_ID,
                                full_name=FULL_NAME_1,
                                booking_ids=[EXTERNAL_BOOKING_ID])
@@ -202,9 +202,11 @@ class TestPersistence(TestCase):
         # Arrange
         ingest_info = IngestInfo()
         ingest_info.people.add(
-            person_id='1', full_name=FULL_NAME_1, birthdate=BIRTHDATE_1)
+            person_id='1_GENERATE', full_name=FULL_NAME_1,
+            birthdate=BIRTHDATE_1)
         ingest_info.people.add(
-            person_id='2', full_name=FULL_NAME_2, birthdate=BIRTHDATE_2)
+            person_id='2_GENERATE', full_name=FULL_NAME_2,
+            birthdate=BIRTHDATE_2)
 
         # Act
         persistence.write(ingest_info, DEFAULT_METADATA)
@@ -357,7 +359,6 @@ class TestPersistence(TestCase):
             external_id=EXTERNAL_PERSON_ID,
             region=REGION_1,
             jurisdiction_id=JURISDICTION_ID,
-            full_name=_format_full_name(FULL_NAME_1),
             bookings=[expected_booking])
         self.assertEqual([expected_person], database.read_people(Session()))
 
