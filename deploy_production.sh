@@ -14,5 +14,11 @@ python -m recidiviz.tools.build_queue_config --environment production
 gcloud app deploy queue.yaml --project=recidiviz-123
 
 VERSION=$(echo $1 | tr '.' '-')
+STAGING_IMAGE_URL=us.gcr.io/recidiviz-staging/appengine/default.$VERSION:latest
+PROD_IMAGE_URL=us.gcr.io/recidiviz-123/appengine/default.$VERSION:latest
+
 echo "Starting deploy of main app"
-gcloud app deploy prod.yaml --project=recidiviz-123 --version=$VERSION
+docker pull $STAGING_IMAGE_URL
+docker tag $STAGING_IMAGE_URL $PROD_IMAGE_URL
+docker push $PROD_IMAGE_URL
+gcloud app deploy prod.yaml --project=recidiviz-123 --version=$VERSION --image-url=$PROD_IMAGE_URL
