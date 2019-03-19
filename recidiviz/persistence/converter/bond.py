@@ -30,25 +30,14 @@ def convert(proto, metadata: IngestMetadata) -> entities.Bond:
 
     new.external_id = fn(parse_external_id, 'bond_id', proto)
     new.bond_agent = fn(normalize, 'bond_agent', proto)
-    new.amount_dollars, inferred_bond_type, inferred_status = fn(
-        converter_utils.parse_bond_amount_and_check_for_type_and_status_info,
-        'amount',
-        proto,
-        default=(None, None, None))
-    # If there is a bond amount we infer the bond type is CASH unless the bond
-    # amount contains information about the type (i.e. NO_BOND or BOND_DENIED).
-    # If there is not a bond amount, the bond type defaults to None.
-    new.bond_type = fn(
-        BondType.parse, 'bond_type', proto, metadata.enum_overrides,
-        default=inferred_bond_type or None)
+    new.amount_dollars, new.bond_type, new.status = \
+        converter_utils.parse_bond_amount_type_and_status(
+            fn(normalize, 'amount', proto),
+            provided_bond_type=fn(
+                BondType.parse, 'bond_type', proto, metadata.enum_overrides),
+            provided_status=fn(
+                BondStatus.parse, 'status', proto, metadata.enum_overrides))
     new.bond_type_raw_text = fn(normalize, 'bond_type', proto)
-
-    # The bond status is set to PRESENT_WITHOUT_INFO unless a different bond
-    # status is provided or the bond amount contains information about the
-    # status (i.e. BOND_DENIED).
-    new.status = fn(
-        BondStatus.parse, 'status', proto, metadata.enum_overrides,
-        default=inferred_status or BondStatus.PRESENT_WITHOUT_INFO)
     new.status_raw_text = fn(normalize, 'status', proto)
 
     return new.build()

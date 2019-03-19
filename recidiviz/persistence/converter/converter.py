@@ -27,7 +27,7 @@ from recidiviz.persistence import entities, persistence_utils
 from recidiviz.persistence.converter import arrest, sentence, \
     charge, bond, booking, person, hold
 from recidiviz.persistence.converter.converter_utils import fn, \
-    parse_bond_amount_and_check_for_type_and_status_info, parse_int
+    parse_bond_amount_type_and_status, parse_int
 
 
 def convert(ingest_info, metadata):
@@ -115,7 +115,7 @@ class Converter:
         booking_builder.charges = charges
 
         bond_info_tuple = fn(
-            parse_bond_amount_and_check_for_type_and_status_info,
+            parse_bond_amount_type_and_status,
             'total_bond_amount',
             ingest_booking)
         if bond_info_tuple is not None:

@@ -23,11 +23,11 @@ from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 class BondType(EntityEnum, metaclass=EntityEnumMeta):
     CASH = enum_strings.bond_type_cash
+    DENIED = enum_strings.bond_type_denied
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
-    NO_BOND = enum_strings.bond_type_no_bond
+    NOT_REQUIRED = enum_strings.bond_type_not_required
     PARTIAL_CASH = enum_strings.bond_type_partial_cash
     SECURED = enum_strings.bond_type_secured
-    REMOVED_WITHOUT_INFO = enum_strings.removed_without_info
     UNSECURED = enum_strings.bond_type_unsecured
 
     @staticmethod
@@ -36,15 +36,12 @@ class BondType(EntityEnum, metaclass=EntityEnumMeta):
 
 
 class BondStatus(EntityEnum, metaclass=EntityEnumMeta):
-    DENIED = enum_strings.bond_status_denied
-    INFERRED_SET = enum_strings.bond_status_inferred_set
-    NOT_REQUIRED = enum_strings.bond_status_not_required
     PENDING = enum_strings.bond_status_pending
     POSTED = enum_strings.bond_status_posted
-    REVOKED = enum_strings.bond_status_revoked
-    SET = enum_strings.bond_status_set
     PRESENT_WITHOUT_INFO = enum_strings.present_without_info
     REMOVED_WITHOUT_INFO = enum_strings.removed_without_info
+    REVOKED = enum_strings.bond_status_revoked
+    SET = enum_strings.bond_status_set
 
     @staticmethod
     def _get_default_map():
@@ -62,9 +59,9 @@ BOND_TYPE_MAP = {
     '10 BOND': BondType.PARTIAL_CASH,
     '10 NO CONTACT': BondType.PARTIAL_CASH,
     '10 W BAIL CREDIT': BondType.PARTIAL_CASH,
+    'BAIL DENIED': BondType.DENIED,
     'BENCH WARRANT': None,
-    'BAIL DENIED': BondType.NO_BOND,
-    'BOND DENIED': BondType.NO_BOND,
+    'BOND DENIED': BondType.DENIED,
     'BOND AT 10': BondType.PARTIAL_CASH,
     'BOND AT 20': BondType.PARTIAL_CASH,
     'BONDING COMPANY': BondType.SECURED,
@@ -77,45 +74,51 @@ BOND_TYPE_MAP = {
     'CASH SURETY': BondType.SECURED,
     'CASH W BAIL CREDIT': BondType.CASH,
     'COURT ORDER': None,
+    'DENIED': BondType.DENIED,
     'FULL CASH': BondType.CASH,
     'FULL CASH NO SURETY': BondType.CASH,
-    'HOLD WITHOUT BAIL': BondType.NO_BOND,
-    'N A': BondType.NO_BOND,
-    'NO BAIL': BondType.NO_BOND,
-    'NO BOND': BondType.NO_BOND,
-    'NO BOND ALLOWED': BondType.NO_BOND,
-    'NONE SET': BondType.NO_BOND,
-    'NONE': BondType.NO_BOND,
-    'OTHER': BondType.NO_BOND,
-    'OWN RECOG': BondType.NO_BOND,
-    'OWN RECOGNIZANCE': BondType.NO_BOND,
-    'OWN RECOGNIZANCE SIGNATURE BOND': BondType.NO_BOND,
+    'HOLD WITHOUT BAIL': BondType.DENIED,
+    'N A': BondType.NOT_REQUIRED,
+    'NO BAIL': BondType.DENIED,
+    'NO BOND': BondType.DENIED,
+    'NO BOND ALLOWED': BondType.DENIED,
+    'NONE SET': BondType.NOT_REQUIRED,
+    'NONE': BondType.DENIED,
+    'NOT REQUIRED': BondType.NOT_REQUIRED,
+    'OTHER': None,
+    'OWN RECOG': BondType.NOT_REQUIRED,
+    'OWN RECOGNIZANCE': BondType.NOT_REQUIRED,
+    'OWN RECOGNIZANCE SIGNATURE BOND': BondType.NOT_REQUIRED,
     'PARTIAL CASH': BondType.PARTIAL_CASH,
     'PARTIALLY SECURE': BondType.SECURED,
     'PAY AND RELEASE': BondType.CASH,
     'PAY OR SERVE': BondType.CASH,
     'PAY OR STAY': BondType.CASH,
-    'PENDING': BondType.NO_BOND,
-    'PENDING PRE TRIAL': BondType.NO_BOND,
+    # TODO(990): remap 'PENDING' values to BondStatus.PENDING
+    'PENDING': None,
+    'PENDING PRE TRIAL': None,
     'PERCENT': BondType.PARTIAL_CASH,
-    'PERSONAL RECOGNIZANCE': BondType.NO_BOND,
+    'PERSONAL RECOGNIZANCE': BondType.NOT_REQUIRED,
     'PURGE': BondType.CASH,
     'PURGE PAYMENT': BondType.CASH,
-    'RELEASE ON RECOGNIZANCE': BondType.NO_BOND,
-    'RELEASED BY COURT': BondType.NO_BOND,
-    'RELEASED ON OWN RECOGNIZANCE': BondType.NO_BOND,
-    'RELEASED ON RECOGNIZANCE': BondType.NO_BOND,
-    'ROR': BondType.NO_BOND,
+    'RELEASE ON RECOGNIZANCE': BondType.NOT_REQUIRED,
+    'RELEASED BY COURT': BondType.NOT_REQUIRED,
+    'RELEASED ON OWN RECOGNIZANCE': BondType.NOT_REQUIRED,
+    'RELEASED ON RECOGNIZANCE': BondType.NOT_REQUIRED,
+    'ROR': BondType.NOT_REQUIRED,
     'SECURED': BondType.SECURED,
     'SECURE BOND': BondType.SECURED,
     'SECURED BOND': BondType.SECURED,
     'SEE ABOVE': None,
-    'SERVING FELONY TIME': BondType.NO_BOND,
-    'SERVING MISDEMEANOR TIME': BondType.NO_BOND,
-    'SERVE TIME': BondType.NO_BOND,
-    'SET BY COURT': BondType.NO_BOND,
+    # TODO(990): remap 'SERVING' values to ChargeStatus.SENTENCED
+    'SERVING FELONY TIME': None,
+    'SERVING MISDEMEANOR TIME': None,
+    'SERVE TIME': None,
+    # TODO(990): remap 'SET BY COURT' to BondStatus.SET
+    'SET BY COURT': None,
     'SPLIT BONDS': BondType.CASH,
-    'STATE INMATE': BondType.NO_BOND,
+    # TODO(990): remap 'STATE INMATE' to ChargeStatus.SENTENCED
+    'STATE INMATE': None,
     'SURETY': BondType.SECURED,
     'SURETY BOND': BondType.SECURED,
     'TOTAL BOND PER COURT': BondType.CASH,
@@ -126,8 +129,8 @@ BOND_TYPE_MAP = {
     'UNSECURED': BondType.UNSECURED,
     'UNSECURED BOND': BondType.UNSECURED,
     'W SURETY': BondType.SECURED,
-    'WRITTEN PROMISE': BondType.NO_BOND,
-    'WRITTEN PROMISE TO APPEAR': BondType.NO_BOND,
+    'WRITTEN PROMISE': BondType.NOT_REQUIRED,
+    'WRITTEN PROMISE TO APPEAR': BondType.NOT_REQUIRED,
 }
 
 # MappableEnum.parse will strip punctuation and separate tokens with a single
@@ -138,16 +141,11 @@ BOND_TYPE_MAP = {
 # persistence/converter/converter_utils
 BOND_STATUS_MAP = {
     'ACTIVE': BondStatus.SET,
-    'BOND DENIED': BondStatus.DENIED,
     'BOND REVOCATION': BondStatus.REVOKED,
-    'DENIED': BondStatus.DENIED,
-    'HOLD WITHOUT BAIL': BondStatus.DENIED,
-    'NO BOND ALLOWED': BondStatus.DENIED,
-    'NONE SET': BondStatus.NOT_REQUIRED,
-    'NOT REQUIRED': BondStatus.NOT_REQUIRED,
+    'BOND REVOKED': BondStatus.REVOKED,
     'PENDING': BondStatus.PENDING,
     'POSTED': BondStatus.POSTED,
     'REVOKED': BondStatus.REVOKED,
-    'BOND REVOKED': BondStatus.REVOKED,
+    'REVOKED BOND': BondStatus.REVOKED,
     'SET': BondStatus.SET,
 }
