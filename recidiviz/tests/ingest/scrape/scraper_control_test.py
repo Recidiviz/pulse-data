@@ -60,11 +60,13 @@ class TestScraperStart:
     @patch("recidiviz.ingest.scrape.tracker.purge_docket_and_session")
     @patch("recidiviz.ingest.scrape.docket.load_target_list")
     @patch("recidiviz.ingest.scrape.sessions.get_current_session")
+    @patch("recidiviz.utils.pubsub_helper.purge")
     def test_start(
-            self, mock_current_session, mock_docket, mock_tracker,
+            self, mock_purge, mock_current_session, mock_docket, mock_tracker,
             mock_sessions, mock_region, mock_supported, mock_environment,
             client):
         """Tests that the start operation chains together the correct calls."""
+        mock_purge.return_value = None
         mock_docket.return_value = None
         mock_tracker.return_value = None
         mock_sessions.return_value = None
@@ -83,6 +85,7 @@ class TestScraperStart:
                               headers=headers)
         assert response.status_code == 200
 
+        mock_purge.assert_called_with(scrape_key, 'scraper_batch')
         mock_docket.assert_called_with(scrape_key, '', '')
         mock_tracker.assert_called_with(scrape_key)
         mock_sessions.assert_called_with(scrape_key)
@@ -96,15 +99,18 @@ class TestScraperStart:
     @patch("recidiviz.ingest.scrape.tracker.purge_docket_and_session")
     @patch("recidiviz.ingest.scrape.docket.load_target_list")
     @patch("recidiviz.ingest.scrape.sessions.get_current_session")
+    @patch("recidiviz.utils.pubsub_helper.purge")
     def test_start_timezone(
-            self, mock_current_session, mock_docket, mock_tracker,
-            mock_sessions, mock_region, mock_supported, mock_environment,
+            self, mock_purge, mock_current_session, mock_docket,
+            mock_tracker, mock_sessions, mock_region, mock_supported,
+            mock_environment,
             client):
         """Tests that the start operation chains together the correct calls."""
         mock_docket.return_value = None
         mock_tracker.return_value = None
         mock_sessions.return_value = None
         mock_current_session.return_value = None
+        mock_purge.return_value = None
         mock_environment.return_value = 'production'
         mock_region.return_value = fake_region(environment='production')
         mock_supported.side_effect = _MockSupported
@@ -120,6 +126,7 @@ class TestScraperStart:
                               headers=headers)
         assert response.status_code == 200
 
+        mock_purge.assert_called_with(scrape_key, 'scraper_batch')
         mock_docket.assert_called_with(scrape_key, '', '')
         mock_tracker.assert_called_with(scrape_key)
         mock_sessions.assert_called_with(scrape_key)
@@ -134,11 +141,13 @@ class TestScraperStart:
     @patch("recidiviz.ingest.scrape.tracker.purge_docket_and_session")
     @patch("recidiviz.ingest.scrape.docket.load_target_list")
     @patch("recidiviz.ingest.scrape.sessions.get_current_session")
+    @patch("recidiviz.utils.pubsub_helper.purge")
     def test_start_all_diff_environment(
-            self, mock_current_session, mock_docket, mock_tracker,
+            self, mock_purge, mock_current_session, mock_docket, mock_tracker,
             mock_sessions, mock_region, mock_supported, mock_environment,
             client):
         """Tests that the start operation chains together the correct calls."""
+        mock_purge.return_value = None
         mock_docket.return_value = None
         mock_tracker.return_value = None
         mock_sessions.return_value = None
@@ -159,6 +168,7 @@ class TestScraperStart:
         assert not mock_docket.called
         assert not mock_tracker.called
         assert not mock_sessions.called
+        assert not mock_purge.called
         mock_region.assert_called_with('us_wy')
         mock_supported.assert_called_with(timezone=None)
 
@@ -169,11 +179,13 @@ class TestScraperStart:
     @patch("recidiviz.ingest.scrape.tracker.purge_docket_and_session")
     @patch("recidiviz.ingest.scrape.docket.load_target_list")
     @patch("recidiviz.ingest.scrape.sessions.get_current_session")
+    @patch("recidiviz.utils.pubsub_helper.purge")
     def test_start_existing_session(
-            self, mock_get_current_session, mock_docket, mock_tracker,
-            mock_create_session, mock_region, mock_supported, mock_environment,
-            client):
+            self, mock_purge, mock_get_current_session, mock_docket,
+            mock_tracker, mock_create_session, mock_region, mock_supported,
+            mock_environment, client):
         """Tests that the start operation halts if an open session exists."""
+        mock_purge.return_value = None
         mock_docket.return_value = None
         mock_tracker.return_value = None
         mock_create_session.return_value = None
@@ -189,6 +201,7 @@ class TestScraperStart:
         response = client.get('/start', query_string=request_args,
                               headers=headers)
         assert response.status_code == 200
+        assert not mock_purge.called
         assert not mock_create_session.called
         assert not mock_tracker.called
         assert not mock_docket.called

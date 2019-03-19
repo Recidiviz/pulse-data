@@ -33,7 +33,8 @@ from recidiviz.common import queues
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.scrape import (docket, ingest_utils, scrape_phase,
                                      sessions, tracker)
-from recidiviz.utils import monitoring, regions
+from recidiviz.ingest.scrape.constants import BATCH_PUBSUB_TYPE
+from recidiviz.utils import monitoring, regions, pubsub_helper
 from recidiviz.utils.auth import authenticate_request
 from recidiviz.utils.params import get_value, get_values
 
@@ -75,8 +76,12 @@ def scraper_start():
                 'session', region)
             return
 
-        logging.info("Starting new scraper for: %s", scrape_key)
+        logging.info(
+            "Purging pubsub queue for scrape_key: %s and pubsub_type: %s",
+            scrape_key, BATCH_PUBSUB_TYPE)
+        pubsub_helper.purge(scrape_key, BATCH_PUBSUB_TYPE)
 
+        logging.info("Starting new scraper for: %s", scrape_key)
         scraper = regions.get_region(region).get_scraper()
 
         sessions.create_session(scrape_key)

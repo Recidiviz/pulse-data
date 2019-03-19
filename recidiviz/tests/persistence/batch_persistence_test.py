@@ -30,7 +30,8 @@ from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.scrape import constants, ingest_utils, infer_release
 from recidiviz.ingest.scrape.task_params import Task
 from recidiviz.persistence import batch_persistence
-from recidiviz.persistence.batch_persistence import PUBSUB_TYPE, BatchMessage
+from recidiviz.persistence.batch_persistence import BATCH_PUBSUB_TYPE, \
+    BatchMessage
 from recidiviz.utils import pubsub_helper
 
 REGIONS = ['us_pa_greene', 'us_ny']
@@ -67,14 +68,14 @@ class TestBatchPersistence(TestCase):
                 scrape_key = ScrapeKey(region, constants.ScrapeType.BACKGROUND)
                 pubsub_helper.get_subscriber().delete_subscription(
                     pubsub_helper.get_subscription_path(
-                        scrape_key, pubsub_type=PUBSUB_TYPE))
+                        scrape_key, pubsub_type=BATCH_PUBSUB_TYPE))
             except exceptions.NotFound:
                 pass
 
     def test_write_to_pubsub(self):
         scrape_key = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
         pubsub_helper.create_topic_and_subscription(
-            scrape_key, PUBSUB_TYPE)
+            scrape_key, BATCH_PUBSUB_TYPE)
 
         ii = IngestInfo()
         ii.create_person(full_name=TEST_NAME).create_booking(
@@ -100,7 +101,7 @@ class TestBatchPersistence(TestCase):
     def test_write_to_multiple_pubsub(self):
         scrape_key = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
         pubsub_helper.create_topic_and_subscription(
-            scrape_key, PUBSUB_TYPE)
+            scrape_key, BATCH_PUBSUB_TYPE)
 
         ii = IngestInfo()
         ii.create_person(full_name=TEST_NAME).create_booking(
@@ -144,7 +145,7 @@ class TestBatchPersistence(TestCase):
     def test_write_error_to_pubsub(self):
         scrape_key = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
         pubsub_helper.create_topic_and_subscription(
-            scrape_key, PUBSUB_TYPE)
+            scrape_key, BATCH_PUBSUB_TYPE)
 
         error = TEST_ERROR
 
@@ -169,7 +170,7 @@ class TestBatchPersistence(TestCase):
     def test_persist_to_db(self, mock_write):
         scrape_key = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
         pubsub_helper.create_topic_and_subscription(
-            scrape_key, PUBSUB_TYPE)
+            scrape_key, BATCH_PUBSUB_TYPE)
 
         ii = IngestInfo()
         ii.create_person(person_id=TEST_ID, full_name=TEST_NAME).create_booking(
@@ -200,7 +201,7 @@ class TestBatchPersistence(TestCase):
     def test_persist_to_db_multiple_same_tasks_one_write(self, mock_write):
         scrape_key = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
         pubsub_helper.create_topic_and_subscription(
-            scrape_key, PUBSUB_TYPE)
+            scrape_key, BATCH_PUBSUB_TYPE)
 
         ii = IngestInfo()
         ii.create_person(person_id=TEST_ID, full_name=TEST_NAME).create_booking(
@@ -241,7 +242,7 @@ class TestBatchPersistence(TestCase):
     def test_persist_to_db_failed_no_write(self, mock_write):
         scrape_key = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
         pubsub_helper.create_topic_and_subscription(
-            scrape_key, PUBSUB_TYPE)
+            scrape_key, BATCH_PUBSUB_TYPE)
 
         ii = IngestInfo()
         ii.create_person(person_id=TEST_ID, full_name=TEST_NAME).create_booking(
@@ -279,7 +280,7 @@ class TestBatchPersistence(TestCase):
     def test_persist_to_db_same_task_one_fail_one_pass(self, mock_write):
         scrape_key = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
         pubsub_helper.create_topic_and_subscription(
-            scrape_key, PUBSUB_TYPE)
+            scrape_key, BATCH_PUBSUB_TYPE)
         mock_write.return_value = True
 
         ii = IngestInfo()
@@ -318,7 +319,7 @@ class TestBatchPersistence(TestCase):
     def test_persist_to_db_same_task_many_fail_one_pass(self, mock_write):
         scrape_key = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
         pubsub_helper.create_topic_and_subscription(
-            scrape_key, PUBSUB_TYPE)
+            scrape_key, BATCH_PUBSUB_TYPE)
 
         ii = IngestInfo()
         ii.create_person(person_id=TEST_ID, full_name=TEST_NAME).create_booking(
@@ -361,9 +362,9 @@ class TestBatchPersistence(TestCase):
         scrape_key1 = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
         scrape_key2 = ScrapeKey(REGIONS[1], constants.ScrapeType.BACKGROUND)
         pubsub_helper.create_topic_and_subscription(
-            scrape_key1, PUBSUB_TYPE)
+            scrape_key1, BATCH_PUBSUB_TYPE)
         pubsub_helper.create_topic_and_subscription(
-            scrape_key2, PUBSUB_TYPE)
+            scrape_key2, BATCH_PUBSUB_TYPE)
 
         ii = IngestInfo()
         ii.create_person(person_id=TEST_ID, full_name=TEST_NAME).create_booking(
