@@ -48,7 +48,7 @@ before_deploy:
 
   # Authenticate gcloud
   - gcloud auth activate-service-account recidiviz-staging@appspot.gserviceaccount.com --key-file client-secret-staging.json
-  - gcloud auth configure-docker
+  - gcloud beta auth configure-docker  # use beta as travis has an old gcloud
 
   # Push the docker image to GCR
   - IMAGE_URL=us.gcr.io/recidiviz-staging/appengine/default.$VERSION:latest
