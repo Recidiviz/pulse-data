@@ -17,6 +17,7 @@
 
 """Cloud Tasks queue helper functions."""
 
+import datetime
 import json
 import uuid
 from typing import List
@@ -38,6 +39,7 @@ def clear_client():
     global _client
     _client = None
 
+
 def format_queue_path(queue_name):
     """Formats a queue name into its full Cloud Tasks queue path.
 
@@ -54,6 +56,20 @@ def format_queue_path(queue_name):
     return full_queue_path
 
 
+def format_task_path(queue_name: str, task_name: str):
+    """Creates a task path out of the necessary parts.
+
+    Task path is of the form:
+        '/projects/{project}/locations/{location}'
+        '/queues/{queue}/tasks/{task_name}'
+    """
+    return client().task_path(
+        metadata.project_id(),
+        metadata.region(),
+        queue_name,
+        task_name)
+
+
 def format_scrape_task_path(queue_name: str, region_code: str, task_id: str):
     """Creates a scrape task path out of the necessary parts.
 
@@ -61,11 +77,7 @@ def format_scrape_task_path(queue_name: str, region_code: str, task_id: str):
         '/projects/{project}/locations/{location}'
         '/queues/{queue}/tasks/{region_code}-{task_id}'
     """
-    return client().task_path(
-        metadata.project_id(),
-        metadata.region(),
-        queue_name,
-        '{}-{}'.format(region_code, task_id))
+    return format_task_path(queue_name, '{}-{}'.format(region_code, task_id))
 
 
 def purge_scrape_tasks(*, region_code: str, queue_name: str):
@@ -124,3 +136,27 @@ def enqueue_scraper_phase(*, region_code, url):
         }
     )
     client().create_task(format_queue_path(SCRAPER_PHASE_QUEUE), task)
+
+
+BIGQUERY_QUEUE = 'bigquery'
+
+def create_bq_task(table_name: str, url: str):
+    """Create a BigQuery table export path.
+
+    Args:
+        table_name: Cloud SQL table to export to BQ. Must be defined in
+            recidiviz.calculator.bq.export_config.TABLES_TO_EXPORT.
+        url: App Engine worker URL.
+    """
+    body = {'table_name': table_name}
+    task_id = '{}-{}-{}'.format(
+        table_name, str(datetime.date.today()), uuid.uuid4())
+    task_name = format_task_path(BIGQUERY_QUEUE, task_id)
+    task = Task(
+        name=task_name,
+        app_engine_http_request={
+            'relative_uri': url,
+            'body': json.dumps(body).encode()
+        }
+    )
+    client().create_task(format_queue_path(BIGQUERY_QUEUE), task)

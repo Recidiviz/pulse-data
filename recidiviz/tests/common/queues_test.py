@@ -108,3 +108,41 @@ class QueuesTest(unittest.TestCase):
         mock_client.return_value.queue_path.assert_called_with(
             metadata.project_id(), metadata.region(), queue_name)
         mock_client.return_value.list_tasks.assert_called_with(queue_path)
+
+
+    @patch('recidiviz.common.queues.datetime')
+    @patch('recidiviz.common.queues.uuid')
+    @patch('google.cloud.tasks_v2beta3.CloudTasksClient')
+    def test_create_bq_task(self, mock_client, mock_uuid, mock_datetime):
+        """Tests that a BQ export task is created."""
+        url = '/test/bq'
+        queue_name = queues.BIGQUERY_QUEUE
+        table_name = 'test_table'
+        uuid = 'random-uuid'
+        date = '1900-01-01'
+        queue_path = queue_name + '-path'
+        mock_uuid.uuid4.return_value = uuid
+        mock_datetime.datet.today.return_value = date
+        mock_client.return_value.queue_path.return_value = queue_path
+        task_path = queue_path + '/{}-{}-{}'.format(
+            table_name, date, uuid)
+        mock_client.return_value.task_path.return_value = task_path
+
+        queues.create_bq_task(
+            table_name=table_name, url=url)
+
+        params = {'table_name': table_name}
+        body_encoded = json.dumps(params).encode()
+
+        task = Task(
+            name=task_path,
+            app_engine_http_request={
+                'relative_uri': url,
+                'body': body_encoded
+            }
+        )
+
+        mock_client.return_value.queue_path.assert_called_with(
+            metadata.project_id(), metadata.region(), queue_name)
+        mock_client.return_value.create_task.assert_called_with(
+            queue_path, task)
