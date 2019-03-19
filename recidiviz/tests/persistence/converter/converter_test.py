@@ -293,6 +293,36 @@ class TestConverter(unittest.TestCase):
 
         self.assertEqual(result, expected_result)
 
+    def testConvert_ExternalId_ClearPII(self):
+        # Arrange
+        metadata = IngestMetadata('REGION', _JURISDICTION_ID, _INGEST_TIME)
+
+        ingest_info = IngestInfo()
+        ingest_info.people.add(
+            person_id='PERSON_ID',
+            full_name='full_name',
+            booking_ids=['BOOKING_ID'])
+        ingest_info.bookings.add(
+            booking_id='BOOKING_ID',
+            admission_date=str(_RELEASE_DATE))
+        # Act
+        result = converter.convert(ingest_info, metadata)
+
+        # Assert
+        expected_result = [Person.new_with_defaults(
+            external_id='PERSON_ID',
+            region='REGION',
+            jurisdiction_id='JURISDICTION_ID',
+            bookings=[Booking.new_with_defaults(
+                external_id='BOOKING_ID',
+                admission_date=_RELEASE_DATE,
+                admission_date_inferred=False,
+                custody_status=CustodyStatus.PRESENT_WITHOUT_INFO,
+                last_seen_time=_INGEST_TIME
+            )])]
+
+        self.assertEqual(result, expected_result)
+
     def testConvert_TotalBondWithCharge_SetsTotalBondOnCharge(self):
         # Arrange
         metadata = IngestMetadata.new_with_defaults(

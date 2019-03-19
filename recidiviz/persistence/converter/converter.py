@@ -86,9 +86,10 @@ class Converter:
 
         converted_person = person_builder.build()
 
-        # If every booking for the person has a release date, then scrub pii
-        if all(converted_booking.release_date for converted_booking in
-               converted_person.bookings):
+        # Scrub PII if the person either has an external id or if all bookings
+        # are already resolved.
+        if converted_person.external_id \
+                or not persistence_utils.has_active_booking(converted_person):
             persistence_utils.remove_pii_for_person(converted_person)
 
         return converted_person
