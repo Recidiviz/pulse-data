@@ -55,7 +55,7 @@ class BondConverterTest(unittest.TestCase):
 
         self.assertEqual(result, expected_result)
 
-    def testParseBond_AmountIsNoBond_SetsAmountToZero(self):
+    def testParseBond_AmountIsNoBond_UsesAmountAsType(self):
         # Arrange
         ingest_bond = ingest_info_pb2.Bond(amount='No Bond')
 
@@ -64,12 +64,12 @@ class BondConverterTest(unittest.TestCase):
 
         # Assert
         expected_result = entities.Bond.new_with_defaults(
-            bond_type=BondType.NO_BOND,
-            status=BondStatus.PRESENT_WITHOUT_INFO
+            bond_type=BondType.DENIED,
+            status=BondStatus.SET
         )
         self.assertEqual(result, expected_result)
 
-    def testParseBond_AmountIsBondDenied_SetsAmountToZero(self):
+    def testParseBond_AmountIsBondDenied_UsesAmountAsType(self):
         # Arrange
         ingest_bond = ingest_info_pb2.Bond(amount='Bond Denied')
 
@@ -78,7 +78,7 @@ class BondConverterTest(unittest.TestCase):
 
         # Assert
         expected_result = entities.Bond.new_with_defaults(
-            bond_type=BondType.NO_BOND,
-            status=BondStatus.DENIED
+            bond_type=BondType.DENIED,
+            status=BondStatus.SET
         )
         self.assertEqual(result, expected_result)
