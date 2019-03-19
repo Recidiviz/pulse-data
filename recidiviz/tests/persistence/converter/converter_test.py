@@ -283,7 +283,7 @@ class TestConverter(unittest.TestCase):
                 charges=[Charge.new_with_defaults(
                     status=ChargeStatus.PRESENT_WITHOUT_INFO,
                     bond=Bond.new_with_defaults(
-                        status=BondStatus.INFERRED_SET,
+                        status=BondStatus.PRESENT_WITHOUT_INFO,
                         bond_type=BondType.CASH,
                         amount_dollars=100
                     )
@@ -322,7 +322,7 @@ class TestConverter(unittest.TestCase):
                     status=ChargeStatus.PRESENT_WITHOUT_INFO,
                     bond=Bond.new_with_defaults(
                         amount_dollars=100,
-                        status=BondStatus.INFERRED_SET,
+                        status=BondStatus.PRESENT_WITHOUT_INFO,
                         bond_type=BondType.CASH
                     )
                 )]

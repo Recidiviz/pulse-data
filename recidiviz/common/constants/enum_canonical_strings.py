@@ -109,14 +109,13 @@ hold_status_inferred_dropped = 'INFERRED_DROPPED'
 # Bond
 
 bond_type_cash = 'CASH'
-bond_type_no_bond = 'NO_BOND'
+bond_type_denied = 'DENIED'
+bond_type_not_required = 'NOT_REQUIRED'
 bond_type_partial_cash = 'PARTIAL_CASH'
 bond_type_secured = 'SECURED'
 bond_type_unsecured = 'UNSECURED'
 
-bond_status_denied = 'DENIED'
 bond_status_inferred_set = 'INFERRED_SET'
-bond_status_not_required = 'NOT_REQUIRED'
 bond_status_pending = 'PENDING'
 bond_status_posted = 'POSTED'
 bond_status_revoked = 'REVOKED'

@@ -126,23 +126,20 @@ hold_status = Enum(enum_strings.hold_status_active,
 
 # Bond
 
-bond_type = Enum(enum_strings.external_unknown,
-                 enum_strings.bond_type_cash,
-                 enum_strings.bond_type_no_bond,
+bond_type = Enum(enum_strings.bond_type_cash,
+                 enum_strings.external_unknown,
+                 enum_strings.bond_type_denied,
+                 enum_strings.bond_type_not_required,
                  enum_strings.bond_type_partial_cash,
                  enum_strings.bond_type_secured,
-                 enum_strings.removed_without_info,
                  enum_strings.bond_type_unsecured,
                  name='bond_type')
 
-bond_status = Enum(enum_strings.bond_status_denied,
-                   enum_strings.present_without_info,
-                   enum_strings.bond_status_inferred_set,
-                   enum_strings.bond_status_not_required,
-                   enum_strings.bond_status_pending,
+bond_status = Enum(enum_strings.bond_status_pending,
                    enum_strings.bond_status_posted,
-                   enum_strings.bond_status_revoked,
+                   enum_strings.present_without_info,
                    enum_strings.removed_without_info,
+                   enum_strings.bond_status_revoked,
                    enum_strings.bond_status_set,
                    name='bond_status')
 
