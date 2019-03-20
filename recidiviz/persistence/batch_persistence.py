@@ -100,18 +100,31 @@ def _get_batch_messages(scrape_key):
     """
 
     def inner():
-        return pubsub_helper.get_subscriber().pull(
-            pubsub_helper.get_subscription_path(scrape_key,
-                                                pubsub_type=BATCH_PUBSUB_TYPE),
+        subscriber = pubsub_helper.get_subscriber()
+        logging.info('Got the pubsub subscriber')
+        logging.info('Getting subscription path')
+        sub_path = pubsub_helper.get_subscription_path(
+            scrape_key, pubsub_type=BATCH_PUBSUB_TYPE)
+        logging.info('Got the subscription path')
+        return subscriber.pull(
+            sub_path,
             max_messages=BATCH_READ_SIZE,
             return_immediately=True
         )
 
     messages = []
     while True:
+        logging.info('Pulling messages off pubsub')
         response = pubsub_helper.retry_with_create(
             scrape_key, inner, pubsub_type=BATCH_PUBSUB_TYPE)
+        logging.info('Finished pulling messages, read %s messages',
+                     len(response.received_messages))
         if response.received_messages:
+            logging.info('Acking the read messages')
+            # TODO(1339): Move this back to bottom of method pending
+            #  scraper_start fix.
+            _ack_messages(response.received_messages, scrape_key)
+            logging.info('Finished acking the messages')
             messages.extend(response.received_messages)
         else:
             break
@@ -218,8 +231,6 @@ def persist_to_database(region_code, scrape_type, scraper_start_time):
 
     messages = _get_batch_messages(scrape_key)
 
-    # TODO(1339): Move this back to bottom of method pending scraper_start fix.
-    _ack_messages(messages, scrape_key)
     logging.info('Received %s messages', len(messages))
     if messages:
         proto, failed_tasks = _get_proto_from_messages(messages)
