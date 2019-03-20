@@ -91,9 +91,12 @@ _CHARGE_DEGREE_MAP = {
     '3RD': ChargeDegree.THIRD,
     '4': ChargeDegree.FOURTH,
     '4TH': ChargeDegree.FOURTH,
+    'F': ChargeDegree.FIRST,
     'FIRST': ChargeDegree.FIRST,
     'FOURTH': ChargeDegree.FOURTH,
+    'S': ChargeDegree.SECOND,
     'SECOND': ChargeDegree.SECOND,
+    'T': ChargeDegree.THIRD,
     'THIRD': ChargeDegree.THIRD,
     'UNKNOWN': ChargeDegree.EXTERNAL_UNKNOWN,
 }
@@ -102,20 +105,20 @@ _CHARGE_DEGREE_MAP = {
 # space. Add mappings here using a single space between words and numbers.
 # For example, `N/A` can be written as `N A` and `(10%)` can be written as `10`.
 _CHARGE_CLASS_MAP = {
+    'C': ChargeClass.CIVIL,
     'CIVIL': ChargeClass.CIVIL,
-    'FELONY': ChargeClass.FELONY,
     'F': ChargeClass.FELONY,
+    'FELONY': ChargeClass.FELONY,
     'I': ChargeClass.INFRACTION,
     'INFRACTION': ChargeClass.INFRACTION,
-    'MISDEMEANOR': ChargeClass.MISDEMEANOR,
     'M': ChargeClass.MISDEMEANOR,
+    'MISDEMEANOR': ChargeClass.MISDEMEANOR,
     'N A': None,
     'O': ChargeClass.OTHER,
     'OTHER': ChargeClass.OTHER,
     'PAROLE VIOLATION': ChargeClass.PAROLE_VIOLATION,
-    'PAROLE_VIOLATION': ChargeClass.PAROLE_VIOLATION,
+    'PROB VIOLATION': ChargeClass.PROBATION_VIOLATION,
     'PROBATION VIOLATION': ChargeClass.PROBATION_VIOLATION,
-    'PROBATION_VIOLATION': ChargeClass.PROBATION_VIOLATION,
     'UNKNOWN': ChargeClass.EXTERNAL_UNKNOWN
 }
 
@@ -175,8 +178,6 @@ _CHARGE_STATUS_MAP = {
     'OTHER W EXPLANATION': None,
     'PAROLE PROBATION REINSTATED': ChargeStatus.SENTENCED,
     'PAROLE PROBATION REVOKED': ChargeStatus.SENTENCED,
-    'PAROLE/PROBATION REINSTATED': ChargeStatus.SENTENCED,
-    'PAROLE/PROBATION REVOKED': ChargeStatus.SENTENCED,
     'PENDING': ChargeStatus.PENDING,
     'PRESENTENCED': ChargeStatus.PRETRIAL,
     'PRE TRIAL': ChargeStatus.PRETRIAL,
