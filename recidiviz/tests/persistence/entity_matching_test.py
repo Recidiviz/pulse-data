@@ -27,7 +27,7 @@ from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.hold import HoldStatus
 from recidiviz.persistence.database import schema, database_utils
 from recidiviz.persistence import entities, entity_matching
-from recidiviz.persistence.entity_matching import EntityMatchingError
+from recidiviz.persistence.errors import EntityMatchingError
 from recidiviz.tests.utils import fakes
 
 _ID = 1
