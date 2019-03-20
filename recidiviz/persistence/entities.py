@@ -47,6 +47,9 @@ class Entity:
             raise Exception('Abstract class cannot be instantiated')
         return super().__new__(cls)
 
+    def get_entity_name(self):
+        return self.__class__.__name__.lower()
+
 
 @attr.s
 class Person(Entity, BuildableAttr, DefaultableAttr):

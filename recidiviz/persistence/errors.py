@@ -27,6 +27,10 @@ class PersistenceError(Exception):
 class EntityMatchingError(Exception):
     """Raised when an error with entity matching is encountered."""
 
+    def __init__(self, msg: str, entity_name: str):
+        self.entity_name = entity_name
+        super(EntityMatchingError, self).__init__(msg)
+
 
 class MatchedMultipleDatabaseEntitiesError(EntityMatchingError):
     """Raised when an ingested entity is matched to multiple database
@@ -40,7 +44,8 @@ class MatchedMultipleDatabaseEntitiesError(EntityMatchingError):
             "\nDatabase entities: {}")
         msg = msg_template.format(ingested_entity,
                                   '\n'.join(str(e) for e in database_entities))
-        super(MatchedMultipleDatabaseEntitiesError, self).__init__(msg)
+        super(MatchedMultipleDatabaseEntitiesError, self).__init__(
+            msg, ingested_entity.get_entity_name())
 
 
 class MatchedMultipleIngestedEntitiesError(EntityMatchingError):
@@ -55,4 +60,5 @@ class MatchedMultipleIngestedEntitiesError(EntityMatchingError):
             "\nIngested entities: {}")
         msg = msg_template.format(database_entity,
                                   '\n'.join(str(e) for e in ingested_entities))
-        super(MatchedMultipleIngestedEntitiesError, self).__init__(msg)
+        super(MatchedMultipleIngestedEntitiesError, self).__init__(
+            msg, database_entity.get_entity_name())

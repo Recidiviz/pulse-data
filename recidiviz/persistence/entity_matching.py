@@ -20,6 +20,8 @@ import logging
 from collections import defaultdict
 from typing import List, Dict, Tuple, Set, Sequence, Callable, Any, cast
 
+from opencensus.stats import measure, view, aggregation
+
 from recidiviz import Session
 from recidiviz.common import common_utils
 from recidiviz.common.constants.bond import BondStatus
@@ -30,7 +32,21 @@ from recidiviz.persistence import entity_matching_utils as utils, entities
 from recidiviz.persistence.database import database
 from recidiviz.persistence.entities import Entity
 from recidiviz.persistence.errors import MatchedMultipleDatabaseEntitiesError, \
-    MatchedMultipleIngestedEntitiesError
+    MatchedMultipleIngestedEntitiesError, EntityMatchingError
+from recidiviz.utils import monitoring
+
+m_matching_errors = measure.MeasureInt(
+    'persistence/entity_matching/error_count',
+    'Number of EntityMatchingErrors thrown for a specific entity type', '1')
+
+matching_errors_by_entity_view = view.View(
+    'recidiviz/persistence/entity_matching/error_count',
+    'Sum of the errors in the entit matching layer, by entity',
+    [monitoring.TagKey.REGION, monitoring.TagKey.ENTITY_TYPE],
+    m_matching_errors,
+    aggregation.SumAggregation())
+
+monitoring.register_views([matching_errors_by_entity_view])
 
 
 def match(
@@ -96,10 +112,11 @@ def match_people_and_return_error_count(
             match_person(ingested_person=ingested_person, db_people=db_people,
                          orphaned_entities=orphaned_entities,
                          matched_people_by_db_id=matched_people_by_db_id)
-        except Exception:
+        except EntityMatchingError as e:
             logging.exception(
                 'Found error while matching ingested person. \nPerson: %s',
                 ingested_person)
+            increment_error(e.entity_name)
             error_count += 1
     return error_count
 
@@ -419,7 +436,7 @@ def _get_next_available_match(
         db_entities: Sequence[entities.Entity],
         db_entities_matched_by_id: Dict[int, Any],
         matcher: Callable):
-    id_name = ingested_entity.__class__.__name__.lower() + '_id'
+    id_name = ingested_entity.get_entity_name() + '_id'
 
     for db_entity in db_entities:
         if not getattr(db_entity, id_name) in db_entities_matched_by_id and \
@@ -456,3 +473,9 @@ def _get_all_matches(
         db_entities: Sequence[entities.Entity], matcher: Callable):
     return [db_entity for db_entity in db_entities
             if matcher(db_entity=db_entity, ingested_entity=ingested_entity)]
+
+
+def increment_error(entity_name: str) -> None:
+    mtags = {monitoring.TagKey.ENTITY_TYPE: entity_name}
+    with monitoring.measurements(mtags) as measurements:
+        measurements.measure_int_put(m_matching_errors, 1)
