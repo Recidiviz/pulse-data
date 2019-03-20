@@ -38,60 +38,13 @@ script:
 after_success:
   - coveralls
 
-before_deploy:
-  # App engine doesn't allow '.' in the version name
-  - VERSION=$(echo $TRAVIS_TAG | tr '.' '-')
-
-  # Create encryption keys used to authenticate with GAE
-  - openssl aes-256-cbc -K $encrypted_f7b0b16e1068_key -iv $encrypted_f7b0b16e1068_iv
-    -in client-secret-staging.json.enc -out client-secret-staging.json -d
-
-  # Authenticate gcloud
-  - gcloud auth activate-service-account recidiviz-staging@appspot.gserviceaccount.com --key-file client-secret-staging.json
-  - gcloud docker --authorize-only  # use insteead of 'auth configure-docker' as travis has an old gcloud
-
-  # Push the docker image to GCR
-  - IMAGE_URL=us.gcr.io/recidiviz-staging/appengine/default.$VERSION:latest
-  - docker tag recidiviz-image $IMAGE_URL
-  - docker push $IMAGE_URL
-
-  # Generate queue.yaml
-  - docker exec -it recidiviz pipenv run python -m recidiviz.tools.build_queue_config --environment all
-  - docker cp recidiviz:/app/queue.yaml .
-
-
-# Enable skip_cleanup when deploying to ensure queue.yaml is available to deploy
 deploy:
-  # Deploy queue.yaml to staging
-  - provider: gae
-    skip_cleanup: true
-    keyfile: client-secret-staging.json
-    project: recidiviz-staging
-    on:
-      tags: true
-      condition: $TRAVIS_TAG =~ ^v[0-9]+\.[0-9]+\.[0-9]+
-    config: queue.yaml
-
   # Deploy full application to staging
-  - provider: gae
-    skip_cleanup: true
-    keyfile: client-secret-staging.json
-    project: recidiviz-staging
+  - provider: script
+    script: bash travis/deploy_staging.sh
     on:
       tags: true
       condition: $TRAVIS_TAG =~ ^v[0-9]+\.[0-9]+\.[0-9]+
-    config: staging.yaml
-    image_url: $IMAGE_URL
-    version: $VERSION
-
-  # Deploy cron.yaml to staging
-  - provider: gae
-    keyfile: client-secret-staging.json
-    project: recidiviz-staging
-    on:
-      tags: true
-      condition: $TRAVIS_TAG =~ ^v[0-9]+\.[0-9]+\.[0-9]+
-    config: cron.yaml
 
 # Reduce the workload on travis by only whitelisting 'push' builds on master (ie. Run a build for every merge into
 # master but not pushes to other branches). Note: If running all pushes on master (ie. PR merges) overloads Travis, we
