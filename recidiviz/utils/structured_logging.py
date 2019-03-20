@@ -28,24 +28,23 @@ def region_record_factory(default_record_factory, *args, **kwargs):
     record = default_record_factory(*args, **kwargs)
 
     tags = monitoring.thread_local_tags()
-    record.region = tags.map.get(monitoring.TagKey.REGION, '')
+    record.region = tags.map.get(monitoring.TagKey.REGION)
 
     return record
 
 
 class StructuredLogFormatter(logging.Formatter):
     def format(self, record):
+        labels = {
+            'region': record.region,
+            'funcName': record.funcName,
+            'module': record.module,
+            'thread': record.thread,
+            'threadName': record.threadName,
+        }
         return {
             'text': super(StructuredLogFormatter, self).format(record),
-            'labels': {
-                # All labels must be strings or bytes (not None)
-                'region': record.region,
-
-                'funcName': record.funcName,
-                'module': record.module,
-                'thread': record.thread,
-                'threadName': record.threadName,
-            }
+            'labels': {k: str(v) for k, v in labels.items()}
         }
 
 
