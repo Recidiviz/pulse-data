@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains logic for communicating with the batch persistence layer."""
+import datetime
 import json
 import logging
 from http import HTTPStatus
@@ -43,6 +44,12 @@ batch_blueprint = Blueprint('batch', __name__)
 
 class BatchPersistError(Exception):
     """Raised when there was an error with batch persistence."""
+
+    def __init__(self, region: str, scrape_type: ScrapeType,
+                 scraper_start_time: datetime.datetime):
+        msg_template = "Error when running '{}' for region {} at {}"
+        msg = msg_template.format(scrape_type, region, scraper_start_time)
+        super(BatchPersistError, self).__init__(msg)
 
 
 @attr.s(frozen=True)
@@ -271,8 +278,11 @@ def read_and_persist():
         scrape_type = session.scrape_type
         scraper_start_time = session.start
 
-        did_persist = persist_to_database(
-            region, scrape_type, scraper_start_time)
+        try:
+            did_persist = persist_to_database(
+                region, scrape_type, scraper_start_time)
+        except:
+            raise BatchPersistError(region, scrape_type, scraper_start_time)
 
         if did_persist:
             next_phase = scrape_phase.next_phase(request.endpoint)
