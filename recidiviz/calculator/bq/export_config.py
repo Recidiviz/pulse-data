@@ -63,7 +63,7 @@ COLUMNS_TO_EXCLUDE = {
     'person': ['full_name']
 }
 
-BASE_TABLES_BQ_DATASET = 'census_test'
+BASE_TABLES_BQ_DATASET = 'census'
 
 
 def gcs_export_uri(table_name: str) -> str:
