@@ -22,8 +22,7 @@ from typing import Callable, Optional
 
 from recidiviz.common.constants.bond import BondStatus
 from recidiviz.persistence import entities
-from recidiviz.persistence.errors import EntityMatchingError
-
+from recidiviz.persistence.errors import PersistenceError
 
 # '*' catches positional arguments, making our arguments named and required.
 from recidiviz.persistence.persistence_utils import is_booking_active
@@ -79,8 +78,9 @@ def _db_open_booking_matches_ingested_booking(
     if not db_open_bookings:
         return True
     if len(db_open_bookings) > 1:
-        raise EntityMatchingError('db person {} has more than one open '
-                                  'booking'.format(db_entity.person_id))
+        raise PersistenceError(
+            'db person {} has more than one open booking'.format(
+                db_entity.person_id))
     return any(db_open_bookings[0].external_id == ingested_booking.external_id
                for ingested_booking in ingested_entity.bookings)
 

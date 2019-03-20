@@ -112,3 +112,4 @@ class TagKey:
     SHOULD_PERSIST = 'should_persist'
     PERSISTED = 'persisted'
     ERROR = 'error'
+    ENTITY_TYPE = 'entity_type'
