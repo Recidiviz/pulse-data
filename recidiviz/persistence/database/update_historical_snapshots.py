@@ -21,6 +21,8 @@ import attr
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import text
 
+from recidiviz.common.constants.booking import CustodyStatus
+from recidiviz.common.constants.sentence import SentenceStatus
 from recidiviz.persistence.database import schema
 
 
@@ -29,6 +31,11 @@ _HISTORICAL_TABLE_CLASS_SUFFIX = 'History'
 
 _BOOKING_DESCENDANT_START_DATE_FIELD = {
     schema.Sentence.__name__: 'date_imposed'
+}
+
+
+_BOOKING_DESCENDANT_END_DATE_FIELD = {
+    schema.Sentence.__name__: 'completion_date'
 }
 
 
@@ -80,10 +87,12 @@ def update_historical_snapshots(session: Session,
     logging.info('%s registered entities with existing snapshots',
                  len(most_recent_snapshots))
 
-    # Provided start times only need to be set for root_people, not
-    # orphaned_entities, because orphaned entities by definition are already
-    # present in the database and therefore already have initial snapshots.
-    _set_provided_start_times(root_people, context_registry)
+    # Provided start and end times only need to be set for root_people, not
+    # orphaned entities. Provided start and end times are only relevant for
+    # new entities with no existing snapshots, and orphaned entities by
+    # definition are already present in the database and therefore already have
+    # existing snapshots.
+    _set_provided_start_and_end_times(root_people, context_registry)
 
     logging.info('Provided start times set for registered entities')
 
@@ -189,73 +198,141 @@ def _fetch_most_recent_snapshots_for_entity_type(
         .all()
 
 
-def _set_provided_start_times(
+def _set_provided_start_and_end_times(
         root_people: List[schema.Person],
         context_registry: '_SnapshotContextRegistry') -> None:
     """For every entity in all record trees rooted at |root_people|, determines
     if the entity has a provided start time (i.e. the time the entity was
-    created or otherwise began) and sets it on the |context_registry|
+    created or otherwise began) and/or a provided end time (i.e. the time the
+    entity was completed or closed) and sets it on the |context_registry|
     """
     for person in root_people:
-        earliest_admission_date = None
+        earliest_booking_date = None
 
         for booking in person.bookings:
             admission_date = None
+            release_date = None
             # Don't include case where admission_date_inferred is None
             if booking.admission_date and \
                     booking.admission_date_inferred is False:
                 admission_date = booking.admission_date
                 context_registry.snapshot_context(booking) \
                     .provided_start_time = _date_to_datetime(admission_date)
-                if earliest_admission_date is None \
-                        or admission_date < earliest_admission_date:
-                    earliest_admission_date = admission_date
+                if earliest_booking_date is None \
+                        or admission_date < earliest_booking_date:
+                    earliest_booking_date = admission_date
+
+            # Don't include case where release_date_inferred is None
+            if booking.release_date and \
+                    booking.release_date_inferred is False:
+                release_date = booking.release_date
+                context_registry.snapshot_context(booking) \
+                    .provided_end_time = _date_to_datetime(release_date)
+                if earliest_booking_date is None \
+                        or release_date < earliest_booking_date:
+                    earliest_booking_date = release_date
+
+            # If no booking start date is provided or if start date is after
+            # end date, end date should be taken as booking start date instead
+            booking_start_date = None
+            if admission_date is not None:
+                booking_start_date = admission_date
+            if release_date is not None and \
+                    (booking_start_date is None or
+                     booking_start_date > release_date):
+                booking_start_date = release_date
 
             _execute_action_for_all_entities(
-                [booking],
-                _set_provided_start_time_for_booking_descendant,
-                admission_date,
+                _get_related_entities(booking),
+                _set_provided_start_and_end_time_for_booking_descendant,
+                booking_start_date,
                 context_registry)
 
-        if earliest_admission_date:
+        if earliest_booking_date:
             context_registry.snapshot_context(person).provided_start_time = \
-                _date_to_datetime(earliest_admission_date)
+                _date_to_datetime(earliest_booking_date)
 
 
-def _set_provided_start_time_for_booking_descendant(
-        entity: Any, parent_booking_admission_date: date,
+def _set_provided_start_and_end_time_for_booking_descendant(
+        entity: Any, parent_booking_start_date: date,
         context_registry: '_SnapshotContextRegistry') -> None:
-    """Sets |entity| provided start time on |context_registry| according to
-    type of |entity|
+    """Sets |entity| provided start time and/or provided end time on
+    |context_registry| according to type of |entity|
     """
 
+    # If this method is called during graph exploration on parent booking or
+    # parent person, do nothing.
+    if isinstance(entity, (schema.Booking, schema.Person)):
+        return
+
     start_time = None
+    end_time = None
 
     # Unless a more specific start time is provided, booking descendants should
     # be treated as having the same start time as the parent booking
-    if parent_booking_admission_date:
-        start_time = _date_to_datetime(parent_booking_admission_date)
+    #
+    # Note the inverse of this does NOT apply to end time. We cannot assume
+    # child entities end when the parent booking ends.
+    if parent_booking_start_date:
+        start_time = _date_to_datetime(parent_booking_start_date)
 
-    if type(entity).__name__ in _BOOKING_DESCENDANT_START_DATE_FIELD:
-        field_name = _BOOKING_DESCENDANT_START_DATE_FIELD[type(entity).__name__]
-        start_date = getattr(entity, field_name)
+    start_date_field_name = \
+        _get_booking_descendant_start_date_field_name(entity)
+    if start_date_field_name:
+        start_date = getattr(entity, start_date_field_name)
         if start_date:
             start_time = _date_to_datetime(start_date)
+
+    end_date_field_name = _get_booking_descendant_end_date_field_name(entity)
+    if end_date_field_name:
+        end_date = getattr(entity, end_date_field_name)
+        if end_date:
+            end_time = _date_to_datetime(end_date)
 
     if start_time:
         context_registry.snapshot_context(entity).provided_start_time = \
             start_time
+
+    if end_time:
+        context_registry.snapshot_context(entity).provided_end_time = \
+            end_time
+
+
+def _get_booking_descendant_start_date_field_name(entity: Any) -> Optional[str]:
+    """Returns field name, if one exists, on schema object that represents the
+    entity's start date
+    """
+    return _BOOKING_DESCENDANT_START_DATE_FIELD.get(type(entity).__name__, None)
+
+
+def _get_booking_descendant_end_date_field_name(entity: Any) -> Optional[str]:
+    """Returns field name, if one exists, on schema object that represents the
+    entity's end date
+    """
+    return _BOOKING_DESCENDANT_END_DATE_FIELD.get(type(entity).__name__, None)
 
 
 def _write_snapshots(session: Session, context: '_SnapshotContext',
                      snapshot_time: datetime) -> None:
     """Writes snapshots for any new entities and any entities that have changes.
 
-    Will backdate the initial snapshot for any entity that has a provided start
-    time earlier than |snapshot_time|.
+    If an entity has no existing snapshots and has a provided start time earlier
+    than |snapshot_time|, will backdate the snapshot to the provided start time.
 
-    NOTE: This method does not yet support creating new snapshots for which
-    both start and end time are in the past.
+    If an entity has no existing snapshots and has a provided end time earlier
+    than |snapshot_time|, will backdate the snapshot to the provided end time.
+    (This assumes the entity has already been already been properly updated
+    to reflect that it is completed, e.g. by marking a booking as released.)
+
+    If an entity has no existing snapshots and has both a provided start time
+    and provided end time earlier than |snapshot_time|, will create one
+    snapshot from start time to end time reflecting the entity's state while
+    it was active, and one open snapshot from end time reflecting the entity's
+    current state (again assuming the entity has already been properly updated
+    to reflect that it is completed).
+
+    If there is a conflict between provided start and end time (i.e. start time
+    is after end time), end time will govern.
     """
 
     # Historical table does not need to be updated if entity is not new and
@@ -265,27 +342,83 @@ def _write_snapshots(session: Session, context: '_SnapshotContext',
                     context.entity, context.most_recent_snapshot):
         return
 
+    if context.most_recent_snapshot is None:
+        _write_snapshots_for_new_entities(session, context, snapshot_time)
+    else:
+        _write_snapshots_for_existing_entities(session, context, snapshot_time)
+
+
+def _write_snapshots_for_new_entities(
+        session: Session, context: '_SnapshotContext',
+        snapshot_time: datetime) -> None:
+    """Writes snapshots for any new entities, including any required manual
+    adjustments based on provided start and end times
+    """
     historical_class = _get_historical_class(type(context.entity))
     new_historical_snapshot = historical_class()
     _copy_entity_fields_to_historical_snapshot(
         context.entity, new_historical_snapshot)
 
-    # Snapshot should only be backdated if there are no existing snapshots and
-    # the entity start time is earlier than the snapshot time
+    provided_start_time = None
+    provided_end_time = None
+
+    # Validate provided start and end times
     if context.provided_start_time and \
-            context.most_recent_snapshot is None and \
             context.provided_start_time.date() < snapshot_time.date():
-        new_historical_snapshot.valid_from = context.provided_start_time
+        provided_start_time = context.provided_start_time
+
+    if context.provided_end_time and \
+            context.provided_end_time.date() < snapshot_time.date():
+        provided_end_time = context.provided_end_time
+
+    if provided_start_time and provided_end_time and \
+            provided_start_time >= provided_end_time:
+        provided_start_time = None
+
+    if provided_start_time is not None and provided_end_time is None:
+        new_historical_snapshot.valid_from = provided_start_time
+    elif provided_end_time is not None:
+        new_historical_snapshot.valid_from = provided_end_time
     else:
         new_historical_snapshot.valid_from = snapshot_time
 
-    # See module assumption #2
-    key_column_name = \
-        context.entity.get_primary_key_column_name() # type: ignore
-    historical_master_key_property_name = \
-        historical_class.get_property_name_by_column_name(key_column_name)
-    setattr(new_historical_snapshot, historical_master_key_property_name,
-            context.entity.get_primary_key()) # type: ignore
+    # Snapshot must be merged separately from record tree, as they are not
+    # included in the ORM model relationships (to avoid needing to load
+    # the entire snapshot chain at once)
+    session.merge(new_historical_snapshot)
+
+    # If both start and end time were provided, an earlier snapshot needs to
+    # be created, reflecting the state of the entity before its current
+    # completed state
+    if provided_start_time and provided_end_time:
+        initial_snapshot = historical_class()
+        _copy_entity_fields_to_historical_snapshot(
+            context.entity, initial_snapshot)
+        initial_snapshot.valid_from = provided_start_time
+        initial_snapshot.valid_to = provided_end_time
+
+        if isinstance(context.entity, schema.Booking):
+            initial_snapshot.custody_status = CustodyStatus.IN_CUSTODY.value
+        elif isinstance(context.entity, schema.Sentence):
+            initial_snapshot.status = SentenceStatus.PRESENT_WITHOUT_INFO.value
+        else:
+            raise NotImplementedError('Snapshot backdating not supported for '
+                                      'type {}'.format(type(context.entity)))
+
+        session.merge(initial_snapshot)
+
+
+def _write_snapshots_for_existing_entities(
+        session: Session, context: '_SnapshotContext',
+        snapshot_time: datetime) -> None:
+    """Writes snapshot updates for entities that already have snapshots
+    present in the database
+    """
+    historical_class = _get_historical_class(type(context.entity))
+    new_historical_snapshot = historical_class()
+    _copy_entity_fields_to_historical_snapshot(
+        context.entity, new_historical_snapshot)
+    new_historical_snapshot.valid_from = snapshot_time
 
     # Snapshot must be merged separately from record tree, as they are not
     # included in the ORM model relationships (to avoid needing to load
@@ -459,8 +592,8 @@ def _does_entity_match_historical_snapshot(entity: Any,
     """Returns (True) if all fields on |entity| are equal to the corresponding
     fields on |historical_snapshot|.
 
-    NOTE: This method *only* compares columns which are present on both the
-    master and historical tables. Any column that is only present on one table
+    NOTE: This method *only* compares properties which are present on both the
+    master and historical tables. Any property that is only present on one table
     will be ignored.
     """
 
@@ -478,15 +611,24 @@ def _copy_entity_fields_to_historical_snapshot(
         entity: Any, historical_snapshot: Any) -> None:
     """Copies all column values present on |entity| to |historical_snapshot|.
 
-    NOTE: This method *only* copies values for columns which are present on
-    both the master and historical tables. Any column that is only present on
-    one table will be ignored.
+    NOTE: This method *only* copies values for properties which are present on
+    both the master and historical tables. Any property that is only present on
+    one table will be ignored. The only exception is the master key column,
+    which is copied over regardless of property name (only based on *column*
+    name), following module assumption #2.
     """
-
     for column_property_name in _get_shared_column_property_names(
             type(entity), type(historical_snapshot)):
         entity_value = getattr(entity, column_property_name)
         setattr(historical_snapshot, column_property_name, entity_value)
+
+    # See module assumption #2
+    key_column_name = entity.get_primary_key_column_name() # type: ignore
+    historical_master_key_property_name = \
+        type(historical_snapshot).get_property_name_by_column_name(
+            key_column_name)
+    setattr(historical_snapshot, historical_master_key_property_name,
+            entity.get_primary_key()) # type: ignore
 
 
 def _get_shared_column_property_names(entity_class_a: Type,
@@ -530,6 +672,7 @@ class _SnapshotContext:
     entity: Optional[Any] = attr.ib(default=None)
     most_recent_snapshot: Optional[Any] = attr.ib(default=None)
     provided_start_time: Optional[datetime] = attr.ib(default=None)
+    provided_end_time: Optional[datetime] = attr.ib(default=None)
 
 
 class _SnapshotContextRegistry:
