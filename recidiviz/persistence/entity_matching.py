@@ -18,7 +18,7 @@
 
 import logging
 from collections import defaultdict
-from typing import List, Dict, Tuple, Set, Sequence, Callable
+from typing import List, Dict, Tuple, Set, Sequence, Callable, Any, cast
 
 from recidiviz import Session
 from recidiviz.common import common_utils
@@ -26,10 +26,11 @@ from recidiviz.common.constants.bond import BondStatus
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.hold import HoldStatus
 from recidiviz.common.constants.sentence import SentenceStatus
-from recidiviz.persistence.database import database
 from recidiviz.persistence import entity_matching_utils as utils, entities
+from recidiviz.persistence.database import database
 from recidiviz.persistence.entities import Entity
-from recidiviz.persistence.errors import EntityMatchingError
+from recidiviz.persistence.errors import MatchedMultipleDatabaseEntitiesError, \
+    MatchedMultipleIngestedEntitiesError
 
 
 def match(
@@ -89,12 +90,12 @@ def match_people_and_return_error_count(
     |db_people|, the primary key is updated on the ingested person.
     """
     error_count = 0
-    matched_db_ids: Set[int] = set()
+    matched_people_by_db_id: Dict[int, entities.Person] = {}
     for ingested_person in ingested_people:
         try:
             match_person(ingested_person=ingested_person, db_people=db_people,
                          orphaned_entities=orphaned_entities,
-                         matched_db_ids=matched_db_ids)
+                         matched_people_by_db_id=matched_people_by_db_id)
         except Exception:
             logging.exception(
                 'Found error while matching ingested person. \nPerson: %s',
@@ -107,7 +108,7 @@ def match_person(
         *, ingested_person: entities.Person,
         db_people: List[entities.Person],
         orphaned_entities: List[Entity],
-        matched_db_ids: Set[int]) -> None:
+        matched_people_by_db_id: Dict[int, entities.Person]) -> None:
     db_person: entities.Person = _get_only_match(ingested_person, db_people,
                                                  utils.is_person_match)
     if db_person:
@@ -115,12 +116,13 @@ def match_person(
                       db_person.person_id)
         # If the match was previously matched to a different database
         # person, raise an error.
-        if db_person.person_id in matched_db_ids:
-            raise EntityMatchingError(
-                'matched db person {} to two ingested entities'.format(
-                    db_person.person_id))
+        if db_person.person_id in matched_people_by_db_id:
+            matches = [ingested_person,
+                       matched_people_by_db_id[db_person.person_id]]
+            raise MatchedMultipleIngestedEntitiesError(db_person, matches)
         ingested_person.person_id = db_person.person_id
-        matched_db_ids.add(db_person.person_id)  # type: ignore
+        matched_people_by_db_id[
+            cast(int, db_person.person_id)] = ingested_person
         match_bookings(db_person=db_person, ingested_person=ingested_person,
                        orphaned_entities=orphaned_entities)
 
@@ -133,7 +135,7 @@ def match_bookings(
     the |db_person|. For any ingested booking, if a matching booking exists on
     |db_person|, the primary key is updated on the ingested booking.
     """
-    matched_db_ids: Set[int] = set()
+    matched_bookings_by_db_id: Dict[int, entities.Booking] = {}
     for ingested_booking in ingested_person.bookings:
         db_booking: entities.Booking = \
             _get_only_match(ingested_booking, db_person.bookings,
@@ -143,11 +145,12 @@ def match_bookings(
                           db_booking.booking_id)
             # If the match was previously matched to a different database
             # booking, raise an error.
-            if db_booking.booking_id in matched_db_ids:
-                raise EntityMatchingError(
-                    'matched db booking {} to two ingested bookings'.format(
-                        db_booking.booking_id))
-            matched_db_ids.add(db_booking.booking_id)  # type: ignore
+            if db_booking.booking_id in matched_bookings_by_db_id:
+                matches = [ingested_booking,
+                           matched_bookings_by_db_id[db_booking.booking_id]]
+                raise MatchedMultipleIngestedEntitiesError(db_booking, matches)
+            matched_bookings_by_db_id[
+                cast(int, db_booking.booking_id)] = ingested_booking
             ingested_booking.booking_id = db_booking.booking_id
 
             if (db_booking.admission_date_inferred and
@@ -169,7 +172,7 @@ def match_bookings(
                             orphaned_entities=orphaned_entities)
 
     for db_booking in db_person.bookings:
-        if db_booking.booking_id not in matched_db_ids:
+        if db_booking.booking_id not in matched_bookings_by_db_id:
             ingested_person.bookings.append(db_booking)
 
 
@@ -244,20 +247,20 @@ def _match_from_charges(
 
         return obj_match and relationship_match
 
-    matched_db_ids: Set[int] = set()
+    matched_ing_objs_by_db_id: Dict[int, entities.Entity] = {}
     for ing_obj in ing_obj_map.values():
         db_obj = _get_next_available_match(
-            ing_obj, list(db_obj_map.values()), matched_db_ids,
+            ing_obj, list(db_obj_map.values()), matched_ing_objs_by_db_id,
             _is_match_with_relationships)
         if db_obj:
             db_id = getattr(db_obj, name + '_id')
             logging.debug('successfully matched to %s with id %s',
                           name, db_id)
             setattr(ing_obj, name + '_id', db_id)
-            matched_db_ids.add(db_id)  # type: ignore
+            matched_ing_objs_by_db_id[cast(int, db_id)] = ing_obj
 
     for db_obj in db_obj_map.values():
-        if not getattr(db_obj, id_name) in matched_db_ids:
+        if not getattr(db_obj, id_name) in matched_ing_objs_by_db_id:
             logging.debug('Did not match %s to any ingested %s, dropping',
                           getattr(db_obj, id_name), name)
             drop_fn = globals()['_drop_' + name]
@@ -293,7 +296,7 @@ def match_holds(
     added to the |ingested_booking|.
     """
 
-    matched_db_ids: Set[int] = set()
+    matched_holds_by_db_id: Dict[int, entities.Hold] = {}
     for ingested_hold in ingested_booking.holds:
         db_hold: entities.Hold = _get_only_match(
             ingested_hold, db_booking.holds, utils.is_hold_match)
@@ -304,17 +307,17 @@ def match_holds(
 
             # If the match was previously matched to a different database
             # charge, raise an error.
-            if db_hold.hold_id in matched_db_ids:
-                raise EntityMatchingError(
-                    'matched db hold {} to multiple ingested holds'.format(
-                        db_hold.hold_id))
+            if db_hold.hold_id in matched_holds_by_db_id:
+                matches = [ingested_hold,
+                           matched_holds_by_db_id[db_hold.hold_id]]
+                raise MatchedMultipleIngestedEntitiesError(db_hold, matches)
 
             ingested_hold.hold_id = db_hold.hold_id
-            matched_db_ids.add(db_hold.hold_id)  # type: ignore
+            matched_holds_by_db_id[cast(int, db_hold.hold_id)] = ingested_hold
 
     dropped_holds = []
     for db_hold in db_booking.holds:
-        if db_hold.hold_id not in matched_db_ids:
+        if db_hold.hold_id not in matched_holds_by_db_id:
             _drop_hold(db_hold)
             dropped_holds.append(db_hold)
     ingested_booking.holds.extend(dropped_holds)
@@ -376,29 +379,30 @@ def match_charges(
         considering the charge fields. At this point A matches to B,
         and B gets a new bond created in the DB.
     """
-    matched_db_ids: Set[int] = set()
+    matched_charges_by_db_id: Dict[int, entities.Charge] = {}
     ing_charges_sorted_by_child_count = sorted(
         ingested_booking.charges, key=_charge_relationship_count, reverse=True)
 
     for ingested_charge in ing_charges_sorted_by_child_count:
         db_charge: entities.Charge = _get_next_available_match(
             ingested_charge, db_booking.charges,
-            matched_db_ids, utils.is_charge_match_with_children)
+            matched_charges_by_db_id, utils.is_charge_match_with_children)
 
         if not db_charge:
             db_charge = _get_next_available_match(
-                ingested_charge, db_booking.charges, matched_db_ids,
+                ingested_charge, db_booking.charges, matched_charges_by_db_id,
                 utils.is_charge_match)
 
         if db_charge:
             logging.debug('Successfully matched to charge with ID %s',
                           db_charge.charge_id)
-            matched_db_ids.add(db_charge.charge_id)  # type: ignore
+            matched_charges_by_db_id[
+                cast(int, db_charge.charge_id)] = ingested_charge
             ingested_charge.charge_id = db_charge.charge_id
 
     dropped_charges = []
     for db_charge in db_booking.charges:
-        if db_charge.charge_id not in matched_db_ids:
+        if db_charge.charge_id not in matched_charges_by_db_id:
             _drop_charge(db_charge)
             dropped_charges.append(db_charge)
     ingested_booking.charges.extend(dropped_charges)
@@ -413,7 +417,8 @@ def _drop_charge(charge: entities.Charge):
 def _get_next_available_match(
         ingested_entity: entities.Entity,
         db_entities: Sequence[entities.Entity],
-        db_entities_matched_by_id: Set[int], matcher: Callable):
+        db_entities_matched_by_id: Dict[int, Any],
+        matcher: Callable):
     id_name = ingested_entity.__class__.__name__.lower() + '_id'
 
     for db_entity in db_entities:
@@ -442,9 +447,7 @@ def _get_only_match(
        """
     matches = _get_all_matches(ingested_entity, db_entities, matcher)
     if len(matches) > 1:
-        raise EntityMatchingError('matched ingested entity {} to all of the '
-                                  'following db entities: '
-                                  '{}'.format(ingested_entity, matches))
+        raise MatchedMultipleDatabaseEntitiesError(ingested_entity, matches)
     return matches[0] if matches else None
 
 
