@@ -17,9 +17,9 @@
 """Ingest TN aggregate jail data.
 """
 import datetime
-import os
 from typing import Dict
 
+import numpy as np
 import pandas as pd
 import tabula
 import us
@@ -32,8 +32,54 @@ from recidiviz.persistence.database.schema import TnFacilityAggregate, \
     TnFacilityFemaleAggregate
 
 
+_JAIL_REPORT_COLUMN_NAMES = [
+    'facility_name',
+    'tdoc_backup_population',
+    'local_felons_population',
+    'other_convicted_felons_population',
+    'federal_and_other_population',
+    'convicted_misdemeanor_population',
+    'pretrial_felony_population',
+    'pretrial_misdemeanor_population',
+    'total_jail_population',
+    'total_beds',
+]
+
+
+_FEMALE_JAIL_REPORT_COLUMN_NAMES = [
+    'facility_name',
+    'tdoc_backup_population',
+    'local_felons_population',
+    'other_convicted_felons_population',
+    'federal_and_other_population',
+    'convicted_misdemeanor_population',
+    'pretrial_felony_population',
+    'pretrial_misdemeanor_population',
+    'female_jail_population',
+    'total_beds',
+    'percent_total_capacity',
+    'female_beds',
+]
+
+
+_KEEP_FEMALE_JAIL_REPORT_COLUMN_NAMES = [
+    'facility_name',
+    'tdoc_backup_population',
+    'local_felons_population',
+    'other_convicted_felons_population',
+    'federal_and_other_population',
+    'convicted_misdemeanor_population',
+    'pretrial_felony_population',
+    'pretrial_misdemeanor_population',
+    'female_jail_population',
+    'female_beds',
+]
+
+
 _MANUAL_FACILITY_TO_COUNTY_MAP = {
+    'Johnson City': 'Washington',
     'Johnson City (F)': 'Washington',
+    'Kingsport': 'Sullivan',
     'Kingsport City': 'Sullivan',
 }
 
@@ -86,6 +132,47 @@ def _parse_date(filename: str) -> datetime.date:
     return aggregate_ingest_utils.on_last_day_of_month(d)
 
 
+def _expand_columns_with_spaces_to_new_columns(
+        df: pd.DataFrame) -> pd.DataFrame:
+    """Varying numbers of columns are parsed into a single column based
+    on headers that change over time. To account for this, create a
+    new dataframe with columns that are created by splitting the
+    contents of the smashed together columns, when we find that situation.
+    """
+    expanded_df = pd.DataFrame(index=df.index)
+    for col_ind in range(len(df.columns)):
+        col = df.iloc[:, col_ind]
+        if col.isnull().all():
+            continue
+
+        # Just copy over the first column and columns with no spaces,
+        # which haven't been smashed together, presumably.
+        if col_ind == 0 or not col.str.contains(' ').any():
+            expanded_df = expanded_df.join(col)
+        else:
+            # Extract all the smashed together columns into their own
+            # columns.
+
+            def grab_one_smashed_col(smashed, col_ind):
+                if pd.isnull(smashed) or len(smashed.split()) <= col_ind:
+                    return np.nan
+                return smashed.split()[col_ind]
+
+            cur_smashed_col = 0
+            while True:
+                smashed_col = col.apply(
+                    lambda smashed, col_ind=cur_smashed_col:
+                    grab_one_smashed_col(smashed, col_ind))
+                if (smashed_col.isnull()).all():
+                    break
+
+                smashed_col.name = col.name + '_{}'.format(cur_smashed_col)
+                expanded_df = expanded_df.join(smashed_col)
+                cur_smashed_col += 1
+
+    return expanded_df
+
+
 def _format_table(df: pd.DataFrame, is_female: bool) -> pd.DataFrame:
     """Format the dataframe that comes from one page of the PDF."""
 
@@ -93,57 +180,37 @@ def _format_table(df: pd.DataFrame, is_female: bool) -> pd.DataFrame:
     df.columns = df.iloc[:4].apply(lambda rows: ' '.join(rows.dropna()).strip())
     df = df.iloc[4:]
 
-    # Some columns get smashed together on parse due to column grouping.
-    smashed_columns_placeholder_name = 'smashed'
+    df = _expand_columns_with_spaces_to_new_columns(df)
+
+    # Discard extra columns and rename the columns based on the table.
     if is_female:
-        smashed_cols = [
-            'local_felons_population',
-            'other_convicted_felons_population',
-            'federal_and_other_population',
-            'convicted_misdemeanor_population',
-            'pretrial_felony_population',
-        ]
+        df = df.iloc[:, 0:len(_FEMALE_JAIL_REPORT_COLUMN_NAMES)]
+        df.columns = _FEMALE_JAIL_REPORT_COLUMN_NAMES
+        df = df[[col for col in df.columns if col in
+                 _KEEP_FEMALE_JAIL_REPORT_COLUMN_NAMES]]
 
-        rename = {
-            r'FACILITY': 'facility_name',
-            r'TDOC Backup.*': 'tdoc_backup_population',
-            r'FEMALE POPULATION': smashed_columns_placeholder_name,
-            r'Pre- trial.*': 'pretrial_misdemeanor_population',
-            r'Female Jail Pop\.': 'female_jail_population',
-            r'Female Beds\*\*': 'female_beds',
-        }
-
+        # Until 2013, the female reports didn't have beds, so percent
+        # capacity gets misinterpreted as female beds.
+        keep_cols = [col for col in df.columns
+                     if not df[col].apply(lambda val: isinstance(val, str) and
+                                          val.endswith('%')).any()]
+        df = df[keep_cols]
     else:
-        smashed_cols = [
-            'other_convicted_felons_population',
-            'federal_and_other_population',
-        ]
-
-        rename = {
-            r'FACILITY': 'facility_name',
-            r'TDOC Backup.*': 'tdoc_backup_population',
-            r'Local': 'local_felons_population',
-            r'Other .* Conv.*': smashed_columns_placeholder_name,
-            r'Conv\. Misd\.': 'convicted_misdemeanor_population',
-            r'Pre- trial Felony': 'pretrial_felony_population',
-            r'Pre- trial Misd\.': 'pretrial_misdemeanor_population',
-            r'Total Jail Pop\.': 'total_jail_population',
-            r'Total Beds\*\*': 'total_beds',
-        }
-
-    df = aggregate_ingest_utils.rename_columns_and_select(
-        df, rename, use_regex=True)
+        df = df.iloc[:, 0:len(_JAIL_REPORT_COLUMN_NAMES)]
+        df.columns = _JAIL_REPORT_COLUMN_NAMES
 
     # When the notes column has more than one line of text, tabula
     # parses a row of null.
     df = df.dropna(how='all')
 
-    # Extract individual values from the smashed columns.
-    for ind, col_name in enumerate(smashed_cols):
-        df[col_name] = df[smashed_columns_placeholder_name].map(
-            lambda element, ind=ind: element.split()[ind])
+    # Sometimes there are missing values, the best we can do is make them zeros?
+    # TODO The real trouble here is that column shifts might happen if
+    # missing values occur in smashed columns.
+    df = df.fillna(0)
 
-    df = df.drop(smashed_columns_placeholder_name, axis=1)
+    df = df.replace('`', 0)
+    df = df.replace('.', 0)
+    df = df.replace('N/A', 0)
 
     return df
 
@@ -157,11 +224,17 @@ def _pretend_facility_is_county(facility_name: str) -> str:
         '-',
         'Annex',
         'Co. Det. Center',
+        'CJC',
+        'CWC (CDC',
+        'CDC (F)',
+        'CDC (M)',
         'Det. Center',
         'Det, Center',
         'Extension',
+        'Extention',
         'Jail',
         'SCCC',
+        '(Temporarily closed)',
         'Work Center',
         'Workhouse',
     ]
