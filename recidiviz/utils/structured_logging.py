@@ -37,18 +37,38 @@ class StructuredLogFormatter(logging.Formatter):
     def format(self, record):
         return {
             'text': super(StructuredLogFormatter, self).format(record),
-            'region': record.region,
+            'labels': {
+                'region': record.region,
 
-            'funcName': record.funcName,
-            'module': record.module,
-            'thread': record.thread,
-            'threadName': record.threadName,
+                'funcName': record.funcName,
+                'module': record.module,
+                'thread': record.thread,
+                'threadName': record.threadName,
+            }
         }
 
 
-CLOUD_HANDLERS = (handlers.AppEngineHandler,
-                  handlers.CloudLoggingHandler,
-                  handlers.ContainerEngineHandler)
+class StructuredAppEngineHandler(handlers.AppEngineHandler):
+    def emit(self, record):
+        """Overrides the emit method for AppEngineHandler.
+
+        Allows us to put custom information in labels instead of
+        jsonPayload.message
+        """
+        message = super(StructuredAppEngineHandler, self).format(record)
+        labels = {**message['labels'], **self.get_gae_labels()}
+        # pylint: disable=protected-access
+        trace_id = (
+            "projects/%s/traces/%s" % (
+                self.project_id, labels[handlers.app_engine._TRACE_ID_LABEL])
+            if handlers.app_engine._TRACE_ID_LABEL in labels else None
+        )
+        self.transport.send(
+            record, message['text'],
+            resource=self.resource, labels=labels, trace=trace_id
+        )
+
+
 def setup():
     logger = logging.getLogger()
 
@@ -60,16 +80,17 @@ def setup():
     # ids are propogated and allows us to send structured messages.
     if environment.in_gae():
         client = Client()
-        client.setup_logging(log_level=logging.INFO)
+        handler = StructuredAppEngineHandler(client)
+        handlers.setup_logging(handler, log_level=logging.INFO)
         for handler in logger.handlers:
-            if not isinstance(handler, CLOUD_HANDLERS):
+            if not isinstance(handler, StructuredAppEngineHandler):
                 logger.removeHandler(handler)
     else:
         logging.basicConfig()
 
     for handler in logger.handlers:
         # If writing directly to Stackdriver, send a structured message.
-        if isinstance(handler, CLOUD_HANDLERS):
+        if isinstance(handler, StructuredAppEngineHandler):
             handler.setFormatter(StructuredLogFormatter())
         # Otherwise, the default stream handler requires a string.
         else:
