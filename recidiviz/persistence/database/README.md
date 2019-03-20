@@ -226,7 +226,7 @@ Create `/usr/local/sbin/initial-setup` with the below content, and `chmod` it to
 
 ```bash
 # Clone the repo and set up pipenv
-git clone https://github.com/Recidiviz/pulse-data && \
+git clone git@github.com:Recidiviz/pulse-data.git && \
 cd pulse-data && pipenv sync --dev
 
 # Make local copies of certs owned by user (to avoid issues with needing
@@ -318,3 +318,33 @@ At the end of `/etc/bash.bashrc`, add the below line. This makes aliases availab
 source /etc/profile.d/prod-data-aliases.sh
 ```
 
+Set up a shared Git user for pushes from the VM by creating `/etc/gitconfig` if it doesn't exist, and then running:
+
+```bash
+sudo git config --system user.name <shared user name>
+sudo git config --system user.email <shared user email>
+```
+
+In `/etc/ssh/ssh_config`, create a new host configuration for Github with the below content:
+
+```bash
+Host github.com
+  HostName github.com
+  IdentityFile /etc/ssh/github_key
+  User git
+```
+
+Generate the SSH key pair with the below command. Do not set a passphrase, because access to the VM is already controlled by GCP auth.
+
+```bash
+ssh-keygen -t rsa -b 4096 -C "<shared user email>"
+```
+
+Move the created key pair to `/etc/ssh/github_key` and `/etc/ssh/github_key.pub`, then ensure they are accessible for all users by running:
+
+```bash
+sudo chmod 644 /etc/ssh/github_key
+sudo chmod 644 /etc/ssh/github_key.pub
+```
+
+Add the public key to the shared Github account through the Github UI, and then run `ssh -T git@github.com` to confirm that the keys are properly set up.
