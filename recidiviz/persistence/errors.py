@@ -15,6 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains errors for the persistence directory."""
+from typing import Sequence
+
+from recidiviz.persistence.entities import Entity
 
 
 class PersistenceError(Exception):
@@ -23,3 +26,33 @@ class PersistenceError(Exception):
 
 class EntityMatchingError(Exception):
     """Raised when an error with entity matching is encountered."""
+
+
+class MatchedMultipleDatabaseEntitiesError(EntityMatchingError):
+    """Raised when an ingested entity is matched to multiple database
+    entities."""
+
+    def __init__(
+            self, ingested_entity: Entity, database_entities: Sequence[Entity]):
+        msg_template = (
+            "Matched one ingested entity to multiple database entities."
+            "\nIngested entity: {}"
+            "\nDatabase entities: {}")
+        msg = msg_template.format(ingested_entity,
+                                  '\n'.join(str(e) for e in database_entities))
+        super(MatchedMultipleDatabaseEntitiesError, self).__init__(msg)
+
+
+class MatchedMultipleIngestedEntitiesError(EntityMatchingError):
+    """Raised when a database entity is matched to multiple ingested
+    entities."""
+
+    def __init__(
+            self, database_entity: Entity, ingested_entities: Sequence[Entity]):
+        msg_template = (
+            "Matched one database entity to multiple ingested entities."
+            "\nDatabase entity: {}"
+            "\nIngested entities: {}")
+        msg = msg_template.format(database_entity,
+                                  '\n'.join(str(e) for e in ingested_entities))
+        super(MatchedMultipleIngestedEntitiesError, self).__init__(msg)
