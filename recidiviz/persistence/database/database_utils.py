@@ -21,10 +21,10 @@ from typing import Optional, Union, Type
 
 import attr
 
-from recidiviz import Base
 from recidiviz.common.constants.entity_enum import EntityEnum
 from recidiviz.persistence import entities
 from recidiviz.persistence.database import schema
+from recidiviz.persistence.database.schema import Base
 from recidiviz.persistence.entities import Entity
 
 

@@ -21,7 +21,9 @@ from opencensus.common.transports.async_ import AsyncTransport
 from opencensus.ext.flask.flask_middleware import FlaskMiddleware
 from opencensus.trace import config_integration
 from opencensus.trace.exporters import file_exporter, stackdriver_exporter
+import sqlalchemy
 
+import recidiviz
 from recidiviz.calculator.bq.export_manager import export_manager_blueprint
 from recidiviz.cloud_functions.cloud_functions import cloud_functions_blueprint
 from recidiviz.ingest.aggregate.scrape_aggregate_reports import \
@@ -32,10 +34,17 @@ from recidiviz.ingest.scrape.scraper_status import scraper_status
 from recidiviz.ingest.scrape.worker import worker
 from recidiviz.persistence.actions import actions
 from recidiviz.persistence.batch_persistence import batch_blueprint
+from recidiviz.persistence.database.schema import Base
 from recidiviz.tests.utils.populate_test_db import test_populator
-from recidiviz.utils import environment, structured_logging, metadata
+from recidiviz.utils import environment, secrets, structured_logging, metadata
+
+
+# SQLAlchemy URL prefix declaring the database type
+_DATABASE_TYPE = 'postgresql'
+
 
 structured_logging.setup()
+
 
 app = Flask(__name__)
 app.register_blueprint(scraper_control, url_prefix='/scraper')
@@ -51,12 +60,33 @@ app.register_blueprint(export_manager_blueprint, url_prefix='/export_manager')
 if not environment.in_gae():
     app.register_blueprint(test_populator, url_prefix='/test_populator')
 
+
+if environment.in_gae():
+    db_user = secrets.get_secret('sqlalchemy_db_user')
+    db_password = secrets.get_secret('sqlalchemy_db_password')
+    db_name = secrets.get_secret('sqlalchemy_db_name')
+    cloudsql_instance_id = secrets.get_secret('cloudsql_instance_id')
+
+    sqlalchemy_url = ('{database_type}://{db_user}:{db_password}@/{db_name}'
+                      '?host=/cloudsql/{cloudsql_instance_id}').format(
+                          database_type=_DATABASE_TYPE,
+                          db_user=db_user,
+                          db_password=db_password,
+                          db_name=db_name,
+                          cloudsql_instance_id=cloudsql_instance_id)
+    recidiviz.db_engine = sqlalchemy.create_engine(sqlalchemy_url)
+    Base.metadata.create_all(recidiviz.db_engine)
+    recidiviz.Session.configure(bind=recidiviz.db_engine)
+
+
 # Setup tracing of requests not traced by default
 if environment.in_gae():
     exporter = stackdriver_exporter.StackdriverExporter(
         project_id=metadata.project_id(), transport=AsyncTransport)
 else:
     exporter = file_exporter.FileExporter(file_name='traces')
+
+
 # TODO(596): This is a no-op until the next release of `opencensus`.
 app.config['OPENCENSUS_TRACE_PARAMS'] = {
     'BLACKLIST_HOSTNAMES': ['metadata']  # Don't trace metadata requests
