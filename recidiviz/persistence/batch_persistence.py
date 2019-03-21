@@ -15,9 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains logic for communicating with the batch persistence layer."""
-import datetime
 import json
 import logging
+from concurrent.futures.thread import ThreadPoolExecutor
 from http import HTTPStatus
 from typing import Optional
 
@@ -38,6 +38,7 @@ from recidiviz.utils import monitoring, pubsub_helper, regions
 from recidiviz.utils.auth import authenticate_request
 
 BATCH_READ_SIZE = 500
+NUM_PULL_THREADS = 5
 FAILED_TASK_THRESHOLD = 0.1
 batch_blueprint = Blueprint('batch', __name__)
 
@@ -45,10 +46,9 @@ batch_blueprint = Blueprint('batch', __name__)
 class BatchPersistError(Exception):
     """Raised when there was an error with batch persistence."""
 
-    def __init__(self, region: str, scrape_type: ScrapeType,
-                 scraper_start_time: datetime.datetime):
-        msg_template = "Error when running '{}' for region {} at {}"
-        msg = msg_template.format(scrape_type, region, scraper_start_time)
+    def __init__(self, region: str, scrape_type: ScrapeType):
+        msg_template = "Error when running '{}' for region {}"
+        msg = msg_template.format(scrape_type, region)
         super(BatchPersistError, self).__init__(msg)
 
 
@@ -105,36 +105,62 @@ def _get_batch_messages(scrape_key):
         A list of messages (ReceivedMessaged) containing the message data
         and the ack_id.
     """
-
-    def inner():
-        subscriber = pubsub_helper.get_subscriber()
-        logging.info('Got the pubsub subscriber')
-        logging.info('Getting subscription path')
-        sub_path = pubsub_helper.get_subscription_path(
-            scrape_key, pubsub_type=BATCH_PUBSUB_TYPE)
-        logging.info('Got the subscription path')
-        return subscriber.pull(
-            sub_path,
-            max_messages=BATCH_READ_SIZE,
-            return_immediately=True
-        )
-
-    messages = []
-    while True:
+    def async_pull():
         logging.info('Pulling messages off pubsub')
-        response = pubsub_helper.retry_with_create(
-            scrape_key, inner, pubsub_type=BATCH_PUBSUB_TYPE)
-        logging.info('Finished pulling messages, read %s messages',
-                     len(response.received_messages))
-        if response.received_messages:
-            logging.info('Acking the read messages')
-            # TODO(1339): Move this back to bottom of method pending
-            #  scraper_start fix.
-            _ack_messages(response.received_messages, scrape_key)
-            logging.info('Finished acking the messages')
-            messages.extend(response.received_messages)
-        else:
+        def inner():
+            subscriber = pubsub_helper.get_subscriber()
+            sub_path = pubsub_helper.get_subscription_path(
+                scrape_key, pubsub_type=BATCH_PUBSUB_TYPE)
+            logging.info('Got the subscription path')
+            return subscriber.pull(
+                sub_path,
+                max_messages=BATCH_READ_SIZE,
+                return_immediately=True
+            )
+        try:
+            recv_messages = pubsub_helper.retry_with_create(
+                scrape_key, inner, pubsub_type=BATCH_PUBSUB_TYPE).\
+                received_messages
+            if recv_messages:
+                logging.info('Finished pulling messages, read %s messages',
+                             len(recv_messages))
+                _ack_messages(recv_messages, scrape_key)
+            return recv_messages, False
+        # We occasionally get timeouts, we want to catch these and not kill the
+        # thread.
+        except Exception as e:
+            logging.error('Got an error trying to pull: %s', str(e))
+            return [], True
+
+    pool = ThreadPoolExecutor(NUM_PULL_THREADS)
+    messages = []
+    # Pubsub provides no guarantees about when all messages have been read off
+    # of pubsub.  If we don't return immediately, we might wait too long and
+    # returning immediately, even if no messages were returned, does not
+    # guarantee we are done.  The recommended solution is to keep trying until
+    # a sufficient number of pulls returns no messages.  We therefore do 5
+    # concurrent pulls and we break if and only if all 5 threads returned no
+    # messages.
+    while True:
+        pull_futures = []
+        all_failed = True
+        pulled_messages = []
+        for _ in range(NUM_PULL_THREADS):
+            t = pool.submit(async_pull)
+            pull_futures.append(t)
+        for pull_future in pull_futures:
+            # This is a blocking call until we return
+            result, did_fail = pull_future.result()
+            pulled_messages.extend(result)
+            all_failed = did_fail and all_failed
+        if all_failed:
+            raise BatchPersistError(
+                scrape_key.region_code, scrape_key.scrape_type)
+        if not pulled_messages:
+            logging.info('No pull calls had any messages, returning')
             break
+        else:
+            messages.extend(pulled_messages)
     return messages
 
 
@@ -238,7 +264,7 @@ def persist_to_database(region_code, scrape_type, scraper_start_time):
 
     messages = _get_batch_messages(scrape_key)
 
-    logging.info('Received %s messages', len(messages))
+    logging.info('Received %s total messages', len(messages))
     if messages:
         proto, failed_tasks = _get_proto_from_messages(messages)
 
@@ -282,7 +308,7 @@ def read_and_persist():
             did_persist = persist_to_database(
                 region, scrape_type, scraper_start_time)
         except:
-            raise BatchPersistError(region, scrape_type, scraper_start_time)
+            raise BatchPersistError(region, scrape_type)
 
         if did_persist:
             next_phase = scrape_phase.next_phase(request.endpoint)
