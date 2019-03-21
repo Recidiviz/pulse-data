@@ -30,8 +30,12 @@ the historical table (which does not). Because the key is shared between the
 master and historical tables, this allows an indirect guarantee of referential
 integrity to the historical tables as well.
 """
+import inspect
+import sys
+from typing import Iterator
+
 from sqlalchemy import Boolean, Column, Date, DateTime, Enum, ForeignKey, \
-    Integer, String, Text, UniqueConstraint
+    Integer, String, Text, UniqueConstraint, Table
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta, \
     declared_attr
@@ -506,7 +510,6 @@ class _SentenceSharedColumns:
             ForeignKey(
                 'booking.booking_id', deferrable=True, initially='DEFERRED'),
             nullable=False)
-
 
 
 class Sentence(Base, DatabaseEntity, _SentenceSharedColumns):
@@ -1029,3 +1032,12 @@ class TnFacilityFemaleAggregate(Base, _AggregateTableMixin):
     pretrial_misdemeanor_population = Column(Integer)
     female_jail_population = Column(Integer)
     female_beds = Column(Integer)
+
+
+def get_aggregate_table_classes() -> Iterator[Table]:
+    all_members_in_current_module = inspect.getmembers(sys.modules[__name__])
+    for _, member in all_members_in_current_module:
+        if (inspect.isclass(member)
+                and issubclass(member, Base)
+                and issubclass(member, _AggregateTableMixin)):
+            yield member
