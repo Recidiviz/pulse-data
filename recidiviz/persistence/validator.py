@@ -1,5 +1,5 @@
-# Recidiviz - a platform for tracking granular recidivism metrics in real time
-# Copyright (C) 2018 Recidiviz, Inc.
+# Recidiviz - a data platform for criminal justice reform
+# Copyright (C) 2019 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
