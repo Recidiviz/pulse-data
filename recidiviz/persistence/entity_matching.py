@@ -23,7 +23,6 @@ from typing import List, Dict, Tuple, Set, Sequence, Callable, Any, cast
 from opencensus.stats import measure, view, aggregation
 
 from recidiviz import Session
-from recidiviz.common import common_utils
 from recidiviz.common.constants.bond import BondStatus
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.hold import HoldStatus
@@ -210,8 +209,8 @@ def match_sentences(
 
 
 def _build_maps_from_charges(
-        charges: List[entities.Charge], obj_name: str) \
-        -> Tuple[Dict[str, Entity], Dict[str, Set[Entity]], Dict[int, str]]:
+        charges: List[entities.Charge], child_obj_name: str) \
+        -> Tuple[Dict[str, Entity], Dict[str, Set[Entity]]]:
     """Helper function that returns a pair of maps describing the relationships
     between charges and their children. The |object_map| maps ids, which may be
     temporary generated ids, to the objects they refer to. The
@@ -221,19 +220,16 @@ def _build_maps_from_charges(
     child."""
     object_map = {}
     object_relationships: Dict[str, set] = defaultdict(set)
-    id_to_generated: Dict[int, str] = {}
 
     for charge in charges:
-        obj = getattr(charge, obj_name)
-        if obj:
-            obj_id = getattr(obj, obj_name + '_id')
-            if not obj_id:
-                obj_id = id_to_generated.get(id(obj)) or \
-                         common_utils.create_generated_id()
-                id_to_generated[id(obj)] = obj_id
-            object_map[obj_id] = obj
-            object_relationships[obj_id].add(charge.charge_id)
-    return object_map, object_relationships, id_to_generated
+        child_obj = getattr(charge, child_obj_name)
+        if child_obj:
+            child_obj_id = getattr(child_obj, child_obj_name + '_id')
+            if not child_obj_id:
+                child_obj_id = _generate_id_from_obj(child_obj)
+            object_map[child_obj_id] = child_obj
+            object_relationships[child_obj_id].add(charge.charge_id)
+    return object_map, object_relationships
 
 
 def _match_from_charges(
@@ -246,13 +242,13 @@ def _match_from_charges(
     given |orphaned_entities|.
     """
     id_name = name + '_id'
-    db_obj_map, db_relationship_map, _ = _build_maps_from_charges(
+    db_obj_map, db_relationship_map = _build_maps_from_charges(
         db_booking.charges, name)
-    ing_obj_map, ing_relationship_map, id_to_generated = \
+    ing_obj_map, ing_relationship_map = \
         _build_maps_from_charges(ingested_booking.charges, name)
 
     def _is_match_with_relationships(*, db_entity, ingested_entity):
-        ing_entity_id = id_to_generated[id(ingested_entity)]
+        ing_entity_id = _generate_id_from_obj(ingested_entity)
         db_entity_id = getattr(db_entity, id_name)
         matcher = getattr(utils, 'is_{}_match'.format(name))
         obj_match = matcher(db_entity=db_entity,
@@ -283,6 +279,10 @@ def _match_from_charges(
             drop_fn = globals()['_drop_' + name]
             drop_fn(db_obj)
             orphaned_entities.append(db_obj)
+
+
+def _generate_id_from_obj(obj) -> str:
+    return str(id(obj)) + '_ENTITY_MATCHING_GENERATED'
 
 
 def _drop_sentence(sentence: entities.Sentence):
