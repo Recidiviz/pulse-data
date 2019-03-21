@@ -76,3 +76,25 @@ class SentenceConverterTest(unittest.TestCase):
         )
 
         self.assertEqual(result, expected_result)
+
+    def testParseSentence_completionDateWithoutStatus_marksAsCompleted(self):
+        # Arrange
+        ingest_sentence = ingest_info_pb2.Sentence(
+            sentence_id='SENTENCE_ID',
+            completion_date='2018-1-1',
+        )
+
+        # Act
+        result = sentence.convert(ingest_sentence,
+                                  IngestMetadata.new_with_defaults(
+                                      ingest_time=datetime.datetime(
+                                          year=2018, month=6, day=8)))
+
+        # Assert
+        expected_result = entities.Sentence.new_with_defaults(
+            external_id='SENTENCE_ID',
+            completion_date=datetime.date(year=2018, month=1, day=1),
+            status=SentenceStatus.COMPLETED
+        )
+
+        self.assertEqual(result, expected_result)
