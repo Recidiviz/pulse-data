@@ -63,10 +63,6 @@ def update_historical_snapshots(session: Session,
         len(root_people),
         len(orphaned_entities))
 
-    # TODO(1125): delete once we've validated the double-registration bug is no
-    # longer occurring
-    _assert_all_record_trees_well_formed(root_people)
-
     root_entities: List[Any] = root_people + orphaned_entities # type: ignore
 
     _assert_all_root_entities_unique(root_entities)
@@ -94,7 +90,7 @@ def update_historical_snapshots(session: Session,
     # existing snapshots.
     _set_provided_start_and_end_times(root_people, context_registry)
 
-    logging.info('Provided start times set for registered entities')
+    logging.info('Provided start and end times set for registered entities')
 
     for snapshot_context in context_registry.all_contexts():
         _write_snapshots(session, snapshot_context, snapshot_time)
@@ -164,18 +160,6 @@ def _fetch_most_recent_snapshots_for_entity_type(
         ids_list=', '.join([str(id) for id in entity_ids]))
 
     results = session.execute(text(snapshot_ids_query)).fetchall()
-
-    # TODO(899): remove this once zero-duration snapshots stop being written
-    results_by_master_key: Dict[int, List] = defaultdict(list)
-    for result in results:
-        results_by_master_key[result[1]].append(result)
-    overlapping_snapshot_entities = [str(master_key) for master_key, results
-                                     in results_by_master_key.items()
-                                     if len(results) > 1]
-    if overlapping_snapshot_entities:
-        logging.error('Overlapping historical snapshots found in table %s '
-                      'for master entity IDs %s', historical_table_name,
-                      ', '.join(overlapping_snapshot_entities))
 
     # Use only results where valid_to is None to exclude any overlapping
     # non-open snapshots
@@ -445,111 +429,6 @@ def _assert_all_root_entities_unique(
                 'Duplicate entities passed of type {} with ID {}'.format(
                     type_name, key))
         keys_by_type[type_name].add(key)
-
-
-# TODO(1125): either delete this or clean this up after #1125 is debugged
-def _assert_all_record_trees_well_formed(
-        root_people: List[schema.Person]) -> None:
-    """Raises (AssertionError) if there are any duplicate entities within any
-    record tree or between any record trees.
-    """
-    person_ids: Set[int] = set()
-    for person in root_people:
-        person_id = person.get_primary_key()
-        if person_id in person_ids:
-            raise AssertionError(
-                'Duplicate people with person ID: {}'.format(person_id))
-        person_ids.add(person_id)
-
-    booking_ids_with_ancestors: Dict[int, List[int]] = {}
-    for person in root_people:
-        for booking in person.bookings:
-            booking_id = booking.get_primary_key()
-            if booking_id in booking_ids_with_ancestors.keys():
-                person_id_a = booking_ids_with_ancestors[booking_id][0]
-                person_id_b = person.get_primary_key()
-                raise AssertionError(
-                    'Duplicate bookings with booking ID: {}, one with '
-                    'parent person ID {} and one with parent person ID {}' \
-                    .format(booking_id, person_id_a, person_id_b))
-            booking_ids_with_ancestors[booking_id] = [person.get_primary_key()]
-
-    charge_ids_with_ancestors: Dict[int, List[int]] = {}
-    for person in root_people:
-        for booking in person.bookings:
-            for charge in booking.charges:
-                charge_id = charge.get_primary_key()
-                if charge_id in charge_ids_with_ancestors.keys():
-                    person_id_a = charge_ids_with_ancestors[charge_id][0]
-                    booking_id_a = charge_ids_with_ancestors[charge_id][1]
-                    person_id_b = person.get_primary_key()
-                    booking_id_b = booking.get_primary_key()
-                    raise AssertionError(
-                        'Duplicate charges with charge ID: {}, one with '
-                        'parent person ID {} and parent booking ID {}, and '
-                        'one with parent person ID {} and parent booking ID '
-                        '{}'.format(charge_id, person_id_a, booking_id_a,
-                                    person_id_b, booking_id_b))
-                charge_ids_with_ancestors[charge_id] = \
-                    [person.get_primary_key(), booking.get_primary_key()]
-
-    bond_ids_with_ancestors: Dict[int, List[int]] = {}
-    for person in root_people:
-        for booking in person.bookings:
-            for charge in booking.charges:
-                if charge.bond is not None:
-                    bond = charge.bond
-                    bond_id = bond.get_primary_key()
-                    if bond_id in bond_ids_with_ancestors.keys():
-                        person_id_a = bond_ids_with_ancestors[bond_id][0]
-                        booking_id_a = bond_ids_with_ancestors[bond_id][1]
-                        charge_id_a = bond_ids_with_ancestors[bond_id][2]
-                        person_id_b = person.get_primary_key()
-                        booking_id_b = booking.get_primary_key()
-                        charge_id_b = charge.get_primary_key()
-                        raise AssertionError(
-                            'Duplicate bonds with bond ID: {}, one with '
-                            'parent person ID {}, parent booking ID {}, and '
-                            'parent charge ID {}, and one with parent person '
-                            'ID {}, parent booking ID {}, and parent charge '
-                            'ID {}'.format(bond_id, person_id_a, booking_id_a,
-                                           charge_id_a, person_id_b,
-                                           booking_id_b, charge_id_b))
-                    bond_ids_with_ancestors[bond_id] = \
-                        [person.get_primary_key(),
-                         booking.get_primary_key(),
-                         charge.get_primary_key()]
-
-    sentence_ids_with_ancestors: Dict[int, List[int]] = {}
-    for person in root_people:
-        for booking in person.bookings:
-            for charge in booking.charges:
-                if charge.sentence is not None:
-                    sentence = charge.sentence
-                    sentence_id = sentence.get_primary_key()
-                    if sentence_id in sentence_ids_with_ancestors.keys():
-                        person_id_a = \
-                            sentence_ids_with_ancestors[sentence_id][0]
-                        booking_id_a = \
-                            sentence_ids_with_ancestors[sentence_id][1]
-                        charge_id_a = \
-                            sentence_ids_with_ancestors[sentence_id][2]
-                        person_id_b = person.get_primary_key()
-                        booking_id_b = booking.get_primary_key()
-                        charge_id_b = charge.get_primary_key()
-                        raise AssertionError(
-                            'Duplicate sentences with sentence ID: {}, one '
-                            'with parent person ID {}, parent booking ID {}, '
-                            'and parent charge ID {}, and one with parent '
-                            'person ID {}, parent booking ID {}, and '
-                            'parent charge ID {}'.format(
-                                sentence_id, person_id_a, booking_id_a,
-                                charge_id_a, person_id_b, booking_id_b,
-                                charge_id_b))
-                    sentence_ids_with_ancestors[sentence_id] = \
-                        [person.get_primary_key(),
-                         booking.get_primary_key(),
-                         charge.get_primary_key()]
 
 
 def _execute_action_for_all_entities(start_entities: List[Any],
