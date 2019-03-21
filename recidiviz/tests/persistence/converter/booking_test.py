@@ -97,6 +97,34 @@ class BookingConverterTest(unittest.TestCase):
 
         self.assertEqual(result, expected_result)
 
+    def testParseBooking_releaseDateWithoutStatus_marksAsReleased(self):
+        # Arrange
+        metadata = IngestMetadata.new_with_defaults(
+            ingest_time=_INGEST_TIME
+        )
+
+        ingest_booking = ingest_info_pb2.Booking(
+            booking_id='BOOKING_ID',
+            release_date='2/1/2019',
+        )
+
+        # Act
+        booking.copy_fields_to_builder(self.subject, ingest_booking, metadata)
+        result = self.subject.build()
+
+        # Assert
+        expected_result = entities.Booking.new_with_defaults(
+            external_id='BOOKING_ID',
+            admission_date=_INGEST_TIME.date(),
+            admission_date_inferred=True,
+            release_date=date(year=2019, month=2, day=1),
+            release_date_inferred=False,
+            custody_status=CustodyStatus.RELEASED,
+            last_seen_time=_INGEST_TIME,
+        )
+
+        self.assertEqual(result, expected_result)
+
     def testParseBooking_releaseDateInFuture_setAsProjected(self):
         # Arrange
         metadata = IngestMetadata.new_with_defaults(
