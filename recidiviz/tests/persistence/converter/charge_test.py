@@ -20,6 +20,7 @@ import unittest
 
 from recidiviz.common.constants.charge import ChargeDegree, ChargeClass, \
     CourtType, ChargeStatus
+from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence import entities
@@ -103,7 +104,6 @@ class ChargeConverterTest(unittest.TestCase):
             charge_class=ChargeClass.PROBATION_VIOLATION,
             status=ChargeStatus.PRESENT_WITHOUT_INFO,
         )
-
         self.assertEqual(result, expected_result)
 
     def testParseCharge_SetsDefaults(self):
@@ -119,4 +119,27 @@ class ChargeConverterTest(unittest.TestCase):
         expected_result = entities.Charge.new_with_defaults(
             status=ChargeStatus.PRESENT_WITHOUT_INFO
         )
+        self.assertEqual(result, expected_result)
+
+    def testParseCharge_MapAcrossFields(self):
+        # Arrange
+        overrides_builder = EnumOverrides.Builder()
+        overrides_builder.add('CIVIL', CourtType.CIVIL, ChargeDegree)
+        overrides_builder.add('FIRST DEGREE', ChargeDegree.FIRST, CourtType)
+        metadata = IngestMetadata.new_with_defaults(
+            enum_overrides=overrides_builder.build()
+        )
+        ingest_charge = ingest_info_pb2.Charge(degree='civil',
+                                               court_type='first degree')
+
+        # Act
+        charge.copy_fields_to_builder(self.subject, ingest_charge,
+                                      metadata)
+        result = self.subject.build()
+
+        # Assert
+        expected_result = entities.Charge.new_with_defaults(
+            degree=ChargeDegree.FIRST, degree_raw_text='CIVIL',
+            court_type=CourtType.CIVIL, court_type_raw_text='FIRST DEGREE',
+            status=ChargeStatus.PRESENT_WITHOUT_INFO)
         self.assertEqual(result, expected_result)

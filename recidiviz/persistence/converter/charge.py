@@ -21,9 +21,9 @@ from recidiviz.common.constants.charge import (ChargeClass, ChargeDegree,
 from recidiviz.common.date import parse_date
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence import entities
-from recidiviz.persistence.converter.converter_utils import (fn, parse_bool,
-                                                             parse_dollars,
-                                                             parse_external_id)
+from recidiviz.persistence.converter.converter_utils import (
+    fn, parse_bool, parse_dollars, parse_external_id)
+from recidiviz.persistence.converter.enum_mappings import EnumMappings
 
 
 def copy_fields_to_builder(
@@ -33,28 +33,37 @@ def copy_fields_to_builder(
 
      Note: This will not copy children into the Builder!
      """
+
+    enum_fields = {
+        'degree': ChargeDegree.parse,
+        'charge_class': ChargeClass.parse,
+        'status': ChargeStatus.parse,
+        'court_type': CourtType.parse
+    }
+    enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
+
+    # Enum values
+    new.degree = enum_mappings.get(ChargeDegree)
+    new.degree_raw_text = fn(normalize, 'degree', proto)
+    new.charge_class = enum_mappings.get(ChargeClass)
+    new.class_raw_text = fn(normalize, 'charge_class', proto)
+    new.status = enum_mappings.get(ChargeStatus,
+                                   default=ChargeStatus.PRESENT_WITHOUT_INFO)
+    new.status_raw_text = fn(normalize, 'status', proto)
+    new.court_type = enum_mappings.get(CourtType)
+    new.court_type_raw_text = fn(normalize, 'court_type', proto)
+
+    # 1-to-1 mappings
     new.external_id = fn(parse_external_id, 'charge_id', proto)
     new.offense_date = fn(parse_date, 'offense_date', proto)
     new.statute = fn(normalize, 'statute', proto)
     new.name = fn(normalize, 'name', proto)
+    if new.charge_class is None:
+        new.charge_class = ChargeClass.find_in_string(new.name)
     new.attempted = fn(parse_bool, 'attempted', proto)
-    new.degree = fn(ChargeDegree.parse, 'degree', proto,
-                    metadata.enum_overrides)
-    new.degree_raw_text = fn(normalize, 'degree', proto)
-    new.charge_class = fn(ChargeClass.parse, 'charge_class', proto,
-                          metadata.enum_overrides,
-                          default=ChargeClass.find_in_string(new.name) or None)
-    new.class_raw_text = fn(normalize, 'charge_class', proto)
     new.level = fn(normalize, 'level', proto)
     new.fee_dollars = fn(parse_dollars, 'fee_dollars', proto)
     new.charging_entity = fn(normalize, 'charging_entity', proto)
-    new.status = fn(ChargeStatus.parse, 'status', proto,
-                    metadata.enum_overrides,
-                    default=ChargeStatus.PRESENT_WITHOUT_INFO)
-    new.status_raw_text = fn(normalize, 'status', proto)
-    new.court_type = fn(CourtType.parse, 'court_type', proto,
-                        metadata.enum_overrides)
-    new.court_type_raw_text = fn(normalize, 'court_type', proto)
     new.case_number = fn(normalize, 'case_number', proto)
     new.next_court_date = fn(parse_date, 'next_court_date', proto)
     new.judge_name = fn(normalize, 'judge_name', proto)

@@ -94,24 +94,28 @@ class EnumOverrides:
 
         def add(self,
                 label_or_predicate: Union[str, Callable[[str], bool]],
-                mapped_enum: EntityEnum) -> None:
+                mapped_enum: EntityEnum,
+                from_field: EntityEnumMeta = None) -> None:
             """Adds a mapping from |match| to |mapped_enum|. |match| can be
             either a string value, in which case the field value must match the
             string exactly, or it can be a predicate specifying which strings
-            constitute a match.
+            constitute a match. Optionally, the |from_field| parameter allows
+            values to be mapped accross fields. For example:
+            `add('PENDING', BondStatus.PENDING, BondType)` remaps the bond_type
+            field to a bond_status when the bond_type is set to 'PENDING'.
+            Mappings *between* entity types are not allowed.
             Note: take care not to add multiple predicates which are properties
             of the same string, as EnumOverrides.parse will throw an exception
             if too many matches are found.
             """
-            # TODO: consider allowing |enum_class| to be different from
-            #  |mapped_enum|'s class
-            enum_class = mapped_enum.__class__
+            if from_field is None:
+                from_field = mapped_enum.__class__
             if isinstance(label_or_predicate, str):
                 label = normalize(label_or_predicate, remove_punctuation=True)
-                self._maps[enum_class][label] = mapped_enum
+                self._maps[from_field][label] = mapped_enum
             else:
                 predicate = label_or_predicate
-                self._predicate_maps[enum_class].add(
+                self._predicate_maps[from_field].add(
                     _EnumMatcher(predicate, mapped_enum))
 
         def ignore(self, label: str, enum_class: EntityEnumMeta = None) -> None:

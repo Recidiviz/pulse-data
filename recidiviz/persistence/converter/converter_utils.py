@@ -23,9 +23,9 @@ from typing import Optional, Tuple
 from recidiviz.common import common_utils, date
 from recidiviz.common.constants.bond import (BOND_STATUS_MAP, BOND_TYPE_MAP,
                                              BondStatus, BondType)
-from recidiviz.common.constants.person import Ethnicity, Race
 
 locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
+
 
 def fn(func, field_name, proto, *additional_func_args, default=None):
     """Return the result of applying the given function to the field on the
@@ -44,16 +44,6 @@ def parse_external_id(id_str):
     if common_utils.is_generated_id(id_str):
         return None
     return common_utils.normalize(id_str)
-
-
-def race_is_actually_ethnicity(ingest_person, enum_overrides):
-    if ingest_person.HasField('ethnicity'):
-        return False
-    if not ingest_person.HasField('race'):
-        return False
-
-    return Ethnicity.can_parse(ingest_person.race, enum_overrides) and \
-        not Race.can_parse(ingest_person.race, enum_overrides)
 
 
 def calculate_birthdate_from_age(age):
@@ -103,8 +93,8 @@ def parse_days(time_string: str, from_dt: Optional[datetime.datetime] = None):
 
 
 def parse_bond_amount_type_and_status(
-        provided_amount: str, provided_bond_type: str = None,
-        provided_status: str = None) -> \
+        provided_amount: str, provided_bond_type: Optional[BondType] = None,
+        provided_status: Optional[BondStatus] = None) -> \
         Tuple[Optional[int], Optional[BondType], BondStatus]:
     """Returns bond amount, bond type, and bond status, setting any missing
     values that can be inferred from the other fields.
@@ -140,7 +130,7 @@ def parse_bond_amount_type_and_status(
     if status is None:
         status = BondStatus.PRESENT_WITHOUT_INFO
 
-    return (amount, bond_type, status) # type: ignore
+    return (amount, bond_type, status)  # type: ignore
 
 
 def parse_dollars(dollar_string):

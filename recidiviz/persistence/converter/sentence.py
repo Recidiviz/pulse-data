@@ -27,12 +27,24 @@ from recidiviz.persistence.converter.converter_utils import (fn, parse_bool,
                                                              parse_days,
                                                              parse_dollars,
                                                              parse_external_id)
+from recidiviz.persistence.converter.enum_mappings import EnumMappings
 
 
 def convert(proto, metadata: IngestMetadata) -> entities.Sentence:
     """Converts an ingest_info proto Sentence to a persistence entity."""
     new = entities.Sentence.builder()
 
+    enum_fields = {
+        'status': SentenceStatus.parse,
+    }
+    enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
+
+    # Enum mappings
+    new.status = enum_mappings.get(SentenceStatus,
+                                   default=SentenceStatus.PRESENT_WITHOUT_INFO)
+    new.status_raw_text = fn(normalize, 'status', proto)
+
+    # 1-to-1 mappings
     new.external_id = fn(parse_external_id, 'sentence_id', proto)
     new.sentencing_region = fn(normalize, 'sentencing_region', proto)
     new.min_length_days = fn(parse_days, 'min_length', proto)
@@ -47,10 +59,6 @@ def convert(proto, metadata: IngestMetadata) -> entities.Sentence:
     new.date_imposed = fn(parse_date, 'date_imposed', proto)
     new.completion_date, new.projected_completion_date = _parse_completion_date(
         proto, metadata)
-    new.status = fn(SentenceStatus.parse, 'status', proto,
-                    metadata.enum_overrides,
-                    default=SentenceStatus.PRESENT_WITHOUT_INFO)
-    new.status_raw_text = fn(normalize, 'status', proto)
 
     _set_status_if_needed(new)
 

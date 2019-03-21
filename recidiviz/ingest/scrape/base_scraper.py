@@ -40,7 +40,7 @@ In order to subclass this the following functions must be implemented:
 import abc
 import json
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 from lxml import html
 from lxml.etree import XMLSyntaxError  # pylint:disable=no-name-in-module
@@ -48,6 +48,7 @@ from lxml.etree import XMLSyntaxError  # pylint:disable=no-name-in-module
 from recidiviz.common.common_utils import get_trace_id_from_flask
 from recidiviz.common.constants.charge import CourtType
 from recidiviz.common.constants.enum_overrides import EnumOverrides
+from recidiviz.common.constants.person import Race, Ethnicity, ETHNICITY_MAP
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.scrape import constants, ingest_utils
@@ -350,7 +351,14 @@ class BaseScraper(Scraper):
         Note: Before overriding this method, consider directly adding each
         mapping directly into the respective global mappings instead.
         """
-        overrides_builder = EnumOverrides.empty().to_builder()
+        overrides_builder = EnumOverrides.Builder()
+        for ethnicity_string in ETHNICITY_MAP:
+            # mypy is unable to correctly type the EntityEnums in
+            # constants.person. See https://github.com/python/mypy/issues/3327
+            ethnicity_enum = cast(Ethnicity, ETHNICITY_MAP[ethnicity_string])
+            if ethnicity_enum is not Ethnicity.EXTERNAL_UNKNOWN:
+                overrides_builder.add(ethnicity_string, ethnicity_enum, Race)
+
         overrides_builder.add(lambda status: 'CIRCU' in status,
                               CourtType.CIRCUIT)
         overrides_builder.add(lambda status: 'SUPERIOR' in status,

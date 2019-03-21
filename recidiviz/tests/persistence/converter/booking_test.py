@@ -20,6 +20,7 @@ from datetime import date, datetime
 
 from recidiviz.common.constants.booking import ReleaseReason, CustodyStatus, \
     Classification, AdmissionReason
+from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence import entities
@@ -153,4 +154,34 @@ class BookingConverterTest(unittest.TestCase):
             last_seen_time=_INGEST_TIME,
         )
 
+        self.assertEqual(result, expected_result)
+
+    def testParseBooking_MapAcrossFields(self):
+        # Arrange
+        overrides_builder = EnumOverrides.Builder()
+        overrides_builder.add('WORK RELEASE', Classification.WORK_RELEASE,
+                              AdmissionReason)
+        overrides_builder.add('transfer', AdmissionReason.TRANSFER,
+                              CustodyStatus)
+        metadata = IngestMetadata.new_with_defaults(
+            ingest_time=_INGEST_TIME,
+            enum_overrides=overrides_builder.build()
+        )
+        ingest_booking = ingest_info_pb2.Booking(
+            admission_reason='work release', custody_status='transfer')
+
+        # Act
+        booking.copy_fields_to_builder(self.subject, ingest_booking, metadata)
+        result = self.subject.build()
+
+        # Assert
+        expected_result = entities.Booking.new_with_defaults(
+            admission_date=_INGEST_TIME.date(),
+            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason_raw_text='WORK RELEASE',
+            admission_date_inferred=True,
+            custody_status=CustodyStatus.PRESENT_WITHOUT_INFO,
+            custody_status_raw_text='TRANSFER',
+            classification=Classification.WORK_RELEASE,
+            last_seen_time=_INGEST_TIME)
         self.assertEqual(result, expected_result)
