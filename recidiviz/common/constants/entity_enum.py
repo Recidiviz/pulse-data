@@ -56,7 +56,7 @@ class EntityEnum(Enum, metaclass=EntityEnumMeta):
             return None
 
         overridden_value = enum_overrides.parse(label, cls)
-        if isinstance(overridden_value, cls):
+        if overridden_value is not None:
             return overridden_value
 
         return cls._parse_to_enum(label, cls._get_default_map())

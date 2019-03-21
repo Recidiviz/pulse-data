@@ -27,11 +27,11 @@ from recidiviz.common.constants.person import (RESIDENCY_STATUS_SUBSTRING_MAP,
                                                Ethnicity, Gender, Race,
                                                ResidencyStatus)
 from recidiviz.common.date import parse_date
-from recidiviz.persistence.converter import converter_utils
 from recidiviz.persistence.converter.converter_utils import (
     calculate_birthdate_from_age, fn, parse_external_id)
-
 # Suffixes used in county names in uszipcode library
+from recidiviz.persistence.converter.enum_mappings import EnumMappings
+
 USZIPCODE_COUNTY_SUFFIXES = [
     'BOROUGH',
     'CENSUS AREA',
@@ -52,17 +52,27 @@ def copy_fields_to_builder(person_builder, proto, metadata):
 
      Note: This will not copy children into the Builder!
      """
+    enum_fields = {
+        'gender': Gender.parse,
+        'race': Race.parse,
+        'ethnicity': Ethnicity.parse,
+    }
+    enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
+
     new = person_builder
 
+    # Enum mappings
+    new.race = enum_mappings.get(Race)
+    new.race_raw_text = fn(normalize, 'race', proto)
+    new.ethnicity = enum_mappings.get(Ethnicity)
+    new.ethnicity_raw_text = fn(normalize, 'ethnicity', proto)
+    new.gender = enum_mappings.get(Gender)
+    new.gender_raw_text = fn(normalize, 'gender', proto)
+
+    # 1-to-1 mappings
     new.external_id = fn(parse_external_id, 'person_id', proto)
     new.full_name = _parse_name(proto)
     new.birthdate, new.birthdate_inferred_from_age = _parse_birthdate(proto)
-    new.race, new.ethnicity = _parse_race_and_ethnicity(proto,
-                                                        metadata.enum_overrides)
-    new.race_raw_text = fn(normalize, 'race', proto)
-    new.ethnicity_raw_text = fn(normalize, 'ethnicity', proto)
-    new.gender = fn(Gender.parse, 'gender', proto, metadata.enum_overrides)
-    new.gender_raw_text = fn(normalize, 'gender', proto)
     new.residency_status = fn(
         _parse_residency_status, 'place_of_residence', proto)
     new.resident_of_region = fn(
@@ -131,17 +141,6 @@ def _parse_birthdate(proto):
         parsed_birthdate_is_inferred = True
 
     return parsed_birthdate, parsed_birthdate_is_inferred
-
-
-def _parse_race_and_ethnicity(proto, enum_overrides):
-    if converter_utils.race_is_actually_ethnicity(proto, enum_overrides):
-        race = None
-        ethnicity = fn(Ethnicity.parse, 'race', proto, enum_overrides)
-    else:
-        race = fn(Race.parse, 'race', proto, enum_overrides)
-        ethnicity = fn(Ethnicity.parse, 'ethnicity', proto, enum_overrides)
-
-    return race, ethnicity
 
 
 def _parse_is_resident(place_of_residence: str, region: str) -> Optional[bool]:
