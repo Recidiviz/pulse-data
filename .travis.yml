@@ -4,6 +4,11 @@ language: generic
 services:
   - docker
 
+env:
+  global:
+    # Sets the GH_TOKEN environment variable
+    - secure: "T0PLqKK8GozEFNsiqLD272yXZSh9ilQwufdwxc9M55ZUB2E1vyDckL0krkYSWO2jg3+v3mGc7SqBoYkqWt/RJ08R2mn6f5kdI63Tok8m4YMd35XjXlIdp6Qk5BvIf0DEuMPGuCJ2aPyGYnwHFObdcoLyQg/8nuIoPpqZl6H89fXXScVyHFFFQythg8zflRlpzzaIoMaGM82As77vprnGheFDOB6rI/vq8B3Xi0W+RFR0y8TV77wl743LF1uVEXbfbRxZa9shoWu9jtOT4wgFRyOu+Qhz4lmOqXom3HpY6i0O4iOiJ1I8zCm+JloSc0CfeSJfehuqIeLcxMbuv1zGz3iq4HU7qVEnIpKfp4mSOnmZUjlVTU0Ema6pzWHBAiVaxP09CxikO3RDA0tclQW9BkcH3IFHeFvINfQD6/wCv/rpD+Kq/bX5Z87vxbPeMwQOvJ7Yyzf8/8ZWfKOqiVdne4oFqOsBsL5Trg5Ad5KXJZ6/E3vEdRmRm3LpKNdfz33Rfi1U0gpeechvjxuhX025ubryXc6PRpq3tLCDD1J3UDJzOPeHl6oJiiHPSKdDk4iAct/KEgKm7PNzovaihvi9WQ9M5Hx7Q6DFDtyO/XOj3pHAzah8Yk5wsmQDNE1s5RN6FsLKr+rOeoZyLJ0nRFPgPMJ90w19KCOS9X8JQhIzikc="
+
 # Note, this caching design is based off: https://gist.github.com/hc2p/9e284cee3d585eefbc59454e44cc247a
 # We decided to cache the docker image even though the majority of the docker build steps are downloading dependencies
 # from the web. We acknowledge that the time needed to download the cached docker image is nearly the same as the time
@@ -39,6 +44,10 @@ after_success:
   - coveralls
 
 deploy:
+  # Copy commit to public repo
+  - provider: script
+    script: bash travis/export_commits.sh
+
   # Deploy full application to staging
   - provider: script
     script: bash travis/deploy_staging.sh
