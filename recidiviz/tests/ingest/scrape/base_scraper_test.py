@@ -23,6 +23,7 @@ import flask
 from mock import patch, Mock
 
 from recidiviz import IngestInfo
+from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.scrape import constants
@@ -54,6 +55,8 @@ class FakeScraper(BaseScraper):
     def add_task(self, _, task: QueueRequest):
         self.tasks.append(task)
 
+    def get_enum_overrides(self):
+        return EnumOverrides.empty()
 
 # pylint: disable=protected-access
 

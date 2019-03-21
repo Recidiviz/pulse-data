@@ -46,6 +46,7 @@ from lxml import html
 from lxml.etree import XMLSyntaxError  # pylint:disable=no-name-in-module
 
 from recidiviz.common.common_utils import get_trace_id_from_flask
+from recidiviz.common.constants.charge import CourtType
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.scrape_key import ScrapeKey
@@ -349,7 +350,13 @@ class BaseScraper(Scraper):
         Note: Before overriding this method, consider directly adding each
         mapping directly into the respective global mappings instead.
         """
-        return EnumOverrides.empty()
+        overrides_builder = EnumOverrides.empty().to_builder()
+        overrides_builder.add(lambda status: 'CIRCU' in status,
+                              CourtType.CIRCUIT)
+        overrides_builder.add(lambda status: 'SUPERIOR' in status,
+                              CourtType.SUPERIOR)
+
+        return overrides_builder.build()
 
     def transform_post_data(self, data):
         """If the child needs to transform the data in any way before it sends
