@@ -191,19 +191,13 @@ Individual tests can be run via `pytest filename.py`. To run all tests, go to th
 The configuration in `setup.cfg` and `.coveragerc` will ensure the right code is tested and the proper code coverage
 metrics are displayed.
 
-A few tests (such as `sessions.py`) depend on running emulators (i.e. [Cloud Datastore Emulator](https://cloud.google.com/datastore/docs/tools/datastore-emulator)). These tests are skipped by default when run locally, but will always be tested by Travis. If you are modifying code tested by these tests then you can run the tests locally. You must first install the both emulators via `gcloud components install cloud-datastore-emulator` and `gcloud components install cloud-pusub-emulator`, which depends on the Java JRE (>=8). Then start the emulators and run the tests:
+A few tests (such as `sessions.py`) depend on running emulators (i.e. [Cloud Datastore Emulator](https://cloud.google.com/datastore/docs/tools/datastore-emulator)). These tests are skipped by default when run locally, but will always be tested by Travis. If you are modifying code tested by these tests then you can run the tests locally. You must first install the both emulators via `gcloud components install cloud-datastore-emulator` and `gcloud components install cloud-pusub-emulator`, which depends on the Java JRE (>=8). Then run the tests, telling it to bring up the emulators and include these tests:
 
 ```bash
-# Starts the emulator
-$ gcloud beta emulators datastore start --no-store-on-disk --project test-project --consistency 1.0
-$ gcloud beta emulators pubsub start --project test-project > ps_emulator.out 2> ps_emulator.err &
-# Run the tests
 $ pytest recidiviz --with-emulator
 ```
 
 [A bug in the google client](https://github.com/googleapis/google-cloud-python/issues/5738) requires that you have default application credentials. This should not be necessary in the future. For now, make sure that you have done both `gcloud config set project recidiviz` and `gcloud auth application-default login`.
-
-_Note: The emulator is a long running command, either (1) run it in a separate session or (2) run it in the background (suffix with `2> emulator.out &`) and bring it back with `fg`._
 
 #### Checking code style
 Run Pylint across the main body of code, in particular: `pylint *.py recidiviz`.
