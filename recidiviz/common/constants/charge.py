@@ -73,6 +73,7 @@ class CourtType(EntityEnum, metaclass=EntityEnumMeta):
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
     OTHER = enum_strings.court_type_other
     SUPERIOR = enum_strings.court_type_superior
+    SUPREME = enum_strings.court_type_supreme
 
     @staticmethod
     def _get_default_map():
@@ -245,5 +246,7 @@ _COURT_TYPE_MAP = {
     'SUP 4 MAG': CourtType.SUPERIOR,
     'SUPERIOR': CourtType.SUPERIOR,
     'SUPERIOR COURT': CourtType.SUPERIOR,
+    'SUPREME': CourtType.SUPREME,
+    'SUPREME COURT': CourtType.SUPREME,
     'UNKNOWN': CourtType.EXTERNAL_UNKNOWN,
 }
