@@ -52,7 +52,10 @@ def convert(proto, metadata: IngestMetadata) -> entities.Sentence:
                     default=SentenceStatus.PRESENT_WITHOUT_INFO)
     new.status_raw_text = fn(normalize, 'status', proto)
 
+    _set_status_if_needed(new)
+
     return new.build()
+
 
 def _parse_completion_date(
         proto,
@@ -71,3 +74,10 @@ def _parse_completion_date(
         completion_date = None
 
     return completion_date, projected_completion_date
+
+
+def _set_status_if_needed(new):
+    # completion_date is guaranteed to be in the past by _parse_completion_date
+    if new.completion_date and \
+            new.status is SentenceStatus.PRESENT_WITHOUT_INFO:
+        new.status = SentenceStatus.COMPLETED

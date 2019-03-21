@@ -65,6 +65,7 @@ def copy_fields_to_builder(booking_builder, proto, metadata):
 
 
 def _set_custody_status_if_needed(new):
+    # release_date is guaranteed to be in the past by _parse_release_date
     if (new.release_date and new.custody_status
             is CustodyStatus.PRESENT_WITHOUT_INFO):
         new.custody_status = CustodyStatus.RELEASED
