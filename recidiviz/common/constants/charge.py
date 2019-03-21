@@ -66,20 +66,6 @@ class ChargeStatus(EntityEnum, metaclass=EntityEnumMeta):
         return _CHARGE_STATUS_MAP
 
 
-class CourtType(EntityEnum, metaclass=EntityEnumMeta):
-    CIRCUIT = enum_strings.court_type_circuit
-    CIVIL = enum_strings.court_type_civil
-    DISTRICT = enum_strings.court_type_district
-    EXTERNAL_UNKNOWN = enum_strings.external_unknown
-    OTHER = enum_strings.court_type_other
-    SUPERIOR = enum_strings.court_type_superior
-    SUPREME = enum_strings.court_type_supreme
-
-    @staticmethod
-    def _get_default_map():
-        return _COURT_TYPE_MAP
-
-
 # MappableEnum.parse will strip punctuation and separate tokens with a single
 # space. Add mappings here using a single space between words and numbers.
 # For example, `N/A` can be written as `N A` and `(10%)` can be written as `10`.
@@ -234,41 +220,4 @@ _CHARGE_STATUS_MAP = {
     'WEEKENDER': ChargeStatus.SENTENCED,
     'WRIT OF HABEAS CORPUS': None,
     'WRONG PERSON BOOKED': ChargeStatus.DROPPED,
-}
-
-# MappableEnum.parse will strip punctuation and separate tokens with a single
-# space. Add mappings here using a single space between words and numbers.
-# For example, `N/A` can be written as `N A` and `(10%)` can be written as `10`.
-_COURT_TYPE_MAP = {
-    'CHANCERY': CourtType.CIVIL,
-    'CHANCERY COURT': CourtType.CIVIL,
-    'CIRCUIT': CourtType.CIRCUIT,
-    'CIRCUIT COURT': CourtType.CIRCUIT,
-    'CITY': CourtType.DISTRICT,
-    'CIVIL': CourtType.CIVIL,
-    'CRIMINAL': CourtType.DISTRICT,
-    'DISTRICT': CourtType.DISTRICT,
-    'DISTRICT COURT': CourtType.DISTRICT,
-    'DRUG': CourtType.OTHER,
-    'FAMILY': CourtType.CIVIL,
-    'FAMILY COURT': CourtType.CIVIL,
-    'GENERAL SESSION': CourtType.OTHER,
-    'GENERAL SESSIONS': CourtType.OTHER,
-    'GRAND JURY': CourtType.OTHER,
-    'JURYT': CourtType.OTHER,
-    'JUVENILE': CourtType.OTHER,
-    'JUVENILE COURT': CourtType.OTHER,
-    'JUVENILE REHABILITATION AUTHORITY DSHS': CourtType.OTHER,
-    'OUT OF COUNTY COURTS': None,
-    'MAGISTRATE': CourtType.DISTRICT,
-    'MUNICIPAL': CourtType.DISTRICT,
-    'OTHER': CourtType.OTHER,
-    'STATE': CourtType.SUPERIOR,
-    'SUP 4 MAG': CourtType.SUPERIOR,
-    'SUPERIOR': CourtType.SUPERIOR,
-    'SUPERIOR COURT': CourtType.SUPERIOR,
-    'SUPREME': CourtType.SUPREME,
-    'SUPREME COURT': CourtType.SUPREME,
-    'TOWN COURT': CourtType.OTHER,
-    'UNKNOWN': CourtType.EXTERNAL_UNKNOWN,
 }

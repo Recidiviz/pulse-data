@@ -195,15 +195,6 @@ charge_status = Enum(enum_strings.charge_status_acquitted,
                      enum_strings.removed_without_info,
                      name='charge_status')
 
-court_type = Enum(enum_strings.court_type_circuit,
-                  enum_strings.court_type_civil,
-                  enum_strings.court_type_district,
-                  enum_strings.external_unknown,
-                  enum_strings.court_type_other,
-                  enum_strings.court_type_superior,
-                  enum_strings.court_type_supreme,
-                  name='court_type')
-
 # Aggregate
 
 time_granularity = Enum(enum_strings.daily_granularity,
@@ -643,8 +634,7 @@ class _ChargeSharedColumns:
     charging_entity = Column(String(255))
     status = Column(charge_status, nullable=False)
     status_raw_text = Column(String(255))
-    court_type = Column(court_type)
-    court_type_raw_text = Column(String(255))
+    court_type = Column(String(255))
     case_number = Column(String(255))
     next_court_date = Column(Date)
     judge_name = Column(String(255))
