@@ -17,7 +17,10 @@
 """Tests for converting bonds."""
 import unittest
 
+import attr
+
 from recidiviz.common.constants.bond import BondType, BondStatus
+from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence import entities
@@ -81,6 +84,22 @@ class BondConverterTest(unittest.TestCase):
             bond_type=BondType.DENIED,
             status=BondStatus.SET
         )
+        self.assertEqual(result, expected_result)
+
+    def testParseBond_MapStatusToType(self):
+        # Arrange
+        ingest_bond = ingest_info_pb2.Bond(bond_type='bond revoked')
+        overrides_builder = EnumOverrides.Builder()
+        overrides_builder.add('BOND REVOKED', BondStatus.REVOKED, BondType)
+        overrides = overrides_builder.build()
+
+        # Act
+        result = bond.convert(
+            ingest_bond, attr.evolve(_EMPTY_METADATA, enum_overrides=overrides))
+
+        # Assert
+        expected_result = entities.Bond.new_with_defaults(
+            bond_type_raw_text='BOND REVOKED', status=BondStatus.REVOKED)
         self.assertEqual(result, expected_result)
 
     def testParseBond_OnlyAmount_InfersCash(self):

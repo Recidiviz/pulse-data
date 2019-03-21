@@ -18,12 +18,13 @@
 import unittest
 from datetime import date, datetime
 
-from mock import patch
+from mock import patch, Mock
 
 from recidiviz.common.constants.person import Gender, Race, Ethnicity, \
     ResidencyStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
+from recidiviz.ingest.scrape.base_scraper import BaseScraper
 from recidiviz.persistence import entities
 from recidiviz.persistence.converter import person
 
@@ -141,8 +142,17 @@ class PersonConverterTest(unittest.TestCase):
         self.assertEqual(result, expected_result)
 
     def testParsePerson_RaceIsEthnicity(self):
+        class ScraperWithDefaultOverrides(BaseScraper):
+            """Class created so BaseScraper's enum_overrides can be used."""
+            def __init__(self):  # pylint: disable=super-init-not-called
+                self.region = Mock()
+
+            def populate_data(self, _, __, ___):
+                pass
+
         # Arrange
-        metadata = IngestMetadata.new_with_defaults()
+        metadata = IngestMetadata.new_with_defaults(
+            enum_overrides=ScraperWithDefaultOverrides().get_enum_overrides())
         ingest_person = ingest_info_pb2.Person(race='HISPANIC')
 
         # Act
