@@ -161,6 +161,7 @@ court_type_civil = 'CIVIL'
 court_type_district = 'DISTRICT'
 court_type_other = 'OTHER'
 court_type_superior = 'SUPERIOR'
+court_type_supreme = 'SUPREME'
 
 # Aggregates
 
