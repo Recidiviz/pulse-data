@@ -26,12 +26,13 @@ from typing import List
 from recidiviz.calculator.bq import bq_utils
 from recidiviz.calculator.bq.views import bqview
 from recidiviz.calculator.bq.views import view_queries
-
+from recidiviz.calculator.bq.views.state_aggregates import state_aggregate_views
 
 VIEWS_DATASET: str = 'census_views'
 
 VIEWS_TO_UPDATE: List[bqview.BigQueryView] = [
-    view_queries.PERSON_COUNT_VIEW
+    view_queries.PERSON_COUNT_VIEW,
+    state_aggregate_views.STATE_AGGREGATE_VIEW
 ]
 
 
