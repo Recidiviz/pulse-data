@@ -17,7 +17,7 @@
 """Converts an ingest_info proto Arrest to a persistence entity."""
 from recidiviz.common.common_utils import normalize
 from recidiviz.common.constants.charge import (ChargeClass, ChargeDegree,
-                                               ChargeStatus, CourtType)
+                                               ChargeStatus)
 from recidiviz.common.date import parse_date
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence import entities
@@ -38,7 +38,6 @@ def copy_fields_to_builder(
         'degree': ChargeDegree.parse,
         'charge_class': ChargeClass.parse,
         'status': ChargeStatus.parse,
-        'court_type': CourtType.parse
     }
     enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
 
@@ -50,8 +49,6 @@ def copy_fields_to_builder(
     new.status = enum_mappings.get(ChargeStatus,
                                    default=ChargeStatus.PRESENT_WITHOUT_INFO)
     new.status_raw_text = fn(normalize, 'status', proto)
-    new.court_type = enum_mappings.get(CourtType)
-    new.court_type_raw_text = fn(normalize, 'court_type', proto)
 
     # 1-to-1 mappings
     new.external_id = fn(parse_external_id, 'charge_id', proto)
@@ -65,6 +62,7 @@ def copy_fields_to_builder(
     new.fee_dollars = fn(parse_dollars, 'fee_dollars', proto)
     new.charging_entity = fn(normalize, 'charging_entity', proto)
     new.case_number = fn(normalize, 'case_number', proto)
+    new.court_type = fn(normalize, 'court_type', proto)
     new.next_court_date = fn(parse_date, 'next_court_date', proto)
     new.judge_name = fn(normalize, 'judge_name', proto)
     new.charge_notes = fn(normalize, 'charge_notes', proto)

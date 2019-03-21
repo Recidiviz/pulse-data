@@ -46,7 +46,6 @@ from lxml import html
 from lxml.etree import XMLSyntaxError  # pylint:disable=no-name-in-module
 
 from recidiviz.common.common_utils import get_trace_id_from_flask
-from recidiviz.common.constants.charge import CourtType
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.person import Race, Ethnicity, ETHNICITY_MAP
 from recidiviz.common.ingest_metadata import IngestMetadata
@@ -358,11 +357,6 @@ class BaseScraper(Scraper):
             ethnicity_enum = cast(Ethnicity, ETHNICITY_MAP[ethnicity_string])
             if ethnicity_enum is not Ethnicity.EXTERNAL_UNKNOWN:
                 overrides_builder.add(ethnicity_string, ethnicity_enum, Race)
-
-        overrides_builder.add(lambda status: 'CIRCU' in status,
-                              CourtType.CIRCUIT)
-        overrides_builder.add(lambda status: 'SUPERIOR' in status,
-                              CourtType.SUPERIOR)
 
         return overrides_builder.build()
 
