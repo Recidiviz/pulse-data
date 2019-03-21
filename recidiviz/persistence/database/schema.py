@@ -1024,10 +1024,16 @@ class TnFacilityFemaleAggregate(Base, _AggregateTableMixin):
     female_beds = Column(Integer)
 
 
-def get_aggregate_table_classes() -> Iterator[Table]:
+def get_all_table_classes() -> Iterator[Table]:
     all_members_in_current_module = inspect.getmembers(sys.modules[__name__])
     for _, member in all_members_in_current_module:
         if (inspect.isclass(member)
                 and issubclass(member, Base)
-                and issubclass(member, _AggregateTableMixin)):
+                and member is not Base):
             yield member
+
+
+def get_aggregate_table_classes() -> Iterator[Table]:
+    for table in get_all_table_classes():
+        if issubclass(table, _AggregateTableMixin):
+            yield table

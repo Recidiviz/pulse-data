@@ -17,8 +17,8 @@
 
 """Export configuration.
 
-Add tables from schema.py to TABLES_TO_EXPORT
-to have them exported by export_manager.py
+By default, lists all tables in schema.py to be exported by export_manager.py.
+To exclude tables from export, add them to TABLES_TO_EXCLUDE_FROM_EXPORT.
 
 Add columns to COLUMNS_TO_EXCLUDE to exclude them from the export.
 
@@ -34,29 +34,17 @@ from recidiviz.persistence.database import schema
 from recidiviz.utils import metadata
 
 
-TABLES_TO_EXPORT = [
-    table.__table__ for table in [ # type: ignore
-        schema.Person,
-        schema.Booking,
-        schema.Hold,
-        schema.Arrest,
-        schema.Bond,
-        schema.Sentence,
-        schema.Charge,
-        schema.CaFacilityAggregate,
-        schema.FlCountyAggregate,
-        schema.FlFacilityAggregate,
-        schema.GaCountyAggregate,
-        schema.HiFacilityAggregate,
-        schema.KyFacilityAggregate,
-        schema.NyFacilityAggregate,
-        schema.TxCountyAggregate,
-        schema.DcFacilityAggregate,
-        schema.PaFacilityPopAggregate,
-        schema.PaCountyPreSentencedAggregate,
-        schema.TnFacilityAggregate
-    ]
-]
+TABLES_TO_EXCLUDE_FROM_EXPORT = tuple( # type: ignore
+    # List tables to be excluded from export here. For example:
+    # schema.FakePersonHistoryTable
+)
+
+# By default, all tables in schema.py are exported
+# unless listed in TABLES_TO_EXCLUDE_FROM_EXPORT above.
+TABLES_TO_EXPORT = tuple(
+    table.__table__ for table in
+    schema.get_all_table_classes() if table not in TABLES_TO_EXCLUDE_FROM_EXPORT
+)
 
 # Mapping from table name to a list of columns to be excluded for that table.
 COLUMNS_TO_EXCLUDE = {
