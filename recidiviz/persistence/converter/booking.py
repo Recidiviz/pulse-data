@@ -24,8 +24,9 @@ from recidiviz.common.constants.booking import (AdmissionReason,
                                                 ReleaseReason)
 from recidiviz.common.date import parse_date
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.persistence.converter.converter_utils import (fn,
-                                                             parse_external_id)
+from recidiviz.persistence.converter.converter_utils import (
+    fn, parse_external_id)
+from recidiviz.persistence.converter.enum_mappings import EnumMappings
 
 
 def copy_fields_to_builder(booking_builder, proto, metadata):
@@ -36,22 +37,29 @@ def copy_fields_to_builder(booking_builder, proto, metadata):
      """
     new = booking_builder
 
+    enum_fields = {
+        'admission_reason': AdmissionReason.parse,
+        'release_reason': ReleaseReason.parse,
+        'custody_status': CustodyStatus.parse,
+        'classification': Classification.parse,
+    }
+    enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
+
+    # Enum mappings
+    new.admission_reason = enum_mappings.get(AdmissionReason)
+    new.admission_reason_raw_text = fn(normalize, 'admission_reason', proto)
+    new.release_reason = enum_mappings.get(ReleaseReason)
+    new.release_reason_raw_text = fn(normalize, 'release_reason', proto)
+    new.custody_status = enum_mappings.get(
+        CustodyStatus, default=CustodyStatus.PRESENT_WITHOUT_INFO)
+    new.custody_status_raw_text = fn(normalize, 'custody_status', proto)
+    new.classification = enum_mappings.get(Classification)
+    new.classification_raw_text = fn(normalize, 'classification', proto)
+
     # 1-to-1 mappings
     new.external_id = fn(parse_external_id, 'booking_id', proto)
-    new.admission_reason = fn(AdmissionReason.parse, 'admission_reason',
-                              proto, metadata.enum_overrides)
-    new.admission_reason_raw_text = fn(normalize, 'admission_reason', proto)
-    new.release_reason = fn(ReleaseReason.parse, 'release_reason', proto,
-                            metadata.enum_overrides)
-    new.release_reason_raw_text = fn(normalize, 'release_reason', proto)
-    new.custody_status = fn(
-        CustodyStatus.parse, 'custody_status', proto,
-        metadata.enum_overrides, default=CustodyStatus.PRESENT_WITHOUT_INFO)
-    new.custody_status_raw_text = fn(normalize, 'custody_status', proto)
+    new.projected_release_date = fn(parse_date, 'projected_release_date', proto)
     new.facility = fn(normalize, 'facility', proto)
-    new.classification = fn(Classification.parse, 'classification', proto,
-                            metadata.enum_overrides)
-    new.classification_raw_text = fn(normalize, 'classification', proto)
 
     # Inferred attributes
     new.admission_date, new.admission_date_inferred = \

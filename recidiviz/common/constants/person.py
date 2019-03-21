@@ -55,7 +55,7 @@ class Ethnicity(EntityEnum, metaclass=EntityEnumMeta):
 
     @staticmethod
     def _get_default_map():
-        return _ETHNICITY_MAP
+        return ETHNICITY_MAP
 
 
 class ResidencyStatus(EntityEnum, metaclass=EntityEnumMeta):
@@ -137,7 +137,8 @@ _RACE_MAP = {
 # MappableEnum.parse will strip punctuation and separate tokens with a single
 # space. Add mappings here using a single space between words and numbers.
 # For example, `N/A` can be written as `N A` and `(10%)` can be written as `10`.
-_ETHNICITY_MAP = {
+# Public so that EnumOverrides default can map race to ethnicity.
+ETHNICITY_MAP = {
     'H': Ethnicity.HISPANIC,
     'H WHITE LATIN HISPANIC': Ethnicity.HISPANIC,
     'HISPANIC': Ethnicity.HISPANIC,
