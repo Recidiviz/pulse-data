@@ -25,7 +25,7 @@ from recidiviz.common.constants.bond import BondType, BondStatus
 from recidiviz.common.constants.booking import CustodyStatus, ReleaseReason, \
     Classification, AdmissionReason
 from recidiviz.common.constants.charge import ChargeDegree, ChargeClass, \
-    ChargeStatus, CourtType
+    ChargeStatus
 from recidiviz.common.constants.hold import HoldStatus
 from recidiviz.common.constants.person import Gender, Race, Ethnicity, \
     ResidencyStatus
@@ -101,8 +101,7 @@ _PERSON = entities.Person(
             charging_entity="charging_entity",
             status=ChargeStatus.DROPPED,
             status_raw_text='DROPPED',
-            court_type=CourtType.CIRCUIT,
-            court_type_raw_text='CIRCUIT',
+            court_type='CIRCUIT',
             case_number="case_number",
             next_court_date=date(year=2000, month=1, day=7),
             judge_name="judge_name",

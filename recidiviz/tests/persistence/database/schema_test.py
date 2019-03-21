@@ -57,7 +57,6 @@ class SchemaTest(TestCase):
             'degree': charge.ChargeDegree,
             'charge_class': charge.ChargeClass,
             'charge_status': charge.ChargeStatus,
-            'court_type': charge.CourtType,
             'time_granularity': None
         }
 

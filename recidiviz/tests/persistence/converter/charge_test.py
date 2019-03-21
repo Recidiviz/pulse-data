@@ -19,7 +19,7 @@
 import unittest
 
 from recidiviz.common.constants.charge import ChargeDegree, ChargeClass, \
-    CourtType, ChargeStatus
+    ChargeStatus
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
@@ -61,8 +61,7 @@ class ChargeConverterTest(unittest.TestCase):
             class_raw_text='FELONY',
             status=ChargeStatus.DROPPED,
             status_raw_text='DROPPED',
-            court_type=CourtType.DISTRICT,
-            court_type_raw_text='DISTRICT',
+            court_type='DISTRICT',
         )
 
         self.assertEqual(result, expected_result)
@@ -124,13 +123,13 @@ class ChargeConverterTest(unittest.TestCase):
     def testParseCharge_MapAcrossFields(self):
         # Arrange
         overrides_builder = EnumOverrides.Builder()
-        overrides_builder.add('CIVIL', CourtType.CIVIL, ChargeDegree)
-        overrides_builder.add('FIRST DEGREE', ChargeDegree.FIRST, CourtType)
+        overrides_builder.add('FELONY', ChargeClass.FELONY, ChargeDegree)
+        overrides_builder.add('FIRST DEGREE', ChargeDegree.FIRST, ChargeClass)
         metadata = IngestMetadata.new_with_defaults(
             enum_overrides=overrides_builder.build()
         )
-        ingest_charge = ingest_info_pb2.Charge(degree='civil',
-                                               court_type='first degree')
+        ingest_charge = ingest_info_pb2.Charge(charge_class='first degree',
+                                               degree='felony')
 
         # Act
         charge.copy_fields_to_builder(self.subject, ingest_charge,
@@ -139,7 +138,7 @@ class ChargeConverterTest(unittest.TestCase):
 
         # Assert
         expected_result = entities.Charge.new_with_defaults(
-            degree=ChargeDegree.FIRST, degree_raw_text='CIVIL',
-            court_type=CourtType.CIVIL, court_type_raw_text='FIRST DEGREE',
+            degree=ChargeDegree.FIRST, degree_raw_text='FELONY',
+            charge_class=ChargeClass.FELONY, class_raw_text='FIRST DEGREE',
             status=ChargeStatus.PRESENT_WITHOUT_INFO)
         self.assertEqual(result, expected_result)

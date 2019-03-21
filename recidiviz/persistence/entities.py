@@ -30,7 +30,7 @@ from recidiviz.common.constants.bond import BondType, BondStatus
 from recidiviz.common.constants.booking import ReleaseReason, CustodyStatus, \
     Classification, AdmissionReason
 from recidiviz.common.constants.charge import ChargeClass, ChargeDegree, \
-    ChargeStatus, CourtType
+    ChargeStatus
 from recidiviz.common.constants.hold import HoldStatus
 from recidiviz.common.constants.person import Race, Ethnicity, Gender, \
     ResidencyStatus
@@ -121,8 +121,7 @@ class Charge(Entity, BuildableAttr, DefaultableAttr):
     charging_entity: Optional[str] = attr.ib()
     status: ChargeStatus = attr.ib()  # non-nullable
     status_raw_text: Optional[str] = attr.ib()
-    court_type: Optional[CourtType] = attr.ib()
-    court_type_raw_text: Optional[str] = attr.ib()
+    court_type: Optional[str] = attr.ib()
     case_number: Optional[str] = attr.ib()
     next_court_date: Optional[datetime.date] = attr.ib()
     judge_name: Optional[str] = attr.ib()
