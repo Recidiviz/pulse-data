@@ -25,8 +25,8 @@ def enum_errors_from_logs(filename: str) -> List[Tuple[str, str, str]]:
         logs = json.loads(logs_file.read())
         for log in logs:
             enum_type, enum_string = extract_enum_string_type(
-                log['jsonPayload']['message']['text'])
-            region = log['jsonPayload']['message']['region']
+                log['jsonPayload']['message'])
+            region = log['labels']['region']
 
             assert region and enum_type and enum_string
             error = (region, enum_type, enum_string)
