@@ -160,3 +160,11 @@ class ExportConfigTest(unittest.TestCase):
                 ' Remove the table from'
                 ' export_config.TABLES_TO_EXPORT.'.format(table)
             )
+
+
+    def test_TABLES_TO_EXCLUDE_FROM_EXPORT_all_excluded(self):
+        """Make sure a table is excluded from TABLES_TO_EXPORT if listed in
+            TABLES_TO_EXCLUDE_FROM_EXPORT.
+        """
+        for table in export_config.TABLES_TO_EXCLUDE_FROM_EXPORT:
+            self.assertNotIn(table.__table__, export_config.TABLES_TO_EXPORT)
