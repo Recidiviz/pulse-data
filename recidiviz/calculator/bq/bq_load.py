@@ -124,7 +124,8 @@ def wait_for_table_load(
                      destination_table.dataset_id,
                      destination_table.table_id)
         return True
-    except (exceptions.NotFound, concurrent.futures.TimeoutError):
+    except (exceptions.NotFound,
+            concurrent.futures.TimeoutError): # type: ignore
         logging.exception('Failed to load table %s.%s.%s',
                           table_ref.project,
                           table_ref.dataset_id,
