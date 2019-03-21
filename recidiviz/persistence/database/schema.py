@@ -197,6 +197,7 @@ court_type = Enum(enum_strings.court_type_circuit,
                   enum_strings.external_unknown,
                   enum_strings.court_type_other,
                   enum_strings.court_type_superior,
+                  enum_strings.court_type_supreme,
                   name='court_type')
 
 # Aggregate
