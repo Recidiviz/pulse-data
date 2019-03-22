@@ -36,7 +36,8 @@ from recidiviz.ingest.scrape import ingest_utils, scrape_phase, sessions
 from recidiviz.ingest.scrape.constants import BATCH_PUBSUB_TYPE, ScrapeType
 from recidiviz.ingest.scrape.task_params import Task
 from recidiviz.persistence import persistence
-from recidiviz.utils import monitoring, pubsub_helper, regions, environment
+from recidiviz.utils import (monitoring, pubsub_helper, regions, environment,
+                             structured_logging)
 from recidiviz.utils.auth import authenticate_request
 
 BATCH_READ_SIZE = 500
@@ -107,6 +108,7 @@ def _get_batch_messages(scrape_key) -> List[pubsub.types.ReceivedMessage]:
         A list of messages (ReceivedMessaged) containing the message data
         and the ack_id.
     """
+    @structured_logging.copy_trace_id_to_thread
     def async_pull() -> Tuple[List[pubsub.types.ReceivedMessage], bool]:
         """Pulls messages and returns them and whether an error occurred."""
         logging.info('Pulling messages off pubsub')
