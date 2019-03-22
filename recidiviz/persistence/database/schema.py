@@ -728,7 +728,9 @@ class CaFacilityAggregate(Base, _AggregateTableMixin):
         UniqueConstraint(
             'fips', 'facility_name', 'report_date', 'aggregation_window'
         ),
-        CheckConstraint('LENGTH(fips) = 5'),
+        CheckConstraint(
+            'LENGTH(fips) = 5',
+            name='ca_facility_aggregate_fips_length_check'),
     )
 
     jurisdiction_name = Column(String(255))
@@ -745,7 +747,9 @@ class FlCountyAggregate(Base, _AggregateTableMixin):
     __tablename__ = 'fl_county_aggregate'
     __table_args__ = (
         UniqueConstraint('fips', 'report_date', 'aggregation_window'),
-        CheckConstraint('LENGTH(fips) = 5'),
+        CheckConstraint(
+            'LENGTH(fips) = 5',
+            name='fl_county_aggregate_fips_length_check'),
     )
 
     county_name = Column(String(255), nullable=False)
@@ -768,7 +772,9 @@ class FlFacilityAggregate(Base, _AggregateTableMixin):
         UniqueConstraint(
             'fips', 'facility_name', 'report_date', 'aggregation_window'
         ),
-        CheckConstraint('LENGTH(fips) = 5'),
+        CheckConstraint(
+            'LENGTH(fips) = 5',
+            name='fl_facility_aggregate_fips_length_check'),
     )
 
     facility_name = Column(String(255), nullable=False)
@@ -782,7 +788,9 @@ class GaCountyAggregate(Base, _AggregateTableMixin):
     __tablename__ = 'ga_county_aggregate'
     __table_args__ = (
         UniqueConstraint('fips', 'report_date', 'aggregation_window'),
-        CheckConstraint('LENGTH(fips) = 5'),
+        CheckConstraint(
+            'LENGTH(fips) = 5',
+            name='ga_county_aggregate_fips_length_check'),
     )
 
     county_name = Column(String(255), nullable=False)
@@ -802,7 +810,9 @@ class HiFacilityAggregate(Base, _AggregateTableMixin):
         UniqueConstraint(
             'fips', 'facility_name', 'report_date', 'aggregation_window'
         ),
-        CheckConstraint('LENGTH(fips) = 5'),
+        CheckConstraint(
+            'LENGTH(fips) = 5',
+            name='hi_facility_aggregate_fips_length_check'),
     )
 
     facility_name = Column(String(255), nullable=False)
@@ -846,7 +856,9 @@ class KyFacilityAggregate(Base, _AggregateTableMixin):
         UniqueConstraint(
             'fips', 'facility_name', 'report_date', 'aggregation_window'
         ),
-        CheckConstraint('LENGTH(fips) = 5'),
+        CheckConstraint(
+            'LENGTH(fips) = 5',
+            name='ky_facility_aggregate_fips_length_check'),
     )
 
     facility_name = Column(String(255), nullable=False)
@@ -883,7 +895,9 @@ class NyFacilityAggregate(Base, _AggregateTableMixin):
         UniqueConstraint(
             'fips', 'facility_name', 'report_date', 'aggregation_window'
         ),
-        CheckConstraint('LENGTH(fips) = 5'),
+        CheckConstraint(
+            'LENGTH(fips) = 5',
+            name='ny_facility_aggregate_fips_length_check'),
     )
 
     facility_name = Column(String(255), nullable=False)
@@ -909,7 +923,9 @@ class TxCountyAggregate(Base, _AggregateTableMixin):
         UniqueConstraint(
             'fips', 'facility_name', 'report_date', 'aggregation_window'
         ),
-        CheckConstraint('LENGTH(fips) = 5'),
+        CheckConstraint(
+            'LENGTH(fips) = 5',
+            name='tx_county_aggregate_fips_length_check'),
     )
 
     facility_name = Column(String(255), nullable=False)
@@ -948,7 +964,9 @@ class DcFacilityAggregate(Base, _AggregateTableMixin):
     __tablename__ = 'dc_facility_aggregate'
     __table_args__ = (
         UniqueConstraint('fips', 'report_date', 'aggregation_window'),
-        CheckConstraint('LENGTH(fips) = 5'),
+        CheckConstraint(
+            'LENGTH(fips) = 5',
+            name='dc_facility_aggregate_fips_length_check'),
     )
 
     facility_name = Column(String(255), nullable=False)
@@ -974,7 +992,9 @@ class PaFacilityPopAggregate(Base, _AggregateTableMixin):
         UniqueConstraint(
             'fips', 'facility_name', 'report_date', 'aggregation_window'
         ),
-        CheckConstraint('LENGTH(fips) = 5'),
+        CheckConstraint(
+            'LENGTH(fips) = 5',
+            name='pa_facility_pop_aggregate_fips_length_check'),
     )
 
     facility_name = Column(Integer)
@@ -994,7 +1014,9 @@ class PaCountyPreSentencedAggregate(Base, _AggregateTableMixin):
         UniqueConstraint(
             'fips', 'report_date', 'aggregation_window'
         ),
-        CheckConstraint('LENGTH(fips) = 5'),
+        CheckConstraint(
+            'LENGTH(fips) = 5',
+            name='pa_county_pre_sentenced_aggregate_fips_length_check'),
     )
 
     county_name = Column(Integer)
@@ -1008,7 +1030,9 @@ class TnFacilityAggregate(Base, _AggregateTableMixin):
         UniqueConstraint(
             'fips', 'facility_name', 'report_date', 'aggregation_window'
         ),
-        CheckConstraint('LENGTH(fips) = 5'),
+        CheckConstraint(
+            'LENGTH(fips) = 5',
+            name='tn_facility_aggregate_fips_length_check'),
     )
 
     facility_name = Column(String(255), nullable=False)
@@ -1030,7 +1054,9 @@ class TnFacilityFemaleAggregate(Base, _AggregateTableMixin):
         UniqueConstraint(
             'fips', 'facility_name', 'report_date', 'aggregation_window'
         ),
-        CheckConstraint('LENGTH(fips) = 5'),
+        CheckConstraint(
+            'LENGTH(fips) = 5',
+            name='tn_facility_aggregate_fips_length_check'),
     )
 
     facility_name = Column(String(255), nullable=False)
