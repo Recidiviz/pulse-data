@@ -18,16 +18,18 @@
 
 import copy
 import datetime
+import logging
 from typing import Callable, Optional
+
+import deepdiff
 
 from recidiviz.common.constants.bond import BondStatus
 from recidiviz.persistence import entities
 from recidiviz.persistence.errors import PersistenceError
-
-# '*' catches positional arguments, making our arguments named and required.
 from recidiviz.persistence.persistence_utils import is_booking_active
 
 
+# '*' catches positional arguments, making our arguments named and required.
 def is_person_match(
         *, db_entity: entities.Person, ingested_entity: entities.Person) \
         -> bool:
@@ -49,6 +51,22 @@ def is_person_match(
             and _is_birthdate_match(db_entity, ingested_entity)
             and _db_open_booking_matches_ingested_booking(
                 db_entity=db_entity, ingested_entity=ingested_entity))
+
+
+def diff_count(entity_a: entities.Entity, entity_b: entities.Entity) -> int:
+    """Counts the number of differences between two entities, including
+    their descendants."""
+    ddiff = deepdiff.DeepDiff(entity_a, entity_b,
+                              ignore_order=True, report_repetition=True)
+    DIFF_TYPES = ('values_changed', 'type_changes', 'iterable_item_added',
+                  'iterable_item_removed', 'repetition_change')
+    if not any(diff_type in ddiff for diff_type in DIFF_TYPES):
+        logging.warning("DeepDiff did not return any of the expected diff "
+                        "report fields. Maybe the API changed?\nDiff output:%s",
+                        ddiff)
+
+    return sum(len(diffs) for diff_type, diffs in ddiff.items()
+               if diff_type in DIFF_TYPES)
 
 
 def _is_birthdate_match(a: entities.Person, b: entities.Person) -> bool:
