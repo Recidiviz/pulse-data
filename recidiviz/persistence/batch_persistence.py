@@ -15,23 +15,25 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains logic for communicating with the batch persistence layer."""
+import itertools
 import json
 import logging
-from concurrent.futures.thread import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from http import HTTPStatus
-from typing import Optional
+from typing import List, Optional, Tuple
 
 import attr
 import cattr
 from flask import Blueprint, request, url_for
+from google.cloud import pubsub
 
 from recidiviz.common import queues
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.ingest.models.scrape_key import ScrapeKey
-from recidiviz.ingest.scrape import ingest_utils, sessions, scrape_phase
-from recidiviz.ingest.scrape.constants import ScrapeType, BATCH_PUBSUB_TYPE
+from recidiviz.ingest.scrape import ingest_utils, scrape_phase, sessions
+from recidiviz.ingest.scrape.constants import BATCH_PUBSUB_TYPE, ScrapeType
 from recidiviz.ingest.scrape.task_params import Task
 from recidiviz.persistence import persistence
 from recidiviz.utils import monitoring, pubsub_helper, regions
@@ -95,7 +97,7 @@ def _publish_batch_message(
     pubsub_helper.retry_with_create(scrape_key, publish, BATCH_PUBSUB_TYPE)
 
 
-def _get_batch_messages(scrape_key):
+def _get_batch_messages(scrape_key) -> List[pubsub.types.ReceivedMessage]:
     """Reads all of the messages from pubsub for the scrape key.
 
     Args:
@@ -105,7 +107,8 @@ def _get_batch_messages(scrape_key):
         A list of messages (ReceivedMessaged) containing the message data
         and the ack_id.
     """
-    def async_pull():
+    def async_pull() -> Tuple[List[pubsub.types.ReceivedMessage], bool]:
+        """Pulls messages and returns them and whether an error occurred."""
         logging.info('Pulling messages off pubsub')
         def inner():
             subscriber = pubsub_helper.get_subscriber()
@@ -142,25 +145,17 @@ def _get_batch_messages(scrape_key):
     # concurrent pulls and we break if and only if all 5 threads returned no
     # messages.
     while True:
-        pull_futures = []
-        all_failed = True
-        pulled_messages = []
-        for _ in range(NUM_PULL_THREADS):
-            t = pool.submit(async_pull)
-            pull_futures.append(t)
-        for pull_future in pull_futures:
-            # This is a blocking call until we return
-            result, did_fail = pull_future.result()
-            pulled_messages.extend(result)
-            all_failed = did_fail and all_failed
-        if all_failed:
+        futures = [pool.submit(async_pull) for _ in range(NUM_PULL_THREADS)]
+        results, failed = zip(*(future.result()
+                                for future in as_completed(futures)))
+        if all(failed):
             raise BatchPersistError(
                 scrape_key.region_code, scrape_key.scrape_type)
+        pulled_messages = list(itertools.chain.from_iterable(results))
         if not pulled_messages:
             logging.info('No pull calls had any messages, returning')
             break
-        else:
-            messages.extend(pulled_messages)
+        messages.extend(pulled_messages)
     return messages
 
 
