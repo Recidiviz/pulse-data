@@ -24,13 +24,12 @@ from typing import List, Optional, Tuple
 
 import attr
 import cattr
-import more_itertools
 from flask import Blueprint, request, url_for
 from google.cloud import pubsub
 
 from recidiviz.common import queues
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.ingest.models.ingest_info import IngestInfo
+from recidiviz.ingest.models.ingest_info import IngestInfo, Person
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.scrape import ingest_utils, scrape_phase, sessions
 from recidiviz.ingest.scrape.constants import BATCH_PUBSUB_TYPE, ScrapeType
@@ -113,6 +112,7 @@ def _get_batch_messages(scrape_key) -> List[pubsub.types.ReceivedMessage]:
     def async_pull(_) -> Tuple[List[pubsub.types.ReceivedMessage], str]:
         """Pulls messages and returns them and an error string, if any."""
         logging.info('Pulling messages off pubsub')
+
         def inner():
             subscriber = pubsub_helper.get_subscriber()
             sub_path = pubsub_helper.get_subscription_path(
@@ -123,9 +123,10 @@ def _get_batch_messages(scrape_key) -> List[pubsub.types.ReceivedMessage]:
                 max_messages=BATCH_READ_SIZE,
                 return_immediately=True
             )
+
         try:
             recv_messages = pubsub_helper.retry_with_create(
-                scrape_key, inner, pubsub_type=BATCH_PUBSUB_TYPE).\
+                scrape_key, inner, pubsub_type=BATCH_PUBSUB_TYPE). \
                 received_messages
             if recv_messages:
                 logging.info('Finished pulling messages, read %s messages',
@@ -223,12 +224,22 @@ def _get_proto_from_messages(messages):
 def _dedup_people(ingest_infos: List[IngestInfo]) -> IngestInfo:
     """Combines a list of IngestInfo objects into a single IngestInfo with
     duplicate People objects removed."""
-    all_people = IngestInfo(
-        people=[person for ii in ingest_infos for person in ii.people])
-    # Sort deeply so that repeated fields are compared in a consistent order.
-    all_people.sort()
-    deduped_people = list(more_itertools.unique_everseen(all_people.people))
-    return IngestInfo(people=deduped_people)
+    unique_people: List[Person] = []
+    duplicate_people: List[Person] = []
+
+    for ingest_info in ingest_infos:
+        for person in ingest_info.people:
+            # Sort deeply so that repeated fields are compared in a consistent
+            # order.
+            person.sort()
+            if person not in unique_people:
+                unique_people.append(person)
+            elif person not in duplicate_people:
+                duplicate_people.append(person)
+    if duplicate_people:
+        logging.info("Removed %d duplicate people: %s", len(duplicate_people),
+                     duplicate_people)
+    return IngestInfo(people=unique_people)
 
 
 def _should_abort(failed_tasks, total_people):
