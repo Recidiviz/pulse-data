@@ -26,6 +26,8 @@ class AdmissionReason(EntityEnum, metaclass=EntityEnumMeta):
     NEW_COMMITMENT = enum_strings.admission_reason_new_commitment
     PAROLE_VIOLATION = enum_strings.admission_reason_parole_violation
     PROBATION_VIOLATION = enum_strings.admission_reason_probation_violation
+    SUPERVISION_VIOLATION_FOR_SEX_OFFENSE = \
+        enum_strings.admission_reason_supervision_violation_for_sex_offense
     TRANSFER = enum_strings.admission_reason_transfer
 
     @staticmethod

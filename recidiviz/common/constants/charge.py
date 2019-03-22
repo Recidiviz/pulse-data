@@ -42,6 +42,8 @@ class ChargeClass(EntityEnum, metaclass=EntityEnumMeta):
     OTHER = enum_strings.charge_class_other
     PAROLE_VIOLATION = enum_strings.charge_class_parole_violation
     PROBATION_VIOLATION = enum_strings.charge_class_probation_violation
+    SUPERVISION_VIOLATION_FOR_SEX_OFFENSE = \
+        enum_strings.charge_class_supervision_violation_for_sex_offense
 
     @staticmethod
     def _get_default_map():

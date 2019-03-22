@@ -51,6 +51,7 @@ removed_without_info = 'REMOVED_WITHOUT_INFO'
 gender_female = 'FEMALE'
 gender_male = 'MALE'
 gender_other = 'OTHER'
+gender_trans = 'TRANS'
 gender_trans_female = 'TRANS_FEMALE'
 gender_trans_male = 'TRANS_MALE'
 
@@ -74,6 +75,8 @@ admission_reason_escape = 'ESCAPE'
 admission_reason_new_commitment = 'NEW_COMMITMENT'
 admission_reason_parole_violation = 'PAROLE_VIOLATION'
 admission_reason_probation_violation = 'PROBATION_VIOLATION'
+admission_reason_supervision_violation_for_sex_offense = \
+    'SUPERVISION_VIOLATION_FOR_SEX_OFFENSE'
 admission_reason_transfer = 'TRANSFER'
 
 release_reason_acquittal = 'ACQUITTAL'
@@ -146,6 +149,8 @@ charge_class_misdemeanor = 'MISDEMEANOR'
 charge_class_other = 'OTHER'
 charge_class_parole_violation = 'PAROLE_VIOLATION'
 charge_class_probation_violation = 'PROBATION_VIOLATION'
+charge_class_supervision_violation_for_sex_offense = \
+    'SUPERVISION_VIOLATION_FOR_SEX_OFFENSE'
 
 charge_status_acquitted = 'ACQUITTED'
 charge_status_completed = 'COMPLETED_SENTENCE'

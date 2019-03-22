@@ -26,6 +26,7 @@ class Gender(EntityEnum, metaclass=EntityEnumMeta):
     FEMALE = enum_strings.gender_female
     MALE = enum_strings.gender_male
     OTHER = enum_strings.gender_other
+    TRANS = enum_strings.gender_trans
     TRANS_FEMALE = enum_strings.gender_trans_female
     TRANS_MALE = enum_strings.gender_trans_male
 
