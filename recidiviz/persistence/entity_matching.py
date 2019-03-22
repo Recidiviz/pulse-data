@@ -484,10 +484,11 @@ def _get_only_match(
     return matches[0] if matches else None
 
 
-def _get_best_match(ingest_entity: entities.Entity,
-                    db_entities: Sequence[entities.Entity],
-                    matcher: Callable,
-                    matched_db_ids: Iterable[int]) -> Optional[entities.Entity]:
+def _get_best_match(
+        ingest_entity: entities.Entity,
+        db_entities: Sequence[entities.Entity],
+        matcher: Callable,
+        matched_db_ids: Iterable[int]) -> Optional[entities.Entity]:
     """Selects the database entity that most closely matches the ingest entity,
     if a match exists. The steps are as follows:
         - Use |matcher| to select a list of candidate matches
@@ -500,6 +501,10 @@ def _get_best_match(ingest_entity: entities.Entity,
         return None
     if len(matches) == 1:
         return matches[0]
+    logging.info(
+        "Using diff_count to pick best match: Multiple matches found for a "
+        "single ingested person.\nIngested entity: %s\nDatabase matches:%s",
+        ingest_entity, matches)
     return min(matches,
                key=lambda db_entity: utils.diff_count(ingest_entity, db_entity))
 
