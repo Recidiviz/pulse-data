@@ -109,8 +109,9 @@ def _get_batch_messages(scrape_key) -> List[pubsub.types.ReceivedMessage]:
         and the ack_id.
     """
     @structured_logging.copy_trace_id_to_thread
-    def async_pull() -> Tuple[List[pubsub.types.ReceivedMessage], bool]:
-        """Pulls messages and returns them and whether an error occurred."""
+    @monitoring.with_region_tag
+    def async_pull(_) -> Tuple[List[pubsub.types.ReceivedMessage], str]:
+        """Pulls messages and returns them and an error string, if any."""
         logging.info('Pulling messages off pubsub')
         def inner():
             subscriber = pubsub_helper.get_subscriber()
@@ -130,12 +131,11 @@ def _get_batch_messages(scrape_key) -> List[pubsub.types.ReceivedMessage]:
                 logging.info('Finished pulling messages, read %s messages',
                              len(recv_messages))
                 _ack_messages(recv_messages, scrape_key)
-            return recv_messages, False
+            return recv_messages, ''
         # We occasionally get timeouts, we want to catch these and not kill the
         # thread.
         except Exception as e:
-            logging.error('Got an error trying to pull: %s', str(e))
-            return [], True
+            return [], str(e)
 
     pool = ThreadPoolExecutor(NUM_PULL_THREADS)
     messages = []
@@ -147,12 +147,16 @@ def _get_batch_messages(scrape_key) -> List[pubsub.types.ReceivedMessage]:
     # concurrent pulls and we break if and only if all 5 threads returned no
     # messages.
     while True:
-        futures = [pool.submit(async_pull) for _ in range(NUM_PULL_THREADS)]
-        results, failed = zip(*(future.result()
+        futures = [pool.submit(async_pull, scrape_key.region_code)
+                   for _ in range(NUM_PULL_THREADS)]
+        results, errors = zip(*(future.result()
                                 for future in as_completed(futures)))
-        if all(failed):
-            raise BatchPersistError(
-                scrape_key.region_code, scrape_key.scrape_type)
+        if any(errors):
+            message = 'Failed to pull:\n\t{}'.format(
+                '\n\t'.join(filter(None, errors)))
+            if all(errors):
+                raise Exception(message)
+            logging.error(message)
         pulled_messages = list(itertools.chain.from_iterable(results))
         if not pulled_messages:
             logging.info('No pull calls had any messages, returning')
