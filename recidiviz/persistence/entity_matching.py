@@ -20,6 +20,7 @@ import logging
 from collections import defaultdict
 from typing import List, Dict, Tuple, Set, Sequence, Callable, Any, cast
 
+import attr
 from opencensus.stats import measure, view, aggregation
 
 from recidiviz import Session
@@ -48,76 +49,90 @@ matching_errors_by_entity_view = view.View(
 monitoring.register_views([matching_errors_by_entity_view])
 
 
+@attr.s(frozen=True, kw_only=True)
+class MatchedEntities:
+    """
+    Object that contains output for entity matching
+    - people: List of all successfully matched and unmatched people.
+        This list does NOT include any people for which Entity Matching raised
+        an Exception.
+    - orphaned entities: All entities that were orphaned during matching.
+        These will need to be added to the session separately from the
+        returned people.
+    - error count: The number of errors raised during the matching process.
+    """
+    people: List[entities.Person] = attr.ib(factory=list)
+    orphaned_entities: List[entities.Entity] = attr.ib(factory=list)
+    error_count: int = attr.ib(default=0)
+
+    def __add__(self, other):
+        return MatchedEntities(
+            people=self.people + other.people,
+            orphaned_entities=self.orphaned_entities + other.orphaned_entities,
+            error_count=self.error_count + other.error_count)
+
+
 def match(
         session: Session, region: str,
-        ingested_people: List[entities.Person]) -> Tuple[int, List[Entity]]:
-    """Attempts to match all people from |ingested_people| with corresponding
-    people in our database for the given |region|. For any ingested person, if a
-    matching person exists in the database, the primary key is updated on the
-    ingested person.
-
-    Returns a tuple with the following:
-        - error count (int): The number of errors raised while entity matching
-            the provided |ingested_people|
-        - orphaned entities (List[Entity]): All entities that were orphaned
-            during matching. These will need to be added to the session
-            separately from the matched people.
+        ingested_people: List[entities.Person]) -> MatchedEntities:
     """
-
+    Attempts to match all people from |ingested_people| with corresponding
+    people in our database for the given |region|. Returns an MatchedEntities
+    object that contains the results of matching.
+    """
     with_external_ids = []
     without_external_ids = []
-
     for ingested_person in ingested_people:
         if ingested_person.external_id:
             with_external_ids.append(ingested_person)
         else:
             without_external_ids.append(ingested_person)
 
-    error_count = 0
-    orphaned_entities: List[Entity] = []
-    if with_external_ids:
-        db_people_with_external_ids = database.read_people_by_external_ids(
-            session, region, with_external_ids)
-        error_count += match_people_and_return_error_count(
-            db_people=db_people_with_external_ids,
-            ingested_people=with_external_ids,
-            orphaned_entities=orphaned_entities)
+    db_people_with_external_ids = database.read_people_by_external_ids(
+        session, region, with_external_ids)
+    matches_with_external_id = match_people_and_return_error_count(
+        db_people=db_people_with_external_ids,
+        ingested_people=with_external_ids)
 
-    if without_external_ids:
-        db_people_without_external_ids = \
-            database.read_people_with_open_bookings(
-                session, region, without_external_ids)
-        error_count += match_people_and_return_error_count(
-            db_people=db_people_without_external_ids,
-            ingested_people=without_external_ids,
-            orphaned_entities=orphaned_entities)
+    db_people_without_external_ids = \
+        database.read_people_with_open_bookings(
+            session, region, without_external_ids)
+    matches_without_external_ids = match_people_and_return_error_count(
+        db_people=db_people_without_external_ids,
+        ingested_people=without_external_ids)
 
-    return error_count, orphaned_entities
+    return matches_with_external_id + matches_without_external_ids
 
 
 def match_people_and_return_error_count(
         *, db_people: List[entities.Person],
-        ingested_people: List[entities.Person],
-        orphaned_entities: List[Entity]) -> int:
+        ingested_people: List[entities.Person]) -> MatchedEntities:
     """
     Attempts to match all people from |ingested_people| with people from the
-    |db_people|. For any ingested person, if a matching person exists in
-    |db_people|, the primary key is updated on the ingested person.
+    |db_people|. Returns an MatchedEntities object that contains the results
+    of matching.
     """
+    people = []
+    orphaned_entities = []
     error_count = 0
     matched_people_by_db_id: Dict[int, entities.Person] = {}
+
     for ingested_person in ingested_people:
         try:
+            ingested_person_orphans: List[Entity] = []
             match_person(ingested_person=ingested_person, db_people=db_people,
-                         orphaned_entities=orphaned_entities,
+                         orphaned_entities=ingested_person_orphans,
                          matched_people_by_db_id=matched_people_by_db_id)
+            people.append(ingested_person)
+            orphaned_entities.extend(ingested_person_orphans)
         except EntityMatchingError as e:
             logging.exception(
                 'Found error while matching ingested person. \nPerson: %s',
                 ingested_person)
             increment_error(e.entity_name)
             error_count += 1
-    return error_count
+    return MatchedEntities(people=people, orphaned_entities=orphaned_entities,
+                           error_count=error_count)
 
 
 def match_person(
