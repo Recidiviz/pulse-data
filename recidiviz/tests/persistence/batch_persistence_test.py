@@ -54,6 +54,12 @@ def client(request):
 
     request.cls.client = app.test_client()
 
+@pytest.fixture(autouse=True)
+def project_id():
+    with patch('recidiviz.utils.metadata.project_id') as mock_project:
+        mock_project.return_value = 'fake-project'
+        yield mock_project
+
 
 # pylint: disable=protected-access
 
