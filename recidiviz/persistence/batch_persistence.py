@@ -36,7 +36,7 @@ from recidiviz.ingest.scrape import ingest_utils, scrape_phase, sessions
 from recidiviz.ingest.scrape.constants import BATCH_PUBSUB_TYPE, ScrapeType
 from recidiviz.ingest.scrape.task_params import Task
 from recidiviz.persistence import persistence
-from recidiviz.utils import monitoring, pubsub_helper, regions
+from recidiviz.utils import monitoring, pubsub_helper, regions, environment
 from recidiviz.utils.auth import authenticate_request
 
 BATCH_READ_SIZE = 500
@@ -118,7 +118,7 @@ def _get_batch_messages(scrape_key) -> List[pubsub.types.ReceivedMessage]:
             return subscriber.pull(
                 sub_path,
                 max_messages=BATCH_READ_SIZE,
-                return_immediately=True
+                return_immediately=(not environment.in_gae())
             )
         try:
             recv_messages = pubsub_helper.retry_with_create(
