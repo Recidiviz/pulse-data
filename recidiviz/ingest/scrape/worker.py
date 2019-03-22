@@ -18,26 +18,33 @@
 """Infrastructure for workers in the ingest pipeline."""
 
 
-from http import HTTPStatus
 import json
 import logging
 import pprint
+from http import HTTPStatus
 
 from flask import Blueprint, request
 
+from opencensus.stats import aggregation, measure, view
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.scrape import sessions
 from recidiviz.ingest.scrape.task_params import QueueRequest
 from recidiviz.utils import monitoring, regions
 from recidiviz.utils.auth import authenticate_request
 
+m_tasks = measure.MeasureInt("ingest/scrape/task_count",
+                             "The count of scrape tasks that occurred", "1")
+
+task_view = view.View("recidiviz/ingest/scrape/task_count",
+                      "The sum of scrape tasks that occurred",
+                      [monitoring.TagKey.REGION, monitoring.TagKey.STATUS],
+                      m_tasks, aggregation.SumAggregation())
+
 class RequestProcessingError(Exception):
     """Exception containing the request that failed to process"""
-    _MAX_REQUEST_STRING_SIZE = 50 * 1024  # 50 KiB
 
     def __init__(self, region: str, task: str, queue_request: QueueRequest):
         request_string = pprint.pformat(queue_request.to_serializable())
-        request_string = request_string[:self._MAX_REQUEST_STRING_SIZE]
         msg = "Error when running '{}' for '{}' with request:\n{}".format(
             task, region, request_string)
         super(RequestProcessingError, self).__init__(msg)
@@ -78,9 +85,6 @@ def work(region):
         Any other response code will make taskqueue consider the task
         failed, and it will retry the task until it expires or succeeds
         (handling backoff logic, etc.)
-
-        The task will set response code to 500 if it receives a return value
-        of -1 from the function it calls.
     """
     # Verify this was actually a task queued by our app
     if "X-AppEngine-QueueName" not in request.headers:
@@ -98,9 +102,14 @@ def work(region):
             'Region specified in task {} does not match region from url {}.'\
                 .format(data['region'], region))
 
-    with monitoring.push_tags({monitoring.TagKey.REGION: region}):
+    task_tags = {monitoring.TagKey.STATUS: 'COMPLETED'}
+    # Note: measurements must be second so it receives the region tag.
+    with monitoring.push_tags({monitoring.TagKey.REGION: region}), \
+            monitoring.measurements(task_tags) as measurements:
+        measurements.measure_int_put(m_tasks, 1)
         if not sessions.get_current_session(
                 ScrapeKey(region, params.scrape_type)):
+            task_tags[monitoring.TagKey.STATUS] = 'SKIPPED'
             logging.info("Queue %s, skipping task (%s) for %s.",
                          queue_name, task, region)
             return ('', HTTPStatus.OK)
@@ -111,16 +120,10 @@ def work(region):
         scraper_task = getattr(scraper, task)
 
         try:
-            result = scraper_task(params)
-        except TimeoutError:
-            # Timeout errors happen occasionally, so just fail the task and let
-            # it retry.
-            logging.info("--- Request timed out, re-queuing task. ---")
-            result = -1
-        except:
+            scraper_task(params)
+        except Exception as e:
+            task_tags[monitoring.TagKey.STATUS] = 'ERROR: {}'.format(type(e))
             raise RequestProcessingError(region, task, params)
 
-        # Respond to the task queue to mark this task as done, or re-queue if
-        # error result
-        return ('', HTTPStatus.INTERNAL_SERVER_ERROR if result == -1 \
-                                                    else HTTPStatus.OK)
+        # Respond to the task queue to mark this task as done
+        return ('', HTTPStatus.OK)

@@ -86,8 +86,7 @@ class TestWorker:
     def test_post_work_error(self, mock_session, mock_region):
         mock_session.return_value = 'session'
         region = create_autospec(Region)
-        # TODO: use exceptions instead of -1
-        region.get_scraper().fake_task.return_value = -1
+        region.get_scraper().fake_task.side_effect = Exception()
         mock_region.return_value = region
 
         form = {
@@ -97,8 +96,8 @@ class TestWorker:
         }
         form_encoded = json.dumps(form).encode()
         headers = {'X-Appengine-QueueName': "test-queue"}
-        response = self.client.post(PATH, data=form_encoded, headers=headers)
-        assert response.status_code == 500
+        with pytest.raises(worker.RequestProcessingError):
+            self.client.post(PATH, data=form_encoded, headers=headers)
 
         region.get_scraper().fake_task.assert_called_with(FAKE_QUEUE_PARAMS)
 
@@ -117,8 +116,8 @@ class TestWorker:
         }
         form_encoded = json.dumps(form).encode()
         headers = {'X-Appengine-QueueName': "test-queue"}
-        response = self.client.post(PATH, data=form_encoded, headers=headers)
-        assert response.status_code == 500
+        with pytest.raises(worker.RequestProcessingError):
+            self.client.post(PATH, data=form_encoded, headers=headers)
 
         region.get_scraper().fake_task.assert_called_with(FAKE_QUEUE_PARAMS)
 
@@ -140,5 +139,5 @@ class TestWorker:
         form_encoded = json.dumps(form).encode()
         headers = {'X-Appengine-QueueName': "test-queue"}
         with pytest.raises(ValueError) as exception:
-            _ = self.client.post(PATH, data=form_encoded, headers=headers)
+            self.client.post(PATH, data=form_encoded, headers=headers)
             assert exception.message.startswith('Region specified')

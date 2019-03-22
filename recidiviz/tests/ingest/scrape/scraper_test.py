@@ -19,13 +19,14 @@
 
 import datetime
 
+import pytest
 import requests
 from mock import patch
 
-from recidiviz.ingest.scrape import constants
 from recidiviz.ingest.models.scrape_key import ScrapeKey
+from recidiviz.ingest.scrape import constants
 from recidiviz.ingest.scrape.constants import BATCH_PUBSUB_TYPE
-from recidiviz.ingest.scrape.scraper import Scraper
+from recidiviz.ingest.scrape.scraper import FetchPageError, Scraper
 from recidiviz.ingest.scrape.sessions import ScrapeSession
 from recidiviz.ingest.scrape.task_params import QueueRequest, Task
 from recidiviz.utils.regions import Region
@@ -439,7 +440,8 @@ class TestFetchPage:
             mock_requests.return_value = error_response
 
             scraper = FakeScraper(region, initial_task)
-            assert scraper.fetch_page(url) == -1
+            with pytest.raises(FetchPageError):
+                scraper.fetch_page(url)
 
             mock_get_region.assert_called_with(region)
             mock_proxies.assert_called_with()

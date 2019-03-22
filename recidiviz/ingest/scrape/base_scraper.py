@@ -59,6 +59,12 @@ from recidiviz.ingest.scrape.task_params import QueueRequest, ScrapedData, \
     Task
 from recidiviz.persistence import batch_persistence, persistence
 
+class ParsingError(Exception):
+    """Exception containing the text that failed to parse"""
+    def __init__(self, response_type: constants.ResponseType, text: str):
+        msg = 'Error parsing response as {}:\n{}'.format(response_type, text)
+        super(ParsingError, self).__init__(msg)
+
 
 class BaseScraper(Scraper):
     """Generic class for scrapers."""
@@ -96,8 +102,7 @@ class BaseScraper(Scraper):
             post_data: dict of parameters to pass into the html request.
 
         Returns:
-            Returns a tuple of the content of the page (or -1) and a dict
-            of cookies (or None).
+            Returns a tuple of the content of the page and a dict of cookies.
         """
         logging.info('Fetching content with endpoint: %s', endpoint)
 
@@ -106,8 +111,6 @@ class BaseScraper(Scraper):
         response = self.fetch_page(
             endpoint, headers=headers, cookies=cookies, params=params,
             post_data=post_data, json_data=json_data, should_proxy=should_proxy)
-        if response == -1:
-            return -1, None
 
         # Extract any cookies from the response and convert back to dict.
         cookies.update(response.cookies.get_dict())
@@ -122,24 +125,21 @@ class BaseScraper(Scraper):
         if response_type is constants.ResponseType.HTML:
             try:
                 return self._parse_html_content(response.text), cookies
-            except XMLSyntaxError as e:
-                logging.error("Error parsing page. Error: %s\nPage:\n\n%s",
-                              e, response.text)
-                return -1, None
+            except XMLSyntaxError:
+                raise ParsingError(response_type, response.text)
         if response_type is constants.ResponseType.JSON:
             try:
                 return json.loads(response.text), cookies
-            except json.JSONDecodeError as e:
-                logging.error("Error parsing page. Error: %s\nPage:\n\n%s",
-                              e, response.text)
-                return -1, None
+            except json.JSONDecodeError:
+                raise ParsingError(response_type, response.text)
         if response_type is constants.ResponseType.TEXT:
             return response.text, cookies
         if response_type is constants.ResponseType.RAW:
             return response.content, cookies
-        logging.error("Unexpected response type '%s' for endpoint '%s'",
-                      response_type, endpoint)
-        return -1, None
+
+        raise ValueError(
+            "Unexpected response type '{}' for endpoint '{}'".format(
+                response_type, endpoint))
 
     def _parse_html_content(self, content_string: str) -> html.HtmlElement:
         """Parses a string into a structured HtmlElement.
@@ -159,9 +159,6 @@ class BaseScraper(Scraper):
 
         Args:
             params: dict of parameters passed from the last scrape session.
-
-        Returns:
-            Nothing if successful, -1 if it fails
         """
         try:
             task = request.next_task
@@ -191,8 +188,6 @@ class BaseScraper(Scraper):
                         task.endpoint, task.response_type, headers=task.headers,
                         cookies=task.cookies, params=task.params,
                         post_data=post_data, json_data=task.json)
-                    if content == -1:
-                        return -1
                 except Exception as e:
                     raise ScraperFetchError(str(e)) from e
 
@@ -267,7 +262,6 @@ class BaseScraper(Scraper):
                     persistence.write(
                         ingest_utils.convert_ingest_info_to_proto(
                             scraped_data.ingest_info), metadata)
-            return None
         except Exception as e:
             if self.BATCH_WRITES:
                 scrape_key = ScrapeKey(
