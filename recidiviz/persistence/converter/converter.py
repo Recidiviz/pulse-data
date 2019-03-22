@@ -86,8 +86,8 @@ class Converter:
 
         converted_person = person_builder.build()
 
-        # Scrub PII if the person either has an external id or if all bookings
-        # are already resolved.
+        # Scrub PII if the person either has an external id or has no open
+        # bookings.
         if converted_person.external_id \
                 or not persistence_utils.has_active_booking(converted_person):
             persistence_utils.remove_pii_for_person(converted_person)
