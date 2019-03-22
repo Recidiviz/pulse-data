@@ -113,3 +113,4 @@ class TagKey:
     PERSISTED = 'persisted'
     ERROR = 'error'
     ENTITY_TYPE = 'entity_type'
+    STATUS = 'status'
