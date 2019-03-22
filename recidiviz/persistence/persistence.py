@@ -251,7 +251,6 @@ def write(ingest_info, metadata):
             entity_matching_output = entity_matching.match(
                 session, metadata.region, people)
             people = entity_matching_output.people
-            # entity_matching_errors, orphaned_entities = \
             logging.info(
                 'Completed entity matching with %s errors',
                 entity_matching_output.error_count)

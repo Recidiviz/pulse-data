@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for entity_matching.py."""
+import copy
 from datetime import datetime
 from unittest import TestCase
 
@@ -25,8 +26,10 @@ from recidiviz.common.constants.bond import BondStatus
 from recidiviz.common.constants.booking import CustodyStatus
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.hold import HoldStatus
-from recidiviz.persistence.database import schema, database_utils
+from recidiviz.common.constants.person import Gender
 from recidiviz.persistence import entities, entity_matching
+from recidiviz.persistence import entity_matching_utils
+from recidiviz.persistence.database import schema, database_utils
 from recidiviz.persistence.entity_matching import MatchedEntities
 from recidiviz.persistence.errors import EntityMatchingError
 from recidiviz.tests.utils import fakes
@@ -71,15 +74,24 @@ class TestEntityMatching(TestCase):
             external_id=_EXTERNAL_ID, admission_date=_DATE_2,
             booking_id=_BOOKING_ID,
             custody_status=CustodyStatus.IN_CUSTODY.value, last_seen_time=_DATE)
+        schema_booking_another = copy.deepcopy(schema_booking)
+        schema_booking_another.booking_id = _BOOKING_ID_ANOTHER
 
         schema_person = schema.Person(
             person_id=_PERSON_ID, external_id=_EXTERNAL_ID,
             jurisdiction_id=_JURISDICTION_ID,
             full_name=_FULL_NAME, birthdate=_DATE,
-            region=_REGION, bookings=[schema_booking])
+            region=_REGION, bookings=[schema_booking, schema_booking_another])
+
+        schema_person_another = schema.Person(person_id=_PERSON_ID_ANOTHER,
+                                              jurisdiction_id=_JURISDICTION_ID,
+                                              region=_REGION,
+                                              full_name=_NAME_2,
+                                              external_id=_EXTERNAL_ID_ANOTHER)
 
         session = Session()
         session.add(schema_person)
+        session.add(schema_person_another)
         session.commit()
 
         ingested_booking = attr.evolve(
@@ -89,21 +101,20 @@ class TestEntityMatching(TestCase):
         ingested_person = attr.evolve(
             database_utils.convert(schema_person), person_id=None,
             bookings=[ingested_booking])
-        ingested_person_another = attr.evolve(ingested_person)
+
+        ingested_person_another = attr.evolve(
+            database_utils.convert(schema_person_another), person_id=None
+        )
 
         # Act
         out = entity_matching.match(
             session, _REGION, [ingested_person, ingested_person_another])
 
         # Assert
-        expected_booking = attr.evolve(
-            ingested_booking, booking_id=schema_booking.booking_id)
-        expected_person = attr.evolve(
-            ingested_person, person_id=schema_person.person_id,
-            bookings=[expected_booking])
+        expected_person = attr.evolve(ingested_person_another,
+                                      person_id=schema_person_another.person_id)
         expected_out = MatchedEntities(
             people=[expected_person], error_count=1, orphaned_entities=[])
-
         self.assertEqual(out, expected_out)
 
     def test_matchPerson_updateStatusOnOrphanedEntities(self):
@@ -282,6 +293,45 @@ class TestEntityMatching(TestCase):
             people=[expected_person_external_id, expected_person],
             error_count=0, orphaned_entities=[])
         self.assertEqual(out, expected_out)
+
+    def test_matchPeople_twoMatchingPeople_PicksMostSimilar(self):
+        # Arrange
+        schema_person = schema.Person(
+            person_id=_PERSON_ID, external_id=_EXTERNAL_ID,
+            jurisdiction_id=_JURISDICTION_ID,
+            full_name=_FULL_NAME, birthdate=_DATE,
+            region=_REGION, gender=Gender.MALE.value)
+
+        schema_person_mismatch = copy.deepcopy(schema_person)
+        schema_person_mismatch.person_id = _PERSON_ID_ANOTHER
+        schema_person_mismatch.gender = Gender.FEMALE.value
+
+        session = Session()
+        session.add(schema_person)
+        session.add(schema_person_mismatch)
+        session.commit()
+
+        ingested_person = attr.evolve(
+            database_utils.convert(schema_person), person_id=None)
+
+        expected_person = attr.evolve(
+            ingested_person, person_id=schema_person.person_id)
+
+        # Act
+        matched_entities = entity_matching.match(
+            session, _REGION, [ingested_person])
+
+        # Assert both schema objects are matches, but we select the most
+        # similar one.
+        self.assertTrue(entity_matching_utils.is_person_match(
+            db_entity=schema_person, ingested_entity=ingested_person))
+        self.assertTrue(entity_matching_utils.is_person_match(
+            db_entity=schema_person_mismatch,
+            ingested_entity=ingested_person))
+
+        self.assertEqual(matched_entities.error_count, 0)
+        self.assertEqual(len(matched_entities.orphaned_entities), 0)
+        self.assertEqual(ingested_person, expected_person)
 
     def test_matchBooking_duplicateMatch_throws(self):
         db_booking = entities.Booking.new_with_defaults(
