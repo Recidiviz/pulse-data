@@ -81,7 +81,7 @@ class TestHiAggregateIngest(TestCase):
             'parole_violation_female_population': [4, 0],
             'probation_violation_male_population': [42, 0],
             'probation_violation_female_population': [12, 0],
-            'fips': [15001, 15003],
+            'fips': ['15001', '15003'],
             'report_date': 2 * [DATE_SCRAPED],
             'aggregation_window': 2 * [enum_strings.daily_granularity],
             'report_frequency': 2 * [enum_strings.monthly_granularity]
@@ -113,7 +113,7 @@ class TestHiAggregateIngest(TestCase):
             'parole_violation_female_population': [0, 0],
             'probation_violation_male_population': [0, 105],
             'probation_violation_female_population': [0, 8],
-            'fips': [4021, 15003],
+            'fips': ['04021', '15003'],
             'report_date': 2 * [DATE_SCRAPED],
             'aggregation_window': 2 * [enum_strings.daily_granularity],
             'report_frequency': 2 * [enum_strings.monthly_granularity]
@@ -148,7 +148,7 @@ class TestHiAggregateIngest(TestCase):
             'parole_violation_female_population': [1, 0],
             'probation_violation_male_population': [62, 0],
             'probation_violation_female_population': [16, 0],
-            'fips': [15001, 15003],
+            'fips': ['15001', '15003'],
             'report_date': 2 * [DATE_SCRAPED_2],
             'aggregation_window': 2 * [enum_strings.daily_granularity],
             'report_frequency': 2 * [enum_strings.monthly_granularity]
@@ -180,7 +180,7 @@ class TestHiAggregateIngest(TestCase):
             'parole_violation_female_population': [0, 0],
             'probation_violation_male_population': [0, 72],
             'probation_violation_female_population': [0, 4],
-            'fips': [4021, 15003],
+            'fips': ['04021', '15003'],
             'report_date': 2 * [DATE_SCRAPED_2],
             'aggregation_window': 2 * [enum_strings.daily_granularity],
             'report_frequency': 2 * [enum_strings.monthly_granularity]

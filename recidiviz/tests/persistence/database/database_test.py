@@ -1334,7 +1334,7 @@ class TestDatabase(TestCase):
             'date_reported': [pd.NaT, pd.NaT,
                               datetime.datetime(year=2017, month=9, day=1),
                               pd.NaT, pd.NaT],
-            'fips': ['0', '1', '2', '3', '4'],
+            'fips': ['00000', '00001', '00002', '00003', '00004'],
             'report_date': 5 * [DATE_SCRAPED],
             'aggregation_window': 5 * [enum_strings.monthly_granularity],
             'report_frequency': 5 * [enum_strings.monthly_granularity]
@@ -1354,7 +1354,7 @@ class TestDatabase(TestCase):
         self.assertEqual(result.average_daily_population, 1015)
         self.assertEqual(result.date_reported,
                          datetime.date(year=2017, month=9, day=1))
-        self.assertEqual(result.fips, '2')
+        self.assertEqual(result.fips, '00002')
         self.assertEqual(result.report_date, DATE_SCRAPED)
         self.assertEqual(result.aggregation_window,
                          enum_strings.monthly_granularity)
@@ -1368,7 +1368,7 @@ class TestDatabase(TestCase):
             'date_reported': [pd.NaT, pd.NaT,
                               datetime.datetime(year=2017, month=9, day=1),
                               pd.NaT, pd.NaT],
-            'fips': ['0', '1', '2', '3', '4'],
+            'fips': ['00000', '00001', '00002', '00003', '00004'],
             'report_date': 5 * [DATE_SCRAPED],
             'aggregation_window': 5 * [enum_strings.monthly_granularity],
             'report_frequency': 5 * [enum_strings.monthly_granularity]
@@ -1380,7 +1380,7 @@ class TestDatabase(TestCase):
             'average_daily_population': [13, 14, 15, 16, 17],
             'number_felony_pretrial': [23, 24, 25, 26, 27],
             'number_misdemeanor_pretrial': 5 * [pd.NaT],
-            'fips': ['000', '111', '222', '333', '444'],
+            'fips': ['10000', '10111', '10222', '10333', '10444'],
             'report_date': 5 * [DATE_SCRAPED],
             'aggregation_window': 5 * [enum_strings.monthly_granularity],
             'report_frequency': 5 * [enum_strings.monthly_granularity]
@@ -1395,18 +1395,19 @@ class TestDatabase(TestCase):
             .filter(FlCountyAggregate.county_name == 'Bay')
         result = one(query.all())
 
-        fips_not_overridden_by_facility_table = '2'
+        fips_not_overridden_by_facility_table = '00002'
         self.assertEqual(result.county_name, 'Bay')
         self.assertEqual(result.fips, fips_not_overridden_by_facility_table)
 
     def testWriteDf_rowsWithSameColumnsThatMustBeUnique_onlyWritesOnce(self):
         # Arrange
+        shared_fips = '12345'
         subject = pd.DataFrame({
             'county_name': ['Alachua', 'Baker'],
             'county_population': [257062, 26965],
             'average_daily_population': [799, 478],
             'date_reported': [pd.NaT, pd.NaT],
-            'fips': 2 * ['SAME_FIPS'],
+            'fips': 2 * [shared_fips],
             'report_date': 2 * [DATE_SCRAPED],
             'aggregation_window': 2 * [enum_strings.monthly_granularity],
             'report_frequency': 2 * [enum_strings.monthly_granularity]
@@ -1428,7 +1429,7 @@ class TestDatabase(TestCase):
             'date_reported': [pd.NaT, pd.NaT,
                               datetime.datetime(year=2017, month=9, day=1),
                               pd.NaT, pd.NaT],
-            'fips': ['0', '1', '2', '3', '4'],
+            'fips': ['00000', '00001', '00002', '00003', '00004'],
             'report_date': 5 * [DATE_SCRAPED],
             'aggregation_window': 5 * [enum_strings.monthly_granularity],
             'report_frequency': 5 * [enum_strings.monthly_granularity]
@@ -1440,7 +1441,7 @@ class TestDatabase(TestCase):
             'county_population': [0, 1000000000, 0],
             'average_daily_population': [0, 50, 0],
             'date_reported': [pd.NaT, pd.NaT, pd.NaT],
-            'fips': ['0', '1000', '2'],
+            'fips': ['00000', '01000', '00002'],
             'report_date': 3 * [DATE_SCRAPED],
             'aggregation_window': 3 * [enum_strings.monthly_granularity],
             'report_frequency': 3 * [enum_strings.monthly_granularity]
