@@ -109,3 +109,15 @@ class TestIngestInfo(unittest.TestCase):
                                          jurisdiction_name='UNSPECIFIED')
                     ])])])
         self.assertEqual(ii.prune(), expected)
+
+    def test_sort(self):
+        b1 = ingest_info.Booking(admission_date='1')
+        b2 = ingest_info.Booking(admission_date='2')
+
+        ii = IngestInfo(people=[ingest_info.Person(bookings=[b1, b2])])
+        ii_reversed = IngestInfo(people=[ingest_info.Person(bookings=[b2, b1])])
+
+        self.assertNotEqual(ii, ii_reversed)
+        ii.sort()
+        ii_reversed.sort()
+        self.assertEqual(ii, ii_reversed)

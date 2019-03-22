@@ -20,13 +20,10 @@ from datetime import date, datetime, timedelta
 from unittest import TestCase
 
 import attr
-
 from mock import patch, Mock
 
 import recidiviz.ingest.models.ingest_info as ii
-
 from recidiviz import Session
-from recidiviz.common.common_utils import create_generated_id
 from recidiviz.common.constants.bond import BondStatus
 from recidiviz.common.constants.booking import CustodyStatus
 from recidiviz.common.constants.charge import ChargeStatus
@@ -436,22 +433,6 @@ class TestPersistence(TestCase):
         # Assert
         people = database.read_people(Session())
         self.assertCountEqual(people, [expected_person, person_unmatched])
-
-    def test_dedup(self):
-        """Tests that identical ingested data is written only once."""
-        # Arrange
-        ingest_info = IngestInfo()
-        ingest_info.people.add(person_id=create_generated_id(),
-                               full_name=FULL_NAME_1)
-        ingest_info.people.add(person_id=create_generated_id(),
-                               full_name=FULL_NAME_1)
-
-        # Act
-        persistence.write(ingest_info, DEFAULT_METADATA)
-        result = database.read_people(Session())
-
-        # Assert
-        self.assertEqual(len(result), 1)
 
 
 def _format_full_name(full_name: str) -> str:

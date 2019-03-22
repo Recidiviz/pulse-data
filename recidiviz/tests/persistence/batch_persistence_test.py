@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for batch_persistence.py."""
+import copy
 import datetime
 import json
 from unittest import TestCase
@@ -38,6 +39,7 @@ REGIONS = ['us_pa_greene', 'us_ny']
 TEST_NAME = 'test'
 TEST_NAME2 = 'test2'
 TEST_ID = '1'
+TEST_ID2 = '2'
 TEST_ENDPOINT = 'www.test.com'
 TEST_ERROR = 'TestError'
 TEST_PARAMS = {'test': 'value'}
@@ -417,6 +419,44 @@ class TestBatchPersistence(TestCase):
         result_proto = mock_write.call_args[0][0]
         self.assertEqual(result_proto, expected_proto)
         self.assertEqual(mock_write.call_count, 2)
+
+    @patch('recidiviz.persistence.persistence.write')
+    def test_persist_duplicates_to_db(self, mock_write):
+        """Tests that duplicate ingest_info.Person objects are merged before
+        write."""
+        scrape_key = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
+        pubsub_helper.create_topic_and_subscription(
+            scrape_key, BATCH_PUBSUB_TYPE)
+
+        # Arrange
+        ii = IngestInfo()
+        ii.create_person(person_id=TEST_ID, full_name=TEST_NAME).create_booking(
+            booking_id=TEST_ID)
+
+        ii_2 = IngestInfo()
+        ii.create_person(person_id=TEST_ID2, full_name=TEST_NAME2)
+
+        ii_1_dup = copy.deepcopy(ii)
+
+        t1, t2, t3 = (Task(task_type=constants.TaskType.SCRAPE_DATA,
+                           endpoint=TEST_ENDPOINT + str(i),
+                           response_type=constants.ResponseType.TEXT)
+                      for i in range(3))
+
+        # Act
+        batch_persistence.write(ii, t1, scrape_key)
+        batch_persistence.write(ii_2, t2, scrape_key)
+        batch_persistence.write(ii_1_dup, t3, scrape_key)
+
+        start_time = datetime.datetime.now()
+        batch_persistence.persist_to_database(
+            scrape_key.region_code, scrape_key.scrape_type, start_time)
+
+        # Assert
+        expected_ii = IngestInfo(people=ii.people + ii_2.people)
+        expected_proto = ingest_utils.convert_ingest_info_to_proto(expected_ii)
+        result_proto = mock_write.call_args[0][0]
+        self.assertEqual(result_proto, expected_proto)
 
 
 @pytest.mark.usefixtures("client")

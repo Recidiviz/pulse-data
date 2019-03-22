@@ -41,6 +41,9 @@ class IngestObject:
             return False
         return self.__dict__ == other.__dict__
 
+    def __lt__(self, other):
+        return str(self) < str(other)
+
     def __bool__(self):
         return to_bool(self)
 
@@ -77,6 +80,11 @@ class IngestInfo(IngestObject):
     def prune(self) -> 'IngestInfo':
         self.people = [person.prune() for person in self.people if person]
         return self
+
+    def sort(self):
+        for person in self.people:
+            person.sort()
+        self.people.sort()
 
     def get_all_people(self, predicate=lambda _: True) -> List['Person']:
         return [person for person in self.people if predicate(person)]
@@ -150,6 +158,11 @@ class Person(IngestObject):
                          for booking in self.bookings if booking]
         return self
 
+    def sort(self):
+        for booking in self.bookings:
+            booking.sort()
+        self.bookings.sort()
+
 
 class Booking(IngestObject):
     """Class for information about a booking.
@@ -213,6 +226,10 @@ class Booking(IngestObject):
         if not self.arrest:
             self.arrest = None
         return self
+
+    def sort(self):
+        self.charges.sort()
+        self.holds.sort()
 
 
 class Arrest(IngestObject):
