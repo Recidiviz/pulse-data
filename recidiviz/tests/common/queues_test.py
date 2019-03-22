@@ -21,7 +21,7 @@ import json
 import unittest
 from mock import call, patch
 
-from google.cloud.tasks_v2beta3.types import Task
+from google.cloud import tasks
 
 from recidiviz.common import queues
 from recidiviz.utils import metadata
@@ -37,7 +37,7 @@ class QueuesTest(unittest.TestCase):
         queues.clear_client()
 
 
-    @patch('google.cloud.tasks_v2beta3.CloudTasksClient')
+    @patch('google.cloud.tasks.CloudTasksClient')
     def test_create_scrape_task(self, mock_client):
         """Tests that a task is created."""
         url = '/test/work'
@@ -52,7 +52,7 @@ class QueuesTest(unittest.TestCase):
             region_code='us_ny', queue_name=queue_name, url=url, body=params)
 
         body_encoded = json.dumps(params).encode()
-        task = Task(
+        task = tasks.types.Task(
             name=task_path,
             app_engine_http_request={
                 'relative_uri': url,
@@ -66,7 +66,7 @@ class QueuesTest(unittest.TestCase):
             queue_path, task)
 
 
-    @patch('google.cloud.tasks_v2beta3.CloudTasksClient')
+    @patch('google.cloud.tasks.CloudTasksClient')
     def test_purge_scrape_tasks(self, mock_client):
         queue_name = 'testqueue'
         queue_path = queue_name + '-path'
@@ -75,9 +75,9 @@ class QueuesTest(unittest.TestCase):
         mock_client.return_value.task_path.return_value = task_path
 
         mock_client.return_value.list_tasks.return_value = [
-            Task(name=queue_path + '/us_ny-123'),
-            Task(name=queue_path + '/us_pa-456'),
-            Task(name=queue_path + '/us_ny-789')
+            tasks.types.Task(name=queue_path + '/us_ny-123'),
+            tasks.types.Task(name=queue_path + '/us_pa-456'),
+            tasks.types.Task(name=queue_path + '/us_ny-789')
         ]
 
         queues.purge_scrape_tasks(region_code='us_ny', queue_name=queue_name)
@@ -85,7 +85,7 @@ class QueuesTest(unittest.TestCase):
         mock_client.return_value.delete_task.assert_has_calls([
             call(queue_path + '/us_ny-123'), call(queue_path + '/us_ny-789')])
 
-    @patch('google.cloud.tasks_v2beta3.CloudTasksClient')
+    @patch('google.cloud.tasks.CloudTasksClient')
     def test_list_scrape_tasks(self, mock_client):
         queue_name = 'testqueue'
         queue_path = queue_name + '-path'
@@ -94,16 +94,18 @@ class QueuesTest(unittest.TestCase):
         mock_client.return_value.task_path.return_value = task_path
 
         mock_client.return_value.list_tasks.return_value = [
-            Task(name=queue_path + '/us_ny-123'),
-            Task(name=queue_path + '/us_pa-456'),
-            Task(name=queue_path + '/us_ny-789')
+            tasks.types.Task(name=queue_path + '/us_ny-123'),
+            tasks.types.Task(name=queue_path + '/us_pa-456'),
+            tasks.types.Task(name=queue_path + '/us_ny-789')
         ]
 
-        tasks = queues.list_scrape_tasks(
+        listed_tasks = queues.list_scrape_tasks(
             region_code='us_ny', queue_name=queue_name)
 
-        assert tasks == [Task(name=queue_path + '/us_ny-123'),
-                         Task(name=queue_path + '/us_ny-789')]
+        assert listed_tasks == [
+            tasks.types.Task(name=queue_path + '/us_ny-123'),
+            tasks.types.Task(name=queue_path + '/us_ny-789')
+        ]
 
         mock_client.return_value.queue_path.assert_called_with(
             metadata.project_id(), metadata.region(), queue_name)
@@ -112,7 +114,7 @@ class QueuesTest(unittest.TestCase):
 
     @patch('recidiviz.common.queues.datetime')
     @patch('recidiviz.common.queues.uuid')
-    @patch('google.cloud.tasks_v2beta3.CloudTasksClient')
+    @patch('google.cloud.tasks.CloudTasksClient')
     def test_create_bq_task(self, mock_client, mock_uuid, mock_datetime):
         """Tests that a BQ export task is created."""
         url = '/test/bq'
@@ -134,7 +136,7 @@ class QueuesTest(unittest.TestCase):
         params = {'table_name': table_name}
         body_encoded = json.dumps(params).encode()
 
-        task = Task(
+        task = tasks.types.Task(
             name=task_path,
             app_engine_http_request={
                 'relative_uri': url,
