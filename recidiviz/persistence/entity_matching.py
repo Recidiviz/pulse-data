@@ -18,7 +18,8 @@
 
 import logging
 from collections import defaultdict
-from typing import List, Dict, Tuple, Set, Sequence, Callable, Any, cast
+from typing import List, Dict, Tuple, Set, Sequence, Callable, Any, cast, \
+    Optional, Iterable
 
 import attr
 from opencensus.stats import measure, view, aggregation
@@ -140,8 +141,10 @@ def match_person(
         db_people: List[entities.Person],
         orphaned_entities: List[Entity],
         matched_people_by_db_id: Dict[int, entities.Person]) -> None:
-    db_person: entities.Person = _get_only_match(ingested_person, db_people,
-                                                 utils.is_person_match)
+    db_person = cast(entities.Person,
+                     _get_best_match(ingested_person, db_people,
+                                     utils.is_person_match,
+                                     matched_people_by_db_id.keys()))
     if db_person:
         logging.debug('Successfully matched to person with ID %s',
                       db_person.person_id)
@@ -239,7 +242,7 @@ def _build_maps_from_charges(
     for charge in charges:
         child_obj = getattr(charge, child_obj_name)
         if child_obj:
-            child_obj_id = getattr(child_obj, child_obj_name + '_id')
+            child_obj_id = _get_id(child_obj)
             if not child_obj_id:
                 child_obj_id = _generate_id_from_obj(child_obj)
             object_map[child_obj_id] = child_obj
@@ -256,7 +259,6 @@ def _match_from_charges(
     Any entities that are orphaned as a part of this process are added to the
     given |orphaned_entities|.
     """
-    id_name = name + '_id'
     db_obj_map, db_relationship_map = _build_maps_from_charges(
         db_booking.charges, name)
     ing_obj_map, ing_relationship_map = \
@@ -264,7 +266,7 @@ def _match_from_charges(
 
     def _is_match_with_relationships(*, db_entity, ingested_entity):
         ing_entity_id = _generate_id_from_obj(ingested_entity)
-        db_entity_id = getattr(db_entity, id_name)
+        db_entity_id = _get_id(db_entity)
         matcher = getattr(utils, 'is_{}_match'.format(name))
         obj_match = matcher(db_entity=db_entity,
                             ingested_entity=ingested_entity)
@@ -281,16 +283,17 @@ def _match_from_charges(
             ing_obj, list(db_obj_map.values()), matched_ing_objs_by_db_id,
             _is_match_with_relationships)
         if db_obj:
-            db_id = getattr(db_obj, name + '_id')
+            db_id = _get_id(db_obj)
             logging.debug('successfully matched to %s with id %s',
                           name, db_id)
             setattr(ing_obj, name + '_id', db_id)
             matched_ing_objs_by_db_id[cast(int, db_id)] = ing_obj
 
     for db_obj in db_obj_map.values():
-        if not getattr(db_obj, id_name) in matched_ing_objs_by_db_id:
+        db_obj_id = _get_id(db_obj)
+        if not db_obj_id in matched_ing_objs_by_db_id:
             logging.debug('Did not match %s to any ingested %s, dropping',
-                          getattr(db_obj, id_name), name)
+                          db_obj_id, name)
             drop_fn = globals()['_drop_' + name]
             drop_fn(db_obj)
             orphaned_entities.append(db_obj)
@@ -451,10 +454,8 @@ def _get_next_available_match(
         db_entities: Sequence[entities.Entity],
         db_entities_matched_by_id: Dict[int, Any],
         matcher: Callable):
-    id_name = ingested_entity.get_entity_name() + '_id'
-
     for db_entity in db_entities:
-        if not getattr(db_entity, id_name) in db_entities_matched_by_id and \
+        if not _get_id(db_entity) in db_entities_matched_by_id and \
                 matcher(db_entity=db_entity, ingested_entity=ingested_entity):
             return db_entity
     return None
@@ -483,11 +484,36 @@ def _get_only_match(
     return matches[0] if matches else None
 
 
+def _get_best_match(ingest_entity: entities.Entity,
+                    db_entities: Sequence[entities.Entity],
+                    matcher: Callable,
+                    matched_db_ids: Iterable[int]) -> Optional[entities.Entity]:
+    """Selects the database entity that most closely matches the ingest entity,
+    if a match exists. The steps are as follows:
+        - Use |matcher| to select a list of candidate matches
+        - Disqualify previously matched entities in |matched_db_ids|
+        - Select the candidate match that differs minimally from the ingested
+          entity."""
+    matches = _get_all_matches(ingest_entity, db_entities, matcher)
+    matches = [m for m in matches if _get_id(m) not in matched_db_ids]
+    if not matches:
+        return None
+    if len(matches) == 1:
+        return matches[0]
+    return min(matches,
+               key=lambda db_entity: utils.diff_count(ingest_entity, db_entity))
+
+
 def _get_all_matches(
         ingested_entity: entities.Entity,
         db_entities: Sequence[entities.Entity], matcher: Callable):
     return [db_entity for db_entity in db_entities
             if matcher(db_entity=db_entity, ingested_entity=ingested_entity)]
+
+
+def _get_id(entity: entities.Entity):
+    id_name = entity.get_entity_name() + '_id'
+    return getattr(entity, id_name)
 
 
 def increment_error(entity_name: str) -> None:

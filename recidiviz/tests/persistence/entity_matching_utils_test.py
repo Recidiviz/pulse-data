@@ -261,3 +261,13 @@ class TestEntityMatchingUtils(TestCase):
                 sentence_id=_SENTENCE_ID),
             ingested_entity=entities.Sentence.new_with_defaults(
                 sentence_id=_SENTENCE_ID_OTHER)))
+
+    def test_person_similarity(self):
+        person = entities.Person.new_with_defaults(
+            person_id=1, birthdate=_DATE,
+            bookings=[entities.Booking.new_with_defaults(
+                booking_id=2, custody_status=CustodyStatus.RELEASED)])
+
+        person_another = attr.evolve(person, birthdate=_DATE_OTHER)
+        self.assertEqual(
+            entity_matching_utils.diff_count(person, person_another), 1)
