@@ -702,7 +702,7 @@ class _AggregateTableMixin:
 
     # TODO(#689): Ensure that `fips` also supports facility level fips
     # TODO(#689): Consider adding fips_type to denote county vs facility
-    fips = Column(String(255), nullable=False)
+    fips = Column(String(5), nullable=False)
 
     report_date = Column(Date, nullable=False)
 
