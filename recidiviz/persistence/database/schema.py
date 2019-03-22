@@ -56,6 +56,7 @@ gender = Enum(enum_strings.external_unknown,
               enum_strings.gender_female,
               enum_strings.gender_male,
               enum_strings.gender_other,
+              enum_strings.gender_trans,
               enum_strings.gender_trans_female,
               enum_strings.gender_trans_male,
               name='gender')
@@ -85,6 +86,8 @@ admission_reason = Enum(enum_strings.admission_reason_escape,
                         enum_strings.admission_reason_new_commitment,
                         enum_strings.admission_reason_parole_violation,
                         enum_strings.admission_reason_probation_violation,
+                        # pylint:disable=line-too-long
+                        enum_strings.admission_reason_supervision_violation_for_sex_offense,
                         enum_strings.admission_reason_transfer,
                         name='admission_reason')
 
@@ -180,6 +183,8 @@ charge_class = Enum(enum_strings.charge_class_civil,
                     enum_strings.charge_class_other,
                     enum_strings.charge_class_parole_violation,
                     enum_strings.charge_class_probation_violation,
+                    # pylint:disable=line-too-long
+                    enum_strings.charge_class_supervision_violation_for_sex_offense,
                     name='charge_class')
 
 charge_status = Enum(enum_strings.charge_status_acquitted,
