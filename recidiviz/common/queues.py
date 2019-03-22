@@ -22,8 +22,7 @@ import json
 import uuid
 from typing import List
 
-from google.cloud import tasks_v2beta3
-from google.cloud.tasks_v2beta3.types import Task
+from google.cloud import tasks
 
 from recidiviz.utils import environment, metadata
 
@@ -31,7 +30,7 @@ _client = None
 def client():
     global _client
     if not _client:
-        _client = tasks_v2beta3.CloudTasksClient()
+        _client = tasks.CloudTasksClient()
     return _client
 
 @environment.test_only
@@ -92,7 +91,8 @@ def purge_scrape_tasks(*, region_code: str, queue_name: str):
         client().delete_task(task.name)
 
 
-def list_scrape_tasks(*, region_code: str, queue_name: str) -> List[Task]:
+def list_scrape_tasks(*, region_code: str, queue_name: str) \
+        -> List[tasks.types.Task]:
     """List scrape tasks for the given region and queue"""
     region_task_prefix = format_scrape_task_path(queue_name, region_code, '')
     return [task for task in client().list_tasks(format_queue_path(queue_name))
@@ -108,7 +108,7 @@ def create_scrape_task(*, region_code, queue_name, url, body):
         url: `str` App Engine worker url.
         body: `dict` task body to be passed to worker.
     """
-    task = Task(
+    task = tasks.types.Task(
         name=format_scrape_task_path(queue_name, region_code, uuid.uuid4()),
         app_engine_http_request={
             'relative_uri': url,
@@ -127,7 +127,7 @@ def enqueue_scraper_phase(*, region_code, url):
     the `region_code` as a url parameter. For example, this can trigger stopping
     a scraper or inferring release for a particular region.
     """
-    task = Task(
+    task = tasks.types.Task(
         app_engine_http_request={
             'http_method': 'GET',
             'relative_uri': '{url}?region={region_code}'.format(
@@ -152,7 +152,7 @@ def create_bq_task(table_name: str, url: str):
     task_id = '{}-{}-{}'.format(
         table_name, str(datetime.date.today()), uuid.uuid4())
     task_name = format_task_path(BIGQUERY_QUEUE, task_id)
-    task = Task(
+    task = tasks.types.Task(
         name=task_name,
         app_engine_http_request={
             'relative_uri': url,
