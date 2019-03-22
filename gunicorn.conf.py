@@ -24,7 +24,7 @@ worker_connections = 10000
 # Use an asynchronous worker as most of the work is waiting for websites to load
 worker_class = '.'.join([GeventGrpcWorker.__module__,
                          GeventGrpcWorker.__name__])
-timeout = 300
+timeout = 600
 loglevel = 'debug'
 accesslog = 'gunicorn-access.log'
 errorlog = 'gunicorn-error.log'
