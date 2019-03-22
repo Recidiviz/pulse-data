@@ -80,6 +80,7 @@ BOND_TYPE_MAP = {
     'CASH PAY OUT': BondType.CASH,
     'CASH SURETY': BondType.SECURED,
     'CASH W BAIL CREDIT': BondType.CASH,
+    'CORPORATE BOND': BondType.SECURED,
     'COURT ORDER': None,
     'COURT RELEASE': None,
     'DENIED': BondType.DENIED,

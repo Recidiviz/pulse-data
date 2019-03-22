@@ -20,6 +20,7 @@ from datetime import datetime
 
 import yaml
 
+from recidiviz.common.constants.person import ETHNICITY_MAP, Ethnicity, Race
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.scrape import constants, ingest_utils
 from recidiviz.ingest.models import ingest_info
@@ -91,6 +92,16 @@ class CommonScraperTest:
                         raise AttributeError(
                             "Attribute %s is unknown on %s, found in "
                             "multi_key_mappings" % (attr, class_to_set))
+
+    def test_overrides_are_correct(self):
+        msg = ("Default override mappings are not present. Be sure your "
+               "scraper's get_enum_overrides calls super() to use "
+               "BaseScraper's EnumOverrides.")
+        overrides = self.scraper.get_enum_overrides()
+        for ethnicity_string, ethnicity_enum in ETHNICITY_MAP.items():
+            if ethnicity_enum is Ethnicity.HISPANIC:
+                self.assertEqual(overrides.parse(ethnicity_string, Race),
+                                 ethnicity_enum, msg)
 
     def validate_and_return_get_more_tasks(
             self, content, task, expected_result):
