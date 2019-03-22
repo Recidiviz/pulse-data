@@ -34,12 +34,12 @@ import inspect
 import sys
 from typing import Iterator
 
-from sqlalchemy import Boolean, Column, Date, DateTime, Enum, ForeignKey, \
-    Integer, String, Text, UniqueConstraint, Table
+from sqlalchemy import Boolean, CheckConstraint, Column, Date, DateTime, Enum, \
+    ForeignKey, Integer, String, Text, UniqueConstraint, Table
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta, \
     declared_attr
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, validates
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 from recidiviz.persistence.database.database_entity import DatabaseEntity
@@ -712,6 +712,14 @@ class _AggregateTableMixin:
     # The expected time between snapshots of data
     report_frequency = Column(time_granularity, nullable=False)
 
+    @validates('fips')
+    def validate_fips(self, _, fips: str) -> str:
+        if len(fips) != 5:
+            raise ValueError(
+                'FIPS code invalid length: {} characters, should be 5'.format(
+                    len(fips)))
+        return fips
+
 
 class CaFacilityAggregate(Base, _AggregateTableMixin):
     """CA state-provided aggregate statistics."""
@@ -720,6 +728,7 @@ class CaFacilityAggregate(Base, _AggregateTableMixin):
         UniqueConstraint(
             'fips', 'facility_name', 'report_date', 'aggregation_window'
         ),
+        CheckConstraint('LENGTH(fips) = 5'),
     )
 
     jurisdiction_name = Column(String(255))
@@ -736,6 +745,7 @@ class FlCountyAggregate(Base, _AggregateTableMixin):
     __tablename__ = 'fl_county_aggregate'
     __table_args__ = (
         UniqueConstraint('fips', 'report_date', 'aggregation_window'),
+        CheckConstraint('LENGTH(fips) = 5'),
     )
 
     county_name = Column(String(255), nullable=False)
@@ -758,6 +768,7 @@ class FlFacilityAggregate(Base, _AggregateTableMixin):
         UniqueConstraint(
             'fips', 'facility_name', 'report_date', 'aggregation_window'
         ),
+        CheckConstraint('LENGTH(fips) = 5'),
     )
 
     facility_name = Column(String(255), nullable=False)
@@ -771,6 +782,7 @@ class GaCountyAggregate(Base, _AggregateTableMixin):
     __tablename__ = 'ga_county_aggregate'
     __table_args__ = (
         UniqueConstraint('fips', 'report_date', 'aggregation_window'),
+        CheckConstraint('LENGTH(fips) = 5'),
     )
 
     county_name = Column(String(255), nullable=False)
@@ -790,6 +802,7 @@ class HiFacilityAggregate(Base, _AggregateTableMixin):
         UniqueConstraint(
             'fips', 'facility_name', 'report_date', 'aggregation_window'
         ),
+        CheckConstraint('LENGTH(fips) = 5'),
     )
 
     facility_name = Column(String(255), nullable=False)
@@ -833,6 +846,7 @@ class KyFacilityAggregate(Base, _AggregateTableMixin):
         UniqueConstraint(
             'fips', 'facility_name', 'report_date', 'aggregation_window'
         ),
+        CheckConstraint('LENGTH(fips) = 5'),
     )
 
     facility_name = Column(String(255), nullable=False)
@@ -869,6 +883,7 @@ class NyFacilityAggregate(Base, _AggregateTableMixin):
         UniqueConstraint(
             'fips', 'facility_name', 'report_date', 'aggregation_window'
         ),
+        CheckConstraint('LENGTH(fips) = 5'),
     )
 
     facility_name = Column(String(255), nullable=False)
@@ -894,6 +909,7 @@ class TxCountyAggregate(Base, _AggregateTableMixin):
         UniqueConstraint(
             'fips', 'facility_name', 'report_date', 'aggregation_window'
         ),
+        CheckConstraint('LENGTH(fips) = 5'),
     )
 
     facility_name = Column(String(255), nullable=False)
@@ -932,6 +948,7 @@ class DcFacilityAggregate(Base, _AggregateTableMixin):
     __tablename__ = 'dc_facility_aggregate'
     __table_args__ = (
         UniqueConstraint('fips', 'report_date', 'aggregation_window'),
+        CheckConstraint('LENGTH(fips) = 5'),
     )
 
     facility_name = Column(String(255), nullable=False)
@@ -957,6 +974,7 @@ class PaFacilityPopAggregate(Base, _AggregateTableMixin):
         UniqueConstraint(
             'fips', 'facility_name', 'report_date', 'aggregation_window'
         ),
+        CheckConstraint('LENGTH(fips) = 5'),
     )
 
     facility_name = Column(Integer)
@@ -976,6 +994,7 @@ class PaCountyPreSentencedAggregate(Base, _AggregateTableMixin):
         UniqueConstraint(
             'fips', 'report_date', 'aggregation_window'
         ),
+        CheckConstraint('LENGTH(fips) = 5'),
     )
 
     county_name = Column(Integer)
@@ -989,6 +1008,7 @@ class TnFacilityAggregate(Base, _AggregateTableMixin):
         UniqueConstraint(
             'fips', 'facility_name', 'report_date', 'aggregation_window'
         ),
+        CheckConstraint('LENGTH(fips) = 5'),
     )
 
     facility_name = Column(String(255), nullable=False)
@@ -1010,6 +1030,7 @@ class TnFacilityFemaleAggregate(Base, _AggregateTableMixin):
         UniqueConstraint(
             'fips', 'facility_name', 'report_date', 'aggregation_window'
         ),
+        CheckConstraint('LENGTH(fips) = 5'),
     )
 
     facility_name = Column(String(255), nullable=False)

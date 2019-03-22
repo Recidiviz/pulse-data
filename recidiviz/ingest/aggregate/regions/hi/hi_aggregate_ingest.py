@@ -72,19 +72,19 @@ _FACILITY_ACRONYM_TO_NAME = {
 }
 
 _FACILITY_ACRONYM_TO_FIPS = {
-    'HCCC': 15001,  # Hawaii
-    'SNF': 15003,  # Honolulu
-    'HMSF': 15003,  # Honolulu
-    'KCCC': 15007,  # Kauai
-    'KCF': 15001,  # Hawaii
-    'MCCC': 15009,  # Maui
-    'OCCC': 15003,  # Honolulu
-    'WCCC': 15003,  # Honolulu
-    'WCF': 15003,  # Honolulu
-    'RED ROCK CC, AZ': 4021,  # Pinal
-    'SAGUARO CC, AZ': 4021,  # Pinal
-    'FEDERAL DET. CTR.': 15003,  # Honolulu
-    'FEDERAL DET. CTR. 1': 15003,  # Honolulu
+    'HCCC': '15001',  # Hawaii
+    'SNF': '15003',  # Honolulu
+    'HMSF': '15003',  # Honolulu
+    'KCCC': '15007',  # Kauai
+    'KCF': '15001',  # Hawaii
+    'MCCC': '15009',  # Maui
+    'OCCC': '15003',  # Honolulu
+    'WCCC': '15003',  # Honolulu
+    'WCF': '15003',  # Honolulu
+    'RED ROCK CC, AZ': '04021',  # Pinal
+    'SAGUARO CC, AZ': '04021',  # Pinal
+    'FEDERAL DET. CTR.': '15003',  # Honolulu
+    'FEDERAL DET. CTR. 1': '15003',  # Honolulu
 }
 
 DATE_PARSE_ANCHOR_FILENAME = 'pop-reports-eom-'
@@ -143,7 +143,7 @@ def _parse_table(filename: str) -> pd.DataFrame:
         result.facility_name.map(_facility_acronym_to_name)
 
     # Rows that may be NaN need to be cast as a float, otherwise use int
-    string_columns = {'facility_name'}
+    string_columns = {'facility_name', 'fips'}
     nullable_columns = {'design_bed_capacity', 'operation_bed_capacity'}
     int_columns = set(result.columns) - string_columns - nullable_columns
 
@@ -222,7 +222,7 @@ def _facility_acronym_to_name(facility_acronym: str) -> str:
     return _FACILITY_ACRONYM_TO_NAME[facility_acronym]
 
 
-def _facility_acronym_to_fips(facility_acronym: str) -> int:
+def _facility_acronym_to_fips(facility_acronym: str) -> str:
     if facility_acronym not in _FACILITY_ACRONYM_TO_FIPS:
         raise FipsMergingError(
             'Failed to match facility acronym "{}" to fips'.format(
