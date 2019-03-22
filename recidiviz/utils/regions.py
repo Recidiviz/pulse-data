@@ -77,7 +77,7 @@ class Region:
         attr.ib(default=RemovedFromWebsite.RELEASED,
                 converter=RemovedFromWebsite)
     names_file: Optional[str] = attr.ib(default=None)
-    should_proxy: Optional[str] = attr.ib(default='True')
+    should_proxy: Optional[str] = attr.ib(default='false')
 
     def __attrs_post_init__(self):
         if self.queue and self.shared_queue:
