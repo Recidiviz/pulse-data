@@ -25,15 +25,12 @@ jurisdiction_ids exist for the corresponding fips.
 
 import glob
 import os
-from typing import Optional
 
 import pandas as pd
-import us
 import yaml
-from more_itertools import one
+from ruamel.yaml import YAML
 
 import recidiviz.ingest.scrape.regions
-from recidiviz.common import fips, fips_fuzzy_matching
 
 _REGIONS_DIR = os.path.dirname(recidiviz.ingest.scrape.regions.__file__)
 _DATA_SETS_DIR = os.path.dirname(recidiviz.common.__file__) + '/data_sets'
@@ -49,59 +46,27 @@ def main():
 
     all_manifests_filenames = glob.glob(_REGIONS_DIR + '/**/manifest.yaml')
 
-    errors = set()
     for manifest_filename in all_manifests_filenames:
         # Read county_name from manifest & state
         region_name = manifest_filename.split('/')[-2]
-        state_name = region_name.split('_')[1]
         county_name = ' '.join(region_name.split('_')[2:])
 
         # Skip state level manifest files
         if not county_name:
             continue
 
-        county_fips = _to_county_fips(county_name,
-                                      us.states.lookup(state_name))
+        with open(manifest_filename, 'r+') as file:
+            y_dict = yaml.load(file)
 
-        with open(manifest_filename, 'r') as yaml_read_file:
-            y_dict = yaml.load(yaml_read_file)
-            if 'jurisdiction_id' in y_dict:
-                continue
+            jid = str(y_dict.get('jurisdiction_id'))
+            jid = jid.zfill(8)
+            y_dict['jurisdiction_id'] = jid
 
-        with open(manifest_filename, 'a') as yaml_file:
-            jid = _to_jurisdiction_id(county_fips)
-
-            if not jid:
-                errors.add(str(county_fips) + ':' + county_name)
-                continue
-
-            yaml_file.write('jurisdiction_id: ' + str(jid) + '\n')
-
-    print(len(errors))
-    print('Failed counties: ' + str(errors))
-
-
-def _to_county_fips(manifest_county_name: str, state: us.states) -> int:
-    """Lookup fips by manifest_county_name, filtering within the given state"""
-    # pylint: disable=protected-access
-    fips_for_state = fips.get_fips_for(state)
-    # pylint: disable=protected-access
-    actual_county_name = fips_fuzzy_matching.best_match(
-        manifest_county_name, fips_for_state.index, _FUZZY_MATCH_CUTOFF)
-
-    return fips_for_state.at[actual_county_name, 'fips']
-
-
-def _to_jurisdiction_id(county_fips: int) -> Optional[str]:
-    """Lookup jurisdction_id by manifest_agency_name, filtering within the
-    given county_fips"""
-    jids_matching_county_fips = _JID.loc[_JID['fips'] == county_fips]
-
-    # If only one jurisdiction in the county, assume it's a match
-    if len(jids_matching_county_fips) == 1:
-        return one(jids_matching_county_fips['jid'])
-
-    return None
+            file.seek(0)
+            y = YAML()
+            y.default_flow_style = False
+            y.dump(y_dict, file)
+            file.truncate()
 
 
 if __name__ == "__main__":
