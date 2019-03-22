@@ -166,3 +166,13 @@ def parse_int(int_string):
         return int(common_utils.normalize(int_string))
     except Exception:
         raise ValueError('cannot parse int value: %s' % int_string)
+
+
+def is_none(s: str) -> bool:
+    """Returns True if the string value should be parsed as None."""
+    return common_utils.normalize(s, remove_punctuation=True) in {
+        'N A',
+        'NONE',
+        'NONE SET',
+        'NOT SPECIFIED'
+    }
