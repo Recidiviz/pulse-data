@@ -271,6 +271,10 @@ def persist_to_database(region_code, scrape_type, scraper_start_time):
     if messages:
         proto, failed_tasks = _get_proto_from_messages(messages)
 
+        if not proto.people:
+            logging.error("Scrape session returned 0 people.")
+            return False
+
         for batch_message in failed_tasks.values():
             logging.error(
                 'Task with trace_id %s failed with error %s',
