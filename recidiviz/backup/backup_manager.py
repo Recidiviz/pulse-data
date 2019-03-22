@@ -32,8 +32,7 @@ from recidiviz.utils.auth import authenticate_request
 
 
 # Weekly backups for 6 months: 26 weekly backups
-# TODO(1113): set this back to 26 once manual testing is completed
-_MAX_COUNT_MANUAL_BACKUPS = 3
+_MAX_COUNT_MANUAL_BACKUPS = 26
 
 
 _SECONDS_BETWEEN_OPERATION_STATUS_CHECKS = 3
