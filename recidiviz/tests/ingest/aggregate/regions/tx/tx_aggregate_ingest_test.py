@@ -94,7 +94,7 @@ class TestTxAggregateIngest(TestCase):
             'total_population': [168, 26, 212],
             'total_capacity': [300, 50, 279],
             'available_beds': [102, 19, 39],
-            'fips': [48001, 48003, 48005],
+            'fips': ['48001', '48003', '48005'],
             'report_date': 3 * [DATE_SCRAPED_AFTER_1996],
             'aggregation_window': 3 * [enum_strings.daily_granularity],
             'report_frequency': 3 * [enum_strings.monthly_granularity]
@@ -121,7 +121,7 @@ class TestTxAggregateIngest(TestCase):
             'total_population': [150, 42, 0],
             'total_capacity': [240, 66, 515],
             'available_beds': [66, 17, 464],
-            'fips': [48505, 48507, 48507],
+            'fips': ['48505', '48507', '48507'],
             'report_date': 3 * [DATE_SCRAPED_AFTER_1996],
             'aggregation_window': 3 * [enum_strings.daily_granularity],
             'report_frequency': 3 * [enum_strings.monthly_granularity]
@@ -162,7 +162,7 @@ class TestTxAggregateIngest(TestCase):
             'total_population': [132, 29],
             'total_capacity': [129, 50],
             'available_beds': [0, 16],
-            'fips': [48001, 48003],
+            'fips': ['48001', '48003'],
             'report_date': 2 * [DATE_SCRAPED_CONCAT],
             'aggregation_window': 2 * [enum_strings.daily_granularity],
             'report_frequency': 2 * [enum_strings.monthly_granularity]
@@ -189,7 +189,7 @@ class TestTxAggregateIngest(TestCase):
             'total_population': [201, 63],
             'total_capacity': [240, 66],
             'available_beds': [15, 0],
-            'fips': [48505, 48507],
+            'fips': ['48505', '48507'],
             'report_date': 2 * [DATE_SCRAPED_CONCAT],
             'aggregation_window': 2 * [enum_strings.daily_granularity],
             'report_frequency': 2 * [enum_strings.monthly_granularity]
@@ -227,7 +227,7 @@ class TestTxAggregateIngest(TestCase):
             'total_population': [67, 22],
             'total_capacity': [129, 50],
             'available_beds': [49, 23],
-            'fips': [48001, 48003],
+            'fips': ['48001', '48003'],
             'report_date': 2 * [DATE_SCRAPED_1996],
             'aggregation_window': 2 * [enum_strings.daily_granularity],
             'report_frequency': 2 * [enum_strings.monthly_granularity]
@@ -251,7 +251,7 @@ class TestTxAggregateIngest(TestCase):
             'total_population': [432, 27],
             'total_capacity': [467, 66],
             'available_beds': [0, 32],
-            'fips': [48507, 48507],
+            'fips': ['48507', '48507'],
             'report_date': 2 * [DATE_SCRAPED_1996],
             'aggregation_window': 2 * [enum_strings.daily_granularity],
             'report_frequency': 2 * [enum_strings.monthly_granularity]
@@ -288,7 +288,7 @@ class TestTxAggregateIngest(TestCase):
             'total_population': [142, 43],
             'total_capacity': [129, 50],
             'available_beds': [0, 0],
-            'fips': [48001, 48003],
+            'fips': ['48001', '48003'],
             'report_date': 2 * [DATE_SCRAPED_BEFORE_1996],
             'aggregation_window': 2 * [enum_strings.daily_granularity],
             'report_frequency': 2 * [enum_strings.monthly_granularity]
@@ -311,7 +311,7 @@ class TestTxAggregateIngest(TestCase):
             'total_population': [0, 52],
             'total_capacity': [12, 67],
             'available_beds': [11, 0],
-            'fips': [48505, 48507],
+            'fips': ['48505', '48507'],
             'report_date': 2 * [DATE_SCRAPED_BEFORE_1996],
             'aggregation_window': 2 * [enum_strings.daily_granularity],
             'report_frequency': 2 * [enum_strings.monthly_granularity]

@@ -64,7 +64,7 @@ class TestGaAggregateIngest(TestCase):
             'number_of_inmates_awaiting_trial': [49, 15, 0],
             'number_of_inmates_serving_county_sentence': [7, 0, 42],
             'number_of_other_inmates': [17, 0, 11],
-            'fips': [13001, 13003, 13005],
+            'fips': ['13001', '13003', '13005'],
             'report_date': 3 * [DATE_SCRAPED],
             'aggregation_window': 3 * [enum_strings.daily_granularity],
             'report_frequency': 3 * [enum_strings.monthly_granularity]
@@ -80,7 +80,7 @@ class TestGaAggregateIngest(TestCase):
             'number_of_inmates_awaiting_trial': [23, 30, 43],
             'number_of_inmates_serving_county_sentence': [3, 0, 4],
             'number_of_other_inmates': [6, 4, 0],
-            'fips': [13317, 13319, 13321],
+            'fips': ['13317', '13319', '13321'],
             'report_date': 3 * [DATE_SCRAPED],
             'aggregation_window': 3 * [enum_strings.daily_granularity],
             'report_frequency': 3 * [enum_strings.monthly_granularity]
@@ -99,7 +99,7 @@ class TestGaAggregateIngest(TestCase):
             'number_of_inmates_awaiting_trial': [38, 12, 39],
             'number_of_inmates_serving_county_sentence': [4, 1, 9],
             'number_of_other_inmates': [13, 0, 1],
-            'fips': [13001, 13003, 13005],
+            'fips': ['13001', '13003', '13005'],
             'report_date': 3 * [DATE_SCRAPED_PDF_EXTRA_ROWS],
             'aggregation_window': 3 * [enum_strings.daily_granularity],
             'report_frequency': 3 * [enum_strings.monthly_granularity]
@@ -115,7 +115,7 @@ class TestGaAggregateIngest(TestCase):
             'number_of_inmates_awaiting_trial': [22, 0, 42],
             'number_of_inmates_serving_county_sentence': [7, 0, 2],
             'number_of_other_inmates': [5, 32, 0],
-            'fips': [13317, 13319, 13321],
+            'fips': ['13317', '13319', '13321'],
             'report_date': 3 * [DATE_SCRAPED_PDF_EXTRA_ROWS],
             'aggregation_window': 3 * [enum_strings.daily_granularity],
             'report_frequency': 3 * [enum_strings.monthly_granularity]
