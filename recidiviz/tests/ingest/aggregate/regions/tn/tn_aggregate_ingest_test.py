@@ -66,7 +66,7 @@ class TestTnAggregateIngest(TestCase):
             'pretrial_misdemeanor_population': [133, 76],
             'total_jail_population': [408, 157],
             'total_beds': [435, 110],
-            'fips': [47001, 47003],
+            'fips': ['47001', '47003'],
             'report_date': 2 * [_REPORT_DATE],
             'aggregation_window': 2 * [enum_strings.daily_granularity],
             'report_frequency': 2 * [enum_strings.monthly_granularity]
@@ -85,7 +85,7 @@ class TestTnAggregateIngest(TestCase):
             'pretrial_misdemeanor_population': [44, 154],
             'total_jail_population': [358, 552],
             'total_beds': [454, 458],
-            'fips': [47187, 47189],
+            'fips': ['47187', '47189'],
             'report_date': 2 * [_REPORT_DATE],
             'aggregation_window': 2 * [enum_strings.daily_granularity],
             'report_frequency': 2 * [enum_strings.monthly_granularity]
@@ -120,7 +120,7 @@ class TestTnAggregateIngest(TestCase):
             'pretrial_misdemeanor_population': [39, 19],
             'female_jail_population': [85, 46],
             'female_beds': [85, 36],
-            'fips': [47001, 47003],
+            'fips': ['47001', '47003'],
             'report_date': 2 * [_REPORT_DATE],
             'aggregation_window': 2 * [enum_strings.daily_granularity],
             'report_frequency': 2 * [enum_strings.monthly_granularity]
@@ -139,7 +139,7 @@ class TestTnAggregateIngest(TestCase):
             'pretrial_misdemeanor_population': [9, 27],
             'female_jail_population': [68, 127],
             'female_beds': [93, 100],
-            'fips': [47187, 47189],
+            'fips': ['47187', '47189'],
             'report_date': 2 * [_REPORT_DATE],
             'aggregation_window': 2 * [enum_strings.daily_granularity],
             'report_frequency': 2 * [enum_strings.monthly_granularity]

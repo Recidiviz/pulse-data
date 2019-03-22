@@ -60,7 +60,7 @@ class TestFlAggregateIngest(TestCase):
             'county_population': [257062, 26965, 176016, 27440, 568919],
             'average_daily_population': [799, 478, 1015, 141, 1547],
             'date_reported': [pd.NaT, pd.NaT, pd.NaT, pd.NaT, pd.NaT],
-            'fips': [12001, 12003, 12005, 12007, 12009],
+            'fips': ['12001', '12003', '12005', '12007', '12009'],
             'report_date': 5 * [DATE_SCRAPED],
             'aggregation_window': 5 * [enum_strings.monthly_granularity],
             'report_frequency': 5 * [enum_strings.monthly_granularity]
@@ -75,7 +75,7 @@ class TestFlAggregateIngest(TestCase):
             'county_population': [15887, 517411, 31599, 62943, 24888],
             'average_daily_population': [38, 1413, 174, 293, 110],
             'date_reported': [pd.NaT, pd.NaT, pd.NaT, pd.NaT, pd.NaT],
-            'fips': [12125, 12127, 12129, 12131, 12133],
+            'fips': ['12125', '12127', '12129', '12131', '12133'],
             'report_date': 5 * [DATE_SCRAPED],
             'aggregation_window': 5 * [enum_strings.monthly_granularity],
             'report_frequency': 5 * [enum_strings.monthly_granularity]
@@ -91,7 +91,7 @@ class TestFlAggregateIngest(TestCase):
             'county_population': [76047],
             'average_daily_population': [545],
             'date_reported': [datetime.datetime(day=1, month=9, year=2017)],
-            'fips': [12087],
+            'fips': ['12087'],
             'report_date': [DATE_SCRAPED],
             'aggregation_window': [enum_strings.monthly_granularity],
             'report_frequency': [enum_strings.monthly_granularity]
@@ -146,7 +146,7 @@ class TestFlAggregateIngest(TestCase):
             'average_daily_population': [749., 50, 478, 1015, 141],
             'number_felony_pretrial': [463., 4, 81, 307, 50],
             'number_misdemeanor_pretrial': [45., 1, 15, 287, 9],
-            'fips': [12001, 12001, 12003, 12005, 12007],
+            'fips': ['12001', '12001', '12003', '12005', '12007'],
             'report_date': 5 * [DATE_SCRAPED],
             'aggregation_window': 5 * [enum_strings.monthly_granularity],
             'report_frequency': 5 * [enum_strings.monthly_granularity]
@@ -164,7 +164,7 @@ class TestFlAggregateIngest(TestCase):
             'average_daily_population': [516., 897, 174, 293, 110],
             'number_felony_pretrial': [203., 349, 67, 135, 54],
             'number_misdemeanor_pretrial': [42., 44, 8, 38, 7],
-            'fips': [12127, 12127, 12129, 12131, 12133],
+            'fips': ['12127', '12127', '12129', '12131', '12133'],
             'report_date': 5 * [DATE_SCRAPED],
             'aggregation_window': 5 * [enum_strings.monthly_granularity],
             'report_frequency': 5 * [enum_strings.monthly_granularity]
@@ -180,7 +180,7 @@ class TestFlAggregateIngest(TestCase):
             'average_daily_population': [835.],
             'number_felony_pretrial': np.array([None]).astype(float),
             'number_misdemeanor_pretrial': np.array([None]).astype(float),
-            'fips': [12069],
+            'fips': ['12069'],
             'report_date': [DATE_SCRAPED],
             'aggregation_window': [enum_strings.monthly_granularity],
             'report_frequency': [enum_strings.monthly_granularity]

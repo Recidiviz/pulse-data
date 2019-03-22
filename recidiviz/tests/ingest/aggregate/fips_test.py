@@ -24,9 +24,9 @@ import us
 from recidiviz.common import fips
 from recidiviz.common.errors import FipsMergingError
 
-_DUPAGE_COUNTY_FIPS = 17043  # "DuPage County"
-_EFFINGHAM_COUNTY_FIPS = 17049  # "Effingham County"
-_JO_DAVIESS_COUNTY_FIPS = 17085  # "Jo Daviess County"
+_DUPAGE_COUNTY_FIPS = '17043'  # "DuPage County"
+_EFFINGHAM_COUNTY_FIPS = '17049'  # "Effingham County"
+_JO_DAVIESS_COUNTY_FIPS = '17085'  # "Jo Daviess County"
 
 
 class TestFips(TestCase):
