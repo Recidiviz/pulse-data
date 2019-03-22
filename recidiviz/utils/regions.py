@@ -50,6 +50,7 @@ class Region:
         agency_type: (string) 'prison' or 'jail'
         environment: (string) The environment the region is allowed to run in.
         base_url: (string) Base URL for scraping
+        should_proxy: (string) Whether or not to send requests through the proxy
         timezone: (string) Timezone in which this region resides. If the region
             is in multiple timezones, this is the timezone in which most of the
             region resides, where "most" is whatever is most useful for that
@@ -76,6 +77,7 @@ class Region:
         attr.ib(default=RemovedFromWebsite.RELEASED,
                 converter=RemovedFromWebsite)
     names_file: Optional[str] = attr.ib(default=None)
+    should_proxy: Optional[str] = attr.ib(default='True')
 
     def __attrs_post_init__(self):
         if self.queue and self.shared_queue:
