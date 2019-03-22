@@ -24,12 +24,12 @@ from typing import List, Optional, Tuple
 
 import attr
 import cattr
+import more_itertools
 from flask import Blueprint, request, url_for
 from google.cloud import pubsub
 
 from recidiviz.common import queues
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.scrape import ingest_utils, scrape_phase, sessions
@@ -185,7 +185,7 @@ def _get_proto_from_messages(messages):
         an IngestInfo proto with data from all of the messages.
     """
     logging.info('Starting generation of proto')
-    base_proto = ingest_info_pb2.IngestInfo()
+    ingest_infos_from_messages: List[IngestInfo] = []
     successful_tasks = set()
     failed_tasks = {}
     for message in messages:
@@ -200,33 +200,35 @@ def _get_proto_from_messages(messages):
             successful_tasks.add(task_hash)
             if task_hash in failed_tasks:
                 del failed_tasks[task_hash]
-            task_proto = ingest_utils.convert_ingest_info_to_proto(
-                batch_message.ingest_info)
-            _append_to_proto(base_proto, task_proto)
+            ingest_infos_from_messages.append(batch_message.ingest_info)
         else:
             # We only add to failed if we didn't see a successful one.  This is
             # because its possible a task ran 3 times before passing, meaning we
             # don't want to fail on that when we see the failed ones.
             if task_hash not in successful_tasks:
                 failed_tasks[task_hash] = batch_message
+
+    deduped_ingest_info = _dedup_people(ingest_infos_from_messages)
+    base_proto = ingest_utils.convert_ingest_info_to_proto(deduped_ingest_info)
     logging.info('Generated proto for %s people', len(base_proto.people))
     return base_proto, failed_tasks
+
+
+def _dedup_people(ingest_infos: List[IngestInfo]) -> IngestInfo:
+    """Combines a list of IngestInfo objects into a single IngestInfo with
+    duplicate People objects removed."""
+    all_people = IngestInfo(
+        people=[person for ii in ingest_infos for person in ii.people])
+    # Sort deeply so that repeated fields are compared in a consistent order.
+    all_people.sort()
+    deduped_people = list(more_itertools.unique_everseen(all_people.people))
+    return IngestInfo(people=deduped_people)
 
 
 def _should_abort(failed_tasks, total_people):
     if (failed_tasks / total_people) >= FAILED_TASK_THRESHOLD:
         return True
     return False
-
-
-def _append_to_proto(base, proto_to_append):
-    base.people.extend(proto_to_append.people)
-    base.bookings.extend(proto_to_append.bookings)
-    base.charges.extend(proto_to_append.charges)
-    base.arrests.extend(proto_to_append.arrests)
-    base.holds.extend(proto_to_append.holds)
-    base.bonds.extend(proto_to_append.bonds)
-    base.sentences.extend(proto_to_append.sentences)
 
 
 def write(ingest_info: IngestInfo, task: Task, scrape_key: ScrapeKey):
