@@ -991,7 +991,7 @@ class TnFacilityAggregate(Base, _AggregateTableMixin):
         ),
     )
 
-    facility_name = Column(Integer)
+    facility_name = Column(String(255), nullable=False)
     tdoc_backup_population = Column(Integer)
     local_felons_population = Column(Integer)
     other_convicted_felons_population = Column(Integer)
@@ -1012,7 +1012,7 @@ class TnFacilityFemaleAggregate(Base, _AggregateTableMixin):
         ),
     )
 
-    facility_name = Column(Integer)
+    facility_name = Column(String(255), nullable=False)
     tdoc_backup_population = Column(Integer)
     local_felons_population = Column(Integer)
     other_convicted_felons_population = Column(Integer)
