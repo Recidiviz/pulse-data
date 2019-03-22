@@ -17,11 +17,38 @@
 """Configures logging setup."""
 
 import logging
-from functools import partial
+import threading
+from contextlib import contextmanager
+from functools import partial, wraps
 
 from google.cloud.logging import Client, handlers
 
 from recidiviz.utils import environment, monitoring
+
+_thread_local = threading.local()
+
+@contextmanager
+def push_trace_id():
+    # pylint: disable=protected-access
+    setattr(_thread_local, 'trace_id',
+            handlers._helpers.get_trace_id_from_flask())
+    try:
+        yield
+    finally:
+        setattr(_thread_local, 'trace_id', None)
+
+
+def copy_trace_id_to_thread(func):
+    @wraps(func)
+    def add_trace_id_and_call(*args, **kwargs):
+        with push_trace_id():
+            return func(*args, **kwargs)
+
+    return add_trace_id_and_call
+
+
+def get_trace_id_from_thread():
+    return getattr(_thread_local, 'trace_id', None)
 
 
 def region_record_factory(default_record_factory, *args, **kwargs):
@@ -52,6 +79,12 @@ class StructuredLogFormatter(logging.Formatter):
             'thread': record.thread,
             'threadName': record.threadName,
         }
+
+        trace_id = get_trace_id_from_thread()
+        if trace_id is not None:
+            # pylint: disable=protected-access
+            labels[handlers.app_enginge._TRACE_ID_LABEL] = trace_id
+
         return {
             'text': text,
             'labels': {k: str(v) for k, v in labels.items()}
