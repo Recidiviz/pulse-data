@@ -48,7 +48,7 @@ class TestAggregateView(TestCase):
             'sentenced_male_adp': [23, 301],
             'sentenced_female_adp': [0, 37],
             'report_date': 2 * [datetime.date(2017, 1, 31)],
-            'fips': [6001, 6001],
+            'fips': ['06001', '06001'],
             'aggregation_window': 2 * [enum_strings.monthly_granularity],
             'report_frequency': 2 * [enum_strings.monthly_granularity]
         })
@@ -64,7 +64,7 @@ class TestAggregateView(TestCase):
             'average_daily_population': [749., 50, 478, 1015, 141],
             'number_felony_pretrial': [463., 4, 81, 307, 50],
             'number_misdemeanor_pretrial': [45., 1, 15, 287, 9],
-            'fips': [12001, 12001, 12003, 12005, 12007],
+            'fips': ['12001', '12001', '12003', '12005', '12007'],
             'report_date': 5 * [datetime.date(2017, 1, 31)],
             'aggregation_window': 5 * [enum_strings.monthly_granularity],
             'report_frequency': 5 * [enum_strings.monthly_granularity]
