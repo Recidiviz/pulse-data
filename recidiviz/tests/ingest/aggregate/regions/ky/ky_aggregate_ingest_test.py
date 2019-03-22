@@ -73,7 +73,7 @@ class TestKyAggregateIngest(TestCase):
             'controlled_intake_female_population': [1, 0],
             'parole_violators_female_population': [0, 0],
             'federal_female_population': [0, 0],
-            'fips': [21001, 21001],
+            'fips': ['21001', '21001'],
             'report_date': 2 * [DATE_SCRAPED],
             'aggregation_window': 2 * [enum_strings.daily_granularity],
             'report_frequency': 2 * [enum_strings.weekly_granularity]
@@ -99,7 +99,7 @@ class TestKyAggregateIngest(TestCase):
             'controlled_intake_female_population': [3, 0],
             'parole_violators_female_population': [1, 0],
             'federal_female_population': [2, 0],
-            'fips': [21239, 21239],
+            'fips': ['21239', '21239'],
             'report_date': 2 * [DATE_SCRAPED],
             'aggregation_window': 2 * [enum_strings.daily_granularity],
             'report_frequency': 2 * [enum_strings.weekly_granularity]
@@ -128,7 +128,7 @@ class TestKyAggregateIngest(TestCase):
             'controlled_intake_female_population': [2, 0],
             'parole_violators_female_population': [2, 0],
             'federal_female_population': [0, 0],
-            'fips': [21001, 21001],
+            'fips': ['21001', '21001'],
             'report_date': 2 * [DATE_SCRAPED_2],
             'aggregation_window': 2 * [enum_strings.daily_granularity],
             'report_frequency': 2 * [enum_strings.weekly_granularity]
@@ -154,7 +154,7 @@ class TestKyAggregateIngest(TestCase):
             'controlled_intake_female_population': [1, 0],
             'parole_violators_female_population': [0, 0],
             'federal_female_population': [2, 0],
-            'fips': [21239, 21239],
+            'fips': ['21239', '21239'],
             'report_date': 2 * [DATE_SCRAPED_2],
             'aggregation_window': 2 * [enum_strings.daily_granularity],
             'report_frequency': 2 * [enum_strings.weekly_granularity]

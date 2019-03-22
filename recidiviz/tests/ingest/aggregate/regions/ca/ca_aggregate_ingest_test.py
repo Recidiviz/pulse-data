@@ -56,7 +56,7 @@ class TestCaAggregateIngest(TestCase):
             'sentenced_male_adp': [23, 301],
             'sentenced_female_adp': [0, 37],
             'report_date': 2 * [datetime.date(2017, 1, 31)],
-            'fips': [6001, 6001],
+            'fips': ['06001', '06001'],
             'aggregation_window': 2 * [enum_strings.monthly_granularity],
             'report_frequency': 2 * [enum_strings.monthly_granularity]
         })
@@ -74,7 +74,7 @@ class TestCaAggregateIngest(TestCase):
             'sentenced_female_adp': [11, 10],
             'report_date': [datetime.date(2017, 11, 30),
                             datetime.date(2017, 12, 31)],
-            'fips': [6115, 6115],
+            'fips': ['06115', '06115'],
             'aggregation_window': 2 * [enum_strings.monthly_granularity],
             'report_frequency': 2 * [enum_strings.monthly_granularity]
         }, index=range(1435, 1437))

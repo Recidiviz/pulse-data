@@ -60,7 +60,7 @@ class TestPaAggregateIngest(TestCase):
             'admissions': [2048, 14810],
             'discharge': [2068, 14642],
             'report_date': 2 * [REPORT_DATE],
-            'fips': [42001, 42003],
+            'fips': ['42001', '42003'],
             'aggregation_window': 2 * [enum_strings.yearly_granularity],
             'report_frequency': 2 * [enum_strings.yearly_granularity]
         })
@@ -77,7 +77,7 @@ class TestPaAggregateIngest(TestCase):
             'admissions': [506, 13900],
             'discharge': [513, 14132],
             'report_date': 2 * [REPORT_DATE],
-            'fips': [42131, 42133],
+            'fips': ['42131', '42133'],
             'aggregation_window': 2 * [enum_strings.yearly_granularity],
             'report_frequency': 2 * [enum_strings.yearly_granularity]
         }, index=range(65, 67))
@@ -92,7 +92,7 @@ class TestPaAggregateIngest(TestCase):
                             datetime.date(year=2017, month=4, day=30)],
             'county_name': ['Adams', 'Adams'],
             'pre_sentenced_population': [111., 127.],
-            'fips': [42001, 42001],
+            'fips': ['42001', '42001'],
             'aggregation_window': 2 * [enum_strings.daily_granularity],
             'report_frequency':
                 2 * [enum_strings.quarterly_granularity]
@@ -105,7 +105,7 @@ class TestPaAggregateIngest(TestCase):
                             datetime.date(year=2017, month=12, day=31)],
             'county_name': ['York', 'York'],
             'pre_sentenced_population': [715., 687.],
-            'fips': [42133, 42133],
+            'fips': ['42133', '42133'],
             'aggregation_window': 2 * [enum_strings.daily_granularity],
             'report_frequency':
                 2 * [enum_strings.quarterly_granularity]
