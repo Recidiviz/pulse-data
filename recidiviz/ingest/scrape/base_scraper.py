@@ -350,7 +350,7 @@ class BaseScraper(Scraper):
             # mypy is unable to correctly type the EntityEnums in
             # constants.person. See https://github.com/python/mypy/issues/3327
             ethnicity_enum = cast(Ethnicity, ETHNICITY_MAP[ethnicity_string])
-            if ethnicity_enum is not Ethnicity.EXTERNAL_UNKNOWN:
+            if ethnicity_enum is Ethnicity.HISPANIC:
                 overrides_builder.add(ethnicity_string, ethnicity_enum, Race)
 
         return overrides_builder.build()
