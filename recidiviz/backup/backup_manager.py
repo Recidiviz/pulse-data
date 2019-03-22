@@ -17,8 +17,10 @@
 
 """Cron endpoint for managing long-term Cloud SQL backups"""
 
+from http import HTTPStatus
 import logging
 import time
+from typing import Tuple
 
 import flask
 import google.auth
@@ -42,7 +44,7 @@ backup_manager_blueprint = flask.Blueprint('backup_manager', __name__)
 
 @backup_manager_blueprint.route('/update_long_term_backups')
 @authenticate_request
-def update_long_term_backups() -> None:
+def update_long_term_backups() -> Tuple[str, HTTPStatus]:
     """Create a new manual backup and delete the oldest manual backup once the
     maximum number has been reached
     """
@@ -97,6 +99,7 @@ def update_long_term_backups() -> None:
         logging.info('Backup delete operation completed')
 
     logging.info('All backup operations completed successfully')
+    return ('', HTTPStatus.OK)
 
 
 def _await_operation(client: discovery.Resource,
