@@ -21,6 +21,8 @@ from typing import Any, Dict, Optional
 
 import dateparser
 
+from recidiviz.persistence.converter import converter_utils
+
 
 def munge_date_string(date_string: str) -> str:
     """Tranforms the input date string so it can be parsed, if necessary"""
@@ -46,6 +48,8 @@ def parse_datetime(
         (datetime) Datetime representation of the provided string.
     """
     if date_string == '' or date_string.isspace():
+        return None
+    if converter_utils.is_none(date_string):
         return None
 
     settings: Dict[str, Any] = {'PREFER_DAY_OF_MONTH': 'first'}

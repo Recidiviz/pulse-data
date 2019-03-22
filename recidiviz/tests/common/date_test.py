@@ -48,6 +48,10 @@ def test_parseDate():
             datetime.date(year=2018, month=1, day=1)
 
 
+def test_parseNoDate():
+    assert date.parse_date('None set') is None
+
+
 def test_parseBadDate():
     with pytest.raises(ValueError):
         date.parse_datetime('ABC')
