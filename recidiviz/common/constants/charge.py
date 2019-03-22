@@ -97,6 +97,7 @@ _CHARGE_CLASS_MAP = {
     '*': None,
     'C': ChargeClass.CIVIL,
     'CIVIL': ChargeClass.CIVIL,
+    'CRIMINAL TRAFFIC VIOLATION': ChargeClass.INFRACTION,
     'F': ChargeClass.FELONY,
     'FEL': ChargeClass.FELONY,
     'FELONY': ChargeClass.FELONY,
@@ -112,7 +113,8 @@ _CHARGE_CLASS_MAP = {
     'PAROLE VIOLATION': ChargeClass.PAROLE_VIOLATION,
     'PROB VIOLATION': ChargeClass.PROBATION_VIOLATION,
     'PROBATION VIOLATION': ChargeClass.PROBATION_VIOLATION,
-    'UNKNOWN': ChargeClass.EXTERNAL_UNKNOWN
+    'UNKNOWN': ChargeClass.EXTERNAL_UNKNOWN,
+    'VIOLATION OF COMMUNITY CONTROL': ChargeClass.PROBATION_VIOLATION,
 }
 
 # MappableEnum.parse will strip punctuation and separate tokens with a single
@@ -135,6 +137,7 @@ _CHARGE_STATUS_MAP = {
     'CASE RESOLVED': ChargeStatus.DROPPED,
     'CONFINED NOT CONVICTED': ChargeStatus.PRETRIAL,
     'CONFINEMENT IN RESPO VIOL': ChargeStatus.SENTENCED,
+    'CHARGE NOT FILED BY PROSECUTOR': ChargeStatus.DROPPED,
     'CHARGES DROPPED': ChargeStatus.DROPPED,
     'CHARGES SATISFIED': ChargeStatus.COMPLETED_SENTENCE,
     'CHG DISMISSED': ChargeStatus.DROPPED,
@@ -145,6 +148,7 @@ _CHARGE_STATUS_MAP = {
     'CONVICTED': ChargeStatus.CONVICTED,
     'COUNTY JAIL TIME': ChargeStatus.SENTENCED,
     'DECLINED TO PROSECUTE': ChargeStatus.DROPPED,
+    'DETAINED': ChargeStatus.PRETRIAL,
     'DISMISS': ChargeStatus.DROPPED,
     'DISMISSAL': ChargeStatus.DROPPED,
     'DISMISSED': ChargeStatus.DROPPED,
@@ -160,6 +164,7 @@ _CHARGE_STATUS_MAP = {
     'GUILTY': ChargeStatus.SENTENCED,
     'HELD TO GRAND JURY': ChargeStatus.PENDING,
     'INDICTED': ChargeStatus.PRETRIAL,
+    'INVESTIGATION': ChargeStatus.PRETRIAL,
     'LIFTED': ChargeStatus.DROPPED,
     'MINIMUM EXPIRATION': ChargeStatus.COMPLETED_SENTENCE,
     'MUNICIPAL COURT': ChargeStatus.PRETRIAL,
@@ -174,6 +179,7 @@ _CHARGE_STATUS_MAP = {
     'OTHER': None,
     'OTHER SEE NOTES': None,
     'OTHER W EXPLANATION': None,
+    'PAROLE': ChargeStatus.SENTENCED,
     'PAROLE PROBATION REINSTATED': ChargeStatus.SENTENCED,
     'PAROLE PROBATION REVOKED': ChargeStatus.SENTENCED,
     'PENDING': ChargeStatus.PENDING,
@@ -186,6 +192,7 @@ _CHARGE_STATUS_MAP = {
     'PRETRIAL': ChargeStatus.PRETRIAL,
     'PROB REVOKED': ChargeStatus.SENTENCED,
     'PROBATION': ChargeStatus.SENTENCED,
+    'PROBATION HOLD': ChargeStatus.SENTENCED,
     'PROBATION REVOCATION': ChargeStatus.SENTENCED,
     'PROBATION REVOKED': ChargeStatus.SENTENCED,
     'PLEAD': ChargeStatus.SENTENCED,
