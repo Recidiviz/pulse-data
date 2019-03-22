@@ -34,7 +34,17 @@ def region_record_factory(default_record_factory, *args, **kwargs):
 
 
 class StructuredLogFormatter(logging.Formatter):
+    # Stackdriver log entries have a max size of 100 KiB. If we log more than
+    # that in a single entry it will be dropped, so we use 80 KiB to be
+    # conservative.
+    _MAX_BYTES = 80 * 1024  # 80 KiB
+    _SUFFIX = '...truncated'
+
     def format(self, record):
+        text = super(StructuredLogFormatter, self).format(record)
+        if len(text) > self._MAX_BYTES:
+            logging.warning('Truncated log message')
+            text = text[:self._MAX_BYTES - len(self._SUFFIX)] + self._SUFFIX
         labels = {
             'region': record.region,
             'funcName': record.funcName,
@@ -43,7 +53,7 @@ class StructuredLogFormatter(logging.Formatter):
             'threadName': record.threadName,
         }
         return {
-            'text': super(StructuredLogFormatter, self).format(record),
+            'text': text,
             'labels': {k: str(v) for k, v in labels.items()}
         }
 

@@ -35,6 +35,25 @@ from recidiviz.ingest.scrape.constants import BATCH_PUBSUB_TYPE
 from recidiviz.ingest.scrape.task_params import QueueRequest, Task
 from recidiviz.utils import regions, pubsub_helper
 
+class FetchPageError(Exception):
+
+    def __init__(self, request, response):
+        details = ''
+        if request is not None:
+            details += ("\n\nRequest headers: \n{0}"
+                        "\n\nMethod: {1}"
+                        "\n\nBody: \n{2} ") \
+                .format(request.headers, request.method, request.body)
+        if response is not None:
+            details += ("\n\nResponse: \n{0} / {1}"
+                        "\n\nHeaders: \n{2}"
+                        "\n\nText: \n{3}") \
+                .format(response.status_code, response.reason, response.headers,
+                        response.text)
+
+        msg = "Problem retrieving page: {}".format(details)
+        super(FetchPageError, self).__init__(msg)
+
 
 class Scraper(metaclass=abc.ABCMeta):
     """The base for all scraper objects. It handles basic setup, scrape
@@ -235,7 +254,7 @@ class Scraper(metaclass=abc.ABCMeta):
             should_proxy: (bool) whether or not to use a proxy.
 
         Returns:
-            The content if successful, -1 if fails.
+            The content.
 
         """
         if should_proxy:
@@ -261,34 +280,7 @@ class Scraper(metaclass=abc.ABCMeta):
                     .format(params, post_data, json_data))
             page.raise_for_status()
         except requests.exceptions.RequestException as ce:
-            log_error = "Error: {0}".format(ce)
-
-            request = ce.request
-            if request is not None:
-                request_error = ("\n\nRequest headers: \n{0}"
-                                 "\n\nMethod: {1}"
-                                 "\n\nBody: \n{2} ") \
-                    .format(request.headers,
-                            request.method,
-                            request.body)
-
-                log_error += request_error
-
-            response = ce.response
-            if response is not None:
-                response_error = ("\n\nResponse: \n{0} / {1}"
-                                  "\n\nHeaders: \n{2}"
-                                  "\n\nText: \n{3}") \
-                    .format(response.status_code,
-                            response.reason,
-                            response.headers,
-                            response.text)
-
-                log_error += response_error
-
-            logging.warning("Problem retrieving page, failing task to "
-                            "retry. \n\n%s", log_error)
-            return -1
+            raise FetchPageError(ce.request, ce.response)
 
         return page
 
@@ -299,9 +291,6 @@ class Scraper(metaclass=abc.ABCMeta):
             task_name: (string) name of the function in the scraper class to
                        be invoked
             request: (dict) parameters to be passed to the function
-
-        Returns:
-            The content if successful, -1 if fails.
         """
         queues.create_scrape_task(
             region_code=self.get_region().region_code,
