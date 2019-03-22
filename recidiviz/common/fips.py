@@ -40,7 +40,8 @@ from recidiviz.tests.ingest.fixtures import as_filepath
 # Float between [0, 1] which sets the required fuzzy matching certainty
 _FUZZY_MATCH_CUTOFF = 0.75
 
-_FIPS = pd.read_csv(as_filepath('fips.csv', subdir='data_sets'))
+_FIPS = pd.read_csv(as_filepath('fips.csv', subdir='data_sets'),
+                    dtype={'fips': str})
 
 
 def add_column_to_df(df: pd.DataFrame, county_names: pd.Series,
