@@ -102,9 +102,10 @@ class BaseScraper(Scraper):
         logging.info('Fetching content with endpoint: %s', endpoint)
 
         # Create cookie jar to pass to fetch
+        should_proxy = bool(self.get_region().should_proxy)
         response = self.fetch_page(
             endpoint, headers=headers, cookies=cookies, params=params,
-            post_data=post_data, json_data=json_data)
+            post_data=post_data, json_data=json_data, should_proxy=should_proxy)
         if response == -1:
             return -1, None
 
