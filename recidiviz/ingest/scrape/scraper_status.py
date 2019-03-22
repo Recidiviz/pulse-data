@@ -26,7 +26,7 @@ from recidiviz.common import queues
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.scrape import (constants, ingest_utils,
                                      scrape_phase, sessions)
-from recidiviz.utils import monitoring, regions
+from recidiviz.utils import monitoring, regions, structured_logging
 from recidiviz.utils.auth import authenticate_request
 from recidiviz.utils.params import get_values
 
@@ -40,6 +40,7 @@ def check_for_finished_scrapers():
     next_phase = scrape_phase.next_phase(request.endpoint)
     next_phase_url = url_for(next_phase) if next_phase else None
 
+    @structured_logging.copy_trace_id_to_thread
     @monitoring.with_region_tag
     def _check_finished(region_code: str):
         # If there are no open sessions, nothing to check.

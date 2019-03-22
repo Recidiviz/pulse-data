@@ -34,7 +34,8 @@ from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.scrape import (docket, ingest_utils, scrape_phase,
                                      sessions, tracker)
 from recidiviz.ingest.scrape.constants import BATCH_PUBSUB_TYPE
-from recidiviz.utils import monitoring, regions, pubsub_helper
+from recidiviz.utils import (monitoring, pubsub_helper, regions,
+                             structured_logging)
 from recidiviz.utils.auth import authenticate_request
 from recidiviz.utils.params import get_value, get_values
 
@@ -66,6 +67,7 @@ def scraper_start():
         N/A
     """
 
+    @structured_logging.copy_trace_id_to_thread
     @monitoring.with_region_tag
     def _start_scraper(region, scrape_type):
         scrape_key = ScrapeKey(region, scrape_type)
@@ -188,6 +190,7 @@ def scraper_stop():
     next_phase = scrape_phase.next_phase(request.endpoint)
     next_phase_url = url_for(next_phase) if next_phase else None
 
+    @structured_logging.copy_trace_id_to_thread
     @monitoring.with_region_tag
     def _stop_scraper(region: str):
         closed_sessions = []
