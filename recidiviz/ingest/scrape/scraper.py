@@ -217,7 +217,7 @@ class Scraper(metaclass=abc.ABCMeta):
 
     @staticmethod
     def fetch_page(url, headers=None, cookies=None, params=None,
-                   post_data=None, json_data=None):
+                   post_data=None, json_data=None, should_proxy=True):
         """Fetch content from a URL. If data is None (the default), we perform
         a GET for the page. If the data is set, it must be a dict of parameters
         to use as POST data in a POST request to the url.
@@ -232,12 +232,16 @@ class Scraper(metaclass=abc.ABCMeta):
                        POST request
             extra_headers: dict of parameters to add to the headers of this
                            request
+            should_proxy: (bool) whether or not to use a proxy.
 
         Returns:
             The content if successful, -1 if fails.
 
         """
-        proxies = scraper_utils.get_proxies()
+        if should_proxy:
+            proxies = scraper_utils.get_proxies()
+        else:
+            proxies = None
         headers = headers.copy() if headers else {}
         headers.update(scraper_utils.get_headers())
 
