@@ -24,6 +24,7 @@ from opencensus.trace.exporters import file_exporter, stackdriver_exporter
 import sqlalchemy
 
 import recidiviz
+from recidiviz.backup.backup_manager import backup_manager_blueprint
 from recidiviz.calculator.bq.export_manager import export_manager_blueprint
 from recidiviz.cloud_functions.cloud_functions import cloud_functions_blueprint
 from recidiviz.ingest.aggregate.scrape_aggregate_reports import \
@@ -57,6 +58,7 @@ app.register_blueprint(batch_blueprint, url_prefix='/batch')
 app.register_blueprint(
     scrape_aggregate_reports_blueprint, url_prefix='/scrape_aggregate_reports')
 app.register_blueprint(export_manager_blueprint, url_prefix='/export_manager')
+app.register_blueprint(backup_manager_blueprint, url_prefix='/backup_manager')
 if not environment.in_gae():
     app.register_blueprint(test_populator, url_prefix='/test_populator')
 
