@@ -27,6 +27,7 @@ from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.hold import HoldStatus
 from recidiviz.persistence.database import schema, database_utils
 from recidiviz.persistence import entities, entity_matching
+from recidiviz.persistence.entity_matching import MatchedEntities
 from recidiviz.persistence.errors import EntityMatchingError
 from recidiviz.tests.utils import fakes
 
@@ -91,14 +92,19 @@ class TestEntityMatching(TestCase):
         ingested_person_another = attr.evolve(ingested_person)
 
         # Act
-        error_count, orphaned_entities = entity_matching.match(
+        out = entity_matching.match(
             session, _REGION, [ingested_person, ingested_person_another])
 
         # Assert
-        # TODO(1282): Update test here to check that ingested_person is
-        #  updated and ingested_person_another is not.
-        self.assertEqual(error_count, 1)
-        self.assertEqual(len(orphaned_entities), 0)
+        expected_booking = attr.evolve(
+            ingested_booking, booking_id=schema_booking.booking_id)
+        expected_person = attr.evolve(
+            ingested_person, person_id=schema_person.person_id,
+            bookings=[expected_booking])
+        expected_out = MatchedEntities(
+            people=[expected_person], error_count=1, orphaned_entities=[])
+
+        self.assertEqual(out, expected_out)
 
     def test_matchPerson_updateStatusOnOrphanedEntities(self):
         # Arrange
@@ -134,6 +140,9 @@ class TestEntityMatching(TestCase):
             bookings=[ingested_booking])
 
         # Act
+        out = entity_matching.match(session, _REGION, [ingested_person])
+
+        # Assert
         expected_orphaned_bond = attr.evolve(
             database_utils.convert(schema_bond),
             status=BondStatus.REMOVED_WITHOUT_INFO)
@@ -145,16 +154,14 @@ class TestEntityMatching(TestCase):
         expected_person = attr.evolve(
             ingested_person, person_id=schema_person.person_id,
             bookings=[expected_booking])
+        expected_out = MatchedEntities(
+            people=[expected_person], error_count=0,
+            orphaned_entities=[expected_orphaned_bond])
 
-        error_count, orphaned_entities = \
-            entity_matching.match(session, _REGION, [ingested_person])
-
-        # Assert
-        self.assertEqual(error_count, 0)
-        self.assertEqual(ingested_person, expected_person)
-        self.assertCountEqual(orphaned_entities, [expected_orphaned_bond])
+        self.assertEqual(out, expected_out)
 
     def test_matchPeople_differentBookingIds(self):
+        # Arrange
         schema_booking = schema.Booking(
             external_id=_EXTERNAL_ID, admission_date=_DATE,
             booking_id=_BOOKING_ID,
@@ -196,25 +203,26 @@ class TestEntityMatching(TestCase):
             person_id=None,
             bookings=[ingested_booking_another])
 
-        expected_booking = attr.evolve(ingested_booking, booking_id=_BOOKING_ID)
-        expected_person = attr.evolve(ingested_person, person_id=_PERSON_ID,
-                                      bookings=[expected_booking])
-        expected_booking_another = attr.evolve(ingested_booking_another,
-                                               booking_id=_BOOKING_ID_ANOTHER)
-        expected_person_another = attr.evolve(ingested_person_another,
-                                              person_id=_PERSON_ID_ANOTHER,
-                                              bookings=[
-                                                  expected_booking_another])
+        # Act
+        out = entity_matching.match(session, _REGION,
+                                    [ingested_person, ingested_person_another])
 
-        ingested_people = [ingested_person, ingested_person_another]
-        error_count, orphaned_entities = entity_matching.match(
-            session, _REGION, ingested_people)
-        self.assertFalse(error_count)
-        self.assertCountEqual(ingested_people,
-                              [expected_person, expected_person_another])
-        self.assertEqual(len(orphaned_entities), 0)
+        # Assert
+        expected_booking = attr.evolve(ingested_booking, booking_id=_BOOKING_ID)
+        expected_person = attr.evolve(
+            ingested_person, person_id=_PERSON_ID, bookings=[expected_booking])
+        expected_booking_another = attr.evolve(
+            ingested_booking_another, booking_id=_BOOKING_ID_ANOTHER)
+        expected_person_another = attr.evolve(
+            ingested_person_another, person_id=_PERSON_ID_ANOTHER,
+            bookings=[expected_booking_another])
+        expected_out = MatchedEntities(
+            error_count=0, people=[expected_person, expected_person_another],
+            orphaned_entities=[])
+        self.assertEqual(out, expected_out)
 
     def test_matchPeople(self):
+        # Arrange
         schema_booking = schema.Booking(
             admission_date=_DATE_2, booking_id=_BOOKING_ID,
             custody_status=CustodyStatus.IN_CUSTODY.value, last_seen_time=_DATE)
@@ -254,6 +262,11 @@ class TestEntityMatching(TestCase):
             database_utils.convert(schema_person_external_id),
             person_id=None, bookings=[ingested_booking_external_id])
 
+        # Act
+        out = entity_matching.match(
+            session, _REGION, [ingested_person_external_id, ingested_person])
+
+        # Assert
         expected_booking = attr.evolve(ingested_booking, booking_id=_BOOKING_ID)
         expected_person = attr.evolve(
             ingested_person, person_id=_PERSON_ID, bookings=[expected_booking])
@@ -265,13 +278,10 @@ class TestEntityMatching(TestCase):
             person_id=_PERSON_ID_ANOTHER,
             bookings=[expected_booking_external_id])
 
-        ingested_people = [ingested_person, ingested_person_external_id]
-        error_count, orphaned_entities = entity_matching.match(
-            session, _REGION, ingested_people)
-        self.assertFalse(error_count)
-        self.assertCountEqual(ingested_people,
-                              [expected_person, expected_person_external_id])
-        self.assertEqual(len(orphaned_entities), 0)
+        expected_out = MatchedEntities(
+            people=[expected_person_external_id, expected_person],
+            error_count=0, orphaned_entities=[])
+        self.assertEqual(out, expected_out)
 
     def test_matchBooking_duplicateMatch_throws(self):
         db_booking = entities.Booking.new_with_defaults(

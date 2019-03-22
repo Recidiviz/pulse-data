@@ -248,19 +248,22 @@ def write(ingest_info, metadata):
         session = Session()
         try:
             logging.info('Starting entity matching')
-            entity_matching_errors, orphaned_entities = \
-                entity_matching.match(session, metadata.region, people)
+            entity_matching_output = entity_matching.match(
+                session, metadata.region, people)
+            people = entity_matching_output.people
+            # entity_matching_errors, orphaned_entities = \
             logging.info(
                 'Completed entity matching with %s errors',
-                entity_matching_errors)
+                entity_matching_output.error_count)
             if _should_abort(
                     total_people=total_people,
                     enum_parsing_errors=enum_parsing_errors,
-                    entity_matching_errors=entity_matching_errors,
+                    entity_matching_errors=entity_matching_output.error_count,
                     data_validation_errors=data_validation_errors):
                 return False
             database.write_people(
-                session, people, metadata, orphaned_entities=orphaned_entities)
+                session, people, metadata,
+                orphaned_entities=entity_matching_output.orphaned_entities)
             logging.info('Successfully wrote to the database')
             session.commit()
             persisted = True
