@@ -1,16 +1,4 @@
-# Prepends '> ' to each line of input.
-# Append `2>&1 | ind` to all commands so that all output goes to stdout and gets
-# run through this function. 
-BLUE=$(tput setaf 4)
-RESET=$(tput sgr0)
-function ind {
-    sed "s/^/$BLUE>$RESET /"
-}
-
-# Use `set -v` so that the commands are printed to Travis. We should never use
-# `set -x` as that expands variables before printing the commands, and some of
-# the variables are secrets.
-set -v
+source base.sh
 
 # Create encryption keys and authenticate with GAE
 openssl aes-256-cbc -K $encrypted_f7b0b16e1068_key -iv $encrypted_f7b0b16e1068_iv -in client-secret-staging.json.enc -out client-secret-staging.json -d 2>&1 | ind
@@ -40,6 +28,3 @@ docker push $IMAGE_URL 2>&1 | ind
 
 # Deploy application
 gcloud -q app deploy staging.yaml --project recidiviz-staging --version $VERSION --image-url $IMAGE_URL 2>&1 | ind
-
-# Turn off verbose
-set +v
