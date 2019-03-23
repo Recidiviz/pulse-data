@@ -12,7 +12,7 @@ liveness_check:
   check_interval_sec: 5
   initial_delay_sec: 0
 readiness_check:
-  app_start_timeout_sec: 10
+  app_start_timeout_sec: 60
 
 beta_settings:
   cloud_sql_instances: recidiviz-123:us-east4:prod-data
