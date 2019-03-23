@@ -1,4 +1,4 @@
-source base.sh
+source travis/base.sh
 
 # Create encryption keys and authenticate with GAE
 openssl aes-256-cbc -K $encrypted_f7b0b16e1068_key -iv $encrypted_f7b0b16e1068_iv -in client-secret-staging.json.enc -out client-secret-staging.json -d 2>&1 | ind
