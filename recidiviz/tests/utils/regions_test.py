@@ -39,6 +39,7 @@ US_NY_MANIFEST_CONTENTS = """
     timezone: America/New_York
     environment: production
     jurisdiction_id: jid_ny
+    should_proxy: true
     """
 US_IN_MANIFEST_CONTENTS = """
     agency_name: Department of Corrections
@@ -105,7 +106,15 @@ class TestRegions(TestCase):
             'timezone': 'America/New_York',
             'environment': 'production',
             'jurisdiction_id': 'jid_ny',
+            'should_proxy': True,
         }
+
+    def test_get_region_proxy_set(self):
+        region = with_manifest(regions.get_region, 'us_ny')
+        assert region.should_proxy
+
+        region = with_manifest(regions.get_region, 'us_in')
+        assert not region.should_proxy
 
     def test_get_region_manifest_not_found(self):
         with pytest.raises(FileNotFoundError):
