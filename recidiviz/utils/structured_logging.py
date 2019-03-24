@@ -47,7 +47,7 @@ def copy_trace_id_to_thread(func):
     return add_trace_id_and_call
 
 
-def get_trace_id_from_thread():
+def get_trace_id_from_thread() -> str:
     return getattr(_thread_local, 'trace_id', None)
 
 
@@ -56,6 +56,8 @@ def region_record_factory(default_record_factory, *args, **kwargs):
 
     tags = monitoring.thread_local_tags()
     record.region = tags.map.get(monitoring.TagKey.REGION)
+
+    record.traceId = get_trace_id_from_thread()
 
     return record
 
@@ -80,10 +82,9 @@ class StructuredLogFormatter(logging.Formatter):
             'threadName': record.threadName,
         }
 
-        trace_id = get_trace_id_from_thread()
-        if trace_id is not None:
+        if record.traceId is not None:
             # pylint: disable=protected-access
-            labels[handlers.app_enginge._TRACE_ID_LABEL] = trace_id
+            labels[handlers.app_enginge._TRACE_ID_LABEL] = record.traceId
 
         return {
             'text': text,
