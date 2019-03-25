@@ -52,6 +52,7 @@ DATE = date(year=2019, day=1, month=2)
 DATE_2 = date(year=2020, day=1, month=2)
 EXTERNAL_PERSON_ID = 'EXTERNAL_PERSON_ID'
 EXTERNAL_BOOKING_ID = 'EXTERNAL_BOOKING_ID'
+EXTERNAL_ID = 'EXTERNAL_ID'
 FACILITY = 'TEST_FACILITY'
 FINE_1 = '$1,500.25'
 FINE_1_INT = 1500
@@ -351,6 +352,78 @@ class TestPersistence(TestCase):
             custody_status=CustodyStatus.IN_CUSTODY,
             custody_status_raw_text=BOOKING_CUSTODY_STATUS.upper(),
             last_seen_time=most_recent_scrape_time)
+        expected_person = entities.Person.new_with_defaults(
+            person_id=PERSON_ID,
+            external_id=EXTERNAL_PERSON_ID,
+            region=REGION_1,
+            jurisdiction_id=JURISDICTION_ID,
+            bookings=[expected_booking])
+        self.assertEqual([expected_person], database.read_people(Session()))
+
+    def test_write_preexisting_person_duplicate_charges(self):
+        # Arrange
+        most_recent_scrape_time = (SCRAPER_START_DATETIME + timedelta(days=1))
+        metadata = IngestMetadata.new_with_defaults(
+            region=REGION_1,
+            jurisdiction_id=JURISDICTION_ID,
+            ingest_time=most_recent_scrape_time)
+
+        schema_charge = schema.Charge(
+            charge_id=ID, external_id=EXTERNAL_ID,
+            status=ChargeStatus.PRESENT_WITHOUT_INFO.value)
+        schema_charge_another = schema.Charge(
+            charge_id=ID_2, external_id=EXTERNAL_ID,
+            status=ChargeStatus.PRESENT_WITHOUT_INFO.value)
+        schema_booking = schema.Booking(
+            booking_id=BOOKING_ID,
+            external_id=EXTERNAL_BOOKING_ID,
+            admission_date_inferred=True,
+            custody_status=CustodyStatus.IN_CUSTODY.value,
+            last_seen_time=SCRAPER_START_DATETIME,
+            charges=[schema_charge, schema_charge_another])
+        schema_person = schema.Person(
+            person_id=PERSON_ID,
+            jurisdiction_id=JURISDICTION_ID,
+            external_id=EXTERNAL_PERSON_ID,
+            region=REGION_1,
+            bookings=[schema_booking])
+
+        session = Session()
+        session.add(schema_person)
+        session.commit()
+
+        ingest_info = IngestInfo()
+        ingest_info.people.add(full_name=FULL_NAME_1,
+                               person_id=EXTERNAL_PERSON_ID,
+                               booking_ids=[EXTERNAL_BOOKING_ID])
+        ingest_info.bookings.add(
+            booking_id=EXTERNAL_BOOKING_ID,
+            custody_status='IN CUSTODY',
+            charge_ids=[EXTERNAL_ID],
+        )
+        ingest_info.charges.add(
+            charge_id=EXTERNAL_ID,
+            number_of_counts='2'
+        )
+
+        # Act
+        persistence.write(ingest_info, metadata)
+
+        # Assert
+        expected_charge = entities.Charge.new_with_defaults(
+            charge_id=ID,
+            external_id=EXTERNAL_ID,
+            status=ChargeStatus.PRESENT_WITHOUT_INFO
+        )
+        expected_charge_another = attr.evolve(expected_charge, charge_id=ID_2)
+        expected_booking = entities.Booking.new_with_defaults(
+            booking_id=BOOKING_ID,
+            external_id=EXTERNAL_BOOKING_ID,
+            admission_date_inferred=True,
+            custody_status=CustodyStatus.IN_CUSTODY,
+            custody_status_raw_text=BOOKING_CUSTODY_STATUS.upper(),
+            last_seen_time=most_recent_scrape_time,
+            charges=[expected_charge, expected_charge_another])
         expected_person = entities.Person.new_with_defaults(
             person_id=PERSON_ID,
             external_id=EXTERNAL_PERSON_ID,
