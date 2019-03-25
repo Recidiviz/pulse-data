@@ -21,9 +21,7 @@ import os
 from distutils.util import strtobool  # pylint: disable=no-name-in-module
 from typing import List, Tuple
 
-from opencensus.stats import aggregation
-from opencensus.stats import measure
-from opencensus.stats import view
+from opencensus.stats import aggregation, measure, view
 
 from recidiviz import Session
 from recidiviz.common.constants.bond import BondStatus
@@ -43,21 +41,27 @@ from recidiviz.utils import environment, monitoring
 
 m_people = measure.MeasureInt("persistence/num_people",
                               "The number of people persisted", "1")
+m_aborts = measure.MeasureInt("persistence/num_aborts",
+                              "The number of aborted writes", "1")
 m_errors = measure.MeasureInt("persistence/num_errors",
                               "The number of errors", "1")
 people_persisted_view = view.View("recidiviz/persistence/num_people",
                                   "The sum of people persisted",
                                   [monitoring.TagKey.REGION,
                                    monitoring.TagKey.PERSISTED],
-                                  m_people,
-                                  aggregation.SumAggregation())
+                                  m_people, aggregation.SumAggregation())
+aborted_writes_view = view.View("recidiviz/persistence/num_aborts",
+                                "The sum of aborted writes to persistence",
+                                [monitoring.TagKey.REGION,
+                                 monitoring.TagKey.REASON],
+                                m_aborts, aggregation.SumAggregation())
 errors_persisted_view = view.View("recidiviz/persistence/num_errors",
                                   "The sum of errors in the persistence layer",
                                   [monitoring.TagKey.REGION,
                                    monitoring.TagKey.ERROR],
-                                  m_errors,
-                                  aggregation.SumAggregation())
-monitoring.register_views([people_persisted_view, errors_persisted_view])
+                                  m_errors, aggregation.SumAggregation())
+monitoring.register_views(
+    [people_persisted_view, aborted_writes_view, errors_persisted_view])
 
 ERROR_THRESHOLD = 0.5
 
@@ -176,6 +180,9 @@ def _should_abort(
     if protected_class_errors:
         logging.error(
             'Aborting because there was an error regarding a protected class')
+        with monitoring.measurements(
+                {monitoring.TagKey.REASON: 'PROTECTED_CLASS_ERROR'}) as m:
+            m.measure_int_put(m_aborts, 1)
         return True
     if (enum_parsing_errors + entity_matching_errors +
             data_validation_errors) / total_people >= ERROR_THRESHOLD:
@@ -184,6 +191,9 @@ def _should_abort(
             'enum_parsing errors, %s entity_matching_errors, and %s '
             'data_validation_errors', ERROR_THRESHOLD, enum_parsing_errors,
             entity_matching_errors, data_validation_errors)
+        with monitoring.measurements(
+                {monitoring.TagKey.REASON: 'THRESHOLD'}) as m:
+            m.measure_int_put(m_aborts, 1)
         return True
     return False
 
@@ -216,7 +226,8 @@ def write(ingest_info, metadata):
     """
     validator.validate(ingest_info)
 
-    mtags = {monitoring.TagKey.SHOULD_PERSIST: _should_persist()}
+    mtags = {monitoring.TagKey.SHOULD_PERSIST: _should_persist(),
+             monitoring.TagKey.PERSISTED: False}
     total_people = len(ingest_info.people)
     with monitoring.measurements(mtags) as measurements:
 
@@ -266,6 +277,7 @@ def write(ingest_info, metadata):
             logging.info('Successfully wrote to the database')
             session.commit()
             persisted = True
+            mtags[monitoring.TagKey.PERSISTED] = True
         except Exception as e:
             # Record the error type that happened and increment the counter
             mtags[monitoring.TagKey.ERROR] = type(e).__name__
@@ -274,5 +286,4 @@ def write(ingest_info, metadata):
             raise
         finally:
             session.close()
-            mtags[monitoring.TagKey.PERSISTED] = persisted
         return persisted
