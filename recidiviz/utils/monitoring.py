@@ -114,3 +114,4 @@ class TagKey:
     ERROR = 'error'
     ENTITY_TYPE = 'entity_type'
     STATUS = 'status'
+    REASON = 'reason'
