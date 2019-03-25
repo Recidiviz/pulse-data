@@ -73,7 +73,8 @@ class TestEntityMatching(TestCase):
         schema_booking = schema.Booking(
             external_id=_EXTERNAL_ID, admission_date=_DATE_2,
             booking_id=_BOOKING_ID,
-            custody_status=CustodyStatus.IN_CUSTODY.value, last_seen_time=_DATE)
+            custody_status=CustodyStatus.IN_CUSTODY.value, last_seen_time=_DATE,
+            first_seen_time=_DATE)
         schema_booking_another = copy.deepcopy(schema_booking)
         schema_booking_another.booking_id = _BOOKING_ID_ANOTHER
 
@@ -128,7 +129,7 @@ class TestEntityMatching(TestCase):
         schema_booking = schema.Booking(
             admission_date=_DATE_2, booking_id=_BOOKING_ID,
             custody_status=CustodyStatus.IN_CUSTODY.value, last_seen_time=_DATE,
-            charges=[schema_charge])
+            first_seen_time=_DATE, charges=[schema_charge])
 
         schema_person = schema.Person(
             person_id=_PERSON_ID, full_name=_FULL_NAME, birthdate=_DATE,
@@ -176,7 +177,8 @@ class TestEntityMatching(TestCase):
         schema_booking = schema.Booking(
             external_id=_EXTERNAL_ID, admission_date=_DATE,
             booking_id=_BOOKING_ID,
-            custody_status=CustodyStatus.IN_CUSTODY.value, last_seen_time=_DATE)
+            custody_status=CustodyStatus.IN_CUSTODY.value, last_seen_time=_DATE,
+            first_seen_time=_DATE)
 
         schema_person = schema.Person(person_id=_PERSON_ID,
                                       full_name=_FULL_NAME,
@@ -186,7 +188,8 @@ class TestEntityMatching(TestCase):
         schema_booking_another = schema.Booking(
             external_id=_EXTERNAL_ID_ANOTHER, admission_date=_DATE,
             booking_id=_BOOKING_ID_ANOTHER,
-            custody_status=CustodyStatus.IN_CUSTODY.value, last_seen_time=_DATE)
+            custody_status=CustodyStatus.IN_CUSTODY.value, last_seen_time=_DATE,
+            first_seen_time=_DATE)
 
         schema_person_another = schema.Person(person_id=_PERSON_ID_ANOTHER,
                                               full_name=_FULL_NAME,
@@ -236,7 +239,8 @@ class TestEntityMatching(TestCase):
         # Arrange
         schema_booking = schema.Booking(
             admission_date=_DATE_2, booking_id=_BOOKING_ID,
-            custody_status=CustodyStatus.IN_CUSTODY.value, last_seen_time=_DATE)
+            custody_status=CustodyStatus.IN_CUSTODY.value, last_seen_time=_DATE,
+            first_seen_time=_DATE)
 
         schema_person = schema.Person(
             person_id=_PERSON_ID, full_name=_FULL_NAME, birthdate=_DATE,
@@ -246,7 +250,7 @@ class TestEntityMatching(TestCase):
         schema_booking_external_id = schema.Booking(
             admission_date=_DATE_2, booking_id=_BOOKING_ID_ANOTHER,
             release_date=_DATE, custody_status=CustodyStatus.RELEASED.value,
-            last_seen_time=_DATE)
+            last_seen_time=_DATE, first_seen_time=_DATE)
 
         schema_person_external_id = schema.Person(
             person_id=_PERSON_ID_ANOTHER, external_id=_EXTERNAL_ID,
@@ -376,6 +380,31 @@ class TestEntityMatching(TestCase):
 
         self.assertCountEqual(ingested_person.bookings, [expected_booking])
         self.assertEqual(len(orphaned_entities), 0)
+
+    def test_matchBooking_withExistingFirstSeenTime_usesExistingValue(self):
+        db_first_seen_time = datetime(2018, 1, 4)
+        ingested_first_seen_time = datetime(2018, 1, 9)
+        db_booking = entities.Booking.new_with_defaults(
+            booking_id=_ID, admission_date=_DATE, admission_date_inferred=True,
+            custody_status=CustodyStatus.IN_CUSTODY,
+            first_seen_time=db_first_seen_time)
+        ingested_booking = entities.Booking.new_with_defaults(
+            admission_date=_DATE_2, admission_date_inferred=True,
+            custody_status=CustodyStatus.HELD_ELSEWHERE,
+            first_seen_time=ingested_first_seen_time)
+
+        expected_booking = attr.evolve(
+            ingested_booking, booking_id=db_booking.booking_id,
+            admission_date=_DATE, first_seen_time=db_first_seen_time)
+
+        db_person = entities.Person.new_with_defaults(bookings=[db_booking])
+        ingested_person = entities.Person.new_with_defaults(
+            bookings=[ingested_booking])
+        entity_matching.match_bookings(
+            db_person=db_person, ingested_person=ingested_person,
+            orphaned_entities=[])
+
+        self.assertCountEqual(ingested_person.bookings, [expected_booking])
 
     def test_matchBooking(self):
         db_booking = entities.Booking.new_with_defaults(

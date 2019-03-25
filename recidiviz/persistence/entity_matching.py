@@ -187,6 +187,11 @@ def match_bookings(
                 cast(int, db_booking.booking_id)] = ingested_booking
             ingested_booking.booking_id = db_booking.booking_id
 
+            # Since db_booking exists, it must already have a first_seen_time,
+            # which means that value should be used rather than any value
+            # provided on the ingested_booking.
+            ingested_booking.first_seen_time = db_booking.first_seen_time
+
             if (db_booking.admission_date_inferred and
                     ingested_booking.admission_date_inferred):
                 ingested_booking.admission_date = db_booking.admission_date

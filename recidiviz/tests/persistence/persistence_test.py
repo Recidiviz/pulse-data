@@ -320,7 +320,8 @@ class TestPersistence(TestCase):
             external_id=EXTERNAL_BOOKING_ID,
             admission_date_inferred=True,
             custody_status=CustodyStatus.IN_CUSTODY.value,
-            last_seen_time=SCRAPER_START_DATETIME)
+            last_seen_time=SCRAPER_START_DATETIME,
+            first_seen_time=SCRAPER_START_DATETIME)
         schema_person = schema.Person(
             person_id=PERSON_ID,
             jurisdiction_id=JURISDICTION_ID,
@@ -351,7 +352,8 @@ class TestPersistence(TestCase):
             admission_date_inferred=True,
             custody_status=CustodyStatus.IN_CUSTODY,
             custody_status_raw_text=BOOKING_CUSTODY_STATUS.upper(),
-            last_seen_time=most_recent_scrape_time)
+            last_seen_time=most_recent_scrape_time,
+            first_seen_time=SCRAPER_START_DATETIME)
         expected_person = entities.Person.new_with_defaults(
             person_id=PERSON_ID,
             external_id=EXTERNAL_PERSON_ID,
@@ -380,6 +382,7 @@ class TestPersistence(TestCase):
             admission_date_inferred=True,
             custody_status=CustodyStatus.IN_CUSTODY.value,
             last_seen_time=SCRAPER_START_DATETIME,
+            first_seen_time=SCRAPER_START_DATETIME,
             charges=[schema_charge, schema_charge_another])
         schema_person = schema.Person(
             person_id=PERSON_ID,
@@ -423,6 +426,7 @@ class TestPersistence(TestCase):
             custody_status=CustodyStatus.IN_CUSTODY,
             custody_status_raw_text=BOOKING_CUSTODY_STATUS.upper(),
             last_seen_time=most_recent_scrape_time,
+            first_seen_time=SCRAPER_START_DATETIME,
             charges=[expected_charge, expected_charge_another])
         expected_person = entities.Person.new_with_defaults(
             person_id=PERSON_ID,
@@ -453,6 +457,7 @@ class TestPersistence(TestCase):
             custody_status_raw_text='IN CUSTODY',
             admission_date=DATE,
             last_seen_time=SCRAPER_START_DATETIME - timedelta(days=1),
+            first_seen_time=SCRAPER_START_DATETIME - timedelta(days=1),
             charges=[charge],
             holds=[hold])
         booking_resolved = attr.evolve(
