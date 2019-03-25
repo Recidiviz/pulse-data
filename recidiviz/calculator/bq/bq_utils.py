@@ -40,7 +40,7 @@ def create_dataset_if_necessary(dataset_ref: bigquery.dataset.DatasetReference):
         client().get_dataset(dataset_ref)
     except exceptions.NotFound:
         logging.info(
-            'Dataset %s does not exist. Creating...', str(dataset_ref))
+            "Dataset %s does not exist. Creating...", str(dataset_ref))
         dataset = bigquery.Dataset(dataset_ref)
         client().create_dataset(dataset)
 
@@ -56,7 +56,7 @@ def table_exists(
         return True
     except exceptions.NotFound:
         logging.warning(
-            'Table "%s" does not exist in dataset %s',
+            "Table '%s' does not exist in dataset %s",
             table_id, str(dataset_ref))
         return False
 
@@ -75,8 +75,8 @@ def create_or_update_view(
     bq_view.view_query = view.view_query
 
     if table_exists(dataset_ref, view.view_id):
-        logging.info('Updating existing view %s', str(bq_view))
+        logging.info("Updating existing view %s", str(bq_view))
         client().update_table(bq_view, ['view_query'])
     else:
-        logging.info('Creating view %s', str(bq_view))
+        logging.info("Creating view %s", str(bq_view))
         client().create_table(bq_view)

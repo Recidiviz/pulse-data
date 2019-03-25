@@ -68,7 +68,7 @@ class TestPaAggregateIngest(TestCase):
 
         # Assert Tail
         expected_tail = pd.DataFrame({
-            'facility_name': ["Wyoming", "York"],
+            'facility_name': ['Wyoming', 'York'],
             'bed_capacity': [78, 2368],
             'work_release_community_corrections_beds': [0., 308.],
             'in_house_adp': [75., 2243.],

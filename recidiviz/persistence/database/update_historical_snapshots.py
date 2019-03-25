@@ -58,8 +58,8 @@ def update_historical_snapshots(session: Session,
     If neither of these cases applies, no action will be taken on the entity.
     """
     logging.info(
-        'Beginning historical snapshot updates for %s record tree(s) and %s '
-        'orphaned entities',
+        "Beginning historical snapshot updates for %s record tree(s) and %s "
+        "orphaned entities",
         len(root_people),
         len(orphaned_entities))
 
@@ -72,7 +72,7 @@ def update_historical_snapshots(session: Session,
     _execute_action_for_all_entities(
         root_entities, context_registry.register_entity)
 
-    logging.info('%s master entities registered for snapshot check',
+    logging.info("%s master entities registered for snapshot check",
                  len(context_registry.all_contexts()))
 
     most_recent_snapshots = _fetch_most_recent_snapshots_for_all_entities(
@@ -80,7 +80,7 @@ def update_historical_snapshots(session: Session,
     for snapshot in most_recent_snapshots:
         context_registry.add_snapshot(snapshot)
 
-    logging.info('%s registered entities with existing snapshots',
+    logging.info("%s registered entities with existing snapshots",
                  len(most_recent_snapshots))
 
     # Provided start and end times only need to be set for root_people, not
@@ -90,12 +90,12 @@ def update_historical_snapshots(session: Session,
     # existing snapshots.
     _set_provided_start_and_end_times(root_people, context_registry)
 
-    logging.info('Provided start and end times set for registered entities')
+    logging.info("Provided start and end times set for registered entities")
 
     for snapshot_context in context_registry.all_contexts():
         _write_snapshots(session, snapshot_context, snapshot_time)
 
-    logging.info('All historical snapshots written')
+    logging.info("All historical snapshots written")
 
 
 def _fetch_most_recent_snapshots_for_all_entities(
@@ -386,8 +386,8 @@ def _write_snapshots_for_new_entities(
         elif isinstance(context.entity, schema.Sentence):
             initial_snapshot.status = SentenceStatus.PRESENT_WITHOUT_INFO.value
         else:
-            raise NotImplementedError('Snapshot backdating not supported for '
-                                      'type {}'.format(type(context.entity)))
+            raise NotImplementedError("Snapshot backdating not supported for "
+                                      "type {}".format(type(context.entity)))
 
         session.merge(initial_snapshot)
 
@@ -426,7 +426,7 @@ def _assert_all_root_entities_unique(
         key = entity.get_primary_key()
         if key in keys_by_type[type_name]:
             raise AssertionError(
-                'Duplicate entities passed of type {} with ID {}'.format(
+                "Duplicate entities passed of type {} with ID {}".format(
                     type_name, key))
         keys_by_type[type_name].add(key)
 
@@ -586,8 +586,8 @@ class _SnapshotContextRegistry:
         entity_id = entity.get_primary_key()
         if entity_id in self.snapshot_contexts[type_name]:
             raise ValueError(
-                'Entity already registered with type {type} and primary key '
-                '{primary_key}'.format(type=type_name, primary_key=entity_id))
+                "Entity already registered with type {type} and primary key "
+                "{primary_key}".format(type=type_name, primary_key=entity_id))
 
         self.snapshot_contexts[type_name][entity_id] = \
             _SnapshotContext(entity=entity)
@@ -611,8 +611,8 @@ class _SnapshotContextRegistry:
         if self.snapshot_contexts[master_type_name][master_entity_id] \
                 .most_recent_snapshot is not None:
             raise ValueError(
-                'Snapshot already registered for master entity with type '
-                '{type} and primary key {primary_key}'.format(
+                "Snapshot already registered for master entity with type "
+                "{type} and primary key {primary_key}".format(
                     type=master_type_name, primary_key=master_entity_id))
 
         self.snapshot_contexts[master_type_name][master_entity_id] \

@@ -41,7 +41,7 @@ def diff_ingest_infos(expected, actual):
             differences.extend(_format_add(location, item)
                                for location, item in diffs.items())
         else:
-            raise ValueError('Unexpected diff value: {}'.format(diff_type))
+            raise ValueError("Unexpected diff value: {}".format(diff_type))
 
     return differences
 

@@ -64,7 +64,7 @@ def validate_regions(region_codes: List[str],
 
     supported_regions = regions.get_supported_region_codes(timezone=timezone)
     for region in region_codes:
-        if region == "all":
+        if region == 'all':
             # We only do this if all is passed to still allow people to manually
             # run any scrapers they wish.
             region_codes_output = _regions_matching_environment(

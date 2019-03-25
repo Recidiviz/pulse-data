@@ -154,3 +154,28 @@ The [linting configuration](.pylintrc) should adhere to this style guide and
 help you follow it automatically. You can use Pylint support for warning
 suppression if you find it necessary, but this may be argued against during
 code review.
+
+### Python Quoting Style
+
+For small, symbol-like strings we use single quotes:
+
+```
+hold = 'Federal'
+tablename = 'booking_history'
+```
+
+For strings that are used for interpolation or that are natural language messages, we use double quotes:
+
+```
+logging.info("Creating new scrape session for: [%s]", scrape_key)
+```
+```
+msg = "Finished loading background target list to docket."
+```
+
+For docstrings, we use triple quotes:
+
+```
+def test_create_scrape_task(self, mock_client):
+    """Tests that a task is created."""
+```

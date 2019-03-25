@@ -102,7 +102,7 @@ def map_recidivism_combinations(person, recidivism_events):
             event.release_date, date.today(), FOLLOW_UP_PERIODS)
 
         for combo in characteristic_combos:
-            combo["release_cohort"] = release_cohort
+            combo['release_cohort'] = release_cohort
 
             metrics.extend(combination_metrics(
                 combo, event, all_reincarceration_dates,
@@ -366,11 +366,11 @@ def characteristic_combinations(person, event):
     entry_age_bucket = age_bucket(entry_age)
     event_stay_length = stay_length_from_event(event)
     event_stay_length_bucket = stay_length_bucket(event_stay_length)
-    characteristics = {"age": entry_age_bucket,
-                       "race": person.race,
-                       "sex": person.sex,
-                       "stay_length": event_stay_length_bucket,
-                       "release_facility": event.release_facility}
+    characteristics = {'age': entry_age_bucket,
+                       'race': person.race,
+                       'sex': person.sex,
+                       'stay_length': event_stay_length_bucket,
+                       'release_facility': event.release_facility}
 
     return for_characteristics(characteristics)
 
@@ -477,6 +477,6 @@ def augment_combination(characteristic_combo, methodology, period):
     """
 
     augmented_combo = characteristic_combo.copy()
-    augmented_combo["methodology"] = methodology
-    augmented_combo["follow_up_period"] = period
+    augmented_combo['methodology'] = methodology
+    augmented_combo['follow_up_period'] = period
     return augmented_combo

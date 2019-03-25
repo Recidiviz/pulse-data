@@ -79,7 +79,7 @@ class BuildableAttr:
         def __getattr__(self, key):
             if key in self.fields:
                 return self.fields[key]
-            raise AttributeError('{} object has no attribute {}'.format(
+            raise AttributeError("{} object has no attribute {}".format(
                 self.__class__.__name__, key))
 
         def build(self):

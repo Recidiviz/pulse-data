@@ -56,18 +56,18 @@ class TestStartScrape:
     """Tests for the Scraper.start_scrape method."""
 
     @patch('recidiviz.ingest.scrape.scraper.datetime')
-    @patch("recidiviz.common.queues.create_scrape_task")
-    @patch("recidiviz.ingest.scrape.tracker.iterate_docket_item")
-    @patch("recidiviz.utils.regions.get_region")
+    @patch('recidiviz.common.queues.create_scrape_task')
+    @patch('recidiviz.ingest.scrape.tracker.iterate_docket_item')
+    @patch('recidiviz.utils.regions.get_region')
     @patch('recidiviz.utils.pubsub_helper.create_topic_and_subscription')
     def test_start_scrape_background(self, mock_pubsub, mock_get_region,
                                      mock_tracker, mock_create_scrape_task,
                                      mock_datetime):
-        docket_item = ("Dog", "Cat")
-        region = "us_nd"
+        docket_item = ('Dog', 'Cat')
+        region = 'us_nd'
         scrape_type = constants.ScrapeType.BACKGROUND
-        queue_name = "us_nd_scraper"
-        initial_task = "use_it"
+        queue_name = 'us_nd_scraper'
+        initial_task = 'use_it'
 
         mock_get_region.return_value = mock_region(region, queue_name)
         mock_tracker.return_value = docket_item
@@ -221,7 +221,7 @@ class TestResumeScrape:
             scrape_type=scrape_type.value,
             scraper_start_time=_DATETIME,
             next_task=FAKE_TASK,
-            # content=["Bangalter", "Thomas"],
+            # content=['Bangalter', 'Thomas'],
         )
         request_body = {
             'region': region,
@@ -235,8 +235,8 @@ class TestResumeScrape:
             url=scraper.scraper_work_url,
             body=request_body)
 
-    @patch("recidiviz.ingest.scrape.sessions.get_recent_sessions")
-    @patch("recidiviz.utils.regions.get_region")
+    @patch('recidiviz.ingest.scrape.sessions.get_recent_sessions')
+    @patch('recidiviz.utils.regions.get_region')
     def test_resume_scrape_background_none_scraped(self, mock_get_region,
                                                    mock_sessions):
         region = "us_nd"
@@ -277,11 +277,11 @@ class TestResumeScrape:
     @patch("recidiviz.utils.regions.get_region")
     def test_resume_scrape_snapshot(self, mock_get_region, mock_tracker,
                                     mock_create_scrape_task, mock_datetime):
-        docket_item = (41620, ["daft", "punk"])
-        region = "us_nd"
+        docket_item = (41620, ['daft', 'punk'])
+        region = 'us_nd'
         scrape_type = constants.ScrapeType.SNAPSHOT
-        queue_name = "us_nd_scraper"
-        initial_task = "press_it"
+        queue_name = 'us_nd_scraper'
+        initial_task = 'press_it'
 
         mock_get_region.return_value = mock_region(region, queue_name)
         mock_tracker.return_value = docket_item
@@ -297,7 +297,7 @@ class TestResumeScrape:
             scrape_type=scrape_type.value,
             scraper_start_time=_DATETIME,
             next_task=FAKE_TASK,
-            # content=(83240, ["dagt", "punk"]),
+            # content=(83240, ['dagt', 'punk']),
         )
         request_body = {
             'region': region,
@@ -311,9 +311,9 @@ class TestResumeScrape:
             url=scraper.scraper_work_url,
             body=request_body)
 
-    @patch("recidiviz.ingest.scrape.sessions.end_session")
-    @patch("recidiviz.ingest.scrape.tracker.iterate_docket_item")
-    @patch("recidiviz.utils.regions.get_region")
+    @patch('recidiviz.ingest.scrape.sessions.end_session')
+    @patch('recidiviz.ingest.scrape.tracker.iterate_docket_item')
+    @patch('recidiviz.utils.regions.get_region')
     def test_resume_scrape_snapshot_no_docket_item(self, mock_get_region,
                                                    mock_tracker,
                                                    mock_end_session):

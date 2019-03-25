@@ -79,7 +79,7 @@ def scrape_aggregate_reports():
     historical_bucket = HISTORICAL_BUCKET.format(gcp_project)
     upload_bucket = UPLOAD_BUCKET.format(gcp_project)
     fs = gcsfs.GCSFileSystem(project=gcp_project, cache_timeout=-1)
-    logging.info('Scraping all pdfs for %s', state)
+    logging.info("Scraping all pdfs for %s", state)
 
     for url in urls:
         post_data = None
@@ -98,10 +98,10 @@ def scrape_aggregate_reports():
         if file_to_upload:
             upload_path = os.path.join(upload_bucket, state, pdf_name)
             fs.put(file_to_upload, upload_path)
-            logging.info('Successfully downloaded %s', url)
+            logging.info("Successfully downloaded %s", url)
         else:
             logging.info(
-                'Skipping %s because the file already exists', url)
+                "Skipping %s because the file already exists", url)
 
     return '', HTTPStatus.OK
 
@@ -126,5 +126,5 @@ def _get_file_to_upload(
                 f.write(response.content)
         else:
             raise ScrapeAggregateError(
-                'Could not download file {}'.format(pdf_name))
+                "Could not download file {}".format(pdf_name))
     return path_to_download

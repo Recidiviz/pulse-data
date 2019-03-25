@@ -45,11 +45,11 @@ def parse_state_aggregate(data, _):
     state, filename = data['name'].split('/')
     project_id = os.environ.get('GCP_PROJECT')
     logging.info(
-        'Running cloud function for bucket %s, state %s, filename %s',
+        "Running cloud function for bucket %s, state %s, filename %s",
         bucket, state, filename)
     url = _CLOUD_FUNCTION_URL.format(
         project_id, bucket, state, filename)
     # Hit the cloud function backend, which persists the table data to our
     # database.
     response = make_iap_request(url, _CLIENT_ID[project_id])
-    logging.info('The response status is %s', response.status_code)
+    logging.info("The response status is %s", response.status_code)

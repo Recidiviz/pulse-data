@@ -330,7 +330,7 @@ def test_stay_length_bucket():
 
 
 def test_for_characteristics():
-    characteristics = {"race": "black", "sex": "female", "age": "<25"}
+    characteristics = {'race': 'black', 'sex': 'female', 'age': '<25'}
     combinations = calculator.for_characteristics(characteristics)
 
     assert combinations == [{},

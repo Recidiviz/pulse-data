@@ -23,26 +23,26 @@ from recidiviz.ingest.scrape import constants
 from recidiviz.utils import params
 
 
-PARAMS = MultiDict([("region", "us_mo"),
-                    ("scrape_type", constants.ScrapeType.BACKGROUND),
-                    ("region", "us_wa")])
+PARAMS = MultiDict([('region', 'us_mo'),
+                    ('scrape_type', constants.ScrapeType.BACKGROUND),
+                    ('region', 'us_wa')])
 
 
 def test_get_value():
-    assert params.get_value("region", PARAMS) == "us_mo"
+    assert params.get_value('region', PARAMS) == 'us_mo'
 
 
 def test_get_values():
-    assert params.get_values("region", PARAMS) == ["us_mo", "us_wa"]
+    assert params.get_values('region', PARAMS) == ['us_mo', 'us_wa']
 
 
 def test_get_value_default():
-    assert params.get_value("foo", PARAMS, default="bar") == "bar"
+    assert params.get_value('foo', PARAMS, default='bar') == 'bar'
 
 
 def test_get_value_no_default():
-    assert not params.get_value("foo", PARAMS)
+    assert not params.get_value('foo', PARAMS)
 
 
 def test_get_value_explicitly_none_default():
-    assert not params.get_value("foo", PARAMS, default=None)
+    assert not params.get_value('foo', PARAMS, default=None)

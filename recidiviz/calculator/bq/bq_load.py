@@ -74,8 +74,8 @@ def start_table_load(
         ]
     except KeyError:
         logging.exception(
-            'Unknown table name "%s". Is it listed in '
-            'export_config.TABLES_TO_EXPORT?', table_name)
+            "Unknown table name '%s'. Is it listed in "
+            "export_config.TABLES_TO_EXPORT?", table_name)
         return None
 
     job_config = bigquery.LoadJobConfig(
@@ -90,7 +90,7 @@ def start_table_load(
         job_config=job_config
     )
 
-    logging.info('Started load job %s for table %s.%s.%s',
+    logging.info("Started load job %s for table %s.%s.%s",
                  load_job.job_id,
                  table_ref.project, table_ref.dataset_id, table_ref.table_id)
 
@@ -111,14 +111,14 @@ def wait_for_table_load(
     try:
         # Wait for table load job to complete.
         load_job.result(_BQ_LOAD_WAIT_TIMEOUT_SECONDS)
-        logging.info('Load job %s for table %s.%s.%s completed successfully.',
+        logging.info("Load job %s for table %s.%s.%s completed successfully.",
                      load_job.job_id,
                      table_ref.project,
                      table_ref.dataset_id,
                      table_ref.table_id)
 
         destination_table = bq_utils.client().get_table(table_ref)
-        logging.info('Loaded %d rows in table %s.%s.%s',
+        logging.info("Loaded %d rows in table %s.%s.%s",
                      destination_table.num_rows,
                      destination_table.project,
                      destination_table.dataset_id,
@@ -127,7 +127,7 @@ def wait_for_table_load(
     except (exceptions.NotFound,
             exceptions.BadRequest,
             concurrent.futures.TimeoutError): # type: ignore
-        logging.exception('Failed to load table %s.%s.%s',
+        logging.exception("Failed to load table %s.%s.%s",
                           table_ref.project,
                           table_ref.dataset_id,
                           table_ref.table_id)

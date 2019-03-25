@@ -418,7 +418,7 @@ def to_bool(obj):
 
 
 def to_string(obj):
-    out = [obj.__class__.__name__ + ":"]
+    out = [obj.__class__.__name__ + ':']
     for key, val in vars(obj).items():
         if isinstance(val, list):
             for index, elem in enumerate(val):
@@ -441,6 +441,6 @@ def restricted_setattr(self, last_field, name, value):
     if isinstance(value, str) and (value == '' or value.isspace()):
         value = None
     if hasattr(self, last_field) and not hasattr(self, name):
-        raise AttributeError('No field {} in object {}'.format(name,
+        raise AttributeError("No field {} in object {}".format(name,
                                                                type(self)))
     self.__dict__[name] = value

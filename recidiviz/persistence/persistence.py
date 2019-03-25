@@ -86,12 +86,12 @@ def infer_release_on_open_bookings(
 
     session = Session()
     try:
-        logging.info('Reading all bookings that happened before %s',
+        logging.info("Reading all bookings that happened before %s",
                      last_ingest_time)
         people = database.read_people_with_open_bookings_scraped_before_time(
             session, region_code, last_ingest_time)
         logging.info(
-            'Found %s people with bookings that will be inferred released',
+            "Found %s people with bookings that will be inferred released",
             len(people))
         for person in people:
             persistence_utils.remove_pii_for_person(person)
@@ -120,7 +120,7 @@ def _infer_release_date_for_bookings(
 
     for booking in bookings:
         if persistence_utils.is_booking_active(booking):
-            logging.info('Marking booking %s as inferred release')
+            logging.info("Marking booking %s as inferred release")
             booking.release_date = last_ingest_time.date()
             booking.release_date_inferred = True
             booking.custody_status = custody_status
@@ -179,7 +179,7 @@ def _should_abort(
     # TODO: finalize the logic in here.
     if protected_class_errors:
         logging.error(
-            'Aborting because there was an error regarding a protected class')
+            "Aborting because there was an error regarding a protected class")
         with monitoring.measurements(
                 {monitoring.TagKey.REASON: 'PROTECTED_CLASS_ERROR'}) as m:
             m.measure_int_put(m_aborts, 1)
@@ -187,9 +187,9 @@ def _should_abort(
     if (enum_parsing_errors + entity_matching_errors +
             data_validation_errors) / total_people >= ERROR_THRESHOLD:
         logging.error(
-            'Aborting because we exceeded the error threshold of %s with %s '
-            'enum_parsing errors, %s entity_matching_errors, and %s '
-            'data_validation_errors', ERROR_THRESHOLD, enum_parsing_errors,
+            "Aborting because we exceeded the error threshold of %s with %s "
+            "enum_parsing errors, %s entity_matching_errors, and %s "
+            "data_validation_errors", ERROR_THRESHOLD, enum_parsing_errors,
             entity_matching_errors, data_validation_errors)
         with monitoring.measurements(
                 {monitoring.TagKey.REASON: 'THRESHOLD'}) as m:
@@ -209,7 +209,7 @@ def validate_one_open_booking(people: List[entities.Person]) -> \
                          persistence_utils.is_booking_active(booking)]
         if len(open_bookings) > 1:
             logging.error(
-                'Multiple open bookings found for person: %s', person.person_id)
+                "Multiple open bookings found for person: %s", person.person_id)
             data_validation_errors += 1
         else:
             validated_people.append(person)
@@ -235,9 +235,9 @@ def write(ingest_info, metadata):
         people, enum_parsing_errors, protected_class_errors = \
             _convert_and_count_errors(ingest_info, metadata)
         people, data_validation_errors = validate_one_open_booking(people)
-        logging.info('Converted %s people with %s enum_parsing_errors, %s'
-                     ' protected_class_errors and %s data_validation_errors, '
-                     '(logging max %d people):',
+        logging.info("Converted %s people with %s enum_parsing_errors, %s"
+                     " protected_class_errors and %s data_validation_errors, "
+                     "(logging max %d people):",
                      len(people), enum_parsing_errors, protected_class_errors,
                      data_validation_errors, MAX_PEOPLE_TO_LOG)
         loop_count = min(len(people), MAX_PEOPLE_TO_LOG)
@@ -258,12 +258,12 @@ def write(ingest_info, metadata):
         persisted = False
         session = Session()
         try:
-            logging.info('Starting entity matching')
+            logging.info("Starting entity matching")
             entity_matching_output = entity_matching.match(
                 session, metadata.region, people)
             people = entity_matching_output.people
             logging.info(
-                'Completed entity matching with %s errors',
+                "Completed entity matching with %s errors",
                 entity_matching_output.error_count)
             if _should_abort(
                     total_people=total_people,
@@ -274,7 +274,7 @@ def write(ingest_info, metadata):
             database.write_people(
                 session, people, metadata,
                 orphaned_entities=entity_matching_output.orphaned_entities)
-            logging.info('Successfully wrote to the database')
+            logging.info("Successfully wrote to the database")
             session.commit()
             persisted = True
             mtags[monitoring.TagKey.PERSISTED] = True

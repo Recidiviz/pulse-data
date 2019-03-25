@@ -38,7 +38,7 @@ def clear_ds():
     global _ds
     _ds = None
 
-SECRET_KIND = "Secret"
+SECRET_KIND = 'Secret'
 CACHED_SECRETS: Dict[str, str] = {}
 
 def get_secret(name):

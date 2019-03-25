@@ -67,10 +67,10 @@ class JsonDataExtractor(DataExtractor):
                     self._set_value_if_key_exists(
                         lookup_key, str(v), ingest_info, seen_map)
                 else:
-                    logging.error('JSON value was not an object, array, int, '
-                                  'float, or string: %s', v)
+                    logging.error("JSON value was not an object, array, int, "
+                                  "float, or string: %s", v)
         else:
-            logging.error('%s is not a valid JSON value', content)
+            logging.error("%s is not a valid JSON value", content)
 
     def _set_value_if_key_exists(self, lookup_key, value, ingest_info,
                                  seen_map):

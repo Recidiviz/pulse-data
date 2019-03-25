@@ -10,7 +10,7 @@ module_path = os.path.abspath(__file__)
 # Walk up directories to reach main package
 while not module_path.split('/')[-1] == 'recidiviz':
     if module_path == '/':
-        raise RuntimeError('Top-level recidiviz package not found')
+        raise RuntimeError("Top-level recidiviz package not found")
     module_path = os.path.dirname(module_path)
 # Must insert parent directory of main package
 sys.path.insert(0, os.path.dirname(module_path))
@@ -48,7 +48,7 @@ def get_sqlalchemy_url():
         return _get_sqlalchemy_url_with_ssl()
     if use_ssl == 0:
         return _get_sqlalchemy_url_without_ssl()
-    raise RuntimeError('Invalid value for use_ssl: {use_ssl}'.format(
+    raise RuntimeError("Invalid value for use_ssl: {use_ssl}".format(
         use_ssl=use_ssl))
 
 
