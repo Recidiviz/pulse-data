@@ -14,17 +14,3 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-
-""" Vendor classes that handle vendor specific navigation and data extraction.
-All regions that use one of these vendors should inherit from the vendor
-specific classes.
-"""
-
-from recidiviz.ingest.scrape.vendors.archonix.archonix_scraper import \
-    ArchonixScraper
-from recidiviz.ingest.scrape.vendors.iml.iml_scraper import ImlScraper
-from recidiviz.ingest.scrape.vendors.net_data.net_data_scraper import \
-    NetDataScraper
-from recidiviz.ingest.scrape.vendors.newworld.newworld_scraper import \
-    NewWorldScraper
-import recidiviz.ingest.scrape.vendors.superion
