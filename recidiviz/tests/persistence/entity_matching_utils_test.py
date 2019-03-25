@@ -221,7 +221,8 @@ class TestEntityMatchingUtils(TestCase):
             db_entity=db_charge, ingested_entity=ingested_charge))
 
     def test_bond_match_external_ids(self):
-        db_bond = entities.Bond.new_with_defaults(external_id=_EXTERNAL_ID)
+        db_bond = entities.Bond.new_with_defaults(external_id=_EXTERNAL_ID,
+                                                  booking_id=_BOOKING_ID)
         ingested_bond = entities.Bond.new_with_defaults(
             external_id=_EXTERNAL_ID)
         self.assertTrue(entity_matching_utils.is_bond_match(
@@ -232,7 +233,8 @@ class TestEntityMatchingUtils(TestCase):
 
     def test_bond_match(self):
         db_bond = entities.Bond.new_with_defaults(
-            bond_id=_BOND_ID, bond_type=BondType.CASH, status=BondStatus.SET)
+            bond_id=_BOND_ID, bond_type=BondType.CASH, status=BondStatus.SET,
+            booking_id=_BOOKING_ID)
         ingested_bond = entities.Bond.new_with_defaults(
             bond_type=BondType.CASH,
             status=BondStatus.POSTED
@@ -245,7 +247,7 @@ class TestEntityMatchingUtils(TestCase):
 
     def test_sentence_match_external_ids(self):
         db_sentence = entities.Sentence.new_with_defaults(
-            external_id=_EXTERNAL_ID)
+            external_id=_EXTERNAL_ID, booking_id=_BOOKING_ID)
         ingested_sentence = entities.Sentence.new_with_defaults(
             external_id=_EXTERNAL_ID)
         self.assertTrue(entity_matching_utils.is_sentence_match(
@@ -258,7 +260,7 @@ class TestEntityMatchingUtils(TestCase):
         # TODO(350): expand tests after more robust equality function
         self.assertTrue(entity_matching_utils.is_sentence_match(
             db_entity=entities.Sentence.new_with_defaults(
-                sentence_id=_SENTENCE_ID),
+                sentence_id=_SENTENCE_ID, booking_id=_BOOKING_ID),
             ingested_entity=entities.Sentence.new_with_defaults(
                 sentence_id=_SENTENCE_ID_OTHER)))
 
