@@ -63,7 +63,7 @@ def _parse_date(filename: str) -> datetime.date:
         parsed_date = date.parse_date(date_str)
         if parsed_date:
             return parsed_date.replace(day=1)
-    raise AggregateDateParsingError('Could not extract date')
+    raise AggregateDateParsingError("Could not extract date")
 
 
 def _parse_table(filename: str, report_date: datetime.date) -> pd.DataFrame:

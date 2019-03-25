@@ -107,12 +107,12 @@ class Names():
     def __attrs_post_init__(self):
         if self.full_name and any((self.given_names, self.middle_names,
                                    self.surname, self.name_suffix)):
-            raise ValueError('Cannot have full_name and surname/middle/'
-                             'given_names/name_suffix')
+            raise ValueError("Cannot have full_name and surname/middle/"
+                             "given_names/name_suffix")
 
         if any((self.middle_names, self.name_suffix)) and \
                 not any((self.given_names, self.surname)):
-            raise ValueError('Cannot set only middle_names/name_suffix.')
+            raise ValueError("Cannot set only middle_names/name_suffix.")
 
     def combine(self) -> Optional[str]:
         """Writes the names out as a json string, skipping fields that are None.

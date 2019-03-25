@@ -27,9 +27,9 @@ from recidiviz.ingest.scrape import constants, docket
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.utils import pubsub_helper
 
-REGIONS = ["us_ny", "us_va"]
+REGIONS = ['us_ny', 'us_va']
 
-@pytest.mark.usefixtures("emulator")
+@pytest.mark.usefixtures('emulator')
 class TestDocket:
     """Tests for the methods related to population of items in the docket."""
     def teardown_method(self, _test_method):

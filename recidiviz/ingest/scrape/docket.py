@@ -72,7 +72,7 @@ from recidiviz.utils import environment, pubsub_helper, regions
 
 SNAPSHOT_BATCH_SIZE = 100
 SNAPSHOT_DISTANCE_YEARS = 10
-FILENAME_PREFIX = "./name_lists/"
+FILENAME_PREFIX = './name_lists/'
 PUBSUB_TYPE = 'docket'
 
 

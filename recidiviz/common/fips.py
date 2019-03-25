@@ -69,7 +69,7 @@ def get_fips_for(state: us.states) -> pd.DataFrame:
     fips = fips[fips.state_code == int(state.fips)]
     if fips.empty:
         raise FipsMergingError(
-            'Failed to find FIPS codes for state: {}'.format(state))
+            "Failed to find FIPS codes for state: {}".format(state))
 
     fips['county_name'] = fips['county_name'].apply(_sanitize_county_name)
     fips = fips.set_index('county_name')

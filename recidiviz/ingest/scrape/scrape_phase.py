@@ -28,5 +28,5 @@ _next_phase = {
 
 def next_phase(current_phase: Optional[str]) -> Optional[str]:
     if current_phase is None:
-        raise ValueError('Unable to identify current scrape phase.')
+        raise ValueError("Unable to identify current scrape phase.")
     return _next_phase[current_phase]

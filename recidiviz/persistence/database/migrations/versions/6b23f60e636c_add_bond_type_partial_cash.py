@@ -17,7 +17,7 @@ Create Date: 2019-02-08 14:47:07.048315
 # # Walk up directories to reach main package
 # while not module_path.split('/')[-1] == 'recidiviz':
 #     if module_path == '/':
-#         raise RuntimeError('Top-level recidiviz package not found')
+#         raise RuntimeError("Top-level recidiviz package not found")
 #     module_path = os.path.dirname(module_path)
 # # Must insert parent directory of main package
 # sys.path.insert(0, os.path.dirname(module_path))

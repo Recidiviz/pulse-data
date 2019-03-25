@@ -32,8 +32,8 @@ class TaskType(enum.Flag):
 
 @enum.unique
 class ScrapeType(enum.Enum):
-    BACKGROUND = "background"
-    SNAPSHOT = "snapshot"
+    BACKGROUND = 'background'
+    SNAPSHOT = 'snapshot'
 
 
 MAX_PEOPLE_TO_LOG = 4
@@ -42,7 +42,7 @@ BATCH_PUBSUB_TYPE = 'scraper_batch'
 
 @enum.unique
 class ResponseType(enum.Enum):
-    HTML = "html"
-    JSON = "json"
-    TEXT = "text"
-    RAW = "raw"
+    HTML = 'html'
+    JSON = 'json'
+    TEXT = 'text'
+    RAW = 'raw'

@@ -198,7 +198,7 @@ def parse_date(filename: str) -> datetime.date:
     parsed_date = date.parse_date(filename[start:end])
     if parsed_date:
         return parsed_date
-    raise AggregateDateParsingError('Could not extract date')
+    raise AggregateDateParsingError("Could not extract date")
 
 
 def _pretend_facility_is_county(facility_name: str):

@@ -115,7 +115,7 @@ def parse_date(filename: str) -> datetime.date:
         d = date.parse_date(filename[start:end])
     if d:
         return d
-    raise AggregateDateParsingError('Could not extract date')
+    raise AggregateDateParsingError("Could not extract date")
 
 
 def _parse_table(filename: str) -> pd.DataFrame:
@@ -216,7 +216,7 @@ def _format_contracted_facilities(df: pd.DataFrame) -> pd.DataFrame:
 def _facility_acronym_to_name(facility_acronym: str) -> str:
     if facility_acronym not in _FACILITY_ACRONYM_TO_FIPS:
         raise AggregateIngestError(
-            'Failed to match facility acronym "{}" to facility_name'.format(
+            "Failed to match facility acronym '{}' to facility_name".format(
                 facility_acronym))
 
     return _FACILITY_ACRONYM_TO_NAME[facility_acronym]
@@ -225,7 +225,7 @@ def _facility_acronym_to_name(facility_acronym: str) -> str:
 def _facility_acronym_to_fips(facility_acronym: str) -> str:
     if facility_acronym not in _FACILITY_ACRONYM_TO_FIPS:
         raise FipsMergingError(
-            'Failed to match facility acronym "{}" to fips'.format(
+            "Failed to match facility acronym '{}' to fips".format(
                 facility_acronym))
 
     return _FACILITY_ACRONYM_TO_FIPS[facility_acronym]

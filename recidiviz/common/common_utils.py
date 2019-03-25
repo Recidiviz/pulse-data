@@ -22,7 +22,7 @@ from typing import Optional
 
 import flask
 
-GENERATED_ID_SUFFIX = "_GENERATE"
+GENERATED_ID_SUFFIX = '_GENERATE'
 
 
 def create_generated_id() -> str:
@@ -59,5 +59,5 @@ def normalize(s: str, remove_punctuation: bool = False) -> str:
             s = label_without_punctuation
 
     if s is None or s == '' or s.isspace():
-        raise ValueError('Cannot normalize None or empty/whitespace string')
+        raise ValueError("Cannot normalize None or empty/whitespace string")
     return ' '.join(s.split()).upper()

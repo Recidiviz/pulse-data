@@ -76,7 +76,7 @@ class ScrapeSession:
         entity['region'] = region  # type: string
         if scrape_type:
             if scrape_type not in constants.ScrapeType:
-                raise ValueError('Invalid scrape type: {}.'.format(scrape_type))
+                raise ValueError("Invalid scrape type: {}.".format(scrape_type))
             entity['scrape_type'] = scrape_type.value
         return cls(entity)
 
@@ -434,7 +434,7 @@ def write_scraped_record(*args, **kwds):
         ds().put(new_record.to_entity())
     except Exception as e:
         logging.warning("Couldn't persist ScrapedRecord entry, "
-                        "record_id: %s\n%s", new_record["record_id"], e)
+                        "record_id: %s\n%s", new_record['record_id'], e)
 
 
 def already_scraped_record(region_code, record_id, start):

@@ -143,7 +143,7 @@ def _parse_date(filename: str) -> datetime.date:
     d = date.parse_date(filename[start:end])
     if d:
         return aggregate_ingest_utils.on_last_day_of_month(d)
-    raise AggregateDateParsingError('Could not extract date')
+    raise AggregateDateParsingError("Could not extract date")
 
 
 def _use_stale_adp(adp_str: str) -> str:

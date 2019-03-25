@@ -74,7 +74,7 @@ def run_scraper(args):
     for region_code in region_codes:
         logging.info('***')
         logging.info('***')
-        logging.info('Starting scraper for region: %s', region_code)
+        logging.info("Starting scraper for region: %s", region_code)
         logging.info('***')
         logging.info('***')
         try:
@@ -85,7 +85,7 @@ def run_scraper(args):
 
     if failed_regions:
         logging.info('***')
-        logging.info('The following regions raised errors during scraping: %s',
+        logging.info("The following regions raised errors during scraping: %s",
                      failed_regions)
 
 
@@ -109,7 +109,7 @@ def run_scraper_for_region(region, args):
     num_tasks_run = 0
     while task_queue and (num_tasks_run < args.num_tasks or args.run_forever):
         logging.info('***')
-        logging.info('Running task %d of %s tasks', num_tasks_run,
+        logging.info("Running task %d of %s tasks", num_tasks_run,
                      'infinite' if args.run_forever else args.num_tasks)
 
         # run the task
@@ -126,11 +126,11 @@ def run_scraper_for_region(region, args):
 
         # increment and sleep
         num_tasks_run += 1
-        logging.info('Sleeping %s seconds before sending another request',
+        logging.info("Sleeping %s seconds before sending another request",
                      args.sleep_between_requests)
         time.sleep(args.sleep_between_requests)
 
-    logging.info('Completed the test run!')
+    logging.info("Completed the test run!")
 
 
 def _create_parser():
@@ -138,27 +138,27 @@ def _create_parser():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--region', required=True,
-                        help='The comma separated list of regions to test, or'
-                             '"all" to test all regions')
+                        help="The comma separated list of regions to test, or"
+                             "'all' to test all regions")
     parser.add_argument(
         '--num_tasks', required=False, default=5, type=int,
-        help='The number of tasks to complete'
+        help="The number of tasks to complete"
     )
     parser.add_argument(
         '--sleep_between_requests', required=False, default=1, type=float,
-        help='The number of seconds to sleep in between requests'
+        help="The number of seconds to sleep in between requests"
     )
     parser.add_argument(
         '--run_forever', required=False, action='store_true',
-        help='If set, ignore num_tasks and run until completion'
+        help="If set, ignore num_tasks and run until completion"
     )
     parser.add_argument(
         '--no_fail_fast', required=False, dest='fail_fast',
-        action='store_false', help='Continue running after an error'
+        action='store_false', help="Continue running after an error"
     )
     parser.add_argument(
         '--log', required=False, default='INFO', type=logging.getLevelName,
-        help='Set the logging level'
+        help="Set the logging level"
     )
     parser.add_argument(
         '--lifo', required=False, action='store_true',
@@ -174,7 +174,7 @@ def _configure_logging(level):
     root.setLevel(level)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     arg_parser = _create_parser()
     arguments = arg_parser.parse_args()
 

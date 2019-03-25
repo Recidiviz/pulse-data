@@ -68,17 +68,17 @@ def state_aggregate():
     state = get_value('state', request.args)
     filename = get_value('filename', request.args)
     project_id = metadata.project_id()
-    logging.info('The project id is %s', project_id)
+    logging.info("The project id is %s", project_id)
     if not bucket or not state or not filename:
         raise StateAggregateError(
-            'All of state, bucket, and filename must be provided')
+            "All of state, bucket, and filename must be provided")
     path = os.path.join(bucket, state, filename)
     parser = state_to_parser[state]
     # Don't use the gcsfs cache
     fs = gcsfs.GCSFileSystem(project=project_id, cache_timeout=-1)
-    logging.info('The path to download from is %s', path)
+    logging.info("The path to download from is %s", path)
     bucket_path = os.path.join(bucket, state)
-    logging.info('The files in the directory are:')
+    logging.info("The files in the directory are:")
     logging.info(fs.ls(bucket_path))
 
     # Providing a stream buffer to tabula reader does not work because it
@@ -87,7 +87,7 @@ def state_aggregate():
     # the local tmpdir and pass that in.
     tmpdir_path = os.path.join(tempfile.gettempdir(), filename)
     fs.get(path, tmpdir_path)
-    logging.info('Successfully downloaded file from gcs: %s', path)
+    logging.info("Successfully downloaded file from gcs: %s", path)
 
     result = parser(tmpdir_path)
     for table, df in result.items():

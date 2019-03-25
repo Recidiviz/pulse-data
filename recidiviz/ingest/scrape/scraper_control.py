@@ -74,8 +74,8 @@ def scraper_start():
 
         if sessions.get_current_session(scrape_key):
             logging.error(
-                'Session already exists for region %s. Could not start new '
-                'session', region)
+                "Session already exists for region %s. Could not start new "
+                "session", region)
             return
 
         logging.info(
@@ -204,7 +204,7 @@ def scraper_stop():
         region_scraper.stop_scrape(scrape_types)
 
         if next_phase:
-            logging.info('Enqueueing %s for region %s.', next_phase, region)
+            logging.info("Enqueueing %s for region %s.", next_phase, region)
             queues.enqueue_scraper_phase(region_code=region, url=next_phase_url)
 
     if not scrape_regions or not scrape_types:

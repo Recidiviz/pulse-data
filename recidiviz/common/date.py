@@ -61,7 +61,7 @@ def parse_datetime(
     if parsed:
         return parsed
 
-    raise ValueError('cannot parse date: %s' % date_string)
+    raise ValueError("cannot parse date: %s" % date_string)
 
 
 def parse_date(

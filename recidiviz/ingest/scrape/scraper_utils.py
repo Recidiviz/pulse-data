@@ -63,13 +63,13 @@ def _one(ingest_object: str, parent: IngestObject):
     if ingest_object in PLURALS:
         lst = getattr(parent, PLURALS[ingest_object])
         if len(lst) != 1:
-            raise ValueError('IngestInfo did not have exactly one {} as '
-                             'expected'.format(ingest_object))
+            raise ValueError("IngestInfo did not have exactly one {} as "
+                             "expected".format(ingest_object))
         return lst[0]
     elt = getattr(parent, ingest_object)
     if elt is None:
-        raise ValueError('IngestInfo did not have exactly one {} as '
-                         'expected'.format(ingest_object))
+        raise ValueError("IngestInfo did not have exactly one {} as "
+                         "expected".format(ingest_object))
     return elt
 
 
@@ -88,7 +88,7 @@ def one(ingest_object: str,
 
     if ingest_object not in HIERARCHY_MAP:
         raise ValueError(
-            'Cannot find ingest object with name {}'.format(ingest_object))
+            "Cannot find ingest object with name {}".format(ingest_object))
 
     parent = ingest_info
     for hier_class in HIERARCHY_MAP[ingest_object]:
@@ -120,8 +120,8 @@ def get_proxies(use_test=False):
     if not environment.in_gae() or use_test:
         return None
 
-    user_var = "proxy_user"
-    pass_var = "proxy_password"
+    user_var = 'proxy_user'
+    pass_var = 'proxy_password'
 
     proxy_url = secrets.get_secret("proxy_url")
 

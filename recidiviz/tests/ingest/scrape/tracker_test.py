@@ -127,7 +127,7 @@ def create_pubsub_message(content, ack_id="ACKID", published=PUBLISHED_SECONDS,
         ack_id=ack_id,
     )
 
-REGIONS = ["us_ny", "us_va"]
+REGIONS = ['us_ny', 'us_va']
 
 @pytest.mark.usefixtures("emulator")
 class TestTrackerIntegration:

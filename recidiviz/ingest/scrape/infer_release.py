@@ -54,14 +54,14 @@ def infer_release():
             session = sessions.get_most_recent_completed_session(
                 region.region_code)
             if session:
-                logging.info('Got most recent completed session for %s with '
+                logging.info("Got most recent completed session for %s with "
                              'start time %s', region.region_code, session.start)
                 persistence.infer_release_on_open_bookings(
                     region.region_code, session.start,
                     _get_custody_status(region))
 
             if next_phase:
-                logging.info('Enqueueing %s for region %s.',
+                logging.info("Enqueueing %s for region %s.",
                              next_phase, region.region_code)
                 queues.enqueue_scraper_phase(
                     region_code=region.region_code, url=next_phase_url)

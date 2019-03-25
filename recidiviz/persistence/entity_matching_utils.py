@@ -97,7 +97,7 @@ def _db_open_booking_matches_ingested_booking(
         return True
     if len(db_open_bookings) > 1:
         raise PersistenceError(
-            'db person {} has more than one open booking'.format(
+            "db person {} has more than one open booking".format(
                 db_entity.person_id))
     return any(db_open_bookings[0].external_id == ingested_booking.external_id
                for ingested_booking in ingested_entity.bookings)
