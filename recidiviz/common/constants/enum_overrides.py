@@ -37,11 +37,14 @@ class EnumOverrides:
     _maps: Dict[EntityEnumMeta, Dict[str, EntityEnum]] = attr.ib()
     _predicate_maps: Dict[EntityEnumMeta, Set['_EnumMatcher']] = attr.ib()
     _ignores: Dict[EntityEnumMeta, Set[str]] = attr.ib()
-    _global_ignores: Set[str] = attr.ib()
+    _predicate_ignores: Dict[EntityEnumMeta,
+                             Set[Callable[[str], bool]]] = attr.ib()
 
     def should_ignore(self, label: str, enum_class: EntityEnumMeta) -> bool:
         label = normalize(label, remove_punctuation=True)
-        return label in self._ignores[enum_class] | self._global_ignores
+        predicate_calls = (predicate(label) for predicate in
+                           self._predicate_ignores[enum_class])
+        return label in self._ignores[enum_class] or any(predicate_calls)
 
     def parse(self,
               label: str,
@@ -70,7 +73,7 @@ class EnumOverrides:
         builder._maps = self._maps
         builder._predicate_maps = self._predicate_maps
         builder._ignores = self._ignores
-        builder._global_ignores = self._global_ignores
+        builder._predicate_ignores = self._predicate_ignores
         return builder
 
     @classmethod
@@ -86,11 +89,13 @@ class EnumOverrides:
             self._predicate_maps: Dict[EntityEnumMeta,
                                        Set[_EnumMatcher]] = defaultdict(set)
             self._ignores: Dict[EntityEnumMeta, Set[str]] = defaultdict(set)
-            self._global_ignores: Set[str] = set()
+            self._predicate_ignores: \
+                Dict[EntityEnumMeta, Set[Callable[[str], bool]]] = \
+                defaultdict(set)
 
         def build(self) -> 'EnumOverrides':
             return EnumOverrides(self._maps, self._predicate_maps,
-                                 self._ignores, self._global_ignores)
+                                 self._ignores, self._predicate_ignores)
 
         def add(self,
                 label_or_predicate: Union[str, Callable[[str], bool]],
@@ -118,15 +123,17 @@ class EnumOverrides:
                 self._predicate_maps[from_field].add(
                     _EnumMatcher(predicate, mapped_enum))
 
-        def ignore(self, label: str, enum_class: EntityEnumMeta = None) -> None:
-            """Marks strings exactly matching |label| as ignored values for
-            |enum_class|. If |enum_class| is None, ignore |label| for all
-            enums."""
-            label = normalize(label, remove_punctuation=True)
-            if enum_class:
-                self._ignores[enum_class].add(label)
+        def ignore(self,
+                   label_or_predicate: Union[str, Callable[[str], bool]],
+                   from_field: EntityEnumMeta) -> None:
+            """Marks strings matching |label_or_predicate| as ignored
+            values for |enum_class|."""
+            if isinstance(label_or_predicate, str):
+                label = normalize(label_or_predicate, remove_punctuation=True)
+                self._ignores[from_field].add(label)
             else:
-                self._global_ignores.add(label)
+                predicate = label_or_predicate
+                self._predicate_ignores[from_field].add(predicate)
 
 
 @attr.s(frozen=True)

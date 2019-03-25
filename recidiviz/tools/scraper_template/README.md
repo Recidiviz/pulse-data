@@ -211,8 +211,8 @@ def get_enum_overrides(self) -> EnumOverrides:
     # When charge.charge_class is 'X', clear the field.
     overrides_builder.ignore('X', ChargeClass)
     
-    # Ignore 'N/A' for all values.
-    overrides_builder.ignore('N/A')
+    # Ignore 'N/A' for ChargeClass.
+    overrides_builder.ignore('N/A', ChargeClass)
     return overrides_builder.build()
 ```
 
