@@ -18,7 +18,6 @@
 
 import logging
 import threading
-from contextlib import contextmanager
 from functools import partial, wraps
 
 from google.cloud.logging import Client, handlers
@@ -27,22 +26,18 @@ from recidiviz.utils import environment, monitoring
 
 _thread_local = threading.local()
 
-@contextmanager
-def push_trace_id():
-    # pylint: disable=protected-access
-    setattr(_thread_local, 'trace_id',
-            handlers._helpers.get_trace_id_from_flask())
-    try:
-        yield
-    finally:
-        setattr(_thread_local, 'trace_id', None)
-
 
 def copy_trace_id_to_thread(func):
+    # pylint: disable=protected-access
+    trace_id = handlers._helpers.get_trace_id_from_flask()
+    if trace_id is None:
+        # TODO: raise error
+        logging.info("No trace id")
+
     @wraps(func)
     def add_trace_id_and_call(*args, **kwargs):
-        with push_trace_id():
-            return func(*args, **kwargs)
+        setattr(_thread_local, 'trace_id', trace_id)
+        return func(*args, **kwargs)
 
     return add_trace_id_and_call
 
