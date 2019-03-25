@@ -30,12 +30,17 @@ from recidiviz.calculator.bq.views import view_config
 from recidiviz.calculator.bq.views import view_queries
 from recidiviz.calculator.bq.views.bonds import bond_views
 from recidiviz.calculator.bq.views.charges import charge_views
+from recidiviz.calculator.bq.views.combined_aggregates import \
+    combined_aggregate_views
 from recidiviz.calculator.bq.views.state_aggregates import state_aggregate_views
 
 
 VIEWS_TO_UPDATE: List[bqview.BigQueryView] = [
     view_queries.PERSON_COUNT_VIEW,
-    state_aggregate_views.STATE_AGGREGATE_VIEW
+    state_aggregate_views.STATE_AGGREGATE_VIEW,
+    combined_aggregate_views.INTERPOLATED_STATE_AGGREGATE_VIEW,
+    combined_aggregate_views.SCRAPER_DATA_AGGREGATED,
+    combined_aggregate_views.SCRAPER_AND_STATE_COMBINED
 ] + bond_views.BOND_VIEWS + charge_views.CHARGE_VIEWS
 
 
