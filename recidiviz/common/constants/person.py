@@ -66,7 +66,7 @@ class ResidencyStatus(EntityEnum, metaclass=EntityEnumMeta):
 
     @staticmethod
     def _get_default_map():
-        raise RuntimeError('ResidencyStatus is not mapped directly')
+        raise RuntimeError("ResidencyStatus is not mapped directly")
 
 
 PROTECTED_CLASSES = (Race, Ethnicity, Gender)

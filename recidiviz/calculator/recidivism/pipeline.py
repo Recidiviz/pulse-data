@@ -148,19 +148,19 @@ def to_metric(metric_key, total_records, total_recidivism):
     # map and shuffle to reduce as a dictionary.
     key_mapping = eval(metric_key)  # pylint: disable=eval-used
 
-    metric.release_cohort = key_mapping["release_cohort"]
-    metric.follow_up_period = key_mapping["follow_up_period"]
-    metric.methodology = key_mapping["methodology"]
+    metric.release_cohort = key_mapping['release_cohort']
+    metric.follow_up_period = key_mapping['follow_up_period']
+    metric.methodology = key_mapping['methodology']
 
     if 'age' in key_mapping:
-        metric.age_bucket = key_mapping["age"]
+        metric.age_bucket = key_mapping['age']
     if 'race' in key_mapping:
-        metric.race = key_mapping["race"]
+        metric.race = key_mapping['race']
     if 'sex' in key_mapping:
-        metric.sex = key_mapping["sex"]
+        metric.sex = key_mapping['sex']
     if 'release_facility' in key_mapping:
-        metric.release_facility = key_mapping["release_facility"]
+        metric.release_facility = key_mapping['release_facility']
     if 'stay_length' in key_mapping:
-        metric.stay_length_bucket = key_mapping["stay_length"]
+        metric.stay_length_bucket = key_mapping['stay_length']
 
     return metric

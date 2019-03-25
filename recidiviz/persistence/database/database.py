@@ -166,7 +166,7 @@ def _convert_and_normalize_record_trees(
             ['ID {} with count {}'.format(duplicate[0], duplicate[1])
              for duplicate in duplicates])
         logging.error(
-            'Duplicate records returned for person IDs:\n%s', id_counts)
+            "Duplicate records returned for person IDs:\n%s", id_counts)
 
     return converted_people
 

@@ -125,13 +125,12 @@ def _get_batch_messages(scrape_key) -> List[pubsub.types.ReceivedMessage]:
     @monitoring.with_region_tag
     def async_pull(_) -> Tuple[List[pubsub.types.ReceivedMessage], str]:
         """Pulls messages and returns them and an error string, if any."""
-        logging.info('Pulling messages off pubsub')
-
+        logging.info("Pulling messages off pubsub")
         def inner():
             subscriber = pubsub_helper.get_subscriber()
             sub_path = pubsub_helper.get_subscription_path(
                 scrape_key, pubsub_type=BATCH_PUBSUB_TYPE)
-            logging.info('Got the subscription path')
+            logging.info("Got the subscription path")
             return subscriber.pull(
                 sub_path,
                 max_messages=BATCH_READ_SIZE,
@@ -143,7 +142,7 @@ def _get_batch_messages(scrape_key) -> List[pubsub.types.ReceivedMessage]:
                 scrape_key, inner, pubsub_type=BATCH_PUBSUB_TYPE). \
                 received_messages
             if recv_messages:
-                logging.info('Finished pulling messages, read %s messages',
+                logging.info("Finished pulling messages, read %s messages",
                              len(recv_messages))
                 _ack_messages(recv_messages, scrape_key)
             return recv_messages, ''
@@ -174,7 +173,7 @@ def _get_batch_messages(scrape_key) -> List[pubsub.types.ReceivedMessage]:
             logging.error(message)
         pulled_messages = list(itertools.chain.from_iterable(results))
         if not pulled_messages:
-            logging.info('No pull calls had any messages, returning')
+            logging.info("No pull calls had any messages, returning")
             break
         messages.extend(pulled_messages)
     return messages
@@ -205,7 +204,7 @@ def _get_proto_from_messages(messages):
     Returns:
         an IngestInfo proto with data from all of the messages.
     """
-    logging.info('Starting generation of proto')
+    logging.info("Starting generation of proto")
     ingest_infos_from_messages: List[IngestInfo] = []
     successful_tasks = set()
     failed_tasks = {}
@@ -231,7 +230,7 @@ def _get_proto_from_messages(messages):
 
     deduped_ingest_info = _dedup_people(ingest_infos_from_messages)
     base_proto = ingest_utils.convert_ingest_info_to_proto(deduped_ingest_info)
-    logging.info('Generated proto for %s people', len(base_proto.people))
+    logging.info("Generated proto for %s people", len(base_proto.people))
     return base_proto, failed_tasks
 
 
@@ -292,7 +291,7 @@ def persist_to_database(region_code, scrape_type, scraper_start_time):
 
     messages = _get_batch_messages(scrape_key)
 
-    logging.info('Received %s total messages', len(messages))
+    logging.info("Received %s total messages", len(messages))
     if messages:
         proto, failed_tasks = _get_proto_from_messages(messages)
 
@@ -302,12 +301,12 @@ def persist_to_database(region_code, scrape_type, scraper_start_time):
 
         for batch_message in failed_tasks.values():
             logging.error(
-                'Task with trace_id %s failed with error %s',
+                "Task with trace_id %s failed with error %s",
                 batch_message.trace_id, batch_message.error
             )
         if _should_abort(len(failed_tasks), len(proto.people)):
             logging.error(
-                'Too many scraper tasks failed(%s), aborting write',
+                "Too many scraper tasks failed(%s), aborting write",
                 len(failed_tasks))
             return False
 
@@ -319,7 +318,7 @@ def persist_to_database(region_code, scrape_type, scraper_start_time):
         did_write = persistence.write(proto, metadata)
         return did_write
 
-    logging.error('No messages received from pubpub')
+    logging.error("No messages received from pubpub")
     return False
 
 
@@ -353,7 +352,7 @@ def read_and_persist():
         if did_persist:
             next_phase = scrape_phase.next_phase(request.endpoint)
             if next_phase:
-                logging.info('Enqueueing %s for region %s.', region, next_phase)
+                logging.info("Enqueueing %s for region %s.", region, next_phase)
                 queues.enqueue_scraper_phase(
                     region_code=region, url=url_for(next_phase))
             return '', HTTPStatus.OK

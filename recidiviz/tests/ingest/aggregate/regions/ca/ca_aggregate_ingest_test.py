@@ -47,8 +47,8 @@ class TestCaAggregateIngest(TestCase):
 
         # Assert Head
         expected_head = pd.DataFrame({
-            'jurisdiction_name': ["Alameda Sheriff's Dept.",
-                                  "Alameda Sheriff's Dept."],
+            'jurisdiction_name': ['Alameda Sheriff\'s Dept.',
+                                  'Alameda Sheriff\'s Dept.'],
             'facility_name': ['Glen Dyer Jail', 'Santa Rita Jail'],
             'average_daily_population': [379, 2043],
             'unsentenced_male_adp': [356, 1513],
@@ -64,8 +64,8 @@ class TestCaAggregateIngest(TestCase):
 
         # Assert Tail
         expected_tail = pd.DataFrame({
-            'jurisdiction_name': ["Yuba Sheriff's Dept.",
-                                  "Yuba Sheriff's Dept."],
+            'jurisdiction_name': ['Yuba Sheriff\'s Dept.',
+                                  'Yuba Sheriff\'s Dept.'],
             'facility_name': ['Yuba County Jail', 'Yuba County Jail'],
             'average_daily_population': [373, 366],
             'unsentenced_male_adp': [307, 292],

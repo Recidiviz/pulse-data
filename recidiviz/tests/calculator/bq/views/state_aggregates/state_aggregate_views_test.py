@@ -39,8 +39,8 @@ class TestAggregateView(TestCase):
     def test_toQuery(self):
         # Arrange
         ca_data = pd.DataFrame({
-            'jurisdiction_name': ["Alameda Sheriff's Dept.",
-                                  "Alameda Sheriff's Dept."],
+            'jurisdiction_name': ['Alameda Sheriff\'s Dept.',
+                                  'Alameda Sheriff\'s Dept.'],
             'facility_name': ['Glen Dyer Jail', 'Santa Rita Jail'],
             'average_daily_population': [379, 2043],
             'unsentenced_male_adp': [356, 1513],

@@ -100,7 +100,7 @@ def work(region):
 
     if region != data['region']:
         raise ValueError(
-            'Region specified in task {} does not match region from url {}.'\
+            "Region specified in task {} does not match region from url {}."\
                 .format(data['region'], region))
 
     task_tags = {monitoring.TagKey.STATUS: 'COMPLETED'}

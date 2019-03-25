@@ -65,7 +65,7 @@ def gcs_export_uri(table_name: str) -> str:
     bucket = '{}-dbexport'.format(project_id)
     GCS_EXPORT_URI_FORMAT = 'gs://{bucket}/{table_name}.csv'
     uri = GCS_EXPORT_URI_FORMAT.format(bucket=bucket, table_name=table_name)
-    logging.info('GCS URI "%s" in project "%s"', uri, project_id)
+    logging.info("GCS URI '%s' in project '%s'", uri, project_id)
     return uri
 
 ############################################
