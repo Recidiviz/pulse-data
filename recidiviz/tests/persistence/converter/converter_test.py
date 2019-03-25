@@ -68,6 +68,7 @@ class TestConverter(unittest.TestCase):
                 external_id='BOOKING_ID',
                 admission_date=_INGEST_TIME.date(),
                 admission_date_inferred=True,
+                first_seen_time=_INGEST_TIME,
                 last_seen_time=_INGEST_TIME,
                 custody_status=CustodyStatus.PRESENT_WITHOUT_INFO,
                 arrest=Arrest.new_with_defaults(
@@ -123,6 +124,7 @@ class TestConverter(unittest.TestCase):
                 external_id='BOOKING_ID',
                 admission_date=_INGEST_TIME.date(),
                 admission_date_inferred=True,
+                first_seen_time=_INGEST_TIME,
                 last_seen_time=_INGEST_TIME,
                 custody_status=CustodyStatus.PRESENT_WITHOUT_INFO,
                 arrest=Arrest.new_with_defaults(
@@ -182,6 +184,7 @@ class TestConverter(unittest.TestCase):
                 release_date=_RELEASE_DATE,
                 release_date_inferred=False,
                 last_seen_time=_INGEST_TIME,
+                first_seen_time=_INGEST_TIME,
                 custody_status=CustodyStatus.RELEASED,
                 arrest=Arrest.new_with_defaults(
                     external_id='ARREST_ID',
@@ -239,6 +242,7 @@ class TestConverter(unittest.TestCase):
             bookings=[Booking.new_with_defaults(
                 admission_date=_INGEST_TIME.date(),
                 admission_date_inferred=True,
+                first_seen_time=_INGEST_TIME,
                 last_seen_time=_INGEST_TIME,
                 custody_status=CustodyStatus.PRESENT_WITHOUT_INFO,
                 arrest=Arrest.new_with_defaults(agency='PD'),
@@ -277,6 +281,7 @@ class TestConverter(unittest.TestCase):
             bookings=[Booking.new_with_defaults(
                 admission_date=_INGEST_TIME.date(),
                 admission_date_inferred=True,
+                first_seen_time=_INGEST_TIME,
                 last_seen_time=_INGEST_TIME,
                 external_id='BOOKING_ID',
                 custody_status=CustodyStatus.PRESENT_WITHOUT_INFO,
@@ -318,6 +323,7 @@ class TestConverter(unittest.TestCase):
                 admission_date=_RELEASE_DATE,
                 admission_date_inferred=False,
                 custody_status=CustodyStatus.PRESENT_WITHOUT_INFO,
+                first_seen_time=_INGEST_TIME,
                 last_seen_time=_INGEST_TIME
             )])]
 
@@ -345,6 +351,7 @@ class TestConverter(unittest.TestCase):
                 external_id='BOOKING_ID',
                 admission_date=_INGEST_TIME.date(),
                 admission_date_inferred=True,
+                first_seen_time=_INGEST_TIME,
                 last_seen_time=_INGEST_TIME,
                 custody_status=CustodyStatus.PRESENT_WITHOUT_INFO,
                 charges=[Charge.new_with_defaults(
@@ -407,6 +414,7 @@ class TestConverter(unittest.TestCase):
             bookings=[Booking.new_with_defaults(
                 external_id='BOOKING_ID',
                 last_seen_time=_INGEST_TIME,
+                first_seen_time=_INGEST_TIME,
                 admission_date_inferred=True,
                 admission_date=_INGEST_TIME.date(),
                 custody_status=CustodyStatus.PRESENT_WITHOUT_INFO,
@@ -454,6 +462,7 @@ class TestConverter(unittest.TestCase):
         expected_result = [Person.new_with_defaults(
             bookings=[Booking.new_with_defaults(
                 admission_date_inferred=True,
+                first_seen_time=_INGEST_TIME,
                 last_seen_time=_INGEST_TIME,
                 admission_date=_INGEST_TIME.date(),
                 custody_status=CustodyStatus.PRESENT_WITHOUT_INFO,

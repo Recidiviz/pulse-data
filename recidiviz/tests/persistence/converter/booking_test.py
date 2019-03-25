@@ -73,6 +73,7 @@ class BookingConverterTest(unittest.TestCase):
             classification=Classification.LOW,
             classification_raw_text='LOW',
             last_seen_time=_INGEST_TIME,
+            first_seen_time=_INGEST_TIME,
         )
 
         self.assertEqual(result, expected_result)
@@ -93,6 +94,7 @@ class BookingConverterTest(unittest.TestCase):
             admission_date=_INGEST_TIME.date(),
             admission_date_inferred=True,
             last_seen_time=_INGEST_TIME,
+            first_seen_time=_INGEST_TIME,
             custody_status=CustodyStatus.PRESENT_WITHOUT_INFO
         )
 
@@ -122,6 +124,7 @@ class BookingConverterTest(unittest.TestCase):
             release_date_inferred=False,
             custody_status=CustodyStatus.RELEASED,
             last_seen_time=_INGEST_TIME,
+            first_seen_time=_INGEST_TIME,
         )
 
         self.assertEqual(result, expected_result)
@@ -152,6 +155,7 @@ class BookingConverterTest(unittest.TestCase):
             projected_release_date=date(year=2020, month=1, day=2),
             custody_status=CustodyStatus.PRESENT_WITHOUT_INFO,
             last_seen_time=_INGEST_TIME,
+            first_seen_time=_INGEST_TIME,
         )
 
         self.assertEqual(result, expected_result)
@@ -183,5 +187,7 @@ class BookingConverterTest(unittest.TestCase):
             custody_status=CustodyStatus.PRESENT_WITHOUT_INFO,
             custody_status_raw_text='TRANSFER',
             classification=Classification.WORK_RELEASE,
-            last_seen_time=_INGEST_TIME)
+            last_seen_time=_INGEST_TIME,
+            first_seen_time=_INGEST_TIME,
+        )
         self.assertEqual(result, expected_result)
