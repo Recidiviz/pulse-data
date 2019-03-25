@@ -226,10 +226,18 @@ def _set_provided_start_and_end_times(
                      booking_start_date > release_date):
                 booking_start_date = release_date
 
+            # Only provide start date to descendants if booking is new
+            # (otherwise new entities added to an existing booking would be
+            # incorrectly backdated)
+            booking_start_date_for_descendants = None
+            if context_registry.snapshot_context(booking)\
+                    .most_recent_snapshot is None:
+                booking_start_date_for_descendants = booking_start_date
+
             _execute_action_for_all_entities(
                 _get_related_entities(booking),
                 _set_provided_start_and_end_time_for_booking_descendant,
-                booking_start_date,
+                booking_start_date_for_descendants,
                 context_registry)
 
         if earliest_booking_date:
