@@ -222,6 +222,11 @@ def _sanitize_bond(bond: entities.Bond) -> entities.Bond:
     sanitized = copy.deepcopy(bond)
     sanitized.bond_id = None
     sanitized.status = BondStatus.REMOVED_WITHOUT_INFO
+
+    # booking_id is added just before writing to the DB. Because this method is
+    # used to compare ingested to db entities, we will ignore it for now.
+    # TODO(1488): Remove once we use whitelist for equality instead of blacklist
+    sanitized.booking_id = None
     return sanitized
 
 
@@ -242,11 +247,14 @@ def is_sentence_match(
 
 
 def _sanitize_sentence(sentence: entities.Sentence) -> entities.Sentence:
-    # TODO(350): decide which fields cannot change
     # TODO(400): update with new incarceration / supervision objects
     sanitized = copy.deepcopy(sentence)
     sanitized.sentence_id = None
     sanitized.related_sentences = []
+    # booking_id is added just before writing to the DB. Because this method is
+    # used to compare ingested to db entities, we will ignore it for now.
+    # TODO(1488): Remove once we use whitelist for equality instead of blacklist
+    sanitized.booking_id = None
     return sanitized
 
 
