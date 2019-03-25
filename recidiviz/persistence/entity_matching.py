@@ -296,7 +296,7 @@ def _match_from_charges(
 
     for db_obj in db_obj_map.values():
         db_obj_id = _get_id(db_obj)
-        if not db_obj_id in matched_ing_objs_by_db_id:
+        if db_obj_id not in matched_ing_objs_by_db_id:
             logging.debug('Did not match %s to any ingested %s, dropping',
                           db_obj_id, name)
             drop_fn = globals()['_drop_' + name]
