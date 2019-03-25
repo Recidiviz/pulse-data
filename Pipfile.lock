@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "9154b22da8cc0ddaba79c61b181933fa6707c288d2ebe5fa5d92d431aa40c648"
+            "sha256": "23b04909b4c0340af97a30b6580fa604910e2cee78c1c3214ffc52f3d64baaab"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -169,9 +169,12 @@
             "version": "==4.4.0"
         },
         "deepdiff": {
-            "editable": true,
-            "git": "https://github.com/seperman/deepdiff.git",
-            "ref": "885a5d5fb16622a4fce1e79bb273dd8d44a6704f"
+            "hashes": [
+                "sha256:d53aefe27f53d0a6a269478ce7eaa5ce95f488478c96764f3e356094015ad2bc",
+                "sha256:f263bf42d3b4eaac8359100f59497e98ae40ea256402b9c75e8c20add9fdbdb0"
+            ],
+            "index": "pypi",
+            "version": "==4.0.2"
         },
         "distro": {
             "hashes": [
@@ -543,12 +546,6 @@
                 "sha256:e249096428b3ae81b08327a63a485ad0878de3fb939049038579ac0ef61e17e7"
             ],
             "version": "==1.1.1"
-        },
-        "mmh3": {
-            "hashes": [
-                "sha256:185209a217c52afe43e079e5b232d0ef0f3a262601eaaf4371326ab6dcbec508"
-            ],
-            "version": "==2.5.1"
         },
         "more-itertools": {
             "hashes": [
