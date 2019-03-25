@@ -70,6 +70,9 @@ def copy_fields_to_builder(booking_builder, proto, metadata):
 
     # Metadata
     new.last_seen_time = metadata.ingest_time
+    # Will be overwritten by first_seen_time value in database if one is already
+    # present
+    new.first_seen_time = metadata.ingest_time
 
 
 def _set_custody_status_if_needed(new):
