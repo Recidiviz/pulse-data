@@ -62,7 +62,7 @@ class EnumOverridesTest(unittest.TestCase):
     def test_ignore(self):
         overrides_builder = EnumOverrides.Builder()
         overrides_builder.ignore('A', ChargeClass)
-        overrides_builder.ignore('NONE')
+        overrides_builder.ignore(lambda s: s.startswith('NO'), ChargeClass)
 
         overrides = overrides_builder.build()
 
