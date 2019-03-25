@@ -82,26 +82,31 @@ class TestDatabase(TestCase):
         release_date = datetime.date(2018, 7, 20)
         most_recent_scrape_date = datetime.datetime(2018, 6, 20)
         date_in_past = most_recent_scrape_date - datetime.timedelta(days=1)
+        first_seen_time = most_recent_scrape_date - datetime.timedelta(days=3)
 
         # Bookings that should be returned
         open_booking_before_last_scrape = Booking(
             person_id=person.person_id,
             custody_status=CustodyStatus.IN_CUSTODY.value,
+            first_seen_time=first_seen_time,
             last_seen_time=date_in_past)
 
         # Bookings that should not be returned
         open_booking_incorrect_region = Booking(
             person_id=person_wrong_region.person_id,
             custody_status=CustodyStatus.IN_CUSTODY.value,
+            first_seen_time=first_seen_time,
             last_seen_time=date_in_past)
         open_booking_most_recent_scrape = Booking(
             person_id=person_most_recent_scrape.person_id,
             custody_status=CustodyStatus.IN_CUSTODY.value,
+            first_seen_time=first_seen_time,
             last_seen_time=most_recent_scrape_date)
         resolved_booking = Booking(
             person_id=person_resolved_booking.person_id,
             custody_status=CustodyStatus.RELEASED.value,
             release_date=release_date,
+            first_seen_time=first_seen_time,
             last_seen_time=date_in_past)
 
         session = Session()
@@ -129,6 +134,7 @@ class TestDatabase(TestCase):
             custody_status=CustodyStatus.IN_CUSTODY.value,
             admission_date=admission_date,
             release_date=release_date,
+            first_seen_time=admission_date,
             last_seen_time=admission_date)
 
         person_no_match = Person(person_id=1, region=_REGION,
@@ -160,11 +166,13 @@ class TestDatabase(TestCase):
         open_booking = Booking(
             custody_status=CustodyStatus.IN_CUSTODY.value,
             admission_date=admission_date,
+            first_seen_time=admission_date,
             last_seen_time=admission_date)
         closed_booking = Booking(
             custody_status=CustodyStatus.RELEASED.value,
             admission_date=admission_date,
             release_date=release_date,
+            first_seen_time=admission_date,
             last_seen_time=admission_date)
 
         person_no_match = Person(person_id=1, region=_REGION,
@@ -201,10 +209,12 @@ class TestDatabase(TestCase):
         booking_1 = Booking(
             custody_status=CustodyStatus.PRESENT_WITHOUT_INFO.value,
             admission_date=datetime.datetime(2019, 1, 10),
+            first_seen_time=datetime.datetime(2019, 1, 10),
             last_seen_time=datetime.datetime(2019, 1, 10))
         booking_2 = Booking(
             custody_status=CustodyStatus.PRESENT_WITHOUT_INFO.value,
             admission_date=datetime.datetime(2019, 2, 10),
+            first_seen_time=datetime.datetime(2019, 2, 10),
             last_seen_time=datetime.datetime(2019, 2, 10))
 
         person.bookings.extend([booking_1, booking_2])
@@ -232,6 +242,7 @@ class TestDatabase(TestCase):
 
         booking = entities.Booking.new_with_defaults(
             custody_status=CustodyStatus.IN_CUSTODY,
+            first_seen_time=_INGEST_TIME,
             last_seen_time=_INGEST_TIME)
         person.bookings = [booking]
 
@@ -320,6 +331,7 @@ class TestDatabase(TestCase):
             booking_id=existing_booking_id,
             custody_status=CustodyStatus.IN_CUSTODY.value,
             facility=_FACILITY,
+            first_seen_time=_INGEST_TIME,
             last_seen_time=_INGEST_TIME)
         existing_booking_snapshot = BookingHistory(
             booking_history_id=1000,
@@ -368,6 +380,7 @@ class TestDatabase(TestCase):
             booking_id=existing_booking_id,
             custody_status=CustodyStatus.IN_CUSTODY,
             facility=_FACILITY,
+            first_seen_time=updated_last_seen_time,
             last_seen_time=updated_last_seen_time)
         ingested_person.bookings = [ingested_booking]
 
@@ -456,6 +469,7 @@ class TestDatabase(TestCase):
             booking_id=existing_booking_id,
             custody_status=CustodyStatus.IN_CUSTODY.value,
             facility=_FACILITY,
+            first_seen_time=_INGEST_TIME,
             last_seen_time=_INGEST_TIME)
         existing_booking_snapshot = BookingHistory(
             booking_history_id=1000,
@@ -491,6 +505,7 @@ class TestDatabase(TestCase):
             booking_id=existing_booking_id,
             custody_status=CustodyStatus.IN_CUSTODY,
             facility=_FACILITY,
+            first_seen_time=_INGEST_TIME,
             last_seen_time=updated_last_seen_time)
         ingested_person.bookings = [ingested_booking]
 
@@ -558,6 +573,7 @@ class TestDatabase(TestCase):
             race=Race.OTHER.value)
         booking = Booking(
             booking_id=2, custody_status=CustodyStatus.IN_CUSTODY.value,
+            first_seen_time=datetime.datetime(year=2020, month=7, day=4),
             last_seen_time=datetime.datetime(year=2020, month=7, day=6))
         person.bookings.append(booking)
         charge = Charge(
@@ -662,6 +678,7 @@ class TestDatabase(TestCase):
             custody_status=CustodyStatus.IN_CUSTODY,
             admission_date=booking_admission_date,
             admission_date_inferred=False,
+            first_seen_time=booking_scrape_time,
             last_seen_time=booking_scrape_time)
         queried_person.bookings = [booking]
         updated_person = database.write_person(
@@ -696,6 +713,7 @@ class TestDatabase(TestCase):
             custody_status=CustodyStatus.RELEASED,
             release_date=booking_release_date,
             release_date_inferred=False,
+            first_seen_time=scrape_time,
             last_seen_time=scrape_time)
         person.bookings = [booking]
         charge = entities.Charge.new_with_defaults(
@@ -738,6 +756,7 @@ class TestDatabase(TestCase):
             custody_status=CustodyStatus.RELEASED,
             release_date=booking_release_date,
             release_date_inferred=False,
+            first_seen_time=scrape_time,
             last_seen_time=scrape_time)
         person.bookings = [booking]
         charge = entities.Charge.new_with_defaults(
@@ -783,6 +802,7 @@ class TestDatabase(TestCase):
             admission_date_inferred=False,
             release_date=release_date,
             release_date_inferred=False,
+            first_seen_time=scrape_time,
             last_seen_time=scrape_time)
         person.bookings = [booking]
         charge = entities.Charge.new_with_defaults(
@@ -838,6 +858,7 @@ class TestDatabase(TestCase):
             jurisdiction_id=_JURISDICTION_ID)
         booking = entities.Booking.new_with_defaults(
             custody_status=CustodyStatus.RELEASED,
+            first_seen_time=scrape_time,
             last_seen_time=scrape_time)
         person.bookings = [booking]
         charge = entities.Charge.new_with_defaults(
@@ -902,6 +923,7 @@ class TestDatabase(TestCase):
             jurisdiction_id=_JURISDICTION_ID)
         booking = entities.Booking.new_with_defaults(
             custody_status=CustodyStatus.IN_CUSTODY,
+            first_seen_time=scrape_time,
             last_seen_time=scrape_time)
         person.bookings = [booking]
         charge = entities.Charge.new_with_defaults(
@@ -953,6 +975,7 @@ class TestDatabase(TestCase):
             jurisdiction_id=_JURISDICTION_ID)
         booking = entities.Booking.new_with_defaults(
             custody_status=CustodyStatus.IN_CUSTODY,
+            first_seen_time=initial_scrape_time,
             last_seen_time=initial_scrape_time)
         person.bookings = [booking]
         persisted_person = database.write_person(
@@ -999,6 +1022,7 @@ class TestDatabase(TestCase):
             custody_status=CustodyStatus.IN_CUSTODY,
             admission_date=booking_admission_date,
             admission_date_inferred=False,
+            first_seen_time=scrape_time,
             last_seen_time=scrape_time)
         person.bookings = [booking]
         persisted_person = database.write_person(
@@ -1034,6 +1058,7 @@ class TestDatabase(TestCase):
             custody_status=CustodyStatus.IN_CUSTODY,
             admission_date=booking_admission_date,
             admission_date_inferred=False,
+            first_seen_time=scrape_time,
             last_seen_time=scrape_time)
         person.bookings = [booking]
         charge = entities.Charge.new_with_defaults(
@@ -1076,6 +1101,7 @@ class TestDatabase(TestCase):
             custody_status=CustodyStatus.IN_CUSTODY,
             admission_date=booking_admission_date,
             admission_date_inferred=False,
+            first_seen_time=scrape_time,
             last_seen_time=scrape_time)
         person.bookings = [booking]
         charge = entities.Charge.new_with_defaults(
@@ -1114,6 +1140,7 @@ class TestDatabase(TestCase):
             region=_REGION, race=Race.OTHER, jurisdiction_id=_JURISDICTION_ID)
         booking = entities.Booking.new_with_defaults(
             custody_status=CustodyStatus.IN_CUSTODY,
+            first_seen_time=_INGEST_TIME,
             last_seen_time=_INGEST_TIME)
         person.bookings = [booking]
         charge = entities.Charge.new_with_defaults(
@@ -1168,6 +1195,7 @@ class TestDatabase(TestCase):
             region=_REGION, race=Race.OTHER, jurisdiction_id=_JURISDICTION_ID)
         booking = entities.Booking.new_with_defaults(
             custody_status=CustodyStatus.IN_CUSTODY,
+            first_seen_time=_INGEST_TIME,
             last_seen_time=_INGEST_TIME)
         person.bookings = [booking]
         charge = entities.Charge.new_with_defaults(
@@ -1222,6 +1250,7 @@ class TestDatabase(TestCase):
             region=_REGION, jurisdiction_id=_JURISDICTION_ID)
         booking = entities.Booking.new_with_defaults(
             custody_status=CustodyStatus.IN_CUSTODY,
+            first_seen_time=_INGEST_TIME,
             last_seen_time=_INGEST_TIME)
         person.bookings = [booking]
         charge = entities.Charge.new_with_defaults(
@@ -1283,6 +1312,7 @@ class TestDatabase(TestCase):
             region=_REGION, race=Race.OTHER, jurisdiction_id=_JURISDICTION_ID)
         booking = entities.Booking.new_with_defaults(
             custody_status=CustodyStatus.IN_CUSTODY,
+            first_seen_time=_INGEST_TIME,
             last_seen_time=_INGEST_TIME)
         person.bookings = [booking]
         charge = entities.Charge.new_with_defaults(

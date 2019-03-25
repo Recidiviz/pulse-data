@@ -275,6 +275,10 @@ class _BookingSharedColumns:
     # NOTE: BookingHistory does not contain last_seen_time column. This is to
     # avoid needing to create a new BookingHistory entity when a booking is
     # re-scraped and no values have changed except last_scraped_date.
+    #
+    # BookingHistory also does not contain first_seen_time column. This is
+    # because this value should never change, so it does not reflect the state
+    # at a single point in time.
 
     external_id = Column(String(255), index=True)
     admission_date = Column(Date)
@@ -303,6 +307,7 @@ class Booking(Base, DatabaseEntity, _BookingSharedColumns):
 
     booking_id = Column(Integer, primary_key=True)
     last_seen_time = Column(DateTime, nullable=False)
+    first_seen_time = Column(DateTime, nullable=False)
 
     holds = relationship('Hold', lazy='joined')
     arrest = relationship('Arrest', uselist=False, lazy='joined')

@@ -69,6 +69,7 @@ _PERSON = entities.Person(
         classification=Classification.HIGH,
         classification_raw_text='HIGH',
         last_seen_time=datetime(year=2000, month=1, day=6, hour=13),
+        first_seen_time=datetime(year=2000, month=1, day=1, hour=3),
         holds=[entities.Hold(
             hold_id=3456,
             external_id="external_id",
