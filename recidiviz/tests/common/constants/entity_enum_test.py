@@ -47,7 +47,7 @@ class EntityEnumTest(unittest.TestCase):
 
     def testParse_WithNoneOverride_IgnoresDefaultMap(self):
         overrides_builder = EnumOverrides.Builder()
-        overrides_builder.ignore('BANANA')
+        overrides_builder.ignore('BANANA', FakeEntityEnum)
         overrides = overrides_builder.build()
         self.assertEqual(FakeEntityEnum.parse('banana', overrides), None)
 
@@ -73,12 +73,12 @@ class EntityEnumTest(unittest.TestCase):
 
     def testCanParse_WithNoneOverride(self):
         overrides_builder = EnumOverrides.Builder()
-        overrides_builder.ignore('BANANA')
+        overrides_builder.ignore('BANANA', FakeEntityEnum)
         overrides = overrides_builder.build()
         self.assertTrue(FakeEntityEnum.can_parse('banana', overrides))
 
     def testCanParse_WithOverrides(self):
         overrides_builder = EnumOverrides.Builder()
-        overrides_builder.ignore('BAN')
+        overrides_builder.ignore('BAN', FakeEntityEnum)
         overrides = overrides_builder.build()
         self.assertTrue(FakeEntityEnum.can_parse('ban', overrides))
