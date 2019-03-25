@@ -25,6 +25,7 @@ from typing import List
 
 from google.cloud import datastore
 
+from recidiviz.common.common_utils import retry_grpc_goaway
 from recidiviz.ingest.scrape import constants
 from recidiviz.utils import environment
 
@@ -42,6 +43,9 @@ def ds():
 def clear_ds():
     global _ds
     _ds = None
+
+
+NUM_GRPC_RETRIES = 2
 
 
 class ScrapeSession:
@@ -118,7 +122,11 @@ def create_session(scrape_key):
                                     region=scrape_key.region_code)
 
     try:
-        ds().put(new_session.to_entity())
+        retry_grpc_goaway(
+            NUM_GRPC_RETRIES,
+            ds().put,
+            new_session.to_entity()
+        )
     except Exception as e:
         logging.warning("Couldn't create new session entity:\n%s", e)
 
@@ -143,7 +151,7 @@ def end_session(scrape_key) -> List[ScrapeSession]:
     for session in open_sessions:
         session.update({'end':  datetime.now()})
         try:
-            ds().put(session.to_entity())
+            retry_grpc_goaway(NUM_GRPC_RETRIES, ds().put, session.to_entity())
         except Exception as e:
             logging.warning("Couldn't set end time on prior sessions:\n%s", e)
         closed_sessions.append(session)
@@ -171,7 +179,11 @@ def update_session(last_scraped, scrape_key):
     if current_session:
         current_session.update({'last_scraped': last_scraped})
         try:
-            ds().put(current_session.to_entity())
+            retry_grpc_goaway(
+                NUM_GRPC_RETRIES,
+                ds().put,
+                current_session.to_entity()
+            )
         except Exception as e:
             logging.warning("Couldn't persist last scraped name: [%s]\n%s",
                             last_scraped, e)
@@ -230,7 +242,7 @@ def add_docket_item_to_session(docket_ack_id, session):
     session.update({'docket_ack_id': docket_ack_id})
 
     try:
-        ds().put(session.to_entity())
+        retry_grpc_goaway(NUM_GRPC_RETRIES, ds().put, session.to_entity())
     except Exception as e:
         logging.warning("%s", e)
         return False
@@ -249,7 +261,7 @@ def remove_docket_item_from_session(session):
     docket_ack_id = session.docket_ack_id
     session.update({'docket_ack_id': None})
     try:
-        ds().put(session.to_entity())
+        retry_grpc_goaway(NUM_GRPC_RETRIES, ds().put, session.to_entity())
     except Exception as e:
         logging.error("Failed to persist session [%s] after deleting "
                       "docket item [%s]:\n%s", session.key, docket_ack_id, e)
@@ -334,7 +346,11 @@ def get_sessions(region_code, include_open=True, include_closed=True,
     if most_recent_only and include_open:
         limit = 1
 
-    results = session_query.fetch(limit=limit)
+    results = retry_grpc_goaway(
+        NUM_GRPC_RETRIES,
+        session_query.fetch,
+        limit=limit
+    )
 
     # Datastore doesn't allow an inequality filter on `end` because we are
     # sorting on `start`, so we have to do the filter after we get the results.
@@ -365,7 +381,8 @@ def get_sessions_with_leased_docket_items(scrape_key):
     session_query.add_filter('scrape_type', '=', scrape_key.scrape_type.value)
     session_query.add_filter('docket_ack_id', '>', None)
 
-    return _sessions_from_entities(session_query.fetch())
+    return _sessions_from_entities(
+        retry_grpc_goaway(NUM_GRPC_RETRIES, session_query.fetch))
 
 
 def _sessions_from_entities(entity_generator):
@@ -431,7 +448,7 @@ def write_scraped_record(*args, **kwds):
                                    *args, **kwds)
 
     try:
-        ds().put(new_record.to_entity())
+        retry_grpc_goaway(NUM_GRPC_RETRIES, ds().put, new_record.to_entity())
     except Exception as e:
         logging.warning("Couldn't persist ScrapedRecord entry, "
                         "record_id: %s\n%s", new_record['record_id'], e)
@@ -452,4 +469,5 @@ def already_scraped_record(region_code, record_id, start):
     record_query.add_filter('region', '=', region_code)
     record_query.add_filter('record_id', '==', record_id)
     record_query.add_filter('created_on', '>', start)
-    return bool(next(record_query.fetch(), None))
+    return bool(next(retry_grpc_goaway(NUM_GRPC_RETRIES, record_query.fetch),
+                     None))
