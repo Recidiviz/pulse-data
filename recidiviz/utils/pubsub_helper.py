@@ -27,10 +27,12 @@ import time
 from google.api_core import exceptions  # pylint: disable=no-name-in-module
 from google.cloud import pubsub
 
+from recidiviz.common.common_utils import retry_grpc_goaway
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.utils import metadata, environment
 
 ACK_DEADLINE_SECONDS = 300
+NUM_GRPC_RETRIES = 2
 
 _publisher = None
 _subscriber = None
@@ -80,7 +82,11 @@ def create_topic_and_subscription(scrape_key, pubsub_type):
     topic_path = get_topic_path(scrape_key, pubsub_type)
     try:
         logging.info("Creating pubsub topic: '%s'", topic_path)
-        get_publisher().create_topic(topic_path)
+        retry_grpc_goaway(
+            NUM_GRPC_RETRIES,
+            get_publisher().create_topic,
+            topic_path
+        )
     except exceptions.AlreadyExists:
         logging.info("Topic already exists")
 
@@ -90,20 +96,23 @@ def create_topic_and_subscription(scrape_key, pubsub_type):
     subscription_path = get_subscription_path(scrape_key, pubsub_type)
     try:
         logging.info("Creating pubsub subscription: '%s'", subscription_path)
-        get_subscriber().create_subscription(
+        retry_grpc_goaway(
+            NUM_GRPC_RETRIES,
+            get_subscriber().create_subscription,
             subscription_path, topic_path,
-            ack_deadline_seconds=ACK_DEADLINE_SECONDS)
+            ack_deadline_seconds=ACK_DEADLINE_SECONDS
+        )
     except exceptions.AlreadyExists:
         logging.info("Subscription already exists")
 
 
 def retry_with_create(scrape_key, fn, pubsub_type):
     try:
-        result = fn()
+        result = retry_grpc_goaway(NUM_GRPC_RETRIES, fn)
     except exceptions.NotFound:
         create_topic_and_subscription(
             scrape_key, pubsub_type=pubsub_type)
-        result = fn()
+        result = retry_grpc_goaway(NUM_GRPC_RETRIES, fn)
     return result
 
 
