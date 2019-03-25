@@ -24,7 +24,10 @@ from typing import List
 
 from google.cloud import tasks
 
+from recidiviz.common.common_utils import retry_grpc_goaway
 from recidiviz.utils import environment, metadata
+
+NUM_GRPC_RETRIES = 2
 
 _client = None
 def client():
@@ -88,14 +91,16 @@ def purge_scrape_tasks(*, region_code: str, queue_name: str):
     """
     for task in list_scrape_tasks(
             region_code=region_code, queue_name=queue_name):
-        client().delete_task(task.name)
+        retry_grpc_goaway(NUM_GRPC_RETRIES, client().delete_task, task.name)
 
 
 def list_scrape_tasks(*, region_code: str, queue_name: str) \
         -> List[tasks.types.Task]:
     """List scrape tasks for the given region and queue"""
     region_task_prefix = format_scrape_task_path(queue_name, region_code, '')
-    return [task for task in client().list_tasks(format_queue_path(queue_name))
+    return [task for task in retry_grpc_goaway(NUM_GRPC_RETRIES,
+                                               client().list_tasks,
+                                               format_queue_path(queue_name))
             if task.name.startswith(region_task_prefix)]
 
 
@@ -116,7 +121,10 @@ def create_scrape_task(*, region_code, queue_name, url, body):
         }
     )
 
-    client().create_task(format_queue_path(queue_name), task)
+    retry_grpc_goaway(NUM_GRPC_RETRIES,
+                      client().create_task,
+                      format_queue_path(queue_name),
+                      task)
 
 SCRAPER_PHASE_QUEUE = 'scraper-phase'
 
@@ -135,7 +143,12 @@ def enqueue_scraper_phase(*, region_code, url):
             ),
         }
     )
-    client().create_task(format_queue_path(SCRAPER_PHASE_QUEUE), task)
+    retry_grpc_goaway(
+        NUM_GRPC_RETRIES,
+        client().create_task,
+        format_queue_path(SCRAPER_PHASE_QUEUE),
+        task
+    )
 
 
 BIGQUERY_QUEUE = 'bigquery'
@@ -159,4 +172,9 @@ def create_bq_task(table_name: str, url: str):
             'body': json.dumps(body).encode()
         }
     )
-    client().create_task(format_queue_path(BIGQUERY_QUEUE), task)
+    retry_grpc_goaway(
+        NUM_GRPC_RETRIES,
+        client().create_task,
+        format_queue_path(BIGQUERY_QUEUE),
+        task
+    )

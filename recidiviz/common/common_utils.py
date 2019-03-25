@@ -16,13 +16,20 @@
 # =============================================================================
 
 "Utils to be shared across recidiviz project"
+import logging
+import random
 import string
+import time
 import uuid
 from typing import Optional
 
 import flask
+from google.api_core import exceptions  # pylint: disable=no-name-in-module
 
-GENERATED_ID_SUFFIX = '_GENERATE'
+from recidiviz.utils import environment
+
+GENERATED_ID_SUFFIX = "_GENERATE"
+RETRY_SLEEP = 30
 
 
 def create_generated_id() -> str:
@@ -47,6 +54,24 @@ def get_trace_id_from_flask():
     trace_id = header.split("/", 1)[0]
 
     return trace_id
+
+
+def retry_grpc_goaway(num_retries, fn, *args, **kwargs):
+    """Retries a function call some number of times"""
+    time_to_sleep = random.uniform(5, RETRY_SLEEP)
+    for i in range(num_retries + 1):
+        try:
+            return fn(*args, **kwargs)
+        except exceptions.InternalServerError as e:
+            if 'GOAWAY' not in str(e):
+                raise
+            if i == num_retries:
+                raise
+            logging.warning(
+                'GOAWAY received, sleeping %.2f seconds and retrying',
+                time_to_sleep)
+            if environment.in_gae():
+                time.sleep(time_to_sleep)
 
 
 def normalize(s: str, remove_punctuation: bool = False) -> str:
