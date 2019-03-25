@@ -108,7 +108,7 @@ def find_skip_commits(commit_range: str) -> FrozenSet[str]:
 def main(commit_range: str):
     skip_commits = find_skip_commits(commit_range)
     if skip_commits:
-        print('Skipping check due to skip commits ({})'.format(
+        print("Skipping check due to skip commits ({})".format(
             ', '.join(skip_commits)))
         sys.exit(0)
 

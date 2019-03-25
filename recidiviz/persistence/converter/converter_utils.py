@@ -64,7 +64,7 @@ def calculate_birthdate_from_age(age):
         birth_year = datetime.datetime.now().date().year - int(age)
         return datetime.date(year=birth_year, month=1, day=1)
     except Exception:
-        raise ValueError('cannot parse age: %s' % age)
+        raise ValueError("Cannot parse age: %s" % age)
 
 
 def parse_days(time_string: str, from_dt: Optional[datetime.datetime] = None):
@@ -89,7 +89,7 @@ def parse_days(time_string: str, from_dt: Optional[datetime.datetime] = None):
         if past_dt:
             return (current_dt - past_dt).days
 
-    raise ValueError('cannot parse time duration: %s' % time_string)
+    raise ValueError("Cannot parse time duration: %s" % time_string)
 
 
 def parse_bond_amount_type_and_status(
@@ -149,7 +149,7 @@ def parse_dollars(dollar_string):
     try:
         return int(locale.atof(clean_string))
     except Exception:
-        raise ValueError('cannot parse dollar value: %s' % dollar_string)
+        raise ValueError("Cannot parse dollar value: %s" % dollar_string)
 
 
 def parse_bool(bool_string):
@@ -157,7 +157,7 @@ def parse_bool(bool_string):
     try:
         return bool(strtobool(bool_string))
     except Exception:
-        raise ValueError('cannot parse bool value: %s' % bool_string)
+        raise ValueError("Cannot parse bool value: %s" % bool_string)
 
 
 def parse_int(int_string):
@@ -165,7 +165,7 @@ def parse_int(int_string):
     try:
         return int(common_utils.normalize(int_string))
     except Exception:
-        raise ValueError('cannot parse int value: %s' % int_string)
+        raise ValueError("Cannot parse int value: %s" % int_string)
 
 
 def is_none(s: str) -> bool:

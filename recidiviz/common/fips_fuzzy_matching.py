@@ -39,8 +39,8 @@ def best_match(county_name: str, known_county_names: Iterable[str],
 
     if not close_matches:
         raise FipsMergingError(
-            'Failed to fuzzy match "{}" to known county_names in the state: '
-            '{}'.format(county_name, known_county_names))
+            "Failed to fuzzy match '{}' to known county_names in the state: "
+            "{}".format(county_name, known_county_names))
 
     closest_match = close_matches[0]
 

@@ -142,7 +142,7 @@ def _create_scraper_files(subs, vendor: Optional[str]):
     template_dir = os.path.join(os.path.dirname(__file__), 'scraper_template')
     target_dir = os.path.join(regions_dir, subs['region'])
     if os.path.exists(target_dir):
-        raise OSError('directory %s already exists' % target_dir)
+        raise OSError("directory %s already exists" % target_dir)
     os.mkdir(target_dir)
 
     init_template = os.path.join(template_dir, '__init__.txt')
@@ -172,11 +172,11 @@ def _create_test_files(subs, vendor: Optional[str]):
     ingest_dir = os.path.dirname(recidiviz.ingest.scrape.regions.__file__)
     test_dir = os.path.dirname(recidiviz.tests.ingest.scrape.regions.__file__)
     if not os.path.exists(ingest_dir):
-        raise OSError('Couldn\'t find directory '
-                      'recidiviz/tests/ingest/scrape/regions.')
+        raise OSError("Couldn\'t find directory "
+                      "recidiviz/tests/ingest/scrape/regions.")
     target_test_dir = os.path.join(test_dir, subs['region'])
     if os.path.exists(target_test_dir):
-        raise OSError('directory %s already exists' % target_test_dir)
+        raise OSError("directory %s already exists" % target_test_dir)
     os.mkdir(target_test_dir)
 
     template_dir = os.path.join(os.path.dirname(__file__), 'scraper_template')
@@ -198,7 +198,7 @@ def _populate_file(template_path, target_path, substitutions):
 def _get_state(state_arg) -> us.states:
     state = us.states.lookup(state_arg)
     if state is None:
-        raise ValueError('Couldn\'t parse state "%s"' % state_arg)
+        raise ValueError("Couldn't parse state '%s'" % state_arg)
 
     return state
 

@@ -38,8 +38,8 @@ def _create_new_migration_and_return_filename(migration_name):
         config_path=_PATH_TO_CONFIG_FILE, migration_name=migration_name)
     exit_code = os.system(command)
     if exit_code != 0:
-        raise RuntimeError('Call to generate alembic revision failed, any '
-                           'error messages printed in preceding output')
+        raise RuntimeError("Call to generate alembic revision failed, any "
+                           "error messages printed in preceding output")
 
     new_filenames = _get_all_filenames_in_versions_directory()
 
@@ -104,7 +104,7 @@ def main():
     with open(migration_filepath, 'w') as migration_file:
         migration_file.write(file_content)
 
-    print('Successfully generated migration {}'.format(migration_filename))
+    print("Successfully generated migration {}".format(migration_filename))
 
 
 if __name__ == '__main__':

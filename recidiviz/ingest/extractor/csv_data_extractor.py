@@ -63,7 +63,7 @@ class CsvDataExtractor(DataExtractor):
     def _extract(self, content, ingest_info):
         """Converts entries in |content| and adds data to |ingest_info|."""
         if not isinstance(content, str):
-            logging.error('%r is not a string', content)
+            logging.error("%r is not a string", content)
             return
 
         rows = csv.DictReader(content.splitlines())
@@ -72,7 +72,7 @@ class CsvDataExtractor(DataExtractor):
             ingest_info.create_person()
             for k, v in row.items():
                 if k not in self.all_keys:
-                    raise ValueError('Unmapped key: %s' % k)
+                    raise ValueError("Unmapped key: %s" % k)
 
                 if not v:
                     continue

@@ -69,5 +69,5 @@ def main():
             file.truncate()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
