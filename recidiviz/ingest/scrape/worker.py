@@ -39,6 +39,7 @@ task_view = view.View("recidiviz/ingest/scrape/task_count",
                       "The sum of scrape tasks that occurred",
                       [monitoring.TagKey.REGION, monitoring.TagKey.STATUS],
                       m_tasks, aggregation.SumAggregation())
+monitoring.register_views([task_view])
 
 class RequestProcessingError(Exception):
     """Exception containing the request that failed to process"""
