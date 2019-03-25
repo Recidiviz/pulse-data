@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for data converter."""
-
+import itertools
 import unittest
 import datetime
 
@@ -419,6 +419,14 @@ class TestConverter(unittest.TestCase):
         )]
 
         self.assertEqual(result, expected_result)
+
+        # Assert that the expanded charges, while containing duplicate
+        # information, are actually different objects.
+        result_expanded_charges = result[0].bookings[0].charges
+        charges_grouped_by_id = list(
+            itertools.groupby(result_expanded_charges, key=id))
+        self.assertEqual(len(result_expanded_charges),
+                         len(charges_grouped_by_id))
 
     def testConvert_CannotConvertField_RaisesValueError(self):
         # Arrange

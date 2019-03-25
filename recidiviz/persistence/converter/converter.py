@@ -138,7 +138,8 @@ class Converter:
             new_charge = self._convert_charge(ingest_charge)
             number_of_counts = parse_int(ingest_charge.number_of_counts) if \
                 ingest_charge.HasField('number_of_counts') else 1
-            charges.extend(number_of_counts * [new_charge])
+            charges.extend(
+                copy.deepcopy(new_charge) for _ in range(number_of_counts))
 
         return charges
 
