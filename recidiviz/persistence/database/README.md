@@ -110,6 +110,12 @@ sa.Column(
     postgresql.ENUM('VALUE_A', 'VALUE_B', create_type=False, name='enum_name'))
 ```
 
+##### New table already present in database
+
+When `Base.metadata.create_all` is called in `server.py` when a new job starts, `CREATE` statements will be executed for any tables found in `schema.py` that are not present in the database. This can create problems, because the newly created tables will be owned by the role used by the job to make writes, rather than the owner role.
+
+The best way to avoid this problem is to follow the procedure outlined above and not deploy against staging or prod with a change in `schema.py` without first running the corresponding migration. However, if it does happen, follow the instructions in "Manual intervention" below (although you may possibly need to log in as a different role, depending on which role was used to create the table) and manually drop any unintentionally created tables, then follow the rest of the migration procedure to re-create them normally.
+
 ##### Alembic version issues
 
 Alembic automatically manages a table called `alembic_version`. This table contains a single row containing the hash ID of the most recent migration run against the database. When you attempt to autogenerate or run a migration, if alembic does not see a migration file corresponding to this hash in the `versions` folder, the attempted action will fail.
@@ -144,7 +150,11 @@ This process can be used to get `dev-data` back into sync with `prod-data` and t
 
 ## Restoring backups
 
-Cloud SQL automatically saves backups of all database instances.
+There are two types of database backup.
+
+**Automatic backups** are created by Cloud SQL. A new automatic backup is created daily, with a TTL of 7 days, so one automatic backup is available for each day for the last 7 days. These backups are available for both `dev-data` and `prod-data`.
+
+**Long-term backups** are created by a cron task in `cron.yaml` calling an endpoint in `backup_manager`. A new long-term backup is created weekly, with a TTL of 26 weeks, so one automatic backup is available for each week of the last 26 weeks. (Note Cloud SQL does not allow setting an actual TTL on a backup, so this "TTL" is manually enforced by the same cron task that creates new long-term backups.) These backups are only available for `prod-data`.
 
 ### Full restore
 
