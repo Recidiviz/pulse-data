@@ -21,7 +21,19 @@ import re
 from enum import Enum, EnumMeta
 from typing import Dict, Optional
 
+from opencensus.stats import aggregation, measure, view
+
 from recidiviz.common.common_utils import normalize
+from recidiviz.utils import monitoring
+
+m_enum_errors = measure.MeasureInt("converter/enum_error_count",
+                                   "The number of enum errors", "1")
+enum_errors_view = view.View("recidiviz/converter/enum_error_count",
+                             "The sum of enum errors",
+                             [monitoring.TagKey.REGION,
+                              monitoring.TagKey.ENTITY_TYPE],
+                             m_enum_errors, aggregation.SumAggregation())
+monitoring.register_views([enum_errors_view])
 
 
 class EnumParsingError(Exception):
@@ -88,6 +100,9 @@ class EntityEnum(Enum, metaclass=EntityEnumMeta):
         try:
             return complete_map[label]
         except KeyError:
+            with monitoring.measurements(
+                    {monitoring.TagKey.ENTITY_TYPE: cls.__name__}) as m:
+                m.measure_int_put(m_enum_errors, 1)
             raise EnumParsingError(cls, label)
 
     @staticmethod

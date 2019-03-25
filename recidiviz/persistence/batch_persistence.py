@@ -27,6 +27,7 @@ import cattr
 from flask import Blueprint, request, url_for
 from google.cloud import pubsub
 
+from opencensus.stats import aggregation, measure, view
 from recidiviz.common import queues
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info import IngestInfo, Person
@@ -43,6 +44,15 @@ BATCH_READ_SIZE = 500
 NUM_PULL_THREADS = 5
 FAILED_TASK_THRESHOLD = 0.1
 batch_blueprint = Blueprint('batch', __name__)
+
+m_batch_count = measure.MeasureInt("persistence/batch_persistence/batch_count",
+                                   "The count of batch persistence calls", "1")
+
+count_view = view.View("recidiviz/persistence/batch_persistence/batch_count",
+                       "The sum of batch persistence calls that occurred",
+                       [monitoring.TagKey.REGION, monitoring.TagKey.STATUS],
+                       m_batch_count, aggregation.SumAggregation())
+monitoring.register_views([count_view])
 
 
 class BatchPersistError(Exception):
@@ -95,6 +105,10 @@ def _publish_batch_message(
         response.result()
 
     pubsub_helper.retry_with_create(scrape_key, publish, BATCH_PUBSUB_TYPE)
+
+
+class FetchBatchMessagesError(Exception):
+    """Raised when there was an error with batch persistence."""
 
 
 def _get_batch_messages(scrape_key) -> List[pubsub.types.ReceivedMessage]:
@@ -156,7 +170,7 @@ def _get_batch_messages(scrape_key) -> List[pubsub.types.ReceivedMessage]:
             message = 'Failed to pull:\n\t{}'.format(
                 '\n\t'.join(filter(None, errors)))
             if all(errors):
-                raise Exception(message)
+                raise FetchBatchMessagesError(message)
             logging.error(message)
         pulled_messages = list(itertools.chain.from_iterable(results))
         if not pulled_messages:
@@ -316,7 +330,13 @@ def read_and_persist():
     them to the database.
     """
     region = request.args.get('region')
-    with monitoring.push_tags({monitoring.TagKey.REGION: region}):
+    batch_tags = {monitoring.TagKey.STATUS: 'COMPLETED',
+                  monitoring.TagKey.PERSISTED: False}
+    # Note: measurements must be second so it receives the region tag.
+    with monitoring.push_tags({monitoring.TagKey.REGION: region}), \
+            monitoring.measurements(batch_tags) as measurements:
+        measurements.measure_int_put(m_batch_count, 1)
+
         session = sessions.get_most_recent_completed_session(
             region, ScrapeType.BACKGROUND)
         scrape_type = session.scrape_type
@@ -325,7 +345,9 @@ def read_and_persist():
         try:
             did_persist = persist_to_database(
                 region, scrape_type, scraper_start_time)
-        except:
+            batch_tags[monitoring.TagKey.PERSISTED] = did_persist
+        except Exception as e:
+            batch_tags[monitoring.TagKey.STATUS] = 'ERROR: {}'.format(type(e))
             raise BatchPersistError(region, scrape_type)
 
         if did_persist:
