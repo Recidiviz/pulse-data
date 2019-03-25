@@ -79,7 +79,7 @@ class StructuredLogFormatter(logging.Formatter):
 
         if record.traceId is not None:
             # pylint: disable=protected-access
-            labels[handlers.app_enginge._TRACE_ID_LABEL] = record.traceId
+            labels[handlers.app_engine._TRACE_ID_LABEL] = record.traceId
 
         return {
             'text': text,
