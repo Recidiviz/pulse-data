@@ -29,13 +29,14 @@ from recidiviz.calculator.bq.views import view_config
 
 from recidiviz.calculator.bq.views import view_queries
 from recidiviz.calculator.bq.views.bonds import bond_views
+from recidiviz.calculator.bq.views.charges import charge_views
 from recidiviz.calculator.bq.views.state_aggregates import state_aggregate_views
 
 
 VIEWS_TO_UPDATE: List[bqview.BigQueryView] = [
     view_queries.PERSON_COUNT_VIEW,
     state_aggregate_views.STATE_AGGREGATE_VIEW
-] + bond_views.BOND_VIEWS
+] + bond_views.BOND_VIEWS + charge_views.CHARGE_VIEWS
 
 
 def create_dataset_and_update_views(
