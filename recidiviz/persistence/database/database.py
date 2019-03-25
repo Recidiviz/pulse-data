@@ -18,7 +18,7 @@
 
 from collections import defaultdict
 import logging
-from typing import List, Dict
+from typing import Dict, List, Set
 from more_itertools import one
 
 import pandas as pd
@@ -35,7 +35,7 @@ from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence import entities
 from recidiviz.persistence.database import database_utils
 from recidiviz.persistence.database.schema import DatabaseEntity, Person, \
-    Booking
+    Booking, Charge
 
 
 _DUMMY_BOOKING_ID = -1
@@ -215,6 +215,10 @@ def _save_record_trees(session: Session,
 
     _set_dummy_booking_ids(root_people)
 
+    _log_untracked_entities(session, root_people, orphaned_entities)
+    _log_charges_with_missing_booking_ids(
+        session, root_people, orphaned_entities)
+
     # Merge is recursive for all related entities, so this persists all master
     # entities in all record trees
     #
@@ -231,6 +235,128 @@ def _save_record_trees(session: Session,
         session, root_people, orphaned_entities, metadata.ingest_time)
 
     return root_people
+
+
+# TODO(1464): remove after bug is found and fixed
+def _log_charges_with_missing_booking_ids(
+        session: Session,
+        root_people: List[Person],
+        orphaned_entities: List[DatabaseEntity]) -> None:
+    """Checks charges with missing booking IDs and attempts to handle them
+    according to the nature of the issue
+    """
+
+    for entity in orphaned_entities:
+        if isinstance(entity, Charge):
+            # Only bonds and sentences should ever be orphaned, so if this is
+            # happening we have a bigger problem than expected.
+            raise RuntimeError('[missing booking IDs] Orphaned charge with '
+                               'ID {}'.format(entity.get_primary_key()))
+
+    # pylint: disable=too-many-nested-blocks
+    for person in root_people:
+        for booking in person.bookings:
+            for charge in booking.charges:
+                if not charge.booking_id:
+                    # Two possibilities, either the booking ID doesn't exist at
+                    # all, or it exists but isn't set yet. Note that these are
+                    # both valid states to be in, so it's unclear why this has
+                    # been causing problems. So here we will both log the
+                    # issue and also attempt a manual workaround.
+                    if booking.booking_id:
+                        logging.error('[missing booking IDs] Booking ID not '
+                                      'set for charge with booking ID %s and '
+                                      'charge ID %s, will set manually',
+                                      str(booking.booking_id),
+                                      str(charge.charge_id))
+                        charge.booking_id = booking.booking_id
+                    else:
+                        # Attempt to add from the highest new parent
+                        if not person.person_id:
+                            logging.error('[missing booking IDs] Booking ID '
+                                          'not set on charge for new record '
+                                          'tree. Will attempt to fix by '
+                                          'adding record tree')
+                            session.add(person)
+                        else:
+                            logging.error('[missing booking IDs] Booking ID '
+                                          'not set on charge for new booking '
+                                          'on existing record tree with person '
+                                          'ID %s. Will attempt to fix by '
+                                          'adding booking',
+                                          str(person.person_id))
+                            session.add(booking)
+
+
+# TODO(1464): remove after bug is found and fixed
+#
+# NOTE: this method expects the set of entities reachable from
+# root_people/orphaned_entities to cover the complete session. Therefore this
+# will give a false positive for multiple consecutive calls to write from
+# within a single session. This should be okay to run temporarily, as we
+# don't have that pattern anywhere in real code, just in tests.
+def _log_untracked_entities(
+        session: Session,
+        root_people: List[Person],
+        orphaned_entities: List[DatabaseEntity]) -> None:
+    """Checks if there are any entities on the |session| not reachable from
+    |root_people| or |orphaned_entities|
+    """
+
+    # For existing entities, track their IDs
+    ids_by_type: Dict[str, Set[int]] = defaultdict(set)
+
+    # For new entities, since they have no IDs yet, track by total count
+    new_count_by_type: Dict[str, int] = defaultdict(lambda: 0)
+
+    def track_entity(entity):
+        if entity.get_primary_key():
+            ids_by_type[type(entity).__name__].add(entity.get_primary_key())
+        else:
+            new_count_by_type[type(entity).__name__] += 1
+
+    for person in root_people:
+        track_entity(person)
+        for booking in person.bookings:
+            track_entity(booking)
+            if booking.arrest:
+                track_entity(booking.arrest)
+            for hold in booking.holds:
+                track_entity(hold)
+            for charge in booking.charges:
+                track_entity(charge)
+                if charge.bond:
+                    track_entity(charge.bond)
+                if charge.sentence:
+                    track_entity(charge.sentence)
+    for entity in orphaned_entities:
+        track_entity(entity)
+
+    error_messages: List[str] = []
+
+    session_new_count_by_type: Dict[str, int] = defaultdict(lambda: 0)
+    for entity in session.new:
+        session_new_count_by_type[type(entity).__name__] += 1
+    for type_name, count in session_new_count_by_type.items():
+        tracked_count = new_count_by_type[type_name]
+        if tracked_count != count:
+            error_messages.append(
+                'Mismatch in number of new entities of type {}. {} entities '
+                'present on session, but {} entities tracked in record trees '
+                'or orphaned entities list'.format(
+                    type_name, count, tracked_count))
+
+    for entity in session.dirty:
+        if entity.get_primary_key() not in ids_by_type[type(entity).__name__]:
+            error_messages.append(
+                'Entity of type {} with ID {} present on session but not '
+                'reachable from record trees or orphaned entities list'.format(
+                    type(entity).__name__, entity.get_primary_key()))
+
+    if error_messages:
+        logging.error('[missing booking IDs] Errors with untracked '
+                      'entities:\n%s',
+                      '\n'.join(error_messages))
 
 
 def _set_dummy_booking_ids(root_people: List[Person]) -> None:
