@@ -27,19 +27,19 @@ from recidiviz.calculator.bq import bq_utils
 from recidiviz.calculator.bq.views import bqview
 from recidiviz.calculator.bq.views import view_config
 
-from recidiviz.calculator.bq.views import view_queries
 from recidiviz.calculator.bq.views.bonds import bond_views
 from recidiviz.calculator.bq.views.charges import charge_views
 from recidiviz.calculator.bq.views.combined_aggregates import \
     combined_aggregate_views
 from recidiviz.calculator.bq.views.population import population_views
 from recidiviz.calculator.bq.views.state_aggregates import state_aggregate_views
+from recidiviz.calculator.bq.views.vera import vera_views
 
 
-VIEWS_TO_UPDATE: List[bqview.BigQueryView] = [
-    view_queries.PERSON_COUNT_VIEW,
-    state_aggregate_views.STATE_AGGREGATE_VIEW,
-] + bond_views.BOND_VIEWS + \
+VIEWS_TO_UPDATE: List[bqview.BigQueryView] = \
+    [state_aggregate_views.STATE_AGGREGATE_VIEW] + \
+    vera_views.VERA_VIEWS + \
+    bond_views.BOND_VIEWS + \
     charge_views.CHARGE_VIEWS + \
     population_views.POPULATION_VIEWS + \
     combined_aggregate_views.COMBINED_AGGREGATE_VIEWS
