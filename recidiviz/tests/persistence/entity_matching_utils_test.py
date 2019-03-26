@@ -233,15 +233,15 @@ class TestEntityMatchingUtils(TestCase):
 
     def test_bond_match(self):
         db_bond = entities.Bond.new_with_defaults(
-            bond_id=_BOND_ID, bond_type=BondType.CASH, status=BondStatus.SET,
+            bond_id=_BOND_ID, bond_type_raw_text='CASH', status=BondStatus.SET,
             booking_id=_BOOKING_ID)
         ingested_bond = entities.Bond.new_with_defaults(
-            bond_type=BondType.CASH,
+            bond_type_raw_text='CASH',
             status=BondStatus.POSTED
         )
         self.assertTrue(entity_matching_utils.is_bond_match(
             db_entity=db_bond, ingested_entity=ingested_bond))
-        ingested_bond.bond_type = BondType.SECURED
+        ingested_bond.bond_type_raw_text = 'SECURED'
         self.assertFalse(entity_matching_utils.is_bond_match(
             db_entity=db_bond, ingested_entity=ingested_bond))
 
