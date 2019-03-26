@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Exposes an endpoint to scrape all of the county websites."""
+"""Utils for persistence.py."""
 import datetime
 
 from recidiviz.common.constants.booking import CustodyStatus
@@ -37,16 +37,13 @@ def remove_pii_for_person(person: entities.Person) -> None:
         )
 
 
-def has_active_booking(person: entities.Person) -> bool:
-    """Determines if a person has an active booking"""
-    for booking in person.bookings:
-        if is_booking_active(booking):
-            return True
-    return False
-
-
 def is_booking_active(booking: entities.Booking) -> bool:
     """Determines whether or not a booking is active"""
     if booking.custody_status in CustodyStatus.get_released_statuses():
         return False
     return True
+
+
+def has_active_booking(person: entities.Person) -> bool:
+    """Determines if a person has an active booking"""
+    return any(is_booking_active(booking) for booking in person.bookings)

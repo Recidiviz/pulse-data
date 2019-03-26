@@ -19,7 +19,7 @@ import datetime
 import logging
 import os
 from distutils.util import strtobool  # pylint: disable=no-name-in-module
-from typing import List, Tuple
+from typing import List
 
 from opencensus.stats import aggregation, measure, view
 
@@ -34,7 +34,7 @@ from recidiviz.common.constants.sentence import SentenceStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.scrape.constants import MAX_PEOPLE_TO_LOG
 from recidiviz.persistence import entity_matching, entities, \
-    persistence_utils, validator
+    persistence_utils, validator, entity_validator
 from recidiviz.persistence.converter import converter
 from recidiviz.persistence.database import database
 from recidiviz.utils import environment, monitoring
@@ -198,24 +198,6 @@ def _should_abort(
     return False
 
 
-# Note: If we ever want to validate more than the existence of multiple open
-# bookings, we should make validation an entirely separate module/step.
-def validate_one_open_booking(people: List[entities.Person]) -> \
-        Tuple[List[entities.Person], int]:
-    data_validation_errors = 0
-    validated_people = []
-    for person in people:
-        open_bookings = [booking for booking in person.bookings if
-                         persistence_utils.is_booking_active(booking)]
-        if len(open_bookings) > 1:
-            logging.error(
-                "Multiple open bookings found for person: %s", person.person_id)
-            data_validation_errors += 1
-        else:
-            validated_people.append(person)
-    return validated_people, data_validation_errors
-
-
 def write(ingest_info, metadata):
     """
     If in prod or if 'PERSIST_LOCALLY' is set to true, persist each person in
@@ -234,7 +216,7 @@ def write(ingest_info, metadata):
         # Convert the people one at a time and count the errors as they happen.
         people, enum_parsing_errors, protected_class_errors = \
             _convert_and_count_errors(ingest_info, metadata)
-        people, data_validation_errors = validate_one_open_booking(people)
+        people, data_validation_errors = entity_validator.validate(people)
         logging.info("Converted %s people with %s enum_parsing_errors, %s"
                      " protected_class_errors and %s data_validation_errors, "
                      "(logging max %d people):",

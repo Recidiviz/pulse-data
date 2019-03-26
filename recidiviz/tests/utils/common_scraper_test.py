@@ -22,12 +22,12 @@ import yaml
 
 from recidiviz.common.constants.person import ETHNICITY_MAP, Ethnicity, Race
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.ingest.scrape import constants, ingest_utils
 from recidiviz.ingest.models import ingest_info
 from recidiviz.ingest.models.ingest_info_diff import diff_ingest_infos
+from recidiviz.ingest.scrape import constants, ingest_utils
 from recidiviz.ingest.scrape.task_params import Task
+from recidiviz.persistence import entity_validator
 from recidiviz.persistence.converter import converter
-from recidiviz.persistence.persistence import validate_one_open_booking
 from recidiviz.persistence.validator import validate
 
 _FAKE_SCRAPER_START_TIME = datetime(year=2019, month=1, day=2)
@@ -162,7 +162,7 @@ class CommonScraperTest:
             _FAKE_SCRAPER_START_TIME,
             self.scraper.get_enum_overrides())
         converted_people = converter.convert(result_proto, metadata)
-        validate_one_open_booking(converted_people)
+        entity_validator.validate(converted_people)
 
         differences = diff_ingest_infos(expected_ingest_info,
                                         result.ingest_info)
