@@ -29,10 +29,9 @@ from recidiviz.calculator.bq.views import view_config
 
 from recidiviz.calculator.bq.views.bonds import bond_views
 from recidiviz.calculator.bq.views.charges import charge_views
-from recidiviz.calculator.bq.views.combined_aggregates import \
-    combined_aggregate_views
 from recidiviz.calculator.bq.views.population import population_views
 from recidiviz.calculator.bq.views.state_aggregates import state_aggregate_views
+from recidiviz.calculator.bq.views.stitch import stitch_views
 from recidiviz.calculator.bq.views.vera import vera_views
 
 
@@ -42,7 +41,7 @@ VIEWS_TO_UPDATE: List[bqview.BigQueryView] = \
     bond_views.BOND_VIEWS + \
     charge_views.CHARGE_VIEWS + \
     population_views.POPULATION_VIEWS + \
-    combined_aggregate_views.COMBINED_AGGREGATE_VIEWS
+    stitch_views.STITCH_VIEWS
 
 
 def create_dataset_and_update_views(
