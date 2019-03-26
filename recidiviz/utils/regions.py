@@ -25,11 +25,13 @@ import os
 import pkgutil
 from datetime import datetime, tzinfo
 from enum import Enum
-from typing import Any, Dict, Optional, Set
+from typing import Any, Dict, Optional, Set, Union
 
 import attr
 import pytz
 import yaml
+
+from recidiviz.utils import environment
 
 
 class RemovedFromWebsite(Enum):
@@ -68,7 +70,7 @@ class Region:
     jurisdiction_id: str = attr.ib()
     agency_name: str = attr.ib()
     agency_type: str = attr.ib()
-    environment: str = attr.ib()
+    environment: Union[str, bool] = attr.ib()
     base_url: str = attr.ib()
     timezone: tzinfo = attr.ib(converter=pytz.timezone)
     shared_queue: Optional[str] = attr.ib(default=None)
@@ -83,6 +85,8 @@ class Region:
         if self.queue and self.shared_queue:
             raise ValueError(
                 'Only one of `queue` and `shared_queue` can be set.')
+        if self.environment not in {*environment.GAE_ENVIRONMENTS, False}:
+            raise ValueError('Invalid environment: {}'.format(self.environment))
 
     def get_scraper(self):
         """Retrieve a scraper object for a particular region

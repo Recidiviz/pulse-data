@@ -93,6 +93,24 @@ class TestIngestUtils:
         }
 
     @patch('pkgutil.iter_modules',
+           return_value=fake_modules('us_a', 'us_b', 'us_c', 'us_d'))
+    @patch("recidiviz.utils.environment.get_gae_environment")
+    @patch("recidiviz.utils.regions.get_region")
+    def test_validate_regions_environments(
+            self, mock_region, mock_env, _mock_modules):
+        region_prod, region_staging, region_none = Mock(), Mock(), Mock()
+        region_prod.environment = 'production'
+        region_staging.environment = 'staging'
+        region_none.environment = False
+
+        mock_region.side_effect = [
+            region_prod, region_none, region_prod, region_staging
+        ]
+        mock_env.return_value = 'production'
+
+        assert len(ingest_utils.validate_regions(['all'])) == 2
+
+    @patch('pkgutil.iter_modules',
            return_value=fake_modules('us_ny', 'us_pa', 'us_vt', 'us_pa_greene'))
     def test_validate_regions_multiple_all_invalid(self, _mock_modules):
         assert not ingest_utils.validate_regions(['all', 'invalid'])
