@@ -41,7 +41,8 @@ from recidiviz.tests.ingest.fixtures import as_filepath
 # Float between [0, 1] which sets the required fuzzy matching certainty
 _FUZZY_MATCH_CUTOFF = 0.75
 
-_JID = pd.read_csv(as_filepath('jid.csv', subdir='data_sets'))
+_JID = pd.read_csv(as_filepath('jid.csv', subdir='data_sets'),
+                   dtype={'fips': str})
 
 
 def get(county_name: str, state: us.states) -> str:
