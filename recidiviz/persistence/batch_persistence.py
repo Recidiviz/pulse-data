@@ -50,7 +50,8 @@ m_batch_count = measure.MeasureInt("persistence/batch_persistence/batch_count",
 
 count_view = view.View("recidiviz/persistence/batch_persistence/batch_count",
                        "The sum of batch persistence calls that occurred",
-                       [monitoring.TagKey.REGION, monitoring.TagKey.STATUS],
+                       [monitoring.TagKey.REGION, monitoring.TagKey.STATUS,
+                        monitoring.TagKey.PERSISTED],
                        m_batch_count, aggregation.SumAggregation())
 monitoring.register_views([count_view])
 
@@ -346,7 +347,8 @@ def read_and_persist():
                 region, scrape_type, scraper_start_time)
             batch_tags[monitoring.TagKey.PERSISTED] = did_persist
         except Exception as e:
-            batch_tags[monitoring.TagKey.STATUS] = 'ERROR: {}'.format(type(e))
+            batch_tags[monitoring.TagKey.STATUS] = 'ERROR: {}' \
+                .format(type(e).__name__)
             raise BatchPersistError(region, scrape_type)
 
         if did_persist:
