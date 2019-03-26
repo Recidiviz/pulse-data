@@ -77,7 +77,7 @@ message Booking {
 message Arrest {
     optional string arrest_id = 1;
     optional string arrest_date = 2;
-    optional string location= 3;
+    optional string location = 3;
     optional string officer_name = 4;
     optional string officer_id = 5;
     optional string agency = 6;
