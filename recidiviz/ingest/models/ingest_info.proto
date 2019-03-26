@@ -58,20 +58,20 @@ message Person {
 }
 
 message Booking {
-	optional string booking_id = 1;
-	optional string admission_date = 2;
+    optional string booking_id = 1;
+    optional string admission_date = 2;
     optional string admission_reason = 13;
-	optional string projected_release_date = 3;
-	optional string release_date = 4;
-	optional string release_reason = 5;
-	optional string custody_status = 6;
-	optional string facility = 7;
-	optional string classification = 8;
-	optional string total_bond_amount = 9;
+    optional string projected_release_date = 3;
+    optional string release_date = 4;
+    optional string release_reason = 5;
+    optional string custody_status = 6;
+    optional string facility = 7;
+    optional string classification = 8;
+    optional string total_bond_amount = 9;
 
-	optional string arrest_id = 10;
-	repeated string charge_ids = 11;
-	repeated string hold_ids = 12;
+    optional string arrest_id = 10;
+    repeated string charge_ids = 11;
+    repeated string hold_ids = 12;
 }
 
 message Arrest {
