@@ -234,12 +234,25 @@ class _PersonSharedColumns:
     residency_status = Column(residency_status)
     resident_of_region = Column(Boolean)
     region = Column(String(255), nullable=False, index=True)
-    jurisdiction_id = Column(String(255), nullable=False)
+    jurisdiction_id = Column(String(8), nullable=False)
+
+    @validates('jurisdiction_id')
+    def validate_jurisdiction_id(self, _, jurisdiction_id: str) -> str:
+        if len(jurisdiction_id) != 8:
+            raise ValueError(
+                'Jurisdiction ID invalid length: {} characters, should be '
+                '8'.format(len(jurisdiction_id)))
+        return jurisdiction_id
 
 
 class Person(Base, DatabaseEntity, _PersonSharedColumns):
     """Represents a person in the SQL schema"""
     __tablename__ = 'person'
+    __table_args__ = (
+        CheckConstraint(
+            'LENGTH(jurisdiction_id) = 8',
+            name='person_jurisdiction_id_length_check'),
+    )
 
     person_id = Column(Integer, primary_key=True)
     full_name = Column(String(255), index=True)
@@ -252,6 +265,11 @@ class Person(Base, DatabaseEntity, _PersonSharedColumns):
 class PersonHistory(Base, DatabaseEntity, _PersonSharedColumns):
     """Represents the historical state of a person"""
     __tablename__ = 'person_history'
+    __table_args__ = (
+        CheckConstraint(
+            'LENGTH(jurisdiction_id) = 8',
+            name='person_history_jurisdiction_id_length_check'),
+    )
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
