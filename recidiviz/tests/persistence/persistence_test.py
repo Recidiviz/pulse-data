@@ -69,10 +69,10 @@ SENTENCE_STATUS = 'SERVING'
 FULL_NAME_1 = 'TEST_FULL_NAME_1'
 FULL_NAME_2 = 'TEST_FULL_NAME_2'
 FULL_NAME_3 = 'TEST_FULL_NAME_3'
-JURISDICTION_ID = 'JURISDICTION_ID'
+JURISDICTION_ID = '12345678'
 DEFAULT_METADATA = IngestMetadata.new_with_defaults(
     region='region_code',
-    jurisdiction_id='jid',
+    jurisdiction_id='12345678',
     ingest_time=datetime(year=1000, month=1, day=1))
 ID = 1
 ID_2 = 2

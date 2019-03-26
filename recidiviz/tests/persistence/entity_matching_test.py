@@ -59,7 +59,7 @@ _DATE_3 = datetime(2020, 12, 13)
 _NAME = 'name_1'
 _NAME_2 = 'name_2'
 _NAME_3 = 'name_3'
-_JURISDICTION_ID = 'jurisdiction_id'
+_JURISDICTION_ID = '12345678'
 
 
 class TestEntityMatching(TestCase):
