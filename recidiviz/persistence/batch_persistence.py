@@ -26,8 +26,8 @@ import attr
 import cattr
 from flask import Blueprint, request, url_for
 from google.cloud import pubsub
-
 from opencensus.stats import aggregation, measure, view
+
 from recidiviz.common import queues
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info import IngestInfo, Person
@@ -36,7 +36,7 @@ from recidiviz.ingest.scrape import ingest_utils, scrape_phase, sessions
 from recidiviz.ingest.scrape.constants import BATCH_PUBSUB_TYPE, ScrapeType
 from recidiviz.ingest.scrape.task_params import Task
 from recidiviz.persistence import persistence
-from recidiviz.utils import monitoring, pubsub_helper, regions,\
+from recidiviz.utils import monitoring, pubsub_helper, regions, \
     structured_logging
 from recidiviz.utils.auth import authenticate_request
 
