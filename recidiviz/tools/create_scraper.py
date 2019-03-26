@@ -211,7 +211,7 @@ def _gen_region_name(county_name: str, state: us.states, *,
 
 def _get_jurisdiction_id(county_name: str, state: us.states) -> str:
     try:
-        return jid.get(county_name, state)
+        return "'{}'".format(jid.get(county_name, state))
     except FipsMergingError:
         # If no 1:1 mapping, leave jurisdiction_id blank to be caught by tests
         return ''
