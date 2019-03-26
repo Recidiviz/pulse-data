@@ -45,7 +45,7 @@ def convert(proto, metadata: IngestMetadata) -> entities.Bond:
 
     # parsed values
     new.external_id = fn(parse_external_id, 'bond_id', proto)
-    new.bond_agent = fn(normalize, 'bond_agent', proto)
+    new.bond_agent = fn(converter_utils.truncate, 'bond_agent', proto)
     new.amount_dollars, new.bond_type, new.status = \
         converter_utils.parse_bond_amount_type_and_status(
             fn(normalize, 'amount', proto),
