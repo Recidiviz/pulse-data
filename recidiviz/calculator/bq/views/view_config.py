@@ -17,3 +17,5 @@
 """View configuration."""
 
 VIEWS_DATASET: str = 'census_views'
+VERA_DATASET: str = 'vera_data'
+INCARCERATION_TRENDS_TABLE: str = 'incarceration_trends'
