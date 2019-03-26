@@ -16,6 +16,16 @@ The valid period columns reflect the state of the entity in the **real world** (
 
 As part of the temporal table design, no rows are ever deleted from the master tables. Any event corresponding to a delete is instead indicated by updating a status value. This makes it easier to keep track of all entities that might ever have been related to a given entity at any point in its history, even if some of those entities are no longer valid at some later date.
 
+#### Determining valid periods
+
+As a complication to the above, the vast majority of ingested data does not provide sufficient detail for us to ascertain the real-world time that the state of any given entity changed. Because of this, for all updates to existing entities, we use the time the update was ingested and treat it as the time the update occurred. It is only when ingesting new entities that we use whatever provided times are available to determine the valid period of the data.
+
+The most important time considered when ingesting new entities is the booking admission date. When a new booking is ingested, if its provided admission date is earlier than the ingestion date, the booking, as well as all of its children that do not provide more granular dates, are treated as valid from the provided admission date. Additionally, if the booking is the first booking for the given person, that person will also have their valid period dated from the provided admission date.
+
+Note this only applies to new bookings. A new bond, for example, added to an existing booking will have its valid period dated from ingestion time, not the booking's admission date.
+
+To see which descendants of booking provide more granular dates for setting their valid periods, see the `BOOKING_DESCENDANT_START_DATE_FIELD` and `BOOKING_DESCENDANT_END_DATE_FIELD` maps in `update_historical_snapshots.py`.
+
 ## Querying
 
 Do not query `prod-data` directly. `prod-data` should only be queried to validate migrations, as detailed below. All other queries should be run against the BigQuery export of `prod-data`.
