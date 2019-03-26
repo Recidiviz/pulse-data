@@ -48,7 +48,7 @@ from recidiviz.tests.utils import fakes
 
 _REGION = 'region'
 _REGION_ANOTHER = 'wrong region'
-_JURISDICTION_ID = 'jid'
+_JURISDICTION_ID = '12345678'
 _FULL_NAME = 'full_name'
 _EXTERNAL_ID = 'external_id'
 _BIRTHDATE = datetime.date(year=2012, month=1, day=2)
