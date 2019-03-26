@@ -22,9 +22,12 @@ from recidiviz.calculator.bq.views.bonds.bond_amounts_by_booking import \
     BOND_AMOUNTS_BY_BOOKING_VIEW
 from recidiviz.calculator.bq.views.bonds.bond_amounts_all_bookings import \
     BOND_AMOUNTS_ALL_BOOKINGS_VIEW
+from recidiviz.calculator.bq.views.bonds.bond_amounts_all_bookings_bins import \
+    BOND_AMOUNTS_ALL_BOOKINGS_BINS_VIEW
 
 BOND_VIEWS = [
     BOND_AMOUNTS_UNKNOWN_DENIED_VIEW,
     BOND_AMOUNTS_BY_BOOKING_VIEW,
-    BOND_AMOUNTS_ALL_BOOKINGS_VIEW
+    BOND_AMOUNTS_ALL_BOOKINGS_VIEW,
+    BOND_AMOUNTS_ALL_BOOKINGS_BINS_VIEW
 ]
