@@ -40,9 +40,9 @@ TODO(garciaz): find appropriate documentation from rasmi@ about querying BigQuer
 
 All migrations should be run from the `prod-data-client` VM, which is accessed by `gcloud compute ssh prod-data-client`. Then follow the steps below according to the type of migration.
 
-If it is your **first time logging in to the VM**, run `initial-setup` from your home directory. This will set up the git repository, pip environment, and SSL certificates you will need to run migrations.
+If it is your **first time logging in to the VM**, you will need to set a password when you run ssh. You will then be prompted to re-enter the same password to access the VM. Once you have successfully logged in, run `initial-setup` from your home directory. This will set up the git repository, pip environment, and SSL certificates you will need to run migrations.
 
-NOTE: All commands below assume you are running in your pip environment. To launch it, run `pipenv shell` from the top-level package of the git repository.
+NOTE: All commands below assume you are **running in your pip environment**. To launch it, run `pipenv shell` from the **top-level package of `pulse-data`** (not your home directory).
 
 #### Generating the migration
 
