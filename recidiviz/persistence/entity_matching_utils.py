@@ -16,17 +16,52 @@
 # =============================================================================
 """Contains utils for match database entities with ingested entities."""
 
-import copy
 import datetime
 import logging
-from typing import Callable, Optional
+from typing import Optional, Set
 
 import deepdiff
 
-from recidiviz.common.constants.bond import BondStatus
 from recidiviz.persistence import entities
 from recidiviz.persistence.errors import PersistenceError
 from recidiviz.persistence.persistence_utils import is_booking_active
+
+_CHARGE_MATCH_FIELDS = {
+    'offense_date',
+    'statute',
+    'name',
+    'attempted',
+    'degree_raw_text',
+    'class_raw_text',
+    'level',
+    'fee_dollars',
+    'charging_entity',
+    'court_type',
+    'case_number',
+}
+
+_HOLD_MATCH_FIELDS = {
+    'jurisdiction_name',
+}
+
+_BOND_MATCH_FIELDS = {
+    'amount_dollars',
+    'bond_type_raw_text',
+    'bond_agent',
+}
+
+_SENTENCE_MATCH_FIELDS = {
+    'sentencing_region',
+    'min_length_days',
+    'max_length_days',
+    'date_imposed',
+    'is_life',
+    'is_probation',
+    'is_suspended',
+    'fine_dollars',
+    'parole_possible',
+    'post_release_supervision_length_days',
+}
 
 
 # '*' catches positional arguments, making our arguments named and required.
@@ -149,14 +184,7 @@ def is_hold_match(
         ingested_entity: (entities.Hold)
     Returns: (bool)
     """
-    return _is_match(db_entity, ingested_entity, _sanitize_hold)
-
-
-def _sanitize_hold(hold: entities.Hold) -> entities.Hold:
-    sanitized = copy.deepcopy(hold)
-    sanitized.hold_id = None
-
-    return sanitized
+    return _is_match(db_entity, ingested_entity, _HOLD_MATCH_FIELDS)
 
 
 def is_charge_match_with_children(
@@ -184,22 +212,7 @@ def is_charge_match(
         ingested_entity: (entities.Charge)
     Returns: (bool)
     """
-
-    if db_entity.external_id or ingested_entity.external_id:
-        return db_entity.external_id == ingested_entity.external_id
-
-    return _sanitize_charge(db_entity) == _sanitize_charge(ingested_entity)
-
-
-def _sanitize_charge(charge: entities.Charge) -> entities.Charge:
-    sanitized = copy.deepcopy(charge)
-    sanitized.charge_id = None
-    sanitized.bond = None
-    sanitized.sentence = None
-    sanitized.next_court_date = None
-    sanitized.judge_name = None
-    sanitized.charge_notes = None
-    return sanitized
+    return _is_match(db_entity, ingested_entity, _CHARGE_MATCH_FIELDS)
 
 
 # '*' catches positional arguments, making our arguments named and required.
@@ -215,19 +228,7 @@ def is_bond_match(
         ingested_entity: (entities.Bond)
     Returns: (bool)
     """
-    return _is_match(db_entity, ingested_entity, _sanitize_bond)
-
-
-def _sanitize_bond(bond: entities.Bond) -> entities.Bond:
-    sanitized = copy.deepcopy(bond)
-    sanitized.bond_id = None
-    sanitized.status = BondStatus.REMOVED_WITHOUT_INFO
-
-    # booking_id is added just before writing to the DB. Because this method is
-    # used to compare ingested to db entities, we will ignore it for now.
-    # TODO(1488): Remove once we use whitelist for equality instead of blacklist
-    sanitized.booking_id = None
-    return sanitized
+    return _is_match(db_entity, ingested_entity, _BOND_MATCH_FIELDS)
 
 
 # '*' catches positional arguments, making our arguments named and required.
@@ -243,29 +244,18 @@ def is_sentence_match(
         ingested_entity: (entities.Sentence)
     Returns: (bool)
     """
-    return _is_match(db_entity, ingested_entity, _sanitize_sentence)
-
-
-def _sanitize_sentence(sentence: entities.Sentence) -> entities.Sentence:
-    # TODO(400): update with new incarceration / supervision objects
-    sanitized = copy.deepcopy(sentence)
-    sanitized.sentence_id = None
-    sanitized.related_sentences = []
-    # booking_id is added just before writing to the DB. Because this method is
-    # used to compare ingested to db entities, we will ignore it for now.
-    # TODO(1488): Remove once we use whitelist for equality instead of blacklist
-    sanitized.booking_id = None
-    return sanitized
+    return _is_match(db_entity, ingested_entity, _SENTENCE_MATCH_FIELDS)
 
 
 def _is_match(
         db_entity: Optional[entities.Entity],
         ingested_entity: Optional[entities.Entity],
-        sanitize_fn: Callable) -> bool:
+        match_fields: Set[str]) -> bool:
     if not db_entity or not ingested_entity:
         return db_entity == ingested_entity
 
     if db_entity.external_id or ingested_entity.external_id:
         return db_entity.external_id == ingested_entity.external_id
 
-    return sanitize_fn(db_entity) == sanitize_fn(ingested_entity)
+    return all(getattr(db_entity, field) == getattr(ingested_entity, field)
+               for field in match_fields)
