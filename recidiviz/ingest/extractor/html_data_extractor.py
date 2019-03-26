@@ -47,7 +47,8 @@ class HtmlDataExtractor(DataExtractor):
         self.all_keys = set(self.keys.keys()) | \
                         set(self.multi_keys.keys()) | set(self.keys_to_ignore)
 
-    def _set_all_cells(self, content: HtmlElement) -> None:
+    def _set_all_cells(
+            self, content: HtmlElement, search_for_keys: bool) -> None:
         """Finds all leaf cells on a page and sets them.
 
         Args:
@@ -56,7 +57,7 @@ class HtmlDataExtractor(DataExtractor):
         for key in self.keys.keys():
             if key in self.css_keys:
                 self._css_key_to_cell(content, key)
-            else:
+            elif search_for_keys:
                 self._convert_key_to_cells(content, key)
 
         all_cells = content.xpath('//*[self::th or self::td]')
@@ -72,9 +73,11 @@ class HtmlDataExtractor(DataExtractor):
         """
         return not e.findall('.//th') and not e.findall('.//td')
 
+    # pylint: disable=arguments-differ
     def extract_and_populate_data(
             self, content: HtmlElement,
-            ingest_info: IngestInfo = None) -> IngestInfo:
+            ingest_info: IngestInfo = None,
+            search_for_keys: bool = True) -> IngestInfo:
         """This function does all the work of taking the users yaml file
         and content and returning a populated data class.  This function
         iterates through every cell on the page and builds a model based on
@@ -84,13 +87,15 @@ class HtmlDataExtractor(DataExtractor):
             content: An already parsed html data structure
             ingest_info: An IngestInfo object to use, if None we create a new
                 one by default
+            search_for_keys: Flag to allow searching for keys outside of
+            table cells (<td> and <tr> elements).
 
         Returns:
             A populated ingest data model for a scrape.
         """
         content_copy = copy.deepcopy(content)
         HtmlDataExtractor._process_html(content_copy)
-        self._set_all_cells(content_copy)
+        self._set_all_cells(content_copy, search_for_keys)
         if ingest_info is None:
             ingest_info = IngestInfo()
         seen_map: Dict[int, Set[str]] = defaultdict(set)
