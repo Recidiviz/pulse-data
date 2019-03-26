@@ -38,6 +38,11 @@ def fn(func, field_name, proto, *additional_func_args, default=None):
     return value if value is not None else default
 
 
+def truncate(message: str) -> str:
+    """Truncates |message| to length used for string fields in schema"""
+    return common_utils.normalize(message)[:255]
+
+
 def parse_external_id(id_str):
     """If the supplied |id_str| is generated, returns None. Otherwise
     returns the normalized version of the provided |id_str|"""
