@@ -33,19 +33,20 @@ we SELECT the same num of columns.
 _QUERY = """
 /*{description}*/
 
-WITH
-
-Days AS (
-  SELECT * FROM UNNEST(GENERATE_DATE_ARRAY('1900-01-01', CURRENT_DATE('America/New_York'))) AS day
-)
-
 SELECT
-  StateAggregatesWithValidDates.fips,
-  Days.day,
+  fips,
+  CASE aggregation_window
+    WHEN 'DAILY' THEN DATE_SUB(report_date, INTERVAL 1 DAY)
+    WHEN 'WEEKLY' THEN DATE_SUB(report_date, INTERVAL 1 WEEK)
+    WHEN 'MONTHLY' THEN DATE_SUB(report_date, INTERVAL 1 MONTH)
+    WHEN 'QUARTERLY' THEN DATE_SUB(report_date, INTERVAL 1 QUARTER)
+    WHEN 'YEARLY' THEN DATE_SUB(report_date, INTERVAL 1 YEAR)
+  END AS valid_from,
+  report_date AS valid_to,
   'state_aggregates' AS data_source,
-  StateAggregatesWithValidDates.population,
-  StateAggregatesWithValidDates.male,
-  StateAggregatesWithValidDates.female,
+  custodial AS population,
+  male,
+  female,
   NULL AS unknown_gender,
   NULL AS asian,
   NULL AS black,
@@ -75,30 +76,8 @@ SELECT
   NULL AS unknown_gender_asian_white,
   NULL AS unknown_gender_asian_other,  
   NULL AS unknown_gender_unknown_race
-
-  FROM (
-      SELECT
-        StateAggregates.report_date AS valid_to,
-        StateAggregates.fips AS fips,
-        StateAggregates.custodial AS population,
-        StateAggregates.male AS male,
-        StateAggregates.female AS female,
-        CASE StateAggregates.aggregation_window
-          WHEN 'DAILY' THEN DATE_SUB(report_date, INTERVAL 1 DAY)
-          WHEN 'WEEKLY' THEN DATE_SUB(report_date, INTERVAL 1 WEEK)
-          WHEN 'MONTHLY' THEN DATE_SUB(report_date, INTERVAL 1 MONTH)
-          WHEN 'QUARTERLY' THEN DATE_SUB(report_date, INTERVAL 1 QUARTER)
-          WHEN 'YEARLY' THEN DATE_SUB(report_date, INTERVAL 1 YEAR)
-        END AS valid_from
-      FROM
-        `{project_id}.{views_dataset}.{combined_state_aggregates}` StateAggregates
-    ) StateAggregatesWithValidDates
-JOIN
-  Days
-ON
-  Days.day BETWEEN StateAggregatesWithValidDates.valid_from AND StateAggregatesWithValidDates.valid_to
-ORDER BY
-  day DESC
+FROM
+  `{project_id}.{views_dataset}.{combined_state_aggregates}`
 """.format(project_id=PROJECT_ID, views_dataset=VIEWS_DATASET,
            combined_state_aggregates=state_aggregate_views.STATE_AGGREGATE_VIEW.view_id,
            description=_DESCRIPTION)

@@ -33,7 +33,8 @@ _QUERY = """
 
 SELECT
   SUBSTR(CAST(yfips AS STRING), 5) AS fips,
-  DATE(year, 1, 1) AS day,
+  DATE(year, 1, 1) AS valid_from,
+  DATE_ADD(DATE(year, 1, 1), INTERVAL 1 YEAR) AS valid_to,
   'incarceration_trends' AS data_source,
 
   total_jail_pop AS population,
