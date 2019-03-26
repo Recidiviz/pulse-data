@@ -19,6 +19,9 @@
 
 from recidiviz.calculator.bq import export_config
 from recidiviz.calculator.bq.views import bqview
+from recidiviz.calculator.bq.views import view_config
+
+from recidiviz.calculator.bq.views.vera.county_names import COUNTY_NAMES_VIEW
 
 from recidiviz.persistence.database.schema import Booking
 from recidiviz.persistence.database.schema import Person
@@ -28,6 +31,7 @@ from recidiviz.utils import metadata
 
 PROJECT_ID = metadata.project_id()
 BASE_DATASET = export_config.BASE_TABLES_BQ_DATASET
+VIEWS_DATASET = view_config.VIEWS_DATASET
 
 POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_VIEW_NAME = 'population_admissions_releases_race_gender'
 
@@ -85,7 +89,7 @@ PersonCountTable AS (
   GROUP BY day, fips, race, gender
 )
 
-SELECT PersonCountTable.day, PersonCountTable.fips, PersonCountTable.race, PersonCountTable.gender, person_count, admitted, released
+SELECT PersonCountTable.day, PersonCountTable.fips, PersonCountTable.race, PersonCountTable.gender, person_count, admitted, released, CountyNames.county_name, CountyNames.state
 FROM PersonCountTable
 FULL JOIN AdmittedTable
 ON PersonCountTable.day = AdmittedTable.day
@@ -97,11 +101,17 @@ ON PersonCountTable.day = ReleasedTable.day
   AND PersonCountTable.fips = ReleasedTable.fips
   AND PersonCountTable.race = ReleasedTable.race
   AND PersonCountTable.gender = ReleasedTable.gender
+JOIN
+  `{project_id}.{views_dataset}.{county_names_view}` CountyNames
+ON
+  PersonCountTable.fips = CountyNames.fips
 ORDER BY day DESC, fips, race, gender
 """.format(
     description=POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_DESCRIPTION,
     project_id=PROJECT_ID,
     base_dataset=BASE_DATASET,
+    views_dataset=VIEWS_DATASET,
+    county_names_view=COUNTY_NAMES_VIEW.view_id,
     booking_table=Booking.__tablename__,
     person_table=Person.__tablename__
 )
