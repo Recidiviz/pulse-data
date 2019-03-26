@@ -1,4 +1,4 @@
-# Recidiviz - a data platform for criminal justice reform
+# Recidiviz - a platform for tracking granular recidivism metrics in real time
 # Copyright (C) 2019 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
@@ -14,6 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""View configuration."""
+"""Views interacting with Vera data."""
 
-VIEWS_DATASET: str = 'census_views'
+from recidiviz.calculator.bq.views.vera import county_names
+
+VERA_VIEWS = [
+    county_names.COUNTY_NAMES_VIEW
+]

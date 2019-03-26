@@ -21,6 +21,7 @@ from recidiviz.calculator.bq import export_config
 from recidiviz.calculator.bq.views import bqview
 from recidiviz.calculator.bq.views import view_config
 from recidiviz.calculator.bq.views.charges.charge_severity_all_bookings import CHARGE_SEVERITY_ALL_BOOKINGS_VIEW
+from recidiviz.calculator.bq.views.vera.county_names import COUNTY_NAMES_VIEW
 
 from recidiviz.persistence.database.schema import Booking
 from recidiviz.persistence.database.schema import Person
@@ -89,12 +90,16 @@ BookingCountTable AS (
   GROUP BY day, fips, most_severe_charge
 )
 
-SELECT BookingCountTable.day, BookingCountTable.fips, BookingCountTable.most_severe_charge, booking_count, admitted, released
+SELECT BookingCountTable.day, BookingCountTable.fips, BookingCountTable.most_severe_charge, booking_count, admitted, released, CountyNames.state, CountyNames.county_name
 FROM BookingCountTable
 FULL JOIN AdmittedTable
 ON BookingCountTable.day = AdmittedTable.day AND BookingCountTable.fips = AdmittedTable.fips AND BookingCountTable.most_severe_charge = AdmittedTable.most_severe_charge
 FULL JOIN ReleasedTable
 ON BookingCountTable.day = ReleasedTable.day AND BookingCountTable.fips = ReleasedTable.fips AND BookingCountTable.most_severe_charge = ReleasedTable.most_severe_charge
+JOIN
+  `{project_id}.{views_dataset}.{county_names_view}` CountyNames
+ON
+  BookingCountTable.fips = CountyNames.fips
 ORDER BY day DESC, fips
 """.format(
     description=CHARGE_SEVERITY_COUNTS_ALL_BOOKINGS_DESCRIPTION,
@@ -103,7 +108,8 @@ ORDER BY day DESC, fips
     views_dataset=VIEWS_DATASET,
     booking_table=Booking.__tablename__,
     person_table=Person.__tablename__,
-    charge_severity_all_bookings_view=CHARGE_SEVERITY_ALL_BOOKINGS_VIEW.view_id
+    charge_severity_all_bookings_view=CHARGE_SEVERITY_ALL_BOOKINGS_VIEW.view_id,
+    county_names_view=COUNTY_NAMES_VIEW.view_id
 )
 
 CHARGE_SEVERITY_COUNTS_ALL_BOOKINGS_VIEW = bqview.BigQueryView(

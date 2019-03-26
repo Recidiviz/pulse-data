@@ -43,12 +43,14 @@ POPULATION_ADMISSIONS_RELEASES_QUERY = \
 SELECT
   day,
   fips,
+  county_name,
+  state,
   SUM(person_count) AS person_count,
   SUM(admitted) AS admitted,
   SUM(released) AS released
 FROM
   `{project_id}.{views_dataset}.{population_admissions_releases_race_gender_view}`
-GROUP BY day, fips
+GROUP BY day, fips, state, county_name
 ORDER BY day DESC, fips
 """.format(
     description=POPULATION_ADMISSIONS_RELEASES_DESCRIPTION,

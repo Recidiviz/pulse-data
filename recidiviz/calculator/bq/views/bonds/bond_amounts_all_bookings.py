@@ -21,6 +21,7 @@ from recidiviz.calculator.bq import export_config
 from recidiviz.calculator.bq.views import bqview
 from recidiviz.calculator.bq.views import view_config
 from recidiviz.calculator.bq.views.bonds.bond_amounts_by_booking import BOND_AMOUNTS_BY_BOOKING_VIEW
+from recidiviz.calculator.bq.views.vera.county_names import COUNTY_NAMES_VIEW
 
 from recidiviz.common.constants.enum_canonical_strings import bond_type_denied
 
@@ -67,7 +68,9 @@ BOND_AMOUNTS_ALL_BOOKINGS_QUERY = \
 """
 /*{description}*/
 SELECT
-  Person.region,
+  CountyNames.fips,
+  CountyNames.state,
+  CountyNames.county_name,
   Person.person_id,
   Booking.booking_id,
   Booking.admission_date,
@@ -93,6 +96,10 @@ LEFT JOIN
   `{project_id}.{base_dataset}.{person_table}` Person
 ON
   Booking.person_id = Person.person_id
+JOIN
+  `{project_id}.{views_dataset}.{county_names_view}` CountyNames
+ON
+  SUBSTR(Person.jurisdiction_id, 0, 5) = CountyNames.fips
 """.format(
     description=BOND_AMOUNTS_ALL_BOOKINGS_DESCRIPTION,
     project_id=PROJECT_ID,
@@ -100,7 +107,8 @@ ON
     bond_amounts_by_booking_view=BOND_AMOUNTS_BY_BOOKING_VIEW.view_id,
     base_dataset=BASE_DATASET,
     booking_table=Booking.__tablename__,
-    person_table=Person.__tablename__
+    person_table=Person.__tablename__,
+    county_names_view=COUNTY_NAMES_VIEW.view_id
 )
 
 BOND_AMOUNTS_ALL_BOOKINGS_VIEW = bqview.BigQueryView(

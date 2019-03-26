@@ -1,4 +1,4 @@
-# Recidiviz - a data platform for criminal justice reform
+# Recidiviz - a platform for tracking granular recidivism metrics in real time
 # Copyright (C) 2019 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""View configuration."""
+"""Constants related to Vera views that we rely on."""
 
-VIEWS_DATASET: str = 'census_views'
+VERA_DATASET: str = 'vera_data'
+INCARCERATION_TRENDS_TABLE: str = 'incarceration_trends'

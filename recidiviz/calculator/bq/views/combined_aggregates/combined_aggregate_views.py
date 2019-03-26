@@ -23,11 +23,12 @@ from recidiviz.calculator.bq.views.population import \
     population_admissions_releases
 from recidiviz.calculator.bq.views.state_aggregates import state_aggregate_views
 from recidiviz.utils import metadata
+from recidiviz.calculator.bq.views.vera import vera_view_constants
 
 PROJECT_ID = metadata.project_id()
 VIEWS_DATASET = view_config.VIEWS_DATASET
-VERA_DATASET = view_config.VERA_DATASET
-INCARCERATION_TRENDS_TABLE = view_config.INCARCERATION_TRENDS_TABLE
+VERA_DATASET = vera_view_constants.VERA_DATASET
+INCARCERATION_TRENDS_TABLE = vera_view_constants.INCARCERATION_TRENDS_TABLE
 
 _INTERPOLATED_STATE_AGGREGATE_DESCRIPTION = """
 First select combined aggregate data then interpolate it over the given

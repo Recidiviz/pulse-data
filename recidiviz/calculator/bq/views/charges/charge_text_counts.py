@@ -19,6 +19,8 @@
 
 from recidiviz.calculator.bq import export_config
 from recidiviz.calculator.bq.views import bqview
+from recidiviz.calculator.bq.views import view_config
+from recidiviz.calculator.bq.views.vera.county_names import COUNTY_NAMES_VIEW
 
 from recidiviz.persistence.database.schema import Booking
 from recidiviz.persistence.database.schema import Charge
@@ -29,6 +31,7 @@ from recidiviz.utils import metadata
 
 PROJECT_ID = metadata.project_id()
 BASE_DATASET = export_config.BASE_TABLES_BQ_DATASET
+VIEWS_DATASET = view_config.VIEWS_DATASET
 
 CHARGE_TEXT_COUNTS_VIEW_NAME = 'charge_text_counts'
 
@@ -95,20 +98,26 @@ PersonCountTable AS (
   GROUP BY day, fips, charge_text
 )
 
-SELECT PersonCountTable.day, PersonCountTable.fips, PersonCountTable.charge_text, person_count, admitted, released
+SELECT PersonCountTable.day, PersonCountTable.fips, PersonCountTable.charge_text, person_count, admitted, released, CountyNames.state, CountyNames.county_name
 FROM PersonCountTable
 FULL JOIN AdmittedTable
 ON PersonCountTable.day = AdmittedTable.day AND PersonCountTable.fips = AdmittedTable.fips AND PersonCountTable.charge_text = AdmittedTable.charge_text
 FULL JOIN ReleasedTable
 ON PersonCountTable.day = ReleasedTable.day AND PersonCountTable.fips = ReleasedTable.fips AND PersonCountTable.charge_text = ReleasedTable.charge_text
+JOIN
+  `{project_id}.{views_dataset}.{county_names_view}` CountyNames
+ON
+  PersonCountTable.fips = CountyNames.fips
 ORDER BY day DESC, fips, person_count DESC
 """.format(
     description=CHARGE_TEXT_COUNTS_DESCRIPTION,
     project_id=PROJECT_ID,
     base_dataset=BASE_DATASET,
+    views_dataset=VIEWS_DATASET,
     charge_table=Charge.__tablename__,
     booking_table=Booking.__tablename__,
-    person_table=Person.__tablename__
+    person_table=Person.__tablename__,
+    county_names_view=COUNTY_NAMES_VIEW.view_id
 )
 
 CHARGE_TEXT_COUNTS_VIEW = bqview.BigQueryView(
