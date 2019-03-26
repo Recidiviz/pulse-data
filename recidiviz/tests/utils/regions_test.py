@@ -70,11 +70,33 @@ BAD_QUEUE_MANIFEST_CONTENTS = """
       rate: 18/m
     jurisdiction_id: jid_bad
     """
+BAD_ENV_BOOL_MANIFEST_CONTENTS = """
+    agency_name: Corrections
+    agency_type: jail
+    base_url: test
+    timezone: America/Los_Angeles
+    environment: true
+    queue:
+      rate: 18/m
+    jurisdiction_id: jid_bad
+    """
+BAD_ENV_STR_MANIFEST_CONTENTS = """
+    agency_name: Corrections
+    agency_type: jail
+    base_url: test
+    timezone: America/Los_Angeles
+    environment: unknown
+    queue:
+      rate: 18/m
+    jurisdiction_id: jid_bad
+    """
 REGION_TO_MANIFEST = {
     'us_ny': US_NY_MANIFEST_CONTENTS,
     'us_in': US_IN_MANIFEST_CONTENTS,
     'us_ca': US_CA_MANIFEST_CONTENTS,
     'bad_queue': BAD_QUEUE_MANIFEST_CONTENTS,
+    'bad_env_bool': BAD_ENV_BOOL_MANIFEST_CONTENTS,
+    'bad_env_str': BAD_ENV_STR_MANIFEST_CONTENTS,
 }
 
 def fake_modules(*names):
@@ -166,8 +188,19 @@ class TestRegions(TestCase):
         assert region.get_queue_name() == 'some-vendor-queue'
 
     def test_set_both_queues_error(self):
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError) as e:
             with_manifest(regions.get_region, 'bad_queue')
+            assert 'queue' in e.message
+
+    def test_invalid_region_error_bool(self):
+        with pytest.raises(ValueError) as e:
+            with_manifest(regions.get_region, 'bad_env_bool')
+            assert 'environment' in e.message
+
+    def test_invalid_region_error_str(self):
+        with pytest.raises(ValueError) as e:
+            with_manifest(regions.get_region, 'bad_env_str')
+            assert 'environment' in e.message
 
 
 def mock_manifest_open(filename, *args):
