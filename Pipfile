@@ -60,6 +60,7 @@ google-cloud-bigquery = "*"
 google-api-python-client = "*"
 google-auth = "*"
 deepdiff = "*"
+"mmh3" = "*"
 
 [requires]
 python_version = "3.7"
