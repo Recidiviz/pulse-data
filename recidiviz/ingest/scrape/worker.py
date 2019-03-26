@@ -123,7 +123,8 @@ def work(region):
         try:
             scraper_task(params)
         except Exception as e:
-            task_tags[monitoring.TagKey.STATUS] = 'ERROR: {}'.format(type(e))
+            task_tags[monitoring.TagKey.STATUS] = 'ERROR: {}' \
+                .format(type(e).__name__)
             raise RequestProcessingError(region, task, params)
 
         # Respond to the task queue to mark this task as done
