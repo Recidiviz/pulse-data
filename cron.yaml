@@ -141,6 +141,15 @@ cron:
       max_doublings: 5
       job_age_limit: 9h
 
+  - description: Run tennessee aggregate report
+    url: /scrape_aggregate_reports/scrape_state?state=tennessee
+    schedule: every day 21:00
+    timezone: America/New_York
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
+
   - description: Start Cloud SQL to BigQuery export tasks
     url: /export_manager/create_export_tasks
     schedule: every day 12:05
