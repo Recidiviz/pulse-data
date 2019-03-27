@@ -221,59 +221,16 @@ def _save_record_trees(session: Session,
     # Merge and flush is required to ensure all master entities, including
     # newly created ones, have primary keys set before performing historical
     # snapshot operations
-
-    # TODO(1464): revert after bug is found and fixed
-    merged_people = []
-    for root_person in root_people:
-        try:
-            merged_people.append(session.merge(root_person))
-        except Exception as err:
-            error_message = _create_missing_person_id_error_message(
-                root_person, err)
-            raise RuntimeError(error_message)
+    root_people = [session.merge(root_person) for root_person in root_people]
     orphaned_entities = [session.merge(entity) for entity in orphaned_entities]
     session.flush()
 
-    _overwrite_dummy_booking_ids(merged_people)
+    _overwrite_dummy_booking_ids(root_people)
 
     update_snapshots.update_historical_snapshots(
-        session, merged_people, orphaned_entities, metadata.ingest_time)
+        session, root_people, orphaned_entities, metadata.ingest_time)
 
-    return merged_people
-
-
-# TODO(1464): remove after bug is found and fixed
-def _create_missing_person_id_error_message(
-        root_person: Person, exception: Exception) -> str:
-    root_person_messages: List[str] = \
-        ['Person with ID: {} and name: {}'.format(root_person.person_id,
-                                                  root_person.full_name)]
-    for booking in root_person.bookings:
-        root_person_messages.append(
-            '\tBooking with ID: {}'.format(booking.booking_id))
-        if booking.arrest:
-            root_person_messages.append(
-                '\t\tArrest with ID: {}'.format(booking.arrest.arrest_id))
-        for hold in booking.holds:
-            root_person_messages.append(
-                '\t\tHold with ID: {}'.format(hold.hold_id))
-        for charge in booking.charges:
-            root_person_messages.append(
-                '\t\tCharge with ID: {}'.format(charge.charge_id))
-            if charge.bond:
-                root_person_messages.append(
-                    '\t\t\tBond with ID: {}'.format(charge.bond.bond_id))
-            if charge.sentence:
-                root_person_messages.append(
-                    '\t\t\tSentence with ID: {}'.format(
-                        charge.sentence.sentence_id))
-
-    return ('[missing person ID]\n'
-            'Root person:\n{root_person}\n'
-            'Original error message: {original_error}'\
-            .format(
-                root_person='\n'.join(root_person_messages),
-                original_error=str(exception)))
+    return root_people
 
 
 def _set_dummy_booking_ids(root_people: List[Person]) -> None:
