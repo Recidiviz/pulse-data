@@ -34,6 +34,7 @@ _QUERY = """
 
 SELECT
   fips,
+  day,
   day AS valid_from,
   DATE_ADD(day, INTERVAL 1 DAY) AS valid_to,
   'scraped' AS data_source,
