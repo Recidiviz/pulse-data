@@ -43,9 +43,6 @@ def check_for_finished_scrapers():
     @structured_logging.copy_trace_id_to_thread
     @monitoring.with_region_tag
     def _check_finished(region_code: str):
-        # TODO: delete
-        logging.info("Checking if region '%s' is finished.", region_code)
-
         # If there are no open sessions, nothing to check.
         if not sessions.get_current_session(
                 ScrapeKey(region_code, constants.ScrapeType.BACKGROUND)):
