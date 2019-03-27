@@ -43,7 +43,7 @@ points are plotted using valid_from.
 _QUERY = """
 /*{description}*/
 
-WITH Cutoffs AS (
+WITH StateCutoffs AS (
   SELECT
     fips,
     MIN(valid_from) AS min_valid_from
@@ -51,6 +51,18 @@ WITH Cutoffs AS (
     `{project_id}.{views_dataset}.{combined_stitch}`
   WHERE
     data_source = 'state_aggregates'
+  GROUP BY
+    fips
+),
+
+ScrapedCutoffs AS (
+  SELECT
+    fips,
+    MIN(valid_from) AS min_valid_from
+  FROM
+    `{project_id}.{views_dataset}.{combined_stitch}`
+  WHERE
+    data_source = 'scraped'
   GROUP BY
     fips
 )
@@ -94,13 +106,27 @@ SELECT
 FROM
   `{project_id}.{views_dataset}.{combined_stitch}` AS Data
 FULL JOIN
-  Cutoffs
+  StateCutoffs
 ON
-  Data.fips = Cutoffs.fips
+  Data.fips = StateCutoffs.fips
+FULL JOIN
+  ScrapedCutoffs
+ON
+  Data.fips = ScrapedCutoffs.fips
 WHERE
+  # We only have itp data
+  (StateCutoffs.fips IS NULL AND ScrapedCutoffs.fips IS NULL) OR
+  
+  # We have itp and scraped
+  (StateCutoffs.fips IS NULL AND (
+      Data.data_source = 'scraped' OR
+      (Data.data_source = 'incarceration_trends' AND Data.valid_from < ScrapedCutoffs.min_valid_from)
+  )) OR
+
+  # We have itp, state_aggregate and scraped
   Data.data_source = 'state_aggregates' OR
-  (Data.data_source = 'incarceration_trends' AND Data.valid_from < Cutoffs.min_valid_from) OR
-  (Data.data_source = 'scraped' AND Cutoffs.min_valid_from < Data.valid_from)
+  (Data.data_source = 'incarceration_trends' AND Data.valid_from < StateCutoffs.min_valid_from) OR
+  (Data.data_source = 'scraped' AND StateCutoffs.min_valid_from < Data.valid_from)
 """.format(project_id=PROJECT_ID, views_dataset=VIEWS_DATASET,
            combined_stitch=combined_stitch.COMBINED_STITCH_VIEW.view_id,
            description=_DESCRIPTION)
