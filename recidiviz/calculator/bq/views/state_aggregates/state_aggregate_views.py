@@ -14,49 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Define views created by concatenating state-reported aggregate reports."""
-
-import sqlalchemy
-
-from recidiviz.calculator.bq import export_config
-from recidiviz.calculator.bq.views.bqview import BigQueryView
+"""List all state aggregate views."""
 from recidiviz.calculator.bq.views.state_aggregates import \
-    state_aggregate_mappings, state_aggregate_collapsed_to_fips
-from recidiviz.persistence.database import schema
-from recidiviz.utils import metadata
-
-
-def _to_bq_table(query_str: str) -> str:
-    """Rename schema table_names with supported BQ syntax."""
-    project_id = metadata.project_id()
-    base_dataset = export_config.BASE_TABLES_BQ_DATASET
-
-    for table in schema.get_aggregate_table_classes():
-        bq_table_name = '`{project_id}.{base_dataset}.{table_name}`'.format(
-            project_id=project_id,
-            base_dataset=base_dataset,
-            table_name=table.__tablename__
-        )
-        query_str = query_str.replace(table.__tablename__, bq_table_name)
-
-    return query_str
-
-
-_QUERIES = [m.to_query() for m in state_aggregate_mappings.MAPPINGS]
-_UNIONED_STATEMENT = sqlalchemy.union_all(*_QUERIES)
-_BQ_UNIONED_STATEMENT = _to_bq_table(str(_UNIONED_STATEMENT.compile()))
-
-# This view is the concatenation of all "state-reported aggregate reports" after
-# mapping each column to a shared column_name. The next logical derivation from
-# this view is to combine it with a view of our "scraped website data" that maps
-# to the same shared column_names. Both of these views should be aggregated to
-# the same level (eg. jurisdiction level via jurisdiction_id).
-STATE_AGGREGATE_VIEW = BigQueryView(
-    view_id='combined_state_aggregates',
-    view_query=_BQ_UNIONED_STATEMENT
-)
+    combined_state_aggregate, state_aggregate_collapsed_to_fips
 
 STATE_AGGREGATE_VIEWS = [
-    STATE_AGGREGATE_VIEW,
+    combined_state_aggregate.COMBINED_STATE_AGGREGATE_VIEW,
     state_aggregate_collapsed_to_fips.STATE_AGGREGATES_COLLAPSED_TO_FIPS
 ]
