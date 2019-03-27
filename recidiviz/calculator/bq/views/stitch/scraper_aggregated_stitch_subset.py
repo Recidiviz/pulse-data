@@ -34,7 +34,6 @@ _QUERY = """
 
 SELECT
   fips,
-  day,
   day AS valid_from,
   DATE_ADD(day, INTERVAL 1 DAY) AS valid_to,
   'scraped' AS data_source,
@@ -75,8 +74,8 @@ SELECT
   SUM(IF(gender = 'EXTERNAL_UNKNOWN' AND race = 'WHITE', person_count, null)) AS unknown_gender_asian_white,
   SUM(IF(gender = 'EXTERNAL_UNKNOWN' AND race = 'OTHER', person_count, null)) AS unknown_gender_asian_other,  
   SUM(IF(gender = 'EXTERNAL_UNKNOWN' AND race = 'EXTERNAL_UNKNOWN', person_count, null)) AS unknown_gender_unknown_race
-FROM `{project_id}.{views_dataset}.{population_admissions_releases_race_gender}`
-GROUP BY fips, day
+FROM `{project_id}.{views_dataset}.{population_admissions_releases_race_gender}` RaceGender
+GROUP BY fips, RaceGender.day
 """.format(project_id=PROJECT_ID, views_dataset=VIEWS_DATASET,
            population_admissions_releases_race_gender=population_admissions_releases.POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_VIEW.view_id,
            description=_DESCRIPTION)
