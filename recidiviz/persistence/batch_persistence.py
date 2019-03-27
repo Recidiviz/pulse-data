@@ -35,7 +35,7 @@ from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.scrape import ingest_utils, scrape_phase, sessions
 from recidiviz.ingest.scrape.constants import BATCH_PUBSUB_TYPE, ScrapeType
 from recidiviz.ingest.scrape.task_params import Task
-from recidiviz.persistence import persistence
+from recidiviz.persistence import persistence, validator
 from recidiviz.utils import monitoring, pubsub_helper, regions, \
     structured_logging
 from recidiviz.utils.auth import authenticate_request
@@ -231,6 +231,7 @@ def _get_proto_from_messages(messages):
 
     deduped_ingest_info = _dedup_people(ingest_infos_from_messages)
     base_proto = ingest_utils.convert_ingest_info_to_proto(deduped_ingest_info)
+    validator.validate(base_proto)
     logging.info("Generated proto for %s people", len(base_proto.people))
     return base_proto, failed_tasks
 
