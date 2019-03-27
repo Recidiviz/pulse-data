@@ -19,6 +19,7 @@
 
 """Tests for utils/regions.py."""
 import builtins
+import sys
 from functools import partial
 from typing import List, Tuple
 from unittest import TestCase
@@ -175,9 +176,17 @@ class TestRegions(TestCase):
         assert not with_manifest(regions.validate_region_code, 'us_az')
 
     def test_get_scraper(self):
-        region = with_manifest(regions.get_region, 'us_ny')
-        scraper = region.get_scraper()
-        assert type(scraper).__name__ == 'UsNyScraper'
+        mock_package = Mock()
+        mock_scraper = Mock()
+        mock_package.UsNyScraper.return_value = mock_scraper
+
+        with patch.dict('sys.modules', {
+                'recidiviz.ingest.scrape.regions.us_ny.us_ny_scraper':
+                mock_package
+        }):
+            region = with_manifest(regions.get_region, 'us_ny')
+            scraper = region.get_scraper()
+            assert scraper is mock_scraper
 
     def test_create_queue_name(self):
         region = with_manifest(regions.get_region, 'us_ny')
