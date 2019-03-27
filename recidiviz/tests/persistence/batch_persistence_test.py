@@ -35,7 +35,7 @@ from recidiviz.persistence.batch_persistence import BATCH_PUBSUB_TYPE, \
     BatchMessage
 from recidiviz.utils import pubsub_helper
 
-REGIONS = ['us_pa_greene', 'us_ny']
+REGIONS = ['us_x', 'us_y']
 TEST_NAME = 'test'
 TEST_NAME2 = 'test2'
 TEST_ID = '1'
@@ -174,8 +174,9 @@ class TestBatchPersistence(TestCase):
             json.loads(messages[0].message.data.decode()))
         self.assertEqual(expected_batch, result)
 
+    @patch('recidiviz.utils.regions.get_region')
     @patch('recidiviz.persistence.persistence.write')
-    def test_persist_to_db(self, mock_write):
+    def test_persist_to_db(self, mock_write, _mock_region):
         scrape_key = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
         pubsub_helper.create_topic_and_subscription(
             scrape_key, BATCH_PUBSUB_TYPE)
@@ -205,8 +206,10 @@ class TestBatchPersistence(TestCase):
         messages = batch_persistence._get_batch_messages(scrape_key)
         self.assertEqual(len(messages), 0)
 
+    @patch('recidiviz.utils.regions.get_region')
     @patch('recidiviz.persistence.persistence.write')
-    def test_persist_to_db_multiple_same_tasks_one_write(self, mock_write):
+    def test_persist_to_db_multiple_same_tasks_one_write(
+            self, mock_write, _mock_region):
         scrape_key = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
         pubsub_helper.create_topic_and_subscription(
             scrape_key, BATCH_PUBSUB_TYPE)
@@ -246,8 +249,9 @@ class TestBatchPersistence(TestCase):
         messages = batch_persistence._get_batch_messages(scrape_key)
         self.assertEqual(len(messages), 0)
 
+    @patch('recidiviz.utils.regions.get_region')
     @patch('recidiviz.persistence.persistence.write')
-    def test_persist_to_db_failed_no_write(self, mock_write):
+    def test_persist_to_db_failed_no_write(self, mock_write, _mock_region):
         scrape_key = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
         pubsub_helper.create_topic_and_subscription(
             scrape_key, BATCH_PUBSUB_TYPE)
@@ -284,8 +288,10 @@ class TestBatchPersistence(TestCase):
         messages = batch_persistence._get_batch_messages(scrape_key)
         self.assertEqual(len(messages), 0)
 
+    @patch('recidiviz.utils.regions.get_region')
     @patch('recidiviz.persistence.persistence.write')
-    def test_persist_to_db_same_task_one_fail_one_pass(self, mock_write):
+    def test_persist_to_db_same_task_one_fail_one_pass(
+            self, mock_write, _mock_region):
         scrape_key = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
         pubsub_helper.create_topic_and_subscription(
             scrape_key, BATCH_PUBSUB_TYPE)
@@ -323,8 +329,10 @@ class TestBatchPersistence(TestCase):
         messages = batch_persistence._get_batch_messages(scrape_key)
         self.assertEqual(len(messages), 0)
 
+    @patch('recidiviz.utils.regions.get_region')
     @patch('recidiviz.persistence.persistence.write')
-    def test_persist_to_db_same_task_many_fail_one_pass(self, mock_write):
+    def test_persist_to_db_same_task_many_fail_one_pass(
+            self, mock_write, _mock_region):
         scrape_key = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
         pubsub_helper.create_topic_and_subscription(
             scrape_key, BATCH_PUBSUB_TYPE)
@@ -365,8 +373,9 @@ class TestBatchPersistence(TestCase):
         messages = batch_persistence._get_batch_messages(scrape_key)
         self.assertEqual(len(messages), 0)
 
+    @patch('recidiviz.utils.regions.get_region')
     @patch('recidiviz.persistence.persistence.write')
-    def test_persist_to_db_different_regions(self, mock_write):
+    def test_persist_to_db_different_regions(self, mock_write, _mock_region):
         scrape_key1 = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
         scrape_key2 = ScrapeKey(REGIONS[1], constants.ScrapeType.BACKGROUND)
         pubsub_helper.create_topic_and_subscription(
@@ -420,8 +429,9 @@ class TestBatchPersistence(TestCase):
         self.assertEqual(result_proto, expected_proto)
         self.assertEqual(mock_write.call_count, 2)
 
+    @patch('recidiviz.utils.regions.get_region')
     @patch('recidiviz.persistence.persistence.write')
-    def test_persist_duplicates_to_db(self, mock_write):
+    def test_persist_duplicates_to_db(self, mock_write, _mock_region):
         """Tests that duplicate ingest_info.Person objects are merged before
         write."""
         scrape_key = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
