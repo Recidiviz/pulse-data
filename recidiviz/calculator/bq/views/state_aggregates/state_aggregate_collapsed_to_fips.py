@@ -18,8 +18,8 @@
 # pylint:disable=line-too-long
 
 from recidiviz.calculator.bq.views.bqview import BigQueryView
-from recidiviz.calculator.bq.views.state_aggregates.state_aggregate_views import \
-    STATE_AGGREGATE_VIEW
+from recidiviz.calculator.bq.views.state_aggregates.combined_state_aggregate import \
+    COMBINED_STATE_AGGREGATE_VIEW
 from recidiviz.calculator.bq.views.view_config import VIEWS_DATASET
 from recidiviz.utils import metadata
 
@@ -30,7 +30,7 @@ Select {combined_state_aggregates} and SUM each field around fips, report_date
 and aggregation_window. This has the effect of collapsing records around a
 single fips in a given report. This is necessary since some reports list data
 per facility which all get mapped to the same fips. 
-""".format(combined_state_aggregates=STATE_AGGREGATE_VIEW.view_id)
+""".format(combined_state_aggregates=COMBINED_STATE_AGGREGATE_VIEW.view_id)
 
 _QUERY = """
 /*{description}*/
@@ -93,7 +93,7 @@ FROM
 GROUP BY
   fips, report_date, aggregation_window
 """.format(project_id=PROJECT_ID, views_dataset=VIEWS_DATASET,
-           combined_state_aggregates=STATE_AGGREGATE_VIEW.view_id,
+           combined_state_aggregates=COMBINED_STATE_AGGREGATE_VIEW.view_id,
            description=_DESCRIPTION)
 
 STATE_AGGREGATES_COLLAPSED_TO_FIPS: BigQueryView = BigQueryView(
