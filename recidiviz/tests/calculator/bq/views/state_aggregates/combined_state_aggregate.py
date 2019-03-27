@@ -23,7 +23,8 @@ import pandas as pd
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 from recidiviz import Session
-from recidiviz.calculator.bq.views.state_aggregates import state_aggregate_views
+from recidiviz.calculator.bq.views.state_aggregates import \
+    combined_state_aggregate
 from recidiviz.persistence.database import database
 from recidiviz.persistence.database.schema import CaFacilityAggregate, \
     FlFacilityAggregate
@@ -72,7 +73,7 @@ class TestAggregateView(TestCase):
         database.write_df(FlFacilityAggregate, fl_data)
 
         # Act
-        query = Session().query(state_aggregate_views._UNIONED_STATEMENT)  # pylint: disable=protected-access
+        query = Session().query(combined_state_aggregate._UNIONED_STATEMENT)  # pylint: disable=protected-access
         result = query.all()
 
         # Assert
