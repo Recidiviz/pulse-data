@@ -115,33 +115,3 @@ class BondConverterTest(unittest.TestCase):
             status=BondStatus.PRESENT_WITHOUT_INFO,
             amount_dollars=1500)
         self.assertEqual(result, expected_result)
-
-    def testParseBond_LongBondAgent_TruncatesAgent(self):
-        # Arrange
-        ingest_bond = ingest_info_pb2.Bond(
-            amount='1,500',
-            bond_agent='Loooooooooooooooooooooooooooooooooooooooooooooooooo'
-                       'ooooooooooooooooooooooooooooooooooooooooooooooooooo'
-                       'ooooooooooooooooooooooooooooooooooooooooooooooooooo'
-                       'ooooooooooooooooooooooooooooooooooooooooooooooooooo'
-                       'ooooooooooooooooooooooooooooooooooooooooooooooooooo'
-                       'ooooooooooooooooooooooooooooooooooooooooooooooooooo'
-                       'ooooooooooooooooooooooooooooooooooooooooooooooooooo'
-                       'ooooooooooooooooooooooooooooooooooooooooooooooooooo'
-                       'ooooooooooooooooooooooooooooooooooooooooooooooooooo'
-                       'ooooooong Agency Name')
-
-        # Act
-        result = bond.convert(ingest_bond, _EMPTY_METADATA)
-
-        # Assert
-        expected_result = entities.Bond.new_with_defaults(
-            bond_type=BondType.CASH,
-            status=BondStatus.PRESENT_WITHOUT_INFO,
-            amount_dollars=1500,
-            bond_agent='LOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO'
-                       'OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO'
-                       'OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO'
-                       'OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO'
-                       'OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO')
-        self.assertEqual(result, expected_result)
