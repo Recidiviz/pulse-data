@@ -18,8 +18,8 @@
 from recidiviz.common.common_utils import normalize
 from recidiviz.common.date import parse_date
 from recidiviz.persistence import entities
-from recidiviz.persistence.converter.converter_utils import (fn,
-                                                             parse_external_id)
+from recidiviz.persistence.converter.converter_utils import \
+    fn, parse_external_id, truncate
 
 
 def convert(proto) -> entities.Arrest:
@@ -32,6 +32,6 @@ def convert(proto) -> entities.Arrest:
     new.agency = fn(normalize, 'agency', proto)
     new.officer_name = fn(normalize, 'officer_name', proto)
     new.officer_id = fn(normalize, 'officer_id', proto)
-    new.agency = fn(normalize, 'agency', proto)
+    new.agency = fn(truncate, 'agency', proto)
 
     return new.build()

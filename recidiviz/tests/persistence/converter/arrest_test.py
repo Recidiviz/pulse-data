@@ -51,3 +51,34 @@ class ArrestConverterTest(unittest.TestCase):
         )
 
         self.assertEqual(result, expected_result)
+
+    def testParseArrest_LongAgencyName_TruncatesName(self):
+        # Arrange
+        ingest_arrest = ingest_info_pb2.Arrest(
+            agency='Loooooooooooooooooooooooooooooooooooooooooooooooooo'
+                   'ooooooooooooooooooooooooooooooooooooooooooooooooooo'
+                   'ooooooooooooooooooooooooooooooooooooooooooooooooooo'
+                   'ooooooooooooooooooooooooooooooooooooooooooooooooooo'
+                   'ooooooooooooooooooooooooooooooooooooooooooooooooooo'
+                   'ooooooooooooooooooooooooooooooooooooooooooooooooooo'
+                   'ooooooooooooooooooooooooooooooooooooooooooooooooooo'
+                   'ooooooooooooooooooooooooooooooooooooooooooooooooooo'
+                   'ooooooooooooooooooooooooooooooooooooooooooooooooooo'
+                   'ooooooong Agency Name')
+
+        # Act
+        result = arrest.convert(ingest_arrest)
+
+        # Assert
+        expected_result = entities.Arrest(
+            agency='LOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO'
+                   'OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO'
+                   'OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO'
+                   'OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO'
+                   'OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO',
+            external_id=None,
+            arrest_date=None,
+            location=None,
+            officer_name=None,
+            officer_id=None)
+        self.assertEqual(result, expected_result)
