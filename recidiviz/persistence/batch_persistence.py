@@ -319,7 +319,7 @@ def persist_to_database(region_code, scrape_type, scraper_start_time):
         did_write = persistence.write(proto, metadata)
         return did_write
 
-    logging.error("No messages received from pubpub")
+    logging.error("No messages received from pubsub")
     return False
 
 
