@@ -30,7 +30,7 @@ To see which descendants of booking provide more granular dates for setting thei
 
 Do not query `prod-data` directly. `prod-data` should only be queried to validate migrations, as detailed below. All other queries should be run against the BigQuery export of `prod-data`.
 
-TODO(garciaz): find appropriate documentation from rasmi@ about querying BigQuery to link to here
+For more information on querying from BigQuery, check the [wiki page](https://github.com/Recidiviz/pulse-data/wiki/Querying-data).
 
 ## Migrations
 
