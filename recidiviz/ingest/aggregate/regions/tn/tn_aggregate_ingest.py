@@ -88,7 +88,7 @@ def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
     # There are two types of reports, total jail population and female
     # jail population. The reports are very similar, but need to be
     # handled slightly differently.
-    is_female = 'Female' in filename
+    is_female = 'female' in filename
 
     table = _parse_table(filename, is_female)
 
@@ -125,7 +125,7 @@ def _parse_table(filename: str, is_female: bool) -> pd.DataFrame:
 def _parse_date(filename: str) -> datetime.date:
     # Slashes are converted to underscores in the GCS bucket. This
     # assumes there are no underscores in the URL basename.
-    base_filename = filename.split('_')[-1].replace('Female', '')
+    base_filename = filename.split('_')[-1].replace('female', '')
     end = base_filename.index('.pdf')
     start = 4
     d = date.parse_date(base_filename[start:end])

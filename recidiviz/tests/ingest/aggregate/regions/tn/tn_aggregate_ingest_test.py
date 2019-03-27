@@ -39,9 +39,9 @@ _REPORT_DATE = datetime.date(year=2019, month=1, day=31)
 @pytest.fixture(scope="class")
 def parsed_pdf(request):
     request.cls.parsed_pdf = tn_aggregate_ingest.parse(
-        fixtures.as_filepath('_JailJanuary2019.pdf'))
+        fixtures.as_filepath('_jailjanuary2019.pdf'))
     request.cls.parsed_female_pdf = tn_aggregate_ingest.parse(
-        fixtures.as_filepath('_JailFemaleJanuary2019.pdf'))
+        fixtures.as_filepath('_jailfemalejanuary2019.pdf'))
 
 
 @pytest.mark.usefixtures("parsed_pdf")
