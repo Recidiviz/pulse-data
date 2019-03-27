@@ -1,7 +1,7 @@
 source travis/base.sh
 
 # Create encryption keys and authenticate with GAE
-openssl aes-256-cbc -K $encrypted_f7b0b16e1068_key -iv $encrypted_f7b0b16e1068_iv -in client-secret-staging.json.enc -out client-secret-staging.json -d 2>&1 | ind
+openssl aes-256-cbc -K $encrypted_7ad4439b42dc_key -iv $encrypted_7ad4439b42dc_iv -in client-secret-staging.json.enc -out client-secret-staging.json -d 2>&1 | ind
 gcloud -q auth activate-service-account recidiviz-staging@appspot.gserviceaccount.com --key-file client-secret-staging.json 2>&1 | ind
 
 # Deploy cron.yaml
