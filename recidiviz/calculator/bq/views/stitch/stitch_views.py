@@ -18,6 +18,7 @@
 # pylint:disable=line-too-long
 
 from recidiviz.calculator.bq.views.stitch.combined_stitch import COMBINED_STITCH_VIEW
+from recidiviz.calculator.bq.views.stitch.combined_stitch_drop_overlapping import COMBINED_STITCH_DROP_OVERLAPPING_VIEW
 from recidiviz.calculator.bq.views.stitch.incarceration_trends_stitch_subset import INCARCERATION_TRENDS_STITCH_SUBSET_VIEW
 from recidiviz.calculator.bq.views.stitch.scraper_aggregated_stitch_subset import SCRAPER_AGGREGATED_STITCH_SUBSET_VIEW
 from recidiviz.calculator.bq.views.stitch.state_aggregate_stitch_subset import STATE_AGGREGATE_STITCH_SUBSET_VIEW
@@ -26,5 +27,6 @@ STITCH_VIEWS = [
     INCARCERATION_TRENDS_STITCH_SUBSET_VIEW,
     SCRAPER_AGGREGATED_STITCH_SUBSET_VIEW,
     STATE_AGGREGATE_STITCH_SUBSET_VIEW,
-    COMBINED_STITCH_VIEW
+    COMBINED_STITCH_VIEW,
+    COMBINED_STITCH_DROP_OVERLAPPING_VIEW
 ]
