@@ -57,13 +57,13 @@ class EnumOverrides:
         if direct_lookup:
             return direct_lookup
 
-        matches = [matcher.value for matcher in self._predicate_maps[enum_class]
-                   if matcher.predicate(label)]
+        matches = {matcher.value for matcher in self._predicate_maps[enum_class]
+                   if matcher.predicate(label)}
         if len(matches) > 1:
             raise ValueError("Overrides map matched too many values from label"
                              " {}: [{}]".format(label, matches))
         if matches:
-            return matches[0]
+            return matches.pop()
 
         return None
 
