@@ -18,7 +18,8 @@
 # pylint:disable=line-too-long
 
 from recidiviz.calculator.bq.views.bqview import BigQueryView
-from recidiviz.calculator.bq.views.state_aggregates import state_aggregate_views
+from recidiviz.calculator.bq.views.state_aggregates import \
+    state_aggregate_collapsed_to_fips
 from recidiviz.calculator.bq.views.view_config import VIEWS_DATASET
 from recidiviz.utils import metadata
 
@@ -79,7 +80,7 @@ SELECT
 FROM
   `{project_id}.{views_dataset}.{combined_state_aggregates}`
 """.format(project_id=PROJECT_ID, views_dataset=VIEWS_DATASET,
-           combined_state_aggregates=state_aggregate_views.STATE_AGGREGATE_VIEW.view_id,
+           combined_state_aggregates=state_aggregate_collapsed_to_fips.STATE_AGGREGATES_COLLAPSED_TO_FIPS.view_id,
            description=_DESCRIPTION)
 
 STATE_AGGREGATE_STITCH_SUBSET_VIEW = BigQueryView(

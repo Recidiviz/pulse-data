@@ -21,7 +21,7 @@ import sqlalchemy
 from recidiviz.calculator.bq import export_config
 from recidiviz.calculator.bq.views.bqview import BigQueryView
 from recidiviz.calculator.bq.views.state_aggregates import \
-    state_aggregate_mappings
+    state_aggregate_mappings, state_aggregate_collapsed_to_fips
 from recidiviz.persistence.database import schema
 from recidiviz.utils import metadata
 
@@ -55,3 +55,8 @@ STATE_AGGREGATE_VIEW = BigQueryView(
     view_id='combined_state_aggregates',
     view_query=_BQ_UNIONED_STATEMENT
 )
+
+STATE_AGGREGATE_VIEWS = [
+    STATE_AGGREGATE_VIEW,
+    state_aggregate_collapsed_to_fips.STATE_AGGREGATES_COLLAPSED_TO_FIPS
+]
