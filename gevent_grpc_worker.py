@@ -20,6 +20,14 @@ Note: This must be a the top level and called before any recidiviz code so that
 nothing is imported prior to being patched. If it is placed inside of the
 recidiviz directory, then the __init__.py file will be called first.
 """
+
+# TODO(#1467): remove
+import os
+os.environ['GRPC_DNS_RESOLVER'] = 'native'
+os.environ['GRPC_TRACE'] = 'all'
+os.environ['GRPC_VERBOSITY'] = 'DEBUG'
+
+# pylint: disable=wrong-import-position
 from gunicorn.workers.ggevent import GeventWorker
 from grpc.experimental import gevent
 
