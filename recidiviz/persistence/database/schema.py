@@ -1025,7 +1025,7 @@ class PaFacilityPopAggregate(Base, _AggregateTableMixin):
             name='pa_facility_pop_aggregate_fips_length_check'),
     )
 
-    facility_name = Column(Integer)
+    facility_name = Column(String(255), nullable=False)
     bed_capacity = Column(Integer)
     work_release_community_corrections_beds = Column(Integer)
     in_house_adp = Column(Integer)
@@ -1047,7 +1047,7 @@ class PaCountyPreSentencedAggregate(Base, _AggregateTableMixin):
             name='pa_county_pre_sentenced_aggregate_fips_length_check'),
     )
 
-    county_name = Column(Integer)
+    county_name = Column(String(255), nullable=False)
     pre_sentenced_population = Column(Integer)
 
 
