@@ -40,7 +40,7 @@ google-cloud-pubsub = "*"
 google-cloud-monitoring = "*"
 pyjwt = "*"
 cssselect = "*"
-grpcio = "==1.18.0"  # TODO(#1467)
+grpcio = "*"
 gunicorn = "*"
 gevent = "*"
 google-cloud-logging = "*"
