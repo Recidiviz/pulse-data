@@ -18,8 +18,7 @@
 
 import logging
 from collections import defaultdict
-from typing import List, Dict, Tuple, Set, Sequence, Callable, Any, cast, \
-    Optional, Iterable
+from typing import List, Dict, Tuple, Set, cast
 
 import attr
 from opencensus.stats import measure, view, aggregation
@@ -32,8 +31,8 @@ from recidiviz.common.constants.sentence import SentenceStatus
 from recidiviz.persistence import entity_matching_utils as utils, entities
 from recidiviz.persistence.database import database
 from recidiviz.persistence.entities import Entity
-from recidiviz.persistence.errors import MatchedMultipleDatabaseEntitiesError, \
-    MatchedMultipleIngestedEntitiesError, EntityMatchingError
+from recidiviz.persistence.errors import MatchedMultipleIngestedEntitiesError, \
+    EntityMatchingError
 from recidiviz.utils import monitoring
 
 m_matching_errors = measure.MeasureInt(
@@ -130,7 +129,7 @@ def match_people_and_return_error_count(
             logging.exception(
                 'Found error while matching ingested person. \nPerson: %s',
                 ingested_person)
-            increment_error(e.entity_name)
+            _increment_error(e.entity_name)
             error_count += 1
     return MatchedEntities(people=people, orphaned_entities=orphaned_entities,
                            error_count=error_count)
@@ -141,10 +140,15 @@ def match_person(
         db_people: List[entities.Person],
         orphaned_entities: List[Entity],
         matched_people_by_db_id: Dict[int, entities.Person]) -> None:
+    """
+    Finds the best match for the provided |ingested_person| from the provided
+    |db_people|. If a match exists, the primary key is added onto the
+    |ingested_person| and then we attempt to match all children entities.
+    """
     db_person = cast(entities.Person,
-                     _get_best_match(ingested_person, db_people,
-                                     utils.is_person_match,
-                                     matched_people_by_db_id.keys()))
+                     utils.get_best_match(ingested_person, db_people,
+                                          utils.is_person_match,
+                                          matched_people_by_db_id.keys()))
     if db_person:
         logging.debug('Successfully matched to person with ID %s',
                       db_person.person_id)
@@ -167,13 +171,14 @@ def match_bookings(
     """
     Attempts to match all bookings on the |ingested_person| with bookings on
     the |db_person|. For any ingested booking, if a matching booking exists on
-    |db_person|, the primary key is updated on the ingested booking.
+    |db_person|, the primary key is updated on the ingested booking and we
+    attempt to match all children entities.
     """
     matched_bookings_by_db_id: Dict[int, entities.Booking] = {}
     for ingested_booking in ingested_person.bookings:
         db_booking: entities.Booking = \
-            _get_only_match(ingested_booking, db_person.bookings,
-                            utils.is_booking_match)
+            utils.get_only_match(ingested_booking, db_person.bookings,
+                                 utils.is_booking_match)
         if db_booking:
             logging.debug('Successfully matched to booking with ID %s',
                           db_booking.booking_id)
@@ -215,113 +220,13 @@ def match_bookings(
             ingested_person.bookings.append(db_booking)
 
 
-def match_bonds(
-        *, db_booking: entities.Booking, ingested_booking: entities.Booking,
-        orphaned_entities: List[Entity]):
-    _match_from_charges(db_booking=db_booking,
-                        ingested_booking=ingested_booking, name='bond',
-                        orphaned_entities=orphaned_entities)
-
-
-def match_sentences(
-        *, db_booking: entities.Booking, ingested_booking: entities.Booking,
-        orphaned_entities: List[Entity]):
-    _match_from_charges(db_booking=db_booking,
-                        ingested_booking=ingested_booking, name='sentence',
-                        orphaned_entities=orphaned_entities)
-
-
-def _build_maps_from_charges(
-        charges: List[entities.Charge], child_obj_name: str) \
-        -> Tuple[Dict[str, Entity], Dict[str, Set[Entity]]]:
-    """Helper function that returns a pair of maps describing the relationships
-    between charges and their children. The |object_map| maps ids, which may be
-    temporary generated ids, to the objects they refer to. The
-    |object_relationships| map maps those ids to the set of charges that the
-    object is a child of. This is part of determining entity equality,
-    e.g. two bonds are equal only if the same set of charges has the bond as its
-    child."""
-    object_map = {}
-    object_relationships: Dict[str, set] = defaultdict(set)
-
-    for charge in charges:
-        child_obj = getattr(charge, child_obj_name)
-        if child_obj:
-            child_obj_id = _get_id(child_obj)
-            if not child_obj_id:
-                child_obj_id = _generate_id_from_obj(child_obj)
-            object_map[child_obj_id] = child_obj
-            object_relationships[child_obj_id].add(charge.charge_id)
-    return object_map, object_relationships
-
-
-def _match_from_charges(
-        *, db_booking: entities.Booking, ingested_booking: entities.Booking,
-        name: str, orphaned_entities: List[Entity]):
-    """Helper function that, within a booking, matches objects that are children
-    of the booking's charges. |name| should be 'bond' or 'sentence'.
-
-    Any entities that are orphaned as a part of this process are added to the
-    given |orphaned_entities|.
-    """
-    db_obj_map, db_relationship_map = _build_maps_from_charges(
-        db_booking.charges, name)
-    ing_obj_map, ing_relationship_map = \
-        _build_maps_from_charges(ingested_booking.charges, name)
-
-    def _is_match_with_relationships(*, db_entity, ingested_entity):
-        ing_entity_id = _generate_id_from_obj(ingested_entity)
-        db_entity_id = _get_id(db_entity)
-        matcher = getattr(utils, 'is_{}_match'.format(name))
-        obj_match = matcher(db_entity=db_entity,
-                            ingested_entity=ingested_entity)
-        # The relationships "match" if new relationships have been added
-        # since the last scrape, but not if relationships have been removed.
-        relationship_match = db_relationship_map[db_entity_id].issubset(
-            ing_relationship_map[ing_entity_id])
-
-        return obj_match and relationship_match
-
-    matched_ing_objs_by_db_id: Dict[int, entities.Entity] = {}
-    for ing_obj in ing_obj_map.values():
-        db_obj = _get_next_available_match(
-            ing_obj, list(db_obj_map.values()), matched_ing_objs_by_db_id,
-            _is_match_with_relationships)
-        if db_obj:
-            db_id = _get_id(db_obj)
-            logging.debug('successfully matched to %s with id %s',
-                          name, db_id)
-            setattr(ing_obj, name + '_id', db_id)
-            matched_ing_objs_by_db_id[cast(int, db_id)] = ing_obj
-
-    for db_obj in db_obj_map.values():
-        db_obj_id = _get_id(db_obj)
-        if db_obj_id not in matched_ing_objs_by_db_id:
-            logging.debug('Did not match %s to any ingested %s, dropping',
-                          db_obj_id, name)
-            drop_fn = globals()['_drop_' + name]
-            drop_fn(db_obj)
-            orphaned_entities.append(db_obj)
-
-
-def _generate_id_from_obj(obj) -> str:
-    return str(id(obj)) + '_ENTITY_MATCHING_GENERATED'
-
-
-def _drop_sentence(sentence: entities.Sentence):
-    if sentence.status != SentenceStatus.REMOVED_WITHOUT_INFO:
-        logging.debug('Removing sentence with id %s', sentence.sentence_id)
-        sentence.status = SentenceStatus.REMOVED_WITHOUT_INFO
-
-
-def _drop_bond(bond: entities.Bond):
-    if bond.status != BondStatus.REMOVED_WITHOUT_INFO:
-        logging.debug('Removing bond with id %s', bond.bond_id)
-        bond.status = BondStatus.REMOVED_WITHOUT_INFO
-
-
 def match_arrest(
         *, db_booking: entities.Booking, ingested_booking: entities.Booking):
+    """
+    Matches the arrest from the |db_booking| to the arrest on the
+    |ingested_booking| if both exist. If there is a match, the primary key is
+    added to the |ingested_booking|.
+    """
     if db_booking.arrest and ingested_booking.arrest:
         ingested_booking.arrest.arrest_id = db_booking.arrest.arrest_id
 
@@ -338,7 +243,7 @@ def match_holds(
 
     matched_holds_by_db_id: Dict[int, entities.Hold] = {}
     for ingested_hold in ingested_booking.holds:
-        db_hold: entities.Hold = _get_only_match(
+        db_hold: entities.Hold = utils.get_only_match(
             ingested_hold, db_booking.holds, utils.is_hold_match)
 
         if db_hold:
@@ -361,17 +266,6 @@ def match_holds(
             _drop_hold(db_hold)
             dropped_holds.append(db_hold)
     ingested_booking.holds.extend(dropped_holds)
-
-
-def _drop_hold(hold: entities.Hold):
-    if hold.status != HoldStatus.INFERRED_DROPPED:
-        logging.debug('Dropping hold with id %s', hold.hold_id)
-        hold.status = HoldStatus.INFERRED_DROPPED
-
-
-def _charge_relationship_count(charge: entities.Charge) -> int:
-    """Return the number of children that the supplied |charge| contains"""
-    return sum([bool(charge.bond), bool(charge.sentence)])
 
 
 def match_charges(
@@ -424,12 +318,12 @@ def match_charges(
         ingested_booking.charges, key=_charge_relationship_count, reverse=True)
 
     for ingested_charge in ing_charges_sorted_by_child_count:
-        db_charge: entities.Charge = _get_next_available_match(
+        db_charge: entities.Charge = utils.get_next_available_match(
             ingested_charge, db_booking.charges,
             matched_charges_by_db_id, utils.is_charge_match_with_children)
 
         if not db_charge:
-            db_charge = _get_next_available_match(
+            db_charge = utils.get_next_available_match(
                 ingested_charge, db_booking.charges, matched_charges_by_db_id,
                 utils.is_charge_match)
 
@@ -448,85 +342,142 @@ def match_charges(
     ingested_booking.charges.extend(dropped_charges)
 
 
+def match_bonds(
+        *, db_booking: entities.Booking, ingested_booking: entities.Booking,
+        orphaned_entities: List[Entity]):
+    """
+    Attempts to match all bonds found on the |ingested_booking| with bonds on
+    the |db_booking|. For any ingested bond, if a matching bond exists on
+    |db_booking|, the primary key is updated on the ingested bond.
+    """
+    _match_from_charges(db_booking=db_booking,
+                        ingested_booking=ingested_booking, name='bond',
+                        orphaned_entities=orphaned_entities)
+
+
+def match_sentences(
+        *, db_booking: entities.Booking, ingested_booking: entities.Booking,
+        orphaned_entities: List[Entity]):
+    """
+    Attempts to match all sentences found on the |ingested_booking| with
+    sentences on the |db_booking|. For any ingested sentence, if a matching
+    sentence exists on |db_booking|, the primary key is updated on the
+    ingested sentence.
+    """
+    _match_from_charges(db_booking=db_booking,
+                        ingested_booking=ingested_booking, name='sentence',
+                        orphaned_entities=orphaned_entities)
+
+
+def _match_from_charges(
+        *, db_booking: entities.Booking, ingested_booking: entities.Booking,
+        name: str, orphaned_entities: List[Entity]):
+    """Helper function that, within a booking, matches objects that are children
+    of the booking's charges. |name| should be 'bond' or 'sentence'.
+
+    Any entities that are orphaned as a part of this process are added to the
+    given |orphaned_entities|.
+    """
+    db_obj_map, db_relationship_map = _build_maps_from_charges(
+        db_booking.charges, name)
+    ing_obj_map, ing_relationship_map = \
+        _build_maps_from_charges(ingested_booking.charges, name)
+
+    def _is_match_with_relationships(*, db_entity, ingested_entity):
+        ing_entity_id = _generate_id_from_obj(ingested_entity)
+        db_entity_id = db_entity.get_id()
+        matcher = getattr(utils, 'is_{}_match'.format(name))
+        obj_match = matcher(db_entity=db_entity,
+                            ingested_entity=ingested_entity)
+        # The relationships "match" if new relationships have been added
+        # since the last scrape, but not if relationships have been removed.
+        parents_of_db_entity = db_relationship_map[db_entity_id]
+        parents_of_ing_entity = ing_relationship_map[ing_entity_id]
+        relationship_match = parents_of_db_entity.issubset(
+            parents_of_ing_entity)
+
+        return obj_match and relationship_match
+
+    matched_ing_objs_by_db_id: Dict[int, entities.Entity] = {}
+    for ing_obj in ing_obj_map.values():
+        db_obj = utils.get_next_available_match(
+            ing_obj, list(db_obj_map.values()), matched_ing_objs_by_db_id,
+            _is_match_with_relationships)
+        if db_obj:
+            db_id = db_obj.get_id()
+            logging.debug('successfully matched to %s with id %s',
+                          name, db_id)
+            setattr(ing_obj, name + '_id', db_id)
+            matched_ing_objs_by_db_id[cast(int, db_id)] = ing_obj
+
+    for db_obj in db_obj_map.values():
+        db_obj_id = db_obj.get_id()
+        if db_obj_id not in matched_ing_objs_by_db_id:
+            logging.debug('Did not match %s to any ingested %s, dropping',
+                          db_obj_id, name)
+            drop_fn = globals()['_drop_' + name]
+            drop_fn(db_obj)
+            orphaned_entities.append(db_obj)
+
+
+def _build_maps_from_charges(
+        charges: List[entities.Charge], child_obj_name: str) \
+        -> Tuple[Dict[str, Entity], Dict[str, Set[Entity]]]:
+    """Helper function that returns a pair of maps describing the relationships
+    between charges and their children. The |object_map| maps ids, which may be
+    temporary generated ids, to the objects they refer to. The
+    |object_relationships| map maps those ids to the set of charges that the
+    object is a child of. This is part of determining entity equality,
+    e.g. two bonds are equal only if the same set of charges has the bond as its
+    child."""
+    object_map = {}
+    object_relationships: Dict[str, set] = defaultdict(set)
+
+    for charge in charges:
+        child_obj = getattr(charge, child_obj_name)
+        if child_obj:
+            child_obj_id = child_obj.get_id()
+            if not child_obj_id:
+                child_obj_id = _generate_id_from_obj(child_obj)
+            object_map[child_obj_id] = child_obj
+            object_relationships[child_obj_id].add(charge.charge_id)
+    return object_map, object_relationships
+
+
+def _charge_relationship_count(charge: entities.Charge) -> int:
+    """Return the number of children that the supplied |charge| contains"""
+    return sum([bool(charge.bond), bool(charge.sentence)])
+
+
+def _generate_id_from_obj(obj) -> str:
+    return str(id(obj)) + '_ENTITY_MATCHING_GENERATED'
+
+
+def _drop_hold(hold: entities.Hold):
+    if hold.status != HoldStatus.INFERRED_DROPPED:
+        logging.debug('Dropping hold with id %s', hold.hold_id)
+        hold.status = HoldStatus.INFERRED_DROPPED
+
+
 def _drop_charge(charge: entities.Charge):
     if charge.status != ChargeStatus.INFERRED_DROPPED:
         logging.debug('Dropping charge with id %s', charge.charge_id)
         charge.status = ChargeStatus.INFERRED_DROPPED
 
 
-def _get_next_available_match(
-        ingested_entity: entities.Entity,
-        db_entities: Sequence[entities.Entity],
-        db_entities_matched_by_id: Dict[int, Any],
-        matcher: Callable):
-    for db_entity in db_entities:
-        if not _get_id(db_entity) in db_entities_matched_by_id and \
-                matcher(db_entity=db_entity, ingested_entity=ingested_entity):
-            return db_entity
-    return None
+def _drop_sentence(sentence: entities.Sentence):
+    if sentence.status != SentenceStatus.REMOVED_WITHOUT_INFO:
+        logging.debug('Removing sentence with id %s', sentence.sentence_id)
+        sentence.status = SentenceStatus.REMOVED_WITHOUT_INFO
 
 
-def _get_only_match(
-        ingested_entity: entities.Entity,
-        db_entities: Sequence[entities.Entity], matcher: Callable):
-    """
-       Finds the entity in |db_entites| that matches the |ingested_entity|.
-       Args:
-           ingested_entity: an entity ingested from source (usually website)
-           db_entities: List of entities from our db that are potential matches
-               for the |ingested_entity|
-           matcher:
-               (db_entity, ingested_entity) -> (bool)
-       Returns:
-           The entity from |db_entities| that matches the |ingested_entity|,
-           or None if no match is found.
-       Raises:
-           EntityMatchingError: if more than one match is found.
-       """
-    matches = _get_all_matches(ingested_entity, db_entities, matcher)
-    if len(matches) > 1:
-        raise MatchedMultipleDatabaseEntitiesError(ingested_entity, matches)
-    return matches[0] if matches else None
+def _drop_bond(bond: entities.Bond):
+    if bond.status != BondStatus.REMOVED_WITHOUT_INFO:
+        logging.debug('Removing bond with id %s', bond.bond_id)
+        bond.status = BondStatus.REMOVED_WITHOUT_INFO
 
 
-def _get_best_match(
-        ingest_entity: entities.Entity,
-        db_entities: Sequence[entities.Entity],
-        matcher: Callable,
-        matched_db_ids: Iterable[int]) -> Optional[entities.Entity]:
-    """Selects the database entity that most closely matches the ingest entity,
-    if a match exists. The steps are as follows:
-        - Use |matcher| to select a list of candidate matches
-        - Disqualify previously matched entities in |matched_db_ids|
-        - Select the candidate match that differs minimally from the ingested
-          entity."""
-    matches = _get_all_matches(ingest_entity, db_entities, matcher)
-    matches = [m for m in matches if _get_id(m) not in matched_db_ids]
-    if not matches:
-        return None
-    if len(matches) == 1:
-        return matches[0]
-    logging.info(
-        "Using diff_count to pick best match: Multiple matches found for a "
-        "single ingested person.\nIngested entity: %s\nDatabase matches:%s",
-        ingest_entity, matches)
-    return min(matches,
-               key=lambda db_entity: utils.diff_count(ingest_entity, db_entity))
-
-
-def _get_all_matches(
-        ingested_entity: entities.Entity,
-        db_entities: Sequence[entities.Entity], matcher: Callable):
-    return [db_entity for db_entity in db_entities
-            if matcher(db_entity=db_entity, ingested_entity=ingested_entity)]
-
-
-def _get_id(entity: entities.Entity):
-    id_name = entity.get_entity_name() + '_id'
-    return getattr(entity, id_name)
-
-
-def increment_error(entity_name: str) -> None:
+def _increment_error(entity_name: str) -> None:
     mtags = {monitoring.TagKey.ENTITY_TYPE: entity_name}
     with monitoring.measurements(mtags) as measurements:
         measurements.measure_int_put(m_matching_errors, 1)
