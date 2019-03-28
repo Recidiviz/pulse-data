@@ -18,12 +18,13 @@
 
 import datetime
 import logging
-from typing import Optional, Set
+from typing import Optional, Set, Callable, Sequence, Dict, Any, Iterable
 
 import deepdiff
 
 from recidiviz.persistence import entities
-from recidiviz.persistence.errors import PersistenceError
+from recidiviz.persistence.errors import PersistenceError, \
+    MatchedMultipleDatabaseEntitiesError
 from recidiviz.persistence.persistence_utils import is_booking_active
 
 _CHARGE_MATCH_FIELDS = {
@@ -259,3 +260,81 @@ def _is_match(
 
     return all(getattr(db_entity, field) == getattr(ingested_entity, field)
                for field in match_fields)
+
+
+def get_next_available_match(
+        ingested_entity: entities.Entity,
+        db_entities: Sequence[entities.Entity],
+        db_entities_matched_by_id: Dict[int, Any],
+        matcher: Callable):
+    """
+    Finds all |db_entities| that match the provided |ingested_entity| based on
+    the |matcher| function, and returns the first of these matches that has not
+    already been matched (based on the provided |db_entities_matched_by_id|.
+    """
+    for db_entity in db_entities:
+        if not db_entity.get_id() in db_entities_matched_by_id and \
+                matcher(db_entity=db_entity, ingested_entity=ingested_entity):
+            return db_entity
+    return None
+
+
+def get_only_match(
+        ingested_entity: entities.Entity,
+        db_entities: Sequence[entities.Entity], matcher: Callable):
+    """
+       Finds the entity in |db_entites| that matches the |ingested_entity|.
+       Args:
+           ingested_entity: an entity ingested from source (usually website)
+           db_entities: List of entities from our db that are potential matches
+               for the |ingested_entity|
+           matcher:
+               (db_entity, ingested_entity) -> (bool)
+       Returns:
+           The entity from |db_entities| that matches the |ingested_entity|,
+           or None if no match is found.
+       Raises:
+           EntityMatchingError: if more than one match is found.
+       """
+    matches = get_all_matches(ingested_entity, db_entities, matcher)
+    if len(matches) > 1:
+        raise MatchedMultipleDatabaseEntitiesError(ingested_entity, matches)
+    return matches[0] if matches else None
+
+
+def get_best_match(
+        ingest_entity: entities.Entity,
+        db_entities: Sequence[entities.Entity],
+        matcher: Callable,
+        matched_db_ids: Iterable[int]) -> Optional[entities.Entity]:
+    """
+    Selects the database entity that most closely matches the ingest entity,
+    if a match exists. The steps are as follows:
+        - Use |matcher| to select a list of candidate matches
+        - Disqualify previously matched entities in |matched_db_ids|
+        - Select the candidate match that differs minimally from the ingested
+          entity.
+    """
+    matches = get_all_matches(ingest_entity, db_entities, matcher)
+    matches = [m for m in matches if m.get_id() not in matched_db_ids]
+    if not matches:
+        return None
+    if len(matches) == 1:
+        return matches[0]
+    logging.info(
+        "Using diff_count to pick best match: Multiple matches found for a "
+        "single ingested person.\nIngested entity: %s\nDatabase matches:%s",
+        ingest_entity, matches)
+    return min(matches,
+               key=lambda db_entity: diff_count(ingest_entity, db_entity))
+
+
+def get_all_matches(
+        ingested_entity: entities.Entity,
+        db_entities: Sequence[entities.Entity], matcher: Callable):
+    """
+    Finds all |db_entities| that match the provided |ingested_entity| based
+    on the |matcher| function
+    """
+    return [db_entity for db_entity in db_entities
+            if matcher(db_entity=db_entity, ingested_entity=ingested_entity)]
