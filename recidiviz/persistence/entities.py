@@ -50,6 +50,9 @@ class Entity:
     def get_entity_name(self):
         return self.__class__.__name__.lower()
 
+    def get_id(self):
+        id_name = self.get_entity_name() + '_id'
+        return getattr(self, id_name)
 
 @attr.s
 class Person(Entity, BuildableAttr, DefaultableAttr):
