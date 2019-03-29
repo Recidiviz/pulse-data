@@ -35,9 +35,9 @@ def copy_fields_to_builder(
      """
 
     enum_fields = {
-        'degree': ChargeDegree.parse,
-        'charge_class': ChargeClass.parse,
-        'status': ChargeStatus.parse,
+        'degree': ChargeDegree,
+        'charge_class': ChargeClass,
+        'status': ChargeStatus,
     }
     enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
 

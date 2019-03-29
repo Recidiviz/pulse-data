@@ -38,10 +38,10 @@ def copy_fields_to_builder(booking_builder, proto, metadata):
     new = booking_builder
 
     enum_fields = {
-        'admission_reason': AdmissionReason.parse,
-        'release_reason': ReleaseReason.parse,
-        'custody_status': CustodyStatus.parse,
-        'classification': Classification.parse,
+        'admission_reason': AdmissionReason,
+        'release_reason': ReleaseReason,
+        'custody_status': CustodyStatus,
+        'classification': Classification,
     }
     enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
 

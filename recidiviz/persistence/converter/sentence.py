@@ -35,7 +35,7 @@ def convert(proto, metadata: IngestMetadata) -> entities.Sentence:
     new = entities.Sentence.builder()
 
     enum_fields = {
-        'status': SentenceStatus.parse,
+        'status': SentenceStatus,
     }
     enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
 
