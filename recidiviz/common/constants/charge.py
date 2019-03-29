@@ -101,6 +101,7 @@ _CHARGE_CLASS_MAP = {
     'C': ChargeClass.CIVIL,
     'CITED CITATION': ChargeClass.INFRACTION,
     'CIVIL': ChargeClass.CIVIL,
+    'COMM': ChargeClass.CIVIL,
     'CONDIT RELEASE VIOLATION': ChargeClass.PROBATION_VIOLATION,
     'CRIMINAL TRAFFIC VIOLATION': ChargeClass.INFRACTION,
     'F': ChargeClass.FELONY,
@@ -128,6 +129,7 @@ _CHARGE_CLASS_MAP = {
     'SUMMONS': ChargeClass.INFRACTION,
     'UNKNOWN': ChargeClass.EXTERNAL_UNKNOWN,
     'VIOLATION OF COMMUNITY CONTROL': ChargeClass.PROBATION_VIOLATION,
+    'WR VIOLATION': ChargeClass.PROBATION_VIOLATION,
 }
 
 # MappableEnum.parse will strip punctuation and separate tokens with a single

@@ -122,6 +122,7 @@ BOND_TYPE_MAP = {
     'NOT REQUIRED': BondType.NOT_REQUIRED,
     'O R': BondType.NOT_REQUIRED,
     'OPEN': None,
+    'OR': BondType.NOT_REQUIRED,
     'OR BOND': BondType.NOT_REQUIRED,
     'OR D': BondType.NOT_REQUIRED,
     'OTHER': None,
@@ -207,6 +208,7 @@ BOND_TYPE_MAP = {
 # persistence/converter/converter_utils
 BOND_STATUS_MAP = {
     'ACTIVE': BondStatus.SET,
+    'BR': BondStatus.REVOKED,
     'BOND REVOCATION': BondStatus.REVOKED,
     'BOND REVOKED': BondStatus.REVOKED,
     'PENDING': BondStatus.PENDING,
