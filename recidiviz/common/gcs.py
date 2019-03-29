@@ -29,7 +29,7 @@ def client():
 
 def list_blobs(bucket_name, prefix):
     bucket = client().get_bucket(bucket_name)
-    return [blob.name for blob in bucket.list_blobs(prefix)]
+    return [blob.name for blob in bucket.list_blobs(prefix=prefix)]
 
 
 def download_to_file(bucket_name, blob_name, local_path):
