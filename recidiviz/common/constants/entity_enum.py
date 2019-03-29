@@ -57,21 +57,15 @@ class EntityEnum(Enum, metaclass=EntityEnumMeta):
     """
 
     @classmethod
-    def parse(cls,
-              label: str,
-              enum_overrides: 'EnumOverrides') -> Optional['EntityEnum']:
-        """Attempts to parse |label| using the default map of |cls| and the
-        provided |override_map|. Ignores punctuation by treating punctuation as
-        a separator, e.g. `(N/A)` will map to the same value as `N A`."""
-        label = normalize(label, remove_punctuation=True)
-        if enum_overrides.should_ignore(label, cls):
-            return None
-
-        overridden_value = enum_overrides.parse(label, cls)
-        if overridden_value is not None:
-            return overridden_value
-
-        return cls._parse_to_enum(label, cls._get_default_map())
+    def parse(cls, label: str, enum_overrides: 'EnumOverrides') \
+            -> Optional['EntityEnum']:
+        try:
+            return cls._parse_to_enum(label, enum_overrides)
+        except EnumParsingError:
+            with monitoring.measurements(
+                    {monitoring.TagKey.ENTITY_TYPE: cls.__name__}) as m:
+                m.measure_int_put(m_enum_errors, 1)
+            raise
 
     @classmethod
     def can_parse(cls, label: str, enum_overrides: 'EnumOverrides') -> bool:
@@ -81,7 +75,7 @@ class EntityEnum(Enum, metaclass=EntityEnumMeta):
         string should be used for this field.
         """
         try:
-            cls.parse(label, enum_overrides)
+            cls._parse_to_enum(label, enum_overrides)
             return True
         except EnumParsingError:
             return False
@@ -96,13 +90,23 @@ class EntityEnum(Enum, metaclass=EntityEnumMeta):
         return None
 
     @classmethod
-    def _parse_to_enum(cls, label, complete_map):
+    def _parse_to_enum(cls, label: str, enum_overrides: 'EnumOverrides') \
+            -> Optional['EntityEnum']:
+        """Attempts to parse |label| using the default map of |cls| and the
+        provided |override_map|. Ignores punctuation by treating punctuation as
+        a separator, e.g. `(N/A)` will map to the same value as `N A`."""
+        label = normalize(label, remove_punctuation=True)
+        if enum_overrides.should_ignore(label, cls):
+            return None
+
+        overridden_value = enum_overrides.parse(label, cls)
+        if overridden_value is not None:
+            return overridden_value
+
+        complete_map = cls._get_default_map()
         try:
             return complete_map[label]
         except KeyError:
-            with monitoring.measurements(
-                    {monitoring.TagKey.ENTITY_TYPE: cls.__name__}) as m:
-                m.measure_int_put(m_enum_errors, 1)
             raise EnumParsingError(cls, label)
 
     @staticmethod
