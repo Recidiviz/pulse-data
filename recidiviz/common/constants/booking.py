@@ -101,9 +101,8 @@ _ADMISSION_REASON_MAP = {
     'ESCAPE': AdmissionReason.ESCAPE,
     'NEW COMMITMENT': AdmissionReason.NEW_COMMITMENT,
     'PAROLE VIOLATION': AdmissionReason.PAROLE_VIOLATION,
-    'PAROLE_VIOLATION': AdmissionReason.PAROLE_VIOLATION,
+    'PENDING SENTENCE': AdmissionReason.NEW_COMMITMENT,
     'PROBATION VIOLATION': AdmissionReason.PROBATION_VIOLATION,
-    'PROBATION_VIOLATION': AdmissionReason.PROBATION_VIOLATION,
     'TRANSFER': AdmissionReason.TRANSFER,
 }
 
@@ -140,6 +139,7 @@ _CUSTODY_STATUS_MAP = {
 # For example, `N/A` can be written as `N A` and `(10%)` can be written as `10`.
 _RELEASE_REASON_MAP = {
     'ACQUITTAL': ReleaseReason.ACQUITTAL,
+    'BALANCE OF SENTENCE SUSPENDED': ReleaseReason.EXPIRATION_OF_SENTENCE,
     'BOND': ReleaseReason.BOND,
     'CASE DISMISSED': ReleaseReason.CASE_DISMISSED,
     'DEATH': ReleaseReason.DEATH,
