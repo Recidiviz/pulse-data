@@ -127,7 +127,8 @@ def match_people_and_return_error_count(
             orphaned_entities.extend(ingested_person_orphans)
         except EntityMatchingError as e:
             logging.exception(
-                'Found error while matching ingested person. \nPerson: %s',
+                'Found %s while matching ingested person. \nPerson: %s',
+                e.__class__.__name__,
                 ingested_person)
             _increment_error(e.entity_name)
             error_count += 1
