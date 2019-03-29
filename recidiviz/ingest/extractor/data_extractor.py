@@ -18,9 +18,24 @@
 """A module which takes any content and extracts from it key/value pairs that
 a user might care about.  The extracted information is put into the ingest data
 model and returned.
+
+DataExtractors are initialized with two categories of keys: single-value keys
+(|self.keys|) and multi-keys (|self.multi_keys|). Single-value keys have one
+value per unit of data: for example, a page might have one 'DOB' field per
+table. Multi-key values are extracted from the content in a sequence: for
+example, a page might have a table with 'Charge Name' and 'Bond Amount' columns,
+such that the association of charge name and bond amount is inferred by their
+order (so the fifth bond amount corresponds to the fifth charge).
+
+Implementations of the DataExtractor walk through structured content and call
+_set_or_create_object, which builds an IngestInfo incrementally. The behavior of
+this method is different for single-key values and multi-key values, and will
+either set a single value or a list of values on the most recent object or
+list of objects; or create new objects as needed.
 """
 
 import abc
+import logging
 from typing import Union, List, Optional, Sequence, Dict, Set
 
 import yaml
@@ -33,25 +48,24 @@ from recidiviz.ingest.models.ingest_info import HIERARCHY_MAP, PLURALS, \
 class DataExtractor(metaclass=abc.ABCMeta):
     """Base class for automatically extracting data from a file."""
 
-    def __init__(self, key_mapping_file=None):
+    def __init__(self, key_mapping_file):
         """The init of the data extractor.
 
         Args:
             key_mapping_file: a yaml file defining the mappings that the
                 data extractor uses to find relevant keys.
         """
-        if key_mapping_file:
-            with open(key_mapping_file, 'r') as ymlfile:
-                self.manifest = yaml.load(ymlfile)
-            self.keys = self.manifest['key_mappings']
-            self.multi_keys = self.manifest.get('multi_key_mapping', {})
+        with open(key_mapping_file, 'r') as ymlfile:
+            self.manifest = yaml.load(ymlfile)
+        self.keys = self.manifest['key_mappings']
+        self.multi_keys = self.manifest.get('multi_key_mapping', {})
 
-            # We want to know which of the classes are multi keys as this helps
-            # us with behaviour when we set the values.
-            self.multi_key_classes = set(
-                value.split('.')[0] if isinstance(value, str)
-                else value[0].split('.')[0]
-                for value in self.multi_keys.values())
+        # We want to know which of the classes are multi keys as this helps
+        # us with behaviour when we set the values.
+        self.multi_key_classes = set(
+            value.split('.')[0] if isinstance(value, str)
+            else value[0].split('.')[0]
+            for value in self.multi_keys.values())
 
     @abc.abstractmethod
     def extract_and_populate_data(self, content: HtmlElement,
@@ -96,8 +110,12 @@ class DataExtractor(metaclass=abc.ABCMeta):
                 # new one.
                 if object_to_set is None or \
                         ingest_key in seen_map[id(object_to_set)]:
+                    logging.debug("Creating new [%s] on parent object [%s]",
+                                  class_to_set, parent)
                     object_to_set = _create(parent, class_to_set)
 
+                logging.debug("Setting value [%s] on field [%s] of object [%s]",
+                              value, ingest_key, object_to_set)
                 setattr(object_to_set, ingest_key, value)
                 seen_map[id(object_to_set)].add(ingest_key)
 

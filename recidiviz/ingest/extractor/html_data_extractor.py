@@ -18,6 +18,17 @@
 """A module which takes any content and extracts from it key/value pairs that
 a user might care about.  The extracted information is put into the ingest data
 model and returned.
+
+This DataExtractor implementation works over HTML content by iterating over the
+table cells (<td> and <tr> elements). If a cell matches  a key, we attempt to
+find the value in an adjacent cell (to the right or below). We expect multi-key
+values to exist in columns, i.e. a number of cells in the same position in rows
+below a given key cell.
+
+The |search_for_keys| flag in extract_and_populate_data, which defaults to True,
+tells the extractor to search for HTML elements that look like keys but are not
+in table cells, and converts those elements to cells. See _key_element_to_cell
+for the HTML patterns we search over.
 """
 
 import copy
@@ -25,7 +36,7 @@ import logging
 from collections import defaultdict
 from typing import Optional, Iterator, List, Dict, Set
 
-from lxml.html import HtmlElement
+from lxml.html import HtmlElement, tostring
 
 from recidiviz.ingest.extractor.data_extractor import DataExtractor
 from recidiviz.ingest.models.ingest_info import IngestInfo
@@ -34,7 +45,7 @@ from recidiviz.ingest.models.ingest_info import IngestInfo
 class HtmlDataExtractor(DataExtractor):
     """Data extractor for HTML pages."""
 
-    def __init__(self, key_mapping_file=None):
+    def __init__(self, key_mapping_file):
         super().__init__(key_mapping_file)
 
         self.css_keys = self.manifest.get('css_key_mappings', {})
@@ -164,11 +175,6 @@ class HtmlDataExtractor(DataExtractor):
         _remove_from_content(content, '//script')
         _remove_from_content(content, '//comment()')
 
-        for script in content.xpath('//script'):
-            parent = script.getparent()
-            if parent is not None:
-                parent.remove(script)
-
         # Format line breaks as newlines
         for br in content.xpath('//br'):
             br.tail = '\n' + br.tail if br.tail else '\n'
@@ -200,12 +206,16 @@ class HtmlDataExtractor(DataExtractor):
             if text:
                 remaining = ' '.join(text.split()).replace(key, '')
                 if not remaining or not remaining[0].isalpha():
-                    self._key_element_to_cell(key, match)
+                    if self._key_element_to_cell(key, match):
+                        logging.debug("Converting element matching key %s: %s",
+                                      key, tostring(match))
 
     def _css_key_to_cell(self, content: HtmlElement, css_key: str) -> None:
         matches = content.cssselect(css_key)
 
         for match in matches:
+            logging.debug("Adding cell [%s] which matches css key [%s]",
+                          tostring(match), css_key)
             key_cell = HtmlElement(css_key)
             key_cell.tag = 'td'
             match.tag = 'td'
@@ -440,4 +450,5 @@ def _remove_from_content(content, xpath: str) -> None:
     for elem in content.xpath(xpath):
         parent = elem.getparent()
         if parent is not None:
+            logging.debug("Removing <%s> element", elem.tag)
             parent.remove(elem)

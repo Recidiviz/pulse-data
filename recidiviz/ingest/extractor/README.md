@@ -121,6 +121,12 @@ multi_key_mapping:
 
 Note that we added Offense DateTime and Arrest DateTime to the ignored keys because they are also always empty.  This simple yaml file allows us to easily look at a webpage and tell the data extractor how to extract the fields.  The user doesn't need to worry about any HTML parsing!
 
+#### `get_value()`
+The HtmlDataExtractor exposes an additional API, used to get one value from a
+key *after* extract_and_populate_data is called. For example, a key in 
+`key_mappings` can be mapped to no value and then accessed later with 
+`get_value`.
+
 ## How To Use the JsonDataExtractor
 
 The `JsonDataExtractor` works like the `HtmlDataExtractor`, but
