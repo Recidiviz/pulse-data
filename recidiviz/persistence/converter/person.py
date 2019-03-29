@@ -53,9 +53,9 @@ def copy_fields_to_builder(person_builder, proto, metadata):
      Note: This will not copy children into the Builder!
      """
     enum_fields = {
-        'gender': Gender.parse,
-        'race': Race.parse,
-        'ethnicity': Ethnicity.parse,
+        'gender': Gender,
+        'race': Race,
+        'ethnicity': Ethnicity,
     }
     enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
 
