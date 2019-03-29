@@ -1,6 +1,6 @@
 # Recidiviz Data Platform
 
-[![Build Status](https://travis-ci.org/Recidiviz/pulse-data.svg?branch=master)](https://travis-ci.org/Recidiviz/pulse-data) [![Coverage Status](https://coveralls.io/repos/github/Recidiviz/pulse-data/badge.svg?branch=master)](https://coveralls.io/github/Recidiviz/pulse-data?branch=master)
+[![Build Status](https://travis-ci.com/Recidiviz/pulse-data.svg?branch=master)](https://travis-ci.com/Recidiviz/pulse-data) [![Coverage Status](https://coveralls.io/repos/github/Recidiviz/pulse-data/badge.svg?branch=master)](https://coveralls.io/github/Recidiviz/pulse-data?branch=master)
 
 At the center of Recidiviz is our platform for tracking granular criminal justice metrics in real time. It includes a system
 for the ingest of corrections records from different source data systems, and for calculation of various metrics from the
