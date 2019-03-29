@@ -728,8 +728,7 @@ class _AggregateTableMixin:
     # each row to be referenced by an int directly.
     record_id = Column(Integer, primary_key=True)
 
-    # TODO(#689): Ensure that `fips` also supports facility level fips
-    # TODO(#689): Consider adding fips_type to denote county vs facility
+    # TODO(#1396): Add JID to aggregate reports
     fips = Column(String(5), nullable=False)
 
     report_date = Column(Date, nullable=False)
@@ -892,7 +891,7 @@ class KyFacilityAggregate(Base, _AggregateTableMixin):
     facility_name = Column(String(255), nullable=False)
 
     total_jail_beds = Column(Integer)
-    reported_population = Column(Integer)  # TODO: Is this adp or population
+    reported_population = Column(Integer)
 
     male_population = Column(Integer)
     female_population = Column(Integer)
@@ -936,11 +935,10 @@ class NyFacilityAggregate(Base, _AggregateTableMixin):
     boarded_out = Column(Integer)  # sent_to_other_jurisdiction_adp
 
     sentenced = Column(Integer)
-    civil = Column(Integer)  # TODO: What is this?
-    federal = Column(Integer)  # TODO: What is this?
-    technical_parole_violators = Column(
-        Integer)  # TODO: Can we drop 'technical'?
-    state_readies = Column(Integer)  # TODO: What is this?
+    civil = Column(Integer)
+    federal = Column(Integer)
+    technical_parole_violators = Column(Integer)
+    state_readies = Column(Integer)
     other_unsentenced = Column(Integer)
 
 
