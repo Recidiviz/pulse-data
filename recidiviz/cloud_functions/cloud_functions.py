@@ -90,9 +90,9 @@ def state_aggregate():
     gcs.download_to_file(bucket, blob_path, tmpdir_path)
     logging.info("Successfully downloaded file: %s/%s", bucket, blob_path)
 
-    result = parser(tmpdir_path)
-    for table, df in result.items():
-        database.write_df(table, df)
+    # result = parser(tmpdir_path)
+    # for table, df in result.items():
+    #     database.write_df(table, df)
 
     # If we are successful, we want to move the file out of the cloud function
     # triggered directory, and into the historical path.
