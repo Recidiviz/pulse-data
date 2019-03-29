@@ -46,6 +46,7 @@ from lxml import html
 from lxml.etree import XMLSyntaxError  # pylint:disable=no-name-in-module
 
 from recidiviz.common.common_utils import get_trace_id_from_flask
+from recidiviz.common.constants.bond import BondStatus, BondType
 from recidiviz.common.constants.charge import ChargeClass, ChargeStatus
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.person import Race, Ethnicity, ETHNICITY_MAP
@@ -354,6 +355,7 @@ class BaseScraper(Scraper):
             if ethnicity_enum is Ethnicity.HISPANIC:
                 overrides_builder.add(ethnicity_string, ethnicity_enum, Race)
 
+        overrides_builder.add('OUT ON BOND', BondStatus.POSTED, BondType)
         overrides_builder.add(lambda status: 'FELONY' in status,
                               ChargeClass.FELONY, ChargeStatus)
         overrides_builder.add(lambda status: 'MURDER' in status,
