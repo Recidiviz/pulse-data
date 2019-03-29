@@ -761,7 +761,7 @@ class CaFacilityAggregate(Base, _AggregateTableMixin):
     )
 
     jurisdiction_name = Column(String(255))
-    facility_name = Column(String(255))
+    facility_name = Column(String(255), nullable=False)
     average_daily_population = Column(Integer)
     unsentenced_male_adp = Column(Integer)
     unsentenced_female_adp = Column(Integer)
