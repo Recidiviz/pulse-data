@@ -34,7 +34,7 @@ from recidiviz.ingest.aggregate.regions.ny import ny_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.pa import pa_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.tn import tn_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.tx import tx_aggregate_ingest
-from recidiviz.persistence.database import database
+#from recidiviz.persistence.database import database
 from recidiviz.utils.auth import authenticate_request
 from recidiviz.utils.params import get_value
 
@@ -91,7 +91,8 @@ def state_aggregate():
     fs.get(path, tmpdir_path)
     logging.info("Successfully downloaded file from gcs: %s", path)
 
-    # result = parser(tmpdir_path)
+    result = parser(tmpdir_path)  # pylint: disable=unused-variable
+    logging.info('Successfully parsed the report')
     # for table, df in result.items():
     #     database.write_df(table, df)
 
