@@ -32,8 +32,8 @@ def convert(proto, metadata: IngestMetadata) -> entities.Bond:
     new = entities.Bond.builder()
 
     enum_fields = {
-        'status': BondStatus.parse,
-        'bond_type': BondType.parse,
+        'status': BondStatus,
+        'bond_type': BondType,
     }
     enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
 

@@ -29,7 +29,7 @@ def convert(proto, metadata: IngestMetadata) -> entities.Hold:
     new = entities.Hold.builder()
 
     enum_fields = {
-        'status': HoldStatus.parse,
+        'status': HoldStatus,
     }
     enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
 

@@ -49,16 +49,13 @@ class EnumParsingError(Exception):
 class EntityEnumMeta(EnumMeta):
     """Metaclass for mappable enums."""
 
-
-class EntityEnum(Enum, metaclass=EntityEnumMeta):
-    """Enum class that can be mapped from a string.
-
-    When extending this class, you must override: _get_default_map
-    """
-
-    @classmethod
-    def parse(cls, label: str, enum_overrides: 'EnumOverrides') \
-            -> Optional['EntityEnum']:
+    # pylint doesn't understand |cls| as |self|:
+    # https://stackoverflow.com/questions/47615318/
+    # what-is-the-best-practice-for-metaclass-methods-that-call-each-other
+    # pylint: disable=no-value-for-parameter, not-an-iterable
+    def parse(cls,
+              label: str,
+              enum_overrides: 'EnumOverrides') -> Optional['EntityEnum']:
         try:
             return cls._parse_to_enum(label, enum_overrides)
         except EnumParsingError:
@@ -67,7 +64,6 @@ class EntityEnum(Enum, metaclass=EntityEnumMeta):
                 m.measure_int_put(m_enum_errors, 1)
             raise
 
-    @classmethod
     def can_parse(cls, label: str, enum_overrides: 'EnumOverrides') -> bool:
         """Checks if the given string will parse into this enum.
 
@@ -80,7 +76,6 @@ class EntityEnum(Enum, metaclass=EntityEnumMeta):
         except EnumParsingError:
             return False
 
-    @classmethod
     def find_in_string(cls, text: Optional[str]) -> Optional['EntityEnum']:
         if not text:
             return None
@@ -89,7 +84,6 @@ class EntityEnum(Enum, metaclass=EntityEnumMeta):
                 return inst
         return None
 
-    @classmethod
     def _parse_to_enum(cls, label: str, enum_overrides: 'EnumOverrides') \
             -> Optional['EntityEnum']:
         """Attempts to parse |label| using the default map of |cls| and the
@@ -108,6 +102,13 @@ class EntityEnum(Enum, metaclass=EntityEnumMeta):
             return complete_map[label]
         except KeyError:
             raise EnumParsingError(cls, label)
+
+
+class EntityEnum(Enum, metaclass=EntityEnumMeta):
+    """Enum class that can be mapped from a string.
+
+    When extending this class, you must override: _get_default_map
+    """
 
     @staticmethod
     def _get_default_map() -> Dict[str, 'EntityEnum']:

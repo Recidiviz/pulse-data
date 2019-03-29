@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Reads fields from an ingest_info proto and parses them into EntityEnums."""
-from typing import Dict, Callable, Optional
+from typing import Dict, Optional, Set, Mapping
 
 from more_itertools import one
 
@@ -29,26 +29,46 @@ class EnumMappings:
     Initialize this class with a specific proto, a mapping of parsing functions,
     and the overrides map. Call enum_mappings.get to retrieve the value from
     an enum type."""
-    def __init__(self, proto, enum_fields: Dict[str, Callable],
+
+    def __init__(self, proto, enum_fields: Mapping[str, EntityEnumMeta],
                  overrides: EnumOverrides):
         """
         Initializes a mapping from enum fields within a single Entity to enum
         values. If enum fields map to enum values in a different entity, those
-        values will be ignored. If a single field maps to multiple enum values
-        of the same enum class, an error will be raised on calling |get|.
+        values will be ignored. EnumMappings prefers values that are the same
+        type as the field they are from; for example, if both ChargeClass and
+        ChargeStatus fields map to a ChargeClass, we will return the ChargeClass
+        from the charge_class field. However, if multiple fields map to
+        different values of the another enum type (for example, if ChargeDegree
+        and ChargeStatus fields map to two ChargeClasses), an error will be
+        raised on calling |get|.
         Args:
             proto: the proto to read fields from, e.g. Person, Booking, etc.
             enum_fields: a mapping from field names (e.g. custody_status) to
                          parsing functions (e.g. CustodyStatus.parse).
             overrides: the enum overrides mapping.
         """
-        self.parsed_enums = {fn(parser, field_name, proto, overrides)
-                             for field_name, parser in enum_fields.items()}
+        self.parsed_enums_from_original_field: \
+            Dict[EntityEnumMeta, EntityEnum] = dict()
+        self.all_parsed_enums: Set[EntityEnum] = set()
+
+        for field_name, from_enum in enum_fields.items():
+            value = fn(from_enum.parse, field_name, proto, overrides)
+            if not value:
+                continue
+            if isinstance(value, from_enum):
+                self.parsed_enums_from_original_field[from_enum] = value
+            else:
+                self.all_parsed_enums.add(value)
 
     def get(self,
             enum_type: EntityEnumMeta,
             default: EntityEnum = None) -> Optional[EntityEnum]:
-        matching_values = {enum for enum in self.parsed_enums
+        value_from_field = self.parsed_enums_from_original_field.get(enum_type)
+        if value_from_field:
+            return value_from_field
+
+        matching_values = {enum for enum in self.all_parsed_enums
                            if isinstance(enum, enum_type)}
 
         if not matching_values:
