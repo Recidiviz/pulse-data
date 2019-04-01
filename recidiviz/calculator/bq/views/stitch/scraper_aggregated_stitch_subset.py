@@ -38,11 +38,9 @@ SELECT
   DATE_ADD(day, INTERVAL 1 DAY) AS valid_to,
   'scraped' AS data_source,
   SUM(person_count) AS population,
-
   SUM(IF(gender = 'MALE', person_count, null)) AS male,
   SUM(IF(gender = 'FEMALE', person_count, null)) AS female,
   SUM(IF(gender = 'EXTERNAL_UNKNOWN', person_count, null)) AS unknown_gender,
-
   SUM(IF(race = 'ASIAN', person_count, null)) AS asian,
   SUM(IF(race = 'BLACK', person_count, null)) AS black,
   SUM(IF(race = 'AMERICAN_INDIAN_ALASKAN_NATIVE', person_count, null)) AS native_american,
@@ -50,7 +48,6 @@ SELECT
   SUM(IF(race = 'WHITE', person_count, null)) AS white,
   SUM(IF(race = 'OTHER', person_count, null)) AS other,
   SUM(IF(race = 'EXTERNAL_UNKNOWN', person_count, null)) AS unknown_race,
-
   SUM(IF(gender = 'MALE' AND race = 'ASIAN', person_count, null)) AS male_asian,
   SUM(IF(gender = 'MALE' AND race = 'BLACK', person_count, null)) AS male_black,
   SUM(IF(gender = 'MALE' AND race = 'AMERICAN_INDIAN_ALASKAN_NATIVE', person_count, null)) AS male_native_american,
@@ -58,7 +55,6 @@ SELECT
   SUM(IF(gender = 'MALE' AND race = 'WHITE', person_count, null)) AS male_white,
   SUM(IF(gender = 'MALE' AND race = 'OTHER', person_count, null)) AS male_other,
   SUM(IF(gender = 'MALE' AND race = 'EXTERNAL_UNKNOWN', person_count, null)) AS male_unknown_race,
-
   SUM(IF(gender = 'FEMALE' AND race = 'ASIAN', person_count, null)) AS female_asian,
   SUM(IF(gender = 'FEMALE' AND race = 'BLACK', person_count, null)) AS female_black,
   SUM(IF(gender = 'FEMALE' AND race = 'AMERICAN_INDIAN_ALASKAN_NATIVE', person_count, null)) AS female_native_american,
@@ -66,13 +62,12 @@ SELECT
   SUM(IF(gender = 'FEMALE' AND race = 'WHITE', person_count, null)) AS female_white,
   SUM(IF(gender = 'FEMALE' AND race = 'OTHER', person_count, null)) AS female_other,
   SUM(IF(gender = 'FEMALE' AND race = 'EXTERNAL_UNKNOWN', person_count, null)) AS female_unknown_race,
-
   SUM(IF(gender = 'EXTERNAL_UNKNOWN' AND race = 'ASIAN', person_count, null)) AS unknown_gender_asian,
-  SUM(IF(gender = 'EXTERNAL_UNKNOWN' AND race = 'BLACK', person_count, null)) AS unknown_gender_asian_black,
-  SUM(IF(gender = 'EXTERNAL_UNKNOWN' AND race = 'AMERICAN_INDIAN_ALASKAN_NATIVE', person_count, null)) AS unknown_gender_asian_native_american,
-  SUM(IF(gender = 'EXTERNAL_UNKNOWN' AND race = 'HISPANIC', person_count, null)) AS unknown_gender_asian_latino,
-  SUM(IF(gender = 'EXTERNAL_UNKNOWN' AND race = 'WHITE', person_count, null)) AS unknown_gender_asian_white,
-  SUM(IF(gender = 'EXTERNAL_UNKNOWN' AND race = 'OTHER', person_count, null)) AS unknown_gender_asian_other,  
+  SUM(IF(gender = 'EXTERNAL_UNKNOWN' AND race = 'BLACK', person_count, null)) AS unknown_gender_black,
+  SUM(IF(gender = 'EXTERNAL_UNKNOWN' AND race = 'AMERICAN_INDIAN_ALASKAN_NATIVE', person_count, null)) AS unknown_gender_native_american,
+  SUM(IF(gender = 'EXTERNAL_UNKNOWN' AND race = 'HISPANIC', person_count, null)) AS unknown_gender_latino,
+  SUM(IF(gender = 'EXTERNAL_UNKNOWN' AND race = 'WHITE', person_count, null)) AS unknown_gender_white,
+  SUM(IF(gender = 'EXTERNAL_UNKNOWN' AND race = 'OTHER', person_count, null)) AS unknown_gender_other,
   SUM(IF(gender = 'EXTERNAL_UNKNOWN' AND race = 'EXTERNAL_UNKNOWN', person_count, null)) AS unknown_gender_unknown_race
 FROM `{project_id}.{views_dataset}.{population_admissions_releases_race_gender}` RaceGender
 GROUP BY fips, RaceGender.day

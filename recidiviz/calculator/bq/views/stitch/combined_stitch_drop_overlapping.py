@@ -97,11 +97,11 @@ SELECT
   female_other,
   female_unknown_race,
   unknown_gender_asian,
-  unknown_gender_asian_black,
-  unknown_gender_asian_native_american,
-  unknown_gender_asian_latino,
-  unknown_gender_asian_white,
-  unknown_gender_asian_other,  
+  unknown_gender_black,
+  unknown_gender_native_american,
+  unknown_gender_latino,
+  unknown_gender_white,
+  unknown_gender_other,  
   unknown_gender_unknown_race
 FROM
   `{project_id}.{views_dataset}.{combined_stitch}` AS Data

@@ -68,11 +68,11 @@ SELECT
   NULL AS female_unknown_race,
 
   NULL AS unknown_gender_asian,
-  NULL AS unknown_gender_asian_black,
-  NULL AS unknown_gender_asian_native_american,
-  NULL AS unknown_gender_asian_latino,
-  NULL AS unknown_gender_asian_white,
-  NULL AS unknown_gender_asian_other,  
+  NULL AS unknown_gender_black,
+  NULL AS unknown_gender_native_american,
+  NULL AS unknown_gender_latino,
+  NULL AS unknown_gender_white,
+  NULL AS unknown_gender_other,
   NULL AS unknown_gender_unknown_race
 FROM
   `{project_id}.{vera_dataset}.{incarceration_trends}`
