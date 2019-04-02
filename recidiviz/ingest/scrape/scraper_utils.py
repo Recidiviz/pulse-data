@@ -25,8 +25,6 @@ import random
 import zlib
 from typing import Union, Optional
 
-import more_itertools
-
 from recidiviz.ingest.models.ingest_info import IngestInfo, IngestObject, \
     HIERARCHY_MAP, PLURALS
 from recidiviz.ingest.scrape.task_params import ScrapedData
@@ -62,13 +60,16 @@ def get_value_from_html_tree(html_tree, attribute_value, attribute_name='id'):
 
 
 def _one(ingest_object: str, parent: IngestObject):
-    none_found = ValueError(f"IngestInfo did not have a(n) {ingest_object} as "
-                            f"expected.")
+    none_found = ValueError(f"IngestInfo did not have a single {ingest_object} "
+                            f"as expected.")
     if ingest_object in PLURALS:
         lst = getattr(parent, PLURALS[ingest_object])
-        many = ValueError(f"IngestInfo had {len(lst)} "
-                          f"{ingest_object}s,expected one.")
-        return more_itertools.one(lst, too_short=none_found, too_long=many)
+        if not lst:
+            raise none_found
+        if len(lst) > 1:
+            raise ValueError(f"IngestInfo had {len(lst)} {ingest_object}s, "
+                             f"expected one.")
+        return lst[0]
     elt = getattr(parent, ingest_object)
     if elt is None:
         raise none_found
