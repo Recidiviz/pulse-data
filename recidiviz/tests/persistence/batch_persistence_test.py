@@ -22,17 +22,17 @@ from unittest import TestCase
 
 import pytest
 from flask import Flask
-
 from google.api_core import exceptions  # pylint: disable=no-name-in-module
-from mock import patch, Mock
+from mock import Mock, patch
 
 from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.ingest.models.scrape_key import ScrapeKey
-from recidiviz.ingest.scrape import constants, ingest_utils, infer_release
+from recidiviz.ingest.scrape import (constants, infer_release, ingest_utils,
+                                     scrape_phase)
 from recidiviz.ingest.scrape.task_params import Task
 from recidiviz.persistence import batch_persistence
-from recidiviz.persistence.batch_persistence import BATCH_PUBSUB_TYPE, \
-    BatchMessage
+from recidiviz.persistence.batch_persistence import (BATCH_PUBSUB_TYPE,
+                                                     BatchMessage)
 from recidiviz.utils import pubsub_helper
 
 REGIONS = ['us_x', 'us_y']
@@ -475,9 +475,11 @@ class TestReadAndPersist(TestCase):
 
     @patch("recidiviz.common.queues.enqueue_scraper_phase")
     @patch("recidiviz.ingest.scrape.sessions.get_most_recent_completed_session")
+    @patch("recidiviz.ingest.scrape.sessions.update_phase")
     @patch("recidiviz.persistence.batch_persistence.persist_to_database")
     def test_read_and_persist(
-            self, mock_persist, mock_session_return, mock_enqueue):
+            self, mock_persist, mock_session_update, mock_session_return,
+            mock_enqueue):
         mock_session = Mock()
         mock_session.region = 'test'
         mock_session.scrape_type = constants.ScrapeType.BACKGROUND
@@ -495,3 +497,5 @@ class TestReadAndPersist(TestCase):
         mock_persist.assert_called_once_with(
             'test', constants.ScrapeType.BACKGROUND, session_start)
         mock_enqueue.assert_called_once_with(region_code='test', url='/release')
+        mock_session_update.assert_called_once_with(
+            mock_session, scrape_phase.ScrapePhase.RELEASE)

@@ -23,7 +23,7 @@ from flask import Flask
 from mock import call, patch
 
 from recidiviz.common.constants.booking import CustodyStatus
-from recidiviz.ingest.scrape import infer_release
+from recidiviz.ingest.scrape import constants, infer_release, scrape_phase
 from recidiviz.ingest.scrape.sessions import ScrapeSession
 from recidiviz.utils import regions
 
@@ -84,8 +84,9 @@ class TestInferRelease(TestCase):
         mock_get_region.side_effect = _REGIONS
 
         time = datetime(2014, 8, 31)
-        mock_get_most_recent_session.return_value = \
-            ScrapeSession.new(key=None, start=time)
+        mock_get_most_recent_session.return_value = ScrapeSession.new(
+            key=None, start=time, scrape_type=constants.ScrapeType.BACKGROUND,
+            phase=scrape_phase.ScrapePhase.RELEASE)
 
         response = self.client.get('/release?region=us_ut&region=us_wy',
                                    headers=headers)

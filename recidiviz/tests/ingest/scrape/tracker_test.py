@@ -23,13 +23,15 @@ from datetime import datetime
 
 import pytest
 import pytz
-from google.api_core import datetime_helpers  # pylint: disable=no-name-in-module
+from google.api_core import \
+    datetime_helpers  # pylint: disable=no-name-in-module
 from google.cloud.pubsub_v1 import types
 from google.protobuf import timestamp_pb2  # pylint: disable=no-name-in-module
 from mock import call, patch
 
-from recidiviz.ingest.scrape import constants, sessions, tracker, docket
 from recidiviz.ingest.models.scrape_key import ScrapeKey
+from recidiviz.ingest.scrape import (constants, docket, scrape_phase, sessions,
+                                     tracker)
 
 
 class TestTracker:
@@ -192,6 +194,7 @@ class TestTrackerIntegration:
     def create_session(self, scrape_key):
         session = sessions.ScrapeSession.new(
             key=sessions.ds().key(sessions.SCRAPE_SESSION_KIND),
-            region=scrape_key.region_code, scrape_type=scrape_key.scrape_type)
+            region=scrape_key.region_code, scrape_type=scrape_key.scrape_type,
+            phase=scrape_phase.ScrapePhase.START)
         sessions.ds().put(session.to_entity())
         self.sessions_to_delete.append(session.to_entity().key)
