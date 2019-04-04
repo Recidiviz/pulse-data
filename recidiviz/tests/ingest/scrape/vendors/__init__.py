@@ -15,6 +15,3 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for scrape.vendors."""
-
-from recidiviz.tests.ingest.scrape.vendors.superion.superion_scraper_test \
-    import SuperionScraperTest
