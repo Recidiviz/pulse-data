@@ -21,11 +21,12 @@
 import logging
 import time
 from datetime import datetime
-from typing import List
+from typing import Iterator, List, Optional
 
 from google.cloud import datastore
 
 from recidiviz.common.common_utils import retry_grpc_goaway
+from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.scrape import constants, scrape_phase
 from recidiviz.utils import environment
 
@@ -113,7 +114,7 @@ class ScrapeSession:
 SCRAPE_SESSION_KIND = ScrapeSession.__name__
 
 
-def create_session(scrape_key) -> ScrapeSession:
+def create_session(scrape_key: ScrapeKey) -> ScrapeSession:
     """Creates a new session to allow starting the given scraper.
 
     Should be prior to any specific scraping tasks for the region. Ends any open
@@ -140,7 +141,7 @@ def create_session(scrape_key) -> ScrapeSession:
     return new_session
 
 
-def close_session(scrape_key) -> List[ScrapeSession]:
+def close_session(scrape_key: ScrapeKey) -> List[ScrapeSession]:
     """Closes any open session for the given scraper.
 
     Resets relevant session info after a scraping session is concluded and
@@ -169,7 +170,7 @@ def close_session(scrape_key) -> List[ScrapeSession]:
     return closed_sessions
 
 
-def update_session(last_scraped, scrape_key):
+def update_session(last_scraped: str, scrape_key: ScrapeKey) -> bool:
     """Updates ScrapeSession entity with most recently successfully scraped
     person.
 
@@ -195,15 +196,14 @@ def update_session(last_scraped, scrape_key):
     return True
 
 
-def update_phase(session, phase):
+def update_phase(session: ScrapeSession, phase: scrape_phase.ScrapePhase):
     """Updates the phase of the session to the given phase."""
     session.phase = phase
     retry_grpc_goaway(NUM_GRPC_RETRIES, ds().put, session.to_entity())
 
 
-def add_docket_item_to_current_session(docket_ack_id,
-                                       scrape_key,
-                                       attempt=0):
+def add_docket_item_to_current_session(
+        docket_ack_id: str, scrape_key: ScrapeKey, attempt: int = 0) -> bool:
     """Adds newly leased docket item to scrape session for tracking
 
     Adds a provided item's id to the current session info, so that the session
@@ -235,7 +235,8 @@ def add_docket_item_to_current_session(docket_ack_id,
         docket_ack_id, scrape_key, attempt+1)
 
 
-def add_docket_item_to_session(docket_ack_id, session):
+def add_docket_item_to_session(
+        docket_ack_id: str, session: ScrapeSession) -> bool:
     """Adds docket item to the given session
 
     Args:
@@ -250,7 +251,7 @@ def add_docket_item_to_session(docket_ack_id, session):
     return True
 
 
-def remove_docket_item_from_session(session):
+def remove_docket_item_from_session(session: ScrapeSession) -> str:
     """Removes the docket item from the session.
 
     Args:
@@ -265,7 +266,7 @@ def remove_docket_item_from_session(session):
     return docket_ack_id
 
 
-def get_current_session(scrape_key):
+def get_current_session(scrape_key: ScrapeKey) -> Optional[ScrapeSession]:
     """Retrieves the current, open session for the given scraper.
 
     Args:
@@ -280,7 +281,7 @@ def get_current_session(scrape_key):
                              scrape_type=scrape_key.scrape_type), None)
 
 
-def get_recent_sessions(scrape_key):
+def get_recent_sessions(scrape_key: ScrapeKey) -> Iterator[ScrapeSession]:
     """Retrieves recent sessions for the given scraper.
 
     Returns a list of sessions for the given scraper, regardless of whether they
@@ -297,15 +298,19 @@ def get_recent_sessions(scrape_key):
                         scrape_type=scrape_key.scrape_type)
 
 
-def get_most_recent_completed_session(region_code, scrape_type=None):
+def get_most_recent_completed_session(
+        region_code: str,
+        scrape_type: constants.ScrapeType = None) -> Optional[ScrapeSession]:
     return next(get_sessions(region_code,
                              include_open=False,
                              most_recent_only=True,
                              scrape_type=scrape_type), None)
 
 
-def get_sessions(region_code, include_open=True, include_closed=True,
-                 most_recent_only=False, scrape_type=None):
+def get_sessions(
+        region_code: str, include_open: bool = True,
+        include_closed: bool = True, most_recent_only: bool = False,
+        scrape_type: constants.ScrapeType = None) -> Iterator[ScrapeSession]:
     """Retrieves scrape sessions.
 
     Retrieves some combination of scrape session entities based on the arguments
@@ -357,7 +362,8 @@ def get_sessions(region_code, include_open=True, include_closed=True,
     return _sessions_from_entities(results)
 
 
-def get_sessions_with_leased_docket_items(scrape_key):
+def get_sessions_with_leased_docket_items(
+        scrape_key: ScrapeKey) -> Iterator[ScrapeSession]:
     """Retrieves scrape sessions that still have leased docket items attached.
 
     Retrieves scrape session entities that have the given region and scrape type
@@ -379,7 +385,8 @@ def get_sessions_with_leased_docket_items(scrape_key):
         retry_grpc_goaway(NUM_GRPC_RETRIES, session_query.fetch))
 
 
-def _sessions_from_entities(entity_generator):
+def _sessions_from_entities(entity_generator: Iterator[datastore.Entity]) \
+        -> Iterator[ScrapeSession]:
     return (ScrapeSession.from_entity(entity) for entity in entity_generator)
 
 
