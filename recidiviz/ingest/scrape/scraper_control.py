@@ -72,8 +72,12 @@ def scraper_start():
     def _start_scraper(region, scrape_type):
         scrape_key = ScrapeKey(region, scrape_type)
 
-        most_recent_session = next(sessions.get_sessions(
-            scrape_key, most_recent_only=True), None)
+        most_recent_session = \
+            next(sessions.get_sessions(region_code=scrape_key.region_code,
+                                       include_closed=True,
+                                       most_recent_only=True,
+                                       scrape_type=scrape_key.scrape_type),
+                 None)
         if most_recent_session and not \
                 most_recent_session.phase.has_persisted():
             logging.error(
