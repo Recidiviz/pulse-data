@@ -24,7 +24,7 @@ import requests
 from mock import patch
 
 from recidiviz.ingest.models.scrape_key import ScrapeKey
-from recidiviz.ingest.scrape import constants
+from recidiviz.ingest.scrape import constants, scrape_phase
 from recidiviz.ingest.scrape.constants import BATCH_PUBSUB_TYPE
 from recidiviz.ingest.scrape.scraper import FetchPageError, Scraper
 from recidiviz.ingest.scrape.sessions import ScrapeSession
@@ -100,7 +100,7 @@ class TestStartScrape:
             url=scraper.scraper_work_url,
             body=request_body)
 
-    @patch("recidiviz.ingest.scrape.sessions.end_session")
+    @patch("recidiviz.ingest.scrape.sessions.close_session")
     @patch("recidiviz.ingest.scrape.tracker.iterate_docket_item")
     @patch("recidiviz.utils.regions.get_region")
     @patch('recidiviz.utils.pubsub_helper.create_topic_and_subscription')
@@ -141,6 +141,7 @@ class TestStopScraper:
         mock_get_region.return_value = mock_region(region, queue_name)
         open_session = ScrapeSession.new(
             key=None, scrape_type=scrape_type, region=region,
+            phase=scrape_phase.ScrapePhase.SCRAPE,
         )
         mock_sessions.return_value = [open_session]
         mock_purge_scrape_tasks.return_value = None
@@ -170,9 +171,11 @@ class TestStopScraper:
         mock_get_region.return_value = mock_region(region, queue_name)
         open_session_other = ScrapeSession.new(
             key=None, scrape_type=constants.ScrapeType.SNAPSHOT,
+            phase=scrape_phase.ScrapePhase.SCRAPE,
         )
         open_session_matching = ScrapeSession.new(
             key=None, scrape_type=constants.ScrapeType.BACKGROUND,
+            phase=scrape_phase.ScrapePhase.SCRAPE,
         )
         mock_sessions.return_value = [open_session_other, open_session_matching]
         mock_purge_scrape_tasks.return_value = None
@@ -203,9 +206,13 @@ class TestResumeScrape:
         initial_task = "charge_it"
 
         mock_get_region.return_value = mock_region(region, queue_name)
-        recent_session_none_scraped = ScrapeSession.new(key=None)
+        recent_session_none_scraped = ScrapeSession.new(
+            key=None, scrape_type=constants.ScrapeType.BACKGROUND,
+            phase=scrape_phase.ScrapePhase.SCRAPE)
         recent_session = ScrapeSession.new(
-            key=None, last_scraped="Bangalter, Thomas")
+            key=None, scrape_type=constants.ScrapeType.BACKGROUND,
+            phase=scrape_phase.ScrapePhase.SCRAPE,
+            last_scraped="Bangalter, Thomas")
         mock_sessions.return_value = [recent_session_none_scraped,
                                       recent_session]
         mock_create_scrape_task.return_value = None
@@ -244,7 +251,10 @@ class TestResumeScrape:
         initial_task = "point_it"
 
         mock_get_region.return_value = mock_region(region)
-        recent_session_none_scraped = ScrapeSession.new(key=None)
+        recent_session_none_scraped = ScrapeSession.new(
+            key=None, scrape_type=constants.ScrapeType.BACKGROUND,
+            phase=scrape_phase.ScrapePhase.SCRAPE)
+
         mock_sessions.return_value = [recent_session_none_scraped]
 
         scraper = FakeScraper(region, initial_task)
@@ -311,26 +321,26 @@ class TestResumeScrape:
             url=scraper.scraper_work_url,
             body=request_body)
 
-    @patch('recidiviz.ingest.scrape.sessions.end_session')
+    @patch('recidiviz.ingest.scrape.sessions.close_session')
     @patch('recidiviz.ingest.scrape.tracker.iterate_docket_item')
     @patch('recidiviz.utils.regions.get_region')
     def test_resume_scrape_snapshot_no_docket_item(self, mock_get_region,
                                                    mock_tracker,
-                                                   mock_end_session):
+                                                   mock_close_session):
         region = "us_nd"
         scrape_type = constants.ScrapeType.SNAPSHOT
         initial_task = "snap_it"
 
         mock_get_region.return_value = mock_region(region)
         mock_tracker.return_value = None
-        mock_end_session.return_value = None
+        mock_close_session.return_value = None
 
         scraper = FakeScraper(region, initial_task)
         scraper.resume_scrape(scrape_type)
 
         mock_get_region.assert_called_with(region)
         mock_tracker.assert_called_with(ScrapeKey(region, scrape_type))
-        mock_end_session.assert_called_with(ScrapeKey(region, scrape_type))
+        mock_close_session.assert_called_with(ScrapeKey(region, scrape_type))
 
 
 class TestFetchPage:

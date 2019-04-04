@@ -25,7 +25,7 @@ import pytest
 from flask import Flask
 from mock import create_autospec, patch
 
-from recidiviz.ingest.scrape import constants, worker
+from recidiviz.ingest.scrape import constants, scrape_phase, sessions, worker
 from recidiviz.ingest.scrape.task_params import QueueRequest, Task
 from recidiviz.utils.regions import Region
 
@@ -54,7 +54,11 @@ class TestWorker:
     @patch("recidiviz.utils.regions.get_region")
     @patch("recidiviz.ingest.scrape.sessions.get_current_session")
     def test_post_work(self, mock_session, mock_region):
-        mock_session.return_value = 'session'
+        mock_session.return_value = sessions.ScrapeSession.new(
+            key=None, region='us_ca',
+            scrape_type=constants.ScrapeType.BACKGROUND,
+            phase=scrape_phase.ScrapePhase.SCRAPE,
+        )
         region = create_autospec(Region)
         mock_region.return_value = region
 
@@ -84,7 +88,11 @@ class TestWorker:
     @patch("recidiviz.utils.regions.get_region")
     @patch("recidiviz.ingest.scrape.sessions.get_current_session")
     def test_post_work_error(self, mock_session, mock_region):
-        mock_session.return_value = 'session'
+        mock_session.return_value = sessions.ScrapeSession.new(
+            key=None, region='us_ca',
+            scrape_type=constants.ScrapeType.BACKGROUND,
+            phase=scrape_phase.ScrapePhase.SCRAPE,
+        )
         region = create_autospec(Region)
         region.get_scraper().fake_task.side_effect = Exception()
         mock_region.return_value = region
@@ -104,7 +112,11 @@ class TestWorker:
     @patch("recidiviz.utils.regions.get_region")
     @patch("recidiviz.ingest.scrape.sessions.get_current_session")
     def test_post_work_timeout(self, mock_session, mock_region):
-        mock_session.return_value = 'session'
+        mock_session.return_value = sessions.ScrapeSession.new(
+            key=None, region='us_ca',
+            scrape_type=constants.ScrapeType.BACKGROUND,
+            phase=scrape_phase.ScrapePhase.SCRAPE,
+        )
         region = create_autospec(Region)
         region.get_scraper().fake_task.side_effect = TimeoutError()
         mock_region.return_value = region

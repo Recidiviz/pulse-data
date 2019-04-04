@@ -16,7 +16,23 @@
 # ============================================================================
 """Defines the order of processes to run once a scrape has finished"""
 
+import enum
 from typing import Optional
+
+@enum.unique
+class ScrapePhase(enum.Enum):
+    START = 'start'
+    SCRAPE = 'scrape'
+    PERSIST = 'persist'
+    RELEASE = 'release'
+    DONE = 'done'
+
+    def is_actively_scraping(self):
+        return self is ScrapePhase.SCRAPE
+
+    def has_persisted(self):
+        return self in {ScrapePhase.RELEASE, ScrapePhase.DONE}
+
 
 _next_phase = {
     'scraper_status.check_for_finished_scrapers':
