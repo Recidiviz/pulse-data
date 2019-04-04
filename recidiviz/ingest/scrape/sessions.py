@@ -26,7 +26,7 @@ from typing import List
 from google.cloud import datastore
 
 from recidiviz.common.common_utils import retry_grpc_goaway
-from recidiviz.ingest.scrape import constants
+from recidiviz.ingest.scrape import constants, scrape_phase
 from recidiviz.utils import environment
 
 _ds = None
@@ -71,30 +71,38 @@ class ScrapeSession:
 
     @classmethod
     def new(cls, key, start=None, end=None, docket_ack_id=None,
-            last_scraped=None, region=None, scrape_type=None):
-        entity = datastore.Entity(key)
-        entity['start'] = start if start else datetime.now()  # type: datetime
-        entity['end'] = end  # type: datetime
-        entity['docket_ack_id'] = docket_ack_id  # type: string
-        entity['last_scraped'] = last_scraped  # type: string
-        entity['region'] = region  # type: string
-        if scrape_type:
-            if scrape_type not in constants.ScrapeType:
-                raise ValueError("Invalid scrape type: {}.".format(scrape_type))
-            entity['scrape_type'] = scrape_type.value
-        return cls(entity)
+            last_scraped=None, region=None, scrape_type=None, phase=None):
+        session = cls(datastore.Entity(key))
+        session.start = start if start else datetime.now()  # type: datetime
+        session.end = end  # type: datetime
+        session.docket_ack_id = docket_ack_id  # type: string
+        session.last_scraped = last_scraped  # type: string
+        session.region = region  # type: string
+        session.scrape_type = scrape_type  # type: constants.ScrapeType
+        session.phase = phase  # type: scrape_phase.ScrapePhase
+        return session
 
     def __init__(self, entity):
-        self._entity = entity
+        self.__dict__['_entity'] = entity
 
-    def update(self, keys_values):
-        self._entity.update(keys_values)
+    def __setattr__(self, attr, value):
+        if attr == 'scrape_type':
+            if value not in constants.ScrapeType:
+                raise ValueError("Invalid scrape type: {}.".format(value))
+            value = value.value
+        elif attr == 'phase':
+            if value not in scrape_phase.ScrapePhase:
+                raise ValueError("Invalid phase: {}.".format(value))
+            value = value.value
+        self.__dict__['_entity'][attr] = value
 
     def __getattr__(self, attr):
-        if attr in self._entity:
+        if attr in self.__dict__['_entity']:
             if attr == 'scrape_type':
                 return constants.ScrapeType(self._entity[attr])
-            return self._entity[attr]
+            if attr == 'phase':
+                return scrape_phase.ScrapePhase(self._entity[attr])
+            return self.__dict__['_entity'][attr]
         raise AttributeError("%r object has no attribute %r" %
                              (self.__class__.__name__, attr))
 
@@ -105,7 +113,7 @@ class ScrapeSession:
 SCRAPE_SESSION_KIND = ScrapeSession.__name__
 
 
-def create_session(scrape_key):
+def create_session(scrape_key) -> ScrapeSession:
     """Creates a new session to allow starting the given scraper.
 
     Should be prior to any specific scraping tasks for the region. Ends any open
@@ -116,23 +124,24 @@ def create_session(scrape_key):
     """
     logging.info("Creating new scrape session for: [%s]", scrape_key)
 
-    end_session(scrape_key)
+    # TODO(#1598): We already skip starting a session if a session already
+    # exists so we should be able to remove this. We could move the skip to here
+    close_session(scrape_key)
     new_session = ScrapeSession.new(ds().key(SCRAPE_SESSION_KIND),
                                     scrape_type=scrape_key.scrape_type,
-                                    region=scrape_key.region_code)
+                                    region=scrape_key.region_code,
+                                    phase=scrape_phase.ScrapePhase.START)
 
-    try:
-        retry_grpc_goaway(
-            NUM_GRPC_RETRIES,
-            ds().put,
-            new_session.to_entity()
-        )
-    except Exception as e:
-        logging.warning("Couldn't create new session entity:\n%s", e)
+    retry_grpc_goaway(
+        NUM_GRPC_RETRIES,
+        ds().put,
+        new_session.to_entity()
+    )
+    return new_session
 
 
-def end_session(scrape_key) -> List[ScrapeSession]:
-    """Ends any open session for the given scraper.
+def close_session(scrape_key) -> List[ScrapeSession]:
+    """Closes any open session for the given scraper.
 
     Resets relevant session info after a scraping session is concluded and
     before another one starts, including updating the ScrapeSession entity for
@@ -143,17 +152,18 @@ def end_session(scrape_key) -> List[ScrapeSession]:
 
     Returns: list of the scrape sessions which were closed
     """
+    # TODO(#1598): Much of our code assumes there is only one open session (i.e.
+    # all sessions go to the same batch persistence queue). Other code
+    # specifically supports there being multiple open sessions, we should
+    # reconcile this.
     open_sessions = get_sessions(scrape_key.region_code,
                                  include_closed=False,
                                  scrape_type=scrape_key.scrape_type)
 
     closed_sessions = []
     for session in open_sessions:
-        session.update({'end':  datetime.now()})
-        try:
-            retry_grpc_goaway(NUM_GRPC_RETRIES, ds().put, session.to_entity())
-        except Exception as e:
-            logging.warning("Couldn't set end time on prior sessions:\n%s", e)
+        session.end = datetime.now()
+        retry_grpc_goaway(NUM_GRPC_RETRIES, ds().put, session.to_entity())
         closed_sessions.append(session)
 
     return closed_sessions
@@ -176,23 +186,19 @@ def update_session(last_scraped, scrape_key):
     """
     current_session = get_current_session(scrape_key)
 
-    if current_session:
-        current_session.update({'last_scraped': last_scraped})
-        try:
-            retry_grpc_goaway(
-                NUM_GRPC_RETRIES,
-                ds().put,
-                current_session.to_entity()
-            )
-        except Exception as e:
-            logging.warning("Couldn't persist last scraped name: [%s]\n%s",
-                            last_scraped, e)
-            return False
-    else:
+    if not current_session:
         logging.error("No open sessions found to update.")
         return False
 
+    current_session.last_scraped = last_scraped
+    retry_grpc_goaway(NUM_GRPC_RETRIES, ds().put, current_session.to_entity())
     return True
+
+
+def update_phase(session, phase):
+    """Updates the phase of the session to the given phase."""
+    session.phase = phase
+    retry_grpc_goaway(NUM_GRPC_RETRIES, ds().put, session.to_entity())
 
 
 def add_docket_item_to_current_session(docket_ack_id,
@@ -239,13 +245,8 @@ def add_docket_item_to_session(docket_ack_id, session):
     Returns:
         True if successful otherwise False
     """
-    session.update({'docket_ack_id': docket_ack_id})
-
-    try:
-        retry_grpc_goaway(NUM_GRPC_RETRIES, ds().put, session.to_entity())
-    except Exception as e:
-        logging.warning("%s", e)
-        return False
+    session.docket_ack_id = docket_ack_id
+    retry_grpc_goaway(NUM_GRPC_RETRIES, ds().put, session.to_entity())
     return True
 
 
@@ -259,12 +260,8 @@ def remove_docket_item_from_session(session):
         Id used to ack the docket message
     """
     docket_ack_id = session.docket_ack_id
-    session.update({'docket_ack_id': None})
-    try:
-        retry_grpc_goaway(NUM_GRPC_RETRIES, ds().put, session.to_entity())
-    except Exception as e:
-        logging.error("Failed to persist session [%s] after deleting "
-                      "docket item [%s]:\n%s", session.key, docket_ack_id, e)
+    session.docket_ack_id = None
+    retry_grpc_goaway(NUM_GRPC_RETRIES, ds().put, session.to_entity())
     return docket_ack_id
 
 
@@ -347,10 +344,7 @@ def get_sessions(region_code, include_open=True, include_closed=True,
         limit = 1
 
     results = retry_grpc_goaway(
-        NUM_GRPC_RETRIES,
-        session_query.fetch,
-        limit=limit
-    )
+        NUM_GRPC_RETRIES, session_query.fetch, limit=limit)
 
     # Datastore doesn't allow an inequality filter on `end` because we are
     # sorting on `start`, so we have to do the filter after we get the results.

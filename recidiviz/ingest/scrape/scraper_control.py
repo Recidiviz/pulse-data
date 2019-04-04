@@ -72,9 +72,12 @@ def scraper_start():
     def _start_scraper(region, scrape_type):
         scrape_key = ScrapeKey(region, scrape_type)
 
-        if sessions.get_current_session(scrape_key):
+        most_recent_session = next(sessions.get_sessions(
+            scrape_key, most_recent_only=True), None)
+        if most_recent_session and not \
+                most_recent_session.phase.has_persisted():
             logging.error(
-                "Session already exists for region %s. Could not start new "
+                "Session already running for region %s. Could not start new "
                 "session", region)
             return
 
@@ -86,7 +89,7 @@ def scraper_start():
         logging.info("Starting new scraper for: %s", scrape_key)
         scraper = regions.get_region(region).get_scraper()
 
-        sessions.create_session(scrape_key)
+        current_session = sessions.create_session(scrape_key)
 
         # Help avoid race condition with new session info
         # vs updating that w/first task.
@@ -110,6 +113,8 @@ def scraper_start():
         # period of time for an item to be published (~90 seconds).
         logging.info("Starting %s/%s scrape...", region, scrape_type)
         scraper.start_scrape(scrape_type)
+
+        sessions.update_phase(current_session, scrape_phase.ScrapePhase.SCRAPE)
 
         # Wait for the docket to be loaded
         load_docket_thread.join()
@@ -196,7 +201,9 @@ def scraper_stop():
         closed_sessions = []
         for scrape_type in scrape_types:
             closed_sessions.extend(
-                sessions.end_session(ScrapeKey(region, scrape_type)))
+                sessions.close_session(ScrapeKey(region, scrape_type)))
+        for session in closed_sessions:
+            sessions.update_phase(session, scrape_phase.ScrapePhase.PERSIST)
         if not closed_sessions:
             return
 

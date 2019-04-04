@@ -125,7 +125,7 @@ class Scraper(metaclass=abc.ABCMeta):
         if not docket_item:
             logging.error("Found no %s docket items for %s, shutting down.",
                           scrape_type, self.get_region().region_code)
-            sessions.end_session(scrape_key)
+            sessions.close_session(scrape_key)
             return
 
         self.add_task(self.get_initial_task_method(),
@@ -225,7 +225,7 @@ class Scraper(metaclass=abc.ABCMeta):
 
             content = self.iterate_docket_item(scrape_type)
             if not content:
-                sessions.end_session(
+                sessions.close_session(
                     ScrapeKey(self.get_region().region_code, scrape_type))
                 return
 

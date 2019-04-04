@@ -63,6 +63,7 @@ def infer_release():
             if next_phase:
                 logging.info("Enqueueing %s for region %s.",
                              next_phase, region.region_code)
+                sessions.update_phase(session, scrape_phase.ScrapePhase.DONE)
                 queues.enqueue_scraper_phase(
                     region_code=region.region_code, url=next_phase_url)
 
