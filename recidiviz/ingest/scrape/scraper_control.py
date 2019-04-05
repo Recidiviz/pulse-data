@@ -234,12 +234,15 @@ def scraper_stop():
         if not closed_sessions:
             return
 
-        region_scraper = regions.get_region(region).get_scraper()
-        region_scraper.stop_scrape(scrape_types)
-
-        if next_phase:
-            logging.info("Enqueueing %s for region %s.", next_phase, region)
-            queues.enqueue_scraper_phase(region_code=region, url=next_phase_url)
+        try:
+            logging.info("Stopping scraper for region %s.", region)
+            region_scraper = regions.get_region(region).get_scraper()
+            region_scraper.stop_scrape(scrape_types)
+        finally:
+            if next_phase:
+                logging.info("Enqueueing %s for region %s.", next_phase, region)
+                queues.enqueue_scraper_phase(region_code=region,
+                                             url=next_phase_url)
 
     if not scrape_regions or not scrape_types:
         return ('Missing or invalid parameters, see service logs.',

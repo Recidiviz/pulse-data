@@ -19,10 +19,11 @@
 
 import datetime
 import json
+import logging
 import uuid
 from typing import List
 
-from google.cloud import tasks
+from google.cloud import exceptions, tasks
 
 from recidiviz.common.common_utils import retry_grpc_goaway
 from recidiviz.utils import environment, metadata
@@ -91,7 +92,10 @@ def purge_scrape_tasks(*, region_code: str, queue_name: str):
     """
     for task in list_scrape_tasks(
             region_code=region_code, queue_name=queue_name):
-        retry_grpc_goaway(NUM_GRPC_RETRIES, client().delete_task, task.name)
+        try:
+            retry_grpc_goaway(NUM_GRPC_RETRIES, client().delete_task, task.name)
+        except exceptions.NotFound as e:
+            logging.debug('Task not found: %s', e)
 
 
 def list_scrape_tasks(*, region_code: str, queue_name: str) \
