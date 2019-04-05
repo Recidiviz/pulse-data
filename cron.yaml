@@ -80,8 +80,8 @@ cron:
 
   - description: Run texas aggregate report
     url: /scrape_aggregate_reports/scrape_state?state=texas
-    schedule: every day 21:00
-    timezone: America/Denver
+    schedule: every day 15:30
+    timezone: America/New_York
     retry_parameters:
       min_backoff_seconds: 2.5
       max_doublings: 5
@@ -89,7 +89,7 @@ cron:
 
   - description: Run florida aggregate report
     url: /scrape_aggregate_reports/scrape_state?state=florida
-    schedule: every day 21:00
+    schedule: every day 16:00
     timezone: America/New_York
     retry_parameters:
       min_backoff_seconds: 2.5
@@ -98,7 +98,7 @@ cron:
 
   - description: Run georgia aggregate report
     url: /scrape_aggregate_reports/scrape_state?state=georgia
-    schedule: every day 21:00
+    schedule: every day 16:30
     timezone: America/New_York
     retry_parameters:
       min_backoff_seconds: 2.5
@@ -107,8 +107,8 @@ cron:
 
   - description: Run hawaii aggregate report
     url: /scrape_aggregate_reports/scrape_state?state=hawaii
-    schedule: every day 21:00
-    timezone: Pacific/Honolulu
+    schedule: every day 17:00
+    timezone: America/New_York
     retry_parameters:
       min_backoff_seconds: 2.5
       max_doublings: 5
@@ -116,7 +116,7 @@ cron:
 
   - description: Run kentucky aggregate report
     url: /scrape_aggregate_reports/scrape_state?state=kentucky
-    schedule: every day 21:00
+    schedule: every day 17:30
     timezone: America/New_York
     retry_parameters:
       min_backoff_seconds: 2.5
@@ -125,7 +125,7 @@ cron:
 
   - description: Run new_york aggregate report
     url: /scrape_aggregate_reports/scrape_state?state=new_york
-    schedule: every day 21:00
+    schedule: every day 18:00
     timezone: America/New_York
     retry_parameters:
       min_backoff_seconds: 2.5
@@ -134,8 +134,8 @@ cron:
 
   - description: Run california aggregate report
     url: /scrape_aggregate_reports/scrape_state?state=california
-    schedule: every day 21:00
-    timezone: America/Los_Angeles
+    schedule: every day 18:30
+    timezone: America/New_York
     retry_parameters:
       min_backoff_seconds: 2.5
       max_doublings: 5
@@ -143,7 +143,7 @@ cron:
 
   - description: Run tennessee aggregate report
     url: /scrape_aggregate_reports/scrape_state?state=tennessee
-    schedule: every day 21:00
+    schedule: every day 19:00
     timezone: America/New_York
     retry_parameters:
       min_backoff_seconds: 2.5
