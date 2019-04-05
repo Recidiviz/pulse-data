@@ -17,7 +17,7 @@
 """Checks the status of scrapers to detect when they have completed."""
 
 import logging
-import threading
+from concurrent import futures
 from http import HTTPStatus
 
 from flask import Blueprint, request, url_for
@@ -61,19 +61,25 @@ def check_for_finished_scrapers():
     region_codes = ingest_utils.validate_regions(
         get_values('region', request.args))
 
-    threads = []
-    for region_code in region_codes:
-        # Kick off a check for each region
-        thread = threading.Thread(
-            target=_check_finished,
-            args=(region_code,)
-        )
-        thread.start()
-        threads.append(thread)
+    failed_regions = []
+    with futures.ThreadPoolExecutor() as executor:
+        future_to_region = \
+            {executor.submit(_check_finished, region_code): region_code
+             for region_code in region_codes}
+        for future in futures.as_completed(future_to_region):
+            region_code = future_to_region[future]
+            with monitoring.push_tags({monitoring.TagKey.REGION: region_code}):
+                try:
+                    future.result()
+                except Exception:
+                    logging.exception(
+                        'An exception occured when checking region %s',
+                        region_code)
+                    failed_regions.append(region_code)
 
-    # Wait for all the checks to complete.
-    for thread in threads:
-        thread.join()
+    if failed_regions:
+        return ('Failed to check regions: {}'.format(failed_regions),
+                HTTPStatus.INTERNAL_SERVER_ERROR)
     return ('', HTTPStatus.OK)
 
 def is_scraper_finished(region_code: str):
