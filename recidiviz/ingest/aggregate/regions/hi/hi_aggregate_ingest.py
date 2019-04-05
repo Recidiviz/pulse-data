@@ -16,6 +16,7 @@
 # =============================================================================
 """Parse the HI Aggregated Statistics PDF."""
 import datetime
+import re
 from typing import Dict, Iterable, List
 
 import more_itertools
@@ -103,18 +104,16 @@ def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
 
 
 def parse_date(filename: str) -> datetime.date:
-    end = filename.index('.pdf')
-    # There are two formats for hawaiis dates:
-    # _wp-content_uploads_2018_12_pop-reports-eom-2018-11-30.pdf and
-    # _wp-content_uploads_2017_10_pop-reports-eom-2017-09-30-17.pdf
-    try:
-        start = end - 10
-        d = date.parse_date(filename[start:end])
-    except ValueError:
-        start = end - 8
-        d = date.parse_date(filename[start:end])
-    if d:
-        return d
+    # Hawaii report pdfs have names that start with `Pop-Reports-EOM-`, followed
+    # by a 10-character date and possibly another number (version?). For example
+    # `Pop-Reports-EOM-2019-03-21.pdf` and `Pop-Reports-EOM-2018-03-31-1.pdf`.
+    regex = r'.*?Pop-Reports-EOM-([\d-]{10})'
+    match = re.search(regex, filename, re.IGNORECASE)
+    if match:
+        date_str = match.group(1)
+        parsed_date = date.parse_date(date_str)
+        if parsed_date:
+            return parsed_date
     raise AggregateDateParsingError("Could not extract date")
 
 
