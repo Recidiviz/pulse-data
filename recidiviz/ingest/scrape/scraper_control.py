@@ -25,6 +25,7 @@ Attributes:
 import logging
 import threading
 import time
+from concurrent import futures
 from http import HTTPStatus
 
 from flask import Blueprint, request, url_for
@@ -108,6 +109,9 @@ def scraper_start():
         # Note, the request context isn't copied when launching this thread, so
         # any logs from within `load_target_list` will not be associated with
         # the start scraper request.
+        #
+        # TODO(#1045): Either kill this, or ensure logs are correlated and
+        # exceptions are passed up to the parent thread.
         load_docket_thread = threading.Thread(
             target=docket.load_target_list,
             args=(scrape_key, given_names, surname))
@@ -125,6 +129,8 @@ def scraper_start():
 
     timezone = ingest_utils.lookup_timezone(request.args.get("timezone"))
     region_value = get_values("region", request.args)
+    # If a timezone wasn't provided start all regions. If it was only start
+    # regions that match the timezone.
     scrape_regions = ingest_utils.validate_regions(
         region_value, timezone=timezone)
     scrape_types = ingest_utils.validate_scrape_types(get_values("scrape_type",
@@ -137,23 +143,38 @@ def scraper_start():
     given_names = get_value("given_names", request.args, "")
     surname = get_value("surname", request.args, "")
 
-    start_scraper_threads = []
-    for region_name in scrape_regions:
-        for scraper_type in scrape_types:
-            # If timezone wasn't provided, return all but if it was, only
-            # return regions that match the timezone.
-            start_scraper_thread = threading.Thread(
-                target=_start_scraper,
-                args=(region_name, scraper_type)
-            )
-            start_scraper_thread.start()
-            start_scraper_threads.append(start_scraper_thread)
+    failed_starts = []
+    with futures.ThreadPoolExecutor() as executor:
+        # Start all of the calls.
+        future_to_args = \
+            {executor.submit(_start_scraper, region_code, scrape_type): \
+                (region_code, scrape_type)
+             for scrape_type in scrape_types
+             for region_code in scrape_regions}
 
-    # Once everything is started, lets wait for everything to end before
-    # returning.
-    for start_scraper_thread in start_scraper_threads:
-        start_scraper_thread.join()
+        # Wait for all the calls to finish.
+        for future in futures.as_completed(future_to_args):
+            region_code, scrape_type = future_to_args[future]
+            with monitoring.push_tags({monitoring.TagKey.REGION: region_code}):
+                try:
+                    future.result()
+                except Exception:
+                    logging.exception(
+                        'An exception occured when starting region %s for %s',
+                        region_code, scrape_type)
+                    failed_starts.append((region_code, scrape_type))
+                else:
+                    logging.info('Finished starting region %s for %s.',
+                                 region_code, scrape_type)
 
+    if failed_starts:
+        # This causes the whole request to be retried. Any regions whose session
+        # was opened during this call will be immediately skipped in the next
+        # call when we check for open sessions. Any regions we failed to start
+        # likely still had sessions opened and thus will be skipped, but it is
+        # worth retrying anyway.
+        return ('Failed to start regions: {}'.format(failed_starts),
+                HTTPStatus.INTERNAL_SERVER_ERROR)
     return ('', HTTPStatus.OK)
 
 
@@ -191,6 +212,8 @@ def scraper_stop():
         N/A
     """
     timezone = ingest_utils.lookup_timezone(request.args.get("timezone"))
+    # If a timezone wasn't provided stop all regions. If it was only stop
+    # regions that match the timezone.
     scrape_regions = ingest_utils.validate_regions(
         get_values("region", request.args), timezone=timezone)
     scrape_types = ingest_utils.validate_scrape_types(get_values("scrape_type",
@@ -222,20 +245,36 @@ def scraper_stop():
         return ('Missing or invalid parameters, see service logs.',
                 HTTPStatus.BAD_REQUEST)
 
-    stop_scraper_threads = []
-    for region_name in scrape_regions:
-        logging.info("Stopping %s scrapes for %s.", scrape_types, region_name)
+    failed_stops = []
+    with futures.ThreadPoolExecutor() as executor:
+        # Start all of the calls.
+        future_to_regions = \
+            {executor.submit(_stop_scraper, region_code): region_code
+             for region_code in scrape_regions}
 
-        stop_scraper_thread = threading.Thread(
-            target=_stop_scraper,
-            args=[region_name]
-        )
-        stop_scraper_thread.start()
-        stop_scraper_threads.append(stop_scraper_thread)
+        # Wait for all the calls to finish.
+        for future in futures.as_completed(future_to_regions):
+            region_code = future_to_regions[future]
+            with monitoring.push_tags({monitoring.TagKey.REGION: region_code}):
+                try:
+                    future.result()
+                except Exception:
+                    logging.exception(
+                        'An exception occured when stopping region %s for %s',
+                        region_code, scrape_types)
+                    failed_stops.append(region_code)
+                else:
+                    logging.info('Finished stopping region %s for %s.',
+                                 region_code, scrape_types)
 
-    for stop_scraper_thread in stop_scraper_threads:
-        stop_scraper_thread.join()
-
+    if failed_stops:
+        # This causes the whole request to be retried. Any regions whose session
+        # was closed during this call will be immediately skipped in the next
+        # call as we won't find any sessions to close. Any regions we failed to
+        # start likely still had their sessions closed and thus will be skipped,
+        # but it is worth retrying anyway.
+        return ('Failed to stop regions: {}'.format(failed_stops),
+                HTTPStatus.INTERNAL_SERVER_ERROR)
     return ('', HTTPStatus.OK)
 
 
