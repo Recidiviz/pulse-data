@@ -191,7 +191,7 @@ Individual tests can be run via `pytest filename.py`. To run all tests, go to th
 The configuration in `setup.cfg` and `.coveragerc` will ensure the right code is tested and the proper code coverage
 metrics are displayed.
 
-A few tests (such as `sessions.py`) depend on running emulators (i.e. [Cloud Datastore Emulator](https://cloud.google.com/datastore/docs/tools/datastore-emulator)). These tests are skipped by default when run locally, but will always be tested by Travis. If you are modifying code tested by these tests then you can run the tests locally. You must first install the both emulators via `gcloud components install cloud-datastore-emulator` and `gcloud components install cloud-pusub-emulator`, which depends on the Java JRE (>=8). Then run the tests, telling it to bring up the emulators and include these tests:
+A few tests (such as `sessions.py`) depend on running emulators (i.e. [Cloud Datastore Emulator](https://cloud.google.com/datastore/docs/tools/datastore-emulator)). These tests are skipped by default when run locally, but will always be tested by Travis. If you are modifying code tested by these tests then you can run the tests locally. You must first install the both emulators via `gcloud components install cloud-datastore-emulator` and `gcloud components install cloud-pusub-emulator`, which depends on the Java JRE (>=8). You will also need to install the beta command to execute these emulators, with `gcloud components install beta`. Then run the tests, telling it to bring up the emulators and include these tests:
 
 ```bash
 $ pytest recidiviz --with-emulator
@@ -200,7 +200,7 @@ $ pytest recidiviz --with-emulator
 [A bug in the google client](https://github.com/googleapis/google-cloud-python/issues/5738) requires that you have default application credentials. This should not be necessary in the future. For now, make sure that you have done both `gcloud config set project recidiviz` and `gcloud auth application-default login`.
 
 #### Checking code style
-Run Pylint across the main body of code, in particular: `pylint *.py recidiviz`.
+Run Pylint across the main body of code, in particular: `pylint recidiviz`.
 
 The output will include individual lines for all style violations, followed by a handful of reports, and finally a
 general code score out of 10. Fix any new violations in your commit. If you believe there is cause for a rule change,
