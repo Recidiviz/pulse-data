@@ -20,11 +20,30 @@ import pytest
 
 from recidiviz.common import date
 
+
 def test_mungeDateString_munges():
     assert date.munge_date_string('1y 1m 1d') == '1year 1month 1day'
 
+
 def test_mungeDateString_doesntMunge():
     assert date.munge_date_string('1year 1month 1day') == '1year 1month 1day'
+
+
+def test_mungeDateString_caseInsensitive():
+    assert date.munge_date_string('1Y 1M 1D') == '1year 1month 1day'
+
+
+def test_mungeDateString_noYear():
+    assert date.munge_date_string('10M 12D') == '10month 12day'
+
+
+def test_mungeDateString_noMonth():
+    assert date.munge_date_string('9Y 28D') == '9year 28day'
+
+
+def test_mungeDateString_noDay():
+    assert date.munge_date_string('4y 3m') == '4year 3month'
+
 
 def test_parseDateTime():
     assert date.parse_datetime('Jan 1, 2018 1:40') == \
