@@ -27,11 +27,22 @@ from recidiviz.persistence.converter import converter_utils
 def munge_date_string(date_string: str) -> str:
     """Tranforms the input date string so it can be parsed, if necessary"""
     return re.sub(
-        r'^(?P<year>\d+)y\s*(?P<month>\d+)m\s*(?P<day>\d+)d$',
-        lambda match: '{year}year {month}month {day}day'.format(
-            year=match.group('year'), month=match.group('month'),
-            day=match.group('day')),
-        date_string)
+        r'^((?P<year>\d+)y)?\s*((?P<month>\d+)m)?\s*((?P<day>\d+)d)?$',
+        _date_component_match, date_string, flags=re.IGNORECASE)
+
+
+def _date_component_match(match) -> str:
+    components = []
+
+    if match.group('year'):
+        components.append('{year}year'.format(year=match.group('year')))
+    if match.group('month'):
+        components.append('{month}month'.format(month=match.group('month')))
+    if match.group('day'):
+        components.append('{day}day'.format(day=match.group('day')))
+
+    return ' '.join(components)
+
 
 
 def parse_datetime(
