@@ -91,8 +91,6 @@ By default, the first task is of `INITIAL_AND_MORE` type so that `get_more_tasks
 
 For convenience, there also exists `SCRAPE_DATA_AND_MORE` which calls both `get_more_tasks` as well as `populate_data`.  This can be used when a persons information is spread across multiple pages.  For example their booking data is on one page, and the user must click a link to reach the pages there the charges information is displayed.
 
-_TODO(697): Implement support for serializing and deserializing IngestInfo, such that we can actually handle booking data spread across multiple pages._
-
 #### What is the structure of pages on the website?
 Most website rosters follow a couple of familiar formats. For examples, refer to
 these scrapers:

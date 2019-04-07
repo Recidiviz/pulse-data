@@ -15,9 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""A module which takes any content and extracts from it key/value pairs that
-a user might care about.  The extracted information is put into the ingest data
-model and returned.
+"""A module which takes any HTML content and extracts from it key/value pairs
+that a user might care about.  The extracted information is put into the ingest
+data model and returned.
 
 This DataExtractor implementation works over HTML content by iterating over the
 table cells (<td> and <tr> elements). If a cell matches  a key, we attempt to
