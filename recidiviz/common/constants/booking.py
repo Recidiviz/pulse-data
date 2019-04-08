@@ -97,6 +97,7 @@ class ReleaseReason(EntityEnum, metaclass=EntityEnumMeta):
 # space. Add mappings here using a single space between words and numbers.
 # For example, `N/A` can be written as `N A` and `(10%)` can be written as `10`.
 _ADMISSION_REASON_MAP = {
+    'BOND SURRENDER': AdmissionReason.NEW_COMMITMENT,
     'COURT ORDER': AdmissionReason.NEW_COMMITMENT,
     'ESCAPE': AdmissionReason.ESCAPE,
     'NEW COMMITMENT': AdmissionReason.NEW_COMMITMENT,
