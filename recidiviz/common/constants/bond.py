@@ -122,6 +122,7 @@ BOND_TYPE_MAP = {
     'NONE': BondType.DENIED,
     'NOT REQUIRED': BondType.NOT_REQUIRED,
     'O R': BondType.NOT_REQUIRED,
+    'O RD': BondType.NOT_REQUIRED,
     'OPEN': None,
     'OR': BondType.NOT_REQUIRED,
     'OR BOND': BondType.NOT_REQUIRED,
