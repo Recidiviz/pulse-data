@@ -15,12 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains logic for communicating with the batch persistence layer."""
+import datetime
 import itertools
 import json
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from http import HTTPStatus
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Dict, Set
 
 import attr
 import cattr
@@ -30,6 +31,7 @@ from opencensus.stats import aggregation, measure, view
 
 from recidiviz.common import queues
 from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.ingest.models.ingest_info import IngestInfo, Person
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.scrape import ingest_utils, scrape_phase, sessions
@@ -112,7 +114,8 @@ class FetchBatchMessagesError(Exception):
     """Raised when there was an error with batch persistence."""
 
 
-def _get_batch_messages(scrape_key) -> List[pubsub.types.ReceivedMessage]:
+def _get_batch_messages(
+        scrape_key: ScrapeKey) -> List[pubsub.types.ReceivedMessage]:
     """Reads all of the messages from pubsub for the scrape key.
 
     Args:
@@ -122,11 +125,13 @@ def _get_batch_messages(scrape_key) -> List[pubsub.types.ReceivedMessage]:
         A list of messages (ReceivedMessaged) containing the message data
         and the ack_id.
     """
+
     @structured_logging.copy_trace_id_to_thread
     @monitoring.with_region_tag
     def async_pull(_) -> Tuple[List[pubsub.types.ReceivedMessage], str]:
         """Pulls messages and returns them and an error string, if any."""
         logging.info("Pulling messages off pubsub")
+
         def inner():
             subscriber = pubsub_helper.get_subscriber()
             sub_path = pubsub_helper.get_subscription_path(
@@ -180,7 +185,8 @@ def _get_batch_messages(scrape_key) -> List[pubsub.types.ReceivedMessage]:
     return messages
 
 
-def _ack_messages(messages, scrape_key):
+def _ack_messages(
+        messages: List[pubsub.types.ReceivedMessage], scrape_key: ScrapeKey):
     """Calls acknowledge on the list of messages in order to remove them
     from the queue.
 
@@ -196,7 +202,8 @@ def _ack_messages(messages, scrape_key):
             scrape_key, pubsub_type=BATCH_PUBSUB_TYPE), ack_ids)
 
 
-def _get_proto_from_messages(messages):
+def _get_proto_from_messages(messages: List[pubsub.types.ReceivedMessage]) -> \
+        Tuple[ingest_info_pb2.IngestInfo, Dict[int, BatchMessage]]:
     """Merges an ingest_info_proto from all of the batched messages.
 
     Args:
@@ -207,8 +214,8 @@ def _get_proto_from_messages(messages):
     """
     logging.info("Starting generation of proto")
     ingest_infos_from_messages: List[IngestInfo] = []
-    successful_tasks = set()
-    failed_tasks = {}
+    successful_tasks: Set[int] = set()
+    failed_tasks: Dict[int, BatchMessage] = {}
     for message in messages:
         batch_message = BatchMessage.from_serializable(
             json.loads(message.message.data.decode()))
@@ -257,8 +264,8 @@ def _dedup_people(ingest_infos: List[IngestInfo]) -> IngestInfo:
     return IngestInfo(people=unique_people)
 
 
-def _should_abort(failed_tasks, total_people):
-    if (failed_tasks / total_people) >= FAILED_TASK_THRESHOLD:
+def _should_abort(failed_tasks: int, total_people: int) -> bool:
+    if total_people and (failed_tasks / total_people) >= FAILED_TASK_THRESHOLD:
         return True
     return False
 
@@ -283,7 +290,8 @@ def write_error(
     _publish_batch_message(batch_message, scrape_key)
 
 
-def persist_to_database(region_code, scrape_type, scraper_start_time):
+def persist_to_database(region_code: str, scrape_type: ScrapeType,
+                        scraper_start_time: datetime.datetime) -> bool:
     """Reads all of the messages on the pubsub queue for a region and persists
     them to the database.
     """

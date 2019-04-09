@@ -66,7 +66,11 @@ Attributes:
 import csv
 import json
 import logging
+from typing import Tuple, Optional
 
+from google.cloud import pubsub
+
+from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.scrape import constants
 from recidiviz.utils import environment, pubsub_helper, regions
 
@@ -81,7 +85,8 @@ PUBSUB_TYPE = 'docket'
 # ##################### #
 
 
-def load_target_list(scrape_key, given_names="", surname=""):
+def load_target_list(
+        scrape_key: ScrapeKey, given_names: str = "", surname: str = ""):
     """Starts docket loading based on scrape type and region.
 
     Determines correct scrape type and kicks off target list generation,
@@ -111,7 +116,8 @@ def load_target_list(scrape_key, given_names="", surname=""):
             load_empty_message(scrape_key)
 
 
-def load_background_target_list(scrape_key, name_file, query_name):
+def load_background_target_list(scrape_key: ScrapeKey, name_file: str,
+                                query_name: Optional[Tuple[str, str]]):
     """Load background scrape docket items, from name file.
 
     Iterates over a CSV of common names, loading a docket item for the scraper
@@ -170,7 +176,7 @@ def load_background_target_list(scrape_key, name_file, query_name):
     logging.info("Finished loading background target list to docket.")
 
 
-def load_empty_message(scrape_key):
+def load_empty_message(scrape_key: ScrapeKey):
     """Loads an empty message onto background scrape docket for region.
 
     This region does not use a list of names for background scrapes so only an
@@ -187,11 +193,11 @@ def load_empty_message(scrape_key):
 
 
 @environment.test_only
-def add_to_query_docket(scrape_key, item):
+def add_to_query_docket(scrape_key: ScrapeKey, item):
     return _add_to_query_docket(scrape_key, item)
 
 
-def _add_to_query_docket(scrape_key, item):
+def _add_to_query_docket(scrape_key: ScrapeKey, item):
     """Add docket item to the query docket for relevant region / scrape type
 
     Adds item the query docket for the given region and scrape type. The scraper
@@ -222,7 +228,9 @@ def _add_to_query_docket(scrape_key, item):
 # ########################## #
 
 
-def get_new_docket_item(scrape_key, return_immediately=False):
+def get_new_docket_item(
+        scrape_key: ScrapeKey,
+        return_immediately=False) -> Optional[pubsub.types.ReceivedMessage]:
     """Retrieves an item from the docket for the specified region / scrape type
 
     Retrieves an arbitrary item still in the docket (whichever docket
@@ -245,10 +253,11 @@ def get_new_docket_item(scrape_key, return_immediately=False):
     subscription_path = pubsub_helper.get_subscription_path(
         scrape_key, pubsub_type=PUBSUB_TYPE)
 
-    def inner():
+    def inner() -> pubsub.types.PullResponse:
         return pubsub_helper.get_subscriber().pull(
             subscription_path, max_messages=1,
             return_immediately=return_immediately)
+
     response = pubsub_helper.retry_with_create(
         scrape_key, inner, pubsub_type=PUBSUB_TYPE)
 
@@ -268,7 +277,7 @@ def get_new_docket_item(scrape_key, return_immediately=False):
 # ######################## #
 
 
-def purge_query_docket(scrape_key):
+def purge_query_docket(scrape_key: ScrapeKey):
     """Purges the docket of all tasks for provided region / scrape type
 
     This deletes our current subscription to the given docket topic. When we try
@@ -286,7 +295,7 @@ def purge_query_docket(scrape_key):
     pubsub_helper.purge(scrape_key, PUBSUB_TYPE)
 
 
-def ack_docket_item(scrape_key, ack_id):
+def ack_docket_item(scrape_key: ScrapeKey, ack_id: str):
     """Ack a specific docket item
 
     Acknowledges a specific docket item once it's been completed. This indicates
@@ -298,8 +307,10 @@ def ack_docket_item(scrape_key, ack_id):
     Returns:
         N/A
     """
+
     def inner():
         pubsub_helper.get_subscriber().acknowledge(
             pubsub_helper.get_subscription_path(
                 scrape_key, pubsub_type=PUBSUB_TYPE), [ack_id])
+
     pubsub_helper.retry_with_create(scrape_key, inner, pubsub_type=PUBSUB_TYPE)
