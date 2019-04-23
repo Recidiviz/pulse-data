@@ -89,7 +89,16 @@ PersonCountTable AS (
   GROUP BY day, fips, race, gender
 )
 
-SELECT PersonCountTable.day, PersonCountTable.fips, PersonCountTable.race, PersonCountTable.gender, person_count, admitted, released, CountyNames.county_name, CountyNames.state
+SELECT
+  PersonCountTable.day,
+  PersonCountTable.fips,
+  PersonCountTable.race,
+  PersonCountTable.gender,
+  PersonCountTable.person_count - COALESCE(ReleasedTable.released, 0) AS person_count,
+  AdmittedTable.admitted,
+  ReleasedTable.released,
+  CountyNames.county_name,
+  CountyNames.state
 FROM PersonCountTable
 FULL JOIN AdmittedTable
 ON PersonCountTable.day = AdmittedTable.day
