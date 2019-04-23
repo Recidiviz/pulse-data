@@ -356,6 +356,8 @@ def read_and_persist():
                 region, scrape_type, scraper_start_time)
             batch_tags[monitoring.TagKey.PERSISTED] = did_persist
         except Exception as e:
+            logging.exception("An exception occurred in read and persist: %s",
+                              type(e).__name__)
             batch_tags[monitoring.TagKey.STATUS] = 'ERROR: {}' \
                 .format(type(e).__name__)
             raise BatchPersistError(region, scrape_type)

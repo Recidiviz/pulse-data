@@ -81,10 +81,8 @@ def scraper_start():
                  None)
         if most_recent_session and not \
                 most_recent_session.phase.has_persisted():
-            logging.error(
-                "Session already running for region %s. Could not start new "
-                "session", region)
-            return
+            raise Exception("Session already running for region %s. Could not "
+                            "start a new session" % region)
 
         logging.info(
             "Purging pubsub queue for scrape_key: %s and pubsub_type: %s",
