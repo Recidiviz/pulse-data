@@ -233,6 +233,9 @@ def write(ingest_info, metadata):
                 enum_parsing_errors=enum_parsing_errors,
                 protected_class_errors=protected_class_errors,
                 data_validation_errors=data_validation_errors):
+            #  TODO(#1665): remove once dangling PERSIST session investigation
+            #   is complete.
+            logging.info("_should_abort_ was true after converting people")
             return False
 
         if not _should_persist():
@@ -245,6 +248,7 @@ def write(ingest_info, metadata):
             entity_matching_output = entity_matching.match(
                 session, metadata.region, people)
             people = entity_matching_output.people
+
             logging.info(
                 "Completed entity matching with %s errors",
                 entity_matching_output.error_count)
@@ -253,6 +257,9 @@ def write(ingest_info, metadata):
                     enum_parsing_errors=enum_parsing_errors,
                     entity_matching_errors=entity_matching_output.error_count,
                     data_validation_errors=data_validation_errors):
+                #  TODO(#1665): remove once dangling PERSIST session
+                #   investigation is complete.
+                logging.info("_should_abort_ was true after entity matching")
                 return False
             database.write_people(
                 session, people, metadata,
@@ -262,6 +269,8 @@ def write(ingest_info, metadata):
             persisted = True
             mtags[monitoring.TagKey.PERSISTED] = True
         except Exception as e:
+            logging.exception("An exception was raised in write(): %s",
+                              type(e).__name__)
             # Record the error type that happened and increment the counter
             mtags[monitoring.TagKey.ERROR] = type(e).__name__
             measurements.measure_int_put(m_errors, 1)

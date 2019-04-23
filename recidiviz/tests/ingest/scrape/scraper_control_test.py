@@ -200,7 +200,7 @@ class TestScraperStart:
         headers = {'X-Appengine-Cron': "test-cron"}
         response = client.get('/start', query_string=request_args,
                               headers=headers)
-        assert response.status_code == 200
+        assert response.status_code == 500
         assert not mock_purge.called
         assert not mock_create_session.called
         assert not mock_tracker.called
