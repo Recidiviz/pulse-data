@@ -67,7 +67,7 @@ class Region:
     """
 
     region_code: str = attr.ib()
-    jurisdiction_id: str = attr.ib()
+    jurisdiction_id: str = attr.ib(validator=attr.validators.instance_of(str))
     agency_name: str = attr.ib()
     agency_type: str = attr.ib()
     environment: Union[str, bool] = attr.ib()
