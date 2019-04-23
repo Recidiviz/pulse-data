@@ -54,41 +54,52 @@ If you are contributing to this repository regularly for an extended period of t
 If you can install `python3.7` locally, do so. 
 
 On a Mac with [Homebrew](https://brew.sh/), you can install `python3.7` with:
-```
-brew install python3
+```bash
+$ brew install python3
 ```
 
 On Ubuntu 18.04, you can install `python3.7` with:
-```
-apt update -y && apt install -y python3.7-dev python3-pip
+```bash
+$ apt update -y && apt install -y python3.7-dev python3-pip
 ```
 
 You do not need to change your default python version, as `pipenv` will look for 3.7.
 
 Upgrade your `pip` to the latest version:
+```bash
+$ pip install -U pip
 ```
-pip install -U pip
+
+If you do not already have `pip` installed, you can install it on a Mac with these commands:
+```bash
+$ curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+$ python get-pip.py --user
+```
+
+On Ubuntu 18.04, you can install `pip` with:
+```
+$ sudo apt-get install python-pip
 ```
 
 Install [`pipenv`](https://pipenv.readthedocs.io/en/latest/):
-```
-pip install pipenv
+```bash
+$ pip install pipenv --user
 ```
 
 [Fork this repository](https://github.com/Recidiviz/pulse-data/fork), clone it locally, and enter its directory: 
 ```
-git clone git@github.com:your_github_username/pulse-data.git
-cd pulse-data
+$ git clone git@github.com:your_github_username/pulse-data.git
+$ cd pulse-data
 ```
 
 Create a new pipenv environment and install all project and development dependencies:
-```
-pipenv sync --dev
+```bash
+$ pipenv sync --dev
 ```
 
 To activate your pipenv environment, run:
-```
-pipenv shell
+```bash
+$ pipenv shell
 ```
 
 Finally, run `pytest`. If no tests fail, you are ready to develop!
@@ -96,18 +107,18 @@ Finally, run `pytest`. If no tests fail, you are ready to develop!
 **NOTE**: If some `recidiviz/tests/ingest/aggregate` tests fail, you may need to install the Java Runtime Environment (JRE) version 7 or higher.
 
 You can ignore those tests with:
-```
-pytest --ignore=recidiviz/tests/ingest/aggregate
+```bash
+$ pytest --ignore=recidiviz/tests/ingest/aggregate
 ```
 
 On a Mac with [Homebrew](https://brew.sh/), you can install the JRE with:
-```
-brew cask install java
+```bash
+$ brew cask install java
 ```
 
 On Ubuntu 18.04, you can install the JRE with:
-```
-apt update -y && apt install -y default-jre
+```bash
+$ apt update -y && apt install -y default-jre
 ```
 
 
@@ -124,39 +135,39 @@ Click the following links to directly download Docker installation binaries for 
  * [Windows](https://download.docker.com/win/stable/Docker%20for%20Windows%20Installer.exe)
 
 Once Docker is installed, [fork this repository](https://github.com/Recidiviz/pulse-data/fork), clone it locally, and enter its directory: 
-```
-git clone git@github.com:your_github_username/pulse-data.git
-cd pulse-data
+```bash
+$ git clone git@github.com:your_github_username/pulse-data.git
+$ cd pulse-data
 ```
 
 Build the image:
-```
-docker build -t recidiviz-image . --build-arg DEV_MODE=True
+```bash
+$ docker build -t recidiviz-image . --build-arg DEV_MODE=True
 ```
 
 Stop and delete previous instances of the image if they exist:
-```
-docker stop recidiviz && docker rm recidiviz
+```bash
+$ docker stop recidiviz && docker rm recidiviz
 ```
 
 Run a new instance, mounting the local working directory within the image:
-```
-docker run --name recidiviz -d -t -v $(pwd):/app recidiviz-image
+```bash
+$ docker run --name recidiviz -d -t -v $(pwd):/app recidiviz-image
 ```
 
 Open a `bash` shell within the instance:
-```
-docker exec -it recidiviz bash
+```bash
+$ docker exec -it recidiviz bash
 ```
 
 Once in the instance's `bash` shell, update your pipenv environment:
-```
-pipenv sync --dev
+```bash
+$ pipenv sync --dev
 ```
 
 To activate your pipenv environment, run:
-```
-pipenv shell
+```bash
+$ pipenv shell
 ```
 
 Finally, run `pytest`. If no tests fail, you are ready to develop! 
