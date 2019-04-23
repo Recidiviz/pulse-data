@@ -17,18 +17,17 @@
 
 """Exposes API to infer release of people."""
 
-from http import HTTPStatus
 import logging
+from http import HTTPStatus
 
-from flask import Blueprint, request, url_for
+from flask import Blueprint, request
 
-from recidiviz.common import queues
 from recidiviz.common.constants.booking import CustodyStatus
 from recidiviz.ingest.scrape import scrape_phase, sessions
 from recidiviz.ingest.scrape.ingest_utils import validate_regions
-from recidiviz.utils.auth import authenticate_request
 from recidiviz.persistence import persistence
 from recidiviz.utils import monitoring
+from recidiviz.utils.auth import authenticate_request
 from recidiviz.utils.params import get_values
 from recidiviz.utils.regions import Region, RemovedFromWebsite, get_region
 
@@ -41,9 +40,6 @@ def infer_release():
     """Runs infer release for the given regions."""
     region_codes = validate_regions(get_values('region', request.args))
     regions = [get_region(region_code) for region_code in region_codes]
-
-    next_phase = scrape_phase.next_phase(request.endpoint)
-    next_phase_url = url_for(next_phase) if next_phase else None
 
     for region in regions:
         with monitoring.push_tags(
@@ -59,13 +55,7 @@ def infer_release():
                 persistence.infer_release_on_open_bookings(
                     region.region_code, session.start,
                     _get_custody_status(region))
-
-            if next_phase:
-                logging.info("Enqueueing %s for region %s.",
-                             next_phase, region.region_code)
                 sessions.update_phase(session, scrape_phase.ScrapePhase.DONE)
-                queues.enqueue_scraper_phase(
-                    region_code=region.region_code, url=next_phase_url)
 
     return '', HTTPStatus.OK
 
