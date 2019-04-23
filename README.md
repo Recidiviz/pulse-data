@@ -241,7 +241,7 @@ Typically on Monday morning the release engineer should:
 
 1. Verify that the tests in `master` are all passing in [Travis](https://travis-ci.org/Recidiviz/pulse-data/branches).
 1. Tag a commit with "va.b.c" following [semver](https://semver.org) for numbering. This will trigger a release to staging.
-1. Once the release is complete, run `https://recidiviz-staging.appspot.com/scraper/start?region=us_fl_martin` [TODO #623](https://github.com/Recidiviz/pulse-data/issues/623)
+1. Once the release is complete, run [`https://recidiviz-staging.appspot.com/scraper/start?region=us_fl_martin`](https://recidiviz-staging.appspot.com/scraper/start?region=us_fl_martin) [TODO #623](https://github.com/Recidiviz/pulse-data/issues/623)
 and verify that it is happy by looking at the monitoring page [TODO #59](https://github.com/Recidiviz/pulse-data/issues/59) and also checking the logs for errors.
 1. If it runs successfully, trigger a release to production by running `./deploy_production <release_tag>`
 
