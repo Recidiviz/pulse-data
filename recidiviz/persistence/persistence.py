@@ -120,7 +120,8 @@ def _infer_release_date_for_bookings(
 
     for booking in bookings:
         if persistence_utils.is_booking_active(booking):
-            logging.info("Marking booking %s as inferred release")
+            logging.info("Marking booking %s as inferred release",
+                         booking.booking_id)
             booking.release_date = last_ingest_time.date()
             booking.release_date_inferred = True
             booking.custody_status = custody_status
