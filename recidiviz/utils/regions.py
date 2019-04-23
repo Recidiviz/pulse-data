@@ -71,8 +71,8 @@ class Region:
     agency_name: str = attr.ib()
     agency_type: str = attr.ib()
     environment: Union[str, bool] = attr.ib()
-    base_url: str = attr.ib()
     timezone: tzinfo = attr.ib(converter=pytz.timezone)
+    base_url: Optional[str] = attr.ib(default=None)
     shared_queue: Optional[str] = attr.ib(default=None)
     queue: Optional[Dict[str, Any]] = attr.ib(default=None)
     removed_from_website: RemovedFromWebsite = \
