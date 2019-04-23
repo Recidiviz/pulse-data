@@ -199,6 +199,9 @@ def update_session(last_scraped: str, scrape_key: ScrapeKey) -> bool:
 def update_phase(session: ScrapeSession, phase: scrape_phase.ScrapePhase):
     """Updates the phase of the session to the given phase."""
     session.phase = phase
+    #  TODO(#1665): remove once dangling PERSIST session investigation
+    #   is complete.
+    logging.info("Updating phase from %s to %s", session.phase, phase)
     retry_grpc_goaway(NUM_GRPC_RETRIES, ds().put, session.to_entity())
 
 
