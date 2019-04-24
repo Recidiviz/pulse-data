@@ -72,8 +72,8 @@ def update_long_term_backups() -> Tuple[str, HTTPStatus]:
     backup_runs = list_result['items']
     manual_backup_runs = [backup_run for backup_run in backup_runs
                           if backup_run['type'] == 'ON_DEMAND']
-    logging.info('Backup list request completed with %s total backup runs '
-                 'and %s manual backup runs',
+    logging.info('Backup list request completed with [%s] total backup runs '
+                 'and [%s] manual backup runs',
                  str(len(backup_runs)),
                  str(len(manual_backup_runs)))
 

@@ -81,7 +81,7 @@ def get_subscription_path(scrape_key, pubsub_type):
 def create_topic_and_subscription(scrape_key, pubsub_type):
     topic_path = get_topic_path(scrape_key, pubsub_type)
     try:
-        logging.info("Creating pubsub topic: '%s'", topic_path)
+        logging.info("Creating pubsub topic: [%s]", topic_path)
         retry_grpc_goaway(
             NUM_GRPC_RETRIES,
             get_publisher().create_topic,
@@ -95,7 +95,7 @@ def create_topic_and_subscription(scrape_key, pubsub_type):
     time.sleep(1)
     subscription_path = get_subscription_path(scrape_key, pubsub_type)
     try:
-        logging.info("Creating pubsub subscription: '%s'", subscription_path)
+        logging.info("Creating pubsub subscription: [%s]", subscription_path)
         retry_grpc_goaway(
             NUM_GRPC_RETRIES,
             get_subscriber().create_subscription,

@@ -65,7 +65,7 @@ def get_secret(name):
             CACHED_SECRETS[name] = value
 
         else:
-            logging.error("Couldn't retrieve env var: %s.", name)
+            logging.error("Couldn't retrieve env var: [%s].", name)
 
     return value
 

@@ -41,7 +41,7 @@ def _get_metadata(url: str):
         metadata_cache[url] = r.text
         return r.text
     except Exception as e:
-        logging.error('Failed to fetch metadata \'%s\': \'%s\'', url, e)
+        logging.error('Failed to fetch metadata [%s]: [%s]', url, e)
         return None
 
 def project_number():

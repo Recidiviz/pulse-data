@@ -95,7 +95,7 @@ def purge_scrape_tasks(*, region_code: str, queue_name: str):
         try:
             retry_grpc_goaway(NUM_GRPC_RETRIES, client().delete_task, task.name)
         except exceptions.NotFound as e:
-            logging.debug('Task not found: %s', e)
+            logging.debug('Task not found: [%s]', e)
 
 
 def list_scrape_tasks(*, region_code: str, queue_name: str) \
