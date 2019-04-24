@@ -68,7 +68,7 @@ def retry_grpc_goaway(num_retries, fn, *args, **kwargs):
             if i == num_retries:
                 raise
             logging.warning(
-                'GOAWAY received, sleeping %.2f seconds and retrying',
+                'GOAWAY received, sleeping [%.2f] seconds and retrying',
                 time_to_sleep)
             if environment.in_gae():
                 time.sleep(time_to_sleep)

@@ -119,7 +119,8 @@ def wait_until_operation_finished(operation_id: str) -> bool:
         elif operation_status == 'DONE':
             operation_in_progress = False
 
-        logging.debug("Operation %s status: %s", operation_id, operation_status)
+        logging.debug("Operation [%s] status: [%s]",
+                      operation_id, operation_status)
 
     if 'error' in operation:
         errors = operation['error'].get('errors', [])
@@ -131,7 +132,7 @@ def wait_until_operation_finished(operation_id: str) -> bool:
                 error.get('code'),
                 error.get('message'))
     else:
-        logging.info("Operation %s succeeded.", operation_id)
+        logging.info("Operation [%s] succeeded.", operation_id)
         operation_success = True
 
     return operation_success
@@ -154,7 +155,7 @@ def export_table(table_name: str) -> bool:
         export_query = export_config.TABLE_EXPORT_QUERIES[table_name]
     except KeyError:
         logging.exception(
-            "Unknown table name '%s'. Is it listed in "
+            "Unknown table name [%s]. Is it listed in "
             "export_config.TABLES_TO_EXPORT?", table_name)
         return False
 
@@ -169,18 +170,18 @@ def export_table(table_name: str) -> bool:
         instance=instance_id,
         body=export_context)
 
-    logging.info("Starting export: %s", str(export_request.to_json()))
+    logging.info("Starting export: [%s]", str(export_request.to_json()))
     try:
         response = export_request.execute()
     except googleapiclient.errors.HttpError:
-        logging.exception("Failed to export table %s", table_name)
+        logging.exception("Failed to export table [%s]", table_name)
         return False
 
     # We need to block until the operation is done because
     # the Cloud SQL API only supports one operation at a time.
     operation_id = response['name']
-    logging.info("Waiting for export operation %s to complete for table '%s' "
-                 "in database '%s' in project '%s'",
+    logging.info("Waiting for export operation [%s] to complete for table [%s] "
+                 "in database [%s] in project [%s]",
                  operation_id, table_name, instance_id, project_id)
     operation_success = wait_until_operation_finished(operation_id)
 
