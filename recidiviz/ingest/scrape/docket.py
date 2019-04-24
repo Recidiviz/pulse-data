@@ -100,7 +100,7 @@ def load_target_list(
     Returns:
         N/A
     """
-    logging.info("Getting target list for scraper: %s", scrape_key)
+    logging.info("Getting target list for scraper: [%s]", scrape_key)
 
     if scrape_key.scrape_type is constants.ScrapeType.BACKGROUND:
         region = regions.get_region(scrape_key.region_code)
@@ -166,7 +166,7 @@ def load_background_target_list(scrape_key: ScrapeKey, name_file: str,
 
     # The query string was not found, add it as a separate docket item.
     if not should_write_names:
-        logging.info("Couldn't find user-provided name '%s' in name list, "
+        logging.info("Couldn't find user-provided name [%s] in name list, "
                      "adding one-off docket item for the name instead.",
                      str(query_name))
         futures.append(_add_to_query_docket(scrape_key, query_name))
@@ -216,7 +216,7 @@ def _add_to_query_docket(scrape_key: ScrapeKey, item):
     Returns:
         Future for the added message
     """
-    logging.debug("Attempting to add item to '%s' docket: %s",
+    logging.debug("Attempting to add item to [%s] docket: [%s]",
                   scrape_key, item)
     return pubsub_helper.get_publisher().publish(
         pubsub_helper.get_topic_path(scrape_key, pubsub_type=PUBSUB_TYPE),
@@ -263,7 +263,7 @@ def get_new_docket_item(
 
     if response.received_messages:
         docket_message = response.received_messages[0]
-        logging.info("Leased docket item from subscription: %s",
+        logging.info("Leased docket item from subscription: [%s]",
                      subscription_path)
     else:
         logging.info("No matching docket item found in the docket queue for "
@@ -291,7 +291,7 @@ def purge_query_docket(scrape_key: ScrapeKey):
     Returns:
         N/A
     """
-    logging.info("Purging existing query docket for scraper: %s", scrape_key)
+    logging.info("Purging existing query docket for scraper: [%s]", scrape_key)
     pubsub_helper.purge(scrape_key, PUBSUB_TYPE)
 
 

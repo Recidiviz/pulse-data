@@ -81,15 +81,15 @@ def scraper_start():
                  None)
         if most_recent_session and not \
                 most_recent_session.phase.has_persisted():
-            raise Exception("Session already running for region %s. Could not "
-                            "start a new session" % region)
+            raise Exception("Session already running for region [%s]. Could "
+                            "not start a new session" % region)
 
         logging.info(
-            "Purging pubsub queue for scrape_key: %s and pubsub_type: %s",
+            "Purging pubsub queue for scrape_key: [%s] and pubsub_type: [%s]",
             scrape_key, BATCH_PUBSUB_TYPE)
         pubsub_helper.purge(scrape_key, BATCH_PUBSUB_TYPE)
 
-        logging.info("Starting new scraper for: %s", scrape_key)
+        logging.info("Starting new scraper for: [%s]", scrape_key)
         scraper = regions.get_region(region).get_scraper()
 
         current_session = sessions.create_session(scrape_key)
@@ -117,7 +117,7 @@ def scraper_start():
 
         # Start scraper, if the docket is empty this will wait for a bounded
         # period of time for an item to be published (~90 seconds).
-        logging.info("Starting %s/%s scrape...", region, scrape_type)
+        logging.info("Starting [%s]/[%s] scrape...", region, scrape_type)
         scraper.start_scrape(scrape_type)
 
         sessions.update_phase(current_session, scrape_phase.ScrapePhase.SCRAPE)
@@ -158,11 +158,12 @@ def scraper_start():
                     future.result()
                 except Exception:
                     logging.exception(
-                        'An exception occured when starting region %s for %s',
+                        'An exception occured when starting region [%s] for '
+                        '[%s]',
                         region_code, scrape_type)
                     failed_starts.append((region_code, scrape_type))
                 else:
-                    logging.info('Finished starting region %s for %s.',
+                    logging.info('Finished starting region [%s] for [%s].',
                                  region_code, scrape_type)
 
     if failed_starts:
@@ -233,12 +234,13 @@ def scraper_stop():
             return
 
         try:
-            logging.info("Stopping scraper for region %s.", region)
+            logging.info("Stopping scraper for region [%s].", region)
             region_scraper = regions.get_region(region).get_scraper()
             region_scraper.stop_scrape(scrape_types)
         finally:
             if next_phase:
-                logging.info("Enqueueing %s for region %s.", next_phase, region)
+                logging.info("Enqueueing %s for region [%s].",
+                             next_phase, region)
                 queues.enqueue_scraper_phase(region_code=region,
                                              url=next_phase_url)
 
@@ -261,11 +263,12 @@ def scraper_stop():
                     future.result()
                 except Exception:
                     logging.exception(
-                        'An exception occured when stopping region %s for %s',
+                        'An exception occured when stopping region [%s] for '
+                        '[%s]',
                         region_code, scrape_types)
                     failed_stops.append(region_code)
                 else:
-                    logging.info('Finished stopping region %s for %s.',
+                    logging.info('Finished stopping region [%s] for [%s].',
                                  region_code, scrape_types)
 
     if failed_stops:
@@ -311,7 +314,7 @@ def scraper_resume():
     for region in scrape_regions:
 
         for scrape_type in scrape_types:
-            logging.info("Resuming %s scrape for %s.", scrape_type, region)
+            logging.info("Resuming [%s] scrape for [%s].", scrape_type, region)
 
             sessions.create_session(ScrapeKey(region, scrape_type))
 

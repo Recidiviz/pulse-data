@@ -148,7 +148,7 @@ def _get_batch_messages(
                 scrape_key, inner, pubsub_type=BATCH_PUBSUB_TYPE). \
                 received_messages
             if recv_messages:
-                logging.info("Finished pulling messages, read %s messages",
+                logging.info("Finished pulling messages, read [%s] messages",
                              len(recv_messages))
                 _ack_messages(recv_messages, scrape_key)
             return recv_messages, ''
@@ -172,7 +172,7 @@ def _get_batch_messages(
         results, errors = zip(*(future.result()
                                 for future in as_completed(futures)))
         if any(errors):
-            message = 'Failed to pull:\n\t{}'.format(
+            message = 'Failed to pull:\n\t[{}]'.format(
                 '\n\t'.join(filter(None, errors)))
             if all(errors):
                 raise FetchBatchMessagesError(message)
@@ -239,7 +239,7 @@ def _get_proto_from_messages(messages: List[pubsub.types.ReceivedMessage]) -> \
     deduped_ingest_info = _dedup_people(ingest_infos_from_messages)
     base_proto = ingest_utils.convert_ingest_info_to_proto(deduped_ingest_info)
     validator.validate(base_proto)
-    logging.info("Generated proto for %s people", len(base_proto.people))
+    logging.info("Generated proto for [%s] people", len(base_proto.people))
     return base_proto, failed_tasks
 
 

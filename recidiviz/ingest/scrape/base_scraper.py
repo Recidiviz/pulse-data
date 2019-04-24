@@ -106,7 +106,7 @@ class BaseScraper(Scraper):
         Returns:
             Returns a tuple of the content of the page and a dict of cookies.
         """
-        logging.info("Fetching content with endpoint: %s", endpoint)
+        logging.info("Fetching content with endpoint: [%s]", endpoint)
 
         # Create cookie jar to pass to fetch
         should_proxy = self.get_region().should_proxy
@@ -197,7 +197,7 @@ class BaseScraper(Scraper):
             if self.should_scrape_data(task.task_type):
                 # If we want to scrape data, we should either create an
                 # ingest_info object or get the one that already exists.
-                logging.info("Scraping data for %s and endpoint: %s",
+                logging.info("Scraping data for [%s] and endpoint: [%s]",
                              self.region.region_code, task.endpoint)
                 try:
                     scraped_data = self.populate_data(
@@ -206,7 +206,7 @@ class BaseScraper(Scraper):
                     raise ScraperPopulateDataError(str(e)) from e
 
             if self.should_get_more_tasks(task.task_type):
-                logging.info("Getting more tasks for %s and endpoint: %s",
+                logging.info("Getting more tasks for [%s] and endpoint: [%s]",
                              self.region.region_code, task.endpoint)
 
                 # Only send along ingest info if it will not be persisted now.
@@ -238,15 +238,17 @@ class BaseScraper(Scraper):
                     raise ScraperError("IngestInfo must be populated")
 
                 logging.info(
-                    "Writing ingest_info (%d people) to the database for %s",
+                    "Writing ingest_info ([%d] people) to the database for "
+                    "[%s]",
                     len(scraped_data.ingest_info.people),
                     self.region.region_code)
                 logging.info("Logging at most 4 people:")
                 loop_count = min(len(scraped_data.ingest_info.people),
                                  constants.MAX_PEOPLE_TO_LOG)
                 for i in range(loop_count):
-                    logging.info(scraped_data.ingest_info.people[i])
-                logging.info("Last seen time of person being set as: %s",
+                    logging.info("[%s]",
+                                 str(scraped_data.ingest_info.people[i]))
+                logging.info("Last seen time of person being set as: [%s]",
                              request.scraper_start_time)
                 metadata = IngestMetadata(self.region.region_code,
                                           self.region.jurisdiction_id,
