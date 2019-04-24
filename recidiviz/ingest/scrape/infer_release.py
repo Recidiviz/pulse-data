@@ -50,8 +50,9 @@ def infer_release():
             session = sessions.get_most_recent_completed_session(
                 region.region_code)
             if session:
-                logging.info("Got most recent completed session for %s with "
-                             'start time %s', region.region_code, session.start)
+                logging.info("Got most recent completed session for [%s] with "
+                             "start time [%s]",
+                             region.region_code, session.start)
                 persistence.infer_release_on_open_bookings(
                     region.region_code, session.start,
                     _get_custody_status(region))

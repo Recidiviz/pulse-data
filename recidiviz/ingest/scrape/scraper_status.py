@@ -50,10 +50,10 @@ def check_for_finished_scrapers():
             return
 
         if is_scraper_finished(region_code):
-            logging.info("Region '%s' has finished scraping.", region_code)
+            logging.info("Region [%s] has finished scraping.", region_code)
 
             if next_phase:
-                logging.info("Enqueueing %s for region %s.",
+                logging.info("Enqueueing [%s] for region [%s].",
                              next_phase, region_code)
                 queues.enqueue_scraper_phase(
                     region_code=region_code, url=next_phase_url)
@@ -73,7 +73,7 @@ def check_for_finished_scrapers():
                     future.result()
                 except Exception:
                     logging.exception(
-                        'An exception occured when checking region %s',
+                        'An exception occured when checking region [%s]',
                         region_code)
                     failed_regions.append(region_code)
 

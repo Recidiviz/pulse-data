@@ -60,7 +60,7 @@ def export_table_then_load_table(
         load_success = bq_load.start_table_load_and_wait(dataset_ref, table)
         return load_success
     else:
-        logging.error("Skipping BigQuery load of table '%s', "
+        logging.error("Skipping BigQuery load of table [%s], "
                       "which failed to export.", table)
         return False
 

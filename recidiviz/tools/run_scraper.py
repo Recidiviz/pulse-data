@@ -74,7 +74,7 @@ def run_scraper(args):
     for region_code in region_codes:
         logging.info('***')
         logging.info('***')
-        logging.info("Starting scraper for region: %s", region_code)
+        logging.info("Starting scraper for region: [%s]", region_code)
         logging.info('***')
         logging.info('***')
         try:
@@ -85,7 +85,8 @@ def run_scraper(args):
 
     if failed_regions:
         logging.info('***')
-        logging.info("The following regions raised errors during scraping: %s",
+        logging.info("The following regions raised errors during scraping: "
+                     "[%s]",
                      failed_regions)
 
 
@@ -109,7 +110,7 @@ def run_scraper_for_region(region, args):
     num_tasks_run = 0
     while task_queue and (num_tasks_run < args.num_tasks or args.run_forever):
         logging.info('***')
-        logging.info("Running task %d of %s tasks", num_tasks_run,
+        logging.info("Running task [%d] of [%s] tasks", num_tasks_run,
                      'infinite' if args.run_forever else args.num_tasks)
 
         # run the task
@@ -126,7 +127,7 @@ def run_scraper_for_region(region, args):
 
         # increment and sleep
         num_tasks_run += 1
-        logging.info("Sleeping %s seconds before sending another request",
+        logging.info("Sleeping [%s] seconds before sending another request",
                      args.sleep_between_requests)
         time.sleep(args.sleep_between_requests)
 
