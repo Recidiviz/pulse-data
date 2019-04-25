@@ -371,10 +371,10 @@ class TestPersistence(TestCase):
             ingest_time=most_recent_scrape_time)
 
         schema_charge = schema.Charge(
-            charge_id=ID, external_id=EXTERNAL_ID,
+            charge_id=ID, external_id=EXTERNAL_ID + '_COUNT_1',
             status=ChargeStatus.PRESENT_WITHOUT_INFO.value)
         schema_charge_another = schema.Charge(
-            charge_id=ID_2, external_id=EXTERNAL_ID,
+            charge_id=ID_2, external_id=EXTERNAL_ID + '_COUNT_2',
             status=ChargeStatus.PRESENT_WITHOUT_INFO.value)
         schema_booking = schema.Booking(
             booking_id=BOOKING_ID,
@@ -415,10 +415,12 @@ class TestPersistence(TestCase):
         # Assert
         expected_charge = entities.Charge.new_with_defaults(
             charge_id=ID,
-            external_id=EXTERNAL_ID,
+            external_id=EXTERNAL_ID + '_COUNT_1',
             status=ChargeStatus.PRESENT_WITHOUT_INFO
         )
-        expected_charge_another = attr.evolve(expected_charge, charge_id=ID_2)
+        expected_charge_another = attr.evolve(
+            expected_charge, charge_id=ID_2,
+            external_id=EXTERNAL_ID + '_COUNT_2')
         expected_booking = entities.Booking.new_with_defaults(
             booking_id=BOOKING_ID,
             external_id=EXTERNAL_BOOKING_ID,

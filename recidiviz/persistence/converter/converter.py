@@ -139,7 +139,7 @@ class Converter:
             number_of_counts = parse_int(ingest_charge.number_of_counts) if \
                 ingest_charge.HasField('number_of_counts') else 1
             charges.extend(
-                copy.deepcopy(new_charge) for _ in range(number_of_counts))
+                _duplicate_charge_with_counts(new_charge, number_of_counts))
 
         return charges
 
@@ -159,6 +159,25 @@ class Converter:
                'sentence_id', ingest_charge)
 
         return charge_builder.build()
+
+
+def _duplicate_charge_with_counts(converted_charge: entities.Charge,
+                                  counts: int) -> List[entities.Charge]:
+    if counts < 1:
+        raise ValueError("Cannot convert charge with fewer than 1 count; "
+                         "charge {} has"
+                         "{} counts".format(converted_charge, counts))
+    duplicated_charges = []
+    for i in range(1, counts + 1):
+        # Perform a shallow copy so that bonds and sentences are shared rather
+        # than duplicated.
+        duplicated_charge = copy.copy(converted_charge)
+        if duplicated_charge.external_id:
+            new_external_id = '{}_COUNT_{}'.format(
+                converted_charge.external_id, i)
+            duplicated_charge.external_id = new_external_id
+        duplicated_charges.append(duplicated_charge)
+    return duplicated_charges
 
 
 def _charges_pointing_to_total_bond(
