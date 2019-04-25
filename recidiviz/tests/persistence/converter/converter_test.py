@@ -15,9 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for data converter."""
-import itertools
-import unittest
 import datetime
+import unittest
+import itertools
+
+import attr
 
 from recidiviz.common.constants.bond import BondType, BondStatus
 from recidiviz.common.constants.booking import CustodyStatus
@@ -76,7 +78,7 @@ class TestConverter(unittest.TestCase):
                     agency='PD'
                 ),
                 charges=[Charge.new_with_defaults(
-                    external_id='CHARGE_ID',
+                    external_id='CHARGE_ID_COUNT_1',
                     status=ChargeStatus.PRESENT_WITHOUT_INFO,
                     name='DUI',
                     bond=Bond.new_with_defaults(
@@ -132,7 +134,7 @@ class TestConverter(unittest.TestCase):
                     agency='PD'
                 ),
                 charges=[Charge.new_with_defaults(
-                    external_id='CHARGE_ID',
+                    external_id='CHARGE_ID_COUNT_1',
                     status=ChargeStatus.PRESENT_WITHOUT_INFO,
                     name='DUI',
                     bond=Bond.new_with_defaults(
@@ -191,7 +193,7 @@ class TestConverter(unittest.TestCase):
                     agency='PD'
                 ),
                 charges=[Charge.new_with_defaults(
-                    external_id='CHARGE_ID',
+                    external_id='CHARGE_ID_COUNT_1',
                     status=ChargeStatus.PRESENT_WITHOUT_INFO,
                     name='DUI',
                     bond=Bond.new_with_defaults(
@@ -355,7 +357,7 @@ class TestConverter(unittest.TestCase):
                 last_seen_time=_INGEST_TIME,
                 custody_status=CustodyStatus.PRESENT_WITHOUT_INFO,
                 charges=[Charge.new_with_defaults(
-                    external_id='CHARGE_ID',
+                    external_id='CHARGE_ID_COUNT_1',
                     status=ChargeStatus.PRESENT_WITHOUT_INFO,
                     bond=Bond.new_with_defaults(
                         amount_dollars=100,
@@ -398,18 +400,21 @@ class TestConverter(unittest.TestCase):
                                  charge_ids=['CHARGE_ID'])
         ingest_info.charges.add(charge_id='CHARGE_ID',
                                 name='CHARGE_NAME',
-                                number_of_counts='3')
+                                number_of_counts='3',
+                                bond_id='BOND_ID')
+        ingest_info.bonds.add(bond_id='BOND_ID')
 
         # Act
         result = converter.convert(ingest_info, metadata)
 
         # Assert
         expected_duplicate_charge = Charge.new_with_defaults(
-            external_id='CHARGE_ID',
+            external_id='CHARGE_ID_COUNT_1',
             status=ChargeStatus.PRESENT_WITHOUT_INFO,
             name='CHARGE_NAME'
         )
-
+        expected_bond = Bond.new_with_defaults(
+            external_id='BOND_ID', status=BondStatus.PRESENT_WITHOUT_INFO)
         expected_result = [Person.new_with_defaults(
             bookings=[Booking.new_with_defaults(
                 external_id='BOOKING_ID',
@@ -419,9 +424,15 @@ class TestConverter(unittest.TestCase):
                 admission_date=_INGEST_TIME.date(),
                 custody_status=CustodyStatus.PRESENT_WITHOUT_INFO,
                 charges=[
-                    expected_duplicate_charge,
-                    expected_duplicate_charge,
-                    expected_duplicate_charge
+                    attr.evolve(expected_duplicate_charge,
+                                external_id='CHARGE_ID_COUNT_1',
+                                bond=expected_bond),
+                    attr.evolve(expected_duplicate_charge,
+                                external_id='CHARGE_ID_COUNT_2',
+                                bond=expected_bond),
+                    attr.evolve(expected_duplicate_charge,
+                                external_id='CHARGE_ID_COUNT_3',
+                                bond=expected_bond),
                 ]
             )]
         )]
@@ -435,6 +446,10 @@ class TestConverter(unittest.TestCase):
             itertools.groupby(result_expanded_charges, key=id))
         self.assertEqual(len(result_expanded_charges),
                          len(charges_grouped_by_id))
+
+        # Assert that the bond belonging to each charge is the same object.
+        bonds = [charge.bond for charge in result_expanded_charges]
+        self.assertTrue(all(bond is bonds[0] for bond in bonds))
 
     def testConvert_CannotConvertField_RaisesValueError(self):
         # Arrange
