@@ -17,7 +17,6 @@
 
 """Utilities for managing sessions among ingest processes."""
 
-
 import logging
 import time
 from datetime import datetime
@@ -25,7 +24,7 @@ from typing import Iterator, List, Optional
 
 from google.cloud import datastore
 
-from recidiviz.common.common_utils import retry_grpc_goaway
+from recidiviz.common.common_utils import retry_grpc
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.scrape import constants, scrape_phase
 from recidiviz.utils import environment
@@ -66,6 +65,7 @@ class ScrapeSession:
         region: (string) Region code, e.g. us_ny
         scrape_type: (string) 'background' or 'snapshot'
     """
+
     @classmethod
     def from_entity(cls, entity):
         return cls(entity)
@@ -133,7 +133,7 @@ def create_session(scrape_key: ScrapeKey) -> ScrapeSession:
                                     region=scrape_key.region_code,
                                     phase=scrape_phase.ScrapePhase.START)
 
-    retry_grpc_goaway(
+    retry_grpc(
         NUM_GRPC_RETRIES,
         ds().put,
         new_session.to_entity()
@@ -164,7 +164,7 @@ def close_session(scrape_key: ScrapeKey) -> List[ScrapeSession]:
     closed_sessions = []
     for session in open_sessions:
         session.end = datetime.now()
-        retry_grpc_goaway(NUM_GRPC_RETRIES, ds().put, session.to_entity())
+        retry_grpc(NUM_GRPC_RETRIES, ds().put, session.to_entity())
         closed_sessions.append(session)
 
     return closed_sessions
@@ -192,7 +192,7 @@ def update_session(last_scraped: str, scrape_key: ScrapeKey) -> bool:
         return False
 
     current_session.last_scraped = last_scraped
-    retry_grpc_goaway(NUM_GRPC_RETRIES, ds().put, current_session.to_entity())
+    retry_grpc(NUM_GRPC_RETRIES, ds().put, current_session.to_entity())
     return True
 
 
@@ -202,7 +202,7 @@ def update_phase(session: ScrapeSession, phase: scrape_phase.ScrapePhase):
     #  TODO(#1665): remove once dangling PERSIST session investigation
     #   is complete.
     logging.info("Updating phase from %s to %s", session.phase, phase)
-    retry_grpc_goaway(NUM_GRPC_RETRIES, ds().put, session.to_entity())
+    retry_grpc(NUM_GRPC_RETRIES, ds().put, session.to_entity())
 
 
 def add_docket_item_to_current_session(
@@ -235,7 +235,7 @@ def add_docket_item_to_current_session(
     # our newly-minted session isn't yet coming up in query results.
     time.sleep(2)
     return add_docket_item_to_current_session(
-        docket_ack_id, scrape_key, attempt+1)
+        docket_ack_id, scrape_key, attempt + 1)
 
 
 def add_docket_item_to_session(
@@ -250,7 +250,7 @@ def add_docket_item_to_session(
         True if successful otherwise False
     """
     session.docket_ack_id = docket_ack_id
-    retry_grpc_goaway(NUM_GRPC_RETRIES, ds().put, session.to_entity())
+    retry_grpc(NUM_GRPC_RETRIES, ds().put, session.to_entity())
     return True
 
 
@@ -265,7 +265,7 @@ def remove_docket_item_from_session(session: ScrapeSession) -> str:
     """
     docket_ack_id = session.docket_ack_id
     session.docket_ack_id = None
-    retry_grpc_goaway(NUM_GRPC_RETRIES, ds().put, session.to_entity())
+    retry_grpc(NUM_GRPC_RETRIES, ds().put, session.to_entity())
     return docket_ack_id
 
 
@@ -351,7 +351,7 @@ def get_sessions(
     if most_recent_only and include_open:
         limit = 1
 
-    results = retry_grpc_goaway(
+    results = retry_grpc(
         NUM_GRPC_RETRIES, session_query.fetch, limit=limit)
 
     # Datastore doesn't allow an inequality filter on `end` because we are
@@ -385,7 +385,7 @@ def get_sessions_with_leased_docket_items(
     session_query.add_filter('docket_ack_id', '>', None)
 
     return _sessions_from_entities(
-        retry_grpc_goaway(NUM_GRPC_RETRIES, session_query.fetch))
+        retry_grpc(NUM_GRPC_RETRIES, session_query.fetch))
 
 
 def _sessions_from_entities(entity_generator: Iterator[datastore.Entity]) \
@@ -405,6 +405,7 @@ class ScrapedRecord:
         record_id: (string) Dept. ID Number, the ID for a record we've scraped
         region: (string) Region code, e.g. us_ny
     """
+
     @classmethod
     def from_entity(cls, entity):
         return cls(entity)
@@ -452,7 +453,7 @@ def write_scraped_record(*args, **kwds):
                                    *args, **kwds)
 
     try:
-        retry_grpc_goaway(NUM_GRPC_RETRIES, ds().put, new_record.to_entity())
+        retry_grpc(NUM_GRPC_RETRIES, ds().put, new_record.to_entity())
     except Exception as e:
         logging.warning("Couldn't persist ScrapedRecord entry, "
                         "record_id: %s\n%s", new_record['record_id'], e)
@@ -473,5 +474,5 @@ def already_scraped_record(region_code, record_id, start):
     record_query.add_filter('region', '=', region_code)
     record_query.add_filter('record_id', '==', record_id)
     record_query.add_filter('created_on', '>', start)
-    return bool(next(retry_grpc_goaway(NUM_GRPC_RETRIES, record_query.fetch),
+    return bool(next(retry_grpc(NUM_GRPC_RETRIES, record_query.fetch),
                      None))

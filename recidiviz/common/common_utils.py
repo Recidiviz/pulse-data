@@ -56,22 +56,23 @@ def get_trace_id_from_flask():
     return trace_id
 
 
-def retry_grpc_goaway(num_retries, fn, *args, **kwargs):
+def retry_grpc(num_retries, fn, *args, **kwargs):
     """Retries a function call some number of times"""
     time_to_sleep = random.uniform(5, RETRY_SLEEP)
     for i in range(num_retries + 1):
         try:
             return fn(*args, **kwargs)
         except exceptions.InternalServerError as e:
-            if 'GOAWAY' not in str(e):
-                raise
             if i == num_retries:
                 raise
-            logging.warning(
-                'GOAWAY received, sleeping [%.2f] seconds and retrying',
-                time_to_sleep)
-            if environment.in_gae():
-                time.sleep(time_to_sleep)
+            if 'GOAWAY' in str(e) or 'Deadline Exceeded' in str(e):
+                logging.exception('Received exception: ')
+                if environment.in_gae():
+                    logging.warning('Sleeping %.2f seconds and retrying',
+                                    time_to_sleep)
+                    time.sleep(time_to_sleep)
+            else:
+                raise
 
 
 def normalize(s: str, remove_punctuation: bool = False) -> str:

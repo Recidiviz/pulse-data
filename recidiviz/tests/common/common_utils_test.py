@@ -21,9 +21,11 @@ from mock import MagicMock, call
 from google.api_core import exceptions  # pylint: disable=no-name-in-module
 
 from recidiviz.common.common_utils import create_generated_id, is_generated_id,\
-    retry_grpc_goaway
+    retry_grpc
 
 GO_AWAY_ERROR = exceptions.InternalServerError('500 GOAWAY received')
+DEADLINE_EXCEEDED_ERROR = exceptions.InternalServerError('504 Deadline '
+                                                         'Exceeded')
 OTHER_ERROR = exceptions.InternalServerError('500 received')
 
 
@@ -44,10 +46,10 @@ class CommonUtilsTest(unittest.TestCase):
 
     def test_retry_grpc_no_raise(self):
         fn = MagicMock()
-        # Two GOAWAY errors, then works
-        fn.side_effect = [GO_AWAY_ERROR] * 2 + [3]
+        # Two GOAWAY errors, 1 DEADLINE_EXCEEDED, then works
+        fn.side_effect = [GO_AWAY_ERROR] * 2 + [DEADLINE_EXCEEDED_ERROR] + [3]
 
-        result = retry_grpc_goaway(3, fn, 1, b=2)
+        result = retry_grpc(3, fn, 1, b=2)
 
         self.assertEqual(result, 3)
         fn.assert_has_calls([call(1, b=2)] * 3)
@@ -58,7 +60,7 @@ class CommonUtilsTest(unittest.TestCase):
         fn.side_effect = GO_AWAY_ERROR
 
         with self.assertRaises(exceptions.InternalServerError):
-            retry_grpc_goaway(3, fn, 1, b=2)
+            retry_grpc(3, fn, 1, b=2)
 
         fn.assert_has_calls([call(1, b=2)] * 4)
 
@@ -68,6 +70,16 @@ class CommonUtilsTest(unittest.TestCase):
         fn.side_effect = OTHER_ERROR
 
         with self.assertRaises(exceptions.InternalServerError):
-            retry_grpc_goaway(3, fn, 1, b=2)
+            retry_grpc(3, fn, 1, b=2)
 
         fn.assert_has_calls([call(1, b=2)])
+
+    def test_retry_grpc_raises_deadline_exceeded(self):
+        fn = MagicMock()
+        # Always a DEADLINE_EXCEEDED error
+        fn.side_effect = DEADLINE_EXCEEDED_ERROR
+
+        with self.assertRaises(exceptions.InternalServerError):
+            retry_grpc(3, fn, 1, b=2)
+
+        fn.assert_has_calls([call(1, b=2)] * 4)
