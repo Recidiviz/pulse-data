@@ -20,7 +20,7 @@ from datetime import date
 
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence import entities
-from recidiviz.persistence.converter import arrest
+from recidiviz.persistence.ingest_info_converter.entity_helpers import arrest
 
 
 class ArrestConverterTest(unittest.TestCase):

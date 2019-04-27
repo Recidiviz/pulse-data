@@ -25,7 +25,7 @@ import tabula
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
-from recidiviz.common import date
+from recidiviz.common import str_field_utils
 from recidiviz.common.errors import FipsMergingError
 from recidiviz.ingest.aggregate.errors import (AggregateDateParsingError,
                                                AggregateIngestError)
@@ -111,7 +111,7 @@ def parse_date(filename: str) -> datetime.date:
     match = re.search(regex, filename, re.IGNORECASE)
     if match:
         date_str = match.group(1)
-        parsed_date = date.parse_date(date_str)
+        parsed_date = str_field_utils.parse_date(date_str)
         if parsed_date:
             return parsed_date
     raise AggregateDateParsingError("Could not extract date")

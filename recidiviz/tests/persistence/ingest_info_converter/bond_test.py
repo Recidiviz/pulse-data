@@ -24,7 +24,7 @@ from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence import entities
-from recidiviz.persistence.converter import bond
+from recidiviz.persistence.ingest_info_converter.entity_helpers import bond
 
 _EMPTY_METADATA = IngestMetadata.new_with_defaults()
 

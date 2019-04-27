@@ -16,33 +16,56 @@
 # ============================================================================
 """Converts scraped IngestInfo data to the persistence layer entity."""
 import copy
-from copy import deepcopy
+import logging
 from typing import List
 
+import attr
 import more_itertools
 
 from recidiviz.common.constants.charge import ChargeStatus
+from recidiviz.common.constants.entity_enum import EnumParsingError
+from recidiviz.common.constants.person import PROTECTED_CLASSES
+from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
+from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
 from recidiviz.persistence import entities, persistence_utils
-from recidiviz.persistence.converter import arrest, sentence, \
-    charge, bond, booking, person, hold
-from recidiviz.persistence.converter.converter_utils import fn, \
-    parse_bond_amount_type_and_status, parse_int
+from recidiviz.persistence.ingest_info_converter.entity_helpers import (
+    arrest,
+    person,
+    hold,
+    charge,
+    sentence,
+    bond,
+    booking
+)
+from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
+    fn,
+    parse_bond_amount_type_and_status
+)
+from recidiviz.common.str_field_utils import parse_int
 
 
-def convert(ingest_info, metadata):
-    """Convert an IngestInfo proto into a persistence layer entity.
+@attr.s(frozen=True)
+class IngestInfoConversionResult:
+    enum_parsing_errors: int = attr.ib()
+    general_parsing_errors: int = attr.ib()
+    protected_class_errors: int = attr.ib()
+    people: List[entities.Person] = attr.ib(factory=list)
 
-    Returns:
-        A list of entities.Person
-    """
-    return Converter(ingest_info, metadata).convert_all()
+
+def convert_to_persistence_entities(
+        ingest_info: IngestInfo, metadata: IngestMetadata
+) -> IngestInfoConversionResult:
+    return _IngestInfoConverter(ingest_info, metadata).run_convert()
 
 
-class Converter:
+class _IngestInfoConverter:
     """Converts between ingest_info objects and persistence layer entity."""
 
-    def __init__(self, ingest_info, metadata):
+    def __init__(self,
+                 ingest_info: IngestInfo,
+                 metadata: IngestMetadata) -> None:
+
         self.ingest_info = copy.deepcopy(ingest_info)
         self.metadata = metadata
 
@@ -53,16 +76,33 @@ class Converter:
         self.bonds = {b.bond_id: b for b in ingest_info.bonds}
         self.sentences = {s.sentence_id: s for s in ingest_info.sentences}
 
-    def convert_all(self):
-        people = []
-        while not self.is_complete():
-            people.append(self.convert_and_pop())
-        return people
+    def run_convert(self):
+        people: List[entities.Person] = []
+        protected_class_errors = 0
+        enum_parsing_errors = 0
+        general_parsing_errors = 0
+        while not self._is_complete():
+            try:
+                people.append(self._convert_and_pop())
+            except EnumParsingError as e:
+                logging.error(str(e))
+                if e.entity_type in PROTECTED_CLASSES:
+                    protected_class_errors += 1
+                else:
+                    enum_parsing_errors += 1
+            except Exception as e:
+                logging.error(str(e))
+                general_parsing_errors += 1
+        return IngestInfoConversionResult(
+            people=people,
+            enum_parsing_errors=enum_parsing_errors,
+            general_parsing_errors=general_parsing_errors,
+            protected_class_errors=protected_class_errors)
 
-    def convert_and_pop(self):
+    def _convert_and_pop(self):
         return self._convert_person(self.ingest_info.people.pop())
 
-    def is_complete(self):
+    def _is_complete(self):
         if self.ingest_info.people:
             return False
         return True
@@ -205,7 +245,7 @@ def _charges_pointing_to_total_bond(
     if any(c.bond is not None for c in charges):
         raise ValueError("Can't use total_bond and create a bond on a charge")
 
-    charges_pointing_to_inferred_bond = deepcopy(charges)
+    charges_pointing_to_inferred_bond = copy.deepcopy(charges)
     for c in charges_pointing_to_inferred_bond:
         c.bond = inferred_bond
 

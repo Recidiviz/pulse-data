@@ -27,7 +27,7 @@ from recidiviz.ingest.models.ingest_info_diff import diff_ingest_infos
 from recidiviz.ingest.scrape import constants, ingest_utils
 from recidiviz.ingest.scrape.task_params import Task
 from recidiviz.persistence import entity_validator
-from recidiviz.persistence.converter import converter
+from recidiviz.persistence.ingest_info_converter import ingest_info_converter
 from recidiviz.persistence.validator import validate
 
 _FAKE_SCRAPER_START_TIME = datetime(year=2019, month=1, day=2)
@@ -161,8 +161,17 @@ class CommonScraperTest:
             self.scraper.region.jurisdiction_id,
             _FAKE_SCRAPER_START_TIME,
             self.scraper.get_enum_overrides())
-        converted_people = converter.convert(result_proto, metadata)
-        entity_validator.validate(converted_people)
+
+        res = ingest_info_converter.convert_to_persistence_entities(
+            result_proto,
+            metadata
+        )
+
+        assert res.enum_parsing_errors == 0
+        assert res.general_parsing_errors == 0
+        assert res.protected_class_errors == 0
+
+        entity_validator.validate(res.people)
 
         differences = diff_ingest_infos(expected_ingest_info,
                                         result.ingest_info)

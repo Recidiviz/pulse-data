@@ -15,13 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Utils for parsing dates."""
-import datetime
 import re
-from typing import Any, Dict, Optional
-
-import dateparser
-
-from recidiviz.persistence.converter import converter_utils
 
 
 def munge_date_string(date_string: str) -> str:
@@ -42,51 +36,3 @@ def _date_component_match(match) -> str:
         components.append('{day}day'.format(day=match.group('day')))
 
     return ' '.join(components)
-
-
-
-def parse_datetime(
-        date_string: str, from_dt: Optional[datetime.datetime] = None
-    ) -> Optional[datetime.datetime]:
-    """
-    Parses a string into a datetime object.
-
-    Args:
-        date_string: The string to be parsed.
-        from_dt: Datetime to use as base for any relative dates.
-
-    Return:
-        (datetime) Datetime representation of the provided string.
-    """
-    if date_string == '' or date_string.isspace():
-        return None
-    if converter_utils.is_none(date_string):
-        return None
-
-    settings: Dict[str, Any] = {'PREFER_DAY_OF_MONTH': 'first'}
-    if from_dt:
-        settings['RELATIVE_BASE'] = from_dt
-
-    date_string = munge_date_string(date_string)
-    parsed = dateparser.parse(date_string, languages=['en'], settings=settings)
-    if parsed:
-        return parsed
-
-    raise ValueError("cannot parse date: %s" % date_string)
-
-
-def parse_date(
-        date_string: str, from_dt: Optional[datetime.datetime] = None
-    ) -> Optional[datetime.date]:
-    """
-    Parses a string into a datetime object.
-
-    Args:
-        date_string: The string to be parsed.
-        from_dt: Datetime to use as base for any relative dates.
-
-    Return:
-        (date) Date representation of the provided string.
-    """
-    parsed = parse_datetime(date_string, from_dt=from_dt)
-    return parsed.date() if parsed else None
