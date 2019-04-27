@@ -22,7 +22,7 @@ from typing import Dict, Optional
 
 import attr
 
-from recidiviz.common.common_utils import normalize
+from recidiviz.common.str_field_utils import normalize
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 

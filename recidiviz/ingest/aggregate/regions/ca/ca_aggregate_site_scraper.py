@@ -22,7 +22,7 @@ from typing import Dict, List, Tuple
 
 import requests
 
-from recidiviz.common import date
+from recidiviz.common import str_field_utils
 from recidiviz.ingest.aggregate import aggregate_ingest_utils
 
 # Human landing page: https://app.bscc.ca.gov/joq//jps/QuerySelection.asp
@@ -77,8 +77,8 @@ def get_urls_to_download() -> List[Tuple[str, Dict]]:
     end = start + 50
     match = re.match(DATE_RANGE_RE, page[start:end])
     if match:
-        date_from = date.parse_date(match.group(1))
-        date_to = date.parse_date(match.group(2))
+        date_from = str_field_utils.parse_date(match.group(1))
+        date_to = str_field_utils.parse_date(match.group(2))
 
     if not (match and date_from and date_to):
         date_from = datetime.date(year=1995, month=9, day=5)

@@ -18,16 +18,17 @@
 from datetime import date
 from typing import Optional, Tuple
 
-from recidiviz.common.common_utils import normalize
 from recidiviz.common.constants.sentence import SentenceStatus
-from recidiviz.common.date import parse_date
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence import entities
-from recidiviz.persistence.converter.converter_utils import (fn, parse_bool,
-                                                             parse_days,
-                                                             parse_dollars,
-                                                             parse_external_id)
-from recidiviz.persistence.converter.enum_mappings import EnumMappings
+from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
+    fn,
+    parse_external_id
+)
+from recidiviz.common.str_field_utils import parse_dollars, parse_bool, \
+    parse_days, normalize, parse_date
+from recidiviz.persistence.ingest_info_converter.utils.enum_mappings \
+    import EnumMappings
 
 
 def convert(proto, metadata: IngestMetadata) -> entities.Sentence:

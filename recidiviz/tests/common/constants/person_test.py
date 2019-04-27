@@ -14,30 +14,26 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for date.py"""
+"""Tests for recidiviz/common/constants/person.py"""
 
-from recidiviz.common import date
+import datetime
+from unittest import TestCase
 
+import pytest
 
-def test_mungeDateString_munges():
-    assert date.munge_date_string('1y 1m 1d') == '1year 1month 1day'
+from recidiviz.common.constants.entity_enum import EnumParsingError
+from recidiviz.common.constants.enum_overrides import EnumOverrides
+from recidiviz.common.constants.person import Gender
 
-
-def test_mungeDateString_doesntMunge():
-    assert date.munge_date_string('1year 1month 1day') == '1year 1month 1day'
-
-
-def test_mungeDateString_caseInsensitive():
-    assert date.munge_date_string('1Y 1M 1D') == '1year 1month 1day'
+_NOW = datetime.datetime(2000, 1, 1)
 
 
-def test_mungeDateString_noYear():
-    assert date.munge_date_string('10M 12D') == '10month 12day'
+class TestCommonConstantsPerson(TestCase):
+    """Test person constants."""
 
+    def test_parseGenderEnum(self):
+        assert Gender.parse('Male', EnumOverrides.empty()) == Gender.MALE
 
-def test_mungeDateString_noMonth():
-    assert date.munge_date_string('9Y 28D') == '9year 28day'
-
-
-def test_mungeDateString_noDay():
-    assert date.munge_date_string('4y 3m') == '4year 3month'
+    def test_parseBadGenderEnum(self):
+        with pytest.raises(EnumParsingError):
+            Gender.parse('ABD', EnumOverrides.empty())

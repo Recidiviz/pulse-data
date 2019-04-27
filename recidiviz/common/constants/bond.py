@@ -53,7 +53,7 @@ class BondStatus(EntityEnum, metaclass=EntityEnumMeta):
 # For example, `N/A` can be written as `N A` and `(10%)` can be written as `10`.
 
 # Not marked as private so it can be used in
-# persistence/converter/converter_utils
+# persistence/ingest_info_converter/converter_utils
 BOND_TYPE_MAP = {
     '10': BondType.PARTIAL_CASH,
     '10 BAIL CREDIT': BondType.PARTIAL_CASH,
@@ -208,7 +208,7 @@ BOND_TYPE_MAP = {
 # For example, `N/A` can be written as `N A` and `(10%)` can be written as `10`.
 
 # Not marked as private so it can be used in
-# persistence/converter/converter_utils
+# persistence/ingest_info_converter/converter_utils
 BOND_STATUS_MAP = {
     'ACTIVE': BondStatus.SET,
     'BR': BondStatus.REVOKED,
