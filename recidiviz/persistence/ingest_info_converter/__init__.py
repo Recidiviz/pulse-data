@@ -14,3 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
+
+"""
+Code for converting scraped IngestInfo data to persistence layer entities.
+"""
+
+from recidiviz.persistence.ingest_info_converter import ingest_info_converter

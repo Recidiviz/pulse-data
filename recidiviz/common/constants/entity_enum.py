@@ -23,9 +23,10 @@ from typing import Dict, Optional
 
 from opencensus.stats import aggregation, measure, view
 
-from recidiviz.common.common_utils import normalize
+from recidiviz.common.str_field_utils import normalize
 from recidiviz.utils import monitoring
 
+# TODO(ageiduschek): Should we change convert -> ingest_info_converter here?
 m_enum_errors = measure.MeasureInt("converter/enum_error_count",
                                    "The number of enum errors", "1")
 enum_errors_view = view.View("recidiviz/converter/enum_error_count",

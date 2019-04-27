@@ -21,7 +21,7 @@ from more_itertools import one
 
 from recidiviz.common.constants.entity_enum import EntityEnumMeta, EntityEnum
 from recidiviz.common.constants.enum_overrides import EnumOverrides
-from recidiviz.persistence.converter.converter_utils import fn
+from recidiviz.persistence.ingest_info_converter.utils.converter_utils import fn
 
 
 class EnumMappings:

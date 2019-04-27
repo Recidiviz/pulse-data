@@ -194,7 +194,7 @@ When updating [`IngestInfo`](recidiviz/ingest/models/ingest_info.proto) be sure 
 
 When updating the [`schema`](recidiviz/persistence/database/schema.py) follow the directions on the [database wiki page](https://github.com/Recidiviz/pulse-data/wiki/Database) to create a schema migration.
 
-When updating either, it may be necessary to update the [`converter`](recidiviz/persistence/converter/) code that handles converting between the two models.
+When updating either, it may be necessary to update the [`converter`](recidiviz/persistence/ingest_info_converter/) code that handles converting between the two models.
 
 #### Running tests
 Individual tests can be run via `pytest filename.py`. To run all tests, go to the root directory and run `pytest recidiviz`.

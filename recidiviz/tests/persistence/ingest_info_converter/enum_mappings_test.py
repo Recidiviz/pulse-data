@@ -21,7 +21,8 @@ from recidiviz.common.constants.charge import ChargeClass, ChargeStatus, \
     ChargeDegree
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.ingest.models.ingest_info_pb2 import Charge
-from recidiviz.persistence.converter.enum_mappings import EnumMappings
+from recidiviz.persistence.ingest_info_converter.utils.enum_mappings \
+    import EnumMappings
 
 
 class EnumMappingsTest(unittest.TestCase):

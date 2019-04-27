@@ -22,16 +22,16 @@ from typing import Optional
 import attr
 from uszipcode import SearchEngine
 
-from recidiviz.common.common_utils import normalize
+from recidiviz.common.str_field_utils import normalize, parse_date
 from recidiviz.common.constants.person import (RESIDENCY_STATUS_SUBSTRING_MAP,
                                                Ethnicity, Gender, Race,
                                                ResidencyStatus)
-from recidiviz.common.date import parse_date
-from recidiviz.persistence.converter.converter_utils import (
+from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
     calculate_birthdate_from_age, fn, parse_external_id)
-# Suffixes used in county names in uszipcode library
-from recidiviz.persistence.converter.enum_mappings import EnumMappings
+from recidiviz.persistence.ingest_info_converter.utils.enum_mappings \
+    import EnumMappings
 
+# Suffixes used in county names in uszipcode library
 USZIPCODE_COUNTY_SUFFIXES = [
     'BOROUGH',
     'CENSUS AREA',

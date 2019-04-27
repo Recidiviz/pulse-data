@@ -24,7 +24,7 @@ from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence import entities
-from recidiviz.persistence.converter import booking
+from recidiviz.persistence.ingest_info_converter.entity_helpers import booking
 
 _INGEST_TIME = datetime(year=2019, month=2, day=18)
 

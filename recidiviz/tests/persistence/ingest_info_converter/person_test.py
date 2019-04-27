@@ -26,7 +26,7 @@ from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.ingest.scrape.base_scraper import BaseScraper
 from recidiviz.persistence import entities
-from recidiviz.persistence.converter import person
+from recidiviz.persistence.ingest_info_converter.entity_helpers import person
 
 _NOW = datetime(2000, 5, 15)
 
@@ -122,7 +122,8 @@ class PersonConverterTest(unittest.TestCase):
 
         self.assertEqual(result, expected_result)
 
-    @patch('recidiviz.persistence.converter.converter_utils.datetime.datetime')
+    @patch('recidiviz.persistence.ingest_info_converter.utils.converter_utils.'
+           'datetime.datetime')
     def testParsePerson_InfersBirthdateFromAge(self, mock_datetime):
         # Arrange
         mock_datetime.now.return_value = _NOW

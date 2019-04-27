@@ -22,7 +22,7 @@ from recidiviz.common.constants.sentence import SentenceStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence import entities
-from recidiviz.persistence.converter import sentence
+from recidiviz.persistence.ingest_info_converter.entity_helpers import sentence
 
 
 class SentenceConverterTest(unittest.TestCase):

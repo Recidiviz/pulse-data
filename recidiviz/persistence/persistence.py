@@ -27,16 +27,16 @@ from recidiviz import Session
 from recidiviz.common.constants.bond import BondStatus
 from recidiviz.common.constants.booking import CustodyStatus
 from recidiviz.common.constants.charge import ChargeStatus
-from recidiviz.common.constants.entity_enum import EnumParsingError
 from recidiviz.common.constants.hold import HoldStatus
-from recidiviz.common.constants.person import PROTECTED_CLASSES
 from recidiviz.common.constants.sentence import SentenceStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.scrape.constants import MAX_PEOPLE_TO_LOG
 from recidiviz.persistence import entity_matching, entities, \
     persistence_utils, validator, entity_validator
-from recidiviz.persistence.converter import converter
+from recidiviz.persistence.ingest_info_converter import ingest_info_converter
 from recidiviz.persistence.database import database
+from recidiviz.persistence.ingest_info_converter.ingest_info_converter import \
+    IngestInfoConversionResult
 from recidiviz.utils import environment, monitoring
 
 m_people = measure.MeasureInt("persistence/num_people",
@@ -86,12 +86,12 @@ def infer_release_on_open_bookings(
 
     session = Session()
     try:
-        logging.info("Reading all bookings that happened before %s",
+        logging.info("Reading all bookings that happened before [%s]",
                      last_ingest_time)
         people = database.read_people_with_open_bookings_scraped_before_time(
             session, region_code, last_ingest_time)
         logging.info(
-            "Found %s people with bookings that will be inferred released",
+            "Found [%s] people with bookings that will be inferred released",
             len(people))
         for person in people:
             persistence_utils.remove_pii_for_person(person)
@@ -120,7 +120,7 @@ def _infer_release_date_for_bookings(
 
     for booking in bookings:
         if persistence_utils.is_booking_active(booking):
-            logging.info("Marking booking %s as inferred release",
+            logging.info("Marking booking [%s] as inferred release",
                          booking.booking_id)
             booking.release_date = last_ingest_time.date()
             booking.release_date_inferred = True
@@ -151,47 +151,36 @@ def _should_persist():
                 strtobool((os.environ.get('PERSIST_LOCALLY', 'false'))))
 
 
-def _convert_and_count_errors(ingest_info, metadata):
-    people = []
-    protected_class_errors = 0
-    enum_parsing_errors = 0
-    ii_converter = converter.Converter(ingest_info, metadata)
-    while not ii_converter.is_complete():
-        try:
-            people.append(ii_converter.convert_and_pop())
-        except EnumParsingError as e:
-            logging.error(str(e))
-            if e.entity_type in PROTECTED_CLASSES:
-                protected_class_errors += 1
-            else:
-                enum_parsing_errors += 1
-        except Exception as e:
-            logging.error(str(e))
-            enum_parsing_errors += 1
-    return people, enum_parsing_errors, protected_class_errors
-
-
 def _should_abort(
         total_people,
-        enum_parsing_errors=0,
+        conversion_result: IngestInfoConversionResult,
         entity_matching_errors=0,
-        protected_class_errors=0,
         data_validation_errors=0):
+    """
+    Returns true if we should abort the current attempt to persist an IngestInfo
+    object, given the number of errors we've encountered.
+    """
     # TODO: finalize the logic in here.
-    if protected_class_errors:
+    if conversion_result.protected_class_errors:
         logging.error(
             "Aborting because there was an error regarding a protected class")
         with monitoring.measurements(
                 {monitoring.TagKey.REASON: 'PROTECTED_CLASS_ERROR'}) as m:
             m.measure_int_put(m_aborts, 1)
         return True
-    if (enum_parsing_errors + entity_matching_errors +
+    if (conversion_result.enum_parsing_errors +
+            conversion_result.general_parsing_errors +
+            entity_matching_errors +
             data_validation_errors) / total_people >= ERROR_THRESHOLD:
         logging.error(
-            "Aborting because we exceeded the error threshold of %s with %s "
-            "enum_parsing errors, %s entity_matching_errors, and %s "
-            "data_validation_errors", ERROR_THRESHOLD, enum_parsing_errors,
-            entity_matching_errors, data_validation_errors)
+            "Aborting because we exceeded the error threshold of [%s] with "
+            "[%s] enum_parsing errors, [%s] general_parsing_errors, [%s] "
+            "entity_matching_errors, and [%s] data_validation_errors",
+            ERROR_THRESHOLD,
+            conversion_result.enum_parsing_errors,
+            conversion_result.general_parsing_errors,
+            entity_matching_errors,
+            data_validation_errors)
         with monitoring.measurements(
                 {monitoring.TagKey.REASON: 'THRESHOLD'}) as m:
             m.measure_int_put(m_aborts, 1)
@@ -215,14 +204,21 @@ def write(ingest_info, metadata):
     with monitoring.measurements(mtags) as measurements:
 
         # Convert the people one at a time and count the errors as they happen.
-        people, enum_parsing_errors, protected_class_errors = \
-            _convert_and_count_errors(ingest_info, metadata)
-        people, data_validation_errors = entity_validator.validate(people)
-        logging.info("Converted %s people with %s enum_parsing_errors, %s"
-                     " protected_class_errors and %s data_validation_errors, "
-                     "(logging max %d people):",
-                     len(people), enum_parsing_errors, protected_class_errors,
-                     data_validation_errors, MAX_PEOPLE_TO_LOG)
+        conversion_result: IngestInfoConversionResult = \
+            ingest_info_converter.convert_to_persistence_entities(ingest_info,
+                                                                  metadata)
+
+        people, data_validation_errors = entity_validator.validate(
+            conversion_result.people)
+        logging.info("Converted [%s] people with [%s] enum_parsing_errors, [%s]"
+                     " general_parsing_errors, [%s] protected_class_errors and "
+                     "[%s] data_validation_errors, (logging max %d people):",
+                     len(people),
+                     conversion_result.enum_parsing_errors,
+                     conversion_result.general_parsing_errors,
+                     conversion_result.protected_class_errors,
+                     data_validation_errors,
+                     MAX_PEOPLE_TO_LOG)
         loop_count = min(len(people), MAX_PEOPLE_TO_LOG)
         for i in range(loop_count):
             logging.info(people[i])
@@ -230,8 +226,7 @@ def write(ingest_info, metadata):
 
         if _should_abort(
                 total_people=total_people,
-                enum_parsing_errors=enum_parsing_errors,
-                protected_class_errors=protected_class_errors,
+                conversion_result=conversion_result,
                 data_validation_errors=data_validation_errors):
             #  TODO(#1665): remove once dangling PERSIST session investigation
             #   is complete.
@@ -250,11 +245,11 @@ def write(ingest_info, metadata):
             people = entity_matching_output.people
 
             logging.info(
-                "Completed entity matching with %s errors",
+                "Completed entity matching with [%s] errors",
                 entity_matching_output.error_count)
             if _should_abort(
                     total_people=total_people,
-                    enum_parsing_errors=enum_parsing_errors,
+                    conversion_result=conversion_result,
                     entity_matching_errors=entity_matching_output.error_count,
                     data_validation_errors=data_validation_errors):
                 #  TODO(#1665): remove once dangling PERSIST session
@@ -269,7 +264,7 @@ def write(ingest_info, metadata):
             persisted = True
             mtags[monitoring.TagKey.PERSISTED] = True
         except Exception as e:
-            logging.exception("An exception was raised in write(): %s",
+            logging.exception("An exception was raised in write(): [%s]",
                               type(e).__name__)
             # Record the error type that happened and increment the counter
             mtags[monitoring.TagKey.ERROR] = type(e).__name__
