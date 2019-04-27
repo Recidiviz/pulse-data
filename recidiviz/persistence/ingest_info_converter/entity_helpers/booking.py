@@ -18,15 +18,15 @@
 from datetime import date
 from typing import Optional, Tuple
 
-from recidiviz.common.common_utils import normalize
+from recidiviz.common.str_field_utils import normalize, parse_date
 from recidiviz.common.constants.booking import (AdmissionReason,
                                                 Classification, CustodyStatus,
                                                 ReleaseReason)
-from recidiviz.common.date import parse_date
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.persistence.converter.converter_utils import (
+from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
     fn, parse_external_id)
-from recidiviz.persistence.converter.enum_mappings import EnumMappings
+from recidiviz.persistence.ingest_info_converter.utils.enum_mappings \
+    import EnumMappings
 
 
 def copy_fields_to_builder(booking_builder, proto, metadata):

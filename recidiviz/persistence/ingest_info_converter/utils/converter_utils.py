@@ -17,12 +17,12 @@
 """Utils for converting individual data fields."""
 import datetime
 import locale
-from distutils.util import strtobool  # pylint: disable=no-name-in-module
 from typing import Optional, Tuple
 
-from recidiviz.common import common_utils, date
+from recidiviz.common import common_utils
 from recidiviz.common.constants.bond import (BOND_STATUS_MAP, BOND_TYPE_MAP,
                                              BondStatus, BondType)
+from recidiviz.common.str_field_utils import parse_dollars, normalize
 
 locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
 
@@ -38,17 +38,12 @@ def fn(func, field_name, proto, *additional_func_args, default=None):
     return value if value is not None else default
 
 
-def truncate(message: str) -> str:
-    """Truncates |message| to length used for string fields in schema"""
-    return common_utils.normalize(message)[:255]
-
-
 def parse_external_id(id_str):
     """If the supplied |id_str| is generated, returns None. Otherwise
     returns the normalized version of the provided |id_str|"""
     if common_utils.is_generated_id(id_str):
         return None
-    return common_utils.normalize(id_str)
+    return normalize(id_str)
 
 
 def calculate_birthdate_from_age(age):
@@ -70,31 +65,6 @@ def calculate_birthdate_from_age(age):
         return datetime.date(year=birth_year, month=1, day=1)
     except Exception:
         raise ValueError("Cannot parse age: %s" % age)
-
-
-def parse_days(time_string: str, from_dt: Optional[datetime.datetime] = None):
-    """
-    Converts the given string into an int number number of days
-
-    Args:
-        time_string: The string to convert into int.
-        from_dt: Datetime to use as base for any relative dates.
-
-    Return:
-        (int) number of days converted from time_string
-    """
-    if time_string == '' or time_string.isspace():
-        return 0
-    try:
-        return int(time_string)
-    except ValueError:
-        # Parses the string '1 YEAR 2 DAYS' to mean 1 year and 2 days prior.
-        current_dt = from_dt or datetime.datetime.now()
-        past_dt = date.parse_datetime(time_string, from_dt=current_dt)
-        if past_dt:
-            return (current_dt - past_dt).days
-
-    raise ValueError("Cannot parse time duration: %s" % time_string)
 
 
 def parse_bond_amount_type_and_status(
@@ -136,48 +106,3 @@ def parse_bond_amount_type_and_status(
         status = BondStatus.PRESENT_WITHOUT_INFO
 
     return (amount, bond_type, status)  # type: ignore
-
-
-def parse_dollars(dollar_string):
-    """
-    Parses a string and returns an int dollar amount
-
-    Args:
-        dollar_string: str to convert into a dollar amount
-
-    Return:
-        (int) whole number of dollars converted from input
-    """
-    clean_string = dollar_string.strip(' ').strip('$')
-    if not clean_string:
-        return 0
-    try:
-        return int(locale.atof(clean_string))
-    except Exception:
-        raise ValueError("Cannot parse dollar value: %s" % dollar_string)
-
-
-def parse_bool(bool_string):
-    """Parse a string and returns a bool."""
-    try:
-        return bool(strtobool(bool_string))
-    except Exception:
-        raise ValueError("Cannot parse bool value: %s" % bool_string)
-
-
-def parse_int(int_string):
-    """Parse a string and returns an int."""
-    try:
-        return int(common_utils.normalize(int_string))
-    except Exception:
-        raise ValueError("Cannot parse int value: %s" % int_string)
-
-
-def is_none(s: str) -> bool:
-    """Returns True if the string value should be parsed as None."""
-    return common_utils.normalize(s, remove_punctuation=True) in {
-        'N A',
-        'NONE',
-        'NONE SET',
-        'NOT SPECIFIED'
-    }

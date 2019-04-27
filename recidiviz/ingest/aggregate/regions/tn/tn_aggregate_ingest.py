@@ -26,7 +26,8 @@ import us
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
-from recidiviz.common import date, fips
+from recidiviz.common import str_field_utils
+from recidiviz.common import fips
 from recidiviz.ingest.aggregate import aggregate_ingest_utils
 from recidiviz.persistence.database.schema import TnFacilityAggregate, \
     TnFacilityFemaleAggregate
@@ -128,7 +129,7 @@ def _parse_date(filename: str) -> datetime.date:
     base_filename = filename.split('_')[-1].replace('female', '')
     end = base_filename.index('.pdf')
     start = 4
-    d = date.parse_date(base_filename[start:end])
+    d = str_field_utils.parse_date(base_filename[start:end])
     return aggregate_ingest_utils.on_last_day_of_month(d)
 
 

@@ -14,10 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for data converter."""
+"""Tests for data ingest_info_converter."""
 import datetime
 import unittest
 import itertools
+
+from typing import List
 
 import attr
 
@@ -28,9 +30,19 @@ from recidiviz.common.constants.hold import HoldStatus
 from recidiviz.common.constants.sentence import SentenceStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
-from recidiviz.persistence.converter import converter
-from recidiviz.persistence.entities import Person, Booking, Arrest, Charge, \
-    Bond, Sentence, Hold
+from recidiviz.persistence import entities
+from recidiviz.persistence.ingest_info_converter import ingest_info_converter
+from recidiviz.persistence.entities import (
+    Person,
+    Booking,
+    Arrest,
+    Charge,
+    Bond,
+    Sentence,
+    Hold
+)
+from recidiviz.persistence.ingest_info_converter.ingest_info_converter import \
+    IngestInfoConversionResult
 
 _INGEST_TIME = datetime.datetime(year=2019, month=2, day=13, hour=12)
 _RELEASE_DATE = datetime.date(year=2018, month=3, day=1)
@@ -39,8 +51,32 @@ _BIRTHDATE_SCRUBBED = datetime.date(1990, 1, 1)
 _JURISDICTION_ID = 'JURISDICTION_ID'
 
 
-class TestConverter(unittest.TestCase):
+class TestIngestInfoConverter(unittest.TestCase):
     """Test converting IngestInfo objects to Persistence layer objects."""
+
+    def _convert_and_throw_on_errors(
+            self,
+            ingest_info: IngestInfo,
+            metadata: IngestMetadata
+    ) -> List[entities.Person]:
+        conversion_result: IngestInfoConversionResult = \
+            ingest_info_converter.convert_to_persistence_entities(ingest_info,
+                                                                  metadata)
+        if conversion_result.enum_parsing_errors > 0:
+            raise ValueError(
+                'Had [{}] enum parsing errors'.format(
+                    conversion_result.enum_parsing_errors))
+
+        if conversion_result.general_parsing_errors > 0:
+            raise ValueError(
+                'Had [{}] general parsing errors'.format(
+                    conversion_result.general_parsing_errors))
+
+        if conversion_result.protected_class_errors > 0:
+            raise ValueError(
+                'Had [{}] protected class errors'.format(
+                    conversion_result.protected_class_errors))
+        return conversion_result.people
 
     def testConvert_FullIngestInfo(self):
         # Arrange
@@ -59,7 +95,7 @@ class TestConverter(unittest.TestCase):
         ingest_info.sentences.add(sentence_id='SENTENCE_ID', is_life='True')
 
         # Act
-        result = converter.convert(ingest_info, metadata)
+        result = self._convert_and_throw_on_errors(ingest_info, metadata)
 
         # Assert
         expected_result = [Person.new_with_defaults(
@@ -112,10 +148,7 @@ class TestConverter(unittest.TestCase):
         ingest_info.sentences.add(sentence_id='SENTENCE_ID', is_life='True')
 
         # Act
-        ii_converter = converter.Converter(ingest_info, metadata)
-        result = []
-        while not ii_converter.is_complete():
-            result.append(ii_converter.convert_and_pop())
+        result = self._convert_and_throw_on_errors(ingest_info, metadata)
 
         # Assert
         expected_result = [Person.new_with_defaults(
@@ -170,7 +203,7 @@ class TestConverter(unittest.TestCase):
         ingest_info.sentences.add(sentence_id='SENTENCE_ID', is_life='True')
 
         # Act
-        result = converter.convert(ingest_info, metadata)
+        result = self._convert_and_throw_on_errors(ingest_info, metadata)
 
         # Assert
         expected_result = [Person.new_with_defaults(
@@ -234,8 +267,7 @@ class TestConverter(unittest.TestCase):
         ingest_info.sentences.add(sentence_id='SENTENCE_ID_GENERATE',
                                   is_life='True')
 
-        # Act
-        result = converter.convert(ingest_info, metadata)
+        result = self._convert_and_throw_on_errors(ingest_info, metadata)
 
         # Assert
         expected_result = [Person.new_with_defaults(
@@ -276,7 +308,7 @@ class TestConverter(unittest.TestCase):
                                  total_bond_amount='$100')
 
         # Act
-        result = converter.convert(ingest_info, metadata)
+        result = self._convert_and_throw_on_errors(ingest_info, metadata)
 
         # Assert
         expected_result = [Person.new_with_defaults(
@@ -313,7 +345,7 @@ class TestConverter(unittest.TestCase):
             booking_id='BOOKING_ID',
             admission_date=str(_RELEASE_DATE))
         # Act
-        result = converter.convert(ingest_info, metadata)
+        result = self._convert_and_throw_on_errors(ingest_info, metadata)
 
         # Assert
         expected_result = [Person.new_with_defaults(
@@ -345,7 +377,7 @@ class TestConverter(unittest.TestCase):
         ingest_info.charges.add(charge_id='CHARGE_ID')
 
         # Act
-        result = converter.convert(ingest_info, metadata)
+        result = self._convert_and_throw_on_errors(ingest_info, metadata)
 
         # Assert
         expected_result = [Person.new_with_defaults(
@@ -387,7 +419,7 @@ class TestConverter(unittest.TestCase):
 
         # Act + Assert
         with self.assertRaises(ValueError):
-            converter.convert(ingest_info, metadata)
+            self._convert_and_throw_on_errors(ingest_info, metadata)
 
     def testConvert_MultipleCountsOfCharge_CreatesDuplicateCharges(self):
         # Arrange
@@ -405,7 +437,7 @@ class TestConverter(unittest.TestCase):
         ingest_info.bonds.add(bond_id='BOND_ID')
 
         # Act
-        result = converter.convert(ingest_info, metadata)
+        result = self._convert_and_throw_on_errors(ingest_info, metadata)
 
         # Assert
         expected_duplicate_charge = Charge.new_with_defaults(
@@ -441,7 +473,12 @@ class TestConverter(unittest.TestCase):
 
         # Assert that the expanded charges, while containing duplicate
         # information, are actually different objects.
+
+        # For some reason, pylint is having trouble identifying that you can
+        # index into the result list even though the revealed type is a list.
+        # pylint: disable=unsubscriptable-object
         result_expanded_charges = result[0].bookings[0].charges
+
         charges_grouped_by_id = list(
             itertools.groupby(result_expanded_charges, key=id))
         self.assertEqual(len(result_expanded_charges),
@@ -460,7 +497,7 @@ class TestConverter(unittest.TestCase):
 
         # Act + Assert
         with self.assertRaises(ValueError):
-            converter.convert(ingest_info, metadata)
+            self._convert_and_throw_on_errors(ingest_info, metadata)
 
     def testConvert_PersonInferredBooking(self):
         # Arrange
@@ -471,7 +508,7 @@ class TestConverter(unittest.TestCase):
         ingest_info.people.add()
 
         # Act
-        result = converter.convert(ingest_info, metadata)
+        result = self._convert_and_throw_on_errors(ingest_info, metadata)
 
         # Assert
         expected_result = [Person.new_with_defaults(

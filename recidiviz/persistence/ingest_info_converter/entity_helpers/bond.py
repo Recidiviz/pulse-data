@@ -17,14 +17,17 @@
 """Converts an ingest_info proto Bond to a persistence entity."""
 from typing import cast, Optional
 
-from recidiviz.common.common_utils import normalize
+from recidiviz.common.str_field_utils import normalize
 from recidiviz.common.constants.bond import BondStatus, BondType
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence import entities
-from recidiviz.persistence.converter import converter_utils
-from recidiviz.persistence.converter.converter_utils import (fn,
-                                                             parse_external_id)
-from recidiviz.persistence.converter.enum_mappings import EnumMappings
+from recidiviz.persistence.ingest_info_converter.utils import converter_utils
+from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
+    fn,
+    parse_external_id
+)
+from recidiviz.persistence.ingest_info_converter.utils.enum_mappings \
+    import EnumMappings
 
 
 def convert(proto, metadata: IngestMetadata) -> entities.Bond:

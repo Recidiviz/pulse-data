@@ -18,7 +18,6 @@
 "Utils to be shared across recidiviz project"
 import logging
 import random
-import string
 import time
 import uuid
 from typing import Optional
@@ -73,17 +72,3 @@ def retry_grpc(num_retries, fn, *args, **kwargs):
                     time.sleep(time_to_sleep)
             else:
                 raise
-
-
-def normalize(s: str, remove_punctuation: bool = False) -> str:
-    """Normalizes whitespace within the provided string by converting all groups
-    of whitespaces into ' ', and uppercases the string."""
-    if remove_punctuation:
-        translation = str.maketrans(dict.fromkeys(string.punctuation, ' '))
-        label_without_punctuation = s.translate(translation)
-        if not label_without_punctuation.isspace():
-            s = label_without_punctuation
-
-    if s is None or s == '' or s.isspace():
-        raise ValueError("Cannot normalize None or empty/whitespace string")
-    return ' '.join(s.split()).upper()
