@@ -109,6 +109,7 @@ _RACE_MAP = {
     'B': Race.BLACK,
     'BLACK': Race.BLACK,
     'BLACK ORIGINS OF AFRICA': Race.BLACK,
+    'BROWN': Race.OTHER,
     'CAUCASIAN': Race.WHITE,
     'FILIPINO': Race.ASIAN,
     'FILLIPINO': Race.ASIAN,
