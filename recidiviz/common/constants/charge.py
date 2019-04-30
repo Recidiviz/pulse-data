@@ -196,6 +196,7 @@ _CHARGE_STATUS_MAP = {
     'HELD TO GRAND JURY': ChargeStatus.PENDING,
     'INDICTED': ChargeStatus.PRETRIAL,
     'INVESTIGATION': ChargeStatus.PRETRIAL,
+    'INDICTED BY GJ': ChargeStatus.PRETRIAL,
     'LIFTED': ChargeStatus.DROPPED,
     'MINIMUM EXPIRATION': ChargeStatus.COMPLETED_SENTENCE,
     'M R S': None,
