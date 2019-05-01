@@ -28,7 +28,6 @@ cattrs = "*"
 opencensus = {ref = "d37b6d267307a136631881e593c2bc8921a786b6",git = "https://github.com/census-instrumentation/opencensus-python.git",editable = true}
 opencensus-correlation = {ref = "d37b6d267307a136631881e593c2bc8921a786b6",git = "https://github.com/census-instrumentation/opencensus-python.git",editable = true,subdirectory = "contrib/opencensus-correlation"}
 opencensus-ext-flask = {ref = "d37b6d267307a136631881e593c2bc8921a786b6",git = "https://github.com/census-instrumentation/opencensus-python.git",editable = true,subdirectory = "contrib/opencensus-ext-flask"}
-Jinja2 = ">=2.10.1"
 alembic = "*"
 sqlalchemy = "*"
 flask = "*"
@@ -49,7 +48,6 @@ google-cloud-trace = "*"
 wrapt = "*"
 attrs = "*"
 requests = "*"
-urllib3 = ">=1.24.2"
 pytz = "*"
 python-dateutil = "*"
 google-api-core = "*"
