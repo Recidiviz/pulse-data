@@ -21,7 +21,7 @@ files in a specified set is modified, then all of the files in that set have
 been modified.
 
 This check is skipped if any of the commit messages in the given range start
-with '[skip validation]'.
+contains the text '[skip validation]'.
 
 Example usage:
 $ python -m recidiviz.tools.validate_source_modifications [--commit-range RANGE]
@@ -95,7 +95,9 @@ def format_failure(failure: Tuple[FrozenSet[str], FrozenSet[str]]) -> str:
                 '\n'.join(map(lambda file: '\t\t' + file, failure[1])))
 
 
-SKIP_COMMIT_REGEX = r'^\[skip validation\]'
+SKIP_COMMIT_REGEX = r'\[skip validation\]'
+
+
 def find_skip_commits(commit_range: str) -> FrozenSet[str]:
     git = subprocess.Popen(
         ['git', 'log', '--format=%h', '--grep={}'.format(SKIP_COMMIT_REGEX),
