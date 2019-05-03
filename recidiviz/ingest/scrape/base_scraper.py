@@ -236,12 +236,6 @@ class BaseScraper(Scraper):
                 # ingest info.
                 if not scraped_data.ingest_info:
                     raise ScraperError("IngestInfo must be populated")
-
-                logging.info(
-                    "Writing ingest_info ([%d] people) to the database for "
-                    "[%s]",
-                    len(scraped_data.ingest_info.people),
-                    self.region.region_code)
                 logging.info("Logging at most 4 people:")
                 loop_count = min(len(scraped_data.ingest_info.people),
                                  constants.MAX_PEOPLE_TO_LOG)
@@ -255,6 +249,11 @@ class BaseScraper(Scraper):
                                           request.scraper_start_time,
                                           self.get_enum_overrides())
                 if self.BATCH_WRITES:
+                    logging.info(
+                        "Queuing ingest_info ([%d] people) to batch_persistence"
+                        " for [%s]",
+                        len(scraped_data.ingest_info.people),
+                        self.region.region_code)
                     scrape_key = ScrapeKey(
                         self.region.region_code, request.scrape_type)
                     batch_persistence.write(
@@ -263,6 +262,11 @@ class BaseScraper(Scraper):
                         scrape_key=scrape_key,
                     )
                 else:
+                    logging.info(
+                        "Writing ingest_info ([%d] people) to the database for "
+                        "[%s]",
+                        len(scraped_data.ingest_info.people),
+                        self.region.region_code)
                     persistence.write(
                         ingest_utils.convert_ingest_info_to_proto(
                             scraped_data.ingest_info), metadata)
