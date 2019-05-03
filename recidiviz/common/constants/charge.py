@@ -211,7 +211,7 @@ _CHARGE_STATUS_MAP = {
     'NOTICE OF APPEAL': ChargeStatus.SENTENCED,
     'NOTICE OF DISCHARGE': ChargeStatus.SENTENCED,
     'NOTICE OF DISCHARGE DOC': ChargeStatus.SENTENCED,
-    'OPEN': ChargeStatus.PENDING,
+    'OPEN': ChargeStatus.PRETRIAL,
     'ORDER OF RELEASE': ChargeStatus.DROPPED,
     'OTHER': None,
     'OTHER SEE NOTES': None,
