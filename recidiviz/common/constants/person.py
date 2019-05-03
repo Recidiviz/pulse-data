@@ -152,6 +152,7 @@ _RACE_MAP = {
 ETHNICITY_MAP = {
     'H': Ethnicity.HISPANIC,
     'H WHITE LATIN HISPANIC': Ethnicity.HISPANIC,
+    'HISP': Ethnicity.HISPANIC,
     'HISPANIC': Ethnicity.HISPANIC,
     'HISPANIC OR LATINO': Ethnicity.HISPANIC,
     'L': Ethnicity.HISPANIC,
