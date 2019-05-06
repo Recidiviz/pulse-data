@@ -21,6 +21,8 @@ import recidiviz.common.constants.enum_canonical_strings as enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
+# NOTE: This may be extended to include other degree classifications used in
+#  some states (e.g. CLASS_A, CLASS_B, etc...)
 class ChargeDegree(EntityEnum, metaclass=EntityEnumMeta):
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
     FIRST = enum_strings.degree_first
