@@ -25,8 +25,7 @@ from recidiviz.calculator.bq.views.vera.county_names import COUNTY_NAMES_VIEW
 
 from recidiviz.common.constants.enum_canonical_strings import bond_type_denied
 
-from recidiviz.persistence.database.schema import Booking
-from recidiviz.persistence.database.schema import Person
+from recidiviz.persistence.database.schema.county.schema import Booking, Person
 
 from recidiviz.utils import metadata
 

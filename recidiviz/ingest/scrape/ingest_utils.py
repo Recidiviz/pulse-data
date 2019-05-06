@@ -108,6 +108,7 @@ def validate_scrape_types(
     return list(constants.ScrapeType) if all_types else scrape_types_output
 
 
+# TODO(1625): Extend to state schema
 def convert_ingest_info_to_proto(
         ingest_info_py: ingest_info.IngestInfo) -> ingest_info_pb2.IngestInfo:
     """Converts an ingest_info python object to an ingest info proto.
@@ -126,6 +127,9 @@ def convert_ingest_info_to_proto(
     arrest_map: Dict[str, ingest_info.Arrest] = {}
     bond_map: Dict[str, ingest_info.Bond] = {}
     sentence_map: Dict[str, ingest_info.Sentence] = {}
+
+    state_person_map: Dict[str, ingest_info.StatePerson] = {}
+
     id_to_generated: Dict[int, str] = {}
 
     def _populate_proto(proto_name, ingest_info_source, id_name, proto_map):
@@ -201,6 +205,10 @@ def convert_ingest_info_to_proto(
                         'sentence_id', sentence_map)
                     proto_charge.sentence_id = proto_sentence.sentence_id
 
+    for state_person in ingest_info_py.state_people:
+        _populate_proto('state_people', state_person,
+                        'state_person_id', state_person_map)
+
     return proto
 
 
@@ -230,6 +238,11 @@ def convert_proto_to_ingest_info(
         dict(_proto_to_py(sentence, ingest_info.Sentence, 'sentence_id')
              for sentence in proto.sentences)
 
+    state_person_map: Dict[str, ingest_info.StatePerson] = \
+        dict(_proto_to_py(state_person, ingest_info.StatePerson,
+                          'state_person_id')
+             for state_person in proto.state_people)
+
     # Wire bonds and sentences to respective charges
     for proto_charge in proto.charges:
         charge = charge_map[proto_charge.charge_id]
@@ -254,10 +267,14 @@ def convert_proto_to_ingest_info(
         person.bookings = [booking_map[proto_id]
                            for proto_id in proto_person.booking_ids]
 
+    # TODO(1625): Wire children to respective state people
+
     # Wire people to ingest info
     ii = ingest_info.IngestInfo()
     ii.people.extend(person_map.values())
+    ii.state_people.extend(state_person_map.values())
     return ii
+
 
 def _proto_to_py(proto, py_type, id_name):
     py_obj = py_type()

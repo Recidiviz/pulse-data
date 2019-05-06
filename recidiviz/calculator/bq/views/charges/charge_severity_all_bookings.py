@@ -24,7 +24,7 @@ from recidiviz.calculator.bq.views.charges.charges_and_severity import CHARGES_A
 
 from recidiviz.common.constants.enum_canonical_strings import external_unknown
 
-from recidiviz.persistence.database.schema import Booking
+from recidiviz.persistence.database.schema.county.schema import Booking
 
 from recidiviz.utils import metadata
 

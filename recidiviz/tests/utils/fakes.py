@@ -20,7 +20,7 @@ import sqlalchemy
 
 import recidiviz
 from recidiviz import Session
-from recidiviz.persistence.database.schema import Base
+from recidiviz.persistence.database.base_schema import Base
 
 
 def use_in_memory_sqlite_database() -> None:

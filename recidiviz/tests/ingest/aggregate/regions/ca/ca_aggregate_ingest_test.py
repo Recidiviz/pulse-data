@@ -26,8 +26,9 @@ from sqlalchemy import func
 from recidiviz import Session
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 from recidiviz.ingest.aggregate.regions.ca import ca_aggregate_ingest
-from recidiviz.persistence.database import database
-from recidiviz.persistence.database.schema import CaFacilityAggregate
+from recidiviz.persistence.database.schema.aggregate import dao
+from recidiviz.persistence.database.schema.aggregate.schema import \
+    CaFacilityAggregate
 from recidiviz.tests.ingest import fixtures
 from recidiviz.tests.utils import fakes
 
@@ -83,7 +84,7 @@ class TestCaAggregateIngest(TestCase):
     def testWrite_CalculatesSum(self):
         # Act
         for table, df in PARSED_RESULT.items():
-            database.write_df(table, df)
+            dao.write_df(table, df)
 
         # Assert
         query = Session().query(

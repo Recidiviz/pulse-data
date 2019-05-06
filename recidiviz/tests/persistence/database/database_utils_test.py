@@ -31,7 +31,7 @@ from recidiviz.common.constants.person import Gender, Race, Ethnicity, \
     ResidencyStatus
 from recidiviz.common.constants.sentence import SentenceStatus
 from recidiviz.persistence import entities
-from recidiviz.persistence.database import schema
+from recidiviz.persistence.database.schema.county import schema as county_schema
 from recidiviz.persistence.database.database_utils import convert
 from recidiviz.tests.utils import fakes
 
@@ -155,6 +155,6 @@ class TestDatabaseUtils(TestCase):
         session.add(schema_person)
         session.commit()
 
-        people = session.query(schema.Person).all()
+        people = session.query(county_schema.Person).all()
         self.assertEqual(len(people), 1)
         self.assertEqual(convert(one(people)), _PERSON)

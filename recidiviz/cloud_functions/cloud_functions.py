@@ -23,6 +23,8 @@ import os
 import tempfile
 from flask import Blueprint, request
 import gcsfs
+
+from recidiviz.persistence.database.schema.aggregate import dao
 from recidiviz.utils import metadata
 
 from recidiviz.ingest.aggregate.regions.ca import ca_aggregate_ingest
@@ -34,7 +36,6 @@ from recidiviz.ingest.aggregate.regions.ny import ny_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.pa import pa_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.tn import tn_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.tx import tx_aggregate_ingest
-from recidiviz.persistence.database import database
 from recidiviz.utils.auth import authenticate_request
 from recidiviz.utils.params import get_value
 
@@ -94,7 +95,7 @@ def state_aggregate():
     result = parser(tmpdir_path)
     logging.info('Successfully parsed the report')
     for table, df in result.items():
-        database.write_df(table, df)
+        dao.write_df(table, df)
 
     # If we are successful, we want to move the file out of the cloud function
     # triggered directory, and into the historical path.

@@ -29,7 +29,8 @@ from recidiviz.common import str_field_utils
 from recidiviz.common import fips
 from recidiviz.ingest.aggregate import aggregate_ingest_utils
 from recidiviz.ingest.aggregate.errors import AggregateDateParsingError
-from recidiviz.persistence.database.schema import TxCountyAggregate
+from recidiviz.persistence.database.schema.aggregate.schema import \
+    TxCountyAggregate
 
 DATE_PARSE_ANCHOR = 'Abbreviated Population Report for'
 DATE_PARSE_ANCHOR_FILENAME = 'abbreviated pop rpt'

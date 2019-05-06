@@ -22,7 +22,7 @@ from recidiviz.calculator.bq import export_config
 from recidiviz.calculator.bq.views.bqview import BigQueryView
 from recidiviz.calculator.bq.views.state_aggregates import \
     state_aggregate_mappings
-from recidiviz.persistence.database import schema
+from recidiviz.persistence.database import schema_utils
 from recidiviz.utils import metadata
 
 
@@ -31,7 +31,7 @@ def _to_bq_table(query_str: str) -> str:
     project_id = metadata.project_id()
     base_dataset = export_config.BASE_TABLES_BQ_DATASET
 
-    for table in schema.get_aggregate_table_classes():
+    for table in schema_utils.get_aggregate_table_classes():
         bq_table_name = '`{project_id}.{base_dataset}.{table_name}`'.format(
             project_id=project_id,
             base_dataset=base_dataset,

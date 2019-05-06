@@ -23,8 +23,7 @@ from recidiviz.calculator.bq.views import view_config
 
 from recidiviz.calculator.bq.views.vera.county_names import COUNTY_NAMES_VIEW
 
-from recidiviz.persistence.database.schema import Booking
-from recidiviz.persistence.database.schema import Person
+from recidiviz.persistence.database.schema.county.schema import Booking, Person
 
 from recidiviz.utils import metadata
 

@@ -14,3 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
+
+"""Functions for converting the various entities from their IngestInfo proto
+representation into their application layer representation (entities.py)."""

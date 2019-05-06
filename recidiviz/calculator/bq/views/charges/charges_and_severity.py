@@ -24,7 +24,7 @@ from recidiviz.calculator.bq.views.charges.charge_class_severity_ranks import CH
 
 from recidiviz.common.constants.enum_canonical_strings import external_unknown
 
-from recidiviz.persistence.database.schema import Charge
+from recidiviz.persistence.database.schema.county.schema import Charge
 
 from recidiviz.utils import metadata
 

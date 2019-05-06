@@ -27,8 +27,9 @@ from sqlalchemy import func
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 from recidiviz import Session
 from recidiviz.ingest.aggregate.regions.tx import tx_aggregate_ingest
-from recidiviz.persistence.database import database
-from recidiviz.persistence.database.schema import TxCountyAggregate
+from recidiviz.persistence.database.schema.aggregate import dao
+from recidiviz.persistence.database.schema.aggregate.schema import \
+    TxCountyAggregate
 from recidiviz.tests.ingest import fixtures
 from recidiviz.tests.utils import fakes
 
@@ -130,7 +131,7 @@ class TestTxAggregateIngest(TestCase):
 
     def testWrite_CalculatesSum_After_1996(self):
         for table, df in self.parsed_pdf_after_1996.items():
-            database.write_df(table, df)
+            dao.write_df(table, df)
 
         # Assert
         query = Session().query(func.sum(TxCountyAggregate.available_beds))
@@ -198,7 +199,7 @@ class TestTxAggregateIngest(TestCase):
 
     def testWrite_CalculatesSum_Concat(self):
         for table, df in self.parsed_pdf_concat.items():
-            database.write_df(table, df)
+            dao.write_df(table, df)
 
         # Assert
         query = Session().query(func.sum(TxCountyAggregate.available_beds))
@@ -260,7 +261,7 @@ class TestTxAggregateIngest(TestCase):
 
     def testWrite_CalculatesSum_1996(self):
         for table, df in self.parsed_pdf_1996.items():
-            database.write_df(table, df)
+            dao.write_df(table, df)
 
         # Assert
         query = Session().query(func.sum(TxCountyAggregate.pretrial_felons))
@@ -321,7 +322,7 @@ class TestTxAggregateIngest(TestCase):
     def testWrite_CalculatesSum_before_1996(self):
 
         for table, df in self.parsed_pdf_before_1996.items():
-            database.write_df(table, df)
+            dao.write_df(table, df)
 
         # Assert
         query = Session().query(func.sum(TxCountyAggregate.pretrial_felons))
