@@ -31,11 +31,14 @@ from recidiviz.common.constants.hold import HoldStatus
 from recidiviz.common.constants.sentence import SentenceStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.scrape.constants import MAX_PEOPLE_TO_LOG
-from recidiviz.persistence import entity_matching, entities, \
-    persistence_utils, validator, entity_validator
-from recidiviz.persistence.ingest_info_converter import ingest_info_converter
+from recidiviz.persistence import entities, persistence_utils
+from recidiviz.persistence.ingest_info_validator import ingest_info_validator
+from recidiviz.persistence.database.schema.county import dao as county_dao
+from recidiviz.persistence.entity_matching import entity_matching
+from recidiviz.persistence.entity_validator import entity_validator
 from recidiviz.persistence.database import database
-from recidiviz.persistence.ingest_info_converter.ingest_info_converter import \
+from recidiviz.persistence.ingest_info_converter import ingest_info_converter
+from recidiviz.persistence.ingest_info_converter.base_converter import \
     IngestInfoConversionResult
 from recidiviz.utils import environment, monitoring
 
@@ -88,7 +91,7 @@ def infer_release_on_open_bookings(
     try:
         logging.info("Reading all bookings that happened before [%s]",
                      last_ingest_time)
-        people = database.read_people_with_open_bookings_scraped_before_time(
+        people = county_dao.read_people_with_open_bookings_scraped_before_time(
             session, region_code, last_ingest_time)
         logging.info(
             "Found [%s] people with bookings that will be inferred released",
@@ -97,8 +100,6 @@ def infer_release_on_open_bookings(
             persistence_utils.remove_pii_for_person(person)
             _infer_release_date_for_bookings(person.bookings, last_ingest_time,
                                              custody_status)
-        # TODO(#1172): Only pass in last_seen_time to write_people instead of
-        # dummy object with half-filled values
         database.write_people(session, people, IngestMetadata(
             region=region_code, jurisdiction_id='',
             ingest_time=last_ingest_time))
@@ -147,7 +148,7 @@ def _mark_children_removed_from_source(booking: entities.Booking):
 
 
 def _should_persist():
-    return bool(environment.in_gae() or \
+    return bool(environment.in_gae() or
                 strtobool((os.environ.get('PERSIST_LOCALLY', 'false'))))
 
 
@@ -196,7 +197,7 @@ def write(ingest_info, metadata):
 
     Otherwise, simply log the given ingest_infos for debugging
     """
-    validator.validate(ingest_info)
+    ingest_info_validator.validate(ingest_info)
 
     mtags = {monitoring.TagKey.SHOULD_PERSIST: _should_persist(),
              monitoring.TagKey.PERSISTED: False}
@@ -240,6 +241,7 @@ def write(ingest_info, metadata):
         session = Session()
         try:
             logging.info("Starting entity matching")
+
             entity_matching_output = entity_matching.match(
                 session, metadata.region, people)
             people = entity_matching_output.people
@@ -256,11 +258,13 @@ def write(ingest_info, metadata):
                 #   investigation is complete.
                 logging.info("_should_abort_ was true after entity matching")
                 return False
+
             database.write_people(
                 session, people, metadata,
                 orphaned_entities=entity_matching_output.orphaned_entities)
             logging.info("Successfully wrote to the database")
             session.commit()
+
             persisted = True
             mtags[monitoring.TagKey.PERSISTED] = True
         except Exception as e:

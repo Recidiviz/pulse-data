@@ -22,9 +22,8 @@ from recidiviz.calculator.bq.views import bqview
 from recidiviz.calculator.bq.views import view_config
 from recidiviz.calculator.bq.views.vera.county_names import COUNTY_NAMES_VIEW
 
-from recidiviz.persistence.database.schema import Booking
-from recidiviz.persistence.database.schema import Charge
-from recidiviz.persistence.database.schema import Person
+from recidiviz.persistence.database.schema.county.schema import Booking, \
+    Charge, Person
 
 from recidiviz.utils import metadata
 

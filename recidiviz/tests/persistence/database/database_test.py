@@ -17,28 +17,24 @@
 """Tests for database.py."""
 
 import datetime
-from copy import deepcopy
 from unittest import TestCase
 
 from more_itertools import one
-import pandas as pd
-from sqlalchemy import func
 from sqlalchemy.sql import text
 
 from recidiviz import Session
-from recidiviz.common.constants import enum_canonical_strings as enum_strings
 from recidiviz.common.constants.bond import BondStatus
 from recidiviz.common.constants.booking import CustodyStatus
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.person import Race
 from recidiviz.common.constants.sentence import SentenceStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.persistence import entities
 from recidiviz.persistence.database import database, database_utils
-from recidiviz.persistence.database.schema import Bond, Booking, Person, \
-    Sentence, FlCountyAggregate, FlFacilityAggregate
-from recidiviz.persistence.database.schema import (
+from recidiviz.persistence.database.schema.county import dao as county_dao
+from recidiviz.persistence.database.schema.county.schema import Bond, Booking, \
+    Person, Sentence
+from recidiviz.persistence.database.schema.county.schema import (
     BondHistory,
     BookingHistory,
     Charge, ChargeHistory,
@@ -67,172 +63,6 @@ class TestDatabase(TestCase):
 
     def setup_method(self, _test_method):
         fakes.use_in_memory_sqlite_database()
-
-    def test_readPeopleWithOpenBookingsBeforeDate(self):
-        # Arrange
-        person = Person(person_id=8, region=_REGION,
-                        jurisdiction_id=_JURISDICTION_ID)
-        person_resolved_booking = Person(person_id=9, region=_REGION,
-                                         jurisdiction_id=_JURISDICTION_ID)
-        person_most_recent_scrape = Person(person_id=10, region=_REGION,
-                                           jurisdiction_id=_JURISDICTION_ID)
-        person_wrong_region = Person(person_id=11, region=_REGION_ANOTHER,
-                                     jurisdiction_id=_JURISDICTION_ID)
-
-        release_date = datetime.date(2018, 7, 20)
-        most_recent_scrape_date = datetime.datetime(2018, 6, 20)
-        date_in_past = most_recent_scrape_date - datetime.timedelta(days=1)
-        first_seen_time = most_recent_scrape_date - datetime.timedelta(days=3)
-
-        # Bookings that should be returned
-        open_booking_before_last_scrape = Booking(
-            person_id=person.person_id,
-            custody_status=CustodyStatus.IN_CUSTODY.value,
-            first_seen_time=first_seen_time,
-            last_seen_time=date_in_past)
-
-        # Bookings that should not be returned
-        open_booking_incorrect_region = Booking(
-            person_id=person_wrong_region.person_id,
-            custody_status=CustodyStatus.IN_CUSTODY.value,
-            first_seen_time=first_seen_time,
-            last_seen_time=date_in_past)
-        open_booking_most_recent_scrape = Booking(
-            person_id=person_most_recent_scrape.person_id,
-            custody_status=CustodyStatus.IN_CUSTODY.value,
-            first_seen_time=first_seen_time,
-            last_seen_time=most_recent_scrape_date)
-        resolved_booking = Booking(
-            person_id=person_resolved_booking.person_id,
-            custody_status=CustodyStatus.RELEASED.value,
-            release_date=release_date,
-            first_seen_time=first_seen_time,
-            last_seen_time=date_in_past)
-
-        session = Session()
-        session.add(person)
-        session.add(person_resolved_booking)
-        session.add(person_most_recent_scrape)
-        session.add(person_wrong_region)
-        session.add(open_booking_before_last_scrape)
-        session.add(open_booking_incorrect_region)
-        session.add(open_booking_most_recent_scrape)
-        session.add(resolved_booking)
-        session.commit()
-
-        # Act
-        people = database.read_people_with_open_bookings_scraped_before_time(
-            session, person.region, most_recent_scrape_date)
-
-        # Assert
-        self.assertEqual(people, [database_utils.convert(person)])
-
-    def test_readPeopleByExternalId(self):
-        admission_date = datetime.datetime(2018, 6, 20)
-        release_date = datetime.date(2018, 7, 20)
-        closed_booking = Booking(
-            custody_status=CustodyStatus.IN_CUSTODY.value,
-            admission_date=admission_date,
-            release_date=release_date,
-            first_seen_time=admission_date,
-            last_seen_time=admission_date)
-
-        person_no_match = Person(person_id=1, region=_REGION,
-                                 jurisdiction_id=_JURISDICTION_ID,
-                                 bookings=[deepcopy(closed_booking)])
-        person_match_external_id = Person(person_id=2, region=_REGION,
-                                          jurisdiction_id=_JURISDICTION_ID,
-                                          bookings=[closed_booking],
-                                          external_id=_EXTERNAL_ID)
-
-        session = Session()
-        session.add(person_no_match)
-        session.add(person_match_external_id)
-        session.commit()
-
-        ingested_person = entities.Person.new_with_defaults(
-            external_id=_EXTERNAL_ID)
-        people = database.read_people_by_external_ids(session, _REGION,
-                                                      [ingested_person])
-
-        expected_people = [
-            database_utils.convert(person_match_external_id)]
-        self.assertCountEqual(people, expected_people)
-
-    def test_readPeopleWithOpenBookings(self):
-        admission_date = datetime.datetime(2018, 6, 20)
-        release_date = datetime.date(2018, 7, 20)
-
-        open_booking = Booking(
-            custody_status=CustodyStatus.IN_CUSTODY.value,
-            admission_date=admission_date,
-            first_seen_time=admission_date,
-            last_seen_time=admission_date)
-        closed_booking = Booking(
-            custody_status=CustodyStatus.RELEASED.value,
-            admission_date=admission_date,
-            release_date=release_date,
-            first_seen_time=admission_date,
-            last_seen_time=admission_date)
-
-        person_no_match = Person(person_id=1, region=_REGION,
-                                 jurisdiction_id=_JURISDICTION_ID,
-                                 bookings=[deepcopy(open_booking)])
-        person_match_full_name = Person(person_id=2, region=_REGION,
-                                        jurisdiction_id=_JURISDICTION_ID,
-                                        bookings=[deepcopy(open_booking)],
-                                        full_name=_FULL_NAME)
-        person_no_open_bookings = Person(person_id=6, region=_REGION,
-                                         jurisdiction_id=_JURISDICTION_ID,
-                                         full_name=_FULL_NAME,
-                                         bookings=[closed_booking])
-
-        session = Session()
-        session.add(person_no_match)
-        session.add(person_no_open_bookings)
-        session.add(person_match_full_name)
-        session.commit()
-
-        info = IngestInfo()
-        info.create_person(full_name=_FULL_NAME, person_id=_EXTERNAL_ID)
-        people = database.read_people_with_open_bookings(session, _REGION,
-                                                         info.people)
-
-        expected_people = [database_utils.convert(p) for p in
-                           [person_match_full_name]]
-        self.assertCountEqual(people, expected_people)
-
-    def test_personWithMultipleBookings_shouldNotReturnDuplicatePeople(self):
-        person = Person(person_id=1, region=_REGION, full_name=_FULL_NAME,
-                        jurisdiction_id=_JURISDICTION_ID)
-
-        booking_1 = Booking(
-            custody_status=CustodyStatus.PRESENT_WITHOUT_INFO.value,
-            admission_date=datetime.datetime(2019, 1, 10),
-            first_seen_time=datetime.datetime(2019, 1, 10),
-            last_seen_time=datetime.datetime(2019, 1, 10))
-        booking_2 = Booking(
-            custody_status=CustodyStatus.PRESENT_WITHOUT_INFO.value,
-            admission_date=datetime.datetime(2019, 2, 10),
-            first_seen_time=datetime.datetime(2019, 2, 10),
-            last_seen_time=datetime.datetime(2019, 2, 10))
-
-        person.bookings.extend([booking_1, booking_2])
-
-        arrange_session = Session()
-        arrange_session.add(person)
-        arrange_session.commit()
-        arrange_session.close()
-
-        act_session = Session()
-        info = IngestInfo()
-        info.create_person(full_name=_FULL_NAME)
-        people = database.read_people_with_open_bookings(
-            act_session, _REGION, info.people)
-        act_session.commit()
-        act_session.close()
-
-        self.assertEqual(len(people), 1)
 
     def testWritePerson_noExistingSnapshots_createsSnapshots(self):
         act_session = Session()
@@ -624,7 +454,7 @@ class TestDatabase(TestCase):
 
         assert_session = Session()
 
-        ingest_person = database.read_people(
+        ingest_person = county_dao.read_people(
             assert_session, full_name=name, birthdate=birthdate)[0]
         ingest_person.bookings[0].custody_status = CustodyStatus.RELEASED
 
@@ -672,7 +502,7 @@ class TestDatabase(TestCase):
         arrange_session.close()
 
         act_session = Session()
-        queried_person = one(database.read_people(
+        queried_person = one(county_dao.read_people(
             session=act_session, full_name=_FULL_NAME, birthdate=_BIRTHDATE))
         booking = entities.Booking.new_with_defaults(
             custody_status=CustodyStatus.IN_CUSTODY,
@@ -843,7 +673,6 @@ class TestDatabase(TestCase):
         self.assertEqual(
             booking_snapshots[1].custody_status, CustodyStatus.RELEASED.value)
 
-
         assert_session.commit()
         assert_session.close()
 
@@ -986,7 +815,7 @@ class TestDatabase(TestCase):
         arrange_session.close()
 
         act_session = Session()
-        queried_person = one(database.read_people(
+        queried_person = one(county_dao.read_people(
             session=act_session, full_name=_FULL_NAME, birthdate=_BIRTHDATE))
         queried_person.bookings[0].admission_date = booking_admission_date
         queried_person.bookings[0].admission_date_inferred = False
@@ -1113,7 +942,7 @@ class TestDatabase(TestCase):
         arrange_session.close()
 
         act_session = Session()
-        queried_person = one(database.read_people(
+        queried_person = one(county_dao.read_people(
             session=act_session, full_name=_FULL_NAME, birthdate=_BIRTHDATE))
         charge = entities.Charge.new_with_defaults(
             status=ChargeStatus.PENDING)
@@ -1415,137 +1244,3 @@ class TestDatabase(TestCase):
 
         assert_session.commit()
         assert_session.close()
-
-    def testWriteDf(self):
-        # Arrange
-        subject = pd.DataFrame({
-            'county_name': ['Alachua', 'Baker', 'Bay', 'Bradford', 'Brevard'],
-            'county_population': [257062, 26965, 176016, 27440, 568919],
-            'average_daily_population': [799, 478, 1015, 141, 1547],
-            'date_reported': [pd.NaT, pd.NaT,
-                              datetime.datetime(year=2017, month=9, day=1),
-                              pd.NaT, pd.NaT],
-            'fips': ['00000', '00001', '00002', '00003', '00004'],
-            'report_date': 5 * [DATE_SCRAPED],
-            'aggregation_window': 5 * [enum_strings.monthly_granularity],
-            'report_frequency': 5 * [enum_strings.monthly_granularity]
-        })
-
-        # Act
-        database.write_df(FlCountyAggregate, subject)
-
-        # Assert
-        query = Session() \
-            .query(FlCountyAggregate) \
-            .filter(FlCountyAggregate.county_name == 'Bay')
-        result = one(query.all())
-
-        self.assertEqual(result.county_name, 'Bay')
-        self.assertEqual(result.county_population, 176016)
-        self.assertEqual(result.average_daily_population, 1015)
-        self.assertEqual(result.date_reported,
-                         datetime.date(year=2017, month=9, day=1))
-        self.assertEqual(result.fips, '00002')
-        self.assertEqual(result.report_date, DATE_SCRAPED)
-        self.assertEqual(result.aggregation_window,
-                         enum_strings.monthly_granularity)
-
-    def testWriteDf_doesNotOverrideMatchingColumnNames(self):
-        # Arrange
-        subject = pd.DataFrame({
-            'county_name': ['Alachua', 'Baker', 'Bay', 'Bradford', 'Brevard'],
-            'county_population': [257062, 26965, 176016, 27440, 568919],
-            'average_daily_population': [799, 478, 1015, 141, 1547],
-            'date_reported': [pd.NaT, pd.NaT,
-                              datetime.datetime(year=2017, month=9, day=1),
-                              pd.NaT, pd.NaT],
-            'fips': ['00000', '00001', '00002', '00003', '00004'],
-            'report_date': 5 * [DATE_SCRAPED],
-            'aggregation_window': 5 * [enum_strings.monthly_granularity],
-            'report_frequency': 5 * [enum_strings.monthly_granularity]
-        })
-        database.write_df(FlCountyAggregate, subject)
-
-        subject = pd.DataFrame({
-            'facility_name': ['One', 'Two', 'Three', 'Four', 'Five'],
-            'average_daily_population': [13, 14, 15, 16, 17],
-            'number_felony_pretrial': [23, 24, 25, 26, 27],
-            'number_misdemeanor_pretrial': 5 * [pd.NaT],
-            'fips': ['10000', '10111', '10222', '10333', '10444'],
-            'report_date': 5 * [DATE_SCRAPED],
-            'aggregation_window': 5 * [enum_strings.monthly_granularity],
-            'report_frequency': 5 * [enum_strings.monthly_granularity]
-        })
-
-        # Act
-        database.write_df(FlFacilityAggregate, subject)
-
-        # Assert
-        query = Session() \
-            .query(FlCountyAggregate) \
-            .filter(FlCountyAggregate.county_name == 'Bay')
-        result = one(query.all())
-
-        fips_not_overridden_by_facility_table = '00002'
-        self.assertEqual(result.county_name, 'Bay')
-        self.assertEqual(result.fips, fips_not_overridden_by_facility_table)
-
-    def testWriteDf_rowsWithSameColumnsThatMustBeUnique_onlyWritesOnce(self):
-        # Arrange
-        shared_fips = '12345'
-        subject = pd.DataFrame({
-            'county_name': ['Alachua', 'Baker'],
-            'county_population': [257062, 26965],
-            'average_daily_population': [799, 478],
-            'date_reported': [pd.NaT, pd.NaT],
-            'fips': 2 * [shared_fips],
-            'report_date': 2 * [DATE_SCRAPED],
-            'aggregation_window': 2 * [enum_strings.monthly_granularity],
-            'report_frequency': 2 * [enum_strings.monthly_granularity]
-        })
-
-        # Act
-        database.write_df(FlCountyAggregate, subject)
-
-        # Assert
-        query = Session().query(FlCountyAggregate)
-        self.assertEqual(len(query.all()), 1)
-
-    def testWriteDf_OverlappingData_WritesNewAndIgnoresDuplicateRows(self):
-        # Arrange
-        initial_df = pd.DataFrame({
-            'county_name': ['Alachua', 'Baker', 'Bay', 'Bradford', 'Brevard'],
-            'county_population': [257062, 26965, 176016, 27440, 568919],
-            'average_daily_population': [799, 478, 1015, 141, 1547],
-            'date_reported': [pd.NaT, pd.NaT,
-                              datetime.datetime(year=2017, month=9, day=1),
-                              pd.NaT, pd.NaT],
-            'fips': ['00000', '00001', '00002', '00003', '00004'],
-            'report_date': 5 * [DATE_SCRAPED],
-            'aggregation_window': 5 * [enum_strings.monthly_granularity],
-            'report_frequency': 5 * [enum_strings.monthly_granularity]
-        })
-        database.write_df(FlCountyAggregate, initial_df)
-
-        subject = pd.DataFrame({
-            'county_name': ['Alachua', 'NewCounty', 'Baker'],
-            'county_population': [0, 1000000000, 0],
-            'average_daily_population': [0, 50, 0],
-            'date_reported': [pd.NaT, pd.NaT, pd.NaT],
-            'fips': ['00000', '01000', '00002'],
-            'report_date': 3 * [DATE_SCRAPED],
-            'aggregation_window': 3 * [enum_strings.monthly_granularity],
-            'report_frequency': 3 * [enum_strings.monthly_granularity]
-        })
-
-        # Act
-        database.write_df(FlCountyAggregate, subject)
-
-        # Assert
-        query = Session().query(func.sum(FlCountyAggregate.county_population))
-        result = one(one(query.all()))
-
-        # This sum includes intial_df + NewCounty and ignores other changes in
-        # the subject (eg. county_population = 0 for 'Alachua')
-        expected_sum_county_populations = 1001056402
-        self.assertEqual(result, expected_sum_county_populations)

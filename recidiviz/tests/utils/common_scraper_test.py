@@ -26,9 +26,10 @@ from recidiviz.ingest.models import ingest_info
 from recidiviz.ingest.models.ingest_info_diff import diff_ingest_infos
 from recidiviz.ingest.scrape import constants, ingest_utils
 from recidiviz.ingest.scrape.task_params import Task
-from recidiviz.persistence import entity_validator
+from recidiviz.persistence.entity_validator import entity_validator
 from recidiviz.persistence.ingest_info_converter import ingest_info_converter
-from recidiviz.persistence.validator import validate
+from recidiviz.persistence.ingest_info_validator.ingest_info_validator import \
+    validate
 
 _FAKE_SCRAPER_START_TIME = datetime(year=2019, month=1, day=2)
 
