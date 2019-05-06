@@ -1,0 +1,46 @@
+# Recidiviz - a data platform for criminal justice reform
+# Copyright (C) 2019 Recidiviz, Inc.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# =============================================================================
+
+"""Constants used by CourtCase."""
+from typing import Dict
+
+from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
+
+
+class CourtType(EntityEnum, metaclass=EntityEnumMeta):
+    # TODO(1697): Add values here
+
+    @staticmethod
+    def _get_default_map():
+        return _COURT_TYPE_MAP
+
+
+class CourtCaseStatus(EntityEnum, metaclass=EntityEnumMeta):
+    # TODO(1697): Add values here
+
+    @staticmethod
+    def _get_default_map():
+        return _COURT_CASE_STATUS_MAP
+
+
+_COURT_TYPE_MAP: Dict[str, CourtType] = {
+    # TODO(1697): Add values here
+}
+
+_COURT_CASE_STATUS_MAP: Dict[str, CourtCaseStatus] = {
+    # TODO(1697): Add values here
+}
