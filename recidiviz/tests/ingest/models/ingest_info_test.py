@@ -21,8 +21,8 @@ import unittest
 
 from recidiviz.ingest.models import ingest_info
 from recidiviz.ingest.models.ingest_info import IngestInfo
-from recidiviz.ingest.models.ingest_info_pb2 import Person, Booking, Charge, \
-    Hold, Arrest, Sentence, Bond
+from recidiviz.ingest.models.ingest_info_pb2 import Person, \
+    Booking, Charge, Hold, Arrest, Sentence, Bond, StatePerson
 
 
 class FieldsDontMatchError(Exception):
@@ -64,6 +64,8 @@ class TestIngestInfo(unittest.TestCase):
         _verify_fields(Arrest, ingest_info.Arrest())
         _verify_fields(Sentence, ingest_info.Sentence(), sentence_fields_ignore)
         _verify_fields(Bond, ingest_info.Bond())
+
+        _verify_fields(StatePerson, ingest_info.StatePerson())
         return True
 
     def test_bool_falsy(self):

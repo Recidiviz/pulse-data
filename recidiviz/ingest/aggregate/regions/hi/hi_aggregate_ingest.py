@@ -29,7 +29,8 @@ from recidiviz.common import str_field_utils
 from recidiviz.common.errors import FipsMergingError
 from recidiviz.ingest.aggregate.errors import (AggregateDateParsingError,
                                                AggregateIngestError)
-from recidiviz.persistence.database.schema import HiFacilityAggregate
+from recidiviz.persistence.database.schema.aggregate.schema import \
+    HiFacilityAggregate
 
 _COLUMN_NAMES = [
     'facility_name',

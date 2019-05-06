@@ -35,7 +35,7 @@ from recidiviz.ingest.scrape.scraper_status import scraper_status
 from recidiviz.ingest.scrape.worker import worker
 from recidiviz.persistence.actions import actions
 from recidiviz.persistence.batch_persistence import batch_blueprint
-from recidiviz.persistence.database.schema import Base
+from recidiviz.persistence.database.base_schema import Base
 from recidiviz.tests.utils.populate_test_db import test_populator
 from recidiviz.utils import environment, secrets, structured_logging, metadata
 

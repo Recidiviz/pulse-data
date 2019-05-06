@@ -23,8 +23,9 @@ import attr
 
 from recidiviz.common.constants.entity_enum import EntityEnum
 from recidiviz.persistence import entities
-from recidiviz.persistence.database import schema
-from recidiviz.persistence.database.schema import Base
+from recidiviz.persistence.database.schema.county import schema as county_schema
+from recidiviz.persistence.database.base_schema import Base
+from recidiviz.persistence.database.schema.state import schema as state_schema
 from recidiviz.persistence.entities import Entity
 
 
@@ -67,7 +68,7 @@ def convert(src):
 
     direction = _Direction.for_cls(src.__class__)
 
-    schema_cls = getattr(schema, src.__class__.__name__)
+    schema_cls = _get_schema_class(src)
     entity_cls = getattr(entities, src.__class__.__name__)
 
     if direction is _Direction.ENTITY_TO_SCHEMA:
@@ -92,6 +93,7 @@ def convert(src):
             # TODO(441): Correctly convert related_sentences once schema for
             # this field is finalized.
             continue
+        # TODO(1625): Add state schema convert calls here
         else:
             if getattr(src, field) is None:
                 value = None
@@ -104,6 +106,11 @@ def convert(src):
     if direction is _Direction.SCHEMA_TO_ENTITY:
         dst = dst.build()
     return dst
+
+
+def _get_schema_class(src):
+    schema_cls = getattr(county_schema, src.__class__.__name__, None)
+    return schema_cls or getattr(state_schema, src.__class__.__name__)
 
 
 def _is_enum(attr_type):

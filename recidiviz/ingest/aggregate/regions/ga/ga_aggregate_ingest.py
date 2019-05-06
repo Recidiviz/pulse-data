@@ -29,7 +29,8 @@ from recidiviz.common import str_field_utils
 from recidiviz.common import fips
 from recidiviz.ingest.aggregate import aggregate_ingest_utils
 from recidiviz.ingest.aggregate.errors import AggregateDateParsingError
-from recidiviz.persistence.database.schema import GaCountyAggregate
+from recidiviz.persistence.database.schema.aggregate.schema import \
+    GaCountyAggregate
 
 DATE_PARSE_ANCHOR = 'DATA SUMMARY'
 

@@ -27,7 +27,7 @@ from recidiviz.common.constants.enum_canonical_strings import bond_type_not_requ
 from recidiviz.common.constants.enum_canonical_strings import bond_type_secured
 from recidiviz.common.constants.enum_canonical_strings import present_without_info
 
-from recidiviz.persistence.database.schema import Bond
+from recidiviz.persistence.database.schema.county.schema import Bond
 
 from recidiviz.utils import metadata
 

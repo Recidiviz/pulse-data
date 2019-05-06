@@ -29,8 +29,8 @@ import recidiviz.common.constants.enum_canonical_strings as enum_strings
 from recidiviz.common import str_field_utils
 from recidiviz.common import fips
 from recidiviz.ingest.aggregate import aggregate_ingest_utils
-from recidiviz.persistence.database.schema import TnFacilityAggregate, \
-    TnFacilityFemaleAggregate
+from recidiviz.persistence.database.schema.aggregate.schema import \
+    TnFacilityAggregate, TnFacilityFemaleAggregate
 
 
 _JAIL_REPORT_COLUMN_NAMES = [
