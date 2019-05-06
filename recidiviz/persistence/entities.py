@@ -37,6 +37,8 @@ from recidiviz.common.constants.person import Race, Ethnicity, Gender, \
 from recidiviz.common.constants.sentence import SentenceStatus
 
 
+# TODO(1704) - Update all entity objects defined in this file to use the new
+#  entity class defined in base_entity.py and delete this.
 @attr.s
 class Entity:
     external_id: Optional[str] = attr.ib()
