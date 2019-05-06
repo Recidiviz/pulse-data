@@ -61,6 +61,7 @@ from recidiviz.ingest.scrape.task_params import QueueRequest, ScrapedData, \
     Task
 from recidiviz.persistence import batch_persistence, persistence
 
+
 class ParsingError(Exception):
     """Exception containing the text that failed to parse"""
     def __init__(self, response_type: constants.ResponseType, text: str):

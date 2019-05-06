@@ -18,8 +18,8 @@
 # pylint: disable=line-too-long
 
 from recidiviz.calculator.bq.views.state_aggregates.mappings import Mappings
-from recidiviz.persistence.database.schema import CaFacilityAggregate, \
-    FlFacilityAggregate, GaCountyAggregate, \
+from recidiviz.persistence.database.schema.aggregate.schema import \
+    CaFacilityAggregate, FlFacilityAggregate, GaCountyAggregate, \
     HiFacilityAggregate, KyFacilityAggregate, NyFacilityAggregate, \
     TxCountyAggregate, PaFacilityPopAggregate, PaCountyPreSentencedAggregate, \
     TnFacilityAggregate, TnFacilityFemaleAggregate

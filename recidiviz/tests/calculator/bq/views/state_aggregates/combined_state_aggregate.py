@@ -25,9 +25,9 @@ import recidiviz.common.constants.enum_canonical_strings as enum_strings
 from recidiviz import Session
 from recidiviz.calculator.bq.views.state_aggregates import \
     combined_state_aggregate
-from recidiviz.persistence.database import database
-from recidiviz.persistence.database.schema import CaFacilityAggregate, \
-    FlFacilityAggregate
+from recidiviz.persistence.database.schema.aggregate import dao
+from recidiviz.persistence.database.schema.aggregate.schema import \
+    CaFacilityAggregate, FlFacilityAggregate
 from recidiviz.tests.utils import fakes
 
 
@@ -53,7 +53,7 @@ class TestAggregateView(TestCase):
             'aggregation_window': 2 * [enum_strings.monthly_granularity],
             'report_frequency': 2 * [enum_strings.monthly_granularity]
         })
-        database.write_df(CaFacilityAggregate, ca_data)
+        dao.write_df(CaFacilityAggregate, ca_data)
 
         fl_data = pd.DataFrame({
             'facility_name': [
@@ -70,7 +70,7 @@ class TestAggregateView(TestCase):
             'aggregation_window': 5 * [enum_strings.monthly_granularity],
             'report_frequency': 5 * [enum_strings.monthly_granularity]
         })
-        database.write_df(FlFacilityAggregate, fl_data)
+        dao.write_df(FlFacilityAggregate, fl_data)
 
         # Act
         query = Session().query(combined_state_aggregate._UNIONED_STATEMENT)  # pylint: disable=protected-access

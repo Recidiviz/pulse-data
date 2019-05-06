@@ -20,7 +20,7 @@ Note: These classes mirror the SQL Alchemy ORM objects but are kept separate.
 This allows these persistence layer objects additional flexibility that the SQL
 Alchemy ORM objects can't provide.
 """
-from typing import List, Optional
+from typing import List, Optional, TypeVar
 
 import datetime
 import attr
@@ -54,8 +54,12 @@ class Entity:
         id_name = self.get_entity_name() + '_id'
         return getattr(self, id_name)
 
+
+# County-level entities
+
 @attr.s
 class Person(Entity, BuildableAttr, DefaultableAttr):
+    """Models a Person moving through the criminal justice system."""
     full_name: Optional[str] = attr.ib()
     birthdate: Optional[datetime.date] = attr.ib()
     birthdate_inferred_from_age: Optional[bool] = attr.ib()
@@ -76,6 +80,7 @@ class Person(Entity, BuildableAttr, DefaultableAttr):
 
 @attr.s
 class Booking(Entity, BuildableAttr, DefaultableAttr):
+    """Models a particular Booking into jail for a Person."""
     admission_date: Optional[datetime.date] = attr.ib()
     admission_reason: Optional[AdmissionReason] = attr.ib()
     admission_reason_raw_text: Optional[str] = attr.ib()
@@ -91,7 +96,7 @@ class Booking(Entity, BuildableAttr, DefaultableAttr):
     classification: Optional[Classification] = attr.ib()
     classification_raw_text: Optional[str] = attr.ib()
     last_seen_time: datetime.datetime = attr.ib()  # non-nullable
-    first_seen_time: datetime.datetime = attr.ib() # non-nullable
+    first_seen_time: datetime.datetime = attr.ib()  # non-nullable
 
     booking_id: Optional[int] = attr.ib(default=None)
     holds: List['Hold'] = attr.ib(factory=list)
@@ -101,6 +106,7 @@ class Booking(Entity, BuildableAttr, DefaultableAttr):
 
 @attr.s
 class Arrest(Entity, BuildableAttr, DefaultableAttr):
+    """Models the Arrest for a particular Booking."""
     arrest_date: Optional[datetime.date] = attr.ib()
     location: Optional[str] = attr.ib()
     agency: Optional[str] = attr.ib()
@@ -112,6 +118,8 @@ class Arrest(Entity, BuildableAttr, DefaultableAttr):
 
 @attr.s
 class Charge(Entity, BuildableAttr, DefaultableAttr):
+    """Models a Charge on a particular Booking."""
+
     offense_date: Optional[datetime.date] = attr.ib()
     statute: Optional[str] = attr.ib()
     name: Optional[str] = attr.ib()
@@ -138,6 +146,8 @@ class Charge(Entity, BuildableAttr, DefaultableAttr):
 
 @attr.s
 class Hold(Entity, BuildableAttr, DefaultableAttr):
+    """Models a jurisdictional Hold on a particular Booking."""
+
     jurisdiction_name: Optional[str] = attr.ib()
     status: HoldStatus = attr.ib()  # non-nullable
     status_raw_text: Optional[str] = attr.ib()
@@ -147,6 +157,8 @@ class Hold(Entity, BuildableAttr, DefaultableAttr):
 
 @attr.s
 class Bond(Entity, BuildableAttr, DefaultableAttr):
+    """Models a Bond on a particular Charge."""
+
     amount_dollars: Optional[int] = attr.ib()
     bond_type: Optional[BondType] = attr.ib()
     bond_type_raw_text: Optional[str] = attr.ib()
@@ -160,6 +172,8 @@ class Bond(Entity, BuildableAttr, DefaultableAttr):
 
 @attr.s
 class Sentence(Entity, BuildableAttr, DefaultableAttr):
+    """Models a Sentence for one or more Charges on a particular Booking."""
+
     sentencing_region: Optional[str] = attr.ib()
     status: SentenceStatus = attr.ib()  # non-nullable
     status_raw_text: Optional[str] = attr.ib()
@@ -181,3 +195,29 @@ class Sentence(Entity, BuildableAttr, DefaultableAttr):
     # To avoid recursive references, store only 1 level of related_sentences
     # (ie. don't store related_sentences of these related_sentences).
     related_sentences: List['Sentence'] = attr.ib(factory=list)
+
+
+# State-level entities
+# TODO(1625): Switch to the upcoming state/entities.py
+
+@attr.s
+class StatePerson(Entity, BuildableAttr, DefaultableAttr):
+    """Models a Person moving through the criminal justice system."""
+    full_name: Optional[str] = attr.ib()
+    birthdate: Optional[datetime.date] = attr.ib()
+    birthdate_inferred_from_age: Optional[bool] = attr.ib()
+    gender: Optional[Gender] = attr.ib()
+    gender_raw_text: Optional[str] = attr.ib()
+    race: Optional[Race] = attr.ib()
+    race_raw_text: Optional[str] = attr.ib()
+    ethnicity: Optional[Ethnicity] = attr.ib()
+    ethnicity_raw_text: Optional[str] = attr.ib()
+    residency_status: Optional[ResidencyStatus] = attr.ib()
+
+    state_person_id: Optional[int] = attr.ib(default=None)
+    # assessments: List['Assessment'] = attr.ib(factory=list)
+    # compound_sentences: List['CompoundSentence'] = attr.ib(factory=list)
+
+
+# A generic type that can be either (county-)Person or StatePerson
+PersonType = TypeVar('PersonType', Person, StatePerson)

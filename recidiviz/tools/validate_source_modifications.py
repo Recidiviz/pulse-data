@@ -34,8 +34,11 @@ import sys
 from typing import FrozenSet, List, Tuple
 
 from recidiviz.ingest.models import ingest_info, ingest_info_pb2
-from recidiviz.persistence.database import schema
+from recidiviz.persistence.database.schema.aggregate import \
+    schema as aggregate_schema
+from recidiviz.persistence.database.schema.county import schema as county_schema
 from recidiviz.persistence.database.migrations import versions
+from recidiviz.persistence.database.schema.state import schema as state_schema
 
 # Sets of prefixes to check. For each set, if the changes modify a file matching
 # any prefix in the set, then it must also modify files matching all other
@@ -51,22 +54,34 @@ MODIFIED_FILE_ASSERTIONS = frozenset((
         os.path.relpath(ingest_info_pb2.__file__),  # generated proto source
         os.path.relpath(ingest_info_pb2.__file__) + 'i',  # proto type hints
     )),
-    # schema
-    frozenset((
-        os.path.relpath(schema.__file__),  # schema
-        os.path.relpath(versions.__file__[:-len('__init__.py')])  # versions
-    )),
     # pipfile
     frozenset((
         'Pipfile', 'Pipfile.lock'
-    ))
+    )),
+    # aggregate schema
+    frozenset((
+        os.path.relpath(aggregate_schema.__file__),  # aggregate schema
+        os.path.relpath(versions.__file__[:-len('__init__.py')])  # versions
+    )),
+    # county schema
+    frozenset((
+        os.path.relpath(county_schema.__file__),  # county schema
+        os.path.relpath(versions.__file__[:-len('__init__.py')])  # versions
+    )),
+    # state schema
+    frozenset((
+        os.path.relpath(state_schema.__file__),  # state schema
+        os.path.relpath(versions.__file__[:-len('__init__.py')])  # versions
+    )),
 ))
+
 
 def match_assertions(modified_files: FrozenSet[str],
                      assertion_prefixes: FrozenSet[str]) -> FrozenSet[str]:
     return frozenset(file_prefix for file_prefix in assertion_prefixes
                      if any(modified_file.startswith(file_prefix)
                             for modified_file in modified_files))
+
 
 def check_assertions(modified_files: FrozenSet[str]) \
         -> List[Tuple[FrozenSet[str], FrozenSet[str]]]:

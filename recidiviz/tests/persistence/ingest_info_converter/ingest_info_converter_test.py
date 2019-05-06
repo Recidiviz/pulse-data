@@ -145,6 +145,7 @@ class TestIngestInfoConverter(unittest.TestCase):
         ingest_info.charges.add(charge_id='CHARGE_ID', name='DUI',
                                 bond_id='BOND_ID', sentence_id='SENTENCE_ID')
         ingest_info.bonds.add(bond_id='BOND_ID')
+
         ingest_info.sentences.add(sentence_id='SENTENCE_ID', is_life='True')
 
         # Act
@@ -291,7 +292,8 @@ class TestIngestInfoConverter(unittest.TestCase):
                         status=BondStatus.PRESENT_WITHOUT_INFO),
                     sentence=Sentence.new_with_defaults(
                         status=SentenceStatus.PRESENT_WITHOUT_INFO,
-                        is_life=True)
+                        is_life=True
+                    )
                 )]
             )])]
 

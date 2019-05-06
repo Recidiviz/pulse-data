@@ -37,6 +37,8 @@ message IngestInfo {
     repeated Bond bonds = 6;
     repeated Sentence sentences = 7;
     repeated SentenceRelationship sentence_relationships = 8;
+
+    repeated StatePerson state_people = 9;
 }
 
 message Person {
@@ -142,4 +144,20 @@ message SentenceRelationship {
     optional string sentence_a_id = 2;
     optional string sentence_b_id = 3;
     optional string relationship_type = 4;
+}
+
+// TODO(1625): Update this when we create the full state schema
+message StatePerson {
+    optional string state_person_id = 1;
+    optional string surname = 2;
+    optional string given_names = 3;
+    optional string birthdate = 4;
+    optional string gender = 5;
+    optional string age = 6;
+    optional string race = 7;
+    optional string ethnicity = 8;
+    optional string place_of_residence = 9;
+    optional string full_name = 10;
+    optional string middle_names = 11;
+    optional string name_suffix = 12;
 }

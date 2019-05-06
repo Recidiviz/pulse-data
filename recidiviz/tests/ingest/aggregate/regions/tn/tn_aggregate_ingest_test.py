@@ -27,9 +27,9 @@ from sqlalchemy import func
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 from recidiviz import Session
 from recidiviz.ingest.aggregate.regions.tn import tn_aggregate_ingest
-from recidiviz.persistence.database import database
-from recidiviz.persistence.database.schema import TnFacilityAggregate, \
-    TnFacilityFemaleAggregate
+from recidiviz.persistence.database.schema.aggregate import dao
+from recidiviz.persistence.database.schema.aggregate.schema import \
+    TnFacilityAggregate, TnFacilityFemaleAggregate
 from recidiviz.tests.ingest import fixtures
 from recidiviz.tests.utils import fakes
 
@@ -95,7 +95,7 @@ class TestTnAggregateIngest(TestCase):
     def testWrite_CalculatesSum(self):
         # Act
         for table, df in self.parsed_pdf.items():
-            database.write_df(table, df)
+            dao.write_df(table, df)
 
         # Assert
         query = Session().query(
@@ -149,7 +149,7 @@ class TestTnAggregateIngest(TestCase):
     def testWrite_CalculatesFemaleSum(self):
         # Act
         for table, df in self.parsed_female_pdf.items():
-            database.write_df(table, df)
+            dao.write_df(table, df)
 
         # Assert
         query = Session().query(

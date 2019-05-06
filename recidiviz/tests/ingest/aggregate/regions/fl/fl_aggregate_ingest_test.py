@@ -28,9 +28,9 @@ from sqlalchemy import func
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 from recidiviz import Session
 from recidiviz.ingest.aggregate.regions.fl import fl_aggregate_ingest
-from recidiviz.persistence.database import database
-from recidiviz.persistence.database.schema import (FlCountyAggregate,
-                                                   FlFacilityAggregate)
+from recidiviz.persistence.database.schema.aggregate import dao
+from recidiviz.persistence.database.schema.aggregate.schema import \
+    FlCountyAggregate, FlFacilityAggregate
 from recidiviz.tests.ingest import fixtures
 from recidiviz.tests.utils import fakes
 
@@ -103,7 +103,7 @@ class TestFlAggregateIngest(TestCase):
     def testWrite_CorrectlyReadsHernandoCounty(self):
         # Act
         for table, df in self.parsed_pdf.items():
-            database.write_df(table, df)
+            dao.write_df(table, df)
 
         # Assert
         query = Session() \
@@ -121,7 +121,7 @@ class TestFlAggregateIngest(TestCase):
     def testWrite_CalculatesCountyPopulationSum(self):
         # Act
         for table, df in self.parsed_pdf.items():
-            database.write_df(table, df)
+            dao.write_df(table, df)
 
         # Assert
         query = Session().query(func.sum(FlCountyAggregate.county_population))
@@ -192,7 +192,7 @@ class TestFlAggregateIngest(TestCase):
     def testWrite_CalculatesFacilityAdpSum(self):
         # Act
         for table, df in self.parsed_pdf.items():
-            database.write_df(table, df)
+            dao.write_df(table, df)
 
         # Assert
         query = Session().query(

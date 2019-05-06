@@ -34,7 +34,9 @@ from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo, Charge, \
     Sentence
 from recidiviz.ingest.scrape.ingest_utils import convert_ingest_info_to_proto
 from recidiviz.persistence import persistence, entities
-from recidiviz.persistence.database import database, schema
+from recidiviz.persistence.database import database
+from recidiviz.persistence.database.schema.county import schema, \
+    dao as county_dao
 from recidiviz.tests.utils import fakes
 
 BIRTHDATE_1 = '11/15/1993'
@@ -95,7 +97,7 @@ class TestPersistence(TestCase):
 
             # Act
             persistence.write(ingest_info, DEFAULT_METADATA)
-            result = database.read_people(Session())
+            result = county_dao.read_people(Session())
 
             # Assert
             assert not result
@@ -109,7 +111,7 @@ class TestPersistence(TestCase):
 
             # Act
             persistence.write(ingest_info, DEFAULT_METADATA)
-            result = database.read_people(Session())
+            result = county_dao.read_people(Session())
 
             # Assert
             assert len(result) == 1
@@ -132,7 +134,7 @@ class TestPersistence(TestCase):
 
         # Act
         persistence.write(ingest_info, DEFAULT_METADATA)
-        result = database.read_people(Session())
+        result = county_dao.read_people(Session())
 
         # Assert
         assert len(result) == 2
@@ -148,7 +150,7 @@ class TestPersistence(TestCase):
 
         # Act
         self.assertFalse(persistence.write(ingest_info, DEFAULT_METADATA))
-        result = database.read_people(Session())
+        result = county_dao.read_people(Session())
 
         # Assert
         assert not result
@@ -167,7 +169,7 @@ class TestPersistence(TestCase):
 
         # Act
         self.assertFalse(persistence.write(ingest_info, DEFAULT_METADATA))
-        result = database.read_people(Session())
+        result = county_dao.read_people(Session())
 
         # Assert
         assert not result
@@ -187,7 +189,7 @@ class TestPersistence(TestCase):
 
         # Act
         persistence.write(ingest_info, DEFAULT_METADATA)
-        result = database.read_people(Session())
+        result = county_dao.read_people(Session())
 
         # Assert
         assert len(result) == 2
@@ -208,7 +210,7 @@ class TestPersistence(TestCase):
 
         # Act
         persistence.write(ingest_info, DEFAULT_METADATA)
-        result = database.read_people(
+        result = county_dao.read_people(
             Session(), full_name=_format_full_name(FULL_NAME_1))
 
         # Assert
@@ -278,7 +280,7 @@ class TestPersistence(TestCase):
 
         # Act
         persistence.write(ingest_info, metadata)
-        result = database.read_people(Session())
+        result = county_dao.read_people(Session())
 
         # Assert
         assert len(result) == 1
@@ -360,7 +362,7 @@ class TestPersistence(TestCase):
             region=REGION_1,
             jurisdiction_id=JURISDICTION_ID,
             bookings=[expected_booking])
-        self.assertEqual([expected_person], database.read_people(Session()))
+        self.assertEqual([expected_person], county_dao.read_people(Session()))
 
     def test_write_preexisting_person_duplicate_charges(self):
         # Arrange
@@ -436,7 +438,7 @@ class TestPersistence(TestCase):
             region=REGION_1,
             jurisdiction_id=JURISDICTION_ID,
             bookings=[expected_booking])
-        self.assertEqual([expected_person], database.read_people(Session()))
+        self.assertEqual([expected_person], county_dao.read_people(Session()))
 
     def test_inferReleaseDateOnOpenBookings(self):
         # Arrange
@@ -511,7 +513,7 @@ class TestPersistence(TestCase):
             REGION_1, SCRAPER_START_DATETIME, CustodyStatus.INFERRED_RELEASE)
 
         # Assert
-        people = database.read_people(Session())
+        people = county_dao.read_people(Session())
         self.assertCountEqual(people, [expected_person, person_unmatched])
 
 

@@ -17,8 +17,9 @@
 
 """Export configuration.
 
-By default, lists all tables in schema.py to be exported by export_manager.py.
-To exclude tables from export, add them to TABLES_TO_EXCLUDE_FROM_EXPORT.
+By default, lists all tables in the various schema.py files to be exported by
+export_manager.py. To exclude tables from export, add them to
+TABLES_TO_EXCLUDE_FROM_EXPORT.
 
 Add columns to COLUMNS_TO_EXCLUDE to exclude them from the export.
 
@@ -30,7 +31,7 @@ import logging
 
 import sqlalchemy
 
-from recidiviz.persistence.database import schema
+from recidiviz.persistence.database import schema_utils
 from recidiviz.utils import metadata
 
 
@@ -39,11 +40,11 @@ TABLES_TO_EXCLUDE_FROM_EXPORT = tuple( # type: ignore
     # schema.FakePersonHistoryTable
 )
 
-# By default, all tables in schema.py are exported
+# By default, all tables in the various base_schema.py modules are exported
 # unless listed in TABLES_TO_EXCLUDE_FROM_EXPORT above.
 TABLES_TO_EXPORT = tuple(
-    table.__table__ for table in
-    schema.get_all_table_classes() if table not in TABLES_TO_EXCLUDE_FROM_EXPORT
+    table.__table__ for table in schema_utils.get_all_table_classes()
+    if table not in TABLES_TO_EXCLUDE_FROM_EXPORT
 )
 
 # Mapping from table name to a list of columns to be excluded for that table.

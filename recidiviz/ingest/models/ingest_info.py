@@ -20,17 +20,24 @@ from abc import abstractmethod
 from typing import List, Optional, Dict, Sequence
 
 HIERARCHY_MAP: Dict[str, Sequence[str]] = {
+    # County level hierarchy
     'person': (),
     'booking': ('person',),
     'arrest': ('person', 'booking'),
     'charge': ('person', 'booking'),
     'hold': ('person', 'booking'),
     'bond': ('person', 'booking', 'charge'),
-    'sentence': ('person', 'booking', 'charge')
+    'sentence': ('person', 'booking', 'charge'),
+
+    # State level hierarchy
+    'state_person': (),
+    # TODO(1625): Add state schema hierarchies here
 }
 
 PLURALS = {'person': 'people', 'booking': 'bookings', 'charge': 'charges',
-           'hold': 'holds'}
+           'hold': 'holds',
+           'state_person': 'state_people'  # TODO(1625): Add state plurals here
+           }
 
 
 class IngestObject:
@@ -61,11 +68,12 @@ class IngestObject:
 class IngestInfo(IngestObject):
     """Class for information about multiple people."""
 
-    def __init__(self, people=None):
+    def __init__(self, people=None, state_people=None):
         self.people: List[Person] = people or []
+        self.state_people: List[StatePerson] = state_people or []
 
     def __setattr__(self, name, value):
-        restricted_setattr(self, 'people', name, value)
+        restricted_setattr(self, 'state_people', name, value)
 
     def create_person(self, **kwargs) -> 'Person':
         person = Person(**kwargs)
@@ -75,6 +83,16 @@ class IngestInfo(IngestObject):
     def get_recent_person(self) -> Optional['Person']:
         if self.people:
             return self.people[-1]
+        return None
+
+    def create_state_person(self, **kwargs) -> 'StatePerson':
+        person = StatePerson(**kwargs)
+        self.state_people.append(person)
+        return person
+
+    def get_recent_state_person(self) -> Optional['StatePerson']:
+        if self.state_people:
+            return self.state_people[-1]
         return None
 
     def prune(self) -> 'IngestInfo':
@@ -112,6 +130,10 @@ class IngestInfo(IngestObject):
     def get_all_sentences(self, predicate=lambda _: True) -> List['Sentence']:
         return [charge.sentence for charge in self.get_all_charges()
                 if charge.sentence is not None and predicate(charge.sentence)]
+
+    def get_all_state_people(self, predicate=lambda _: True) \
+            -> List['StatePerson']:
+        return [person for person in self.state_people if predicate(person)]
 
 
 class Person(IngestObject):
@@ -154,8 +176,8 @@ class Person(IngestObject):
         return None
 
     def prune(self) -> 'Person':
-        self.bookings = [booking.prune() \
-                         for booking in self.bookings if booking]
+        self.bookings = [booking.prune() for booking
+                         in self.bookings if booking]
         return self
 
     def sort(self):
@@ -410,6 +432,34 @@ class SentenceRelationship(IngestObject):
 
     def __setattr__(self, name, value):
         restricted_setattr(self, 'relationship_type', name, value)
+
+
+# TODO(1625): Update this when we create the full state schema
+class StatePerson(IngestObject):
+    """Class for information about a person at the state level.
+    Referenced from IngestInfo.
+    """
+
+    def __init__(
+            self, state_person_id=None, full_name=None, surname=None,
+            given_names=None, middle_names=None, name_suffix=None,
+            birthdate=None, gender=None, age=None, race=None, ethnicity=None,
+            place_of_residence=None):
+        self.state_person_id: Optional[str] = state_person_id
+        self.surname: Optional[str] = surname
+        self.given_names: Optional[str] = given_names
+        self.middle_names: Optional[str] = middle_names
+        self.name_suffix: Optional[str] = name_suffix
+        self.full_name: Optional[str] = full_name
+        self.birthdate: Optional[str] = birthdate
+        self.gender: Optional[str] = gender
+        self.age: Optional[str] = age
+        self.race: Optional[str] = race
+        self.ethnicity: Optional[str] = ethnicity
+        self.place_of_residence: Optional[str] = place_of_residence
+
+    def __setattr__(self, name, value):
+        restricted_setattr(self, 'place_of_residence', name, value)
 
 
 def to_bool(obj):
