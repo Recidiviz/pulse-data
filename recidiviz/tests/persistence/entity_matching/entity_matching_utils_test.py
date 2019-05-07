@@ -21,7 +21,7 @@ from unittest import TestCase
 import attr
 
 from recidiviz.common.constants.booking import CustodyStatus
-from recidiviz.persistence import entities
+from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.persistence.entity_matching import entity_matching_utils
 
 _DATE = datetime(2018, 12, 13)
@@ -32,9 +32,9 @@ class TestEntityMatchingUtils(TestCase):
     """Tests for entity matching logic"""
 
     def test_person_similarity(self):
-        person = entities.Person.new_with_defaults(
+        person = county_entities.Person.new_with_defaults(
             person_id=1, birthdate=_DATE,
-            bookings=[entities.Booking.new_with_defaults(
+            bookings=[county_entities.Booking.new_with_defaults(
                 booking_id=2, custody_status=CustodyStatus.RELEASED)])
 
         person_another = attr.evolve(person, birthdate=_DATE_OTHER)

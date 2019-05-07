@@ -18,7 +18,7 @@
 import datetime
 import unittest
 
-from recidiviz.persistence import entities
+from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.persistence.entity_validator.county.county_validator import \
     _has_malformed_dates, _has_overlapping_bookings
 
@@ -27,9 +27,9 @@ class EntityValidatorTest(unittest.TestCase):
     """Tests entity validation."""
 
     def test_has_malformed_dates(self):
-        person = entities.Person.new_with_defaults(
+        person = county_entities.Person.new_with_defaults(
             bookings=[
-                entities.Booking.new_with_defaults(
+                county_entities.Booking.new_with_defaults(
                     admission_date=datetime.date(2, 2, 2),
                     release_date=datetime.date(3, 3, 3))
             ])
@@ -39,15 +39,15 @@ class EntityValidatorTest(unittest.TestCase):
         self.assertTrue(_has_malformed_dates(person))
 
     def test_has_overlapping_bookings(self):
-        person = entities.Person.new_with_defaults()
+        person = county_entities.Person.new_with_defaults()
 
-        b1 = entities.Booking.new_with_defaults(
+        b1 = county_entities.Booking.new_with_defaults(
             admission_date=datetime.date(1, 1, 1),
             release_date=datetime.date(3, 3, 3))
-        b2 = entities.Booking.new_with_defaults(
+        b2 = county_entities.Booking.new_with_defaults(
             admission_date=datetime.date(3, 3, 3),
             release_date=datetime.date(4, 4, 4))
-        b_overlapping = entities.Booking.new_with_defaults(
+        b_overlapping = county_entities.Booking.new_with_defaults(
             admission_date=datetime.date(2, 2, 2))
 
         person.bookings = [b1, b2]

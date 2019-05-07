@@ -19,7 +19,7 @@ import datetime
 import unittest
 
 from recidiviz.common.constants.booking import CustodyStatus
-from recidiviz.persistence import entities
+from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.persistence.persistence_utils import remove_pii_for_person, \
     is_booking_active, has_active_booking
 
@@ -28,7 +28,7 @@ class PersistenceUtilsTest(unittest.TestCase):
     """Tests for common_utils.py."""
 
     def test_remove_pii_for_person(self):
-        person = entities.Person.new_with_defaults(
+        person = county_entities.Person.new_with_defaults(
             full_name='TEST', birthdate=datetime.date(1990, 3, 12))
 
         remove_pii_for_person(person)
@@ -38,20 +38,20 @@ class PersistenceUtilsTest(unittest.TestCase):
         self.assertIsNone(person.full_name)
 
     def test_has_active_booking(self):
-        person_inactive_booking = entities.Person.new_with_defaults(
-            bookings=[entities.Booking.new_with_defaults(
+        person_inactive_booking = county_entities.Person.new_with_defaults(
+            bookings=[county_entities.Booking.new_with_defaults(
                 booking_id='1', custody_status=CustodyStatus.RELEASED)])
-        person_active_booking = entities.Person.new_with_defaults(
-            bookings=[entities.Booking.new_with_defaults(
+        person_active_booking = county_entities.Person.new_with_defaults(
+            bookings=[county_entities.Booking.new_with_defaults(
                 booking_id='2')])
 
         self.assertFalse(has_active_booking(person_inactive_booking))
         self.assertTrue(has_active_booking(person_active_booking))
 
     def test_is_booking_active(self):
-        inactive_booking = entities.Booking.new_with_defaults(
+        inactive_booking = county_entities.Booking.new_with_defaults(
             booking_id='1', custody_status=CustodyStatus.RELEASED)
-        active_booking = entities.Booking.new_with_defaults(
+        active_booking = county_entities.Booking.new_with_defaults(
             booking_id='2')
 
         self.assertFalse(is_booking_active(inactive_booking))

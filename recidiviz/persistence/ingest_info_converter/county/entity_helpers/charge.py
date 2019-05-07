@@ -18,7 +18,7 @@
 from recidiviz.common.constants.charge import (ChargeClass, ChargeDegree,
                                                ChargeStatus)
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.persistence import entities
+from recidiviz.persistence.entity.county import entities
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
     fn, parse_external_id)
 from recidiviz.common.str_field_utils import parse_dollars, parse_bool, \

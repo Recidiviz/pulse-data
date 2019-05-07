@@ -33,7 +33,8 @@ from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo, Charge, \
     Sentence
 from recidiviz.ingest.scrape.ingest_utils import convert_ingest_info_to_proto
-from recidiviz.persistence import persistence, entities
+from recidiviz.persistence import persistence
+from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.persistence.database import database
 from recidiviz.persistence.database.schema.county import schema, \
     dao as county_dao
@@ -348,7 +349,7 @@ class TestPersistence(TestCase):
         persistence.write(ingest_info, metadata)
 
         # Assert
-        expected_booking = entities.Booking.new_with_defaults(
+        expected_booking = county_entities.Booking.new_with_defaults(
             booking_id=BOOKING_ID,
             external_id=EXTERNAL_BOOKING_ID,
             admission_date_inferred=True,
@@ -356,7 +357,7 @@ class TestPersistence(TestCase):
             custody_status_raw_text=BOOKING_CUSTODY_STATUS.upper(),
             last_seen_time=most_recent_scrape_time,
             first_seen_time=SCRAPER_START_DATETIME)
-        expected_person = entities.Person.new_with_defaults(
+        expected_person = county_entities.Person.new_with_defaults(
             person_id=PERSON_ID,
             external_id=EXTERNAL_PERSON_ID,
             region=REGION_1,
@@ -415,7 +416,7 @@ class TestPersistence(TestCase):
         persistence.write(ingest_info, metadata)
 
         # Assert
-        expected_charge = entities.Charge.new_with_defaults(
+        expected_charge = county_entities.Charge.new_with_defaults(
             charge_id=ID,
             external_id=EXTERNAL_ID + '_COUNT_1',
             status=ChargeStatus.PRESENT_WITHOUT_INFO
@@ -423,7 +424,7 @@ class TestPersistence(TestCase):
         expected_charge_another = attr.evolve(
             expected_charge, charge_id=ID_2,
             external_id=EXTERNAL_ID + '_COUNT_2')
-        expected_booking = entities.Booking.new_with_defaults(
+        expected_booking = county_entities.Booking.new_with_defaults(
             booking_id=BOOKING_ID,
             external_id=EXTERNAL_BOOKING_ID,
             admission_date_inferred=True,
@@ -432,7 +433,7 @@ class TestPersistence(TestCase):
             last_seen_time=most_recent_scrape_time,
             first_seen_time=SCRAPER_START_DATETIME,
             charges=[expected_charge, expected_charge_another])
-        expected_person = entities.Person.new_with_defaults(
+        expected_person = county_entities.Person.new_with_defaults(
             person_id=PERSON_ID,
             external_id=EXTERNAL_PERSON_ID,
             region=REGION_1,
@@ -442,20 +443,20 @@ class TestPersistence(TestCase):
 
     def test_inferReleaseDateOnOpenBookings(self):
         # Arrange
-        hold = entities.Hold.new_with_defaults(
+        hold = county_entities.Hold.new_with_defaults(
             hold_id=ID, status=HoldStatus.ACTIVE, status_raw_text='ACTIVE')
-        sentence = entities.Sentence.new_with_defaults(
+        sentence = county_entities.Sentence.new_with_defaults(
             sentence_id=ID, status=SentenceStatus.SERVING,
             status_raw_text='SERVING',
             booking_id=ID)
-        bond = entities.Bond.new_with_defaults(
+        bond = county_entities.Bond.new_with_defaults(
             bond_id=ID, status=BondStatus.SET,
             status_raw_text='NOT_REQUIRED',
             booking_id=ID)
-        charge = entities.Charge.new_with_defaults(
+        charge = county_entities.Charge.new_with_defaults(
             charge_id=ID, status=ChargeStatus.PENDING,
             status_raw_text='PENDING', sentence=sentence, bond=bond)
-        booking_open = entities.Booking.new_with_defaults(
+        booking_open = county_entities.Booking.new_with_defaults(
             booking_id=ID,
             custody_status=CustodyStatus.IN_CUSTODY,
             custody_status_raw_text='IN CUSTODY',
@@ -473,10 +474,10 @@ class TestPersistence(TestCase):
             booking_open, booking_id=ID_3,
             last_seen_time=SCRAPER_START_DATETIME, charges=[], holds=[])
 
-        person = entities.Person.new_with_defaults(
+        person = county_entities.Person.new_with_defaults(
             person_id=ID, region=REGION_1, jurisdiction_id=JURISDICTION_ID,
             bookings=[booking_open, booking_resolved])
-        person_unmatched = entities.Person.new_with_defaults(
+        person_unmatched = county_entities.Person.new_with_defaults(
             person_id=ID_2, region=REGION_1, jurisdiction_id=JURISDICTION_ID,
             bookings=[booking_open_most_recent_scrape])
 

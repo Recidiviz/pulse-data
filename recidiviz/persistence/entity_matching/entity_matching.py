@@ -21,7 +21,9 @@ from typing import List, Optional
 from opencensus.stats import measure, view, aggregation
 
 from recidiviz import Session
-from recidiviz.persistence import entities
+from recidiviz.persistence.entity.county import entities as county_entities
+from recidiviz.persistence.entity.entities import PersonType
+from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity_matching.base_entity_matcher import \
     BaseEntityMatcher, MatchedEntities
 from recidiviz.persistence.entity_matching.county.county_entity_matcher import \
@@ -50,7 +52,7 @@ _EMPTY_MATCH_OUTPUT = MatchedEntities(people=[],
 
 def match(session: Session,
           region: str,
-          ingested_people: List[entities.PersonType]) -> MatchedEntities:
+          ingested_people: List[PersonType]) -> MatchedEntities:
     matcher = _get_matcher(ingested_people)
     if not matcher:
         return _EMPTY_MATCH_OUTPUT
@@ -58,16 +60,16 @@ def match(session: Session,
     return matcher.run_match(session, region, ingested_people)
 
 
-def _get_matcher(ingested_people: List[entities.PersonType]) \
+def _get_matcher(ingested_people: List[PersonType]) \
         -> Optional[BaseEntityMatcher]:
     sample = next(iter(ingested_people), None)
     if not sample:
         return None
 
-    if isinstance(sample, entities.Person):
+    if isinstance(sample, county_entities.Person):
         return CountyEntityMatcher()
 
-    if isinstance(sample, entities.StatePerson):
+    if isinstance(sample, state_entities.StatePerson):
         return StateEntityMatcher()
 
     raise ValueError('Invalid person type of [{}]'

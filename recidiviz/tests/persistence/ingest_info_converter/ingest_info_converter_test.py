@@ -30,9 +30,9 @@ from recidiviz.common.constants.hold import HoldStatus
 from recidiviz.common.constants.sentence import SentenceStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
-from recidiviz.persistence import entities
+from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.persistence.ingest_info_converter import ingest_info_converter
-from recidiviz.persistence.entities import (
+from recidiviz.persistence.entity.county.entities import (
     Person,
     Booking,
     Arrest,
@@ -58,7 +58,7 @@ class TestIngestInfoConverter(unittest.TestCase):
             self,
             ingest_info: IngestInfo,
             metadata: IngestMetadata
-    ) -> List[entities.Person]:
+    ) -> List[county_entities.Person]:
         conversion_result: IngestInfoConversionResult = \
             ingest_info_converter.convert_to_persistence_entities(ingest_info,
                                                                   metadata)

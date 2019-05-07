@@ -28,18 +28,18 @@ from recidiviz.common.constants.entity_enum import EnumParsingError
 from recidiviz.common.constants.person import PROTECTED_CLASSES
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
-from recidiviz.persistence import entities
+from recidiviz.persistence.entity.entities import PersonType
 
 
 @attr.s(frozen=True)
-class IngestInfoConversionResult(Generic[entities.PersonType]):
+class IngestInfoConversionResult(Generic[PersonType]):
     enum_parsing_errors: int = attr.ib()
     general_parsing_errors: int = attr.ib()
     protected_class_errors: int = attr.ib()
-    people: List[entities.PersonType] = attr.ib(factory=list)
+    people: List[PersonType] = attr.ib(factory=list)
 
 
-class BaseConverter(Generic[entities.PersonType]):
+class BaseConverter(Generic[PersonType]):
     """Base class for all data converters of IngestInfo proto objects."""
 
     def __init__(self, ingest_info: IngestInfo, metadata: IngestMetadata):
@@ -47,7 +47,7 @@ class BaseConverter(Generic[entities.PersonType]):
         self.metadata = metadata
 
     def run_convert(self) -> IngestInfoConversionResult:
-        people: List[entities.PersonType] = []
+        people: List[PersonType] = []
         protected_class_errors = 0
         enum_parsing_errors = 0
         general_parsing_errors = 0
@@ -76,7 +76,7 @@ class BaseConverter(Generic[entities.PersonType]):
         IngestInfo."""
 
     @abstractmethod
-    def _convert_and_pop(self) -> entities.PersonType:
+    def _convert_and_pop(self) -> PersonType:
         """Pops a person from the list of persons to be converted, and
         converts the entity plus all of its children."""
 

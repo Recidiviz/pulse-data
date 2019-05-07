@@ -27,7 +27,7 @@ from recidiviz.common.constants.booking import CustodyStatus
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.hold import HoldStatus
 from recidiviz.common.constants.person import Gender
-from recidiviz.persistence import entities
+from recidiviz.persistence.entity.county import entities
 from recidiviz.persistence.database import database_utils
 from recidiviz.persistence.database.schema.county import schema
 from recidiviz.persistence.entity_matching import entity_matching
@@ -66,7 +66,7 @@ _NAME_3 = 'name_3'
 _JURISDICTION_ID = '12345678'
 
 
-class TestEntityMatching(TestCase):
+class TestCountyEntityMatching(TestCase):
     """Tests for entity matching logic"""
 
     def setup_method(self, _test_method):

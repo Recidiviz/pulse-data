@@ -15,11 +15,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Validation logic for state-level entities."""
+"""
+Defines a generic type to describe a person entity that may belong to either the
+state or county schema.
+"""
 
-from recidiviz.persistence.entity.state import entities
 
+from typing import TypeVar
 
-def validate_state_person(_person: entities.StatePerson) -> bool:
-    # TODO(1625): Fill this in
-    return True
+from recidiviz.persistence.entity.county import entities as county_entities
+from recidiviz.persistence.entity.state import entities as state_entities
+
+PersonType = TypeVar('PersonType',
+                     county_entities.Person,
+                     state_entities.StatePerson)

@@ -23,7 +23,7 @@ import logging
 
 import more_itertools
 
-from recidiviz.persistence import entities
+from recidiviz.persistence.entity.county import entities
 
 
 def validate_county_person(person: entities.Person) -> bool:
