@@ -24,20 +24,20 @@ from typing import Dict, List
 
 from sqlalchemy.orm import Session
 
-from recidiviz.persistence import entities
+from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.database import database_utils
-from recidiviz.persistence.database.schema.state.schema import StatePerson
+from recidiviz.persistence.database.schema.state import schema
 
 
 def read_people(session, full_name=None, birthdate=None) \
         -> List[entities.StatePerson]:
     """Read all people matching the optional surname and birthdate. If neither
     the surname or birthdate are provided, then read all people."""
-    query = session.query(StatePerson)
+    query = session.query(schema.StatePerson)
     if full_name is not None:
-        query = query.filter(StatePerson.full_name == full_name)
+        query = query.filter(schema.StatePerson.full_name == full_name)
     if birthdate is not None:
-        query = query.filter(StatePerson.birthdate == birthdate)
+        query = query.filter(schema.StatePerson.birthdate == birthdate)
     return _convert_and_normalize_record_trees(query.all())
 
 
@@ -50,13 +50,13 @@ def read_people_by_external_ids(session: Session, _region: str,
     """
     external_ids = {p.external_id for p in ingested_people}
     # TODO include region check in a state-specific way?
-    query = session.query(StatePerson) \
-        .filter(StatePerson.external_id.in_(external_ids))
+    query = session.query(schema.StatePerson) \
+        .filter(schema.StatePerson.external_id.in_(external_ids))
     return _convert_and_normalize_record_trees(query.all())
 
 
 def _convert_and_normalize_record_trees(
-        people: List[StatePerson]) -> List[entities.StatePerson]:
+        people: List[schema.StatePerson]) -> List[entities.StatePerson]:
     """Converts schema record trees to persistence layer models and removes
     any duplicate people created by how SQLAlchemy handles joins
     """
