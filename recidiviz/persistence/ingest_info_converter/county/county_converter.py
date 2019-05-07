@@ -26,7 +26,8 @@ from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.common.str_field_utils import parse_int
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
-from recidiviz.persistence import entities, persistence_utils
+from recidiviz.persistence import persistence_utils
+from recidiviz.persistence.entity.county import entities
 from recidiviz.persistence.ingest_info_converter.base_converter import \
     BaseConverter
 from recidiviz.persistence.ingest_info_converter.county.entity_helpers import \

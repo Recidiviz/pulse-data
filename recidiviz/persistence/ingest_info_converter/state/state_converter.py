@@ -17,7 +17,7 @@
 
 """Converts ingested IngestInfo data to the persistence layer entities."""
 
-from recidiviz.persistence import entities
+from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.ingest_info_converter.base_converter import \
     BaseConverter
 from recidiviz.persistence.ingest_info_converter.state.entity_helpers import \

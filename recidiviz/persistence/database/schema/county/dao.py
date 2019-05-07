@@ -25,7 +25,7 @@ from typing import Dict, List
 from sqlalchemy.orm import Session
 
 from recidiviz.common.constants.booking import CustodyStatus
-from recidiviz.persistence import entities
+from recidiviz.persistence.entity.county import entities
 from recidiviz.persistence.database import database_utils
 from recidiviz.persistence.database.schema.county.schema import Person, Booking
 

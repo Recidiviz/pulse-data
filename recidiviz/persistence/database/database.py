@@ -24,10 +24,12 @@ from sqlalchemy.orm import Session
 import recidiviz.persistence.database.history.update_historical_snapshots as \
     update_snapshots
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.persistence import entities
+from recidiviz.persistence.entity import entities
+from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.persistence.database import database_utils
-from recidiviz.persistence.database.schema.county.schema import Person
 from recidiviz.persistence.database.database_entity import DatabaseEntity
+from recidiviz.persistence.database.schema.county import schema as county_schema
+from recidiviz.persistence.entity.base_entity import Entity
 
 _DUMMY_BOOKING_ID = -1
 
@@ -35,7 +37,7 @@ _DUMMY_BOOKING_ID = -1
 def write_people(session: Session,
                  people: List[entities.PersonType],
                  metadata: IngestMetadata,
-                 orphaned_entities: List[entities.Entity] = None):
+                 orphaned_entities: List[Entity] = None):
     """Converts the given |people| into schema.Person objects and persists their
     corresponding record trees. Returns the list of persisted (Person) objects
     """
@@ -51,7 +53,7 @@ def write_people(session: Session,
 def write_person(session: Session,
                  person: entities.PersonType,
                  metadata: IngestMetadata,
-                 orphaned_entities: List[entities.Entity] = None):
+                 orphaned_entities: List[Entity] = None):
     """Converts the given |person| into a schema.Person object and persists the
     record tree rooted at that |person|. Returns the persisted (Person)
     """
@@ -75,7 +77,7 @@ def _save_record_trees(session: Session,
     record trees. Returns the list of persisted (Person) objects
     """
 
-    if all(isinstance(person, Person) for person in root_people):
+    if all(isinstance(person, county_schema.Person) for person in root_people):
         _set_dummy_booking_ids(root_people)
 
     # Merge is recursive for all related entities, so this persists all master
@@ -88,7 +90,7 @@ def _save_record_trees(session: Session,
     orphaned_entities = [session.merge(entity) for entity in orphaned_entities]
     session.flush()
 
-    if all(isinstance(person, Person) for person in root_people):
+    if all(isinstance(person, county_schema.Person) for person in root_people):
         _overwrite_dummy_booking_ids(root_people)
 
     update_snapshots.update_historical_snapshots(
@@ -97,7 +99,7 @@ def _save_record_trees(session: Session,
     return root_people
 
 
-def _set_dummy_booking_ids(root_people: List[Person]) -> None:
+def _set_dummy_booking_ids(root_people: List[county_entities.Person]) -> None:
     """Horrible hack to allow flushing new bookings. If the booking is new, it
     won't have a primary key until it is flushed. However, that flush will fail
     if the booking has child bonds or sentences, which require the booking_id
@@ -115,7 +117,9 @@ def _set_dummy_booking_ids(root_people: List[Person]) -> None:
                     charge.sentence.booking_id = _DUMMY_BOOKING_ID
 
 
-def _overwrite_dummy_booking_ids(root_people: List[Person]) -> None:
+def _overwrite_dummy_booking_ids(
+        root_people: List[county_entities.Person]
+) -> None:
     """Overwrites the dummy booking ID for any bonds and sentences that have
     it set with the real ID of their parent booking
     """

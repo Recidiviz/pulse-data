@@ -20,9 +20,9 @@ ingested entities."""
 
 from typing import List
 
-from recidiviz.persistence import entities
+from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.database.schema.state import dao
-from recidiviz.persistence.entities import Entity
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity_matching.base_entity_matcher import \
     BaseEntityMatcher
 from recidiviz.persistence.entity_matching.entity_matching_utils import \
@@ -46,6 +46,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
     def is_person_match(self, *,
                         db_entity: entities.StatePerson,
                         ingested_entity: entities.StatePerson) -> bool:
+        # TODO(1625): Update to match against external_ids list
         if db_entity.external_id or ingested_entity.external_id:
             return db_entity.external_id == ingested_entity.external_id
 

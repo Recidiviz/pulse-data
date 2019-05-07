@@ -20,7 +20,7 @@ Note: These classes mirror the SQL Alchemy ORM objects but are kept separate.
 This allows these persistence layer objects additional flexibility that the SQL
 Alchemy ORM objects can't provide.
 """
-from typing import List, Optional, TypeVar
+from typing import List, Optional
 
 import datetime
 import attr
@@ -36,28 +36,8 @@ from recidiviz.common.constants.person import Race, Ethnicity, Gender, \
     ResidencyStatus
 from recidiviz.common.constants.sentence import SentenceStatus
 
+from recidiviz.persistence.entity.base_entity import Entity
 
-# TODO(1704) - Update all entity objects defined in this file to use the new
-#  entity class defined in base_entity.py and delete this.
-@attr.s
-class Entity:
-    external_id: Optional[str] = attr.ib()
-
-    # Consider Entity abstract and only allow instantiating subclasses
-    def __new__(cls, *_, **__):
-        if cls is Entity:
-            raise Exception('Abstract class cannot be instantiated')
-        return super().__new__(cls)
-
-    def get_entity_name(self):
-        return self.__class__.__name__.lower()
-
-    def get_id(self):
-        id_name = self.get_entity_name() + '_id'
-        return getattr(self, id_name)
-
-
-# County-level entities
 
 @attr.s
 class Person(Entity, BuildableAttr, DefaultableAttr):
@@ -197,29 +177,3 @@ class Sentence(Entity, BuildableAttr, DefaultableAttr):
     # To avoid recursive references, store only 1 level of related_sentences
     # (ie. don't store related_sentences of these related_sentences).
     related_sentences: List['Sentence'] = attr.ib(factory=list)
-
-
-# State-level entities
-# TODO(1625): Switch to the upcoming state/entities.py
-
-@attr.s
-class StatePerson(Entity, BuildableAttr, DefaultableAttr):
-    """Models a Person moving through the criminal justice system."""
-    full_name: Optional[str] = attr.ib()
-    birthdate: Optional[datetime.date] = attr.ib()
-    birthdate_inferred_from_age: Optional[bool] = attr.ib()
-    gender: Optional[Gender] = attr.ib()
-    gender_raw_text: Optional[str] = attr.ib()
-    race: Optional[Race] = attr.ib()
-    race_raw_text: Optional[str] = attr.ib()
-    ethnicity: Optional[Ethnicity] = attr.ib()
-    ethnicity_raw_text: Optional[str] = attr.ib()
-    residency_status: Optional[ResidencyStatus] = attr.ib()
-
-    state_person_id: Optional[int] = attr.ib(default=None)
-    # assessments: List['Assessment'] = attr.ib(factory=list)
-    # compound_sentences: List['CompoundSentence'] = attr.ib(factory=list)
-
-
-# A generic type that can be either (county-)Person or StatePerson
-PersonType = TypeVar('PersonType', Person, StatePerson)

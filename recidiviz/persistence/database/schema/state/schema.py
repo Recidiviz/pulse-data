@@ -88,23 +88,15 @@ class _StatePersonSharedColumns:
     full_name = Column(String(255), index=True)
     birthdate = Column(Date, index=True)
     birthdate_inferred_from_age = Column(Boolean)
-    gender = Column(gender)
-    gender_raw_text = Column(String(255))
-    race = Column(race)
-    race_raw_text = Column(String(255))
-    ethnicity = Column(ethnicity)
-    ethnicity_raw_text = Column(String(255))
-    residency_status = Column(residency_status)
 
 
+# TODO(1625): Once these fields match those on entities.StatePerson, update
+#  database_utils.convert to handle StatePerson properly.
 class StatePerson(Base, DatabaseEntity, _StatePersonSharedColumns):
     """Represents a state person in the SQL schema"""
     __tablename__ = 'state_person'
 
     state_person_id = Column(Integer, primary_key=True)
-
-    # assessments = relationship('Assessment', lazy='joined')
-    # compound_sentences = relationship('CompoundSentence', lazy='joined')
 
 
 class StatePersonHistory(Base, DatabaseEntity, _StatePersonSharedColumns):
