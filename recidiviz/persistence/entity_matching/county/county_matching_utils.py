@@ -18,7 +18,7 @@
 
 from typing import Optional
 
-from recidiviz.persistence import entities
+from recidiviz.persistence.entity.county import entities
 from recidiviz.persistence.entity_matching.entity_matching_utils import \
     is_match, is_birthdate_match
 from recidiviz.persistence.errors import PersistenceError

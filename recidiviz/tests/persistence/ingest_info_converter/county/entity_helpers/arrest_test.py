@@ -19,7 +19,7 @@ import unittest
 from datetime import date
 
 from recidiviz.ingest.models import ingest_info_pb2
-from recidiviz.persistence import entities
+from recidiviz.persistence.entity.county import entities
 from recidiviz.persistence.ingest_info_converter.county.entity_helpers import \
     arrest
 

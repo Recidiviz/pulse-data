@@ -25,7 +25,7 @@ from recidiviz.common.constants.person import Gender, Race, Ethnicity, \
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.ingest.scrape.base_scraper import BaseScraper
-from recidiviz.persistence import entities
+from recidiviz.persistence.entity.county import entities
 from recidiviz.persistence.ingest_info_converter.county.entity_helpers import \
     person
 
@@ -100,8 +100,8 @@ class PersonConverterTest(unittest.TestCase):
         # Assert
         expected_full_name = \
             '{{"given_names": "{}", "middle_names": "{}", "surname": "{}"}}'\
-                .format('GIVEN_NAMES', 'MIDDLE_NAMES',
-                        'UNESCAPED,SURNAME\\"WITH-CHARS\\"')
+            .format('GIVEN_NAMES', 'MIDDLE_NAMES',
+                    'UNESCAPED,SURNAME\\"WITH-CHARS\\"')
         expected_result = entities.Person.new_with_defaults(
             full_name=expected_full_name)
 

@@ -17,7 +17,7 @@
 """Converts an ingest_info proto Arrest to a persistence entity."""
 from recidiviz.common.str_field_utils import normalize, normalize_truncated, \
     parse_date
-from recidiviz.persistence import entities
+from recidiviz.persistence.entity.county import entities
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import \
     fn, parse_external_id
 

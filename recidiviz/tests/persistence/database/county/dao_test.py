@@ -25,7 +25,7 @@ from recidiviz import Session
 from recidiviz.common.constants.booking import CustodyStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info import IngestInfo
-from recidiviz.persistence import entities
+from recidiviz.persistence.entity.county import entities
 from recidiviz.persistence.database import database_utils
 from recidiviz.persistence.database.schema.county import dao
 from recidiviz.persistence.database.schema.county.schema import Booking, Person

@@ -26,9 +26,9 @@ from recidiviz.common.constants.bond import BondStatus
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.hold import HoldStatus
 from recidiviz.common.constants.sentence import SentenceStatus
-from recidiviz.persistence import entities
+from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.county import entities
 from recidiviz.persistence.database.schema.county import dao
-from recidiviz.persistence.entities import Entity
 from recidiviz.persistence.entity_matching.base_entity_matcher import \
     BaseEntityMatcher
 from recidiviz.persistence.entity_matching.county import county_matching_utils
@@ -301,7 +301,7 @@ def _match_from_charges(
 
         return obj_match and relationship_match
 
-    matched_ing_objs_by_db_id: Dict[int, entities.Entity] = {}
+    matched_ing_objs_by_db_id: Dict[int, Entity] = {}
     for ing_obj in ing_obj_map.values():
         db_obj = get_next_available_match(
             ing_obj, list(db_obj_map.values()), matched_ing_objs_by_db_id,

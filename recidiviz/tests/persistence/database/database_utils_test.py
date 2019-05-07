@@ -30,12 +30,12 @@ from recidiviz.common.constants.hold import HoldStatus
 from recidiviz.common.constants.person import Gender, Race, Ethnicity, \
     ResidencyStatus
 from recidiviz.common.constants.sentence import SentenceStatus
-from recidiviz.persistence import entities
+from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.persistence.database.schema.county import schema as county_schema
 from recidiviz.persistence.database.database_utils import convert
 from recidiviz.tests.utils import fakes
 
-_PERSON = entities.Person(
+_PERSON = county_entities.Person(
     external_id="external_id",
     full_name="full_name",
     birthdate=date(year=2000, month=1, day=2),
@@ -51,7 +51,7 @@ _PERSON = entities.Person(
     resident_of_region=True,
     person_id=1234,
     jurisdiction_id='12345678',
-    bookings=[entities.Booking(
+    bookings=[county_entities.Booking(
         booking_id=2345,
         external_id="external_id",
         admission_date=date(year=2000, month=1, day=3),
@@ -70,14 +70,14 @@ _PERSON = entities.Person(
         classification_raw_text='HIGH',
         last_seen_time=datetime(year=2000, month=1, day=6, hour=13),
         first_seen_time=datetime(year=2000, month=1, day=1, hour=3),
-        holds=[entities.Hold(
+        holds=[county_entities.Hold(
             hold_id=3456,
             external_id="external_id",
             jurisdiction_name="jurisdiction_name",
             status=HoldStatus.ACTIVE,
             status_raw_text='active'
         )],
-        arrest=entities.Arrest(
+        arrest=county_entities.Arrest(
             arrest_id=4567,
             external_id="external_id",
             arrest_date=date(year=2000, month=1, day=6),
@@ -86,7 +86,7 @@ _PERSON = entities.Person(
             officer_name="officer_name",
             officer_id="officer_id",
         ),
-        charges=[entities.Charge(
+        charges=[county_entities.Charge(
             charge_id=5678,
             external_id="external_id",
             offense_date=date(year=2000, month=1, day=6),
@@ -108,7 +108,7 @@ _PERSON = entities.Person(
             judge_name="judge_name",
             charge_notes='notes',
 
-            bond=entities.Bond(
+            bond=county_entities.Bond(
                 bond_id=6789,
                 external_id="external_id",
                 amount_dollars=2,
@@ -119,7 +119,7 @@ _PERSON = entities.Person(
                 bond_agent='bond_agent',
                 booking_id=2345
             ),
-            sentence=entities.Sentence(
+            sentence=county_entities.Sentence(
                 sentence_id=7890,
                 external_id="external_id",
                 sentencing_region='sentencing_region',

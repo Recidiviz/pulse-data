@@ -31,7 +31,8 @@ from recidiviz.common.constants.hold import HoldStatus
 from recidiviz.common.constants.sentence import SentenceStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.scrape.constants import MAX_PEOPLE_TO_LOG
-from recidiviz.persistence import entities, persistence_utils
+from recidiviz.persistence import persistence_utils
+from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.persistence.ingest_info_validator import ingest_info_validator
 from recidiviz.persistence.database.schema.county import dao as county_dao
 from recidiviz.persistence.entity_matching import entity_matching
@@ -112,7 +113,7 @@ def infer_release_on_open_bookings(
 
 
 def _infer_release_date_for_bookings(
-        bookings: List[entities.Booking],
+        bookings: List[county_entities.Booking],
         last_ingest_time: datetime.datetime, custody_status: CustodyStatus):
     """Marks the provided bookings with an inferred release date equal to the
     provided date. Updates the custody_status to the provided custody
@@ -130,7 +131,7 @@ def _infer_release_date_for_bookings(
             _mark_children_removed_from_source(booking)
 
 
-def _mark_children_removed_from_source(booking: entities.Booking):
+def _mark_children_removed_from_source(booking: county_entities.Booking):
     """Marks all children of a booking with the status 'REMOVED_FROM_SOURCE'"""
     for hold in booking.holds:
         hold.status = HoldStatus.REMOVED_WITHOUT_INFO

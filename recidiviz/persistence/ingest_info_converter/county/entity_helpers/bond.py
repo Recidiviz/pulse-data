@@ -20,7 +20,7 @@ from typing import cast, Optional
 from recidiviz.common.str_field_utils import normalize
 from recidiviz.common.constants.bond import BondStatus, BondType
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.persistence import entities
+from recidiviz.persistence.entity.county import entities
 from recidiviz.persistence.ingest_info_converter.utils import converter_utils
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
     fn,

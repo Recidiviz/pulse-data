@@ -25,8 +25,10 @@ import attr
 from opencensus.stats import measure, view, aggregation
 
 from recidiviz import Session
-from recidiviz.persistence import entities
-from recidiviz.persistence.entities import Entity
+from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.county import entities as county_entities
+from recidiviz.persistence.entity.entities import PersonType
+from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity_matching import entity_matching_utils as utils
 from recidiviz.persistence.errors import EntityMatchingError, \
     MatchedMultipleIngestedEntitiesError
@@ -48,7 +50,7 @@ monitoring.register_views([matching_errors_by_entity_view])
 
 
 @attr.s(frozen=True, kw_only=True)
-class MatchedEntities(Generic[entities.PersonType]):
+class MatchedEntities(Generic[PersonType]):
     """
     Object that contains output for entity matching
     - people: List of all successfully matched and unmatched people.
@@ -59,8 +61,8 @@ class MatchedEntities(Generic[entities.PersonType]):
         returned people.
     - error count: The number of errors raised during the matching process.
     """
-    people: List[entities.PersonType] = attr.ib(factory=list)
-    orphaned_entities: List[entities.Entity] = attr.ib(factory=list)
+    people: List[PersonType] = attr.ib(factory=list)
+    orphaned_entities: List[Entity] = attr.ib(factory=list)
     error_count: int = attr.ib(default=0)
 
     def __add__(self, other):
@@ -70,11 +72,11 @@ class MatchedEntities(Generic[entities.PersonType]):
             error_count=self.error_count + other.error_count)
 
 
-class BaseEntityMatcher(Generic[entities.PersonType]):
+class BaseEntityMatcher(Generic[PersonType]):
     """Base class for all entity matchers."""
 
     def run_match(self, session: Session, region: str,
-                  ingested_people: List[entities.PersonType]) \
+                  ingested_people: List[PersonType]) \
             -> MatchedEntities:
         """
         Attempts to match all people from |ingested_people| with corresponding
@@ -107,8 +109,8 @@ class BaseEntityMatcher(Generic[entities.PersonType]):
 
     def _match_people_and_return_error_count(
             self, *,
-            db_people: List[entities.PersonType],
-            ingested_people: List[entities.PersonType]) -> MatchedEntities:
+            db_people: List[PersonType],
+            ingested_people: List[PersonType]) -> MatchedEntities:
         """
         Attempts to match all people from |ingested_people| with people from the
         |db_people|. Returns an MatchedEntities object that contains the results
@@ -117,7 +119,7 @@ class BaseEntityMatcher(Generic[entities.PersonType]):
         people = []
         orphaned_entities = []
         error_count = 0
-        matched_people_by_db_id: Dict[int, entities.PersonType] = {}
+        matched_people_by_db_id: Dict[int, PersonType] = {}
 
         for ingested_person in ingested_people:
             try:
@@ -143,17 +145,17 @@ class BaseEntityMatcher(Generic[entities.PersonType]):
 
     def _match_person(
             self, *,
-            ingested_person: entities.PersonType,
-            db_people: List[entities.PersonType],
+            ingested_person: PersonType,
+            db_people: List[PersonType],
             orphaned_entities: List[Entity],
-            matched_people_by_db_id: Dict[int, entities.PersonType]) -> None:
+            matched_people_by_db_id: Dict[int, PersonType]) -> None:
         """
         Finds the best match for the provided |ingested_person| from the
         provided |db_people|. If a match exists, the primary key is added onto
         the |ingested_person| and then we attempt to match all children
         entities.
         """
-        db_person = cast(entities.PersonType,
+        db_person = cast(PersonType,
                          utils.get_best_match(ingested_person,
                                               db_people,
                                               self.is_person_match,
@@ -179,29 +181,29 @@ class BaseEntityMatcher(Generic[entities.PersonType]):
 
     @abstractmethod
     def get_people_by_external_ids(self, session, region, with_external_ids) \
-            -> List[entities.PersonType]:
+            -> List[PersonType]:
         """Returns all people for the given region that have external_ids that
         match the external_ids from the ingested people."""
 
     @abstractmethod
     def get_people_without_external_ids(
             self, session, region, without_external_ids) \
-            -> List[entities.PersonType]:
+            -> List[PersonType]:
         """Returns all people for the given region that have no external ids
         and must be matched to the ingest people in some other way."""
 
     @abstractmethod
     def is_person_match(self, *,
-                        db_entity: entities.PersonType,
-                        ingested_entity: entities.PersonType) -> bool:
+                        db_entity: PersonType,
+                        ingested_entity: PersonType) -> bool:
         """Given a database person and an ingested person, determine if they
         should be considered the same person."""
 
     @abstractmethod
     def match_child_entities(
             self, *,
-            db_person: entities.PersonType,
-            ingested_person: entities.PersonType,
+            db_person: PersonType,
+            ingested_person: PersonType,
             orphaned_entities: List[Entity]):
         """
         Attempts to match all child entities on the |ingested_person| with child
@@ -218,24 +220,24 @@ def _increment_error(entity_name: str) -> None:
         measurements.measure_int_put(m_matching_errors, 1)
 
 
-def _get_person_id(db_person: entities.PersonType):
+def _get_person_id(db_person: PersonType):
     if not db_person:
         return None
 
-    if isinstance(db_person, entities.Person):
+    if isinstance(db_person, county_entities.Person):
         return db_person.person_id
 
-    if isinstance(db_person, entities.StatePerson):
+    if isinstance(db_person, state_entities.StatePerson):
         return db_person.state_person_id
 
     raise ValueError("Invalid person type of [{}]"
                      .format(db_person.__class__.__name__))
 
 
-def _set_person_id(ingested_person: entities.PersonType, person_id):
-    if isinstance(ingested_person, entities.Person):
+def _set_person_id(ingested_person: PersonType, person_id):
+    if isinstance(ingested_person, county_entities.Person):
         ingested_person.person_id = person_id
-    elif isinstance(ingested_person, entities.StatePerson):
+    elif isinstance(ingested_person, state_entities.StatePerson):
         ingested_person.state_person_id = person_id
     else:
         raise ValueError("Invalid person type of [{}]"

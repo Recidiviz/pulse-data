@@ -107,11 +107,11 @@ class PersonEthnicity(Entity, BuildableAttr, DefaultableAttr):
 
 
 @attr.s
-class Person(Entity, BuildableAttr, DefaultableAttr):
+class StatePerson(Entity, BuildableAttr, DefaultableAttr):
     """Models a Person moving through the criminal justice system."""
     # Primary key - Only optional when hydrated in the data converter, before
     # we have written this entity to the persistence layer
-    person_id: Optional[int] = attr.ib()
+    state_person_id: Optional[int] = attr.ib()
 
     # External IDs - IDs used to track this entity in systems external to
     # Recidiviz

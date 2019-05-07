@@ -22,11 +22,12 @@ from typing import Optional, Union, Type
 import attr
 
 from recidiviz.common.constants.entity_enum import EntityEnum
-from recidiviz.persistence import entities
+from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.persistence.database.schema.county import schema as county_schema
 from recidiviz.persistence.database.base_schema import Base
 from recidiviz.persistence.database.schema.state import schema as state_schema
-from recidiviz.persistence.entities import Entity
+from recidiviz.persistence.entity.state import entities as state_entities
 
 
 class DatabaseConversionError(Exception):
@@ -69,7 +70,16 @@ def convert(src):
     direction = _Direction.for_cls(src.__class__)
 
     schema_cls = _get_schema_class(src)
-    entity_cls = getattr(entities, src.__class__.__name__)
+    entity_cls = _get_entity_class(src)
+
+    if entity_cls is None or schema_cls is None:
+        raise DatabaseConversionError('Both |entity_cls| and |schema_cls| '
+                                      'should be not None')
+
+    # TODO(1625): Remove this once schema.StatePerson has fields that match
+    #  those on entities.StatePerson.
+    if src.__class__.__name__ == 'StatePerson':
+        return None
 
     if direction is _Direction.ENTITY_TO_SCHEMA:
         dst = schema_cls()
@@ -90,7 +100,7 @@ def convert(src):
         elif field == 'sentence':
             dst.sentence = convert(src.sentence)
         elif field == 'related_sentences':
-            # TODO(441): Correctly convert related_sentences once schema for
+            # TODO(1145): Correctly convert related_sentences once schema for
             # this field is finalized.
             continue
         # TODO(1625): Add state schema convert calls here
@@ -111,6 +121,11 @@ def convert(src):
 def _get_schema_class(src):
     schema_cls = getattr(county_schema, src.__class__.__name__, None)
     return schema_cls or getattr(state_schema, src.__class__.__name__)
+
+
+def _get_entity_class(src):
+    entity_cls = getattr(county_entities, src.__class__.__name__, None)
+    return entity_cls or getattr(state_entities, src.__class__.__name__)
 
 
 def _is_enum(attr_type):

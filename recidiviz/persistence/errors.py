@@ -17,7 +17,7 @@
 """Contains errors for the persistence directory."""
 from typing import Sequence
 
-from recidiviz.persistence.entities import Entity
+from recidiviz.persistence.entity.base_entity import Entity
 
 
 class PersistenceError(Exception):

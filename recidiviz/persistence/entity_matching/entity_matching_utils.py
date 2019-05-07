@@ -22,11 +22,12 @@ from typing import Optional, Set, Callable, Sequence, Dict, Any, Iterable
 
 import deepdiff
 
-from recidiviz.persistence import entities
+from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.entities import PersonType
 from recidiviz.persistence.errors import MatchedMultipleDatabaseEntitiesError
 
 
-def diff_count(entity_a: entities.Entity, entity_b: entities.Entity) -> int:
+def diff_count(entity_a: Entity, entity_b: Entity) -> int:
     """Counts the number of differences between two entities, including
     their descendants."""
     ddiff = deepdiff.DeepDiff(entity_a, entity_b,
@@ -42,7 +43,7 @@ def diff_count(entity_a: entities.Entity, entity_b: entities.Entity) -> int:
                if diff_type in diff_types)
 
 
-def is_birthdate_match(a: entities.PersonType, b: entities.PersonType) -> bool:
+def is_birthdate_match(a: PersonType, b: PersonType) -> bool:
     if a.birthdate_inferred_from_age and b.birthdate_inferred_from_age:
         return _is_inferred_birthdate_match(a.birthdate, b.birthdate)
 
@@ -62,8 +63,8 @@ def _is_inferred_birthdate_match(
 
 
 def is_match(
-        db_entity: Optional[entities.Entity],
-        ingested_entity: Optional[entities.Entity],
+        db_entity: Optional[Entity],
+        ingested_entity: Optional[Entity],
         match_fields: Set[str]) -> bool:
     if not db_entity or not ingested_entity:
         return db_entity == ingested_entity
@@ -76,8 +77,8 @@ def is_match(
 
 
 def get_next_available_match(
-        ingested_entity: entities.Entity,
-        db_entities: Sequence[entities.Entity],
+        ingested_entity: Entity,
+        db_entities: Sequence[Entity],
         db_entities_matched_by_id: Dict[int, Any],
         matcher: Callable):
     """
@@ -93,8 +94,8 @@ def get_next_available_match(
 
 
 def get_only_match(
-        ingested_entity: entities.Entity,
-        db_entities: Sequence[entities.Entity], matcher: Callable):
+        ingested_entity: Entity,
+        db_entities: Sequence[Entity], matcher: Callable):
     """
        Finds the entity in |db_entites| that matches the |ingested_entity|.
        Args:
@@ -116,10 +117,10 @@ def get_only_match(
 
 
 def get_best_match(
-        ingest_entity: entities.Entity,
-        db_entities: Sequence[entities.Entity],
+        ingest_entity: Entity,
+        db_entities: Sequence[Entity],
         matcher: Callable,
-        matched_db_ids: Iterable[int]) -> Optional[entities.Entity]:
+        matched_db_ids: Iterable[int]) -> Optional[Entity]:
     """
     Selects the database entity that most closely matches the ingest entity,
     if a match exists. The steps are as follows:
@@ -143,8 +144,8 @@ def get_best_match(
 
 
 def get_all_matches(
-        ingested_entity: entities.Entity,
-        db_entities: Sequence[entities.Entity], matcher: Callable):
+        ingested_entity: Entity,
+        db_entities: Sequence[Entity], matcher: Callable):
     """
     Finds all |db_entities| that match the provided |ingested_entity| based
     on the |matcher| function

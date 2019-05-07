@@ -18,7 +18,7 @@
 from recidiviz.common.str_field_utils import normalize
 from recidiviz.common.constants.hold import HoldStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.persistence import entities
+from recidiviz.persistence.entity.county import entities
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
     fn,
     parse_external_id

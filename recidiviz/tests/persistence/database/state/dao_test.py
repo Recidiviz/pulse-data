@@ -21,10 +21,10 @@ import datetime
 from unittest import TestCase
 
 from recidiviz import Session
-from recidiviz.persistence import entities
+from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.database import database_utils
 from recidiviz.persistence.database.schema.state import dao
-from recidiviz.persistence.database.schema.state.schema import StatePerson
+from recidiviz.persistence.database.schema.state import schema
 from recidiviz.tests.utils import fakes
 
 _REGION = 'region'
@@ -41,9 +41,9 @@ class TestDao(TestCase):
 
     def test_readPeople_byFullName(self):
         # Arrange
-        person = StatePerson(state_person_id=8, full_name=_FULL_NAME)
-        person_different_name = StatePerson(state_person_id=9,
-                                            full_name='diff_name')
+        person = schema.StatePerson(state_person_id=8, full_name=_FULL_NAME)
+        person_different_name = schema.StatePerson(state_person_id=9,
+                                                   full_name='diff_name')
 
         session = Session()
         session.add(person)
@@ -58,10 +58,12 @@ class TestDao(TestCase):
 
     def test_readPeople_byBirthdate(self):
         # Arrange
-        person = StatePerson(state_person_id=8, birthdate=_BIRTHDATE)
-        person_different_birthdate = StatePerson(state_person_id=9,
-                                                 birthdate=datetime.date(
-                                                     year=2002, month=1, day=2))
+        person = schema.StatePerson(state_person_id=8, birthdate=_BIRTHDATE)
+        person_different_birthdate = schema.StatePerson(state_person_id=9,
+                                                        birthdate=datetime.date(
+                                                            year=2002,
+                                                            month=1,
+                                                            day=2))
 
         session = Session()
         session.add(person)
@@ -76,12 +78,9 @@ class TestDao(TestCase):
 
     def test_readPeople(self):
         # Arrange
-        person = StatePerson(state_person_id=8, full_name=_FULL_NAME)
-        person_different_name = StatePerson(state_person_id=9,
-                                            full_name='diff_name')
-        person_different_birthdate = StatePerson(state_person_id=10,
-                                                 birthdate=datetime.date(
-                                                     year=2002, month=1, day=2))
+        person = schema.StatePerson(state_person_id=8)
+        person_different_name = schema.StatePerson(state_person_id=9)
+        person_different_birthdate = schema.StatePerson(state_person_id=10)
 
         session = Session()
         session.add(person)
@@ -99,10 +98,9 @@ class TestDao(TestCase):
                           database_utils.convert(person_different_birthdate)])
 
     def test_readPeopleByExternalId(self):
-        person_no_match = StatePerson(state_person_id=1, full_name=_FULL_NAME)
-        person_match_external_id = StatePerson(state_person_id=2,
-                                               full_name='different_name',
-                                               external_id=_EXTERNAL_ID)
+        person_no_match = schema.StatePerson(state_person_id=1)
+        person_match_external_id = schema.StatePerson(state_person_id=2,
+                                                      external_id=_EXTERNAL_ID)
 
         session = Session()
         session.add(person_no_match)
