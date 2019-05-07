@@ -17,6 +17,7 @@
 """Converts scraped IngestInfo data to the persistence layer entities."""
 
 import copy
+import logging
 from typing import List
 
 import more_itertools
@@ -162,10 +163,13 @@ class CountyConverter(BaseConverter[entities.Person]):
 
 def _duplicate_charge_with_counts(converted_charge: entities.Charge,
                                   counts: int) -> List[entities.Charge]:
-    if counts < 1:
-        raise ValueError("Cannot convert charge with fewer than 1 count; "
-                         "charge {} has"
-                         "{} counts".format(converted_charge, counts))
+    if counts == 0:
+        logging.info("Charge with [%d] counts cannot be converted; changing to"
+                     "1 count for charge %s", counts, converted_charge)
+        counts = 1
+    elif counts < 0:
+        raise ValueError(f"Charge with [{counts}] counts cannot be converted: "
+                         f"{converted_charge}")
     duplicated_charges = []
     for i in range(1, counts + 1):
         # Perform a shallow copy so that bonds and sentences are shared rather
