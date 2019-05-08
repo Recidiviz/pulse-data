@@ -25,7 +25,9 @@ import pandas as pd
 from sqlalchemy import func
 
 from recidiviz import Session
-from recidiviz.common.constants import enum_canonical_strings as enum_strings
+from recidiviz.common.constants.aggregate import (
+    enum_canonical_strings as enum_strings
+)
 from recidiviz.persistence.database.schema.aggregate import dao
 from recidiviz.persistence.database.schema.aggregate.schema import \
     FlCountyAggregate, FlFacilityAggregate

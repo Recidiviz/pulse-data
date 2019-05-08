@@ -43,11 +43,11 @@ assessment_type_oras = 'ORAS'
 assessment_type_psa = 'PSA'
 
 # charge.py
-charge_class_civil = 'CIVIL'
-charge_class_felony = 'FELONY'
-charge_class_infraction = 'INFRACTION'
-charge_class_misdemeanor = 'MISDEMEANOR'
-charge_class_other = 'OTHER'
+charge_classification_civil = 'CIVIL'
+charge_classification_felony = 'FELONY'
+charge_classification_infraction = 'INFRACTION'
+charge_classification_misdemeanor = 'MISDEMEANOR'
+charge_classification_other = 'OTHER'
 
 # court_case.py
 # TODO(1697): Add enum strings here

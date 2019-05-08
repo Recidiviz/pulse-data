@@ -14,26 +14,3 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for recidiviz/common/constants/person.py"""
-
-import datetime
-from unittest import TestCase
-
-import pytest
-
-from recidiviz.common.constants.entity_enum import EnumParsingError
-from recidiviz.common.constants.enum_overrides import EnumOverrides
-from recidiviz.common.constants.person import Gender
-
-_NOW = datetime.datetime(2000, 1, 1)
-
-
-class TestCommonConstantsPerson(TestCase):
-    """Test person constants."""
-
-    def test_parseGenderEnum(self):
-        assert Gender.parse('Male', EnumOverrides.empty()) == Gender.MALE
-
-    def test_parseBadGenderEnum(self):
-        with pytest.raises(EnumParsingError):
-            Gender.parse('ABD', EnumOverrides.empty())

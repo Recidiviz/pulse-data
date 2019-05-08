@@ -47,9 +47,14 @@ from lxml.etree import XMLSyntaxError  # pylint:disable=no-name-in-module
 
 from recidiviz.common.common_utils import get_trace_id_from_flask
 from recidiviz.common.constants.bond import BondStatus, BondType
-from recidiviz.common.constants.charge import ChargeClass, ChargeStatus
+from recidiviz.common.constants.charge import ChargeStatus
+from recidiviz.common.constants.county.charge import ChargeClass
 from recidiviz.common.constants.enum_overrides import EnumOverrides
-from recidiviz.common.constants.person import Race, Ethnicity, ETHNICITY_MAP
+from recidiviz.common.constants.person_characteristics import (
+    Race,
+    Ethnicity,
+    ETHNICITY_MAP,
+)
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.scrape import constants, ingest_utils

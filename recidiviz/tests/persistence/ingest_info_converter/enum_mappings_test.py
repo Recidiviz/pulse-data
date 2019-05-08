@@ -17,8 +17,9 @@
 """Tests for enum_mappings.py"""
 import unittest
 
-from recidiviz.common.constants.charge import ChargeClass, ChargeStatus, \
+from recidiviz.common.constants.charge import ChargeStatus, \
     ChargeDegree
+from recidiviz.common.constants.county.charge import ChargeClass
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.ingest.models.ingest_info_pb2 import Charge
 from recidiviz.persistence.ingest_info_converter.utils.enum_mappings \

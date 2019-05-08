@@ -18,8 +18,12 @@
 import unittest
 from datetime import date, datetime
 
-from recidiviz.common.constants.booking import ReleaseReason, CustodyStatus, \
-    Classification, AdmissionReason
+from recidiviz.common.constants.county.booking import (
+    ReleaseReason,
+    CustodyStatus,
+    Classification,
+    AdmissionReason,
+)
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
