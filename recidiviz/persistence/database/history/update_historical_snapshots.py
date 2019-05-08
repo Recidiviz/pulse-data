@@ -38,8 +38,8 @@ import attr
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import text
 
-from recidiviz.common.constants.booking import CustodyStatus
-from recidiviz.common.constants.sentence import SentenceStatus
+from recidiviz.common.constants.county.booking import CustodyStatus
+from recidiviz.common.constants.county.sentence import SentenceStatus
 from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
 from recidiviz.persistence.database.schema.county import schema
 

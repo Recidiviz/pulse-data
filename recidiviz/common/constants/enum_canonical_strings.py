@@ -15,8 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Strings used as underlying representation of enum values for application and
-database code.
+"""Strings used as underlying representation of enum values for shared
+application and database code.
 
 NOTE: Changing ANY STRING VALUE in this file will require a database migration.
 The Python values pointing to the strings can be renamed without issue.
@@ -46,7 +46,7 @@ present_without_info = 'PRESENT_WITHOUT_INFO'
 # anything about what removal means (i.e. 'INFER_DROPPED')
 removed_without_info = 'REMOVED_WITHOUT_INFO'
 
-# Person
+# person_characteristics.py
 
 gender_female = 'FEMALE'
 gender_male = 'MALE'
@@ -69,47 +69,7 @@ residency_status_homeless = 'HOMELESS'
 residency_status_permanent = 'PERMANENT'
 residency_status_transient = 'TRANSIENT'
 
-# Booking
-
-admission_reason_escape = 'ESCAPE'
-admission_reason_new_commitment = 'NEW_COMMITMENT'
-admission_reason_parole_violation = 'PAROLE_VIOLATION'
-admission_reason_probation_violation = 'PROBATION_VIOLATION'
-admission_reason_supervision_violation_for_sex_offense = \
-    'SUPERVISION_VIOLATION_FOR_SEX_OFFENSE'
-admission_reason_transfer = 'TRANSFER'
-
-release_reason_acquittal = 'ACQUITTAL'
-release_reason_bond = 'BOND'
-release_reason_case_dismissed = 'CASE_DISMISSED'
-release_reason_death = 'DEATH'
-release_reason_escape = 'ESCAPE'
-release_reason_expiration = 'EXPIRATION_OF_SENTENCE'
-release_reason_recognizance = 'OWN_RECOGNIZANCE'
-release_reason_parole = 'PAROLE'
-release_reason_probation = 'PROBATION'
-release_reason_transfer = 'TRANSFER'
-
-custody_status_escaped = 'ESCAPED'
-custody_status_elsewhere = 'HELD_ELSEWHERE'
-custody_status_in_custody = 'IN_CUSTODY'
-custody_status_inferred_release = 'INFERRED_RELEASE'
-custody_status_released = 'RELEASED'
-
-classification_high = 'HIGH'
-classification_low = 'LOW'
-classification_maximum = 'MAXIMUM'
-classification_medium = 'MEDIUM'
-classification_minimum = 'MINIMUM'
-classification_work_release = 'WORK_RELEASE'
-
-# Hold
-
-hold_status_active = 'ACTIVE'
-hold_status_inactive = 'INACTIVE'
-hold_status_inferred_dropped = 'INFERRED_DROPPED'
-
-# Bond
+# bond.py
 
 bond_type_cash = 'CASH'
 bond_type_denied = 'DENIED'
@@ -124,33 +84,12 @@ bond_status_posted = 'POSTED'
 bond_status_revoked = 'REVOKED'
 bond_status_set = 'SET'
 
-# Sentence
-
-sentence_status_commuted = 'COMMUTED'
-sentence_status_completed = 'COMPLETED'
-sentence_status_serving = 'SERVING'
-
-# SentenceRelationship
-
-sentence_relationship_type_concurrent = 'CONCURRENT'
-sentence_relationship_type_consecutive = 'CONSECUTIVE'
-
-# Charge
+# charge.py
 
 degree_first = 'FIRST'
 degree_second = 'SECOND'
 degree_third = 'THIRD'
 degree_fourth = 'FOURTH'
-
-charge_class_civil = 'CIVIL'
-charge_class_felony = 'FELONY'
-charge_class_infraction = 'INFRACTION'
-charge_class_misdemeanor = 'MISDEMEANOR'
-charge_class_other = 'OTHER'
-charge_class_parole_violation = 'PAROLE_VIOLATION'
-charge_class_probation_violation = 'PROBATION_VIOLATION'
-charge_class_supervision_violation_for_sex_offense = \
-    'SUPERVISION_VIOLATION_FOR_SEX_OFFENSE'
 
 charge_status_acquitted = 'ACQUITTED'
 charge_status_completed = 'COMPLETED_SENTENCE'
@@ -160,11 +99,3 @@ charge_status_inferred_dropped = 'INFERRED_DROPPED'
 charge_status_pending = 'PENDING'
 charge_status_pretrial = 'PRETRIAL'
 charge_status_sentenced = 'SENTENCED'
-
-# Aggregates
-
-daily_granularity = 'DAILY'
-weekly_granularity = 'WEEKLY'
-monthly_granularity = 'MONTHLY'
-quarterly_granularity = 'QUARTERLY'
-yearly_granularity = 'YEARLY'

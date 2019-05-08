@@ -18,7 +18,7 @@
 """Utils for persistence.py."""
 import datetime
 
-from recidiviz.common.constants.booking import CustodyStatus
+from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.persistence.entity.county import entities as county_entities
 
 

@@ -27,14 +27,23 @@ import attr
 
 from recidiviz.common.attr_mixins import BuildableAttr, DefaultableAttr
 from recidiviz.common.constants.bond import BondType, BondStatus
-from recidiviz.common.constants.booking import ReleaseReason, CustodyStatus, \
-    Classification, AdmissionReason
-from recidiviz.common.constants.charge import ChargeClass, ChargeDegree, \
+from recidiviz.common.constants.county.booking import (
+    ReleaseReason,
+    CustodyStatus,
+    Classification,
+    AdmissionReason
+)
+from recidiviz.common.constants.charge import ChargeDegree, \
     ChargeStatus
-from recidiviz.common.constants.hold import HoldStatus
-from recidiviz.common.constants.person import Race, Ethnicity, Gender, \
-    ResidencyStatus
-from recidiviz.common.constants.sentence import SentenceStatus
+from recidiviz.common.constants.county.charge import ChargeClass
+from recidiviz.common.constants.county.hold import HoldStatus
+from recidiviz.common.constants.person_characteristics import (
+    Race,
+    Ethnicity,
+    Gender,
+    ResidencyStatus,
+)
+from recidiviz.common.constants.county.sentence import SentenceStatus
 
 from recidiviz.persistence.entity.base_entity import Entity
 

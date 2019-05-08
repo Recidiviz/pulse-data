@@ -22,7 +22,7 @@ from http import HTTPStatus
 
 from flask import Blueprint, request
 
-from recidiviz.common.constants.booking import CustodyStatus
+from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.ingest.scrape import scrape_phase, sessions
 from recidiviz.ingest.scrape.ingest_utils import validate_regions
 from recidiviz.persistence import persistence

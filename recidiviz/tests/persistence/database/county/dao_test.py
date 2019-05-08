@@ -22,7 +22,7 @@ from copy import deepcopy
 from unittest import TestCase
 
 from recidiviz import Session
-from recidiviz.common.constants.booking import CustodyStatus
+from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.persistence.entity.county import entities

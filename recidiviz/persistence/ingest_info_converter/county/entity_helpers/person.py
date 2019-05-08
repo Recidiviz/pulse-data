@@ -23,9 +23,13 @@ import attr
 from uszipcode import SearchEngine
 
 from recidiviz.common.str_field_utils import normalize, parse_date
-from recidiviz.common.constants.person import (RESIDENCY_STATUS_SUBSTRING_MAP,
-                                               Ethnicity, Gender, Race,
-                                               ResidencyStatus)
+from recidiviz.common.constants.person_characteristics import (
+    RESIDENCY_STATUS_SUBSTRING_MAP,
+    Ethnicity,
+    Gender,
+    Race,
+    ResidencyStatus
+)
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
     calculate_birthdate_from_age, fn, parse_external_id)
 from recidiviz.persistence.ingest_info_converter.utils.enum_mappings \

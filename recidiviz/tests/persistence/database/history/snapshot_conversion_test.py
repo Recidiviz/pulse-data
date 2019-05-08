@@ -25,14 +25,15 @@ from unittest import TestCase
 from more_itertools import one
 from recidiviz import Session
 from recidiviz.common.constants.bond import BondStatus, BondType
-from recidiviz.common.constants.booking import \
+from recidiviz.common.constants.county.booking import \
     AdmissionReason, Classification, CustodyStatus, ReleaseReason
 from recidiviz.common.constants.charge import \
-    ChargeClass, ChargeDegree, ChargeStatus
-from recidiviz.common.constants.hold import HoldStatus
-from recidiviz.common.constants.person import \
+    ChargeDegree, ChargeStatus
+from recidiviz.common.constants.county.charge import ChargeClass
+from recidiviz.common.constants.county.hold import HoldStatus
+from recidiviz.common.constants.person_characteristics import \
     Ethnicity, Gender, Race, ResidencyStatus
-from recidiviz.common.constants.sentence import SentenceStatus
+from recidiviz.common.constants.county.sentence import SentenceStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence.database.schema.county import schema
 from recidiviz.persistence.database.database_entity import DatabaseEntity

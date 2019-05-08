@@ -25,7 +25,9 @@ from more_itertools import one
 from numpy import NaN
 from sqlalchemy import func
 
-import recidiviz.common.constants.enum_canonical_strings as enum_strings
+from recidiviz.common.constants.aggregate import (
+    enum_canonical_strings as enum_strings
+)
 from recidiviz import Session
 from recidiviz.ingest.aggregate.regions.hi import hi_aggregate_ingest
 from recidiviz.persistence.database.schema.aggregate import dao

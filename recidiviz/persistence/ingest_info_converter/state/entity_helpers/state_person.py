@@ -21,9 +21,13 @@ from typing import Optional
 
 import attr
 
-from recidiviz.common.constants.person import (RESIDENCY_STATUS_SUBSTRING_MAP,
-                                               Ethnicity, Gender, Race,
-                                               ResidencyStatus)
+from recidiviz.common.constants.person_characteristics import (
+    RESIDENCY_STATUS_SUBSTRING_MAP,
+    Ethnicity,
+    Gender,
+    Race,
+    ResidencyStatus
+)
 from recidiviz.common.str_field_utils import parse_date, normalize
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import \
     fn, parse_external_id, calculate_birthdate_from_age
