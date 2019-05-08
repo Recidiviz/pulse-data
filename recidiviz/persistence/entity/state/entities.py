@@ -32,9 +32,13 @@ from recidiviz.common.constants.state.assessment import AssessmentClass, \
 
 from recidiviz.common.constants.bond import BondType, BondStatus
 from recidiviz.common.constants.charge import ChargeDegree, ChargeStatus
-from recidiviz.common.constants.person import Gender, Race, Ethnicity, \
+from recidiviz.common.constants.person_characteristics import (
+    Gender,
+    Race,
+    Ethnicity,
     ResidencyStatus
-from recidiviz.common.constants.sentence import SentenceStatus
+)
+from recidiviz.common.constants.county.sentence import SentenceStatus
 
 from recidiviz.common.constants.state.court_case import CourtType, \
     CourtCaseStatus

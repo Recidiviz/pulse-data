@@ -21,11 +21,12 @@ from unittest import TestCase
 import sqlalchemy
 
 import recidiviz.common.constants.bond as bond
-import recidiviz.common.constants.booking as booking
+import recidiviz.common.constants.county.booking as booking
 import recidiviz.common.constants.charge as charge
-import recidiviz.common.constants.hold as hold
-import recidiviz.common.constants.person as person
-import recidiviz.common.constants.sentence as sentence
+import recidiviz.common.constants.county.charge
+import recidiviz.common.constants.county.hold as hold
+import recidiviz.common.constants.person_characteristics as person
+import recidiviz.common.constants.county.sentence as sentence
 import recidiviz.persistence.database.base_schema as schema
 
 
@@ -57,7 +58,8 @@ class SchemaTest(TestCase):
             'sentence_status': sentence.SentenceStatus,
             'sentence_relationship_type': None,
             'degree': charge.ChargeDegree,
-            'charge_class': charge.ChargeClass,
+            'charge_class':
+                recidiviz.common.constants.county.charge.ChargeClass,
             'charge_status': charge.ChargeStatus,
             'time_granularity': None
         }

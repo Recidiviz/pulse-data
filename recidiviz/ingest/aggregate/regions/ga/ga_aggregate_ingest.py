@@ -24,7 +24,9 @@ import us
 from PyPDF2 import PdfFileReader
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
-import recidiviz.common.constants.enum_canonical_strings as enum_strings
+from recidiviz.common.constants.aggregate import (
+    enum_canonical_strings as enum_strings
+)
 from recidiviz.common import str_field_utils
 from recidiviz.common import fips
 from recidiviz.ingest.aggregate import aggregate_ingest_utils
