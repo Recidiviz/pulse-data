@@ -22,7 +22,7 @@ from unittest import TestCase
 from flask import Flask
 from mock import call, patch
 
-from recidiviz.common.constants.booking import CustodyStatus
+from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.ingest.scrape import constants, infer_release, scrape_phase
 from recidiviz.ingest.scrape.sessions import ScrapeSession
 from recidiviz.utils import regions

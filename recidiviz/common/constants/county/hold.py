@@ -15,29 +15,30 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Constants related to a sentence entity."""
-
-import recidiviz.common.constants.enum_canonical_strings as enum_strings
+"""Constants related to a hold entity."""
+from recidiviz.common.constants.county import (
+    enum_canonical_strings as county_enum_strings
+)
+from recidiviz.common.constants import enum_canonical_strings as enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
-class SentenceStatus(EntityEnum, metaclass=EntityEnumMeta):
-    COMMUTED = enum_strings.sentence_status_commuted
-    COMPLETED = enum_strings.sentence_status_completed
-    SERVING = enum_strings.sentence_status_serving
+class HoldStatus(EntityEnum, metaclass=EntityEnumMeta):
+    ACTIVE = county_enum_strings.hold_status_active
+    INACTIVE = county_enum_strings.hold_status_inactive
+    INFERRED_DROPPED = county_enum_strings.hold_status_inferred_dropped
     PRESENT_WITHOUT_INFO = enum_strings.present_without_info
     REMOVED_WITHOUT_INFO = enum_strings.removed_without_info
 
     @staticmethod
     def _get_default_map():
-        return _SENTENCE_STATUS_MAP
+        return _HOLD_STATUS_MAP
 
 
 # MappableEnum.parse will strip punctuation and separate tokens with a single
 # space. Add mappings here using a single space between words and numbers.
 # For example, `N/A` can be written as `N A` and `(10%)` can be written as `10`.
-_SENTENCE_STATUS_MAP = {
-    'COMMUTED': SentenceStatus.COMMUTED,
-    'COMPLETED': SentenceStatus.COMPLETED,
-    'SERVING': SentenceStatus.SERVING,
+_HOLD_STATUS_MAP = {
+    'ACTIVE': HoldStatus.ACTIVE,
+    'INACTIVE': HoldStatus.INACTIVE
 }

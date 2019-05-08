@@ -24,7 +24,9 @@ import pandas as pd
 import tabula
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
-import recidiviz.common.constants.enum_canonical_strings as enum_strings
+from recidiviz.common.constants.aggregate import (
+    enum_canonical_strings as enum_strings
+)
 from recidiviz.common import str_field_utils
 from recidiviz.common.errors import FipsMergingError
 from recidiviz.ingest.aggregate.errors import (AggregateDateParsingError,

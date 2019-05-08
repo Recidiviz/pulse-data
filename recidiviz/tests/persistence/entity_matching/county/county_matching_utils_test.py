@@ -24,7 +24,7 @@ import attr
 from dateutil.relativedelta import relativedelta
 
 from recidiviz.common.constants.bond import BondType, BondStatus
-from recidiviz.common.constants.booking import CustodyStatus
+from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.persistence.entity.county import entities
 from recidiviz.persistence.entity_matching.county import county_matching_utils
 

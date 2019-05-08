@@ -25,10 +25,10 @@ from mock import patch, Mock
 import recidiviz.ingest.models.ingest_info as ii
 from recidiviz import Session
 from recidiviz.common.constants.bond import BondStatus
-from recidiviz.common.constants.booking import CustodyStatus
+from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.common.constants.charge import ChargeStatus
-from recidiviz.common.constants.hold import HoldStatus
-from recidiviz.common.constants.sentence import SentenceStatus
+from recidiviz.common.constants.county.hold import HoldStatus
+from recidiviz.common.constants.county.sentence import SentenceStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo, Charge, \
     Sentence

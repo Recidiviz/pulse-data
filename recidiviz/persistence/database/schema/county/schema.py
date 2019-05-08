@@ -38,6 +38,9 @@ from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import relationship, validates
 
+from recidiviz.common.constants.county import (
+    enum_canonical_strings as county_enum_strings
+)
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.base_schema import Base
@@ -77,51 +80,52 @@ residency_status = Enum(enum_strings.residency_status_homeless,
 
 # Booking
 
-admission_reason = Enum(enum_strings.admission_reason_escape,
-                        enum_strings.admission_reason_new_commitment,
-                        enum_strings.admission_reason_parole_violation,
-                        enum_strings.admission_reason_probation_violation,
+admission_reason = Enum(county_enum_strings.admission_reason_escape,
+                        county_enum_strings.admission_reason_new_commitment,
+                        county_enum_strings.admission_reason_parole_violation,
                         # pylint:disable=line-too-long
-                        enum_strings.admission_reason_supervision_violation_for_sex_offense,
-                        enum_strings.admission_reason_transfer,
+                        county_enum_strings.admission_reason_probation_violation,
+                        # pylint:disable=line-too-long
+                        county_enum_strings.admission_reason_supervision_violation_for_sex_offense,
+                        county_enum_strings.admission_reason_transfer,
                         name='admission_reason')
 
-release_reason = Enum(enum_strings.release_reason_acquittal,
-                      enum_strings.release_reason_bond,
-                      enum_strings.release_reason_case_dismissed,
-                      enum_strings.release_reason_death,
-                      enum_strings.release_reason_escape,
-                      enum_strings.release_reason_expiration,
+release_reason = Enum(county_enum_strings.release_reason_acquittal,
+                      county_enum_strings.release_reason_bond,
+                      county_enum_strings.release_reason_case_dismissed,
+                      county_enum_strings.release_reason_death,
+                      county_enum_strings.release_reason_escape,
+                      county_enum_strings.release_reason_expiration,
                       enum_strings.external_unknown,
-                      enum_strings.release_reason_recognizance,
-                      enum_strings.release_reason_parole,
-                      enum_strings.release_reason_probation,
-                      enum_strings.release_reason_transfer,
+                      county_enum_strings.release_reason_recognizance,
+                      county_enum_strings.release_reason_parole,
+                      county_enum_strings.release_reason_probation,
+                      county_enum_strings.release_reason_transfer,
                       name='release_reason')
 
-custody_status = Enum(enum_strings.custody_status_escaped,
-                      enum_strings.custody_status_elsewhere,
-                      enum_strings.custody_status_in_custody,
-                      enum_strings.custody_status_inferred_release,
-                      enum_strings.custody_status_released,
+custody_status = Enum(county_enum_strings.custody_status_escaped,
+                      county_enum_strings.custody_status_elsewhere,
+                      county_enum_strings.custody_status_in_custody,
+                      county_enum_strings.custody_status_inferred_release,
+                      county_enum_strings.custody_status_released,
                       enum_strings.present_without_info,
                       enum_strings.removed_without_info,
                       name='custody_status')
 
 classification = Enum(enum_strings.external_unknown,
-                      enum_strings.classification_high,
-                      enum_strings.classification_low,
-                      enum_strings.classification_maximum,
-                      enum_strings.classification_medium,
-                      enum_strings.classification_minimum,
-                      enum_strings.classification_work_release,
+                      county_enum_strings.classification_high,
+                      county_enum_strings.classification_low,
+                      county_enum_strings.classification_maximum,
+                      county_enum_strings.classification_medium,
+                      county_enum_strings.classification_minimum,
+                      county_enum_strings.classification_work_release,
                       name='classification')
 
 # Hold
 
-hold_status = Enum(enum_strings.hold_status_active,
-                   enum_strings.hold_status_inactive,
-                   enum_strings.hold_status_inferred_dropped,
+hold_status = Enum(county_enum_strings.hold_status_active,
+                   county_enum_strings.hold_status_inactive,
+                   county_enum_strings.hold_status_inferred_dropped,
                    enum_strings.present_without_info,
                    enum_strings.removed_without_info,
                    name='hold_status')
@@ -147,9 +151,9 @@ bond_status = Enum(enum_strings.bond_status_pending,
 
 # Sentence
 
-sentence_status = Enum(enum_strings.sentence_status_commuted,
-                       enum_strings.sentence_status_completed,
-                       enum_strings.sentence_status_serving,
+sentence_status = Enum(county_enum_strings.sentence_status_commuted,
+                       county_enum_strings.sentence_status_completed,
+                       county_enum_strings.sentence_status_serving,
                        enum_strings.present_without_info,
                        enum_strings.removed_without_info,
                        name='sentence_status')
@@ -157,8 +161,8 @@ sentence_status = Enum(enum_strings.sentence_status_commuted,
 # SentenceRelationship
 
 sentence_relationship_type = Enum(
-    enum_strings.sentence_relationship_type_concurrent,
-    enum_strings.sentence_relationship_type_consecutive,
+    county_enum_strings.sentence_relationship_type_concurrent,
+    county_enum_strings.sentence_relationship_type_consecutive,
     name='sentence_relationship_type')
 
 # Charge
@@ -170,16 +174,16 @@ degree = Enum(enum_strings.external_unknown,
               enum_strings.degree_third,
               name='degree')
 
-charge_class = Enum(enum_strings.charge_class_civil,
+charge_class = Enum(county_enum_strings.charge_class_civil,
                     enum_strings.external_unknown,
-                    enum_strings.charge_class_felony,
-                    enum_strings.charge_class_infraction,
-                    enum_strings.charge_class_misdemeanor,
-                    enum_strings.charge_class_other,
-                    enum_strings.charge_class_parole_violation,
-                    enum_strings.charge_class_probation_violation,
+                    county_enum_strings.charge_class_felony,
+                    county_enum_strings.charge_class_infraction,
+                    county_enum_strings.charge_class_misdemeanor,
+                    county_enum_strings.charge_class_other,
+                    county_enum_strings.charge_class_parole_violation,
+                    county_enum_strings.charge_class_probation_violation,
                     # pylint:disable=line-too-long
-                    enum_strings.charge_class_supervision_violation_for_sex_offense,
+                    county_enum_strings.charge_class_supervision_violation_for_sex_offense,
                     name='charge_class')
 
 charge_status = Enum(enum_strings.charge_status_acquitted,

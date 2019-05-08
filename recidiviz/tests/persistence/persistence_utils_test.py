@@ -18,7 +18,7 @@
 import datetime
 import unittest
 
-from recidiviz.common.constants.booking import CustodyStatus
+from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.persistence.persistence_utils import remove_pii_for_person, \
     is_booking_active, has_active_booking

@@ -18,7 +18,7 @@
 from datetime import date
 from typing import Optional, Tuple
 
-from recidiviz.common.constants.sentence import SentenceStatus
+from recidiviz.common.constants.county.sentence import SentenceStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
     fn,

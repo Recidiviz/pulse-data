@@ -19,9 +19,12 @@ from datetime import date
 from typing import Optional, Tuple
 
 from recidiviz.common.str_field_utils import normalize, parse_date
-from recidiviz.common.constants.booking import (AdmissionReason,
-                                                Classification, CustodyStatus,
-                                                ReleaseReason)
+from recidiviz.common.constants.county.booking import (
+    AdmissionReason,
+    Classification,
+    CustodyStatus,
+    ReleaseReason
+)
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
     fn, parse_external_id)

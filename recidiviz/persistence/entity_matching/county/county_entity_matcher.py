@@ -24,8 +24,8 @@ from typing import List, Dict, cast, Set, Tuple
 
 from recidiviz.common.constants.bond import BondStatus
 from recidiviz.common.constants.charge import ChargeStatus
-from recidiviz.common.constants.hold import HoldStatus
-from recidiviz.common.constants.sentence import SentenceStatus
+from recidiviz.common.constants.county.hold import HoldStatus
+from recidiviz.common.constants.county.sentence import SentenceStatus
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.county import entities
 from recidiviz.persistence.database.schema.county import dao

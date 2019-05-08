@@ -20,8 +20,12 @@ from datetime import date, datetime
 
 from mock import patch, Mock
 
-from recidiviz.common.constants.person import Gender, Race, Ethnicity, \
-    ResidencyStatus
+from recidiviz.common.constants.person_characteristics import (
+    Gender,
+    Race,
+    Ethnicity,
+    ResidencyStatus,
+)
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.ingest.scrape.base_scraper import BaseScraper

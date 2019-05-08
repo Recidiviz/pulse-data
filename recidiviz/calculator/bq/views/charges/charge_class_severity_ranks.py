@@ -19,13 +19,15 @@
 
 from recidiviz.calculator.bq.views import bqview
 
-from recidiviz.common.constants.enum_canonical_strings import charge_class_civil
-from recidiviz.common.constants.enum_canonical_strings import charge_class_felony
-from recidiviz.common.constants.enum_canonical_strings import charge_class_infraction
-from recidiviz.common.constants.enum_canonical_strings import charge_class_misdemeanor
-from recidiviz.common.constants.enum_canonical_strings import charge_class_other
-from recidiviz.common.constants.enum_canonical_strings import charge_class_parole_violation
-from recidiviz.common.constants.enum_canonical_strings import charge_class_probation_violation
+from recidiviz.common.constants.county.enum_canonical_strings import (
+    charge_class_civil,
+    charge_class_felony,
+    charge_class_infraction,
+    charge_class_misdemeanor,
+    charge_class_other,
+    charge_class_parole_violation,
+    charge_class_probation_violation,
+)
 from recidiviz.common.constants.enum_canonical_strings import external_unknown
 
 

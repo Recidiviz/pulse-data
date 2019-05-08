@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Constants related to a charge entity in the state schema."""
+"""Constants related to a Charge entity in the state schema."""
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 import recidiviz.common.constants.state.enum_canonical_strings as \
@@ -24,22 +24,22 @@ from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
 class ChargeClassification(EntityEnum, metaclass=EntityEnumMeta):
-    CIVIL = state_enum_strings.charge_class_civil
+    CIVIL = state_enum_strings.charge_classification_civil
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
-    FELONY = state_enum_strings.charge_class_felony
-    INFRACTION = state_enum_strings.charge_class_infraction
-    MISDEMEANOR = state_enum_strings.charge_class_misdemeanor
-    OTHER = state_enum_strings.charge_class_other
+    FELONY = state_enum_strings.charge_classification_felony
+    INFRACTION = state_enum_strings.charge_classification_infraction
+    MISDEMEANOR = state_enum_strings.charge_classification_misdemeanor
+    OTHER = state_enum_strings.charge_classification_other
 
     @staticmethod
     def _get_default_map():
-        return _CHARGE_CLASS_MAP
+        return _CHARGE_CLASSIFICATION_MAP
 
 
 # MappableEnum.parse will strip punctuation and separate tokens with a single
 # space. Add mappings here using a single space between words and numbers.
 # For example, `N/A` can be written as `N A` and `(10%)` can be written as `10`.
-_CHARGE_CLASS_MAP = {
+_CHARGE_CLASSIFICATION_MAP = {
     '*': None,
     '-': None,
     '.': None,

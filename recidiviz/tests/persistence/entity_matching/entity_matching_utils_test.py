@@ -20,7 +20,7 @@ from unittest import TestCase
 
 import attr
 
-from recidiviz.common.constants.booking import CustodyStatus
+from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.persistence.entity_matching import entity_matching_utils
 

@@ -22,14 +22,22 @@ from more_itertools import one
 
 from recidiviz import Session
 from recidiviz.common.constants.bond import BondType, BondStatus
-from recidiviz.common.constants.booking import CustodyStatus, ReleaseReason, \
-    Classification, AdmissionReason
-from recidiviz.common.constants.charge import ChargeDegree, ChargeClass, \
-    ChargeStatus
-from recidiviz.common.constants.hold import HoldStatus
-from recidiviz.common.constants.person import Gender, Race, Ethnicity, \
-    ResidencyStatus
-from recidiviz.common.constants.sentence import SentenceStatus
+from recidiviz.common.constants.county.booking import (
+    CustodyStatus,
+    ReleaseReason,
+    Classification,
+    AdmissionReason,
+)
+from recidiviz.common.constants.charge import ChargeDegree, ChargeStatus
+from recidiviz.common.constants.county.charge import ChargeClass
+from recidiviz.common.constants.county.hold import HoldStatus
+from recidiviz.common.constants.person_characteristics import (
+    Gender,
+    Race,
+    Ethnicity,
+    ResidencyStatus,
+)
+from recidiviz.common.constants.county.sentence import SentenceStatus
 from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.persistence.database.schema.county import schema as county_schema
 from recidiviz.persistence.database.database_utils import convert

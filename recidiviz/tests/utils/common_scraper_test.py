@@ -20,7 +20,11 @@ from datetime import datetime
 
 import yaml
 
-from recidiviz.common.constants.person import ETHNICITY_MAP, Ethnicity, Race
+from recidiviz.common.constants.person_characteristics import (
+    ETHNICITY_MAP,
+    Ethnicity,
+    Race,
+)
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info
 from recidiviz.ingest.models.ingest_info_diff import diff_ingest_infos

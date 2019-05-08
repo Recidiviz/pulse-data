@@ -17,18 +17,23 @@
 
 """Constants related to a booking entity."""
 
-import recidiviz.common.constants.enum_canonical_strings as enum_strings
+from recidiviz.common.constants.county import (
+    enum_canonical_strings as county_enum_strings
+)
+from recidiviz.common.constants import enum_canonical_strings as enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
 class AdmissionReason(EntityEnum, metaclass=EntityEnumMeta):
-    ESCAPE = enum_strings.admission_reason_escape
-    NEW_COMMITMENT = enum_strings.admission_reason_new_commitment
-    PAROLE_VIOLATION = enum_strings.admission_reason_parole_violation
-    PROBATION_VIOLATION = enum_strings.admission_reason_probation_violation
+    ESCAPE = county_enum_strings.admission_reason_escape
+    NEW_COMMITMENT = county_enum_strings.admission_reason_new_commitment
+    PAROLE_VIOLATION = county_enum_strings.admission_reason_parole_violation
+    PROBATION_VIOLATION = county_enum_strings.\
+        admission_reason_probation_violation
     SUPERVISION_VIOLATION_FOR_SEX_OFFENSE = \
-        enum_strings.admission_reason_supervision_violation_for_sex_offense
-    TRANSFER = enum_strings.admission_reason_transfer
+        county_enum_strings.\
+        admission_reason_supervision_violation_for_sex_offense
+    TRANSFER = county_enum_strings.admission_reason_transfer
 
     @staticmethod
     def _get_default_map():
@@ -37,12 +42,12 @@ class AdmissionReason(EntityEnum, metaclass=EntityEnumMeta):
 
 class Classification(EntityEnum, metaclass=EntityEnumMeta):
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
-    HIGH = enum_strings.classification_high
-    LOW = enum_strings.classification_low
-    MAXIMUM = enum_strings.classification_maximum
-    MEDIUM = enum_strings.classification_medium
-    MINIMUM = enum_strings.classification_minimum
-    WORK_RELEASE = enum_strings.classification_work_release
+    HIGH = county_enum_strings.classification_high
+    LOW = county_enum_strings.classification_low
+    MAXIMUM = county_enum_strings.classification_maximum
+    MEDIUM = county_enum_strings.classification_medium
+    MINIMUM = county_enum_strings.classification_minimum
+    WORK_RELEASE = county_enum_strings.classification_work_release
 
     @staticmethod
     def _get_default_map():
@@ -50,11 +55,11 @@ class Classification(EntityEnum, metaclass=EntityEnumMeta):
 
 
 class CustodyStatus(EntityEnum, metaclass=EntityEnumMeta):
-    ESCAPED = enum_strings.custody_status_escaped
-    HELD_ELSEWHERE = enum_strings.custody_status_elsewhere
-    IN_CUSTODY = enum_strings.custody_status_in_custody
-    RELEASED = enum_strings.custody_status_released
-    INFERRED_RELEASE = enum_strings.custody_status_inferred_release
+    ESCAPED = county_enum_strings.custody_status_escaped
+    HELD_ELSEWHERE = county_enum_strings.custody_status_elsewhere
+    IN_CUSTODY = county_enum_strings.custody_status_in_custody
+    RELEASED = county_enum_strings.custody_status_released
+    INFERRED_RELEASE = county_enum_strings.custody_status_inferred_release
     PRESENT_WITHOUT_INFO = enum_strings.present_without_info
     REMOVED_WITHOUT_INFO = enum_strings.removed_without_info
 
@@ -76,17 +81,17 @@ class CustodyStatus(EntityEnum, metaclass=EntityEnumMeta):
 
 
 class ReleaseReason(EntityEnum, metaclass=EntityEnumMeta):
-    ACQUITTAL = enum_strings.release_reason_acquittal
-    BOND = enum_strings.release_reason_bond
-    CASE_DISMISSED = enum_strings.release_reason_case_dismissed
-    DEATH = enum_strings.release_reason_death
-    ESCAPE = enum_strings.release_reason_escape
-    EXPIRATION_OF_SENTENCE = enum_strings.release_reason_expiration
+    ACQUITTAL = county_enum_strings.release_reason_acquittal
+    BOND = county_enum_strings.release_reason_bond
+    CASE_DISMISSED = county_enum_strings.release_reason_case_dismissed
+    DEATH = county_enum_strings.release_reason_death
+    ESCAPE = county_enum_strings.release_reason_escape
+    EXPIRATION_OF_SENTENCE = county_enum_strings.release_reason_expiration
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
-    OWN_RECOGNIZANCE = enum_strings.release_reason_recognizance
-    PAROLE = enum_strings.release_reason_parole
-    PROBATION = enum_strings.release_reason_probation
-    TRANSFER = enum_strings.release_reason_transfer
+    OWN_RECOGNIZANCE = county_enum_strings.release_reason_recognizance
+    PAROLE = county_enum_strings.release_reason_parole
+    PROBATION = county_enum_strings.release_reason_probation
+    TRANSFER = county_enum_strings.release_reason_transfer
 
     @staticmethod
     def _get_default_map():

@@ -26,7 +26,9 @@ from sqlalchemy import CheckConstraint, Column, Date, Enum, Integer, String, \
     UniqueConstraint
 from sqlalchemy.orm import validates
 
-import recidiviz.common.constants.enum_canonical_strings as enum_strings
+from recidiviz.common.constants.aggregate import (
+    enum_canonical_strings as enum_strings
+)
 from recidiviz.persistence.database.base_schema import Base
 
 # SQLAlchemy enums. Created separately from the tables so they can be shared
