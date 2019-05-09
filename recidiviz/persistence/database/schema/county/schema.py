@@ -31,7 +31,6 @@ the historical table (which does not). Because the key is shared between the
 master and historical tables, this allows an indirect guarantee of referential
 integrity to the historical tables as well.
 """
-
 from sqlalchemy import Boolean, CheckConstraint, Column, Date, DateTime, Enum, \
     ForeignKey, Integer, String, Text
 from sqlalchemy.ext.associationproxy import association_proxy
@@ -44,39 +43,15 @@ from recidiviz.common.constants.county import (
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.base_schema import Base
+from recidiviz.persistence.database.schema.shared_enums import (
+    gender,
+    race,
+    ethnicity,
+    residency_status,
+)
 
 # SQLAlchemy enums. Created separately from the tables so they can be shared
 # between the master and historical tables for each entity.
-
-# Person
-
-gender = Enum(enum_strings.external_unknown,
-              enum_strings.gender_female,
-              enum_strings.gender_male,
-              enum_strings.gender_other,
-              enum_strings.gender_trans,
-              enum_strings.gender_trans_female,
-              enum_strings.gender_trans_male,
-              name='gender')
-
-race = Enum(enum_strings.race_american_indian,
-            enum_strings.race_asian,
-            enum_strings.race_black,
-            enum_strings.external_unknown,
-            enum_strings.race_hawaiian,
-            enum_strings.race_other,
-            enum_strings.race_white,
-            name='race')
-
-ethnicity = Enum(enum_strings.external_unknown,
-                 enum_strings.ethnicity_hispanic,
-                 enum_strings.ethnicity_not_hispanic,
-                 name='ethnicity')
-
-residency_status = Enum(enum_strings.residency_status_homeless,
-                        enum_strings.residency_status_permanent,
-                        enum_strings.residency_status_transient,
-                        name='residency_status')
 
 # Booking
 
