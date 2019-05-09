@@ -33,46 +33,41 @@ master and historical tables, this allows an indirect guarantee of referential
 integrity to the historical tables as well.
 """
 
-from sqlalchemy import Boolean, Column, Date, DateTime, Enum, \
-    ForeignKey, Integer, String
+from sqlalchemy import (
+    Boolean,
+    Column,
+    Date,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Integer,
+    String,
+)
 
-import recidiviz.common.constants.enum_canonical_strings as enum_strings
+import recidiviz.common.constants.state.enum_canonical_strings as enum_strings
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.base_schema import Base
 
 # SQLAlchemy enums. Created separately from the tables so they can be shared
 # between the master and historical tables for each entity.
 
+
+assessment_class = Enum(enum_strings.assessment_class_mental_health,
+                        enum_strings.assessment_class_risk,
+                        enum_strings.assessment_class_security_classification,
+                        enum_strings.assessment_class_substance_abuse,
+                        name='assessment_class')
+
+assessment_type = Enum(enum_strings.assessment_type_asi,
+                       enum_strings.assessment_type_lsir,
+                       enum_strings.assessment_type_oras,
+                       enum_strings.assessment_type_psa,
+                       name='assessment_type')
+
+# TODO(1625): Add state-specific schema enums here
+
+
 # Person
-
-gender = Enum(enum_strings.external_unknown,
-              enum_strings.gender_female,
-              enum_strings.gender_male,
-              enum_strings.gender_other,
-              enum_strings.gender_trans,
-              enum_strings.gender_trans_female,
-              enum_strings.gender_trans_male,
-              name='gender')
-
-race = Enum(enum_strings.race_american_indian,
-            enum_strings.race_asian,
-            enum_strings.race_black,
-            enum_strings.external_unknown,
-            enum_strings.race_hawaiian,
-            enum_strings.race_other,
-            enum_strings.race_white,
-            name='race')
-
-ethnicity = Enum(enum_strings.external_unknown,
-                 enum_strings.ethnicity_hispanic,
-                 enum_strings.ethnicity_not_hispanic,
-                 name='ethnicity')
-
-residency_status = Enum(enum_strings.residency_status_homeless,
-                        enum_strings.residency_status_permanent,
-                        enum_strings.residency_status_transient,
-                        name='residency_status')
-
 
 class _StatePersonSharedColumns:
     """A mixin which defines all columns common to StatePerson and

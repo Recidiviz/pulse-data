@@ -14,61 +14,62 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for base_schema.py."""
+"""
+Tests for SQLAlchemy enums defined in recidiviz.persistence.database.schema
+"""
 
 from unittest import TestCase
 
 import sqlalchemy
 
 import recidiviz.common.constants.bond as bond
-import recidiviz.common.constants.county.booking as booking
 import recidiviz.common.constants.charge as charge
-import recidiviz.common.constants.county.charge
-import recidiviz.common.constants.county.hold as hold
-import recidiviz.common.constants.person_characteristics as person
-import recidiviz.common.constants.county.sentence as sentence
-import recidiviz.persistence.database.base_schema as schema
+import recidiviz.persistence.database.schema.shared_enums as shared_enums
 
 
-# TODO(1625): split this up into schema tests for each schema
-class SchemaTest(TestCase):
-    """Test validating schema file"""
+from recidiviz.common.constants import person_characteristics
+
+
+class SchemaEnumsTest(TestCase):
+    """Base test class for validating schema enums are defined correctly"""
+
+    # Mapping between name of schema enum and persistence layer enum. This
+    # map controls which pairs of enums are tested.
+    #
+    # If a schema enum does not correspond to a persistence layer enum,
+    # it should be mapped to None.
+    SHARED_ENUMS_TEST_MAPPING = {
+        'gender': person_characteristics.Gender,
+        'race': person_characteristics.Race,
+        'ethnicity': person_characteristics.Ethnicity,
+        'residency_status': person_characteristics.ResidencyStatus,
+        'bond_type': bond.BondType,
+        'bond_status': bond.BondStatus,
+        'degree': charge.ChargeDegree,
+        'charge_status': charge.ChargeStatus,
+    }
 
     # Test case ensuring enum values match between persistence layer enums and
     # schema enums
     def testPersistenceAndSchemaEnumsMatch(self):
-        # Mapping between name of schema enum and persistence layer enum. This
-        # map controls which pairs of enums are tested.
-        #
-        # If a schema enum does not correspond to a persistence layer enum,
-        # it should be mapped to None.
-        test_mapping = {
-            # TODO(1625): Add state schema enum mappings here
-            'gender': person.Gender,
-            'race': person.Race,
-            'ethnicity': person.Ethnicity,
-            'residency_status': person.ResidencyStatus,
-            'admission_reason': booking.AdmissionReason,
-            'classification': booking.Classification,
-            'custody_status': booking.CustodyStatus,
-            'release_reason': booking.ReleaseReason,
-            'hold_status': hold.HoldStatus,
-            'bond_type': bond.BondType,
-            'bond_status': bond.BondStatus,
-            'sentence_status': sentence.SentenceStatus,
-            'sentence_relationship_type': None,
-            'degree': charge.ChargeDegree,
-            'charge_class':
-                recidiviz.common.constants.county.charge.ChargeClass,
-            'charge_status': charge.ChargeStatus,
-            'time_granularity': None
-        }
+        self.check_persistence_and_schema_enums_match(
+            self.SHARED_ENUMS_TEST_MAPPING,
+            shared_enums)
 
+    def check_persistence_and_schema_enums_match(self,
+                                                 test_mapping,
+                                                 enums_package):
         schema_enums_by_name = {}
-        for attribute_name in dir(schema):
-            attribute = getattr(schema, attribute_name)
+        num_enums = 0
+        for attribute_name in dir(enums_package):
+            attribute = getattr(enums_package, attribute_name)
             if isinstance(attribute, sqlalchemy.Enum):
+                num_enums += 1
                 schema_enums_by_name[attribute_name] = attribute
+        self.assertNotEqual(0, num_enums,
+                            f'No enums found in package [{enums_package}] - is'
+                            f' this the correct package to search for schema'
+                            f' enums?')
 
         for schema_enum_name, schema_enum in schema_enums_by_name.items():
             # This will throw a KeyError if a schema enum is not mapped to
@@ -76,7 +77,6 @@ class SchemaTest(TestCase):
             persistence_enum = test_mapping[schema_enum_name]
             if persistence_enum is not None:
                 self._assert_enum_values_match(schema_enum, persistence_enum)
-
 
     # This test method currently does not account for situations where either
     # enum should have values that are excluded from comparison. If a situation
