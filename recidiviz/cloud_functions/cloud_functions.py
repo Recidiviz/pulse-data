@@ -126,7 +126,7 @@ def direct():
     if not bucket or not region or not filename:
         raise DirectIngestError(
             "All of region, bucket, and filename must be provided")
-    path = os.path.join(bucket, filename)
+    path = os.path.join(bucket, region, filename)
     collector = DirectIngestCollector(region)
 
     # Don't use the gcsfs cache
