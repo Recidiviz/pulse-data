@@ -1,0 +1,18 @@
+[
+    {"id": "1234567",
+     "birth_year": "1979",
+     "race": "White",
+     "gender": "Female",
+     "admission_date": "2019-01-02",
+     "charge_name": "POSSESSION OF BOOKS",
+     "bond_amount": "99000"
+    },
+    {"id": "1234569",
+     "birth_year": "1990",
+     "race": "Other",
+     "gender": "Male",
+     "admission_date": "2019-02-01",
+     "charge_name": "POSSESSION OF NOOKS",
+     "bond_amount": "99001"
+    }
+]

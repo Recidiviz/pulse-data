@@ -31,6 +31,7 @@ import attr
 import pytz
 import yaml
 
+from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.utils import environment
 
 
@@ -98,7 +99,14 @@ class Region:
             'recidiviz.ingest.scrape.regions.{region}.{region}_scraper'.format(
                 region=self.region_code
             )
-        scraper_module = importlib.import_module(scraper_module_name)
+
+        # Allow for the direct ingest only case, where the requested
+        # module won't exist in the scrapers.
+        try:
+            scraper_module = importlib.import_module(scraper_module_name)
+        except ModuleNotFoundError:
+            return None
+
         scraper_class = getattr(scraper_module,
                                 scraper_class_name(self.region_code))
 
@@ -106,7 +114,10 @@ class Region:
 
     def get_enum_overrides(self):
         """Retrieves the overrides object of a region"""
-        return self.get_scraper().get_enum_overrides()
+        scraper = self.get_scraper()
+        if scraper:
+            return scraper.get_enum_overrides()
+        return EnumOverrides.empty()
 
     def get_queue_name(self):
         """Returns the name of the queue to be used for the region"""
@@ -115,27 +126,37 @@ class Region:
 
 # Cache of the `Region` objects.
 REGIONS: Dict[str, 'Region'] = {}
-def get_region(region_code: str) -> Region:
+def get_region(region_code: str, is_direct_ingest: bool = False) -> Region:
     global REGIONS
     if not region_code in REGIONS:
         REGIONS[region_code] = Region(region_code=region_code,
-                                      **get_region_manifest(region_code))
+                                      **get_region_manifest(region_code,
+                                                            is_direct_ingest))
     return REGIONS[region_code]
 
 
-BASE_REGION_PATH = 'recidiviz/ingest/scrape/regions'
+SCRAPER_BASE_REGION_PATH = os.path.join(
+    'recidiviz', 'ingest', 'scrape', 'regions')
+DIRECT_INGEST_BASE_REGION_PATH = os.path.join(
+    'recidiviz', 'ingest', 'direct', 'regions')
 MANIFEST_NAME = 'manifest.yaml'
 
-def get_region_manifest(region_code: str) -> Dict[str, Any]:
+
+def get_region_manifest(region_code: str,
+                        is_direct_ingest: bool = False) -> Dict[str, Any]:
     """Gets manifest for a specific region
 
     Args:
         region_code: (string) Region code
+        is_direct_ingest: (bool) Flag indicating to read the region info as if
+            it's a direct ingest partner.
 
     Returns:
         Region manifest as dictionary
     """
-    with open(os.path.join(BASE_REGION_PATH, region_code, MANIFEST_NAME)) \
+    region_path = DIRECT_INGEST_BASE_REGION_PATH if is_direct_ingest else \
+        SCRAPER_BASE_REGION_PATH
+    with open(os.path.join(region_path, region_code, MANIFEST_NAME)) \
             as region_manifest:
         return yaml.load(region_manifest)
 
@@ -150,7 +171,7 @@ def get_supported_region_codes(timezone: tzinfo = None) -> Set[str]:
         Set of region codes (strings)
     """
     all_region_codes = {region_module.name for region_module
-                        in pkgutil.iter_modules([BASE_REGION_PATH])}
+                        in pkgutil.iter_modules([SCRAPER_BASE_REGION_PATH])}
     if timezone:
         dt = datetime.now()
         return {region_code for region_code in all_region_codes

@@ -1,0 +1,10 @@
+key_mappings:
+  person_id: person.person_id
+  gender: person.gender
+  race: person.race
+  birth_year: person.birthdate
+  admission_date: booking.admission_date
+
+multi_key_mapping:
+  charge_name: charge.name
+  bond_amount: bond.amount

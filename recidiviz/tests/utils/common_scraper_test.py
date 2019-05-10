@@ -17,7 +17,6 @@
 
 """Base test class for scrapers."""
 from datetime import datetime
-
 import yaml
 
 from recidiviz.common.constants.person_characteristics import (
@@ -27,18 +26,15 @@ from recidiviz.common.constants.person_characteristics import (
 )
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info
-from recidiviz.ingest.models.ingest_info_diff import diff_ingest_infos
-from recidiviz.ingest.scrape import constants, ingest_utils
+from recidiviz.ingest.scrape import constants
 from recidiviz.ingest.scrape.task_params import Task
-from recidiviz.persistence.entity_validator import entity_validator
-from recidiviz.persistence.ingest_info_converter import ingest_info_converter
-from recidiviz.persistence.ingest_info_validator.ingest_info_validator import \
-    validate
+
+from recidiviz.tests.utils.individual_ingest_test import IndividualIngestTest
 
 _FAKE_SCRAPER_START_TIME = datetime(year=2019, month=1, day=2)
 
 
-class CommonScraperTest:
+class CommonScraperTest(IndividualIngestTest):
     """A base class for scraper tests which does extra validations."""
 
     def setUp(self):
@@ -149,49 +145,21 @@ class CommonScraperTest:
         task = task or Task(task_type=constants.TaskType.SCRAPE_DATA,
                             endpoint='')
 
-        result = self.scraper.populate_data(content, task, info)
+        scrape_data = self.scraper.populate_data(content, task, info)
 
         if expected_ingest_info is None:
-            assert result == expected_ingest_info
-            return result
+            assert scrape_data == expected_ingest_info
+            return scrape_data
 
-        # Attempt to convert the result to the ingest info proto,
-        # validate the proto, and finally attempt to convert the proto into
-        # our entitiy/ objects (which includes parsing strings into types)
-        result_proto = ingest_utils.convert_ingest_info_to_proto(
-            result.ingest_info)
-        validate(result_proto)
         metadata = IngestMetadata(
             self.scraper.region.region_code,
             self.scraper.region.jurisdiction_id,
             _FAKE_SCRAPER_START_TIME,
             self.scraper.get_enum_overrides())
 
-        res = ingest_info_converter.convert_to_persistence_entities(
-            result_proto,
-            metadata
-        )
+        self.validate_ingest(
+            scrape_data.ingest_info, expected_ingest_info, metadata)
 
-        assert res.enum_parsing_errors == 0
-        assert res.general_parsing_errors == 0
-        assert res.protected_class_errors == 0
+        assert scrape_data.persist == expected_persist
 
-        entity_validator.validate(res.people)
-
-        differences = diff_ingest_infos(expected_ingest_info,
-                                        result.ingest_info)
-
-        if differences:
-            self.fail('IngestInfo objects do not match.\n'
-                      'Expected:\n{}\n'
-                      'Actual:\n{}\n'
-                      'Differences:\n{}\n\n'
-                      '(paste the following) scraped object:'
-                      '\n{}'.format(expected_ingest_info,
-                                    result.ingest_info,
-                                    '\n'.join(differences),
-                                    repr(result)))
-
-        assert result.persist == expected_persist
-
-        return result
+        return scrape_data
