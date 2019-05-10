@@ -36,6 +36,7 @@ from recidiviz.ingest.aggregate.regions.ny import ny_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.pa import pa_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.tn import tn_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.tx import tx_aggregate_ingest
+from recidiviz.ingest.direct.collector import DirectIngestCollector
 from recidiviz.utils.auth import authenticate_request
 from recidiviz.utils.params import get_value
 
@@ -44,6 +45,10 @@ cloud_functions_blueprint = Blueprint('cloud_functions', __name__)
 
 class StateAggregateError(Exception):
     """Errors thrown in the state aggregate endpoint"""
+
+
+class DirectIngestError(Exception):
+    """Errors thrown in the direct ingest endpoint"""
 
 
 HISTORICAL_BUCKET = '{}-processed-state-aggregates'
@@ -104,5 +109,44 @@ def state_aggregate():
         state, filename
     )
     fs.mv(path, historical_path)
+
+    return '', HTTPStatus.OK
+
+
+@cloud_functions_blueprint.route('/direct')
+@authenticate_request
+def direct():
+    """Calls direct ingest"""
+
+    bucket = get_value('bucket', request.args)
+    region = get_value('region', request.args)
+    filename = get_value('filename', request.args)
+    project_id = metadata.project_id()
+    logging.info("The project id is %s", project_id)
+    if not bucket or not region or not filename:
+        raise DirectIngestError(
+            "All of region, bucket, and filename must be provided")
+    path = os.path.join(bucket, filename)
+    collector = DirectIngestCollector(region)
+
+    # Don't use the gcsfs cache
+    fs = gcsfs.GCSFileSystem(project=project_id, cache_timeout=-1)
+    logging.info("The path to process is %s", path)
+    logging.info("The files in the directory are:")
+    logging.info(fs.ls(bucket))
+
+    with fs.open(path) as fp:
+        ingest_info = collector.parse(fp)
+        # TODO #1738 implement retry on fail.
+        if ingest_info:
+            if collector.persist(ingest_info):
+                logging.info("Successfully ingested, removing uploaded file.")
+                fs.rm(path)
+            else:
+                logging.error("Failed to persist.")
+                return ("Failed to persist while processing region {} "
+                        "from file {} on bucket {} and project {}.".format(
+                            region, filename, bucket, project_id),
+                        HTTPStatus.INTERNAL_SERVER_ERROR)
 
     return '', HTTPStatus.OK
