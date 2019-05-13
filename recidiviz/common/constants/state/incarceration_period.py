@@ -16,7 +16,6 @@
 # =============================================================================
 
 """Constants related to a IncarcerationPeriod."""
-from typing import Dict
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 import recidiviz.common.constants.state.enum_canonical_strings as \
@@ -47,7 +46,15 @@ class IncarcerationFacilitySecurityLevel(EntityEnum, metaclass=EntityEnumMeta):
 
 class IncarcerationPeriodAdmissionReason(EntityEnum, metaclass=EntityEnumMeta):
 
-    # TODO(1697): Add values here
+    NEW_ADMISSION = \
+        state_enum_strings.incarceration_period_admission_reason_new_admission
+    PAROLE_REVOCATION = state_enum_strings. \
+        incarceration_period_admission_reason_parole_revocation
+    PROBATION_REVOCATION = state_enum_strings. \
+        incarceration_period_admission_reason_probation_revocation
+    RETURN_FROM_ESCAPE = state_enum_strings.\
+        incarceration_period_admission_reason_return_from_escape
+    TRANSFER = state_enum_strings.incarceration_period_admission_reason_transfer
 
     @staticmethod
     def _get_default_map():
@@ -118,10 +125,14 @@ _INCARCERATION_PERIOD_STATUS_MAP = {
     #  IncarcerationPeriodStatus.NOT_IN_CUSTODY?
 }
 
-_INCARCERATION_PERIOD_ADMISSION_REASON_MAP: \
-    Dict[str, IncarcerationPeriodAdmissionReason] = {
-        # TODO(1697): Add values here
-    }
+_INCARCERATION_PERIOD_ADMISSION_REASON_MAP = {
+    'NEW ADMISSION': IncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+    'PAROLE REVOCATION': IncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+    'PROBATION REVOCATION':
+        IncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+    'RETURN FROM ESCAPE': IncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE,
+    'TRANSFER': IncarcerationPeriodAdmissionReason.TRANSFER
+}
 
 _INCARCERATION_PERIOD_TERMINATION_REASON_MAP = {
     'DEATH': IncarcerationPeriodTerminationReason.DEATH,
