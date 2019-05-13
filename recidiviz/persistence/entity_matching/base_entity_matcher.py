@@ -26,9 +26,7 @@ from opencensus.stats import measure, view, aggregation
 
 from recidiviz import Session
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.persistence.entity.entities import PersonType
-from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity_matching import entity_matching_utils as utils
 from recidiviz.persistence.errors import EntityMatchingError, \
     MatchedMultipleIngestedEntitiesError
@@ -224,21 +222,8 @@ def _get_person_id(db_person: PersonType):
     if not db_person:
         return None
 
-    if isinstance(db_person, county_entities.Person):
-        return db_person.person_id
-
-    if isinstance(db_person, state_entities.StatePerson):
-        return db_person.state_person_id
-
-    raise ValueError("Invalid person type of [{}]"
-                     .format(db_person.__class__.__name__))
+    return db_person.person_id
 
 
 def _set_person_id(ingested_person: PersonType, person_id):
-    if isinstance(ingested_person, county_entities.Person):
-        ingested_person.person_id = person_id
-    elif isinstance(ingested_person, state_entities.StatePerson):
-        ingested_person.state_person_id = person_id
-    else:
-        raise ValueError("Invalid person type of [{}]"
-                         .format(ingested_person.__class__.__name__))
+    ingested_person.person_id = person_id

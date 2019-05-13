@@ -24,7 +24,7 @@ from recidiviz.persistence.ingest_info_converter.state.entity_helpers import \
     state_person
 
 
-class StateConverter(BaseConverter[entities.StatePerson]):
+class StateConverter(BaseConverter[entities.Person]):
     """Converts between ingest_info objects and persistence layer entities
     for state-level entities."""
 
@@ -36,13 +36,13 @@ class StateConverter(BaseConverter[entities.StatePerson]):
             return False
         return True
 
-    def _convert_and_pop(self) -> entities.StatePerson:
+    def _convert_and_pop(self) -> entities.Person:
         return self._convert_state_person(self.ingest_info.state_people.pop())
 
     def _convert_state_person(self, ingest_state_person) \
-            -> entities.StatePerson:
+            -> entities.Person:
         """Converts an ingest_info proto StatePerson to a persistence entity."""
-        state_person_builder = entities.StatePerson.builder()
+        state_person_builder = entities.Person.builder()
 
         state_person.copy_fields_to_builder(
             state_person_builder, ingest_state_person, self.metadata)

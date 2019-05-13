@@ -14,12 +14,3 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-
-"""Validation logic for state-level entities."""
-
-from recidiviz.persistence.entity.state import entities
-
-
-def validate_state_person(_person: entities.Person) -> bool:
-    # TODO(1625): Fill this in
-    return True

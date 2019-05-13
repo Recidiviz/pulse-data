@@ -76,9 +76,14 @@ def convert(src):
         raise DatabaseConversionError('Both |entity_cls| and |schema_cls| '
                                       'should be not None')
 
-    # TODO(1625): Remove this once schema.StatePerson has fields that match
-    #  those on entities.StatePerson.
-    if src.__class__.__name__ == 'StatePerson':
+    # TODO(1625): Remove this once state.schema.Person has fields that match
+    #  those on state.entities.Person.
+
+    modules_to_skip = [
+        'recidiviz.persistence.database.schema.state.schema',
+        'recidiviz.persistence.database.entity.state.entities'
+    ]
+    if src.__class__.__module__ in modules_to_skip:
         return None
 
     if direction is _Direction.ENTITY_TO_SCHEMA:
@@ -118,14 +123,27 @@ def convert(src):
     return dst
 
 
+_COUNTY_MODULE_NAMES = [county_schema.__name__, county_entities.__name__]
+_STATE_MODULE_NAMES = [state_schema.__name__, state_entities.__name__]
+
+
 def _get_schema_class(src):
-    schema_cls = getattr(county_schema, src.__class__.__name__, None)
-    return schema_cls or getattr(state_schema, src.__class__.__name__)
+    if src.__module__ in _COUNTY_MODULE_NAMES:
+        return getattr(county_schema, src.__class__.__name__)
+    if src.__module__ in _STATE_MODULE_NAMES:
+        return getattr(state_schema, src.__class__.__name__)
+    raise DatabaseConversionError(f'Attempting to convert class with unexpected'
+                                  f' module: [{src.__module__}]')
 
 
 def _get_entity_class(src):
-    entity_cls = getattr(county_entities, src.__class__.__name__, None)
-    return entity_cls or getattr(state_entities, src.__class__.__name__)
+    if src.__module__ in _COUNTY_MODULE_NAMES:
+        return getattr(county_entities, src.__class__.__name__)
+    if src.__module__ in _STATE_MODULE_NAMES:
+        return getattr(state_entities, src.__class__.__name__)
+
+    raise DatabaseConversionError(f'Attempting to convert class with unexpected'
+                                  f' module: [{src.__module__}]')
 
 
 def _is_enum(attr_type):

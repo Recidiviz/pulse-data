@@ -56,27 +56,27 @@ assessment_class = Enum(enum_strings.assessment_class_mental_health,
                         enum_strings.assessment_class_risk,
                         enum_strings.assessment_class_security_classification,
                         enum_strings.assessment_class_substance_abuse,
-                        name='assessment_class')
+                        name='state_assessment_class')
 
 assessment_type = Enum(enum_strings.assessment_type_asi,
                        enum_strings.assessment_type_lsir,
                        enum_strings.assessment_type_oras,
                        enum_strings.assessment_type_psa,
-                       name='assessment_type')
+                       name='state_assessment_type')
 
 # TODO(1625): Add state-specific schema enums here
 
 
 # Person
 
-class _StatePersonSharedColumns:
-    """A mixin which defines all columns common to StatePerson and
-    StatePersonHistory"""
+class _PersonSharedColumns:
+    """A mixin which defines all columns common to Person and
+    PersonHistory"""
 
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_, **__):
-        if cls is _StatePersonSharedColumns:
-            raise Exception('_StatePersonSharedColumns cannot be instantiated')
+        if cls is _PersonSharedColumns:
+            raise Exception(f'[{cls}] cannot be instantiated')
         return super().__new__(cls)
 
     external_id = Column(String(255), index=True)
@@ -85,25 +85,25 @@ class _StatePersonSharedColumns:
     birthdate_inferred_from_age = Column(Boolean)
 
 
-# TODO(1625): Once these fields match those on entities.StatePerson, update
-#  database_utils.convert to handle StatePerson properly.
-class StatePerson(Base, DatabaseEntity, _StatePersonSharedColumns):
-    """Represents a state person in the SQL schema"""
+# TODO(1625): Once these fields match those on entities.Person, update
+#  database_utils.convert to handle Person properly.
+class Person(Base, DatabaseEntity, _PersonSharedColumns):
+    """Represents a person in the state SQL schema"""
     __tablename__ = 'state_person'
 
-    state_person_id = Column(Integer, primary_key=True)
+    person_id = Column(Integer, primary_key=True)
 
 
-class StatePersonHistory(Base, DatabaseEntity, _StatePersonSharedColumns):
+class PersonHistory(Base, DatabaseEntity, _PersonSharedColumns):
     """Represents the historical state of a state person"""
     __tablename__ = 'state_person_history'
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
-    state_person_history_id = Column(Integer, primary_key=True)
+    person_history_id = Column(Integer, primary_key=True)
 
-    state_person_id = Column(
-        Integer, ForeignKey('state_person.state_person_id'),
+    person_id = Column(
+        Integer, ForeignKey('state_person.person_id'),
         nullable=False, index=True)
     valid_from = Column(DateTime, nullable=False)
     valid_to = Column(DateTime)
