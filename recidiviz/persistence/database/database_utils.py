@@ -76,47 +76,29 @@ def convert(src):
         raise DatabaseConversionError('Both |entity_cls| and |schema_cls| '
                                       'should be not None')
 
-    # TODO(1625): Remove this once state.schema.Person has fields that match
-    #  those on state.entities.Person.
-
-    modules_to_skip = [
-        'recidiviz.persistence.database.schema.state.schema',
-        'recidiviz.persistence.database.entity.state.entities'
-    ]
-    if src.__class__.__module__ in modules_to_skip:
-        return None
-
     if direction is _Direction.ENTITY_TO_SCHEMA:
         dst = schema_cls()
     else:
         dst = entity_cls.builder()
 
     for field, attribute in attr.fields_dict(entity_cls).items():
-        if field == 'bookings':
-            dst.bookings = [convert(b) for b in src.bookings]
-        elif field == 'holds':
-            dst.holds = [convert(h) for h in src.holds]
-        elif field == 'arrest':
-            dst.arrest = convert(src.arrest)
-        elif field == 'charges':
-            dst.charges = [convert(c) for c in src.charges]
-        elif field == 'bond':
-            dst.bond = convert(src.bond)
-        elif field == 'sentence':
-            dst.sentence = convert(src.sentence)
-        elif field == 'related_sentences':
+        if field == 'related_sentences':
             # TODO(1145): Correctly convert related_sentences once schema for
             # this field is finalized.
             continue
-        # TODO(1625): Add state schema convert calls here
+        v = getattr(src, field)
+        if isinstance(v, list):
+            value = [convert(i) for i in v]
+        elif issubclass(type(v), Entity) or issubclass(type(v), Base):
+            value = convert(v)
+        elif v is None:
+            value = None
+        elif _is_enum(attribute.type):
+            value = _convert_enum(src, field, attribute.type, direction)
         else:
-            if getattr(src, field) is None:
-                value = None
-            elif _is_enum(attribute.type):
-                value = _convert_enum(src, field, attribute.type, direction)
-            else:
-                value = getattr(src, field)
-            setattr(dst, field, value)
+            value = v
+
+        setattr(dst, field, value)
 
     if direction is _Direction.SCHEMA_TO_ENTITY:
         dst = dst.build()

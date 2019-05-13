@@ -32,6 +32,9 @@ from recidiviz.persistence.entity_matching.entity_matching_utils import \
 class StateEntityMatcher(BaseEntityMatcher[entities.Person]):
     """Base class for all entity matchers."""
 
+    def has_external_id(self, person: entities.Person) -> bool:
+        return bool(person.external_ids)
+
     def get_people_by_external_ids(self, session, region, with_external_ids) \
             -> List[entities.Person]:
         return dao.read_people_by_external_ids(
@@ -46,9 +49,9 @@ class StateEntityMatcher(BaseEntityMatcher[entities.Person]):
     def is_person_match(self, *,
                         db_entity: entities.Person,
                         ingested_entity: entities.Person) -> bool:
-        # TODO(1625): Update to match against external_ids list
-        if db_entity.external_id or ingested_entity.external_id:
-            return db_entity.external_id == ingested_entity.external_id
+        if db_entity.external_ids or ingested_entity.external_ids:
+            # TODO(1625): Update to match against external_ids list
+            return False
 
         if not all([db_entity.full_name, ingested_entity.full_name]):
             return False

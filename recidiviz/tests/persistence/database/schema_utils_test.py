@@ -43,7 +43,7 @@ def test_get_all_table_classes():
         'PaFacilityPopAggregate',
         'TnFacilityAggregate',
         'TnFacilityFemaleAggregate',
-        'TxCountyAggregate'
+        'TxCountyAggregate',
     ]
     county_table_names = [
         'Arrest',
@@ -64,8 +64,18 @@ def test_get_all_table_classes():
         'SentenceRelationshipHistory',
     ]
     state_table_names = [
+        'Assessment',
+        'AssessmentHistory',
         'Person',
-        'PersonHistory'
+        'PersonHistory',
+        'PersonEthnicity',
+        'PersonEthnicityHistory',
+        'PersonExternalId',
+        'PersonExternalIdHistory',
+        'PersonRace',
+        'PersonRaceHistory',
+        'SentenceGroup',
+        'SentenceGroupHistory',
     ]
 
     expected_qualified_names = \
@@ -76,8 +86,8 @@ def test_get_all_table_classes():
         _prefix_module_name(state_schema.__name__,
                             state_table_names)
 
-    assert _classes_to_qualified_names(
-        get_all_table_classes()) == expected_qualified_names
+    assert sorted(_classes_to_qualified_names(
+        get_all_table_classes())) == sorted(expected_qualified_names)
 
 
 def test_get_aggregate_table_classes():
@@ -94,7 +104,7 @@ def test_get_aggregate_table_classes():
         'PaFacilityPopAggregate',
         'TnFacilityAggregate',
         'TnFacilityFemaleAggregate',
-        'TxCountyAggregate'
+        'TxCountyAggregate',
     ]
 
     assert _classes_to_qualified_names(get_aggregate_table_classes()) == \

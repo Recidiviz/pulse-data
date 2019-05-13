@@ -43,6 +43,9 @@ from recidiviz.persistence.errors import MatchedMultipleIngestedEntitiesError
 class CountyEntityMatcher(BaseEntityMatcher[entities.Person]):
     """Base class for all entity matchers."""
 
+    def has_external_id(self, person: entities.Person) -> bool:
+        return bool(person.external_id)
+
     def get_people_by_external_ids(self, session, region, with_external_ids) \
             -> List[entities.Person]:
         return dao.read_people_by_external_ids(
