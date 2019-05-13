@@ -20,6 +20,7 @@ import datetime
 
 from more_itertools import one
 from recidiviz import Session
+from recidiviz.common.constants.person_characteristics import Ethnicity
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.persistence.database.schema.state import schema as state_schema
 from recidiviz.tests.persistence.database.history.\
@@ -39,6 +40,42 @@ class TestStateHistoricalSnapshotUpdater(BaseHistoricalSnapshotUpdaterTest):
             full_name='name',
             birthdate=datetime.date(1980, 1, 5),
             birthdate_inferred_from_age=False,
+            external_ids=[
+                state_schema.PersonExternalId(
+                    person_external_id_id=234,
+                    external_id='person_external_id',
+                    state_code='us_ny',
+                    person_id=person_id,
+                )
+            ],
+            races=[
+                state_schema.PersonRace(
+                    person_race_id=345,
+                    race=None,
+                    race_raw_text='BLK',
+                    person_id=person_id,
+                )
+            ],
+            ethnicities=[
+                state_schema.PersonEthnicity(
+                    person_ethnicity_id=345,
+                    ethnicity=Ethnicity.NOT_HISPANIC.value,
+                    ethnicity_raw_text='HISP',
+                    person_id=person_id,
+                )
+            ],
+            assessments=[
+                state_schema.Assessment(
+                    assessment_id=456,
+                    person_id=person_id,
+                )
+            ],
+            sentence_groups=[
+                state_schema.SentenceGroup(
+                    sentence_group_id=567,
+                    person_id=person_id,
+                )
+            ],
         )
 
         self._check_person_has_relationships_to_all_schema_object_types(
@@ -57,6 +94,8 @@ class TestStateHistoricalSnapshotUpdater(BaseHistoricalSnapshotUpdaterTest):
         person_snapshot = one(history_snapshots)
 
         self._assert_entity_and_snapshot_match(person, person_snapshot)
+
+        # TODO(1625): Add more detailed checking for objects in the subtree
 
         assert_session.commit()
         assert_session.close()

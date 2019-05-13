@@ -22,7 +22,7 @@ from typing import Optional, Set, Callable, Sequence, Dict, Any, Iterable
 
 import deepdiff
 
-from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.base_entity import Entity, ExternalIdEntity
 from recidiviz.persistence.entity.entities import PersonType
 from recidiviz.persistence.errors import MatchedMultipleDatabaseEntitiesError
 
@@ -63,8 +63,8 @@ def _is_inferred_birthdate_match(
 
 
 def is_match(
-        db_entity: Optional[Entity],
-        ingested_entity: Optional[Entity],
+        db_entity: Optional[ExternalIdEntity],
+        ingested_entity: Optional[ExternalIdEntity],
         match_fields: Set[str]) -> bool:
     if not db_entity or not ingested_entity:
         return db_entity == ingested_entity
