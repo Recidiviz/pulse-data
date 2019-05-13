@@ -84,7 +84,7 @@ class BaseEntityMatcher(Generic[PersonType]):
         with_external_ids = []
         without_external_ids = []
         for ingested_person in ingested_people:
-            if ingested_person.external_id:
+            if self.has_external_id(ingested_person):
                 with_external_ids.append(ingested_person)
             else:
                 without_external_ids.append(ingested_person)
@@ -176,6 +176,12 @@ class BaseEntityMatcher(Generic[PersonType]):
             self.match_child_entities(db_person=db_person,
                                       ingested_person=ingested_person,
                                       orphaned_entities=orphaned_entities)
+
+    @abstractmethod
+    def has_external_id(self, person: PersonType) -> bool:
+        """
+        Returns true if the person has one or more valid external_id.
+        """
 
     @abstractmethod
     def get_people_by_external_ids(self, session, region, with_external_ids) \
