@@ -14,13 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-
-"""Tests for snapshot conversion logic in update_historical_snapshots"""
+"""Tests for CountyHistoricalSnapshotUpdater"""
 
 import datetime
-from inspect import isclass
-from typing import Set
-from unittest import TestCase
 
 from more_itertools import one
 from recidiviz import Session
@@ -34,12 +30,12 @@ from recidiviz.common.constants.county.hold import HoldStatus
 from recidiviz.common.constants.person_characteristics import \
     Ethnicity, Gender, Race, ResidencyStatus
 from recidiviz.common.constants.county.sentence import SentenceStatus
-from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.persistence.database.schema.county import schema
-from recidiviz.persistence.database.database_entity import DatabaseEntity
-from recidiviz.persistence.database.history.update_historical_snapshots import \
-    update_historical_snapshots
-from recidiviz.tests.utils import fakes
+from recidiviz.common.ingest_metadata import SystemLevel
+from recidiviz.persistence.database.schema.county import schema as county_schema
+from recidiviz.tests.persistence.database.history.\
+    base_historical_snapshot_updater_test import (
+        BaseHistoricalSnapshotUpdaterTest
+    )
 
 
 _ENTITY_TYPES_TO_IGNORE = [
@@ -48,15 +44,10 @@ _ENTITY_TYPES_TO_IGNORE = [
 ]
 
 
-class TestSnapshotConversion(TestCase):
-    """Test that all database entity types can be converted correctly to their
-    corresponding historical snapshots
-    """
+class TestCountyHistoricalSnapshotUpdater(BaseHistoricalSnapshotUpdaterTest):
+    """Tests for CountyHistoricalSnapshotUpdater"""
 
-    def setup_method(self, _test_method):
-        fakes.use_in_memory_sqlite_database()
-
-    def testConvertRecordTree(self):
+    def testConvertCountyRecordTree(self):
         person_id = 143
         booking_id = 938
         hold_id = 9945
@@ -65,7 +56,7 @@ class TestSnapshotConversion(TestCase):
         bond_id = 22222
         sentence_id = 12345
 
-        person = schema.Person(
+        person = county_schema.Person(
             person_id=person_id,
             full_name='name',
             birthdate=datetime.date(1980, 1, 5),
@@ -82,7 +73,7 @@ class TestSnapshotConversion(TestCase):
             region='somewhere',
             jurisdiction_id='12345678',
         )
-        booking = schema.Booking(
+        booking = county_schema.Booking(
             booking_id=booking_id,
             person_id=person_id,
             external_id='booking_id',
@@ -104,7 +95,7 @@ class TestSnapshotConversion(TestCase):
             first_seen_time=datetime.datetime(2018, 7, 12),
         )
         person.bookings.append(booking)
-        hold = schema.Hold(
+        hold = county_schema.Hold(
             hold_id=hold_id,
             booking_id=booking_id,
             external_id='hold_id',
@@ -113,7 +104,7 @@ class TestSnapshotConversion(TestCase):
             status_raw_text=None,
         )
         booking.holds.append(hold)
-        arrest = schema.Arrest(
+        arrest = county_schema.Arrest(
             arrest_id=arrest_id,
             booking_id=booking_id,
             external_id='arrest_id',
@@ -123,7 +114,7 @@ class TestSnapshotConversion(TestCase):
             officer_id='some officer ID',
         )
         booking.arrest = arrest
-        charge = schema.Charge(
+        charge = county_schema.Charge(
             charge_id=charge_id,
             booking_id=booking_id,
             bond_id=bond_id,
@@ -149,7 +140,7 @@ class TestSnapshotConversion(TestCase):
             charge_notes='some notes',
         )
         booking.charges.append(charge)
-        bond = schema.Bond(
+        bond = county_schema.Bond(
             bond_id=bond_id,
             booking_id=booking_id,
             external_id='bond_id',
@@ -161,7 +152,7 @@ class TestSnapshotConversion(TestCase):
             bond_agent='some bond agent',
         )
         charge.bond = bond
-        sentence = schema.Sentence(
+        sentence = county_schema.Sentence(
             sentence_id=sentence_id,
             booking_id=booking_id,
             external_id='sentence_id',
@@ -182,56 +173,56 @@ class TestSnapshotConversion(TestCase):
         )
         charge.sentence = sentence
 
-        provided_entity_types = \
-            self._get_all_entity_types_in_record_tree(person)
+        self._check_person_has_relationships_to_all_schema_object_types(
+            person, county_schema, _ENTITY_TYPES_TO_IGNORE)
 
-        # Ensure this test covers all entity types
-        expected_entity_types = set()
-        for attribute_name in dir(schema):
-            attribute = getattr(schema, attribute_name)
-            # Find all master (non-historical) entity types
-            if isclass(attribute) and attribute is not DatabaseEntity and \
-                    issubclass(attribute, DatabaseEntity) \
-                    and not attribute_name.endswith('History'):
-                expected_entity_types.add(attribute_name)
-
-        missing_entity_types = []
-        for entity_type in expected_entity_types:
-            if entity_type not in provided_entity_types and \
-                    entity_type not in _ENTITY_TYPES_TO_IGNORE:
-                missing_entity_types.append(entity_type)
-        if missing_entity_types:
-            self.fail('Expected entity type(s) {} not found in provided entity '
-                      'types'.format(', '.join(missing_entity_types)))
-
-        act_session = Session()
-        act_session.merge(person)
-
-        metadata = IngestMetadata(region='somewhere', jurisdiction_id='12345',
-                                  ingest_time=datetime.datetime(2018, 7, 30))
-        update_historical_snapshots(act_session, [person], [], metadata)
-
-        act_session.commit()
-        act_session.close()
+        self._commit_person(person,
+                            SystemLevel.COUNTY,
+                            datetime.datetime(2018, 7, 30))
 
         assert_session = Session()
 
-        person_snapshot = one(assert_session.query(schema.PersonHistory).filter(
-            schema.PersonHistory.person_id == person_id).all())
+        person_snapshot = one(assert_session.query(
+            county_schema.PersonHistory
+        ).filter(
+            county_schema.PersonHistory.person_id == person_id
+        ).all())
+
         booking_snapshot = one(assert_session.query(
-            schema.BookingHistory).filter(
-                schema.BookingHistory.booking_id == booking_id).all())
-        hold_snapshot = one(assert_session.query(schema.HoldHistory).filter(
-            schema.HoldHistory.hold_id == hold_id).all())
-        arrest_snapshot = one(assert_session.query(schema.ArrestHistory).filter(
-            schema.ArrestHistory.arrest_id == arrest_id).all())
-        charge_snapshot = one(assert_session.query(schema.ChargeHistory).filter(
-            schema.ChargeHistory.charge_id == charge_id).all())
-        bond_snapshot = one(assert_session.query(schema.BondHistory).filter(
-            schema.BondHistory.bond_id == bond_id).all())
+            county_schema.BookingHistory
+        ).filter(
+            county_schema.BookingHistory.booking_id == booking_id
+        ).all())
+
+        hold_snapshot = one(assert_session.query(
+            county_schema.HoldHistory
+        ).filter(
+            county_schema.HoldHistory.hold_id == hold_id
+        ).all())
+
+        arrest_snapshot = one(assert_session.query(
+            county_schema.ArrestHistory
+        ).filter(
+            county_schema.ArrestHistory.arrest_id == arrest_id
+        ).all())
+
+        charge_snapshot = one(assert_session.query(
+            county_schema.ChargeHistory
+        ).filter(
+            county_schema.ChargeHistory.charge_id == charge_id
+        ).all())
+
+        bond_snapshot = one(assert_session.query(
+            county_schema.BondHistory
+        ).filter(
+            county_schema.BondHistory.bond_id == bond_id
+        ).all())
+
         sentence_snapshot = one(assert_session.query(
-            schema.SentenceHistory).filter(
-                schema.SentenceHistory.sentence_id == sentence_id).all())
+            county_schema.SentenceHistory
+        ).filter(
+            county_schema.SentenceHistory.sentence_id == sentence_id
+        ).all())
 
         self._assert_entity_and_snapshot_match(person, person_snapshot)
         self._assert_entity_and_snapshot_match(booking, booking_snapshot)
@@ -243,42 +234,3 @@ class TestSnapshotConversion(TestCase):
 
         assert_session.commit()
         assert_session.close()
-
-    @staticmethod
-    def _get_all_entity_types_in_record_tree(
-            person: schema.Person) -> Set[str]:
-        entity_types = set()
-
-        unprocessed = list([person])
-        processed = []
-        while unprocessed:
-            entity = unprocessed.pop()
-            entity_types.add(type(entity).__name__)
-            processed.append(entity)
-
-            related_entities = []
-            for relationship_name in entity.get_relationship_property_names():
-                related = getattr(entity, relationship_name)
-                # Relationship can return either a list or a single item
-                if isinstance(related, list):
-                    related_entities.extend(related)
-                elif related is not None:
-                    related_entities.append(related)
-
-            unprocessed.extend([related_entity for related_entity
-                                in related_entities
-                                if related_entity not in processed
-                                and related_entity not in unprocessed])
-
-        return entity_types
-
-    def _assert_entity_and_snapshot_match(
-            self, entity, historical_snapshot) -> None:
-        shared_property_names = \
-            type(entity).get_column_property_names().intersection(
-                type(historical_snapshot).get_column_property_names())
-        for column_property_name in shared_property_names:
-            entity_value = getattr(entity, column_property_name)
-            historical_value = getattr(
-                historical_snapshot, column_property_name)
-            self.assertEqual(entity_value, historical_value)

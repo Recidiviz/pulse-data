@@ -21,7 +21,7 @@ from more_itertools import one
 
 from sqlalchemy.orm import Session
 
-import recidiviz.persistence.database.history.update_historical_snapshots as \
+import recidiviz.persistence.database.history.historical_snapshot_update as \
     update_snapshots
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence.entity import entities

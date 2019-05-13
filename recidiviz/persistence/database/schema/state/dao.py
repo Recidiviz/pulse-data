@@ -30,42 +30,42 @@ from recidiviz.persistence.database.schema.state import schema
 
 
 def read_people(session, full_name=None, birthdate=None) \
-        -> List[entities.StatePerson]:
+        -> List[entities.Person]:
     """Read all people matching the optional surname and birthdate. If neither
     the surname or birthdate are provided, then read all people."""
-    query = session.query(schema.StatePerson)
+    query = session.query(schema.Person)
     if full_name is not None:
-        query = query.filter(schema.StatePerson.full_name == full_name)
+        query = query.filter(schema.Person.full_name == full_name)
     if birthdate is not None:
-        query = query.filter(schema.StatePerson.birthdate == birthdate)
+        query = query.filter(schema.Person.birthdate == birthdate)
     return _convert_and_normalize_record_trees(query.all())
 
 
 def read_people_by_external_ids(session: Session, _region: str,
-                                ingested_people: List[entities.StatePerson]) \
-        -> List[entities.StatePerson]:
+                                ingested_people: List[entities.Person]) \
+        -> List[entities.Person]:
     """
     Reads all people for the given |region| that have external_ids that match
     the external_ids from the |ingested_people|.
     """
     external_ids = {p.external_id for p in ingested_people}
     # TODO include region check in a state-specific way?
-    query = session.query(schema.StatePerson) \
-        .filter(schema.StatePerson.external_id.in_(external_ids))
+    query = session.query(schema.Person) \
+        .filter(schema.Person.external_id.in_(external_ids))
     return _convert_and_normalize_record_trees(query.all())
 
 
 def _convert_and_normalize_record_trees(
-        people: List[schema.StatePerson]) -> List[entities.StatePerson]:
+        people: List[schema.Person]) -> List[entities.Person]:
     """Converts schema record trees to persistence layer models and removes
     any duplicate people created by how SQLAlchemy handles joins
     """
-    converted_people: List[entities.StatePerson] = []
+    converted_people: List[entities.Person] = []
     count_by_id: Dict[int, int] = defaultdict(lambda: 0)
     for person in people:
-        if count_by_id[person.state_person_id] == 0:
+        if count_by_id[person.person_id] == 0:
             converted_people.append(database_utils.convert(person))
-        count_by_id[person.state_person_id] += 1
+        count_by_id[person.person_id] += 1
 
     duplicates = [(person_id, count) for person_id, count
                   in count_by_id.items() if count > 1]

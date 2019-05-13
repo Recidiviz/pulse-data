@@ -41,9 +41,9 @@ class TestDao(TestCase):
 
     def test_readPeople_byFullName(self):
         # Arrange
-        person = schema.StatePerson(state_person_id=8, full_name=_FULL_NAME)
-        person_different_name = schema.StatePerson(state_person_id=9,
-                                                   full_name='diff_name')
+        person = schema.Person(person_id=8, full_name=_FULL_NAME)
+        person_different_name = schema.Person(person_id=9,
+                                              full_name='diff_name')
 
         session = Session()
         session.add(person)
@@ -58,12 +58,12 @@ class TestDao(TestCase):
 
     def test_readPeople_byBirthdate(self):
         # Arrange
-        person = schema.StatePerson(state_person_id=8, birthdate=_BIRTHDATE)
-        person_different_birthdate = schema.StatePerson(state_person_id=9,
-                                                        birthdate=datetime.date(
-                                                            year=2002,
-                                                            month=1,
-                                                            day=2))
+        person = schema.Person(person_id=8, birthdate=_BIRTHDATE)
+        person_different_birthdate = schema.Person(person_id=9,
+                                                   birthdate=datetime.date(
+                                                       year=2002,
+                                                       month=1,
+                                                       day=2))
 
         session = Session()
         session.add(person)
@@ -78,9 +78,9 @@ class TestDao(TestCase):
 
     def test_readPeople(self):
         # Arrange
-        person = schema.StatePerson(state_person_id=8)
-        person_different_name = schema.StatePerson(state_person_id=9)
-        person_different_birthdate = schema.StatePerson(state_person_id=10)
+        person = schema.Person(person_id=8)
+        person_different_name = schema.Person(person_id=9)
+        person_different_birthdate = schema.Person(person_id=10)
 
         session = Session()
         session.add(person)
@@ -98,16 +98,16 @@ class TestDao(TestCase):
                           database_utils.convert(person_different_birthdate)])
 
     def test_readPeopleByExternalId(self):
-        person_no_match = schema.StatePerson(state_person_id=1)
-        person_match_external_id = schema.StatePerson(state_person_id=2,
-                                                      external_id=_EXTERNAL_ID)
+        person_no_match = schema.Person(person_id=1)
+        person_match_external_id = schema.Person(person_id=2,
+                                                 external_id=_EXTERNAL_ID)
 
         session = Session()
         session.add(person_no_match)
         session.add(person_match_external_id)
         session.commit()
 
-        ingested_person = entities.StatePerson.new_with_defaults(
+        ingested_person = entities.Person.new_with_defaults(
             external_id=_EXTERNAL_ID)
         people = dao.read_people_by_external_ids(session, _REGION,
                                                  [ingested_person])
