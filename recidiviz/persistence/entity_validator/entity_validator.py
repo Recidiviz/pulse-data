@@ -46,9 +46,9 @@ def _get_validator(person: PersonType) -> Callable[[PersonType], bool]:
     if isinstance(person, county_entities.Person):
         return validate_county_person
 
-    if isinstance(person, state_entities.StatePerson):
+    if isinstance(person, state_entities.Person):
         return validate_state_person
 
     raise ValueError("Person entity to validate was not of expected type "
-                     "Person or StatePerson but [{}]"
+                     "county_entities.Person or state_entities.Person but [{}]"
                      .format(person.__class__.__name__))
