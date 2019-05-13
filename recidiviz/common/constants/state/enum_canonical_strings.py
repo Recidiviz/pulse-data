@@ -77,6 +77,13 @@ incarceration_facility_security_level_maximum = 'MAXIMUM'
 incarceration_facility_security_level_medium = 'MEDIUM'
 incarceration_facility_security_level_minimum = 'MINIMUM'
 
+incarceration_period_admission_reason_new_admission = 'NEW_ADMISSION'
+incarceration_period_admission_reason_parole_revocation = 'PAROLE_REVOCATION'
+incarceration_period_admission_reason_probation_revocation = \
+    'PROBATION_REVOCATION'
+incarceration_period_admission_reason_return_from_escape = 'RETURN_FROM_ESCAPE'
+incarceration_period_admission_reason_transfer = 'TRANSFER'
+
 incarceration_period_termination_reason_death = 'DEATH'
 incarceration_period_termination_reason_escaped = 'ESCAPED'
 incarceration_period_termination_reason_released = 'RELEASED'
