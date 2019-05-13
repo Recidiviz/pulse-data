@@ -23,8 +23,6 @@ import attr
 
 @attr.s
 class Entity:
-    external_id: Optional[str] = attr.ib()
-
     # Consider Entity abstract and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is Entity:
@@ -37,3 +35,14 @@ class Entity:
     def get_id(self):
         id_name = self.get_entity_name() + '_id'
         return getattr(self, id_name)
+
+
+@attr.s
+class ExternalIdEntity(Entity):
+    external_id: Optional[str] = attr.ib()
+
+    # Consider Entity abstract and only allow instantiating subclasses
+    def __new__(cls, *_, **__):
+        if cls is ExternalIdEntity:
+            raise Exception('Abstract class cannot be instantiated')
+        return super().__new__(cls)

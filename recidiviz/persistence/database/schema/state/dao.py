@@ -48,11 +48,24 @@ def read_people_by_external_ids(session: Session, _region: str,
     Reads all people for the given |region| that have external_ids that match
     the external_ids from the |ingested_people|.
     """
-    external_ids = {p.external_id for p in ingested_people}
-    # TODO include region check in a state-specific way?
-    query = session.query(schema.Person) \
-        .filter(schema.Person.external_id.in_(external_ids))
-    return _convert_and_normalize_record_trees(query.all())
+    region_to_external_ids: Dict[str, List[str]] = defaultdict(list)
+    for ingested_person in ingested_people:
+        for external_id_info in ingested_person.external_ids:
+            region_to_external_ids[external_id_info.state_code].append(
+                external_id_info.external_id)
+
+    state_persons: List[schema.Person] = []
+    for state_code, external_ids in region_to_external_ids.items():
+        query = session.query(schema.Person) \
+            .join(schema.PersonExternalId) \
+            .filter(schema.PersonExternalId.state_code == state_code) \
+            .filter(schema.Person.person_id ==
+                    schema.PersonExternalId.person_id) \
+            .filter(schema.PersonExternalId.external_id.in_(external_ids))
+
+        state_persons += query.all()
+
+    return _convert_and_normalize_record_trees(state_persons)
 
 
 def _convert_and_normalize_record_trees(

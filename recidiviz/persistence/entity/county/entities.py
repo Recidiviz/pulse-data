@@ -45,11 +45,11 @@ from recidiviz.common.constants.person_characteristics import (
 )
 from recidiviz.common.constants.county.sentence import SentenceStatus
 
-from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.base_entity import ExternalIdEntity
 
 
 @attr.s
-class Person(Entity, BuildableAttr, DefaultableAttr):
+class Person(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     """Models a Person moving through the criminal justice system."""
     full_name: Optional[str] = attr.ib()
     birthdate: Optional[datetime.date] = attr.ib()
@@ -70,7 +70,7 @@ class Person(Entity, BuildableAttr, DefaultableAttr):
 
 
 @attr.s
-class Booking(Entity, BuildableAttr, DefaultableAttr):
+class Booking(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     """Models a particular Booking into jail for a Person."""
     admission_date: Optional[datetime.date] = attr.ib()
     admission_reason: Optional[AdmissionReason] = attr.ib()
@@ -96,7 +96,7 @@ class Booking(Entity, BuildableAttr, DefaultableAttr):
 
 
 @attr.s
-class Arrest(Entity, BuildableAttr, DefaultableAttr):
+class Arrest(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     """Models the Arrest for a particular Booking."""
     arrest_date: Optional[datetime.date] = attr.ib()
     location: Optional[str] = attr.ib()
@@ -108,7 +108,7 @@ class Arrest(Entity, BuildableAttr, DefaultableAttr):
 
 
 @attr.s
-class Charge(Entity, BuildableAttr, DefaultableAttr):
+class Charge(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     """Models a Charge on a particular Booking."""
 
     offense_date: Optional[datetime.date] = attr.ib()
@@ -136,7 +136,7 @@ class Charge(Entity, BuildableAttr, DefaultableAttr):
 
 
 @attr.s
-class Hold(Entity, BuildableAttr, DefaultableAttr):
+class Hold(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     """Models a jurisdictional Hold on a particular Booking."""
 
     jurisdiction_name: Optional[str] = attr.ib()
@@ -147,7 +147,7 @@ class Hold(Entity, BuildableAttr, DefaultableAttr):
 
 
 @attr.s
-class Bond(Entity, BuildableAttr, DefaultableAttr):
+class Bond(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     """Models a Bond on a particular Charge."""
 
     amount_dollars: Optional[int] = attr.ib()
@@ -162,7 +162,7 @@ class Bond(Entity, BuildableAttr, DefaultableAttr):
 
 
 @attr.s
-class Sentence(Entity, BuildableAttr, DefaultableAttr):
+class Sentence(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     """Models a Sentence for one or more Charges on a particular Booking."""
 
     sentencing_region: Optional[str] = attr.ib()
