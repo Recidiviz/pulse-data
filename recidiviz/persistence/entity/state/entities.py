@@ -45,10 +45,13 @@ from recidiviz.common.constants.state.court_case import CourtType, \
 from recidiviz.common.constants.state.incarceration import IncarcerationType
 from recidiviz.common.constants.state.incarceration_incident import \
     IncarcerationIncidentOffense, IncarcerationIncidentOutcome
-from recidiviz.common.constants.state.incarceration_period import \
-    IncarcerationPeriodStatus, IncarcerationPeriodAdmissionReason, \
-    IncarcerationPeriodTerminationReason, \
-    IncarcerationFacilitySecurityLevel
+from recidiviz.common.constants.state.incarceration_period import (
+    IncarcerationPeriodStatus,
+    IncarcerationPeriodAdmissionReason,
+    IncarcerationPeriodReleaseReason,
+    IncarcerationFacilitySecurityLevel,
+)
+
 from recidiviz.common.constants.state.fine import FineStatus
 from recidiviz.common.constants.state.charge import ChargeClassification
 from recidiviz.common.constants.state.supervision import SupervisionType
@@ -532,11 +535,12 @@ class IncarcerationPeriod(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     admission_reason: Optional[IncarcerationPeriodAdmissionReason] = attr.ib()
     admission_reason_raw_text: Optional[str] = attr.ib()
 
-    projected_release_reason: Optional[IncarcerationPeriodTerminationReason] = \
-        attr.ib()
+    projected_release_reason: \
+        Optional[IncarcerationPeriodReleaseReason] = attr.ib()
     projected_release_reason_raw_text: Optional[str] = attr.ib()
 
-    release_reason: Optional[IncarcerationPeriodTerminationReason] = attr.ib()
+    release_reason: Optional[IncarcerationPeriodReleaseReason] = \
+        attr.ib()
     release_reason_raw_text: Optional[str] = attr.ib()
 
     #   - Who
@@ -580,7 +584,7 @@ class SupervisionPeriod(ExternalIdEntity, BuildableAttr, DefaultableAttr):
 
     # Attributes
     #   - When
-    admission_date: Optional[datetime.date] = attr.ib()
+    start_date: Optional[datetime.date] = attr.ib()
     termination_date: Optional[datetime.date] = attr.ib()
 
     #   - Where

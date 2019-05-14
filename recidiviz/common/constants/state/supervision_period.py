@@ -64,12 +64,13 @@ class SupervisionLevel(EntityEnum, metaclass=EntityEnumMeta):
 
 class SupervisionPeriodTerminationReason(EntityEnum, metaclass=EntityEnumMeta):
     ABSCONSION = state_enum_strings.\
-        supervision_period_termination_type_absconsion
-    DISCHARGE = state_enum_strings.supervision_period_termination_type_discharge
+        supervision_period_termination_reason_absconsion
+    DISCHARGE = \
+        state_enum_strings.supervision_period_termination_reason_discharge
     REVOCATION = \
-        state_enum_strings.supervision_period_termination_type_revocation
+        state_enum_strings.supervision_period_termination_reason_revocation
     SUSPENSION = \
-        state_enum_strings.supervision_period_termination_type_suspension
+        state_enum_strings.supervision_period_termination_reason_suspension
 
     @staticmethod
     def _get_default_map():
