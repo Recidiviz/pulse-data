@@ -84,18 +84,11 @@ incarceration_period_admission_reason_probation_revocation = \
 incarceration_period_admission_reason_return_from_escape = 'RETURN_FROM_ESCAPE'
 incarceration_period_admission_reason_transfer = 'TRANSFER'
 
-incarceration_period_termination_reason_death = 'DEATH'
-incarceration_period_termination_reason_escaped = 'ESCAPED'
-incarceration_period_termination_reason_released = 'RELEASED'
-incarceration_period_termination_reason_transfer = 'TRANSFER'
-
-incarceration_period_release_type_conditional = 'CONDITIONAL'
-incarceration_period_release_type_death = 'DEATH'
-incarceration_period_release_type_earned_time = 'EARNED_TIME'
-incarceration_period_release_type_good_time = 'GOOD_TIME'
-incarceration_period_release_type_parole = 'PAROLE'
-incarceration_period_release_type_probation = 'PROBATION'
-incarceration_period_release_type_sentence_served = 'SERVED'
+incarceration_period_release_reason_conditional_release = 'CONDITIONAL_RELEASE'
+incarceration_period_release_reason_death = 'DEATH'
+incarceration_period_release_reason_escape = 'ESCAPE'
+incarceration_period_release_reason_sentence_served = 'SENTENCE_SERVED'
+incarceration_period_release_reason_transfer = 'TRANSFER'
 
 # sentence.py
 sentence_status_commuted = 'COMMUTED'
@@ -122,10 +115,10 @@ supervision_period_admission_type_return_from_suspension = \
 supervision_period_status_terminated = 'TERMINATED'
 supervision_period_status_under_supervision = 'UNDER_SUPERVISION'
 
-supervision_period_termination_type_absconsion = 'ABSCONSION'
-supervision_period_termination_type_discharge = 'DISCHARGE'
-supervision_period_termination_type_revocation = 'REVOCATION'
-supervision_period_termination_type_suspension = 'SUSPENSION'
+supervision_period_termination_reason_absconsion = 'ABSCONSION'
+supervision_period_termination_reason_discharge = 'DISCHARGE'
+supervision_period_termination_reason_revocation = 'REVOCATION'
+supervision_period_termination_reason_suspension = 'SUSPENSION'
 
 # supervision_violation.py
 supervision_violation_type_absconded = 'ABSCONDED'
