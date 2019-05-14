@@ -104,6 +104,20 @@ class EntityEnumMeta(EnumMeta):
         except KeyError:
             raise EnumParsingError(cls, label)
 
+    def parse_from_canonical_string(cls: EnumMeta, label: Optional[str]) \
+            -> Optional['EntityEnum']:
+        """Attempts to parse |label| using the enum canonical strings.
+        Only accepts exact, case-sensitive matches. Returns `None` if
+        |label| is empty."""
+
+        if label is None:
+            return None
+
+        try:
+            return cls._value2member_map_[label]
+        except KeyError:
+            raise EnumParsingError(cls, label)
+
 
 class EntityEnum(Enum, metaclass=EntityEnumMeta):
     """Enum class that can be mapped from a string.
