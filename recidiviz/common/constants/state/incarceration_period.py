@@ -61,31 +61,23 @@ class IncarcerationPeriodAdmissionReason(EntityEnum, metaclass=EntityEnumMeta):
         return _INCARCERATION_PERIOD_ADMISSION_REASON_MAP
 
 
-class IncarcerationPeriodTerminationReason(EntityEnum,
-                                           metaclass=EntityEnumMeta):
-    DEATH = state_enum_strings.incarceration_period_termination_reason_death
-    ESCAPED = state_enum_strings.incarceration_period_termination_reason_escaped
-    RELEASED = \
-        state_enum_strings.incarceration_period_termination_reason_released
-    TRANSFER = \
-        state_enum_strings.incarceration_period_termination_reason_transfer
-
-    @staticmethod
-    def _get_default_map():
-        return _INCARCERATION_PERIOD_TERMINATION_REASON_MAP
-
-
-class IncarcerationPeriodReleaseType(EntityEnum, metaclass=EntityEnumMeta):
+class IncarcerationPeriodReleaseReason(EntityEnum,
+                                       metaclass=EntityEnumMeta):
     # This release type corresponds to any release into some sort of
     # supervision.
-    CONDITIONAL = \
-        state_enum_strings.incarceration_period_release_type_conditional
+    CONDITIONAL_RELEASE = \
+        state_enum_strings.\
+        incarceration_period_release_reason_conditional_release
+    DEATH = state_enum_strings.incarceration_period_release_reason_death
+    ESCAPE = state_enum_strings.incarceration_period_release_reason_escape
     SENTENCE_SERVED = \
-        state_enum_strings.incarceration_period_release_type_sentence_served
+        state_enum_strings.incarceration_period_release_reason_sentence_served
+    TRANSFER = \
+        state_enum_strings.incarceration_period_release_reason_transfer
 
     @staticmethod
     def _get_default_map():
-        return _INCARCERATION_PERIOD_RELEASE_TYPE_MAP
+        return _INCARCERATION_PERIOD_RELEASE_REASON_MAP
 
 
 _INCARCERATION_FACILITY_SECURITY_LEVEL_MAP = {
@@ -95,25 +87,6 @@ _INCARCERATION_FACILITY_SECURITY_LEVEL_MAP = {
     'MED': IncarcerationFacilitySecurityLevel.MEDIUM,
     'MINIMUM': IncarcerationFacilitySecurityLevel.MINIMUM,
     'MIN': IncarcerationFacilitySecurityLevel.MINIMUM,
-}
-
-
-_INCARCERATION_PERIOD_RELEASE_TYPE_MAP = {
-    'CONDITIONAL': IncarcerationPeriodReleaseType.CONDITIONAL,
-    'CONDITIONAL RELEASE': IncarcerationPeriodReleaseType.CONDITIONAL,
-    'EARNED TIME': IncarcerationPeriodReleaseType.SENTENCE_SERVED,
-    'TIME EARNED': IncarcerationPeriodReleaseType.SENTENCE_SERVED,
-    'GOOD TIME': IncarcerationPeriodReleaseType.SENTENCE_SERVED,
-    'PAROLE': IncarcerationPeriodReleaseType.CONDITIONAL,
-    'RELEASE TO PAROLE': IncarcerationPeriodReleaseType.CONDITIONAL,
-
-    # TODO(1697): Should this actually be SENTENCE_SERVED? The probation is now
-    #  a new stacked sentence that is being served?
-    'PROBATION': IncarcerationPeriodReleaseType.CONDITIONAL,
-    'RELEASE TO PROBATION': IncarcerationPeriodReleaseType.CONDITIONAL,
-    'SERVED': IncarcerationPeriodReleaseType.SENTENCE_SERVED,
-    'TIME SERVED': IncarcerationPeriodReleaseType.SENTENCE_SERVED,
-    'EXPIRED': IncarcerationPeriodReleaseType.SENTENCE_SERVED,
 }
 
 
@@ -134,13 +107,33 @@ _INCARCERATION_PERIOD_ADMISSION_REASON_MAP = {
     'TRANSFER': IncarcerationPeriodAdmissionReason.TRANSFER
 }
 
-_INCARCERATION_PERIOD_TERMINATION_REASON_MAP = {
-    'DEATH': IncarcerationPeriodTerminationReason.DEATH,
-    'ESCAPED': IncarcerationPeriodTerminationReason.ESCAPED,
-    'ESCAPE': IncarcerationPeriodTerminationReason.ESCAPED,
-    'RELEASED': IncarcerationPeriodTerminationReason.RELEASED,
+_INCARCERATION_PERIOD_RELEASE_REASON_MAP = {
+    'CONDITIONAL': IncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+    'CONDITIONAL RELEASE': IncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+    'DEATH': IncarcerationPeriodReleaseReason.DEATH,
+    'EARNED TIME': IncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+    'ESCAPED': IncarcerationPeriodReleaseReason.ESCAPE,
+    'ESCAPE': IncarcerationPeriodReleaseReason.ESCAPE,
+    'EXPIRED': IncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+    'GOOD TIME': IncarcerationPeriodReleaseReason.SENTENCE_SERVED,
 
     # TODO(1697): Is this actually what these mean?
-    'HELD ELSEWHERE': IncarcerationPeriodTerminationReason.TRANSFER,
-    'HOLD': IncarcerationPeriodTerminationReason.TRANSFER,
+    'HELD ELSEWHERE': IncarcerationPeriodReleaseReason.TRANSFER,
+    'HOLD': IncarcerationPeriodReleaseReason.TRANSFER,
+
+    'PAROLE': IncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+
+    # TODO(1697): Should this actually be SENTENCE_SERVED? The probation is now
+    #  a new stacked sentence that is being served?
+    'PROBATION': IncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+    'RELEASE TO PAROLE': IncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+
+    # TODO(1697): Should this actually be SENTENCE_SERVED? The probation is now
+    #  a new stacked sentence that is being served?
+    'RELEASE TO PROBATION':
+        IncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+    'RELEASED': IncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+    'SERVED': IncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+    'TIME EARNED': IncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+    'TIME SERVED': IncarcerationPeriodReleaseReason.SENTENCE_SERVED,
 }
