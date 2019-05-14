@@ -23,9 +23,9 @@ from recidiviz.common.constants.enum_overrides import EnumOverrides
 
 
 class FakeEntityEnum(EntityEnum):
-    BANANA = 'banana'
-    STRAWBERRY = 'strawberry'
-    PASSION_FRUIT = 'passion fruit'
+    BANANA = 'BANANA'
+    STRAWBERRY = 'STRAWBERRY'
+    PASSION_FRUIT = 'PASSION FRUIT'
 
     @staticmethod
     def _get_default_map():
@@ -82,3 +82,24 @@ class EntityEnumTest(unittest.TestCase):
         overrides_builder.ignore('BAN', FakeEntityEnum)
         overrides = overrides_builder.build()
         self.assertTrue(FakeEntityEnum.can_parse('ban', overrides))
+
+    def testParseFromCanonicalString_Valid(self):
+        self.assertEqual(FakeEntityEnum.parse_from_canonical_string
+                         (FakeEntityEnum.BANANA.value),
+                         FakeEntityEnum.BANANA)
+
+    def testParseFromCanonicalString_Valid_ValueDifferent(self):
+        self.assertEqual(FakeEntityEnum.parse_from_canonical_string
+                         (FakeEntityEnum.PASSION_FRUIT.value),
+                         FakeEntityEnum.PASSION_FRUIT)
+
+    def testParseFromCanonicalString_None(self):
+        self.assertEqual(FakeEntityEnum.parse_from_canonical_string(None), None)
+
+    def testParseFromCanonicalString_Invalid(self):
+        with self.assertRaises(EnumParsingError):
+            FakeEntityEnum.parse_from_canonical_string('invalid')
+
+    def testParseFromCanonicalString_Lowercase(self):
+        with self.assertRaises(EnumParsingError):
+            FakeEntityEnum.parse_from_canonical_string('strawberry')
