@@ -27,6 +27,7 @@ import datetime
 import attr
 
 from recidiviz.common.attr_mixins import BuildableAttr, DefaultableAttr
+from recidiviz.common.constants.state.agent import AgentType
 from recidiviz.common.constants.state.assessment import AssessmentClass, \
     AssessmentType
 
@@ -61,6 +62,10 @@ from recidiviz.common.constants.state.supervision_period import \
 
 from recidiviz.common.constants.state.supervision_violation import \
     SupervisionViolationType
+from recidiviz.common.constants.state.supervision_violation_response import \
+    SupervisionViolationResponseType, SupervisionViolationResponseDecision, \
+    SupervisionViolationResponseRevocationType, \
+    SupervisionViolationResponseDecidingBodyType
 from recidiviz.persistence.entity.base_entity import Entity, ExternalIdEntity
 
 
@@ -689,27 +694,13 @@ class ParoleDecision(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     corrective_action: Optional[str] = attr.ib()
 
     #   - Who
+    # TODO(1625) - Convert to List[Agent]
     decision_agent_names: List[str] = attr.ib(factory=list)
 
     # Cross-entity relationships
     incarceration_period_id: Optional[int] = attr.ib(default=None)
 
 
-@attr.s
-class ParoleDecisionAgent(ExternalIdEntity, BuildableAttr, DefaultableAttr):
-    # Primary key - Only optional when hydrated in the data converter, before
-    # we have written this entity to the persistence layer
-    parole_decision_agent_id: Optional[int] = attr.ib()
-
-    # Attributes
-    #   - Where
-    state_code: str = attr.ib()  # non-nullable
-
-    #   - What
-    full_name: Optional[str] = attr.ib()
-
-
-@attr.s
 class SupervisionViolation(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     """
     Models a recorded instance where a Person has violated one or more of the
@@ -731,7 +722,9 @@ class SupervisionViolation(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     violation_date: Optional[datetime.date] = attr.ib()
 
     #   - Where
-    # N/A
+    # State that recorded this violation, not necessarily where the violation
+    # took place
+    state_code: str = attr.ib()  # non-nullable
 
     #   - What
     # These should correspond to |conditions| in SupervisionPeriod
@@ -749,6 +742,22 @@ class SupervisionViolation(ExternalIdEntity, BuildableAttr, DefaultableAttr):
         attr.ib(factory=list)
 
 
+class Agent(Entity, BuildableAttr, DefaultableAttr):
+    # Primary key - Only optional when hydrated in the data converter, before
+    # we have written this entity to the persistence layer
+    agent_id: Optional[int] = attr.ib()
+
+    # Type
+    agent_type: Optional[AgentType] = attr.ib()
+
+    # Attributes
+    #   - Where
+    state_code: str = attr.ib()  # non-nullable
+
+    #   - What
+    full_name: Optional[str] = attr.ib()
+
+
 @attr.s
 class SupervisionViolationResponse(ExternalIdEntity,
                                    BuildableAttr,
@@ -758,5 +767,34 @@ class SupervisionViolationResponse(ExternalIdEntity,
     # we have written this entity to the persistence layer
     supervision_violation_response_id: Optional[int] = attr.ib()
 
-    # TODO(1719): Update the schema to properly model responses to supervision
-    #  violations
+    # Status
+    # N/A
+
+    # Type
+    response_type: Optional[SupervisionViolationResponseType] = attr.ib()
+
+    # Attributes
+    #   - When
+    response_date: Optional[datetime.date] = attr.ib()
+
+    #   - Where
+    state_code: str = attr.ib()  # non-nullable
+
+    #   - What
+    decision: Optional[SupervisionViolationResponseDecision] = attr.ib()
+
+    # Only nonnull if decision is REVOCATION
+    revocation_type: Optional[SupervisionViolationResponseRevocationType] = \
+        attr.ib()
+
+    #   - Who
+    # See SupervisionViolationResponders below
+    deciding_body_type: Optional[SupervisionViolationResponseDecidingBodyType] \
+        = attr.ib()
+    # See also |deciding_agents| below
+
+    # Cross-entity relationships
+    person_id: Optional[int] = attr.ib()
+    supervision_violation_id: Optional[int] = attr.ib()
+
+    decision_agents: List['Agent'] = attr.ib(factory=list)

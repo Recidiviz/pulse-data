@@ -31,6 +31,12 @@ us to structure the application layer code any way we want, while only
 requiring the database to be updated when an enum value is created or removed.
 """
 
+# agent.py
+agent_judge = 'JUDGE'
+agent_parole_board_member = 'PAROLE_BOARD_MEMBER'
+agent_supervision_officer = 'SUPERVISION_OFFICER'
+agent_unit_supervisor = 'UNIT_SUPERVISOR'
+
 # assessment.py
 assessment_class_mental_health = 'MENTAL_HEALTH'
 assessment_class_risk = 'RISK'
@@ -126,3 +132,24 @@ supervision_violation_type_felony = 'FELONY'
 supervision_violation_type_misdemeanor = 'MISDEMEANOR'
 supervision_violation_type_municipal = 'MUNICIPAL'
 supervision_violation_type_technical = 'TECHNICAL'
+
+# supervision_violation_response.py
+supervision_violation_response_type_citation = 'CITATION'
+supervision_violation_response_type_violation_report = 'VIOLATION_REPORT'
+supervision_violation_response_type_permanent_decision = 'PERMANENT_DECISION'
+
+supervision_violation_response_decision_continuance = 'CONTINUANCE'
+supervision_violation_response_decision_extension = 'EXTENSION'
+supervision_violation_response_decision_revocation = 'REVOCATION'
+supervision_violation_response_decision_suspension = 'SUSPENSION'
+
+supervision_violation_response_revocation_type_shock_incarceration = \
+    'SHOCK_INCARCERATION'
+supervision_violation_response_revocation_type_standard = 'STANDARD'
+supervision_violation_response_revocation_type_treatment_in_prison = \
+    'TREATMENT_IN_PRISON'
+
+supervision_violation_response_deciding_body_type_court = 'COURT'
+supervision_violation_response_deciding_body_parole_board = 'PAROLE_BOARD'
+supervision_violation_response_deciding_body_type_supervision_officer = \
+    'SUPERVISION_OFFICER'
