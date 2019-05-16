@@ -22,17 +22,14 @@ from typing import Optional, Union, Type
 import attr
 
 from recidiviz.common.constants.entity_enum import EntityEnum
+from recidiviz.persistence.database.schema_entity_converter.\
+    base_schema_entity_converter import DatabaseConversionError
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.persistence.database.schema.county import schema as county_schema
 from recidiviz.persistence.database.base_schema import Base
 from recidiviz.persistence.database.schema.state import schema as state_schema
 from recidiviz.persistence.entity.state import entities as state_entities
-
-
-class DatabaseConversionError(Exception):
-    """Raised if an error is encountered when converting between entity
-    objects and schema objects (or vice versa)."""
 
 
 class _Direction(Enum):
@@ -51,6 +48,8 @@ class _Direction(Enum):
             "Unable to convert class {0}".format(src_cls))
 
 
+# TODO(1625): Convert all usages of this function to the new classes in
+#   recidiviz.persistence.schema_entity_converter
 def convert_all(src):
     """Converts the given list of objects into their entity/schema counterparts
 
@@ -62,6 +61,8 @@ def convert_all(src):
     return [convert(s) for s in src]
 
 
+# TODO(1625): Convert all usages of this function to the new classes in
+#   recidiviz.persistence.schema_entity_converter
 def convert(src):
     """Converts the given src object to its entity/schema counterpart."""
     if not src:

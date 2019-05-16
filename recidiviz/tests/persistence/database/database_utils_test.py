@@ -152,6 +152,8 @@ _PERSON = county_entities.Person(
 )
 
 
+# TODO(1625): Update this test to use the new classes in
+#   recidiviz.persistence.schema_entity_converter
 class TestDatabaseUtils(TestCase):
 
     def setup_method(self, _test_method):
