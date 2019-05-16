@@ -1,0 +1,85 @@
+# Recidiviz - a data platform for criminal justice reform
+# Copyright (C) 2019 Recidiviz, Inc.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# =============================================================================
+"""Test database schema definitions for schema defined in test_entities.py """
+from sqlalchemy import (
+    Column,
+    ForeignKey,
+    Integer,
+    String,
+    Table, Enum)
+from sqlalchemy.orm import relationship
+
+from recidiviz.persistence.database.database_entity import DatabaseEntity
+from recidiviz.persistence.database.base_schema import Base
+from recidiviz.tests.persistence.database.schema_entity_converter.\
+    test_entities import RootType
+
+
+root_type = Enum(RootType.SIMPSONS.value,
+                 RootType.FRIENDS.value,
+                 name='root_type')
+
+
+class Root(Base, DatabaseEntity):
+    """Represents a Root object in the test schema"""
+    __tablename__ = 'root'
+
+    root_id = Column(Integer, primary_key=True)
+
+    root_type = Column(root_type)
+
+    parents = relationship('Parent', lazy='joined')
+
+
+association_table = Table('state_parent_child_association',
+                          Base.metadata,
+                          Column('parent_id',
+                                 Integer,
+                                 ForeignKey('parent.parent_id')),
+                          Column('child_id',
+                                 Integer,
+                                 ForeignKey('child.child_id')))
+
+
+class Parent(Base, DatabaseEntity):
+    """Represents a Parent object in the test schema"""
+    __tablename__ = 'parent'
+
+    parent_id = Column(Integer, primary_key=True)
+
+    full_name = Column(String(255))
+
+    root_id = Column(Integer, ForeignKey('root.root_id'))
+
+    children = relationship(
+        'Child',
+        secondary=association_table,
+        back_populates='parents')
+
+
+class Child(Base, DatabaseEntity):
+    """Represents a Child object in the test schema"""
+    __tablename__ = 'child'
+
+    child_id = Column(Integer, primary_key=True)
+
+    full_name = Column(String(255))
+
+    parents = relationship(
+        'Parent',
+        secondary=association_table,
+        back_populates='children')
