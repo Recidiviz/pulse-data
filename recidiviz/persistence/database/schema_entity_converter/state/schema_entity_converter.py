@@ -21,21 +21,43 @@ objects.
 
 from types import ModuleType
 
+from recidiviz.persistence.database.base_schema import Base
 from recidiviz.persistence.database.schema_entity_converter. \
     base_schema_entity_converter import (
         BaseSchemaEntityConverter,
         FieldNameType,
+        SrcBaseType,
+        DstBaseType
     )
+from recidiviz.persistence.entity.base_entity import Entity
 
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.database.schema.state import schema
 
 
-class StateSchemaEntityConverter(BaseSchemaEntityConverter):
-
+class _StateSchemaEntityConverter(BaseSchemaEntityConverter[SrcBaseType,
+                                                            DstBaseType]):
+    """State-specific implementation of BaseSchemaEntityConverter"""
     CLASS_RANK_LIST = [
         entities.Person.__name__,
-        # TODO(1625): Update with full ranking here and write tests
+        entities.PersonExternalId.__name__,
+        entities.PersonRace.__name__,
+        entities.PersonEthnicity.__name__,
+        entities.SentenceGroup.__name__,
+        entities.Fine.__name__,
+        entities.IncarcerationSentence.__name__,
+        entities.SupervisionSentence.__name__,
+        entities.Charge.__name__,
+        entities.Bond.__name__,
+        entities.CourtCase.__name__,
+        entities.IncarcerationPeriod.__name__,
+        entities.IncarcerationIncident.__name__,
+        entities.ParoleDecision.__name__,
+        entities.SupervisionPeriod.__name__,
+        entities.SupervisionViolation.__name__,
+        entities.SupervisionViolationResponse.__name__,
+        entities.Agent.__name__,
+        entities.Assessment.__name__,
     ]
 
     def __init__(self):
@@ -49,3 +71,11 @@ class StateSchemaEntityConverter(BaseSchemaEntityConverter):
 
     def _should_skip_field(self, field: FieldNameType) -> bool:
         return False
+
+
+class StateEntityToSchemaConverter(_StateSchemaEntityConverter[Entity, Base]):
+    pass
+
+
+class StateSchemaToEntityConverter(_StateSchemaEntityConverter[Base, Entity]):
+    pass

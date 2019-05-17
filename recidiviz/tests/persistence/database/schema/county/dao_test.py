@@ -26,7 +26,9 @@ from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.persistence.entity.county import entities
-from recidiviz.persistence.database import database_utils
+from recidiviz.persistence.database.schema_entity_converter import (
+    schema_entity_converter as converter,
+)
 from recidiviz.persistence.database.schema.county import dao
 from recidiviz.persistence.database.schema.county.schema import Booking, Person
 from recidiviz.tests.utils import fakes
@@ -109,7 +111,8 @@ class TestDao(TestCase):
             session, person.region, most_recent_scrape_date)
 
         # Assert
-        self.assertEqual(people, [database_utils.convert(person)])
+        self.assertEqual(people,
+                         [converter.convert_schema_object_to_entity(person)])
 
     def test_readPeopleByExternalId(self):
         admission_date = datetime.datetime(2018, 6, 20)
@@ -140,7 +143,7 @@ class TestDao(TestCase):
                                                  [ingested_person])
 
         expected_people = [
-            database_utils.convert(person_match_external_id)]
+            converter.convert_schema_object_to_entity(person_match_external_id)]
         self.assertCountEqual(people, expected_people)
 
     def test_readPeopleWithOpenBookings(self):
@@ -182,6 +185,6 @@ class TestDao(TestCase):
         people = dao.read_people_with_open_bookings(session, _REGION,
                                                     info.people)
 
-        expected_people = [database_utils.convert(p) for p in
+        expected_people = [converter.convert_schema_object_to_entity(p) for p in
                            [person_match_full_name]]
         self.assertCountEqual(people, expected_people)

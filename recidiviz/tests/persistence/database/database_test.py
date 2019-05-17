@@ -30,7 +30,10 @@ from recidiviz.common.constants.person_characteristics import Race
 from recidiviz.common.constants.county.sentence import SentenceStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence.entity.county import entities as county_entities
-from recidiviz.persistence.database import database, database_utils
+from recidiviz.persistence.database import database
+from recidiviz.persistence.database.schema_entity_converter import (
+    schema_entity_converter as converter,
+)
 from recidiviz.persistence.database.schema.county import dao as county_dao
 from recidiviz.persistence.database.schema.county.schema import Bond, Booking, \
     Person, Sentence
@@ -1053,7 +1056,8 @@ class TestDatabase(TestCase):
         act_session = Session()
         person_query = act_session.query(Person) \
             .filter(Person.person_id == persisted_person_id)
-        fetched_person = database_utils.convert(person_query.first())
+        fetched_person = \
+            converter.convert_schema_object_to_entity(person_query.first())
         # Remove bond from charge so bond is no longer directly associated
         # with ORM copy of the record tree
         fetched_charge = fetched_person.bookings[0].charges[0]
@@ -1107,7 +1111,8 @@ class TestDatabase(TestCase):
         act_session = Session()
         person_query = act_session.query(Person) \
             .filter(Person.person_id == persisted_person_id)
-        fetched_person = database_utils.convert(person_query.first())
+        fetched_person = \
+            converter.convert_schema_object_to_entity(person_query.first())
         # Remove sentence from charge so sentence is no longer directly
         # associated with ORM copy of the record tree
         fetched_charge = fetched_person.bookings[0].charges[0]
@@ -1161,7 +1166,8 @@ class TestDatabase(TestCase):
         act_session = Session()
         person_query = act_session.query(Person) \
             .filter(Person.person_id == persisted_person_id)
-        fetched_person = database_utils.convert(person_query.first())
+        fetched_person = \
+            converter.convert_schema_object_to_entity(person_query.first())
         # Remove sentence from charge so sentence is no longer directly
         # associated with ORM copy of the record tree
         fetched_charge = fetched_person.bookings[0].charges[0]
@@ -1221,7 +1227,8 @@ class TestDatabase(TestCase):
         act_session = Session()
         person_query = act_session.query(Person) \
             .filter(Person.person_id == persisted_person_id)
-        fetched_person = database_utils.convert(person_query.first())
+        fetched_person = \
+            converter.convert_schema_object_to_entity(person_query.first())
         new_bond = county_entities.Bond.new_with_defaults(
             status=BondStatus.PRESENT_WITHOUT_INFO)
         fetched_person.bookings[0].charges[0].bond = new_bond
@@ -1236,7 +1243,7 @@ class TestDatabase(TestCase):
 
         assert_person_query = assert_session.query(Person) \
             .filter(Person.person_id == persisted_person_id)
-        final_fetched_person = database_utils.convert(
+        final_fetched_person = converter.convert_schema_object_to_entity(
             assert_person_query.first())
         self.assertEqual(
             final_fetched_person.bookings[0].charges[0].bond.booking_id,

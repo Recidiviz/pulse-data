@@ -262,7 +262,7 @@ class _PersonSharedColumns:
 
 
 # TODO(1625): Once these fields match those on entities.Person, update
-#  database_utils.convert to handle Person properly.
+#  schema entity converter to handle Person properly.
 class Person(Base, DatabaseEntity, _PersonSharedColumns):
     """Represents a person in the state SQL schema"""
     __tablename__ = 'state_person'

@@ -24,9 +24,12 @@ from sqlalchemy.orm import Session
 import recidiviz.persistence.database.history.historical_snapshot_update as \
     update_snapshots
 from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.persistence.database.schema.schema_person_type import \
+    SchemaPersonType
 from recidiviz.persistence.entity import entities
-from recidiviz.persistence.entity.county import entities as county_entities
-from recidiviz.persistence.database import database_utils
+from recidiviz.persistence.database.schema_entity_converter import (
+    schema_entity_converter as converter,
+)
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.county import schema as county_schema
 from recidiviz.persistence.entity.base_entity import Entity
@@ -45,8 +48,8 @@ def write_people(session: Session,
         orphaned_entities = []
     return _save_record_trees(
         session,
-        [database_utils.convert(person) for person in people],
-        [database_utils.convert(entity) for entity in orphaned_entities],
+        converter.convert_entities_to_schema(people),
+        converter.convert_entities_to_schema(orphaned_entities),
         metadata)
 
 
@@ -61,15 +64,15 @@ def write_person(session: Session,
         orphaned_entities = []
     persisted_people = _save_record_trees(
         session,
-        [database_utils.convert(person)],
-        [database_utils.convert(entity) for entity in orphaned_entities],
+        [converter.convert_entity_to_schema_object(person)],
+        converter.convert_entities_to_schema(orphaned_entities),
         metadata)
     # persisted_people will only contain the single person passed in
     return one(persisted_people)
 
 
 def _save_record_trees(session: Session,
-                       root_people,
+                       root_people: List[SchemaPersonType],
                        orphaned_entities: List[DatabaseEntity],
                        metadata: IngestMetadata):
     """Persists all record trees rooted at |root_people|. Also performs any
@@ -99,7 +102,7 @@ def _save_record_trees(session: Session,
     return root_people
 
 
-def _set_dummy_booking_ids(root_people: List[county_entities.Person]) -> None:
+def _set_dummy_booking_ids(root_people: List[county_schema.Person]) -> None:
     """Horrible hack to allow flushing new bookings. If the booking is new, it
     won't have a primary key until it is flushed. However, that flush will fail
     if the booking has child bonds or sentences, which require the booking_id
@@ -118,7 +121,7 @@ def _set_dummy_booking_ids(root_people: List[county_entities.Person]) -> None:
 
 
 def _overwrite_dummy_booking_ids(
-        root_people: List[county_entities.Person]
+        root_people: List[county_schema.Person]
 ) -> None:
     """Overwrites the dummy booking ID for any bonds and sentences that have
     it set with the real ID of their parent booking

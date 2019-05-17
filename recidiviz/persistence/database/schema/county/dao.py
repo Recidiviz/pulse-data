@@ -26,7 +26,9 @@ from sqlalchemy.orm import Session
 
 from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.persistence.entity.county import entities
-from recidiviz.persistence.database import database_utils
+from recidiviz.persistence.database.schema_entity_converter import (
+    schema_entity_converter as converter,
+)
 from recidiviz.persistence.database.schema.county.schema import Person, Booking
 
 
@@ -59,7 +61,8 @@ def read_bookings(session):
     Return:
         List of all bookings
     """
-    return database_utils.convert_all(session.query(Booking).all())
+    return converter.convert_schema_objects_to_entity(
+        session.query(Booking).all())
 
 
 def read_people_by_external_ids(
@@ -145,7 +148,11 @@ def _convert_and_normalize_record_trees(
     count_by_id: Dict[int, int] = defaultdict(lambda: 0)
     for person in people:
         if count_by_id[person.person_id] == 0:
-            converted_people.append(database_utils.convert(person))
+            converted = converter.convert_schema_object_to_entity(person)
+            if not isinstance(converted, entities.Person):
+                raise ValueError(
+                    f"Unexpected return type [{converted.__class__}]")
+            converted_people.append(converted)
         count_by_id[person.person_id] += 1
 
     duplicates = [(person_id, count) for person_id, count
