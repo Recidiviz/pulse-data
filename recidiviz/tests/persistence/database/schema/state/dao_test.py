@@ -22,7 +22,9 @@ from unittest import TestCase
 
 from recidiviz import Session
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.database import database_utils
+from recidiviz.persistence.database.schema_entity_converter import (
+    schema_entity_converter as converter,
+)
 from recidiviz.persistence.database.schema.state import dao
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.tests.utils import fakes
@@ -54,7 +56,8 @@ class TestDao(TestCase):
         people = dao.read_people(session, full_name=_FULL_NAME, birthdate=None)
 
         # Assert
-        self.assertEqual(people, [database_utils.convert(person)])
+        self.assertEqual(people,
+                         [converter.convert_schema_object_to_entity(person)])
 
     def test_readPeople_byBirthdate(self):
         # Arrange
@@ -74,7 +77,8 @@ class TestDao(TestCase):
         people = dao.read_people(session, full_name=None, birthdate=_BIRTHDATE)
 
         # Assert
-        self.assertEqual(people, [database_utils.convert(person)])
+        self.assertEqual(people,
+                         [converter.convert_schema_object_to_entity(person)])
 
     def test_readPeople(self):
         # Arrange
@@ -99,10 +103,14 @@ class TestDao(TestCase):
         people = dao.read_people(session, full_name=None, birthdate=None)
 
         # Assert
-        self.assertEqual(people,
-                         [database_utils.convert(person),
-                          database_utils.convert(person_different_name),
-                          database_utils.convert(person_different_birthdate)])
+        converted_people = [
+            converter.convert_schema_object_to_entity(person),
+            converter.convert_schema_object_to_entity(person_different_name),
+            converter.convert_schema_object_to_entity(
+                person_different_birthdate)
+        ]
+
+        self.assertEqual(people, converted_people)
 
     def test_readPeopleByExternalId(self):
         person_no_match = schema.Person(person_id=1)
@@ -130,7 +138,7 @@ class TestDao(TestCase):
                                                  [ingested_person])
 
         expected_people = [
-            database_utils.convert(person_match_external_id)]
+            converter.convert_schema_object_to_entity(person_match_external_id)]
         self.assertCountEqual(people, expected_people)
 
         # TODO(1625): Verify values in |people| are expected

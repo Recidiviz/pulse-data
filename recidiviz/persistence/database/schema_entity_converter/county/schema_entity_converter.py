@@ -21,21 +21,31 @@ objects.
 
 from types import ModuleType
 
+from recidiviz.persistence.database.base_schema import Base
 from recidiviz.persistence.database.schema_entity_converter. \
     base_schema_entity_converter import (
         BaseSchemaEntityConverter,
         FieldNameType,
+        SrcBaseType,
+        DstBaseType
     )
+from recidiviz.persistence.entity.base_entity import Entity
 
 from recidiviz.persistence.entity.county import entities
 from recidiviz.persistence.database.schema.county import schema
 
 
-class CountySchemaEntityConverter(BaseSchemaEntityConverter):
+class _CountySchemaEntityConverter(BaseSchemaEntityConverter[SrcBaseType,
+                                                             DstBaseType]):
+    """County-specific implementation of BaseSchemaEntityConverter"""
     CLASS_RANK_LIST = [
         entities.Person.__name__,
         entities.Booking.__name__,
-        # TODO(1625): Update with full ranking here and write tests
+        entities.Arrest.__name__,
+        entities.Hold.__name__,
+        entities.Charge.__name__,
+        entities.Bond.__name__,
+        entities.Sentence.__name__,
     ]
 
     def __init__(self):
@@ -51,3 +61,11 @@ class CountySchemaEntityConverter(BaseSchemaEntityConverter):
         # TODO(1145): Correctly convert related_sentences once schema
         # for this field is finalized.
         return field == 'related_sentences'
+
+
+class CountyEntityToSchemaConverter(_CountySchemaEntityConverter[Entity, Base]):
+    pass
+
+
+class CountySchemaToEntityConverter(_CountySchemaEntityConverter[Base, Entity]):
+    pass

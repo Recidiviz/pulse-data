@@ -25,7 +25,7 @@ from collections import defaultdict
 from enum import Enum
 from types import ModuleType
 from typing import TypeVar, Generic, Dict, List, Type, Union, Optional, Any, \
-    Tuple
+    Tuple, Sequence
 
 import attr
 
@@ -129,13 +129,13 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
         expected_minus_given = expected_class_names.difference(class_rank_list)
 
         if given_minus_expected or expected_minus_given:
-            msg = ''
+            msg = ""
             if given_minus_expected:
-                msg += f'Found unexpected class in class rank list: ' \
-                    f'[{list(given_minus_expected)[0]}]. '
+                msg += f"Found unexpected class in class rank list: " \
+                    f"[{list(given_minus_expected)[0]}]. "
             if expected_minus_given:
-                msg += f'Missing expected class in class rank list: ' \
-                    f'[{list(expected_minus_given)[0]}]. '
+                msg += f"Missing expected class in class rank list: " \
+                    f"[{list(expected_minus_given)[0]}]. "
 
             raise DatabaseConversionError(msg)
 
@@ -156,13 +156,13 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
 
         if from_class_name not in self._class_rank_map:
             raise DatabaseConversionError(
-                f'Unable to convert: [{from_class_name}] not in the class '
-                f'rank map')
+                f"Unable to convert: [{from_class_name}] not in the class "
+                f"rank map")
 
         if to_class_name not in self._class_rank_map:
             raise DatabaseConversionError(
-                f'Unable to convert: [{to_class_name}] not in the class '
-                f'rank map')
+                f"Unable to convert: [{to_class_name}] not in the class "
+                f"rank map")
 
         return self._class_rank_map[from_class_name] >= \
             self._class_rank_map[to_class_name]
@@ -196,10 +196,10 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
         """
         if self._back_edges.keys():
             raise DatabaseConversionError(
-                f'Found back edges that have yet to be filled in for '
-                f'[{len(self._back_edges.keys())}] items. Should have been 0.')
+                f"Found back edges that have yet to be filled in for "
+                f"[{len(self._back_edges.keys())}] items. Should have been 0.")
 
-    def convert_all(self, src: List[SrcBaseType]) -> List[DstBaseType]:
+    def convert_all(self, src: Sequence[SrcBaseType]) -> List[DstBaseType]:
         """
         Converts the given list of objects into their entity/schema counterparts
 
@@ -243,16 +243,16 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
         entity_cls = self._get_entity_class(src)
 
         if entity_cls is None or schema_cls is None:
-            raise DatabaseConversionError('Both |entity_cls| and |schema_cls| '
-                                          'should be not None')
+            raise DatabaseConversionError("Both |entity_cls| and |schema_cls| "
+                                          "should be not None")
 
         if direction is _Direction.ENTITY_TO_SCHEMA:
             dst = schema_cls()
         else:
             if not issubclass(entity_cls, BuildableAttr):
                 raise DatabaseConversionError(
-                    f'Expected [{entity_cls}] to be a subclass of '
-                    f'BuildableAttr, but it is not')
+                    f"Expected [{entity_cls}] to be a subclass of "
+                    f"BuildableAttr, but it is not")
 
             dst = entity_cls.builder()
 
@@ -264,8 +264,8 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
 
             if not isinstance(attribute, attr.Attribute):
                 raise DatabaseConversionError(
-                    f'Expected attribute with class [{attribute.__class__}] to '
-                    f'be an instance of Attribute, but it is not')
+                    f"Expected attribute with class [{attribute.__class__}] to "
+                    f"be an instance of Attribute, but it is not")
 
             if isinstance(v, list):
                 values = []
@@ -342,9 +342,9 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
                 else:
                     if len(next_src_ids) > 1:
                         raise DatabaseConversionError(
-                            f'Found [{len(next_src_ids)}] edges for non-list '
-                            f'field [{field}] on object with class name '
-                            f'{dst_object.__class__.__name__}')
+                            f"Found [{len(next_src_ids)}] edges for non-list "
+                            f"field [{field}] on object with class name "
+                            f"{dst_object.__class__.__name__}")
 
                     next_dst_object = next_dst_objects[0]
                     setattr(dst_object, field, next_dst_object)
@@ -358,8 +358,8 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
         if src.__module__ not in [self._get_schema_module().__name__,
                                   self._get_entities_module().__name__]:
             raise DatabaseConversionError(
-                f'Attempting to convert class with unexpected'
-                f' module: [{src.__module__}]')
+                f"Attempting to convert class with unexpected"
+                f" module: [{src.__module__}]")
 
     def _get_entity_class(self, src: SrcBaseType) -> Type[Entity]:
         self._check_is_valid_src_module(src)

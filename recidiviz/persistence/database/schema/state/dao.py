@@ -25,7 +25,9 @@ from typing import Dict, List
 from sqlalchemy.orm import Session
 
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.database import database_utils
+from recidiviz.persistence.database.schema_entity_converter import (
+    schema_entity_converter as converter,
+)
 from recidiviz.persistence.database.schema.state import schema
 
 
@@ -77,7 +79,11 @@ def _convert_and_normalize_record_trees(
     count_by_id: Dict[int, int] = defaultdict(lambda: 0)
     for person in people:
         if count_by_id[person.person_id] == 0:
-            converted_people.append(database_utils.convert(person))
+            converted = converter.convert_schema_object_to_entity(person)
+            if not isinstance(converted, entities.Person):
+                raise ValueError(
+                    f"Unexpected return type [{converted.__class__}]")
+            converted_people.append(converted)
         count_by_id[person.person_id] += 1
 
     duplicates = [(person_id, count) for person_id, count

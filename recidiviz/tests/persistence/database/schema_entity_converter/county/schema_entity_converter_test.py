@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for database_utils.py."""
+"""Tests for county/schema_entity_converter.py."""
 from datetime import date, datetime
 from unittest import TestCase
 
@@ -38,12 +38,16 @@ from recidiviz.common.constants.person_characteristics import (
     ResidencyStatus,
 )
 from recidiviz.common.constants.county.sentence import SentenceStatus
-from recidiviz.persistence.entity.county import entities as county_entities
-from recidiviz.persistence.database.schema.county import schema as county_schema
-from recidiviz.persistence.database.database_utils import convert
+from recidiviz.persistence.database.schema_entity_converter.county.\
+    schema_entity_converter import (
+        CountyEntityToSchemaConverter,
+        CountySchemaToEntityConverter
+    )
+from recidiviz.persistence.entity.county import entities
+from recidiviz.persistence.database.schema.county import schema
 from recidiviz.tests.utils import fakes
 
-_PERSON = county_entities.Person(
+_PERSON = entities.Person.new_with_defaults(
     external_id="external_id",
     full_name="full_name",
     birthdate=date(year=2000, month=1, day=2),
@@ -59,7 +63,7 @@ _PERSON = county_entities.Person(
     resident_of_region=True,
     person_id=1234,
     jurisdiction_id='12345678',
-    bookings=[county_entities.Booking(
+    bookings=[entities.Booking.new_with_defaults(
         booking_id=2345,
         external_id="external_id",
         admission_date=date(year=2000, month=1, day=3),
@@ -78,14 +82,14 @@ _PERSON = county_entities.Person(
         classification_raw_text='HIGH',
         last_seen_time=datetime(year=2000, month=1, day=6, hour=13),
         first_seen_time=datetime(year=2000, month=1, day=1, hour=3),
-        holds=[county_entities.Hold(
+        holds=[entities.Hold.new_with_defaults(
             hold_id=3456,
             external_id="external_id",
             jurisdiction_name="jurisdiction_name",
             status=HoldStatus.ACTIVE,
             status_raw_text='active'
         )],
-        arrest=county_entities.Arrest(
+        arrest=entities.Arrest.new_with_defaults(
             arrest_id=4567,
             external_id="external_id",
             arrest_date=date(year=2000, month=1, day=6),
@@ -94,7 +98,7 @@ _PERSON = county_entities.Person(
             officer_name="officer_name",
             officer_id="officer_id",
         ),
-        charges=[county_entities.Charge(
+        charges=[entities.Charge.new_with_defaults(
             charge_id=5678,
             external_id="external_id",
             offense_date=date(year=2000, month=1, day=6),
@@ -116,7 +120,7 @@ _PERSON = county_entities.Person(
             judge_name="judge_name",
             charge_notes='notes',
 
-            bond=county_entities.Bond(
+            bond=entities.Bond.new_with_defaults(
                 bond_id=6789,
                 external_id="external_id",
                 amount_dollars=2,
@@ -127,7 +131,7 @@ _PERSON = county_entities.Person(
                 bond_agent='bond_agent',
                 booking_id=2345
             ),
-            sentence=county_entities.Sentence(
+            sentence=entities.Sentence.new_with_defaults(
                 sentence_id=7890,
                 external_id="external_id",
                 sentencing_region='sentencing_region',
@@ -152,19 +156,18 @@ _PERSON = county_entities.Person(
 )
 
 
-# TODO(1625): Update this test to use the new classes in
-#   recidiviz.persistence.schema_entity_converter
-class TestDatabaseUtils(TestCase):
+class TestCountySchemaEntityConverter(TestCase):
 
     def setup_method(self, _test_method):
         fakes.use_in_memory_sqlite_database()
 
     def test_convert_person(self):
-        schema_person = convert(_PERSON)
+        schema_person = CountyEntityToSchemaConverter().convert(_PERSON)
         session = Session()
         session.add(schema_person)
         session.commit()
 
-        people = session.query(county_schema.Person).all()
+        people = session.query(schema.Person).all()
         self.assertEqual(len(people), 1)
-        self.assertEqual(convert(one(people)), _PERSON)
+        self.assertEqual(CountySchemaToEntityConverter().convert((one(people))),
+                         _PERSON)
