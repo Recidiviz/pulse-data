@@ -28,7 +28,9 @@ from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.county.hold import HoldStatus
 from recidiviz.common.constants.person_characteristics import Gender
 from recidiviz.persistence.entity.county import entities
-from recidiviz.persistence.database import database_utils
+from recidiviz.persistence.database.schema_entity_converter import (
+    schema_entity_converter as converter,
+)
 from recidiviz.persistence.database.schema.county import schema
 from recidiviz.persistence.entity_matching import entity_matching
 from recidiviz.persistence.entity_matching.base_entity_matcher import \
@@ -100,15 +102,18 @@ class TestCountyEntityMatching(TestCase):
         session.commit()
 
         ingested_booking = attr.evolve(
-            database_utils.convert(schema_booking), booking_id=None,
+            converter.convert_schema_object_to_entity(schema_booking),
+            booking_id=None,
             custody_status=CustodyStatus.RELEASED)
 
         ingested_person = attr.evolve(
-            database_utils.convert(schema_person), person_id=None,
+            converter.convert_schema_object_to_entity(schema_person),
+            person_id=None,
             bookings=[ingested_booking])
 
         ingested_person_another = attr.evolve(
-            database_utils.convert(schema_person_another), person_id=None
+            converter.convert_schema_object_to_entity(schema_person_another),
+            person_id=None
         )
 
         # Act
@@ -145,14 +150,17 @@ class TestCountyEntityMatching(TestCase):
         session.commit()
 
         ingested_charge_no_bond = attr.evolve(
-            database_utils.convert(schema_charge), charge_id=None,
+            converter.convert_schema_object_to_entity(schema_charge),
+            charge_id=None,
             bond=None)
         ingested_booking = attr.evolve(
-            database_utils.convert(schema_booking), booking_id=None,
+            converter.convert_schema_object_to_entity(schema_booking),
+            booking_id=None,
             custody_status=CustodyStatus.RELEASED,
             charges=[ingested_charge_no_bond])
         ingested_person = attr.evolve(
-            database_utils.convert(schema_person), person_id=None,
+            converter.convert_schema_object_to_entity(schema_person),
+            person_id=None,
             bookings=[ingested_booking])
 
         # Act
@@ -160,7 +168,7 @@ class TestCountyEntityMatching(TestCase):
 
         # Assert
         expected_orphaned_bond = attr.evolve(
-            database_utils.convert(schema_bond),
+            converter.convert_schema_object_to_entity(schema_bond),
             status=BondStatus.REMOVED_WITHOUT_INFO)
         expected_charge = attr.evolve(
             ingested_charge_no_bond, charge_id=schema_charge.charge_id)
@@ -207,17 +215,19 @@ class TestCountyEntityMatching(TestCase):
         session.commit()
 
         ingested_booking = attr.evolve(
-            database_utils.convert(schema_booking), booking_id=None)
+            converter.convert_schema_object_to_entity(schema_booking),
+            booking_id=None)
 
         ingested_person = attr.evolve(
-            database_utils.convert(schema_person), person_id=None,
+            converter.convert_schema_object_to_entity(schema_person),
+            person_id=None,
             bookings=[ingested_booking])
 
         ingested_booking_another = attr.evolve(
-            database_utils.convert(schema_booking_another),
+            converter.convert_schema_object_to_entity(schema_booking_another),
             booking_id=None)
         ingested_person_another = attr.evolve(
-            database_utils.convert(schema_person_another),
+            converter.convert_schema_object_to_entity(schema_person_another),
             person_id=None,
             bookings=[ingested_booking_another])
 
@@ -268,17 +278,21 @@ class TestCountyEntityMatching(TestCase):
         session.commit()
 
         ingested_booking = attr.evolve(
-            database_utils.convert(schema_booking), booking_id=None,
+            converter.convert_schema_object_to_entity(schema_booking),
+            booking_id=None,
             custody_status=CustodyStatus.RELEASED)
         ingested_person = attr.evolve(
-            database_utils.convert(schema_person), person_id=None,
+            converter.convert_schema_object_to_entity(schema_person),
+            person_id=None,
             bookings=[ingested_booking])
 
         ingested_booking_external_id = attr.evolve(
-            database_utils.convert(schema_booking_external_id),
+            converter.convert_schema_object_to_entity(
+                schema_booking_external_id),
             booking_id=None, facility=_FACILITY)
         ingested_person_external_id = attr.evolve(
-            database_utils.convert(schema_person_external_id),
+            converter.convert_schema_object_to_entity(
+                schema_person_external_id),
             person_id=None, bookings=[ingested_booking_external_id])
 
         # Act
@@ -320,7 +334,8 @@ class TestCountyEntityMatching(TestCase):
         session.commit()
 
         ingested_person = attr.evolve(
-            database_utils.convert(schema_person), person_id=None)
+            converter.convert_schema_object_to_entity(schema_person),
+            person_id=None)
 
         expected_person = attr.evolve(
             ingested_person, person_id=schema_person.person_id)
