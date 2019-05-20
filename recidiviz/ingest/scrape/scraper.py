@@ -262,7 +262,8 @@ class Scraper(metaclass=abc.ABCMeta):
         else:
             proxies = None
         headers = headers.copy() if headers else {}
-        headers.update(scraper_utils.get_headers())
+        if 'User-Agent' not in headers:
+            headers.update(scraper_utils.get_headers())
 
         try:
             if post_data is None and json_data is None:
