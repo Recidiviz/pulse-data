@@ -22,10 +22,10 @@ import os
 
 import logging
 
-import dropbox
-from dropbox.files import DeletedMetadata, FolderMetadata
 from flask import Blueprint, request
 import gcsfs
+import dropbox
+from dropbox.files import DeletedMetadata, FolderMetadata
 from recidiviz.utils.auth import authenticate_request
 from recidiviz.utils.params import get_value
 
