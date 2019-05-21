@@ -16,7 +16,7 @@
 # =============================================================================
 """
 Module with base class for updating historical snapshots for all entities in all
-record trees rooted in a list of county Person or state Person schema objects.
+record trees rooted in a list of Person or StatePerson schema objects.
 
 See BaseHistoricalSnapshotUpdater for further documentation.
 """
@@ -46,7 +46,7 @@ _HISTORICAL_TABLE_CLASS_SUFFIX = 'History'
 class BaseHistoricalSnapshotUpdater(Generic[SchemaPersonType]):
     """
     Base class for updating historical snapshots for all entities in all record
-    trees rooted in a list of county Person or state Person schema objects.
+    trees rooted in a list of Person or StatePerson schema objects.
 
     NOTE: All code in this class makes the following two assumptions:
     1) The table ORM class names are: <ENTITY> and <ENTITY>History (e.g.

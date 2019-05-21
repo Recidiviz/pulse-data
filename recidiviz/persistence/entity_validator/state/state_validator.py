@@ -20,6 +20,6 @@
 from recidiviz.persistence.entity.state import entities
 
 
-def validate_state_person(_person: entities.Person) -> bool:
+def validate_state_person(_person: entities.StatePerson) -> bool:
     # TODO(1625): Fill this in
     return True

@@ -29,4 +29,4 @@ from recidiviz.persistence.entity.state import entities as state_entities
 # TODO(1625): Rename to EntityPersonType
 PersonType = TypeVar('PersonType',
                      county_entities.Person,
-                     state_entities.Person)
+                     state_entities.StatePerson)

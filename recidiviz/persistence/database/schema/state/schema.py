@@ -62,29 +62,31 @@ from recidiviz.persistence.database.schema.shared_enums import (
 # between the master and historical tables for each entity.
 
 
-assessment_class = Enum(enum_strings.assessment_class_mental_health,
-                        enum_strings.assessment_class_risk,
-                        enum_strings.assessment_class_security_classification,
-                        enum_strings.assessment_class_substance_abuse,
-                        name='state_assessment_class')
+state_assessment_class = Enum(
+    enum_strings.state_assessment_class_mental_health,
+    enum_strings.state_assessment_class_risk,
+    enum_strings.state_assessment_class_security_classification,
+    enum_strings.state_assessment_class_substance_abuse,
+    name='state_assessment_class')
 
-assessment_type = Enum(enum_strings.assessment_type_asi,
-                       enum_strings.assessment_type_lsir,
-                       enum_strings.assessment_type_oras,
-                       enum_strings.assessment_type_psa,
-                       name='state_assessment_type')
+state_assessment_type = Enum(
+    enum_strings.state_assessment_type_asi,
+    enum_strings.state_assessment_type_lsir,
+    enum_strings.state_assessment_type_oras,
+    enum_strings.state_assessment_type_psa,
+    name='state_assessment_type')
 
 # TODO(1625): Add state-specific schema enums here
 
 
 # Shared mixin columns
-class _ReferencesPersonSharedColumns:
+class _ReferencesStatePersonSharedColumns:
     """A mixin which defines columns for any table whose rows reference an
-    individual Person"""
+    individual StatePerson"""
 
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_, **__):
-        if cls is _ReferencesPersonSharedColumns:
+        if cls is _ReferencesStatePersonSharedColumns:
             raise Exception(f'[{cls}] cannot be instantiated')
         return super().__new__(cls)
 
@@ -108,15 +110,15 @@ class _HistoryTableSharedColumns:
     valid_to = Column(DateTime)
 
 
-# PersonExternalId
+# StatePersonExternalId
 
-class _PersonExternalIdSharedColumns(_ReferencesPersonSharedColumns):
-    """A mixin which defines all columns common to PersonExternalId and
-    PersonExternalIdHistory"""
+class _StatePersonExternalIdSharedColumns(_ReferencesStatePersonSharedColumns):
+    """A mixin which defines all columns common to StatePersonExternalId and
+    StatePersonExternalIdHistory"""
 
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_, **__):
-        if cls is _PersonExternalIdSharedColumns:
+        if cls is _StatePersonExternalIdSharedColumns:
             raise Exception(f'[{cls}] cannot be instantiated')
         return super().__new__(cls)
 
@@ -124,19 +126,19 @@ class _PersonExternalIdSharedColumns(_ReferencesPersonSharedColumns):
     state_code = Column(String(255), nullable=False, index=True)
 
 
-class PersonExternalId(Base,
-                       DatabaseEntity,
-                       _PersonExternalIdSharedColumns):
+class StatePersonExternalId(Base,
+                            DatabaseEntity,
+                            _StatePersonExternalIdSharedColumns):
     """Represents a state person in the SQL schema"""
     __tablename__ = 'state_person_external_id'
 
     person_external_id_id = Column(Integer, primary_key=True)
 
 
-class PersonExternalIdHistory(Base,
-                              DatabaseEntity,
-                              _PersonExternalIdSharedColumns,
-                              _HistoryTableSharedColumns):
+class StatePersonExternalIdHistory(Base,
+                                   DatabaseEntity,
+                                   _StatePersonExternalIdSharedColumns,
+                                   _HistoryTableSharedColumns):
     """Represents the historical state of a state person external id"""
     __tablename__ = 'state_person_external_id_history'
 
@@ -150,15 +152,15 @@ class PersonExternalIdHistory(Base,
         nullable=False, index=True)
 
 
-# PersonRace
+# StatePersonRace
 
-class _PersonRaceSharedColumns(_ReferencesPersonSharedColumns):
-    """A mixin which defines all columns common to PersonRace and
-    PersonRaceHistory"""
+class _StatePersonRaceSharedColumns(_ReferencesStatePersonSharedColumns):
+    """A mixin which defines all columns common to StatePersonRace and
+    StatePersonRaceHistory"""
 
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_, **__):
-        if cls is _PersonRaceSharedColumns:
+        if cls is _StatePersonRaceSharedColumns:
             raise Exception(f'[{cls}] cannot be instantiated')
         return super().__new__(cls)
 
@@ -166,19 +168,19 @@ class _PersonRaceSharedColumns(_ReferencesPersonSharedColumns):
     race_raw_text = Column(String(255))
 
 
-class PersonRace(Base,
-                 DatabaseEntity,
-                 _PersonRaceSharedColumns):
+class StatePersonRace(Base,
+                      DatabaseEntity,
+                      _StatePersonRaceSharedColumns):
     """Represents a state person in the SQL schema"""
     __tablename__ = 'state_person_race'
 
     person_race_id = Column(Integer, primary_key=True)
 
 
-class PersonRaceHistory(Base,
-                        DatabaseEntity,
-                        _PersonRaceSharedColumns,
-                        _HistoryTableSharedColumns):
+class StatePersonRaceHistory(Base,
+                             DatabaseEntity,
+                             _StatePersonRaceSharedColumns,
+                             _HistoryTableSharedColumns):
     """Represents the historical state of a state person race"""
     __tablename__ = 'state_person_race_history'
 
@@ -192,15 +194,15 @@ class PersonRaceHistory(Base,
         nullable=False, index=True)
 
 
-# PersonEthnicity
+# StatePersonEthnicity
 
-class _PersonEthnicitySharedColumns(_ReferencesPersonSharedColumns):
-    """A mixin which defines all columns common to PersonEthnicity and
-    PersonEthnicityHistory"""
+class _StatePersonEthnicitySharedColumns(_ReferencesStatePersonSharedColumns):
+    """A mixin which defines all columns common to StatePersonEthnicity and
+    StatePersonEthnicityHistory"""
 
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_, **__):
-        if cls is _PersonEthnicitySharedColumns:
+        if cls is _StatePersonEthnicitySharedColumns:
             raise Exception(f'[{cls}] cannot be instantiated')
         return super().__new__(cls)
 
@@ -208,19 +210,19 @@ class _PersonEthnicitySharedColumns(_ReferencesPersonSharedColumns):
     ethnicity_raw_text = Column(String(255))
 
 
-class PersonEthnicity(Base,
-                      DatabaseEntity,
-                      _PersonEthnicitySharedColumns):
+class StatePersonEthnicity(Base,
+                           DatabaseEntity,
+                           _StatePersonEthnicitySharedColumns):
     """Represents a state person in the SQL schema"""
     __tablename__ = 'state_person_ethnicity'
 
     person_ethnicity_id = Column(Integer, primary_key=True)
 
 
-class PersonEthnicityHistory(Base,
-                             DatabaseEntity,
-                             _PersonEthnicitySharedColumns,
-                             _HistoryTableSharedColumns):
+class StatePersonEthnicityHistory(Base,
+                                  DatabaseEntity,
+                                  _StatePersonEthnicitySharedColumns,
+                                  _HistoryTableSharedColumns):
     """Represents the historical state of a state person ethnicity"""
     __tablename__ = 'state_person_ethnicity_history'
 
@@ -234,15 +236,15 @@ class PersonEthnicityHistory(Base,
         nullable=False, index=True)
 
 
-# Person
+# StatePerson
 
-class _PersonSharedColumns:
-    """A mixin which defines all columns common to Person and
-    PersonHistory"""
+class _StatePersonSharedColumns:
+    """A mixin which defines all columns common to StatePerson and
+    StatePersonHistory"""
 
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_, **__):
-        if cls is _PersonSharedColumns:
+        if cls is _StatePersonSharedColumns:
             raise Exception(f'[{cls}] cannot be instantiated')
         return super().__new__(cls)
 
@@ -261,25 +263,25 @@ class _PersonSharedColumns:
     residency_status = Column(residency_status)
 
 
-# TODO(1625): Once these fields match those on entities.Person, update
-#  schema entity converter to handle Person properly.
-class Person(Base, DatabaseEntity, _PersonSharedColumns):
+# TODO(1625): Once these fields match those on entities.StatePerson, update
+#  schema entity converter to handle StatePerson properly.
+class StatePerson(Base, DatabaseEntity, _StatePersonSharedColumns):
     """Represents a person in the state SQL schema"""
     __tablename__ = 'state_person'
 
     person_id = Column(Integer, primary_key=True)
 
-    external_ids = relationship('PersonExternalId', lazy='joined')
-    races = relationship('PersonRace', lazy='joined')
-    ethnicities = relationship('PersonEthnicity', lazy='joined')
-    assessments = relationship('Assessment', lazy='joined')
-    sentence_groups = relationship('SentenceGroup', lazy='joined')
+    external_ids = relationship('StatePersonExternalId', lazy='joined')
+    races = relationship('StatePersonRace', lazy='joined')
+    ethnicities = relationship('StatePersonEthnicity', lazy='joined')
+    assessments = relationship('StateAssessment', lazy='joined')
+    sentence_groups = relationship('StateSentenceGroup', lazy='joined')
 
 
-class PersonHistory(Base,
-                    DatabaseEntity,
-                    _PersonSharedColumns,
-                    _HistoryTableSharedColumns):
+class StatePersonHistory(Base,
+                         DatabaseEntity,
+                         _StatePersonSharedColumns,
+                         _HistoryTableSharedColumns):
 
     """Represents the historical state of a state person"""
     __tablename__ = 'state_person_history'
@@ -293,35 +295,35 @@ class PersonHistory(Base,
         nullable=False, index=True)
 
 
-# Assessment
+# StateAssessment
 
-class _AssessmentSharedColumns(_ReferencesPersonSharedColumns):
-    """A mixin which defines all columns common to Assessment and
-    AssessmentHistory"""
+class _StateAssessmentSharedColumns(_ReferencesStatePersonSharedColumns):
+    """A mixin which defines all columns common to StateAssessment and
+    StateAssessmentHistory"""
 
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_, **__):
-        if cls is _AssessmentSharedColumns:
+        if cls is _StateAssessmentSharedColumns:
             raise Exception(f'[{cls}] cannot be instantiated')
         return super().__new__(cls)
 
-    # TODO(1625) Fill out Assessment columns
+    # TODO(1625) Fill out StateAssessment columns
 
 
-class Assessment(Base,
-                 DatabaseEntity,
-                 _AssessmentSharedColumns):
+class StateAssessment(Base,
+                      DatabaseEntity,
+                      _StateAssessmentSharedColumns):
     """Represents an assessment in the SQL schema"""
     __tablename__ = 'assessment'
 
     assessment_id = Column(Integer, primary_key=True)
 
 
-class AssessmentHistory(Base,
-                        DatabaseEntity,
-                        _AssessmentSharedColumns,
-                        _HistoryTableSharedColumns):
-    """Represents the historical state of an Assessment"""
+class StateAssessmentHistory(Base,
+                             DatabaseEntity,
+                             _StateAssessmentSharedColumns,
+                             _HistoryTableSharedColumns):
+    """Represents the historical state of an StateAssessment"""
     __tablename__ = 'assessment_history'
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
@@ -334,35 +336,35 @@ class AssessmentHistory(Base,
         nullable=False, index=True)
 
 
-# SentenceGroup
+# StateSentenceGroup
 
-class _SentenceGroupSharedColumns(_ReferencesPersonSharedColumns):
-    """A mixin which defines all columns common to SentenceGroup and
-    SentenceGroupHistory"""
+class _StateSentenceGroupSharedColumns(_ReferencesStatePersonSharedColumns):
+    """A mixin which defines all columns common to StateSentenceGroup and
+    StateSentenceGroupHistory"""
 
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_, **__):
-        if cls is _SentenceGroupSharedColumns:
+        if cls is _StateSentenceGroupSharedColumns:
             raise Exception(f'[{cls}] cannot be instantiated')
         return super().__new__(cls)
 
-    # TODO(1625) Fill out SentenceGroup columns
+    # TODO(1625) Fill out StateSentenceGroup columns
 
 
-class SentenceGroup(Base,
-                    DatabaseEntity,
-                    _SentenceGroupSharedColumns):
-    """Represents a SentenceGroup in the SQL schema"""
+class StateSentenceGroup(Base,
+                         DatabaseEntity,
+                         _StateSentenceGroupSharedColumns):
+    """Represents a StateSentenceGroup in the SQL schema"""
     __tablename__ = 'sentence_group'
 
     sentence_group_id = Column(Integer, primary_key=True)
 
 
-class SentenceGroupHistory(Base,
-                           DatabaseEntity,
-                           _SentenceGroupSharedColumns,
-                           _HistoryTableSharedColumns):
-    """Represents the historical state of a SentenceGroup"""
+class StateSentenceGroupHistory(Base,
+                                DatabaseEntity,
+                                _StateSentenceGroupSharedColumns,
+                                _HistoryTableSharedColumns):
+    """Represents the historical state of a StateSentenceGroup"""
     __tablename__ = 'sentence_group_history'
 
     # This primary key should NOT be used. It only exists because SQLAlchemy

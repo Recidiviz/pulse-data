@@ -35,13 +35,13 @@ class TestStateHistoricalSnapshotUpdater(BaseHistoricalSnapshotUpdaterTest):
     def testConvertStateRecordTree(self):
         person_id = 143
 
-        person = state_schema.Person(
+        person = state_schema.StatePerson(
             person_id=person_id,
             full_name='name',
             birthdate=datetime.date(1980, 1, 5),
             birthdate_inferred_from_age=False,
             external_ids=[
-                state_schema.PersonExternalId(
+                state_schema.StatePersonExternalId(
                     person_external_id_id=234,
                     external_id='person_external_id',
                     state_code='us_ny',
@@ -49,7 +49,7 @@ class TestStateHistoricalSnapshotUpdater(BaseHistoricalSnapshotUpdaterTest):
                 )
             ],
             races=[
-                state_schema.PersonRace(
+                state_schema.StatePersonRace(
                     person_race_id=345,
                     race=None,
                     race_raw_text='BLK',
@@ -57,7 +57,7 @@ class TestStateHistoricalSnapshotUpdater(BaseHistoricalSnapshotUpdaterTest):
                 )
             ],
             ethnicities=[
-                state_schema.PersonEthnicity(
+                state_schema.StatePersonEthnicity(
                     person_ethnicity_id=345,
                     ethnicity=Ethnicity.NOT_HISPANIC.value,
                     ethnicity_raw_text='HISP',
@@ -65,13 +65,13 @@ class TestStateHistoricalSnapshotUpdater(BaseHistoricalSnapshotUpdaterTest):
                 )
             ],
             assessments=[
-                state_schema.Assessment(
+                state_schema.StateAssessment(
                     assessment_id=456,
                     person_id=person_id,
                 )
             ],
             sentence_groups=[
-                state_schema.SentenceGroup(
+                state_schema.StateSentenceGroup(
                     sentence_group_id=567,
                     person_id=person_id,
                 )
@@ -86,9 +86,9 @@ class TestStateHistoricalSnapshotUpdater(BaseHistoricalSnapshotUpdaterTest):
 
         assert_session = Session()
         history_snapshots = assert_session.query(
-            state_schema.PersonHistory
+            state_schema.StatePersonHistory
         ).filter(
-            state_schema.PersonHistory.person_id == person_id
+            state_schema.StatePersonHistory.person_id == person_id
         ).all()
 
         person_snapshot = one(history_snapshots)
@@ -107,9 +107,9 @@ class TestStateHistoricalSnapshotUpdater(BaseHistoricalSnapshotUpdaterTest):
         assert_session = Session()
 
         history_snapshots = assert_session.query(
-            state_schema.PersonHistory
+            state_schema.StatePersonHistory
         ).filter(
-            state_schema.PersonHistory.person_id == person_id
+            state_schema.StatePersonHistory.person_id == person_id
         ).all()
 
         assert len(history_snapshots) == 2
