@@ -63,6 +63,7 @@ def validate_regions(region_codes: List[str],
     region_codes_output = set(region_codes)
 
     supported_regions = regions.get_supported_region_codes(timezone=timezone)
+    logging.info("Supported regions: %s", supported_regions)
     for region in region_codes:
         if region == 'all':
             # We only do this if all is passed to still allow people to manually
