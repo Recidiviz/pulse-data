@@ -15,32 +15,23 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Constants used by CourtCase."""
+"""Shared constants related to custody."""
 from typing import Dict
 
+import recidiviz.common.constants.state.enum_canonical_strings as \
+    state_enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
-class CourtType(EntityEnum, metaclass=EntityEnumMeta):
-    # TODO(1697): Add values here
+class StateIncarcerationType(EntityEnum, metaclass=EntityEnumMeta):
+    COUNTY_JAIL = state_enum_strings.state_incarceration_type_county_jail
+    STATE_PRISON = state_enum_strings.state_incarceration_type_state_prison
 
     @staticmethod
     def _get_default_map():
-        return _COURT_TYPE_MAP
+        return _STATE_INCARCERATION_TYPE_MAP
 
 
-class CourtCaseStatus(EntityEnum, metaclass=EntityEnumMeta):
-    # TODO(1697): Add values here
-
-    @staticmethod
-    def _get_default_map():
-        return _COURT_CASE_STATUS_MAP
-
-
-_COURT_TYPE_MAP: Dict[str, CourtType] = {
-    # TODO(1697): Add values here
-}
-
-_COURT_CASE_STATUS_MAP: Dict[str, CourtCaseStatus] = {
+_STATE_INCARCERATION_TYPE_MAP: Dict[str, StateIncarcerationType] = {
     # TODO(1697): Add values here
 }

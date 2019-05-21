@@ -29,7 +29,7 @@ from recidiviz.persistence.entity_validator.state.state_validator import \
 
 
 def validate(people: List[PersonType]) -> Tuple[List[PersonType], int]:
-    """Validates a list of Person entities and returns the valid people and
+    """Validates a list of PersonType entities and returns the valid people and
     the number of people with validation errors."""
     data_validation_errors = 0
     validated_people = []
@@ -46,9 +46,9 @@ def _get_validator(person: PersonType) -> Callable[[PersonType], bool]:
     if isinstance(person, county_entities.Person):
         return validate_county_person
 
-    if isinstance(person, state_entities.Person):
+    if isinstance(person, state_entities.StatePerson):
         return validate_state_person
 
-    raise ValueError("Person entity to validate was not of expected type "
-                     "county_entities.Person or state_entities.Person but [{}]"
-                     .format(person.__class__.__name__))
+    raise ValueError(f"StatePerson entity to validate was not of expected type "
+                     f"county_entities.Person or state_entities.StatePerson "
+                     f"but [{person.__class__.__name__}]")

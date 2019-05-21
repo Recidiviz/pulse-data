@@ -17,7 +17,7 @@
 
 """
 Method to update historical snapshots for all entities in all record trees
-rooted in a list of county Person or state Person schema objects.
+rooted in a list of Person or StatePerson schema objects.
 
 See BaseHistoricalSnapshotUpdater for further documentation.
 """
@@ -60,9 +60,11 @@ def update_historical_snapshots(session: Session,
     if all(isinstance(person, county_schema.Person) for person in root_people):
         CountyHistoricalSnapshotUpdater().update_historical_snapshots(
             session, root_people, orphaned_entities, ingest_metadata)
-    elif all(isinstance(person, state_schema.Person) for person in root_people):
+    elif all(isinstance(person,
+                        state_schema.StatePerson) for person in root_people):
         StateHistoricalSnapshotUpdater().update_historical_snapshots(
             session, root_people, orphaned_entities, ingest_metadata)
     else:
         raise ValueError(f'Expected all types to be the same type, and one of '
-                         f'{county_schema.Person} or {state_schema.Person}')
+                         f'[{county_schema.Person}] or '
+                         f'[{state_schema.StatePerson}]')

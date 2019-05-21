@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for state-specific SQLAlchemy enums."""
-from recidiviz.common.constants.state import assessment
+from recidiviz.common.constants.state import state_assessment
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.tests.persistence.database.schema.shared_enums_test import (
     SchemaEnumsTest
@@ -34,8 +34,8 @@ class TestStateSchemaEnums(SchemaEnumsTest):
         # If a schema enum does not correspond to a persistence layer enum,
         # it should be mapped to None.
         state_enums_mapping = {
-            'assessment_class': assessment.AssessmentClass,
-            'assessment_type': assessment.AssessmentType,
+            'state_assessment_class': state_assessment.StateAssessmentClass,
+            'state_assessment_type': state_assessment.StateAssessmentType,
             # TODO(1625): Add more state schema enum mappings here
         }
 

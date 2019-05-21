@@ -19,7 +19,7 @@ from sqlalchemy import Enum
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 
-# Person
+# Person/StatePerson
 
 gender = Enum(enum_strings.external_unknown,
               enum_strings.gender_female,
