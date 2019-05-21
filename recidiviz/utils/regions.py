@@ -21,6 +21,7 @@ Regions represent geographic areas/legal jurisdictions from which we ingest
 criminal justice data and calculate metrics.
 """
 import importlib
+import logging
 import os
 import pkgutil
 from datetime import datetime, tzinfo
@@ -172,6 +173,7 @@ def get_supported_region_codes(timezone: tzinfo = None) -> Set[str]:
     """
     all_region_codes = {region_module.name for region_module
                         in pkgutil.iter_modules([SCRAPER_BASE_REGION_PATH])}
+    logging.info("All region codes: %s", all_region_codes)
     if timezone:
         dt = datetime.now()
         return {region_code for region_code in all_region_codes
