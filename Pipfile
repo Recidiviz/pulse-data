@@ -61,7 +61,6 @@ google-api-python-client = "*"
 google-auth = "*"
 deepdiff = "*"
 "mmh3" = "*"
-dropbox = "*"
 
 [requires]
 python_version = "3.7"
