@@ -43,7 +43,8 @@ def read_people(session, full_name=None, birthdate=None) \
     return _convert_and_normalize_record_trees(query.all())
 
 
-def read_people_by_external_ids(session: Session, _region: str,
+def read_people_by_external_ids(session: Session,
+                                _region: str,
                                 ingested_people: List[entities.StatePerson]) \
         -> List[entities.StatePerson]:
     """
@@ -56,16 +57,22 @@ def read_people_by_external_ids(session: Session, _region: str,
             region_to_external_ids[external_id_info.state_code].append(
                 external_id_info.external_id)
 
-    state_persons: List[schema.StatePerson] = []
-    for state_code, external_ids in region_to_external_ids.items():
-        query = session.query(schema.StatePerson) \
-            .join(schema.StatePersonExternalId) \
-            .filter(schema.StatePersonExternalId.state_code == state_code) \
-            .filter(schema.StatePerson.person_id ==
-                    schema.StatePersonExternalId.person_id) \
-            .filter(schema.StatePersonExternalId.external_id.in_(external_ids))
+    # TODO(1625): Revert back to the proper version of this query
+    state_persons: List[schema.StatePerson] = \
+        session.query(schema.StatePerson).all()
 
-        state_persons += query.all()
+    # state_persons: List[schema.StatePerson] = []
+    # for state_code, external_ids in region_to_external_ids.items():
+    #     query = session.query(schema.StatePerson)
+    #
+    #     query = query.join(schema.StatePersonExternalId) \
+    #         .filter(schema.StatePersonExternalId.state_code == state_code) \
+    #         .filter(schema.StatePerson.person_id ==
+    #                 schema.StatePersonExternalId.person_id) \
+    #         .filter(schema.StatePersonExternalId.external_id.in_(
+    #             external_ids))
+    #
+    #     state_persons += query.all()
 
     return _convert_and_normalize_record_trees(state_persons)
 
