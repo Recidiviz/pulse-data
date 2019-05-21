@@ -15,25 +15,32 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Consatnts related to fine sentences."""
+"""Constants used by CourtCase."""
 from typing import Dict
 
-import recidiviz.common.constants.enum_canonical_strings as enum_strings
-import recidiviz.common.constants.state.enum_canonical_strings as \
-    state_enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
-class FineStatus(EntityEnum, metaclass=EntityEnumMeta):
-    EXTERNAL_UNKNOWN = enum_strings.external_unknown
-    PAID = state_enum_strings.fine_status_paid
-    UNPAID = state_enum_strings.fine_status_unpaid
+class StateCourtType(EntityEnum, metaclass=EntityEnumMeta):
+    # TODO(1697): Add values here
 
     @staticmethod
     def _get_default_map():
-        return _FINE_STATUS_MAP
+        return _STATE_COURT_TYPE_MAP
 
 
-_FINE_STATUS_MAP: Dict[str, FineStatus] = {
+class StateCourtCaseStatus(EntityEnum, metaclass=EntityEnumMeta):
+    # TODO(1697): Add values here
+
+    @staticmethod
+    def _get_default_map():
+        return _STATE_COURT_CASE_STATUS_MAP
+
+
+_STATE_COURT_TYPE_MAP: Dict[str, StateCourtType] = {
+    # TODO(1697): Add values here
+}
+
+_STATE_COURT_CASE_STATUS_MAP: Dict[str, StateCourtCaseStatus] = {
     # TODO(1697): Add values here
 }

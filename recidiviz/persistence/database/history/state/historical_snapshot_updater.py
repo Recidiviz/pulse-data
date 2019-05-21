@@ -27,7 +27,7 @@ from recidiviz.persistence.database.schema.state import schema
 
 
 class StateHistoricalSnapshotUpdater(
-        BaseHistoricalSnapshotUpdater[schema.Person]):
+        BaseHistoricalSnapshotUpdater[schema.StatePerson]):
     """State schema-specific implementation of BaseHistoricalSnapshotUpdater"""
 
     def get_schema_module(self) -> ModuleType:

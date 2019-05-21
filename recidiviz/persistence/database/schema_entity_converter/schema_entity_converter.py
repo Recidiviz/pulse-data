@@ -46,11 +46,11 @@ def _is_obj_in_module(obj: Any, module: ModuleType) -> bool:
 def convert_entities_to_schema(entities: Sequence[Entity]) -> List[Base]:
     def _is_county_entity(obj: Any) -> bool:
         return _is_obj_in_module(obj, county_entities) and \
-               issubclass(obj.__class__, Entity)
+            issubclass(obj.__class__, Entity)
 
     def _is_state_entity(obj: Any) -> bool:
         return _is_obj_in_module(obj, state_entities) and \
-               issubclass(obj.__class__, Entity)
+            issubclass(obj.__class__, Entity)
 
     if all(_is_county_entity(obj) for obj in entities):
         return list(CountyEntityToSchemaConverter().convert_all(entities))
@@ -64,11 +64,11 @@ def convert_schema_objects_to_entity(
         schema_objects: List[Base]) -> List[Entity]:
     def _is_county_schema_object(obj: Any) -> bool:
         return _is_obj_in_module(obj, county_schema) and \
-               issubclass(obj.__class__, Base)
+            issubclass(obj.__class__, Base)
 
     def _is_state_schema_object(obj: Any) -> bool:
         return _is_obj_in_module(obj, state_schema) and \
-               issubclass(obj.__class__, Base)
+            issubclass(obj.__class__, Base)
 
     if all(_is_county_schema_object(obj) for obj in schema_objects):
         return CountySchemaToEntityConverter().convert_all(schema_objects)

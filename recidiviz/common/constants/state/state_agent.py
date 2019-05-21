@@ -15,28 +15,28 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Constants related to an Agent entity."""
+"""Constants related to an StateAgent entity."""
 
 import recidiviz.common.constants.state.enum_canonical_strings as \
     state_enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
-class AgentType(EntityEnum, metaclass=EntityEnumMeta):
-    JUDGE = state_enum_strings.agent_judge
-    PAROLE_BOARD_MEMBER = state_enum_strings.agent_parole_board_member
+class StateAgentType(EntityEnum, metaclass=EntityEnumMeta):
+    JUDGE = state_enum_strings.state_agent_judge
+    PAROLE_BOARD_MEMBER = state_enum_strings.state_agent_parole_board_member
     # A parole/probation officer (PO)
-    SUPERVISION_OFFICER = state_enum_strings.agent_supervision_officer
-    UNIT_SUPERVISOR = state_enum_strings.agent_unit_supervisor
+    SUPERVISION_OFFICER = state_enum_strings.state_agent_supervision_officer
+    UNIT_SUPERVISOR = state_enum_strings.state_agent_unit_supervisor
 
     @staticmethod
     def _get_default_map():
-        return _AGENT_TYPE_MAP
+        return _STATE_AGENT_TYPE_MAP
 
 
-_AGENT_TYPE_MAP = {
-    'JUDGE': AgentType.JUDGE,
-    'PAROLE BOARD MEMBER': AgentType.PAROLE_BOARD_MEMBER,
-    'SUPERVISION OFFICER': AgentType.SUPERVISION_OFFICER,
-    'UNIT SUPERVISOR': AgentType.UNIT_SUPERVISOR,
+_STATE_AGENT_TYPE_MAP = {
+    'JUDGE': StateAgentType.JUDGE,
+    'PAROLE BOARD MEMBER': StateAgentType.PAROLE_BOARD_MEMBER,
+    'SUPERVISION OFFICER': StateAgentType.SUPERVISION_OFFICER,
+    'UNIT SUPERVISOR': StateAgentType.UNIT_SUPERVISOR,
 }

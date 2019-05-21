@@ -32,20 +32,20 @@ from recidiviz.persistence.database.schema.state import schema
 
 
 def read_people(session, full_name=None, birthdate=None) \
-        -> List[entities.Person]:
+        -> List[entities.StatePerson]:
     """Read all people matching the optional surname and birthdate. If neither
     the surname or birthdate are provided, then read all people."""
-    query = session.query(schema.Person)
+    query = session.query(schema.StatePerson)
     if full_name is not None:
-        query = query.filter(schema.Person.full_name == full_name)
+        query = query.filter(schema.StatePerson.full_name == full_name)
     if birthdate is not None:
-        query = query.filter(schema.Person.birthdate == birthdate)
+        query = query.filter(schema.StatePerson.birthdate == birthdate)
     return _convert_and_normalize_record_trees(query.all())
 
 
 def read_people_by_external_ids(session: Session, _region: str,
-                                ingested_people: List[entities.Person]) \
-        -> List[entities.Person]:
+                                ingested_people: List[entities.StatePerson]) \
+        -> List[entities.StatePerson]:
     """
     Reads all people for the given |region| that have external_ids that match
     the external_ids from the |ingested_people|.
@@ -56,14 +56,14 @@ def read_people_by_external_ids(session: Session, _region: str,
             region_to_external_ids[external_id_info.state_code].append(
                 external_id_info.external_id)
 
-    state_persons: List[schema.Person] = []
+    state_persons: List[schema.StatePerson] = []
     for state_code, external_ids in region_to_external_ids.items():
-        query = session.query(schema.Person) \
-            .join(schema.PersonExternalId) \
-            .filter(schema.PersonExternalId.state_code == state_code) \
-            .filter(schema.Person.person_id ==
-                    schema.PersonExternalId.person_id) \
-            .filter(schema.PersonExternalId.external_id.in_(external_ids))
+        query = session.query(schema.StatePerson) \
+            .join(schema.StatePersonExternalId) \
+            .filter(schema.StatePersonExternalId.state_code == state_code) \
+            .filter(schema.StatePerson.person_id ==
+                    schema.StatePersonExternalId.person_id) \
+            .filter(schema.StatePersonExternalId.external_id.in_(external_ids))
 
         state_persons += query.all()
 
@@ -71,16 +71,16 @@ def read_people_by_external_ids(session: Session, _region: str,
 
 
 def _convert_and_normalize_record_trees(
-        people: List[schema.Person]) -> List[entities.Person]:
+        people: List[schema.StatePerson]) -> List[entities.StatePerson]:
     """Converts schema record trees to persistence layer models and removes
     any duplicate people created by how SQLAlchemy handles joins
     """
-    converted_people: List[entities.Person] = []
+    converted_people: List[entities.StatePerson] = []
     count_by_id: Dict[int, int] = defaultdict(lambda: 0)
     for person in people:
         if count_by_id[person.person_id] == 0:
             converted = converter.convert_schema_object_to_entity(person)
-            if not isinstance(converted, entities.Person):
+            if not isinstance(converted, entities.StatePerson):
                 raise ValueError(
                     f"Unexpected return type [{converted.__class__}]")
             converted_people.append(converted)

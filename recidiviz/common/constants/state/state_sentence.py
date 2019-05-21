@@ -15,23 +15,32 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Shared constants related to custody."""
-from typing import Dict
+"""Constants related to a state Sentence."""
 
+import recidiviz.common.constants.enum_canonical_strings as enum_strings
 import recidiviz.common.constants.state.enum_canonical_strings as \
     state_enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
-class IncarcerationType(EntityEnum, metaclass=EntityEnumMeta):
-    COUNTY_JAIL = state_enum_strings.incarceration_type_county_jail
-    STATE_PRISON = state_enum_strings.incarceration_type_state_prison
+class StateSentenceStatus(EntityEnum, metaclass=EntityEnumMeta):
+    COMMUTED = state_enum_strings.state_sentence_status_commuted
+    COMPLETED = state_enum_strings.state_sentence_status_completed
+    EXTERNAL_UNKNOWN = enum_strings.external_unknown
+    SERVING = state_enum_strings.state_sentence_status_serving
+    SUSPENDED = state_enum_strings.state_sentence_status_suspended
 
     @staticmethod
     def _get_default_map():
-        return _INCARCERATION_TYPE_MAP
+        return _STATE_SENTENCE_STATUS_MAP
 
 
-_INCARCERATION_TYPE_MAP: Dict[str, IncarcerationType] = {
-    # TODO(1697): Add values here
+# MappableEnum.parse will strip punctuation and separate tokens with a single
+# space. Add mappings here using a single space between words and numbers.
+# For example, `N/A` can be written as `N A` and `(10%)` can be written as `10`.
+_STATE_SENTENCE_STATUS_MAP = {
+    'COMMUTED': StateSentenceStatus.COMMUTED,
+    'COMPLETED': StateSentenceStatus.COMPLETED,
+    'SERVING': StateSentenceStatus.SERVING,
+    'SUSPENDED': StateSentenceStatus.SERVING,
 }

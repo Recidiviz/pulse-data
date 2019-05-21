@@ -15,31 +15,32 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Constants related to a SupervisionViolation."""
+"""Constants related to a StateSupervisionViolation."""
 
 import recidiviz.common.constants.state.enum_canonical_strings as \
     state_enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
-class SupervisionViolationType(EntityEnum, metaclass=EntityEnumMeta):
-    ABSCONDED = state_enum_strings.supervision_violation_type_absconded
-    FELONY = state_enum_strings.supervision_violation_type_felony
-    MISDEMEANOR = state_enum_strings.supervision_violation_type_misdemeanor
-    MUNICIPAL = state_enum_strings.supervision_violation_type_municipal
-    TECHNICAL = state_enum_strings.supervision_violation_type_technical
+class StateSupervisionViolationType(EntityEnum, metaclass=EntityEnumMeta):
+    ABSCONDED = state_enum_strings.state_supervision_violation_type_absconded
+    FELONY = state_enum_strings.state_supervision_violation_type_felony
+    MISDEMEANOR = \
+        state_enum_strings.state_supervision_violation_type_misdemeanor
+    MUNICIPAL = state_enum_strings.state_supervision_violation_type_municipal
+    TECHNICAL = state_enum_strings.state_supervision_violation_type_technical
 
     @staticmethod
     def _get_default_map():
-        return _SUPERVISION_VIOLATION_TYPE_MAP
+        return _STATE_SUPERVISION_VIOLATION_TYPE_MAP
 
 
-_SUPERVISION_VIOLATION_TYPE_MAP = {
-    'ABSCONDER': SupervisionViolationType.ABSCONDED,
-    'FELONY': SupervisionViolationType.FELONY,
-    'F': SupervisionViolationType.FELONY,
-    'MISDEMEANOR': SupervisionViolationType.MISDEMEANOR,
-    'M': SupervisionViolationType.MISDEMEANOR,
-    'MUNICIPAL': SupervisionViolationType.MUNICIPAL,
-    'TECHNICAL': SupervisionViolationType.TECHNICAL,
+_STATE_SUPERVISION_VIOLATION_TYPE_MAP = {
+    'ABSCONDER': StateSupervisionViolationType.ABSCONDED,
+    'FELONY': StateSupervisionViolationType.FELONY,
+    'F': StateSupervisionViolationType.FELONY,
+    'MISDEMEANOR': StateSupervisionViolationType.MISDEMEANOR,
+    'M': StateSupervisionViolationType.MISDEMEANOR,
+    'MUNICIPAL': StateSupervisionViolationType.MUNICIPAL,
+    'TECHNICAL': StateSupervisionViolationType.TECHNICAL,
 }

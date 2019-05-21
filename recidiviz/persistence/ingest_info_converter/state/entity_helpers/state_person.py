@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Converts an ingest_info proto Person to a persistence entity."""
+"""Converts an ingest_info proto StatePerson to a persistence entity."""
 
 import json
 from typing import Optional
@@ -37,7 +37,7 @@ from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import \
 
 def copy_fields_to_builder(state_person_builder, proto, metadata):
     """Mutates the provided |state_person_builder| by converting an
-    ingest_info proto Person.
+    ingest_info proto StatePerson.
 
     Note: This will not copy children into the Builder!
     """

@@ -69,7 +69,7 @@ def _get_matcher(ingested_people: List[PersonType]) \
     if isinstance(sample, county_entities.Person):
         return CountyEntityMatcher()
 
-    if isinstance(sample, state_entities.Person):
+    if isinstance(sample, state_entities.StatePerson):
         return StateEntityMatcher()
 
     raise ValueError('Invalid person type of [{}]'
