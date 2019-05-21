@@ -64,18 +64,8 @@ def test_get_all_table_classes():
         'SentenceRelationshipHistory',
     ]
     state_table_names = [
-        'StateAssessment',
-        'StateAssessmentHistory',
         'StatePerson',
         'StatePersonHistory',
-        'StatePersonEthnicity',
-        'StatePersonEthnicityHistory',
-        'StatePersonExternalId',
-        'StatePersonExternalIdHistory',
-        'StatePersonRace',
-        'StatePersonRaceHistory',
-        'StateSentenceGroup',
-        'StateSentenceGroupHistory',
     ]
 
     expected_qualified_names = \
