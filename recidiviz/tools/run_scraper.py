@@ -68,6 +68,7 @@ def start_scrape(queue, self, scrape_type):
 
 def run_scraper(args):
     region_codes = validate_regions(args.region.split(','))
+    logging.info("Region codes: %s", region_codes)
     if not region_codes:
         sys.exit(1)
     failed_regions = []
