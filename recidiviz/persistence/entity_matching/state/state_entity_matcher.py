@@ -29,26 +29,26 @@ from recidiviz.persistence.entity_matching.entity_matching_utils import \
     is_birthdate_match
 
 
-class StateEntityMatcher(BaseEntityMatcher[entities.Person]):
+class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
     """Base class for all entity matchers."""
 
-    def has_external_id(self, person: entities.Person) -> bool:
+    def has_external_id(self, person: entities.StatePerson) -> bool:
         return bool(person.external_ids)
 
     def get_people_by_external_ids(self, session, region, with_external_ids) \
-            -> List[entities.Person]:
+            -> List[entities.StatePerson]:
         return dao.read_people_by_external_ids(
             session, region, with_external_ids)
 
     def get_people_without_external_ids(self, session, region,
                                         without_external_ids) \
-            -> List[entities.Person]:
+            -> List[entities.StatePerson]:
         # TODO(1625): Fill this in with an appropriate query
         return dao.read_people(session)
 
     def is_person_match(self, *,
-                        db_entity: entities.Person,
-                        ingested_entity: entities.Person) -> bool:
+                        db_entity: entities.StatePerson,
+                        ingested_entity: entities.StatePerson) -> bool:
         if db_entity.external_ids or ingested_entity.external_ids:
             # TODO(1625): Update to match against external_ids list
             return False
@@ -59,8 +59,8 @@ class StateEntityMatcher(BaseEntityMatcher[entities.Person]):
         return (db_entity.full_name == ingested_entity.full_name
                 and is_birthdate_match(db_entity, ingested_entity))
 
-    def match_child_entities(self, *, db_person: entities.Person,
-                             ingested_person: entities.Person,
+    def match_child_entities(self, *, db_person: entities.StatePerson,
+                             ingested_person: entities.StatePerson,
                              orphaned_entities: List[Entity]):
         # TODO(1625): Fill this in with appropriate logic
         pass

@@ -41,8 +41,10 @@ def write_people(session: Session,
                  people: List[entities.PersonType],
                  metadata: IngestMetadata,
                  orphaned_entities: List[Entity] = None):
-    """Converts the given |people| into schema.Person objects and persists their
-    corresponding record trees. Returns the list of persisted (Person) objects
+    """
+    Converts the given |people| into (SchemaPersonType) objects and persists
+    their corresponding record trees. Returns the list of persisted
+    (SchemaPersonType) objects.
     """
     if not orphaned_entities:
         orphaned_entities = []
@@ -57,8 +59,10 @@ def write_person(session: Session,
                  person: entities.PersonType,
                  metadata: IngestMetadata,
                  orphaned_entities: List[Entity] = None):
-    """Converts the given |person| into a schema.Person object and persists the
-    record tree rooted at that |person|. Returns the persisted (Person)
+    """
+    Converts the given |person| into a (SchemaPersonType) object and persists
+    the record tree rooted at that |person|. Returns the persisted
+    (SchemaPersonType) object.
     """
     if not orphaned_entities:
         orphaned_entities = []
@@ -77,7 +81,7 @@ def _save_record_trees(session: Session,
                        metadata: IngestMetadata):
     """Persists all record trees rooted at |root_people|. Also performs any
     historical snapshot updates required for any entities in any of these
-    record trees. Returns the list of persisted (Person) objects
+    record trees. Returns the list of persisted (SchemaPersonType) objects.
     """
 
     if all(isinstance(person, county_schema.Person) for person in root_people):

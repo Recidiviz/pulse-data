@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-Defines a generic type to describe a schema.Person that may belong to either the
+Defines a generic type to describe a person object that may belong to either the
 state or county schema.
 """
 
@@ -27,4 +27,4 @@ from recidiviz.persistence.database.schema.state import schema as state_schema
 
 SchemaPersonType = TypeVar('SchemaPersonType',
                            county_schema.Person,
-                           state_schema.Person)
+                           state_schema.StatePerson)
