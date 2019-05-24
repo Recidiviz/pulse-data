@@ -64,7 +64,8 @@ class TestScraperStart:
     @patch("recidiviz.utils.pubsub_helper.purge")
     def test_start(
             self, mock_purge, mock_get_sessions, mock_docket, mock_tracker,
-            mock_create_session, mock_update_phase, mock_region, mock_supported,
+            mock_create_session, mock_update_phase, mock_region,
+            mock_supported,
             mock_environment, client):
         """Tests that the start operation chains together the correct calls."""
         mock_purge.return_value = None
@@ -105,7 +106,8 @@ class TestScraperStart:
     @patch("recidiviz.utils.pubsub_helper.purge")
     def test_start_timezone(
             self, mock_purge, mock_get_sessions, mock_docket, mock_tracker,
-            mock_create_session, mock_update_phase, mock_region, mock_supported,
+            mock_create_session, mock_update_phase, mock_region,
+            mock_supported,
             mock_environment, client):
         """Tests that the start operation chains together the correct calls."""
         mock_docket.return_value = None
@@ -219,7 +221,8 @@ class TestScraperStart:
     @patch("recidiviz.utils.pubsub_helper.purge")
     def test_start_existing_session_release(
             self, mock_purge, mock_get_sessions, mock_docket, mock_tracker,
-            mock_create_session, mock_update_phase, mock_region, mock_supported,
+            mock_create_session, mock_update_phase, mock_region,
+            mock_supported,
             mock_environment, client):
         """Tests that the start operation runs when there is a session running
         infer release."""
@@ -288,7 +291,8 @@ class TestScraperStop:
         mock_region.return_value = fake_region()
         mock_supported.return_value = ['us_ca', 'us_ut']
 
-        request_args = {'region': 'all', 'scrape_type': 'all'}
+        request_args = {'region': 'all', 'scrape_type': 'all',
+                        'respect_is_stoppable': 'false'}
         headers = {'X-Appengine-Cron': "test-cron"}
         response = client.get('/stop',
                               query_string=request_args,
@@ -305,9 +309,9 @@ class TestScraperStop:
             [call(session, scrape_phase.ScrapePhase.PERSIST)] * 4)
         mock_region.return_value.get_scraper().stop_scrape.assert_has_calls([
             call([constants.ScrapeType.BACKGROUND,
-                  constants.ScrapeType.SNAPSHOT]),
+                  constants.ScrapeType.SNAPSHOT], 'false'),
             call([constants.ScrapeType.BACKGROUND,
-                  constants.ScrapeType.SNAPSHOT])
+                  constants.ScrapeType.SNAPSHOT], 'false')
         ])
         mock_supported.assert_called_with(timezone=None)
         mock_enqueue.assert_has_calls([
@@ -326,7 +330,9 @@ class TestScraperStop:
         mock_region.return_value = fake_region()
         mock_supported.return_value = ['us_ca', 'us_ut']
 
-        request_args = {'region': 'all', 'scrape_type': 'all'}
+        request_args = {'region': 'all', 'scrape_type': 'all',
+                        'respect_is_stoppable': 'false'}
+
         headers = {'X-Appengine-Cron': "test-cron"}
         response = client.get('/stop',
                               query_string=request_args,
@@ -363,7 +369,8 @@ class TestScraperStop:
         request_args = {
             'region': 'all',
             'scrape_type': 'all',
-            'timezone': 'America/New_York'
+            'timezone': 'America/New_York',
+            'respect_is_stoppable': 'false',
         }
         headers = {'X-Appengine-Cron': "test-cron"}
         response = client.get('/stop',
@@ -379,7 +386,7 @@ class TestScraperStop:
         mock_region.assert_has_calls([call('us_ut')])
         mock_region.return_value.get_scraper().stop_scrape.assert_called_with([
             constants.ScrapeType.BACKGROUND, constants.ScrapeType.SNAPSHOT
-        ])
+        ], 'false')
         mock_supported.assert_called_with(
             timezone=pytz.timezone('America/New_York'))
         mock_enqueue.assert_called_with(
@@ -402,6 +409,52 @@ class TestScraperStop:
 
         mock_supported.assert_called_with(timezone=None)
         assert not mock_enqueue.called
+
+    @patch("recidiviz.utils.regions.get_supported_region_codes")
+    @patch("recidiviz.utils.regions.get_region")
+    @patch("recidiviz.common.queues.enqueue_scraper_phase")
+    @patch("recidiviz.ingest.scrape.sessions.update_phase")
+    @patch("recidiviz.ingest.scrape.sessions.close_session")
+    def test_stop_respects_region_is_not_stoppable(
+            self, mock_sessions, mock_phase, mock_enqueue, mock_region,
+            mock_supported, client):
+        session = sessions.ScrapeSession.new(
+            key=None, region='us_xx',
+            scrape_type=constants.ScrapeType.BACKGROUND,
+            phase=scrape_phase.ScrapePhase.SCRAPE
+        )
+        mock_sessions.return_value = [session]
+        mock_region.return_value = fake_region()
+        mock_region.return_value.is_stoppable = False
+        mock_supported.return_value = ['us_ca', 'us_ut']
+
+        request_args = {'region': 'all', 'scrape_type': 'all'}
+        headers = {'X-Appengine-Cron': "test-cron"}
+        response = client.get('/stop',
+                              query_string=request_args,
+                              headers=headers)
+        assert response.status_code == 200
+
+        mock_sessions.assert_has_calls(
+            [call(ScrapeKey('us_ca', constants.ScrapeType.BACKGROUND)),
+             call(ScrapeKey('us_ca', constants.ScrapeType.SNAPSHOT)),
+             call(ScrapeKey('us_ut', constants.ScrapeType.BACKGROUND)),
+             call(ScrapeKey('us_ut', constants.ScrapeType.SNAPSHOT))],
+            any_order=True)
+        mock_phase.assert_has_calls(
+            [call(session, scrape_phase.ScrapePhase.PERSIST)] * 4)
+        mock_region.return_value.get_scraper().stop_scrape.assert_has_calls([
+            call([constants.ScrapeType.BACKGROUND,
+                  constants.ScrapeType.SNAPSHOT], None),
+            call([constants.ScrapeType.BACKGROUND,
+                  constants.ScrapeType.SNAPSHOT], None)
+        ])
+
+        mock_supported.assert_called_with(timezone=None)
+        mock_enqueue.assert_has_calls([
+            call(region_code='us_ca', url='/read_and_persist'),
+            call(region_code='us_ut', url='/read_and_persist'),
+        ], any_order=True)
 
 
 class TestScraperResume:
