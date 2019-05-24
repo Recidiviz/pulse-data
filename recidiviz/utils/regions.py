@@ -65,6 +65,8 @@ class Region:
         removed_from_website: (string) Value to use when a person is removed
             from a website (converted to `RemovedFromWebsite`).
         names_file: (string) Optional filename of names file for this region
+        is_stoppable: (string) Whether or not this region is stoppable via the
+            cron job /scraper/stop.
     """
 
     region_code: str = attr.ib()
@@ -81,6 +83,7 @@ class Region:
                 converter=RemovedFromWebsite)
     names_file: Optional[str] = attr.ib(default=None)
     should_proxy: Optional[bool] = attr.ib(default=False)
+    is_stoppable: Optional[bool] = attr.ib(default=False)
 
     def __attrs_post_init__(self):
         if self.queue and self.shared_queue:
