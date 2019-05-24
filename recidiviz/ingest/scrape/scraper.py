@@ -35,6 +35,7 @@ from recidiviz.ingest.scrape.constants import BATCH_PUBSUB_TYPE
 from recidiviz.ingest.scrape.task_params import QueueRequest, Task
 from recidiviz.utils import regions, pubsub_helper
 
+
 class FetchPageError(Exception):
 
     def __init__(self, request, response):
@@ -48,7 +49,8 @@ class FetchPageError(Exception):
             details += ("\n\nResponse: \n{0} / {1}"
                         "\n\nHeaders: \n{2}"
                         "\n\nText: \n{3}") \
-                .format(response.status_code, response.reason, response.headers,
+                .format(response.status_code, response.reason,
+                        response.headers,
                         response.text)
 
         msg = "Problem retrieving page: {}".format(details)
@@ -133,7 +135,7 @@ class Scraper(metaclass=abc.ABCMeta):
                                    scraper_start_time=datetime.now(),
                                    next_task=self.get_initial_task()))
 
-    def stop_scrape(self, scrape_types):
+    def stop_scrape(self, scrape_types, respect_is_stoppable=False):
         """Stops all active scraping tasks, resume non-targeted scrape types
 
         Stops the scraper, even if in the middle of a session. In
@@ -149,12 +151,25 @@ class Scraper(metaclass=abc.ABCMeta):
 
         Args:
             scrape_types: (list of ScrapeType) Scrape types to terminate
+            respect_is_stoppable: Defaults to false, in which case the scraper
+                will be stopped regardless of whether `is_stoppable` is set to
+                true. Otherwise, stops the region's scraper only if its
+                `is_stoppable` is set to true.
 
         Returns:
             N/A
 
         """
         region = self.get_region()
+
+        if respect_is_stoppable and not region.is_stoppable:
+            logging.info(
+                "Stop scrape was called and ignored for the region: %s "
+                "because the region's manifest is flagged as not stoppable",
+                region.region_code)
+            return
+
+        logging.info("Stopping scrape for the region: %s", region.region_code)
         queues.purge_scrape_tasks(region_code=region.region_code,
                                   queue_name=region.get_queue_name())
 
@@ -278,7 +293,7 @@ class Scraper(metaclass=abc.ABCMeta):
                 raise ValueError(
                     "Both params ({}) for a GET request and either post_data "
                     "({}) or json_data ({}) for a POST request were set." \
-                    .format(params, post_data, json_data))
+                        .format(params, post_data, json_data))
             page.raise_for_status()
         except requests.exceptions.RequestException as ce:
             raise FetchPageError(ce.request, ce.response)
