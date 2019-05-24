@@ -61,6 +61,7 @@ _CHARGE_CLASS_MAP = {
     'ENHANCEMENT': None,
     'F': ChargeClass.FELONY,
     'FEL': ChargeClass.FELONY,
+    'FELON': ChargeClass.FELONY,
     'FELONY': ChargeClass.FELONY,
     'FLONY': ChargeClass.FELONY,
     'I': ChargeClass.INFRACTION,
