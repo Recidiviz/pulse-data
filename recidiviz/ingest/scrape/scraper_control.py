@@ -211,6 +211,8 @@ def scraper_stop():
         N/A
     """
     timezone = ingest_utils.lookup_timezone(request.args.get("timezone"))
+    respect_is_stoppable = get_value("respect_is_stoppable", request.args)
+
     # If a timezone wasn't provided stop all regions. If it was only stop
     # regions that match the timezone.
     scrape_regions = ingest_utils.validate_regions(
@@ -236,7 +238,7 @@ def scraper_stop():
         try:
             logging.info("Stopping scraper for region [%s].", region)
             region_scraper = regions.get_region(region).get_scraper()
-            region_scraper.stop_scrape(scrape_types)
+            region_scraper.stop_scrape(scrape_types, respect_is_stoppable)
         finally:
             if next_phase:
                 logging.info("Enqueueing %s for region [%s].",

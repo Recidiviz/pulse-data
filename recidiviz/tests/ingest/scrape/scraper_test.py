@@ -138,7 +138,8 @@ class TestStopScraper:
         queue_name = "us_sd_scraper"
         initial_task = "change_it"
 
-        mock_get_region.return_value = mock_region(region, queue_name)
+        mock_get_region.return_value = mock_region(region, queue_name,
+                                                   is_stoppable=True)
         open_session = ScrapeSession.new(
             key=None, scrape_type=scrape_type, region=region,
             phase=scrape_phase.ScrapePhase.SCRAPE,
@@ -157,6 +158,32 @@ class TestStopScraper:
     @patch("recidiviz.common.queues.purge_scrape_tasks")
     @patch("recidiviz.ingest.scrape.sessions.get_sessions")
     @patch("recidiviz.utils.regions.get_region")
+    def test_stop_scrape_not_executed(
+            self, mock_get_region, mock_sessions, mock_purge_scrape_tasks):
+        region = "us_sd"
+        scrape_type = constants.ScrapeType.BACKGROUND
+        queue_name = "us_sd_scraper"
+        initial_task = "change_it"
+
+        mock_get_region.return_value = mock_region(region, queue_name,
+                                                   is_stoppable=False)
+        open_session = ScrapeSession.new(
+            key=None, scrape_type=scrape_type, region=region,
+            phase=scrape_phase.ScrapePhase.SCRAPE,
+        )
+        mock_sessions.return_value = [open_session]
+        mock_purge_scrape_tasks.return_value = None
+
+        scraper = FakeScraper(region, initial_task)
+        scraper.stop_scrape([scrape_type], respect_is_stoppable=True)
+
+        mock_get_region.assert_called_with(region)
+        mock_sessions.assert_not_called()
+        mock_purge_scrape_tasks.assert_not_called()
+
+    @patch("recidiviz.common.queues.purge_scrape_tasks")
+    @patch("recidiviz.ingest.scrape.sessions.get_sessions")
+    @patch("recidiviz.utils.regions.get_region")
     @patch.object(Scraper, "resume_scrape")
     def test_stop_scrape_resume_other_scrapes(
             self, mock_resume, mock_get_region, mock_sessions,
@@ -168,7 +195,8 @@ class TestStopScraper:
         queue_name = "us_sd_scraper"
         initial_task = "mail_upgrade_it"
 
-        mock_get_region.return_value = mock_region(region, queue_name)
+        mock_get_region.return_value = mock_region(region, queue_name,
+                                                   is_stoppable=True)
         open_session_other = ScrapeSession.new(
             key=None, scrape_type=constants.ScrapeType.SNAPSHOT,
             phase=scrape_phase.ScrapePhase.SCRAPE,
@@ -177,7 +205,8 @@ class TestStopScraper:
             key=None, scrape_type=constants.ScrapeType.BACKGROUND,
             phase=scrape_phase.ScrapePhase.SCRAPE,
         )
-        mock_sessions.return_value = [open_session_other, open_session_matching]
+        mock_sessions.return_value = [open_session_other,
+                                      open_session_matching]
         mock_purge_scrape_tasks.return_value = None
 
         scraper = FakeScraper(region, initial_task)
@@ -416,7 +445,8 @@ class TestFetchPage:
     @patch("recidiviz.ingest.scrape.scraper_utils.get_headers")
     @patch("recidiviz.ingest.scrape.scraper_utils.get_proxies")
     @patch("recidiviz.utils.regions.get_region")
-    def test_fetch_page_error(self, mock_get_region, mock_proxies, mock_headers,
+    def test_fetch_page_error(self, mock_get_region, mock_proxies,
+                              mock_headers,
                               mock_requests):
         """Tests that fetch_page successfully handles error responses."""
         url = "/around/the/world"
@@ -460,7 +490,8 @@ class TestFetchPage:
                 url, proxies=proxies, headers=headers, cookies=None,
                 params=None, verify=False)
 
-def mock_region(region_code, queue_name=None):
+
+def mock_region(region_code, queue_name=None, is_stoppable=False):
     return Region(
         region_code=region_code,
         shared_queue=queue_name or None,
@@ -471,9 +502,12 @@ def mock_region(region_code, queue_name=None):
         timezone='America/New_York',
         environment='production',
         jurisdiction_id='jurisdiction_id',
+        is_stoppable=is_stoppable or False,
     )
 
+
 FAKE_TASK = Task(task_type=constants.TaskType.INITIAL, endpoint='fake')
+
 
 class FakeScraper(Scraper):
 
