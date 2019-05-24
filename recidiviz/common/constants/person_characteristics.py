@@ -159,6 +159,7 @@ ETHNICITY_MAP = {
     'H WHITE LATIN HISPANIC': Ethnicity.HISPANIC,
     'HISP': Ethnicity.HISPANIC,
     'HISPANIC': Ethnicity.HISPANIC,
+    'HISPANIC LATINO': Ethnicity.HISPANIC,
     'HISPANIC OR LATINO': Ethnicity.HISPANIC,
     'L': Ethnicity.HISPANIC,
     'NOT HISPANIC': Ethnicity.NOT_HISPANIC,
