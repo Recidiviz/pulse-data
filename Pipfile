@@ -12,6 +12,7 @@ pylint = "*"
 pytest-cov = "*"
 mypy = "*"
 coveralls = "*"
+apache_beam = {extras = ["gcp", "test"], version = "*"}
 
 [packages]
 callee = "*"
