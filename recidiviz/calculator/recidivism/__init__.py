@@ -14,15 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
+"""Pipeline calculation of recidivism metrics."""
 
-
-"""The recidivism calculation pipeline.
-
-This includes infrastructure, logic, and models for calculating recidivism
-metrics from ingested records and persisting those metrics.
-"""
-
-from recidiviz.calculator.recidivism import identifier
-from recidiviz.calculator.recidivism import pipeline
-from recidiviz.calculator.recidivism import recidivism_event
-from recidiviz.calculator.recidivism.metrics import RecidivismMetric
+from .recidivism_event import RecidivismEvent
+from .metrics import RecidivismMetric
+from .calculator import map_recidivism_combinations
