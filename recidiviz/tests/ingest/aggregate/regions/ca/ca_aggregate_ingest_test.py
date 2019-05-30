@@ -36,7 +36,7 @@ from recidiviz.tests.utils import fakes
 
 # Cache the parsed result between tests since it's expensive to compute
 PARSED_RESULT = ca_aggregate_ingest.parse(
-    fixtures.as_filepath('QueryResult.xls'))
+    '', fixtures.as_filepath('QueryResult.xls'))
 
 
 class TestCaAggregateIngest(TestCase):
