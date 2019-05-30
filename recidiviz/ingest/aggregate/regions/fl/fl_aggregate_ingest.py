@@ -20,7 +20,6 @@ import locale
 from typing import Dict, Optional
 
 import pandas as pd
-import tabula
 import us
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
@@ -28,6 +27,7 @@ from recidiviz.common.constants.aggregate import (
     enum_canonical_strings as enum_strings
 )
 from recidiviz.common import str_field_utils
+from recidiviz.common.read_pdf import read_pdf
 from recidiviz.common import fips
 from recidiviz.ingest.aggregate import aggregate_ingest_utils
 from recidiviz.ingest.aggregate.errors import AggregateDateParsingError
@@ -35,15 +35,15 @@ from recidiviz.persistence.database.schema.aggregate.schema import \
     FlCountyAggregate, FlFacilityAggregate
 
 
-def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
+def parse(location: str, filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
     _setup()
 
-    fl_county_table = _parse_county_table(filename)
+    fl_county_table = _parse_county_table(location, filename)
     fl_county_table = fips.add_column_to_df(
         fl_county_table, fl_county_table.county_name, us.states.FL)
 
     # TODO(#689): Also set the facility_fips
-    fl_facility_table = _parse_facility_table(filename)
+    fl_facility_table = _parse_facility_table(location, filename)
     names = fl_facility_table.facility_name.apply(_pretend_facility_is_county)
     fl_facility_table = fips.add_column_to_df(
         fl_facility_table, names, us.states.FL)
@@ -62,15 +62,17 @@ def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
     return result
 
 
-def _parse_county_table(filename: str) -> pd.DataFrame:
+def _parse_county_table(location: str, filename: str) -> pd.DataFrame:
     """Parses the FL County - Table 1 in the PDF."""
-    part1 = tabula.read_pdf(
+    part1 = read_pdf(
+        location,
         filename,
         pages=[3],
         pandas_options={
             'header': [0, 1],
         })
-    part2 = tabula.read_pdf(
+    part2 = read_pdf(
+        location,
         filename,
         pages=[4],
         pandas_options={
@@ -95,7 +97,7 @@ def _parse_county_table(filename: str) -> pd.DataFrame:
     return result
 
 
-def _parse_facility_table(filename: str) -> pd.DataFrame:
+def _parse_facility_table(location: str, filename: str) -> pd.DataFrame:
     """Parse the FL County Pretrial Inmate Report - Table 2 in the PDF."""
     # Set column names directly since the pdf format makes them hard to parse
     column_names = [
@@ -105,14 +107,16 @@ def _parse_facility_table(filename: str) -> pd.DataFrame:
         'Number Misdemeanor Pretrial',
         'Total Percent Pretrial']
 
-    part1 = tabula.read_pdf(
+    part1 = read_pdf(
+        location,
         filename,
         pages=[5],
         pandas_options={
             'skiprows': [0, 1, 2],
             'names': column_names,
         })
-    part2 = tabula.read_pdf(
+    part2 = read_pdf(
+        location,
         filename,
         pages=[6],
         pandas_options={

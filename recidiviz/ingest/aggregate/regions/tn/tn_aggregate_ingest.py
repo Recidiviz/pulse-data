@@ -21,7 +21,6 @@ from typing import Dict
 
 import numpy as np
 import pandas as pd
-import tabula
 import us
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
@@ -30,10 +29,10 @@ from recidiviz.common.constants.aggregate import (
 )
 from recidiviz.common import str_field_utils
 from recidiviz.common import fips
+from recidiviz.common.read_pdf import read_pdf
 from recidiviz.ingest.aggregate import aggregate_ingest_utils
 from recidiviz.persistence.database.schema.aggregate.schema import \
     TnFacilityAggregate, TnFacilityFemaleAggregate
-
 
 _JAIL_REPORT_COLUMN_NAMES = [
     'facility_name',
@@ -47,7 +46,6 @@ _JAIL_REPORT_COLUMN_NAMES = [
     'total_jail_population',
     'total_beds',
 ]
-
 
 _FEMALE_JAIL_REPORT_COLUMN_NAMES = [
     'facility_name',
@@ -64,7 +62,6 @@ _FEMALE_JAIL_REPORT_COLUMN_NAMES = [
     'female_beds',
 ]
 
-
 _KEEP_FEMALE_JAIL_REPORT_COLUMN_NAMES = [
     'facility_name',
     'tdoc_backup_population',
@@ -78,7 +75,6 @@ _KEEP_FEMALE_JAIL_REPORT_COLUMN_NAMES = [
     'female_beds',
 ]
 
-
 _MANUAL_FACILITY_TO_COUNTY_MAP = {
     'Johnson City': 'Washington',
     'Johnson City (F)': 'Washington',
@@ -87,13 +83,13 @@ _MANUAL_FACILITY_TO_COUNTY_MAP = {
 }
 
 
-def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
+def parse(location: str, filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
     # There are two types of reports, total jail population and female
     # jail population. The reports are very similar, but need to be
     # handled slightly differently.
     is_female = 'female' in filename
 
-    table = _parse_table(filename, is_female)
+    table = _parse_table(location, filename, is_female)
 
     names = table.facility_name.apply(_pretend_facility_is_county)
     table = fips.add_column_to_df(table, names, us.states.TN)
@@ -109,8 +105,8 @@ def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
     }
 
 
-def _parse_table(filename: str, is_female: bool) -> pd.DataFrame:
-    table = tabula.read_pdf(filename, pages=[2, 3, 4], multiple_tables=True)
+def _parse_table(location: str, filename: str, is_female: bool) -> pd.DataFrame:
+    table = read_pdf(location, filename, pages=[2, 3, 4], multiple_tables=True)
 
     formatted_dfs = [_format_table(df, is_female) for df in table]
 
@@ -196,7 +192,7 @@ def _format_table(df: pd.DataFrame, is_female: bool) -> pd.DataFrame:
         # capacity gets misinterpreted as female beds.
         keep_cols = [col for col in df.columns
                      if not df[col].apply(lambda val: isinstance(val, str) and
-                                          val.endswith('%')).any()]
+                                                      val.endswith('%')).any()]
         df = df[keep_cols]
     else:
         df = df.iloc[:, 0:len(_JAIL_REPORT_COLUMN_NAMES)]

@@ -43,24 +43,24 @@ DATE_SCRAPED_CONCAT = datetime.date(year=2003, month=10, day=1)
 @pytest.fixture(scope="class")
 def parsed_pdf_after_1996(request):
     request.cls.parsed_pdf_after_1996 = tx_aggregate_ingest.parse(
-        fixtures.as_filepath('Abbreviated Pop Rpt Dec 2017.pdf'))
+        '', fixtures.as_filepath('Abbreviated Pop Rpt Dec 2017.pdf'))
 
 # Cache the parsed pdf between tests since it's expensive to compute
 @pytest.fixture(scope="class")
 def parsed_pdf_1996(request):
     request.cls.parsed_pdf_1996 = tx_aggregate_ingest.parse(
-        fixtures.as_filepath('texas_url_abbreviated pop rpt June 1996.pdf'))
+        '', fixtures.as_filepath('texas_url_abbreviated pop rpt June 1996.pdf'))
 
 # Cache the parsed pdf between tests since it's expensive to compute
 @pytest.fixture(scope="class")
 def parsed_pdf_before_1996(request):
     request.cls.parsed_pdf_before_1996 = tx_aggregate_ingest.parse(
-        fixtures.as_filepath('abbreviated pop rpt march 1994.pdf'))
+        '', fixtures.as_filepath('abbreviated pop rpt march 1994.pdf'))
 
 @pytest.fixture(scope="class")
 def parsed_pdf_concat(request):
     request.cls.parsed_pdf_concat = tx_aggregate_ingest.parse(
-        fixtures.as_filepath(
+        '', fixtures.as_filepath(
             'docs_abbreviatedpopreports_abbreviated pop rpt oct 2003.pdf'))
 
 

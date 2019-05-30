@@ -38,7 +38,7 @@ from recidiviz.tests.utils import fakes
 REPORT_DATE = datetime.date(year=2017, month=1, day=1)
 
 # Cache the parsed result between tests since it's expensive to compute
-PARSED_RESULT = pa_aggregate_ingest.parse(fixtures.as_filepath(
+PARSED_RESULT = pa_aggregate_ingest.parse('', fixtures.as_filepath(
     '2018 County Statistics _ General Information - 2017 Data.xlsx'))
 
 

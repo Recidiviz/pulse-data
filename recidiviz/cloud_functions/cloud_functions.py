@@ -97,7 +97,7 @@ def state_aggregate():
     fs.get(path, tmpdir_path)
     logging.info("Successfully downloaded file from gcs: %s", path)
 
-    result = parser(tmpdir_path)
+    result = parser(os.path.join(bucket, state), tmpdir_path)
     logging.info('Successfully parsed the report')
     for table, df in result.items():
         dao.write_df(table, df)

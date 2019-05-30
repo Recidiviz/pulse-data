@@ -20,7 +20,6 @@ from typing import Dict, List
 
 import numpy as np
 import pandas as pd
-import tabula
 import us
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
@@ -29,14 +28,15 @@ from recidiviz.common.constants.aggregate import (
 )
 from recidiviz.common import str_field_utils
 from recidiviz.common import fips
+from recidiviz.common.read_pdf import read_pdf
 from recidiviz.ingest.aggregate import aggregate_ingest_utils
 from recidiviz.ingest.aggregate.errors import AggregateDateParsingError
 from recidiviz.persistence.database.schema.aggregate.schema import \
     KyFacilityAggregate
 
 
-def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
-    table = _parse_table(filename)
+def parse(location: str, filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
+    table = _parse_table(location, filename)
 
     # Fuzzy match each facility_name to a county fips
     county_names = table.facility_name.map(_pretend_facility_is_county)
@@ -51,9 +51,10 @@ def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
     }
 
 
-def _parse_table(filename: str) -> pd.DataFrame:
+def _parse_table(location, filename: str) -> pd.DataFrame:
     """Parses the table in the KY PDF."""
-    whole_df = tabula.read_pdf(
+    whole_df = read_pdf(
+        location,
         filename,
         pages='all',
         lattice=True
@@ -193,13 +194,9 @@ def parse_date(filename: str) -> datetime.date:
     Parse the report_date from the filename since the PDF contents can't
     easily be parsed for the date.
     """
-    if 'revised' in filename:
-        end = filename.index(' revised')
-        start = end - 9
-    else:
-        end = filename.index('.pdf')
-        start = end - 8
-    parsed_date = str_field_utils.parse_date(filename[start:end])
+    date_str = filename.replace(' revised', ''). \
+        replace(' new', '').replace('.pdf', '')[-8:]
+    parsed_date = str_field_utils.parse_date(date_str)
     if parsed_date:
         return parsed_date
     raise AggregateDateParsingError("Could not extract date")

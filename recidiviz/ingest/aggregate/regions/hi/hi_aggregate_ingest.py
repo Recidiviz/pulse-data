@@ -21,7 +21,6 @@ from typing import Dict, Iterable, List
 
 import more_itertools
 import pandas as pd
-import tabula
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
 from recidiviz.common.constants.aggregate import (
@@ -29,6 +28,7 @@ from recidiviz.common.constants.aggregate import (
 )
 from recidiviz.common import str_field_utils
 from recidiviz.common.errors import FipsMergingError
+from recidiviz.common.read_pdf import read_pdf
 from recidiviz.ingest.aggregate.errors import (AggregateDateParsingError,
                                                AggregateIngestError)
 from recidiviz.persistence.database.schema.aggregate.schema import \
@@ -94,8 +94,8 @@ _FACILITY_ACRONYM_TO_FIPS = {
 DATE_PARSE_ANCHOR_FILENAME = 'pop-reports-eom-'
 
 
-def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
-    table = _parse_table(filename)
+def parse(location: str, filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
+    table = _parse_table(location, filename)
 
     table['report_date'] = parse_date(filename)
     table['aggregation_window'] = enum_strings.daily_granularity
@@ -120,9 +120,10 @@ def parse_date(filename: str) -> datetime.date:
     raise AggregateDateParsingError("Could not extract date")
 
 
-def _parse_table(filename: str) -> pd.DataFrame:
+def _parse_table(location: str, filename: str) -> pd.DataFrame:
     """Parse the Head Count Endings and Contracted Facilities Tables."""
-    all_dfs = tabula.read_pdf(
+    all_dfs = read_pdf(
+        location,
         filename,
         multiple_tables=True,
         lattice=True,
