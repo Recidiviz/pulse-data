@@ -17,140 +17,112 @@
 
 """Events of recidivism and non-recidivism for calculation."""
 
-from typing import Optional
-
-from datetime import date
-
-from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
-
-# TODO(1809): Update this enum to cover all potential recidivism types
-class IncarcerationReturnType(EntityEnum, metaclass=EntityEnumMeta):
-
-    RECONVICTION = 'RECONVICTION'
-    PAROLE_REVOCATION = 'PAROLE_REVOCATION'
-    PROBATION_REVOCATION = 'PROBATION_REVOCATION'
-
-    @staticmethod
-    def _get_default_map():
-        return _INCARCERATION_RETURN_TYPE_MAP
-
 
 class RecidivismEvent:
     """Models details related to a recidivism or non-recidivism event.
 
-    This includes the information pertaining to a release from incarceration
-    that we will want to track when calculating recidivism metrics, and whether
-    or not recidivism later took place.
+    This includes the information pertaining to a release from prison that we
+    will want to track when calculating recidivism metrics, and whether or not
+    recidivism later took place.
 
     Attributes:
         recidivated: A boolean indicating whether or not the person actually
             recidivated for this release event.
-        original_admission_date: A Date for when the person first was admitted
-            for this period of incarceration.
-        release_date: A Date for when the person was last released from this
-            period of incarceration.
+        original_entry_date: A Date for when the person first entered prison
+            for this record.
+        release_date: A Date for when the person was last released from prison
+            for this record.
         release_facility: The facility that the person was last released from
-            for this period of incarceration.
-        reincarceration_date: A Date for when the person was re-incarcerated.
+            for this record.
+        reincarceration_date: A Date for when the person re-entered prison.
         reincarceration_facility: The facility that the person entered into upon
-            first return to incarceration after the release.
-        return_type: IncarcerationReturnType enum describing the type of return
-            to incarceration this recidivism event describes.
+            first return to prison after the release.
+        was_conditional: A boolean indicating whether or not the recidivism,
+            if it occurred, was due to a conditional violation, as opposed to a
+            new incarceration.
     """
 
     def __init__(self,
-                 recidivated: bool,
-                 original_admission_date: date,
-                 release_date: date,
-                 release_facility: Optional[str],
-                 reincarceration_date: Optional[date] = None,
-                 reincarceration_facility: Optional[str] = None,
-                 return_type: IncarcerationReturnType = None):
+                 recidivated,
+                 original_entry_date,
+                 release_date,
+                 release_facility,
+                 reincarceration_date=None,
+                 reincarceration_facility=None,
+                 was_conditional=False):
 
         self.recidivated = recidivated
-        self.original_admission_date = original_admission_date
+        self.original_entry_date = original_entry_date
         self.release_date = release_date
         self.release_facility = release_facility
         self.reincarceration_date = reincarceration_date
         self.reincarceration_facility = reincarceration_facility
-        self.return_type = return_type
+        self.was_conditional = was_conditional
 
     @staticmethod
-    def recidivism_event(original_admission_date: date, release_date: date,
-                         release_facility: Optional[str],
-                         reincarceration_date: date,
-                         reincarceration_facility: Optional[str],
-                         return_type: IncarcerationReturnType):
+    def recidivism_event(original_entry_date, release_date, release_facility,
+                         reincarceration_date, reincarceration_facility,
+                         was_conditional):
         """Creates a RecidivismEvent instance for an event where reincarceration
         occurred.
 
         Args:
-            original_admission_date: A Date for when the person first was
-                admitted for this period of incarceration.
-            release_date: A Date for when the person was last released from this
-                period of incarceration.
-            release_facility: The facility that the person was released
-                from for this period of incarceration.
-            reincarceration_date: A Date for when the person was
-                re-incarcerated.
+            original_entry_date: A Date for when the person first entered prison
+                for this record.
+            release_date: A Date for when the person was last released from
+                prison for this record.
+            release_facility: The facility that the person was last released
+                from for this record.
+            reincarceration_date: A Date for when the person re-entered prison.
             reincarceration_facility: The facility that the person entered into
-                upon first return to incarceration after the release.
-            return_type: IncarcerationReturnType enum describing the type of
-                return to incarceration this recidivism event describes.
+                upon first return to prison after the release.
+            was_conditional: A boolean indicating whether or not the recidivism,
+                if it occurred, was due to a conditional violation, as opposed
+                to a new incarceration.
 
         Returns:
             A RecidivismEvent for an instance of reincarceration.
         """
-        return RecidivismEvent(True, original_admission_date, release_date,
+        return RecidivismEvent(True, original_entry_date, release_date,
                                release_facility, reincarceration_date,
-                               reincarceration_facility, return_type)
+                               reincarceration_facility, was_conditional)
 
     @staticmethod
-    def non_recidivism_event(original_admission_date: date, release_date: date,
-                             release_facility: Optional[str]):
+    def non_recidivism_event(original_entry_date, release_date,
+                             release_facility):
         """Creates a RecidivismEvent instance for an event where reincarceration
         did not occur.
 
         Args:
-            original_admission_date: A Date for when this period of
-                incarceration started.
-            release_date: A Date for when the person was released from this
-                period of incarceration.
-            release_facility: The facility that the person was released
-                from for period of incarceration.
+            original_entry_date: A Date for when the person first entered
+                prison for this record.
+            release_date: A Date for when the person was last released from
+                prison for this record.
+            release_facility: The facility that the person was last released
+                from for this record.
 
         Returns:
             A RecidivismEvent for an instance where recidivism did not occur.
         """
-        return RecidivismEvent(False, original_admission_date, release_date,
+        return RecidivismEvent(False, original_entry_date, release_date,
                                release_facility)
 
     def __repr__(self):
-        return "<RecidivismEvent recidivated: %s, " \
-               "original_admission_date: %s, " \
+        return "<RecidivismEvent recidivated: %s, original_entry_date: %s, " \
                "release_date: %s, release_facility: %s, " \
                "reincarceration_date: %s, reincarceration_facility: %s, " \
-               "return_type: %s>" \
-               % (self.recidivated, self.original_admission_date,
-                  self.release_date,
+               "was_conditional: %s>" \
+               % (self.recidivated, self.original_entry_date, self.release_date,
                   self.release_facility, self.reincarceration_date,
-                  self.reincarceration_facility, self.return_type)
+                  self.reincarceration_facility, self.was_conditional)
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
             return self.recidivated == other.recidivated \
-                and self.original_admission_date == \
-                other.original_admission_date \
-                and self.release_date == other.release_date \
-                and self.release_facility == other.release_facility \
-                and self.reincarceration_facility == \
-                other.reincarceration_facility \
-                and self.return_type == other.return_type
+                   and self.original_entry_date == other.original_entry_date \
+                   and self.release_date == other.release_date \
+                   and self.release_facility == other.release_facility \
+                   and self.reincarceration_facility == \
+                   other.reincarceration_facility \
+                   and self.was_conditional == other.was_conditional
         return False
-
-
-_INCARCERATION_RETURN_TYPE_MAP = {
-    'RECONVICTION': IncarcerationReturnType.RECONVICTION,
-    'PAROLE REVOCATION': IncarcerationReturnType.PAROLE_REVOCATION,
-    'PROBATION REVOCATION': IncarcerationReturnType.PROBATION_REVOCATION
-}
