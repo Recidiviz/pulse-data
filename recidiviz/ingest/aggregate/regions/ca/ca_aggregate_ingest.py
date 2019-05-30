@@ -31,7 +31,7 @@ from recidiviz.persistence.database.schema.aggregate.schema import \
     CaFacilityAggregate
 
 
-def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
+def parse(_, filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
     table = _parse_table(filename)
 
     county_names = table.jurisdiction_name.map(_pretend_jurisdiction_is_county)
