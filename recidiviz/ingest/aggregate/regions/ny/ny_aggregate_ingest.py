@@ -24,23 +24,23 @@ import dateutil.parser
 import numpy
 import numpy as np
 import pandas as pd
-import tabula
 import us
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
 from recidiviz.common.constants.aggregate import (
     enum_canonical_strings as enum_strings
 )
+from recidiviz.common.read_pdf import read_pdf
 from recidiviz.ingest.aggregate import aggregate_ingest_utils
 from recidiviz.common import fips
 from recidiviz.persistence.database.schema.aggregate.schema import \
     NyFacilityAggregate
 
 
-def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
+def parse(location: str, filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
     _setup()
 
-    table = _parse_table(filename)
+    table = _parse_table(location, filename)
 
     # Fuzzy match each facility_name to a county fips
     county_names = table.facility_name.map(_pretend_facility_is_county)
@@ -54,9 +54,10 @@ def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
     }
 
 
-def _parse_table(filename: str) -> pd.DataFrame:
+def _parse_table(location: str, filename: str) -> pd.DataFrame:
     """Parses all tables in the GA PDF."""
-    all_dfs = tabula.read_pdf(
+    all_dfs = read_pdf(
+        location,
         filename,
         pages='all',
         multiple_tables=True,

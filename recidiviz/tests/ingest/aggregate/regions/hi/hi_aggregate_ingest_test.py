@@ -44,9 +44,9 @@ DATE_SCRAPED_2 = datetime.date(year=2017, month=9, day=30)
 @pytest.fixture(scope="class")
 def parsed_pdf(request):
     request.cls.parsed_pdf = hi_aggregate_ingest.parse(
-        fixtures.as_filepath('Pop-Reports-EOM-2018-11-30.pdf'))
+        '', fixtures.as_filepath('Pop-Reports-EOM-2018-11-30.pdf'))
     request.cls.parsed_pdf_2 = hi_aggregate_ingest.parse(
-        fixtures.as_filepath('pop-reports-eom-2017-09-30-17.pdf'))
+        '', fixtures.as_filepath('pop-reports-eom-2017-09-30-17.pdf'))
 
 
 @pytest.mark.usefixtures("parsed_pdf")

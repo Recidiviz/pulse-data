@@ -20,7 +20,6 @@ from collections import OrderedDict
 from typing import Dict
 
 import pandas as pd
-import tabula
 import us
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
@@ -29,6 +28,7 @@ from recidiviz.common.constants.aggregate import (
 )
 from recidiviz.common import str_field_utils
 from recidiviz.common import fips
+from recidiviz.common.read_pdf import read_pdf
 from recidiviz.ingest.aggregate import aggregate_ingest_utils
 from recidiviz.ingest.aggregate.errors import AggregateDateParsingError
 from recidiviz.persistence.database.schema.aggregate.schema import \
@@ -38,9 +38,9 @@ DATE_PARSE_ANCHOR = 'Abbreviated Population Report for'
 DATE_PARSE_ANCHOR_FILENAME = 'abbreviated pop rpt'
 
 
-def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
+def parse(location: str, filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
     report_date = _parse_date(filename)
-    table = _parse_table(filename, report_date)
+    table = _parse_table(location, filename, report_date)
 
     county_names = table.facility_name.map(_pretend_facility_is_county)
     table = fips.add_column_to_df(table, county_names, us.states.TX)
@@ -61,7 +61,7 @@ def _parse_date(filename: str) -> datetime.date:
         # The names can be a few formats, the most robust way is to take
         # all of the text after the anchor.
         # (eg. report Jan 2017.pdf)
-        start = filename_date.index(DATE_PARSE_ANCHOR_FILENAME)\
+        start = filename_date.index(DATE_PARSE_ANCHOR_FILENAME) \
                 + len(DATE_PARSE_ANCHOR_FILENAME)
         date_str = filename_date[start:].strip('.pdf')
         parsed_date = str_field_utils.parse_date(date_str)
@@ -70,20 +70,22 @@ def _parse_date(filename: str) -> datetime.date:
     raise AggregateDateParsingError("Could not extract date")
 
 
-def _parse_table(filename: str, report_date: datetime.date) -> pd.DataFrame:
+def _parse_table(location: str, filename: str,
+                 report_date: datetime.date) -> pd.DataFrame:
     """Parses the TX County Table in the PDF."""
     num_pages = 9
     columns_to_schema = _get_column_names(report_date)
 
     pages = []
-    for page_num in range(1, num_pages+1):
+    for page_num in range(1, num_pages + 1):
         # Each page has 1 or more tables on it with the last table being the
         # one with the data on it.  The headers are poorly read by tabula and
         # some years have different responses to this call so we generally
         # just get all of the tables and consider only the one with numbers on
         # it.  That lets us clean it up by dropping nonsense columns and rows,
         # and then assigning our own columns names to them.
-        df = tabula.read_pdf(
+        df = read_pdf(
+            location,
             filename,
             multiple_tables=True,
             pages=page_num,
@@ -106,8 +108,8 @@ def _parse_table(filename: str, report_date: datetime.date) -> pd.DataFrame:
                 index_to_insert = df.columns.get_loc(column)
                 df_temp = pd.DataFrame(
                     df.pop(column).str.split(n=1, expand=True))
-                df.insert(index_to_insert, str(column)+'_a', df_temp[0])
-                df.insert(index_to_insert+1, str(column) + '_b', df_temp[1])
+                df.insert(index_to_insert, str(column) + '_a', df_temp[0])
+                df.insert(index_to_insert + 1, str(column) + '_b', df_temp[1])
         pages.append(df)
 
     # Drop last rows since it's the 'Totals' section

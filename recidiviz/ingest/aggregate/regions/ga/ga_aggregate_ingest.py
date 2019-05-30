@@ -16,10 +16,9 @@
 # =============================================================================
 """Parse the GA Aggregated Statistics PDF."""
 import datetime
-from typing import Dict
+from typing import Dict, List
 
 import pandas as pd
-import tabula
 import us
 from PyPDF2 import PdfFileReader
 from sqlalchemy.ext.declarative import DeclarativeMeta
@@ -29,6 +28,7 @@ from recidiviz.common.constants.aggregate import (
 )
 from recidiviz.common import str_field_utils
 from recidiviz.common import fips
+from recidiviz.common.read_pdf import read_pdf
 from recidiviz.ingest.aggregate import aggregate_ingest_utils
 from recidiviz.ingest.aggregate.errors import AggregateDateParsingError
 from recidiviz.persistence.database.schema.aggregate.schema import \
@@ -37,8 +37,8 @@ from recidiviz.persistence.database.schema.aggregate.schema import \
 DATE_PARSE_ANCHOR = 'DATA SUMMARY'
 
 
-def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
-    table = _parse_table(filename)
+def parse(location: str, filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
+    table = _parse_table(location, filename)
 
     # Fuzzy match each facility_name to a county fips
     county_names = table.county_name.map(_sanitize_county_name)
@@ -71,7 +71,7 @@ def _parse_date(filename: str) -> datetime.date:
         raise AggregateDateParsingError("Could not extract date")
 
 
-def _parse_table(filename: str) -> pd.DataFrame:
+def _parse_table(location: str, filename: str) -> pd.DataFrame:
     """Parses the last table in the GA PDF."""
 
     # Set column names since the pdf makes them hard to parse directly
@@ -98,13 +98,14 @@ def _parse_table(filename: str) -> pd.DataFrame:
     # the right half of the page
     use_lattice = True
 
-    result = tabula.read_pdf(
+    result = read_pdf(
+        location,
         filename,
         pages=pages,
         lattice=use_lattice,
         pandas_options={
             'names': column_names,
-            'skiprows': _header_on_each_page,
+            'skiprows': _header_on_each_page(),
             'skipfooter': 1,  # The last row is the grand totals
             'engine': 'python'  # Only python engine supports 'skipfooter'
         })
@@ -136,6 +137,8 @@ def _sanitize_county_name(county_name: str) -> str:
     return county_name.replace('NO JAIL', '').rstrip(' ')
 
 
-def _header_on_each_page(index: int) -> bool:
-    # Every 43rd row is the header on a new page
-    return index % 43 == 0
+def _header_on_each_page() -> List[int]:
+    """Every 43rd row is the header on a new page. This is better passed to
+    pandas as a lambda x: x % 43 == 0, but since pandas options are sent over
+    HTTP we use a list instead."""
+    return [x * 43 for x in range(10000)]

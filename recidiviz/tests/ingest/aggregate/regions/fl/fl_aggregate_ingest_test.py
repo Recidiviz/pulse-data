@@ -42,7 +42,7 @@ DATE_SCRAPED = datetime.date(year=2018, month=1, day=31)
 @pytest.fixture(scope="class")
 def parsed_pdf(request):
     request.cls.parsed_pdf = fl_aggregate_ingest.parse(
-        fixtures.as_filepath('jails-2018-01.pdf'))
+        '', fixtures.as_filepath('jails-2018-01.pdf'))
 
 @pytest.mark.usefixtures("parsed_pdf")
 class TestFlAggregateIngest(TestCase):

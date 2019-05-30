@@ -43,9 +43,9 @@ DATE_SCRAPED_PDF_EXTRA_ROWS = datetime.date(year=2016, month=7, day=7)
 @pytest.fixture(scope="class")
 def parsed_pdf(request):
     request.cls.parsed_pdf = ga_aggregate_ingest.parse(
-        fixtures.as_filepath('jailreport_june18.pdf'))
+        '', fixtures.as_filepath('jailreport_june18.pdf'))
     request.cls.parsed_pdf_with_extra_rows = ga_aggregate_ingest.parse(
-        fixtures.as_filepath('jul16_jail_report.pdf'))
+        '', fixtures.as_filepath('jul16_jail_report.pdf'))
 
 
 @pytest.mark.usefixtures("parsed_pdf")
