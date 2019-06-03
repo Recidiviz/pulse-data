@@ -40,7 +40,8 @@ def as_string(region_directory, filename):
     subdir = 'scrape/regions'
     if 'vendor' in region_directory:
         subdir = 'scrape'
-    elif 'aggregate' in region_directory or 'extractor' in region_directory:
+    elif any(d in region_directory
+             for d in ('aggregate', 'extractor', 'direct')):
         subdir = ''
 
     with open(os.path.join(os.path.dirname(__file__),
