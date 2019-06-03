@@ -21,7 +21,7 @@ from http import HTTPStatus
 import logging
 import os
 import tempfile
-from flask import Blueprint, request
+from flask import Blueprint, request, jsonify
 import gcsfs
 
 from recidiviz.persistence.database.schema.aggregate import dao
@@ -97,20 +97,22 @@ def state_aggregate():
     fs.get(path, tmpdir_path)
     logging.info("Successfully downloaded file from gcs: %s", path)
 
-    result = parser(os.path.join(bucket, state), tmpdir_path)
-    logging.info('Successfully parsed the report')
-    for table, df in result.items():
-        dao.write_df(table, df)
+    try:
+        result = parser(os.path.join(bucket, state), tmpdir_path)
+        logging.info('Successfully parsed the report')
+        for table, df in result.items():
+            dao.write_df(table, df)
 
-    # If we are successful, we want to move the file out of the cloud function
-    # triggered directory, and into the historical path.
-    historical_path = os.path.join(
-        HISTORICAL_BUCKET.format(project_id),
-        state, filename
-    )
-    fs.mv(path, historical_path)
-
-    return '', HTTPStatus.OK
+        # If we are successful, we want to move the file out of the cloud
+        # function triggered directory, and into the historical path.
+        historical_path = os.path.join(
+            HISTORICAL_BUCKET.format(project_id),
+            state, filename
+        )
+        fs.mv(path, historical_path)
+        return '', HTTPStatus.OK
+    except Exception as e:
+        return jsonify(e), 500
 
 
 @cloud_functions_blueprint.route('/direct')
