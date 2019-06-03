@@ -167,3 +167,12 @@ cron:
       min_backoff_seconds: 2.5
       max_doublings: 5
       job_age_limit: 9h
+
+  - description: Start Middlesex, MA conversion from exported SQL tables
+    url: /direct/us_ma_middlesex
+    schedule: every day 12:00
+    timezone: America/New_York
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h

@@ -115,6 +115,29 @@ class Region:
 
         return scraper_class()
 
+    def get_collector(self):
+        """Retrieve a direct ingest collector object for a particular region
+
+        Returns:
+            An instance of the region's direct ingest collector class (e.g.,
+             UsMaMiddlesexcollector)
+        """
+        collector_module_name = (
+            'recidiviz.ingest.direct.regions.'
+            '{region}.{region}_collector'.format(region=self.region_code))
+
+        # Allow for the direct ingest only case, where the requested
+        # module won't exist in the scrapers.
+        try:
+            collector_module = importlib.import_module(collector_module_name)
+        except ModuleNotFoundError:
+            return None
+
+        scraper_class = getattr(collector_module,
+                                collector_class_name(self.region_code))
+
+        return scraper_class()
+
     def get_enum_overrides(self):
         """Retrieves the overrides object of a region"""
         scraper = self.get_scraper()
@@ -127,8 +150,11 @@ class Region:
         return self.shared_queue if self.shared_queue \
             else '{}-scraper'.format(self.region_code.replace('_', '-'))
 
+
 # Cache of the `Region` objects.
 REGIONS: Dict[str, 'Region'] = {}
+
+
 def get_region(region_code: str, is_direct_ingest: bool = False) -> Region:
     global REGIONS
     if not region_code in REGIONS:
@@ -179,7 +205,7 @@ def get_supported_region_codes(timezone: tzinfo = None) -> Set[str]:
         dt = datetime.now()
         return {region_code for region_code in all_region_codes
                 if timezone.utcoffset(dt) == \
-                    get_region(region_code).timezone.utcoffset(dt)}
+                get_region(region_code).timezone.utcoffset(dt)}
     return all_region_codes
 
 
@@ -200,6 +226,12 @@ def validate_region_code(region_code):
     """
     return region_code in get_supported_region_codes()
 
+
 def scraper_class_name(region_code: str) -> str:
-    """Returns the class name for a given region_code)"""
+    """Returns the scraper class name for a given region_code"""
     return ''.join(s.title() for s in region_code.split('_')) + 'Scraper'
+
+
+def collector_class_name(region_code: str) -> str:
+    """Returns the collector class name for a given region_code"""
+    return ''.join(s.title() for s in region_code.split('_')) + 'Collector'
