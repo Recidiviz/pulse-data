@@ -21,6 +21,7 @@ ingest data model and returned.
 """
 import logging
 from collections import defaultdict
+from typing import Union, Dict, List
 
 from recidiviz.ingest.extractor.data_extractor import DataExtractor
 from recidiviz.ingest.models.ingest_info import IngestInfo
@@ -29,7 +30,8 @@ from recidiviz.ingest.models.ingest_info import IngestInfo
 class JsonDataExtractor(DataExtractor):
     """Data extractor for JSON files."""
 
-    def extract_and_populate_data(self, content, ingest_info=None):
+    def extract_and_populate_data(
+            self, content: Union[Dict, List], ingest_info: IngestInfo = None):
         """This function does all the work of taking the users yaml file
         and content and returning a populated data class.  This function
         iterates through every field in the object and builds a model based on
