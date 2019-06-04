@@ -32,4 +32,5 @@ run_cmd "docker push us.gcr.io/recidiviz-staging/appengine/$deploy_name"
 echo "Running deploy"
 run_cmd "gcloud -q app deploy staging.yaml --project recidiviz-staging
        --version $version_tag-$deploy_name
-       --image-url us.gcr.io/recidiviz-staging/appengine/$deploy_name"
+       --image-url us.gcr.io/recidiviz-staging/appengine/$deploy_name
+       --verbosity=debug"
