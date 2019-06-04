@@ -15,9 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Constants used by CourtCase."""
+"""Constants used by StateCourtCase."""
 from typing import Dict
 
+import recidiviz.common.constants.enum_canonical_strings as enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
@@ -30,6 +31,8 @@ class StateCourtType(EntityEnum, metaclass=EntityEnumMeta):
 
 
 class StateCourtCaseStatus(EntityEnum, metaclass=EntityEnumMeta):
+    EXTERNAL_UNKNOWN = enum_strings.external_unknown
+
     # TODO(1697): Add values here
 
     @staticmethod

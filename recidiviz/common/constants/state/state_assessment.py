@@ -45,6 +45,18 @@ class StateAssessmentType(EntityEnum, metaclass=EntityEnumMeta):
         return _STATE_ASSESSMENT_TYPE_MAP
 
 
+class StateAssessmentLevel(EntityEnum, metaclass=EntityEnumMeta):
+    LOW = state_enum_strings.state_assessment_level_low
+    LOW_MEDIUM = state_enum_strings.state_assessment_level_low_medium
+    MEDIUM = state_enum_strings.state_assessment_level_medium
+    MEDIUM_HIGH = state_enum_strings.state_assessment_level_medium_high
+    HIGH = state_enum_strings.state_assessment_level_high
+
+    @staticmethod
+    def _get_default_map():
+        return _STATE_ASSESSMENT_LEVEL_TYPE_MAP
+
+
 _STATE_ASSESSMENT_CLASS_MAP = {
     'MENTAL HEALTH': StateAssessmentClass.MENTAL_HEALTH,
     'MH': StateAssessmentClass.MENTAL_HEALTH,
@@ -59,4 +71,12 @@ _STATE_ASSESSMENT_TYPE_MAP = {
     'LSIR': StateAssessmentType.LSIR,
     'ORAS': StateAssessmentType.ORAS,
     'PSA': StateAssessmentType.PSA,
+}
+
+_STATE_ASSESSMENT_LEVEL_TYPE_MAP = {
+    'LOW': StateAssessmentLevel.LOW,
+    'LOW MEDIUM': StateAssessmentLevel.LOW_MEDIUM,
+    'MEDIUM': StateAssessmentLevel.MEDIUM,
+    'MEDIUM HIGH': StateAssessmentLevel.MEDIUM_HIGH,
+    'HIGH': StateAssessmentLevel.HIGH,
 }

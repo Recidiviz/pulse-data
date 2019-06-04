@@ -30,16 +30,16 @@ class StateSupervisionPeriodAdmissionReason(EntityEnum,
     # period into a supervision period (i.e. parole).
     CONDITIONAL_RELEASE = \
         state_enum_strings.\
-        state_supervision_period_admission_type_conditional_release
+        state_supervision_period_admission_reason_conditional_release
     COURT_SENTENCE = \
         state_enum_strings.\
-        state_supervision_period_admission_type_court_sentence
+        state_supervision_period_admission_reason_court_sentence
     RETURN_FROM_ABSCONSION = \
         state_enum_strings.\
-        state_supervision_period_admission_type_return_from_absconsion
+        state_supervision_period_admission_reason_return_from_absconsion
     RETURN_FROM_SUSPENSION = \
         state_enum_strings.\
-        state_supervision_period_admission_type_return_from_suspension
+        state_supervision_period_admission_reason_return_from_suspension
 
     @staticmethod
     def _get_default_map():
@@ -58,6 +58,7 @@ class StateSupervisionPeriodStatus(EntityEnum, metaclass=EntityEnumMeta):
 
 
 class StateSupervisionLevel(EntityEnum, metaclass=EntityEnumMeta):
+    EXTERNAL_UNKNOWN = enum_strings.external_unknown
     # TODO(1697): Add values here
 
     @staticmethod
