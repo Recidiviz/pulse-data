@@ -32,6 +32,7 @@ requiring the database to be updated when an enum value is created or removed.
 """
 
 # state_agent.py
+state_agent_correctional_officer = 'CORRECTIONAL_OFFICER'
 state_agent_judge = 'JUDGE'
 state_agent_parole_board_member = 'PAROLE_BOARD_MEMBER'
 state_agent_supervision_officer = 'SUPERVISION_OFFICER'
@@ -47,6 +48,12 @@ state_assessment_type_asi = 'ASI'
 state_assessment_type_lsir = 'LSIR'
 state_assessment_type_oras = 'ORAS'
 state_assessment_type_psa = 'PSA'
+
+state_assessment_level_low = 'LOW'
+state_assessment_level_low_medium = 'LOW_MEDIUM'
+state_assessment_level_medium = 'MEDIUM'
+state_assessment_level_medium_high = 'MEDIUM_HIGH'
+state_assessment_level_high = 'HIGH'
 
 # state_charge.py
 state_charge_classification_civil = 'CIVIL'
@@ -106,7 +113,6 @@ state_sentence_status_serving = 'SERVING'
 state_sentence_status_suspended = 'SUSPENDED'
 
 # state_supervision.py
-state_supervision_type_conditional = 'CONDITIONAL'
 state_supervision_type_halfway_house = 'HALFWAY_HOUSE'
 state_supervision_type_parole = 'PAROLE'
 state_supervision_type_post_confinement = 'POST_CONFINEMENT'
@@ -114,13 +120,13 @@ state_supervision_type_pre_confinement = 'PRE_CONFINEMENT'
 state_supervision_type_probation = 'PROBATION'
 
 # supervision_period.py
-state_supervision_period_admission_type_conditional_release = \
+state_supervision_period_admission_reason_conditional_release = \
     'CONDITIONAL_RELEASE'
-state_supervision_period_admission_type_court_sentence = 'COURT_SENTENCE'
-state_supervision_period_admission_type_return_from_absconsion = \
+state_supervision_period_admission_reason_court_sentence = 'COURT_SENTENCE'
+state_supervision_period_admission_reason_return_from_absconsion = \
     'RETURN_FROM_ABSCONSION'
-state_supervision_period_admission_type_return_from_suspension = \
-    'RETURN_FROM_SUPSENSION'
+state_supervision_period_admission_reason_return_from_suspension = \
+    'RETURN_FROM_SUSPENSION'
 
 state_supervision_period_status_terminated = 'TERMINATED'
 state_supervision_period_status_under_supervision = 'UNDER_SUPERVISION'
