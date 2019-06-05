@@ -1,0 +1,19 @@
+key_mappings:
+  OFFENDER_BOOK_ID: sentence_group.sentence_group_id
+  IN_OUT_STATUS: sentence_group.status
+
+primary_key:
+  OFFENDER_BOOK_ID: sentence_group.sentence_group_id
+
+keys_to_ignore:
+  - ROOT_OFFENDER_ID
+  - BOOKING_NO
+  - LIVING_UNIT_ID
+  - ACTIVE_FLAG
+  - BOOKING_STATUS
+  - BOOKING_BEGIN_DATE
+  - BOOKING_END_DATE
+  - BOOKING_TYPE
+  - AGY_LOC_ID
+  - CREATE_DATETIME
+  - MODIFY_DATETIME

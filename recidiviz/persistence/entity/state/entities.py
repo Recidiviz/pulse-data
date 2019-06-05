@@ -112,6 +112,9 @@ class StatePersonExternalId(Entity, BuildableAttr, DefaultableAttr):
     # State providing the external id
     state_code: str = attr.ib()  # non-nullable
 
+    #   - What
+    id_type: Optional[str] = attr.ib()
+
     # Cross-entity relationships
     person_id: Optional[int] = attr.ib()
 
@@ -223,6 +226,7 @@ class CourtCase(ExternalIdEntity, BuildableAttr, DefaultableAttr):
 
     # Attributes
     #   - When
+    date_convicted: Optional[datetime.date] = attr.ib()
     next_court_date: Optional[datetime.date] = attr.ib()
 
     #   - Where
@@ -365,7 +369,11 @@ class StateSentenceGroup(ExternalIdEntity, BuildableAttr, DefaultableAttr):
 
     #   - What
     # See |supervision_sentences|, |incarceration_sentences|, and |fines| in
-    # entity relationships below.
+    # entity relationships below for more of the What.
+    # Total length periods, either rolled up from individual sentences
+    # or directly reported from the ingested source data
+    min_length_days: Optional[int] = attr.ib()
+    max_length_days: Optional[int] = attr.ib()
 
     #   - Who
     # See |person_id| in entity relationships below.
@@ -452,6 +460,7 @@ class StateIncarcerationSentence(ExternalIdEntity,
 
     # Attributes
     #   - When
+    date_imposed: Optional[datetime.date] = attr.ib()
     projected_min_release_date: Optional[datetime.date] = attr.ib()
     projected_max_release_date: Optional[datetime.date] = attr.ib()
     parole_eligibility_date: Optional[datetime.date] = attr.ib()
@@ -661,7 +670,7 @@ class StateIncarcerationIncident(ExternalIdEntity,
     """Models a documented incident for a StatePerson while incarcerated."""
     # Primary key - Only optional when hydrated in the data converter, before
     # we have written this entity to the persistence layer
-    incident_id: Optional[int] = attr.ib()
+    incarceration_incident_id: Optional[int] = attr.ib()
 
     # Status
     # N/A

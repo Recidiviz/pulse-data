@@ -39,6 +39,23 @@ message IngestInfo {
     repeated SentenceRelationship sentence_relationships = 8;
 
     repeated StatePerson state_people = 9;
+    repeated StatePersonRace state_person_races = 10;
+    repeated StatePersonEthnicity state_person_ethnicities = 11;
+    repeated StateAlias state_aliases = 12;
+    repeated StatePersonExternalId state_person_external_ids = 13;
+    repeated StateAssessment state_assessments = 14;
+    repeated StateSentenceGroup state_sentence_groups = 15;
+    repeated StateSupervisionSentence state_supervision_sentences = 16;
+    repeated StateIncarcerationSentence state_incarceration_sentences = 17;
+    repeated StateFine state_fines = 18;
+    repeated StateCharge state_charges = 19;
+    repeated StateCourtCase court_cases = 20;
+    repeated StateBond state_bonds = 21;
+    repeated StateIncarcerationPeriod state_incarceration_periods = 22;
+    repeated StateSupervisionPeriod state_supervision_periods = 23;
+    repeated StateIncarcerationIncident state_incarceration_incidents = 24;
+    repeated StateParoleDecision state_parole_decisions = 25;
+    repeated StateSupervisionViolation state_supervision_violations = 26;
 }
 
 message Person {
@@ -146,18 +163,235 @@ message SentenceRelationship {
     optional string relationship_type = 4;
 }
 
-// TODO(1625): Update this when we create the full state schema
 message StatePerson {
     optional string state_person_id = 1;
-    optional string surname = 2;
-    optional string given_names = 3;
-    optional string birthdate = 4;
-    optional string gender = 5;
-    optional string age = 6;
-    optional string race = 7;
-    optional string ethnicity = 8;
-    optional string place_of_residence = 9;
-    optional string full_name = 10;
-    optional string middle_names = 11;
-    optional string name_suffix = 12;
+    optional string full_name = 2;
+    optional string surname = 3;
+    optional string given_names = 4;
+    optional string middle_names = 5;
+    optional string name_suffix = 6;
+    optional string birthdate = 7;
+    optional string gender = 8;
+    optional string age = 9;
+    optional string place_of_residence = 10;
+    optional string residency_status = 11;
+
+    repeated string state_person_race_ids = 12;
+    repeated string state_person_ethnicity_ids = 13;
+    repeated string state_alias_ids = 14;
+    repeated string state_person_external_ids_ids = 15;
+    repeated string state_assessment_ids = 16;
+    repeated string state_sentence_group_ids = 17;
+}
+
+message StatePersonRace {
+    optional string state_person_race_id = 1;
+    optional string race = 2;
+}
+
+message StatePersonEthnicity {
+    optional string state_person_ethnicity_id = 1;
+    optional string ethnicity = 2;
+}
+
+message StateAlias {
+    optional string alias_id = 1;
+    optional string full_name = 2;
+    optional string surname = 3;
+    optional string given_names = 4;
+    optional string middle_names = 5;
+    optional string name_suffix = 6;
+}
+
+message StatePersonExternalId {
+    optional string external_id = 1;
+    optional string id_type = 2;
+}
+
+message StateAssessment {
+    optional string state_assessment_id = 1;
+    optional string assessment_class = 2;
+    optional string assessment_type = 3;
+    optional string assessment_date = 4;
+    optional string assessment_score = 5;
+    optional string assessment_level = 6;
+    optional string assessment_metadata = 7;
+    optional string conducting_agent_name = 8;
+    optional string conducting_agent_id = 9;
+}
+
+message StateSentenceGroup {
+    optional string state_sentence_group_id = 1;
+    optional string status = 2;
+    optional string date_imposed = 3;
+    optional string state_code = 4;
+    optional string county_code = 5;
+    optional string min_length = 6;
+    optional string max_length = 7;
+
+    repeated string state_supervision_sentence_ids = 8;
+    repeated string state_incarceration_sentence_ids = 9;
+    repeated string state_fine_ids = 10;
+}
+
+message StateSupervisionSentence {
+    optional string state_supervision_sentence_id = 1;
+    optional string status = 2;
+    optional string supervision_type = 3;
+    optional string projected_completion_date = 4;
+    optional string completion_date = 5;
+    optional string state_code = 6;
+    optional string county_code = 7;
+    optional string min_length = 8;
+    optional string max_length = 9;
+
+    repeated string state_charge_ids = 10;
+    repeated string state_incarceration_period_ids = 11;
+    repeated string state_supervision_period_ids = 12;
+}
+
+message StateIncarcerationSentence {
+    optional string state_incarceration_sentence_id = 1;
+    optional string status = 2;
+    optional string incarceration_type = 3;
+    optional string date_imposed = 4;
+    optional string projected_min_release_date = 5;
+    optional string projected_max_release_date = 6;
+    optional string parole_eligibility_date = 7;
+    optional string state_code = 8;
+    optional string county_code = 9;
+    optional string min_length = 10;
+    optional string max_length = 11;
+    optional string is_life = 12;
+    optional string parole_possible = 13;
+    optional string is_suspended = 14;
+    optional string initial_time_served = 15;
+    optional string good_time = 16;
+    optional string earned_time = 17;
+
+    repeated string state_charge_ids = 18;
+    repeated string state_incarceration_period_ids = 19;
+    repeated string state_supervision_period_ids = 20;
+}
+
+message StateFine {
+    optional string state_fine_id = 1;
+    optional string status = 2;
+    optional string date_paid = 3;
+    optional string state_code = 4;
+    optional string county_code = 5;
+    optional string fine_dollars = 6;
+
+    repeated string state_charge_ids = 7;
+}
+
+message StateCharge {
+    optional string state_charge_id = 1;
+    optional string status = 2;
+    optional string offense_date = 3;
+    optional string date_charged = 4;
+    optional string statute = 5;
+    optional string description = 6;
+    optional string attempted = 7;
+    optional string charge_classification = 8;
+    optional string degree = 9;
+    optional string counts = 10;
+    optional string charge_notes = 11;
+    optional string charging_entity = 12;
+
+    optional string state_court_case_id = 13;
+    optional string state_bond_id = 14;
+}
+
+message StateCourtCase {
+    optional string state_court_case_id = 1;
+    optional string status = 2;
+    optional string court_type = 3;
+    optional string date_convicted = 4;
+    optional string next_court_date = 5;
+    optional string state_code = 6;
+    optional string county_code = 7;
+    optional string court_fee_dollars = 8;
+    optional string judge_name = 9;
+}
+
+message StateBond {
+    optional string state_bond_id = 1;
+    optional string status = 2;
+    optional string bond_type = 3;
+    optional string date_paid = 4;
+    optional string state_code = 5;
+    optional string county_code = 6;
+    optional string amount_dollars = 7;
+    optional string bond_agent = 8;
+}
+
+message StateIncarcerationPeriod {
+    optional string state_incarceration_period_id = 1;
+    optional string status = 2;
+    optional string incarceration_type = 3;
+    optional string admission_date = 4;
+    optional string release_date = 5;
+    optional string state_code = 6;
+    optional string county_code = 7;
+    optional string facility = 8;
+    optional string housing_unit = 9;
+    optional string facility_security_level = 10;
+    optional string admission_reason = 11;
+    optional string projected_release_reason = 12;
+    optional string release_reason = 13;
+
+    repeated string state_incarceration_incident_ids = 14;
+    repeated string state_parole_decision_ids = 15;
+    repeated string state_assessment_ids = 16;
+}
+
+message StateSupervisionPeriod {
+    optional string state_supervision_period_id = 1;
+    optional string status = 2;
+    optional string supervision_type = 3;
+    optional string admission_date = 4;
+    optional string termination_date = 5;
+    optional string state_code = 6;
+    optional string county_code = 7;
+    optional string admission_reason = 8;
+    optional string termination_reason = 9;
+    optional string supervision_level = 10;
+    repeated string conditions = 11;
+
+    repeated string state_supervision_violation_ids = 12;
+    repeated string state_assessment_ids = 13;
+}
+
+message StateIncarcerationIncident {
+    optional string state_incarceration_incident_id = 1;
+    optional string incident_date = 2;
+    optional string state_code = 3;
+    optional string county_code = 4;
+    optional string location_within_facility = 5;
+    optional string offense = 6;
+    optional string outcome = 7;
+    optional string responding_officer_name = 8;
+    optional string responding_officer_id = 9;
+}
+
+message StateParoleDecision {
+    optional string state_parole_decision_id = 1;
+    optional string received_parole = 2;
+    optional string decision_date = 3;
+    optional string corrective_action_deadline = 4;
+    optional string state_code = 5;
+    optional string county_code = 6;
+    optional string decision_outcome = 7;
+    optional string decision_reasoning = 8;
+    optional string corrective_action = 9;
+    repeated string decision_agent_names = 10;
+}
+
+message StateSupervisionViolation {
+    optional string state_supervision_violation_id = 1;
+    optional string violation_type = 2;
+    optional string violation_date = 3;
+    optional string is_violent = 4;
+    repeated string violated_conditions = 5;
 }

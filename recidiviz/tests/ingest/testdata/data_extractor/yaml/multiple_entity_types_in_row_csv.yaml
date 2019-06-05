@@ -1,0 +1,19 @@
+key_mappings:
+  EARLIEST_SENT_START_DATE: sentence_group.date_imposed
+  MAX_TERM: sentence_group.max_length
+  PAROLE_DATE: incarceration_sentence.parole_eligibility_date
+
+ancestor_key:
+  OFFENDER_BOOK_ID: sentence_group.sentence_group_id
+
+primary_key:
+  OFFENDER_BOOK_ID: sentence_group.sentence_group_id
+
+keys_to_ignore:
+  - OFFENDER_BOOK_ID
+  - FINAL_SENT_EXP_DATE
+  - CALC_POS_REL_DATE
+  - OVR_POS_REL_DATE
+  - PAROLE_REVIEW_DATE
+  - CREATE_DATETIME
+  - MODIFY_DATETIME
