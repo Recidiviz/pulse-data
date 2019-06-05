@@ -22,7 +22,7 @@ from deepdiff import DeepDiff
 def diff_ingest_infos(expected, actual):
     """Returns a list of formatted strings describing the differences between
     two IngestInfo objects."""
-    ddiff = DeepDiff(expected, actual)
+    ddiff = DeepDiff(expected, actual, exclude_paths={'root._people_by_id'})
     differences = []
 
     for diff_type, diffs in ddiff.items():

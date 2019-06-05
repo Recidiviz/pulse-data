@@ -22,7 +22,11 @@ import unittest
 from recidiviz.ingest.models import ingest_info
 from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.ingest.models.ingest_info_pb2 import Person, \
-    Booking, Charge, Hold, Arrest, Sentence, Bond, StatePerson
+    Booking, Charge, Hold, Arrest, Sentence, Bond, StatePerson, \
+    StateAssessment, StateSentenceGroup, StateSupervisionSentence, \
+    StateIncarcerationSentence, StateFine, StateCharge, StateCourtCase, \
+    StateBond, StateIncarcerationPeriod, StateSupervisionPeriod, \
+    StateIncarcerationIncident, StateParoleDecision, StateSupervisionViolation
 
 
 class FieldsDontMatchError(Exception):
@@ -51,11 +55,46 @@ class TestIngestInfo(unittest.TestCase):
                         " IngestInfo object but not in the proto object" % (
                             field, proto.__name__))
 
+        # These should only contain fields that are listed in ingest_info.proto
+        # as ids but listed in ingest_info.py as full objects. Think carefully
+        # before adding anything else.
         person_fields_ignore = ['booking_ids', 'bookings']
         booking_fields_ignore = ['arrest_id', 'charge_ids', 'hold_ids',
                                  'arrest', 'charges', 'holds']
         charge_fields_ignore = ['bond_id', 'sentence_id', 'bond', 'sentence']
         sentence_fields_ignore = ['sentence_relationships']
+
+        state_person_fields_ignore = [
+            'state_person_race_ids', 'state_person_races',
+            'state_person_ethnicity_ids', 'state_person_ethnicities',
+            'state_alias_ids', 'state_aliases',
+            'state_person_external_ids_ids', 'state_person_external_ids',
+            'state_assessment_ids', 'state_assessments',
+            'state_sentence_group_ids', 'state_sentence_groups']
+        sentence_group_fields_ignore = \
+            ['state_supervision_sentence_ids', 'state_supervision_sentences',
+             'state_incarceration_sentence_ids',
+             'state_incarceration_sentences',
+             'state_fine_ids', 'state_fines']
+        supervision_sentence_fields_ignore = \
+            ['state_charge_ids', 'state_charges',
+             'state_incarceration_period_ids', 'state_incarceration_periods',
+             'state_supervision_period_ids', 'state_supervision_periods']
+        incarceration_sentence_fields_ignore = \
+            ['state_charge_ids', 'state_charges',
+             'state_incarceration_period_ids', 'state_incarceration_periods',
+             'state_supervision_period_ids', 'state_supervision_periods']
+        fine_fields_ignore = ['state_charge_ids', 'state_charges']
+        state_charge_fields_ignore = ['state_court_case_id', 'state_court_case',
+                                      'state_bond_id', 'state_bond']
+        incarceration_period_fields_ignore = \
+            ['state_incarceration_incident_ids',
+             'state_incarceration_incidents',
+             'state_parole_decision_ids', 'state_parole_decisions',
+             'state_assessment_ids', 'state_assessments']
+        supervision_period_fields_ignore = \
+            ['state_supervision_violation_ids', 'state_supervision_violations',
+             'state_assessment_ids', 'state_assessments']
 
         _verify_fields(Person, ingest_info.Person(), person_fields_ignore)
         _verify_fields(Booking, ingest_info.Booking(), booking_fields_ignore)
@@ -65,7 +104,34 @@ class TestIngestInfo(unittest.TestCase):
         _verify_fields(Sentence, ingest_info.Sentence(), sentence_fields_ignore)
         _verify_fields(Bond, ingest_info.Bond())
 
-        _verify_fields(StatePerson, ingest_info.StatePerson())
+        _verify_fields(StatePerson, ingest_info.StatePerson(),
+                       state_person_fields_ignore)
+        _verify_fields(StateAssessment, ingest_info.StateAssessment())
+        _verify_fields(StateSentenceGroup, ingest_info.StateSentenceGroup(),
+                       sentence_group_fields_ignore)
+        _verify_fields(StateSupervisionSentence,
+                       ingest_info.StateSupervisionSentence(),
+                       supervision_sentence_fields_ignore)
+        _verify_fields(StateIncarcerationSentence,
+                       ingest_info.StateIncarcerationSentence(),
+                       incarceration_sentence_fields_ignore)
+        _verify_fields(StateFine, ingest_info.StateFine(), fine_fields_ignore)
+        _verify_fields(StateCharge, ingest_info.StateCharge(),
+                       state_charge_fields_ignore)
+        _verify_fields(StateCourtCase, ingest_info.StateCourtCase())
+        _verify_fields(StateBond, ingest_info.StateBond())
+        _verify_fields(StateIncarcerationPeriod,
+                       ingest_info.StateIncarcerationPeriod(),
+                       incarceration_period_fields_ignore)
+        _verify_fields(StateSupervisionPeriod,
+                       ingest_info.StateSupervisionPeriod(),
+                       supervision_period_fields_ignore)
+        _verify_fields(StateIncarcerationIncident,
+                       ingest_info.StateIncarcerationIncident())
+        _verify_fields(StateParoleDecision, ingest_info.StateParoleDecision())
+        _verify_fields(StateSupervisionViolation,
+                       ingest_info.StateSupervisionViolation())
+
         return True
 
     def test_bool_falsy(self):
