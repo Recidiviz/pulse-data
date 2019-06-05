@@ -51,16 +51,16 @@ If you are contributing to this repository regularly for an extended period of t
 
 ##### Option 1: Local Python installation
 
-If you can install `python3.7` locally, do so. 
+If you can install `python3.7` locally, do so. For local Python development, you will also need to install the `libpq` PostgreSQL client library.
 
-On a Mac with [Homebrew](https://brew.sh/), you can install `python3.7` with:
+On a Mac with [Homebrew](https://brew.sh/), you can install `python3.7` and `libpq` with:
 ```bash
-$ brew install python3
+$ brew install python3 postgresql
 ```
 
-On Ubuntu 18.04, you can install `python3.7` with:
+On Ubuntu 18.04, you can install `python3.7` and `libpq` with:
 ```bash
-$ apt update -y && apt install -y python3.7-dev python3-pip
+$ apt update -y && apt install -y python3.7-dev python3-pip libpq-dev
 ```
 
 You do not need to change your default python version, as `pipenv` will look for 3.7.
