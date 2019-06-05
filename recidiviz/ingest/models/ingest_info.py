@@ -31,12 +31,42 @@ HIERARCHY_MAP: Dict[str, Sequence[str]] = {
 
     # State level hierarchy
     'state_person': (),
-    # TODO(1625): Add state schema hierarchies here
+    'state_person_race': ('state_person',),
+    'state_person_ethnicity': ('state_person',),
+    'state_alias': ('state_person',),
+    'state_person_external_id': ('state_person',),
+    'state_assessment': ('state_person',),
+    'state_sentence_group': ('state_person',),
+    'state_supervision_sentence': ('state_person', 'state_sentence_group',),
+    'state_incarceration_sentence': ('state_person', 'state_sentence_group',),
+    'state_fine': ('state_person', 'state_sentence_group',),
+    'state_incarceration_period': ('state_person', 'state_sentence_group',
+                                   'state_incarceration_sentence',),
+    'state_charge': ('state_person', 'state_sentence_group',
+                     'state_incarceration_sentence',),
+    'state_court_case': ('state_person', 'state_sentence_group',
+                         'state_incarceration_sentence', 'state_charge',),
+    # TODO(1626): Handle when an entity type can be child of multiple parents
 }
 
 PLURALS = {'person': 'people', 'booking': 'bookings', 'charge': 'charges',
            'hold': 'holds',
-           'state_person': 'state_people'  # TODO(1625): Add state plurals here
+           'state_person': 'state_people',
+           'state_person_race': 'state_person_races',
+           'state_person_ethnicity': 'state_person_ethnicities',
+           'state_alias': 'state_aliases',
+           'state_assessment': 'state_assessments',
+           'state_person_external_id': 'state_person_external_ids',
+           'state_sentence_group': 'state_sentence_groups',
+           'state_supervision_sentence': 'state_supervision_sentences',
+           'state_incarceration_sentence': 'state_incarceration_sentences',
+           'state_fine': 'state_fines',
+           'state_supervision_period': 'state_supervision_periods',
+           'state_incarceration_period': 'state_incarceration_periods',
+           'state_charge': 'state_charges',
+           'state_incarceration_incident': 'state_incarceration_incidents',
+           'state_parole_decision': 'state_parole_decisions',
+           'state_supervision_violation': 'state_supervision_violations'
            }
 
 
@@ -44,9 +74,7 @@ class IngestObject:
     """Abstract base class for all the objects contained by IngestInfo"""
 
     def __eq__(self, other):
-        if other is None:
-            return False
-        return self.__dict__ == other.__dict__
+        return eq(self, other)
 
     def __lt__(self, other):
         return str(self) < str(other)
@@ -72,8 +100,31 @@ class IngestInfo(IngestObject):
         self.people: List[Person] = people or []
         self.state_people: List[StatePerson] = state_people or []
 
+        self._state_people_by_id: Dict[str, StatePerson] = {}
+        self._set_person_ids(state_people)
+
+    def __eq__(self, other):
+        return eq(self, other, exclude=['_state_people_by_id'])
+
+    def __bool__(self):
+        return to_bool(self, exclude=['_state_people_by_id'])
+
+    def __str__(self):
+        return to_string(self, exclude=['_state_people_by_id'])
+
+    def __repr__(self):
+        return to_repr(self, exclude=['_state_people_by_id'])
+
     def __setattr__(self, name, value):
-        restricted_setattr(self, 'state_people', name, value)
+        restricted_setattr(self, '_state_people_by_id', name, value)
+
+    # TODO(1626): Extract the caching mechanisms embedded in IngestInfo
+    # into an optional caching decorator of some sort
+    def _set_person_ids(self, state_people):
+        if state_people:
+            for person in state_people:
+                if person.state_person_id:
+                    self._state_people_by_id[person.state_person_id] = person
 
     def create_person(self, **kwargs) -> 'Person':
         person = Person(**kwargs)
@@ -88,6 +139,7 @@ class IngestInfo(IngestObject):
     def create_state_person(self, **kwargs) -> 'StatePerson':
         person = StatePerson(**kwargs)
         self.state_people.append(person)
+        self._set_person_ids([person])
         return person
 
     def get_recent_state_person(self) -> Optional['StatePerson']:
@@ -95,14 +147,36 @@ class IngestInfo(IngestObject):
             return self.state_people[-1]
         return None
 
+    def get_state_person_by_id(self, state_person_id) \
+            -> Optional['StatePerson']:
+        if state_person_id in self._state_people_by_id:
+            return self._state_people_by_id.get(state_person_id)
+
+        # TODO(1626) in ND scraper we set person id from Elite id to SID by hand
+        # Does that need to change the id we set on the cache?
+        state_person = next((person for person in self.state_people
+                             if person.state_person_id == state_person_id),
+                            None)
+        if state_person:
+            if state_person.state_person_id:
+                self._state_people_by_id[state_person.state_person_id] = \
+                    state_person
+        return state_person
+
     def prune(self) -> 'IngestInfo':
         self.people = [person.prune() for person in self.people if person]
+        self.state_people = [person.prune() for person
+                             in self.state_people if person]
         return self
 
     def sort(self):
         for person in self.people:
             person.sort()
         self.people.sort()
+
+        for person in self.state_people:
+            person.sort()
+        self.state_people.sort()
 
     def get_all_people(self, predicate=lambda _: True) -> List['Person']:
         return [person for person in self.people if predicate(person)]
@@ -434,7 +508,6 @@ class SentenceRelationship(IngestObject):
         restricted_setattr(self, 'relationship_type', name, value)
 
 
-# TODO(1625): Update this when we create the full state schema
 class StatePerson(IngestObject):
     """Class for information about a person at the state level.
     Referenced from IngestInfo.
@@ -443,33 +516,881 @@ class StatePerson(IngestObject):
     def __init__(
             self, state_person_id=None, full_name=None, surname=None,
             given_names=None, middle_names=None, name_suffix=None,
-            birthdate=None, gender=None, age=None, race=None, ethnicity=None,
-            place_of_residence=None):
+            birthdate=None, gender=None, age=None, place_of_residence=None,
+            residency_status=None, state_person_races=None,
+            state_person_ethnicities=None, state_aliases=None,
+            state_person_external_ids=None, state_assessments=None,
+            state_sentence_groups=None):
         self.state_person_id: Optional[str] = state_person_id
+        self.full_name: Optional[str] = full_name
         self.surname: Optional[str] = surname
         self.given_names: Optional[str] = given_names
         self.middle_names: Optional[str] = middle_names
         self.name_suffix: Optional[str] = name_suffix
-        self.full_name: Optional[str] = full_name
         self.birthdate: Optional[str] = birthdate
         self.gender: Optional[str] = gender
         self.age: Optional[str] = age
-        self.race: Optional[str] = race
-        self.ethnicity: Optional[str] = ethnicity
         self.place_of_residence: Optional[str] = place_of_residence
+        self.residency_status: Optional[str] = residency_status
+
+        self.state_person_races: List[StatePersonRace] = \
+            state_person_races or []
+        self.state_person_ethnicities: List[StatePersonEthnicity] = \
+            state_person_ethnicities or []
+        self.state_aliases: List[StateAlias] = state_aliases or []
+        self.state_person_external_ids: List[StatePersonExternalId] = \
+            state_person_external_ids or []
+        self.state_assessments: List[StateAssessment] = state_assessments or []
+        self.state_sentence_groups: List[StateSentenceGroup] = \
+            state_sentence_groups or []
 
     def __setattr__(self, name, value):
-        restricted_setattr(self, 'place_of_residence', name, value)
+        restricted_setattr(self, 'state_sentence_groups', name, value)
+
+    def create_state_person_race(self, **kwargs) -> 'StatePersonRace':
+        race = StatePersonRace(**kwargs)
+        self.state_person_races.append(race)
+        return race
+
+    def create_state_person_ethnicity(self, **kwargs) -> 'StatePersonEthnicity':
+        ethnicity = StatePersonEthnicity(**kwargs)
+        self.state_person_ethnicities.append(ethnicity)
+        return ethnicity
+
+    def create_state_alias(self, **kwargs) -> 'StateAlias':
+        alias = StateAlias(**kwargs)
+        self.state_aliases.append(alias)
+        return alias
+
+    def create_state_person_external_id(self, **kwargs) \
+            -> 'StatePersonExternalId':
+        external_id = StatePersonExternalId(**kwargs)
+        self.state_person_external_ids.append(external_id)
+        return external_id
+
+    def create_state_assessment(self, **kwargs) -> 'StateAssessment':
+        assessment = StateAssessment(**kwargs)
+        self.state_assessments.append(assessment)
+        return assessment
+
+    def create_state_sentence_group(self, **kwargs) -> 'StateSentenceGroup':
+        sentence_group = StateSentenceGroup(**kwargs)
+        self.state_sentence_groups.append(sentence_group)
+        return sentence_group
+
+    def get_recent_state_person_race(self) -> Optional['StatePersonRace']:
+        if self.state_person_races:
+            return self.state_person_races[-1]
+        return None
+
+    def get_recent_state_person_ethnicity(self) \
+            -> Optional['StatePersonEthnicity']:
+        if self.state_person_ethnicities:
+            return self.state_person_ethnicities[-1]
+        return None
+
+    def get_recent_state_alias(self) -> Optional['StateAlias']:
+        if self.state_aliases:
+            return self.state_aliases[-1]
+        return None
+
+    def get_recent_state_person_external_id(self) \
+            -> Optional['StatePersonExternalId']:
+        if self.state_person_external_ids:
+            return self.state_person_external_ids[-1]
+        return None
+
+    def get_recent_state_assessment(self) -> Optional['StateAssessment']:
+        if self.state_assessments:
+            return self.state_assessments[-1]
+        return None
+
+    def get_recent_state_sentence_group(self) -> Optional['StateSentenceGroup']:
+        if self.state_sentence_groups:
+            return self.state_sentence_groups[-1]
+        return None
+
+    def get_state_sentence_group_by_id(self, sentence_group_id) \
+            -> Optional['StateSentenceGroup']:
+        return next((sg for sg in self.state_sentence_groups
+                     if sg.state_sentence_group_id == sentence_group_id), None)
+
+    def prune(self) -> 'StatePerson':
+        self.state_sentence_groups = [sg.prune() for sg
+                                      in self.state_sentence_groups if sg]
+        return self
+
+    def sort(self):
+        self.state_person_races.sort()
+        self.state_person_ethnicities.sort()
+        self.state_aliases.sort()
+        self.state_person_external_ids.sort()
+        self.state_assessments.sort()
+
+        for sentence_group in self.state_sentence_groups:
+            sentence_group.sort()
+        self.state_sentence_groups.sort()
 
 
-def to_bool(obj):
+class StatePersonExternalId(IngestObject):
+    """Class for information about one of a StatePerson's external ids.
+    Referenced from StatePerson.
+    """
+
+    def __init__(self, external_id=None, id_type=None):
+        self.external_id: Optional[str] = external_id
+        self.id_type: Optional[str] = id_type
+
+    def __setattr__(self, name, value):
+        restricted_setattr(self, 'id_type', name, value)
+
+
+class StateAlias(IngestObject):
+    """Class for information about an alias.
+    Referenced from StatePerson.
+    """
+
+    def __init__(self, state_alias_id=None, full_name=None, surname=None,
+                 given_names=None, middle_names=None, name_suffix=None):
+        self.state_alias_id: Optional[str] = state_alias_id
+        self.full_name: Optional[str] = full_name
+        self.surname: Optional[str] = surname
+        self.given_names: Optional[str] = given_names
+        self.middle_names: Optional[str] = middle_names
+        self.name_suffix: Optional[str] = name_suffix
+
+    def __setattr__(self, name, value):
+        restricted_setattr(self, 'name_suffix', name, value)
+
+
+class StatePersonRace(IngestObject):
+    """Class for information about a state person's race.
+    Referenced from StatePerson.
+    """
+
+    def __init__(self, state_person_race_id=None, race=None):
+        self.state_person_race_id: Optional[str] = state_person_race_id
+        self.race: Optional[str] = race
+
+    def __setattr__(self, name, value):
+        restricted_setattr(self, 'race', name, value)
+
+
+class StatePersonEthnicity(IngestObject):
+    """Class for information about a state person's ethnicity.
+    Referenced from StatePerson.
+    """
+
+    def __init__(self, state_person_ethnicity_id=None, ethnicity=None):
+        self.state_person_ethnicity_id: Optional[str] = \
+            state_person_ethnicity_id
+        self.ethnicity: Optional[str] = ethnicity
+
+    def __setattr__(self, name, value):
+        restricted_setattr(self, 'ethnicity', name, value)
+
+
+class StateAssessment(IngestObject):
+    """Class for information about an assessment.
+    Referenced from StatePerson.
+    """
+
+    def __init__(self, state_assessment_id=None, assessment_class=None,
+                 assessment_type=None, assessment_date=None,
+                 assessment_score=None, assessment_level=None,
+                 assessment_metadata=None, conducting_agent_name=None,
+                 conducting_agent_id=None):
+        self.state_assessment_id: Optional[str] = state_assessment_id
+        self.assessment_class: Optional[str] = assessment_class
+        self.assessment_type: Optional[str] = assessment_type
+        self.assessment_date: Optional[str] = assessment_date
+        self.assessment_score: Optional[str] = assessment_score
+        self.assessment_level: Optional[str] = assessment_level
+        self.assessment_metadata: Optional[str] = assessment_metadata
+        self.conducting_agent_name: Optional[str] = conducting_agent_name
+        self.conducting_agent_id: Optional[str] = conducting_agent_id
+
+    def __setattr__(self, name, value):
+        restricted_setattr(self, 'conducting_agent_id', name, value)
+
+
+class StateSentenceGroup(IngestObject):
+    """Class for information about a group of related sentences.
+    Referenced from StatePerson.
+    """
+
+    def __init__(self, state_sentence_group_id=None, status=None,
+                 date_imposed=None, state_code=None, county_code=None,
+                 min_length=None, max_length=None,
+                 state_supervision_sentences=None,
+                 state_incarceration_sentences=None, state_fines=None):
+        self.state_sentence_group_id: Optional[str] = state_sentence_group_id
+        self.status: Optional[str] = status
+        self.date_imposed: Optional[str] = date_imposed
+        self.state_code: Optional[str] = state_code
+        self.county_code: Optional[str] = county_code
+        self.min_length: Optional[str] = min_length
+        self.max_length: Optional[str] = max_length
+
+        self.state_supervision_sentences: List[StateSupervisionSentence] = \
+            state_supervision_sentences or []
+        self.state_incarceration_sentences: List[StateIncarcerationSentence] = \
+            state_incarceration_sentences or []
+        self.state_fines: List[StateFine] = state_fines or []
+
+    def __setattr__(self, name, value):
+        restricted_setattr(self, 'state_fines', name, value)
+
+    def create_state_supervision_sentence(self, **kwargs) \
+            -> 'StateSupervisionSentence':
+        supervision_sentence = StateSupervisionSentence(**kwargs)
+        self.state_supervision_sentences.append(supervision_sentence)
+        return supervision_sentence
+
+    def create_state_incarceration_sentence(self, **kwargs) \
+            -> 'StateIncarcerationSentence':
+        incarceration_sentence = StateIncarcerationSentence(**kwargs)
+        self.state_incarceration_sentences.append(incarceration_sentence)
+        return incarceration_sentence
+
+    def create_state_fine(self, **kwargs) -> 'StateFine':
+        fine = StateFine(**kwargs)
+        self.state_fines.append(fine)
+        return fine
+
+    def get_recent_state_supervision_sentence(self) \
+            -> Optional['StateSupervisionSentence']:
+        if self.state_supervision_sentences:
+            return self.state_supervision_sentences[-1]
+        return None
+
+    def get_recent_state_incarceration_sentence(self)\
+            -> Optional['StateIncarcerationSentence']:
+        if self.state_incarceration_sentences:
+            return self.state_incarceration_sentences[-1]
+        return None
+
+    def get_state_incarceration_sentence_by_id(self,
+                                               incarceration_sentence_id) \
+            -> Optional['StateIncarcerationSentence']:
+        return next((ins for ins in self.state_incarceration_sentences
+                     if ins.state_incarceration_sentence_id
+                     == incarceration_sentence_id), None)
+
+    def get_recent_state_fine(self) -> Optional['StateFine']:
+        if self.state_fines:
+            return self.state_fines[-1]
+        return None
+
+    def prune(self) -> 'StateSentenceGroup':
+        self.state_supervision_sentences = \
+            [ss.prune() for ss in self.state_supervision_sentences if ss]
+
+        self.state_incarceration_sentences = \
+            [ins.prune() for ins in self.state_incarceration_sentences if ins]
+
+        self.state_fines = [fine.prune() for fine in self.state_fines if fine]
+
+        return self
+
+    def sort(self):
+        for supervision_sentence in self.state_supervision_sentences:
+            supervision_sentence.sort()
+        self.state_supervision_sentences.sort()
+
+        for incarceration_sentence in self.state_incarceration_sentences:
+            incarceration_sentence.sort()
+        self.state_incarceration_sentences.sort()
+
+        self.state_fines.sort()
+
+
+class StateSupervisionSentence(IngestObject):
+    """Class for information about a sentence to supervision.
+    Referenced from SentenceGroup.
+    """
+
+    def __init__(self, state_supervision_sentence_id=None, status=None,
+                 supervision_type=None, projected_completion_date=None,
+                 completion_date=None, state_code=None, county_code=None,
+                 min_length=None, max_length=None, state_charges=None,
+                 state_incarceration_periods=None,
+                 state_supervision_periods=None):
+        self.state_supervision_sentence_id: Optional[str] = \
+            state_supervision_sentence_id
+        self.status: Optional[str] = status
+        self.supervision_type: Optional[str] = supervision_type
+        self.projected_completion_date: Optional[str] = \
+            projected_completion_date
+        self.completion_date: Optional[str] = completion_date
+        self.state_code: Optional[str] = state_code
+        self.county_code: Optional[str] = county_code
+        self.min_length: Optional[str] = min_length
+        self.max_length: Optional[str] = max_length
+
+        self.state_charges: List[StateCharge] = state_charges or []
+        self.state_incarceration_periods: List[StateIncarcerationPeriod] = \
+            state_incarceration_periods or []
+        self.state_supervision_periods: List[StateSupervisionPeriod] = \
+            state_supervision_periods or []
+
+    def __setattr__(self, name, value):
+        restricted_setattr(self, 'state_supervision_periods', name, value)
+
+    def create_state_charge(self, **kwargs) -> 'StateCharge':
+        charge = StateCharge(**kwargs)
+        self.state_charges.append(charge)
+        return charge
+
+    def create_state_incarceration_period(self, **kwargs) \
+            -> 'StateIncarcerationPeriod':
+        incarceration_period = StateIncarcerationPeriod(**kwargs)
+        self.state_incarceration_periods.append(incarceration_period)
+        return incarceration_period
+
+    def create_state_supervision_period(self, **kwargs) \
+            -> 'StateSupervisionPeriod':
+        supervision_period = StateSupervisionPeriod(**kwargs)
+        self.state_supervision_periods.append(supervision_period)
+        return supervision_period
+
+    def get_recent_state_charge(self) -> Optional['StateCharge']:
+        if self.state_charges:
+            return self.state_charges[-1]
+        return None
+
+    def get_recent_state_incarceration_sentence(self)\
+            -> Optional['StateIncarcerationPeriod']:
+        if self.state_incarceration_periods:
+            return self.state_incarceration_periods[-1]
+        return None
+
+    def get_recent_state_supervision_sentence(self) \
+            -> Optional['StateSupervisionPeriod']:
+        if self.state_supervision_periods:
+            return self.state_supervision_periods[-1]
+        return None
+
+    def prune(self) -> 'StateSupervisionSentence':
+        self.state_charges = [sc.prune() for sc in self.state_charges if sc]
+
+        self.state_incarceration_periods = \
+            [ip.prune() for ip in self.state_incarceration_periods if ip]
+
+        self.state_supervision_periods = \
+            [sp.prune() for sp in self.state_supervision_periods if sp]
+
+        return self
+
+    def sort(self):
+        self.state_charges.sort()
+
+        for incarceration_period in self.state_incarceration_periods:
+            incarceration_period.sort()
+        self.state_incarceration_periods.sort()
+
+        for supervision_period in self.state_supervision_periods:
+            supervision_period.sort()
+        self.state_supervision_periods.sort()
+
+
+class StateIncarcerationSentence(IngestObject):
+    """Class for information about a sentence to incarceration.
+    Referenced from SentenceGroup.
+    """
+
+    def __init__(self, state_incarceration_sentence_id=None, status=None,
+                 incarceration_type=None, date_imposed=None,
+                 projected_min_release_date=None,
+                 projected_max_release_date=None, parole_eligibility_date=None,
+                 state_code=None, county_code=None, min_length=None,
+                 max_length=None, is_life=None, parole_possible=None,
+                 is_suspended=None, initial_time_served=None, good_time=None,
+                 earned_time=None, state_charges=None,
+                 state_incarceration_periods=None,
+                 state_supervision_periods=None):
+        self.state_incarceration_sentence_id: Optional[str] = \
+            state_incarceration_sentence_id
+        self.status: Optional[str] = status
+        self.incarceration_type: Optional[str] = incarceration_type
+        self.date_imposed: Optional[str] = date_imposed
+        self.projected_min_release_date: Optional[str] = \
+            projected_min_release_date
+        self.projected_max_release_date: Optional[str] = \
+            projected_max_release_date
+        self.parole_eligibility_date: Optional[str] = parole_eligibility_date
+        self.state_code: Optional[str] = state_code
+        self.county_code: Optional[str] = county_code
+        self.min_length: Optional[str] = min_length
+        self.max_length: Optional[str] = max_length
+        self.is_life: Optional[str] = is_life
+        self.parole_possible: Optional[str] = parole_possible
+        self.is_suspended: Optional[str] = is_suspended
+        self.initial_time_served: Optional[str] = initial_time_served
+        self.good_time: Optional[str] = good_time
+        self.earned_time: Optional[str] = earned_time
+
+        self.state_charges: List[StateCharge] = state_charges or []
+        self.state_incarceration_periods: List[StateIncarcerationPeriod] = \
+            state_incarceration_periods or []
+        self.state_supervision_periods: List[StateSupervisionPeriod] = \
+            state_supervision_periods or []
+
+    def __setattr__(self, name, value):
+        restricted_setattr(self, 'state_supervision_periods', name, value)
+
+    def create_state_charge(self, **kwargs) -> 'StateCharge':
+        state_charge = StateCharge(**kwargs)
+        self.state_charges.append(state_charge)
+        return state_charge
+
+    def create_state_incarceration_period(self, **kwargs) \
+            -> 'StateIncarcerationPeriod':
+        incarceration_period = StateIncarcerationPeriod(**kwargs)
+        self.state_incarceration_periods.append(incarceration_period)
+        return incarceration_period
+
+    def create_state_supervision_period(self, **kwargs) \
+            -> 'StateSupervisionPeriod':
+        supervision_period = StateSupervisionPeriod(**kwargs)
+        self.state_supervision_periods.append(supervision_period)
+        return supervision_period
+
+    def get_recent_state_charge(self) -> Optional['StateCharge']:
+        if self.state_charges:
+            return self.state_charges[-1]
+        return None
+
+    def get_state_charge_by_id(self, state_charge_id) \
+            -> Optional['StateCharge']:
+        return next((sc for sc in self.state_charges
+                     if sc.state_charge_id == state_charge_id), None)
+
+    def get_recent_state_incarceration_period(self)\
+            -> Optional['StateIncarcerationPeriod']:
+        if self.state_incarceration_periods:
+            return self.state_incarceration_periods[-1]
+        return None
+
+    def get_recent_state_supervision_period(self) \
+            -> Optional['StateSupervisionPeriod']:
+        if self.state_supervision_periods:
+            return self.state_supervision_periods[-1]
+        return None
+
+    def prune(self) -> 'StateIncarcerationSentence':
+        self.state_charges = [sc.prune() for sc in self.state_charges if sc]
+
+        self.state_incarceration_periods = \
+            [ip.prune() for ip in self.state_incarceration_periods if ip]
+
+        self.state_supervision_periods = \
+            [sp.prune() for sp in self.state_supervision_periods if sp]
+
+        return self
+
+    def sort(self):
+        self.state_charges.sort()
+
+        for incarceration_period in self.state_incarceration_periods:
+            incarceration_period.sort()
+        self.state_incarceration_periods.sort()
+
+        for supervision_period in self.state_supervision_periods:
+            supervision_period.sort()
+        self.state_supervision_periods.sort()
+
+
+class StateFine(IngestObject):
+    """Class for information about a fine associated with a sentence.
+    Referenced from SentenceGroup.
+    """
+
+    def __init__(self, state_fine_id=None, status=None, date_paid=None,
+                 state_code=None, county_code=None, fine_dollars=None,
+                 state_charges=None):
+        self.state_fine_id: Optional[str] = state_fine_id
+        self.status: Optional[str] = status
+        self.date_paid: Optional[str] = date_paid
+        self.state_code: Optional[str] = state_code
+        self.county_code: Optional[str] = county_code
+        self.fine_dollars: Optional[str] = fine_dollars
+
+        self.state_charges: List[StateCharge] = state_charges or []
+
+    def __setattr__(self, name, value):
+        restricted_setattr(self, 'state_charges', name, value)
+
+    def create_state_charge(self, **kwargs) -> 'StateCharge':
+        charge = StateCharge(**kwargs)
+        self.state_charges.append(charge)
+        return charge
+
+    def get_recent_state_charge(self) -> Optional['StateCharge']:
+        if self.state_charges:
+            return self.state_charges[-1]
+        return None
+
+    def prune(self) -> 'StateFine':
+        self.state_charges = [sc.prune() for sc in self.state_charges if sc]
+        return self
+
+    def sort(self):
+        self.state_charges.sort()
+
+
+class StateCharge(IngestObject):
+    """Class for information about a charge.
+    Referenced from IncarcerationSentence, SupervisionSentence, and Fine.
+    """
+
+    def __init__(self, state_charge_id=None, status=None, offense_date=None,
+                 date_charged=None, statute=None, description=None,
+                 attempted=None, charge_classification=None, degree=None,
+                 counts=None, charge_notes=None, charging_entity=None,
+                 state_court_case=None, state_bond=None):
+        self.state_charge_id: Optional[str] = state_charge_id
+        self.status: Optional[str] = status
+        self.offense_date: Optional[str] = offense_date
+        self.date_charged: Optional[str] = date_charged
+        self.statute: Optional[str] = statute
+        self.description: Optional[str] = description
+        self.attempted: Optional[str] = attempted
+        self.charge_classification: Optional[str] = charge_classification
+        self.degree: Optional[str] = degree
+        self.counts: Optional[str] = counts
+        self.charge_notes: Optional[str] = charge_notes
+        self.charging_entity: Optional[str] = charging_entity
+
+        self.state_court_case: Optional[StateCourtCase] = state_court_case
+        self.state_bond: Optional[StateBond] = state_bond
+
+    def __setattr__(self, name, value):
+        restricted_setattr(self, 'state_bond', name, value)
+
+    def create_state_court_case(self, **kwargs) -> 'StateCourtCase':
+        court_case = StateCourtCase(**kwargs)
+        self.state_court_case = court_case
+        return self.state_court_case
+
+    def create_state_bond(self, **kwargs) -> 'StateBond':
+        self.state_bond = StateBond(**kwargs)
+        return self.state_bond
+
+    def get_recent_state_court_case(self) -> Optional['StateCourtCase']:
+        return self.state_court_case
+
+    def get_state_court_case_by_id(self, court_case_id) \
+            -> Optional['StateCourtCase']:
+        if self.state_court_case and \
+                self.state_court_case.state_court_case_id == court_case_id:
+            return self.state_court_case
+        return None
+
+    def get_recent_state_bond(self) -> Optional['StateBond']:
+        return self.state_bond
+
+    def prune(self) -> 'StateCharge':
+        if not self.state_court_case:
+            self.state_court_case = None
+        if not self.state_bond:
+            self.state_bond = None
+        return self
+
+
+class StateCourtCase(IngestObject):
+    """Class for information about a court case.
+    Referenced from StateCharge.
+    """
+
+    def __init__(self, state_court_case_id=None, status=None, court_type=None,
+                 date_convicted=None, next_court_date=None, state_code=None,
+                 county_code=None, court_fee_dollars=None, judge_name=None):
+        self.state_court_case_id: Optional[str] = state_court_case_id
+        self.status: Optional[str] = status
+        self.court_type: Optional[str] = court_type
+        self.date_convicted: Optional[str] = date_convicted
+        self.next_court_date: Optional[str] = next_court_date
+        self.state_code: Optional[str] = state_code
+        self.county_code: Optional[str] = county_code
+        self.court_fee_dollars: Optional[str] = court_fee_dollars
+        self.judge_name: Optional[str] = judge_name
+
+    def __setattr__(self, name, value):
+        restricted_setattr(self, 'judge_name', name, value)
+
+
+class StateBond(IngestObject):
+    """Class for information about a bond.
+    Referenced from StateCharge.
+    """
+
+    def __init__(self, state_bond_id=None, status=None, bond_type=None,
+                 date_paid=None, state_code=None, county_code=None,
+                 amount_dollars=None, bond_agent=None):
+        self.state_bond_id: Optional[str] = state_bond_id
+        self.status: Optional[str] = status
+        self.bond_type: Optional[str] = bond_type
+        self.date_paid: Optional[str] = date_paid
+        self.state_code: Optional[str] = state_code
+        self.county_code: Optional[str] = county_code
+        self.amount_dollars: Optional[str] = amount_dollars
+        self.bond_agent: Optional[str] = bond_agent
+
+    def __setattr__(self, name, value):
+        restricted_setattr(self, 'bond_agent', name, value)
+
+
+class StateIncarcerationPeriod(IngestObject):
+    """Class for information about a period of incarceration.
+    Referenced from IncarcerationSentence and SupervisionSentence.
+    """
+
+    def __init__(self, state_incarceration_period_id=None, status=None,
+                 incarceration_type=None, admission_date=None,
+                 release_date=None, state_code=None, county_code=None,
+                 facility=None, housing_unit=None, facility_security_level=None,
+                 admission_reason=None, projected_release_reason=None,
+                 release_reason=None, state_incarceration_incidents=None,
+                 state_parole_decisions=None, state_assessments=None):
+        self.state_incarceration_period_id: Optional[str] = \
+            state_incarceration_period_id
+        self.status: Optional[str] = status
+        self.incarceration_type: Optional[str] = incarceration_type
+        self.admission_date: Optional[str] = admission_date
+        self.release_date: Optional[str] = release_date
+        self.state_code: Optional[str] = state_code
+        self.county_code: Optional[str] = county_code
+        self.facility: Optional[str] = facility
+        self.housing_unit: Optional[str] = housing_unit
+        self.facility_security_level: Optional[str] = facility_security_level
+        self.admission_reason: Optional[str] = admission_reason
+        self.projected_release_reason: Optional[str] = projected_release_reason
+        self.release_reason: Optional[str] = release_reason
+
+        self.state_incarceration_incidents: List[StateIncarcerationIncident] = \
+            state_incarceration_incidents or []
+        self.state_parole_decisions: List[StateParoleDecision] = \
+            state_parole_decisions or []
+        self.state_assessments: List[StateAssessment] = state_assessments or []
+
+    def __setattr__(self, name, value):
+        restricted_setattr(self, 'state_assessments', name, value)
+
+    def create_state_incarceration_incident(self, **kwargs) \
+            -> 'StateIncarcerationIncident':
+        incarceration_incident = StateIncarcerationIncident(**kwargs)
+        self.state_incarceration_incidents.append(incarceration_incident)
+        return incarceration_incident
+
+    def create_state_parole_decision(self, **kwargs) -> 'StateParoleDecision':
+        parole_decision = StateParoleDecision(**kwargs)
+        self.state_parole_decisions.append(parole_decision)
+        return parole_decision
+
+    def create_state_assessment(self, **kwargs) -> 'StateAssessment':
+        assessment = StateAssessment(**kwargs)
+        self.state_assessments.append(assessment)
+        return assessment
+
+    def get_recent_state_incarceration_incident(self) \
+            -> Optional['StateIncarcerationIncident']:
+        if self.state_incarceration_incidents:
+            return self.state_incarceration_incidents[-1]
+        return None
+
+    def get_recent_state_parole_decision(self) \
+            -> Optional['StateParoleDecision']:
+        if self.state_parole_decisions:
+            return self.state_parole_decisions[-1]
+        return None
+
+    def get_recent_state_assessment(self) -> Optional['StateAssessment']:
+        if self.state_assessments:
+            return self.state_assessments[-1]
+        return None
+
+    def prune(self) -> 'StateIncarcerationPeriod':
+        self.state_incarceration_incidents = \
+            [ii for ii in self.state_incarceration_incidents if ii]
+
+        self.state_parole_decisions = \
+            [pd for pd in self.state_parole_decisions if pd]
+
+        self.state_assessments = [a for a in self.state_assessments if a]
+
+        return self
+
+    def sort(self):
+        self.state_incarceration_incidents.sort()
+        self.state_parole_decisions.sort()
+        self.state_assessments.sort()
+
+
+class StateSupervisionPeriod(IngestObject):
+    """Class for information about a period of supervision.
+    Referenced from IncarcerationSentence and SupervisionSentence.
+    """
+
+    def __init__(self, state_supervision_period_id=None, status=None,
+                 supervision_type=None, admission_date=None,
+                 termination_date=None, state_code=None, county_code=None,
+                 admission_reason=None, termination_reason=None,
+                 supervision_level=None, conditions=None,
+                 state_supervision_violations=None, state_assessments=None):
+        self.state_supervision_period_id: Optional[str] = \
+            state_supervision_period_id
+        self.status: Optional[str] = status
+        self.supervision_type: Optional[str] = supervision_type
+        self.admission_date: Optional[str] = admission_date
+        self.termination_date: Optional[str] = termination_date
+        self.state_code: Optional[str] = state_code
+        self.county_code: Optional[str] = county_code
+        self.admission_reason: Optional[str] = admission_reason
+        self.termination_reason: Optional[str] = termination_reason
+        self.supervision_level: Optional[str] = supervision_level
+        self.conditions: List[str] = conditions or []
+
+        self.state_supervision_violations: List[StateSupervisionViolation] = \
+            state_supervision_violations or []
+        self.state_assessments: List[StateAssessment] = state_assessments or []
+
+    def __setattr__(self, name, value):
+        restricted_setattr(self, 'state_assessments', name, value)
+
+    def create_state_supervision_violation(self, **kwargs) \
+            -> 'StateSupervisionViolation':
+        supervision_violation = StateSupervisionViolation(**kwargs)
+        self.state_supervision_violations.append(supervision_violation)
+        return supervision_violation
+
+    def create_state_assessment(self, **kwargs) -> 'StateAssessment':
+        assessment = StateAssessment(**kwargs)
+        self.state_assessments.append(assessment)
+        return assessment
+
+    def get_recent_state_supervision_violation(self)\
+            -> Optional['StateSupervisionViolation']:
+        if self.state_supervision_violations:
+            return self.state_supervision_violations[-1]
+        return None
+
+    def get_recent_state_assessment(self) -> Optional['StateAssessment']:
+        if self.state_assessments:
+            return self.state_assessments[-1]
+        return None
+
+    def prune(self) -> 'StateSupervisionPeriod':
+        self.state_supervision_violations = \
+            [sv for sv in self.state_supervision_violations if sv]
+        self.state_assessments = [a for a in self.state_assessments if a]
+
+        return self
+
+    def sort(self):
+        self.state_supervision_violations.sort()
+        self.state_assessments.sort()
+
+
+class StateIncarcerationIncident(IngestObject):
+    """Class for information about an incident during incarceration.
+    Referenced from IncarcerationPeriod.
+    """
+
+    def __init__(self, state_incarceration_incident_id=None, incident_date=None,
+                 state_code=None, county_code=None,
+                 location_within_facility=None, offense=None, outcome=None,
+                 responding_officer_name=None, responding_officer_id=None):
+        self.state_incarceration_incident_id: Optional[str] = \
+            state_incarceration_incident_id
+        self.incident_date: Optional[str] = incident_date
+        self.state_code: Optional[str] = state_code
+        self.county_code: Optional[str] = county_code
+        self.location_within_facility: Optional[str] = location_within_facility
+        self.offense: Optional[str] = offense
+        self.outcome: Optional[str] = outcome
+        self.responding_officer_name: Optional[str] = responding_officer_name
+        self.responding_officer_id: Optional[str] = responding_officer_id
+
+    def __setattr__(self, name, value):
+        restricted_setattr(self, 'responding_officer_id', name, value)
+
+
+class StateParoleDecision(IngestObject):
+    """Class for information about a parole decision.
+    Referenced from IncarcerationPeriod.
+    """
+
+    def __init__(self, state_parole_decision_id=None, received_parole=None,
+                 decision_date=None, corrective_action_deadline=None,
+                 state_code=None, county_code=None, decision_outcome=None,
+                 decision_reasoning=None, corrective_action=None,
+                 decision_agent_names=None):
+        self.state_parole_decision_id: Optional[str] = state_parole_decision_id
+        self.received_parole: Optional[str] = received_parole
+        self.decision_date: Optional[str] = decision_date
+        self.corrective_action_deadline: Optional[str] = \
+            corrective_action_deadline
+        self.state_code: Optional[str] = state_code
+        self.county_code: Optional[str] = county_code
+        self.decision_outcome: Optional[str] = decision_outcome
+        self.decision_reasoning: Optional[str] = decision_reasoning
+        self.corrective_action: Optional[str] = corrective_action
+        self.decision_agent_names: List[str] = decision_agent_names or []
+
+    def __setattr__(self, name, value):
+        restricted_setattr(self, 'decision_agent_names', name, value)
+
+
+class StateSupervisionViolation(IngestObject):
+    """Class for information about a supervision violation.
+    Referenced from SupervisionViolation.
+    """
+
+    def __init__(self, state_supervision_violation_id=None, violation_type=None,
+                 violation_date=None, is_violent=None,
+                 violated_conditions=None):
+        self.state_supervision_violation_id: Optional[str] = \
+            state_supervision_violation_id
+        self.violation_type: Optional[str] = violation_type
+        self.violation_date: Optional[str] = violation_date
+        self.is_violent: Optional[str] = is_violent
+        self.violated_conditions: List[str] = violated_conditions or []
+
+    def __setattr__(self, name, value):
+        restricted_setattr(self, 'violated_conditions', name, value)
+
+
+def eq(self, other, exclude=None):
+    if other is None:
+        return False
+    if exclude is None:
+        return self.__dict__ == other.__dict__
+
+    return _without_exclusions(self, exclude) \
+        == _without_exclusions(other, exclude)
+
+
+def _without_exclusions(obj, exclude=None):
+    if exclude is None:
+        exclude = []
+    return {k: v for k, v in obj.__dict__.items() if k not in exclude}
+
+
+def to_bool(obj, exclude=None):
+    if exclude is None:
+        exclude = []
     return any(any(v) if isinstance(v, list) else v
-               for v in obj.__dict__.values())
+               for k, v in obj.__dict__.items() if k not in exclude)
 
 
-def to_string(obj):
+def to_string(obj, exclude=None):
+    if exclude is None:
+        exclude = []
     out = [obj.__class__.__name__ + ':']
     for key, val in vars(obj).items():
+        if key in exclude:
+            continue
         if isinstance(val, list):
             for index, elem in enumerate(val):
                 out += '{}[{}]: {}'.format(key, index, elem).split('\n')
@@ -478,9 +1399,13 @@ def to_string(obj):
     return '\n   '.join(out)
 
 
-def to_repr(obj):
+def to_repr(obj, exclude=None):
+    if exclude is None:
+        exclude = []
     args = []
     for key, val in vars(obj).items():
+        if key in exclude:
+            continue
         if val:
             args.append('{}={}'.format(key, repr(val)))
 
