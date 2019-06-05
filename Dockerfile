@@ -6,7 +6,8 @@ RUN apt update -y && \
         git \
         libxml2-dev libxslt1-dev \
         python3.7-dev python3-pip \
-        default-jre
+        default-jre \
+        libpq-dev
 
 RUN locale-gen en_US.UTF-8
 ENV LC_ALL en_US.UTF-8
