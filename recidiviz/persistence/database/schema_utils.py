@@ -19,7 +19,7 @@
 
 import inspect
 import sys
-from typing import Iterator
+from typing import Iterator, Optional, Type
 
 from sqlalchemy import Table
 
@@ -50,3 +50,22 @@ def _get_all_table_classes(module_name) -> Iterator[Table]:
 
 def get_aggregate_table_classes() -> Iterator[Table]:
     yield from _get_all_table_classes(aggregate_schema.__name__)
+
+
+_HISTORICAL_TABLE_CLASS_SUFFIX = 'History'
+
+
+def historical_table_class_name_from_obj(schema_object: Base) -> str:
+    obj_class_name = schema_object.__class__.__name__
+    if obj_class_name.endswith(_HISTORICAL_TABLE_CLASS_SUFFIX):
+        return obj_class_name
+
+    return f'{obj_class_name}{_HISTORICAL_TABLE_CLASS_SUFFIX}'
+
+
+def historical_table_class_from_obj(
+        schema_object: Base) -> Optional[Type[Base]]:
+    schema_module = inspect.getmodule(schema_object)
+    history_table_class_name = \
+        historical_table_class_name_from_obj(schema_object)
+    return getattr(schema_module, history_table_class_name, None)
