@@ -17,7 +17,9 @@
 """
 Tests for SQLAlchemy enums defined in recidiviz.persistence.database.schema
 """
-
+from inspect import isclass
+from types import ModuleType
+from typing import List, Type
 from unittest import TestCase
 
 import sqlalchemy
@@ -28,9 +30,17 @@ import recidiviz.persistence.database.schema.shared_enums as shared_enums
 
 
 from recidiviz.common.constants import person_characteristics
+from recidiviz.persistence.database.base_schema import Base
+from recidiviz.persistence.database.schema.aggregate import (
+    schema as aggregate_schema
+)
+from recidiviz.persistence.database.schema.county import schema as county_schema
+from recidiviz.persistence.database.schema.state import schema as state_schema
+
+ALL_SCHEMA_MODULES = [county_schema, state_schema, aggregate_schema]
 
 
-class SchemaEnumsTest(TestCase):
+class TestSchemaEnums(TestCase):
     """Base test class for validating schema enums are defined correctly"""
 
     # Mapping between name of schema enum and persistence layer enum. This
@@ -52,9 +62,30 @@ class SchemaEnumsTest(TestCase):
     # Test case ensuring enum values match between persistence layer enums and
     # schema enums
     def testPersistenceAndSchemaEnumsMatch(self):
+        """Test case ensuring enum values match between persistence layer enums
+        and schema enums."""
         self.check_persistence_and_schema_enums_match(
             self.SHARED_ENUMS_TEST_MAPPING,
             shared_enums)
+
+    def testNoOverlappingEnumPostgresNames(self):
+        postgres_names_set = set()
+        enum_id_set = set()
+        for schema_module in ALL_SCHEMA_MODULES:
+            enums = \
+                self._get_all_sqlalchemy_enums_in_module(schema_module)
+            for enum in enums:
+                if id(enum) in enum_id_set:
+                    continue
+                postgres_name = enum.name
+                self.assertNotIn(
+                    postgres_name,
+                    postgres_names_set,
+                    f'SQLAlchemy enum with Postgres name [{postgres_name}]'
+                    f' (defined in [{schema_module}]) already exists'
+                )
+                postgres_names_set.add(postgres_name)
+                enum_id_set.add(id(enum))
 
     def check_persistence_and_schema_enums_match(self,
                                                  test_mapping,
@@ -93,3 +124,70 @@ class SchemaEnumsTest(TestCase):
                 'persistence enum "{persistence_enum}"'.format(
                     schema_enum=schema_enum.name,
                     persistence_enum=persistence_enum.__name__))
+
+    @staticmethod
+    def _get_all_sqlalchemy_enums_in_module(
+            schema_module: ModuleType,
+    ) -> List[sqlalchemy.Enum]:
+        enums = []
+        for attribute_name in dir(schema_module):
+            attribute = getattr(schema_module, attribute_name)
+            if isinstance(attribute, sqlalchemy.Enum):
+                enums.append(attribute)
+        return enums
+
+
+class TestSchemaTableConsistency(TestCase):
+    """Base test class for validating schema tables are defined correctly"""
+
+    def testNoRepeatTableNames(self):
+        table_names_set = set()
+        for schema_module in ALL_SCHEMA_MODULES:
+            table_classes = \
+                self._get_all_schema_table_classes_in_module(schema_module)
+            for cls in table_classes:
+                table_name = cls.__tablename__
+                self.assertNotIn(
+                    table_name,
+                    table_names_set,
+                    f'Table name [{table_name}] defined in [{schema_module}]) '
+                    f'already exists.'
+                )
+                table_names_set.add(table_name)
+
+    def testNoRepeatTableClassNames(self):
+        table_class_names_set = set()
+        for schema_module in ALL_SCHEMA_MODULES:
+            table_classes = \
+                self._get_all_schema_table_classes_in_module(schema_module)
+            for cls in table_classes:
+                table_class_name = cls.__name__
+                self.assertNotIn(
+                    table_class_name,
+                    table_class_names_set,
+                    f'Table name [{table_class_name}] defined in '
+                    f'[{schema_module}]) already exists.'
+                )
+
+    def testAllTableNamesMatchClassNames(self):
+        for schema_module in ALL_SCHEMA_MODULES:
+            for cls in \
+                    self._get_all_schema_table_classes_in_module(schema_module):
+                table_name = cls.__tablename__
+                table_name_to_capital_case = table_name.title().replace("_", "")
+                self.assertEqual(
+                    table_name_to_capital_case,
+                    cls.__name__,
+                    f'Table class {cls.__name__} does not have matching table '
+                    f'name: {table_name}')
+
+    @staticmethod
+    def _get_all_schema_table_classes_in_module(
+            schema_module: ModuleType) -> List[Type[Base]]:
+        subclass_types = []
+        for attribute_name in dir(schema_module):
+            attribute = getattr(schema_module, attribute_name)
+            if isclass(attribute) and attribute is not Base and \
+                    issubclass(attribute, Base):
+                subclass_types.append(attribute)
+        return subclass_types
