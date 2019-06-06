@@ -18,8 +18,6 @@
 
 import datetime
 
-from more_itertools import one
-from recidiviz import Session
 from recidiviz.common.constants.bond import BondStatus, BondType
 from recidiviz.common.constants.county.booking import \
     AdmissionReason, Classification, CustodyStatus, ReleaseReason
@@ -38,7 +36,7 @@ from recidiviz.tests.persistence.database.history.\
     )
 
 
-_ENTITY_TYPES_TO_IGNORE = [
+_SCHEMA_OBJECT_TYPES_TO_IGNORE = [
     # TODO(#1145): remove once sentence relationships are implemented
     'SentenceRelationship',
 ]
@@ -174,63 +172,27 @@ class TestCountyHistoricalSnapshotUpdater(BaseHistoricalSnapshotUpdaterTest):
         charge.sentence = sentence
 
         self._check_person_has_relationships_to_all_schema_object_types(
-            person, county_schema, _ENTITY_TYPES_TO_IGNORE)
+            person, county_schema, _SCHEMA_OBJECT_TYPES_TO_IGNORE)
 
+        ingest_time = datetime.datetime(2018, 7, 30)
         self._commit_person(person,
                             SystemLevel.COUNTY,
-                            datetime.datetime(2018, 7, 30))
+                            ingest_time)
 
-        assert_session = Session()
+        all_schema_objects = [person, booking, hold, arrest,
+                              charge, bond, sentence]
 
-        person_snapshot = one(assert_session.query(
-            county_schema.PersonHistory
-        ).filter(
-            county_schema.PersonHistory.person_id == person_id
-        ).all())
+        self._check_all_non_history_schema_object_types_in_list(
+            all_schema_objects, county_schema, _SCHEMA_OBJECT_TYPES_TO_IGNORE)
 
-        booking_snapshot = one(assert_session.query(
-            county_schema.BookingHistory
-        ).filter(
-            county_schema.BookingHistory.booking_id == booking_id
-        ).all())
+        ingest_time_overrides = {
+            id(sentence): datetime.datetime(2018, 7, 14)
+        }
 
-        hold_snapshot = one(assert_session.query(
-            county_schema.HoldHistory
-        ).filter(
-            county_schema.HoldHistory.hold_id == hold_id
-        ).all())
+        for schema_object in all_schema_objects:
+            expected_ingest_time = ingest_time
+            if id(schema_object) in ingest_time_overrides:
+                expected_ingest_time = ingest_time_overrides[id(schema_object)]
 
-        arrest_snapshot = one(assert_session.query(
-            county_schema.ArrestHistory
-        ).filter(
-            county_schema.ArrestHistory.arrest_id == arrest_id
-        ).all())
-
-        charge_snapshot = one(assert_session.query(
-            county_schema.ChargeHistory
-        ).filter(
-            county_schema.ChargeHistory.charge_id == charge_id
-        ).all())
-
-        bond_snapshot = one(assert_session.query(
-            county_schema.BondHistory
-        ).filter(
-            county_schema.BondHistory.bond_id == bond_id
-        ).all())
-
-        sentence_snapshot = one(assert_session.query(
-            county_schema.SentenceHistory
-        ).filter(
-            county_schema.SentenceHistory.sentence_id == sentence_id
-        ).all())
-
-        self._assert_entity_and_snapshot_match(person, person_snapshot)
-        self._assert_entity_and_snapshot_match(booking, booking_snapshot)
-        self._assert_entity_and_snapshot_match(hold, hold_snapshot)
-        self._assert_entity_and_snapshot_match(arrest, arrest_snapshot)
-        self._assert_entity_and_snapshot_match(charge, charge_snapshot)
-        self._assert_entity_and_snapshot_match(bond, bond_snapshot)
-        self._assert_entity_and_snapshot_match(sentence, sentence_snapshot)
-
-        assert_session.commit()
-        assert_session.close()
+            self._assert_expected_snapshots_for_schema_object(
+                schema_object, [expected_ingest_time])
