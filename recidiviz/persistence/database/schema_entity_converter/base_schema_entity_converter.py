@@ -32,7 +32,9 @@ import attr
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.common.constants.entity_enum import EntityEnum
 from recidiviz.persistence.database.base_schema import Base
-from recidiviz.persistence.entity.base_entity import Entity, ExternalIdEntity
+from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.entity_utils import \
+    get_all_entity_class_names_in_module
 
 SrcBaseType = TypeVar('SrcBaseType', Base, Entity)
 DstBaseType = TypeVar('DstBaseType', Base, Entity)
@@ -43,7 +45,8 @@ FieldNameType = str
 
 class DatabaseConversionError(Exception):
     """Raised if an error is encountered when converting between entity
-    objects and schema objects (or vice versa)."""
+    objects and schema objects (or vice versa).
+    """
 
 
 class _Direction(Enum):
@@ -63,8 +66,7 @@ class _Direction(Enum):
 
 
 class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
-    """
-    A base abstract class for converting between Entity and schema Base
+    """A base abstract class for converting between Entity and schema Base
     objects. For each individual schema, define a subclass which provides the
     entities and schema modules, as well as defines an explicit ordering of
     entity types.
@@ -104,9 +106,15 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
 
     def _build_class_rank_map(self,
                               class_rank_list: List[str]) -> Dict[str, int]:
-        """
-        Returns a map of class names with their associated rank in the schema
-        graph ordering. Lower number means closer to the root of the graph.
+        """Returns a map of class names with their associated rank in the schema
+        graph ordering.
+
+        Args:
+            class_rank_list: A list of class names, ordered by rank in the
+                schema graph ordering.
+        Returns:
+            A map of class names with their associated rank in the schema graph
+            ordering. Lower number means closer to the root of the graph.
         """
         self._check_class_rank_includes_all_expected_classes(class_rank_list)
 
@@ -114,15 +122,8 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
 
     def _check_class_rank_includes_all_expected_classes(
             self, class_rank_list: List[str]) -> None:
-        entities_module = self._get_entities_module()
-        expected_class_names = set()
-        for attribute_name in dir(entities_module):
-            attribute = getattr(entities_module, attribute_name)
-            if inspect.isclass(attribute):
-                if attribute is not Entity and \
-                        attribute is not ExternalIdEntity and \
-                        issubclass(attribute, Entity):
-                    expected_class_names.add(attribute_name)
+        expected_class_names = \
+            get_all_entity_class_names_in_module(self._get_entities_module())
 
         given_minus_expected = \
             set(class_rank_list).difference(expected_class_names)
@@ -142,7 +143,11 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
     def _is_back_edge(self,
                       from_src_obj: SrcBaseType,
                       to_src_obj: SrcBaseType) -> bool:
-        """
+        """Given two object types, returns whether traversing from the first to
+        the second object would be traveling along a 'back edge' in the object
+        graph. A back edge is an edge that might introduce a cycle in the graph.
+        Without back edges, the object graph should have no cycles.
+
         Args:
             from_src_obj: An object that is the origin of this edge
             to_src_obj: An object that is the destination of this edge
@@ -195,13 +200,15 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
         filled in.
         """
         if self._back_edges.keys():
+            key = next(iter(self._back_edges.keys()))
             raise DatabaseConversionError(
                 f"Found back edges that have yet to be filled in for "
-                f"[{len(self._back_edges.keys())}] items. Should have been 0.")
+                f"[{len(self._back_edges.keys())}] items. Should have been 0."
+                f"First unfilled edge: {key}: {self._back_edges[key]}")
 
     def convert_all(self, src: Sequence[SrcBaseType]) -> List[DstBaseType]:
-        """
-        Converts the given list of objects into their entity/schema counterparts
+        """Converts the given list of objects into their entity/schema
+        counterparts.
 
         Args:
             src: list of schema objects or entity objects
@@ -213,8 +220,7 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
         return result
 
     def convert(self, src: SrcBaseType) -> DstBaseType:
-        """
-        Converts the given object into its entity/schema counterpart
+        """Converts the given object into its entity/schema counterpart.
 
         Args:
             src: a schema object or entity object
@@ -274,6 +280,10 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
                         self._register_back_edge(src, next_src, field)
                         continue
                     values.append(self._convert_forward(next_src))
+
+                if not values:
+                    continue
+
                 value: Optional[Any] = values
             elif issubclass(type(v), Entity) or issubclass(type(v), Base):
                 next_src = v
@@ -304,7 +314,9 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
             self,
             next_src_ids: List[SrcIdType]
     ) -> Tuple[List[DstBaseType], List[SrcIdType]]:
-        """
+        """Look up objects in the destination object graph corresponding to the
+        provided list of object ids from the source object graph.
+
         Args:
             next_src_ids: A list of ids to search for in our map of converted
                 objects
@@ -326,6 +338,10 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
         return next_dst_objects, not_found_next_src_ids
 
     def _fill_back_edges(self):
+        """Fills back edges that have been identified during conversion for any
+        objects that have been properly created.
+        """
+
         not_found_back_edges: \
             Dict[SrcIdType, Dict[FieldNameType, List[SrcIdType]]] = \
             defaultdict(lambda: defaultdict(list))
@@ -336,9 +352,20 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
                 next_dst_objects, not_found_next_src_ids = \
                     self._lookup_edges(next_src_ids)
 
+                if len(next_dst_objects) + len(not_found_next_src_ids) != \
+                    len(next_src_ids):
+                    raise DatabaseConversionError(
+                        f'Expected to find {len(next_src_ids)} '
+                        f'next_dst_objects or not_found_next_src_ids, instead '
+                        f'found {len(next_dst_objects)} objects and '
+                        f'{len(not_found_next_src_ids)} not found ids.')
+
                 v = getattr(dst_object, field)
                 if isinstance(v, list):
-                    v.extend(next_dst_objects)
+                    existing = {id(obj) for obj in v}
+
+                    v.extend([obj for obj in next_dst_objects
+                              if id(obj) not in existing])
                 else:
                     if len(next_src_ids) > 1:
                         raise DatabaseConversionError(
@@ -346,8 +373,9 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
                             f"field [{field}] on object with class name "
                             f"{dst_object.__class__.__name__}")
 
-                    next_dst_object = next_dst_objects[0]
-                    setattr(dst_object, field, next_dst_object)
+                    if len(next_dst_objects) == 1:
+                        next_dst_object = next_dst_objects[0]
+                        setattr(dst_object, field, next_dst_object)
 
                 for next_src_id in not_found_next_src_ids:
                     not_found_back_edges[src_id][field].append(next_src_id)
@@ -381,7 +409,8 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
 
     def _get_enum_cls(self, attr_type) -> Optional[Type[EntityEnum]]:
         """Return the MappableEnum cls from the provided type attribute,
-        or None if the type can't be a MappableEnum"""
+        or None if the type can't be a MappableEnum.
+        """
         if inspect.isclass(attr_type) and issubclass(attr_type, EntityEnum):
             return attr_type
 

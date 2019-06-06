@@ -83,3 +83,15 @@ class Child(Base, DatabaseEntity):
         'Parent',
         secondary=association_table,
         back_populates='children')
+
+    favorite_toy_id = Column(Integer, ForeignKey('toy.toy_id'))
+    favorite_toy = relationship('Toy', uselist=False)
+
+
+class Toy(Base, DatabaseEntity):
+    """Represents a Toy object in the test schema"""
+    __tablename__ = 'toy'
+
+    toy_id = Column(Integer, primary_key=True)
+
+    name = Column(String(255))

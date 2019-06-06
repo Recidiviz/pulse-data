@@ -40,7 +40,7 @@ class Root(Entity, BuildableAttr, DefaultableAttr):
 
     type: Optional[RootType] = attr.ib()
 
-    parents: List['Parent'] = attr.ib()
+    parents: List['Parent'] = attr.ib(factory=list)
 
 
 @attr.s
@@ -49,7 +49,7 @@ class Parent(Entity, BuildableAttr, DefaultableAttr):
 
     full_name: str = attr.ib()
 
-    children: List['Child'] = attr.ib()
+    children: List['Child'] = attr.ib(factory=list)
 
 
 @attr.s
@@ -58,4 +58,13 @@ class Child(Entity, BuildableAttr, DefaultableAttr):
 
     full_name: str = attr.ib()
 
-    parents: List['Parent'] = attr.ib()
+    parents: List['Parent'] = attr.ib(factory=list)
+
+    favorite_toy: Optional['Toy'] = attr.ib(default=None)
+
+
+@attr.s
+class Toy(Entity, BuildableAttr, DefaultableAttr):
+    toy_id: Optional[int] = attr.ib()
+
+    name: str = attr.ib()
