@@ -17,12 +17,12 @@
 """Tests for state-specific SQLAlchemy enums."""
 from recidiviz.common.constants.state import state_assessment
 from recidiviz.persistence.database.schema.state import schema
-from recidiviz.tests.persistence.database.schema.shared_enums_test import (
-    SchemaEnumsTest
+from recidiviz.tests.persistence.database.schema.schema_test import (
+    TestSchemaEnums
 )
 
 
-class TestStateSchemaEnums(SchemaEnumsTest):
+class TestStateSchemaEnums(TestSchemaEnums):
     """Tests for validating state schema enums are defined correctly"""
 
     # Test case ensuring enum values match between persistence layer enums and

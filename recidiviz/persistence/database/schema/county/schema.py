@@ -48,6 +48,10 @@ from recidiviz.persistence.database.schema.shared_enums import (
     race,
     ethnicity,
     residency_status,
+    bond_status,
+    bond_type,
+    charge_status,
+    degree,
 )
 
 # SQLAlchemy enums. Created separately from the tables so they can be shared
@@ -105,25 +109,6 @@ hold_status = Enum(county_enum_strings.hold_status_active,
                    enum_strings.removed_without_info,
                    name='hold_status')
 
-# Bond
-
-bond_type = Enum(enum_strings.bond_type_cash,
-                 enum_strings.external_unknown,
-                 enum_strings.bond_type_denied,
-                 enum_strings.bond_type_not_required,
-                 enum_strings.bond_type_partial_cash,
-                 enum_strings.bond_type_secured,
-                 enum_strings.bond_type_unsecured,
-                 name='bond_type')
-
-bond_status = Enum(enum_strings.bond_status_pending,
-                   enum_strings.bond_status_posted,
-                   enum_strings.present_without_info,
-                   enum_strings.removed_without_info,
-                   enum_strings.bond_status_revoked,
-                   enum_strings.bond_status_set,
-                   name='bond_status')
-
 # Sentence
 
 sentence_status = Enum(county_enum_strings.sentence_status_commuted,
@@ -140,15 +125,6 @@ sentence_relationship_type = Enum(
     county_enum_strings.sentence_relationship_type_consecutive,
     name='sentence_relationship_type')
 
-# Charge
-
-degree = Enum(enum_strings.external_unknown,
-              enum_strings.degree_first,
-              enum_strings.degree_fourth,
-              enum_strings.degree_second,
-              enum_strings.degree_third,
-              name='degree')
-
 charge_class = Enum(county_enum_strings.charge_class_civil,
                     enum_strings.external_unknown,
                     county_enum_strings.charge_class_felony,
@@ -160,19 +136,6 @@ charge_class = Enum(county_enum_strings.charge_class_civil,
                     # pylint:disable=line-too-long
                     county_enum_strings.charge_class_supervision_violation_for_sex_offense,
                     name='charge_class')
-
-charge_status = Enum(enum_strings.charge_status_acquitted,
-                     enum_strings.charge_status_completed,
-                     enum_strings.charge_status_convicted,
-                     enum_strings.charge_status_dropped,
-                     enum_strings.charge_status_inferred_dropped,
-                     enum_strings.external_unknown,
-                     enum_strings.charge_status_pending,
-                     enum_strings.charge_status_pretrial,
-                     enum_strings.charge_status_sentenced,
-                     enum_strings.present_without_info,
-                     enum_strings.removed_without_info,
-                     name='charge_status')
 
 
 class _PersonSharedColumns:

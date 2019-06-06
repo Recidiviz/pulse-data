@@ -18,12 +18,12 @@
 
 from recidiviz.common.constants.county import booking, sentence, charge, hold
 from recidiviz.persistence.database.schema.county import schema
-from recidiviz.tests.persistence.database.schema.shared_enums_test import (
-    SchemaEnumsTest
+from recidiviz.tests.persistence.database.schema.schema_test import (
+    TestSchemaEnums
 )
 
 
-class TestCountySchemaEnums(SchemaEnumsTest):
+class TestCountySchemaEnums(TestSchemaEnums):
     """Tests for validating state schema enums are defined correctly"""
 
     # Test case ensuring enum values match between persistence layer enums and
