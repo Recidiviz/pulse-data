@@ -23,11 +23,16 @@ from unittest import TestCase
 
 from recidiviz import Session
 from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
+from recidiviz.persistence.database.base_schema import Base
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.history.historical_snapshot_update import \
     update_historical_snapshots
 from recidiviz.persistence.database.schema.schema_person_type import \
     SchemaPersonType
+from recidiviz.persistence.database.schema_utils import \
+    historical_table_class_from_obj
+from recidiviz.persistence.persistence_utils import primary_key_name_from_obj, \
+    primary_key_value_from_obj
 from recidiviz.tests.utils import fakes
 
 
@@ -56,69 +61,150 @@ class BaseHistoricalSnapshotUpdaterTest(TestCase):
         act_session.commit()
         act_session.close()
 
+    def _check_all_non_history_schema_object_types_in_list(
+            self,
+            schema_objects: List[Base],
+            schema: ModuleType,
+            schema_object_type_names_to_ignore: List[str]) -> None:
+        expected_schema_object_types = \
+            self._get_all_non_history_schema_object_type_names_in_module(schema)
+
+        expected_schema_object_types = \
+            expected_schema_object_types.difference(
+                set(schema_object_type_names_to_ignore))
+        actual_schema_object_types = \
+            {obj.__class__.__name__ for obj in schema_objects}
+
+        self.assertEqual(expected_schema_object_types,
+                         actual_schema_object_types)
+
+    @staticmethod
+    def _get_all_non_history_schema_object_type_names_in_module(
+            schema: ModuleType) -> Set[str]:
+        expected_schema_object_types = set()
+        for attribute_name in dir(schema):
+            attribute = getattr(schema, attribute_name)
+            # Find all master (non-historical) schema object types
+            if isclass(attribute) and attribute is not DatabaseEntity and \
+                    issubclass(attribute, DatabaseEntity) \
+                    and not attribute_name.endswith('History'):
+                expected_schema_object_types.add(attribute_name)
+
+        return expected_schema_object_types
+
     def _check_person_has_relationships_to_all_schema_object_types(
             self,
             person: SchemaPersonType,
             schema: ModuleType,
-            entity_type_names_to_ignore: List[str]
-    ):
+            schema_object_type_names_to_ignore: List[str]
+    ) -> None:
 
-        provided_entity_types = \
-            self._get_all_entity_types_in_record_tree(person)
+        provided_schema_object_types = \
+            self._get_all_schema_object_types_in_record_tree(person)
 
-        # Ensure this test covers all entity types
-        expected_entity_types = set()
-        for attribute_name in dir(schema):
-            attribute = getattr(schema, attribute_name)
-            # Find all master (non-historical) entity types
-            if isclass(attribute) and attribute is not DatabaseEntity and \
-                    issubclass(attribute, DatabaseEntity) \
-                    and not attribute_name.endswith('History'):
-                expected_entity_types.add(attribute_name)
+        # Ensure this test covers all schema object types
+        expected_schema_object_types = \
+            self._get_all_non_history_schema_object_type_names_in_module(schema)
 
-        missing_entity_types = []
-        for entity_type in expected_entity_types:
-            if entity_type not in provided_entity_types and \
-                    entity_type not in entity_type_names_to_ignore:
-                missing_entity_types.append(entity_type)
-        if missing_entity_types:
-            self.fail('Expected entity type(s) {} not found in provided entity '
-                      'types'.format(', '.join(missing_entity_types)))
+        missing_schema_object_types = []
+        for schema_obj_type in expected_schema_object_types:
+            if schema_obj_type not in provided_schema_object_types and \
+                    schema_obj_type not in schema_object_type_names_to_ignore:
+                missing_schema_object_types.append(schema_obj_type)
+        if missing_schema_object_types:
+            self.fail(
+                'Expected schema object type(s) {} not found in provided '
+                'schema object types'.format(
+                    ', '.join(missing_schema_object_types)))
 
     @staticmethod
-    def _get_all_entity_types_in_record_tree(person) -> Set[str]:
-        entity_types = set()
+    def _get_all_schema_object_types_in_record_tree(
+            person: SchemaPersonType) -> Set[str]:
+        schema_object_types = set()
 
         unprocessed = list([person])
         processed = []
         while unprocessed:
-            entity = unprocessed.pop()
-            entity_types.add(type(entity).__name__)
-            processed.append(entity)
+            schema_object = unprocessed.pop()
+            schema_object_types.add(type(schema_object).__name__)
+            processed.append(schema_object)
 
             related_entities = []
-            for relationship_name in entity.get_relationship_property_names():
-                related = getattr(entity, relationship_name)
+            for relationship_name \
+                    in schema_object.get_relationship_property_names():
+                related = getattr(schema_object, relationship_name)
                 # Relationship can return either a list or a single item
                 if isinstance(related, list):
                     related_entities.extend(related)
                 elif related is not None:
                     related_entities.append(related)
 
-            unprocessed.extend([related_entity for related_entity
+            unprocessed.extend([related_schema_object for related_schema_object
                                 in related_entities
-                                if related_entity not in processed
-                                and related_entity not in unprocessed])
+                                if related_schema_object not in processed
+                                and related_schema_object not in unprocessed])
 
-        return entity_types
+        return schema_object_types
 
-    def _assert_entity_and_snapshot_match(
-            self, entity, historical_snapshot) -> None:
+    def _assert_expected_snapshots_for_schema_object(
+            self,
+            expected_schema_object: Base,
+            ingest_times: List[datetime.date]) -> None:
+        """
+        Assert that we have expected history snapshots for the given schema
+        object that has been ingested at the provided |ingest_times|.
+        """
+        history_table_class = \
+            historical_table_class_from_obj(expected_schema_object)
+        self.assertIsNotNone(history_table_class)
+
+        schema_obj_primary_key_col_name = \
+            primary_key_name_from_obj(expected_schema_object)
+        schema_obj_primary_key_value = \
+            primary_key_value_from_obj(expected_schema_object)
+
+        self.assertIsNotNone(schema_obj_primary_key_value)
+        self.assertEqual(type(schema_obj_primary_key_value), int)
+
+        schema_obj_foreign_key_column_in_history_table = \
+            getattr(history_table_class, schema_obj_primary_key_col_name, None)
+
+        self.assertIsNotNone(schema_obj_foreign_key_column_in_history_table)
+
+        assert_session = Session()
+        history_snapshots: List[Base] = \
+            assert_session.query(history_table_class).filter(
+                schema_obj_foreign_key_column_in_history_table
+                == schema_obj_primary_key_value
+            ).all()
+
+        self.assertEqual(len(history_snapshots), len(ingest_times))
+
+        history_snapshots.sort(key=lambda snapshot: snapshot.valid_from)
+
+        for i, history_snapshot in enumerate(history_snapshots):
+            expected_valid_from = ingest_times[i]
+            expected_valid_to = ingest_times[i+1] \
+                if i < len(ingest_times) - 1 else None
+            self.assertEqual(expected_valid_from, history_snapshot.valid_from)
+            self.assertEqual(expected_valid_to, history_snapshot.valid_to)
+
+        last_history_snapshot = history_snapshots[-1]
+        assert last_history_snapshot is not None
+
+        self._assert_schema_object_and_historical_snapshot_match(
+            expected_schema_object,
+            last_history_snapshot)
+
+        assert_session.close()
+
+    def _assert_schema_object_and_historical_snapshot_match(
+            self, schema_object: Base, historical_snapshot: Base) -> None:
         shared_property_names = \
-            type(entity).get_column_property_names().intersection(
+            type(schema_object).get_column_property_names().intersection(
                 type(historical_snapshot).get_column_property_names())
         for column_property_name in shared_property_names:
-            entity_value = getattr(entity, column_property_name)
-            historical_value = getattr(
+            expected_col_value = getattr(schema_object, column_property_name)
+            historical_col_value = getattr(
                 historical_snapshot, column_property_name)
-            self.assertEqual(entity_value, historical_value)
+            self.assertEqual(expected_col_value, historical_col_value)
