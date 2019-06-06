@@ -17,8 +17,12 @@
 
 """Utils for persistence.py."""
 import datetime
+import re
+from typing import Union, Type
 
 from recidiviz.common.constants.county.booking import CustodyStatus
+from recidiviz.persistence.database.base_schema import Base
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.county import entities as county_entities
 
 
@@ -47,3 +51,26 @@ def is_booking_active(booking: county_entities.Booking) -> bool:
 def has_active_booking(person: county_entities.Person) -> bool:
     """Determines if a person has an active booking"""
     return any(is_booking_active(booking) for booking in person.bookings)
+
+
+first_cap_regex = re.compile('(.)([A-Z][a-z]+)')
+all_cap_regex = re.compile('([a-z0-9])([A-Z])')
+
+
+def _to_snake_case(capital_case_name: str) -> str:
+    """Converts a capital case string (i.e. 'SupervisionViolationResponse'
+    to a snake case string (i.e. 'supervision_violation_response'. See
+    https://stackoverflow.com/questions/1175208/
+    elegant-python-function-to-convert-camelcase-to-snake-case.
+    """
+    s1 = first_cap_regex.sub(r'\1_\2', capital_case_name)
+    return all_cap_regex.sub(r'\1_\2', s1).lower()
+
+
+def primary_key_name_from_cls(
+        schema_cls: Union[Type[Base], Type[Entity]]) -> str:
+    def _strip_prefix(s: str, prefix: str) -> str:
+        return s[len(prefix):] if s.startswith(prefix) else s
+
+    stripped_cls_name = _strip_prefix(schema_cls.__name__, 'State')
+    return f'{_to_snake_case(stripped_cls_name)}_id'
