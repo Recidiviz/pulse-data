@@ -31,6 +31,7 @@ from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
     StateAssessmentType,
+    StateAssessmentLevel,
 )
 
 from recidiviz.common.constants.bond import BondType, BondStatus
@@ -44,7 +45,6 @@ from recidiviz.common.constants.person_characteristics import (
 from recidiviz.common.constants.county.sentence import SentenceStatus
 
 from recidiviz.common.constants.state.state_court_case import (
-    StateCourtType,
     StateCourtCaseStatus,
 )
 from recidiviz.common.constants.state.state_incarceration import (
@@ -106,6 +106,7 @@ from recidiviz.persistence.entity.base_entity import Entity, ExternalIdEntity
 
 @attr.s(cmp=False)
 class StatePersonExternalId(Entity, BuildableAttr, DefaultableAttr):
+    """Models an external id associated with a particular StatePerson."""
     # Primary key - Only optional when hydrated in the data converter, before
     # we have written this entity to the persistence layer
     person_external_id_id: Optional[int] = attr.ib()
@@ -120,11 +121,31 @@ class StatePersonExternalId(Entity, BuildableAttr, DefaultableAttr):
     id_type: Optional[str] = attr.ib()
 
     # Cross-entity relationships
-    person_id: Optional[int] = attr.ib()
+    person: Optional['StatePerson'] = attr.ib(default=None)
+
+
+@attr.s(cmp=False)
+class StatePersonAlias(Entity, BuildableAttr, DefaultableAttr):
+    """Models an alias associated with a particular StatePerson."""
+    # Primary key - Only optional when hydrated in the data converter, before
+    # we have written this entity to the persistence layer
+    person_alias_id: Optional[int] = attr.ib()
+
+    # Attributes
+    state_code: str = attr.ib()  # non-nullable
+    full_name: Optional[str] = attr.ib()
+    surname: Optional[str] = attr.ib()
+    given_names: Optional[str] = attr.ib()
+    middle_names: Optional[str] = attr.ib()
+    name_suffix: Optional[str] = attr.ib()
+
+    # Cross-entity relationships
+    person: Optional['StatePerson'] = attr.ib(default=None)
 
 
 @attr.s(cmp=False)
 class StatePersonRace(Entity, BuildableAttr, DefaultableAttr):
+    """Models a race associated with a particular StatePerson."""
     # Primary key - Only optional when hydrated in the data converter, before
     # we have written this entity to the persistence layer
     person_race_id: Optional[int] = attr.ib()
@@ -135,11 +156,12 @@ class StatePersonRace(Entity, BuildableAttr, DefaultableAttr):
     race_raw_text: Optional[str] = attr.ib()
 
     # Cross-entity relationships
-    person_id: Optional[int] = attr.ib()
+    person: Optional['StatePerson'] = attr.ib(default=None)
 
 
 @attr.s(cmp=False)
 class StatePersonEthnicity(Entity, BuildableAttr, DefaultableAttr):
+    """Models an ethnicity associated with a particular StatePerson."""
     # Primary key - Only optional when hydrated in the data converter, before
     # we have written this entity to the persistence layer
     person_ethnicity_id: Optional[int] = attr.ib()
@@ -150,7 +172,7 @@ class StatePersonEthnicity(Entity, BuildableAttr, DefaultableAttr):
     ethnicity_raw_text: Optional[str] = attr.ib()
 
     # Cross-entity relationships
-    person_id: Optional[int] = attr.ib()
+    person: Optional['StatePerson'] = attr.ib(default=None)
 
 
 @attr.s(cmp=False)
@@ -158,7 +180,7 @@ class StatePerson(Entity, BuildableAttr, DefaultableAttr):
     """Models a StatePerson moving through the criminal justice system."""
     # Primary key - Only optional when hydrated in the data converter, before
     # we have written this entity to the persistence layer
-    person_id: Optional[int] = attr.ib()
+    person_id: Optional[int] = attr.ib(default=None)
 
     # Attributes
 
@@ -166,8 +188,9 @@ class StatePerson(Entity, BuildableAttr, DefaultableAttr):
     current_address: Optional[str] = attr.ib(default=None)
 
     #   - What
+    # TODO(ageiduschek): Decide if this should be a 'primary_alias' object of
+    #  type Alias.
     full_name: Optional[str] = attr.ib(default=None)
-    aliases: List[str] = attr.ib(factory=list)
 
     birthdate: Optional[datetime.date] = attr.ib(default=None)
     birthdate_inferred_from_age: Optional[bool] = attr.ib(default=None)
@@ -180,6 +203,7 @@ class StatePerson(Entity, BuildableAttr, DefaultableAttr):
 
     # Cross-entity relationships
     external_ids: List['StatePersonExternalId'] = attr.ib(factory=list)
+    aliases: List['StatePersonAlias'] = attr.ib(factory=list)
     races: List['StatePersonRace'] = attr.ib(factory=list)
     ethnicities: List['StatePersonEthnicity'] = attr.ib(factory=list)
     assessments: List['StateAssessment'] = attr.ib(factory=list)
@@ -220,8 +244,8 @@ class StateBond(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     bond_agent: Optional[str] = attr.ib()
 
     # Cross-entity relationships
-    person_id: Optional[int] = attr.ib()
-    charge_ids: List[int] = attr.ib(factory=list)
+    person: Optional['StatePerson'] = attr.ib(default=None)
+    charges: List['StateCharge'] = attr.ib(factory=list)
 
 
 @attr.s(cmp=False)
@@ -233,10 +257,12 @@ class StateCourtCase(ExternalIdEntity, BuildableAttr, DefaultableAttr):
 
     # Status
     status: StateCourtCaseStatus = attr.ib()
+    status_raw_text: Optional[str] = attr.ib()
 
     # Type
-    court_type: Optional[StateCourtType] = attr.ib()
-    court_type_raw_text: Optional[str] = attr.ib()
+    # TODO(1625) - Bring back once we know values for court type
+    # court_type: Optional[StateCourtType] = attr.ib()
+    # court_type_raw_text: Optional[str] = attr.ib()
 
     # Attributes
     #   - When
@@ -256,8 +282,8 @@ class StateCourtCase(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     judge_name: Optional[str] = attr.ib()
 
     # Cross-entity relationships
-    person_id: Optional[int] = attr.ib()
-    charge_ids: List[int] = attr.ib(factory=list)
+    person: Optional['StatePerson'] = attr.ib(default=None)
+    charges: List['StateCharge'] = attr.ib(factory=list)
 
 
 @attr.s(cmp=False)
@@ -299,13 +325,15 @@ class StateCharge(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     charging_entity: Optional[str] = attr.ib()
 
     # Cross-entity relationships
-    person_id: Optional[int] = attr.ib()
+    person: Optional['StatePerson'] = attr.ib(default=None)
     court_case: Optional['StateCourtCase'] = attr.ib(default=None)
     bond: Optional['StateBond'] = attr.ib(default=None)
 
-    incarceration_sentence_ids: List[int] = attr.ib(factory=list)
-    supervision_sentence_ids: List[int] = attr.ib(factory=list)
-    fine_ids: List[int] = attr.ib(factory=list)
+    incarceration_sentences: List['StateIncarcerationSentence'] = \
+        attr.ib(factory=list)
+    supervision_sentences: List['StateSupervisionSentence'] = \
+        attr.ib(factory=list)
+    fines: List['StateFine'] = attr.ib(factory=list)
 
 
 @attr.s(cmp=False)
@@ -334,21 +362,23 @@ class StateAssessment(ExternalIdEntity, BuildableAttr, DefaultableAttr):
 
     #   - What
     assessment_score: Optional[int] = attr.ib()
-    assessment_level: Optional[str] = attr.ib()
+    assessment_level: Optional[StateAssessmentLevel] = attr.ib()
+    assessment_level_raw_text: Optional[str] = attr.ib()
     assessment_metadata: Optional[str] = attr.ib()
 
     #   - Who
-    conducting_agent_name: Optional[str] = attr.ib()
-    conducting_agent_id: Optional[str] = attr.ib()
+    # See |conducting_agent| below
 
     # Cross-entity relationships
 
     # Only optional when hydrated in the data converter, before we have written
     # this entity to the persistence layer
-    person_id: Optional[int] = attr.ib()
-
-    incarceration_period_id: Optional[int] = attr.ib()
-    supervision_period_id: Optional[int] = attr.ib()
+    person: Optional['StatePerson'] = attr.ib(default=None)
+    incarceration_period: Optional['StateIncarcerationPeriod'] = \
+        attr.ib(default=None)
+    supervision_period: Optional['StateSupervisionPeriod'] = \
+        attr.ib(default=None)
+    conducting_agent: Optional['StateAgent'] = attr.ib(default=None)
 
 
 @attr.s(cmp=False)
@@ -393,7 +423,7 @@ class StateSentenceGroup(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     # See |person_id| in entity relationships below.
 
     # Cross-entity relationships
-    person_id: Optional[int] = attr.ib()
+    person: Optional['StatePerson'] = attr.ib(default=None)
     supervision_sentences: List['StateSupervisionSentence'] = attr.ib(
         factory=list)
     incarceration_sentences: List['StateIncarcerationSentence'] = \
@@ -440,8 +470,8 @@ class StateSupervisionSentence(ExternalIdEntity,
     #   - Who
 
     # Cross-entity relationships
-    state_person_id: Optional[int] = attr.ib(default=None)
-    sentence_group_id: Optional[int] = attr.ib(default=None)
+    person: Optional['StatePerson'] = attr.ib(default=None)
+    sentence_group: Optional['StateSentenceGroup'] = attr.ib(default=None)
     charges: List['StateCharge'] = attr.ib(factory=list)
 
     # NOTE: A person might have an incarceration period associated with a
@@ -492,7 +522,6 @@ class StateIncarcerationSentence(ExternalIdEntity,
     is_life: Optional[bool] = attr.ib()
 
     parole_possible: Optional[bool] = attr.ib()
-    is_suspended: Optional[bool] = attr.ib()
     initial_time_served_days: Optional[int] = attr.ib()
     good_time_days: Optional[int] = attr.ib()
     earned_time_days: Optional[int] = attr.ib()
@@ -501,8 +530,8 @@ class StateIncarcerationSentence(ExternalIdEntity,
     # See |person_id| in entity relationships below.
 
     # Cross-entity relationships
-    state_person_id: Optional[int] = attr.ib(default=None)
-    sentence_group_id: Optional[int] = attr.ib(default=None)
+    person: Optional['StatePerson'] = attr.ib(default=None)
+    sentence_group: Optional['StateSentenceGroup'] = attr.ib(default=None)
     charges: List['StateCharge'] = attr.ib(factory=list)
 
     incarceration_periods: List['StateIncarcerationPeriod'] = attr.ib(
@@ -543,8 +572,8 @@ class StateFine(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     # See |person_id| in entity relationships below.
 
     # Cross-entity relationships
-    state_person_id: Optional[int] = attr.ib(default=None)
-    sentence_group_id: Optional[int] = attr.ib(default=None)
+    person: Optional['StatePerson'] = attr.ib(default=None)
+    sentence_group: Optional['StateSentenceGroup'] = attr.ib(default=None)
     charges: List['StateCharge'] = attr.ib(factory=list)
 
 
@@ -603,11 +632,13 @@ class StateIncarcerationPeriod(ExternalIdEntity,
     # See |person_id| in entity relationships below.
 
     # Cross-entity relationships
-    state_person_id: Optional[int] = attr.ib(default=None)
+    person: Optional['StatePerson'] = attr.ib(default=None)
 
     # NOTE: An incarceration period might count towards multiple sentences
-    incarceration_sentence_ids: List[int] = attr.ib(default=None)
-    supervision_sentence_ids: List[int] = attr.ib(default=None)
+    incarceration_sentences: List['StateIncarcerationSentence'] = \
+        attr.ib(factory=list)
+    supervision_sentences: List['StateSupervisionSentence'] = \
+        attr.ib(factory=list)
 
     incarceration_incidents: List['StateIncarcerationIncident'] = \
         attr.ib(factory=list)
@@ -616,8 +647,8 @@ class StateIncarcerationPeriod(ExternalIdEntity,
 
     # When the admission reason is SUPERVISION_VIOLATION, this is the object
     # with info about the violation/hearing that resulted in the revocation
-    source_supervision_violation_response: Optional[int] = \
-        attr.ib(default=None)
+    source_supervision_violation_response: \
+        Optional['StateSupervisionViolationResponse'] = attr.ib(default=None)
 
 
 @attr.s(cmp=False)
@@ -660,17 +691,19 @@ class StateSupervisionPeriod(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     supervision_level: Optional[StateSupervisionLevel] = attr.ib()
     supervision_level_raw_text: Optional[str] = attr.ib()
 
-    conditions: List[str] = attr.ib(factory=list)
+    conditions: Optional[str] = attr.ib()
 
     #   - Who
     # See |person_id| in entity relationships below.
 
     # Cross-entity relationships
-    state_person_id: Optional[int] = attr.ib(default=None)
+    person: Optional['StatePerson'] = attr.ib(default=None)
 
     # NOTE: A supervision period might count towards multiple sentences
-    incarceration_sentence_ids: List[int] = attr.ib(default=None)
-    supervision_sentence_ids: List[int] = attr.ib(default=None)
+    incarceration_sentences: List['StateIncarcerationSentence'] = \
+        attr.ib(factory=list)
+    supervision_sentences: List['StateSupervisionSentence'] = \
+        attr.ib(factory=list)
 
     supervision_violations: List['StateSupervisionViolation'] = attr.ib(
         factory=list)
@@ -711,12 +744,13 @@ class StateIncarcerationIncident(ExternalIdEntity,
     outcome_raw_text: Optional[str] = attr.ib()
 
     #   - Who
-    responding_officer_name: Optional[str] = attr.ib()
-    responding_officer_id: Optional[str] = attr.ib()
+    # See |responding_officer| below
 
     # Cross-entity relationships
-    state_person_id: Optional[int] = attr.ib(default=None)
-    incarceration_period_id: Optional[int] = attr.ib(default=None)
+    person: Optional['StatePerson'] = attr.ib(default=None)
+    responding_officer: Optional['StateAgent'] = attr.ib(default=None)
+    incarceration_period: Optional['StateIncarcerationPeriod'] = \
+        attr.ib(default=None)
 
 
 @attr.s(cmp=False)
@@ -743,16 +777,19 @@ class StateParoleDecision(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     county_code: Optional[str] = attr.ib()
 
     #   - What
+    # TODO(1625) - Convert this to an outcome enum
     decision_outcome: Optional[str] = attr.ib()
     decision_reasoning: Optional[str] = attr.ib()
     corrective_action: Optional[str] = attr.ib()
 
     #   - Who
-    # TODO(1625) - Convert to List[StateAgent]
-    decision_agent_names: List[str] = attr.ib(factory=list)
+    # See |decision_agents| below
 
     # Cross-entity relationships
-    incarceration_period_id: Optional[int] = attr.ib(default=None)
+    person: Optional['StatePerson'] = attr.ib(default=None)
+    incarceration_period: Optional['StateIncarcerationPeriod'] = \
+        attr.ib(default=None)
+    decision_agents: List['StateAgent'] = attr.ib(factory=list)
 
 
 @attr.s(cmp=False)
@@ -787,14 +824,15 @@ class StateSupervisionViolation(ExternalIdEntity,
     # These should correspond to |conditions| in StateSupervisionPeriod
     is_violent: Optional[bool] = attr.ib()
 
-    violated_conditions: List[str] = attr.ib(factory=list)
+    violated_conditions: Optional[str] = attr.ib()
 
     #   - Who
     # See |person_id| in entity relationships below.
 
     # Cross-entity relationships
-    state_person_id: Optional[int] = attr.ib(default=None)
-    supervision_period_id: Optional[int] = attr.ib(default=None)
+    person: Optional['StatePerson'] = attr.ib(default=None)
+    supervision_period: Optional['StateSupervisionPeriod'] = \
+        attr.ib(default=None)
     supervision_violation_responses: \
         List['StateSupervisionViolationResponse'] = attr.ib(factory=list)
 
@@ -823,10 +861,12 @@ class StateSupervisionViolationResponse(ExternalIdEntity,
 
     #   - What
     decision: Optional[StateSupervisionViolationResponseDecision] = attr.ib()
+    decision_raw_text: Optional[str] = attr.ib()
 
     # Only nonnull if decision is REVOCATION
     revocation_type: \
         Optional[StateSupervisionViolationResponseRevocationType] = attr.ib()
+    revocation_type_raw_text: Optional[str] = attr.ib()
 
     #   - Who
     # See SupervisionViolationResponders below
@@ -835,9 +875,9 @@ class StateSupervisionViolationResponse(ExternalIdEntity,
     # See also |deciding_agents| below
 
     # Cross-entity relationships
-    person_id: Optional[int] = attr.ib()
-    supervision_violation_id: Optional[int] = attr.ib()
-
+    person: Optional['StatePerson'] = attr.ib(default=None)
+    supervision_violation: Optional['StateSupervisionViolation'] = \
+        attr.ib(default=None)
     decision_agents: List['StateAgent'] = attr.ib(factory=list)
 
 

@@ -41,6 +41,7 @@ class _StateSchemaEntityConverter(BaseSchemaEntityConverter[SrcBaseType,
     CLASS_RANK_LIST = [
         entities.StatePerson.__name__,
         entities.StatePersonExternalId.__name__,
+        entities.StatePersonAlias.__name__,
         entities.StatePersonRace.__name__,
         entities.StatePersonEthnicity.__name__,
         entities.StateSentenceGroup.__name__,
@@ -56,8 +57,8 @@ class _StateSchemaEntityConverter(BaseSchemaEntityConverter[SrcBaseType,
         entities.StateSupervisionPeriod.__name__,
         entities.StateSupervisionViolation.__name__,
         entities.StateSupervisionViolationResponse.__name__,
-        entities.StateAgent.__name__,
         entities.StateAssessment.__name__,
+        entities.StateAgent.__name__,
     ]
 
     def __init__(self):

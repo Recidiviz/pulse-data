@@ -17,6 +17,13 @@
 """Tests for state/entities.py"""
 from typing import Optional
 
+# ForwardRef not defined in python 3.6 and mypy will complain if we don't
+# surround with try-catch.
+try:
+    from typing import ForwardRef  # type: ignore
+except ImportError as e:
+    raise ImportError(e)
+
 from unittest import TestCase
 
 import attr
@@ -26,6 +33,8 @@ from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import \
     get_all_entity_classes_in_module
 from recidiviz.persistence.entity.state import entities
+from recidiviz.tests.persistence.entity.state.entities_test_utils import \
+    generate_full_graph_state_person
 
 
 class TestStateEntities(TestCase):
@@ -68,6 +77,64 @@ class TestStateEntities(TestCase):
                              str,
                              f"Unexpected type [{attribute.type}] for "
                              f"|state_code| field of class [{cls}].")
+
+    def test_all_classes_have_person_reference(self):
+        classes_without_a_person_ref = [
+            entities.StatePerson,
+            entities.StateAgent,
+        ]
+
+        for cls in get_all_entity_classes_in_module(entities):
+            if cls in classes_without_a_person_ref:
+                continue
+            self.assertTrue(
+                'person' in attr.fields_dict(cls),
+                f"Expected field |person| not defined for class [{cls}].")
+            attribute = attr.fields_dict(cls)['person']
+            self.assertEqual(attribute.type,
+                             Optional[ForwardRef('StatePerson')],
+                             f"Unexpected type [{attribute.type}] for |person| "
+                             f"field of class [{cls}].")
+
+    def test_person_equality_no_backedges(self):
+        person1 = generate_full_graph_state_person(set_back_edges=False)
+        person2 = generate_full_graph_state_person(set_back_edges=False)
+
+        self.assertEqual(person1, person2)
+
+    def test_person_equality_with_backedges(self):
+        person1 = generate_full_graph_state_person(set_back_edges=True)
+        person2 = generate_full_graph_state_person(set_back_edges=True)
+
+        self.assertEqual(person1, person2)
+
+    def test_person_equality_ignore_list_ordering(self):
+        person1 = generate_full_graph_state_person(set_back_edges=True)
+        person2 = generate_full_graph_state_person(set_back_edges=True)
+
+        self.assertTrue(len(person2.assessments) > 1)
+        person2.assessments.reverse()
+
+        self.assertEqual(person1, person2)
+
+    def test_person_equality_list_items_differ(self) -> None:
+        person1 = generate_full_graph_state_person(set_back_edges=True)
+        person2 = generate_full_graph_state_person(set_back_edges=True)
+
+        next(iter(person1.assessments)).state_code = 'us_ny'
+
+        self.assertNotEqual(person1, person2)
+
+    def test_person_equality_list(self):
+        """Test that we can compare a list of person Entity objects"""
+        person1a = generate_full_graph_state_person(set_back_edges=True)
+        person1b = generate_full_graph_state_person(set_back_edges=True)
+
+        person2a = generate_full_graph_state_person(set_back_edges=False)
+        person2b = generate_full_graph_state_person(set_back_edges=False)
+
+        self.assertEqual([person1a, person2a],
+                         [person1b, person2b])
 
     # TODO(1625): Add more detailed unit tests for entity_graph_eq (first
     #  defined in #1812)
