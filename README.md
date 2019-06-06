@@ -51,14 +51,14 @@ If you are contributing to this repository regularly for an extended period of t
 
 ##### Option 1: Local Python installation
 
-If you can install `python3.7` locally, do so. For local Python development, you will also need to install the `libpq` PostgreSQL client library.
+If you can install `python3.7` locally, do so. For local Python development, you will also need to install the `libpq` PostgreSQL client library and `openssl`.
 
-On a Mac with [Homebrew](https://brew.sh/), you can install `python3.7` and `libpq` with:
+On a Mac with [Homebrew](https://brew.sh/), you can install `python3.7`, `libpq`, and `openssl` with:
 ```bash
-$ brew install python3 postgresql
+$ brew install python3 postgresql openssl
 ```
 
-On Ubuntu 18.04, you can install `python3.7` and `libpq` with:
+On Ubuntu 18.04,`openssl` is installed by default,  you can install `python3.7` and `libpq` with:
 ```bash
 $ apt update -y && apt install -y python3.7-dev python3-pip libpq-dev
 ```
@@ -92,7 +92,16 @@ $ git clone git@github.com:your_github_username/pulse-data.git
 $ cd pulse-data
 ```
 
-Create a new pipenv environment and install all project and development dependencies:
+Create a new pipenv environment and install all project and development dependencies
+
+On a Mac, run the `initial_pipenv_setup_mac` script. 
+
+**NOTE**: Installation of one of our dependencies (`psycopg2`) requires OpenSSL, and as OpenSSL is not linked on Macs by default, this script temporarily sets the necessary compiler flags and then runs `pipenv sync --dev`. After this initial installation all `pipenv sync/install`s should work without this script.
+```bash
+$ ./initial_pipenv_setup_mac.sh
+```
+
+On a Linux machine, run the following:
 ```bash
 $ pipenv sync --dev
 ```
@@ -120,7 +129,6 @@ On Ubuntu 18.04, you can install the JRE with:
 ```bash
 $ apt update -y && apt install -y default-jre
 ```
-
 
 ##### Option 2: Docker container
 
@@ -262,3 +270,17 @@ Typically on Wednesday morning the release engineer should:
 1.  For every region that has `environment: staging` set, check the logs and monitoring in staging periodically to verify that they run successfully.
 1.  For all regions that look good, set their environment to `production` and they will be ready to be deployed for the next week
 1.  Be sure to file bugs/fixes for any errors that exist for other scrapers, and hold off on promoting them to production.
+
+### Troubleshooting
+
+If you see a pipenv error (either during install or sync) with the following:
+```
+An error occurred while installing psycopg2==...
+```
+
+On a Mac:
+
+1. Ensure `postgresql` and `openssl` are installed with: `brew install postgresql openssl`
+2. Run the initial pipenv setup script: `./initial_pipenv_setup_mac.sh`
+
+On Linux: Ensure `libpq` is installed with: `apt update -y && apt install -y libpq-dev`
