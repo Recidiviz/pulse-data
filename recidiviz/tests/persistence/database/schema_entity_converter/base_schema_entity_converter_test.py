@@ -45,6 +45,7 @@ class TestSchemaEntityConverter(BaseSchemaEntityConverter):
         entities.Root.__name__,
         entities.Parent.__name__,
         entities.Child.__name__,
+        entities.Toy.__name__,
     ]
 
     def __init__(self):
@@ -322,3 +323,39 @@ class TestBaseSchemaEntityConverter(TestCase):
             self._check_children(converted_parent, family.child_entities)
             for converted_child in converted_parent.children:
                 self._check_parents(converted_child, family.parent_entities)
+
+    def test_many_to_one_no_backref(self):
+        family = self.SimpsonsFamily()
+        self.assertEqual(len(family.homer.children), 0)
+        family.root.parents = [family.homer]
+        family.homer.children = [family.bart, family.maggie]
+        toy = entities.Toy.new_with_defaults(
+            toy_id=456789,
+            name='Skateboard')
+        family.bart.favorite_toy = toy
+        family.maggie.favorite_toy = toy
+
+        schema_root = TestSchemaEntityConverter().convert(family.root)
+
+        session = Session()
+        session.add(schema_root)
+        session.commit()
+
+        db_roots = session.query(schema.Root).all()
+        self.assertEqual(len(db_roots), 1)
+        db_parents = session.query(schema.Parent).all()
+        self.assertEqual(len(db_parents), 1)
+        db_children = session.query(schema.Child).all()
+        self.assertEqual(len(db_children), 2)
+        db_toys = session.query(schema.Toy).all()
+        self.assertEqual(len(db_toys), 1)
+
+        converted_root = TestSchemaEntityConverter().convert(one(db_roots))
+        self.assertEqual(len(converted_root.parents), 1)
+        self.assertEqual(len(converted_root.parents[0].children), 2)
+        self.assertEqual(converted_root.parents[0].children[0].favorite_toy,
+                         toy)
+        self.assertEqual(converted_root.parents[0].children[1].favorite_toy,
+                         toy)
+
+    # TODO(1625): Write more unit tests for bugfixes in this commit
