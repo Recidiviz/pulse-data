@@ -15,10 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Utils for persistence.py."""
+"""Utils for the persistence layer."""
 import datetime
 import re
-from typing import Union, Type
+from typing import Union, Type, Optional
 
 from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.persistence.database.base_schema import Base
@@ -59,7 +59,7 @@ all_cap_regex = re.compile('([a-z0-9])([A-Z])')
 
 def _to_snake_case(capital_case_name: str) -> str:
     """Converts a capital case string (i.e. 'SupervisionViolationResponse'
-    to a snake case string (i.e. 'supervision_violation_response'. See
+    to a snake case string (i.e. 'supervision_violation_response'). See
     https://stackoverflow.com/questions/1175208/
     elegant-python-function-to-convert-camelcase-to-snake-case.
     """
@@ -74,3 +74,13 @@ def primary_key_name_from_cls(
 
     stripped_cls_name = _strip_prefix(schema_cls.__name__, 'State')
     return f'{_to_snake_case(stripped_cls_name)}_id'
+
+
+def primary_key_name_from_obj(schema_object: Union[Base, Entity]) -> str:
+    return primary_key_name_from_cls(schema_object.__class__)
+
+
+def primary_key_value_from_obj(
+        schema_object: Union[Base, Entity]) -> Optional[int]:
+    primary_key_column_name = primary_key_name_from_obj(schema_object)
+    return getattr(schema_object, primary_key_column_name, None)
