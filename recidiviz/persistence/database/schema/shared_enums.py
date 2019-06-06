@@ -14,7 +14,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""SQLAlchemy enums shared between multiple schemas."""
+"""SQLAlchemy enums shared between multiple schemas.
+
+The different schemas, which are really just grouped sets of tables and
+their corresponding entities, can share enum types. Enums should only be defined
+in this file if they are actually used by more than one schema, otherwise, they
+should be defined in state/county/aggregate-specific schema.py files, for better
+clarity around where they are used.
+
+Regardless of where enums are defined, all SQLAlchemy enums must have globally
+unique names (enforced in tests).
+"""
 from sqlalchemy import Enum
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
@@ -48,3 +58,45 @@ residency_status = Enum(enum_strings.residency_status_homeless,
                         enum_strings.residency_status_permanent,
                         enum_strings.residency_status_transient,
                         name='residency_status')
+
+
+# Bond
+
+bond_type = Enum(enum_strings.bond_type_cash,
+                 enum_strings.external_unknown,
+                 enum_strings.bond_type_denied,
+                 enum_strings.bond_type_not_required,
+                 enum_strings.bond_type_partial_cash,
+                 enum_strings.bond_type_secured,
+                 enum_strings.bond_type_unsecured,
+                 name='bond_type')
+
+bond_status = Enum(enum_strings.bond_status_pending,
+                   enum_strings.bond_status_posted,
+                   enum_strings.present_without_info,
+                   enum_strings.removed_without_info,
+                   enum_strings.bond_status_revoked,
+                   enum_strings.bond_status_set,
+                   name='bond_status')
+
+# Charge
+
+degree = Enum(enum_strings.external_unknown,
+              enum_strings.degree_first,
+              enum_strings.degree_fourth,
+              enum_strings.degree_second,
+              enum_strings.degree_third,
+              name='degree')
+
+charge_status = Enum(enum_strings.charge_status_acquitted,
+                     enum_strings.charge_status_completed,
+                     enum_strings.charge_status_convicted,
+                     enum_strings.charge_status_dropped,
+                     enum_strings.charge_status_inferred_dropped,
+                     enum_strings.external_unknown,
+                     enum_strings.charge_status_pending,
+                     enum_strings.charge_status_pretrial,
+                     enum_strings.charge_status_sentenced,
+                     enum_strings.present_without_info,
+                     enum_strings.removed_without_info,
+                     name='charge_status')
