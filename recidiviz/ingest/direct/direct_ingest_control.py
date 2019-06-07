@@ -26,7 +26,8 @@ from flask import Blueprint
 from recidiviz.ingest.direct.errors import DirectIngestError
 from recidiviz.ingest.direct.regions.us_ma_middlesex.us_ma_middlesex_collector \
     import UsMaMiddlesexCollector
-from recidiviz.utils import environment, metadata
+from recidiviz.utils import environment, metadata, monitoring, \
+    structured_logging
 from recidiviz.utils.auth import authenticate_request
 
 direct_ingest_control = Blueprint('direct_ingest_control', __name__)
@@ -42,8 +43,14 @@ def us_ma_middlesex():
         return (f"Skipping Middlesex direct ingest in environment {gae_env}",
                 HTTPStatus.OK)
 
-    try:
+    @structured_logging.copy_trace_id_to_thread
+    @monitoring.with_region_tag
+    # pylint: disable=unused-argument
+    def _us_ma_middlesex(region):
         collector.go()
+
+    try:
+        _us_ma_middlesex('us_ma_middlesex')
     except DirectIngestError:
         logging.exception("Direct ingest failed.")
         return ("Direct ingest data processing failed for region "
