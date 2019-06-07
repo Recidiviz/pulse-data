@@ -27,13 +27,16 @@ from apache_beam.testing.test_pipeline import TestPipeline
 
 from datetime import date
 from dateutil.relativedelta import relativedelta
+import pytest
 
 from recidiviz.calculator.recidivism import pipeline
-from recidiviz.calculator.recidivism import calculator, \
-    RecidivismEvent, RecidivismMetric
-from recidiviz.calculator.recidivism.metrics import Methodology
-from recidiviz.calculator.recidivism.recidivism_event import \
-    IncarcerationReturnType
+from recidiviz.calculator.recidivism import calculator, RecidivismMetric
+from recidiviz.calculator.recidivism.metrics import RecidivismMethodologyType
+from recidiviz.calculator.recidivism.release_event import \
+    IncarcerationReturnType, ReleaseEvent, RecidivismReleaseEvent, \
+    NonRecidivismReleaseEvent
+from recidiviz.calculator.utils import person_extractor, \
+    incarceration_period_extractor
 from recidiviz.common.constants.entity_enum import EntityEnum
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus, StateIncarcerationPeriodAdmissionReason, \
@@ -54,6 +57,9 @@ class TestRecidivismPipeline(unittest.TestCase):
     def testRecidivismPipeline(self):
         """Tests the entire recidivism pipeline with one person and three
         incarceration periods."""
+
+        # TODO(1852): Build entities as schema objects once the schema changes
+        #  have landed.
 
         fake_person_id = 12345
 
@@ -81,6 +87,9 @@ class TestRecidivismPipeline(unittest.TestCase):
             release_reason=StateIncarcerationPeriodReleaseReason.
             SENTENCE_SERVED)
 
+        initial_incarceration_dict = initial_incarceration.__dict__
+        initial_incarceration_dict['person_id'] = fake_person_id
+
         first_reincarceration = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=2222,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
@@ -98,6 +107,9 @@ class TestRecidivismPipeline(unittest.TestCase):
             release_reason=StateIncarcerationPeriodReleaseReason.
             SENTENCE_SERVED)
 
+        first_reincarceration_dict = first_reincarceration.__dict__
+        first_reincarceration_dict['person_id'] = fake_person_id
+
         subsequent_reincarceration = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=3333,
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
@@ -112,23 +124,28 @@ class TestRecidivismPipeline(unittest.TestCase):
             CONDITIONAL_RELEASE,
             admission_date=date(2017, 1, 4))
 
+        subsequent_reincarceration_dict = subsequent_reincarceration.__dict__
+        subsequent_reincarceration_dict['person_id'] = fake_person_id
+
         incarceration_periods_data = [
-            NormalizeEntityDict.normalize(initial_incarceration.__dict__),
-            NormalizeEntityDict.normalize(first_reincarceration.__dict__),
-            NormalizeEntityDict.normalize(subsequent_reincarceration.__dict__)
+            NormalizeEntityDict.normalize(initial_incarceration_dict),
+            NormalizeEntityDict.normalize(first_reincarceration_dict),
+            NormalizeEntityDict.normalize(subsequent_reincarceration_dict)
         ]
 
         dimensions_to_filter = ['age_bucket', 'race', 'release_facility',
                                 'stay_length_bucket']
 
+        methodologies = [RecidivismMethodologyType.EVENT,
+                         RecidivismMethodologyType.PERSON]
+
         test_pipeline = TestPipeline()
 
-        # Read persons from input and load them into StatePerson entities
         # Read persons from input and load them into StatePerson entities
         persons = (test_pipeline
                    | 'Read Persons' >> beam.Create(persons_data)
                    | 'Load StatePerson entities' >> beam.ParDo(
-                       pipeline.ExtractPerson()))
+                       person_extractor.HydratePersonEntity()))
 
         # Read incarceration periods from input and load them into
         # StateIncarcerationPeriod entities
@@ -136,8 +153,8 @@ class TestRecidivismPipeline(unittest.TestCase):
                                  | 'Read Incarceration Periods' >>
                                  beam.Create(incarceration_periods_data)
                                  | 'Load StateIncarcerationPeriod entities' >>
-                                 beam.ParDo(
-                                     pipeline.ExtractIncarcerationPeriod()))
+                                 beam.ParDo(incarceration_period_extractor.
+                                            HydrateIncarcerationPeriodEntity()))
 
         # Group each StatePerson with their StateIncarcerationPeriods
         person_and_incarceration_periods = \
@@ -147,47 +164,24 @@ class TestRecidivismPipeline(unittest.TestCase):
              beam.CoGroupByKey()
              )
 
-        find_recidivism_kwargs = {'include_revocation_returns': True}
-
-        # Find recidivism events from the StatePerson's
+        # Identify ReleaseEvents events from the StatePerson's
         # StateIncarcerationPeriods
-        recidivism_events = (person_and_incarceration_periods
-                             | 'Find Recidivism Events' >>
-                             beam.ParDo(pipeline.FindRecidivism(),
-                                        **find_recidivism_kwargs))
+        person_events = (person_and_incarceration_periods |
+                         'Get Release Events' >>
+                         pipeline.GetReleaseEvents(
+                             classify_revocation_return_as_recidivism=True))
 
-        # Group each StatePerson with their RecidivismEvents
-        person_events = ({'person': persons,
-                          'recidivism_events': recidivism_events}
-                         | 'Group StatePerson to RecidivismEvents' >>
-                         beam.CoGroupByKey())
-
-        # Map each person and their events to the combinations of metrics
-        # Note: We are preventing fusion here by having a GroupByKey in between
-        # this high fan-out ParDo and the metric ParDo
-        mapped_metric_combinations = (person_events
-                                      | 'Map to metric combinations' >>
-                                      beam.ParDo(
-                                          pipeline.MapMetricCombinations())
-                                      )
-
-        # Group metrics that have the same metric_key
-        grouped_metric_combinations = (mapped_metric_combinations
-                                       | 'Group metrics by metric key' >>
-                                       beam.GroupByKey())
-
-        # Build RecidivismMetric objects
-        metrics = (grouped_metric_combinations
-                   | 'Produce recidivism metrics' >>
-                   beam.ParDo(pipeline.ProduceRecidivismMetric()))
+        recidivism_metrics = (person_events
+                              | 'Get Recidivism Metrics' >>
+                              pipeline.GetRecidivismMetrics())
 
         filter_metrics_kwargs = {
             'dimensions_to_filter_out': dimensions_to_filter,
-            'methodology': Methodology.BOTH,
+            'methodologies': methodologies,
             'release_count_min': 0}
 
         # Filter out unneeded metrics
-        filtered_metrics = (metrics
+        filtered_metrics = (recidivism_metrics
                             | 'Filter out unwanted metrics' >>
                             beam.ParDo(pipeline.FilterMetrics(),
                                        **filter_metrics_kwargs))
@@ -201,6 +195,9 @@ class TestRecidivismPipeline(unittest.TestCase):
         incarceration periods each. One StatePerson has a return from a
         supervision violation.
         """
+
+        # TODO(1852): Build entities as schema objects once the schema changes
+        #  have landed.
 
         fake_person_id_1 = 12345
 
@@ -236,6 +233,9 @@ class TestRecidivismPipeline(unittest.TestCase):
             release_reason=StateIncarcerationPeriodReleaseReason.
             SENTENCE_SERVED)
 
+        initial_incarceration_1_dict = initial_incarceration_1.__dict__
+        initial_incarceration_1_dict['person_id'] = fake_person_id_1
+
         first_reincarceration_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=2222,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
@@ -253,6 +253,9 @@ class TestRecidivismPipeline(unittest.TestCase):
             release_reason=StateIncarcerationPeriodReleaseReason.
             SENTENCE_SERVED)
 
+        first_reincarceration_1_dict = first_reincarceration_1.__dict__
+        first_reincarceration_1_dict['person_id'] = fake_person_id_1
+
         subsequent_reincarceration_1 = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=3333,
@@ -267,6 +270,10 @@ class TestRecidivismPipeline(unittest.TestCase):
                 projected_release_reason=StateIncarcerationPeriodReleaseReason.
                 CONDITIONAL_RELEASE,
                 admission_date=date(2017, 1, 4))
+
+        subsequent_reincarceration_1_dict = \
+            subsequent_reincarceration_1.__dict__
+        subsequent_reincarceration_1_dict['person_id'] = fake_person_id_1
 
         initial_incarceration_2 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=4444,
@@ -285,6 +292,9 @@ class TestRecidivismPipeline(unittest.TestCase):
             release_reason=StateIncarcerationPeriodReleaseReason.
             CONDITIONAL_RELEASE)
 
+        initial_incarceration_2_dict = initial_incarceration_2.__dict__
+        initial_incarceration_2_dict['person_id'] = fake_person_id_2
+
         first_reincarceration_2 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=5555,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
@@ -302,6 +312,9 @@ class TestRecidivismPipeline(unittest.TestCase):
             release_reason=StateIncarcerationPeriodReleaseReason.
             SENTENCE_SERVED)
 
+        first_reincarceration_2_dict = first_reincarceration_2.__dict__
+        first_reincarceration_2_dict['person_id'] = fake_person_id_2
+
         subsequent_reincarceration_2 = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=6666,
@@ -317,28 +330,34 @@ class TestRecidivismPipeline(unittest.TestCase):
                 CONDITIONAL_RELEASE,
                 admission_date=date(2018, 3, 9))
 
+        subsequent_reincarceration_2_dict = \
+            subsequent_reincarceration_2.__dict__
+        subsequent_reincarceration_2_dict['person_id'] = fake_person_id_2
+
         incarceration_periods_data = [
-            NormalizeEntityDict.normalize(initial_incarceration_1.__dict__),
-            NormalizeEntityDict.normalize(first_reincarceration_1.__dict__),
+            NormalizeEntityDict.normalize(initial_incarceration_1_dict),
+            NormalizeEntityDict.normalize(first_reincarceration_1_dict),
             NormalizeEntityDict.normalize(
-                subsequent_reincarceration_1.__dict__),
-            NormalizeEntityDict.normalize(initial_incarceration_2.__dict__),
-            NormalizeEntityDict.normalize(first_reincarceration_2.__dict__),
+                subsequent_reincarceration_1_dict),
+            NormalizeEntityDict.normalize(initial_incarceration_2_dict),
+            NormalizeEntityDict.normalize(first_reincarceration_2_dict),
             NormalizeEntityDict.normalize(
-                subsequent_reincarceration_2.__dict__)
+                subsequent_reincarceration_2_dict)
         ]
 
         dimensions_to_filter = ['age_bucket', 'race', 'release_facility',
                                 'stay_length_bucket']
 
+        methodologies = [RecidivismMethodologyType.EVENT,
+                         RecidivismMethodologyType.PERSON]
+
         test_pipeline = TestPipeline()
 
-        # Read persons from input and load them into StatePerson entities
         # Read persons from input and load them into StatePerson entities
         persons = (test_pipeline
                    | 'Read Persons' >> beam.Create(persons_data)
                    | 'Load StatePerson entities' >> beam.ParDo(
-                       pipeline.ExtractPerson()))
+                       person_extractor.HydratePersonEntity()))
 
         # Read incarceration periods from input and load them into
         # StateIncarcerationPeriod entities
@@ -346,8 +365,8 @@ class TestRecidivismPipeline(unittest.TestCase):
                                  | 'Read Incarceration Periods' >>
                                  beam.Create(incarceration_periods_data)
                                  | 'Load StateIncarcerationPeriod entities' >>
-                                 beam.ParDo(
-                                     pipeline.ExtractIncarcerationPeriod()))
+                                 beam.ParDo(incarceration_period_extractor.
+                                            HydrateIncarcerationPeriodEntity()))
 
         # Group each StatePerson with their StateIncarcerationPeriods
         person_and_incarceration_periods = \
@@ -357,47 +376,24 @@ class TestRecidivismPipeline(unittest.TestCase):
              beam.CoGroupByKey()
              )
 
-        find_recidivism_kwargs = {'include_revocation_returns': True}
-
-        # Find recidivism events from the StatePerson's
+        # Classify ReleaseEvents from the StatePerson's
         # StateIncarcerationPeriods
-        recidivism_events = (person_and_incarceration_periods
-                             | 'Find Recidivism Events' >>
-                             beam.ParDo(pipeline.FindRecidivism(),
-                                        **find_recidivism_kwargs))
+        person_events = (person_and_incarceration_periods |
+                         'Get Release Events' >>
+                         pipeline.GetReleaseEvents(
+                             classify_revocation_return_as_recidivism=True))
 
-        # Group each StatePerson with their RecidivismEvents
-        person_events = ({'person': persons,
-                          'recidivism_events': recidivism_events}
-                         | 'Group StatePerson to RecidivismEvents' >>
-                         beam.CoGroupByKey())
-
-        # Map each person and their events to the combinations of metrics
-        # Note: We are preventing fusion here by having a GroupByKey in between
-        # this high fan-out ParDo and the metric ParDo
-        mapped_metric_combinations = (person_events
-                                      | 'Map to metric combinations' >>
-                                      beam.ParDo(
-                                          pipeline.MapMetricCombinations())
-                                      )
-
-        # Group metrics that have the same metric_key
-        grouped_metric_combinations = (mapped_metric_combinations
-                                       | 'Group metrics by metric key' >>
-                                       beam.GroupByKey())
-
-        # Build RecidivismMetric objects
-        metrics = (grouped_metric_combinations
-                   | 'Produce recidivism metrics' >>
-                   beam.ParDo(pipeline.ProduceRecidivismMetric()))
+        recidivism_metrics = (person_events
+                              | 'Get Recidivism Metrics' >>
+                              pipeline.GetRecidivismMetrics())
 
         filter_metrics_kwargs = {
             'dimensions_to_filter_out': dimensions_to_filter,
-            'methodology': Methodology.BOTH,
+            'methodologies': methodologies,
             'release_count_min': 0}
 
         # Filter out unneeded metrics
-        filtered_metrics = (metrics
+        filtered_metrics = (recidivism_metrics
                             | 'Filter out unwanted metrics' >>
                             beam.ParDo(pipeline.FilterMetrics(),
                                        **filter_metrics_kwargs))
@@ -413,6 +409,9 @@ class TestExtractPerson(unittest.TestCase):
     def testExtractPerson(self):
         """Tests the extraction of a valid StatePerson entity."""
 
+        # TODO(1852): Build entities as schema objects once the schema changes
+        #  have landed.
+
         fake_person = StatePerson.new_with_defaults(
             person_id=12345, current_address='123 Street',
             full_name='Jack Smith', birthdate=date(1970, 1, 1),
@@ -425,7 +424,7 @@ class TestExtractPerson(unittest.TestCase):
                   | beam.Create([
                       NormalizeEntityDict.normalize(fake_person.__dict__)])
                   | 'Load StatePerson entity' >>
-                  beam.ParDo(pipeline.ExtractPerson())
+                  beam.ParDo(person_extractor.HydratePersonEntity())
                   )
 
         assert_that(output, equal_to([(12345, fake_person)]))
@@ -436,40 +435,49 @@ class TestExtractPerson(unittest.TestCase):
         """Tests the extraction of a StatePerson entity when the dictionary is
         empty."""
 
-        test_pipeline = TestPipeline()
+        with pytest.raises(ValueError) as e:
 
-        output = (test_pipeline
-                  | beam.Create([{}])
-                  | 'Load StatePerson entity' >>
-                  beam.ParDo(pipeline.ExtractPerson())
-                  )
+            test_pipeline = TestPipeline()
 
-        assert_that(output, equal_to([]))
+            _ = (test_pipeline
+                 | beam.Create([{}])
+                 | 'Load StatePerson entity' >>
+                 beam.ParDo(person_extractor.HydratePersonEntity())
+                 )
 
-        test_pipeline.run()
+            test_pipeline.run()
+
+        assert str(e.value) == "No person_id on this person. " \
+                               "[while running 'Load StatePerson entity']"
 
     def testExtractPerson_NoPersonID(self):
         """Tests the extraction of a StatePerson entity when there is no
         person_id given."""
 
-        fake_person = StatePerson.new_with_defaults(
-            current_address='123 Street',
-            full_name='Jack Smith', birthdate=date(1970, 1, 1),
-            gender=Gender.MALE,
-            residency_status=ResidencyStatus.PERMANENT, aliases=[])
+        # TODO(1852): Build entities as schema objects once the schema changes
+        #  have landed.
 
-        test_pipeline = TestPipeline()
+        with pytest.raises(ValueError) as e:
 
-        output = (test_pipeline
-                  | beam.Create([
-                      NormalizeEntityDict.normalize(fake_person.__dict__)])
-                  | 'Load StatePerson entity' >>
-                  beam.ParDo(pipeline.ExtractPerson())
-                  )
+            fake_person = StatePerson.new_with_defaults(
+                current_address='123 Street',
+                full_name='Jack Smith', birthdate=date(1970, 1, 1),
+                gender=Gender.MALE,
+                residency_status=ResidencyStatus.PERMANENT, aliases=[])
 
-        assert_that(output, equal_to([]))
+            test_pipeline = TestPipeline()
 
-        test_pipeline.run()
+            _ = (test_pipeline
+                 | beam.Create([
+                     NormalizeEntityDict.normalize(fake_person.__dict__)])
+                 | 'Load StatePerson entity' >>
+                 beam.ParDo(person_extractor.HydratePersonEntity())
+                 )
+
+            test_pipeline.run()
+
+        assert str(e.value) == "No person_id on this person. " \
+                               "[while running 'Load StatePerson entity']"
 
 
 class TestExtractIncarcerationPeriod(unittest.TestCase):
@@ -477,6 +485,9 @@ class TestExtractIncarcerationPeriod(unittest.TestCase):
 
     def testExtractIncarcerationPeriod(self):
         """Tests the extraction of a valid StateIncarcerationPeriod entity."""
+
+        # TODO(1852): Build entities as schema objects once the schema changes
+        #  have landed.
 
         person_id = 6789
 
@@ -506,7 +517,8 @@ class TestExtractIncarcerationPeriod(unittest.TestCase):
                           fake_incarceration_period_dict)
                   ])
                   | 'Load StateIncarcerationPeriod entity' >>
-                  beam.ParDo(pipeline.ExtractIncarcerationPeriod())
+                  beam.ParDo(incarceration_period_extractor.
+                             HydrateIncarcerationPeriodEntity())
                   )
 
         assert_that(output,
@@ -516,60 +528,76 @@ class TestExtractIncarcerationPeriod(unittest.TestCase):
 
     def testExtractIncarcerationPeriod_NoStatePersonID(self):
         """Tests the extraction of a StateIncarcerationPeriod entity when
-        there is no state_person_id present."""
+        there is no person_id present."""
 
-        fake_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=12345,
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            admission_date=date(2001, 1, 1),
-            state_code='CA',
-            county_code='124',
-            facility='San Quentin',
-            facility_security_level=StateIncarcerationFacilitySecurityLevel.
-            MAXIMUM,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.
-            NEW_ADMISSION,
-            projected_release_reason=StateIncarcerationPeriodReleaseReason.
-            CONDITIONAL_RELEASE)
+        # TODO(1852): Build entities as schema objects once the schema changes
+        #  have landed.
 
-        test_pipeline = TestPipeline()
+        fake_incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=12345,
+                status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                admission_date=date(2001, 1, 1),
+                state_code='CA',
+                county_code='124',
+                facility='San Quentin',
+                facility_security_level=StateIncarcerationFacilitySecurityLevel.
+                MAXIMUM,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.
+                NEW_ADMISSION,
+                projected_release_reason=StateIncarcerationPeriodReleaseReason.
+                CONDITIONAL_RELEASE)
 
-        output = (test_pipeline
-                  | beam.Create([
-                      NormalizeEntityDict.normalize(
-                          fake_incarceration_period.__dict__)
-                  ])
-                  | 'Load StateIncarcerationPeriod entity' >>
-                  beam.ParDo(pipeline.ExtractIncarcerationPeriod())
-                  )
+        with pytest.raises(ValueError) as e:
 
-        assert_that(output, equal_to([]))
+            test_pipeline = TestPipeline()
 
-        test_pipeline.run()
+            _ = (test_pipeline
+                 | beam.Create([
+                     NormalizeEntityDict.normalize(
+                         fake_incarceration_period.__dict__)
+                 ])
+                 | 'Load StateIncarcerationPeriod entity' >>
+                 beam.ParDo(incarceration_period_extractor.
+                            HydrateIncarcerationPeriodEntity())
+                 )
+
+            test_pipeline.run()
+
+        assert str(e.value) == "No person_id associated with this " \
+                               "incarceration period. " \
+                               "[while running 'Load " \
+                               "StateIncarcerationPeriod entity']"
 
     def testExtractIncarcerationPeriod_EmptyDict(self):
         """Tests the extraction of a StateIncarcerationPeriod entity when the
         dictionary is empty."""
 
-        test_pipeline = TestPipeline()
-        output = (test_pipeline
-                  | beam.Create([{}])
-                  | 'Load StateIncarcerationPeriod entity' >>
-                  beam.ParDo(pipeline.ExtractIncarcerationPeriod())
-                  )
+        with pytest.raises(ValueError) as e:
 
-        assert_that(output, equal_to([]))
+            test_pipeline = TestPipeline()
+            _ = (test_pipeline
+                 | beam.Create([{}])
+                 | 'Load StateIncarcerationPeriod entity' >>
+                 beam.ParDo(incarceration_period_extractor.
+                            HydrateIncarcerationPeriodEntity())
+                 )
 
-        test_pipeline.run()
+            test_pipeline.run()
+
+        assert str(e.value) == "No person_id associated with this " \
+                               "incarceration period. " \
+                               "[while running 'Load " \
+                               "StateIncarcerationPeriod entity']"
 
 
-class TestFindRecidivism(unittest.TestCase):
-    """Tests the FindRecidivism DoFn in the pipeline."""
+class TestClassifyReleaseEvents(unittest.TestCase):
+    """Tests the ClassifyReleaseEvents DoFn in the pipeline."""
 
-    def testFindRecidivism(self):
-        """Tests the FindRecidivism DoFn when there are two instances of
-        recidivism."""
+    def testClassifyReleaseEvents(self):
+        """Tests the ClassifyReleaseEvents DoFn when there are two instances
+        of recidivism."""
 
         fake_person_id = 12345
 
@@ -602,14 +630,13 @@ class TestFindRecidivism(unittest.TestCase):
             state_code='TX',
             admission_date=date(2017, 1, 4))
 
-        person_incarceration_periods = {'person': fake_person,
+        person_incarceration_periods = {'person': [fake_person],
                                         'incarceration_periods': [
                                             initial_incarceration,
                                             first_reincarceration,
                                             subsequent_reincarceration]}
 
-        first_recidivism_event = RecidivismEvent(
-            recidivated=True,
+        first_recidivism_release_event = RecidivismReleaseEvent(
             original_admission_date=initial_incarceration.admission_date,
             release_date=initial_incarceration.release_date,
             release_facility=None,
@@ -617,8 +644,7 @@ class TestFindRecidivism(unittest.TestCase):
             reincarceration_facility=None,
             return_type=IncarcerationReturnType.RECONVICTION)
 
-        second_recidivism_event = RecidivismEvent(
-            recidivated=True,
+        second_recidivism_release_event = RecidivismReleaseEvent(
             original_admission_date=first_reincarceration.admission_date,
             release_date=first_reincarceration.release_date,
             release_facility=None,
@@ -627,20 +653,21 @@ class TestFindRecidivism(unittest.TestCase):
             return_type=IncarcerationReturnType.RECONVICTION)
 
         correct_output = [
-            (fake_person_id, {initial_incarceration.release_date.year:
-                                  [first_recidivism_event],
-                              first_reincarceration.release_date.year:
-                                  [second_recidivism_event]})]
+            (fake_person, {initial_incarceration.release_date.year:
+                           [first_recidivism_release_event],
+                           first_reincarceration.release_date.year:
+                           [second_recidivism_release_event]})]
 
-        find_recidivism_kwargs = {'include_revocation_returns': True}
+        find_recidivism_kwargs = {
+            'classify_revocation_return_as_recidivism': True}
 
         test_pipeline = TestPipeline()
 
         output = (test_pipeline
                   | beam.Create([(fake_person_id,
                                   person_incarceration_periods)])
-                  | 'Find Recidivism' >>
-                  beam.ParDo(pipeline.FindRecidivism(),
+                  | 'Identify Recidivism Events' >>
+                  beam.ParDo(pipeline.ClassifyReleaseEvents(),
                              **find_recidivism_kwargs)
                   )
 
@@ -648,9 +675,9 @@ class TestFindRecidivism(unittest.TestCase):
 
         test_pipeline.run()
 
-    def testFindRecidivism_NoRecidivism(self):
-        """Tests the FindRecidivism DoFn in the pipeline when there is no
-        instance of recidivism."""
+    def testClassifyReleaseEvents_NoRecidivism(self):
+        """Tests the ClassifyReleaseEvents DoFn in the pipeline when there
+        is no instance of recidivism."""
 
         fake_person_id = 12345
 
@@ -667,36 +694,37 @@ class TestFindRecidivism(unittest.TestCase):
             release_reason=StateIncarcerationPeriodReleaseReason.
             SENTENCE_SERVED)
 
-        person_incarceration_periods = {'person': fake_person,
+        person_incarceration_periods = {'person': [fake_person],
                                         'incarceration_periods':
                                             [only_incarceration]}
 
-        non_recidivism_event = RecidivismEvent.non_recidivism_event(
+        non_recidivism_release_event = NonRecidivismReleaseEvent(
             only_incarceration.admission_date, only_incarceration.release_date,
             only_incarceration.facility)
 
-        correct_output = [(fake_person_id,
+        correct_output = [(fake_person,
                            {only_incarceration.release_date.year:
-                            [non_recidivism_event]})]
+                            [non_recidivism_release_event]})]
 
-        find_recidivism_kwargs = {'include_revocation_returns': True}
+        find_recidivism_kwargs = {
+            'classify_revocation_return_as_recidivism': True}
 
         test_pipeline = TestPipeline()
 
         output = (test_pipeline
                   | beam.Create([(fake_person_id,
                                   person_incarceration_periods)])
-                  | 'Find Recidivism' >>
-                  beam.ParDo(pipeline.FindRecidivism(),
+                  | 'Identify Recidivism Events' >>
+                  beam.ParDo(pipeline.ClassifyReleaseEvents(),
                              **find_recidivism_kwargs))
 
         assert_that(output, equal_to(correct_output))
 
         test_pipeline.run()
 
-    def testFindRecidivism_NoIncarcerationPeriods(self):
-        """Tests the FindRecidivism DoFn in the pipeline when there are no
-        incarceration periods."""
+    def testClassifyReleaseEvents_NoIncarcerationPeriods(self):
+        """Tests the ClassifyReleaseEvents DoFn in the pipeline when there
+        are no incarceration periods."""
 
         fake_person_id = 12345
 
@@ -705,20 +733,21 @@ class TestFindRecidivism(unittest.TestCase):
             birthdate=date(1970, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)
 
-        person_incarceration_periods = {'person': fake_person,
+        person_incarceration_periods = {'person': [fake_person],
                                         'incarceration_periods': []}
 
-        correct_output = [(fake_person_id, {})]
+        correct_output = [(fake_person, {})]
 
-        find_recidivism_kwargs = {'include_revocation_returns': True}
+        find_recidivism_kwargs = {
+            'classify_revocation_return_as_recidivism': True}
 
         test_pipeline = TestPipeline()
 
         output = (test_pipeline
                   | beam.Create([(fake_person_id,
                                   person_incarceration_periods)])
-                  | 'Find Recidivism' >>
-                  beam.ParDo(pipeline.FindRecidivism(),
+                  | 'Identify Recidivism Events' >>
+                  beam.ParDo(pipeline.ClassifyReleaseEvents(),
                              **find_recidivism_kwargs)
                   )
 
@@ -726,9 +755,9 @@ class TestFindRecidivism(unittest.TestCase):
 
         test_pipeline.run()
 
-    def testFindRecidivism_TwoReleasesSameYear(self):
-        """Tests the FindRecidivism DoFn in the pipeline when a person is
-        released twice in the same calendar year."""
+    def testClassifyReleaseEvents_TwoReleasesSameYear(self):
+        """Tests the ClassifyReleaseEvents DoFn in the pipeline when a person
+        is released twice in the same calendar year."""
 
         fake_person_id = 12345
 
@@ -761,14 +790,13 @@ class TestFindRecidivism(unittest.TestCase):
             state_code='TX',
             admission_date=date(2017, 1, 4))
 
-        person_incarceration_periods = {'person': fake_person,
+        person_incarceration_periods = {'person': [fake_person],
                                         'incarceration_periods': [
                                             initial_incarceration,
                                             first_reincarceration,
                                             subsequent_reincarceration]}
 
-        first_recidivism_event = RecidivismEvent(
-            recidivated=True,
+        first_recidivism_release_event = RecidivismReleaseEvent(
             original_admission_date=initial_incarceration.admission_date,
             release_date=initial_incarceration.release_date,
             release_facility=None,
@@ -776,8 +804,7 @@ class TestFindRecidivism(unittest.TestCase):
             reincarceration_facility=None,
             return_type=IncarcerationReturnType.RECONVICTION)
 
-        second_recidivism_event = RecidivismEvent(
-            recidivated=True,
+        second_recidivism_release_event = RecidivismReleaseEvent(
             original_admission_date=first_reincarceration.admission_date,
             release_date=first_reincarceration.release_date,
             release_facility=None,
@@ -786,18 +813,99 @@ class TestFindRecidivism(unittest.TestCase):
             return_type=IncarcerationReturnType.RECONVICTION)
 
         correct_output = [
-            (fake_person_id, {initial_incarceration.release_date.year:
-                              [first_recidivism_event,
-                               second_recidivism_event]})]
+            (fake_person, {initial_incarceration.release_date.year:
+                           [first_recidivism_release_event,
+                            second_recidivism_release_event]})]
 
-        find_recidivism_kwargs = {'include_revocation_returns': True}
+        find_recidivism_kwargs = {
+            'classify_revocation_return_as_recidivism': True}
 
         test_pipeline = TestPipeline()
         output = (test_pipeline
                   | beam.Create([(fake_person_id,
                                   person_incarceration_periods)])
-                  | 'Find Recidivism' >>
-                  beam.ParDo(pipeline.FindRecidivism(),
+                  | 'Identify Recidivism Events' >>
+                  beam.ParDo(pipeline.ClassifyReleaseEvents(),
+                             **find_recidivism_kwargs)
+                  )
+
+        assert_that(output, equal_to(correct_output))
+
+        test_pipeline.run()
+
+    def testClassifyReleaseEvents_WrongOrder(self):
+        """Tests the ClassifyReleaseEvents DoFn when there are two instances
+        of recidivism."""
+
+        fake_person_id = 12345
+
+        fake_person = StatePerson.new_with_defaults(
+            person_id=fake_person_id, gender=Gender.MALE,
+            birthdate=date(1970, 1, 1),
+            residency_status=ResidencyStatus.PERMANENT)
+
+        initial_incarceration = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='TX',
+            admission_date=date(2008, 11, 20),
+            release_date=date(2010, 12, 4),
+            release_reason=StateIncarcerationPeriodReleaseReason.
+            SENTENCE_SERVED)
+
+        first_reincarceration = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=2222,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='TX',
+            admission_date=date(2011, 4, 5),
+            release_date=date(2014, 4, 14),
+            release_reason=StateIncarcerationPeriodReleaseReason.
+            SENTENCE_SERVED)
+
+        subsequent_reincarceration = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=3333,
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            state_code='TX',
+            admission_date=date(2017, 1, 4))
+
+        person_incarceration_periods = {'person': [fake_person],
+                                        'incarceration_periods': [
+                                            subsequent_reincarceration,
+                                            initial_incarceration,
+                                            first_reincarceration]}
+
+        first_recidivism_release_event = RecidivismReleaseEvent(
+            original_admission_date=initial_incarceration.admission_date,
+            release_date=initial_incarceration.release_date,
+            release_facility=None,
+            reincarceration_date=first_reincarceration.admission_date,
+            reincarceration_facility=None,
+            return_type=IncarcerationReturnType.RECONVICTION)
+
+        second_recidivism_release_event = RecidivismReleaseEvent(
+            original_admission_date=first_reincarceration.admission_date,
+            release_date=first_reincarceration.release_date,
+            release_facility=None,
+            reincarceration_date=subsequent_reincarceration.admission_date,
+            reincarceration_facility=None,
+            return_type=IncarcerationReturnType.RECONVICTION)
+
+        correct_output = [
+            (fake_person, {initial_incarceration.release_date.year:
+                           [first_recidivism_release_event],
+                           first_reincarceration.release_date.year:
+                           [second_recidivism_release_event]})]
+
+        find_recidivism_kwargs = {
+            'classify_revocation_return_as_recidivism': True}
+
+        test_pipeline = TestPipeline()
+
+        output = (test_pipeline
+                  | beam.Create([(fake_person_id,
+                                  person_incarceration_periods)])
+                  | 'Identify Recidivism Events' >>
+                  beam.ParDo(pipeline.ClassifyReleaseEvents(),
                              **find_recidivism_kwargs)
                   )
 
@@ -806,11 +914,13 @@ class TestFindRecidivism(unittest.TestCase):
         test_pipeline.run()
 
 
-class TestMapMetricCombination(unittest.TestCase):
-    """Tests for the MapMetricCombinations DoFn in the pipeline."""
+class TestCalculateRecidivismMetricCombinations(unittest.TestCase):
+    """Tests for the CalculateRecidivismMetricCombinations DoFn in the
+    pipeline."""
 
-    def testMapMetricCombinations(self):
-        """Tests the MapMetricCombinations DoFn in the pipeline."""
+    def testCalculateRecidivismMetricCombinations(self):
+        """Tests the CalculateRecidivismMetricCombinations DoFn in the
+        pipeline."""
 
         fake_person_id = 12345
 
@@ -818,31 +928,29 @@ class TestMapMetricCombination(unittest.TestCase):
             person_id=fake_person_id, gender=Gender.MALE,
             residency_status=ResidencyStatus.PERMANENT)
 
-        first_recidivism_event = RecidivismEvent(
-            recidivated=True, original_admission_date=date(2008, 11, 20),
+        first_recidivism_release_event = RecidivismReleaseEvent(
+            original_admission_date=date(2008, 11, 20),
             release_date=date(2010, 12, 4), release_facility=None,
             reincarceration_date=date(2011, 4, 5),
             reincarceration_facility=None, return_type=IncarcerationReturnType.
             RECONVICTION)
 
-        second_recidivism_event = RecidivismEvent(
-            recidivated=True, original_admission_date=date(2011, 4, 5),
+        second_recidivism_release_event = RecidivismReleaseEvent(
+            original_admission_date=date(2011, 4, 5),
             release_date=date(2014, 4, 14), release_facility=None,
             reincarceration_date=date(2017, 1, 4),
             reincarceration_facility=None, return_type=IncarcerationReturnType.
             RECONVICTION)
 
         person_events = [
-            (fake_person_id,
-             {'person': [fake_person], 'recidivism_events': [
-                 {first_recidivism_event.release_date.year:
-                  [first_recidivism_event],
-                  second_recidivism_event.release_date.year:
-                      [second_recidivism_event]}]})]
+            (fake_person, {first_recidivism_release_event.release_date.year:
+                           [first_recidivism_release_event],
+                           second_recidivism_release_event.release_date.year:
+                               [second_recidivism_release_event]})]
 
         # Get the number of combinations of person-event characteristics.
         num_combinations = len(calculator.characteristic_combinations(
-            fake_person, first_recidivism_event))
+            fake_person, first_recidivism_release_event))
         assert num_combinations > 0
 
         # We do not track metrics for periods that start after today, so we
@@ -867,8 +975,8 @@ class TestMapMetricCombination(unittest.TestCase):
 
         output = (test_pipeline
                   | beam.Create(person_events)
-                  | 'Map Metric Combinations' >>
-                  beam.ParDo(pipeline.MapMetricCombinations())
+                  | 'Calculate Metric Combinations' >>
+                  beam.ParDo(pipeline.CalculateRecidivismMetricCombinations())
                   )
 
         assert_that(output, AssertMatchers.
@@ -876,9 +984,9 @@ class TestMapMetricCombination(unittest.TestCase):
 
         test_pipeline.run()
 
-    def testMapMetricCombinations_NoResults(self):
-        """Tests the MapMetricCombinations DoFn in the pipeline when there
-        are no RecidivismEvents associated with the StatePerson."""
+    def testCalculateRecidivismMetricCombinations_NoResults(self):
+        """Tests the CalculateRecidivismMetricCombinations DoFn in the pipeline
+        when there are no ReleaseEvents associated with the StatePerson."""
 
         fake_person_id = 12345
 
@@ -886,36 +994,32 @@ class TestMapMetricCombination(unittest.TestCase):
             person_id=fake_person_id, gender=Gender.MALE,
             residency_status=ResidencyStatus.PERMANENT)
 
-        person_events = [(fake_person_id,
-                          {'person': [fake_person], 'recidivism_events':[]})]
+        person_events = [(fake_person, {})]
 
         test_pipeline = TestPipeline()
 
         output = (test_pipeline
                   | beam.Create(person_events)
-                  | 'Map Metric Combinations' >>
-                  beam.ParDo(pipeline.MapMetricCombinations())
+                  | 'Calculate Metric Combinations' >>
+                  beam.ParDo(pipeline.CalculateRecidivismMetricCombinations())
                   )
 
         assert_that(output, equal_to([]))
 
         test_pipeline.run()
 
-    def testMapMetricCombinations_NoPersonEvents(self):
-        """Tests the MapMetricCombinations DoFn in the pipeline when there
-        are no RecidivismEvents associated with the StatePerson."""
+    def testCalculateRecidivismMetricCombinations_NoPersonEvents(self):
+        """Tests the CalculateRecidivismMetricCombinations DoFn in the pipeline
+        when there is no StatePerson and no ReleaseEvents."""
 
-        fake_person_id = 12345
-
-        person_events = [(fake_person_id,
-                          {'person': [], 'recidivism_events':[]})]
+        person_events = []
 
         test_pipeline = TestPipeline()
 
         output = (test_pipeline
                   | beam.Create(person_events)
-                  | 'Map Metric Combinations' >>
-                  beam.ParDo(pipeline.MapMetricCombinations())
+                  | 'Calculate Metric Combinations' >>
+                  beam.ParDo(pipeline.CalculateRecidivismMetricCombinations())
                   )
 
         assert_that(output, equal_to([]))
@@ -930,7 +1034,8 @@ class TestProduceRecidivismMetric(unittest.TestCase):
         """Tests the ProduceRecidivismMetric DoFn in the pipeline."""
 
         metric_key = {'stay_length': '36-48', 'gender': Gender.MALE,
-                      'release_cohort': 2014, 'methodology': Methodology.PERSON,
+                      'release_cohort': 2014,
+                      'methodology': RecidivismMethodologyType.PERSON,
                       'follow_up_period': 1}
 
         group = [1, 0, 1, 0, 0, 0, 1, 1, 1, 1]
@@ -954,7 +1059,8 @@ class TestProduceRecidivismMetric(unittest.TestCase):
         recidivism rate for the metric is 0.0."""
 
         metric_key = {'stay_length': '36-48', 'gender': Gender.MALE,
-                      'release_cohort': 2014, 'methodology': Methodology.PERSON,
+                      'release_cohort': 2014,
+                      'methodology': RecidivismMethodologyType.PERSON,
                       'follow_up_period': 1}
 
         group = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
@@ -980,23 +1086,25 @@ class TestProduceRecidivismMetric(unittest.TestCase):
         This should not happen in the pipeline, but we test against it
         anyways."""
 
-        metric_key = {'stay_length': '36-48', 'gender': Gender.MALE,
-                      'release_cohort': 2014, 'methodology': Methodology.PERSON,
-                      'follow_up_period': 1}
+        with pytest.raises(ValueError) as e:
+            metric_key = {'stay_length': '36-48', 'gender': Gender.MALE,
+                          'release_cohort': 2014,
+                          'methodology': RecidivismMethodologyType.PERSON,
+                          'follow_up_period': 1}
 
-        group = []
+            group = []
 
-        test_pipeline = TestPipeline()
+            test_pipeline = TestPipeline()
 
-        output = (test_pipeline
-                  | beam.Create([(metric_key, group)])
-                  | 'Produce Recidivism Metric' >>
-                  beam.ParDo(pipeline.ProduceRecidivismMetric())
-                  )
+            _ = (test_pipeline
+                 | beam.Create([(metric_key, group)])
+                 | 'Produce Recidivism Metric' >>
+                 beam.ParDo(pipeline.ProduceRecidivismMetric())
+                 )
 
-        assert_that(output, equal_to([]))
-
-        test_pipeline.run()
+            test_pipeline.run()
+        assert str(e.value) == "The release_group is empty. " \
+                               "[while running 'Produce Recidivism Metric']"
 
     def testProduceRecidivismMetric_EmptyMetric(self):
         """Tests the ProduceRecivismMetric DoFn in the pipeline when there is
@@ -1005,21 +1113,25 @@ class TestProduceRecidivismMetric(unittest.TestCase):
         This should not happen in the pipeline, but we test against it
         anyways."""
 
-        metric_key = {}
+        with pytest.raises(ValueError) as e:
 
-        group = [0, 0, 0, 1, 0, 0, 0, 0, 1, 0]
+            metric_key = {}
 
-        test_pipeline = TestPipeline()
+            group = [0, 0, 0, 1, 0, 0, 0, 0, 1, 0]
 
-        output = (test_pipeline
-                  | beam.Create([(metric_key, group)])
-                  | 'Produce Recidivism Metric' >>
-                  beam.ParDo(pipeline.ProduceRecidivismMetric())
-                  )
+            test_pipeline = TestPipeline()
 
-        assert_that(output, equal_to([]))
+            output = (test_pipeline
+                      | beam.Create([(metric_key, group)])
+                      | 'Produce Recidivism Metric' >>
+                      beam.ParDo(pipeline.ProduceRecidivismMetric())
+                      )
 
-        test_pipeline.run()
+            assert_that(output, equal_to([]))
+
+            test_pipeline.run()
+        assert str(e.value) == "The metric_key is empty. " \
+                               "[while running 'Produce Recidivism Metric']"
 
 
 class TestFilterMetrics(unittest.TestCase):
@@ -1031,12 +1143,13 @@ class TestFilterMetrics(unittest.TestCase):
 
         dimensions_to_filter = ['age_bucket', 'race', 'release_facility',
                                 'gender', 'stay_length_bucket']
-        methodology = Methodology.BOTH
+        methodologies = [RecidivismMethodologyType.EVENT,
+                         RecidivismMethodologyType.PERSON]
         release_count_min = 0
 
         filter_metrics_kwargs = {
             'dimensions_to_filter_out': dimensions_to_filter,
-            'methodology': methodology,
+            'methodologies': methodologies,
             'release_count_min': release_count_min}
 
         test_pipeline = TestPipeline()
@@ -1060,12 +1173,13 @@ class TestFilterMetrics(unittest.TestCase):
 
         dimensions_to_filter = ['gender', 'race', 'release_facility',
                                 'stay_length_bucket']
-        methodology = Methodology.BOTH
+        methodologies = [RecidivismMethodologyType.EVENT,
+                         RecidivismMethodologyType.PERSON]
         release_count_min = 0
 
         filter_metrics_kwargs = {
             'dimensions_to_filter_out': dimensions_to_filter,
-            'methodology': methodology,
+            'methodologies': methodologies,
             'release_count_min': release_count_min}
 
         test_pipeline = TestPipeline()
@@ -1089,12 +1203,13 @@ class TestFilterMetrics(unittest.TestCase):
 
         dimensions_to_filter = ['age_bucket', 'race', 'release_facility',
                                 'stay_length_bucket']
-        methodology = Methodology.BOTH
+        methodologies = [RecidivismMethodologyType.EVENT,
+                         RecidivismMethodologyType.PERSON]
         release_count_min = 0
 
         filter_metrics_kwargs = {
             'dimensions_to_filter_out': dimensions_to_filter,
-            'methodology': methodology,
+            'methodologies': methodologies,
             'release_count_min': release_count_min}
 
         test_pipeline = TestPipeline()
@@ -1120,12 +1235,13 @@ class TestFilterMetrics(unittest.TestCase):
 
         dimensions_to_filter = ['age_bucket', 'gender', 'race',
                                 'stay_length_bucket']
-        methodology = Methodology.BOTH
+        methodologies = [RecidivismMethodologyType.EVENT,
+                         RecidivismMethodologyType.PERSON]
         release_count_min = 0
 
         filter_metrics_kwargs = {
             'dimensions_to_filter_out': dimensions_to_filter,
-            'methodology': methodology,
+            'methodologies': methodologies,
             'release_count_min': release_count_min}
 
         test_pipeline = TestPipeline()
@@ -1149,12 +1265,13 @@ class TestFilterMetrics(unittest.TestCase):
 
         dimensions_to_filter = ['age_bucket', 'gender', 'race',
                                 'release_facility']
-        methodology = Methodology.BOTH
+        methodologies = [RecidivismMethodologyType.EVENT,
+                         RecidivismMethodologyType.PERSON]
         release_count_min = 0
 
         filter_metrics_kwargs = {
             'dimensions_to_filter_out': dimensions_to_filter,
-            'methodology': methodology,
+            'methodologies': methodologies,
             'release_count_min': release_count_min}
 
         test_pipeline = TestPipeline()
@@ -1179,12 +1296,13 @@ class TestFilterMetrics(unittest.TestCase):
 
         dimensions_to_filter = ['age_bucket', 'race',
                                 'release_facility']
-        methodology = Methodology.BOTH
+        methodologies = [RecidivismMethodologyType.EVENT,
+                         RecidivismMethodologyType.PERSON]
         release_count_min = 0
 
         filter_metrics_kwargs = {
             'dimensions_to_filter_out': dimensions_to_filter,
-            'methodology': methodology,
+            'methodologies': methodologies,
             'release_count_min': release_count_min}
 
         test_pipeline = TestPipeline()
@@ -1221,30 +1339,31 @@ class MetricGroup:
     dimension filtering."""
     recidivism_metric_with_age = RecidivismMetric(
         execution_id=12345, release_cohort=2015, follow_up_period=1,
-        methodology=Methodology.PERSON, age_bucket='25-29', total_releases=1000,
-        total_returns=900, recidivism_rate=0.9)
+        methodology=RecidivismMethodologyType.PERSON, age_bucket='25-29',
+        total_releases=1000, recidivated_releases=900, recidivism_rate=0.9)
 
     # TODO(1781): Add metricS with races and ethnicities
 
     recidivism_metric_with_gender = RecidivismMetric(
         execution_id=12345, release_cohort=2015, follow_up_period=1,
-        methodology=Methodology.PERSON, gender=Gender.MALE, total_releases=1000,
-        total_returns=875, recidivism_rate=0.875)
+        methodology=RecidivismMethodologyType.PERSON, gender=Gender.MALE,
+        total_releases=1000, recidivated_releases=875, recidivism_rate=0.875)
 
     recidivism_metric_with_release_facility = RecidivismMetric(
         execution_id=12345, release_cohort=2015, follow_up_period=1,
-        methodology=Methodology.PERSON, release_facility='Red',
-        total_releases=1000, total_returns=300, recidivism_rate=0.30)
+        methodology=RecidivismMethodologyType.PERSON, release_facility='Red',
+        total_releases=1000, recidivated_releases=300, recidivism_rate=0.30)
 
     recidivism_metric_with_stay_length = RecidivismMetric(
         execution_id=12345, release_cohort=2015, follow_up_period=1,
-        methodology=Methodology.PERSON, stay_length_bucket='12-24',
-        total_releases=1000, total_returns=300, recidivism_rate=0.30)
+        methodology=RecidivismMethodologyType.PERSON,
+        stay_length_bucket='12-24', total_releases=1000,
+        recidivated_releases=300, recidivism_rate=0.30)
 
     recidivism_metric_without_dimensions = RecidivismMetric(
         execution_id=12345, release_cohort=2015,
-        follow_up_period=1, methodology=Methodology.PERSON, total_releases=1500,
-        total_returns=1200, recidivism_rate=0.80)
+        follow_up_period=1, methodology=RecidivismMethodologyType.PERSON,
+        total_releases=1500, recidivated_releases=1200, recidivism_rate=0.80)
 
     @staticmethod
     def get_list():

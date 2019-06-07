@@ -18,25 +18,37 @@
 """Recidivism metrics we calculate."""
 
 from datetime import date
+from enum import Enum, auto
+from typing import Any, Dict, List, Optional
 
-from recidiviz.calculator.recidivism.recidivism_event import \
+import attr
+
+from recidiviz.calculator.recidivism.release_event import \
     IncarcerationReturnType
-from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
+from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.common.constants.person_characteristics import Gender, Race
 
 
-class Methodology(EntityEnum, metaclass=EntityEnumMeta):
+class RecidivismMethodologyType(Enum):
+    """Methods for counting recidivism.
 
-    BOTH = 'BOTH'
-    EVENT = 'EVENT'
-    PERSON = 'PERSON'
+     Event-Based: a method for measuring recidivism wherein the event, such as
+        release from a facility, is the unit of analysis. That is, if Allison
+        is released from and returned to a facility twice in a given window,
+        then that counts as two separate instances of recidivism for
+        measurement, even though it includes only a single individual.
+     Person-based: a method for measuring recidivism wherein the person is the
+        unit of analysis. That is, if Allison is released from and returned to
+        a facility twice in a given window, then that counts as only one
+        instance of recidivism for measurement.
+     """
 
-    @staticmethod
-    def _get_default_map():
-        return _METHODOLOGY_MAP
+    EVENT = auto()
+    PERSON = auto()
 
 
-class RecidivismMetric:
+@attr.s
+class RecidivismMetric(BuildableAttr):
     """Models a single recidivism metric.
 
     A recidivism metric contains a recidivism rate, including the numerator of
@@ -44,102 +56,118 @@ class RecidivismMetric:
     release from incarceration. It also contains all of the identifying
     characteristics of the metric, including required characteristics for
     normalization as well as optional characteristics for slicing the data.
-
-    Attributes:
-        execution_id: the string id of the calculation pipeline that produced
-            this metric. Required.
-        release_cohort: the integer year during which the person was released.
-            Required.
-        follow_up_period: the integer number of years after date of release
-            during which recidivism was measured, e.g. the recidivism rate
-            within 5 years of release. Required.
-        methodology: Methodology enum for the calculation for the metric,
-            i.e. Methodology.EVENT or Methodology.PERSON. Required.
-        age_bucket: the age bucket string of the person the metric describes,
-            e.g. '<25' or '35-39'.
-        stay_length_bucket: the bucket string of the person's incarceration stay
-            length (in months), e.g., '<12' or '36-48'.
-        race: the race of the person the metric describes.
-        gender: the gender of the person the metric describes.
-        release_facility: the facility the person was released from prior to
-            recidivating.
-        # TODO(1809): Handle all potential recidivism types
-        return_type: IncarcerationReturnType enum indicating whether the person
-             returned to incarceration because of a revocation of supervision or
-             because of a reconviction.
-        total_releases: the integer number of releases from incarceration that
-            the characteristics in this metric describe.
-        total_returns: the total number of releases from incarceration that
-            led to recidivism that the characteristics in this metric describe.
-            This is a float because the PERSON methodology calculates a
-            weighted recidivism number based on total recidivating instances
-            for the person.
-        recidivism_rate: the float rate of recidivism for the releases that the
-            characteristics in this metric describe.
-        created_on: a date for when this metric was created.
-        updated_on: a date for when this metric was last updated.
-
     """
 
-    def __init__(self, execution_id: int = None, release_cohort: int = None,
-                 follow_up_period: int = None,
-                 methodology: Methodology = None, total_releases: int = None,
-                 total_returns: float = None,
-                 recidivism_rate: float = None, age_bucket: str = None,
-                 stay_length_bucket: str = None,
-                 race: Race = None, gender: Gender = None,
-                 release_facility: str = None,
-                 return_type: IncarcerationReturnType = None,
-                 created_on: date = None,
-                 updated_on: date = None):
+    # Required characteristics
 
-        # Id of the calculation pipeline that created this metric
-        self.execution_id = execution_id
+    # The string id of the calculation pipeline that produced this metric.
+    execution_id: int = attr.ib()  # non-nullable
 
-        # Required characteristics
-        self.release_cohort = release_cohort
-        self.follow_up_period = follow_up_period
-        self.return_type = return_type
-        self.methodology = methodology
+    # The integer year during which the person was released
+    release_cohort: int = attr.ib()  # non-nullable
 
-        # Required Metric values
-        self.total_releases = total_releases
-        self.total_returns = total_returns
-        self.recidivism_rate = recidivism_rate
+    # The integer number of years after date of release during which
+    # recidivism was measured
+    follow_up_period: int = attr.ib()  # non-nullable
 
-        # Optional characteristics
-        self.age_bucket = age_bucket
-        self.stay_length_bucket = stay_length_bucket
-        self.race = race
-        self.gender = gender
-        self.release_facility = release_facility
+    # RecidivismMethodologyType enum for the calculation of the metric
+    methodology: RecidivismMethodologyType = attr.ib()  # non-nullable
 
-        # Record keeping fields
-        self.created_on = created_on
-        self.updated_on = updated_on
+    # Required metric values
 
-    def __eq__(self, other):
-        if other is None:
-            return False
-        return self.__dict__ == other.__dict__
+    # The integer number of releases from incarceration that the
+    # characteristics in this metric describe
+    total_releases: int = attr.ib()  # non-nullable
 
-    def __str__(self):
-        return to_string(self)
+    # The total number of releases from incarceration that led to recidivism
+    # that the characteristics in this metric describe
+    recidivated_releases: float = attr.ib()  # non-nullable
 
+    # The float rate of recidivism for the releases that the characteristics in
+    # this metric describe
+    recidivism_rate: float = attr.ib()  # non-nullable
 
-def to_string(obj):
-    out = [obj.__class__.__name__ + ':']
-    for key, val in vars(obj).items():
-        if isinstance(val, list):
-            for index, elem in enumerate(val):
-                out += '{}[{}]: {}'.format(key, index, elem).split('\n')
-        elif val or val == 0:
-            out += '{}: {}'.format(key, val).split('\n')
-    return '\n   '.join(out)
+    # Optional characteristics
 
+    # The age bucket string of the persons the metric describes, e.g. '<25' or
+    # '35-39'
+    age_bucket: Optional[str] = attr.ib(default=None)
 
-_METHODOLOGY_MAP = {
-    'BOTH': Methodology.BOTH,
-    'EVENT': Methodology.EVENT,
-    'PERSON': Methodology.PERSON
-}
+    # The bucket string of the persons' incarceration stay length (in months),
+    # e.g., '<12' or '36-48'
+    stay_length_bucket: Optional[str] = attr.ib(default=None)
+
+    # The race of the persons the metric describes
+    race: Optional[Race] = attr.ib(default=None)
+
+    # The gender of the persons the metric describes
+    gender: Optional[Gender] = attr.ib(default=None)
+
+    # The facility the persons were released from prior to recidivating
+    release_facility: Optional[str] = attr.ib(default=None)
+
+    # IncarcerationReturnType enum indicating whether the person returned to
+    # incarceration because of a revocation of supervision or because of a
+    # reconviction
+    # TODO(1809): Handle all potential recidivism types
+    return_type: IncarcerationReturnType = attr.ib(default=None)
+
+    # Record keeping fields
+
+    # A date for when this metric was created
+    created_on: Optional[date] = attr.ib(default=None)
+
+    # A date for when this metric was last updated
+    updated_on: Optional[date] = attr.ib(default=None)
+
+    @staticmethod
+    def build_from_metric_key_release_group(metric_key: Dict[str, Any],
+                                            release_group: List[int]) -> \
+            Optional['RecidivismMetric']:
+        """Builds a RecidivismMetric object from the given arguments.
+
+        Constructs a RecidivismMetric object from a dictionary containing all
+        required values and the corresponding group of ReleaseEvents, with 1s
+        representing RecidivismReleaseEvents, and 0s representing
+        NonRecidivismReleaseEvents.
+        """
+
+        if not metric_key:
+            raise ValueError("The metric_key is empty.")
+
+        recidivism_metric = RecidivismMetric.builder()
+
+        # Calculate number of releases and number resulting in recidivism
+        recidivism_metric.total_releases = len(list(release_group))
+        recidivism_metric.recidivated_releases = sum(release_group)
+
+        if recidivism_metric.total_releases == 0:
+            raise ValueError("The release_group is empty.")
+
+        # Calculate recidivism rate
+        recidivism_metric.recidivism_rate = \
+            ((recidivism_metric.recidivated_releases + 0.0) /
+             recidivism_metric.total_releases)
+
+        # TODO(1789): Implement pipeline execution_id
+        recidivism_metric.execution_id = 12345
+        recidivism_metric.release_cohort = metric_key.get('release_cohort')
+        recidivism_metric.follow_up_period = metric_key.get('follow_up_period')
+        recidivism_metric.methodology = metric_key.get('methodology')
+        recidivism_metric.created_on = date.today()
+
+        if 'age' in metric_key:
+            recidivism_metric.age_bucket = metric_key.get('age')
+        if 'race' in metric_key:
+            recidivism_metric.race = metric_key.get('race')
+        if 'gender' in metric_key:
+            recidivism_metric.gender = metric_key.get('gender')
+        if 'release_facility' in metric_key:
+            recidivism_metric.release_facility = \
+                metric_key.get('release_facility')
+        if 'stay_length' in metric_key:
+            recidivism_metric.stay_length_bucket = metric_key.get('stay_length')
+        if 'return_type' in metric_key:
+            recidivism_metric.return_type = metric_key.get('return_type')
+
+        return recidivism_metric.build()

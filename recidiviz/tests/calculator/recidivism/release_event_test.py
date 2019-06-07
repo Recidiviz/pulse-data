@@ -19,9 +19,8 @@
 
 
 from datetime import datetime
-from recidiviz.calculator.recidivism import recidivism_event
-from recidiviz.calculator.recidivism.recidivism_event import \
-    IncarcerationReturnType
+from recidiviz.calculator.recidivism.release_event import \
+    RecidivismReleaseEvent, NonRecidivismReleaseEvent, IncarcerationReturnType
 
 
 def test_recidivism_event():
@@ -32,11 +31,10 @@ def test_recidivism_event():
     reincarceration_facility = 'Hexagon Sun'
     return_type = IncarcerationReturnType.RECONVICTION
 
-    event = recidivism_event.RecidivismEvent.recidivism_event(
+    event = RecidivismReleaseEvent(
         original_admission_date, release_date, release_facility,
         reincarceration_date, reincarceration_facility, return_type)
 
-    assert event.recidivated
     assert original_admission_date == event.original_admission_date
     assert release_date == event.release_date
     assert release_facility == event.release_facility
@@ -53,11 +51,10 @@ def test_recidivism_event_parole_revocation():
     reincarceration_facility = 'Hexagon Sun'
     return_type = IncarcerationReturnType.PAROLE_REVOCATION
 
-    event = recidivism_event.RecidivismEvent.recidivism_event(
+    event = RecidivismReleaseEvent(
         original_admission_date, release_date, release_facility,
         reincarceration_date, reincarceration_facility, return_type)
 
-    assert event.recidivated
     assert original_admission_date == event.original_admission_date
     assert release_date == event.release_date
     assert release_facility == event.release_facility
@@ -74,11 +71,10 @@ def test_recidivism_event_probation_revocation():
     reincarceration_facility = 'Hexagon Sun'
     return_type = IncarcerationReturnType.PROBATION_REVOCATION
 
-    event = recidivism_event.RecidivismEvent.recidivism_event(
+    event = RecidivismReleaseEvent(
         original_admission_date, release_date, release_facility,
         reincarceration_date, reincarceration_facility, return_type)
 
-    assert event.recidivated
     assert original_admission_date == event.original_admission_date
     assert release_date == event.release_date
     assert release_facility == event.release_facility
@@ -92,16 +88,13 @@ def test_non_recidivism_event():
     release_date = datetime(2012, 6, 17)
     release_facility = 'Hexagon Sun'
 
-    event = recidivism_event.RecidivismEvent.non_recidivism_event(
-        original_admission_date, release_date, release_facility)
+    event = NonRecidivismReleaseEvent(original_admission_date,
+                                      release_date, release_facility)
 
-    assert not event.recidivated
     assert original_admission_date == event.original_admission_date
     assert release_date == event.release_date
     assert release_facility == event.release_facility
-    assert not event.reincarceration_date
-    assert not event.reincarceration_facility
-    assert not event.return_type
+    assert not isinstance(event, RecidivismReleaseEvent)
 
 
 def test_eq_different_field():
@@ -112,11 +105,11 @@ def test_eq_different_field():
     reincarceration_facility = 'Hexagon Sun'
     return_type = IncarcerationReturnType.RECONVICTION
 
-    first = recidivism_event.RecidivismEvent.recidivism_event(
+    first = RecidivismReleaseEvent(
         original_admission_date, release_date, release_facility,
         reincarceration_date, reincarceration_facility, return_type)
 
-    second = recidivism_event.RecidivismEvent.recidivism_event(
+    second = RecidivismReleaseEvent(
         original_admission_date, release_date, release_facility,
         reincarceration_date, 'A beautiful place out in the country',
         return_type)
@@ -132,11 +125,11 @@ def test_eq_different_events():
     reincarceration_facility = 'Hexagon Sun'
     return_type = IncarcerationReturnType.RECONVICTION
 
-    first = recidivism_event.RecidivismEvent.recidivism_event(
+    first = RecidivismReleaseEvent(
         original_admission_date, release_date, release_facility,
         reincarceration_date, reincarceration_facility, return_type)
 
-    second = recidivism_event.RecidivismEvent.non_recidivism_event(
+    second = NonRecidivismReleaseEvent(
         original_admission_date, release_date, release_facility)
 
     assert first != second
@@ -150,53 +143,10 @@ def test_eq_different_types():
     reincarceration_facility = 'Hexagon Sun'
     return_type = IncarcerationReturnType.RECONVICTION
 
-    event = recidivism_event.RecidivismEvent.recidivism_event(
+    event = RecidivismReleaseEvent(
         original_admission_date, release_date, release_facility,
         reincarceration_date, reincarceration_facility, return_type)
 
     different = "Everything you do is a balloon"
 
-    assert not event.__eq__(different)
-
-
-def test_repr_recidivism_event():
-    original_admission_date = datetime(2009, 6, 17)
-    release_date = datetime(2012, 6, 17)
-    release_facility = 'Hexagon Sun'
-    reincarceration_date = datetime(2014, 6, 17)
-    reincarceration_facility = 'Hexagon Sun'
-    return_type = IncarcerationReturnType.RECONVICTION
-
-    event = recidivism_event.RecidivismEvent.recidivism_event(
-        original_admission_date, release_date, release_facility,
-        reincarceration_date, reincarceration_facility, return_type)
-
-    representation = event.__repr__()
-
-    assert representation == "<RecidivismEvent recidivated: True, " \
-                             "original_admission_date: 2009-06-17 00:00:00, " \
-                             "release_date: 2012-06-17 00:00:00, " \
-                             "release_facility: Hexagon Sun, " \
-                             "reincarceration_date: 2014-06-17 00:00:00, " \
-                             "reincarceration_facility: Hexagon Sun, " \
-                             "return_type: IncarcerationReturnType." \
-                             "RECONVICTION>"
-
-
-def test_repr_non_recidivism_event():
-    original_admission_date = datetime(2009, 6, 17)
-    release_date = datetime(2012, 6, 17)
-    release_facility = 'Hexagon Sun'
-
-    event = recidivism_event.RecidivismEvent.non_recidivism_event(
-        original_admission_date, release_date, release_facility)
-
-    representation = event.__repr__()
-
-    assert representation == "<RecidivismEvent recidivated: False, " \
-                             "original_admission_date: 2009-06-17 00:00:00, " \
-                             "release_date: 2012-06-17 00:00:00, " \
-                             "release_facility: Hexagon Sun, " \
-                             "reincarceration_date: None, " \
-                             "reincarceration_facility: None, " \
-                             "return_type: None>"
+    assert event != different

@@ -15,10 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Calculates recidivism metrics from recidivism and non-recidivism events.
+"""Calculates recidivism metrics from release events.
 
 This contains the core logic for calculating recidivism metrics on a
-person-by-person basis. It transforms RecidivismEvents into recidivism metrics,
+person-by-person basis. It transforms ReleaseEvents into recidivism metrics,
 key-value pairs where the key represents all of the dimensions represented in
 the data point, and the value represents a recidivism value, e.g. 0 for no or 1
 for yes.
@@ -35,8 +35,9 @@ from typing import Any, Dict, List, Optional, Tuple
 from datetime import date
 from dateutil.relativedelta import relativedelta
 
-from recidiviz.calculator.recidivism import RecidivismEvent
-from recidiviz.calculator.recidivism.metrics import Methodology
+from recidiviz.calculator.recidivism.release_event import ReleaseEvent, \
+    RecidivismReleaseEvent, NonRecidivismReleaseEvent
+from recidiviz.calculator.recidivism.metrics import RecidivismMethodologyType
 from recidiviz.persistence.entity.state.entities import StatePerson
 
 
@@ -48,13 +49,12 @@ FOLLOW_UP_PERIODS = range(1, 11)
 
 
 def map_recidivism_combinations(person: StatePerson,
-                                recidivism_events:
-                                Dict[int, List[RecidivismEvent]]) \
+                                release_events:
+                                Dict[int, List[ReleaseEvent]]) \
         -> List[Tuple[Dict[str, Any], Any]]:
-    """Transforms the given RecidivismEvents and StatePerson details into unique
-    recidivism metric combinations to count.
+    """Transforms ReleaseEvents and a StatePerson into metric combinations.
 
-    Takes in a StatePerson and all of her RecidivismEvents and returns an array
+    Takes in a StatePerson and all of her ReleaseEvents and returns an array
     of "recidivism combinations". These are key-value pairs where the key
     represents a specific metric and the value represents whether or not
     recidivism occurred. If a metric does count towards recidivism, then the
@@ -73,35 +73,41 @@ def map_recidivism_combinations(person: StatePerson,
     Example output for a hispanic female age 27 who was released in 2008 and
     went back to prison in 2014:
     [
-      ({'methodology': Methodology.EVENT, 'release_cohort': 2008,
-        'follow_up_period': 5, 'gender': Gender.MALE, 'age': '25-29'}, 0),
-      ({'methodology': Methodology.PERSON', 'release_cohort': 2008,
-        'follow_up_period': 5, 'gender': Gender.MALE, 'age': '25-29'}, 0),
-      ({'methodology': Methodology.EVENT, 'release_cohort': 2008,
+      ({'methodology': RecidivismMethodologyType.EVENT, 'release_cohort': 2008,
+        'follow_up_period': 5, 'gender': Gender.FEMALE, 'age': '25-29'}, 0),
+      ({'methodology': RecidivismMethodologyType.PERSON',
+            'release_cohort': 2008, 'follow_up_period': 5,
+             'gender': Gender.FEMALE, 'age': '25-29'}, 0),
+      ({'methodology': RecidivismMethodologyType.EVENT, 'release_cohort': 2008,
         'follow_up_period': 6, 'gender': Gender.FEMALE, 'age': '25-29'}, 1),
-      ({'methodology': Methodology.EVENT, 'release_cohort': 2008,
+      ({'methodology': RecidivismMethodologyType.EVENT, 'release_cohort': 2008,
         'follow_up_period': 6, 'gender': Gender.FEMALE, 'race': 'hispanic'}, 1),
       ...
     ]
 
     Args:
         person: the StatePerson
-        recidivism_events: A dictionary mapping release cohorts to a list of
-            RecidivismEvents for the given StatePerson.
+        release_events: A dictionary mapping release cohorts to a list of
+            ReleaseEvents for the given StatePerson.
 
     Returns:
         A list of key-value tuples representing specific metric combinations and
         the recidivism value corresponding to that metric.
     """
     metrics = []
-    all_reincarceration_dates = reincarceration_dates(recidivism_events)
+    all_reincarceration_dates = reincarceration_dates(release_events)
 
-    for release_cohort, events in recidivism_events.items():
+    for release_cohort, events in release_events.items():
         for event in events:
             characteristic_combos = characteristic_combinations(person, event)
 
-            earliest_recidivism_period = earliest_recidivated_follow_up_period(
-                event.release_date, event.reincarceration_date)
+            if isinstance(event, RecidivismReleaseEvent):
+                earliest_recidivism_period = \
+                    earliest_recidivated_follow_up_period(
+                        event.release_date,
+                        event.reincarceration_date)
+            else:
+                earliest_recidivism_period = None
 
             relevant_periods = relevant_follow_up_periods(
                 event.release_date, date.today(), FOLLOW_UP_PERIODS)
@@ -116,26 +122,27 @@ def map_recidivism_combinations(person: StatePerson,
     return metrics
 
 
-def reincarceration_dates(recidivism_events: Dict[int, List[RecidivismEvent]]) \
+def reincarceration_dates(release_events: Dict[int, List[ReleaseEvent]]) \
         -> List[date]:
-    """The dates of reincarceration within the given RecidivismEvents.
+    """Finds the dates of reincarceration within the given ReleaseEvents.
 
     Returns the list of reincarceration dates extracted from the given array of
-    RecidivismEvents. If one of the given events is not an instance of
-    recidivism, i.e. has no reincarceration date, then it is not represented in
-    the output.
+    ReleaseEvents. If one of the given events is not an instance of
+    recidivism, i.e. it is not a RecidivismReleaseEvent, then it is not
+    represented in the output.
 
     Args:
-        recidivism_events: the list of RecidivismEvents.
+        release_events: the list of ReleaseEvents.
 
     Returns:
         A list of reincarceration dates, in the order in which they appear in
         the given list of objects.
     """
     dates = []
-    for _cohort, events in recidivism_events.items():
+    for _cohort, events in release_events.items():
         dates.extend([event.reincarceration_date for event in events
-                      if event.reincarceration_date])
+                      if isinstance(event, RecidivismReleaseEvent)])
+
     return dates
 
 
@@ -143,8 +150,7 @@ def count_reincarcerations_in_window(start_date: date,
                                      follow_up_period: int,
                                      all_reincarceration_dates: List[date]) \
         -> int:
-    """The number of the given reincarceration dates during the window from the
-    start date until the end of the follow-up period.
+    """Finds the number of reincarceration dates during the given window.
 
     Returns how many of the given reincarceration dates fall within the given
     follow-up period after the given start date, end point exclusive, including
@@ -176,7 +182,7 @@ def count_reincarcerations_in_window(start_date: date,
 def earliest_recidivated_follow_up_period(
         release_date: date,
         reincarceration_date: Optional[date]) -> Optional[int]:
-    """The earliest follow-up period under which recidivism has occurred.
+    """Finds the earliest follow-up period under which recidivism has occurred.
 
     For example, if someone was released from prison on March 14, 2005 and
     reincarcerated on April 23, 2008, then the earliest follow-up period is 4,
@@ -205,7 +211,7 @@ def earliest_recidivated_follow_up_period(
 
 def relevant_follow_up_periods(release_date: date, current_date: date,
                                follow_up_periods: range) -> List[int]:
-    """All of the given follow-up periods which are relevant to measurement.
+    """Finds the given follow-up periods which are relevant to measurement.
 
     Returns all of the given follow-up periods after the given release date
     which are either complete as the current_date, or still in progress as of
@@ -241,7 +247,7 @@ def relevant_follow_up_periods(release_date: date, current_date: date,
 
 
 def age_at_date(person: StatePerson, check_date: date) -> Optional[int]:
-    """The age of the StatePerson at the given date.
+    """Calculates the age of the StatePerson at the given date.
 
     Args:
         person: the StatePerson
@@ -258,7 +264,7 @@ def age_at_date(person: StatePerson, check_date: date) -> Optional[int]:
 
 
 def age_bucket(age: Optional[int]) -> Optional[str]:
-    """The age bucket that applies to measurement.
+    """Calculates the age bucket that applies to measurement.
 
     Age buckets for measurement: <25, 25-29, 30-34, 35-39, 40<
 
@@ -269,7 +275,6 @@ def age_bucket(age: Optional[int]) -> Optional[str]:
         A string representation of the age bucket for the person. None if the
             age is not known.
     """
-
     if age is None:
         return None
     if age < 25:
@@ -283,8 +288,8 @@ def age_bucket(age: Optional[int]) -> Optional[str]:
     return '40<'
 
 
-def stay_length_from_event(event: RecidivismEvent) -> Optional[int]:
-    """Length of facility stay of a given event in months.
+def stay_length_from_event(event: ReleaseEvent) -> Optional[int]:
+    """Calculates the length of facility stay of a given event in months.
 
     This is rounded down to the nearest month, so a stay from 2015-01-15 to
     2017-01-14 results in a stay length of 23 months. Note that bucketing in
@@ -293,7 +298,7 @@ def stay_length_from_event(event: RecidivismEvent) -> Optional[int]:
     would be 24 months and the bucket would be 24-36.
 
     Args:
-        event: the RecidivismEvent
+        event: the ReleaseEvent
 
     Returns:
         The length of the facility stay in months. None if the original
@@ -307,7 +312,7 @@ def stay_length_from_event(event: RecidivismEvent) -> Optional[int]:
 
 
 def stay_length_bucket(stay_length: Optional[int]) -> Optional[str]:
-    """The stay length bucket that applies to measurement.
+    """Calculates the stay length bucket that applies to measurement.
 
     Stay length buckets (upper bound exclusive) for measurement:
         <12, 12-24, 24-36, 36-48, 48-60, 60-72,
@@ -345,18 +350,17 @@ def stay_length_bucket(stay_length: Optional[int]) -> Optional[str]:
 
 
 def characteristic_combinations(person: StatePerson,
-                                event: RecidivismEvent) -> List[Dict[str, Any]]:
-    """The list of all combinations of the metric characteristics picked from
-    the given StatePerson and RecidivismEvent.
+                                event: ReleaseEvent) -> List[Dict[str, Any]]:
+    """Calculates all recidivism metric combinations.
 
     Returns the list of all combinations of the metric characteristics, of all
-    sizes. That is, this returns a list of dictionaries where each dictionary
-    is a combination of 0 to n unique elements of characteristics, where n is
-    the size of the given array.
+    sizes, given the StatePerson and ReleaseEvent. That is, this returns a list
+    of dictionaries where each dictionary is a combination of 0 to n unique
+    elements of characteristics, where n is the size of the given array.
 
     For each event, we need to calculate metrics across combinations of:
     Release Cohort; Follow-up Period (up to 10 years);
-    Methodology (Event-based, Person-based);
+    RecidivismMethodologyType (Event-based, Person-based);
     Demographics (age, race, gender); Location (facility, region);
     Facility Stay Breakdown (stay length); ...
     TODO: Add support for offense and sentencing type (Issues 33 and 32)
@@ -374,7 +378,7 @@ def characteristic_combinations(person: StatePerson,
 
     Args:
         person: the StatePerson we are picking characteristics from
-        event: the RecidivismEvent we are picking characteristics from
+        event: the ReleaseEvent we are picking characteristics from
 
     Returns:
         A list of dictionaries containing all unique combinations of
@@ -384,11 +388,8 @@ def characteristic_combinations(person: StatePerson,
     entry_age_bucket = age_bucket(entry_age)
     event_stay_length = stay_length_from_event(event)
     event_stay_length_bucket = stay_length_bucket(event_stay_length)
-    supervision_revocation_return = event.return_type
 
-    characteristics: Dict[str, Any] = {'stay_length': event_stay_length_bucket,
-                                       'return_type':
-                                           supervision_revocation_return}
+    characteristics: Dict[str, Any] = {'stay_length': event_stay_length_bucket}
 
     # TODO(1781) Handle multiple races and ethnicities
 
@@ -398,6 +399,9 @@ def characteristic_combinations(person: StatePerson,
         characteristics['gender'] = person.gender
     if event.release_facility is not None:
         characteristics['release_facility'] = event.release_facility
+    if isinstance(event, RecidivismReleaseEvent) \
+            and event.return_type is not None:
+        characteristics['return_type'] = event.return_type
 
     return for_characteristics(characteristics)
 
@@ -433,7 +437,7 @@ def for_characteristics(characteristics) -> List[Dict[str, Any]]:
     return combos
 
 
-def combination_metrics(combo: Dict[str, Any], event: RecidivismEvent,
+def combination_metrics(combo: Dict[str, Any], event: ReleaseEvent,
                         all_reincarceration_dates: List[date],
                         earliest_recidivism_period: Optional[int],
                         relevant_periods: List[int]) \
@@ -449,7 +453,7 @@ def combination_metrics(combo: Dict[str, Any], event: RecidivismEvent,
         combo: a characteristic combination to convert into metrics
         event: the recidivism event from which the combination was derived
         all_reincarceration_dates: all dates of reincarceration for the person's
-            RecidivismEvents
+            ReleaseEvents
         earliest_recidivism_period: the earliest follow-up period under which
             recidivism occurred
         relevant_periods: the list of periods relevant for measurement
@@ -461,16 +465,15 @@ def combination_metrics(combo: Dict[str, Any], event: RecidivismEvent,
     metrics = []
 
     for period in relevant_periods:
-        person_based_combo = augment_combination(combo,
-                                                 Methodology.PERSON,
-                                                 period)
-        event_based_combo = augment_combination(combo, Methodology.EVENT,
-                                                period)
+        person_based_combo = augment_combination(
+            combo, RecidivismMethodologyType.PERSON, period)
+        event_based_combo = augment_combination(
+            combo, RecidivismMethodologyType.EVENT, period)
 
         # If they didn't recidivate at all or not yet for this period
         # (or they didn't recidivate until 10 years had passed),
         # assign 0 for both event- and person-based measurement.
-        if not event.recidivated \
+        if isinstance(event, NonRecidivismReleaseEvent) \
                 or not earliest_recidivism_period \
                 or period < earliest_recidivism_period:
             metrics.append((person_based_combo, 0))
@@ -495,9 +498,9 @@ def combination_metrics(combo: Dict[str, Any], event: RecidivismEvent,
 
 
 def augment_combination(characteristic_combo: Dict[str, Any],
-                        methodology: Methodology,
+                        methodology: RecidivismMethodologyType,
                         period: int) -> Dict[str, Any]:
-    """A copy of the given combo with the given additional parameters added.
+    """Returns a copy of the combo with the additional parameters added.
 
     Creates a shallow copy of the given characteristic combination and sets the
     given methodology and follow-up period on the copy. This avoids updating the
@@ -505,14 +508,13 @@ def augment_combination(characteristic_combo: Dict[str, Any],
 
     Args:
         characteristic_combo: the combination to copy and augment
-        methodology: the methodology to set, i.e. Methodology.PERSON or
-            Methodology.EVENT
+        methodology: the methodology to set, i.e.
+            RecidivismMethodologyType.PERSON or RecidivismMethodologyType.EVENT
         period: the follow-up period to set
 
     Returns:
         The augmented characteristic combination, ready for tracking.
     """
-
     augmented_combo = characteristic_combo.copy()
     augmented_combo['methodology'] = methodology
     augmented_combo['follow_up_period'] = period

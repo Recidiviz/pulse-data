@@ -29,25 +29,25 @@ import logging
 from typing import Dict, List, Optional
 
 from collections import defaultdict
-from recidiviz.calculator.recidivism import RecidivismEvent
-from recidiviz.calculator.recidivism.recidivism_event import \
-    IncarcerationReturnType
+from recidiviz.calculator.recidivism.release_event import \
+    IncarcerationReturnType, ReleaseEvent, RecidivismReleaseEvent, \
+    NonRecidivismReleaseEvent
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus, StateIncarcerationPeriodReleaseReason, \
     StateIncarcerationPeriodAdmissionReason
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 
-def find_recidivism(incarceration_periods: List[StateIncarcerationPeriod],
-                    include_revocation_returns: bool = True) \
-        -> Dict[int, List[RecidivismEvent]]:
-    """Classifies all individual StateIncarcerationPeriods for the person as
-    either leading to recidivism or not.
+def find_release_events_by_cohort_year(
+        incarceration_periods: List[StateIncarcerationPeriod],
+        classify_revocation_return_as_recidivism: bool = True) \
+        -> Dict[int, List[ReleaseEvent]]:
+    """Finds instances of release and determines if they resulted in recidivism.
 
     Transforms each StateIncarcerationPeriod from which the person has been
     released into a mapping from its release cohort to the details of the event.
     The release cohort is an integer for the year, e.g. 2006. The event details
-    are a RecidivismEvent object, which represents events of both recidivism and
+    are a ReleaseEvent object, which can represent events of both recidivism and
     non-recidivism. That is, each StateIncarcerationPeriod is transformed into a
     recidivism event unless it is the most recent period of incarceration and
     they are still incarcerated, or it is connected to a subsequent
@@ -56,30 +56,31 @@ def find_recidivism(incarceration_periods: List[StateIncarcerationPeriod],
     Example output for someone who went to prison in 2006, was released in 2008,
     went back in 2010, was released in 2012, and never returned:
     {
-      2008: [RecidivismEvent(recidivated=True,
-                original_admission_date="2006-04-05", ...)],
-      2012: [RecidivismEvent(recidivated=False,
-                original_admission_date="2010-09-17", ...)]
+      2008: [RecidivismReleaseEvent(original_admission_date="2006-04-05", ...)],
+      2012: [NonRecidivismReleaseEvent(original_admission_date="2010-09-17",
+                ...)]
     }
 
     Args:
         incarceration_periods: list of StateIncarcerationPeriods for a person
-        include_revocation_returns: a boolean indicating whether or not
-                to include revocations of supervision in recidivism
-                calculations.
+        classify_revocation_return_as_recidivism: a boolean indicating whether
+            or not to classify revocations of supervision as instances of
+            recidivism.
 
     Returns:
-        A dictionary mapping release cohorts to a list of RecidivismEvents
+        A dictionary mapping release cohorts to a list of ReleaseEvents
             for the given person in that cohort.
     """
 
-    # If there is more than one StateIncarcerationPeriod, collapse the ones that
-    # are linked by transfer
+    # If there is more than one StateIncarcerationPeriod, sort them and then
+    # collapse the ones that are linked by transfer
     if incarceration_periods and len(incarceration_periods) > 1:
+        incarceration_periods.sort(key=lambda b: b.admission_date)
+
         incarceration_periods = \
             collapse_incarceration_periods(incarceration_periods)
 
-    recidivism_events: Dict[int, List[RecidivismEvent]] = defaultdict(list)
+    release_events: Dict[int, List[ReleaseEvent]] = defaultdict(list)
 
     for index, incarceration_period in enumerate(incarceration_periods):
         if incarceration_period.admission_date is None:
@@ -114,7 +115,7 @@ def find_recidivism(incarceration_periods: List[StateIncarcerationPeriod],
                                                   release_date,
                                                   release_facility)
             if event and release_cohort:
-                recidivism_events[release_cohort].append(event)
+                release_events[release_cohort].append(event)
         else:
             # If there is a StateIncarcerationPeriod after this one and
             # they have been released, then they recidivated.
@@ -122,20 +123,23 @@ def find_recidivism(incarceration_periods: List[StateIncarcerationPeriod],
             event = for_intermediate_incarceration_period(
                 incarceration_period, incarceration_periods[index + 1],
                 admission_date, release_date, release_facility,
-                include_revocation_returns)
+                classify_revocation_return_as_recidivism)
 
             if event and release_cohort:
-                recidivism_events[release_cohort].append(event)
+                release_events[release_cohort].append(event)
 
-    return recidivism_events
+    return release_events
 
 
 def collapse_incarceration_periods(incarceration_periods:
                                    List[StateIncarcerationPeriod]) -> \
         List[StateIncarcerationPeriod]:
     """Collapses any incarceration periods that are connected by transfers.
-    Only connects to periods if the release reason of the first is `TRANSFER`
-    and the admission reason for the second is also `TRANSFER`.
+
+    Loops through all of the StateIncarcerationPeriods and combines adjacent
+    periods that are connected by a transfer. Only connects two periods if the
+    release reason of the first is `TRANSFER` and the admission reason for the
+    second is also `TRANSFER`.
 
     Args:
         incarceration_periods: list of StateIncarcerationPeriods for a
@@ -187,8 +191,10 @@ def collapse_incarceration_periods(incarceration_periods:
 def combine_incarceration_periods(start: StateIncarcerationPeriod,
                                   end: StateIncarcerationPeriod) -> \
         StateIncarcerationPeriod:
-    """Combines two StateIncarcerationPeriods by setting the following fields on
-    the |start| StateIncarcerationPeriod to the values on the |end|
+    """Combines two StateIncarcerationPeriods.
+
+    Brings together two StateIncarcerationPeriods by setting the following
+    fields on the |start| StateIncarcerationPeriod to the values on the |end|
     StateIncarcerationPeriod:
 
         [status, release_date, facility, housing_unit, facility_security_level,
@@ -220,14 +226,15 @@ def combine_incarceration_periods(start: StateIncarcerationPeriod,
 def for_last_incarceration_period(
         incarceration_period: StateIncarcerationPeriod, admission_date: date,
         release_date: Optional[date],
-        release_facility: Optional[str]) -> Optional[RecidivismEvent]:
-    """Returns any non-recidivism event relevant to the person's last
+        release_facility: Optional[str]) -> Optional[ReleaseEvent]:
+    """Looks at the last StateIncarcerationPeriod for a non-recidivism event.
+
+    If the person has been released from their last StateIncarcerationPeriod,
+    there is an instance of non-recidivism to count. If they are still
+    incarcerated, or they were released because they died, there is nothing to
+    count. Returns any non-recidivism event relevant to the person's last
     StateIncarcerationPeriod.
 
-    If the person has been released from their last
-    StateIncarcerationPeriod, there is an instance of non-recidivism to
-    count. If they are still incarcerated, or they were released because
-    they died, there is nothing to count.
 
         Args:
             incarceration_period: a StateIncarcerationPeriod for some person
@@ -263,16 +270,15 @@ def for_last_incarceration_period(
 
     if not release_date:
         # If for some reason there is no release date, don't return a
-        # RecidivismEvent
+        # ReleaseEvent
         return None
 
     logging.debug('Person was released from last or only '
                   'incarceration period %s. No recidivism.',
                   incarceration_period.incarceration_period_id)
 
-    return RecidivismEvent.non_recidivism_event(admission_date,
-                                                release_date,
-                                                release_facility)
+    return NonRecidivismReleaseEvent(admission_date, release_date,
+                                     release_facility)
 
 
 def for_intermediate_incarceration_period(
@@ -280,12 +286,16 @@ def for_intermediate_incarceration_period(
         next_incarceration_period: StateIncarcerationPeriod,
         admission_date: Optional[date], release_date: Optional[date],
         release_facility: Optional[str],
-        include_revocation_returns: bool) -> Optional[RecidivismEvent]:
-    """Returns the RecidivismEvent relevant to the person's intermediate
-    (not last) StateIncarcerationPeriod.
+        classify_revocation_return_as_recidivism: bool) -> \
+        Optional[ReleaseEvent]:
+    """Returns the ReleaseEvent relevant to an intermediate
+    StateIncarcerationPeriod.
 
-    There is definitely an instance of recidivism to count if this is not the
-    person's last StateIncarcerationPeriod and they have been released.
+    If this is not the person's last StateIncarcerationPeriod and they have been
+    released, there is probably an instance of recidivism to count. There is not
+    an instance of recidivism if the person escaped or if the next period of
+    incarceration was due to a supervision revocation and the identifier has
+    been told not to classify revocation returns as recidivism.
 
     Args:
         incarceration_period: a StateIncarcerationPeriod for some person
@@ -295,12 +305,12 @@ def for_intermediate_incarceration_period(
         release_date: when they were released from this StateIncarcerationPeriod
         release_facility: the facility they were released from on this
             StateIncarcerationPeriod
-        include_revocation_returns: a boolean indicating whether or not
-            to include revocations of supervision in recidivism
-            calculations.
+        classify_revocation_return_as_recidivism: a boolean indicating whether
+            or not to classify revocations of supervision as instances of
+            recidivism.
 
     Returns:
-        A RecidivismEvent.
+        A ReleaseEvent.
     """
 
     # If the person escaped, do not include them in the recidivism calculations.
@@ -326,17 +336,17 @@ def for_intermediate_incarceration_period(
         return_type = IncarcerationReturnType.RECONVICTION
 
     if return_type != IncarcerationReturnType.RECONVICTION and not \
-            include_revocation_returns:
+            classify_revocation_return_as_recidivism:
         # If this return was due to a revocation of supervision, and
-        # supervision revocations should not be included in the calculations,
+        # supervision revocations should not be classified as recidivism,
         # then return None.
         return None
 
     if not admission_date or not release_date or not reincarceration_date:
-        # If any of these required RecidivismEvent fields are empty, return
+        # If any of these required ReleaseEvent fields are empty, return
         # None
         return None
 
-    return RecidivismEvent.recidivism_event(
-        admission_date, release_date, release_facility,
-        reincarceration_date, reincarceration_facility, return_type)
+    return RecidivismReleaseEvent(admission_date, release_date,
+                                  release_facility, reincarceration_date,
+                                  reincarceration_facility, return_type)
