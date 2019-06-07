@@ -22,7 +22,7 @@ usage: pipeline.py --output=OUTPUT_LOCATION --project=PROJECT
                     [--include_age] [--include_gender]
                     [--include_race] [--include_release_facility]
                     [--include_stay_length] [--release_count_min]
-                    [--include_revocation_returns]
+                    [--classify_revocation_return_as_recidivism]
 
 Example output to GCP storage bucket:
 python -m recidiviz.calculator.recidivism.pipeline
@@ -51,271 +51,147 @@ from __future__ import absolute_import
 import argparse
 import logging
 
-from datetime import date
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
+from more_itertools import one
 
 import apache_beam as beam
 from apache_beam.typehints import with_input_types, with_output_types
 
 from recidiviz.calculator.recidivism import identifier, calculator, \
-    RecidivismEvent, RecidivismMetric
-from recidiviz.calculator.recidivism.metrics import Methodology
-from recidiviz.common.constants.person_characteristics import Gender, \
-    ResidencyStatus
-from recidiviz.common.constants.state.state_incarceration import \
-    StateIncarcerationType
-from recidiviz.common.constants.state.state_incarceration_period import \
-    StateIncarcerationPeriodStatus, StateIncarcerationPeriodAdmissionReason, \
-    StateIncarcerationPeriodReleaseReason, \
-    StateIncarcerationFacilitySecurityLevel
-from recidiviz.persistence.entity.state.entities import StatePerson, \
-    StateIncarcerationPeriod
+    RecidivismMetric
+from recidiviz.calculator.recidivism.release_event import ReleaseEvent
+from recidiviz.calculator.recidivism.metrics import RecidivismMethodologyType
+from recidiviz.calculator.utils import person_extractor, \
+    incarceration_period_extractor
+from recidiviz.persistence.entity.state.entities import StatePerson
 
 
-@with_input_types(beam.typehints.Dict[Any, Any])
-@with_output_types(beam.typehints.Tuple[int, StatePerson])
-class ExtractPerson(beam.DoFn):
-    """Extraction of person entities."""
+@with_input_types(beam.typehints.Tuple[int, Dict[str, Any]])
+@with_output_types(beam.typehints.Tuple[StatePerson, List[ReleaseEvent]])
+class GetReleaseEvents(beam.PTransform):
+    """Transforms a StatePerson and their IncarcerationPeriods into
+    ReleaseEvents."""
 
-    def process(self, element, *args, **kwargs):
-        """ Builds a person entity from a collection of
-        corresponding key-value pairs.
+    def __init__(self, classify_revocation_return_as_recidivism: bool):
+        super(GetReleaseEvents, self).__init__()
+        self._classify_revocation_return_as_recidivism = \
+            classify_revocation_return_as_recidivism
 
-        Args:
-            element: A dictionary containing StatePerson information.
+    def expand(self, input_or_inputs):
 
-        Yields:
-            A tuple containing |person_ID| and the StatePerson entity.
-        """
+        find_release_events_by_cohort_year_kwargs = {
+            'classify_revocation_return_as_recidivism':
+                self._classify_revocation_return_as_recidivism}
 
-        person_builder = StatePerson.builder()
-
-        person = person_builder
-
-        # Build the person from the values in the element
-
-        # External IDs
-        # TODO(1780): Implement external IDs
-
-        # Residency
-        person.residency_status = ResidencyStatus. \
-            parse_from_canonical_string(element.get('residency_status'))
-        person.current_address = element.get('current_address')
-
-        # Names
-        person.full_name = element.get('full_name')
-        # TODO(1780): Implement aliases
-
-        # Birth Date
-        person.birthdate = element.get('birthdate')
-        person.birthdate_inferred_from_age = \
-            element.get('birthdate_inferred_from_age')
-
-        # Gender
-        person.gender = \
-            Gender.parse_from_canonical_string(element.get('gender'))
-
-        # TODO(1781): Implement multiple races
-        # TODO(1781): Implement multiple ethnicities
-
-        # ID
-        person.person_id = element.get('person_id')
-
-        # TODO(1782): Implement sentence_groups
-
-        # TODO(1780): Implement assessments
-
-        if person.person_id:
-            # Only return a StatePerson if we have a valid person_id for them
-            yield (person.person_id, person.build())
-
-    def to_runner_api_parameter(self, unused_context):
-        pass
+        return (input_or_inputs
+                | beam.ParDo(ClassifyReleaseEvents(),
+                             **find_release_events_by_cohort_year_kwargs))
 
 
-@with_input_types(beam.typehints.Dict[Any, Any])
-@with_output_types(beam.typehints.Tuple[int, StateIncarcerationPeriod])
-class ExtractIncarcerationPeriod(beam.DoFn):
-    """Extraction of StateIncarcerationPeriod entity."""
+@with_input_types(beam.typehints.Tuple[StatePerson, List[ReleaseEvent]])
+@with_output_types(RecidivismMetric)
+class GetRecidivismMetrics(beam.PTransform):
+    """Transforms a StatePerson and ReleaseEvents into RecidivismMetrics."""
 
-    def process(self, element, *args, **kwargs):
-        """Builds a StateIncarcerationPeriod entity from a collection of
-        corresponding key-value pairs.
+    def __init__(self):
+        super(GetRecidivismMetrics, self).__init__()
 
-        Args:
-            element: Dictionary containing StateIncarcerationPeriod information.
+    def expand(self, input_or_inputs):
+        # Calculate recidivism metric combinations from a StatePerson and their
+        # ReleaseEvents
+        recidivism_metric_combinations = (
+            input_or_inputs
+            | 'Map to metric combinations' >>
+            beam.ParDo(CalculateRecidivismMetricCombinations()))
 
-        Yields:
-            A tuple containing |person_id| and the StateIncarcerationPeriod
-            entity.
-        """
+        # Group metrics that have the same metric_key
+        # Note: We are preventing fusion here by having a GroupByKey in between
+        # this high fan-out ParDo and the metric ParDo
+        grouped_metric_combinations = (recidivism_metric_combinations
+                                       | 'Group metrics by metric key' >>
+                                       beam.GroupByKey())
 
-        incarceration_period_builder = StateIncarcerationPeriod.builder()
-
-        incarceration_period = incarceration_period_builder
-
-        # Build the incarceration_period from the values in the element
-
-        # IDs
-        incarceration_period.external_id = element.get('external_id')
-        incarceration_period.incarceration_period_id = \
-            element.get('incarceration_period_id')
-
-        # Status
-        incarceration_period.status = \
-            StateIncarcerationPeriodStatus.parse_from_canonical_string(
-                element.get('status'))
-        # TODO(1801): Don't hydrate raw text fields in calculate code
-        incarceration_period.status_raw_text = element.get('status_raw_text')
-
-        # Type
-        incarceration_period.incarceration_type = \
-            StateIncarcerationType.parse_from_canonical_string(
-                element.get('incarceration_type'))
-        incarceration_period.incarceration_type_raw_text = \
-            element.get('incarceration_type_raw_text')
-
-        # When
-        incarceration_period.admission_date = element.get('admission_date')
-        incarceration_period.release_date = element.get('release_date')
-
-        # Where
-        incarceration_period.state_code = element.get('state_code')
-        incarceration_period.county_code = element.get('county_code')
-        incarceration_period.facility = element.get('facility')
-        incarceration_period.housing_unit = element.get('housing_unit')
-
-        # What
-        incarceration_period.facility_security_level = \
-            StateIncarcerationFacilitySecurityLevel.parse_from_canonical_string(
-                element.get('facility_security_level'))
-        incarceration_period.facility_security_level_raw_text = \
-            element.get('facility_security_level_raw_text')
-
-        incarceration_period.admission_reason = \
-            StateIncarcerationPeriodAdmissionReason.parse_from_canonical_string(
-                element.get('admission_reason'))
-        incarceration_period.admission_reason_raw_text = \
-            element.get('admission_reason_raw_text')
-
-        incarceration_period.projected_release_reason = \
-            StateIncarcerationPeriodReleaseReason.parse_from_canonical_string(
-                element.get('projected_release_reason'))
-        incarceration_period.projected_release_reason_raw_text = \
-            element.get('projected_release_reason_raw_text')
-
-        incarceration_period.release_reason = \
-            StateIncarcerationPeriodReleaseReason.parse_from_canonical_string(
-                element.get('release_reason'))
-        incarceration_period.release_reason_raw_text = \
-            element.get('release_reason_raw_text')
-
-        # Who
-        person_id = element.get('person_id')
-
-        # TODO(1782): Implement incarceration_sentence_ids
-
-        #  TODO(1780): Hydrate these cross-entity relationships as side inputs
-        #   (state_person_id, incarceration_sentence_ids,
-        #   supervision_sentence_ids, incarceration_incidents, parole_decisions,
-        #   assessments, and source_supervision_violation_response)
-
-        if person_id:
-            # Only return the StateIncarcerationPeriod if we have a valid
-            # person_id to connect it to
-            yield (person_id, incarceration_period.build())
-
-    def to_runner_api_parameter(self, unused_context):
-        pass
+        # Return RecidivismMetric objects built from grouped metric_keys
+        return (grouped_metric_combinations
+                | 'Produce recidivism metrics' >>
+                beam.ParDo(ProduceRecidivismMetric()))
 
 
 @with_input_types(beam.typehints.Tuple[int, Dict[str, Any]],
-                  **{'include_revocation_returns': bool})
-@with_output_types(beam.typehints.Tuple[
-    int, Dict[int, List[RecidivismEvent]]])
-class FindRecidivism(beam.DoFn):
-    """Transform for finding recidivism and non-recidivism."""
+                  **{'classify_revocation_return_as_recidivism': bool})
+@with_output_types(beam.typehints.Tuple[StatePerson,
+                                        Dict[int, List[ReleaseEvent]]])
+class ClassifyReleaseEvents(beam.DoFn):
+    """Classifies releases as either recidivism or non-recidivism events."""
 
     def process(self, element, *args, **kwargs):
-        """Sends the identifier the sorted StateIncarcerationPeriods for
-        identifying instances of recidivism and non-recidivism.
+        """ Identifies instances of recidivism and non-recidivism.
+
+        Sends the identifier the StateIncarcerationPeriods for a given
+        StatePerson, which returns a list of ReleaseEvents for each year the
+        individual was released from incarceration.
 
         Args:
             element: Tuple containing person_id and a dictionary with
                 a StatePerson and a list of StateIncarcerationPeriods
             **kwargs: This should be a dictionary with values for the following
                 keys:
-                    - include_revocation_returns
+                    - classify_revocation_return_as_recidivism
 
         Yields:
-            Tuple containing |person_id| and a collection
-            of RecidivismEvents.
+            Tuple containing the StatePerson and a collection
+            of ReleaseEvents.
         """
 
-        include_revocation_returns = kwargs['include_revocation_returns']
+        classify_revocation_return_as_recidivism = kwargs[
+            'classify_revocation_return_as_recidivism']
 
-        person_id, person_incarceration_periods = element
+        _, person_incarceration_periods = element
 
         # Get the StateIncarcerationPeriods as a list
         incarceration_periods = \
             list(person_incarceration_periods['incarceration_periods'])
 
-        # Sort StateIncarcerationPeriods by admission date
-        incarceration_periods.sort(key=lambda b: b.admission_date)
+        # Get the StatePerson
+        person = one(person_incarceration_periods['person'])
 
-        # Identify the RecidivismEvents from the StateIncarcerationPeriods
-        recidivism_events = \
-            identifier.find_recidivism(incarceration_periods,
-                                       include_revocation_returns)
+        # Find the ReleaseEvents from the StateIncarcerationPeriods
+        release_events_by_cohort_year = \
+            identifier.find_release_events_by_cohort_year(
+                incarceration_periods,
+                classify_revocation_return_as_recidivism)
 
-        yield (person_id, recidivism_events)
+        yield (person, release_events_by_cohort_year)
 
     def to_runner_api_parameter(self, unused_context):
         pass
 
 
-@with_input_types(beam.typehints.Tuple[int, Dict[str, Any]])
+@with_input_types(beam.typehints.Tuple[StatePerson,
+                                       Dict[int, List[ReleaseEvent]]])
 @with_output_types(beam.typehints.Tuple[Dict[str, Any], Any])
-class MapMetricCombinations(beam.DoFn):
-    """Transform for calculating recidivism metric combinations
-    for a StatePerson and their RecidivismEvents."""
+class CalculateRecidivismMetricCombinations(beam.DoFn):
+    """Calculates recidivism metric combinations."""
 
     def process(self, element, *args, **kwargs):
-        """Sends the calculator the person entity and corresponding
-        RecidivismEvents for mapping all recidivism combinations.
+        """Produces various recidivism metric combinations.
+
+        Sends the calculator the StatePerson entity and their corresponding
+        ReleaseEvents for mapping all recidivism combinations.
 
         Args:
-            element: Tuple containing a |person_id| and a dictionary storing
-             a StatePerson and their RecidivismEvents
+            element: Tuple containing a StatePerson and their ReleaseEvents
 
         Yields:
             Each recidivism metric combination.
         """
 
-        _, person_events = element
-
-        # Get the person if they exist
-        person_list = list(person_events['person'])
-
-        if not person_list or len(person_list) != 1:
-            return
-
-        person = person_list[0]
-
-        # Get the recidivism events if they exist
-        grouped_recidivism_events_list = \
-            list(person_events['recidivism_events'])
-
-        if not grouped_recidivism_events_list or \
-                len(grouped_recidivism_events_list) != 1:
-            return
-
-        grouped_recidivism_events = grouped_recidivism_events_list[0]
+        person, release_events = element
 
         # Calculate recidivism metric combinations for this person and events
         metric_combinations = \
             calculator.map_recidivism_combinations(person,
-                                                   grouped_recidivism_events)
+                                                   release_events)
 
         # Return each of the recidivism metric combinations
         for metric_combination in metric_combinations:
@@ -329,64 +205,29 @@ class MapMetricCombinations(beam.DoFn):
     Dict[str, str], List[int]])
 @with_output_types(RecidivismMetric)
 class ProduceRecidivismMetric(beam.DoFn):
-    """Transform for producing RecidivismMetrics ."""
+    """Produces RecidivismMetrics."""
 
     def process(self, element, *args, **kwargs):
-        """Populates a RecidivismMetric object with values from
-        the metric_key.
+        """Converts a recidivism metric key into a RecidivismMetric.
 
         Args:
             element: A tuple containing a dictionary of the metric_key for a
-            given recidivism metric, and the list of 1s and 0s representing
-            the recidivism and non-recidivism events corresponding to this
-            metric.
+            given recidivism metric, and a list where each element corresponds
+            to a ReleaseEvent, with 1s representing RecidivismReleaseEvents, and
+            0s representing NonRecidivismReleaseEvents.
 
         Yields:
             The RecidivismMetric.
         """
 
-        (metric_key, group) = element
+        (metric_key, release_group) = element
 
-        # Calculate number of releases and number resulting in recidivism
-        total_releases = len(list(group))
-        total_returns = sum(group)
+        recidivism_metric = \
+            RecidivismMetric.build_from_metric_key_release_group(metric_key,
+                                                                 release_group)
 
-        if total_releases == 0:
-            return
-
-        if not metric_key:
-            return
-
-        # Calculate recidivism rate
-        recidivism_rate = ((total_returns + 0.0) / total_releases)
-
-        # Build RecidivismMetric object from metric_key
-        recidivism_metric = RecidivismMetric()
-        # TODO(1789): Implement pipeline execution_id
-        recidivism_metric.execution_id = 12345
-        recidivism_metric.total_releases = total_releases
-        recidivism_metric.total_returns = total_returns
-        recidivism_metric.recidivism_rate = recidivism_rate
-
-        recidivism_metric.release_cohort = metric_key['release_cohort']
-        recidivism_metric.follow_up_period = metric_key['follow_up_period']
-        recidivism_metric.methodology = metric_key['methodology']
-        recidivism_metric.created_on = date.today()
-
-        if 'age' in metric_key:
-            recidivism_metric.age_bucket = metric_key['age']
-        if 'race' in metric_key:
-            recidivism_metric.race = metric_key['race']
-        if 'gender' in metric_key:
-            recidivism_metric.gender = metric_key['gender']
-        if 'release_facility' in metric_key:
-            recidivism_metric.release_facility = metric_key['release_facility']
-        if 'stay_length' in metric_key:
-            recidivism_metric.stay_length_bucket = metric_key['stay_length']
-        if 'return_type' in metric_key:
-            recidivism_metric.return_type = metric_key['return_type']
-
-        yield recidivism_metric
+        if recidivism_metric:
+            yield recidivism_metric
 
     def to_runner_api_parameter(self, unused_context):
         pass
@@ -394,7 +235,7 @@ class ProduceRecidivismMetric(beam.DoFn):
 
 @with_input_types(RecidivismMetric,
                   **{'dimensions_to_filter_out': [str],
-                     'methodology': Methodology,
+                     'methodologies': List[RecidivismMethodologyType],
                      'release_count_min': int})
 @with_output_types(RecidivismMetric)
 class FilterMetrics(beam.DoFn):
@@ -408,8 +249,9 @@ class FilterMetrics(beam.DoFn):
                 **kwargs: This should be a dictionary with values for the
                     following keys:
                         - dimensions_to_filter_out: List of dimensions to filter
-                             from the output.
-                        - methodology: Methodology to report.
+                            from the output.
+                        - methodologies: The RecidivismMethodologyTypes to
+                            report.
                         - release_count_min: Minimum number of releases in the
                             metric to be included in the output.
 
@@ -418,7 +260,7 @@ class FilterMetrics(beam.DoFn):
         """
 
         dimensions_to_filter_out = kwargs['dimensions_to_filter_out']
-        methodology = kwargs['methodology']
+        methodologies = kwargs['methodologies']
         release_count_min = kwargs['release_count_min']
 
         recidivism_metric = element
@@ -433,9 +275,8 @@ class FilterMetrics(beam.DoFn):
                 return
 
         # Filter out unwanted methodologies
-        if methodology != Methodology.BOTH:
-            if recidivism_metric.methodology != methodology:
-                return
+        if recidivism_metric.methodology not in methodologies:
+            return
 
         # Filter metrics that have less than release_count_min releases
         if recidivism_metric.total_releases < release_count_min:
@@ -480,10 +321,10 @@ def parse_arguments(argv):
                         dest='include_release_facility',
                         type=bool,
                         help='Include metrics broken down by release facility.',
-                        default=True)
+                        default=False)
 
-    parser.add_argument('--include_revocation_returns',
-                        dest='include_revocation_returns',
+    parser.add_argument('--classify_revocation_return_as_recidivism',
+                        dest='classify_revocation_return_as_recidivism',
                         type=bool,
                         help='Whether or not to include incarceration returns '
                              'caused by supervision revocation in the '
@@ -519,34 +360,43 @@ def parse_arguments(argv):
     return parser.parse_known_args(argv)
 
 
-def dimensions_to_filter(known_args):
-    """Identifies dimensions to filter from output.
+def dimensions_and_methodologies(known_args) -> \
+        Tuple[List[str], List[RecidivismMethodologyType]]:
+    """Identifies dimensions to filter from output, and the methodologies of
+    counting recidivism to use.
 
         Args:
             known_args: Arguments identified by the argument parsers.
 
-        Returns: List of dimensions to filter from output.
+        Returns: A tuple containing the list of dimensions to filter from
+            the output, and a list of methodologies to use.
     """
 
     dimensions = []
 
-    if not known_args.include_age:
-        dimensions.append('age_bucket')
+    # TODO(1781): Fix race to be races and include ethnicities
+    filterable_dimensions_map = {
+        'include_age': 'age_bucket',
+        'include_gender': 'gender',
+        'include_race': 'race',
+        'include_release_facility': 'release_facility',
+        'include_stay_length': 'stay_length_bucket'}
 
-    if not known_args.include_gender:
-        dimensions.append('gender')
+    known_args_dict = vars(known_args)
 
-    # TODO(1781): Fix to be races and include ethnicities
-    if not known_args.include_race:
-        dimensions.append('race')
+    for dimension_key in filterable_dimensions_map:
+        if not known_args_dict[dimension_key]:
+            dimensions.append(filterable_dimensions_map[dimension_key])
 
-    if not known_args.include_release_facility:
-        dimensions.append('release_facility')
+    methodologies = []
 
-    if not known_args.include_stay_length:
-        dimensions.append('stay_length_bucket')
+    if known_args.methodology == 'BOTH':
+        methodologies.append(RecidivismMethodologyType.EVENT)
+        methodologies.append(RecidivismMethodologyType.PERSON)
+    else:
+        methodologies.append(RecidivismMethodologyType[known_args.methodology])
 
-    return dimensions
+    return dimensions, methodologies
 
 
 def run(argv=None):
@@ -561,96 +411,60 @@ def run(argv=None):
         #  DataflowRunner
         # Change this to DataflowRunner to
         # run the pipeline on the Google Cloud Dataflow Service.
-        '--runner=DirectRunner',
-        # '--runner=DataflowRunner',
+        # '--runner=DirectRunner',
+        '--runner=DataflowRunner'
     ])
 
     with beam.Pipeline(argv=pipeline_args) as p:
-        # Query for all persons and incarceration periods in
-        # recidiviz-123.recidiviz_state_scratch_space
-
-        # TODO(1784): Implement new queries with new schema
-        person_query = f'''SELECT * FROM `{known_args.dataset}.person`
-                                WHERE gender != 'gender' '''''
-
-        incarceration_periods_query = \
-            f'''SELECT * FROM `{known_args.dataset}.booking`'''
-
-        # Read persons from BQ and load them into StatePerson entities
+        # Get StatePersons
         persons = (p
-                   | 'Read Persons' >> beam.io.Read(beam.io.BigQuerySource
-                                                    (query=person_query,
-                                                     use_standard_sql=True))
-                   | 'Load StatePerson entities' >> beam.ParDo(ExtractPerson()))
+                   | 'Get hydrated StatePersons' >>
+                   person_extractor.ExtractPersons(dataset=known_args.dataset))
 
-        # Read incarceration periods from BQ and load them into
-        # StateIncarcerationPeriod entities
-        incarceration_periods = (p
-                                 | 'Read StateIncarceration Periods' >>
-                                 beam.io.Read(
-                                     beam.io.BigQuerySource
-                                     (query=incarceration_periods_query,
-                                      use_standard_sql=True))
-                                 | 'Load StateIncarcerationPeriod entities' >>
-                                 beam.ParDo(ExtractIncarcerationPeriod()))
+        # Get StateIncarcerationPeriods
+        incarceration_periods = (
+            p
+            | 'Get hydrated IncarcerationPeriods' >>
+            incarceration_period_extractor.ExtractIncarcerationPeriods(
+                dataset=known_args.dataset))
 
         # Group each StatePerson with their StateIncarcerationPeriods
-        person_and_incarceration_periods = \
-            ({'person': persons, 'incarceration_periods': incarceration_periods}
-             | 'Group StatePerson to StateIncarcerationPeriods' >>
-             beam.CoGroupByKey()
-             )
+        person_and_incarceration_periods = (
+            {'person': persons,
+             'incarceration_periods': incarceration_periods}
+            | 'Group StatePerson to StateIncarcerationPeriods' >>
+            beam.CoGroupByKey()
+        )
+        # Identify ReleaseEvents events from the StatePerson's
 
-        find_recidivism_kwargs = {'include_revocation_returns':
-                                  known_args.include_revocation_returns}
-
-        # Find recidivism events from the StatePerson's
         # StateIncarcerationPeriods
-        recidivism_events = (person_and_incarceration_periods
-                             | 'Find Recidivism Events' >>
-                             beam.ParDo(FindRecidivism(),
-                                        **find_recidivism_kwargs))
+        person_events = (
+            person_and_incarceration_periods |
+            'Get Recidivism Events' >>
+            GetReleaseEvents(
+                classify_revocation_return_as_recidivism=
+                known_args.classify_revocation_return_as_recidivism))
 
-        # Group each StatePerson with their RecidivismEvents
-        person_events = ({'person': persons,
-                          'recidivism_events': recidivism_events}
-                         | 'Group StatePerson to RecidivismEvents' >>
-                         beam.CoGroupByKey())
+        recidivism_metrics = (person_events
+                              | 'Get Recidivism Metrics' >>
+                              GetRecidivismMetrics())
 
-        # Map each person and their events to the combinations of metrics
-        # Note: We are preventing fusion here by having a GroupByKey in between
-        # this high fan-out ParDo and the metric ParDo
-        mapped_metric_combinations = (person_events
-                                      | 'Map to metric combinations' >>
-                                      beam.ParDo(MapMetricCombinations())
-                                      )
-
-        # Group metrics that have the same metric_key
-        grouped_metric_combinations = (mapped_metric_combinations
-                                       | 'Group metrics by metric key' >>
-                                       beam.GroupByKey())
-
-        # Build RecidivismMetric objects
-        metrics = (grouped_metric_combinations
-                   | 'Produce recidivism metrics' >>
-                   beam.ParDo(ProduceRecidivismMetric()))
-
-        # Get dimensions to filter out
-        dimensions = dimensions_to_filter(known_args)
+        # Get dimensions to filter out and methodologies to use
+        dimensions, methodologies = dimensions_and_methodologies(known_args)
 
         filter_metrics_kwargs = {
             'dimensions_to_filter_out': dimensions,
-            'methodology': Methodology[known_args.methodology],
+            'methodologies': methodologies,
             'release_count_min': known_args.release_count_min}
 
         # Filter out unneeded metrics
-        filtered_metrics = (metrics
-                            | 'Filter out unwanted metrics' >>
-                            beam.ParDo(FilterMetrics(),
-                                       **filter_metrics_kwargs))
+        filtered_recidivism_metrics = (
+            recidivism_metrics
+            | 'Filter out unwanted metrics' >>
+            beam.ParDo(FilterMetrics(), **filter_metrics_kwargs))
 
         # Write results to the output sink
-        _ = (filtered_metrics
+        _ = (filtered_recidivism_metrics
              | 'Write Results' >> beam.io.WriteToText(known_args.output))
 
 

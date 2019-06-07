@@ -16,6 +16,7 @@
 # =============================================================================
 """Pipeline calculation of recidivism metrics."""
 
-from .recidivism_event import RecidivismEvent
+from .release_event import ReleaseEvent, RecidivismReleaseEvent, \
+    NonRecidivismReleaseEvent
 from .metrics import RecidivismMetric
 from .calculator import map_recidivism_combinations

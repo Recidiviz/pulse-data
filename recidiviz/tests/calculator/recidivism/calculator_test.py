@@ -25,7 +25,11 @@ from datetime import datetime
 
 from dateutil.relativedelta import relativedelta
 
-from recidiviz.calculator.recidivism import calculator, recidivism_event
+from recidiviz.calculator.recidivism import calculator, ReleaseEvent, \
+    RecidivismReleaseEvent, NonRecidivismReleaseEvent
+from recidiviz.calculator.recidivism.metrics import RecidivismMethodologyType
+from recidiviz.calculator.recidivism.release_event import \
+    IncarcerationReturnType
 from recidiviz.persistence.entity.state.entities import StatePerson, Gender
 
 
@@ -35,14 +39,14 @@ def test_reincarceration_dates():
     reincarceration_date = release_date + relativedelta(years=3)
     second_release_date = reincarceration_date + relativedelta(years=1)
 
-    first_event = recidivism_event.RecidivismEvent.recidivism_event(
-        original_admission_date, release_date, "Sing Sing",
-        reincarceration_date, "Sing Sing", False)
-    second_event = recidivism_event.RecidivismEvent.non_recidivism_event(
-        reincarceration_date, second_release_date, "Sing Sing")
-    recidivism_events = {2018: [first_event], 2022: [second_event]}
+    first_event = RecidivismReleaseEvent(
+        original_admission_date, release_date, 'Sing Sing',
+        reincarceration_date, 'Sing Sing')
+    second_event = NonRecidivismReleaseEvent(
+        reincarceration_date, second_release_date, 'Sing Sing')
+    release_events = {2018: [first_event], 2022: [second_event]}
 
-    release_dates = calculator.reincarceration_dates(recidivism_events)
+    release_dates = calculator.reincarceration_dates(release_events)
     assert release_dates == [reincarceration_date]
 
 
@@ -231,18 +235,17 @@ def test_age_at_date_birthdate_unknown():
 
 
 def test_age_bucket():
-    assert calculator.age_bucket(24) == "<25"
-    assert calculator.age_bucket(27) == "25-29"
-    assert calculator.age_bucket(30) == "30-34"
-    assert calculator.age_bucket(39) == "35-39"
-    assert calculator.age_bucket(40) == "40<"
+    assert calculator.age_bucket(24) == '<25'
+    assert calculator.age_bucket(27) == '25-29'
+    assert calculator.age_bucket(30) == '30-34'
+    assert calculator.age_bucket(39) == '35-39'
+    assert calculator.age_bucket(40) == '40<'
 
 
 def test_stay_length_from_event_earlier_month_and_date():
     original_admission_date = date(2013, 6, 17)
     release_date = date(2014, 4, 15)
-    event = recidivism_event.RecidivismEvent(
-        False, original_admission_date, release_date, "Sing Sing")
+    event = ReleaseEvent(original_admission_date, release_date, 'Sing Sing')
 
     assert calculator.stay_length_from_event(event) == 9
 
@@ -250,8 +253,7 @@ def test_stay_length_from_event_earlier_month_and_date():
 def test_stay_length_from_event_same_month_earlier_date():
     original_admission_date = date(2013, 6, 17)
     release_date = date(2014, 6, 16)
-    event = recidivism_event.RecidivismEvent(
-        False, original_admission_date, release_date, "Sing Sing")
+    event = ReleaseEvent(original_admission_date, release_date, 'Sing Sing')
 
     assert calculator.stay_length_from_event(event) == 11
 
@@ -259,8 +261,7 @@ def test_stay_length_from_event_same_month_earlier_date():
 def test_stay_length_from_event_same_month_same_date():
     original_admission_date = date(2013, 6, 17)
     release_date = date(2014, 6, 17)
-    event = recidivism_event.RecidivismEvent(
-        False, original_admission_date, release_date, "Sing Sing")
+    event = ReleaseEvent(original_admission_date, release_date, 'Sing Sing')
 
     assert calculator.stay_length_from_event(event) == 12
 
@@ -268,8 +269,7 @@ def test_stay_length_from_event_same_month_same_date():
 def test_stay_length_from_event_same_month_later_date():
     original_admission_date = date(2013, 6, 17)
     release_date = date(2014, 6, 18)
-    event = recidivism_event.RecidivismEvent(
-        False, original_admission_date, release_date, "Sing Sing")
+    event = ReleaseEvent(original_admission_date, release_date, 'Sing Sing')
 
     assert calculator.stay_length_from_event(event) == 12
 
@@ -277,54 +277,50 @@ def test_stay_length_from_event_same_month_later_date():
 def test_stay_length_from_event_later_month():
     original_admission_date = date(2013, 6, 17)
     release_date = date(2014, 8, 11)
-    event = recidivism_event.RecidivismEvent(
-        False, original_admission_date, release_date, "Sing Sing")
+    event = ReleaseEvent(original_admission_date, release_date, 'Sing Sing')
 
     assert calculator.stay_length_from_event(event) == 13
 
 
 def test_stay_length_from_event_original_admission_date_unknown():
     release_date = date(2014, 7, 11)
-    event = recidivism_event.RecidivismEvent(
-        False, None, release_date, "Sing Sing")
+    event = ReleaseEvent(None, release_date, 'Sing Sing')
     assert calculator.stay_length_from_event(event) is None
 
 
 def test_stay_length_from_event_release_date_unknown():
     original_admission_date = date(2014, 7, 11)
-    event = recidivism_event.RecidivismEvent(
-        False, original_admission_date, None, "Sing Sing")
+    event = ReleaseEvent(original_admission_date, None, 'Sing Sing')
     assert calculator.stay_length_from_event(event) is None
 
 
 def test_stay_length_from_event_both_dates_unknown():
-    event = recidivism_event.RecidivismEvent(
-        False, None, None, "Sing Sing")
+    event = ReleaseEvent(None, None, 'Sing Sing')
     assert calculator.stay_length_from_event(event) is None
 
 
 def test_stay_length_bucket():
     assert calculator.stay_length_bucket(None) is None
-    assert calculator.stay_length_bucket(11) == "<12"
-    assert calculator.stay_length_bucket(12) == "12-24"
-    assert calculator.stay_length_bucket(20) == "12-24"
-    assert calculator.stay_length_bucket(24) == "24-36"
-    assert calculator.stay_length_bucket(30) == "24-36"
-    assert calculator.stay_length_bucket(36) == "36-48"
-    assert calculator.stay_length_bucket(40) == "36-48"
-    assert calculator.stay_length_bucket(48) == "48-60"
-    assert calculator.stay_length_bucket(50) == "48-60"
-    assert calculator.stay_length_bucket(60) == "60-72"
-    assert calculator.stay_length_bucket(70) == "60-72"
-    assert calculator.stay_length_bucket(72) == "72-84"
-    assert calculator.stay_length_bucket(80) == "72-84"
-    assert calculator.stay_length_bucket(84) == "84-96"
-    assert calculator.stay_length_bucket(96) == "96-108"
-    assert calculator.stay_length_bucket(100) == "96-108"
-    assert calculator.stay_length_bucket(108) == "108-120"
-    assert calculator.stay_length_bucket(110) == "108-120"
-    assert calculator.stay_length_bucket(120) == "120<"
-    assert calculator.stay_length_bucket(130) == "120<"
+    assert calculator.stay_length_bucket(11) == '<12'
+    assert calculator.stay_length_bucket(12) == '12-24'
+    assert calculator.stay_length_bucket(20) == '12-24'
+    assert calculator.stay_length_bucket(24) == '24-36'
+    assert calculator.stay_length_bucket(30) == '24-36'
+    assert calculator.stay_length_bucket(36) == '36-48'
+    assert calculator.stay_length_bucket(40) == '36-48'
+    assert calculator.stay_length_bucket(48) == '48-60'
+    assert calculator.stay_length_bucket(50) == '48-60'
+    assert calculator.stay_length_bucket(60) == '60-72'
+    assert calculator.stay_length_bucket(70) == '60-72'
+    assert calculator.stay_length_bucket(72) == '72-84'
+    assert calculator.stay_length_bucket(80) == '72-84'
+    assert calculator.stay_length_bucket(84) == '84-96'
+    assert calculator.stay_length_bucket(96) == '96-108'
+    assert calculator.stay_length_bucket(100) == '96-108'
+    assert calculator.stay_length_bucket(108) == '108-120'
+    assert calculator.stay_length_bucket(110) == '108-120'
+    assert calculator.stay_length_bucket(120) == '120<'
+    assert calculator.stay_length_bucket(130) == '120<'
 
 
 def test_for_characteristics():
@@ -342,7 +338,7 @@ def test_for_characteristics():
 
 
 def test_for_characteristics_one_characteristic():
-    characteristics = {"sex": "male"}
+    characteristics = {'sex': 'male'}
     combinations = calculator.for_characteristics(characteristics)
 
     assert combinations == [{}, {'sex': 'male'}]
@@ -350,11 +346,13 @@ def test_for_characteristics_one_characteristic():
 
 def test_augment_combination():
     combo = {'age': '<25', 'race': 'black', 'sex': 'female'}
-    augmented = calculator.augment_combination(combo, 'EVENT', 8)
+    augmented = calculator.augment_combination(combo,
+                                               RecidivismMethodologyType.EVENT,
+                                               8)
 
     assert augmented == {'age': '<25',
                          'follow_up_period': 8,
-                         'methodology': 'EVENT',
+                         'methodology': RecidivismMethodologyType.EVENT,
                          'race': 'black',
                          'sex': 'female'}
     assert augmented != combo
@@ -370,14 +368,15 @@ class TestMapRecidivismCombinations:
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        recidivism_events_by_cohort = {
-            2008: [recidivism_event.RecidivismEvent.recidivism_event(
-                date(2005, 7, 19), date(2008, 9, 19), "Hudson",
-                date(2014, 5, 12), "Upstate", False)]
+        release_events_by_cohort = {
+            2008: [RecidivismReleaseEvent(
+                date(2005, 7, 19), date(2008, 9, 19), 'Hudson',
+                date(2014, 5, 12), 'Upstate',
+                IncarcerationReturnType.RECONVICTION)]
         }
 
         recidivism_combinations = calculator.map_recidivism_combinations(
-            person, recidivism_events_by_cohort)
+            person, release_events_by_cohort)
 
         # 32 combinations of demographics, facility, and stay length
         # * 2 methodologies * 10 periods = 640 metrics
@@ -398,17 +397,19 @@ class TestMapRecidivismCombinations:
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        recidivism_events_by_cohort = {
-            1908: [recidivism_event.RecidivismEvent.recidivism_event(
-                date(1905, 7, 19), date(1908, 9, 19), "Hudson",
-                date(1910, 8, 12), "Upstate", False)],
-            1912: [recidivism_event.RecidivismEvent.recidivism_event(
-                date(1910, 8, 12), date(1912, 8, 19), "Upstate",
-                date(1914, 7, 12), "Sing Sing", False)]
+        release_events_by_cohort = {
+            1908: [RecidivismReleaseEvent(
+                date(1905, 7, 19), date(1908, 9, 19), 'Hudson',
+                date(1910, 8, 12), 'Upstate',
+                IncarcerationReturnType.RECONVICTION)],
+            1912: [RecidivismReleaseEvent(
+                date(1910, 8, 12), date(1912, 8, 19), 'Upstate',
+                date(1914, 7, 12), 'Sing Sing',
+                IncarcerationReturnType.RECONVICTION)]
         }
 
         recidivism_combinations = calculator.map_recidivism_combinations(
-            person, recidivism_events_by_cohort)
+            person, release_events_by_cohort)
 
         # For the first event:
         #   For the first 5 periods:
@@ -437,19 +438,19 @@ class TestMapRecidivismCombinations:
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        recidivism_events_by_cohort = {
-            2008: [recidivism_event.RecidivismEvent.non_recidivism_event(
-                date(2005, 7, 19), date(2008, 9, 19), "Hudson")]
+        release_events_by_cohort = {
+            2008: [NonRecidivismReleaseEvent(date(2005, 7, 19),
+                                             date(2008, 9, 19), 'Hudson')]
         }
 
         recidivism_combinations = calculator.map_recidivism_combinations(
-            person, recidivism_events_by_cohort)
+            person, release_events_by_cohort)
 
         # 32 combinations of demographics, facility, and stay length
         # * 2 methodologies * 10 periods = 640 metrics
         # TODO(1781): Update this number once races and ethnicities are
         #  implemented
-        assert len(recidivism_combinations) == 640
+        assert len(recidivism_combinations) == 320
         assert all(value == 0 for _combination, value
                    in recidivism_combinations)
 
@@ -460,14 +461,15 @@ class TestMapRecidivismCombinations:
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        recidivism_events_by_cohort = {
-            2008: [recidivism_event.RecidivismEvent.recidivism_event(
-                date(2005, 7, 19), date(2008, 9, 19), "Hudson",
-                date(2018, 10, 12), "Upstate", False)]
+        release_events_by_cohort = {
+            2008: [RecidivismReleaseEvent(
+                date(2005, 7, 19), date(2008, 9, 19), 'Hudson',
+                date(2018, 10, 12), 'Upstate',
+                IncarcerationReturnType.RECONVICTION)]
         }
 
         recidivism_combinations = calculator.map_recidivism_combinations(
-            person, recidivism_events_by_cohort)
+            person, release_events_by_cohort)
 
         # 32 combinations of demographics, facility, and stay length
         # * 2 methodologies * 10 periods = 640 metrics

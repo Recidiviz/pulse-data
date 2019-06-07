@@ -27,17 +27,18 @@ from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodReleaseReason, \
     StateIncarcerationFacilitySecurityLevel
 
-from recidiviz.calculator.recidivism import identifier, RecidivismEvent
-from recidiviz.calculator.recidivism.recidivism_event import \
+from recidiviz.calculator.recidivism import identifier, \
+    RecidivismReleaseEvent, NonRecidivismReleaseEvent
+from recidiviz.calculator.recidivism.release_event import \
     IncarcerationReturnType
 
 
-class TestFindRecidivism:
-    """Tests for the find_recidivism function."""
+class TestClassifyReleaseEvents:
+    """Tests for the find_release_events_by_cohort_year function."""
 
-    def test_find_recidivism(self):
-        """Tests the find_recidivism function path where the person did
-        recidivate."""
+    def test_find_release_events_by_cohort_year(self):
+        """Tests the find_release_events_by_cohort_year function path where the
+        person did recidivate."""
 
         initial_incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
@@ -76,13 +77,13 @@ class TestFindRecidivism:
                                  first_reincarceration_period,
                                  subsequent_reincarceration_period]
 
-        recidivism_events_by_cohort = \
-            identifier.find_recidivism(incarceration_periods)
+        release_events_by_cohort = \
+            identifier.find_release_events_by_cohort_year(
+                incarceration_periods)
 
-        assert len(recidivism_events_by_cohort) == 2
+        assert len(release_events_by_cohort) == 2
 
-        assert recidivism_events_by_cohort[2010] == [RecidivismEvent(
-            recidivated=True,
+        assert release_events_by_cohort[2010] == [RecidivismReleaseEvent(
             original_admission_date=initial_incarceration_period.admission_date,
             release_date=initial_incarceration_period.release_date,
             release_facility=None,
@@ -90,8 +91,7 @@ class TestFindRecidivism:
             reincarceration_facility=None,
             return_type=IncarcerationReturnType.RECONVICTION)]
 
-        assert recidivism_events_by_cohort[2014] == [RecidivismEvent(
-            recidivated=True,
+        assert release_events_by_cohort[2014] == [RecidivismReleaseEvent(
             original_admission_date=first_reincarceration_period.admission_date,
             release_date=first_reincarceration_period.release_date,
             release_facility=None,
@@ -100,16 +100,17 @@ class TestFindRecidivism:
             reincarceration_facility=None,
             return_type=IncarcerationReturnType.RECONVICTION)]
 
-    def test_find_recidivism_no_incarcerations_at_all(self):
-        """Tests the find_recidivism function when the person has no
-        StateIncarcerationPeriods."""
-        recidivism_events_by_cohort = identifier.find_recidivism([])
+    def test_find_release_events_by_cohort_year_no_incarcerations_at_all(self):
+        """Tests the find_release_events_by_cohort_year function when the person
+        has no StateIncarcerationPeriods."""
+        release_events_by_cohort = \
+            identifier.find_release_events_by_cohort_year([])
 
-        assert not recidivism_events_by_cohort
+        assert not release_events_by_cohort
 
-    def test_find_recidivism_no_recidivism_after_first(self):
-        """Tests the find_recidivism function when the person does not have
-        any StateIncarcerationPeriods after their first."""
+    def test_find_release_events_by_cohort_year_no_recidivism_after_first(self):
+        """Tests the find_release_events_by_cohort_year function when the person
+        does not have any StateIncarcerationPeriods after their first."""
         only_incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=1111,
@@ -122,21 +123,23 @@ class TestFindRecidivism:
                 release_reason=StateIncarcerationPeriodReleaseReason.
                 SENTENCE_SERVED)
 
-        recidivism_events_by_cohort = identifier.find_recidivism(
-            [only_incarceration_period])
+        release_events_by_cohort = \
+            identifier.find_release_events_by_cohort_year(
+                [only_incarceration_period])
 
-        assert len(recidivism_events_by_cohort) == 1
+        assert len(release_events_by_cohort) == 1
 
-        assert recidivism_events_by_cohort[2003] == [
-            RecidivismEvent.non_recidivism_event(
+        assert release_events_by_cohort[2003] == [
+            NonRecidivismReleaseEvent(
                 original_admission_date=only_incarceration_period.
                 admission_date,
                 release_date=only_incarceration_period.release_date,
                 release_facility=None)]
 
-    def test_find_recidivism_still_incarcerated_on_first(self):
-        """Tests the find_recidivism function where the person is still
-        incarcerated on their very first StateIncarcerationPeriod."""
+    def test_find_release_events_by_cohort_year_still_incarcerated(self):
+        """Tests the find_release_events_by_cohort_year function where the
+        person is still incarcerated on their very first
+         StateIncarcerationPeriod."""
         only_incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=1111,
@@ -146,15 +149,16 @@ class TestFindRecidivism:
                 admission_reason=StateIncarcerationPeriodAdmissionReason.
                 NEW_ADMISSION)
 
-        recidivism_events_by_cohort = identifier.find_recidivism(
-            [only_incarceration_period])
+        release_events_by_cohort = \
+            identifier.find_release_events_by_cohort_year(
+                [only_incarceration_period])
 
-        assert not recidivism_events_by_cohort
+        assert not release_events_by_cohort
 
-    def test_find_recidivism_no_recidivism_conditional_release(self):
-        """Tests the find_recidivism function when the person does not have
-                any StateIncarcerationPeriods after their first, and they were
-                released conditionally."""
+    def test_find_release_events_by_cohort_year_no_recid_cond_release(self):
+        """Tests the find_release_events_by_cohort_year function when the person
+        does not have any StateIncarcerationPeriods after their first, and they
+        were released conditionally."""
         only_incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=1111,
@@ -167,21 +171,22 @@ class TestFindRecidivism:
                 release_reason=StateIncarcerationPeriodReleaseReason.
                 CONDITIONAL_RELEASE)
 
-        recidivism_events_by_cohort = identifier.find_recidivism(
-            [only_incarceration_period])
+        release_events_by_cohort = \
+            identifier.find_release_events_by_cohort_year(
+                [only_incarceration_period])
 
-        assert len(recidivism_events_by_cohort) == 1
+        assert len(release_events_by_cohort) == 1
 
-        assert recidivism_events_by_cohort[2003] == [
-            RecidivismEvent.non_recidivism_event(
+        assert release_events_by_cohort[2003] == [
+            NonRecidivismReleaseEvent(
                 original_admission_date=only_incarceration_period.
                 admission_date,
                 release_date=only_incarceration_period.release_date,
                 release_facility=None)]
 
-    def test_find_recidivism_parole_revocation(self):
-        """Tests the find_recidivism function path where the person was
-        conditionally released on parole and returned for a parole
+    def test_find_release_events_by_cohort_year_parole_revocation(self):
+        """Tests the find_release_events_by_cohort_year function path where the
+        person was conditionally released on parole and returned for a parole
         revocation."""
 
         initial_incarceration_period = \
@@ -211,14 +216,14 @@ class TestFindRecidivism:
         incarceration_periods = [initial_incarceration_period,
                                  first_reincarceration_period]
 
-        recidivism_events_by_cohort = identifier.find_recidivism(
-            incarceration_periods=incarceration_periods,
-            include_revocation_returns=True)
+        release_events_by_cohort = \
+            identifier.find_release_events_by_cohort_year(
+                incarceration_periods=incarceration_periods,
+                classify_revocation_return_as_recidivism=True)
 
-        assert len(recidivism_events_by_cohort) == 2
+        assert len(release_events_by_cohort) == 2
 
-        assert recidivism_events_by_cohort[2010] == [RecidivismEvent(
-            recidivated=True,
+        assert release_events_by_cohort[2010] == [RecidivismReleaseEvent(
             original_admission_date=initial_incarceration_period.admission_date,
             release_date=initial_incarceration_period.release_date,
             release_facility=None,
@@ -226,16 +231,17 @@ class TestFindRecidivism:
             reincarceration_facility=None,
             return_type=IncarcerationReturnType.PAROLE_REVOCATION)]
 
-        assert recidivism_events_by_cohort[2014] == [
-            RecidivismEvent.non_recidivism_event(
+        assert release_events_by_cohort[2014] == [
+            NonRecidivismReleaseEvent(
                 original_admission_date=first_reincarceration_period.
                 admission_date,
                 release_date=first_reincarceration_period.release_date,
                 release_facility=None)]
 
-    def test_find_recidivism_probation_revocation(self):
-        """Tests the find_recidivism function path where the person was
-        conditionally released and returned for a probation revocation."""
+    def test_find_release_events_by_cohort_year_probation_revocation(self):
+        """Tests the find_release_events_by_cohort_year function path where the
+        person was conditionally released and returned for a probation
+        revocation."""
 
         initial_incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
@@ -264,14 +270,14 @@ class TestFindRecidivism:
         incarceration_periods = [initial_incarceration_period,
                                  first_reincarceration_period]
 
-        recidivism_events_by_cohort = identifier.find_recidivism(
-            incarceration_periods=incarceration_periods,
-            include_revocation_returns=True)
+        release_events_by_cohort = \
+            identifier.find_release_events_by_cohort_year(
+                incarceration_periods=incarceration_periods,
+                classify_revocation_return_as_recidivism=True)
 
-        assert len(recidivism_events_by_cohort) == 2
+        assert len(release_events_by_cohort) == 2
 
-        assert recidivism_events_by_cohort[2010] == [RecidivismEvent(
-            recidivated=True,
+        assert release_events_by_cohort[2010] == [RecidivismReleaseEvent(
             original_admission_date=initial_incarceration_period.admission_date,
             release_date=initial_incarceration_period.release_date,
             release_facility=None,
@@ -279,16 +285,17 @@ class TestFindRecidivism:
             reincarceration_facility=None,
             return_type=IncarcerationReturnType.PROBATION_REVOCATION)]
 
-        assert recidivism_events_by_cohort[2014] == [
-            RecidivismEvent.non_recidivism_event(
+        assert release_events_by_cohort[2014] == [
+            NonRecidivismReleaseEvent(
                 original_admission_date=first_reincarceration_period.
                 admission_date,
                 release_date=first_reincarceration_period.release_date,
                 release_facility=None)]
 
-    def test_find_recidivism_conditional_release_new_admission(self):
-        """Tests the find_recidivism function path where the person was
-        conditionally released on parole but returned as a new admission."""
+    def test_find_release_events_by_cohort_year_cond_release_new_admit(self):
+        """Tests the find_release_events_by_cohort_year function path where the
+        person was conditionally released on parole but returned as a new
+         admission."""
 
         initial_incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
@@ -317,14 +324,14 @@ class TestFindRecidivism:
         incarceration_periods = [initial_incarceration_period,
                                  first_reincarceration_period]
 
-        recidivism_events_by_cohort = identifier.find_recidivism(
-            incarceration_periods=incarceration_periods,
-            include_revocation_returns=True)
+        release_events_by_cohort = \
+            identifier.find_release_events_by_cohort_year(
+                incarceration_periods=incarceration_periods,
+                classify_revocation_return_as_recidivism=True)
 
-        assert len(recidivism_events_by_cohort) == 2
+        assert len(release_events_by_cohort) == 2
 
-        assert recidivism_events_by_cohort[2010] == [RecidivismEvent(
-            recidivated=True,
+        assert release_events_by_cohort[2010] == [RecidivismReleaseEvent(
             original_admission_date=initial_incarceration_period.admission_date,
             release_date=initial_incarceration_period.release_date,
             release_facility=None,
@@ -332,16 +339,17 @@ class TestFindRecidivism:
             reincarceration_facility=None,
             return_type=IncarcerationReturnType.RECONVICTION)]
 
-        assert recidivism_events_by_cohort[2014] == [
-            RecidivismEvent.non_recidivism_event(
+        assert release_events_by_cohort[2014] == [
+            NonRecidivismReleaseEvent(
                 original_admission_date=first_reincarceration_period.
                 admission_date,
                 release_date=first_reincarceration_period.release_date,
                 release_facility=None)]
 
-    def test_find_recidivism_sentence_served_probation_revocation(self):
-        """Tests the find_recidivism function path where the person served their
-         first sentence, then later returned on a probation revocation."""
+    def test_find_release_events_by_cohort_year_sentence_served_prob_rev(self):
+        """Tests the find_release_events_by_cohort_year function path where the
+        person served their first sentence, then later returned on a probation
+        revocation."""
 
         initial_incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
@@ -370,14 +378,14 @@ class TestFindRecidivism:
         incarceration_periods = [initial_incarceration_period,
                                  first_reincarceration_period]
 
-        recidivism_events_by_cohort = identifier.find_recidivism(
-            incarceration_periods=incarceration_periods,
-            include_revocation_returns=True)
+        release_events_by_cohort = \
+            identifier.find_release_events_by_cohort_year(
+                incarceration_periods=incarceration_periods,
+                classify_revocation_return_as_recidivism=True)
 
-        assert len(recidivism_events_by_cohort) == 2
+        assert len(release_events_by_cohort) == 2
 
-        assert recidivism_events_by_cohort[2010] == [RecidivismEvent(
-            recidivated=True,
+        assert release_events_by_cohort[2010] == [RecidivismReleaseEvent(
             original_admission_date=initial_incarceration_period.admission_date,
             release_date=initial_incarceration_period.release_date,
             release_facility=None,
@@ -385,16 +393,16 @@ class TestFindRecidivism:
             reincarceration_facility=None,
             return_type=IncarcerationReturnType.PROBATION_REVOCATION)]
 
-        assert recidivism_events_by_cohort[2014] == [
-            RecidivismEvent.non_recidivism_event(
+        assert release_events_by_cohort[2014] == [
+            NonRecidivismReleaseEvent(
                 original_admission_date=first_reincarceration_period.
                 admission_date,
                 release_date=first_reincarceration_period.release_date,
                 release_facility=None)]
 
-    def test_find_recidivism_transfer_no_recidivism(self):
-        """Tests the find_recidivism function path where the person was
-        transferred between two incarceration periods."""
+    def test_find_release_events_by_cohort_year_transfer_no_recidivism(self):
+        """Tests the find_release_events_by_cohort_year function path where the
+        person was transferred between two incarceration periods."""
 
         initial_incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
@@ -423,22 +431,24 @@ class TestFindRecidivism:
         incarceration_periods = [initial_incarceration_period,
                                  first_reincarceration_period]
 
-        recidivism_events_by_cohort = identifier.find_recidivism(
-            incarceration_periods=incarceration_periods,
-            include_revocation_returns=True)
+        release_events_by_cohort = \
+            identifier.find_release_events_by_cohort_year(
+                incarceration_periods=incarceration_periods,
+                classify_revocation_return_as_recidivism=True)
 
-        assert len(recidivism_events_by_cohort) == 1
+        assert len(release_events_by_cohort) == 1
 
-        assert recidivism_events_by_cohort[2014] == [
-            RecidivismEvent.non_recidivism_event(
+        assert release_events_by_cohort[2014] == [
+            NonRecidivismReleaseEvent(
                 original_admission_date=initial_incarceration_period.
                 admission_date,
                 release_date=first_reincarceration_period.release_date,
                 release_facility=None)]
 
-    def test_find_recidivism_transfer_out_but_recidivism(self):
-        """Tests the find_recidivism function path where the person was
-        transferred out of state, then later returned on a new admission."""
+    def test_find_release_events_by_cohort_year_transfer_out_but_recid(self):
+        """Tests the find_release_events_by_cohort_year function path where the
+        person was transferred out of state, then later returned on a new
+        admission."""
         initial_incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=1111,
@@ -466,14 +476,14 @@ class TestFindRecidivism:
         incarceration_periods = [initial_incarceration_period,
                                  first_reincarceration_period]
 
-        recidivism_events_by_cohort = identifier.find_recidivism(
-            incarceration_periods=incarceration_periods,
-            include_revocation_returns=True)
+        release_events_by_cohort = \
+            identifier.find_release_events_by_cohort_year(
+                incarceration_periods=incarceration_periods,
+                classify_revocation_return_as_recidivism=True)
 
-        assert len(recidivism_events_by_cohort) == 2
+        assert len(release_events_by_cohort) == 2
 
-        assert recidivism_events_by_cohort[2010] == [RecidivismEvent(
-            recidivated=True,
+        assert release_events_by_cohort[2010] == [RecidivismReleaseEvent(
             original_admission_date=initial_incarceration_period.admission_date,
             release_date=initial_incarceration_period.release_date,
             release_facility=None,
@@ -481,8 +491,8 @@ class TestFindRecidivism:
             reincarceration_facility=None,
             return_type=IncarcerationReturnType.RECONVICTION)]
 
-        assert recidivism_events_by_cohort[2014] == [
-            RecidivismEvent.non_recidivism_event(
+        assert release_events_by_cohort[2014] == [
+            NonRecidivismReleaseEvent(
                 original_admission_date=first_reincarceration_period.
                 admission_date,
                 release_date=first_reincarceration_period.release_date,
