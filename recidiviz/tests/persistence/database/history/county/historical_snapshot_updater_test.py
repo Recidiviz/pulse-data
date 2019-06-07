@@ -17,6 +17,7 @@
 """Tests for CountyHistoricalSnapshotUpdater"""
 
 import datetime
+from typing import Dict, Type, Optional
 
 from recidiviz.common.constants.bond import BondStatus, BondType
 from recidiviz.common.constants.county.booking import \
@@ -29,7 +30,9 @@ from recidiviz.common.constants.person_characteristics import \
     Ethnicity, Gender, Race, ResidencyStatus
 from recidiviz.common.constants.county.sentence import SentenceStatus
 from recidiviz.common.ingest_metadata import SystemLevel
+from recidiviz.persistence.database.base_schema import Base
 from recidiviz.persistence.database.schema.county import schema as county_schema
+from recidiviz.persistence.persistence_utils import primary_key_value_from_obj
 from recidiviz.tests.persistence.database.history.\
     base_historical_snapshot_updater_test import (
         BaseHistoricalSnapshotUpdaterTest
@@ -45,7 +48,14 @@ _SCHEMA_OBJECT_TYPES_TO_IGNORE = [
 class TestCountyHistoricalSnapshotUpdater(BaseHistoricalSnapshotUpdaterTest):
     """Tests for CountyHistoricalSnapshotUpdater"""
 
-    def testConvertCountyRecordTree(self):
+    def generate_schema_county_person_obj_tree(
+            self) -> county_schema.Person:
+        """Test util for generating a Person schema object that has at least one
+         child of each possible schema object type defined on county/schema.py.
+
+        Returns:
+            A test instance of a Person schema object.
+        """
         person_id = 143
         booking_id = 938
         hold_id = 9945
@@ -171,28 +181,40 @@ class TestCountyHistoricalSnapshotUpdater(BaseHistoricalSnapshotUpdaterTest):
         )
         charge.sentence = sentence
 
-        self._check_person_has_relationships_to_all_schema_object_types(
-            person, county_schema, _SCHEMA_OBJECT_TYPES_TO_IGNORE)
+        return person
+
+    def testConvertCountyRecordTree(self):
+        person = self.generate_schema_county_person_obj_tree()
 
         ingest_time = datetime.datetime(2018, 7, 30)
         self._commit_person(person,
                             SystemLevel.COUNTY,
                             ingest_time)
 
-        all_schema_objects = [person, booking, hold, arrest,
-                              charge, bond, sentence]
+        all_schema_objects = self._get_all_schema_objects_in_db(
+            county_schema.Person, county_schema, _SCHEMA_OBJECT_TYPES_TO_IGNORE)
 
-        self._check_all_non_history_schema_object_types_in_list(
-            all_schema_objects, county_schema, _SCHEMA_OBJECT_TYPES_TO_IGNORE)
+        ingest_time_overrides_by_type: \
+            Dict[Type[Base], Dict[int, datetime.date]] = {
+                county_schema.Sentence: {
+                    12345: datetime.datetime(2018, 7, 14),
+                }
+            }
 
-        ingest_time_overrides = {
-            id(sentence): datetime.datetime(2018, 7, 14)
-        }
+        def _get_ingest_time_override_for_obj(
+                obj: Base) -> Optional[datetime.date]:
+            obj_type = type(obj)
+            if obj_type in ingest_time_overrides_by_type:
+                overrides_for_type = ingest_time_overrides_by_type[obj_type]
+                if primary_key in overrides_for_type:
+                    return overrides_for_type[primary_key]
+
+            return None
 
         for schema_object in all_schema_objects:
-            expected_ingest_time = ingest_time
-            if id(schema_object) in ingest_time_overrides:
-                expected_ingest_time = ingest_time_overrides[id(schema_object)]
+            primary_key = primary_key_value_from_obj(schema_object)
+            expected_ingest_time = \
+                _get_ingest_time_override_for_obj(schema_object) or ingest_time
 
             self._assert_expected_snapshots_for_schema_object(
                 schema_object, [expected_ingest_time])
