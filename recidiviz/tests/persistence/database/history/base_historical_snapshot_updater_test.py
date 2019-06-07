@@ -21,6 +21,8 @@ from types import ModuleType
 from typing import Set, List
 from unittest import TestCase
 
+from more_itertools import one
+
 from recidiviz import Session
 from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
 from recidiviz.persistence.database.base_schema import Base
@@ -50,13 +52,13 @@ class BaseHistoricalSnapshotUpdaterTest(TestCase):
                        ingest_time: datetime.datetime):
 
         act_session = Session()
-        act_session.merge(person)
+        merged_person = act_session.merge(person)
 
         metadata = IngestMetadata(region='somewhere',
                                   jurisdiction_id='12345',
                                   ingest_time=ingest_time,
                                   system_level=system_level)
-        update_historical_snapshots(act_session, [person], [], metadata)
+        update_historical_snapshots(act_session, [merged_person], [], metadata)
 
         act_session.commit()
         act_session.close()
@@ -92,59 +94,61 @@ class BaseHistoricalSnapshotUpdaterTest(TestCase):
 
         return expected_schema_object_types
 
-    def _check_person_has_relationships_to_all_schema_object_types(
+    def _get_all_schema_objects_in_db(
             self,
-            person: SchemaPersonType,
+            schema_person_type: SchemaPersonType,
             schema: ModuleType,
-            schema_object_type_names_to_ignore: List[str]
-    ) -> None:
+            schema_object_type_names_to_ignore: List[str]) -> List[Base]:
+        """Generates a list of all schema objects stored in the database that
+        can be reached from an object with the provided type.
 
-        provided_schema_object_types = \
-            self._get_all_schema_object_types_in_record_tree(person)
+        Args:
+            schema_person_type: Class type of the root of the schema object
+                graph (e.g. StatePerson).
+            schema: The schema module that root_object_type is defined in.
+            schema_object_type_names_to_ignore: type names for objects defined
+                in the schema that we shouldn't assert are included in the
+                object graph.
 
-        # Ensure this test covers all schema object types
-        expected_schema_object_types = \
-            self._get_all_non_history_schema_object_type_names_in_module(schema)
+        Returns:
+            A list of all schema objects that can be reached from the object
+            graph rooted at the singular object of type |schema_person_type|.
 
-        missing_schema_object_types = []
-        for schema_obj_type in expected_schema_object_types:
-            if schema_obj_type not in provided_schema_object_types and \
-                    schema_obj_type not in schema_object_type_names_to_ignore:
-                missing_schema_object_types.append(schema_obj_type)
-        if missing_schema_object_types:
-            self.fail(
-                'Expected schema object type(s) {} not found in provided '
-                'schema object types'.format(
-                    ', '.join(missing_schema_object_types)))
+        Throws:
+            If more than one object of type |schema_person_type| exists in the
+            DB.
+        """
 
-    @staticmethod
-    def _get_all_schema_object_types_in_record_tree(
-            person: SchemaPersonType) -> Set[str]:
-        schema_object_types = set()
+        session = Session()
+        person = one(session.query(schema_person_type).all())
 
+        schema_objects: Set[Base] = {person}
         unprocessed = list([person])
-        processed = []
         while unprocessed:
             schema_object = unprocessed.pop()
-            schema_object_types.add(type(schema_object).__name__)
-            processed.append(schema_object)
 
             related_entities = []
             for relationship_name \
                     in schema_object.get_relationship_property_names():
                 related = getattr(schema_object, relationship_name)
+
                 # Relationship can return either a list or a single item
+                if isinstance(related, Base):
+                    related_entities.append(related)
                 if isinstance(related, list):
                     related_entities.extend(related)
-                elif related is not None:
-                    related_entities.append(related)
 
-            unprocessed.extend([related_schema_object for related_schema_object
-                                in related_entities
-                                if related_schema_object not in processed
-                                and related_schema_object not in unprocessed])
+                for obj in related_entities:
+                    if obj not in schema_objects:
+                        schema_objects.add(obj)
+                        unprocessed.append(obj)
 
-        return schema_object_types
+        session.close()
+
+        self._check_all_non_history_schema_object_types_in_list(
+            list(schema_objects), schema, schema_object_type_names_to_ignore)
+
+        return list(schema_objects)
 
     def _assert_expected_snapshots_for_schema_object(
             self,
