@@ -78,11 +78,10 @@ def start_table_load(
             "export_config.TABLES_TO_EXPORT?", table_name)
         return None
 
-    job_config = bigquery.LoadJobConfig(
-        schema=bq_schema,
-        source_format=bigquery.SourceFormat.CSV,
-        write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE
-    )
+    job_config = bigquery.LoadJobConfig()
+    job_config.schema = bq_schema
+    job_config.source_format = bigquery.SourceFormat.CSV
+    job_config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE
 
     load_job = bq_utils.client().load_table_from_uri(
         uri,
