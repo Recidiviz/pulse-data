@@ -52,4 +52,4 @@ RUN if [ "$DEV_MODE" = "True" ]; \
 ADD . /app
 
 EXPOSE 8080
-CMD pipenv run gunicorn -c gunicorn.conf.py -b :8080 recidiviz.server:app
+CMD pipenv run gunicorn -c gunicorn.conf.py --log-file=- -b :8080 recidiviz.server:app
