@@ -38,13 +38,14 @@ from recidiviz.utils import metadata
 TABLES_TO_EXCLUDE_FROM_EXPORT = tuple( # type: ignore
     # List tables to be excluded from export here. For example:
     # schema.FakePersonHistoryTable
+    table.__table__ for table in schema_utils.get_state_table_classes()
 )
 
 # By default, all tables in the various base_schema.py modules are exported
 # unless listed in TABLES_TO_EXCLUDE_FROM_EXPORT above.
 TABLES_TO_EXPORT = tuple(
     table.__table__ for table in schema_utils.get_all_table_classes()
-    if table not in TABLES_TO_EXCLUDE_FROM_EXPORT
+    if table.__table__ not in TABLES_TO_EXCLUDE_FROM_EXPORT
 )
 
 # Mapping from table name to a list of columns to be excluded for that table.

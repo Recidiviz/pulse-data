@@ -120,6 +120,8 @@ def generate_full_graph_state_person(
         date_imposed=datetime.date(year=2016, month=10, day=14),
         state_code='us_ca',
         county_code='us_ca_san_francisco',
+        min_length_days=90,
+        max_length_days=120,
     )
 
     person.sentence_groups = [sentence_group]
@@ -131,6 +133,7 @@ def generate_full_graph_state_person(
             status_raw_text='COMPLETED',
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             incarceration_type_raw_text='PRISON',
+            date_imposed=datetime.date(year=2018, month=7, day=3),
             projected_min_release_date=
             datetime.date(year=2017, month=5, day=14),
             projected_max_release_date=None,
@@ -184,6 +187,7 @@ def generate_full_graph_state_person(
     court_case = entities.StateCourtCase.new_with_defaults(
         external_id='CASEID456',
         status=StateCourtCaseStatus.EXTERNAL_UNKNOWN,
+        date_convicted=datetime.date(year=2018, month=7, day=1),
         next_court_date=datetime.date(year=2019, month=7, day=1),
         state_code='us_ca',
         court_fee_dollars=150,
