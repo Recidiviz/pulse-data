@@ -52,6 +52,10 @@ def get_aggregate_table_classes() -> Iterator[Table]:
     yield from _get_all_table_classes(aggregate_schema.__name__)
 
 
+def get_state_table_classes() -> Iterator[Table]:
+    yield from _get_all_table_classes(state_schema.__name__)
+
+
 _HISTORICAL_TABLE_CLASS_SUFFIX = 'History'
 
 
