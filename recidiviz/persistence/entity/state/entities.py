@@ -42,7 +42,6 @@ from recidiviz.common.constants.person_characteristics import (
     Ethnicity,
     ResidencyStatus
 )
-from recidiviz.common.constants.county.sentence import SentenceStatus
 
 from recidiviz.common.constants.state.state_court_case import (
     StateCourtCaseStatus,
@@ -63,6 +62,7 @@ from recidiviz.common.constants.state.state_fine import StateFineStatus
 from recidiviz.common.constants.state.state_charge import (
     StateChargeClassification,
 )
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import (
     StateSupervisionType,
 )
@@ -395,7 +395,7 @@ class StateSentenceGroup(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     # TODO(1698): Look at Measures for Justice doc for methodology on how to
     #  calculate an aggregate sentence status from multiple sentence statuses.
     # This will be a composite of all the linked individual statuses
-    status: SentenceStatus = attr.ib()  # non-nullable
+    status: StateSentenceStatus = attr.ib()  # non-nullable
     status_raw_text: Optional[str] = attr.ib()
 
     # Type
@@ -446,7 +446,7 @@ class StateSupervisionSentence(ExternalIdEntity,
     supervision_sentence_id: Optional[int] = attr.ib()
 
     # Status
-    status: SentenceStatus = attr.ib()  # non-nullable
+    status: StateSentenceStatus = attr.ib()  # non-nullable
     status_raw_text: Optional[str] = attr.ib()
 
     # Type
@@ -495,7 +495,7 @@ class StateIncarcerationSentence(ExternalIdEntity,
     incarceration_sentence_id: Optional[int] = attr.ib()
 
     # Status
-    status: SentenceStatus = attr.ib()  # non-nullable
+    status: StateSentenceStatus = attr.ib()  # non-nullable
     status_raw_text: Optional[str] = attr.ib()
 
     # Type

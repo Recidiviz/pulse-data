@@ -20,7 +20,6 @@ import datetime
 
 from recidiviz.common.constants.bond import BondStatus, BondType
 from recidiviz.common.constants.charge import ChargeStatus, ChargeDegree
-from recidiviz.common.constants.county.sentence import SentenceStatus
 from recidiviz.common.constants.person_characteristics import Race, Ethnicity
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import \
@@ -38,6 +37,7 @@ from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus, StateIncarcerationFacilitySecurityLevel, \
     StateIncarcerationPeriodAdmissionReason, \
     StateIncarcerationPeriodReleaseReason
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import \
     StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import \
@@ -115,7 +115,7 @@ def generate_full_graph_state_person(
 
     sentence_group = entities.StateSentenceGroup.new_with_defaults(
         external_id='BOOK_ID1234',
-        status=SentenceStatus.SERVING,
+        status=StateSentenceStatus.SERVING,
         status_raw_text='SERVING',
         date_imposed=datetime.date(year=2016, month=10, day=14),
         state_code='us_ca',
@@ -129,7 +129,7 @@ def generate_full_graph_state_person(
     incarceration_sentence = \
         entities.StateIncarcerationSentence.new_with_defaults(
             external_id='BOOK_ID1234-1',
-            status=SentenceStatus.COMPLETED,
+            status=StateSentenceStatus.COMPLETED,
             status_raw_text='COMPLETED',
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             incarceration_type_raw_text='PRISON',
@@ -157,7 +157,7 @@ def generate_full_graph_state_person(
     supervision_sentence = \
         entities.StateSupervisionSentence.new_with_defaults(
             external_id='BOOK_ID1234-2',
-            status=SentenceStatus.SERVING,
+            status=StateSentenceStatus.SERVING,
             status_raw_text='SERVING',
             supervision_type=StateSupervisionType.PAROLE,
             supervision_type_raw_text='PAROLE',
