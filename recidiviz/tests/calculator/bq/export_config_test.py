@@ -166,5 +166,8 @@ class ExportConfigTest(unittest.TestCase):
         """Make sure a table is excluded from TABLES_TO_EXPORT if listed in
             TABLES_TO_EXCLUDE_FROM_EXPORT.
         """
+        to_export_names = \
+            [table.name for table in export_config.TABLES_TO_EXPORT]
+
         for table in export_config.TABLES_TO_EXCLUDE_FROM_EXPORT:
-            self.assertNotIn(table.__table__, export_config.TABLES_TO_EXPORT)
+            self.assertNotIn(table.name, to_export_names)
