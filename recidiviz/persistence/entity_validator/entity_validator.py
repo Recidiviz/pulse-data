@@ -20,7 +20,7 @@ assumptions."""
 from typing import List, Tuple, Callable
 
 from recidiviz.persistence.entity.county import entities as county_entities
-from recidiviz.persistence.entity.entities import PersonType
+from recidiviz.persistence.entity.entities import EntityPersonType
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity_validator.county.county_validator import \
     validate_county_person
@@ -28,9 +28,11 @@ from recidiviz.persistence.entity_validator.state.state_validator import \
     validate_state_person
 
 
-def validate(people: List[PersonType]) -> Tuple[List[PersonType], int]:
-    """Validates a list of PersonType entities and returns the valid people and
-    the number of people with validation errors."""
+def validate(
+        people: List[EntityPersonType]) -> Tuple[List[EntityPersonType], int]:
+    """Validates a list of EntityPersonType entities and returns the valid
+    people and the number of people with validation errors.
+    """
     data_validation_errors = 0
     validated_people = []
     for person in people:
@@ -42,7 +44,8 @@ def validate(people: List[PersonType]) -> Tuple[List[PersonType], int]:
     return validated_people, data_validation_errors
 
 
-def _get_validator(person: PersonType) -> Callable[[PersonType], bool]:
+def _get_validator(
+        person: EntityPersonType) -> Callable[[EntityPersonType], bool]:
     if isinstance(person, county_entities.Person):
         return validate_county_person
 
