@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for data ingest_info_converter."""
+"""Tests for the ingest info county_converter."""
 import datetime
 import unittest
 import itertools
@@ -51,11 +51,11 @@ _BIRTHDATE_SCRUBBED = datetime.date(1990, 1, 1)
 _JURISDICTION_ID = 'JURISDICTION_ID'
 
 
-class TestIngestInfoConverter(unittest.TestCase):
+class TestIngestInfoCountyConverter(unittest.TestCase):
     """Test converting IngestInfo objects to Persistence layer objects."""
 
+    @staticmethod
     def _convert_and_throw_on_errors(
-            self,
             ingest_info: IngestInfo,
             metadata: IngestMetadata
     ) -> List[county_entities.Person]:
@@ -92,60 +92,6 @@ class TestIngestInfoConverter(unittest.TestCase):
         ingest_info.charges.add(charge_id='CHARGE_ID', name='DUI',
                                 bond_id='BOND_ID', sentence_id='SENTENCE_ID')
         ingest_info.bonds.add(bond_id='BOND_ID')
-        ingest_info.sentences.add(sentence_id='SENTENCE_ID', is_life='True')
-
-        # Act
-        result = self._convert_and_throw_on_errors(ingest_info, metadata)
-
-        # Assert
-        expected_result = [Person.new_with_defaults(
-            external_id='PERSON_ID',
-            region='REGION',
-            jurisdiction_id='JURISDICTION_ID',
-            bookings=[Booking.new_with_defaults(
-                external_id='BOOKING_ID',
-                admission_date=_INGEST_TIME.date(),
-                admission_date_inferred=True,
-                first_seen_time=_INGEST_TIME,
-                last_seen_time=_INGEST_TIME,
-                custody_status=CustodyStatus.PRESENT_WITHOUT_INFO,
-                arrest=Arrest.new_with_defaults(
-                    external_id='ARREST_ID',
-                    agency='PD'
-                ),
-                charges=[Charge.new_with_defaults(
-                    external_id='CHARGE_ID_COUNT_1',
-                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                    name='DUI',
-                    bond=Bond.new_with_defaults(
-                        external_id='BOND_ID',
-                        status=BondStatus.PRESENT_WITHOUT_INFO
-                    ),
-                    sentence=Sentence.new_with_defaults(
-                        status=SentenceStatus.PRESENT_WITHOUT_INFO,
-                        external_id='SENTENCE_ID',
-                        is_life=True
-                    )
-                )]
-            )])]
-
-        self.assertEqual(result, expected_result)
-
-    def testConvert_FullIngestInfo_usingPop(self):
-        # Arrange
-        metadata = IngestMetadata('REGION', _JURISDICTION_ID, _INGEST_TIME)
-
-        ingest_info = IngestInfo()
-        ingest_info.people.add(person_id='PERSON_ID',
-                               booking_ids=['BOOKING_ID'])
-        ingest_info.bookings.add(booking_id='BOOKING_ID',
-                                 arrest_id='ARREST_ID',
-                                 charge_ids=['CHARGE_ID'])
-        ingest_info.arrests.add(arrest_id='ARREST_ID', agency='PD')
-        ingest_info.charges.add(charge_id='CHARGE_ID', name='DUI',
-                                bond_id='BOND_ID', sentence_id='SENTENCE_ID')
-        ingest_info.bonds.add(bond_id='BOND_ID')
-
         ingest_info.sentences.add(sentence_id='SENTENCE_ID', is_life='True')
 
         # Act

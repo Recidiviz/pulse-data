@@ -49,7 +49,7 @@ message IngestInfo {
     repeated StateIncarcerationSentence state_incarceration_sentences = 17;
     repeated StateFine state_fines = 18;
     repeated StateCharge state_charges = 19;
-    repeated StateCourtCase court_cases = 20;
+    repeated StateCourtCase state_court_cases = 20;
     repeated StateBond state_bonds = 21;
     repeated StateIncarcerationPeriod state_incarceration_periods = 22;
     repeated StateSupervisionPeriod state_supervision_periods = 23;
@@ -57,6 +57,7 @@ message IngestInfo {
     repeated StateParoleDecision state_parole_decisions = 25;
     repeated StateSupervisionViolation state_supervision_violations = 26;
     repeated StateSupervisionViolationResponse state_supervision_violation_responses = 27;
+    repeated StateAgent state_agents = 28;
 }
 
 message Person {
@@ -174,7 +175,7 @@ message StatePerson {
     optional string birthdate = 7;
     optional string gender = 8;
     optional string age = 9;
-    optional string place_of_residence = 10;
+    optional string current_address = 10;
     optional string residency_status = 11;
 
     repeated string state_person_race_ids = 12;
@@ -188,25 +189,30 @@ message StatePerson {
 message StatePersonRace {
     optional string state_person_race_id = 1;
     optional string race = 2;
+    optional string state_code = 3;
 }
 
 message StatePersonEthnicity {
     optional string state_person_ethnicity_id = 1;
     optional string ethnicity = 2;
+    optional string state_code = 3;
 }
 
 message StateAlias {
     optional string alias_id = 1;
-    optional string full_name = 2;
-    optional string surname = 3;
-    optional string given_names = 4;
-    optional string middle_names = 5;
-    optional string name_suffix = 6;
+    optional string state_code = 2;
+    optional string full_name = 3;
+    optional string surname = 4;
+    optional string given_names = 5;
+    optional string middle_names = 6;
+    optional string name_suffix = 7;
 }
 
 message StatePersonExternalId {
-    optional string external_id = 1;
-    optional string id_type = 2;
+    optional string state_person_external_id_id = 1;
+    optional string external_id = 2;
+    optional string id_type = 3;
+    optional string state_code = 4;
 }
 
 message StateAssessment {
@@ -214,10 +220,11 @@ message StateAssessment {
     optional string assessment_class = 2;
     optional string assessment_type = 3;
     optional string assessment_date = 4;
-    optional string assessment_score = 5;
-    optional string assessment_level = 6;
-    optional string assessment_metadata = 7;
-    optional string conducting_agent_name = 8;
+    optional string state_code = 5;
+    optional string assessment_score = 6;
+    optional string assessment_level = 7;
+    optional string assessment_metadata = 8;
+
     optional string conducting_agent_id = 9;
 }
 
@@ -265,14 +272,13 @@ message StateIncarcerationSentence {
     optional string max_length = 11;
     optional string is_life = 12;
     optional string parole_possible = 13;
-    optional string is_suspended = 14;
-    optional string initial_time_served = 15;
-    optional string good_time = 16;
-    optional string earned_time = 17;
+    optional string initial_time_served = 14;
+    optional string good_time = 15;
+    optional string earned_time = 16;
 
-    repeated string state_charge_ids = 18;
-    repeated string state_incarceration_period_ids = 19;
-    repeated string state_supervision_period_ids = 20;
+    repeated string state_charge_ids = 17;
+    repeated string state_incarceration_period_ids = 18;
+    repeated string state_supervision_period_ids = 19;
 }
 
 message StateFine {
@@ -291,18 +297,19 @@ message StateCharge {
     optional string status = 2;
     optional string offense_date = 3;
     optional string date_charged = 4;
-    optional string county_code = 5;
-    optional string statute = 6;
-    optional string description = 7;
-    optional string attempted = 8;
-    optional string charge_classification = 9;
-    optional string degree = 10;
-    optional string counts = 11;
-    optional string charge_notes = 12;
-    optional string charging_entity = 13;
+    optional string state_code = 5;
+    optional string county_code = 6;
+    optional string statute = 7;
+    optional string description = 8;
+    optional string attempted = 9;
+    optional string charge_classification = 10;
+    optional string degree = 11;
+    optional string counts = 12;
+    optional string charge_notes = 13;
+    optional string charging_entity = 14;
 
-    optional string state_court_case_id = 14;
-    optional string state_bond_id = 15;
+    optional string state_court_case_id = 15;
+    optional string state_bond_id = 16;
 }
 
 message StateCourtCase {
@@ -324,7 +331,7 @@ message StateBond {
     optional string date_paid = 4;
     optional string state_code = 5;
     optional string county_code = 6;
-    optional string amount_dollars = 7;
+    optional string amount = 7;
     optional string bond_agent = 8;
 }
 
@@ -373,8 +380,8 @@ message StateIncarcerationIncident {
     optional string location_within_facility = 5;
     optional string offense = 6;
     optional string outcome = 7;
-    optional string responding_officer_name = 8;
-    optional string responding_officer_id = 9;
+
+    optional string responding_officer_id = 8;
 }
 
 message StateParoleDecision {
@@ -387,22 +394,34 @@ message StateParoleDecision {
     optional string decision_outcome = 7;
     optional string decision_reasoning = 8;
     optional string corrective_action = 9;
-    repeated string decision_agent_names = 10;
+
+    repeated string decision_agent_ids = 10;
 }
 
 message StateSupervisionViolation {
     optional string state_supervision_violation_id = 1;
     optional string violation_type = 2;
     optional string violation_date = 3;
-    optional string is_violent = 4;
-    repeated string violated_conditions = 5;
+    optional string state_code = 4;
+    optional string is_violent = 5;
+    repeated string violated_conditions = 6;
+
+    repeated string state_supervision_violation_response_ids = 7;
 }
 
 message StateSupervisionViolationResponse {
     optional string state_supervision_violation_response_id = 1;
     optional string response_type = 2;
     optional string response_date = 3;
-    optional string decision = 4;
-    optional string revocation_type = 5;
-    optional string deciding_body_type = 6;
+    optional string state_code = 4;
+    optional string decision = 5;
+    optional string revocation_type = 6;
+    optional string deciding_body_type = 7;
+}
+
+message StateAgent {
+    optional string state_agent_id = 1;
+    optional string agent_type = 2;
+    optional string state_code = 3;
+    optional string full_name = 4;
 }
