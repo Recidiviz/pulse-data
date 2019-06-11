@@ -29,7 +29,8 @@ from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.county.hold import HoldStatus
 from recidiviz.common.constants.county.sentence import SentenceStatus
-from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
+from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
 from recidiviz.ingest.scrape.constants import MAX_PEOPLE_TO_LOG
 from recidiviz.persistence import persistence_utils
 from recidiviz.persistence.entity.county import entities as county_entities
@@ -162,6 +163,11 @@ def _should_abort(
     Returns true if we should abort the current attempt to persist an IngestInfo
     object, given the number of errors we've encountered.
     """
+    if total_people == 0:
+        logging.info("Aborting because the ingest info object contains no "
+                     "people objects to persist.")
+        return True
+
     # TODO: finalize the logic in here.
     if conversion_result.protected_class_errors:
         logging.error(
@@ -202,7 +208,7 @@ def write(ingest_info, metadata):
 
     mtags = {monitoring.TagKey.SHOULD_PERSIST: _should_persist(),
              monitoring.TagKey.PERSISTED: False}
-    total_people = len(ingest_info.people)
+    total_people = _get_total_people(ingest_info, metadata)
     with monitoring.measurements(mtags) as measurements:
 
         # Convert the people one at a time and count the errors as they happen.
@@ -279,3 +285,9 @@ def write(ingest_info, metadata):
         finally:
             session.close()
         return persisted
+
+
+def _get_total_people(ingest_info: IngestInfo, metadata: IngestMetadata) -> int:
+    if metadata.system_level == SystemLevel.COUNTY:
+        return len(ingest_info.people)
+    return len(ingest_info.state_people)

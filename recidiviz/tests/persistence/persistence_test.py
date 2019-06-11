@@ -441,6 +441,23 @@ class TestPersistence(TestCase):
             bookings=[expected_booking])
         self.assertEqual([expected_person], county_dao.read_people(Session()))
 
+    def test_write_noPeople(self):
+        # Arrange
+        most_recent_scrape_time = (SCRAPER_START_DATETIME + timedelta(days=1))
+        metadata = IngestMetadata.new_with_defaults(
+            region=REGION_1,
+            jurisdiction_id=JURISDICTION_ID,
+            ingest_time=most_recent_scrape_time)
+
+        ingest_info = IngestInfo()
+
+        # Act
+        persistence.write(ingest_info, metadata)
+
+        # Assert
+        people = county_dao.read_people(Session())
+        self.assertFalse(people)
+
     def test_inferReleaseDateOnOpenBookings(self):
         # Arrange
         hold = county_entities.Hold.new_with_defaults(
