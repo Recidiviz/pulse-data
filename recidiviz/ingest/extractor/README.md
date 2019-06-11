@@ -217,35 +217,34 @@ a column, list it as part of `keys_to_ignore` (as in the above example).
 For an example of a scraper using all of these specific features, check out the
 `us_nd_scraper` which ingests data across several incoming CSV files at a time.
 
-The CSV data extractor includes a few unique mapping sections. Two of these are
-`ancestor_key` and `primary_key` (a third, `child_key_mappings` is described in
-an example further below):
+The CSV data extractor includes a few unique mapping sections. Three of these
+are `ancestor_keys`, `primary_key`, `child_key_mappings`, and `ancestor_gap`.
+
+#### ancestor_keys and primary_key
 
 ```yaml
 key_mappings:
-  OFFENDER_BOOK_ID: state_sentence_group.state_sentence_group_id
-  IN_OUT_STATUS: state_sentence_group.status
+  SENTENCE_ID: state_incarceration_sentence.state_incarceration_sentence_id
+  IN_OUT_STATUS: state_incarceration_sentence.status
 
-ancestor_key:
-  ROOT_OFFENDER_ID: state_person.state_person_id
+ancestor_keys:
+  ROOT_PERSON_ID: state_person.state_person_id
+  GROUP_ID: state_sentence_group.state_sentence_group_id
 
 primary_key:
-  OFFENDER_BOOK_ID: state_sentence_group.state_sentence_group_id
-  
-keys_to_ignore:
-  - ROOT_OFFENDER_ID
+  SENTENCE_ID: state_incarceration_sentence.state_incarceration_sentence_id
 ```
 
-`ancestor_key` and `primary_key` are used to help stitch together `IngestInfo`
-object trees that may be distributed across multiple rows and files, for example
-if there is a file filled with rows that populate `StatePerson` entities and
-another file filled with rows that populate `SentenceGroup` entities that
-reference `StatePerson`. These keys are only used in the CSV extractor, for now.
+`ancestor_keys` and `primary_key` are used to help stitch together `IngestInfo`
+object trees that may be distributed across multiple rows and files. In the
+example above, a file contains columns for `state_incarceration_sentence`,
+including its primary key, and also has columns pointing to the parent
+`state_sentence_group` and the grandparent `state_person`.
 
 Specifically:
 
-* `ancestor_key` includes references to ancestor entities that this row
-is updating/creating a child for. If the ancestor entity with the given id has
+* `ancestor_keys` includes references to ancestor entities that this row
+is updating/creating a child for. If an ancestor entity with the given id has
 already been instantiated, and the ancestor is the direct parent of this child,
 then this will attach the child to that ancestor. If the ancestor has been 
 instantiated but is not a direct parent, and we don't know the id of any gaps 
@@ -255,21 +254,18 @@ If the ancestor entity has not yet been instantiated, a new ancestor entity will
 be created (and attached to its own ancestor, if known), and the child will be 
 attached to the ancestor or within its tree, as described previously. This may 
 be omitted if this file does not contain any ancestor information. If the 
-`ancestor_key` is omitted and and an object with a matching `primary_key` has 
-not already been instantiated, we pick the most recent object with a matching 
-parent type. (TODO(1625): Update to fill an ancestor chain with dummy objects 
+`ancestor_keys` is omitted and and an object with a matching `primary_key` has
+not already been instantiated, we pick the most recent object with a matching
+parent type. (TODO(1625): Update to fill an ancestor chain with dummy objects
 when there is no primary key match and no ancestor key.)
- 
+
 * `primary_key` includes the column name that matches to the main id for this
 entity. This is used to ensure the primary id is set on the entity when it is
 first created, regardless of which field it is first created with, to help in
 locating this object later. This may be omitted if a `primary_id_coordinates_override_callback`
 (see below) is defined for this file.
 
-
-Note that if either of these sections includes a field name that is not being
-directly scraped _for this new entity_, it must be listed under
-`keys_to_ignore`.
+#### child_key_mappings
 
 If a file predominantly contains information for a parent entity, but also has
 a field for a child entity which will be ingested by a later file, that child
@@ -282,9 +278,8 @@ GROUP_ID,CASE_ID,CHARGE_SEQ,CHARGE_STATUS,COMMENT_TEXT,DESCRIPTION,INITIAL_COUNT
 105640,5190,1,A,,KIDNAPPING,1,1801,,FB,6/19/89  12:00:00 AM,12/6/14  12:23:51 PM,
 ```
 
-This contains information mostly about a `StateCharge`, but also has an id to
-the downstream `CourtCase`, which will be ingested later. The YAML for this file
-is as follows:
+This contains information mostly about a `StateCharge`, but also has a field for
+the downstream `CourtCase`. The YAML for this file is as follows:
 ```yaml
 key_mappings:
   CHARGE_STATUS: state_charge.status
@@ -296,29 +291,68 @@ key_mappings:
   INITIAL_COUNTS: state_charge.counts
   COMMENT_TEXT: state_charge.charge_notes
 
-ancestor_key:
+ancestor_keys:
   GROUP_ID: state_sentence_group.state_sentence_group_id
-
-primary_key:
-  CASE_ID: state_court_case.state_court_case_id
 
 child_key_mappings:
   CASE_ID: state_court_case.state_court_case_id
 
 keys_to_ignore:
-  - OFFENDER_BOOK_ID
-  - OFFENCE_DATE_RANGE
   - CREATE_DATETIME
   - MODIFY_DATETIME
-  - CHARGE_SEQ
 ```
 
 When the `CASE_ID` column is processed, if it has a value then `StateCharge.court_case`
 will be created immediately, with the value of that column set on `court_case_id`.
-Note also that the `CASE_ID` is being referenced again under `primary_key`: this
-will ensure that the `court_case` will be locatable later when the case file is
-ingested by caching the `CASE_ID` value as the primary key of the `court_case` 
-pointing to its chain of ancestor entities.
+Importantly, the primary key for the parent entity in the file, `state_charge`
+in this case, will be included in the ancestor chain of any new child entities,
+whether that primary key comes from `primary_key` or a callback as described
+below.
+
+#### enforced_ancestor_types
+
+If a file contains information for some entity and includes an `ancestor_keys`
+for an ancestor that's not the direct parent, and the entity being extracted has
+multiple potential parent types between itself and the noted ancestor (e.g. if
+the entity is a `state_charge` and the `ancestor_keys` points to `state_sentence_group`
+then in between the two could be any of `state_incarceration_sentence`,
+`state_supervision_sentence` or `state_fine`). `enforced_ancestor_types` can be
+used in these situations to explicitly declare what the parent should be, from
+context.
+
+For example:
+```yaml
+key_mappings:
+  CASE_ID: state_court_case.state_court_case_id
+  CASE_STATUS: state_court_case.status
+  CONVICTION_DATE: state_court_case.date_convicted
+  COURT_DATE: state_court_case.next_court_date
+  COUNTY_CODE: state_court_case.county_code
+  JUDGE_NAME: state_court_case.judge_name
+
+ancestor_keys:
+  OFFENDER_BOOK_ID: state_sentence_group.state_sentence_group_id
+
+enforced_ancestor_types:
+  state_sentence: state_incarceration_sentence
+
+primary_key:
+  ORDER_ID: state_court_case.state_court_case_id
+
+keys_to_ignore:
+  - CREATE_DATETIME
+  - MODIFY_DATETIME
+```
+
+In this case, the mapping is used to extract `state_court_case` entities, but we
+only have a key for `state_sentence_group`, which is the great-grandparent. The
+grandparent can be any of the state sentence types (hence `state_sentence`; see
+`ingest_object_hierarchy.py` for a set of valid ancestor choice keys), and then
+the parent will be `state_charge`. `enforced_ancestor_types` is explicitly set
+to `state_incarceration_sentence` because it is known that this file provides
+information on cases that lead to sentences of incarceration. If there are
+multiple ancestor levels for which a specific type must be explicitly set, that
+can be done with multiple entries in the `enforced_ancestor_types` mapping.
 
 ### Csv-Specific Callbacks
 
@@ -355,7 +389,7 @@ def my_primary_key_override_callback(row: Dict[str, str]) -> IngestFieldCoordina
 * `parent_id_override_callback` - a callback which is called before a row is 
 processed, dynamically setting the parent id with which to locate the entity to
 be updated by the row. This is inserted into the mapping of parent ids derived
-from the `ancestor_key` mapping in the yaml file, overriding any entry in the 
+from the `ancestor_keys` mapping in the yaml file, overriding any entry in the 
 map with the same class key. It will be invoked with the `IngestFieldCoordinates` that
 represent the primary key for the row, and must return a mapping from parent 
 type to the primary key of an instance of that type. The interface is:

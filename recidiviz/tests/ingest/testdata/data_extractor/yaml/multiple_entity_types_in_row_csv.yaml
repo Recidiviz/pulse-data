@@ -3,7 +3,7 @@ key_mappings:
   MAX_TERM: sentence_group.max_length
   PAROLE_DATE: incarceration_sentence.parole_eligibility_date
 
-ancestor_key:
+ancestor_keys:
   OFFENDER_BOOK_ID: sentence_group.sentence_group_id
 
 primary_key:

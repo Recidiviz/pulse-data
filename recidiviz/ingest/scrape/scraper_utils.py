@@ -26,7 +26,9 @@ import zlib
 from typing import Union, Optional
 
 from recidiviz.ingest.models.ingest_info import IngestInfo, IngestObject, \
-    HIERARCHY_MAP, PLURALS
+    PLURALS
+from recidiviz.ingest.models.ingest_object_hierarchy import \
+    get_ancestor_class_sequence
 from recidiviz.ingest.scrape.task_params import ScrapedData
 from recidiviz.utils import environment
 from recidiviz.utils import secrets
@@ -89,12 +91,9 @@ def one(ingest_object: str,
     else:
         ingest_info = ingest_info_or_scraped_data
 
-    if ingest_object not in HIERARCHY_MAP:
-        raise ValueError(
-            "Cannot find ingest object with name {}".format(ingest_object))
-
+    hierarchy_sequence = get_ancestor_class_sequence(ingest_object)
     parent = ingest_info
-    for hier_class in HIERARCHY_MAP[ingest_object]:
+    for hier_class in hierarchy_sequence:
         parent = _one(hier_class, parent)
 
     return _one(ingest_object, parent)
