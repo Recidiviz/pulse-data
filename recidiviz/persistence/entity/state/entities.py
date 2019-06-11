@@ -308,6 +308,7 @@ class StateCharge(ExternalIdEntity, BuildableAttr, DefaultableAttr):
 
     #   - Where
     state_code: str = attr.ib()  # non-nullable
+    county_code: str = attr.ib()
 
     #   - What
     # A code corresponding to actual sentencing terms that

@@ -17,37 +17,8 @@
 
 """Represents data scraped for a single individual."""
 from abc import abstractmethod
-from typing import List, Optional, Dict, Sequence
+from typing import List, Optional, Dict
 
-HIERARCHY_MAP: Dict[str, Sequence[str]] = {
-    # County level hierarchy
-    'person': (),
-    'booking': ('person',),
-    'arrest': ('person', 'booking'),
-    'charge': ('person', 'booking'),
-    'hold': ('person', 'booking'),
-    'bond': ('person', 'booking', 'charge'),
-    'sentence': ('person', 'booking', 'charge'),
-
-    # State level hierarchy
-    'state_person': (),
-    'state_person_race': ('state_person',),
-    'state_person_ethnicity': ('state_person',),
-    'state_alias': ('state_person',),
-    'state_person_external_id': ('state_person',),
-    'state_assessment': ('state_person',),
-    'state_sentence_group': ('state_person',),
-    'state_supervision_sentence': ('state_person', 'state_sentence_group',),
-    'state_incarceration_sentence': ('state_person', 'state_sentence_group',),
-    'state_fine': ('state_person', 'state_sentence_group',),
-    'state_incarceration_period': ('state_person', 'state_sentence_group',
-                                   'state_incarceration_sentence',),
-    'state_charge': ('state_person', 'state_sentence_group',
-                     'state_incarceration_sentence',),
-    'state_court_case': ('state_person', 'state_sentence_group',
-                         'state_incarceration_sentence', 'state_charge',),
-    # TODO(1626): Handle when an entity type can be child of multiple parents
-}
 
 PLURALS = {'person': 'people', 'booking': 'bookings', 'charge': 'charges',
            'hold': 'holds',
@@ -66,7 +37,9 @@ PLURALS = {'person': 'people', 'booking': 'bookings', 'charge': 'charges',
            'state_charge': 'state_charges',
            'state_incarceration_incident': 'state_incarceration_incidents',
            'state_parole_decision': 'state_parole_decisions',
-           'state_supervision_violation': 'state_supervision_violations'
+           'state_supervision_violation': 'state_supervision_violations',
+           'state_supervision_violation_response':
+               'state_supervision_violation_responses'
            }
 
 
@@ -764,6 +737,13 @@ class StateSentenceGroup(IngestObject):
             return self.state_supervision_sentences[-1]
         return None
 
+    def get_state_supervision_sentence_by_id(self,
+                                             supervision_sentence_id) \
+            -> Optional['StateSupervisionSentence']:
+        return next((ss for ss in self.state_supervision_sentences
+                     if ss.state_supervision_sentence_id
+                     == supervision_sentence_id), None)
+
     def get_recent_state_incarceration_sentence(self)\
             -> Optional['StateIncarcerationSentence']:
         if self.state_incarceration_sentences:
@@ -859,13 +839,13 @@ class StateSupervisionSentence(IngestObject):
             return self.state_charges[-1]
         return None
 
-    def get_recent_state_incarceration_sentence(self)\
+    def get_recent_state_incarceration_period(self)\
             -> Optional['StateIncarcerationPeriod']:
         if self.state_incarceration_periods:
             return self.state_incarceration_periods[-1]
         return None
 
-    def get_recent_state_supervision_sentence(self) \
+    def get_recent_state_supervision_period(self) \
             -> Optional['StateSupervisionPeriod']:
         if self.state_supervision_periods:
             return self.state_supervision_periods[-1]
@@ -1045,14 +1025,15 @@ class StateCharge(IngestObject):
     """
 
     def __init__(self, state_charge_id=None, status=None, offense_date=None,
-                 date_charged=None, statute=None, description=None,
-                 attempted=None, charge_classification=None, degree=None,
-                 counts=None, charge_notes=None, charging_entity=None,
-                 state_court_case=None, state_bond=None):
+                 date_charged=None, county_code=None, statute=None,
+                 description=None, attempted=None, charge_classification=None,
+                 degree=None, counts=None, charge_notes=None,
+                 charging_entity=None, state_court_case=None, state_bond=None):
         self.state_charge_id: Optional[str] = state_charge_id
         self.status: Optional[str] = status
         self.offense_date: Optional[str] = offense_date
         self.date_charged: Optional[str] = date_charged
+        self.county_code: Optional[str] = county_code
         self.statute: Optional[str] = statute
         self.description: Optional[str] = description
         self.attempted: Optional[str] = attempted
@@ -1233,7 +1214,7 @@ class StateSupervisionPeriod(IngestObject):
     """
 
     def __init__(self, state_supervision_period_id=None, status=None,
-                 supervision_type=None, admission_date=None,
+                 supervision_type=None, start_date=None,
                  termination_date=None, state_code=None, county_code=None,
                  admission_reason=None, termination_reason=None,
                  supervision_level=None, conditions=None,
@@ -1242,7 +1223,7 @@ class StateSupervisionPeriod(IngestObject):
             state_supervision_period_id
         self.status: Optional[str] = status
         self.supervision_type: Optional[str] = supervision_type
-        self.admission_date: Optional[str] = admission_date
+        self.start_date: Optional[str] = start_date
         self.termination_date: Optional[str] = termination_date
         self.state_code: Optional[str] = state_code
         self.county_code: Optional[str] = county_code
@@ -1349,7 +1330,8 @@ class StateSupervisionViolation(IngestObject):
 
     def __init__(self, state_supervision_violation_id=None, violation_type=None,
                  violation_date=None, is_violent=None,
-                 violated_conditions=None):
+                 violated_conditions=None,
+                 state_supervision_violation_responses=None):
         self.state_supervision_violation_id: Optional[str] = \
             state_supervision_violation_id
         self.violation_type: Optional[str] = violation_type
@@ -1357,8 +1339,54 @@ class StateSupervisionViolation(IngestObject):
         self.is_violent: Optional[str] = is_violent
         self.violated_conditions: List[str] = violated_conditions or []
 
+        self.state_supervision_violation_responses: \
+            List[StateSupervisionViolationResponse] = \
+            state_supervision_violation_responses or []
+
     def __setattr__(self, name, value):
-        restricted_setattr(self, 'violated_conditions', name, value)
+        restricted_setattr(self, 'state_supervision_violation_responses',
+                           name, value)
+
+    def create_state_supervision_violation_response(self, **kwargs) \
+            -> 'StateSupervisionViolationResponse':
+        violation_response = StateSupervisionViolationResponse(**kwargs)
+        self.state_supervision_violation_responses.append(violation_response)
+        return violation_response
+
+    def get_recent_state_supervision_violation_response(self) \
+            -> Optional['StateSupervisionViolationResponse']:
+        if self.state_supervision_violation_responses:
+            return self.state_supervision_violation_responses[-1]
+        return None
+
+    def prune(self) -> 'StateSupervisionViolation':
+        self.state_supervision_violation_responses = \
+            [vr for vr in self.state_supervision_violation_responses if vr]
+
+        return self
+
+    def sort(self):
+        self.state_supervision_violation_responses.sort()
+
+
+class StateSupervisionViolationResponse(IngestObject):
+    """Class for information about a supervision violation response.
+    Referenced from StateSupervisionViolationResponse.
+    """
+
+    def __init__(self, state_supervision_violation_response_id=None,
+                 response_type=None, response_date=None, decision=None,
+                 revocation_type=None, deciding_body_type=None):
+        self.state_supervision_violation_response_id: Optional[str] = \
+            state_supervision_violation_response_id
+        self.response_type: Optional[str] = response_type
+        self.response_date: Optional[str] = response_date
+        self.decision: Optional[str] = decision
+        self.revocation_type: Optional[str] = revocation_type
+        self.deciding_body_type: Optional[str] = deciding_body_type
+
+    def __setattr__(self, name, value):
+        restricted_setattr(self, 'deciding_body_type', name, value)
 
 
 def eq(self, other, exclude=None):

@@ -24,6 +24,8 @@ import logging
 from collections import defaultdict
 from typing import Dict, Set, List, Callable, Optional
 
+import more_itertools
+
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.extractor.data_extractor import DataExtractor
 from recidiviz.ingest.models.ingest_info import IngestInfo, IngestObject
@@ -86,12 +88,14 @@ class CsvDataExtractor(DataExtractor):
         super().__init__(key_mapping_file, should_cache=should_cache)
 
         self.keys_to_ignore: List[str] = self.manifest.get('keys_to_ignore', [])
-        self.ancestor_key: Dict[str, str] = \
-            self.manifest.get('ancestor_key', {})
+        self.ancestor_keys: Dict[str, str] = \
+            self.manifest.get('ancestor_keys', {})
         self.primary_key: Dict[str, str] = \
             self.manifest.get('primary_key', {})
         self.child_keys: Dict[str, str] = \
             self.manifest.get('child_key_mappings', {})
+        self.enforced_ancestor_types: Dict[str, str] = \
+            self.manifest.get('enforced_ancestor_types', {})
 
         if row_post_hooks is None:
             row_post_hooks = []
@@ -108,7 +112,7 @@ class CsvDataExtractor(DataExtractor):
 
         self.all_keys: List[str] = set(self.keys.keys()) | set(
             self.child_keys.keys()) | set(self.keys_to_ignore) | set(
-                self.ancestor_key.keys()) | set(self.primary_key.keys())
+                self.ancestor_keys.keys()) | set(self.primary_key.keys())
 
     def extract_and_populate_data(self,
                                   content: str,
@@ -189,7 +193,7 @@ class CsvDataExtractor(DataExtractor):
         if lookup_key in self.keys:
             return self._set_or_create_object(
                 ingest_info, self.keys[lookup_key], [value], seen_map,
-                ancestor_chain, **create_args)
+                ancestor_chain, self.enforced_ancestor_types, **create_args)
 
         return []
 
@@ -254,11 +258,11 @@ class CsvDataExtractor(DataExtractor):
         """
         ancestor_chain = {}
 
-        if self.ancestor_key:
+        if self.ancestor_keys:
             ancestor_coordinates = self._get_coordinates_from_mapping(
-                self.ancestor_key, row)
-            ancestor_chain[ancestor_coordinates.class_name] = \
-                ancestor_coordinates.field_value
+                self.ancestor_keys, row)
+            for coordinate in ancestor_coordinates:
+                ancestor_chain[coordinate.class_name] = coordinate.field_value
 
         if self.ancestor_key_override_callback and primary_coordinates:
             ancestor_addition = self.ancestor_key_override_callback(
@@ -281,21 +285,24 @@ class CsvDataExtractor(DataExtractor):
             return self.primary_key_override_callback(row)
 
         if self.primary_key:
-            return self._get_coordinates_from_mapping(self.primary_key, row)
+            coordinates = self._get_coordinates_from_mapping(self.primary_key,
+                                                             row)
+            return more_itertools.one(coordinates)
 
         return None
 
     @staticmethod
     def _get_coordinates_from_mapping(key_mapping: Dict[str, str],
                                       row: Dict[str, str]) \
-            -> IngestFieldCoordinates:
-        lookup_key = next(iter(key_mapping.keys()))
-        cls_and_field = key_mapping.get(lookup_key)
-        if not cls_and_field:
-            raise TypeError(f"Expected truthy key mapping [{key_mapping}] "
-                            f"to have a value inside")
+            -> List[IngestFieldCoordinates]:
+        coordinates = []
 
-        cls, field = cls_and_field.split('.')
-        id_value = row.get(lookup_key)
+        for lookup_key, cls_and_field in key_mapping.items():
+            if not cls_and_field:
+                raise TypeError(f"Expected truthy key mapping [{key_mapping}] "
+                                f"to have a value inside")
+            cls, field = cls_and_field.split('.')
+            id_value = row.get(lookup_key)
+            coordinates.append(IngestFieldCoordinates(cls, field, id_value))
 
-        return IngestFieldCoordinates(cls, field, id_value)
+        return coordinates

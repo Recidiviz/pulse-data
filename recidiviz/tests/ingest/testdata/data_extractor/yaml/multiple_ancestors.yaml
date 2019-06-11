@@ -1,15 +1,15 @@
 key_mappings:
-  OFFENDER_BOOK_ID: sentence_group.sentence_group_id
-  IN_OUT_STATUS: sentence_group.status
+  OFFENDER_BOOK_ID: state_incarceration_sentence.state_incarceration_sentence_id
+  IN_OUT_STATUS: state_incarceration_sentence.status
 
 ancestor_keys:
   ROOT_OFFENDER_ID: state_person.state_person_id
+  GROUP_ID: state_sentence_group.state_sentence_group_id
 
 primary_key:
-  OFFENDER_BOOK_ID: sentence_group.sentence_group_id
+  OFFENDER_BOOK_ID: state_incarceration_sentence.state_incarceration_sentence_id
 
 keys_to_ignore:
-  - ROOT_OFFENDER_ID
   - BOOKING_NO
   - LIVING_UNIT_ID
   - ACTIVE_FLAG

@@ -26,7 +26,8 @@ from recidiviz.ingest.models.ingest_info_pb2 import Person, \
     StateAssessment, StateSentenceGroup, StateSupervisionSentence, \
     StateIncarcerationSentence, StateFine, StateCharge, StateCourtCase, \
     StateBond, StateIncarcerationPeriod, StateSupervisionPeriod, \
-    StateIncarcerationIncident, StateParoleDecision, StateSupervisionViolation
+    StateIncarcerationIncident, StateParoleDecision, \
+    StateSupervisionViolation, StateSupervisionViolationResponse
 
 
 class FieldsDontMatchError(Exception):
@@ -95,6 +96,9 @@ class TestIngestInfo(unittest.TestCase):
         supervision_period_fields_ignore = \
             ['state_supervision_violation_ids', 'state_supervision_violations',
              'state_assessment_ids', 'state_assessments']
+        supervision_violation_fields_ignore = \
+            ['state_supervision_violation_response_ids',
+             'state_supervision_violation_responses']
 
         _verify_fields(Person, ingest_info.Person(), person_fields_ignore)
         _verify_fields(Booking, ingest_info.Booking(), booking_fields_ignore)
@@ -130,7 +134,10 @@ class TestIngestInfo(unittest.TestCase):
                        ingest_info.StateIncarcerationIncident())
         _verify_fields(StateParoleDecision, ingest_info.StateParoleDecision())
         _verify_fields(StateSupervisionViolation,
-                       ingest_info.StateSupervisionViolation())
+                       ingest_info.StateSupervisionViolation(),
+                       supervision_violation_fields_ignore)
+        _verify_fields(StateSupervisionViolationResponse,
+                       ingest_info.StateSupervisionViolationResponse())
 
         return True
 
