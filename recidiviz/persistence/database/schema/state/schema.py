@@ -803,6 +803,7 @@ class _StateChargeSharedColumns(_ReferencesStatePersonSharedColumns):
     offense_date = Column(Date)
     date_charged = Column(Date)
     state_code = Column(String(255), nullable=False, index=True)
+    county_code = Column(String(255), index=True)
     statute = Column(String(255))
     description = Column(Text)
     attempted = Column(Boolean)
@@ -821,6 +822,7 @@ class _StateChargeSharedColumns(_ReferencesStatePersonSharedColumns):
     @declared_attr
     def bond_id(self):
         return Column(Integer, ForeignKey('state_bond.bond_id'))
+
 
 class StateCharge(Base,
                   DatabaseEntity,

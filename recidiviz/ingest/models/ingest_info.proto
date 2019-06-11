@@ -56,6 +56,7 @@ message IngestInfo {
     repeated StateIncarcerationIncident state_incarceration_incidents = 24;
     repeated StateParoleDecision state_parole_decisions = 25;
     repeated StateSupervisionViolation state_supervision_violations = 26;
+    repeated StateSupervisionViolationResponse state_supervision_violation_responses = 27;
 }
 
 message Person {
@@ -290,17 +291,18 @@ message StateCharge {
     optional string status = 2;
     optional string offense_date = 3;
     optional string date_charged = 4;
-    optional string statute = 5;
-    optional string description = 6;
-    optional string attempted = 7;
-    optional string charge_classification = 8;
-    optional string degree = 9;
-    optional string counts = 10;
-    optional string charge_notes = 11;
-    optional string charging_entity = 12;
+    optional string county_code = 5;
+    optional string statute = 6;
+    optional string description = 7;
+    optional string attempted = 8;
+    optional string charge_classification = 9;
+    optional string degree = 10;
+    optional string counts = 11;
+    optional string charge_notes = 12;
+    optional string charging_entity = 13;
 
-    optional string state_court_case_id = 13;
-    optional string state_bond_id = 14;
+    optional string state_court_case_id = 14;
+    optional string state_bond_id = 15;
 }
 
 message StateCourtCase {
@@ -350,7 +352,7 @@ message StateSupervisionPeriod {
     optional string state_supervision_period_id = 1;
     optional string status = 2;
     optional string supervision_type = 3;
-    optional string admission_date = 4;
+    optional string start_date = 4;
     optional string termination_date = 5;
     optional string state_code = 6;
     optional string county_code = 7;
@@ -394,4 +396,13 @@ message StateSupervisionViolation {
     optional string violation_date = 3;
     optional string is_violent = 4;
     repeated string violated_conditions = 5;
+}
+
+message StateSupervisionViolationResponse {
+    optional string state_supervision_violation_response_id = 1;
+    optional string response_type = 2;
+    optional string response_date = 3;
+    optional string decision = 4;
+    optional string revocation_type = 5;
+    optional string deciding_body_type = 6;
 }

@@ -39,6 +39,16 @@ class CsvDataExtractorTest(unittest.TestCase):
         expected_chain = {'state_person': '52163'}
         self.assertEqual(expected_chain, ancestor_chain)
 
+    def test_ancestor_chain_multiple_keys(self):
+        extractor = _instantiate_extractor('multiple_ancestors.yaml')
+        rows = _get_content_as_csv('multiple_ancestors.csv')
+        first_row = next(iter(rows))
+
+        ancestor_chain = extractor._ancestor_chain(first_row, None)
+        expected_chain = {'state_person': '52163',
+                          'state_sentence_group': '12345'}
+        self.assertEqual(expected_chain, ancestor_chain)
+
     def test_ancestor_chain_no_ancestor_key(self):
         extractor = _instantiate_extractor('no_ancestor_key_csv.yaml')
         rows = _get_content_as_csv('standard_child_file.csv')
