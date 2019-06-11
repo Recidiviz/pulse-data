@@ -38,7 +38,7 @@ _DUMMY_BOOKING_ID = -1
 
 
 def write_people(session: Session,
-                 people: List[entities.PersonType],
+                 people: List[entities.EntityPersonType],
                  metadata: IngestMetadata,
                  orphaned_entities: List[Entity] = None):
     """
@@ -56,7 +56,7 @@ def write_people(session: Session,
 
 
 def write_person(session: Session,
-                 person: entities.PersonType,
+                 person: entities.EntityPersonType,
                  metadata: IngestMetadata,
                  orphaned_entities: List[Entity] = None):
     """

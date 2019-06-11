@@ -23,7 +23,7 @@ from typing import Optional, Set, Callable, Sequence, Dict, Any, Iterable
 import deepdiff
 
 from recidiviz.persistence.entity.base_entity import Entity, ExternalIdEntity
-from recidiviz.persistence.entity.entities import PersonType
+from recidiviz.persistence.entity.entities import EntityPersonType
 from recidiviz.persistence.errors import MatchedMultipleDatabaseEntitiesError
 
 
@@ -43,7 +43,7 @@ def diff_count(entity_a: Entity, entity_b: Entity) -> int:
                if diff_type in diff_types)
 
 
-def is_birthdate_match(a: PersonType, b: PersonType) -> bool:
+def is_birthdate_match(a: EntityPersonType, b: EntityPersonType) -> bool:
     if a.birthdate_inferred_from_age and b.birthdate_inferred_from_age:
         return _is_inferred_birthdate_match(a.birthdate, b.birthdate)
 
