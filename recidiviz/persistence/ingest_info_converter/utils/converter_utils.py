@@ -14,7 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Utils for converting individual data fields."""
+"""Utils for converting individual data fields.
+
+TODO(1861): Fill out unit tests instead of relying on implicit testing elsewhere
+"""
 import datetime
 import locale
 from typing import Optional, Tuple
@@ -22,7 +25,11 @@ from typing import Optional, Tuple
 from recidiviz.common import common_utils
 from recidiviz.common.constants.bond import (BOND_STATUS_MAP, BOND_TYPE_MAP,
                                              BondStatus, BondType)
-from recidiviz.common.str_field_utils import parse_dollars, normalize
+from recidiviz.common.constants.person_characteristics import ResidencyStatus, \
+    RESIDENCY_STATUS_SUBSTRING_MAP
+from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.common.str_field_utils import parse_dollars, normalize, \
+    parse_date
 
 locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
 
@@ -67,6 +74,48 @@ def calculate_birthdate_from_age(age):
         raise ValueError("Cannot parse age: %s" % age)
 
 
+def parse_birthdate(proto, birthdate_field: str, age_field: str):
+    """Parses the birthdate from the given proto with the identified fields
+    with birthdate and age information.
+
+    Returns a tuple of the birthdate and whether or not that birthdate was
+    inferred.
+    """
+    parsed_birthdate = None
+    parsed_birthdate_is_inferred = None
+
+    birthdate = fn(parse_date, birthdate_field, proto)
+    birthdate_inferred_by_age = fn(calculate_birthdate_from_age,
+                                   age_field,
+                                   proto)
+    if birthdate is not None:
+        parsed_birthdate = birthdate
+        parsed_birthdate_is_inferred = False
+    elif birthdate_inferred_by_age is not None:
+        parsed_birthdate = birthdate_inferred_by_age
+        parsed_birthdate_is_inferred = True
+
+    return parsed_birthdate, parsed_birthdate_is_inferred
+
+
+def parse_completion_date(proto, metadata: IngestMetadata) \
+        -> Tuple[Optional[datetime.date], Optional[datetime.date]]:
+    """Reads completion_date and projected_completion_date from |proto|.
+
+    If completion_date is in the future relative to scrape time, will be
+    treated as projected_completion_date instead.
+    """
+    completion_date = fn(parse_date, 'completion_date', proto)
+    projected_completion_date = fn(
+        parse_date, 'projected_completion_date', proto)
+
+    if completion_date and completion_date > metadata.ingest_time.date():
+        projected_completion_date = completion_date
+        completion_date = None
+
+    return completion_date, projected_completion_date
+
+
 def parse_bond_amount_type_and_status(
         provided_amount: str, provided_bond_type: Optional[BondType] = None,
         provided_status: Optional[BondStatus] = None) -> \
@@ -105,4 +154,37 @@ def parse_bond_amount_type_and_status(
     if status is None:
         status = BondStatus.PRESENT_WITHOUT_INFO
 
-    return (amount, bond_type, status)  # type: ignore
+    return amount, bond_type, status  # type: ignore
+
+
+def parse_residency_status(place_of_residence: str) -> ResidencyStatus:
+    """Returns the residency status of a person, e.g. PERMANENT or HOMELESS."""
+    normalized_place_of_residence = place_of_residence.upper()
+    for substring, residency_status in RESIDENCY_STATUS_SUBSTRING_MAP.items():
+        if substring in normalized_place_of_residence:
+            return residency_status
+    # If place of residence is provided and no other status is explicitly
+    # provided, assumed to be permanent
+    return ResidencyStatus.PERMANENT
+
+
+def parse_region_code_with_override(proto,
+                                    region_field_name: str,
+                                    metadata: IngestMetadata):
+    """Returns a normalized form of the region code living on the |proto|.
+
+    Normalizes the region code at the field with the given |region_field_name|,
+    unless the given |metadata| contains a region. If so, returns the normalized
+    form of that metadata region instead."""
+
+    if metadata and metadata.region:
+        return normalize(metadata.region)
+    if proto.HasField(region_field_name):
+        return normalize(getattr(proto, region_field_name))
+    return None
+
+
+def create_comma_separated_list(proto, field_name: str):
+    """Returns a normalized, comma-separated string for the list field with the
+    given |field_name| on the given |proto|."""
+    return ', '.join([normalize(value) for value in getattr(proto, field_name)])

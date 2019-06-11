@@ -369,7 +369,7 @@ def generate_full_graph_state_person(
         status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
         status_raw_text='UNDER SUPERVISION',
         supervision_type=StateSupervisionType.PAROLE,
-        supervision_type_type_raw_text='PAROLE',
+        supervision_type_raw_text='PAROLE',
         start_date=datetime.date(year=2004, month=8, day=1),
         termination_date=None,
         state_code='us_ca',
