@@ -30,7 +30,6 @@ import dateparser
 from recidiviz.common.date import munge_date_string
 
 
-# TODO(jessex): Should this return a float instead?
 def parse_dollars(dollar_string: str) -> int:
     """Parses a string and returns an int dollar amount"""
     clean_string = dollar_string.strip(' ').strip('$')
