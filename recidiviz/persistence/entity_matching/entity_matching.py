@@ -22,7 +22,7 @@ from opencensus.stats import measure, view, aggregation
 
 from recidiviz import Session
 from recidiviz.persistence.entity.county import entities as county_entities
-from recidiviz.persistence.entity.entities import PersonType
+from recidiviz.persistence.entity.entities import EntityPersonType
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity_matching.base_entity_matcher import \
     BaseEntityMatcher, MatchedEntities
@@ -52,7 +52,7 @@ _EMPTY_MATCH_OUTPUT = MatchedEntities(people=[],
 
 def match(session: Session,
           region: str,
-          ingested_people: List[PersonType]) -> MatchedEntities:
+          ingested_people: List[EntityPersonType]) -> MatchedEntities:
     matcher = _get_matcher(ingested_people)
     if not matcher:
         return _EMPTY_MATCH_OUTPUT
@@ -60,7 +60,7 @@ def match(session: Session,
     return matcher.run_match(session, region, ingested_people)
 
 
-def _get_matcher(ingested_people: List[PersonType]) \
+def _get_matcher(ingested_people: List[EntityPersonType]) \
         -> Optional[BaseEntityMatcher]:
     sample = next(iter(ingested_people), None)
     if not sample:
