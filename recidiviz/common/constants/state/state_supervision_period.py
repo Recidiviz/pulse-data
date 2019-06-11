@@ -85,6 +85,8 @@ class StateSupervisionPeriodTerminationReason(EntityEnum,
 
 
 _STATE_SUPERVISION_ADMISSION_TYPE_MAP = {
+    'CONDITIONAL RELEASE':
+        StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
     'COURT SENTENCE': StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
     'SENTENCE': StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
     'RETURN FROM ABSCOND':

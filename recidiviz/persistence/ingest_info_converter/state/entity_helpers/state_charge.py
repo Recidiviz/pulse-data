@@ -14,57 +14,63 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Converts an ingest_info proto Charge to a persistence entity."""
+"""Converts an ingest_info proto StateCharge to a persistence entity."""
+
 from recidiviz.common.constants.charge import (ChargeDegree,
                                                ChargeStatus)
-from recidiviz.common.constants.county.charge import ChargeClass
+from recidiviz.common.constants.state.state_charge import \
+    StateChargeClassification
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.persistence.entity.county import entities
+from recidiviz.ingest.models.ingest_info_pb2 import StateCharge
+from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
-    fn, parse_external_id)
-from recidiviz.common.str_field_utils import parse_dollars, parse_bool, \
-    normalize, parse_date
+    fn, parse_external_id, parse_region_code_with_override)
+from recidiviz.common.str_field_utils import parse_bool, normalize, \
+    parse_date, parse_int
 from recidiviz.persistence.ingest_info_converter.utils.enum_mappings \
     import EnumMappings
 
 
 def copy_fields_to_builder(
-        new: entities.Charge.Builder, proto, metadata: IngestMetadata) -> None:
+        new: entities.StateCharge.Builder,
+        proto: StateCharge,
+        metadata: IngestMetadata) -> None:
     """Mutates the provided |charge_builder| by converting an ingest_info proto
-     Charge.
+     StateCharge.
 
      Note: This will not copy children into the Builder!
      """
 
     enum_fields = {
-        'degree': ChargeDegree,
-        'charge_class': ChargeClass,
         'status': ChargeStatus,
+        'charge_classification': StateChargeClassification,
+        'degree': ChargeDegree,
     }
     enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
 
     # Enum values
-    new.degree = enum_mappings.get(ChargeDegree)
-    new.degree_raw_text = fn(normalize, 'degree', proto)
-    new.charge_class = enum_mappings.get(ChargeClass)
-    new.class_raw_text = fn(normalize, 'charge_class', proto)
     new.status = enum_mappings.get(ChargeStatus,
                                    default=ChargeStatus.PRESENT_WITHOUT_INFO)
     new.status_raw_text = fn(normalize, 'status', proto)
+    new.degree = enum_mappings.get(ChargeDegree)
+    new.degree_raw_text = fn(normalize, 'degree', proto)
+    new.charge_classification = enum_mappings.get(StateChargeClassification)
+    new.charge_classification_raw_text = fn(normalize, 'charge_classification',
+                                            proto)
 
     # 1-to-1 mappings
-    new.external_id = fn(parse_external_id, 'charge_id', proto)
+    new.external_id = fn(parse_external_id, 'state_charge_id', proto)
     new.offense_date = fn(parse_date, 'offense_date', proto)
+    new.date_charged = fn(parse_date, 'date_charged', proto)
+    new.state_code = parse_region_code_with_override(
+        proto, 'state_code', metadata)
+    new.county_code = fn(normalize, 'county_code', proto)
     new.statute = fn(normalize, 'statute', proto)
-    new.name = fn(normalize, 'name', proto)
-    if new.charge_class is None:
-        new.charge_class = ChargeClass.find_in_string(new.name)
+    new.description = fn(normalize, 'description', proto)
     new.attempted = fn(parse_bool, 'attempted', proto)
-    new.level = fn(normalize, 'level', proto)
-    new.fee_dollars = fn(parse_dollars, 'fee_dollars', proto)
-    new.charging_entity = fn(normalize, 'charging_entity', proto)
-    new.case_number = fn(normalize, 'case_number', proto)
-    new.court_type = fn(normalize, 'court_type', proto)
-    new.next_court_date = fn(parse_date, 'next_court_date', proto)
-    new.judge_name = fn(normalize, 'judge_name', proto)
+    if new.charge_classification is None:
+        new.charge_classification = \
+            StateChargeClassification.find_in_string(new.description)
+    new.counts = fn(parse_int, 'counts', proto)
     new.charge_notes = fn(normalize, 'charge_notes', proto)
+    new.charging_entity = fn(normalize, 'charging_entity', proto)

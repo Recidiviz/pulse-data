@@ -41,7 +41,9 @@ class EnumMappings:
         from the charge_class field. However, if multiple fields map to
         different values of the another enum type (for example, if ChargeDegree
         and ChargeStatus fields map to two ChargeClasses), an error will be
-        raised on calling |get|.
+        raised on calling |get|. If the given enum fields dict contains multiple
+        fields that map to the same enum type, both will be retrievable by their
+        field name in the `get` method below.
         Args:
             proto: the proto to read fields from, e.g. Person, Booking, etc.
             enum_fields: a mapping from field names (e.g. custody_status) to
@@ -49,7 +51,7 @@ class EnumMappings:
             overrides: the enum overrides mapping.
         """
         self.parsed_enums_from_original_field: \
-            Dict[EntityEnumMeta, EntityEnum] = dict()
+            Dict[EntityEnumMeta, Dict[str, EntityEnum]] = dict()
         self.all_parsed_enums: Set[EntityEnum] = set()
 
         for field_name, from_enum in enum_fields.items():
@@ -57,16 +59,35 @@ class EnumMappings:
             if not value:
                 continue
             if isinstance(value, from_enum):
-                self.parsed_enums_from_original_field[from_enum] = value
+                default_mapping: Dict[str, EntityEnum] = {}
+                mappings_by_field = self.parsed_enums_from_original_field \
+                    .get(from_enum, default_mapping)
+                mappings_by_field[field_name] = value
+                self.parsed_enums_from_original_field[from_enum] = \
+                    mappings_by_field
             else:
                 self.all_parsed_enums.add(value)
 
     def get(self,
             enum_type: EntityEnumMeta,
+            field_name: str = None,
             default: EntityEnum = None) -> Optional[EntityEnum]:
-        value_from_field = self.parsed_enums_from_original_field.get(enum_type)
-        if value_from_field:
-            return value_from_field
+        """Returns the exact enum value mapped to the given |enum_type|.
+
+        If this instance was instantiated with a map that contains multiple
+        fields that map to the same enum type, you can retrieve the value for
+        the specific field you want by passing it in via |field_name|. If this
+        is the case but that arg is not provided, the returned value is
+        arbitrary.
+
+        |default| can be passed in to return a default value in the event that
+        there was no properly parsed enum for a particular field.
+        """
+        field_mappings = self.parsed_enums_from_original_field.get(enum_type)
+        if field_mappings:
+            if field_name:
+                return field_mappings[field_name]
+            return next(iter(field_mappings.values()), None)
 
         matching_values = {enum for enum in self.all_parsed_enums
                            if isinstance(enum, enum_type)}

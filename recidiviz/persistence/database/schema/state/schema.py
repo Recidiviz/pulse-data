@@ -1342,7 +1342,7 @@ class _StateSupervisionPeriodSharedColumns(_ReferencesStatePersonSharedColumns):
     status = Column(state_supervision_period_status, nullable=False)
     status_raw_text = Column(String(255))
     supervision_type = Column(state_supervision_type)
-    supervision_type_type_raw_text = Column(String(255))
+    supervision_type_raw_text = Column(String(255))
     start_date = Column(Date)
     termination_date = Column(Date)
     state_code = Column(String(255), nullable=False, index=True)
@@ -1630,6 +1630,7 @@ class _StateSupervisionViolationResponseSharedColumns(
 
     external_id = Column(String(255), index=True)
     response_type = Column(state_supervision_violation_response_type)
+    response_type_raw_text = Column(String(255))
     response_date = Column(Date)
     state_code = Column(String(255), nullable=False, index=True)
     decision = Column(state_supervision_violation_response_decision)
@@ -1639,7 +1640,7 @@ class _StateSupervisionViolationResponseSharedColumns(
     revocation_type_raw_text = Column(String(255))
     deciding_body_type = \
         Column(state_supervision_violation_response_deciding_body_type)
-
+    deciding_body_type_raw_text = Column(String(255))
 
     @declared_attr
     def supervision_violation_id(self):
@@ -1705,6 +1706,7 @@ class _StateAgentSharedColumns:
 
     external_id = Column(String(255), index=True)
     agent_type = Column(state_agent_type, nullable=False)
+    agent_type_raw_text = Column(String(255))
     state_code = Column(String(255), nullable=False, index=True)
     full_name = Column(String(255))
 

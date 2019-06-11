@@ -430,7 +430,7 @@ def convert_proto_to_ingest_info(
         dict(_proto_to_py(court_case,
                           ingest_info.StateCourtCase,
                           'state_court_case_id')
-             for court_case in proto.court_cases)
+             for court_case in proto.state_court_cases)
     state_bond_map: Dict[str, ingest_info.StateBond] = \
         dict(_proto_to_py(state_bond,
                           ingest_info.StateBond,

@@ -35,5 +35,6 @@ class StateFineStatus(EntityEnum, metaclass=EntityEnumMeta):
 
 
 _STATE_FINE_STATUS_MAP: Dict[str, StateFineStatus] = {
-    # TODO(1697): Add values here
+    'PAID': StateFineStatus.PAID,
+    'UNPAID': StateFineStatus.UNPAID,
 }
