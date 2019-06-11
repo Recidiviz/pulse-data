@@ -63,6 +63,7 @@ class BaseConverter(Generic[EntityPersonType]):
             except Exception as e:
                 logging.error(str(e))
                 general_parsing_errors += 1
+                raise e
 
         return IngestInfoConversionResult(
             people=people,

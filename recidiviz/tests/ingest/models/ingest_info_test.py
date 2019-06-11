@@ -72,6 +72,7 @@ class TestIngestInfo(unittest.TestCase):
             'state_person_external_ids_ids', 'state_person_external_ids',
             'state_assessment_ids', 'state_assessments',
             'state_sentence_group_ids', 'state_sentence_groups']
+        assessment_fields_ignore = ['conducting_agent_id', 'conducting_agent']
         sentence_group_fields_ignore = \
             ['state_supervision_sentence_ids', 'state_supervision_sentences',
              'state_incarceration_sentence_ids',
@@ -93,6 +94,10 @@ class TestIngestInfo(unittest.TestCase):
              'state_incarceration_incidents',
              'state_parole_decision_ids', 'state_parole_decisions',
              'state_assessment_ids', 'state_assessments']
+        incarceration_incident_fields_ignore = \
+            ['responding_officer_id', 'responding_officer']
+        parole_decision_fields_ignore = \
+            ['decision_agent_ids', 'decision_agents']
         supervision_period_fields_ignore = \
             ['state_supervision_violation_ids', 'state_supervision_violations',
              'state_assessment_ids', 'state_assessments']
@@ -110,7 +115,8 @@ class TestIngestInfo(unittest.TestCase):
 
         _verify_fields(StatePerson, ingest_info.StatePerson(),
                        state_person_fields_ignore)
-        _verify_fields(StateAssessment, ingest_info.StateAssessment())
+        _verify_fields(StateAssessment, ingest_info.StateAssessment(),
+                       assessment_fields_ignore)
         _verify_fields(StateSentenceGroup, ingest_info.StateSentenceGroup(),
                        sentence_group_fields_ignore)
         _verify_fields(StateSupervisionSentence,
@@ -131,8 +137,10 @@ class TestIngestInfo(unittest.TestCase):
                        ingest_info.StateSupervisionPeriod(),
                        supervision_period_fields_ignore)
         _verify_fields(StateIncarcerationIncident,
-                       ingest_info.StateIncarcerationIncident())
-        _verify_fields(StateParoleDecision, ingest_info.StateParoleDecision())
+                       ingest_info.StateIncarcerationIncident(),
+                       incarceration_incident_fields_ignore)
+        _verify_fields(StateParoleDecision, ingest_info.StateParoleDecision(),
+                       parole_decision_fields_ignore)
         _verify_fields(StateSupervisionViolation,
                        ingest_info.StateSupervisionViolation(),
                        supervision_violation_fields_ignore)

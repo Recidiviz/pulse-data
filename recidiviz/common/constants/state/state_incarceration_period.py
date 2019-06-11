@@ -101,9 +101,7 @@ _STATE_INCARCERATION_FACILITY_SECURITY_LEVEL_MAP = {
 _STATE_INCARCERATION_PERIOD_STATUS_MAP = {
     'CUSTODY': StateIncarcerationPeriodStatus.IN_CUSTODY,
     'IN CUSTODY': StateIncarcerationPeriodStatus.IN_CUSTODY,
-
-    # TODO(1697): What strings correspond to
-    #  StateIncarcerationPeriodStatus.NOT_IN_CUSTODY?
+    'NOT IN CUSTODY': StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
 }
 
 _STATE_INCARCERATION_PERIOD_ADMISSION_REASON_MAP = {

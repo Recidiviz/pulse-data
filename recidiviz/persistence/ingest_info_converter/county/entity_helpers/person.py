@@ -15,27 +15,27 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Converts an ingest_info proto Person to a persistence entity."""
-import json
+
 import re
 from typing import Optional
 
-import attr
 from uszipcode import SearchEngine
 
-from recidiviz.common.str_field_utils import normalize, parse_date
+from recidiviz.common.str_field_utils import normalize
 from recidiviz.common.constants.person_characteristics import (
-    RESIDENCY_STATUS_SUBSTRING_MAP,
     Ethnicity,
     Gender,
     Race,
-    ResidencyStatus
 )
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
-    calculate_birthdate_from_age, fn, parse_external_id)
+    fn, parse_external_id, parse_residency_status,
+    parse_birthdate)
 from recidiviz.persistence.ingest_info_converter.utils.enum_mappings \
     import EnumMappings
 
 # Suffixes used in county names in uszipcode library
+from recidiviz.persistence.ingest_info_converter.utils.names import parse_name
+
 USZIPCODE_COUNTY_SUFFIXES = [
     'BOROUGH',
     'CENSUS AREA',
@@ -75,10 +75,11 @@ def copy_fields_to_builder(person_builder, proto, metadata):
 
     # 1-to-1 mappings
     new.external_id = fn(parse_external_id, 'person_id', proto)
-    new.full_name = _parse_name(proto)
-    new.birthdate, new.birthdate_inferred_from_age = _parse_birthdate(proto)
+    new.full_name = parse_name(proto)
+    new.birthdate, new.birthdate_inferred_from_age = parse_birthdate(
+        proto, 'birthdate', 'age')
     new.residency_status = fn(
-        _parse_residency_status, 'place_of_residence', proto)
+        parse_residency_status, 'place_of_residence', proto)
     new.resident_of_region = fn(
         _parse_is_resident, 'place_of_residence', proto, metadata.region)
 
@@ -86,65 +87,6 @@ def copy_fields_to_builder(person_builder, proto, metadata):
                              default=metadata.jurisdiction_id)
 
     new.region = metadata.region
-
-
-def _parse_name(proto) -> Optional[str]:
-    """Parses name into a single string."""
-    names = Names(
-        full_name=fn(normalize, 'full_name', proto),
-        given_names=fn(normalize, 'given_names', proto),
-        middle_names=fn(normalize, 'middle_names', proto),
-        surname=fn(normalize, 'surname', proto),
-        name_suffix=fn(normalize, 'name_suffix', proto))
-    return names.combine()
-
-
-@attr.s(auto_attribs=True, frozen=True)
-class Names():
-    """Holds the various name fields"""
-    full_name: Optional[str]
-    given_names: Optional[str]
-    middle_names: Optional[str]
-    surname: Optional[str]
-    name_suffix: Optional[str]
-
-    def __attrs_post_init__(self):
-        if self.full_name and any((self.given_names, self.middle_names,
-                                   self.surname, self.name_suffix)):
-            raise ValueError("Cannot have full_name and surname/middle/"
-                             "given_names/name_suffix")
-
-        if any((self.middle_names, self.name_suffix)) and \
-                not any((self.given_names, self.surname)):
-            raise ValueError("Cannot set only middle_names/name_suffix.")
-
-    def combine(self) -> Optional[str]:
-        """Writes the names out as a json string, skipping fields that are None.
-
-        Note: We don't have any need for parsing these back into their parts,
-        but this gives us other advantages. It handles escaping the names, and
-        allows us to add fields in the future without changing the serialization
-        of existing names.
-        """
-        filled_names = attr.asdict(self, filter=lambda a, v: v is not None)
-        return json.dumps(filled_names, sort_keys=True) \
-            if filled_names else None
-
-
-def _parse_birthdate(proto):
-    parsed_birthdate = None
-    parsed_birthdate_is_inferred = None
-
-    birthdate = fn(parse_date, 'birthdate', proto)
-    birthdate_inferred_by_age = fn(calculate_birthdate_from_age, 'age', proto)
-    if birthdate is not None:
-        parsed_birthdate = birthdate
-        parsed_birthdate_is_inferred = False
-    elif birthdate_inferred_by_age is not None:
-        parsed_birthdate = birthdate_inferred_by_age
-        parsed_birthdate_is_inferred = True
-
-    return parsed_birthdate, parsed_birthdate_is_inferred
 
 
 def _parse_is_resident(place_of_residence: str, region: str) -> Optional[bool]:
@@ -204,13 +146,3 @@ def _parse_is_state_resident(
     if not residence_state_code:
         return None
     return region_state_code == residence_state_code
-
-
-def _parse_residency_status(place_of_residence: str) -> ResidencyStatus:
-    normalized_place_of_residence = place_of_residence.upper()
-    for substring, residency_status in RESIDENCY_STATUS_SUBSTRING_MAP.items():
-        if substring in normalized_place_of_residence:
-            return residency_status
-    # If place of residence is provided and no other status is explicitly
-    # provided, assumed to be permanent
-    return ResidencyStatus.PERMANENT
