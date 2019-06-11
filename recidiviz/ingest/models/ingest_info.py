@@ -125,8 +125,6 @@ class IngestInfo(IngestObject):
         if state_person_id in self._state_people_by_id:
             return self._state_people_by_id.get(state_person_id)
 
-        # TODO(1626) in ND scraper we set person id from Elite id to SID by hand
-        # Does that need to change the id we set on the cache?
         state_person = next((person for person in self.state_people
                              if person.state_person_id == state_person_id),
                             None)
