@@ -305,3 +305,195 @@ class TestIngestUtils:
             ingest_utils.ingest_info_to_serializable(info))
 
         assert converted_info == info
+
+    def test_convert_ingest_info_state_entities(self):
+        # Arrange Python ingest info
+        info = ingest_info.IngestInfo()
+        person = info.create_state_person()
+        person.state_person_id = 'person1'
+        person.surname = 'testname'
+
+        race = person.create_state_person_race()
+        race.state_person_race_id = 'race1'
+        race.race = 'white'
+        ethnicity = person.create_state_person_ethnicity()
+        ethnicity.state_person_ethnicity_id = 'ethnicity1'
+        ethnicity.ethnicity = 'non-hispanic'
+        external_id = person.create_state_person_external_id()
+        external_id.state_person_external_id_id = 'external_id1'
+        external_id.id_type = 'contrived'
+        alias = person.create_state_alias()
+        alias.state_alias_id = 'alias1'
+        alias.surname = 'testerson'
+        assessment = person.create_state_assessment()
+        assessment.state_assessment_id = 'assessment1'
+        assessment.assessment_score = '42'
+
+        assessment_agent = assessment.create_state_agent()
+        assessment_agent.state_agent_id = 'agent1'
+        assessment_agent.full_name = 'Officer Jones'
+
+        group = person.create_state_sentence_group()
+        group.state_sentence_group_id = 'group1'
+
+        fine = group.create_state_fine()
+        fine.state_fine_id = 'fine1'
+
+        incarceration_sentence = group.create_state_incarceration_sentence()
+        incarceration_sentence.state_incarceration_sentence_id = 'is1'
+        charge1 = incarceration_sentence.create_state_charge()
+        charge1.state_charge_id = 'charge1'
+        charge1.degree = 'F'
+        incarceration_period = incarceration_sentence.\
+            create_state_incarceration_period()
+        incarceration_period.state_incarceration_period_id = 'ip1'
+        incarceration_period.status = 'IN_CUSTODY'
+        incident = incarceration_period.create_state_incarceration_incident()
+        incident.state_incarceration_incident_id = 'incident1'
+        incident.offense = 'FISTICUFFS'
+
+        incident_agent = incident.create_state_agent()
+        incident_agent.state_agent_id = 'agent2'
+        incident_agent.full_name = 'Officer Thompson'
+
+        decision = incarceration_period.create_state_parole_decision()
+        decision.state_parole_decision_id = 'decision1'
+
+        decision_agent = decision.create_state_agent()
+        decision_agent.state_agent_id = 'agent3'
+        decision_agent.full_name = 'Officer Barkley'
+
+        supervision_sentence = group.create_state_supervision_sentence()
+        supervision_sentence.state_supervision_sentence_id = 'ss1'
+        charge2 = supervision_sentence.create_state_charge()
+        charge2.state_charge_id = 'charge2'
+        charge2.degree = 'M'
+        supervision_period = supervision_sentence. \
+            create_state_supervision_period()
+        supervision_period.state_supervision_period_id = 'sp1'
+        supervision_period.status = 'TERMINATED'
+        violation = supervision_period.create_state_supervision_violation()
+        violation.state_supervision_violation_id = 'violation1'
+        violation.is_violent = 'false'
+        response = violation.create_state_supervision_violation_response()
+        response.state_supervision_violation_response_id = 'response1'
+
+        bond = charge1.create_state_bond()
+        bond.state_bond_id = 'bond1'
+
+        court_case = charge2.create_state_court_case()
+        court_case.state_court_case_id = 'case1'
+
+        # Arrange Proto ingest info
+        expected_proto = ingest_info_pb2.IngestInfo()
+        person = expected_proto.state_people.add()
+        person.state_person_id = 'person1'
+        person.surname = 'testname'
+
+        person.state_person_race_ids.append('race1')
+        race = expected_proto.state_person_races.add()
+        race.state_person_race_id = 'race1'
+        race.race = 'white'
+        person.state_person_ethnicity_ids.append('ethnicity1')
+        ethnicity = expected_proto.state_person_ethnicities.add()
+        ethnicity.state_person_ethnicity_id = 'ethnicity1'
+        ethnicity.ethnicity = 'non-hispanic'
+        person.state_person_external_ids_ids.append('external_id1')
+        external_id = expected_proto.state_person_external_ids.add()
+        external_id.state_person_external_id_id = 'external_id1'
+        external_id.id_type = 'contrived'
+        person.state_alias_ids.append('alias1')
+        alias = expected_proto.state_aliases.add()
+        alias.state_alias_id = 'alias1'
+        alias.surname = 'testerson'
+        person.state_assessment_ids.append('assessment1')
+        assessment = expected_proto.state_assessments.add()
+        assessment.state_assessment_id = 'assessment1'
+        assessment.assessment_score = '42'
+
+        assessment.conducting_agent_id = 'agent1'
+        assessment_agent = expected_proto.state_agents.add()
+        assessment_agent.state_agent_id = 'agent1'
+        assessment_agent.full_name = 'Officer Jones'
+
+        person.state_sentence_group_ids.append('group1')
+        group = expected_proto.state_sentence_groups.add()
+        group.state_sentence_group_id = 'group1'
+
+        group.state_fine_ids.append('fine1')
+        fine = expected_proto.state_fines.add()
+        fine.state_fine_id = 'fine1'
+
+        group.state_supervision_sentence_ids.append('ss1')
+        supervision_sentence = expected_proto.state_supervision_sentences.add()
+        supervision_sentence.state_supervision_sentence_id = 'ss1'
+        supervision_sentence.state_charge_ids.append('charge2')
+        charge2 = expected_proto.state_charges.add()
+        charge2.state_charge_id = 'charge2'
+        charge2.degree = 'M'
+        supervision_sentence.state_supervision_period_ids.append('sp1')
+        supervision_period = expected_proto.state_supervision_periods.add()
+        supervision_period.state_supervision_period_id = 'sp1'
+        supervision_period.status = 'TERMINATED'
+        supervision_period.state_supervision_violation_ids.append('violation1')
+        violation = expected_proto.state_supervision_violations.add()
+        violation.state_supervision_violation_id = 'violation1'
+        violation.is_violent = 'false'
+        violation.state_supervision_violation_response_ids.append('response1')
+        response = expected_proto.state_supervision_violation_responses.add()
+        response.state_supervision_violation_response_id = 'response1'
+
+        group.state_incarceration_sentence_ids.append('is1')
+        incarceration_sentence = expected_proto.state_incarceration_sentences\
+            .add()
+        incarceration_sentence.state_incarceration_sentence_id = 'is1'
+        incarceration_sentence.state_charge_ids.append('charge1')
+        charge1 = expected_proto.state_charges.add()
+        charge1.state_charge_id = 'charge1'
+        charge1.degree = 'F'
+        incarceration_sentence.state_incarceration_period_ids.append('ip1')
+        incarceration_period = expected_proto.state_incarceration_periods.add()
+        incarceration_period.state_incarceration_period_id = 'ip1'
+        incarceration_period.status = 'IN_CUSTODY'
+        incarceration_period.state_incarceration_incident_ids\
+            .append('incident1')
+        incident = expected_proto.state_incarceration_incidents.add()
+        incident.state_incarceration_incident_id = 'incident1'
+        incident.offense = 'FISTICUFFS'
+
+        incident.responding_officer_id = 'agent2'
+        incident_agent = expected_proto.state_agents.add()
+        incident_agent.state_agent_id = 'agent2'
+        incident_agent.full_name = 'Officer Thompson'
+
+        incarceration_period.state_parole_decision_ids.append('decision1')
+        decision = expected_proto.state_parole_decisions.add()
+        decision.state_parole_decision_id = 'decision1'
+
+        decision.decision_agent_ids.append('agent3')
+        decision_agent = expected_proto.state_agents.add()
+        decision_agent.state_agent_id = 'agent3'
+        decision_agent.full_name = 'Officer Barkley'
+
+        charge1.state_bond_id = 'bond1'
+        bond = expected_proto.state_bonds.add()
+        bond.state_bond_id = 'bond1'
+
+        charge2.state_court_case_id = 'case1'
+        court_case = expected_proto.state_court_cases.add()
+        court_case.state_court_case_id = 'case1'
+
+        # Act & Assert
+
+        proto = ingest_utils.convert_ingest_info_to_proto(info)
+        assert expected_proto == proto
+
+        info_back = ingest_utils.convert_proto_to_ingest_info(proto)
+        assert info_back == info
+
+        # Assert that none of the proto's collections are empty, i.e. we've
+        # tested all of the object graph
+        proto_classes = [field.name for field in proto.DESCRIPTOR.fields]
+        for cls in proto_classes:
+            if cls.startswith('state_'):
+                assert proto.__getattribute__(cls)

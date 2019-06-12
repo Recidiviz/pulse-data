@@ -122,11 +122,11 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             ethnicity='HISPANIC'
         )
         ingest_info.state_aliases.add(
-            alias_id='ALIAS_ID1',
+            state_alias_id='ALIAS_ID1',
             full_name='LONNY BREAUX'
         )
         ingest_info.state_aliases.add(
-            alias_id='ALIAS_ID2',
+            state_alias_id='ALIAS_ID2',
             full_name='FRANK OCEAN'
         )
         ingest_info.state_person_external_ids.add(

@@ -122,25 +122,33 @@ def convert_ingest_info_to_proto(ingest_info_py: ingest_info.IngestInfo) \
     sentence_map: Dict[str, ingest_info.Sentence] = {}
 
     state_person_map: Dict[str, ingest_info.StatePerson] = {}
-    assessment_map: Dict[str, ingest_info.StateAssessment] = {}
-    sentence_group_map: Dict[str, ingest_info.StateSentenceGroup] = {}
-    supervision_sentence_map: Dict[str, ingest_info.StateSupervisionSentence] \
-        = {}
-    incarceration_sentence_map: \
+    state_person_race_map: Dict[str, ingest_info.StatePersonRace] = {}
+    state_person_ethnicity_map: Dict[str, ingest_info.StatePersonEthnicity] = {}
+    state_person_external_id_map: \
+        Dict[str, ingest_info.StatePersonExternalId] = {}
+    state_alias_map: Dict[str, ingest_info.StateAlias] = {}
+    state_assessment_map: Dict[str, ingest_info.StateAssessment] = {}
+    state_sentence_group_map: Dict[str, ingest_info.StateSentenceGroup] = {}
+    state_supervision_sentence_map: \
+        Dict[str, ingest_info.StateSupervisionSentence] = {}
+    state_incarceration_sentence_map: \
         Dict[str, ingest_info.StateIncarcerationSentence] = {}
-    fine_map: Dict[str, ingest_info.StateFine] = {}
+    state_fine_map: Dict[str, ingest_info.StateFine] = {}
     state_charge_map: Dict[str, ingest_info.StateCharge] = {}
-    court_case_map: Dict[str, ingest_info.StateCourtCase] = {}
+    state_court_case_map: Dict[str, ingest_info.StateCourtCase] = {}
     state_bond_map: Dict[str, ingest_info.StateBond] = {}
-    incarceration_period_map: Dict[str, ingest_info.StateIncarcerationPeriod] \
-        = {}
-    supervision_period_map: Dict[str, ingest_info.StateSupervisionPeriod] \
-        = {}
-    incarceration_incident_map: \
+    state_incarceration_period_map: \
+        Dict[str, ingest_info.StateIncarcerationPeriod] = {}
+    state_supervision_period_map: \
+        Dict[str, ingest_info.StateSupervisionPeriod] = {}
+    state_incarceration_incident_map: \
         Dict[str, ingest_info.StateIncarcerationIncident] = {}
-    parole_decision_map: Dict[str, ingest_info.StateParoleDecision] = {}
-    supervision_violation_map: \
+    state_parole_decision_map: Dict[str, ingest_info.StateParoleDecision] = {}
+    state_supervision_violation_map: \
         Dict[str, ingest_info.StateSupervisionViolation] = {}
+    state_supervision_violation_response_map: \
+        Dict[str, ingest_info.StateSupervisionViolationResponse] = {}
+    state_agent_map: Dict[str, ingest_info.StateAgent] = {}
 
     id_to_generated: Dict[int, str] = {}
 
@@ -192,20 +200,22 @@ def convert_ingest_info_to_proto(ingest_info_py: ingest_info.IngestInfo) \
             proto_state_charge = _populate_proto(
                 'state_charges', state_charge,
                 'state_charge_id', state_charge_map)
-            parent_proto.charge_ids.append(proto_state_charge.state_charge_id)
+            parent_proto.state_charge_ids.append(
+                proto_state_charge.state_charge_id)
 
-            if state_charge.court_case:
+            if state_charge.state_court_case:
                 proto_court_case = _populate_proto(
                     'state_court_cases', state_charge.state_court_case,
-                    'state_court_case_id', court_case_map)
+                    'state_court_case_id', state_court_case_map)
                 proto_state_charge.state_court_case_id = \
                     proto_court_case.state_court_case_id
 
-            if state_charge.bond:
+            if state_charge.state_bond:
                 proto_state_bond = _populate_proto(
-                    'state_bonds', state_charge.bond,
+                    'state_bonds', state_charge.state_bond,
                     'state_bond_id', state_bond_map)
-                proto_charge.state_bond_id = proto_state_bond.state_bond_id
+                proto_state_charge.state_bond_id = \
+                    proto_state_bond.state_bond_id
 
     def _populate_incarceration_period_protos(parent_ingest_object,
                                               parent_proto):
@@ -217,7 +227,7 @@ def convert_ingest_info_to_proto(ingest_info_py: ingest_info.IngestInfo) \
                 parent_ingest_object.state_incarceration_periods:
             proto_period = _populate_proto(
                 'state_incarceration_periods', incarceration_period,
-                'state_incarceration_period_id', incarceration_period_map)
+                'state_incarceration_period_id', state_incarceration_period_map)
             parent_proto.state_incarceration_period_ids.append(
                 proto_period.state_incarceration_period_id)
 
@@ -225,23 +235,44 @@ def convert_ingest_info_to_proto(ingest_info_py: ingest_info.IngestInfo) \
                 proto_incident = _populate_proto(
                     'state_incarceration_incidents', incident,
                     'state_incarceration_incident_id',
-                    incarceration_incident_map)
+                    state_incarceration_incident_map)
                 proto_period.state_incarceration_incident_ids.append(
                     proto_incident.state_incarceration_incident_id)
+
+                if incident.responding_officer:
+                    proto_agent = _populate_proto(
+                        'state_agents', incident.responding_officer,
+                        'state_agent_id', state_agent_map)
+                    proto_incident.responding_officer_id = \
+                        proto_agent.state_agent_id
 
             for decision in incarceration_period.state_parole_decisions:
                 proto_decision = _populate_proto(
                     'state_parole_decisions', decision,
-                    'state_parole_decision_id', parole_decision_map)
+                    'state_parole_decision_id', state_parole_decision_map)
                 proto_period.state_parole_decision_ids.append(
-                    proto_decision.state_fparole_decision_id)
+                    proto_decision.state_parole_decision_id)
+
+                for agent in decision.decision_agents:
+                    proto_agent = _populate_proto(
+                        'state_agents', agent,
+                        'state_agent_id', state_agent_map)
+                    proto_decision.decision_agent_ids.append(
+                        proto_agent.state_agent_id)
 
             for period_assessment in incarceration_period.state_assessments:
                 proto_period_assessment = _populate_proto(
                     'state_assessments', period_assessment,
-                    'state_assessment_id', assessment_map)
+                    'state_assessment_id', state_assessment_map)
                 proto_period.state_assessment_ids.append(
                     proto_period_assessment.state_assessment_id)
+
+                if period_assessment.conducting_agent:
+                    proto_agent = _populate_proto(
+                        'state_agents', period_assessment.conducting_agent,
+                        'state_agent_id', state_agent_map)
+                    proto_period_assessment.conducting_agent_id = \
+                        proto_agent.state_agent_id
 
     def _populate_supervision_period_protos(parent_ingest_object,
                                             parent_proto):
@@ -253,23 +284,40 @@ def convert_ingest_info_to_proto(ingest_info_py: ingest_info.IngestInfo) \
                 parent_ingest_object.state_supervision_periods:
             proto_period = _populate_proto(
                 'state_supervision_periods', supervision_period,
-                'state_supervision_period_id', supervision_period_map)
-            parent_proto.supervision_period_ids.append(
-                proto_period.supervision_period_id)
+                'state_supervision_period_id', state_supervision_period_map)
+            parent_proto.state_supervision_period_ids.append(
+                proto_period.state_supervision_period_id)
 
             for violation in supervision_period.state_supervision_violations:
                 proto_violation = _populate_proto(
                     'state_supervision_violations', violation,
-                    'state_supervision_violation_id', supervision_violation_map)
+                    'state_supervision_violation_id',
+                    state_supervision_violation_map)
                 proto_period.state_supervision_violation_ids.append(
                     proto_violation.state_supervision_violation_id)
+
+                for response in violation.state_supervision_violation_responses:
+                    proto_response = _populate_proto(
+                        'state_supervision_violation_responses', response,
+                        'state_supervision_violation_response_id',
+                        state_supervision_violation_response_map)
+                    proto_violation.state_supervision_violation_response_ids\
+                        .append(proto_response.
+                                state_supervision_violation_response_id)
 
             for period_assessment in supervision_period.state_assessments:
                 proto_period_assessment = _populate_proto(
                     'state_assessments', period_assessment,
-                    'state_assessment_id', assessment_map)
+                    'state_assessment_id', state_assessment_map)
                 proto_period.state_assessment_ids.append(
                     proto_period_assessment.state_assessment_id)
+
+                if period_assessment.conducting_agent:
+                    proto_agent = _populate_proto(
+                        'state_agents', period_assessment.conducting_agent,
+                        'state_agent_id', state_agent_map)
+                    proto_period_assessment.conducting_agent_id = \
+                        proto_agent.state_agent_id
 
     for person in ingest_info_py.people:
         proto_person = _populate_proto(
@@ -309,17 +357,52 @@ def convert_ingest_info_to_proto(ingest_info_py: ingest_info.IngestInfo) \
         proto_state_person = _populate_proto(
             'state_people', state_person, 'state_person_id', state_person_map)
 
+        for race in state_person.state_person_races:
+            proto_race = _populate_proto(
+                'state_person_races', race,
+                'state_person_race_id', state_person_race_map)
+            proto_state_person.state_person_race_ids.append(
+                proto_race.state_person_race_id)
+
+        for ethnicity in state_person.state_person_ethnicities:
+            proto_ethnicity = _populate_proto(
+                'state_person_ethnicities', ethnicity,
+                'state_person_ethnicity_id', state_person_ethnicity_map)
+            proto_state_person.state_person_ethnicity_ids.append(
+                proto_ethnicity.state_person_ethnicity_id)
+
+        for external_id in state_person.state_person_external_ids:
+            proto_external_id = _populate_proto(
+                'state_person_external_ids', external_id,
+                'state_person_external_id_id', state_person_external_id_map)
+            proto_state_person.state_person_external_ids_ids.append(
+                proto_external_id.state_person_external_id_id)
+
+        for alias in state_person.state_aliases:
+            proto_alias = _populate_proto(
+                'state_aliases', alias,
+                'state_alias_id', state_alias_map)
+            proto_state_person.state_alias_ids.append(
+                proto_alias.state_alias_id)
+
         for assessment in state_person.state_assessments:
             proto_assessment = _populate_proto(
                 'state_assessments', assessment,
-                'state_assessment_id', assessment_map)
+                'state_assessment_id', state_assessment_map)
             proto_state_person.state_assessment_ids.append(
                 proto_assessment.state_assessment_id)
+
+            if assessment.conducting_agent:
+                proto_agent = _populate_proto(
+                    'state_agents', assessment.conducting_agent,
+                    'state_agent_id', state_agent_map)
+                proto_assessment.conducting_agent_id = \
+                    proto_agent.state_agent_id
 
         for sentence_group in state_person.state_sentence_groups:
             proto_sentence_group = _populate_proto(
                 'state_sentence_groups', sentence_group,
-                'state_sentence_group_id', sentence_group_map)
+                'state_sentence_group_id', state_sentence_group_map)
             proto_state_person.state_sentence_group_ids.append(
                 proto_sentence_group.state_sentence_group_id)
 
@@ -327,7 +410,8 @@ def convert_ingest_info_to_proto(ingest_info_py: ingest_info.IngestInfo) \
                     sentence_group.state_supervision_sentences:
                 proto_supervision_sentence = _populate_proto(
                     'state_supervision_sentences', supervision_sentence,
-                    'state_supervision_sentence_id', supervision_sentence_map)
+                    'state_supervision_sentence_id',
+                    state_supervision_sentence_map)
                 proto_sentence_group.state_supervision_sentence_ids.append(
                     proto_supervision_sentence.state_supervision_sentence_id)
 
@@ -345,7 +429,7 @@ def convert_ingest_info_to_proto(ingest_info_py: ingest_info.IngestInfo) \
                 proto_incarceration_sentence = _populate_proto(
                     'state_incarceration_sentences', incarceration_sentence,
                     'state_incarceration_sentence_id',
-                    incarceration_sentence_map)
+                    state_incarceration_sentence_map)
                 proto_sentence_group.state_incarceration_sentence_ids\
                     .append(proto_incarceration_sentence
                             .state_incarceration_sentence_id)
@@ -361,8 +445,9 @@ def convert_ingest_info_to_proto(ingest_info_py: ingest_info.IngestInfo) \
 
             for fine in sentence_group.state_fines:
                 proto_fine = _populate_proto('state_fines', fine,
-                                             'state_fine_id', fine_map)
-                proto_sentence_group.fine_ids.append(proto_fine.state_fine_id)
+                                             'state_fine_id', state_fine_map)
+                proto_sentence_group.state_fine_ids.append(
+                    proto_fine.state_fine_id)
 
                 _populate_state_charge_protos(fine, proto_fine)
 
@@ -399,34 +484,51 @@ def convert_proto_to_ingest_info(
         dict(_proto_to_py(state_person, ingest_info.StatePerson,
                           'state_person_id')
              for state_person in proto.state_people)
-    assessment_map: Dict[str, ingest_info.StateAssessment] = \
+    state_person_race_map: Dict[str, ingest_info.StatePersonRace] = \
+        dict(_proto_to_py(race, ingest_info.StatePersonRace,
+                          'state_person_race_id')
+             for race in proto.state_person_races)
+    state_person_ethnicity_map: Dict[str, ingest_info.StatePersonEthnicity] = \
+        dict(_proto_to_py(ethnicity, ingest_info.StatePersonEthnicity,
+                          'state_person_ethnicity_id')
+             for ethnicity in proto.state_person_ethnicities)
+    state_person_external_id_map: Dict[str,
+                                       ingest_info.StatePersonExternalId] = \
+        dict(_proto_to_py(external_id, ingest_info.StatePersonExternalId,
+                          'state_person_external_id_id')
+             for external_id in proto.state_person_external_ids)
+    state_alias_map: Dict[str, ingest_info.StateAlias] = \
+        dict(_proto_to_py(alias, ingest_info.StateAlias, 'state_alias_id')
+             for alias in proto.state_aliases)
+    state_assessment_map: Dict[str, ingest_info.StateAssessment] = \
         dict(_proto_to_py(assessment,
                           ingest_info.StateAssessment,
                           'state_assessment_id')
              for assessment in proto.state_assessments)
-    sentence_group_map: Dict[str, ingest_info.StateSentenceGroup] = \
+    state_sentence_group_map: Dict[str, ingest_info.StateSentenceGroup] = \
         dict(_proto_to_py(sentence_group, ingest_info.StateSentenceGroup,
                           'state_sentence_group_id')
              for sentence_group in proto.state_sentence_groups)
-    supervision_sentence_map: Dict[str, ingest_info.StateSupervisionSentence] \
-        = dict(_proto_to_py(supervision_sentence,
-                            ingest_info.StateSupervisionSentence,
-                            'state_supervision_sentence_id')
-               for supervision_sentence in proto.state_supervision_sentences)
-    incarceration_sentence_map: \
+    state_supervision_sentence_map: \
+        Dict[str, ingest_info.StateSupervisionSentence] = \
+        dict(_proto_to_py(supervision_sentence,
+                          ingest_info.StateSupervisionSentence,
+                          'state_supervision_sentence_id')
+             for supervision_sentence in proto.state_supervision_sentences)
+    state_incarceration_sentence_map: \
         Dict[str, ingest_info.StateIncarcerationSentence] = \
         dict(_proto_to_py(incarceration_sentence,
                           ingest_info.StateIncarcerationSentence,
                           'state_incarceration_sentence_id')
              for incarceration_sentence in proto.state_incarceration_sentences)
-    fine_map: Dict[str, ingest_info.StateFine] = \
+    state_fine_map: Dict[str, ingest_info.StateFine] = \
         dict(_proto_to_py(fine, ingest_info.StateFine, 'state_fine_id')
              for fine in proto.state_fines)
     state_charge_map: Dict[str, ingest_info.StateCharge] = \
         dict(_proto_to_py(state_charge, ingest_info.StateCharge,
                           'state_charge_id')
              for state_charge in proto.state_charges)
-    court_case_map: Dict[str, ingest_info.StateCourtCase] = \
+    state_court_case_map: Dict[str, ingest_info.StateCourtCase] = \
         dict(_proto_to_py(court_case,
                           ingest_info.StateCourtCase,
                           'state_court_case_id')
@@ -436,33 +538,45 @@ def convert_proto_to_ingest_info(
                           ingest_info.StateBond,
                           'state_bond_id')
              for state_bond in proto.state_bonds)
-    incarceration_period_map: Dict[str, ingest_info.StateIncarcerationPeriod] \
+    state_incarceration_period_map: \
+        Dict[str, ingest_info.StateIncarcerationPeriod] \
         = dict(_proto_to_py(incarceration_period,
                             ingest_info.StateIncarcerationPeriod,
                             'state_incarceration_period_id')
                for incarceration_period in proto.state_incarceration_periods)
-    supervision_period_map: Dict[str, ingest_info.StateSupervisionPeriod] = \
+    state_supervision_period_map: \
+        Dict[str, ingest_info.StateSupervisionPeriod] = \
         dict(_proto_to_py(supervision_period,
                           ingest_info.StateSupervisionPeriod,
                           'state_supervision_period_id')
              for supervision_period in proto.state_supervision_periods)
-    incarceration_incident_map: \
+    state_incarceration_incident_map: \
         Dict[str, ingest_info.StateIncarcerationIncident] = \
         dict(_proto_to_py(incarceration_incident,
                           ingest_info.StateIncarcerationIncident,
                           'state_incarceration_incident_id')
              for incarceration_incident in proto.state_incarceration_incidents)
-    parole_decision_map: Dict[str, ingest_info.StateParoleDecision] = \
+    state_parole_decision_map: Dict[str, ingest_info.StateParoleDecision] = \
         dict(_proto_to_py(parole_decision,
                           ingest_info.StateParoleDecision,
                           'state_parole_decision_id')
              for parole_decision in proto.state_parole_decisions)
-    supervision_violation_map: \
+    state_supervision_violation_map: \
         Dict[str, ingest_info.StateSupervisionViolation] = \
         dict(_proto_to_py(supervision_violation,
                           ingest_info.StateSupervisionViolation,
                           'state_supervision_violation_id')
              for supervision_violation in proto.state_supervision_violations)
+    state_supervision_violation_response_map: \
+        Dict[str, ingest_info.StateSupervisionViolationResponse] = \
+        dict(_proto_to_py(violation_response,
+                          ingest_info.StateSupervisionViolationResponse,
+                          'state_supervision_violation_response_id')
+             for violation_response
+             in proto.state_supervision_violation_responses)
+    state_agent_map: Dict[str, ingest_info.StateAgent] = \
+        dict(_proto_to_py(agent, ingest_info.StateAgent, 'state_agent_id')
+             for agent in proto.state_agents)
 
     # Wire bonds and sentences to respective charges
     for proto_charge in proto.charges:
@@ -497,53 +611,81 @@ def convert_proto_to_ingest_info(
             [state_charge_map[proto_id] for proto_id
              in proto_sentence.state_charge_ids]
 
-        sentence.supervision_periods = \
-            [supervision_period_map[proto_id] for proto_id
-             in proto_sentence.supervision_period_ids]
+        sentence.state_supervision_periods = \
+            [state_supervision_period_map[proto_id] for proto_id
+             in proto_sentence.state_supervision_period_ids]
 
-        sentence.incarceration_periods = \
-            [incarceration_period_map[proto_id] for proto_id
-             in proto_sentence.incarceration_period_ids]
+        sentence.state_incarceration_periods = \
+            [state_incarceration_period_map[proto_id] for proto_id
+             in proto_sentence.state_incarceration_period_ids]
+
+    # Wire agents to respective parent entities
+    for proto_parole_decision in proto.state_parole_decisions:
+        parole_decision = state_parole_decision_map[
+            proto_parole_decision.state_parole_decision_id]
+        parole_decision.decision_agents = \
+            [state_agent_map[proto_id] for proto_id
+             in proto_parole_decision.decision_agent_ids]
+
+    for proto_incident in proto.state_incarceration_incidents:
+        incarceration_incident = state_incarceration_incident_map[
+            proto_incident.state_incarceration_incident_id]
+        incarceration_incident.responding_officer = \
+            state_agent_map[proto_incident.responding_officer_id]
+
+    for proto_assessment in proto.state_assessments:
+        assessment = state_assessment_map[proto_assessment.state_assessment_id]
+        assessment.conducting_agent = \
+            state_agent_map[proto_assessment.conducting_agent_id]
+
+    # Wire child entities to respective violations
+    for proto_supervision_violation in proto.state_supervision_violations:
+        supervision_violation = state_supervision_violation_map[
+            proto_supervision_violation.state_supervision_violation_id]
+        supervision_violation.state_supervision_violation_responses = \
+            [state_supervision_violation_response_map[proto_id] for proto_id
+             in proto_supervision_violation.
+             state_supervision_violation_response_ids]
 
     # Wire child entities to respective supervision periods
     for proto_supervision_period in proto.state_supervision_periods:
-        supervision_period = supervision_period_map[
+        supervision_period = state_supervision_period_map[
             proto_supervision_period.state_supervision_period_id]
         supervision_period.state_supervision_violations = \
-            [supervision_violation_map[proto_id] for proto_id
+            [state_supervision_violation_map[proto_id] for proto_id
              in proto_supervision_period.state_supervision_violation_ids]
         supervision_period.state_assessments = \
-            [assessment_map[proto_id] for proto_id
+            [state_assessment_map[proto_id] for proto_id
              in proto_supervision_period.state_assessment_ids]
 
     # Wire child entities to respective incarceration periods
     for proto_incarceration_period in proto.state_incarceration_periods:
-        incarceration_period = incarceration_period_map[
+        incarceration_period = state_incarceration_period_map[
             proto_incarceration_period.state_incarceration_period_id]
         incarceration_period.state_incarceration_incidents = \
-            [incarceration_incident_map[proto_id] for proto_id
+            [state_incarceration_incident_map[proto_id] for proto_id
              in proto_incarceration_period.state_incarceration_incident_ids]
         incarceration_period.state_parole_decisions = \
-            [parole_decision_map[proto_id] for proto_id
+            [state_parole_decision_map[proto_id] for proto_id
              in proto_incarceration_period.state_parole_decision_ids]
         incarceration_period.state_assessments = \
-            [assessment_map[proto_id] for proto_id
+            [state_assessment_map[proto_id] for proto_id
              in proto_incarceration_period.state_assessment_ids]
 
     # Wire court cases and state bonds to respective state charges
     for proto_state_charge in proto.state_charges:
-        state_charge = fine_map[proto_state_charge.state_charge_id]
+        state_charge = state_charge_map[proto_state_charge.state_charge_id]
         if proto_state_charge.state_court_case_id:
-            state_charge.court_case = court_case_map[
+            state_charge.state_court_case = state_court_case_map[
                 proto_state_charge.state_court_case_id]
 
         if proto_state_charge.state_bond_id:
-            state_charge.bond = state_bond_map[
+            state_charge.state_bond = state_bond_map[
                 proto_state_charge.state_bond_id]
 
     # Wire all state charges and period types to respective sentence types
     for proto_fine in proto.state_fines:
-        fine = fine_map[proto_fine.state_fine_id]
+        fine = state_fine_map[proto_fine.state_fine_id]
         fine.state_charges = [state_charge_map[proto_id] for proto_id
                               in proto_fine.state_charge_ids]
 
@@ -551,40 +693,56 @@ def convert_proto_to_ingest_info(
         _wire_sentence_proto(
             proto_incarceration_sentence,
             proto_incarceration_sentence.state_incarceration_sentence_id,
-            incarceration_sentence_map)
+            state_incarceration_sentence_map)
 
     for proto_supervision_sentence in proto.state_supervision_sentences:
         _wire_sentence_proto(
             proto_supervision_sentence,
             proto_supervision_sentence.state_supervision_sentence_id,
-            supervision_sentence_map)
+            state_supervision_sentence_map)
 
     # Wire all sentence types to respective sentence groups
     for proto_sentence_group in proto.state_sentence_groups:
-        sentence_group = sentence_group_map[
+        sentence_group = state_sentence_group_map[
             proto_sentence_group.state_sentence_group_id]
 
-        sentence_group.state_fines = [fine_map[proto_id] for proto_id
+        sentence_group.state_fines = [state_fine_map[proto_id] for proto_id
                                       in proto_sentence_group.state_fine_ids]
 
         sentence_group.state_incarceration_sentences = \
-            [incarceration_sentence_map[proto_id] for proto_id
+            [state_incarceration_sentence_map[proto_id] for proto_id
              in proto_sentence_group.state_incarceration_sentence_ids]
 
         sentence_group.state_supervision_sentences = \
-            [supervision_sentence_map[proto_id] for proto_id
+            [state_supervision_sentence_map[proto_id] for proto_id
              in proto_sentence_group.state_supervision_sentence_ids]
 
-    # Wire assessments and sentence groups to respective state people
+    # Wire child entities to respective state people
     for proto_state_person in proto.state_people:
         state_person = state_person_map[proto_state_person.state_person_id]
 
+        state_person.state_person_races = \
+            [state_person_race_map[proto_id] for proto_id
+             in proto_state_person.state_person_race_ids]
+
+        state_person.state_person_ethnicities = \
+            [state_person_ethnicity_map[proto_id] for proto_id
+             in proto_state_person.state_person_ethnicity_ids]
+
+        state_person.state_person_external_ids = \
+            [state_person_external_id_map[proto_id] for proto_id
+             in proto_state_person.state_person_external_ids_ids]
+
+        state_person.state_aliases = \
+            [state_alias_map[proto_id] for proto_id
+             in proto_state_person.state_alias_ids]
+
         state_person.state_assessments = \
-            [assessment_map[proto_id] for proto_id
+            [state_assessment_map[proto_id] for proto_id
              in proto_state_person.state_assessment_ids]
 
         state_person.state_sentence_groups = \
-            [sentence_group_map[proto_id] for proto_id
+            [state_sentence_group_map[proto_id] for proto_id
              in proto_state_person.state_sentence_group_ids]
 
     # Wire people to ingest info
@@ -619,7 +777,10 @@ def _copy_fields(source, dest, descriptor):
             continue
         val = getattr(source, field, None)
         if val is not None:
-            setattr(dest, field, val)
+            if isinstance(val, list):
+                getattr(dest, field).extend(val)
+            else:
+                setattr(dest, field, val)
 
 
 def ingest_info_to_serializable(ii: ingest_info.IngestInfo) -> Dict[Any, Any]:
