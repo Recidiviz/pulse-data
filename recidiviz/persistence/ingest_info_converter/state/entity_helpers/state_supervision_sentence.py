@@ -17,8 +17,7 @@
 
 """Converts an ingest_info proto StateSupervisionSentence to a
 persistence entity."""
-
-from recidiviz.common.constants.county.sentence import SentenceStatus
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import \
     StateSupervisionType
 from recidiviz.common.ingest_metadata import IngestMetadata
@@ -46,14 +45,15 @@ def copy_fields_to_builder(
     new = supervision_sentence_builder
 
     enum_fields = {
-        'status': SentenceStatus,
-        'supervision_type': StateSupervisionType
+        'status': StateSentenceStatus,
+        'supervision_type': StateSupervisionType,
     }
     enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
 
     # Enum mappings
-    new.status = enum_mappings.get(SentenceStatus,
-                                   default=SentenceStatus.PRESENT_WITHOUT_INFO)
+    new.status = enum_mappings.get(
+        StateSentenceStatus,
+        default=StateSentenceStatus.PRESENT_WITHOUT_INFO)
     new.status_raw_text = fn(normalize, 'status', proto)
     new.supervision_type = enum_mappings.get(StateSupervisionType)
     new.supervision_type_raw_text = fn(normalize, 'supervision_type', proto)
@@ -75,5 +75,5 @@ def copy_fields_to_builder(
 def set_status_if_needed(builder):
     # completion_date is guaranteed to be in the past by parse_completion_date
     if builder.completion_date and \
-            builder.status is SentenceStatus.PRESENT_WITHOUT_INFO:
-        builder.status = SentenceStatus.COMPLETED
+            builder.status is StateSentenceStatus.PRESENT_WITHOUT_INFO:
+        builder.status = StateSentenceStatus.COMPLETED

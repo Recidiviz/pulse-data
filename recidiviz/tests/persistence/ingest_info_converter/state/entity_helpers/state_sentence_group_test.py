@@ -20,7 +20,7 @@
 import unittest
 from datetime import date
 
-from recidiviz.common.constants.county.sentence import SentenceStatus
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
@@ -37,7 +37,7 @@ class StateSentenceGroupConverterTest(unittest.TestCase):
     def testParseStateSentenceGroup(self):
         # Arrange
         ingest_group = ingest_info_pb2.StateSentenceGroup(
-            status='COMPLETED',
+            status='SUSPENDED',
             state_sentence_group_id='GROUP_ID',
             date_imposed='1/2/2111',
             county_code='CO',
@@ -53,8 +53,8 @@ class StateSentenceGroupConverterTest(unittest.TestCase):
 
         # Assert
         expected_result = entities.StateSentenceGroup(
-            status=SentenceStatus.COMPLETED,
-            status_raw_text='COMPLETED',
+            status=StateSentenceStatus.SUSPENDED,
+            status_raw_text='SUSPENDED',
             external_id='GROUP_ID',
             date_imposed=date(year=2111, month=1, day=2),
             state_code='US_ND',

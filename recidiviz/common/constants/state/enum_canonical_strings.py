@@ -106,6 +106,10 @@ state_incarceration_period_release_reason_escape = 'ESCAPE'
 state_incarceration_period_release_reason_sentence_served = 'SENTENCE_SERVED'
 state_incarceration_period_release_reason_transfer = 'TRANSFER'
 
+# state_parole_decision.py
+state_parole_decision_parole_denied = 'PAROLE_DENIED'
+state_parole_decision_parole_granted = 'PAROLE_GRANTED'
+
 # state_sentence.py
 state_sentence_status_commuted = 'COMMUTED'
 state_sentence_status_completed = 'COMPLETED'

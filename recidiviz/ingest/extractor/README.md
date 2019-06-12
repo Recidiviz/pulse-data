@@ -256,8 +256,7 @@ attached to the ancestor or within its tree, as described previously. This may
 be omitted if this file does not contain any ancestor information. If the 
 `ancestor_keys` is omitted and and an object with a matching `primary_key` has
 not already been instantiated, we pick the most recent object with a matching
-parent type. (TODO(1625): Update to fill an ancestor chain with dummy objects
-when there is no primary key match and no ancestor key.)
+parent type.
 
 * `primary_key` includes the column name that matches to the main id for this
 entity. This is used to ensure the primary id is set on the entity when it is

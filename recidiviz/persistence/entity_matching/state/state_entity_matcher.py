@@ -43,14 +43,14 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
     def get_people_without_external_ids(self, session, region,
                                         without_external_ids) \
             -> List[entities.StatePerson]:
-        # TODO(1625): Fill this in with an appropriate query
+        # TODO(1868): Fill this in with an appropriate query
         return dao.read_people(session)
 
     def is_person_match(self, *,
                         db_entity: entities.StatePerson,
                         ingested_entity: entities.StatePerson) -> bool:
         if db_entity.external_ids or ingested_entity.external_ids:
-            # TODO(1625): Update to match against external_ids list
+            # TODO(1868): Update to match against external_ids list
             return False
 
         if not all([db_entity.full_name, ingested_entity.full_name]):
@@ -62,5 +62,5 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
     def match_child_entities(self, *, db_person: entities.StatePerson,
                              ingested_person: entities.StatePerson,
                              orphaned_entities: List[Entity]):
-        # TODO(1625): Fill this in with appropriate logic
+        # TODO(1868): Fill this in with appropriate logic
         pass
