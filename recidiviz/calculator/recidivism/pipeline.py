@@ -22,7 +22,6 @@ usage: pipeline.py --output=OUTPUT_LOCATION --project=PROJECT
                     [--include_age] [--include_gender]
                     [--include_race] [--include_release_facility]
                     [--include_stay_length] [--release_count_min]
-                    [--classify_revocation_return_as_recidivism]
 
 Example output to GCP storage bucket:
 python -m recidiviz.calculator.recidivism.pipeline
@@ -58,7 +57,7 @@ import apache_beam as beam
 from apache_beam.typehints import with_input_types, with_output_types
 
 from recidiviz.calculator.recidivism import identifier, calculator, \
-    RecidivismMetric
+    ReincarcerationRecidivismMetric
 from recidiviz.calculator.recidivism.release_event import ReleaseEvent
 from recidiviz.calculator.recidivism.metrics import RecidivismMethodologyType
 from recidiviz.calculator.utils import person_extractor, \
@@ -72,24 +71,16 @@ class GetReleaseEvents(beam.PTransform):
     """Transforms a StatePerson and their IncarcerationPeriods into
     ReleaseEvents."""
 
-    def __init__(self, classify_revocation_return_as_recidivism: bool):
+    def __init__(self):
         super(GetReleaseEvents, self).__init__()
-        self._classify_revocation_return_as_recidivism = \
-            classify_revocation_return_as_recidivism
 
     def expand(self, input_or_inputs):
-
-        find_release_events_by_cohort_year_kwargs = {
-            'classify_revocation_return_as_recidivism':
-                self._classify_revocation_return_as_recidivism}
-
         return (input_or_inputs
-                | beam.ParDo(ClassifyReleaseEvents(),
-                             **find_release_events_by_cohort_year_kwargs))
+                | beam.ParDo(ClassifyReleaseEvents()))
 
 
 @with_input_types(beam.typehints.Tuple[StatePerson, List[ReleaseEvent]])
-@with_output_types(RecidivismMetric)
+@with_output_types(ReincarcerationRecidivismMetric)
 class GetRecidivismMetrics(beam.PTransform):
     """Transforms a StatePerson and ReleaseEvents into RecidivismMetrics."""
 
@@ -111,14 +102,14 @@ class GetRecidivismMetrics(beam.PTransform):
                                        | 'Group metrics by metric key' >>
                                        beam.GroupByKey())
 
-        # Return RecidivismMetric objects built from grouped metric_keys
+        # Return ReincarcerationRecidivismMetric objects built from grouped
+        # metric_keys
         return (grouped_metric_combinations
                 | 'Produce recidivism metrics' >>
-                beam.ParDo(ProduceRecidivismMetric()))
+                beam.ParDo(ProduceReincarcerationRecidivismMetric()))
 
 
-@with_input_types(beam.typehints.Tuple[int, Dict[str, Any]],
-                  **{'classify_revocation_return_as_recidivism': bool})
+@with_input_types(beam.typehints.Tuple[int, Dict[str, Any]])
 @with_output_types(beam.typehints.Tuple[StatePerson,
                                         Dict[int, List[ReleaseEvent]]])
 class ClassifyReleaseEvents(beam.DoFn):
@@ -134,17 +125,11 @@ class ClassifyReleaseEvents(beam.DoFn):
         Args:
             element: Tuple containing person_id and a dictionary with
                 a StatePerson and a list of StateIncarcerationPeriods
-            **kwargs: This should be a dictionary with values for the following
-                keys:
-                    - classify_revocation_return_as_recidivism
 
         Yields:
             Tuple containing the StatePerson and a collection
             of ReleaseEvents.
         """
-
-        classify_revocation_return_as_recidivism = kwargs[
-            'classify_revocation_return_as_recidivism']
 
         _, person_incarceration_periods = element
 
@@ -158,8 +143,7 @@ class ClassifyReleaseEvents(beam.DoFn):
         # Find the ReleaseEvents from the StateIncarcerationPeriods
         release_events_by_cohort_year = \
             identifier.find_release_events_by_cohort_year(
-                incarceration_periods,
-                classify_revocation_return_as_recidivism)
+                incarceration_periods)
 
         yield (person, release_events_by_cohort_year)
 
@@ -203,12 +187,13 @@ class CalculateRecidivismMetricCombinations(beam.DoFn):
 
 @with_input_types(beam.typehints.Tuple[
     Dict[str, str], List[int]])
-@with_output_types(RecidivismMetric)
-class ProduceRecidivismMetric(beam.DoFn):
-    """Produces RecidivismMetrics."""
+@with_output_types(ReincarcerationRecidivismMetric)
+class ProduceReincarcerationRecidivismMetric(beam.DoFn):
+    """Produces ReincarcerationRecidivismMetrics."""
 
     def process(self, element, *args, **kwargs):
-        """Converts a recidivism metric key into a RecidivismMetric.
+        """Converts a recidivism metric key into a
+        ReincarcerationRecidivismMetric.
 
         Args:
             element: A tuple containing a dictionary of the metric_key for a
@@ -217,14 +202,15 @@ class ProduceRecidivismMetric(beam.DoFn):
             0s representing NonRecidivismReleaseEvents.
 
         Yields:
-            The RecidivismMetric.
+            The ReincarcerationRecidivismMetric.
         """
 
         (metric_key, release_group) = element
 
         recidivism_metric = \
-            RecidivismMetric.build_from_metric_key_release_group(metric_key,
-                                                                 release_group)
+            ReincarcerationRecidivismMetric.build_from_metric_key_release_group(
+                metric_key,
+                release_group)
 
         if recidivism_metric:
             yield recidivism_metric
@@ -233,19 +219,20 @@ class ProduceRecidivismMetric(beam.DoFn):
         pass
 
 
-@with_input_types(RecidivismMetric,
+@with_input_types(ReincarcerationRecidivismMetric,
                   **{'dimensions_to_filter_out': [str],
                      'methodologies': List[RecidivismMethodologyType],
                      'release_count_min': int})
-@with_output_types(RecidivismMetric)
+@with_output_types(ReincarcerationRecidivismMetric)
 class FilterMetrics(beam.DoFn):
     """Filters out metrics that should not be included in the output."""
 
     def process(self, element, *args, **kwargs):
-        """Returns the RecidivismMetric if it should be included in the output.
+        """Returns the ReincarcerationRecidivismMetric if it should be included
+         in the output.
 
             Args:
-                element: A RecidivismMetric object
+                element: A ReincarcerationRecidivismMetric object
                 **kwargs: This should be a dictionary with values for the
                     following keys:
                         - dimensions_to_filter_out: List of dimensions to filter
@@ -256,7 +243,7 @@ class FilterMetrics(beam.DoFn):
                             metric to be included in the output.
 
             Yields:
-                The RecidivismMetric.
+                The ReincarcerationRecidivismMetric.
         """
 
         dimensions_to_filter_out = kwargs['dimensions_to_filter_out']
@@ -321,14 +308,6 @@ def parse_arguments(argv):
                         dest='include_release_facility',
                         type=bool,
                         help='Include metrics broken down by release facility.',
-                        default=False)
-
-    parser.add_argument('--classify_revocation_return_as_recidivism',
-                        dest='classify_revocation_return_as_recidivism',
-                        type=bool,
-                        help='Whether or not to include incarceration returns '
-                             'caused by supervision revocation in the '
-                             'recidivism calculations.',
                         default=False)
 
     parser.add_argument('--include_stay_length',
@@ -441,9 +420,7 @@ def run(argv=None):
         person_events = (
             person_and_incarceration_periods |
             'Get Recidivism Events' >>
-            GetReleaseEvents(
-                classify_revocation_return_as_recidivism=
-                known_args.classify_revocation_return_as_recidivism))
+            GetReleaseEvents())
 
         recidivism_metrics = (person_events
                               | 'Get Recidivism Metrics' >>

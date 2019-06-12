@@ -20,7 +20,7 @@
 
 from datetime import datetime
 from recidiviz.calculator.recidivism.release_event import \
-    RecidivismReleaseEvent, NonRecidivismReleaseEvent, IncarcerationReturnType
+    RecidivismReleaseEvent, NonRecidivismReleaseEvent, ReincarcerationReturnType
 
 
 def test_recidivism_event():
@@ -29,7 +29,7 @@ def test_recidivism_event():
     release_facility = 'Hexagon Sun'
     reincarceration_date = datetime(2014, 6, 17)
     reincarceration_facility = 'Hexagon Sun'
-    return_type = IncarcerationReturnType.RECONVICTION
+    return_type = ReincarcerationReturnType.NEW_ADMISSION
 
     event = RecidivismReleaseEvent(
         original_admission_date, release_date, release_facility,
@@ -49,7 +49,7 @@ def test_recidivism_event_parole_revocation():
     release_facility = 'Hexagon Sun'
     reincarceration_date = datetime(2014, 6, 17)
     reincarceration_facility = 'Hexagon Sun'
-    return_type = IncarcerationReturnType.PAROLE_REVOCATION
+    return_type = ReincarcerationReturnType.REVOCATION
 
     event = RecidivismReleaseEvent(
         original_admission_date, release_date, release_facility,
@@ -69,7 +69,7 @@ def test_recidivism_event_probation_revocation():
     release_facility = 'Hexagon Sun'
     reincarceration_date = datetime(2014, 6, 17)
     reincarceration_facility = 'Hexagon Sun'
-    return_type = IncarcerationReturnType.PROBATION_REVOCATION
+    return_type = ReincarcerationReturnType.REVOCATION
 
     event = RecidivismReleaseEvent(
         original_admission_date, release_date, release_facility,
@@ -103,7 +103,7 @@ def test_eq_different_field():
     release_facility = 'Hexagon Sun'
     reincarceration_date = datetime(2014, 6, 17)
     reincarceration_facility = 'Hexagon Sun'
-    return_type = IncarcerationReturnType.RECONVICTION
+    return_type = ReincarcerationReturnType.NEW_ADMISSION
 
     first = RecidivismReleaseEvent(
         original_admission_date, release_date, release_facility,
@@ -123,7 +123,7 @@ def test_eq_different_events():
     release_facility = 'Hexagon Sun'
     reincarceration_date = datetime(2014, 6, 17)
     reincarceration_facility = 'Hexagon Sun'
-    return_type = IncarcerationReturnType.RECONVICTION
+    return_type = ReincarcerationReturnType.NEW_ADMISSION
 
     first = RecidivismReleaseEvent(
         original_admission_date, release_date, release_facility,
@@ -141,7 +141,7 @@ def test_eq_different_types():
     release_facility = 'Hexagon Sun'
     reincarceration_date = datetime(2014, 6, 17)
     reincarceration_facility = 'Hexagon Sun'
-    return_type = IncarcerationReturnType.RECONVICTION
+    return_type = ReincarcerationReturnType.NEW_ADMISSION
 
     event = RecidivismReleaseEvent(
         original_admission_date, release_date, release_facility,

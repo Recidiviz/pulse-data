@@ -23,24 +23,25 @@ into instances of recidivism or non-recidivism as appropriate.
 
 
 """
-
 from datetime import date
 import logging
 from typing import Dict, List, Optional
 
 from collections import defaultdict
 from recidiviz.calculator.recidivism.release_event import \
-    IncarcerationReturnType, ReleaseEvent, RecidivismReleaseEvent, \
-    NonRecidivismReleaseEvent
+    ReincarcerationReturnType, ReincarcerationReturnFromSupervisionType, \
+    ReleaseEvent, RecidivismReleaseEvent, NonRecidivismReleaseEvent
 from recidiviz.common.constants.state.state_incarceration_period import \
-    StateIncarcerationPeriodStatus, StateIncarcerationPeriodReleaseReason, \
-    StateIncarcerationPeriodAdmissionReason
+    StateIncarcerationPeriodStatus
+from recidiviz.common.constants.state.state_incarceration_period import \
+    StateIncarcerationPeriodAdmissionReason as AdmissionReason
+from recidiviz.common.constants.state.state_incarceration_period import \
+    StateIncarcerationPeriodReleaseReason as ReleaseReason
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 
 def find_release_events_by_cohort_year(
-        incarceration_periods: List[StateIncarcerationPeriod],
-        classify_revocation_return_as_recidivism: bool = True) \
+        incarceration_periods: List[StateIncarcerationPeriod]) \
         -> Dict[int, List[ReleaseEvent]]:
     """Finds instances of release and determines if they resulted in recidivism.
 
@@ -63,72 +64,122 @@ def find_release_events_by_cohort_year(
 
     Args:
         incarceration_periods: list of StateIncarcerationPeriods for a person
-        classify_revocation_return_as_recidivism: a boolean indicating whether
-            or not to classify revocations of supervision as instances of
-            recidivism.
 
     Returns:
         A dictionary mapping release cohorts to a list of ReleaseEvents
             for the given person in that cohort.
     """
 
-    # If there is more than one StateIncarcerationPeriod, sort them and then
-    # collapse the ones that are linked by transfer
-    if incarceration_periods and len(incarceration_periods) > 1:
-        incarceration_periods.sort(key=lambda b: b.admission_date)
-
-        incarceration_periods = \
-            collapse_incarceration_periods(incarceration_periods)
+    incarceration_periods = \
+        validate_sort_and_collapse_incarceration_periods(incarceration_periods)
 
     release_events: Dict[int, List[ReleaseEvent]] = defaultdict(list)
 
     for index, incarceration_period in enumerate(incarceration_periods):
-        if incarceration_period.admission_date is None:
-            # If there is no admission date,
-            # there is nothing we can process. Skip it.
-            continue
-
-        if incarceration_period.status != \
-                StateIncarcerationPeriodStatus.IN_CUSTODY and not \
-                incarceration_period.release_date:
-            # If the StateIncarcerationPeriod is marked as not in custody but
-            #  there is no release date, there is nothing we can process.
-            #  Skip it.
-            continue
-
-        if incarceration_period.status != \
-                StateIncarcerationPeriodStatus.IN_CUSTODY and not \
-                incarceration_period.release_reason:
-            # If the StateIncarcerationPeriod is marked as not in custody but
-            # there is no release reason, there is nothing we can process.
-            # Skip it.
-            continue
 
         admission_date = incarceration_period.admission_date
-        release_facility = incarceration_period.facility
+        status = incarceration_period.status
         release_date = incarceration_period.release_date
-        release_cohort = release_date.year if release_date else None
+        release_reason = incarceration_period.release_reason
+        release_facility = incarceration_period.facility
 
-        if len(incarceration_periods) - index == 1:
-            event = for_last_incarceration_period(incarceration_period,
-                                                  admission_date,
+        if not admission_date:
+            # This should never happen after validation. Throw error.
+            raise ValueError("admission_date should not be None on "
+                             f"{incarceration_period}.")
+
+        if not status:
+            # This should never happen after validation. Throw error.
+            raise ValueError("status should not be None on "
+                             f"{incarceration_period}.")
+
+        event = None
+
+        if index == len(incarceration_periods) - 1:
+            event = for_last_incarceration_period(admission_date, status,
                                                   release_date,
+                                                  release_reason,
                                                   release_facility)
-            if event and release_cohort:
-                release_events[release_cohort].append(event)
         else:
-            # If there is a StateIncarcerationPeriod after this one and
-            # they have been released, then they recidivated.
-            # Capture the details.
-            event = for_intermediate_incarceration_period(
-                incarceration_period, incarceration_periods[index + 1],
-                admission_date, release_date, release_facility,
-                classify_revocation_return_as_recidivism)
+            reincarceration_period = incarceration_periods[index + 1]
+            reincarceration_date = reincarceration_period.admission_date
+            reincarceration_facility = reincarceration_period.facility
+            reincarceration_admission_reason = \
+                reincarceration_period.admission_reason
 
-            if event and release_cohort:
-                release_events[release_cohort].append(event)
+            if not release_date:
+                # This should never happen after validation. Throw error.
+                raise ValueError("release_date should not be None on an"
+                                 "intermediate incarceration period "
+                                 f"{incarceration_period}.")
+
+            if not release_reason:
+                # This should never happen after validation. Throw error.
+                raise ValueError("release_reason should not be None on an "
+                                 "intermediate incarceration period "
+                                 f"{incarceration_period}.")
+
+            if not reincarceration_date:
+                # This should never happen after validation. Throw error.
+                raise ValueError("reincarceration_date should "
+                                 f"not be None on {incarceration_period}.")
+
+            if not reincarceration_admission_reason:
+                # This should never happen after validation. Throw error.
+                raise ValueError("reincarceration_admission_reason should "
+                                 f"not be None on {incarceration_period}.")
+
+            event = for_intermediate_incarceration_period(
+                admission_date, release_date, release_reason, release_facility,
+                reincarceration_date, reincarceration_facility,
+                reincarceration_admission_reason)
+
+        if event:
+            if not release_date:
+                raise ValueError("Release event should not have been generated"
+                                 "with a null release_date.")
+            release_cohort = release_date.year
+            release_events[release_cohort].append(event)
 
     return release_events
+
+
+def validate_sort_and_collapse_incarceration_periods(
+        incarceration_periods: List[StateIncarcerationPeriod]) -> \
+        List[StateIncarcerationPeriod]:
+    """Validates, sorts, and collapses the incarceration period inputs.
+
+    Ensures the necessary dates are set on each incarceration period. Sorts the
+    the list of StateIncarcerationPeriods sorted by admission_date, and
+    collapses the ones connected by a transfer.
+    """
+    for incarceration_period in incarceration_periods:
+        if not incarceration_period.admission_date:
+            raise ValueError("No admission_date on incarceration period: "
+                             f"{incarceration_period}")
+        if not incarceration_period.admission_reason:
+            raise ValueError("No admission_reason on incarceration period: "
+                             f"{incarceration_period}")
+        if not incarceration_period.status:
+            raise ValueError("No status on incarceration period: "
+                             f"{incarceration_period}")
+        if not incarceration_period.release_date and \
+                incarceration_period.status != \
+                StateIncarcerationPeriodStatus.IN_CUSTODY:
+            raise ValueError("No release_date on intermediate incarceration "
+                             f"period: {incarceration_period}")
+        if not incarceration_period.release_reason and \
+                incarceration_period.status != \
+                StateIncarcerationPeriodStatus.IN_CUSTODY:
+            raise ValueError("No release_reason on intermediate incarceration "
+                             f"period: {incarceration_period}")
+
+    incarceration_periods.sort(key=lambda b: b.admission_date)
+
+    incarceration_periods = \
+        collapse_incarceration_periods(incarceration_periods)
+
+    return incarceration_periods
 
 
 def collapse_incarceration_periods(incarceration_periods:
@@ -158,7 +209,7 @@ def collapse_incarceration_periods(incarceration_periods:
     for incarceration_period in incarceration_periods:
         if open_transfer:
             if incarceration_period.admission_reason == \
-                    StateIncarcerationPeriodAdmissionReason.TRANSFER:
+                    AdmissionReason.TRANSFER:
                 # If there is an open transfer period and they were transferred
                 # into this incarceration period, then combine this period with
                 # the open transfer period.
@@ -183,7 +234,7 @@ def collapse_incarceration_periods(incarceration_periods:
         # If this incarceration period ended in a transfer, then flag
         # that there's an open transfer period.
         open_transfer = (incarceration_period.release_reason ==
-                         StateIncarcerationPeriodReleaseReason.TRANSFER)
+                         ReleaseReason.TRANSFER)
 
     return new_incarceration_periods
 
@@ -224,9 +275,12 @@ def combine_incarceration_periods(start: StateIncarcerationPeriod,
 
 
 def for_last_incarceration_period(
-        incarceration_period: StateIncarcerationPeriod, admission_date: date,
+        admission_date: date,
+        status: StateIncarcerationPeriodStatus,
         release_date: Optional[date],
-        release_facility: Optional[str]) -> Optional[ReleaseEvent]:
+        release_reason: Optional[ReleaseReason],
+        release_facility: Optional[str]) \
+        -> Optional[ReleaseEvent]:
     """Looks at the last StateIncarcerationPeriod for a non-recidivism event.
 
     If the person has been released from their last StateIncarcerationPeriod,
@@ -235,14 +289,16 @@ def for_last_incarceration_period(
     count. Returns any non-recidivism event relevant to the person's last
     StateIncarcerationPeriod.
 
-
         Args:
-            incarceration_period: a StateIncarcerationPeriod for some person
             admission_date: when this StateIncarcerationPeriod started
+            status: status of this StateIncarcerationPeriod
             release_date: when they were released from this
                  StateIncarcerationPeriod
+            release_reason: reason they were released from this
+                StateIncarcerationPeriod
             release_facility: the facility they were released from on this
                 StateIncarcerationPeriod
+
 
         Returns:
             A non-recidivism event if released legitimately from this
@@ -250,103 +306,185 @@ def for_last_incarceration_period(
         """
 
     # If the person is still in custody, there is nothing to track.
-    if incarceration_period.status == StateIncarcerationPeriodStatus.IN_CUSTODY:
-        logging.debug('Person is still in custody on last or only '
-                      'incarceration period %s. Nothing to track',
-                      incarceration_period.incarceration_period_id)
-        return None
-
-    # If the person was released from this incarceration period because they
-    # died, do not include them in the recidivism calculations.
-    if incarceration_period.release_reason == \
-            StateIncarcerationPeriodReleaseReason.DEATH:
-        return None
-
-    # If the person was released from this incarceration period because they
-    # escaped, do not include them in the recidivism calculations.
-    if incarceration_period.release_reason == \
-            StateIncarcerationPeriodReleaseReason.ESCAPE:
+    if status == StateIncarcerationPeriodStatus.IN_CUSTODY:
         return None
 
     if not release_date:
-        # If for some reason there is no release date, don't return a
-        # ReleaseEvent
+        # If the person is not in custody, there should be a release_date.
+        # This should not happen after validation. Throw error.
+        raise ValueError("release_date is not set where it should be.")
+
+    if release_reason == ReleaseReason.DEATH:
+        # If the person was released from this incarceration period because they
+        # died, do not include them in the release cohort.
         return None
+    if release_reason == ReleaseReason.ESCAPE:
+        # If the person was released from this incarceration period because they
+        # escaped, do not include them in the release cohort.
+        return None
+    if release_reason == ReleaseReason.TRANSFER:
+        # If the person was released from this incarceration period because they
+        # were transferred elsewhere, do not include them in the release cohort.
+        return None
+    if release_reason in [ReleaseReason.CONDITIONAL_RELEASE,
+                          ReleaseReason.SENTENCE_SERVED]:
 
-    logging.debug('Person was released from last or only '
-                  'incarceration period %s. No recidivism.',
-                  incarceration_period.incarceration_period_id)
+        return NonRecidivismReleaseEvent(admission_date, release_date,
+                                         release_facility)
 
-    return NonRecidivismReleaseEvent(admission_date, release_date,
-                                     release_facility)
+    raise ValueError("Enum case not handled for "
+                     "StateIncarcerationPeriodReleaseReason of type:"
+                     f" {release_reason}.")
 
 
 def for_intermediate_incarceration_period(
-        incarceration_period: StateIncarcerationPeriod,
-        next_incarceration_period: StateIncarcerationPeriod,
-        admission_date: Optional[date], release_date: Optional[date],
+        admission_date: date,
+        release_date: date,
+        release_reason: ReleaseReason,
         release_facility: Optional[str],
-        classify_revocation_return_as_recidivism: bool) -> \
+        reincarceration_date: date,
+        reincarceration_facility: Optional[str],
+        reincarceration_admission_reason: AdmissionReason) -> \
         Optional[ReleaseEvent]:
     """Returns the ReleaseEvent relevant to an intermediate
     StateIncarcerationPeriod.
 
     If this is not the person's last StateIncarcerationPeriod and they have been
-    released, there is probably an instance of recidivism to count. There is not
-    an instance of recidivism if the person escaped or if the next period of
-    incarceration was due to a supervision revocation and the identifier has
-    been told not to classify revocation returns as recidivism.
+    released, there is probably an instance of recidivism to count.
 
     Args:
-        incarceration_period: a StateIncarcerationPeriod for some person
-        next_incarceration_period: the next StateIncarcerationPeriod after this,
-            through which recidivism has occurred
-        admission_date: when this StateIncarcerationPeriod started
-        release_date: when they were released from this StateIncarcerationPeriod
-        release_facility: the facility they were released from on this
+        admission_date: when the StateIncarcerationPeriod started
+        release_date: when they were released from the StateIncarcerationPeriod
+        release_reason: the reason they were released from the
             StateIncarcerationPeriod
-        classify_revocation_return_as_recidivism: a boolean indicating whether
-            or not to classify revocations of supervision as instances of
-            recidivism.
+        release_facility: the facility they were released from on the
+            StateIncarcerationPeriod
+        reincarceration_date: date they were admitted to the subsequent
+            StateIncarcerationPeriod
+        reincarceration_facility: facility in which the subsequent
+            StateIncarcerationPeriod started
+        reincarceration_admission_reason: reason they were admitted to the
+            subsequent StateIncarcerationPeriod
 
     Returns:
         A ReleaseEvent.
     """
 
-    # If the person escaped, do not include them in the recidivism calculations.
-    if incarceration_period.release_reason == \
-            StateIncarcerationPeriodReleaseReason.ESCAPE:
+    if not should_include_in_release_cohort(release_reason,
+                                            reincarceration_admission_reason):
+        # Don't include this release in the release cohort
         return None
 
-    logging.debug('Person was released from incarceration period %s and went '
-                  'back again. Yes recidivism.',
-                  incarceration_period.incarceration_period_id)
+    return_type = get_return_type(reincarceration_admission_reason)
+    from_supervision_type = \
+        get_from_supervision_type(reincarceration_admission_reason)
 
-    reincarceration_date = next_incarceration_period.admission_date
-    reincarceration_facility = next_incarceration_period.facility
-
-    # Capture what kind of return this was
-    if next_incarceration_period.admission_reason == \
-            StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION:
-        return_type = IncarcerationReturnType.PROBATION_REVOCATION
-    elif next_incarceration_period.admission_reason == \
-            StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION:
-        return_type = IncarcerationReturnType.PAROLE_REVOCATION
-    else:
-        return_type = IncarcerationReturnType.RECONVICTION
-
-    if return_type != IncarcerationReturnType.RECONVICTION and not \
-            classify_revocation_return_as_recidivism:
-        # If this return was due to a revocation of supervision, and
-        # supervision revocations should not be classified as recidivism,
-        # then return None.
-        return None
-
-    if not admission_date or not release_date or not reincarceration_date:
-        # If any of these required ReleaseEvent fields are empty, return
-        # None
-        return None
-
+    # This is a new admission recidivism event. Return it.
     return RecidivismReleaseEvent(admission_date, release_date,
                                   release_facility, reincarceration_date,
-                                  reincarceration_facility, return_type)
+                                  reincarceration_facility, return_type,
+                                  from_supervision_type)
+
+
+def should_include_in_release_cohort(
+        release_reason: ReleaseReason,
+        reincarceration_admission_reason: AdmissionReason) -> bool:
+    """Identifies whether a pair of release reason and admission reason should
+    be included in the release cohort."""
+
+    if release_reason == ReleaseReason.DEATH:
+        # If there is an intermediate incarceration period with a release reason
+        # of death, log this unexpected situation.
+        logging.info("StateIncarcerationPeriod following a release for death.")
+        return False
+    if release_reason == ReleaseReason.ESCAPE:
+        # If this escape is followed by a reincarceration_admission_reason that
+        # is not RETURN_FROM_ESCAPE, log this unexpected situation.
+        if reincarceration_admission_reason != \
+                AdmissionReason.RETURN_FROM_ESCAPE:
+            logging.info("%s following a release for ESCAPE.",
+                         reincarceration_admission_reason)
+
+        # If the person was released from this incarceration period because they
+        # escaped, do not include them in the release cohort.
+        return False
+    if release_reason == ReleaseReason.TRANSFER:
+        # The fact that this transfer release reason isn't collapsed with a
+        # transfer admission reason means there is something unexpected going
+        # on. Log it.
+        logging.info("Unexpected reincarceration_admission_reason: %s"
+                     "following a release for a transfer.",
+                     reincarceration_admission_reason)
+
+        # If the person was released from this incarceration period because they
+        # were transferred elsewhere, do not include them in the release cohort.
+        return False
+    if release_reason in [ReleaseReason.CONDITIONAL_RELEASE,
+                          ReleaseReason.SENTENCE_SERVED]:
+        if reincarceration_admission_reason == \
+                AdmissionReason.RETURN_FROM_ESCAPE:
+            # If this person was not recorded as escaped, but returned on a
+            # release from escape, log this unexpected situation and exclude
+            # from the release cohort.
+            logging.info("StateIncarcerationPeriod following a release for"
+                         " death.")
+            return False
+
+        return True
+
+    raise ValueError("Enum case not handled for "
+                     "StateIncarcerationPeriodReleaseReason of type:"
+                     f" {release_reason}.")
+
+
+def get_return_type(
+        reincarceration_admission_reason: AdmissionReason) -> \
+        ReincarcerationReturnType:
+    """Returns the return type for the reincarceration admission reason."""
+
+    if reincarceration_admission_reason == AdmissionReason.NEW_ADMISSION:
+        return ReincarcerationReturnType.NEW_ADMISSION
+    if reincarceration_admission_reason == AdmissionReason.PAROLE_REVOCATION:
+        return ReincarcerationReturnType.REVOCATION
+    if reincarceration_admission_reason == AdmissionReason.PROBATION_REVOCATION:
+        return ReincarcerationReturnType.REVOCATION
+    if reincarceration_admission_reason == AdmissionReason.TRANSFER:
+        # This should be a rare case, but we are considering this a type of
+        # new admission recidivism because this person became reincarcerated at
+        # some point after being released, and this is the most likely return
+        # type in most cases in the absence of further information."
+        return ReincarcerationReturnType.NEW_ADMISSION
+    if reincarceration_admission_reason == AdmissionReason.RETURN_FROM_ESCAPE:
+        # This should never happen. Should have been filtered by
+        # should_include_in_release_cohort function. Throw error.
+        raise ValueError("should_include_in_release_cohort is not effectively"
+                         " filtering. Found unexpected admission_reason of:"
+                         f" {reincarceration_admission_reason}")
+
+    raise ValueError("Enum case not handled for "
+                     "StateIncarcerationPeriodAdmissionReason of type:"
+                     f" {reincarceration_admission_reason}.")
+
+
+def get_from_supervision_type(
+        reincarceration_admission_reason: AdmissionReason) \
+        -> Optional[ReincarcerationReturnFromSupervisionType]:
+    """If the person returned from supervision, returns the type."""
+
+    if reincarceration_admission_reason == AdmissionReason.NEW_ADMISSION:
+        return None
+    if reincarceration_admission_reason == AdmissionReason.PAROLE_REVOCATION:
+        return ReincarcerationReturnFromSupervisionType.PAROLE
+    if reincarceration_admission_reason == AdmissionReason.PROBATION_REVOCATION:
+        return ReincarcerationReturnFromSupervisionType.PROBATION
+    if reincarceration_admission_reason in [AdmissionReason.RETURN_FROM_ESCAPE,
+                                            AdmissionReason.TRANSFER]:
+        # This should never happen. Should have been filtered by
+        # should_include_in_release_cohort function. Throw error.
+        raise ValueError("should_include_in_release_cohort is not effectively"
+                         " filtering. Found unexpected admission_reason of:"
+                         f" {reincarceration_admission_reason}")
+
+    raise ValueError("Enum case not handled for "
+                     "StateIncarcerationPeriodAdmissionReason of type:"
+                     f" {reincarceration_admission_reason}.")

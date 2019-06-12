@@ -399,9 +399,12 @@ def characteristic_combinations(person: StatePerson,
         characteristics['gender'] = person.gender
     if event.release_facility is not None:
         characteristics['release_facility'] = event.release_facility
-    if isinstance(event, RecidivismReleaseEvent) \
-            and event.return_type is not None:
-        characteristics['return_type'] = event.return_type
+    if isinstance(event, RecidivismReleaseEvent):
+        if event.return_type is not None:
+            characteristics['return_type'] = event.return_type
+        if event.from_supervision_type is not None:
+            characteristics['from_supervision_type'] = \
+                event.from_supervision_type
 
     return for_characteristics(characteristics)
 

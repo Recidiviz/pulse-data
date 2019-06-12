@@ -29,7 +29,7 @@ from recidiviz.calculator.recidivism import calculator, ReleaseEvent, \
     RecidivismReleaseEvent, NonRecidivismReleaseEvent
 from recidiviz.calculator.recidivism.metrics import RecidivismMethodologyType
 from recidiviz.calculator.recidivism.release_event import \
-    IncarcerationReturnType
+    ReincarcerationReturnType
 from recidiviz.persistence.entity.state.entities import StatePerson, Gender
 
 
@@ -372,7 +372,7 @@ class TestMapRecidivismCombinations:
             2008: [RecidivismReleaseEvent(
                 date(2005, 7, 19), date(2008, 9, 19), 'Hudson',
                 date(2014, 5, 12), 'Upstate',
-                IncarcerationReturnType.RECONVICTION)]
+                ReincarcerationReturnType.NEW_ADMISSION)]
         }
 
         recidivism_combinations = calculator.map_recidivism_combinations(
@@ -401,11 +401,11 @@ class TestMapRecidivismCombinations:
             1908: [RecidivismReleaseEvent(
                 date(1905, 7, 19), date(1908, 9, 19), 'Hudson',
                 date(1910, 8, 12), 'Upstate',
-                IncarcerationReturnType.RECONVICTION)],
+                ReincarcerationReturnType.NEW_ADMISSION)],
             1912: [RecidivismReleaseEvent(
                 date(1910, 8, 12), date(1912, 8, 19), 'Upstate',
                 date(1914, 7, 12), 'Sing Sing',
-                IncarcerationReturnType.RECONVICTION)]
+                ReincarcerationReturnType.NEW_ADMISSION)]
         }
 
         recidivism_combinations = calculator.map_recidivism_combinations(
@@ -465,7 +465,7 @@ class TestMapRecidivismCombinations:
             2008: [RecidivismReleaseEvent(
                 date(2005, 7, 19), date(2008, 9, 19), 'Hudson',
                 date(2018, 10, 12), 'Upstate',
-                IncarcerationReturnType.RECONVICTION)]
+                ReincarcerationReturnType.NEW_ADMISSION)]
         }
 
         recidivism_combinations = calculator.map_recidivism_combinations(
