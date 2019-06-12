@@ -20,7 +20,7 @@
 import unittest
 from datetime import date, datetime
 
-from recidiviz.common.constants.county.sentence import SentenceStatus
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import \
     StateSupervisionType
 from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
@@ -40,7 +40,7 @@ class StateSupervisionSentenceConverterTest(unittest.TestCase):
     def testParseStateSupervisionSentence(self):
         # Arrange
         ingest_supervision = ingest_info_pb2.StateSupervisionSentence(
-            status='COMPLETED',
+            status='SUSPENDED',
             supervision_type='PROBATION',
             state_supervision_sentence_id='SENTENCE_ID',
             completion_date='1/2/2111',
@@ -57,8 +57,8 @@ class StateSupervisionSentenceConverterTest(unittest.TestCase):
 
         # Assert
         expected_result = entities.StateSupervisionSentence(
-            status=SentenceStatus.COMPLETED,
-            status_raw_text='COMPLETED',
+            status=StateSentenceStatus.SUSPENDED,
+            status_raw_text='SUSPENDED',
             supervision_type=StateSupervisionType.PROBATION,
             supervision_type_raw_text='PROBATION',
             external_id='SENTENCE_ID',

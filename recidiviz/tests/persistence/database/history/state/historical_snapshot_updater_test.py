@@ -28,6 +28,8 @@ from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_fine import StateFineStatus
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus
+from recidiviz.common.constants.state.state_parole_decision import \
+    StateParoleDecisionOutcome
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_period import \
     StateSupervisionPeriodStatus
@@ -83,6 +85,7 @@ class TestStateHistoricalSnapshotUpdater(BaseHistoricalSnapshotUpdaterTest):
         parole_decision = state_schema.StateParoleDecision(
             parole_decision_id=789,
             state_code='us_ca',
+            decision_outcome=StateParoleDecisionOutcome.PAROLE_DENIED.value,
             person_id=person_id,
         )
 
