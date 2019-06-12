@@ -62,6 +62,8 @@ from recidiviz.common.constants.state.state_fine import StateFineStatus
 from recidiviz.common.constants.state.state_charge import (
     StateChargeClassification,
 )
+from recidiviz.common.constants.state.state_parole_decision import \
+    StateParoleDecisionOutcome
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import (
     StateSupervisionType,
@@ -184,7 +186,7 @@ class StatePerson(Entity, BuildableAttr, DefaultableAttr):
     current_address: Optional[str] = attr.ib(default=None)
 
     #   - What
-    # TODO(ageiduschek): Decide if this should be a 'primary_alias' object of
+    # TODO(1625): Decide if this should be a 'primary_alias' object of
     #  type Alias.
     full_name: Optional[str] = attr.ib(default=None)
 
@@ -772,8 +774,8 @@ class StateParoleDecision(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     county_code: Optional[str] = attr.ib()
 
     #   - What
-    # TODO(1625) - Convert this to an outcome enum
-    decision_outcome: Optional[str] = attr.ib()
+    decision_outcome: Optional[StateParoleDecisionOutcome] = attr.ib()
+    decision_outcome_raw_text: Optional[str] = attr.ib()
     decision_reasoning: Optional[str] = attr.ib()
     corrective_action: Optional[str] = attr.ib()
 

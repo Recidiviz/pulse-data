@@ -95,6 +95,7 @@ state_sentence_status = Enum(
     state_enum_strings.state_sentence_status_commuted,
     state_enum_strings.state_sentence_status_completed,
     enum_strings.external_unknown,
+    enum_strings.present_without_info,
     state_enum_strings.state_sentence_status_serving,
     state_enum_strings.state_sentence_status_suspended,
     name='state_sentence_status')
@@ -262,6 +263,13 @@ state_supervision_violation_response_deciding_body_type = Enum(
     state_enum_strings.
     state_supervision_violation_response_deciding_body_type_supervision_officer,
     name='state_supervision_violation_response_deciding_body_type')
+
+state_parole_decision_outcome = Enum(
+    enum_strings.external_unknown,
+    state_enum_strings.state_parole_decision_parole_denied,
+    state_enum_strings.state_parole_decision_parole_granted,
+    name='state_parole_decision_outcome'
+)
 
 # Join tables
 
@@ -1499,7 +1507,8 @@ class _StateParoleDecisionSharedColumns(
     corrective_action_deadline = Column(Date)
     state_code = Column(String(255), nullable=False, index=True)
     county_code = Column(String(255), index=True)
-    decision_outcome = Column(String(255))
+    decision_outcome = Column(state_parole_decision_outcome)
+    decision_outcome_raw_text = Column(String(255))
     decision_reasoning = Column(String(255))
     corrective_action = Column(String(255))
 

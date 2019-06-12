@@ -18,9 +18,9 @@
 """Converts an ingest_info proto StateIncarcerationSentence to a
 persistence entity."""
 
-from recidiviz.common.constants.county.sentence import SentenceStatus
 from recidiviz.common.constants.state.state_incarceration import \
     StateIncarcerationType
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import StateIncarcerationSentence
 from recidiviz.persistence.entity.state import entities
@@ -47,14 +47,15 @@ def copy_fields_to_builder(
     new = incarceration_sentence_builder
 
     enum_fields = {
-        'status': SentenceStatus,
+        'status': StateSentenceStatus,
         'incarceration_type': StateIncarcerationType
     }
     enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
 
     # Enum mappings
-    new.status = enum_mappings.get(SentenceStatus,
-                                   default=SentenceStatus.PRESENT_WITHOUT_INFO)
+    new.status = enum_mappings.get(
+        StateSentenceStatus,
+        default=StateSentenceStatus.PRESENT_WITHOUT_INFO)
     new.status_raw_text = fn(normalize, 'status', proto)
     new.incarceration_type = enum_mappings.get(StateIncarcerationType)
     new.incarceration_type_raw_text = fn(normalize, 'incarceration_type', proto)

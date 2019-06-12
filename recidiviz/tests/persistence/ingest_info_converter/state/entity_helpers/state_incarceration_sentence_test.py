@@ -20,9 +20,9 @@
 import unittest
 from datetime import date
 
-from recidiviz.common.constants.county.sentence import SentenceStatus
 from recidiviz.common.constants.state.state_incarceration import \
     StateIncarcerationType
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
@@ -39,7 +39,7 @@ class StateIncarcerationSentenceConverterTest(unittest.TestCase):
     def testParseStateIncarcerationSentence(self):
         # Arrange
         ingest_incarceration = ingest_info_pb2.StateIncarcerationSentence(
-            status='COMPLETED',
+            status='SUSPENDED',
             incarceration_type='STATE_PRISON',
             state_incarceration_sentence_id='INCARCERATION_ID',
             date_imposed='1/2/2111',
@@ -64,8 +64,8 @@ class StateIncarcerationSentenceConverterTest(unittest.TestCase):
 
         # Assert
         expected_result = entities.StateIncarcerationSentence(
-            status=SentenceStatus.COMPLETED,
-            status_raw_text='COMPLETED',
+            status=StateSentenceStatus.SUSPENDED,
+            status_raw_text='SUSPENDED',
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             incarceration_type_raw_text='STATE_PRISON',
             external_id='INCARCERATION_ID',

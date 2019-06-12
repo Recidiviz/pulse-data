@@ -16,7 +16,8 @@
 # =============================================================================
 
 """Converts an ingest_info proto StateParoleDecision to a persistence entity."""
-
+from recidiviz.common.constants.state.state_parole_decision import \
+    StateParoleDecisionOutcome
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.common.str_field_utils import parse_bool, parse_date, normalize
 
@@ -24,6 +25,8 @@ from recidiviz.ingest.models.ingest_info_pb2 import StateParoleDecision
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import \
     parse_region_code_with_override, parse_external_id, fn
+from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import \
+    EnumMappings
 
 
 def copy_fields_to_builder(
@@ -37,6 +40,15 @@ def copy_fields_to_builder(
     """
     new = state_parole_decision_builder
 
+    enum_fields = {
+        'decision_outcome': StateParoleDecisionOutcome,
+    }
+    enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
+
+    # Enum mappings
+    new.decision_outcome = enum_mappings.get(StateParoleDecisionOutcome)
+    new.decision_outcome_raw_text = fn(normalize, 'decision_outcome', proto)
+
     new.external_id = fn(parse_external_id, 'state_parole_decision_id', proto)
     new.received_parole = fn(parse_bool, 'received_parole', proto)
     new.decision_date = fn(parse_date, 'decision_date', proto)
@@ -46,6 +58,5 @@ def copy_fields_to_builder(
     new.state_code = parse_region_code_with_override(
         proto, 'state_code', metadata)
     new.county_code = fn(normalize, 'county_code', proto)
-    new.decision_outcome = fn(normalize, 'decision_outcome', proto)
     new.decision_reasoning = fn(normalize, 'decision_reasoning', proto)
     new.corrective_action = fn(normalize, 'corrective_action', proto)

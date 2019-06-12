@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Constants related to a state Sentence."""
+"""Constants related to a StateParoleDecision."""
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 import recidiviz.common.constants.state.enum_canonical_strings as \
@@ -23,25 +23,21 @@ import recidiviz.common.constants.state.enum_canonical_strings as \
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
-class StateSentenceStatus(EntityEnum, metaclass=EntityEnumMeta):
-    COMMUTED = state_enum_strings.state_sentence_status_commuted
-    COMPLETED = state_enum_strings.state_sentence_status_completed
+class StateParoleDecisionOutcome(EntityEnum, metaclass=EntityEnumMeta):
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
-    PRESENT_WITHOUT_INFO = enum_strings.present_without_info
-    SERVING = state_enum_strings.state_sentence_status_serving
-    SUSPENDED = state_enum_strings.state_sentence_status_suspended
+    PAROLE_DENIED = state_enum_strings.state_parole_decision_parole_denied
+    PAROLE_GRANTED = state_enum_strings.state_parole_decision_parole_granted
 
     @staticmethod
     def _get_default_map():
-        return _STATE_SENTENCE_STATUS_MAP
+        return _STATE_PAROLE_DECISION_OUTCOME_MAP
 
 
-# MappableEnum.parse will strip punctuation and separate tokens with a single
-# space. Add mappings here using a single space between words and numbers.
-# For example, `N/A` can be written as `N A` and `(10%)` can be written as `10`.
-_STATE_SENTENCE_STATUS_MAP = {
-    'COMMUTED': StateSentenceStatus.COMMUTED,
-    'COMPLETED': StateSentenceStatus.COMPLETED,
-    'SERVING': StateSentenceStatus.SERVING,
-    'SUSPENDED': StateSentenceStatus.SUSPENDED,
+_STATE_PAROLE_DECISION_OUTCOME_MAP = {
+    'DENIED': StateParoleDecisionOutcome.PAROLE_DENIED,
+    'DENIED PAROLE': StateParoleDecisionOutcome.PAROLE_DENIED,
+    'PAROLE DENIED': StateParoleDecisionOutcome.PAROLE_DENIED,
+    'GRANTED': StateParoleDecisionOutcome.PAROLE_GRANTED,
+    'GRANTED PAROLE': StateParoleDecisionOutcome.PAROLE_GRANTED,
+    'PAROLE GRANTED': StateParoleDecisionOutcome.PAROLE_GRANTED,
 }

@@ -22,13 +22,13 @@ from typing import List
 
 from recidiviz.common.constants.bond import BondStatus
 from recidiviz.common.constants.charge import ChargeStatus, ChargeDegree
-from recidiviz.common.constants.county.sentence import SentenceStatus
 from recidiviz.common.constants.person_characteristics import Race, Ethnicity
 from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentClass
 from recidiviz.common.constants.state.state_fine import StateFineStatus
 from recidiviz.common.constants.state.state_incarceration_incident import \
     StateIncarcerationIncidentOffense
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import \
     StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_violation_response \
@@ -327,7 +327,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                         StateSupervisionSentence.new_with_defaults(
                             external_id='SUPERVISION_SENTENCE_ID1',
                             state_code='US_ND',
-                            status=SentenceStatus.PRESENT_WITHOUT_INFO,
+                            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                             charges=[
                                 StateCharge.new_with_defaults(
                                     external_id='CHARGE_ID1',
@@ -374,7 +374,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                         StateIncarcerationSentence.new_with_defaults(
                             external_id='INCARCERATION_SENTENCE_ID1',
                             state_code='US_ND',
-                            status=SentenceStatus.PRESENT_WITHOUT_INFO,
+                            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                             charges=[
                                 StateCharge.new_with_defaults(
                                     external_id='CHARGE_ID1',
@@ -426,7 +426,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                         StateIncarcerationSentence.new_with_defaults(
                             external_id='INCARCERATION_SENTENCE_ID2',
                             state_code='US_ND',
-                            status=SentenceStatus.PRESENT_WITHOUT_INFO,
+                            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                             charges=[
                                 StateCharge.new_with_defaults(
                                     external_id='CHARGE_ID2',
@@ -471,7 +471,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                         StateSupervisionSentence.new_with_defaults(
                             external_id='SUPERVISION_SENTENCE_ID2',
                             state_code='US_ND',
-                            status=SentenceStatus.PRESENT_WITHOUT_INFO,
+                            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                             charges=[
                                 StateCharge.new_with_defaults(
                                     external_id='CHARGE_ID2',
