@@ -24,7 +24,7 @@ from typing import Any, Dict, List, Optional
 import attr
 
 from recidiviz.calculator.recidivism.release_event import \
-    IncarcerationReturnType
+    ReincarcerationReturnType, ReincarcerationReturnFromSupervisionType
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.common.constants.person_characteristics import Gender, Race
 
@@ -47,8 +47,10 @@ class RecidivismMethodologyType(Enum):
     PERSON = auto()
 
 
+# TODO: Implement rearrest and reconviction recidivism metrics
+#  (Issues #1841 and #1842)
 @attr.s
-class RecidivismMetric(BuildableAttr):
+class ReincarcerationRecidivismMetric(BuildableAttr):
     """Models a single recidivism metric.
 
     A recidivism metric contains a recidivism rate, including the numerator of
@@ -63,7 +65,7 @@ class RecidivismMetric(BuildableAttr):
     # The string id of the calculation pipeline that produced this metric.
     execution_id: int = attr.ib()  # non-nullable
 
-    # The integer year during which the person was released
+    # The integer year during which the persons were released
     release_cohort: int = attr.ib()  # non-nullable
 
     # The integer number of years after date of release during which
@@ -106,11 +108,18 @@ class RecidivismMetric(BuildableAttr):
     # The facility the persons were released from prior to recidivating
     release_facility: Optional[str] = attr.ib(default=None)
 
-    # IncarcerationReturnType enum indicating whether the person returned to
+    # ReincarcerationReturnType enum indicating whether the persons returned to
     # incarceration because of a revocation of supervision or because of a
-    # reconviction
-    # TODO(1809): Handle all potential recidivism types
-    return_type: IncarcerationReturnType = attr.ib(default=None)
+    # new admission
+    return_type: ReincarcerationReturnType = attr.ib(default=None)
+
+    # ReincarcerationReturnFromSupervisionType enum for the type of
+    # supervision the persons were on before they returned to incarceration.
+    from_supervision_type: ReincarcerationReturnFromSupervisionType = \
+        attr.ib(default=None)
+
+    # TODO(1793) Track whether revocation of supervision was for a purely
+    #  technical violation
 
     # Record keeping fields
 
@@ -123,7 +132,7 @@ class RecidivismMetric(BuildableAttr):
     @staticmethod
     def build_from_metric_key_release_group(metric_key: Dict[str, Any],
                                             release_group: List[int]) -> \
-            Optional['RecidivismMetric']:
+            Optional['ReincarcerationRecidivismMetric']:
         """Builds a RecidivismMetric object from the given arguments.
 
         Constructs a RecidivismMetric object from a dictionary containing all
@@ -135,7 +144,7 @@ class RecidivismMetric(BuildableAttr):
         if not metric_key:
             raise ValueError("The metric_key is empty.")
 
-        recidivism_metric = RecidivismMetric.builder()
+        recidivism_metric = ReincarcerationRecidivismMetric.builder()
 
         # Calculate number of releases and number resulting in recidivism
         recidivism_metric.total_releases = len(list(release_group))
@@ -169,5 +178,8 @@ class RecidivismMetric(BuildableAttr):
             recidivism_metric.stay_length_bucket = metric_key.get('stay_length')
         if 'return_type' in metric_key:
             recidivism_metric.return_type = metric_key.get('return_type')
+        if 'from_supervision_type' in metric_key:
+            recidivism_metric.from_supervision_type = \
+                metric_key['from_supervision_type']
 
         return recidivism_metric.build()
