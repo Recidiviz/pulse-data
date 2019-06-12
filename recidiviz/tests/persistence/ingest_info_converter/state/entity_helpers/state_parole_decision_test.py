@@ -19,6 +19,8 @@
 import unittest
 from datetime import date
 
+from recidiviz.common.constants.state.state_parole_decision import \
+    StateParoleDecisionOutcome
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
@@ -59,7 +61,8 @@ class StateParoleDecisionConverterTest(unittest.TestCase):
             corrective_action_deadline=date(year=2111, month=2, day=2),
             state_code='US_ND',
             county_code=None,
-            decision_outcome='PAROLE GRANTED',
+            decision_outcome=StateParoleDecisionOutcome.PAROLE_GRANTED,
+            decision_outcome_raw_text='PAROLE GRANTED',
             decision_reasoning='GREAT ALL AROUND PERSON',
             corrective_action=None
         )

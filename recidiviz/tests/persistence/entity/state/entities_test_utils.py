@@ -37,6 +37,8 @@ from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus, StateIncarcerationFacilitySecurityLevel, \
     StateIncarcerationPeriodAdmissionReason, \
     StateIncarcerationPeriodReleaseReason
+from recidiviz.common.constants.state.state_parole_decision import \
+    StateParoleDecisionOutcome
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import \
     StateSupervisionType
@@ -331,11 +333,11 @@ def generate_full_graph_state_person(
         decision_date=datetime.date(year=2004, month=7, day=1),
         corrective_action_deadline=None,
         state_code='us_ca',
-        decision_outcome='GRANTED PAROLE',
+        decision_outcome=StateParoleDecisionOutcome.PAROLE_GRANTED,
         decision_reasoning='GOOD BEHAVIOR',
         corrective_action=None,
         person=person,
-        # incarceration_period=incarceration_period,
+        incarceration_period=incarceration_period,
     )
 
     incarceration_period.parole_decisions = [parole_decision]

@@ -15,8 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Converts an ingest_info proto StateSentenceGroup to a persistence entity."""
-
-from recidiviz.common.constants.county.sentence import SentenceStatus
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.str_field_utils import normalize, parse_date, parse_days
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import StateSentenceGroup
@@ -39,12 +38,12 @@ def copy_fields_to_builder(
     new = sentence_group_builder
 
     enum_fields = {
-        'status': SentenceStatus
+        'status': StateSentenceStatus,
     }
     enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
 
     # Enum mappings
-    new.status = enum_mappings.get(SentenceStatus)
+    new.status = enum_mappings.get(StateSentenceStatus)
     new.status_raw_text = fn(normalize, 'status', proto)
 
     # 1-to-1 mappings
