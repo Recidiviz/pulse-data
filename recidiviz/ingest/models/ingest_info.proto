@@ -199,7 +199,7 @@ message StatePersonEthnicity {
 }
 
 message StateAlias {
-    optional string alias_id = 1;
+    optional string state_alias_id = 1;
     optional string state_code = 2;
     optional string full_name = 3;
     optional string surname = 4;
