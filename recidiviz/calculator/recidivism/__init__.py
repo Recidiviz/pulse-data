@@ -18,5 +18,5 @@
 
 from .release_event import ReleaseEvent, RecidivismReleaseEvent, \
     NonRecidivismReleaseEvent
-from .metrics import RecidivismMetric
+from .metrics import ReincarcerationRecidivismMetric
 from .calculator import map_recidivism_combinations
