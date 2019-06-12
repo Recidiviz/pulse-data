@@ -35,7 +35,7 @@ class StateAliasConverterTest(unittest.TestCase):
     def testParseStateAliasNameParts(self):
         # Arrange
         ingest_alias = ingest_info_pb2.StateAlias(
-            alias_id='ALIAS_ID',
+            state_alias_id='ALIAS_ID',
             state_code='US_ND',
             given_names='FRANK',
             middle_names='LONNY',
@@ -65,7 +65,7 @@ class StateAliasConverterTest(unittest.TestCase):
         # Arrange
         ingest_alias = ingest_info_pb2.StateAlias(
             state_code='US_ND',
-            alias_id='ALIAS_ID',
+            state_alias_id='ALIAS_ID',
             full_name='FRANK OCEAN',
         )
 
@@ -84,7 +84,7 @@ class StateAliasConverterTest(unittest.TestCase):
     def testParseStateAliasTooManyNames():
         # Arrange
         ingest_alias = ingest_info_pb2.StateAlias(
-            alias_id='ALIAS_ID',
+            state_alias_id='ALIAS_ID',
             full_name='FRANK OCEAN',
             given_names='FRANK',
             middle_names='LONNY',

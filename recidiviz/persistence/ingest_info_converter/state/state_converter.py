@@ -43,7 +43,7 @@ class StateConverter(BaseConverter[entities.StatePerson]):
     def __init__(self, ingest_info, metadata):
         super().__init__(ingest_info, metadata)
 
-        self.aliases = {a.alias_id: a for a in ingest_info.state_aliases}
+        self.aliases = {a.state_alias_id: a for a in ingest_info.state_aliases}
         self.person_races = {pr.state_person_race_id: pr for pr
                              in ingest_info.state_person_races}
         self.person_ethnicities = {pe.state_person_ethnicity_id: pe for pe

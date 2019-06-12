@@ -1447,7 +1447,7 @@ class StateAgent(IngestObject):
 
     def __init__(self, state_agent_id=None, agent_type=None, state_code=None,
                  full_name=None):
-        self.agent_id: Optional[str] = state_agent_id
+        self.state_agent_id: Optional[str] = state_agent_id
         self.agent_type: Optional[str] = agent_type
         self.state_code: Optional[str] = state_code
         self.full_name: Optional[str] = full_name
