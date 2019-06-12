@@ -26,12 +26,22 @@ import attr
 from recidiviz.common.attr_mixins import BuildableAttr
 
 
-# TODO(1809): Update this enum to cover all potential recidivism types
-class IncarcerationReturnType(Enum):
+class ReincarcerationReturnType(Enum):
+    # The person returned to incarceration on a new admission after being free.
+    NEW_ADMISSION = auto()
 
-    RECONVICTION = auto()
-    PAROLE_REVOCATION = auto()
-    PROBATION_REVOCATION = auto()
+    # The person returned to incarceration because their supervision was
+    # revoked. Note this covers all reasons for revocation, including new
+    # crimes that may have factored into the revocation decision.
+    REVOCATION = auto()
+
+
+class ReincarcerationReturnFromSupervisionType(Enum):
+    # The person returned from being on parole
+    PAROLE = auto()
+
+    # The person returned from being on probation
+    PROBATION = auto()
 
 
 @attr.s
@@ -65,10 +75,15 @@ class RecidivismReleaseEvent(ReleaseEvent):
     # incarceration after the release.
     reincarceration_facility: Optional[str] = attr.ib(default=None)
 
-    # IncarcerationReturnType enum for the type of return to
+    # ReincarcerationReturnType enum for the type of return to
     # incarceration this recidivism event describes.
-    return_type: IncarcerationReturnType = attr.ib(default=None)
+    return_type: ReincarcerationReturnType = attr.ib(default=None)
 
+    # ReincarcerationReturnFromSupervisionType enum for the type of
+    # supervision the person was on before they returned to incarceration.
+    from_supervision_type: \
+        Optional[ReincarcerationReturnFromSupervisionType] = \
+        attr.ib(default=None)
 
 @attr.s
 class NonRecidivismReleaseEvent(ReleaseEvent):

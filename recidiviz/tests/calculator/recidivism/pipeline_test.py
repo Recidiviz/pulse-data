@@ -30,10 +30,11 @@ from dateutil.relativedelta import relativedelta
 import pytest
 
 from recidiviz.calculator.recidivism import pipeline
-from recidiviz.calculator.recidivism import calculator, RecidivismMetric
+from recidiviz.calculator.recidivism import calculator, \
+    ReincarcerationRecidivismMetric
 from recidiviz.calculator.recidivism.metrics import RecidivismMethodologyType
 from recidiviz.calculator.recidivism.release_event import \
-    IncarcerationReturnType, ReleaseEvent, RecidivismReleaseEvent, \
+    ReincarcerationReturnType, ReleaseEvent, RecidivismReleaseEvent, \
     NonRecidivismReleaseEvent
 from recidiviz.calculator.utils import person_extractor, \
     incarceration_period_extractor
@@ -168,8 +169,7 @@ class TestRecidivismPipeline(unittest.TestCase):
         # StateIncarcerationPeriods
         person_events = (person_and_incarceration_periods |
                          'Get Release Events' >>
-                         pipeline.GetReleaseEvents(
-                             classify_revocation_return_as_recidivism=True))
+                         pipeline.GetReleaseEvents())
 
         recidivism_metrics = (person_events
                               | 'Get Recidivism Metrics' >>
@@ -380,8 +380,7 @@ class TestRecidivismPipeline(unittest.TestCase):
         # StateIncarcerationPeriods
         person_events = (person_and_incarceration_periods |
                          'Get Release Events' >>
-                         pipeline.GetReleaseEvents(
-                             classify_revocation_return_as_recidivism=True))
+                         pipeline.GetReleaseEvents())
 
         recidivism_metrics = (person_events
                               | 'Get Recidivism Metrics' >>
@@ -611,6 +610,8 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code='TX',
             admission_date=date(2008, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.
+            NEW_ADMISSION,
             release_date=date(2010, 12, 4),
             release_reason=StateIncarcerationPeriodReleaseReason.
             SENTENCE_SERVED)
@@ -620,6 +621,8 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code='TX',
             admission_date=date(2011, 4, 5),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.
+            NEW_ADMISSION,
             release_date=date(2014, 4, 14),
             release_reason=StateIncarcerationPeriodReleaseReason.
             SENTENCE_SERVED)
@@ -628,7 +631,9 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             incarceration_period_id=3333,
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             state_code='TX',
-            admission_date=date(2017, 1, 4))
+            admission_date=date(2017, 1, 4),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.
+            NEW_ADMISSION)
 
         person_incarceration_periods = {'person': [fake_person],
                                         'incarceration_periods': [
@@ -642,7 +647,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             release_facility=None,
             reincarceration_date=first_reincarceration.admission_date,
             reincarceration_facility=None,
-            return_type=IncarcerationReturnType.RECONVICTION)
+            return_type=ReincarcerationReturnType.NEW_ADMISSION)
 
         second_recidivism_release_event = RecidivismReleaseEvent(
             original_admission_date=first_reincarceration.admission_date,
@@ -650,7 +655,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             release_facility=None,
             reincarceration_date=subsequent_reincarceration.admission_date,
             reincarceration_facility=None,
-            return_type=IncarcerationReturnType.RECONVICTION)
+            return_type=ReincarcerationReturnType.NEW_ADMISSION)
 
         correct_output = [
             (fake_person, {initial_incarceration.release_date.year:
@@ -658,17 +663,13 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                            first_reincarceration.release_date.year:
                            [second_recidivism_release_event]})]
 
-        find_recidivism_kwargs = {
-            'classify_revocation_return_as_recidivism': True}
-
         test_pipeline = TestPipeline()
 
         output = (test_pipeline
                   | beam.Create([(fake_person_id,
                                   person_incarceration_periods)])
                   | 'Identify Recidivism Events' >>
-                  beam.ParDo(pipeline.ClassifyReleaseEvents(),
-                             **find_recidivism_kwargs)
+                  beam.ParDo(pipeline.ClassifyReleaseEvents())
                   )
 
         assert_that(output, equal_to(correct_output))
@@ -690,6 +691,8 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             incarceration_period_id=1111,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code='TX', admission_date=date(2008, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.
+            NEW_ADMISSION,
             release_date=date(2010, 12, 4),
             release_reason=StateIncarcerationPeriodReleaseReason.
             SENTENCE_SERVED)
@@ -706,17 +709,13 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                            {only_incarceration.release_date.year:
                             [non_recidivism_release_event]})]
 
-        find_recidivism_kwargs = {
-            'classify_revocation_return_as_recidivism': True}
-
         test_pipeline = TestPipeline()
 
         output = (test_pipeline
                   | beam.Create([(fake_person_id,
                                   person_incarceration_periods)])
                   | 'Identify Recidivism Events' >>
-                  beam.ParDo(pipeline.ClassifyReleaseEvents(),
-                             **find_recidivism_kwargs))
+                  beam.ParDo(pipeline.ClassifyReleaseEvents()))
 
         assert_that(output, equal_to(correct_output))
 
@@ -738,17 +737,13 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         correct_output = [(fake_person, {})]
 
-        find_recidivism_kwargs = {
-            'classify_revocation_return_as_recidivism': True}
-
         test_pipeline = TestPipeline()
 
         output = (test_pipeline
                   | beam.Create([(fake_person_id,
                                   person_incarceration_periods)])
                   | 'Identify Recidivism Events' >>
-                  beam.ParDo(pipeline.ClassifyReleaseEvents(),
-                             **find_recidivism_kwargs)
+                  beam.ParDo(pipeline.ClassifyReleaseEvents())
                   )
 
         assert_that(output, equal_to(correct_output))
@@ -771,6 +766,8 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code='TX',
             admission_date=date(2008, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.
+            NEW_ADMISSION,
             release_date=date(2010, 1, 4),
             release_reason=StateIncarcerationPeriodReleaseReason.
             SENTENCE_SERVED)
@@ -780,6 +777,8 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code='TX',
             admission_date=date(2010, 4, 5),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.
+            NEW_ADMISSION,
             release_date=date(2010, 10, 14),
             release_reason=StateIncarcerationPeriodReleaseReason.
             SENTENCE_SERVED)
@@ -788,7 +787,10 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             incarceration_period_id=3333,
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             state_code='TX',
-            admission_date=date(2017, 1, 4))
+            admission_date=date(2017, 1, 4),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.
+            NEW_ADMISSION,
+        )
 
         person_incarceration_periods = {'person': [fake_person],
                                         'incarceration_periods': [
@@ -802,7 +804,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             release_facility=None,
             reincarceration_date=first_reincarceration.admission_date,
             reincarceration_facility=None,
-            return_type=IncarcerationReturnType.RECONVICTION)
+            return_type=ReincarcerationReturnType.NEW_ADMISSION)
 
         second_recidivism_release_event = RecidivismReleaseEvent(
             original_admission_date=first_reincarceration.admission_date,
@@ -810,23 +812,19 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             release_facility=None,
             reincarceration_date=subsequent_reincarceration.admission_date,
             reincarceration_facility=None,
-            return_type=IncarcerationReturnType.RECONVICTION)
+            return_type=ReincarcerationReturnType.NEW_ADMISSION)
 
         correct_output = [
             (fake_person, {initial_incarceration.release_date.year:
                            [first_recidivism_release_event,
                             second_recidivism_release_event]})]
 
-        find_recidivism_kwargs = {
-            'classify_revocation_return_as_recidivism': True}
-
         test_pipeline = TestPipeline()
         output = (test_pipeline
                   | beam.Create([(fake_person_id,
                                   person_incarceration_periods)])
                   | 'Identify Recidivism Events' >>
-                  beam.ParDo(pipeline.ClassifyReleaseEvents(),
-                             **find_recidivism_kwargs)
+                  beam.ParDo(pipeline.ClassifyReleaseEvents())
                   )
 
         assert_that(output, equal_to(correct_output))
@@ -849,6 +847,8 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code='TX',
             admission_date=date(2008, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.
+            NEW_ADMISSION,
             release_date=date(2010, 12, 4),
             release_reason=StateIncarcerationPeriodReleaseReason.
             SENTENCE_SERVED)
@@ -858,6 +858,8 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code='TX',
             admission_date=date(2011, 4, 5),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.
+            NEW_ADMISSION,
             release_date=date(2014, 4, 14),
             release_reason=StateIncarcerationPeriodReleaseReason.
             SENTENCE_SERVED)
@@ -866,7 +868,9 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             incarceration_period_id=3333,
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             state_code='TX',
-            admission_date=date(2017, 1, 4))
+            admission_date=date(2017, 1, 4),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.
+            NEW_ADMISSION)
 
         person_incarceration_periods = {'person': [fake_person],
                                         'incarceration_periods': [
@@ -880,7 +884,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             release_facility=None,
             reincarceration_date=first_reincarceration.admission_date,
             reincarceration_facility=None,
-            return_type=IncarcerationReturnType.RECONVICTION)
+            return_type=ReincarcerationReturnType.NEW_ADMISSION)
 
         second_recidivism_release_event = RecidivismReleaseEvent(
             original_admission_date=first_reincarceration.admission_date,
@@ -888,7 +892,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             release_facility=None,
             reincarceration_date=subsequent_reincarceration.admission_date,
             reincarceration_facility=None,
-            return_type=IncarcerationReturnType.RECONVICTION)
+            return_type=ReincarcerationReturnType.NEW_ADMISSION)
 
         correct_output = [
             (fake_person, {initial_incarceration.release_date.year:
@@ -896,17 +900,13 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                            first_reincarceration.release_date.year:
                            [second_recidivism_release_event]})]
 
-        find_recidivism_kwargs = {
-            'classify_revocation_return_as_recidivism': True}
-
         test_pipeline = TestPipeline()
 
         output = (test_pipeline
                   | beam.Create([(fake_person_id,
                                   person_incarceration_periods)])
                   | 'Identify Recidivism Events' >>
-                  beam.ParDo(pipeline.ClassifyReleaseEvents(),
-                             **find_recidivism_kwargs)
+                  beam.ParDo(pipeline.ClassifyReleaseEvents())
                   )
 
         assert_that(output, equal_to(correct_output))
@@ -932,15 +932,15 @@ class TestCalculateRecidivismMetricCombinations(unittest.TestCase):
             original_admission_date=date(2008, 11, 20),
             release_date=date(2010, 12, 4), release_facility=None,
             reincarceration_date=date(2011, 4, 5),
-            reincarceration_facility=None, return_type=IncarcerationReturnType.
-            RECONVICTION)
+            reincarceration_facility=None,
+            return_type=ReincarcerationReturnType.NEW_ADMISSION)
 
         second_recidivism_release_event = RecidivismReleaseEvent(
             original_admission_date=date(2011, 4, 5),
             release_date=date(2014, 4, 14), release_facility=None,
             reincarceration_date=date(2017, 1, 4),
-            reincarceration_facility=None, return_type=IncarcerationReturnType.
-            RECONVICTION)
+            reincarceration_facility=None,
+            return_type=ReincarcerationReturnType.NEW_ADMISSION)
 
         person_events = [
             (fake_person, {first_recidivism_release_event.release_date.year:
@@ -1027,26 +1027,29 @@ class TestCalculateRecidivismMetricCombinations(unittest.TestCase):
         test_pipeline.run()
 
 
-class TestProduceRecidivismMetric(unittest.TestCase):
-    """Tests for the ProduceRecidivismMetric DoFn in the pipeline."""
+class TestProduceReincarcerationRecidivismMetric(unittest.TestCase):
+    """Tests for the ProduceReincarcerationRecidivismMetric DoFn in the
+     pipeline."""
 
-    def testProduceRecidivismMetric(self):
-        """Tests the ProduceRecidivismMetric DoFn in the pipeline."""
+    def testProduceReincarcerationRecidivismMetric(self):
+        """Tests the ProduceReincarcerationRecidivismMetric DoFn in the
+         pipeline."""
 
         metric_key = {'stay_length': '36-48', 'gender': Gender.MALE,
                       'release_cohort': 2014,
                       'methodology': RecidivismMethodologyType.PERSON,
                       'follow_up_period': 1}
 
-        group = [1, 0, 1, 0, 0, 0, 1, 1, 1, 1]
-        expected_recidivism_rate = (sum(group) + 0.0) / len(group)
+        release_group = [1, 0, 1, 0, 0, 0, 1, 1, 1, 1]
+        expected_recidivism_rate = \
+            (sum(release_group) + 0.0) / len(release_group)
 
         test_pipeline = TestPipeline()
 
         output = (test_pipeline
-                  | beam.Create([(metric_key, group)])
+                  | beam.Create([(metric_key, release_group)])
                   | 'Produce Recidivism Metric' >>
-                  beam.ParDo(pipeline.ProduceRecidivismMetric())
+                  beam.ParDo(pipeline.ProduceReincarcerationRecidivismMetric())
                   )
 
         assert_that(output, AssertMatchers.
@@ -1054,7 +1057,7 @@ class TestProduceRecidivismMetric(unittest.TestCase):
 
         test_pipeline.run()
 
-    def testProduceRecidivismMetric_NoRecidivism(self):
+    def testProduceReincarcerationRecidivismMetric_NoRecidivism(self):
         """Tests the ProduceRecivismMetric DoFn in the pipeline when the
         recidivism rate for the metric is 0.0."""
 
@@ -1063,15 +1066,16 @@ class TestProduceRecidivismMetric(unittest.TestCase):
                       'methodology': RecidivismMethodologyType.PERSON,
                       'follow_up_period': 1}
 
-        group = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        expected_recidivism_rate = (sum(group) + 0.0) / len(group)
+        release_group = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        expected_recidivism_rate = \
+            (sum(release_group) + 0.0) / len(release_group)
 
         test_pipeline = TestPipeline()
 
         output = (test_pipeline
-                  | beam.Create([(metric_key, group)])
+                  | beam.Create([(metric_key, release_group)])
                   | 'Produce Recidivism Metric' >>
-                  beam.ParDo(pipeline.ProduceRecidivismMetric())
+                  beam.ParDo(pipeline.ProduceReincarcerationRecidivismMetric())
                   )
 
         assert_that(output, AssertMatchers.
@@ -1079,7 +1083,7 @@ class TestProduceRecidivismMetric(unittest.TestCase):
 
         test_pipeline.run()
 
-    def testProduceRecidivismMetric_EmptyGroup(self):
+    def testProduceReincarcerationRecidivismMetric_EmptyGroup(self):
         """Tests the ProduceRecivismMetric DoFn in the pipeline when there is
         no group associated with the metric.
 
@@ -1092,21 +1096,22 @@ class TestProduceRecidivismMetric(unittest.TestCase):
                           'methodology': RecidivismMethodologyType.PERSON,
                           'follow_up_period': 1}
 
-            group = []
+            release_group = []
 
             test_pipeline = TestPipeline()
 
             _ = (test_pipeline
-                 | beam.Create([(metric_key, group)])
+                 | beam.Create([(metric_key, release_group)])
                  | 'Produce Recidivism Metric' >>
-                 beam.ParDo(pipeline.ProduceRecidivismMetric())
+                 beam.ParDo(pipeline.ProduceReincarcerationRecidivismMetric())
                  )
 
             test_pipeline.run()
+
         assert str(e.value) == "The release_group is empty. " \
                                "[while running 'Produce Recidivism Metric']"
 
-    def testProduceRecidivismMetric_EmptyMetric(self):
+    def testProduceReincarcerationRecidivismMetric_EmptyMetric(self):
         """Tests the ProduceRecivismMetric DoFn in the pipeline when there is
         no group associated with the metric.
 
@@ -1117,19 +1122,18 @@ class TestProduceRecidivismMetric(unittest.TestCase):
 
             metric_key = {}
 
-            group = [0, 0, 0, 1, 0, 0, 0, 0, 1, 0]
+            release_group = [0, 0, 0, 1, 0, 0, 0, 0, 1, 0]
 
             test_pipeline = TestPipeline()
 
-            output = (test_pipeline
-                      | beam.Create([(metric_key, group)])
-                      | 'Produce Recidivism Metric' >>
-                      beam.ParDo(pipeline.ProduceRecidivismMetric())
-                      )
-
-            assert_that(output, equal_to([]))
+            _ = (test_pipeline
+                 | beam.Create([(metric_key, release_group)])
+                 | 'Produce Recidivism Metric' >>
+                 beam.ParDo(pipeline.ProduceReincarcerationRecidivismMetric())
+                 )
 
             test_pipeline.run()
+
         assert str(e.value) == "The metric_key is empty. " \
                                "[while running 'Produce Recidivism Metric']"
 
@@ -1337,30 +1341,30 @@ class NormalizeEntityDict:
 class MetricGroup:
     """Stores a set of metrics where every dimension is included for testing
     dimension filtering."""
-    recidivism_metric_with_age = RecidivismMetric(
+    recidivism_metric_with_age = ReincarcerationRecidivismMetric(
         execution_id=12345, release_cohort=2015, follow_up_period=1,
         methodology=RecidivismMethodologyType.PERSON, age_bucket='25-29',
         total_releases=1000, recidivated_releases=900, recidivism_rate=0.9)
 
     # TODO(1781): Add metricS with races and ethnicities
 
-    recidivism_metric_with_gender = RecidivismMetric(
+    recidivism_metric_with_gender = ReincarcerationRecidivismMetric(
         execution_id=12345, release_cohort=2015, follow_up_period=1,
         methodology=RecidivismMethodologyType.PERSON, gender=Gender.MALE,
         total_releases=1000, recidivated_releases=875, recidivism_rate=0.875)
 
-    recidivism_metric_with_release_facility = RecidivismMetric(
+    recidivism_metric_with_release_facility = ReincarcerationRecidivismMetric(
         execution_id=12345, release_cohort=2015, follow_up_period=1,
         methodology=RecidivismMethodologyType.PERSON, release_facility='Red',
         total_releases=1000, recidivated_releases=300, recidivism_rate=0.30)
 
-    recidivism_metric_with_stay_length = RecidivismMetric(
+    recidivism_metric_with_stay_length = ReincarcerationRecidivismMetric(
         execution_id=12345, release_cohort=2015, follow_up_period=1,
         methodology=RecidivismMethodologyType.PERSON,
         stay_length_bucket='12-24', total_releases=1000,
         recidivated_releases=300, recidivism_rate=0.30)
 
-    recidivism_metric_without_dimensions = RecidivismMetric(
+    recidivism_metric_without_dimensions = ReincarcerationRecidivismMetric(
         execution_id=12345, release_cohort=2015,
         follow_up_period=1, methodology=RecidivismMethodologyType.PERSON,
         total_releases=1500, recidivated_releases=1200, recidivism_rate=0.80)
@@ -1384,9 +1388,11 @@ class AssertMatchers:
         def _validate_pipeline_test(output):
 
             for metric in output:
-                if not isinstance(metric, RecidivismMetric):
-                    raise BeamAssertException('Failed assert. Output is not'
-                                              'of type RecidivismMetric.')
+                if not isinstance(metric, ReincarcerationRecidivismMetric):
+                    raise BeamAssertException(
+                        'Failed assert. Output is not'
+                        'of type'
+                        ' ReincarcerationRecidivismMetric.')
 
         return _validate_pipeline_test
 
@@ -1417,12 +1423,14 @@ class AssertMatchers:
 
     @staticmethod
     def validate_recidivism_metric(expected_recidivism_rate):
-        """Asserts that the recidivism rate on the RecidivismMetric produced
-        by the pipeline matches the expected recidivism rate."""
+        """Asserts that the recidivism rate on the
+         ReincarcerationRecidivismMetric produced by the pipeline matches the
+          expected recidivism rate."""
         def _validate_recidivism_metric(output):
             if len(output) != 1:
                 raise BeamAssertException('Failed assert. Should be only one '
-                                          'RecidivismMetric returned.')
+                                          'ReincarcerationRecidivismMetric'
+                                          ' returned.')
 
             recidivism_metric = output[0]
 
