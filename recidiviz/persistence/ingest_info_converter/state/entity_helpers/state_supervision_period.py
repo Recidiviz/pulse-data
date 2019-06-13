@@ -55,7 +55,9 @@ def copy_fields_to_builder(
     enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
 
     # enum values
-    new.status = enum_mappings.get(StateSupervisionPeriodStatus)
+    new.status = enum_mappings.get(
+        StateSupervisionPeriodStatus,
+        default=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO)
     new.status_raw_text = fn(normalize, 'status', proto)
     new.supervision_type = enum_mappings.get(StateSupervisionType)
     new.supervision_type_raw_text = fn(normalize, 'supervision_type', proto)

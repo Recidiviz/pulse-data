@@ -48,6 +48,7 @@ class StateSupervisionPeriodAdmissionReason(EntityEnum,
 
 class StateSupervisionPeriodStatus(EntityEnum, metaclass=EntityEnumMeta):
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
+    PRESENT_WITHOUT_INFO = enum_strings.present_without_info
     TERMINATED = state_enum_strings.state_supervision_period_status_terminated
     UNDER_SUPERVISION = \
         state_enum_strings.state_supervision_period_status_under_supervision

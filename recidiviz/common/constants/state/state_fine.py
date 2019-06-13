@@ -27,6 +27,7 @@ from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 class StateFineStatus(EntityEnum, metaclass=EntityEnumMeta):
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
     PAID = state_enum_strings.state_fine_status_paid
+    PRESENT_WITHOUT_INFO = enum_strings.present_without_info
     UNPAID = state_enum_strings.state_fine_status_unpaid
 
     @staticmethod

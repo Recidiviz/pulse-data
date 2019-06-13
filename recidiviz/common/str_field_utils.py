@@ -21,6 +21,7 @@ normalizing, etc).
 
 import datetime
 import locale
+import re
 import string
 from distutils.util import strtobool  # pylint: disable=no-name-in-module
 from typing import Optional, Dict, Any
@@ -141,3 +142,17 @@ def is_str_field_none(s: str) -> bool:
         'NONE SET',
         'NOT SPECIFIED'
     }
+
+
+_FIRST_CAP_REGEX = re.compile('(.)([A-Z][a-z]+)')
+_ALL_CAP_REGEX = re.compile('([a-z0-9])([A-Z])')
+
+
+def to_snake_case(capital_case_name: str) -> str:
+    """Converts a capital case string (i.e. 'SupervisionViolationResponse'
+    to a snake case string (i.e. 'supervision_violation_response'). See
+    https://stackoverflow.com/questions/1175208/
+    elegant-python-function-to-convert-camelcase-to-snake-case.
+    """
+    s1 = _FIRST_CAP_REGEX.sub(r'\1_\2', capital_case_name)
+    return _ALL_CAP_REGEX.sub(r'\1_\2', s1).lower()

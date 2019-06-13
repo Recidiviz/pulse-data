@@ -15,9 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Base class for all entity types"""
+
 from typing import Optional, Dict, Type, Callable, List
 
 import attr
+
+from recidiviz.common.str_field_utils import to_snake_case
 
 
 @attr.s(cmp=False)
@@ -29,10 +32,12 @@ class Entity:
         return super().__new__(cls)
 
     def get_entity_name(self):
-        return self.__class__.__name__.lower()
+        return to_snake_case(self.__class__.__name__)
 
     def get_id(self):
         id_name = self.get_entity_name() + '_id'
+        if id_name.startswith('state_'):
+            id_name = id_name.replace('state_', '')
         return getattr(self, id_name)
 
     def __eq__(self, other):

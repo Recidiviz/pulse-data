@@ -46,7 +46,8 @@ def copy_fields_to_builder(
     enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
 
     # enum values
-    new.status = enum_mappings.get(StateFineStatus)
+    new.status = enum_mappings.get(StateFineStatus,
+                                   default=StateFineStatus.PRESENT_WITHOUT_INFO)
     new.status_raw_text = fn(normalize, 'status', proto)
 
     # 1-to-1 mappings
