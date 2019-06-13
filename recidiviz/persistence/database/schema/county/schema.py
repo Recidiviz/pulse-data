@@ -43,6 +43,8 @@ from recidiviz.common.constants.county import (
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.base_schema import Base
+from recidiviz.persistence.database.schema.history_table_shared_columns_mixin \
+    import HistoryTableSharedColumns
 from recidiviz.persistence.database.schema.shared_enums import (
     gender,
     race,
@@ -190,7 +192,10 @@ class Person(Base, DatabaseEntity, _PersonSharedColumns):
     bookings = relationship('Booking', lazy='joined')
 
 
-class PersonHistory(Base, DatabaseEntity, _PersonSharedColumns):
+class PersonHistory(Base,
+                    DatabaseEntity,
+                    _PersonSharedColumns,
+                    HistoryTableSharedColumns):
     """Represents the historical state of a person"""
     __tablename__ = 'person_history'
     __table_args__ = (
@@ -205,8 +210,6 @@ class PersonHistory(Base, DatabaseEntity, _PersonSharedColumns):
 
     person_id = Column(
         Integer, ForeignKey('person.person_id'), nullable=False, index=True)
-    valid_from = Column(DateTime, nullable=False)
-    valid_to = Column(DateTime)
 
 
 class _BookingSharedColumns:
@@ -260,7 +263,10 @@ class Booking(Base, DatabaseEntity, _BookingSharedColumns):
     charges = relationship('Charge', lazy='joined')
 
 
-class BookingHistory(Base, DatabaseEntity, _BookingSharedColumns):
+class BookingHistory(Base,
+                     DatabaseEntity,
+                     _BookingSharedColumns,
+                     HistoryTableSharedColumns):
     """Represents the historical state of a booking"""
     __tablename__ = 'booking_history'
 
@@ -270,8 +276,6 @@ class BookingHistory(Base, DatabaseEntity, _BookingSharedColumns):
 
     booking_id = Column(
         Integer, ForeignKey('booking.booking_id'), nullable=False, index=True)
-    valid_from = Column(DateTime, nullable=False)
-    valid_to = Column(DateTime)
 
 
 class _HoldSharedColumns:
@@ -301,7 +305,10 @@ class Hold(Base, DatabaseEntity, _HoldSharedColumns):
     hold_id = Column(Integer, primary_key=True)
 
 
-class HoldHistory(Base, DatabaseEntity, _HoldSharedColumns):
+class HoldHistory(Base,
+                  DatabaseEntity,
+                  _HoldSharedColumns,
+                  HistoryTableSharedColumns):
     """Represents the historical state of a hold"""
     __tablename__ = 'hold_history'
 
@@ -311,8 +318,6 @@ class HoldHistory(Base, DatabaseEntity, _HoldSharedColumns):
 
     hold_id = Column(
         Integer, ForeignKey('hold.hold_id'), nullable=False, index=True)
-    valid_from = Column(DateTime, nullable=False)
-    valid_to = Column(DateTime)
 
 
 class _ArrestSharedColumns:
@@ -344,7 +349,10 @@ class Arrest(Base, DatabaseEntity, _ArrestSharedColumns):
     arrest_id = Column(Integer, primary_key=True)
 
 
-class ArrestHistory(Base, DatabaseEntity, _ArrestSharedColumns):
+class ArrestHistory(Base,
+                    DatabaseEntity,
+                    _ArrestSharedColumns,
+                    HistoryTableSharedColumns):
     """Represents the historical state of an arrest"""
     __tablename__ = 'arrest_history'
 
@@ -354,8 +362,6 @@ class ArrestHistory(Base, DatabaseEntity, _ArrestSharedColumns):
 
     arrest_id = Column(
         Integer, ForeignKey('arrest.arrest_id'), nullable=False, index=True)
-    valid_from = Column(DateTime, nullable=False)
-    valid_to = Column(DateTime)
 
 
 class _BondSharedColumns:
@@ -400,7 +406,10 @@ class Bond(Base, DatabaseEntity, _BondSharedColumns):
     bond_id = Column(Integer, primary_key=True)
 
 
-class BondHistory(Base, DatabaseEntity, _BondSharedColumns):
+class BondHistory(Base,
+                  DatabaseEntity,
+                  _BondSharedColumns,
+                  HistoryTableSharedColumns):
     """Represents the historical state of a bond"""
     __tablename__ = 'bond_history'
 
@@ -410,8 +419,6 @@ class BondHistory(Base, DatabaseEntity, _BondSharedColumns):
 
     bond_id = Column(
         Integer, ForeignKey('bond.bond_id'), nullable=False, index=True)
-    valid_from = Column(DateTime, nullable=False)
-    valid_to = Column(DateTime)
 
 
 class _SentenceSharedColumns:
@@ -475,7 +482,10 @@ class Sentence(Base, DatabaseEntity, _SentenceSharedColumns):
         'b_sentence_relations', 'sentence_b')
 
 
-class SentenceHistory(Base, DatabaseEntity, _SentenceSharedColumns):
+class SentenceHistory(Base,
+                      DatabaseEntity,
+                      _SentenceSharedColumns,
+                      HistoryTableSharedColumns):
     """Represents the historical state of a sentence"""
     __tablename__ = 'sentence_history'
 
@@ -488,8 +498,6 @@ class SentenceHistory(Base, DatabaseEntity, _SentenceSharedColumns):
         ForeignKey('sentence.sentence_id'),
         nullable=False,
         index=True)
-    valid_from = Column(DateTime, nullable=False)
-    valid_to = Column(DateTime)
 
 
 class _SentenceRelationshipSharedColumns:
@@ -547,8 +555,10 @@ class SentenceRelationship(Base, DatabaseEntity,
         primaryjoin='Sentence.sentence_id==SentenceRelationship.sentence_a_id')
 
 
-class SentenceRelationshipHistory(Base, DatabaseEntity,
-                                  _SentenceRelationshipSharedColumns):
+class SentenceRelationshipHistory(Base,
+                                  DatabaseEntity,
+                                  _SentenceRelationshipSharedColumns,
+                                  HistoryTableSharedColumns):
     """Represents the historical state of the relationship between two sentences
     """
     __tablename__ = 'sentence_relationship_history'
@@ -562,8 +572,6 @@ class SentenceRelationshipHistory(Base, DatabaseEntity,
         ForeignKey('sentence_relationship.sentence_relationship_id'),
         nullable=False,
         index=True)
-    valid_from = Column(DateTime, nullable=False)
-    valid_to = Column(DateTime)
 
 
 class _ChargeSharedColumns:
@@ -620,7 +628,10 @@ class Charge(Base, DatabaseEntity, _ChargeSharedColumns):
     sentence = relationship('Sentence', lazy='joined')
 
 
-class ChargeHistory(Base, DatabaseEntity, _ChargeSharedColumns):
+class ChargeHistory(Base,
+                    DatabaseEntity,
+                    _ChargeSharedColumns,
+                    HistoryTableSharedColumns):
     """Represents the historical state of a charge"""
     __tablename__ = 'charge_history'
 
@@ -630,5 +641,3 @@ class ChargeHistory(Base, DatabaseEntity, _ChargeSharedColumns):
 
     charge_id = Column(
         Integer, ForeignKey('charge.charge_id'), nullable=False, index=True)
-    valid_from = Column(DateTime, nullable=False)
-    valid_to = Column(DateTime)
