@@ -45,7 +45,7 @@ from recidiviz.common.constants.person_characteristics import (
 
 from recidiviz.common.constants.state.state_court_case import (
     StateCourtCaseStatus,
-)
+    StateCourtType)
 from recidiviz.common.constants.state.state_incarceration import (
     StateIncarcerationType,
 )
@@ -258,9 +258,8 @@ class StateCourtCase(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     status_raw_text: Optional[str] = attr.ib()
 
     # Type
-    # TODO(1625) - Bring back once we know values for court type
-    # court_type: Optional[StateCourtType] = attr.ib()
-    # court_type_raw_text: Optional[str] = attr.ib()
+    court_type: Optional[StateCourtType] = attr.ib()
+    court_type_raw_text: Optional[str] = attr.ib()
 
     # Attributes
     #   - When

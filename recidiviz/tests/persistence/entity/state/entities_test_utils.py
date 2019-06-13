@@ -27,7 +27,7 @@ from recidiviz.common.constants.state.state_assessment import \
 from recidiviz.common.constants.state.state_charge import \
     StateChargeClassification
 from recidiviz.common.constants.state.state_court_case import \
-    StateCourtCaseStatus
+    StateCourtCaseStatus, StateCourtType
 from recidiviz.common.constants.state.state_fine import StateFineStatus
 from recidiviz.common.constants.state.state_incarceration import \
     StateIncarcerationType
@@ -192,6 +192,9 @@ def generate_full_graph_state_person(
         date_convicted=datetime.date(year=2018, month=7, day=1),
         next_court_date=datetime.date(year=2019, month=7, day=1),
         state_code='us_ca',
+        court_type=
+        StateCourtType.PRESENT_WITHOUT_INFO,
+        court_type_raw_text=None,
         court_fee_dollars=150,
         judge_name='JUDGE JUDY',
         person=person,
