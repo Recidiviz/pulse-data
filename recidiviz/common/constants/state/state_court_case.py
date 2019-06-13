@@ -23,6 +23,8 @@ from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
 class StateCourtType(EntityEnum, metaclass=EntityEnumMeta):
+    PRESENT_WITHOUT_INFO = enum_strings.present_without_info
+
     # TODO(1697): Add values here
 
     @staticmethod

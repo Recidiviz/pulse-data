@@ -136,7 +136,8 @@ state_court_case_status = Enum(
     name='state_court_case_status')
 
 state_court_type = Enum(
-    # TODO(1697): Add values here
+    enum_strings.present_without_info,
+    # TODO(1697): Add values here,
     name='state_court_type')
 
 state_agent_type = Enum(
@@ -742,9 +743,8 @@ class _StateCourtCaseSharedColumns(_ReferencesStatePersonSharedColumns):
     external_id = Column(String(255), index=True)
     status = Column(state_court_case_status)
     status_raw_text = Column(String(255))
-    # TODO(1625) - Bring back once we know values for court type
-    # court_type = Column(state_court_type)
-    # court_type_raw_text = Column(String(255))
+    court_type = Column(state_court_type)
+    court_type_raw_text = Column(String(255))
     date_convicted = Column(Date)
     next_court_date = Column(Date)
     state_code = Column(String(255), nullable=False, index=True)

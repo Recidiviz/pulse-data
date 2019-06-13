@@ -25,6 +25,7 @@ from recidiviz.common.constants.bond import BondStatus, BondType
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.person_characteristics import Ethnicity, Race
 from recidiviz.common.constants.state.state_agent import StateAgentType
+from recidiviz.common.constants.state.state_court_case import StateCourtType
 from recidiviz.common.constants.state.state_fine import StateFineStatus
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus
@@ -100,6 +101,9 @@ class TestStateHistoricalSnapshotUpdater(BaseHistoricalSnapshotUpdaterTest):
         court_case = state_schema.StateCourtCase(
             court_case_id=8888,
             state_code='us_ca',
+            court_type=
+            StateCourtType.PRESENT_WITHOUT_INFO.value,
+            court_type_raw_text=None,
             person_id=person_id,
         )
 

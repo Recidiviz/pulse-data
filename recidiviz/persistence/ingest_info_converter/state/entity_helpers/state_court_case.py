@@ -18,7 +18,7 @@
 """Converts an ingest_info proto StateCourtCase to a persistence entity."""
 
 from recidiviz.common.constants.state.state_court_case import \
-    StateCourtCaseStatus
+    StateCourtCaseStatus, StateCourtType
 from recidiviz.common.str_field_utils import normalize, parse_date, \
     parse_dollars
 from recidiviz.common.ingest_metadata import IngestMetadata
@@ -39,6 +39,7 @@ def convert(proto: StateCourtCase, metadata: IngestMetadata) \
 
     enum_fields = {
         'status': StateCourtCaseStatus,
+        'court_type': StateCourtType,
     }
     enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
 
@@ -46,9 +47,8 @@ def convert(proto: StateCourtCase, metadata: IngestMetadata) \
     new.status = enum_mappings.get(StateCourtCaseStatus)
     new.status_raw_text = fn(normalize, 'status', proto)
 
-    # TODO(1625) - Bring back once we know values for court type
-    # new.court_type = enum_mappings.get(StateCourtType)
-    # new.court_type_raw_text = fn(normalize, 'court_type', proto)
+    new.court_type = enum_mappings.get(StateCourtType)
+    new.court_type_raw_text = fn(normalize, 'court_type', proto)
 
     # 1-to-1 mappings
     new.external_id = fn(parse_external_id, 'state_court_case_id', proto)
