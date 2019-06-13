@@ -56,7 +56,9 @@ def copy_fields_to_builder(
     enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
 
     # enum values
-    new.status = enum_mappings.get(StateIncarcerationPeriodStatus)
+    new.status = enum_mappings.get(
+        StateIncarcerationPeriodStatus,
+        default=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO)
     new.status_raw_text = fn(normalize, 'status', proto)
     new.incarceration_type = enum_mappings.get(StateIncarcerationType)
     new.incarceration_type_raw_text = fn(normalize, 'incarceration_type', proto)
