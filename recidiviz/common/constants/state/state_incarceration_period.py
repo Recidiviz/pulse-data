@@ -28,6 +28,7 @@ class StateIncarcerationPeriodStatus(EntityEnum, metaclass=EntityEnumMeta):
     IN_CUSTODY = state_enum_strings.state_incarceration_period_status_in_custody
     NOT_IN_CUSTODY = \
         state_enum_strings.state_incarceration_period_status_not_in_custody
+    PRESENT_WITHOUT_INFO = enum_strings.present_without_info
 
     @staticmethod
     def _get_default_map():

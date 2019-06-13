@@ -120,6 +120,7 @@ state_charge_classification = Enum(
 state_fine_status = Enum(
     enum_strings.external_unknown,
     state_enum_strings.state_fine_status_paid,
+    enum_strings.present_without_info,
     state_enum_strings.state_fine_status_unpaid,
     name='state_fine_status')
 
@@ -149,6 +150,7 @@ state_incarceration_period_status = Enum(
     enum_strings.external_unknown,
     state_enum_strings.state_incarceration_period_status_in_custody,
     state_enum_strings.state_incarceration_period_status_not_in_custody,
+    enum_strings.present_without_info,
     name='state_incarceration_period_status')
 
 state_incarceration_facility_security_level = Enum(
@@ -184,6 +186,7 @@ state_supervision_period_status = Enum(
     enum_strings.external_unknown,
     state_enum_strings.state_supervision_period_status_terminated,
     state_enum_strings.state_supervision_period_status_under_supervision,
+    enum_strings.present_without_info,
     name='state_supervision_period_status')
 
 state_supervision_period_admission_reason = Enum(

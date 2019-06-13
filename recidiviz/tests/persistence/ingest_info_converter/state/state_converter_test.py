@@ -29,8 +29,12 @@ from recidiviz.common.constants.state.state_fine import StateFineStatus
 from recidiviz.common.constants.state.state_incarceration_incident import \
     StateIncarcerationIncidentOffense
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.constants.state.state_incarceration_period import \
+    StateIncarcerationPeriodStatus
 from recidiviz.common.constants.state.state_supervision import \
     StateSupervisionType
+from recidiviz.common.constants.state.state_supervision_period import \
+    StateSupervisionPeriodStatus
 from recidiviz.common.constants.state.state_supervision_violation_response \
     import StateSupervisionViolationResponseType
 from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
@@ -322,6 +326,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             sentence_groups=[
                 StateSentenceGroup.new_with_defaults(
                     external_id='GROUP_ID1',
+                    status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                     state_code='US_ND',
                     supervision_sentences=[
                         StateSupervisionSentence.new_with_defaults(
@@ -361,6 +366,9 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                             supervision_periods=[
                                 StateSupervisionPeriod.new_with_defaults(
                                     external_id='S_PERIOD_ID1',
+                                    status=
+                                    StateSupervisionPeriodStatus.
+                                    PRESENT_WITHOUT_INFO,
                                     state_code='US_ND',
                                     supervision_type=
                                     StateSupervisionType.PAROLE,
@@ -397,6 +405,9 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                             incarceration_periods=[
                                 StateIncarcerationPeriod.new_with_defaults(
                                     external_id='I_PERIOD_ID',
+                                    status=
+                                    StateIncarcerationPeriodStatus.
+                                    PRESENT_WITHOUT_INFO,
                                     state_code='US_ND',
                                     incarceration_incidents=[
                                         incident
@@ -454,6 +465,8 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                             supervision_periods=[
                                 StateSupervisionPeriod.new_with_defaults(
                                     external_id='S_PERIOD_ID3',
+                                    status=StateSupervisionPeriodStatus.
+                                    PRESENT_WITHOUT_INFO,
                                     state_code='US_ND',
                                     supervision_type=
                                     StateSupervisionType.PROBATION,
@@ -466,6 +479,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                 ),
                 StateSentenceGroup.new_with_defaults(
                     external_id='GROUP_ID2',
+                    status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                     state_code='US_ND',
                     supervision_sentences=[
                         StateSupervisionSentence.new_with_defaults(
@@ -488,6 +502,9 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                             supervision_periods=[
                                 StateSupervisionPeriod.new_with_defaults(
                                     external_id='S_PERIOD_ID2',
+                                    status=
+                                    StateSupervisionPeriodStatus.
+                                    PRESENT_WITHOUT_INFO,
                                     state_code='US_ND',
                                     supervision_type=
                                     StateSupervisionType.PAROLE,
@@ -507,6 +524,8 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                 )
             ]
         )]
+
+        print(expected_result, "\n\n\n", result)
 
         self.assertEqual(result, expected_result)
 
