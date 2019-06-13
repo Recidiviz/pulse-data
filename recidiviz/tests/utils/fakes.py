@@ -24,14 +24,31 @@ from recidiviz.persistence.database.base_schema import Base
 
 
 def use_in_memory_sqlite_database() -> None:
-    """
-    Creates a new SqlDatabase object used to communicate to a fake in-memory
-    sqlite database. This includes:
+    """Creates a new SqlDatabase object used to communicate to a fake in-memory
+    sqlite database.
+
+    This includes:
     1. Creates a new in memory sqlite database engine
     2. Create all tables in the newly created sqlite database
     3. Bind the global SessionMaker to the new fake database engine
     """
     recidiviz.db_engine = sqlalchemy.create_engine('sqlite:///:memory:')
+    sqlalchemy.event.listen(
+        recidiviz.db_engine, 'connect', _enforce_foreign_key_constraints)
+    Base.metadata.create_all(recidiviz.db_engine)
+    Session.configure(bind=recidiviz.db_engine)
+
+
+def use_on_disk_sqlite_database() -> None:
+    """Creates a new SqlDatabase object used to communicate to an on-disk
+    sqlite database.
+
+    This includes:
+    1. Creates a new on-disk sqlite database engine
+    2. Create all tables in the newly created sqlite database
+    3. Bind the global SessionMaker to the new database engine
+    """
+    recidiviz.db_engine = sqlalchemy.create_engine('sqlite:///recidiviz.db')
     sqlalchemy.event.listen(
         recidiviz.db_engine, 'connect', _enforce_foreign_key_constraints)
     Base.metadata.create_all(recidiviz.db_engine)
