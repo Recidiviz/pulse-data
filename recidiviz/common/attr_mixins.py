@@ -15,7 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Logic for Attr objects that can be built with a Builder."""
+
+from typing import Any, Dict, Optional
 import attr
+
+from recidiviz.common.attr_utils import is_enum, is_forward_ref, is_list, \
+    get_enum_cls
 
 
 class DefaultableAttr:
@@ -108,6 +113,54 @@ class BuildableAttr:
     @classmethod
     def builder(cls):
         return cls.Builder(cls)
+
+    @classmethod
+    def build_from_dictionary(cls, build_dict: Dict[str, Any]) -> \
+            Optional['BuildableAttr']:
+        """Builds a BuildableAttr with values from the given build_dict.
+
+        Given build_dict must contain all required fields, and cannot contain
+        any fields with attribute types of List or ForwardRef.
+        """
+        if not attr.has(cls):
+            raise Exception("Parent class must be an attr class")
+
+        if not build_dict:
+            raise ValueError("build_dict cannot be empty")
+
+        cls_builder = cls.builder()
+
+        for field, attribute in attr.fields_dict(cls).items():
+            if field in build_dict:
+                if is_list(attribute):
+                    raise ValueError("build_dict should be a dictionary of "
+                                     "flat values. Should not contain any "
+                                     f"lists: {build_dict}.")
+                if is_forward_ref(attribute):
+                    # TODO(1886): Implement detection of non-ForwardRefs
+                    # ForwardRef fields are expected to be references to other
+                    # BuildableAttrs
+                    raise ValueError("build_dict should be a dictionary of "
+                                     "flat values. Should not contain any "
+                                     f"ForwardRef fields: {build_dict}")
+
+                if is_enum(attribute):
+                    value = cls.extract_enum_value(
+                        build_dict, field, attribute)
+                else:
+                    value = build_dict.get(field)
+
+                setattr(cls_builder, field, value)
+
+        return cls_builder.build()
+
+    @classmethod
+    def extract_enum_value(cls, build_dict, field, attribute):
+        enum_cls = get_enum_cls(attribute)
+
+        value = build_dict.get(field)
+
+        return enum_cls(value) if value else None
 
 
 class BuilderException(Exception):

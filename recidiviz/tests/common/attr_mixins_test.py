@@ -16,8 +16,9 @@
 # =============================================================================
 """Tests for BuildableAttr base class."""
 
+from enum import Enum
+from typing import List, Optional
 import unittest
-
 import attr
 
 from recidiviz.common.attr_mixins import BuilderException, BuildableAttr, \
@@ -36,6 +37,27 @@ class FakeDefaultableAttr(DefaultableAttr):
     field_another = attr.ib()
     field_with_default = attr.ib(default=1)
     factory_field = attr.ib(factory=list)
+
+
+class FakeEnum(Enum):
+    A = 'A'
+    B = 'B'
+
+
+class InvalidFakeEnum(Enum):
+    A = 'A'
+    C = 'C'
+    D = 'D'
+
+
+@attr.s
+class FakeBuildableAttrDeluxe(BuildableAttr):
+    required_field = attr.ib()
+    another_required_field = attr.ib()
+    enum_nonnull_field: FakeEnum = attr.ib()
+    enum_field: Optional[FakeEnum] = attr.ib(default=None)
+    field_list: List[str] = attr.ib(factory=list)
+    field_forward_ref: Optional['FakeBuildableAttr'] = attr.ib(default=None)
 
 
 class BuildableAttrTests(unittest.TestCase):
@@ -93,3 +115,121 @@ class BuildableAttrTests(unittest.TestCase):
     def testInstantiateDefaultableAttr_RaisesException(self):
         with self.assertRaises(Exception):
             DefaultableAttr()
+
+    def testBuildFromDictionary(self):
+        # Construct dictionary representation
+        subject_dict = {'required_field': 'value',
+                        'another_required_field': 'another_value',
+                        'enum_nonnull_field': FakeEnum.A.value,
+                        'enum_field': FakeEnum.B.value}
+
+        # Build from dictionary
+        subject = FakeBuildableAttrDeluxe.build_from_dictionary(subject_dict)
+
+        # Assert
+        expected_result = FakeBuildableAttrDeluxe(
+            required_field='value',
+            another_required_field='another_value',
+            enum_nonnull_field=FakeEnum.A,
+            enum_field=FakeEnum.B)
+
+        self.assertEqual(subject, expected_result)
+
+    def testBuildFromDictionary_Enum(self):
+        # Construct dictionary representation
+        subject_dict = {'required_field': 'value',
+                        'another_required_field': 'another_value',
+                        'enum_nonnull_field': FakeEnum.A}
+
+        # Build from dictionary
+        subject = FakeBuildableAttrDeluxe.build_from_dictionary(subject_dict)
+
+        # Assert
+        expected_result = FakeBuildableAttrDeluxe(
+            required_field='value',
+            another_required_field='another_value',
+            enum_nonnull_field=FakeEnum.A)
+
+        self.assertEqual(subject, expected_result)
+
+    def testBuildFromDictionary_MissingRequiredArgs(self):
+        with self.assertRaises(Exception):
+            # Construct dictionary representation
+            subject_dict = {'required_field': 'value'}
+
+            # Build from dictionary
+            _ = FakeBuildableAttrDeluxe.build_from_dictionary(subject_dict)
+
+    def testBuildFromDictionary_MissingNonnullEnum(self):
+        with self.assertRaises(Exception):
+            # Construct dictionary representation
+            subject_dict = {'required_field': 'value',
+                            'another_required_field': 'another_value'}
+
+            # Build from dictionary
+            _ = FakeBuildableAttrDeluxe.build_from_dictionary(subject_dict)
+
+    def testBuildFromDictionary_EmptyDict(self):
+        with self.assertRaises(ValueError):
+            _ = FakeBuildableAttr.build_from_dictionary({})
+
+    def testBuildFromDictionary_ExtraArguments(self):
+        # Construct dictionary representation
+        subject_dict = {'required_field': 'value',
+                        'another_required_field': 'another_value',
+                        'enum_nonnull_field': FakeEnum.A.value,
+                        'extra_invalid_field': 'extra_value'}
+
+        # Build from dictionary
+        subject = FakeBuildableAttrDeluxe.build_from_dictionary(subject_dict)
+
+        # Assert
+        expected_result = FakeBuildableAttrDeluxe(
+            required_field='value',
+            another_required_field='another_value',
+            enum_nonnull_field=FakeEnum.A)
+
+        self.assertEqual(subject, expected_result)
+
+    def testBuildFromDictionary_WrongEnum(self):
+        with self.assertRaises(ValueError):
+            # Construct dictionary representation
+            subject_dict = {'required_field': 'value',
+                            'another_required_field': 'another_value',
+                            'enum_field': InvalidFakeEnum.C}
+
+            # Build from dictionary
+            _ = FakeBuildableAttrDeluxe.build_from_dictionary(subject_dict)
+
+    def testBuildFromDictionary_WrongEnumSameValue(self):
+        with self.assertRaises(ValueError):
+            # Construct dictionary representation
+            subject_dict = {'required_field': 'value',
+                            'another_required_field': 'another_value',
+                            'enum_field': InvalidFakeEnum.A}
+
+            # Build from dictionary
+            _ = FakeBuildableAttrDeluxe.build_from_dictionary(subject_dict)
+
+    def testBuildFromDictionary_InvalidListInDict(self):
+        with self.assertRaises(ValueError):
+
+            # Construct dictionary representation
+            subject_dict = {'required_field': 'value',
+                            'another_required_field': 'another_value',
+                            'field_list': ['a', 'b', 'c']}
+
+            # Build from dictionary
+            _ = FakeBuildableAttrDeluxe.build_from_dictionary(subject_dict)
+
+    def testBuildFromDictionary_InvalidForwardRefInDict(self):
+        with self.assertRaises(ValueError):
+
+            # Construct dictionary representation
+            subject_dict = {'required_field': 'value',
+                            'another_required_field': 'another_value',
+                            'field_forward_ref':
+                                FakeBuildableAttr('a', ['a', 'b'])}
+
+            # Build from dictionary
+            _ = FakeBuildableAttrDeluxe.build_from_dictionary(subject_dict)

@@ -23,8 +23,6 @@ from typing import Any
 import apache_beam as beam
 from apache_beam.typehints import with_input_types, with_output_types
 
-from recidiviz.common.constants.person_characteristics import Gender, \
-    ResidencyStatus
 from recidiviz.persistence.entity.state.entities import StatePerson
 
 
@@ -47,9 +45,10 @@ class ExtractPersons(beam.PTransform):
 
         # Read persons from BQ and hydrate StatePerson entities
         return (input_or_inputs
-                | 'Read StatePersons' >> beam.io.Read(beam.io.BigQuerySource
-                                                      (query=person_query,
-                                                       use_standard_sql=True))
+                | 'Read StatePersons' >>
+                beam.io.Read(beam.io.BigQuerySource
+                             (query=person_query,
+                              use_standard_sql=True))
                 | 'Hydrate StatePerson entities' >>
                 beam.ParDo(HydratePersonEntity()))
 
@@ -69,45 +68,21 @@ class HydratePersonEntity(beam.DoFn):
             A tuple containing |person_ID| and the StatePerson entity.
         """
 
-        person = StatePerson.builder()
-
         # Build the person from the values in the element
+        person = StatePerson.build_from_dictionary(element)
 
-        # External IDs
+        # Cross-entity relationships to hydrate
         # TODO(1780): Implement external IDs
-
-        # Residency
-        person.residency_status = ResidencyStatus. \
-            parse_from_canonical_string(element.get('residency_status'))
-        person.current_address = element.get('current_address')
-
-        # Names
-        person.full_name = element.get('full_name')
         # TODO(1780): Implement aliases
-
-        # Birth Date
-        person.birthdate = element.get('birthdate')
-        person.birthdate_inferred_from_age = \
-            element.get('birthdate_inferred_from_age')
-
-        # Gender
-        person.gender = \
-            Gender.parse_from_canonical_string(element.get('gender'))
-
         # TODO(1781): Implement multiple races
         # TODO(1781): Implement multiple ethnicities
-
-        # ID
-        person.person_id = element.get('person_id')
-
         # TODO(1782): Implement sentence_groups
-
         # TODO(1780): Implement assessments
 
         if not person.person_id:
             raise ValueError("No person_id on this person.")
 
-        yield (person.person_id, person.build())
+        yield (person.person_id, person)
 
     def to_runner_api_parameter(self, unused_context):
         pass

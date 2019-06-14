@@ -20,17 +20,16 @@ objects.
 """
 
 import abc
-import inspect
 from collections import defaultdict
 from enum import Enum
 from types import ModuleType
-from typing import TypeVar, Generic, Dict, List, Type, Union, Optional, Any, \
+from typing import TypeVar, Generic, Dict, List, Type, Optional, Any, \
     Tuple, Sequence
 
 import attr
 
+from recidiviz.common.attr_utils import is_enum, get_enum_cls
 from recidiviz.common.attr_mixins import BuildableAttr
-from recidiviz.common.constants.entity_enum import EntityEnum
 from recidiviz.persistence.database.base_schema import Base
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import \
@@ -293,10 +292,10 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
                 value = self._convert_forward(v)
             elif v is None:
                 value = None
-            elif self._is_enum(attribute.type):
+            elif is_enum(attribute):
                 value = self._convert_enum(src,
                                            field,
-                                           attribute.type,
+                                           attribute,
                                            direction)
             else:
                 value = v
@@ -353,7 +352,7 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
                     self._lookup_edges(next_src_ids)
 
                 if len(next_dst_objects) + len(not_found_next_src_ids) != \
-                    len(next_src_ids):
+                        len(next_src_ids):
                     raise DatabaseConversionError(
                         f'Expected to find {len(next_src_ids)} '
                         f'next_dst_objects or not_found_next_src_ids, instead '
@@ -397,52 +396,10 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
         self._check_is_valid_src_module(src)
         return getattr(self._get_schema_module(), src.__class__.__name__)
 
-    def _is_enum(self, attr_type):
-        return self._get_enum_cls(attr_type) is not None
-
-    def _convert_enum(self, src, field, attr_type, direction):
+    @staticmethod
+    def _convert_enum(src, field, attribute, direction):
         if direction is _Direction.SCHEMA_TO_ENTITY:
-            enum_cls = self._get_enum_cls(attr_type)
+            enum_cls = get_enum_cls(attribute)
             return enum_cls(getattr(src, field))
 
         return getattr(src, field).value
-
-    def _get_enum_cls(self, attr_type) -> Optional[Type[EntityEnum]]:
-        """Return the MappableEnum cls from the provided type attribute,
-        or None if the type can't be a MappableEnum.
-        """
-        if inspect.isclass(attr_type) and issubclass(attr_type, EntityEnum):
-            return attr_type
-
-        if self._is_union(attr_type):
-            return self._extract_mappable_enum_from_union(attr_type)
-
-        return None
-
-    @staticmethod
-    def _is_union(attr_type) -> bool:
-        return hasattr(attr_type, '__origin__') \
-            and attr_type.__origin__ is Union
-
-    @staticmethod
-    def _extract_mappable_enum_from_union(union: Union) \
-            -> Optional[Type[EntityEnum]]:
-        """Extracts a MappableEnum from a Union.
-
-        This method throws an Error if multiple Enums exist and returns None if
-        no Enums exist.
-        """
-        result = set()
-        for type_in_union in union.__args__:  # type: ignore
-            if issubclass(type_in_union, EntityEnum):
-                result.add(type_in_union)
-
-        if not result:
-            return None
-
-        if len(result) == 1:
-            return next(iter(result))
-
-        raise TypeError(
-            f"Can't extract Enum from a union containing multiple Enums: "
-            f"{union}")

@@ -22,6 +22,8 @@ import attr
 
 from recidiviz.common.str_field_utils import to_snake_case
 
+# TODO(1885): Enforce all ForwardRef attributes on an Entity are optional
+
 
 @attr.s(cmp=False)
 class Entity:
