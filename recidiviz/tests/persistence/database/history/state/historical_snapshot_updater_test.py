@@ -187,6 +187,7 @@ class TestStateHistoricalSnapshotUpdater(BaseHistoricalSnapshotUpdaterTest):
                 state_schema.StatePersonExternalId(
                     person_external_id_id=234,
                     external_id='person_external_id',
+                    id_type='STATE',
                     state_code='us_ny',
                     person_id=person_id,
                 )
