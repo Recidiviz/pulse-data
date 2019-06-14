@@ -439,7 +439,7 @@ class _StatePersonExternalIdSharedColumns(_ReferencesStatePersonSharedColumns):
 
     external_id = Column(String(255), nullable=False, index=True)
     state_code = Column(String(255), nullable=False, index=True)
-    id_type = Column(String(255))
+    id_type = Column(String(255), nullable=False)
 
 
 class StatePersonExternalId(Base,

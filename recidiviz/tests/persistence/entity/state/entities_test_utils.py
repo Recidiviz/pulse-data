@@ -21,6 +21,7 @@ import datetime
 from recidiviz.common.constants.bond import BondStatus, BondType
 from recidiviz.common.constants.charge import ChargeStatus, ChargeDegree
 from recidiviz.common.constants.person_characteristics import Race, Ethnicity
+from recidiviz.common.constants.state.external_id_types import US_ND_ELITE
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentClass, StateAssessmentType, StateAssessmentLevel
@@ -77,6 +78,7 @@ def generate_full_graph_state_person(
         entities.StatePersonExternalId.new_with_defaults(
             state_code='us_ca',
             external_id='ELITE_ID_123',
+            id_type=US_ND_ELITE,
         )
     ]
     person.aliases = [

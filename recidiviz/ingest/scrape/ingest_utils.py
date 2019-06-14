@@ -773,7 +773,8 @@ def _copy_fields(source, dest, descriptor):
     """
     field_names = [i.name for i in descriptor.fields]
     for field in field_names:
-        if field.endswith('id') or field.endswith('ids'):
+        if (field.endswith('id') or field.endswith('ids')) \
+                and not _is_state_person_external_id(source, field):
             continue
         val = getattr(source, field, None)
         if val is not None:
@@ -781,6 +782,14 @@ def _copy_fields(source, dest, descriptor):
                 getattr(dest, field).extend(val)
             else:
                 setattr(dest, field, val)
+
+
+def _is_state_person_external_id(source, field):
+    """StatePersonExternalId has a normal field called 'external_id' which
+    should be copied between types unlike other fields ending in 'id'."""
+    return isinstance(source, (ingest_info.StatePersonExternalId,
+                               ingest_info_pb2.StatePersonExternalId)) \
+           and field == 'external_id'
 
 
 def ingest_info_to_serializable(ii: ingest_info.IngestInfo) -> Dict[Any, Any]:

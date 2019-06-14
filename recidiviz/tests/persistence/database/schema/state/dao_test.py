@@ -117,6 +117,7 @@ class TestDao(TestCase):
         person_external_id = schema.StatePersonExternalId(
             person_external_id_id=1,
             external_id=_EXTERNAL_ID,
+            id_type='STATE',
             state_code='us_ca',
             person=person_match_external_id,
         )
@@ -131,6 +132,7 @@ class TestDao(TestCase):
         ingested_person.external_ids = \
             [entities.StatePersonExternalId.new_with_defaults(
                 external_id=_EXTERNAL_ID,
+                id_type='STATE',
                 state_code='us_ca',
                 person=ingested_person,
             )]
