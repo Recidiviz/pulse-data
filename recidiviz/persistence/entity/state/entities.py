@@ -186,8 +186,6 @@ class StatePerson(Entity, BuildableAttr, DefaultableAttr):
     current_address: Optional[str] = attr.ib(default=None)
 
     #   - What
-    # TODO(1625): Decide if this should be a 'primary_alias' object of
-    #  type Alias.
     full_name: Optional[str] = attr.ib(default=None)
 
     birthdate: Optional[datetime.date] = attr.ib(default=None)
@@ -276,7 +274,7 @@ class StateCourtCase(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     court_fee_dollars: Optional[int] = attr.ib()
 
     #   - Who
-    judge_name: Optional[str] = attr.ib()
+    # See |judge| below
 
     # Primary key - Only optional when hydrated in the data converter, before
     # we have written this entity to the persistence layer
@@ -285,6 +283,7 @@ class StateCourtCase(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     # Cross-entity relationships
     person: Optional['StatePerson'] = attr.ib(default=None)
     charges: List['StateCharge'] = attr.ib(factory=list)
+    judge: Optional['StateAgent'] = attr.ib(default=None)
 
 
 @attr.s(cmp=False)
@@ -887,7 +886,7 @@ class StateSupervisionViolationResponse(ExternalIdEntity,
 class StateAgent(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     """Models an agent working within a justice system."""
     # Type
-    agent_type: Optional[StateAgentType] = attr.ib()
+    agent_type: StateAgentType = attr.ib()
     agent_type_raw_text: Optional[str] = attr.ib()
 
     # Attributes

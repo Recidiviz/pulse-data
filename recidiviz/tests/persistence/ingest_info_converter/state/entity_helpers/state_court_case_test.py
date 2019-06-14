@@ -41,11 +41,13 @@ class StateCourtCaseConverterTest(unittest.TestCase):
             state_code='us_nd',
             county_code='111',
             court_fee_dollars='1000',
-            judge_name='JUDY',
         )
 
         # Act
-        result = state_court_case.convert(ingest_case, _EMPTY_METADATA)
+        court_case_builder = entities.StateCourtCase.builder()
+        state_court_case.copy_fields_to_builder(
+            court_case_builder, ingest_case, _EMPTY_METADATA)
+        result = court_case_builder.build()
 
         # Assert
         expected_result = entities.StateCourtCase.new_with_defaults(
@@ -57,7 +59,6 @@ class StateCourtCaseConverterTest(unittest.TestCase):
             state_code='US_ND',
             county_code='111',
             court_fee_dollars=1000,
-            judge_name='JUDY',
         )
 
         self.assertEqual(result, expected_result)

@@ -750,8 +750,13 @@ class _StateCourtCaseSharedColumns(_ReferencesStatePersonSharedColumns):
     state_code = Column(String(255), nullable=False, index=True)
     county_code = Column(String(255), index=True)
     court_fee_dollars = Column(Integer)
-    # TODO(1625): Convert field to an Agent type?
-    judge_name = Column(String(255))
+
+    @declared_attr
+    def judge_id(self):
+        return Column(
+            Integer,
+            ForeignKey('state_agent.agent_id'),
+            nullable=True)
 
 
 class StateCourtCase(Base,
@@ -764,6 +769,7 @@ class StateCourtCase(Base,
     person = relationship('StatePerson', uselist=False)
     charges = relationship('StateCharge',
                            back_populates='court_case')
+    judge = relationship('StateAgent', uselist=False)
 
 
 class StateCourtCaseHistory(Base,
