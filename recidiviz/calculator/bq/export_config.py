@@ -41,7 +41,7 @@ TABLES_TO_EXCLUDE_FROM_EXPORT = tuple( # type: ignore
     table.__table__ for table in schema_utils.get_state_table_classes()
 )
 
-# By default, all tables in the various base_schema.py modules are exported
+# By default, all tables in the various schema.py modules are exported
 # unless listed in TABLES_TO_EXCLUDE_FROM_EXPORT above.
 TABLES_TO_EXPORT = tuple(
     table.__table__ for table in schema_utils.get_all_table_classes()

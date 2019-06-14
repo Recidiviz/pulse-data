@@ -26,7 +26,6 @@ from more_itertools import one
 from recidiviz import Session
 from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
 from recidiviz.persistence.database.base_schema import Base
-from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.history.historical_snapshot_update import \
     update_historical_snapshots
 from recidiviz.persistence.database.schema.schema_person_type import \
@@ -83,12 +82,12 @@ class BaseHistoricalSnapshotUpdaterTest(TestCase):
     @staticmethod
     def _get_all_non_history_schema_object_type_names_in_module(
             schema: ModuleType) -> Set[str]:
-        expected_schema_object_types = set()
+        expected_schema_object_types: Set[str] = set()
         for attribute_name in dir(schema):
             attribute = getattr(schema, attribute_name)
             # Find all master (non-historical) schema object types
-            if isclass(attribute) and attribute is not DatabaseEntity and \
-                    issubclass(attribute, DatabaseEntity) \
+            if isclass(attribute) and attribute is not Base and \
+                    issubclass(attribute, Base) \
                     and not attribute_name.endswith('History'):
                 expected_schema_object_types.add(attribute_name)
 

@@ -22,6 +22,7 @@ For actual schema definitions, see /aggregate/schema.py, /county/schema.py, and
 """
 
 from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta
+from recidiviz.persistence.database.database_entity import DatabaseEntity
 
 # Base class for all table classes
-Base: DeclarativeMeta = declarative_base()
+Base: DeclarativeMeta = declarative_base(cls=DatabaseEntity)
