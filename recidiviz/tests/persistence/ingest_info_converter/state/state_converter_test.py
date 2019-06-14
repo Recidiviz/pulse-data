@@ -23,6 +23,8 @@ from typing import List
 from recidiviz.common.constants.bond import BondStatus
 from recidiviz.common.constants.charge import ChargeStatus, ChargeDegree
 from recidiviz.common.constants.person_characteristics import Race, Ethnicity
+from recidiviz.common.constants.state.external_id_types import US_ND_ELITE, \
+    US_ND_SID
 from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentClass
 from recidiviz.common.constants.state.state_fine import StateFineStatus
@@ -141,12 +143,12 @@ class TestIngestInfoStateConverter(unittest.TestCase):
         ingest_info.state_person_external_ids.add(
             state_person_external_id_id='EXT_EXT_ID1',
             external_id='EXTERNAL_ID1',
-            id_type='ELITE'
+            id_type=US_ND_ELITE
         )
         ingest_info.state_person_external_ids.add(
             state_person_external_id_id='EXT_EXT_ID2',
             external_id='EXTERNAL_ID2',
-            id_type='SID'
+            id_type=US_ND_SID
         )
         ingest_info.state_assessments.add(
             state_assessment_id='ASSESSMENT_ID',
@@ -295,16 +297,14 @@ class TestIngestInfoStateConverter(unittest.TestCase):
         expected_result = [StatePerson.new_with_defaults(
             external_ids=[
                 StatePersonExternalId.new_with_defaults(
-                    person_external_id_id='EXT_EXT_ID1',
                     external_id='EXTERNAL_ID1',
                     state_code='US_ND',
-                    id_type='ELITE'
+                    id_type=US_ND_ELITE
                 ),
                 StatePersonExternalId.new_with_defaults(
-                    person_external_id_id='EXT_EXT_ID2',
                     external_id='EXTERNAL_ID2',
                     state_code='US_ND',
-                    id_type='SID'
+                    id_type=US_ND_SID
                 )
             ],
             races=[
