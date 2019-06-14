@@ -17,7 +17,7 @@
 
 """Provides tools for traversing the hierarchy of ingest objects."""
 
-from typing import Dict, Sequence, Any, Set, Union
+from typing import Dict, Sequence, Set, Union
 
 import attr
 from more_itertools import one
@@ -98,55 +98,22 @@ _HIERARCHY_MAP: Dict[
                     ancestor_choices={'state_incarceration_sentence',
                                       'state_supervision_sentence'}),
                 'state_supervision_period',
-                'state_supervision_violation')}
-
-_HIERARCHY_MAP2: Dict[str, Sequence[str]] = {
-    # County level hierarchy
-    'person': (),
-    'booking': ('person',),
-    'arrest': ('person', 'booking'),
-    'charge': ('person', 'booking'),
-    'hold': ('person', 'booking'),
-    'bond': ('person', 'booking', 'charge'),
-    'sentence': ('person', 'booking', 'charge'),
-
-    # State level hierarchy
-    'state_person': (),
-    'state_person_race': ('state_person',),
-    'state_person_ethnicity': ('state_person',),
-    'state_alias': ('state_person',),
-    'state_person_external_id': ('state_person',),
-    'state_assessment': ('state_person',),
-    'state_sentence_group': ('state_person',),
-    'state_supervision_sentence': ('state_person', 'state_sentence_group',),
-    'state_incarceration_sentence': ('state_person', 'state_sentence_group',),
-    'state_fine': ('state_person', 'state_sentence_group',),
-}
-
-_POSSIBLE_HIERARCHY_MAP: Dict[str, Sequence[Any]] = {
-    # Remainder of state level hierarchy
-    'state_incarceration_period': (
-        'state_person', 'state_sentence_group',
-        ('state_incarceration_sentence', 'state_supervision_sentence')),
-    'state_supervision_period': (
-        'state_person', 'state_sentence_group',
-        ('state_incarceration_sentence', 'state_supervision_sentence')),
-    'state_charge': (
-        'state_person', 'state_sentence_group',
-        ('state_incarceration_sentence', 'state_supervision_sentence', 'fine')),
-    'state_court_case': (
-        'state_person', 'state_sentence_group',
-        ('state_incarceration_sentence', 'state_supervision_sentence', 'fine'),
-        'state_charge'),
-    'state_supervision_violation': (
-        'state_person', 'state_sentence_group',
-        ('state_incarceration_sentence', 'state_supervision_sentence'),
-        'state_supervision_period'),
-    'state_supervision_violation_response': (
-        'state_person', 'state_sentence_group',
-        ('state_incarceration_sentence', 'state_supervision_sentence'),
-        'state_supervision_period', 'state_supervision_violation')
-}
+                'state_supervision_violation'),
+            # TODO(1883): The entry here for |state_agent| is a hack. StateAgent
+            #  can have multiple ancestor paths depending on what type of agent
+            #  it is. We need to update the extractor code to just generate
+            #  buckets of objects of a given type, with some encoding about
+            #  parent relationships. However, this is fine for the ND MVP, since
+            #  we only create one type of StateAgent right now.
+            'state_agent': (
+                'state_person', 'state_sentence_group',
+                AncestorTypeChoices(
+                    key='state_sentence',
+                    ancestor_choices={'state_incarceration_sentence',
+                                      'state_supervision_sentence',
+                                      'fine'}),
+                'state_charge', 'state_court_case'),
+        }
 
 
 def get_ancestor_class_sequence(

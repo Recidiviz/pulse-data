@@ -32,10 +32,17 @@ from recidiviz.persistence.ingest_info_converter.utils.enum_mappings \
     import EnumMappings
 
 
-def convert(proto: StateCourtCase, metadata: IngestMetadata) \
-        -> entities.StateCourtCase:
-    """Converts an ingest_info proto StateCourtCase to a persistence entity."""
-    new = entities.StateCourtCase.builder()
+def copy_fields_to_builder(
+        court_case_builder: entities.StateCourtCase.Builder,
+        proto: StateCourtCase,
+        metadata: IngestMetadata) -> None:
+
+    """Mutates the provided |court_case_builder| by converting an ingest_info
+    proto StateCourtCase.
+
+    Note: This will not copy children into the Builder!
+    """
+    new = court_case_builder
 
     enum_fields = {
         'status': StateCourtCaseStatus,
@@ -58,6 +65,3 @@ def convert(proto: StateCourtCase, metadata: IngestMetadata) \
         proto, 'state_code', metadata)
     new.county_code = fn(normalize, 'county_code', proto)
     new.court_fee_dollars = fn(parse_dollars, 'court_fee_dollars', proto)
-    new.judge_name = fn(normalize, 'judge_name', proto)
-
-    return new.build()

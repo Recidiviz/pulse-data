@@ -279,12 +279,25 @@ class StateConverter(BaseConverter[entities.StatePerson]):
                ingest_charge)
 
         charge_builder.court_case = \
-            fn(lambda i: state_court_case.convert(self.court_cases[i],
-                                                  self.metadata),
+            fn(self._convert_court_case,
                'state_court_case_id',
                ingest_charge)
 
         return charge_builder.build()
+
+    def _convert_court_case(self, court_case_id):
+        court_case_builder = entities.StateCourtCase.builder()
+        court_case = self.court_cases[court_case_id]
+
+        state_court_case.copy_fields_to_builder(court_case_builder,
+                                                court_case,
+                                                self.metadata)
+
+        converted_judge = state_agent.convert(
+            self.agents[court_case.judge_id], self.metadata)
+        court_case_builder.judge = converted_judge
+
+        return court_case_builder.build()
 
     def _convert_incarceration_period(
             self, ingest_incarceration_period: StateIncarcerationPeriod) \
