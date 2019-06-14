@@ -30,7 +30,7 @@ from recidiviz.persistence.entity import entities
 from recidiviz.persistence.database.schema_entity_converter import (
     schema_entity_converter as converter,
 )
-from recidiviz.persistence.database.database_entity import DatabaseEntity
+from recidiviz.persistence.database.base_schema import Base
 from recidiviz.persistence.database.schema.county import schema as county_schema
 from recidiviz.persistence.entity.base_entity import Entity
 
@@ -77,7 +77,7 @@ def write_person(session: Session,
 
 def _save_record_trees(session: Session,
                        root_people: List[SchemaPersonType],
-                       orphaned_entities: List[DatabaseEntity],
+                       orphaned_entities: List[Base],
                        metadata: IngestMetadata):
     """Persists all record trees rooted at |root_people|. Also performs any
     historical snapshot updates required for any entities in any of these

@@ -50,7 +50,6 @@ from recidiviz.common.constants.state import (
     enum_canonical_strings as state_enum_strings
 )
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
-from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.base_schema import Base
 from recidiviz.persistence.database.schema.history_table_shared_columns_mixin \
     import HistoryTableSharedColumns
@@ -443,7 +442,6 @@ class _StatePersonExternalIdSharedColumns(_ReferencesStatePersonSharedColumns):
 
 
 class StatePersonExternalId(Base,
-                            DatabaseEntity,
                             _StatePersonExternalIdSharedColumns):
     """Represents a StatePersonExternalId in the SQL schema"""
     __tablename__ = 'state_person_external_id'
@@ -456,7 +454,6 @@ class StatePersonExternalId(Base,
 
 
 class StatePersonExternalIdHistory(Base,
-                                   DatabaseEntity,
                                    _StatePersonExternalIdSharedColumns,
                                    HistoryTableSharedColumns):
     """Represents the historical state of a StatePersonExternalId"""
@@ -495,7 +492,6 @@ class _StatePersonAliasSharedColumns(_ReferencesStatePersonSharedColumns):
 
 
 class StatePersonAlias(Base,
-                       DatabaseEntity,
                        _StatePersonAliasSharedColumns):
     """Represents a StatePersonAlias in the SQL schema"""
     __tablename__ = 'state_person_alias'
@@ -507,7 +503,6 @@ class StatePersonAlias(Base,
 
 
 class StatePersonAliasHistory(Base,
-                              DatabaseEntity,
                               _StatePersonAliasSharedColumns,
                               HistoryTableSharedColumns):
     """Represents the historical state of a StatePersonAlias"""
@@ -541,7 +536,6 @@ class _StatePersonRaceSharedColumns(_ReferencesStatePersonSharedColumns):
 
 
 class StatePersonRace(Base,
-                      DatabaseEntity,
                       _StatePersonRaceSharedColumns):
     """Represents a StatePersonRace in the SQL schema"""
     __tablename__ = 'state_person_race'
@@ -553,7 +547,6 @@ class StatePersonRace(Base,
 
 
 class StatePersonRaceHistory(Base,
-                             DatabaseEntity,
                              _StatePersonRaceSharedColumns,
                              HistoryTableSharedColumns):
     """Represents the historical state of a StatePersonRace"""
@@ -587,7 +580,6 @@ class _StatePersonEthnicitySharedColumns(_ReferencesStatePersonSharedColumns):
 
 
 class StatePersonEthnicity(Base,
-                           DatabaseEntity,
                            _StatePersonEthnicitySharedColumns):
     """Represents a state person in the SQL schema"""
     __tablename__ = 'state_person_ethnicity'
@@ -599,7 +591,6 @@ class StatePersonEthnicity(Base,
 
 
 class StatePersonEthnicityHistory(Base,
-                                  DatabaseEntity,
                                   _StatePersonEthnicitySharedColumns,
                                   HistoryTableSharedColumns):
     """Represents the historical state of a state person ethnicity"""
@@ -640,7 +631,7 @@ class _StatePersonSharedColumns:
     residency_status = Column(residency_status)
 
 
-class StatePerson(Base, DatabaseEntity, _StatePersonSharedColumns):
+class StatePerson(Base, _StatePersonSharedColumns):
     """Represents a StatePerson in the state SQL schema"""
     __tablename__ = 'state_person'
 
@@ -657,7 +648,6 @@ class StatePerson(Base, DatabaseEntity, _StatePersonSharedColumns):
 
 
 class StatePersonHistory(Base,
-                         DatabaseEntity,
                          _StatePersonSharedColumns,
                          HistoryTableSharedColumns):
 
@@ -698,7 +688,6 @@ class _StateBondSharedColumns(_ReferencesStatePersonSharedColumns):
 
 
 class StateBond(Base,
-                DatabaseEntity,
                 _StateBondSharedColumns):
     """Represents a StateBond in the SQL schema"""
     __tablename__ = 'state_bond'
@@ -710,7 +699,6 @@ class StateBond(Base,
 
 
 class StateBondHistory(Base,
-                       DatabaseEntity,
                        _StateBondSharedColumns,
                        HistoryTableSharedColumns):
     """Represents the historical state of a StateBond"""
@@ -760,7 +748,6 @@ class _StateCourtCaseSharedColumns(_ReferencesStatePersonSharedColumns):
 
 
 class StateCourtCase(Base,
-                     DatabaseEntity,
                      _StateCourtCaseSharedColumns):
     """Represents a StateCourtCase in the SQL schema"""
     __tablename__ = 'state_court_case'
@@ -773,7 +760,6 @@ class StateCourtCase(Base,
 
 
 class StateCourtCaseHistory(Base,
-                            DatabaseEntity,
                             _StateCourtCaseSharedColumns,
                             HistoryTableSharedColumns):
     """Represents the historical state of a StateCourtCase"""
@@ -829,7 +815,6 @@ class _StateChargeSharedColumns(_ReferencesStatePersonSharedColumns):
 
 
 class StateCharge(Base,
-                  DatabaseEntity,
                   _StateChargeSharedColumns):
     """Represents a StateCharge in the SQL schema"""
     __tablename__ = 'state_charge'
@@ -859,7 +844,6 @@ class StateCharge(Base,
 
 
 class StateChargeHistory(Base,
-                         DatabaseEntity,
                          _StateChargeSharedColumns,
                          HistoryTableSharedColumns):
     """Represents the historical state of a StateCharge"""
@@ -922,7 +906,6 @@ class _StateAssessmentSharedColumns(_ReferencesStatePersonSharedColumns):
 
 
 class StateAssessment(Base,
-                      DatabaseEntity,
                       _StateAssessmentSharedColumns):
     """Represents a StateAssessment in the SQL schema"""
     __tablename__ = 'state_assessment'
@@ -942,7 +925,6 @@ class StateAssessment(Base,
 
 
 class StateAssessmentHistory(Base,
-                             DatabaseEntity,
                              _StateAssessmentSharedColumns,
                              HistoryTableSharedColumns):
     """Represents the historical state of a StateAssessment"""
@@ -981,7 +963,6 @@ class _StateSentenceGroupSharedColumns(_ReferencesStatePersonSharedColumns):
 
 
 class StateSentenceGroup(Base,
-                         DatabaseEntity,
                          _StateSentenceGroupSharedColumns):
     """Represents a StateSentenceGroup in the SQL schema"""
     __tablename__ = 'state_sentence_group'
@@ -1000,7 +981,6 @@ class StateSentenceGroup(Base,
 
 
 class StateSentenceGroupHistory(Base,
-                                DatabaseEntity,
                                 _StateSentenceGroupSharedColumns,
                                 HistoryTableSharedColumns):
     """Represents the historical state of a StateSentenceGroup"""
@@ -1044,7 +1024,6 @@ class _StateSupervisionSentenceSharedColumns(
 
 
 class StateSupervisionSentence(Base,
-                               DatabaseEntity,
                                _StateSupervisionSentenceSharedColumns):
     """Represents a StateSupervisionSentence in the SQL schema"""
     __tablename__ = 'state_supervision_sentence'
@@ -1072,7 +1051,6 @@ class StateSupervisionSentence(Base,
 
 
 class StateSupervisionSentenceHistory(Base,
-                                      DatabaseEntity,
                                       _StateSupervisionSentenceSharedColumns,
                                       HistoryTableSharedColumns):
     """Represents the historical state of a StateSupervisionSentence"""
@@ -1125,7 +1103,6 @@ class _StateIncarcerationSentenceSharedColumns(
 
 
 class StateIncarcerationSentence(Base,
-                                 DatabaseEntity,
                                  _StateIncarcerationSentenceSharedColumns):
     """Represents a StateIncarcerationSentence in the SQL schema"""
     __tablename__ = 'state_incarceration_sentence'
@@ -1155,7 +1132,6 @@ class StateIncarcerationSentence(Base,
 
 class StateIncarcerationSentenceHistory(
         Base,
-        DatabaseEntity,
         _StateIncarcerationSentenceSharedColumns,
         HistoryTableSharedColumns):
     """Represents the historical state of a StateIncarcerationSentence"""
@@ -1196,7 +1172,6 @@ class _StateFineSharedColumns(
 
 
 class StateFine(Base,
-                DatabaseEntity,
                 _StateFineSharedColumns):
     """Represents a StateFine in the SQL schema"""
     __tablename__ = 'state_fine'
@@ -1214,7 +1189,6 @@ class StateFine(Base,
 
 
 class StateFineHistory(Base,
-                       DatabaseEntity,
                        _StateFineSharedColumns,
                        HistoryTableSharedColumns):
     """Represents the historical state of a StateFine"""
@@ -1279,7 +1253,6 @@ class _StateIncarcerationPeriodSharedColumns(
 
 
 class StateIncarcerationPeriod(Base,
-                               DatabaseEntity,
                                _StateIncarcerationPeriodSharedColumns):
     """Represents a StateIncarcerationPeriod in the SQL schema"""
     __tablename__ = 'state_incarceration_period'
@@ -1312,7 +1285,6 @@ class StateIncarcerationPeriod(Base,
 
 
 class StateIncarcerationPeriodHistory(Base,
-                                      DatabaseEntity,
                                       _StateIncarcerationPeriodSharedColumns,
                                       HistoryTableSharedColumns):
     """Represents the historical state of a StateIncarcerationPeriod"""
@@ -1364,7 +1336,6 @@ class _StateSupervisionPeriodSharedColumns(_ReferencesStatePersonSharedColumns):
 
 
 class StateSupervisionPeriod(Base,
-                             DatabaseEntity,
                              _StateSupervisionPeriodSharedColumns):
     """Represents a StateSupervisionPeriod in the SQL schema"""
     __tablename__ = 'state_supervision_period'
@@ -1390,7 +1361,6 @@ class StateSupervisionPeriod(Base,
 
 
 class StateSupervisionPeriodHistory(Base,
-                                    DatabaseEntity,
                                     _StateSupervisionPeriodSharedColumns,
                                     HistoryTableSharedColumns):
     """Represents the historical state of a StateSupervisionPeriod"""
@@ -1447,7 +1417,6 @@ class _StateIncarcerationIncidentSharedColumns(
 
 
 class StateIncarcerationIncident(Base,
-                                 DatabaseEntity,
                                  _StateIncarcerationIncidentSharedColumns):
     """Represents a StateIncarcerationIncident in the SQL schema"""
     __tablename__ = 'state_incarceration_incident'
@@ -1465,7 +1434,6 @@ class StateIncarcerationIncident(Base,
 
 class StateIncarcerationIncidentHistory(
         Base,
-        DatabaseEntity,
         _StateIncarcerationIncidentSharedColumns,
         HistoryTableSharedColumns):
     """Represents the historical state of a StateIncarcerationIncident"""
@@ -1517,7 +1485,6 @@ class _StateParoleDecisionSharedColumns(
 
 
 class StateParoleDecision(Base,
-                          DatabaseEntity,
                           _StateParoleDecisionSharedColumns):
     """Represents a StateParoleDecision in the SQL schema"""
     __tablename__ = 'state_parole_decision'
@@ -1535,7 +1502,6 @@ class StateParoleDecision(Base,
 
 
 class StateParoleDecisionHistory(Base,
-                                 DatabaseEntity,
                                  _StateParoleDecisionSharedColumns,
                                  HistoryTableSharedColumns):
     """Represents the historical state of a StateParoleDecision"""
@@ -1583,7 +1549,6 @@ class _StateSupervisionViolationSharedColumns(
 
 
 class StateSupervisionViolation(Base,
-                                DatabaseEntity,
                                 _StateSupervisionViolationSharedColumns):
     """Represents a StateSupervisionViolation in the SQL schema"""
     __tablename__ = 'state_supervision_violation'
@@ -1601,7 +1566,6 @@ class StateSupervisionViolation(Base,
 
 
 class StateSupervisionViolationHistory(Base,
-                                       DatabaseEntity,
                                        _StateSupervisionViolationSharedColumns,
                                        HistoryTableSharedColumns):
     """Represents the historical state of a StateSupervisionViolation"""
@@ -1657,7 +1621,6 @@ class _StateSupervisionViolationResponseSharedColumns(
 
 class StateSupervisionViolationResponse(
         Base,
-        DatabaseEntity,
         _StateSupervisionViolationResponseSharedColumns):
     """Represents a StateSupervisionViolationResponse in the SQL schema"""
     __tablename__ = 'state_supervision_violation_response'
@@ -1677,7 +1640,6 @@ class StateSupervisionViolationResponse(
 
 class StateSupervisionViolationResponseHistory(
         Base,
-        DatabaseEntity,
         _StateSupervisionViolationResponseSharedColumns,
         HistoryTableSharedColumns):
     """Represents the historical state of a StateSupervisionViolationResponse"""
@@ -1717,7 +1679,6 @@ class _StateAgentSharedColumns:
 
 
 class StateAgent(Base,
-                 DatabaseEntity,
                  _StateAgentSharedColumns):
     """Represents a StateAgent in the SQL schema"""
     __tablename__ = 'state_agent'
@@ -1726,7 +1687,6 @@ class StateAgent(Base,
 
 
 class StateAgentHistory(Base,
-                        DatabaseEntity,
                         _StateAgentSharedColumns,
                         HistoryTableSharedColumns):
     """Represents the historical state of a StateAgent"""

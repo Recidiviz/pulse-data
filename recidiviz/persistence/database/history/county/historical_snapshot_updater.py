@@ -48,7 +48,7 @@ class CountyHistoricalSnapshotUpdater(
     def post_process_initial_snapshot(self,
                                       snapshot_context: _SnapshotContext,
                                       initial_snapshot: Any) -> None:
-        snapshot_entity = snapshot_context.entity
+        snapshot_entity = snapshot_context.schema_object
         if isinstance(snapshot_entity, schema.Booking):
             initial_snapshot.custody_status = CustodyStatus.IN_CUSTODY.value
         elif isinstance(snapshot_entity, schema.Sentence):

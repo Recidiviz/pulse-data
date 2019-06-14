@@ -41,7 +41,6 @@ from recidiviz.common.constants.county import (
     enum_canonical_strings as county_enum_strings
 )
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
-from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.base_schema import Base
 from recidiviz.persistence.database.schema.history_table_shared_columns_mixin \
     import HistoryTableSharedColumns
@@ -175,7 +174,7 @@ class _PersonSharedColumns:
         return jurisdiction_id
 
 
-class Person(Base, DatabaseEntity, _PersonSharedColumns):
+class Person(Base, _PersonSharedColumns):
     """Represents a person in the SQL schema"""
     __tablename__ = 'person'
     __table_args__ = (
@@ -193,7 +192,6 @@ class Person(Base, DatabaseEntity, _PersonSharedColumns):
 
 
 class PersonHistory(Base,
-                    DatabaseEntity,
                     _PersonSharedColumns,
                     HistoryTableSharedColumns):
     """Represents the historical state of a person"""
@@ -250,7 +248,7 @@ class _BookingSharedColumns:
         return Column(Integer, ForeignKey('person.person_id'), nullable=False)
 
 
-class Booking(Base, DatabaseEntity, _BookingSharedColumns):
+class Booking(Base, _BookingSharedColumns):
     """Represents a booking in the SQL schema"""
     __tablename__ = 'booking'
 
@@ -264,7 +262,6 @@ class Booking(Base, DatabaseEntity, _BookingSharedColumns):
 
 
 class BookingHistory(Base,
-                     DatabaseEntity,
                      _BookingSharedColumns,
                      HistoryTableSharedColumns):
     """Represents the historical state of a booking"""
@@ -298,7 +295,7 @@ class _HoldSharedColumns:
             Integer, ForeignKey('booking.booking_id'), nullable=False)
 
 
-class Hold(Base, DatabaseEntity, _HoldSharedColumns):
+class Hold(Base, _HoldSharedColumns):
     """Represents a hold from another jurisdiction against a booking"""
     __tablename__ = 'hold'
 
@@ -306,7 +303,6 @@ class Hold(Base, DatabaseEntity, _HoldSharedColumns):
 
 
 class HoldHistory(Base,
-                  DatabaseEntity,
                   _HoldSharedColumns,
                   HistoryTableSharedColumns):
     """Represents the historical state of a hold"""
@@ -342,7 +338,7 @@ class _ArrestSharedColumns:
             Integer, ForeignKey('booking.booking_id'), nullable=False)
 
 
-class Arrest(Base, DatabaseEntity, _ArrestSharedColumns):
+class Arrest(Base, _ArrestSharedColumns):
     """Represents an arrest in the SQL schema"""
     __tablename__ = 'arrest'
 
@@ -350,7 +346,6 @@ class Arrest(Base, DatabaseEntity, _ArrestSharedColumns):
 
 
 class ArrestHistory(Base,
-                    DatabaseEntity,
                     _ArrestSharedColumns,
                     HistoryTableSharedColumns):
     """Represents the historical state of an arrest"""
@@ -399,7 +394,7 @@ class _BondSharedColumns:
             nullable=False)
 
 
-class Bond(Base, DatabaseEntity, _BondSharedColumns):
+class Bond(Base, _BondSharedColumns):
     """Represents a bond in the SQL schema"""
     __tablename__ = 'bond'
 
@@ -407,7 +402,6 @@ class Bond(Base, DatabaseEntity, _BondSharedColumns):
 
 
 class BondHistory(Base,
-                  DatabaseEntity,
                   _BondSharedColumns,
                   HistoryTableSharedColumns):
     """Represents the historical state of a bond"""
@@ -466,7 +460,7 @@ class _SentenceSharedColumns:
             nullable=False)
 
 
-class Sentence(Base, DatabaseEntity, _SentenceSharedColumns):
+class Sentence(Base, _SentenceSharedColumns):
     """Represents a sentence in the SQL schema"""
     __tablename__ = 'sentence'
 
@@ -483,7 +477,6 @@ class Sentence(Base, DatabaseEntity, _SentenceSharedColumns):
 
 
 class SentenceHistory(Base,
-                      DatabaseEntity,
                       _SentenceSharedColumns,
                       HistoryTableSharedColumns):
     """Represents the historical state of a sentence"""
@@ -538,7 +531,7 @@ class _SentenceRelationshipSharedColumns:
             Integer, ForeignKey('sentence.sentence_id'), nullable=False)
 
 
-class SentenceRelationship(Base, DatabaseEntity,
+class SentenceRelationship(Base,
                            _SentenceRelationshipSharedColumns):
     """Represents the relationship between two sentences"""
     __tablename__ = 'sentence_relationship'
@@ -556,7 +549,6 @@ class SentenceRelationship(Base, DatabaseEntity,
 
 
 class SentenceRelationshipHistory(Base,
-                                  DatabaseEntity,
                                   _SentenceRelationshipSharedColumns,
                                   HistoryTableSharedColumns):
     """Represents the historical state of the relationship between two sentences
@@ -618,7 +610,7 @@ class _ChargeSharedColumns:
         return Column(Integer, ForeignKey('sentence.sentence_id'))
 
 
-class Charge(Base, DatabaseEntity, _ChargeSharedColumns):
+class Charge(Base, _ChargeSharedColumns):
     """Represents a charge in the SQL schema"""
     __tablename__ = 'charge'
 
@@ -629,7 +621,6 @@ class Charge(Base, DatabaseEntity, _ChargeSharedColumns):
 
 
 class ChargeHistory(Base,
-                    DatabaseEntity,
                     _ChargeSharedColumns,
                     HistoryTableSharedColumns):
     """Represents the historical state of a charge"""

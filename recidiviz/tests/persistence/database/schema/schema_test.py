@@ -181,6 +181,18 @@ class TestSchemaTableConsistency(TestCase):
                     f'Table class {cls.__name__} does not have matching table '
                     f'name: {table_name}')
 
+    def testDatabaseEntityFunctionality(self):
+        for schema_module in ALL_SCHEMA_MODULES:
+            for cls in \
+                    self._get_all_schema_table_classes_in_module(schema_module):
+                primary_key_col_name = cls.get_primary_key_column_name()
+                self.assertIsNotNone(primary_key_col_name)
+                primary_key_prop_name = cls.get_column_property_names()
+                self.assertTrue(len(primary_key_prop_name) > 0)
+                self.assertTrue(primary_key_col_name in primary_key_prop_name)
+                # Just should not crash
+                cls.get_relationship_property_names()
+
     @staticmethod
     def _get_all_schema_table_classes_in_module(
             schema_module: ModuleType) -> List[Type[Base]]:

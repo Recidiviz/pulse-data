@@ -27,7 +27,7 @@ import logging
 from collections import defaultdict
 
 from types import ModuleType
-from typing import List, Generic, Any, Type, Set, Callable, Optional, Dict
+from typing import List, Generic, Type, Set, Callable, Optional, Dict
 
 import attr
 
@@ -36,7 +36,6 @@ from sqlalchemy import text
 from recidiviz import Session
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence.database.base_schema import Base
-from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.schema_person_type import \
     SchemaPersonType
 
@@ -81,7 +80,7 @@ class BaseHistoricalSnapshotUpdater(Generic[SchemaPersonType]):
     @abc.abstractmethod
     def post_process_initial_snapshot(self,
                                       snapshot_context: '_SnapshotContext',
-                                      initial_snapshot: Any) -> None:
+                                      initial_snapshot: Base) -> None:
         """Perform any additional processing on the initial closed snapshot,
         i.e.the snapshot representing the state of the entity before its current
         completed state."""
@@ -89,7 +88,7 @@ class BaseHistoricalSnapshotUpdater(Generic[SchemaPersonType]):
     def update_historical_snapshots(self,
                                     session: Session,
                                     root_people: List[SchemaPersonType],
-                                    orphaned_entities: List[DatabaseEntity],
+                                    orphaned_entities: List[Base],
                                     ingest_metadata: IngestMetadata) -> None:
         """For all entities in all record trees rooted at |root_people| and all
         entities in |orphaned_entities|, performs any required historical
@@ -114,9 +113,7 @@ class BaseHistoricalSnapshotUpdater(Generic[SchemaPersonType]):
 
         schema: ModuleType = self.get_schema_module()
 
-        # TODO(1625): Make this type more specific (subclass of both Base and
-        #  DatabaseEntity)
-        root_entities: List[Any] = list()
+        root_entities: List[Base] = list()
         root_entities.extend(root_people)
         root_entities.extend(orphaned_entities)
 
@@ -158,8 +155,8 @@ class BaseHistoricalSnapshotUpdater(Generic[SchemaPersonType]):
     def _fetch_most_recent_snapshots_for_all_entities(
             self,
             session: Session,
-            root_entities: List[Any],
-            schema) -> List[Any]:
+            root_entities: List[Base],
+            schema) -> List[Base]:
         """Returns a list containing the most recent snapshot for each entity in
         all graphs reachable from |root_entities|, if one exists.
         """
@@ -172,7 +169,7 @@ class BaseHistoricalSnapshotUpdater(Generic[SchemaPersonType]):
             lambda entity: ids_by_entity_type_name[type(entity).__name__]
             .add(entity.get_primary_key()))
 
-        snapshots: List[Any] = []
+        snapshots: List[Base] = []
         for type_name, ids in ids_by_entity_type_name.items():
             master_class = getattr(schema, type_name)
             snapshots.extend(self._fetch_most_recent_snapshots_for_entity_type(
@@ -184,7 +181,7 @@ class BaseHistoricalSnapshotUpdater(Generic[SchemaPersonType]):
             session: Session,
             master_class: Type,
             entity_ids: Set[int],
-            schema: ModuleType) -> List[Any]:
+            schema: ModuleType) -> List[Base]:
         """Returns a list containing the most recent snapshot for each ID in
         |entity_ids| with type |master_class|
         """
@@ -281,7 +278,7 @@ class BaseHistoricalSnapshotUpdater(Generic[SchemaPersonType]):
         # its current state matches its most recent historical snapshot
         if context.most_recent_snapshot is not None and \
                 self._does_entity_match_historical_snapshot(
-                        context.entity, context.most_recent_snapshot):
+                        context.schema_object, context.most_recent_snapshot):
             return
 
         if context.most_recent_snapshot is None:
@@ -293,16 +290,18 @@ class BaseHistoricalSnapshotUpdater(Generic[SchemaPersonType]):
 
     def _write_snapshots_for_new_entities(
             self,
-            session: Session, context: '_SnapshotContext',
+            session: Session,
+            context: '_SnapshotContext',
             snapshot_time: datetime,
             schema) -> None:
         """Writes snapshots for any new entities, including any required manual
         adjustments based on provided start and end times
         """
-        historical_class = _get_historical_class(type(context.entity), schema)
+        historical_class = _get_historical_class(type(context.schema_object),
+                                                 schema)
         new_historical_snapshot = historical_class()
         self._copy_entity_fields_to_historical_snapshot(
-            context.entity, new_historical_snapshot)
+            context.schema_object, new_historical_snapshot)
 
         provided_start_time = None
         provided_end_time = None
@@ -338,7 +337,7 @@ class BaseHistoricalSnapshotUpdater(Generic[SchemaPersonType]):
         if provided_start_time and provided_end_time:
             initial_snapshot = historical_class()
             self._copy_entity_fields_to_historical_snapshot(
-                context.entity, initial_snapshot)
+                context.schema_object, initial_snapshot)
             initial_snapshot.valid_from = provided_start_time
             initial_snapshot.valid_to = provided_end_time
 
@@ -354,10 +353,11 @@ class BaseHistoricalSnapshotUpdater(Generic[SchemaPersonType]):
         """Writes snapshot updates for entities that already have snapshots
         present in the database
         """
-        historical_class = _get_historical_class(type(context.entity), schema)
+        historical_class = _get_historical_class(type(context.schema_object),
+                                                 schema)
         new_historical_snapshot = historical_class()
         self._copy_entity_fields_to_historical_snapshot(
-            context.entity, new_historical_snapshot)
+            context.schema_object, new_historical_snapshot)
         new_historical_snapshot.valid_from = snapshot_time
 
         # Snapshot must be merged separately from record tree, as they are not
@@ -372,14 +372,14 @@ class BaseHistoricalSnapshotUpdater(Generic[SchemaPersonType]):
 
     def _assert_all_root_entities_unique(
             self,
-            root_entities: List[DatabaseEntity]) -> None:
-        """Raises (AssertionError) if any entity in |root_entities| does not
-        have a unique primary key for its type
+            root_schema_objects: List[Base]) -> None:
+        """Raises (AssertionError) if any schema_object in |root_schema_objects|
+        does not have a unique primary key for its type.
         """
         keys_by_type: Dict[str, Set[int]] = defaultdict(set)
-        for entity in root_entities:
-            type_name = type(entity).__name__
-            key = entity.get_primary_key()
+        for schema_object in root_schema_objects:
+            type_name = type(schema_object).__name__
+            key = schema_object.get_primary_key()
             if key in keys_by_type[type_name]:
                 raise AssertionError(
                     "Duplicate entities passed of type {} with ID {}".format(
@@ -388,12 +388,12 @@ class BaseHistoricalSnapshotUpdater(Generic[SchemaPersonType]):
 
     def _execute_action_for_all_entities(
             self,
-            start_entities: List[Any],
+            start_schema_object: List[Base],
             action: Callable, *args) -> None:
         """For every entity in every graph reachable from |start_entities|,
         invokes |action|, passing the entity and |*args| as arguments"""
 
-        unprocessed = list(start_entities)
+        unprocessed = list(start_schema_object)
         processed = []
         while unprocessed:
             entity = unprocessed.pop()
@@ -406,7 +406,7 @@ class BaseHistoricalSnapshotUpdater(Generic[SchemaPersonType]):
                                 and related_entity not in unprocessed])
 
     @staticmethod
-    def _get_related_entities(entity: Any) -> List[Any]:
+    def _get_related_entities(entity: Base) -> List[Base]:
         """Returns list of all entities related to |entity|"""
 
         related_entities = []
@@ -424,8 +424,8 @@ class BaseHistoricalSnapshotUpdater(Generic[SchemaPersonType]):
 
     def _does_entity_match_historical_snapshot(
             self,
-            entity: Any,
-            historical_snapshot: Any) -> bool:
+            schema_object: Base,
+            historical_snapshot: Base) -> bool:
         """Returns (True) if all fields on |entity| are equal to the
         corresponding fields on |historical_snapshot|.
 
@@ -435,8 +435,8 @@ class BaseHistoricalSnapshotUpdater(Generic[SchemaPersonType]):
         """
 
         for column_property_name in self._get_shared_column_property_names(
-                type(entity), type(historical_snapshot)):
-            entity_value = getattr(entity, column_property_name)
+                type(schema_object), type(historical_snapshot)):
+            entity_value = getattr(schema_object, column_property_name)
             historical_value = getattr(
                 historical_snapshot, column_property_name)
             if entity_value != historical_value:
@@ -446,7 +446,8 @@ class BaseHistoricalSnapshotUpdater(Generic[SchemaPersonType]):
 
     def _copy_entity_fields_to_historical_snapshot(
             self,
-            entity: Any, historical_snapshot: Any) -> None:
+            entity: Base,
+            historical_snapshot: Base) -> None:
         """
         Copies all column values present on |entity| to |historical_snapshot|.
 
@@ -506,8 +507,8 @@ class _SnapshotContext:
     """Container for all data required for snapshot operations for a single
     entity
     """
-    entity: Optional[Any] = attr.ib(default=None)
-    most_recent_snapshot: Optional[Any] = attr.ib(default=None)
+    schema_object: Base = attr.ib(default=None)
+    most_recent_snapshot: Optional[Base] = attr.ib(default=None)
     provided_start_time: Optional[datetime] = attr.ib(default=None)
     provided_end_time: Optional[datetime] = attr.ib(default=None)
 
@@ -520,7 +521,7 @@ class _SnapshotContextRegistry:
         # (master entity type name string) -> ((primary key) -> (context))
         self.snapshot_contexts = {}
 
-    def snapshot_context(self, entity: Any) -> _SnapshotContext:
+    def snapshot_context(self, entity: Base) -> _SnapshotContext:
         """Returns (_SnapshotContext) for |entity|"""
         context_map = self.snapshot_contexts[type(entity).__name__]
         return context_map[entity.get_primary_key()]
@@ -532,25 +533,25 @@ class _SnapshotContextRegistry:
             contexts.extend(nested_registry.values())
         return contexts
 
-    def register_entity(self, entity: Any) -> None:
+    def register_entity(self, schema_object: Base) -> None:
         """Creates (_SnapshotContext) for |entity| and adds it to registry
 
         Raises (ValueError) if |entity| has already been registered
         """
-        type_name = type(entity).__name__
+        type_name = type(schema_object).__name__
         if type_name not in self.snapshot_contexts:
             self.snapshot_contexts[type_name] = {}
 
-        entity_id = entity.get_primary_key()
+        entity_id = schema_object.get_primary_key()
         if entity_id in self.snapshot_contexts[type_name]:
             raise ValueError(
                 "Entity already registered with type {type} and primary key "
                 "{primary_key}".format(type=type_name, primary_key=entity_id))
 
         self.snapshot_contexts[type_name][entity_id] = \
-            _SnapshotContext(entity=entity)
+            _SnapshotContext(schema_object=schema_object)
 
-    def add_snapshot(self, snapshot: Any, schema) -> None:
+    def add_snapshot(self, snapshot: Base, schema) -> None:
         """Registers |snapshot| to the appropriate (_SnapshotContext) of the
         master entity corresponding to |snapshot|
 
