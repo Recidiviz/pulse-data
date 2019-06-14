@@ -45,8 +45,14 @@ from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationFacilitySecurityLevel
 from recidiviz.common.constants.state.state_incarceration import \
     StateIncarcerationType
+from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state.entities import StatePerson, \
     StateIncarcerationPeriod, Gender, ResidencyStatus
+from recidiviz.persistence.database.database_entity import DatabaseEntity
+from recidiviz.persistence.database.schema_entity_converter.state.\
+    schema_entity_converter import (
+        StateSchemaToEntityConverter
+    )
 
 
 # TODO(1852): Build entities as schema objects once the schema changes have
@@ -64,14 +70,14 @@ class TestRecidivismPipeline(unittest.TestCase):
 
         fake_person_id = 12345
 
-        fake_person = StatePerson.new_with_defaults(
+        fake_person = schema.StatePerson(
             person_id=fake_person_id, gender=Gender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)
 
-        persons_data = [NormalizeEntityDict.normalize(fake_person.__dict__)]
+        persons_data = [_normalized_db_entity_dict(fake_person)]
 
-        initial_incarceration = StateIncarcerationPeriod.new_with_defaults(
+        initial_incarceration = schema.StateIncarcerationPeriod(
             incarceration_period_id=1111,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code='CA',
@@ -86,12 +92,11 @@ class TestRecidivismPipeline(unittest.TestCase):
             admission_date=date(2008, 11, 20),
             release_date=date(2010, 12, 4),
             release_reason=StateIncarcerationPeriodReleaseReason.
-            SENTENCE_SERVED)
+            SENTENCE_SERVED,
+            person_id=fake_person_id
+        )
 
-        initial_incarceration_dict = initial_incarceration.__dict__
-        initial_incarceration_dict['person_id'] = fake_person_id
-
-        first_reincarceration = StateIncarcerationPeriod.new_with_defaults(
+        first_reincarceration = schema.StateIncarcerationPeriod(
             incarceration_period_id=2222,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code='CA',
@@ -106,12 +111,10 @@ class TestRecidivismPipeline(unittest.TestCase):
             admission_date=date(2011, 4, 5),
             release_date=date(2014, 4, 14),
             release_reason=StateIncarcerationPeriodReleaseReason.
-            SENTENCE_SERVED)
+            SENTENCE_SERVED,
+            person_id=fake_person_id)
 
-        first_reincarceration_dict = first_reincarceration.__dict__
-        first_reincarceration_dict['person_id'] = fake_person_id
-
-        subsequent_reincarceration = StateIncarcerationPeriod.new_with_defaults(
+        subsequent_reincarceration = schema.StateIncarcerationPeriod(
             incarceration_period_id=3333,
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             state_code='CA',
@@ -123,15 +126,13 @@ class TestRecidivismPipeline(unittest.TestCase):
             NEW_ADMISSION,
             projected_release_reason=StateIncarcerationPeriodReleaseReason.
             CONDITIONAL_RELEASE,
-            admission_date=date(2017, 1, 4))
-
-        subsequent_reincarceration_dict = subsequent_reincarceration.__dict__
-        subsequent_reincarceration_dict['person_id'] = fake_person_id
+            admission_date=date(2017, 1, 4),
+            person_id=fake_person_id)
 
         incarceration_periods_data = [
-            NormalizeEntityDict.normalize(initial_incarceration_dict),
-            NormalizeEntityDict.normalize(first_reincarceration_dict),
-            NormalizeEntityDict.normalize(subsequent_reincarceration_dict)
+            _normalized_db_entity_dict(initial_incarceration),
+            _normalized_db_entity_dict(first_reincarceration),
+            _normalized_db_entity_dict(subsequent_reincarceration)
         ]
 
         dimensions_to_filter = ['age_bucket', 'race', 'release_facility',
@@ -201,22 +202,22 @@ class TestRecidivismPipeline(unittest.TestCase):
 
         fake_person_id_1 = 12345
 
-        fake_person_1 = StatePerson.new_with_defaults(
+        fake_person_1 = schema.StatePerson(
             person_id=fake_person_id_1, gender=Gender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)
 
         fake_person_id_2 = 6789
 
-        fake_person_2 = StatePerson.new_with_defaults(
+        fake_person_2 = schema.StatePerson(
             person_id=fake_person_id_2, gender=Gender.FEMALE,
             birthdate=date(1990, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)
 
-        persons_data = [NormalizeEntityDict.normalize(fake_person_1.__dict__),
-                        NormalizeEntityDict.normalize(fake_person_2.__dict__)]
+        persons_data = [_normalized_db_entity_dict(fake_person_1),
+                        _normalized_db_entity_dict(fake_person_2)]
 
-        initial_incarceration_1 = StateIncarcerationPeriod.new_with_defaults(
+        initial_incarceration_1 = schema.StateIncarcerationPeriod(
             incarceration_period_id=1111,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code='CA',
@@ -231,12 +232,10 @@ class TestRecidivismPipeline(unittest.TestCase):
             admission_date=date(2008, 11, 20),
             release_date=date(2010, 12, 4),
             release_reason=StateIncarcerationPeriodReleaseReason.
-            SENTENCE_SERVED)
+            SENTENCE_SERVED,
+            person_id=fake_person_id_1)
 
-        initial_incarceration_1_dict = initial_incarceration_1.__dict__
-        initial_incarceration_1_dict['person_id'] = fake_person_id_1
-
-        first_reincarceration_1 = StateIncarcerationPeriod.new_with_defaults(
+        first_reincarceration_1 = schema.StateIncarcerationPeriod(
             incarceration_period_id=2222,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code='CA',
@@ -251,13 +250,11 @@ class TestRecidivismPipeline(unittest.TestCase):
             admission_date=date(2011, 4, 5),
             release_date=date(2014, 4, 14),
             release_reason=StateIncarcerationPeriodReleaseReason.
-            SENTENCE_SERVED)
-
-        first_reincarceration_1_dict = first_reincarceration_1.__dict__
-        first_reincarceration_1_dict['person_id'] = fake_person_id_1
+            SENTENCE_SERVED,
+            person_id=fake_person_id_1)
 
         subsequent_reincarceration_1 = \
-            StateIncarcerationPeriod.new_with_defaults(
+            schema.StateIncarcerationPeriod(
                 incarceration_period_id=3333,
                 status=StateIncarcerationPeriodStatus.IN_CUSTODY,
                 state_code='CA',
@@ -269,13 +266,10 @@ class TestRecidivismPipeline(unittest.TestCase):
                 NEW_ADMISSION,
                 projected_release_reason=StateIncarcerationPeriodReleaseReason.
                 CONDITIONAL_RELEASE,
-                admission_date=date(2017, 1, 4))
+                admission_date=date(2017, 1, 4),
+                person_id=fake_person_id_1)
 
-        subsequent_reincarceration_1_dict = \
-            subsequent_reincarceration_1.__dict__
-        subsequent_reincarceration_1_dict['person_id'] = fake_person_id_1
-
-        initial_incarceration_2 = StateIncarcerationPeriod.new_with_defaults(
+        initial_incarceration_2 = schema.StateIncarcerationPeriod(
             incarceration_period_id=4444,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code='CA',
@@ -290,12 +284,10 @@ class TestRecidivismPipeline(unittest.TestCase):
             admission_date=date(2004, 12, 20),
             release_date=date(2010, 6, 3),
             release_reason=StateIncarcerationPeriodReleaseReason.
-            CONDITIONAL_RELEASE)
+            CONDITIONAL_RELEASE,
+            person_id=fake_person_id_2)
 
-        initial_incarceration_2_dict = initial_incarceration_2.__dict__
-        initial_incarceration_2_dict['person_id'] = fake_person_id_2
-
-        first_reincarceration_2 = StateIncarcerationPeriod.new_with_defaults(
+        first_reincarceration_2 = schema.StateIncarcerationPeriod(
             incarceration_period_id=5555,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code='CA',
@@ -310,13 +302,11 @@ class TestRecidivismPipeline(unittest.TestCase):
             admission_date=date(2011, 4, 5),
             release_date=date(2014, 1, 4),
             release_reason=StateIncarcerationPeriodReleaseReason.
-            SENTENCE_SERVED)
-
-        first_reincarceration_2_dict = first_reincarceration_2.__dict__
-        first_reincarceration_2_dict['person_id'] = fake_person_id_2
+            SENTENCE_SERVED,
+            person_id=fake_person_id_2)
 
         subsequent_reincarceration_2 = \
-            StateIncarcerationPeriod.new_with_defaults(
+            schema.StateIncarcerationPeriod(
                 incarceration_period_id=6666,
                 status=StateIncarcerationPeriodStatus.IN_CUSTODY,
                 state_code='CA',
@@ -328,21 +318,16 @@ class TestRecidivismPipeline(unittest.TestCase):
                 NEW_ADMISSION,
                 projected_release_reason=StateIncarcerationPeriodReleaseReason.
                 CONDITIONAL_RELEASE,
-                admission_date=date(2018, 3, 9))
-
-        subsequent_reincarceration_2_dict = \
-            subsequent_reincarceration_2.__dict__
-        subsequent_reincarceration_2_dict['person_id'] = fake_person_id_2
+                admission_date=date(2018, 3, 9),
+                person_id=fake_person_id_2)
 
         incarceration_periods_data = [
-            NormalizeEntityDict.normalize(initial_incarceration_1_dict),
-            NormalizeEntityDict.normalize(first_reincarceration_1_dict),
-            NormalizeEntityDict.normalize(
-                subsequent_reincarceration_1_dict),
-            NormalizeEntityDict.normalize(initial_incarceration_2_dict),
-            NormalizeEntityDict.normalize(first_reincarceration_2_dict),
-            NormalizeEntityDict.normalize(
-                subsequent_reincarceration_2_dict)
+            _normalized_db_entity_dict(initial_incarceration_1),
+            _normalized_db_entity_dict(first_reincarceration_1),
+            _normalized_db_entity_dict(subsequent_reincarceration_1),
+            _normalized_db_entity_dict(initial_incarceration_2),
+            _normalized_db_entity_dict(first_reincarceration_2),
+            _normalized_db_entity_dict(subsequent_reincarceration_2)
         ]
 
         dimensions_to_filter = ['age_bucket', 'race', 'release_facility',
@@ -411,22 +396,26 @@ class TestExtractPerson(unittest.TestCase):
         # TODO(1852): Build entities as schema objects once the schema changes
         #  have landed.
 
-        fake_person = StatePerson.new_with_defaults(
+        fake_person = schema.StatePerson(
             person_id=12345, current_address='123 Street',
             full_name='Jack Smith', birthdate=date(1970, 1, 1),
             gender=Gender.MALE,
-            residency_status=ResidencyStatus.PERMANENT, aliases=[])
+            residency_status=ResidencyStatus.PERMANENT
+        )
+
+        fake_person_data = _normalized_db_entity_dict(fake_person)
+
+        fake_person_entity = StateSchemaToEntityConverter().convert(fake_person)
 
         test_pipeline = TestPipeline()
 
         output = (test_pipeline
-                  | beam.Create([
-                      NormalizeEntityDict.normalize(fake_person.__dict__)])
+                  | beam.Create([fake_person_data])
                   | 'Load StatePerson entity' >>
                   beam.ParDo(person_extractor.HydratePersonEntity())
                   )
 
-        assert_that(output, equal_to([(12345, fake_person)]))
+        assert_that(output, equal_to([(12345, fake_person_entity)]))
 
         test_pipeline.run()
 
@@ -446,7 +435,7 @@ class TestExtractPerson(unittest.TestCase):
 
             test_pipeline.run()
 
-        assert str(e.value) == "No person_id on this person. " \
+        assert str(e.value) == "build_dict cannot be empty " \
                                "[while running 'Load StatePerson entity']"
 
     def testExtractPerson_NoPersonID(self):
@@ -458,17 +447,18 @@ class TestExtractPerson(unittest.TestCase):
 
         with pytest.raises(ValueError) as e:
 
-            fake_person = StatePerson.new_with_defaults(
+            fake_person = schema.StatePerson(
                 current_address='123 Street',
                 full_name='Jack Smith', birthdate=date(1970, 1, 1),
                 gender=Gender.MALE,
                 residency_status=ResidencyStatus.PERMANENT, aliases=[])
 
+            fake_person_data = _normalized_db_entity_dict(fake_person)
+
             test_pipeline = TestPipeline()
 
             _ = (test_pipeline
-                 | beam.Create([
-                     NormalizeEntityDict.normalize(fake_person.__dict__)])
+                 | beam.Create([fake_person_data])
                  | 'Load StatePerson entity' >>
                  beam.ParDo(person_extractor.HydratePersonEntity())
                  )
@@ -490,7 +480,7 @@ class TestExtractIncarcerationPeriod(unittest.TestCase):
 
         person_id = 6789
 
-        fake_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+        fake_incarceration_period = schema.StateIncarcerationPeriod(
             incarceration_period_id=12345,
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -503,25 +493,24 @@ class TestExtractIncarcerationPeriod(unittest.TestCase):
             admission_reason=StateIncarcerationPeriodAdmissionReason.
             NEW_ADMISSION,
             projected_release_reason=StateIncarcerationPeriodReleaseReason.
-            CONDITIONAL_RELEASE)
+            CONDITIONAL_RELEASE,
+            person_id=person_id)
 
-        fake_incarceration_period_dict = fake_incarceration_period.__dict__
-        fake_incarceration_period_dict['person_id'] = person_id
+        fake_incarceration_period_entity = \
+            StateSchemaToEntityConverter().convert(fake_incarceration_period)
 
         test_pipeline = TestPipeline()
 
         output = (test_pipeline
-                  | beam.Create([
-                      NormalizeEntityDict.normalize(
-                          fake_incarceration_period_dict)
-                  ])
+                  | beam.Create([_normalized_db_entity_dict(
+                      fake_incarceration_period)])
                   | 'Load StateIncarcerationPeriod entity' >>
                   beam.ParDo(incarceration_period_extractor.
                              HydrateIncarcerationPeriodEntity())
                   )
 
         assert_that(output,
-                    equal_to([(person_id, fake_incarceration_period)]))
+                    equal_to([(person_id, fake_incarceration_period_entity)]))
 
         test_pipeline.run()
 
@@ -533,7 +522,7 @@ class TestExtractIncarcerationPeriod(unittest.TestCase):
         #  have landed.
 
         fake_incarceration_period = \
-            StateIncarcerationPeriod.new_with_defaults(
+            schema.StateIncarcerationPeriod(
                 incarceration_period_id=12345,
                 status=StateIncarcerationPeriodStatus.IN_CUSTODY,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -553,10 +542,8 @@ class TestExtractIncarcerationPeriod(unittest.TestCase):
             test_pipeline = TestPipeline()
 
             _ = (test_pipeline
-                 | beam.Create([
-                     NormalizeEntityDict.normalize(
-                         fake_incarceration_period.__dict__)
-                 ])
+                 | beam.Create([_normalized_db_entity_dict(
+                     fake_incarceration_period)])
                  | 'Load StateIncarcerationPeriod entity' >>
                  beam.ParDo(incarceration_period_extractor.
                             HydrateIncarcerationPeriodEntity())
@@ -585,8 +572,7 @@ class TestExtractIncarcerationPeriod(unittest.TestCase):
 
             test_pipeline.run()
 
-        assert str(e.value) == "No person_id associated with this " \
-                               "incarceration period. " \
+        assert str(e.value) == "build_dict cannot be empty " \
                                "[while running 'Load " \
                                "StateIncarcerationPeriod entity']"
 
@@ -1325,17 +1311,23 @@ class TestFilterMetrics(unittest.TestCase):
         test_pipeline.run()
 
 
-class NormalizeEntityDict:
-    """Converts entity __dict__ dictionaries into dictionaries interpretable
-    by the pipeline extract functions."""
+def _normalized_db_entity_dict(database_entity: DatabaseEntity) -> dict:
+    """Takes in a DatabaseEntity object and returns a dictionary with only keys
+    that are column property names in the database. If any columns are not
+    currently represented in the entity, sets the value as None for that key.
+    For values that are EntityEnum, stores the value of the enum in the
+    dictionary instead of the entire enum."""
+    new_object_dict = {}
 
-    @staticmethod
-    def normalize(person_dict: dict) -> dict:
+    for column in database_entity.get_column_property_names():
+        # Set any required columns as None if they aren't present
+        v = getattr(database_entity, column, None)
+        if isinstance(v, EntityEnum):
+            new_object_dict[column] = v.value
+        else:
+            new_object_dict[column] = v
 
-        def _normalize(v):
-            return v.value if isinstance(v, EntityEnum) else v
-
-        return {k: _normalize(v) for k, v in person_dict.items()}
+    return new_object_dict
 
 
 class MetricGroup:
