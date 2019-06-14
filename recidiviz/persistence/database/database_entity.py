@@ -64,12 +64,9 @@ class DatabaseEntity:
         """Returns string name of ORM object attribute corresponding to
         |column_name| on table
         """
-        return next(name for name, property
-                    # pylint: disable=protected-access
-                    in inspect(cls)._props.items()
-                    if type(property).__name__ == cls._COLUMN_PROPERTY_TYPE_NAME
-                    # columns returns a list containing a single column
-                    and property.columns[0].name == column_name)
+        return next(name
+                    for name in cls.get_column_property_names()
+                    if column_name == name)
 
     def get_primary_key(self):
         """Returns primary key value for entity"""
