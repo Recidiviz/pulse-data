@@ -186,6 +186,12 @@ def generate_full_graph_state_person(
     sentence_group.supervision_sentences = [supervision_sentence]
     sentence_group.fines = [fine]
 
+    judge = entities.StateAgent.new_with_defaults(
+        agent_type=StateAgentType.JUDGE,
+        state_code='us_ca',
+        full_name='JUDGE JUDY',
+    )
+
     court_case = entities.StateCourtCase.new_with_defaults(
         external_id='CASEID456',
         status=StateCourtCaseStatus.EXTERNAL_UNKNOWN,
@@ -196,7 +202,7 @@ def generate_full_graph_state_person(
         StateCourtType.PRESENT_WITHOUT_INFO,
         court_type_raw_text=None,
         court_fee_dollars=150,
-        judge_name='JUDGE JUDY',
+        judge=judge,
         person=person,
     )
 
@@ -325,7 +331,6 @@ def generate_full_graph_state_person(
             outcome=StateIncarcerationIncidentOutcome.WRITE_UP,
             outcome_raw_text='WRITE UP',
             person=person,
-            # incarceration_period=incarceration_period,
             responding_officer=incident_responding_officer,
         )
 

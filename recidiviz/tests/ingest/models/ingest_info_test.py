@@ -89,6 +89,7 @@ class TestIngestInfo(unittest.TestCase):
         fine_fields_ignore = ['state_charge_ids', 'state_charges']
         state_charge_fields_ignore = ['state_court_case_id', 'state_court_case',
                                       'state_bond_id', 'state_bond']
+        state_court_case_fields_ignore = ['judge_id', 'judge']
         incarceration_period_fields_ignore = \
             ['state_incarceration_incident_ids',
              'state_incarceration_incidents',
@@ -128,7 +129,8 @@ class TestIngestInfo(unittest.TestCase):
         _verify_fields(StateFine, ingest_info.StateFine(), fine_fields_ignore)
         _verify_fields(StateCharge, ingest_info.StateCharge(),
                        state_charge_fields_ignore)
-        _verify_fields(StateCourtCase, ingest_info.StateCourtCase())
+        _verify_fields(StateCourtCase, ingest_info.StateCourtCase(),
+                       state_court_case_fields_ignore)
         _verify_fields(StateBond, ingest_info.StateBond())
         _verify_fields(StateIncarcerationPeriod,
                        ingest_info.StateIncarcerationPeriod(),
