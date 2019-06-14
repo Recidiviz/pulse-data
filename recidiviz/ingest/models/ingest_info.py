@@ -1105,7 +1105,7 @@ class StateCourtCase(IngestObject):
 
     def __init__(self, state_court_case_id=None, status=None, court_type=None,
                  date_convicted=None, next_court_date=None, state_code=None,
-                 county_code=None, court_fee_dollars=None, judge_name=None):
+                 county_code=None, court_fee_dollars=None, judge=None):
         self.state_court_case_id: Optional[str] = state_court_case_id
         self.status: Optional[str] = status
         self.court_type: Optional[str] = court_type
@@ -1114,10 +1114,18 @@ class StateCourtCase(IngestObject):
         self.state_code: Optional[str] = state_code
         self.county_code: Optional[str] = county_code
         self.court_fee_dollars: Optional[str] = court_fee_dollars
-        self.judge_name: Optional[str] = judge_name
+
+        self.judge: Optional[StateAgent] = judge
+
+    def create_state_agent(self, **kwargs) -> 'StateAgent':
+        self.judge = StateAgent(**kwargs)
+        return self.judge
+
+    def get_recent_state_agent(self) -> Optional['StateAgent']:
+        return self.judge
 
     def __setattr__(self, name, value):
-        restricted_setattr(self, 'judge_name', name, value)
+        restricted_setattr(self, 'judge', name, value)
 
 
 class StateBond(IngestObject):

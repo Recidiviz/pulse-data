@@ -104,6 +104,11 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             state_agent_id='AGENT_ID3',
             full_name='AGENT SMITH'
         )
+        ingest_info.state_agents.add(
+            state_agent_id='JUDGE_AGENT_ID_1',
+            full_name='JUDGE_JUDY'
+        )
+
         ingest_info.state_people.add(
             state_person_id='PERSON_ID',
             state_person_race_ids=['RACE_ID1', 'RACE_ID2'],
@@ -200,7 +205,8 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             degree='3'
         )
         ingest_info.state_court_cases.add(
-            state_court_case_id='CASE_ID'
+            state_court_case_id='CASE_ID',
+            judge_id='JUDGE_AGENT_ID_1',
         )
         ingest_info.state_bonds.add(
             state_bond_id='BOND_ID',
@@ -342,7 +348,12 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                                     status=ChargeStatus.PRESENT_WITHOUT_INFO,
                                     court_case=StateCourtCase.new_with_defaults(
                                         external_id='CASE_ID',
-                                        state_code='US_ND'
+                                        state_code='US_ND',
+                                        judge=StateAgent.new_with_defaults(
+                                            external_id='JUDGE_AGENT_ID_1',
+                                            state_code='US_ND',
+                                            full_name='JUDGE_JUDY',
+                                        )
                                     ),
                                     bond=StateBond.new_with_defaults(
                                         external_id='BOND_ID',
@@ -359,7 +370,12 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                                     status=ChargeStatus.PRESENT_WITHOUT_INFO,
                                     court_case=StateCourtCase.new_with_defaults(
                                         external_id='CASE_ID',
-                                        state_code='US_ND'
+                                        state_code='US_ND',
+                                        judge=StateAgent.new_with_defaults(
+                                            external_id='JUDGE_AGENT_ID_1',
+                                            state_code='US_ND',
+                                            full_name='JUDGE_JUDY',
+                                        )
                                     )
                                 )
                             ],
@@ -392,7 +408,12 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                                     status=ChargeStatus.PRESENT_WITHOUT_INFO,
                                     court_case=StateCourtCase.new_with_defaults(
                                         external_id='CASE_ID',
-                                        state_code='US_ND'
+                                        state_code='US_ND',
+                                        judge=StateAgent.new_with_defaults(
+                                            external_id='JUDGE_AGENT_ID_1',
+                                            state_code='US_ND',
+                                            full_name='JUDGE_JUDY',
+                                        )
                                     ),
                                     bond=StateBond.new_with_defaults(
                                         external_id='BOND_ID',
@@ -447,7 +468,12 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                                     status=ChargeStatus.PRESENT_WITHOUT_INFO,
                                     court_case=StateCourtCase.new_with_defaults(
                                         external_id='CASE_ID',
-                                        state_code='US_ND'
+                                        state_code='US_ND',
+                                        judge=StateAgent.new_with_defaults(
+                                            external_id='JUDGE_AGENT_ID_1',
+                                            state_code='US_ND',
+                                            full_name='JUDGE_JUDY',
+                                        )
                                     )
                                 ),
                                 StateCharge.new_with_defaults(
@@ -458,7 +484,12 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                                     status=ChargeStatus.PRESENT_WITHOUT_INFO,
                                     court_case=StateCourtCase.new_with_defaults(
                                         external_id='CASE_ID',
-                                        state_code='US_ND'
+                                        state_code='US_ND',
+                                        judge=StateAgent.new_with_defaults(
+                                            external_id='JUDGE_AGENT_ID_1',
+                                            state_code='US_ND',
+                                            full_name='JUDGE_JUDY',
+                                        )
                                     )
                                 )
                             ],
@@ -495,7 +526,12 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                                     status=ChargeStatus.PRESENT_WITHOUT_INFO,
                                     court_case=StateCourtCase.new_with_defaults(
                                         external_id='CASE_ID',
-                                        state_code='US_ND'
+                                        state_code='US_ND',
+                                        judge=StateAgent.new_with_defaults(
+                                            external_id='JUDGE_AGENT_ID_1',
+                                            state_code='US_ND',
+                                            full_name='JUDGE_JUDY',
+                                        )
                                     )
                                 )
                             ],

@@ -37,6 +37,7 @@ class StateAgentType(EntityEnum, metaclass=EntityEnumMeta):
 
 
 _STATE_AGENT_TYPE_MAP = {
+    'CORRECTIONAL OFFICER': StateAgentType.CORRECTIONAL_OFFICER,
     'JUDGE': StateAgentType.JUDGE,
     'PAROLE BOARD MEMBER': StateAgentType.PAROLE_BOARD_MEMBER,
     'SUPERVISION OFFICER': StateAgentType.SUPERVISION_OFFICER,
