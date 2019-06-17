@@ -20,47 +20,18 @@ ingested entities."""
 
 from typing import List
 
+from recidiviz import Session
+from recidiviz.persistence.entity.entities import EntityPersonType
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.database.schema.state import dao
-from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity_matching.base_entity_matcher import \
-    BaseEntityMatcher
-from recidiviz.persistence.entity_matching.entity_matching_utils import \
-    is_birthdate_match
+    BaseEntityMatcher, MatchedEntities
 
 
 class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
     """Base class for all entity matchers."""
 
-    def has_external_id(self, person: entities.StatePerson) -> bool:
-        return bool(person.external_ids)
-
-    def get_people_by_external_ids(self, session, region, with_external_ids) \
-            -> List[entities.StatePerson]:
-        return dao.read_people_by_external_ids(
-            session, region, with_external_ids)
-
-    def get_people_without_external_ids(self, session, region,
-                                        without_external_ids) \
-            -> List[entities.StatePerson]:
-        # TODO(1868): Fill this in with an appropriate query
-        return dao.read_people(session)
-
-    def is_person_match(self, *,
-                        db_entity: entities.StatePerson,
-                        ingested_entity: entities.StatePerson) -> bool:
-        if db_entity.external_ids or ingested_entity.external_ids:
-            # TODO(1868): Update to match against external_ids list
-            return False
-
-        if not all([db_entity.full_name, ingested_entity.full_name]):
-            return False
-
-        return (db_entity.full_name == ingested_entity.full_name
-                and is_birthdate_match(db_entity, ingested_entity))
-
-    def match_child_entities(self, *, db_person: entities.StatePerson,
-                             ingested_person: entities.StatePerson,
-                             orphaned_entities: List[Entity]):
+    def run_match(self, session: Session, region: str,
+                  ingested_people: List[EntityPersonType]) \
+            -> MatchedEntities:
         # TODO(1868): Fill this in with appropriate logic
         pass

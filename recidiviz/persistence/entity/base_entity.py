@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Base class for all entity types"""
-
 from typing import Optional, Dict, Type, Callable, List
 
 import attr
@@ -33,14 +32,21 @@ class Entity:
             raise Exception('Abstract class cannot be instantiated')
         return super().__new__(cls)
 
+    # TODO(1876): Merge these with persistence_utils versions
     def get_entity_name(self):
         return to_snake_case(self.__class__.__name__)
 
-    def get_id(self):
+    def _get_id_name(self):
         id_name = self.get_entity_name() + '_id'
         if id_name.startswith('state_'):
             id_name = id_name.replace('state_', '')
-        return getattr(self, id_name)
+        return id_name
+
+    def get_id(self):
+        return getattr(self, self._get_id_name())
+
+    def set_id(self, entity_id: int):
+        return setattr(self, self._get_id_name(), entity_id)
 
     def __eq__(self, other):
         return entity_graph_eq(self, other)
