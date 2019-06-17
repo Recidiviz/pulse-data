@@ -48,12 +48,16 @@ state_assessment_type_asi = 'ASI'
 state_assessment_type_lsir = 'LSIR'
 state_assessment_type_oras = 'ORAS'
 state_assessment_type_psa = 'PSA'
+state_assessment_type_sorac = 'SORAC'
 
 state_assessment_level_low = 'LOW'
 state_assessment_level_low_medium = 'LOW_MEDIUM'
 state_assessment_level_medium = 'MEDIUM'
 state_assessment_level_medium_high = 'MEDIUM_HIGH'
+state_assessment_level_moderate = 'MODERATE'
 state_assessment_level_high = 'HIGH'
+state_assessment_level_not_applicable = 'NOT_APPLICABLE'
+state_assessment_level_undetermined = 'UNDETERMINED'
 
 # state_charge.py
 state_charge_classification_civil = 'CIVIL'
@@ -90,19 +94,29 @@ state_incarceration_facility_security_level_maximum = 'MAXIMUM'
 state_incarceration_facility_security_level_medium = 'MEDIUM'
 state_incarceration_facility_security_level_minimum = 'MINIMUM'
 
+state_incarceration_period_admission_reason_admitted_in_error = \
+    'ADMITTED_IN_ERROR'
 state_incarceration_period_admission_reason_new_admission = 'NEW_ADMISSION'
 state_incarceration_period_admission_reason_parole_revocation = \
     'PAROLE_REVOCATION'
 state_incarceration_period_admission_reason_probation_revocation = \
     'PROBATION_REVOCATION'
+state_incarceration_period_admission_reason_return_from_court = \
+    'RETURN_FROM_COURT'
+state_incarceration_period_admission_reason_return_from_erroneous_release = \
+    'RETURN_FROM_ERRONEOUS_RELEASE'
 state_incarceration_period_admission_reason_return_from_escape = \
     'RETURN_FROM_ESCAPE'
 state_incarceration_period_admission_reason_transfer = 'TRANSFER'
 
+state_incarceration_period_release_reason_commuted = 'COMMUTED'
 state_incarceration_period_release_reason_conditional_release = \
     'CONDITIONAL_RELEASE'
+state_incarceration_period_release_reason_court_order = 'COURT_ORDER'
 state_incarceration_period_release_reason_death = 'DEATH'
 state_incarceration_period_release_reason_escape = 'ESCAPE'
+state_incarceration_period_release_reason_released_in_error = \
+    'RELEASED_IN_ERROR'
 state_incarceration_period_release_reason_sentence_served = 'SENTENCE_SERVED'
 state_incarceration_period_release_reason_transfer = 'TRANSFER'
 
@@ -117,6 +131,7 @@ state_sentence_status_serving = 'SERVING'
 state_sentence_status_suspended = 'SUSPENDED'
 
 # state_supervision.py
+state_supervision_type_civil_commitment = 'CIVIL_COMMITMENT'
 state_supervision_type_halfway_house = 'HALFWAY_HOUSE'
 state_supervision_type_parole = 'PAROLE'
 state_supervision_type_post_confinement = 'POST_CONFINEMENT'
@@ -158,9 +173,12 @@ state_supervision_violation_response_decision_extension = 'EXTENSION'
 state_supervision_violation_response_decision_revocation = 'REVOCATION'
 state_supervision_violation_response_decision_suspension = 'SUSPENSION'
 
+state_supervision_violation_response_revocation_type_reincarceration = \
+    'REINCARCERATION'
+state_supervision_violation_response_revocation_type_return_to_supervision = \
+    'RETURN_TO_SUPERVISION'
 state_supervision_violation_response_revocation_type_shock_incarceration = \
     'SHOCK_INCARCERATION'
-state_supervision_violation_response_revocation_type_standard = 'STANDARD'
 state_supervision_violation_response_revocation_type_treatment_in_prison = \
     'TREATMENT_IN_PRISON'
 
