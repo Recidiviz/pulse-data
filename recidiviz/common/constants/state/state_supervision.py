@@ -23,6 +23,8 @@ from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 # TODO(1697): Revisit these values! What do all of them mean?
 class StateSupervisionType(EntityEnum, metaclass=EntityEnumMeta):
+    CIVIL_COMMITMENT = \
+        state_enum_strings.state_supervision_type_civil_commitment
     HALFWAY_HOUSE = state_enum_strings.state_supervision_type_halfway_house
     PAROLE = state_enum_strings.state_supervision_type_parole
     POST_CONFINEMENT = \
@@ -36,13 +38,20 @@ class StateSupervisionType(EntityEnum, metaclass=EntityEnumMeta):
 
 
 _SUPERVISION_TYPE_MAP = {
+    'CIVIL COMMITMENT': StateSupervisionType.CIVIL_COMMITMENT,
+    'CC': StateSupervisionType.CIVIL_COMMITMENT,
+    'CCC': StateSupervisionType.CIVIL_COMMITMENT,
     'HALFWAY HOUSE': StateSupervisionType.HALFWAY_HOUSE,
     'HALFWAY HOME': StateSupervisionType.HALFWAY_HOUSE,
     'HALFWAY': StateSupervisionType.HALFWAY_HOUSE,
+    'IC PAROLE': StateSupervisionType.PAROLE,
     'PAROLE': StateSupervisionType.PAROLE,
     'POST CONFINEMENT': StateSupervisionType.POST_CONFINEMENT,
     'POST RELEASE': StateSupervisionType.POST_CONFINEMENT,
     'PRE CONFINEMENT': StateSupervisionType.PRE_CONFINEMENT,
     'PRE RELEASE': StateSupervisionType.PRE_CONFINEMENT,
+    'DEFERRED': StateSupervisionType.PROBATION,
+    'IC PROBATION': StateSupervisionType.PROBATION,
     'PROBATION': StateSupervisionType.PROBATION,
+    'SUSPENDED': StateSupervisionType.PROBATION,
 }

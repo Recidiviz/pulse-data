@@ -22,8 +22,8 @@ from recidiviz.common.constants.state.state_court_case import \
 from recidiviz.common.str_field_utils import normalize, parse_date, \
     parse_dollars
 from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.ingest.models.ingest_info_pb2 import StateCourtCase
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.entity.state.entities import StateCourtCase
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
     fn,
     parse_external_id,

@@ -81,6 +81,7 @@ state_assessment_type = Enum(
     state_enum_strings.state_assessment_type_lsir,
     state_enum_strings.state_assessment_type_oras,
     state_enum_strings.state_assessment_type_psa,
+    state_enum_strings.state_assessment_type_sorac,
     name='state_assessment_type')
 
 state_assessment_level = Enum(
@@ -88,7 +89,10 @@ state_assessment_level = Enum(
     state_enum_strings.state_assessment_level_low_medium,
     state_enum_strings.state_assessment_level_medium,
     state_enum_strings.state_assessment_level_medium_high,
+    state_enum_strings.state_assessment_level_moderate,
     state_enum_strings.state_assessment_level_high,
+    state_enum_strings.state_assessment_level_not_applicable,
+    state_enum_strings.state_assessment_level_undetermined,
     name='state_assessment_level')
 
 state_sentence_status = Enum(
@@ -101,6 +105,7 @@ state_sentence_status = Enum(
     name='state_sentence_status')
 
 state_supervision_type = Enum(
+    state_enum_strings.state_supervision_type_civil_commitment,
     state_enum_strings.state_supervision_type_halfway_house,
     state_enum_strings.state_supervision_type_parole,
     state_enum_strings.state_supervision_type_post_confinement,
@@ -162,21 +167,31 @@ state_incarceration_facility_security_level = Enum(
 
 state_incarceration_period_admission_reason = Enum(
     state_enum_strings.
+    state_incarceration_period_admission_reason_admitted_in_error,
+    enum_strings.external_unknown,
+    state_enum_strings.
     state_incarceration_period_admission_reason_new_admission,
     state_enum_strings.
     state_incarceration_period_admission_reason_parole_revocation,
     state_enum_strings.
     state_incarceration_period_admission_reason_probation_revocation,
     state_enum_strings.
+    state_incarceration_period_admission_reason_return_from_erroneous_release,
+    state_enum_strings.
     state_incarceration_period_admission_reason_return_from_escape,
     state_enum_strings.state_incarceration_period_admission_reason_transfer,
     name='state_incarceration_period_admission_reason')
 
 state_incarceration_period_release_reason = Enum(
+    state_enum_strings.state_incarceration_period_release_reason_commuted,
     state_enum_strings.
     state_incarceration_period_release_reason_conditional_release,
+    state_enum_strings.state_incarceration_period_release_reason_court_order,
     state_enum_strings.state_incarceration_period_release_reason_death,
     state_enum_strings.state_incarceration_period_release_reason_escape,
+    enum_strings.external_unknown,
+    state_enum_strings.
+    state_incarceration_period_release_reason_released_in_error,
     state_enum_strings.
     state_incarceration_period_release_reason_sentence_served,
     state_enum_strings.state_incarceration_period_release_reason_transfer,
@@ -252,9 +267,11 @@ state_supervision_violation_response_decision = Enum(
 
 state_supervision_violation_response_revocation_type = Enum(
     state_enum_strings.
-    state_supervision_violation_response_revocation_type_shock_incarceration,
+    state_supervision_violation_response_revocation_type_reincarceration,
     state_enum_strings.
-    state_supervision_violation_response_revocation_type_standard,
+    state_supervision_violation_response_revocation_type_return_to_supervision,
+    state_enum_strings.
+    state_supervision_violation_response_revocation_type_shock_incarceration,
     state_enum_strings.
     state_supervision_violation_response_revocation_type_treatment_in_prison,
     name='state_supervision_violation_response_revocation_type')

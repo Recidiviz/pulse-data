@@ -51,15 +51,24 @@ class StateIncarcerationFacilitySecurityLevel(EntityEnum,
 
 class StateIncarcerationPeriodAdmissionReason(EntityEnum,
                                               metaclass=EntityEnumMeta):
-
+    """Reasons for admission to a period of incarceration."""
+    ADMITTED_IN_ERROR = \
+        state_enum_strings.\
+        state_incarceration_period_admission_reason_admitted_in_error
+    EXTERNAL_UNKNOWN = enum_strings.external_unknown
     NEW_ADMISSION = \
         state_enum_strings.\
         state_incarceration_period_admission_reason_new_admission
-    PAROLE_REVOCATION = state_enum_strings. \
+    PAROLE_REVOCATION = state_enum_strings.\
         state_incarceration_period_admission_reason_parole_revocation
-    PROBATION_REVOCATION = state_enum_strings. \
+    PROBATION_REVOCATION = state_enum_strings.\
         state_incarceration_period_admission_reason_probation_revocation
-    RETURN_FROM_ESCAPE = state_enum_strings. \
+    # pylint:disable=line-too-long
+    RETURN_FROM_ERRONEOUS_RELEASE = \
+        state_enum_strings.\
+        state_incarceration_period_admission_reason_return_from_erroneous_release
+    RETURN_FROM_ESCAPE = \
+        state_enum_strings.\
         state_incarceration_period_admission_reason_return_from_escape
     TRANSFER = \
         state_enum_strings.state_incarceration_period_admission_reason_transfer
@@ -71,13 +80,24 @@ class StateIncarcerationPeriodAdmissionReason(EntityEnum,
 
 class StateIncarcerationPeriodReleaseReason(EntityEnum,
                                             metaclass=EntityEnumMeta):
+    """Reasons for release from a period of incarceration."""
+    COMMUTED = \
+        state_enum_strings.\
+        state_incarceration_period_release_reason_commuted
     # This release type corresponds to any release into some sort of
     # supervision.
     CONDITIONAL_RELEASE = \
         state_enum_strings.\
         state_incarceration_period_release_reason_conditional_release
+    COURT_ORDER = \
+        state_enum_strings.\
+        state_incarceration_period_release_reason_court_order
     DEATH = state_enum_strings.state_incarceration_period_release_reason_death
     ESCAPE = state_enum_strings.state_incarceration_period_release_reason_escape
+    EXTERNAL_UNKNOWN = enum_strings.external_unknown
+    RELEASED_IN_ERROR = \
+        state_enum_strings.\
+        state_incarceration_period_release_reason_released_in_error
     SENTENCE_SERVED = \
         state_enum_strings.\
         state_incarceration_period_release_reason_sentence_served
@@ -100,28 +120,52 @@ _STATE_INCARCERATION_FACILITY_SECURITY_LEVEL_MAP = {
 
 
 _STATE_INCARCERATION_PERIOD_STATUS_MAP = {
+    'ADM': StateIncarcerationPeriodStatus.IN_CUSTODY,
     'CUSTODY': StateIncarcerationPeriodStatus.IN_CUSTODY,
     'IN CUSTODY': StateIncarcerationPeriodStatus.IN_CUSTODY,
     'NOT IN CUSTODY': StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+    'REL': StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
 }
 
 _STATE_INCARCERATION_PERIOD_ADMISSION_REASON_MAP = {
+    'ADM ERROR': StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR,
+    'ERROR': StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR,
+    'ADMN': StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
     'NEW ADMISSION': StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
     'PAROLE REVOCATION':
         StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+    'PV': StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+    'PRB': StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
     'PROBATION REVOCATION':
         StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+    'REC': StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE,
+    'RECA': StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE,
     'RETURN FROM ESCAPE':
         StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE,
+    'COURT': StateIncarcerationPeriodAdmissionReason.TRANSFER,
+    'CRT': StateIncarcerationPeriodAdmissionReason.TRANSFER,
+    'DETOX': StateIncarcerationPeriodAdmissionReason.TRANSFER,
+    'HOSPITAL': StateIncarcerationPeriodAdmissionReason.TRANSFER,
+    'MED': StateIncarcerationPeriodAdmissionReason.TRANSFER,
+    'MEDICAL': StateIncarcerationPeriodAdmissionReason.TRANSFER,
+    'RETURN FROM MEDICAL': StateIncarcerationPeriodAdmissionReason.TRANSFER,
     'TRANSFER': StateIncarcerationPeriodAdmissionReason.TRANSFER
 }
 
 _STATE_INCARCERATION_PERIOD_RELEASE_REASON_MAP = {
+    'CMM': StateIncarcerationPeriodReleaseReason.COMMUTED,
+    'COMMUTED': StateIncarcerationPeriodReleaseReason.COMMUTED,
+    'COMMUTATION': StateIncarcerationPeriodReleaseReason.COMMUTED,
     'CONDITIONAL': StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
     'CONDITIONAL RELEASE':
         StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+    'COURT ORDER': StateIncarcerationPeriodReleaseReason.COURT_ORDER,
     'DEATH': StateIncarcerationPeriodReleaseReason.DEATH,
+    'DECE': StateIncarcerationPeriodReleaseReason.DEATH,
+    'DECEASED': StateIncarcerationPeriodReleaseReason.DEATH,
     'EARNED TIME': StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+    'ESC': StateIncarcerationPeriodReleaseReason.ESCAPE,
+    'ESCP': StateIncarcerationPeriodReleaseReason.ESCAPE,
     'ESCAPED': StateIncarcerationPeriodReleaseReason.ESCAPE,
     'ESCAPE': StateIncarcerationPeriodReleaseReason.ESCAPE,
     'EXPIRED': StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
@@ -132,6 +176,10 @@ _STATE_INCARCERATION_PERIOD_RELEASE_REASON_MAP = {
     'HOLD': StateIncarcerationPeriodReleaseReason.TRANSFER,
 
     'PAROLE': StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+    'PARL': StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+    'RPAR': StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+    'RPRB': StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+    'SUPL': StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
 
     # TODO(1697): Should this actually be SENTENCE_SERVED? The probation is now
     #  a new stacked sentence that is being served?
@@ -143,8 +191,17 @@ _STATE_INCARCERATION_PERIOD_RELEASE_REASON_MAP = {
     #  a new stacked sentence that is being served?
     'RELEASE TO PROBATION':
         StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+    'ERR': StateIncarcerationPeriodReleaseReason.RELEASED_IN_ERROR,
+    'ERROR': StateIncarcerationPeriodReleaseReason.RELEASED_IN_ERROR,
     'RELEASED': StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
     'SERVED': StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
     'TIME EARNED': StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
     'TIME SERVED': StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+    'COURT': StateIncarcerationPeriodReleaseReason.TRANSFER,
+    'CRT': StateIncarcerationPeriodReleaseReason.TRANSFER,
+    'DETOX': StateIncarcerationPeriodReleaseReason.TRANSFER,
+    'HOSPITAL': StateIncarcerationPeriodReleaseReason.TRANSFER,
+    'MED': StateIncarcerationPeriodReleaseReason.TRANSFER,
+    'MEDICAL': StateIncarcerationPeriodReleaseReason.TRANSFER,
+    'TRN': StateIncarcerationPeriodReleaseReason.TRANSFER,
 }
