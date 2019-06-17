@@ -1207,24 +1207,35 @@ class TestCombineIncarcerationPeriods:
             )
 
 
+_RETURN_TYPES_BY_STANDARD_ADMISSION: Dict[
+    AdmissionReason, ReincarcerationReturnType] = {
+        AdmissionReason.ADMITTED_IN_ERROR:
+            ReincarcerationReturnType.NEW_ADMISSION,
+        AdmissionReason.EXTERNAL_UNKNOWN:
+            ReincarcerationReturnType.NEW_ADMISSION,
+        AdmissionReason.NEW_ADMISSION:
+            ReincarcerationReturnType.NEW_ADMISSION,
+        AdmissionReason.PAROLE_REVOCATION:
+            ReincarcerationReturnType.REVOCATION,
+        AdmissionReason.PROBATION_REVOCATION:
+            ReincarcerationReturnType.REVOCATION,
+        AdmissionReason.TRANSFER:
+            ReincarcerationReturnType.NEW_ADMISSION
+    }
+
+
 # Stores the return types for the combinations of release reason and
 # admission reason that should be included in a release cohort
 SHOULD_INCLUDE_WITH_RETURN_TYPE: \
     Dict[ReleaseReason, Dict[AdmissionReason, ReincarcerationReturnType]] = \
-    {ReleaseReason.CONDITIONAL_RELEASE:
-     {AdmissionReason.NEW_ADMISSION: ReincarcerationReturnType.NEW_ADMISSION,
-      AdmissionReason.PAROLE_REVOCATION: ReincarcerationReturnType.REVOCATION,
-      AdmissionReason.PROBATION_REVOCATION:
-      ReincarcerationReturnType.REVOCATION,
-      AdmissionReason.TRANSFER: ReincarcerationReturnType.NEW_ADMISSION},
+    {ReleaseReason.COMMUTED: _RETURN_TYPES_BY_STANDARD_ADMISSION,
+     ReleaseReason.CONDITIONAL_RELEASE: _RETURN_TYPES_BY_STANDARD_ADMISSION,
+     ReleaseReason.COURT_ORDER: _RETURN_TYPES_BY_STANDARD_ADMISSION,
      ReleaseReason.DEATH: {},
      ReleaseReason.ESCAPE: {},
-     ReleaseReason.SENTENCE_SERVED:
-     {AdmissionReason.NEW_ADMISSION: ReincarcerationReturnType.NEW_ADMISSION,
-      AdmissionReason.PAROLE_REVOCATION: ReincarcerationReturnType.REVOCATION,
-      AdmissionReason.PROBATION_REVOCATION:
-          ReincarcerationReturnType.REVOCATION,
-      AdmissionReason.TRANSFER: ReincarcerationReturnType.NEW_ADMISSION},
+     ReleaseReason.EXTERNAL_UNKNOWN: _RETURN_TYPES_BY_STANDARD_ADMISSION,
+     ReleaseReason.RELEASED_IN_ERROR: {},
+     ReleaseReason.SENTENCE_SERVED: _RETURN_TYPES_BY_STANDARD_ADMISSION,
      ReleaseReason.TRANSFER: {}}
 
 
@@ -1266,17 +1277,21 @@ class TestGetReturnType:
             for admission_reason in AdmissionReason:
                 return_type = identifier.get_return_type(admission_reason)
 
-                if admission_reason in [AdmissionReason.RETURN_FROM_ESCAPE,
-                                        AdmissionReason.TRANSFER]:
+                if admission_reason in (
+                        AdmissionReason.RETURN_FROM_ESCAPE,
+                        AdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE,
+                        AdmissionReason.TRANSFER):
                     assert str(e) == (f"should_include_in_release_cohort is not"
                                       f" effectively filtering. "
                                       f"Found unexpected admission_reason of:"
                                       f" {admission_reason}")
-                elif admission_reason == AdmissionReason.NEW_ADMISSION:
+                elif admission_reason in (AdmissionReason.ADMITTED_IN_ERROR,
+                                          AdmissionReason.EXTERNAL_UNKNOWN,
+                                          AdmissionReason.NEW_ADMISSION):
                     assert return_type == \
                         ReincarcerationReturnType.NEW_ADMISSION
-                elif admission_reason in [AdmissionReason.PAROLE_REVOCATION,
-                                          AdmissionReason.PROBATION_REVOCATION]:
+                elif admission_reason in (AdmissionReason.PAROLE_REVOCATION,
+                                          AdmissionReason.PROBATION_REVOCATION):
                     assert return_type == ReincarcerationReturnType.REVOCATION
                 else:
                     # StateIncarcerationPeriodAdmissionReason enum type not
@@ -1319,13 +1334,17 @@ class TestGetFromSupervisionType:
                 from_supervision_type = \
                     identifier.get_from_supervision_type(admission_reason)
 
-                if admission_reason in [AdmissionReason.RETURN_FROM_ESCAPE,
-                                        AdmissionReason.TRANSFER]:
+                if admission_reason in \
+                        [AdmissionReason.RETURN_FROM_ESCAPE,
+                         AdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE,
+                         AdmissionReason.TRANSFER]:
                     assert str(e) == (f"should_include_in_release_cohort is not"
                                       f" effectively filtering. "
                                       f"Found unexpected admission_reason of:"
                                       f" {admission_reason}")
-                elif admission_reason == AdmissionReason.NEW_ADMISSION:
+                elif admission_reason in [AdmissionReason.ADMITTED_IN_ERROR,
+                                          AdmissionReason.EXTERNAL_UNKNOWN,
+                                          AdmissionReason.NEW_ADMISSION]:
                     assert not from_supervision_type
                 elif admission_reason in [AdmissionReason.PAROLE_REVOCATION,
                                           AdmissionReason.PROBATION_REVOCATION]:

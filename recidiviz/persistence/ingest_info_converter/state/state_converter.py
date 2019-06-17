@@ -21,7 +21,7 @@ from recidiviz.ingest.models.ingest_info_pb2 import StateSentenceGroup, \
     StatePerson, StateSupervisionSentence, StateIncarcerationSentence, \
     StateCharge, StateIncarcerationPeriod, StateSupervisionPeriod, \
     StateSupervisionViolation, StateFine, StateParoleDecision, \
-    StateIncarcerationIncident, StateAssessment
+    StateIncarcerationIncident, StateAssessment, StateCourtCase
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.ingest_info_converter.base_converter import \
     BaseConverter
@@ -279,23 +279,23 @@ class StateConverter(BaseConverter[entities.StatePerson]):
                ingest_charge)
 
         charge_builder.court_case = \
-            fn(self._convert_court_case,
+            fn(lambda i: self._convert_court_case(self.court_cases[i]),
                'state_court_case_id',
                ingest_charge)
 
         return charge_builder.build()
 
-    def _convert_court_case(self, court_case_id):
+    def _convert_court_case(self, ingest_court_case: StateCourtCase):
         court_case_builder = entities.StateCourtCase.builder()
-        court_case = self.court_cases[court_case_id]
 
         state_court_case.copy_fields_to_builder(court_case_builder,
-                                                court_case,
+                                                ingest_court_case,
                                                 self.metadata)
 
-        converted_judge = state_agent.convert(
-            self.agents[court_case.judge_id], self.metadata)
-        court_case_builder.judge = converted_judge
+        court_case_builder.judge = \
+            fn(lambda i: state_agent.convert(self.agents[i], self.metadata),
+               'judge_id',
+               ingest_court_case)
 
         return court_case_builder.build()
 
@@ -401,9 +401,10 @@ class StateConverter(BaseConverter[entities.StatePerson]):
                                                 ingest_assessment,
                                                 self.metadata)
 
-        converted_agent = state_agent.convert(
-            self.agents[ingest_assessment.conducting_agent_id], self.metadata)
-        assessment_builder.conducting_agent = converted_agent
+        assessment_builder.conducting_agent = \
+            fn(lambda i: state_agent.convert(self.agents[i], self.metadata),
+               'conducting_agent_id',
+               ingest_assessment)
 
         return assessment_builder.build()
 
@@ -418,9 +419,10 @@ class StateConverter(BaseConverter[entities.StatePerson]):
                                                             ingest_incident,
                                                             self.metadata)
 
-        converted_agent = state_agent.convert(
-            self.agents[ingest_incident.responding_officer_id], self.metadata)
-        incident_builder.responding_officer = converted_agent
+        incident_builder.responding_officer = \
+            fn(lambda i: state_agent.convert(self.agents[i], self.metadata),
+               'responding_officer_id',
+               ingest_incident)
 
         return incident_builder.build()
 

@@ -41,7 +41,7 @@ class StateSupervisionViolationResponseConverterTest(unittest.TestCase):
         ingest_response = ingest_info_pb2.StateSupervisionViolationResponse(
             response_type='PERMANENT_DECISION',
             decision='REVOCATION',
-            revocation_type='STANDARD',
+            revocation_type='REINCARCERATION',
             deciding_body_type='PAROLE_BOARD',
             state_supervision_violation_response_id='RESPONSE_ID',
             response_date='1/2/2111',
@@ -61,8 +61,8 @@ class StateSupervisionViolationResponseConverterTest(unittest.TestCase):
             StateSupervisionViolationResponseDecision.REVOCATION,
             decision_raw_text='REVOCATION',
             revocation_type=
-            StateSupervisionViolationResponseRevocationType.STANDARD,
-            revocation_type_raw_text='STANDARD',
+            StateSupervisionViolationResponseRevocationType.REINCARCERATION,
+            revocation_type_raw_text='REINCARCERATION',
             deciding_body_type=
             StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
             deciding_body_type_raw_text='PAROLE_BOARD',

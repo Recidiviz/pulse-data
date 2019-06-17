@@ -86,7 +86,7 @@ class EnumMappings:
         field_mappings = self.parsed_enums_from_original_field.get(enum_type)
         if field_mappings:
             if field_name:
-                return field_mappings[field_name]
+                return field_mappings.get(field_name, None)
             return next(iter(field_mappings.values()), None)
 
         matching_values = {enum for enum in self.all_parsed_enums
