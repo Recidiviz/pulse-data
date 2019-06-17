@@ -39,6 +39,7 @@ class StateAssessmentType(EntityEnum, metaclass=EntityEnumMeta):
     LSIR = state_enum_strings.state_assessment_type_lsir
     ORAS = state_enum_strings.state_assessment_type_oras
     PSA = state_enum_strings.state_assessment_type_psa
+    SORAC = state_enum_strings.state_assessment_type_sorac
 
     @staticmethod
     def _get_default_map():
@@ -50,7 +51,10 @@ class StateAssessmentLevel(EntityEnum, metaclass=EntityEnumMeta):
     LOW_MEDIUM = state_enum_strings.state_assessment_level_low_medium
     MEDIUM = state_enum_strings.state_assessment_level_medium
     MEDIUM_HIGH = state_enum_strings.state_assessment_level_medium_high
+    MODERATE = state_enum_strings.state_assessment_level_moderate
     HIGH = state_enum_strings.state_assessment_level_high
+    NOT_APPLICABLE = state_enum_strings.state_assessment_level_not_applicable
+    UNDETERMINED = state_enum_strings.state_assessment_level_undetermined
 
     @staticmethod
     def _get_default_map():
@@ -71,6 +75,7 @@ _STATE_ASSESSMENT_TYPE_MAP = {
     'LSIR': StateAssessmentType.LSIR,
     'ORAS': StateAssessmentType.ORAS,
     'PSA': StateAssessmentType.PSA,
+    'SORAC': StateAssessmentType.SORAC,
 }
 
 _STATE_ASSESSMENT_LEVEL_TYPE_MAP = {
@@ -78,5 +83,8 @@ _STATE_ASSESSMENT_LEVEL_TYPE_MAP = {
     'LOW MEDIUM': StateAssessmentLevel.LOW_MEDIUM,
     'MEDIUM': StateAssessmentLevel.MEDIUM,
     'MEDIUM HIGH': StateAssessmentLevel.MEDIUM_HIGH,
+    'MODERATE': StateAssessmentLevel.MODERATE,
     'HIGH': StateAssessmentLevel.HIGH,
+    'NOT APPLICABLE': StateAssessmentLevel.NOT_APPLICABLE,
+    'UNDETERMINED': StateAssessmentLevel.UNDETERMINED,
 }

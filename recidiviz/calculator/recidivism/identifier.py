@@ -93,8 +93,6 @@ def find_release_events_by_cohort_year(
             raise ValueError("status should not be None on "
                              f"{incarceration_period}.")
 
-        event = None
-
         if index == len(incarceration_periods) - 1:
             event = for_last_incarceration_period(admission_date, status,
                                                   release_date,
@@ -285,9 +283,9 @@ def for_last_incarceration_period(
 
     If the person has been released from their last StateIncarcerationPeriod,
     there is an instance of non-recidivism to count. If they are still
-    incarcerated, or they were released because they died, there is nothing to
-    count. Returns any non-recidivism event relevant to the person's last
-    StateIncarcerationPeriod.
+    incarcerated, or they were released for some circumstances, e.g. because
+    they died, there is nothing to count. Returns any non-recidivism event
+    relevant to the person's last StateIncarcerationPeriod.
 
         Args:
             admission_date: when this StateIncarcerationPeriod started
@@ -318,9 +316,10 @@ def for_last_incarceration_period(
         # If the person was released from this incarceration period because they
         # died, do not include them in the release cohort.
         return None
-    if release_reason == ReleaseReason.ESCAPE:
-        # If the person was released from this incarceration period because they
-        # escaped, do not include them in the release cohort.
+    if release_reason in (ReleaseReason.ESCAPE,
+                          ReleaseReason.RELEASED_IN_ERROR):
+        # If the person was released from this incarceration period but was not
+        # meant to be released, do not include them in the release cohort.
         return None
     if release_reason == ReleaseReason.TRANSFER:
         # If the person was released from this incarceration period because they
@@ -408,26 +407,39 @@ def should_include_in_release_cohort(
         # If the person was released from this incarceration period because they
         # escaped, do not include them in the release cohort.
         return False
+    if release_reason == ReleaseReason.RELEASED_IN_ERROR:
+        if reincarceration_admission_reason != \
+                AdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE:
+            logging.info("%s following an erroneous release.",
+                         reincarceration_admission_reason)
+        # If the person was released from this incarceration period due to an
+        # error, do not include them in the release cohort.
+        return False
     if release_reason == ReleaseReason.TRANSFER:
         # The fact that this transfer release reason isn't collapsed with a
         # transfer admission reason means there is something unexpected going
         # on. Log it.
-        logging.info("Unexpected reincarceration_admission_reason: %s"
-                     "following a release for a transfer.",
-                     reincarceration_admission_reason)
+        logging.warning("Unexpected reincarceration_admission_reason: %s "
+                        "following a release for a transfer.",
+                        reincarceration_admission_reason)
 
         # If the person was released from this incarceration period because they
         # were transferred elsewhere, do not include them in the release cohort.
         return False
-    if release_reason in [ReleaseReason.CONDITIONAL_RELEASE,
-                          ReleaseReason.SENTENCE_SERVED]:
-        if reincarceration_admission_reason == \
-                AdmissionReason.RETURN_FROM_ESCAPE:
+    if release_reason in (ReleaseReason.COMMUTED,
+                          ReleaseReason.CONDITIONAL_RELEASE,
+                          ReleaseReason.COURT_ORDER,
+                          ReleaseReason.EXTERNAL_UNKNOWN,
+                          ReleaseReason.SENTENCE_SERVED):
+        if reincarceration_admission_reason in (
+                AdmissionReason.RETURN_FROM_ESCAPE,
+                AdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE):
             # If this person was not recorded as escaped, but returned on a
             # release from escape, log this unexpected situation and exclude
             # from the release cohort.
-            logging.info("StateIncarcerationPeriod following a release for"
-                         " death.")
+            logging.info("Unexpected reincarceration_admission_reason of "
+                         "%s following a release reason of %s.",
+                         reincarceration_admission_reason, release_reason)
             return False
 
         return True
@@ -442,6 +454,10 @@ def get_return_type(
         ReincarcerationReturnType:
     """Returns the return type for the reincarceration admission reason."""
 
+    if reincarceration_admission_reason == AdmissionReason.ADMITTED_IN_ERROR:
+        return ReincarcerationReturnType.NEW_ADMISSION
+    if reincarceration_admission_reason == AdmissionReason.EXTERNAL_UNKNOWN:
+        return ReincarcerationReturnType.NEW_ADMISSION
     if reincarceration_admission_reason == AdmissionReason.NEW_ADMISSION:
         return ReincarcerationReturnType.NEW_ADMISSION
     if reincarceration_admission_reason == AdmissionReason.PAROLE_REVOCATION:
@@ -454,7 +470,9 @@ def get_return_type(
         # some point after being released, and this is the most likely return
         # type in most cases in the absence of further information."
         return ReincarcerationReturnType.NEW_ADMISSION
-    if reincarceration_admission_reason == AdmissionReason.RETURN_FROM_ESCAPE:
+    if reincarceration_admission_reason in (
+            AdmissionReason.RETURN_FROM_ESCAPE,
+            AdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE):
         # This should never happen. Should have been filtered by
         # should_include_in_release_cohort function. Throw error.
         raise ValueError("should_include_in_release_cohort is not effectively"
@@ -471,14 +489,18 @@ def get_from_supervision_type(
         -> Optional[ReincarcerationReturnFromSupervisionType]:
     """If the person returned from supervision, returns the type."""
 
-    if reincarceration_admission_reason == AdmissionReason.NEW_ADMISSION:
+    if reincarceration_admission_reason in [AdmissionReason.ADMITTED_IN_ERROR,
+                                            AdmissionReason.EXTERNAL_UNKNOWN,
+                                            AdmissionReason.NEW_ADMISSION]:
         return None
     if reincarceration_admission_reason == AdmissionReason.PAROLE_REVOCATION:
         return ReincarcerationReturnFromSupervisionType.PAROLE
     if reincarceration_admission_reason == AdmissionReason.PROBATION_REVOCATION:
         return ReincarcerationReturnFromSupervisionType.PROBATION
-    if reincarceration_admission_reason in [AdmissionReason.RETURN_FROM_ESCAPE,
-                                            AdmissionReason.TRANSFER]:
+    if reincarceration_admission_reason in (
+            AdmissionReason.RETURN_FROM_ESCAPE,
+            AdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE,
+            AdmissionReason.TRANSFER):
         # This should never happen. Should have been filtered by
         # should_include_in_release_cohort function. Throw error.
         raise ValueError("should_include_in_release_cohort is not effectively"

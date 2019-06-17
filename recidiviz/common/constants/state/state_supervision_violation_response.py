@@ -60,11 +60,14 @@ class StateSupervisionViolationResponseDecision(EntityEnum,
 
 class StateSupervisionViolationResponseRevocationType(EntityEnum,
                                                       metaclass=EntityEnumMeta):
+    REINCARCERATION = state_enum_strings. \
+        state_supervision_violation_response_revocation_type_reincarceration
+    # pylint: disable=line-too-long
+    RETURN_TO_SUPERVISION = state_enum_strings. \
+        state_supervision_violation_response_revocation_type_return_to_supervision
     SHOCK_INCARCERATION = \
         state_enum_strings. \
         state_supervision_violation_response_revocation_type_shock_incarceration
-    STANDARD = state_enum_strings. \
-        state_supervision_violation_response_revocation_type_standard
     TREATMENT_IN_PRISON = \
         state_enum_strings. \
         state_supervision_violation_response_revocation_type_treatment_in_prison
@@ -108,10 +111,16 @@ _STATE_SUPERVISION_VIOLATION_RESPONSE_DECISION_MAP = {
 }
 
 _STATE_SUPERVISION_VIOLATION_RESPONSE_REVOCATION_TYPE_MAP = {
+    'REINCARCERATION':
+        StateSupervisionViolationResponseRevocationType.REINCARCERATION,
+    'SUPERVISION TERMINATED':
+        StateSupervisionViolationResponseRevocationType.REINCARCERATION,
+    'PLACED BACK ON PROBATION/PAROLE':
+        StateSupervisionViolationResponseRevocationType.RETURN_TO_SUPERVISION,
+    'SUPERVISION':
+        StateSupervisionViolationResponseRevocationType.RETURN_TO_SUPERVISION,
     'SHOCK INCARCERATION':
         StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
-    'STANDARD':
-        StateSupervisionViolationResponseRevocationType.STANDARD,
     'TREATMENT IN PRISON':
         StateSupervisionViolationResponseRevocationType.TREATMENT_IN_PRISON,
 
