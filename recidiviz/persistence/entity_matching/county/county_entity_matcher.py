@@ -22,6 +22,7 @@ import logging
 from collections import defaultdict
 from typing import List, Dict, cast, Set, Tuple
 
+from recidiviz import Session
 from recidiviz.common.constants.bond import BondStatus
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.county.hold import HoldStatus
@@ -30,45 +31,123 @@ from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.county import entities
 from recidiviz.persistence.database.schema.county import dao
 from recidiviz.persistence.entity_matching.base_entity_matcher import \
-    BaseEntityMatcher
+    BaseEntityMatcher, MatchedEntities, increment_error
 from recidiviz.persistence.entity_matching.county import county_matching_utils
 from recidiviz.persistence.entity_matching.county.county_matching_utils import \
     is_booking_match, is_hold_match, is_charge_match_with_children, \
     is_charge_match
 from recidiviz.persistence.entity_matching.entity_matching_utils import \
-    get_only_match, get_next_available_match, generate_id_from_obj
-from recidiviz.persistence.errors import MatchedMultipleIngestedEntitiesError
+    get_only_match, get_next_available_match, generate_id_from_obj, \
+    get_best_match
+from recidiviz.persistence.errors import MatchedMultipleIngestedEntitiesError, \
+    EntityMatchingError
 
 
 class CountyEntityMatcher(BaseEntityMatcher[entities.Person]):
     """Base class for all entity matchers."""
 
-    def has_external_id(self, person: entities.Person) -> bool:
-        return bool(person.external_id)
+    def run_match(self, session: Session, region: str,
+                  ingested_people: List[entities.Person]) \
+            -> MatchedEntities:
+        """
+        Attempts to match all people from |ingested_people| with corresponding
+        people in our database for the given |region|. Returns an
+        MatchedEntities object that contains the results of matching.
+        """
+        with_external_ids = []
+        without_external_ids = []
+        for ingested_person in ingested_people:
+            if bool(ingested_person.external_id):
+                with_external_ids.append(ingested_person)
+            else:
+                without_external_ids.append(ingested_person)
 
-    def get_people_by_external_ids(self, session, region, with_external_ids) \
-            -> List[entities.Person]:
-        return dao.read_people_by_external_ids(
+        db_people_with_external_ids = dao.read_people_by_external_ids(
             session, region, with_external_ids)
+        matches_with_external_id = match_people_and_return_error_count(
+            db_people=db_people_with_external_ids,
+            ingested_people=with_external_ids)
 
-    def get_people_without_external_ids(self, session, region,
-                                        without_external_ids) \
-            -> List[entities.Person]:
-        return dao.read_people_with_open_bookings(
+        db_people_without_external_ids = dao.read_people_with_open_bookings(
             session, region, without_external_ids)
+        matches_without_external_ids = \
+            match_people_and_return_error_count(
+                db_people=db_people_without_external_ids,
+                ingested_people=without_external_ids)
 
-    def is_person_match(self, *,
-                        db_entity: entities.Person,
-                        ingested_entity: entities.Person) -> bool:
-        return county_matching_utils.is_person_match(
-            db_entity=db_entity, ingested_entity=ingested_entity)
+        return matches_with_external_id + matches_without_external_ids
 
-    def match_child_entities(self, *, db_person: entities.Person,
-                             ingested_person: entities.Person,
-                             orphaned_entities: List[Entity]):
-        return match_bookings(db_person=db_person,
-                              ingested_person=ingested_person,
-                              orphaned_entities=orphaned_entities)
+
+def match_people_and_return_error_count(
+        *, db_people: List[entities.Person],
+        ingested_people: List[entities.Person]) -> MatchedEntities:
+    """
+    Attempts to match all people from |ingested_people| with people from the
+    |db_people|. Returns an MatchedEntities object that contains the results
+    of matching.
+    """
+    people = []
+    orphaned_entities = []
+    error_count = 0
+    matched_people_by_db_id: Dict[int, entities.Person] = {}
+
+    for ingested_person in ingested_people:
+        try:
+            ingested_person_orphans: List[Entity] = []
+            match_person(
+                ingested_person=ingested_person,
+                db_people=db_people,
+                orphaned_entities=ingested_person_orphans,
+                matched_people_by_db_id=matched_people_by_db_id)
+
+            people.append(ingested_person)
+            orphaned_entities.extend(ingested_person_orphans)
+        except EntityMatchingError as e:
+            logging.exception(
+                'Found %s while matching ingested person. \nPerson: %s',
+                e.__class__.__name__,
+                ingested_person)
+            increment_error(e.entity_name)
+            error_count += 1
+    return MatchedEntities(people=people,
+                           orphaned_entities=orphaned_entities,
+                           error_count=error_count)
+
+
+def match_person(
+        *,
+        ingested_person: entities.Person,
+        db_people: List[entities.Person],
+        orphaned_entities: List[Entity],
+        matched_people_by_db_id: Dict[int, entities.Person]) -> None:
+    """
+    Finds the best match for the provided |ingested_person| from the
+    provided |db_people|. If a match exists, the primary key is added onto
+    the |ingested_person| and then we attempt to match all children
+    entities.
+    """
+    db_person = cast(entities.Person,
+                     get_best_match(ingested_person,
+                                    db_people,
+                                    county_matching_utils.is_person_match,
+                                    matched_people_by_db_id.keys()))
+
+    if db_person:
+        person_id = db_person.get_id()
+        logging.debug('Successfully matched to person with ID %s',
+                      person_id)
+        # If the match was previously matched to a different database
+        # person, raise an error.
+        if person_id in matched_people_by_db_id:
+            matches = [ingested_person,
+                       matched_people_by_db_id[person_id]]
+            raise MatchedMultipleIngestedEntitiesError(db_person, matches)
+
+        ingested_person.set_id(person_id)
+        matched_people_by_db_id[cast(int, person_id)] = ingested_person
+        match_bookings(db_person=db_person,
+                       ingested_person=ingested_person,
+                       orphaned_entities=orphaned_entities)
 
 
 def match_bookings(
