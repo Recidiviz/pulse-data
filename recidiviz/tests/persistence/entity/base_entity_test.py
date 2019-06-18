@@ -80,5 +80,5 @@ class TestBaseEntities(TestCase):
                          Hold.new_with_defaults(hold_id=789).get_id())
         self.assertIsNone(Charge.new_with_defaults().get_id())
 
-    # TODO(1625): Write unit tests for entity graph equality that reference the
+    # TODO(1894): Write unit tests for entity graph equality that reference the
     # schema defined in test_schema/test_entities.py.
