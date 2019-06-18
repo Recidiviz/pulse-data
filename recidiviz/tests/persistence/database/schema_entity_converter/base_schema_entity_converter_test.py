@@ -358,4 +358,4 @@ class TestBaseSchemaEntityConverter(TestCase):
         self.assertEqual(converted_root.parents[0].children[1].favorite_toy,
                          toy)
 
-    # TODO(1625): Write more unit tests for bugfixes in this commit
+    # TODO(1894): Write more unit tests for bugfixes in #1816
