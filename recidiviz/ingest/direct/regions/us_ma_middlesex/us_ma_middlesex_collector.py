@@ -26,6 +26,11 @@ import sqlalchemy
 from more_itertools import one
 
 from recidiviz import IngestInfo
+from recidiviz.common.constants.bond import BondStatus
+from recidiviz.common.constants.charge import ChargeStatus
+from recidiviz.common.constants.county.booking import AdmissionReason, \
+    ReleaseReason
+from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.direct.collector import DirectIngestCollector
 from recidiviz.ingest.direct.errors import DirectIngestError
@@ -135,7 +140,7 @@ class UsMaMiddlesexCollector(DirectIngestCollector):
         metadata = IngestMetadata(self.region.region_code,
                                   self.region.jurisdiction_id,
                                   export_time,
-                                  self.region.get_enum_overrides())
+                                  self.get_enum_overrides())
 
         return persistence.write(ingest_info_proto, metadata)
 
@@ -152,3 +157,27 @@ class UsMaMiddlesexCollector(DirectIngestCollector):
             logging.debug("Skipping row deletion for us_ma_middlesex tables "
                           "and export time [%s] outside of prod environment.",
                           export_time)
+
+    def get_enum_overrides(self) -> EnumOverrides:
+        builder = EnumOverrides.Builder()
+        builder.add('15 DAY PAROLE DETAINER', AdmissionReason.PAROLE_VIOLATION)
+        builder.add('2', ChargeStatus.SENTENCED)
+        builder.add('BAIL', ReleaseReason.BOND)
+        builder.ignore('C', BondStatus)
+        builder.ignore('CIVIL CAPIAS', AdmissionReason)  # Civil bench warrant.
+        builder.add('CONTEMPT OF COURT', AdmissionReason.NEW_COMMITMENT)
+        builder.add('COURT ORDERED', ReleaseReason.OWN_RECOGNIZANCE)
+        builder.add('END OF SENTENCE', ReleaseReason.EXPIRATION_OF_SENTENCE)
+        builder.ignore('N', BondStatus)
+        builder.add('NOL PROS', ChargeStatus.DROPPED)
+        builder.add('O', BondStatus.SET)
+        builder.add('PERMANENT PAROLE DETAINER',
+                    AdmissionReason.PAROLE_VIOLATION)
+        builder.add('PT', ChargeStatus.PRETRIAL)
+        builder.ignore('S', BondStatus)
+        # TODO (#1897) make sure charge class is filled in. This is a
+        # parole violation.
+        builder.add('VL', ChargeStatus.PRETRIAL)
+        builder.add('WARRANT MANAGEMENT SYSTEM', AdmissionReason.NEW_COMMITMENT)
+
+        return builder.build()
