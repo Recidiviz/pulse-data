@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for entity_matching.py."""
+"""Tests for county_entity_matcher.py."""
 import copy
 from datetime import datetime
 from unittest import TestCase
@@ -68,7 +68,7 @@ _NAME_3 = 'name_3'
 _JURISDICTION_ID = '12345678'
 
 
-class TestCountyEntityMatching(TestCase):
+class TestCountyEntityMatcher(TestCase):
     """Tests for entity matching logic"""
 
     def setup_method(self, _test_method):
