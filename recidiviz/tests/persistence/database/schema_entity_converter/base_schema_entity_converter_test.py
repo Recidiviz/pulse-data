@@ -21,16 +21,16 @@ from unittest import TestCase
 from more_itertools import one
 
 from recidiviz import Session
-from recidiviz.persistence.database.schema_entity_converter.\
+from recidiviz.persistence.database.schema_entity_converter. \
     base_schema_entity_converter import (
         BaseSchemaEntityConverter,
-        FieldNameType
-    )
+        FieldNameType)
+from recidiviz.persistence.entity.entity_utils import SchemaEdgeDirectionChecker
 from recidiviz.tests.persistence.database.schema_entity_converter \
     import test_entities as entities
 from recidiviz.tests.persistence.database.schema_entity_converter \
     import test_schema as schema
-from recidiviz.tests.persistence.database.schema_entity_converter.\
+from recidiviz.tests.persistence.database.schema_entity_converter. \
     test_entities import RootType
 from recidiviz.tests.utils import fakes
 
@@ -41,7 +41,7 @@ class TestSchemaEntityConverter(BaseSchemaEntityConverter):
     database schema
     """
 
-    CLASS_RANK_LIST = [
+    CLASS_HIERARCHY = [
         entities.Root.__name__,
         entities.Parent.__name__,
         entities.Child.__name__,
@@ -49,7 +49,9 @@ class TestSchemaEntityConverter(BaseSchemaEntityConverter):
     ]
 
     def __init__(self):
-        super().__init__(self.CLASS_RANK_LIST)
+        direction_checker = SchemaEdgeDirectionChecker(self.CLASS_HIERARCHY,
+                                                       entities)
+        super().__init__(direction_checker)
 
     def _get_schema_module(self) -> ModuleType:
         return schema
@@ -169,6 +171,7 @@ class TestBaseSchemaEntityConverter(TestCase):
         in tests. The relationships between these objects are intentionally not
         set.
         """
+
         def __init__(self):
             self.root = entities.Root.new_with_defaults(
                 root_id=314,

@@ -23,8 +23,8 @@ import abc
 from collections import defaultdict
 from enum import Enum
 from types import ModuleType
-from typing import TypeVar, Generic, Dict, List, Type, Optional, Any, \
-    Tuple, Sequence
+from typing import Generic, Dict, List, Type, Optional, Any, Tuple, Sequence, \
+    TypeVar
 
 import attr
 
@@ -32,14 +32,13 @@ from recidiviz.common.attr_utils import is_enum, get_enum_cls
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.persistence.database.base_schema import Base
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.entity_utils import \
-    get_all_entity_class_names_in_module
-
-SrcBaseType = TypeVar('SrcBaseType', Base, Entity)
-DstBaseType = TypeVar('DstBaseType', Base, Entity)
+from recidiviz.persistence.entity.entity_utils import SchemaEdgeDirectionChecker
 
 SrcIdType = int
 FieldNameType = str
+
+SrcBaseType = TypeVar('SrcBaseType', Base, Entity)
+DstBaseType = TypeVar('DstBaseType', Base, Entity)
 
 
 class DatabaseConversionError(Exception):
@@ -71,14 +70,14 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
     entity types.
     """
 
-    def __init__(self, class_rank_list: List[str]):
+    def __init__(self, direction_checker: SchemaEdgeDirectionChecker):
         """
         Args:
-            class_rank_list: A list of class names in order of their rank in
-                in the schema graph ordering.
+            direction_checker: A SchemaEdgeDirectionChecker object that is
+            specific to the schema required by the subclass. Will be used to
+            determine which edges of the graph are back edges.
         """
-        self._class_rank_map: Dict[str, int] = \
-            self._build_class_rank_map(class_rank_list)
+        self._direction_checker = direction_checker
 
         # Cache of src object id to corresponding converted object
         self._converted_map: Dict[SrcIdType, DstBaseType] = {}
@@ -102,74 +101,6 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
     @abc.abstractmethod
     def _should_skip_field(self, field: FieldNameType) -> bool:
         pass
-
-    def _build_class_rank_map(self,
-                              class_rank_list: List[str]) -> Dict[str, int]:
-        """Returns a map of class names with their associated rank in the schema
-        graph ordering.
-
-        Args:
-            class_rank_list: A list of class names, ordered by rank in the
-                schema graph ordering.
-        Returns:
-            A map of class names with their associated rank in the schema graph
-            ordering. Lower number means closer to the root of the graph.
-        """
-        self._check_class_rank_includes_all_expected_classes(class_rank_list)
-
-        return {class_name: i for i, class_name in enumerate(class_rank_list)}
-
-    def _check_class_rank_includes_all_expected_classes(
-            self, class_rank_list: List[str]) -> None:
-        expected_class_names = \
-            get_all_entity_class_names_in_module(self._get_entities_module())
-
-        given_minus_expected = \
-            set(class_rank_list).difference(expected_class_names)
-        expected_minus_given = expected_class_names.difference(class_rank_list)
-
-        if given_minus_expected or expected_minus_given:
-            msg = ""
-            if given_minus_expected:
-                msg += f"Found unexpected class in class rank list: " \
-                    f"[{list(given_minus_expected)[0]}]. "
-            if expected_minus_given:
-                msg += f"Missing expected class in class rank list: " \
-                    f"[{list(expected_minus_given)[0]}]. "
-
-            raise DatabaseConversionError(msg)
-
-    def _is_back_edge(self,
-                      from_src_obj: SrcBaseType,
-                      to_src_obj: SrcBaseType) -> bool:
-        """Given two object types, returns whether traversing from the first to
-        the second object would be traveling along a 'back edge' in the object
-        graph. A back edge is an edge that might introduce a cycle in the graph.
-        Without back edges, the object graph should have no cycles.
-
-        Args:
-            from_src_obj: An object that is the origin of this edge
-            to_src_obj: An object that is the destination of this edge
-        Returns:
-            True if a graph edge travelling from from_src_obj to to_src_obj is
-                a back edge, i.e. it travels in a direction opposite to the
-                class ranking.
-        """
-        from_class_name = from_src_obj.__class__.__name__
-        to_class_name = to_src_obj.__class__.__name__
-
-        if from_class_name not in self._class_rank_map:
-            raise DatabaseConversionError(
-                f"Unable to convert: [{from_class_name}] not in the class "
-                f"rank map")
-
-        if to_class_name not in self._class_rank_map:
-            raise DatabaseConversionError(
-                f"Unable to convert: [{to_class_name}] not in the class "
-                f"rank map")
-
-        return self._class_rank_map[from_class_name] >= \
-            self._class_rank_map[to_class_name]
 
     @staticmethod
     def _id_from_src_object(src: SrcBaseType) -> SrcIdType:
@@ -275,7 +206,7 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
             if isinstance(v, list):
                 values = []
                 for next_src in v:
-                    if self._is_back_edge(src, next_src):
+                    if self._direction_checker.is_back_edge(src, next_src):
                         self._register_back_edge(src, next_src, field)
                         continue
                     values.append(self._convert_forward(next_src))
@@ -286,7 +217,7 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
                 value: Optional[Any] = values
             elif issubclass(type(v), Entity) or issubclass(type(v), Base):
                 next_src = v
-                if self._is_back_edge(src, next_src):
+                if self._direction_checker.is_back_edge(src, next_src):
                     self._register_back_edge(src, next_src, field)
                     continue
                 value = self._convert_forward(v)
