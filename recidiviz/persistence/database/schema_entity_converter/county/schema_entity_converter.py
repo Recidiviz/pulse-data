@@ -23,33 +23,22 @@ from types import ModuleType
 
 from recidiviz.persistence.database.base_schema import Base
 from recidiviz.persistence.database.schema_entity_converter. \
-    base_schema_entity_converter import (
-        BaseSchemaEntityConverter,
-        FieldNameType,
-        SrcBaseType,
-        DstBaseType
-    )
+    base_schema_entity_converter import (BaseSchemaEntityConverter,
+                                         FieldNameType, DstBaseType,
+                                         SrcBaseType)
 from recidiviz.persistence.entity.base_entity import Entity
 
 from recidiviz.persistence.entity.county import entities
 from recidiviz.persistence.database.schema.county import schema
+from recidiviz.persistence.entity.entity_utils import SchemaEdgeDirectionChecker
 
 
 class _CountySchemaEntityConverter(BaseSchemaEntityConverter[SrcBaseType,
                                                              DstBaseType]):
     """County-specific implementation of BaseSchemaEntityConverter"""
-    CLASS_RANK_LIST = [
-        entities.Person.__name__,
-        entities.Booking.__name__,
-        entities.Arrest.__name__,
-        entities.Hold.__name__,
-        entities.Charge.__name__,
-        entities.Bond.__name__,
-        entities.Sentence.__name__,
-    ]
 
     def __init__(self):
-        super().__init__(self.CLASS_RANK_LIST)
+        super().__init__(SchemaEdgeDirectionChecker.county_direction_checker())
 
     def _get_schema_module(self) -> ModuleType:
         return schema

@@ -30,6 +30,7 @@ from recidiviz.persistence.database.schema_entity_converter. \
         DstBaseType
     )
 from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.entity_utils import SchemaEdgeDirectionChecker
 
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.database.schema.state import schema
@@ -38,31 +39,9 @@ from recidiviz.persistence.database.schema.state import schema
 class _StateSchemaEntityConverter(BaseSchemaEntityConverter[SrcBaseType,
                                                             DstBaseType]):
     """State-specific implementation of BaseSchemaEntityConverter"""
-    CLASS_RANK_LIST = [
-        entities.StatePerson.__name__,
-        entities.StatePersonExternalId.__name__,
-        entities.StatePersonAlias.__name__,
-        entities.StatePersonRace.__name__,
-        entities.StatePersonEthnicity.__name__,
-        entities.StateSentenceGroup.__name__,
-        entities.StateFine.__name__,
-        entities.StateIncarcerationSentence.__name__,
-        entities.StateSupervisionSentence.__name__,
-        entities.StateCharge.__name__,
-        entities.StateBond.__name__,
-        entities.StateCourtCase.__name__,
-        entities.StateIncarcerationPeriod.__name__,
-        entities.StateIncarcerationIncident.__name__,
-        entities.StateParoleDecision.__name__,
-        entities.StateSupervisionPeriod.__name__,
-        entities.StateSupervisionViolation.__name__,
-        entities.StateSupervisionViolationResponse.__name__,
-        entities.StateAssessment.__name__,
-        entities.StateAgent.__name__,
-    ]
 
     def __init__(self):
-        super().__init__(self.CLASS_RANK_LIST)
+        super().__init__(SchemaEdgeDirectionChecker.state_direction_checker())
 
     def _get_schema_module(self) -> ModuleType:
         return schema
