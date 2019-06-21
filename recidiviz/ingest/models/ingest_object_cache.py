@@ -17,7 +17,7 @@
 
 """Caching utilities for IngestInfo."""
 from collections import defaultdict
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 
 def _recursive_defaultdict():
@@ -39,8 +39,18 @@ class IngestObjectCache:
         self.object_by_id_cache: Dict[str, Dict[str, Any]] = \
             _recursive_defaultdict()
 
-    def cache_object_by_id(self, class_name: str, obj_id: str, obj: Any):
+    def cache_object_by_id(self, class_name: str,
+                           obj_id: Optional[str],
+                           obj: Any):
+        if obj_id is None:
+            return
         self.object_by_id_cache[class_name][obj_id] = obj
 
-    def get_object_by_id(self, class_name: str, obj_id: str) -> Any:
+    def get_object_by_id(self, class_name: str, obj_id: Optional[str]) -> Any:
+        if class_name not in self.object_by_id_cache:
+            return None
+
+        if not obj_id or obj_id not in self.object_by_id_cache[class_name]:
+            return None
+
         return self.object_by_id_cache[class_name][obj_id]

@@ -36,7 +36,7 @@ list of objects; or create new objects as needed.
 
 import abc
 import logging
-from typing import Union, List, Optional, Sequence, Dict, Set, cast
+from typing import Union, List, Optional, Sequence, Dict, Set
 
 import yaml
 from lxml.html import HtmlElement
@@ -281,11 +281,17 @@ class DataExtractor(metaclass=abc.ABCMeta):
             return None
 
         parent = closest_ancestor
-        for hier_class in remaining_ancestors[1:]:
+        for hier_class in remaining_ancestors:
             grandparent = parent
+            parent = None
+
             parent_id = ancestor_chain.get(hier_class)
-            parent = self.ingest_object_cache.get_object_by_id(
-                hier_class, cast(str, parent_id))
+            if parent_id:
+                parent = self.ingest_object_cache.get_object_by_id(
+                    hier_class, parent_id)
+
+            if not parent:
+                parent = _get_by_id(grandparent, hier_class, parent_id)
 
             if not parent:
                 parent_create_args = {**create_args,
@@ -353,5 +359,5 @@ def _get_recent(
     return getattr(parent, 'get_recent_' + class_name)()
 
 
-def _get_by_id(parent: IngestObject, class_name: str, class_id: str):
+def _get_by_id(parent: IngestObject, class_name: str, class_id: Optional[str]):
     return getattr(parent, 'get_' + class_name + '_by_id')(class_id)
