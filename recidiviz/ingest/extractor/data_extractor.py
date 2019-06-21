@@ -36,7 +36,7 @@ list of objects; or create new objects as needed.
 
 import abc
 import logging
-from typing import Union, List, Optional, Sequence, Dict, Set
+from typing import Union, List, Optional, Sequence, Dict, Set, Tuple
 
 import yaml
 from lxml.html import HtmlElement
@@ -121,22 +121,16 @@ class DataExtractor(metaclass=abc.ABCMeta):
             class_to_set, ingest_key = lookup_key.split('.')
             is_multi_key = class_to_set in self.multi_key_classes
             for i, value in enumerate(values):
-                parent = self._get_parent(ingest_info, class_to_set, i,
-                                          is_multi_key, ancestor_chain,
-                                          enforced_ancestor_types)
-
-                object_to_set = self._get_object_to_set(class_to_set, parent,
-                                                        i, is_multi_key,
-                                                        ancestor_chain)
-                # If the object we are trying to operate on is None, or it has
-                # already set the ingest_key then we know we need to create a
-                # new one.
-                if object_to_set is None or \
-                        ingest_key in seen_map[id(object_to_set)]:
-                    logging.debug("Creating new [%s] on parent object [%s]",
-                                  class_to_set, parent)
-                    object_to_set = self._create(parent, class_to_set,
-                                                 **create_args)
+                object_to_set = self._get_object_to_set(
+                    ingest_info,
+                    seen_map,
+                    class_to_set,
+                    ingest_key,
+                    i,
+                    is_multi_key,
+                    ancestor_chain,
+                    enforced_ancestor_types,
+                    **create_args)
 
                 logging.debug("Setting value [%s] on field [%s] of object [%s]",
                               value, ingest_key, object_to_set)
@@ -192,9 +186,9 @@ class DataExtractor(metaclass=abc.ABCMeta):
                 return self._create(grandparent, parent_cls_to_set)
 
         if self.ingest_object_cache:
-            parent = self._get_cached_parent(ancestor_chain,
-                                             ancestor_class_sequence,
-                                             **create_args)
+            parent = self._get_cached_parent(class_to_set,
+                                             ancestor_chain,
+                                             ancestor_class_sequence)
             if parent:
                 return parent
 
@@ -204,19 +198,68 @@ class DataExtractor(metaclass=abc.ABCMeta):
                                                ancestor_chain,
                                                **create_args)
 
-    @staticmethod
-    def _get_object_to_set(class_to_set: str, parent: IngestObject, index: int,
-                           is_multi_key: bool, ancestor_chain: Dict[str, str]) \
+    def _get_object_to_set(self,
+                           ingest_info: IngestInfo,
+                           seen_map: Dict[int, Set[str]],
+                           class_to_set: str,
+                           ingest_key: str,
+                           index: int,
+                           is_multi_key: bool,
+                           ancestor_chain: Dict[str, str],
+                           enforced_ancestor_types: Dict[str, str],
+                           **create_args) \
             -> IngestObject:
         """Finds or creates the object we are going to set, which may already
         exist in the multi-key case."""
+
+        object_to_set = None
+        if create_args and self.ingest_object_cache:
+            # First, check the cache for an object with a matching ID
+            obj_to_set_id_name = f'{class_to_set}_id'
+            if obj_to_set_id_name in create_args:
+                obj_to_set_id = create_args[obj_to_set_id_name]
+                object_to_set = \
+                    self.ingest_object_cache.get_object_by_id(
+                        class_to_set, obj_to_set_id)
+
+        if object_to_set is not None and \
+                ingest_key not in seen_map[id(object_to_set)]:
+            return object_to_set
+
+        # If we don't find a cached object with a matching id, look on the
+        # parent object for a potential match.
+        parent = self._get_parent(ingest_info, class_to_set, index,
+                                  is_multi_key, ancestor_chain,
+                                  enforced_ancestor_types)
+
         if is_multi_key and class_to_set in PLURALS:
             list_of_class_to_set = getattr(parent, PLURALS[class_to_set])
             if list_of_class_to_set is not None \
                     and isinstance(list_of_class_to_set, list) \
                     and len(list_of_class_to_set) > index:
-                return list_of_class_to_set[index]
-        return _get_by_id_or_recent(parent, class_to_set, ancestor_chain)
+                object_to_set = list_of_class_to_set[index]
+            else:
+                object_to_set = _get_by_id_or_recent(parent,
+                                                     class_to_set,
+                                                     ancestor_chain)
+        else:
+            object_to_set = _get_by_id_or_recent(parent,
+                                                 class_to_set,
+                                                 ancestor_chain)
+
+        if object_to_set is not None and \
+                ingest_key not in seen_map[id(object_to_set)]:
+            return object_to_set
+
+        # If the object we are trying to operate on is None, or it has
+        # already set the ingest_key then we know we need to create a
+        # new one.
+        logging.debug("Creating new [%s] on parent object [%s]",
+                      class_to_set, parent)
+        object_to_set = self._create(parent, class_to_set,
+                                     **create_args)
+
+        return object_to_set
 
     def _find_parent_ingest_object(self, ingest_info: IngestInfo,
                                    hierarchy: Sequence[str],
@@ -264,9 +307,9 @@ class DataExtractor(metaclass=abc.ABCMeta):
         return parent
 
     def _get_cached_parent(self,
+                           class_to_set: str,
                            ancestor_chain: Dict[str, str],
-                           hierarchy_sequence: Sequence[str],
-                           **create_args):
+                           hierarchy_sequence: Sequence[str]):
         """Retrieves the cached parent instance of the object we are trying to
         set, i.e. the object at the end of the |hierarchy_sequence|, based on
         the given |ancestor_chain|. If there are gaps in the chain of parents up
@@ -280,41 +323,79 @@ class DataExtractor(metaclass=abc.ABCMeta):
         if not closest_ancestor_class:
             return None
 
-        parent = closest_ancestor
-        for hier_class in remaining_ancestors:
-            grandparent = parent
-            parent = None
+        ancestor_objs = [(closest_ancestor_class, closest_ancestor)]
+        for next_ancestor_class in remaining_ancestors:
+            _, last_ancestor = ancestor_objs[-1]
 
-            parent_id = ancestor_chain.get(hier_class)
-            if parent_id:
-                parent = self.ingest_object_cache.get_object_by_id(
-                    hier_class, parent_id)
+            next_ancestor_id = ancestor_chain.get(next_ancestor_class)
+            if next_ancestor_id is not None:
+                next_ancestor = self.ingest_object_cache.get_object_by_id(
+                    next_ancestor_class, next_ancestor_id)
+            else:
+                # Get a placeholder object if one already exists on the
+                # last ancestor
+                next_ancestor = _get_by_id(last_ancestor,
+                                           next_ancestor_class,
+                                           None)
 
-            if not parent:
-                parent = _get_by_id(grandparent, hier_class, parent_id)
+            if next_ancestor is None:
+                self._overwrite_last_ancestor_obj_if_cannot_create_next_child(
+                    ancestor_objs,
+                    next_ancestor_class)
+                _, last_ancestor = ancestor_objs[-1]
 
-            if not parent:
-                parent_create_args = {**create_args,
-                                      **{hier_class + '_id': parent_id}}
-                parent = self._create(grandparent, hier_class,
-                                      **parent_create_args)
+                next_ancestor = self._create(
+                    last_ancestor, next_ancestor_class,
+                    **{next_ancestor_class + '_id': next_ancestor_id})
 
-        return parent
+            ancestor_objs.append((next_ancestor_class, next_ancestor))
+
+        self._overwrite_last_ancestor_obj_if_cannot_create_next_child(
+            ancestor_objs, class_to_set)
+
+        # The parent is the last ancestor object in the chain
+        return ancestor_objs[-1][1]
+
+    def _overwrite_last_ancestor_obj_if_cannot_create_next_child(
+            self,
+            ancestor_objs: List[Tuple[str, IngestObject]],
+            next_child_class: str
+    ):
+        """Our ingest algorithm generates dummy placeholder objects with null
+        ids. We may add multiple child objects to this dummy object when in
+        reality, the dummy object will eventually be split into multiple
+        objects. In the case that the schema does not allow multiple child
+        objects of a given type (e.g. Charge -> CourtCase), we need to create
+        a new dummy object to attach a child object to if the matched dummy
+        parent already has an object of that type. This function does that work.
+        """
+        last_ancestor_class, last_ancestor = ancestor_objs[-1]
+
+        # This is a hack that assumes that singular child fields will match the
+        # name of the child class.
+        if hasattr(last_ancestor, next_child_class) \
+                and getattr(last_ancestor, next_child_class) is not None:
+            _, grandparent = ancestor_objs[-2]
+            last_ancestor = self._create(
+                grandparent,
+                last_ancestor_class,
+                **{last_ancestor_class + '_id': None})
+
+            ancestor_objs[-1] = (last_ancestor_class, last_ancestor)
 
     def _get_closest_cached_ancestor(self,
                                      ancestor_chain: Dict[str, str],
                                      hierarchy_sequence: Sequence[str]):
         """Finds the ancestor "closest" to the |class_to_set| that is currently
         in the cache, returning a tuple of that ancestor's class name, the
-        ancestor instance itself, and then the remaining sequence of parents
-        starting at that ancestor and running to the |class_to_set|.
+        ancestor instance itself, and then the remaining sequence of descendants
+        of ancestor, running to the |class_to_set|.
 
         For example, if the class to set is sentence, and the booking in the
         given |ancestor_chain| is in the cache, then this returns a tuple of
-        'booking', the booking object, and then a sequence of
-        ('booking', 'charge'). If the booking is not in the cache, this returns
-        a tuple of 'person', the person object, and then a sequence of
-        ('person', 'booking', 'charge').
+        'booking', the booking object, and then a sequence of ('charge'). If the
+        booking is not in the cache, this returns a tuple of 'person', the
+        person object, and then a sequence of ('booking', 'charge').
         """
         for i, hier_class in enumerate(reversed(hierarchy_sequence)):
             # hier_class may not be in ancestor_chain if the ancestor chain
@@ -324,8 +405,7 @@ class DataExtractor(metaclass=abc.ABCMeta):
                     hier_class, ancestor_chain[hier_class])
                 if parent:
                     remaining_uncached_ancestors = \
-                        hierarchy_sequence[-1 - i:] \
-                        if i < len(hierarchy_sequence) - 1 else []
+                        hierarchy_sequence[-i:] if i > 0 else []
 
                     return hier_class, parent, remaining_uncached_ancestors
         return None, None, None
