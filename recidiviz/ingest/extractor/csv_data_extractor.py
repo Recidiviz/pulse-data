@@ -148,12 +148,15 @@ class CsvDataExtractor(DataExtractor):
             ancestor_chain: Dict[str, str] = self._ancestor_chain(
                 row, primary_coordinates)
 
-            # TODO(1839): Generalize instantiation so we don't special-case this
-            if not ancestor_chain \
-                    or not ancestor_chain.get('person') \
-                    or not ancestor_chain.get('state_person'):
-                # If there's no person at the top of this tree, create one now
-                self._instantiate_person(ingest_info)
+            if self.ingest_object_cache is None:
+                # TODO(1839): Generalize instantiation so we don't special-case
+                #  this in the non-object-cache case
+                if not ancestor_chain \
+                        or not ancestor_chain.get('person') \
+                        or not ancestor_chain.get('state_person'):
+                    # If there's no person at the top of this tree, create one
+                    # now
+                    self._instantiate_person(ingest_info)
 
             extracted_objects_for_row = []
             for k, v in row.items():
