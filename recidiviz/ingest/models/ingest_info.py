@@ -549,6 +549,11 @@ class StatePerson(IngestObject):
         self.state_sentence_groups.append(sentence_group)
         return sentence_group
 
+    def get_state_person_race_by_id(self, state_person_race_id) \
+            -> Optional['StatePersonRace']:
+        return next((spr for spr in self.state_person_races
+                     if spr.state_person_race_id == state_person_race_id), None)
+
     def get_recent_state_person_race(self) -> Optional['StatePersonRace']:
         if self.state_person_races:
             return self.state_person_races[-1]
@@ -560,16 +565,32 @@ class StatePerson(IngestObject):
             return self.state_person_ethnicities[-1]
         return None
 
+    def get_state_alias_by_id(self, state_alias_id) \
+            -> Optional['StateAlias']:
+        return next((sa for sa in self.state_aliases
+                     if sa.state_alias_id == state_alias_id), None)
+
     def get_recent_state_alias(self) -> Optional['StateAlias']:
         if self.state_aliases:
             return self.state_aliases[-1]
         return None
+
+    def get_state_person_external_id_by_id(self, state_person_external_id_id) \
+            -> Optional['StatePersonExternalId']:
+        return next((eid for eid in self.state_person_external_ids
+                     if eid.state_person_external_id_id ==
+                     state_person_external_id_id), None)
 
     def get_recent_state_person_external_id(self) \
             -> Optional['StatePersonExternalId']:
         if self.state_person_external_ids:
             return self.state_person_external_ids[-1]
         return None
+
+    def get_state_assessment_by_id(self, state_assessment_id) \
+            -> Optional['StateAssessment']:
+        return next((sa for sa in self.state_assessments
+                     if sa.state_assessment_id == state_assessment_id), None)
 
     def get_recent_state_assessment(self) -> Optional['StateAssessment']:
         if self.state_assessments:
@@ -853,6 +874,11 @@ class StateSupervisionSentence(IngestObject):
         self.state_supervision_periods.append(supervision_period)
         return supervision_period
 
+    def get_state_charge_by_id(self, state_charge_id) \
+            -> Optional['StateCharge']:
+        return next((sc for sc in self.state_charges
+                     if sc.state_charge_id == state_charge_id), None)
+
     def get_recent_state_charge(self) -> Optional['StateCharge']:
         if self.state_charges:
             return self.state_charges[-1]
@@ -863,6 +889,12 @@ class StateSupervisionSentence(IngestObject):
         if self.state_incarceration_periods:
             return self.state_incarceration_periods[-1]
         return None
+
+    def get_state_supervision_period_by_id(self, state_supervision_period_id) \
+            -> Optional['StateSupervisionPeriod']:
+        return next((sc for sc in self.state_supervision_periods
+                     if sc.state_supervision_period_id ==
+                     state_supervision_period_id), None)
 
     def get_recent_state_supervision_period(self) \
             -> Optional['StateSupervisionPeriod']:
@@ -1121,6 +1153,11 @@ class StateCourtCase(IngestObject):
         self.judge = StateAgent(**kwargs)
         return self.judge
 
+    def get_state_agent_by_id(self, state_agent_id) -> Optional['StateAgent']:
+        if self.judge and self.judge.state_agent_id == state_agent_id:
+            return self.judge
+        return None
+
     def get_recent_state_agent(self) -> Optional['StateAgent']:
         return self.judge
 
@@ -1276,6 +1313,13 @@ class StateSupervisionPeriod(IngestObject):
         assessment = StateAssessment(**kwargs)
         self.state_assessments.append(assessment)
         return assessment
+
+    def get_state_supervision_violation_by_id(
+            self, state_supervision_violation_id
+    ) -> Optional['StateSupervisionViolation']:
+        return next((sc for sc in self.state_supervision_violations
+                     if sc.state_supervision_violation_id ==
+                     state_supervision_violation_id), None)
 
     def get_recent_state_supervision_violation(self)\
             -> Optional['StateSupervisionViolation']:
