@@ -54,3 +54,11 @@ class IngestObjectCache:
             return None
 
         return self.object_by_id_cache[class_name][obj_id]
+
+    def clear_object_by_id(self, class_name: str, obj_id: Optional[str]):
+        if obj_id is None:
+            return
+
+        if class_name in self.object_by_id_cache and \
+                obj_id in self.object_by_id_cache[class_name]:
+            del self.object_by_id_cache[class_name][obj_id]
