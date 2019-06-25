@@ -21,7 +21,7 @@ from unittest import TestCase
 import pytest
 
 from recidiviz.common.str_field_utils import parse_days, parse_dollars, \
-    parse_bool, parse_date, parse_datetime
+    parse_bool, parse_date, parse_datetime, parse_days_from_duration_pieces
 
 
 class TestStrFieldUtils(TestCase):
@@ -35,6 +35,39 @@ class TestStrFieldUtils(TestCase):
         # 2000 was a leap year
         assert parse_days(
             '1 YEAR 2 DAYS', from_dt=source_date) == 368
+
+    def test_parseDaysFromDurationPieces(self):
+        two_years_in_days = parse_days_from_duration_pieces(years_str='2')
+        assert two_years_in_days == (365 * 2)
+
+        four_years_in_days = parse_days_from_duration_pieces(years_str='4')
+        assert four_years_in_days == (365 * 4 + 1)  # Include leap day
+
+        leap_year_source_date = datetime.datetime(2000, 1, 1)
+
+        two_months = parse_days_from_duration_pieces(
+            months_str='2', start_dt_str=str(leap_year_source_date))
+
+        assert two_months == (31 + 29)
+
+        leap_year_in_days = parse_days_from_duration_pieces(
+            years_str='1', start_dt_str=str(leap_year_source_date))
+        assert leap_year_in_days == 366
+
+        combo_duration = parse_days_from_duration_pieces(years_str='1',
+                                                         months_str='2',
+                                                         days_str='3')
+
+        assert combo_duration == (1*365 + 2*30 + 3)
+
+        combo_duration_with_start_date = \
+            parse_days_from_duration_pieces(
+                years_str='0',
+                months_str='2',
+                days_str='3',
+                start_dt_str=str(leap_year_source_date))
+
+        assert combo_duration_with_start_date == (2 * 30 + 3)
 
     def test_parseBadTimeDuration(self):
         with pytest.raises(ValueError):

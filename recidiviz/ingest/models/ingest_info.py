@@ -1366,7 +1366,8 @@ class StateIncarcerationIncident(IngestObject):
     def __init__(self, state_incarceration_incident_id=None, incident_type=None,
                  incident_date=None, state_code=None, facility=None,
                  location_within_facility=None, incident_details=None,
-                 responding_officer=None, incarceration_incident_outcomes=None):
+                 responding_officer=None,
+                 state_incarceration_incident_outcomes=None):
         self.state_incarceration_incident_id: Optional[str] = \
             state_incarceration_incident_id
         self.incident_type: Optional[str] = incident_type
@@ -1379,7 +1380,7 @@ class StateIncarcerationIncident(IngestObject):
         self.responding_officer: Optional[StateAgent] = responding_officer
         self.state_incarceration_incident_outcomes: \
             List[StateIncarcerationIncidentOutcome] = \
-            incarceration_incident_outcomes or []
+            state_incarceration_incident_outcomes or []
 
     def __setattr__(self, name, value):
         restricted_setattr(self, 'incarceration_incident_outcomes', name, value)
