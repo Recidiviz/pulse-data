@@ -135,6 +135,7 @@ BOND_TYPE_MAP = {
     'NON REFUNDABLE': BondType.CASH,
     'NONE SET': BondType.NOT_REQUIRED,
     'NONE': BondType.DENIED,
+    'NOT BONDABLE': BondType.DENIED,
     'NOT REQUIRED': BondType.NOT_REQUIRED,
     'O R': BondType.NOT_REQUIRED,
     'O R BOND': BondType.NOT_REQUIRED,
