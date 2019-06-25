@@ -27,6 +27,7 @@ from distutils.util import strtobool  # pylint: disable=no-name-in-module
 from typing import Optional, Dict, Any
 
 import dateparser
+from dateutil.relativedelta import relativedelta
 
 from recidiviz.common.date import munge_date_string
 
@@ -78,6 +79,49 @@ def parse_days(
             return (current_dt - past_dt).days
 
     raise ValueError("Cannot parse time duration: %s" % time_string)
+
+
+def parse_days_from_duration_pieces(
+        years_str: Optional[str] = None,
+        months_str: Optional[str] = None,
+        days_str: Optional[str] = None,
+        start_dt_str: Optional[str] = None) -> int:
+    """Returns a number of days specified by the given duration strings. If a
+    start date is specified, will calculate the number of days after that date,
+    otherwise, assumes that a month is 30 days long and a year is 365.25 days
+    long. All calculations are rounded to the nearest full day.
+
+    Args:
+        years_str: A string representation of an int number of years
+        months_str: A string representation of an int number of months
+        days_str: A string representation of an int number of days
+        start_dt_str: A string representation of a date to start counting from.
+
+    Returns:
+        A number of days specified by the duration strings.
+
+    Raises:
+        ValueError: If one of the provided strings cannot be properly parsed.
+    """
+
+    if not any((years_str, months_str, days_str)):
+        raise ValueError(
+            'One of (years_str, months_str, days_str) must be nonnull')
+
+    years = parse_int(years_str) if years_str else 0
+    months = parse_int(months_str) if months_str else 0
+    days = parse_int(days_str) if days_str else 0
+
+    if start_dt_str and not is_str_field_none(start_dt_str):
+        start_dt = parse_datetime(start_dt_str)
+        if start_dt:
+            end_dt = start_dt + relativedelta(years=years,
+                                              months=months,
+                                              days=days)
+            if end_dt:
+                return (end_dt - start_dt).days
+
+    return int(years * 365.25) + (months * 30) + days
 
 
 def parse_datetime(
