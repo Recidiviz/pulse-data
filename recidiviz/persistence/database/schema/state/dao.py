@@ -31,6 +31,7 @@ from recidiviz.persistence.database.schema_entity_converter import (
 from recidiviz.persistence.database.schema.state import schema
 
 
+# TODO(1907): Rename to read_persons.
 def read_people(session, full_name=None, birthdate=None) \
         -> List[entities.StatePerson]:
     """Read all people matching the optional surname and birthdate. If neither

@@ -42,6 +42,7 @@ matching_errors_by_entity_view = view.View(
 monitoring.register_views([matching_errors_by_entity_view])
 
 
+# TODO(1907): Rename people -> persons
 @attr.s(frozen=True, kw_only=True)
 class MatchedEntities(Generic[EntityPersonType]):
     """

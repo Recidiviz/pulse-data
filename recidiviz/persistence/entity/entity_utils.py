@@ -17,13 +17,16 @@
 """Utils for working with Entity classes or various |entities| modules."""
 
 import inspect
+from enum import Enum
 from types import ModuleType
 from typing import Set, Type, List, Dict
+
+import attr
 
 from recidiviz.persistence.entity.base_entity import Entity, ExternalIdEntity
 from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.errors import PersistenceError
+from recidiviz.persistence.errors import PersistenceError, EntityMatchingError
 
 _STATE_CLASS_HIERARCHY = [
     state_entities.StatePerson.__name__,
@@ -168,3 +171,61 @@ def get_all_entity_class_names_in_module(
      are defined in the given module."""
     return {cls_.__name__
             for cls_ in get_all_entity_classes_in_module(entities_module)}
+
+
+class EntityFieldType(Enum):
+    FLAT_FIELD = 1
+    FORWARD_EDGE = 2
+    BACK_EDGE = 3
+
+
+def get_set_entity_field_names(
+        entity: Entity,
+        entity_field_type: EntityFieldType) -> Set[str]:
+    """Returns a set of field_names that correspond to any set fields on the
+    provided |entity| that match the provided |entity_field_type|.
+    """
+    if entity.get_entity_name().startswith('state_'):
+        direction_checker = SchemaEdgeDirectionChecker.state_direction_checker()
+    else:
+        direction_checker = \
+            SchemaEdgeDirectionChecker.county_direction_checker()
+
+    back_edges = set()
+    forward_edges = set()
+    flat_fields = set()
+    for field, _ in attr.fields_dict(entity.__class__).items():
+        v = getattr(entity, field)
+
+        if v is None:
+            continue
+
+        # TODO(1908): Update traversal logic if relationship fields can be
+        # different types aside from Entity and List
+        if issubclass(type(v), Entity):
+            is_back_edge = direction_checker.is_back_edge(entity, v)
+            if is_back_edge:
+                back_edges.add(field)
+            else:
+                forward_edges.add(field)
+        elif isinstance(v, list):
+            # Disregard empty lists
+            if not v:
+                continue
+            is_back_edge = direction_checker.is_back_edge(entity, v[0])
+            if is_back_edge:
+                back_edges.add(field)
+            else:
+                forward_edges.add(field)
+        else:
+            flat_fields.add(field)
+
+    if entity_field_type is EntityFieldType.FLAT_FIELD:
+        return flat_fields
+    if entity_field_type is EntityFieldType.FORWARD_EDGE:
+        return forward_edges
+    if entity_field_type is EntityFieldType.BACK_EDGE:
+        return back_edges
+    raise EntityMatchingError(
+        f"Unrecognized EntityFieldType {entity_field_type}",
+        'entity_field_type')
