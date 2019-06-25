@@ -27,7 +27,8 @@ from recidiviz.ingest.models.ingest_info_pb2 import Person, \
     StateIncarcerationSentence, StateFine, StateCharge, StateCourtCase, \
     StateBond, StateIncarcerationPeriod, StateSupervisionPeriod, \
     StateIncarcerationIncident, StateParoleDecision, \
-    StateSupervisionViolation, StateSupervisionViolationResponse
+    StateSupervisionViolation, StateSupervisionViolationResponse, \
+    StateIncarcerationIncidentOutcome
 
 
 class FieldsDontMatchError(Exception):
@@ -96,7 +97,9 @@ class TestIngestInfo(unittest.TestCase):
              'state_parole_decision_ids', 'state_parole_decisions',
              'state_assessment_ids', 'state_assessments']
         incarceration_incident_fields_ignore = \
-            ['responding_officer_id', 'responding_officer']
+            ['responding_officer_id', 'responding_officer',
+             'state_incarceration_incident_outcomes',
+             'state_incarceration_incident_outcome_ids']
         parole_decision_fields_ignore = \
             ['decision_agent_ids', 'decision_agents']
         supervision_period_fields_ignore = \
@@ -140,6 +143,9 @@ class TestIngestInfo(unittest.TestCase):
                        supervision_period_fields_ignore)
         _verify_fields(StateIncarcerationIncident,
                        ingest_info.StateIncarcerationIncident(),
+                       incarceration_incident_fields_ignore)
+        _verify_fields(StateIncarcerationIncidentOutcome,
+                       ingest_info.StateIncarcerationIncidentOutcome(),
                        incarceration_incident_fields_ignore)
         _verify_fields(StateParoleDecision, ingest_info.StateParoleDecision(),
                        parole_decision_fields_ignore)

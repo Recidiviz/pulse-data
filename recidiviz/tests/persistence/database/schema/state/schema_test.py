@@ -76,10 +76,11 @@ class TestStateSchemaEnums(TestSchemaEnums):
                 StateSupervisionPeriodTerminationReason,
             'state_supervision_level':
                 state_supervision_period.StateSupervisionLevel,
-            'state_incarceration_incident_offense':
-                state_incarceration_incident.StateIncarcerationIncidentOffense,
-            'state_incarceration_incident_outcome':
-                state_incarceration_incident.StateIncarcerationIncidentOutcome,
+            'state_incarceration_incident_type':
+                state_incarceration_incident.StateIncarcerationIncidentType,
+            'state_incarceration_incident_outcome_type':
+                state_incarceration_incident.
+                StateIncarcerationIncidentOutcomeType,
             'state_supervision_violation_type':
                 state_supervision_violation.StateSupervisionViolationType,
             'state_supervision_violation_response_type':
