@@ -350,7 +350,11 @@ class TestIngestUtils:
         incarceration_period.status = 'IN_CUSTODY'
         incident = incarceration_period.create_state_incarceration_incident()
         incident.state_incarceration_incident_id = 'incident1'
-        incident.offense = 'FISTICUFFS'
+        incident.incident_type = 'FISTICUFFS'
+        incident_outcome = \
+            incident.create_state_incarceration_incident_outcome()
+        incident_outcome.state_incarceration_incident_outcome_id = 'incident1-1'
+        incident_outcome.outcome_type = 'FINE'
 
         incident_agent = incident.create_state_agent()
         incident_agent.state_agent_id = 'agent2'
@@ -459,12 +463,18 @@ class TestIngestUtils:
             .append('incident1')
         incident = expected_proto.state_incarceration_incidents.add()
         incident.state_incarceration_incident_id = 'incident1'
-        incident.offense = 'FISTICUFFS'
+        incident.incident_type = 'FISTICUFFS'
 
         incident.responding_officer_id = 'agent2'
         incident_agent = expected_proto.state_agents.add()
         incident_agent.state_agent_id = 'agent2'
         incident_agent.full_name = 'Officer Thompson'
+
+        incident.state_incarceration_incident_outcome_ids.append('incident1-1')
+        incident_outcome = \
+            expected_proto.state_incarceration_incident_outcomes.add()
+        incident_outcome.state_incarceration_incident_outcome_id = 'incident1-1'
+        incident_outcome.outcome_type = 'FINE'
 
         incarceration_period.state_parole_decision_ids.append('decision1')
         decision = expected_proto.state_parole_decisions.add()

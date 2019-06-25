@@ -100,7 +100,7 @@ class EnumOverrides:
         def add(self,
                 label_or_predicate: Union[str, Callable[[str], bool]],
                 mapped_enum: EntityEnum,
-                from_field: EntityEnumMeta = None) -> None:
+                from_field: EntityEnumMeta = None) -> 'EnumOverrides.Builder':
             """Adds a mapping from |match| to |mapped_enum|. |match| can be
             either a string value, in which case the field value must match the
             string exactly, or it can be a predicate specifying which strings
@@ -122,10 +122,11 @@ class EnumOverrides:
                 predicate = label_or_predicate
                 self._predicate_maps[from_field].add(
                     _EnumMatcher(predicate, mapped_enum))
+            return self
 
         def ignore(self,
                    label_or_predicate: Union[str, Callable[[str], bool]],
-                   from_field: EntityEnumMeta) -> None:
+                   from_field: EntityEnumMeta) -> 'EnumOverrides.Builder':
             """Marks strings matching |label_or_predicate| as ignored
             values for |enum_class|."""
             if isinstance(label_or_predicate, str):
@@ -135,6 +136,7 @@ class EnumOverrides:
                 predicate = label_or_predicate
                 self._predicate_ignores[from_field].add(predicate)
 
+            return self
 
 @attr.s(frozen=True)
 class _EnumMatcher:

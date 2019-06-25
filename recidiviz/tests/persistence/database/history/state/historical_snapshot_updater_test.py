@@ -27,6 +27,8 @@ from recidiviz.common.constants.person_characteristics import Ethnicity, Race
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_court_case import StateCourtType
 from recidiviz.common.constants.state.state_fine import StateFineStatus
+from recidiviz.common.constants.state.state_incarceration_incident import \
+    StateIncarcerationIncidentOutcomeType
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus
 from recidiviz.common.constants.state.state_parole_decision import \
@@ -77,10 +79,20 @@ class TestStateHistoricalSnapshotUpdater(BaseHistoricalSnapshotUpdaterTest):
             supervision_violations=[supervision_violation],
         )
 
+        incarceration_incident_outcome = \
+            state_schema.StateIncarcerationIncidentOutcome(
+                incarceration_incident_outcome_id=3211,
+                outcome_type=
+                StateIncarcerationIncidentOutcomeType.DISCIPLINARY_LABOR.value,
+                state_code='us_ca',
+                person_id=person_id,
+            )
+
         incarceration_incident = state_schema.StateIncarcerationIncident(
             incarceration_incident_id=321,
             state_code='us_ca',
             person_id=person_id,
+            incarceration_incident_outcomes=[incarceration_incident_outcome],
         )
 
         parole_decision = state_schema.StateParoleDecision(

@@ -19,7 +19,7 @@
 persistence entity."""
 
 from recidiviz.common.constants.state.state_incarceration_incident import \
-    StateIncarcerationIncidentOffense, StateIncarcerationIncidentOutcome
+    StateIncarcerationIncidentType
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.common.str_field_utils import normalize, parse_date
 
@@ -44,16 +44,13 @@ def copy_fields_to_builder(
     new = state_incarceration_incident_builder
 
     enum_fields = {
-        'offense': StateIncarcerationIncidentOffense,
-        'outcome': StateIncarcerationIncidentOutcome,
+        'incident_type': StateIncarcerationIncidentType,
     }
     enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
 
     # enum values
-    new.offense = enum_mappings.get(StateIncarcerationIncidentOffense)
-    new.offense_raw_text = fn(normalize, 'offense', proto)
-    new.outcome = enum_mappings.get(StateIncarcerationIncidentOutcome)
-    new.outcome_raw_text = fn(normalize, 'outcome', proto)
+    new.incident_type = enum_mappings.get(StateIncarcerationIncidentType)
+    new.incident_type_raw_text = fn(normalize, 'incident_type', proto)
 
     # 1-to-1 mappings
     new.external_id = fn(parse_external_id,
@@ -62,7 +59,8 @@ def copy_fields_to_builder(
     new.incident_date = fn(parse_date, 'incident_date', proto)
     new.state_code = parse_region_code_with_override(
         proto, 'state_code', metadata)
-    new.county_code = fn(normalize, 'county_code', proto)
+    new.facility = fn(normalize, 'facility', proto)
     new.location_within_facility = fn(normalize,
                                       'location_within_facility',
                                       proto)
+    new.incident_details = fn(normalize, 'incident_details', proto)

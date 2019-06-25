@@ -69,6 +69,18 @@ _HIERARCHY_MAP: Dict[
                     key='state_sentence',
                     ancestor_choices={'state_incarceration_sentence',
                                       'state_supervision_sentence'})),
+            # TODO(1883): It's a hack that we assume the parent of a
+            #  state_incarceration_period is an state_incarceration_sentence
+            #  here. In theory parent could be state_supervision_sentence that
+            #  has a revocation edge into a state_incarceration_period.
+            'state_incarceration_incident': (
+                'state_person', 'state_sentence_group',
+                'state_incarceration_sentence',
+                'state_incarceration_period'),
+            'state_incarceration_incident_outcome': (
+                'state_person', 'state_sentence_group',
+                'state_incarceration_sentence',
+                'state_incarceration_period', 'state_incarceration_incident'),
             'state_charge': (
                 'state_person', 'state_sentence_group',
                 AncestorTypeChoices(

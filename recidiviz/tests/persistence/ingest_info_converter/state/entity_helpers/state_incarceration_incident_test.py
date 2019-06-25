@@ -20,7 +20,7 @@ import unittest
 from datetime import date
 
 from recidiviz.common.constants.state.state_incarceration_incident import \
-    StateIncarcerationIncidentOffense, StateIncarcerationIncidentOutcome
+    StateIncarcerationIncidentType
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
@@ -36,13 +36,13 @@ class StateIncarcerationIncidentConverterTest(unittest.TestCase):
     def testParseStateIncarcerationIncident(self):
         # Arrange
         ingest_incident = ingest_info_pb2.StateIncarcerationIncident(
-            offense='CONTRABAND',
-            outcome='WARNING',
             state_incarceration_incident_id='INCIDENT_ID',
+            incident_type='CONTRABAND',
             incident_date='1/2/1111',
-            state_code='us_nd',
-            county_code='089',
-            location_within_facility='KITCHEN',
+            state_code='us_ca',
+            facility='Alcatraz',
+            location_within_facility='13B',
+            incident_details='Inmate was told to be quiet and would not comply',
         )
 
         # Act
@@ -53,15 +53,14 @@ class StateIncarcerationIncidentConverterTest(unittest.TestCase):
 
         # Assert
         expected_result = entities.StateIncarcerationIncident(
-            offense=StateIncarcerationIncidentOffense.CONTRABAND,
-            offense_raw_text='CONTRABAND',
-            outcome=StateIncarcerationIncidentOutcome.WARNING,
-            outcome_raw_text='WARNING',
             external_id='INCIDENT_ID',
+            incident_type=StateIncarcerationIncidentType.CONTRABAND,
+            incident_type_raw_text='CONTRABAND',
             incident_date=date(year=1111, month=1, day=2),
-            state_code='US_ND',
-            county_code='089',
-            location_within_facility='KITCHEN',
+            state_code='US_CA',
+            facility='ALCATRAZ',
+            location_within_facility='13B',
+            incident_details='INMATE WAS TOLD TO BE QUIET AND WOULD NOT COMPLY',
         )
 
         self.assertEqual(result, expected_result)

@@ -32,7 +32,8 @@ from recidiviz.persistence.ingest_info_converter.state.entity_helpers import \
     state_bond, state_court_case, state_incarceration_period, \
     state_supervision_period, state_parole_decision, \
     state_incarceration_incident, state_supervision_violation, \
-    state_supervision_violation_response, state_fine, state_agent
+    state_supervision_violation_response, state_fine, state_agent, \
+    state_incarceration_incident_outcome
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import fn
 
 
@@ -85,6 +86,12 @@ class StateConverter(BaseConverter[entities.StatePerson]):
             ii.state_incarceration_incident_id: ii
             for ii in ingest_info.state_incarceration_incidents
         }
+
+        self.incarceration_incident_outcomes = {
+            iio.state_incarceration_incident_outcome_id: iio
+            for iio in ingest_info.state_incarceration_incident_outcomes
+        }
+
         self.supervision_violations = {
             sv.state_supervision_violation_id: sv for sv
             in ingest_info.state_supervision_violations
@@ -424,6 +431,15 @@ class StateConverter(BaseConverter[entities.StatePerson]):
                'responding_officer_id',
                ingest_incident)
 
+        converted_outcomes = [
+            state_incarceration_incident_outcome.convert(
+                self.incarceration_incident_outcomes[outcome_id],
+                self.metadata)
+            for outcome_id in
+            ingest_incident.state_incarceration_incident_outcome_ids
+        ]
+
+        incident_builder.incarceration_incident_outcomes = converted_outcomes
         return incident_builder.build()
 
     def _convert_parole_decision(

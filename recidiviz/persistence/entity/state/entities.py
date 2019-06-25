@@ -50,7 +50,7 @@ from recidiviz.common.constants.state.state_incarceration import (
     StateIncarcerationType,
 )
 from recidiviz.common.constants.state.state_incarceration_incident import \
-    StateIncarcerationIncidentOffense, StateIncarcerationIncidentOutcome
+    StateIncarcerationIncidentType, StateIncarcerationIncidentOutcomeType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodStatus,
     StateIncarcerationPeriodAdmissionReason,
@@ -718,7 +718,8 @@ class StateIncarcerationIncident(ExternalIdEntity,
     # N/A
 
     # Type
-    # N/A
+    incident_type: Optional[StateIncarcerationIncidentType] = attr.ib()
+    incident_type_raw_text: Optional[str] = attr.ib()
 
     # Attributes
     #   - When
@@ -726,17 +727,11 @@ class StateIncarcerationIncident(ExternalIdEntity,
 
     #   - Where
     state_code: str = attr.ib()  # non-nullable
-    # The county where this intervention happened - should match the linked
-    # incarceration period.
-    county_code: Optional[str] = attr.ib()
-
+    facility: Optional[str] = attr.ib()
     location_within_facility: Optional[str] = attr.ib()
 
     #   - What
-    offense: Optional[StateIncarcerationIncidentOffense] = attr.ib()
-    offense_raw_text: Optional[str] = attr.ib()
-    outcome: Optional[StateIncarcerationIncidentOutcome] = attr.ib()
-    outcome_raw_text: Optional[str] = attr.ib()
+    incident_details: Optional[str] = attr.ib()
 
     #   - Who
     # See |responding_officer| below
@@ -749,6 +744,41 @@ class StateIncarcerationIncident(ExternalIdEntity,
     person: Optional['StatePerson'] = attr.ib(default=None)
     responding_officer: Optional['StateAgent'] = attr.ib(default=None)
     incarceration_period: Optional['StateIncarcerationPeriod'] = \
+        attr.ib(default=None)
+
+    incarceration_incident_outcomes: List['StateIncarcerationIncidentOutcome'] \
+        = attr.ib(factory=list)
+
+
+@attr.s(cmp=False)
+class StateIncarcerationIncidentOutcome(ExternalIdEntity,
+                                        BuildableAttr,
+                                        DefaultableAttr):
+    # Type
+    outcome_type: Optional[StateIncarcerationIncidentOutcomeType] = attr.ib()
+    outcome_type_raw_text: Optional[str] = attr.ib()
+
+    # Attributes
+    #   - When
+    date_effective: Optional[datetime.date] = attr.ib()
+
+    #   - Where
+    state_code: str = attr.ib()  # non-nullable
+
+    #   - What
+    outcome_description: Optional[str] = attr.ib()
+    punishment_length_days: Optional[int] = attr.ib()
+
+    #   - Who
+    # See |person| below
+
+    # Primary key - Only optional when hydrated in the data converter, before
+    # we have written this entity to the persistence layer
+    incarceration_incident_outcome_id: Optional[int] = attr.ib(default=None)
+
+    # Cross-entity relationships
+    person: Optional['StatePerson'] = attr.ib(default=None)
+    incarceration_incident: Optional['StateIncarcerationIncident'] = \
         attr.ib(default=None)
 
 

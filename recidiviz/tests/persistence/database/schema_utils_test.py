@@ -78,6 +78,8 @@ def test_get_all_table_classes():
         'StateFineHistory',
         'StateIncarcerationIncident',
         'StateIncarcerationIncidentHistory',
+        'StateIncarcerationIncidentOutcome',
+        'StateIncarcerationIncidentOutcomeHistory',
         'StateIncarcerationPeriod',
         'StateIncarcerationPeriodHistory',
         'StateIncarcerationSentence',

@@ -29,7 +29,7 @@ from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentClass
 from recidiviz.common.constants.state.state_fine import StateFineStatus
 from recidiviz.common.constants.state.state_incarceration_incident import \
-    StateIncarcerationIncidentOffense
+    StateIncarcerationIncidentType, StateIncarcerationIncidentOutcomeType
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus
@@ -49,7 +49,7 @@ from recidiviz.persistence.entity.state.entities import StatePerson, \
     StateIncarcerationSentence, StateIncarcerationPeriod, \
     StateIncarcerationIncident, StateParoleDecision, StateFine, \
     StateSupervisionViolation, StateSupervisionViolationResponse, StateAgent, \
-    StatePersonAlias
+    StatePersonAlias, StateIncarcerationIncidentOutcome
 from recidiviz.persistence.ingest_info_converter import ingest_info_converter
 from recidiviz.persistence.ingest_info_converter.ingest_info_converter import \
     IngestInfoConversionResult
@@ -244,8 +244,18 @@ class TestIngestInfoStateConverter(unittest.TestCase):
         )
         ingest_info.state_incarceration_incidents.add(
             state_incarceration_incident_id='INCIDENT_ID',
-            offense='CONTRABAND',
-            responding_officer_id='AGENT_ID2'
+            incident_type='CONTRABAND',
+            responding_officer_id='AGENT_ID2',
+            state_incarceration_incident_outcome_ids=['INCIDENT_OUTCOME_ID'],
+        )
+
+        ingest_info.state_incarceration_incident_outcomes.add(
+            state_incarceration_incident_outcome_id='INCIDENT_OUTCOME_ID',
+            outcome_type='GOOD_TIME_LOSS',
+            date_effective='2/10/2018',
+            state_code='US_ND',
+            outcome_description='Good time',
+            punishment_length_days='7',
         )
         ingest_info.state_parole_decisions.add(
             state_parole_decision_id='DECISION_ID',
@@ -256,16 +266,27 @@ class TestIngestInfoStateConverter(unittest.TestCase):
         result = self._convert_and_throw_on_errors(ingest_info, metadata)
 
         # Assert
+        incident_outcome = StateIncarcerationIncidentOutcome.new_with_defaults(
+            external_id='INCIDENT_OUTCOME_ID',
+            outcome_type=StateIncarcerationIncidentOutcomeType.GOOD_TIME_LOSS,
+            outcome_type_raw_text='GOOD_TIME_LOSS',
+            date_effective=datetime.date(year=2018, month=2, day=10),
+            state_code='US_ND',
+            outcome_description='GOOD TIME',
+            punishment_length_days=7,
+        )
+
         incident = StateIncarcerationIncident.new_with_defaults(
             external_id='INCIDENT_ID',
             state_code='US_ND',
-            offense=StateIncarcerationIncidentOffense.CONTRABAND,
-            offense_raw_text='CONTRABAND',
+            incident_type=StateIncarcerationIncidentType.CONTRABAND,
+            incident_type_raw_text='CONTRABAND',
             responding_officer=StateAgent.new_with_defaults(
                 external_id='AGENT_ID2',
                 state_code='US_ND',
                 full_name='AGENT HERNANDEZ'
-            )
+            ),
+            incarceration_incident_outcomes=[incident_outcome]
         )
 
         assessment = StateAssessment.new_with_defaults(

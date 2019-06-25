@@ -228,17 +228,27 @@ state_supervision_period_termination_reason = Enum(
     state_enum_strings.state_supervision_period_termination_reason_suspension,
     name='state_supervision_period_termination_reason')
 
-state_incarceration_incident_offense = Enum(
-    state_enum_strings.state_incarceration_incident_offense_contraband,
-    state_enum_strings.state_incarceration_incident_offense_violent,
-    name='state_incarceration_incident_offense')
+state_incarceration_incident_type = Enum(
+    state_enum_strings.state_incarceration_incident_type_contraband,
+    state_enum_strings.state_incarceration_incident_type_disorderly_conduct,
+    state_enum_strings.state_incarceration_incident_type_escape,
+    state_enum_strings.state_incarceration_incident_type_minor_offense,
+    state_enum_strings.state_incarceration_incident_type_violence,
+    name='state_incarceration_incident_type')
 
-state_incarceration_incident_outcome = Enum(
+state_incarceration_incident_outcome_type = Enum(
+    state_enum_strings.state_incarceration_incident_outcome_disciplinary_labor,
+    state_enum_strings.
+    state_incarceration_incident_outcome_external_prosecution,
+    state_enum_strings.state_incarceration_incident_outcome_financial_penalty,
+    state_enum_strings.state_incarceration_incident_outcome_good_time_loss,
+    state_enum_strings.state_incarceration_incident_outcome_miscellaneous,
+    state_enum_strings.state_incarceration_incident_outcome_not_guilty,
     state_enum_strings.state_incarceration_incident_outcome_privilege_loss,
     state_enum_strings.state_incarceration_incident_outcome_solitary,
+    state_enum_strings.state_incarceration_incident_outcome_treatment,
     state_enum_strings.state_incarceration_incident_outcome_warning,
-    state_enum_strings.state_incarceration_incident_outcome_write_up,
-    name='state_incarceration_incident_outcome')
+    name='state_incarceration_incident_outcome_type')
 
 state_supervision_violation_type = Enum(
     state_enum_strings.state_supervision_violation_type_absconded,
@@ -489,8 +499,7 @@ class StatePersonExternalIdHistory(Base,
 # StatePersonAlias
 
 class _StatePersonAliasSharedColumns(_ReferencesStatePersonSharedColumns):
-    """
-    A mixin which defines all columns common to StatePersonAlias and
+    """A mixin which defines all columns common to StatePersonAlias and
     StatePersonAliasHistory
     """
 
@@ -734,8 +743,7 @@ class StateBondHistory(Base,
 # StateCourtCase
 
 class _StateCourtCaseSharedColumns(_ReferencesStatePersonSharedColumns):
-    """
-    A mixin which defines all columns common to StateCourtCase and
+    """A mixin which defines all columns common to StateCourtCase and
     StateCourtCaseHistory
     """
 
@@ -1088,9 +1096,8 @@ class StateSupervisionSentenceHistory(Base,
 class _StateIncarcerationSentenceSharedColumns(
         _ReferencesStatePersonSharedColumns,
         _ReferencesStateSentenceGroupSharedColumns):
-    """
-    A mixin which defines all columns common to StateIncarcerationSentence and
-    StateIncarcerationSentenceHistory
+    """A mixin which defines all columns common to StateIncarcerationSentence
+    and StateIncarcerationSentenceHistory
     """
 
     # Consider this class a mixin and only allow instantiating subclasses
@@ -1169,8 +1176,8 @@ class StateIncarcerationSentenceHistory(
 class _StateFineSharedColumns(
         _ReferencesStatePersonSharedColumns,
         _ReferencesStateSentenceGroupSharedColumns):
-    """
-    A mixin which defines all columns common to StateFine and StateFineHistory
+    """A mixin which defines all columns common to StateFine and
+    StateFineHistory
     """
 
     # Consider this class a mixin and only allow instantiating subclasses
@@ -1225,8 +1232,7 @@ class StateFineHistory(Base,
 
 class _StateIncarcerationPeriodSharedColumns(
         _ReferencesStatePersonSharedColumns):
-    """
-    A mixin which defines all columns common to StateIncarcerationPeriod and
+    """A mixin which defines all columns common to StateIncarcerationPeriod and
     StateIncarcerationPeriodHistory
     """
 
@@ -1320,8 +1326,7 @@ class StateIncarcerationPeriodHistory(Base,
 # StateSupervisionPeriod
 
 class _StateSupervisionPeriodSharedColumns(_ReferencesStatePersonSharedColumns):
-    """
-    A mixin which defines all columns common to StateSupervisionPeriod and
+    """A mixin which defines all columns common to StateSupervisionPeriod and
     StateSupervisionPeriodHistory
     """
 
@@ -1397,9 +1402,8 @@ class StateSupervisionPeriodHistory(Base,
 
 class _StateIncarcerationIncidentSharedColumns(
         _ReferencesStatePersonSharedColumns):
-    """
-    A mixin which defines all columns common to StateIncarcerationIncident and
-    StateIncarcerationIncidentHistory
+    """A mixin which defines all columns common to StateIncarcerationIncident
+    and StateIncarcerationIncidentHistory
     """
 
     # Consider this class a mixin and only allow instantiating subclasses
@@ -1409,14 +1413,13 @@ class _StateIncarcerationIncidentSharedColumns(
         return super().__new__(cls)
 
     external_id = Column(String(255), index=True)
+    incident_type = Column(state_incarceration_incident_type)
+    incident_type_raw_text = Column(String(255))
     incident_date = Column(Date)
     state_code = Column(String(255), nullable=False, index=True)
-    county_code = Column(String(255), index=True)
+    facility = Column(String(255))
     location_within_facility = Column(String(255))
-    offense = Column(state_incarceration_incident_offense)
-    offense_raw_text = Column(String(255))
-    outcome = Column(state_incarceration_incident_outcome)
-    outcome_raw_text = Column(String(255))
+    incident_details = Column(Text)
 
     @declared_attr
     def incarceration_period_id(self):
@@ -1448,6 +1451,10 @@ class StateIncarcerationIncident(Base,
         uselist=False,
         back_populates='incarceration_incidents')
 
+    incarceration_incident_outcomes = relationship(
+        'StateIncarcerationIncidentOutcome',
+        back_populates='incarceration_incident')
+
 
 class StateIncarcerationIncidentHistory(
         Base,
@@ -1466,12 +1473,77 @@ class StateIncarcerationIncidentHistory(
         nullable=False, index=True)
 
 
+# StateIncarcerationIncidentOutcome
+
+class _StateIncarcerationIncidentOutcomeSharedColumns(
+        _ReferencesStatePersonSharedColumns):
+    """A mixin which defines all columns common to
+    StateIncarcerationIncidentOutcome and
+    StateIncarcerationIncidentOutcomeHistory
+    """
+
+    # Consider this class a mixin and only allow instantiating subclasses
+    def __new__(cls, *_, **__):
+        if cls is _StateIncarcerationIncidentOutcomeSharedColumns:
+            raise Exception(f'[{cls}] cannot be instantiated')
+        return super().__new__(cls)
+
+    external_id = Column(String(255), index=True)
+    outcome_type = Column(state_incarceration_incident_outcome_type)
+    outcome_type_raw_text = Column(String(255))
+    state_code = Column(String(255), nullable=False, index=True)
+    date_effective = Column(Date)
+    outcome_description = Column(String(255))
+    punishment_length_days = Column(Integer)
+
+    @declared_attr
+    def incarceration_incident_id(self):
+        return Column(
+            Integer,
+            ForeignKey(
+                'state_incarceration_incident.incarceration_incident_id'),
+            nullable=True)
+
+
+class StateIncarcerationIncidentOutcome(
+        Base,
+        _StateIncarcerationIncidentOutcomeSharedColumns):
+    """Represents a StateIncarcerationIncidentOutcome in the SQL schema"""
+    __tablename__ = 'state_incarceration_incident_outcome'
+
+    incarceration_incident_outcome_id = Column(Integer, primary_key=True)
+
+    person = relationship('StatePerson', uselist=False)
+    incarceration_incident = relationship(
+        'StateIncarcerationIncident',
+        uselist=False,
+        back_populates='incarceration_incident_outcomes')
+
+
+class StateIncarcerationIncidentOutcomeHistory(
+        Base,
+        _StateIncarcerationIncidentOutcomeSharedColumns,
+        HistoryTableSharedColumns):
+    """Represents the historical state of a StateIncarcerationIncidentOutcome"""
+    __tablename__ = 'state_incarceration_incident_outcome_history'
+
+    # This primary key should NOT be used. It only exists because SQLAlchemy
+    # requires every table to have a unique primary key.
+    incarceration_incident_outcome_history_id = Column(
+        Integer, primary_key=True)
+
+    incarceration_incident_outcome_id = Column(
+        Integer, ForeignKey(
+            'state_incarceration_incident_outcome.'
+            'incarceration_incident_outcome_id'),
+        nullable=False, index=True)
+
+
 # StateParoleDecision
 
 class _StateParoleDecisionSharedColumns(
         _ReferencesStatePersonSharedColumns):
-    """
-    A mixin which defines all columns common to StateParoleDecision and
+    """A mixin which defines all columns common to StateParoleDecision and
     StateParoleDecisionHistory
     """
 
@@ -1538,8 +1610,7 @@ class StateParoleDecisionHistory(Base,
 
 class _StateSupervisionViolationSharedColumns(
         _ReferencesStatePersonSharedColumns):
-    """
-    A mixin which defines all columns common to StateSupervisionViolation and
+    """A mixin which defines all columns common to StateSupervisionViolation and
     StateSupervisionViolationHistory
     """
 
@@ -1602,8 +1673,7 @@ class StateSupervisionViolationHistory(Base,
 
 class _StateSupervisionViolationResponseSharedColumns(
         _ReferencesStatePersonSharedColumns):
-    """
-    A mixin which defines all columns common to
+    """A mixin which defines all columns common to
     StateSupervisionViolationResponse and
     StateSupervisionViolationResponseHistory
     """
@@ -1677,8 +1747,7 @@ class StateSupervisionViolationResponseHistory(
 # StateAgent
 
 class _StateAgentSharedColumns:
-    """
-    A mixin which defines all columns common to StateAgent and
+    """A mixin which defines all columns common to StateAgent and
     StateAgentHistory
     """
 
