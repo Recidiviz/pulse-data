@@ -78,13 +78,23 @@ state_incarceration_type_county_jail = 'COUNTY_JAIL'
 state_incarceration_type_state_prison = 'STATE_PRISON'
 
 # state_incarceration_incident.py
-state_incarceration_incident_offense_contraband = 'CONTRABAND'
-state_incarceration_incident_offense_violent = 'VIOLENT'
+state_incarceration_incident_type_contraband = 'CONTRABAND'
+state_incarceration_incident_type_disorderly_conduct = 'DISORDERLY_CONDUCT'
+state_incarceration_incident_type_escape = 'ESCAPE'
+state_incarceration_incident_type_minor_offense = 'MINOR_OFFENSE'
+state_incarceration_incident_type_violence = 'VIOLENCE'
 
+state_incarceration_incident_outcome_disciplinary_labor = 'DISCIPLINARY_LABOR'
+state_incarceration_incident_outcome_external_prosecution = \
+    'EXTERNAL_PROSECUTION'
+state_incarceration_incident_outcome_financial_penalty = 'FINANCIAL_PENALTY'
+state_incarceration_incident_outcome_good_time_loss = 'GOOD_TIME_LOSS'
+state_incarceration_incident_outcome_miscellaneous = 'MISCELLANEOUS'
+state_incarceration_incident_outcome_not_guilty = 'NOT_GUILTY'
 state_incarceration_incident_outcome_privilege_loss = 'PRIVILEGE_LOSS'
 state_incarceration_incident_outcome_solitary = 'SOLITARY'
+state_incarceration_incident_outcome_treatment = 'TREATMENT'
 state_incarceration_incident_outcome_warning = 'WARNING'
-state_incarceration_incident_outcome_write_up = 'WRITE_UP'
 
 # state_incarceration_period.py
 state_incarceration_period_status_in_custody = 'IN_CUSTODY'

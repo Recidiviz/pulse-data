@@ -143,6 +143,8 @@ def convert_ingest_info_to_proto(ingest_info_py: ingest_info.IngestInfo) \
         Dict[str, ingest_info.StateSupervisionPeriod] = {}
     state_incarceration_incident_map: \
         Dict[str, ingest_info.StateIncarcerationIncident] = {}
+    state_incarceration_incident_outcome_map: \
+        Dict[str, ingest_info.StateIncarcerationIncidentOutcome] = {}
     state_parole_decision_map: Dict[str, ingest_info.StateParoleDecision] = {}
     state_supervision_violation_map: \
         Dict[str, ingest_info.StateSupervisionViolation] = {}
@@ -245,6 +247,17 @@ def convert_ingest_info_to_proto(ingest_info_py: ingest_info.IngestInfo) \
                         'state_agent_id', state_agent_map)
                     proto_incident.responding_officer_id = \
                         proto_agent.state_agent_id
+
+                for incident_outcome in \
+                        incident.state_incarceration_incident_outcomes:
+                    proto_incident_outcome = _populate_proto(
+                        'state_incarceration_incident_outcomes',
+                        incident_outcome,
+                        'state_incarceration_incident_outcome_id',
+                        state_incarceration_incident_outcome_map)
+                    proto_incident.state_incarceration_incident_outcome_ids.\
+                        append(proto_incident_outcome.
+                               state_incarceration_incident_outcome_id)
 
             for decision in incarceration_period.state_parole_decisions:
                 proto_decision = _populate_proto(
@@ -556,6 +569,13 @@ def convert_proto_to_ingest_info(
                           ingest_info.StateIncarcerationIncident,
                           'state_incarceration_incident_id')
              for incarceration_incident in proto.state_incarceration_incidents)
+    state_incarceration_incident_outcome_map: \
+        Dict[str, ingest_info.StateIncarcerationIncidentOutcome] = \
+        dict(_proto_to_py(incarceration_incident_outcome,
+                          ingest_info.StateIncarcerationIncidentOutcome,
+                          'state_incarceration_incident_outcome_id')
+             for incarceration_incident_outcome in
+             proto.state_incarceration_incident_outcomes)
     state_parole_decision_map: Dict[str, ingest_info.StateParoleDecision] = \
         dict(_proto_to_py(parole_decision,
                           ingest_info.StateParoleDecision,
@@ -633,6 +653,17 @@ def convert_proto_to_ingest_info(
         incarceration_incident.responding_officer = \
             state_agent_map[proto_incident.responding_officer_id]
 
+        incarceration_incident_outcomes = []
+        for proto_incident_outcome in \
+                proto.state_incarceration_incident_outcomes:
+            incarceration_incident_outcomes.append(
+                state_incarceration_incident_outcome_map[
+                    proto_incident_outcome.
+                    state_incarceration_incident_outcome_id])
+
+        incarceration_incident.state_incarceration_incident_outcomes = \
+            incarceration_incident_outcomes
+
     for proto_assessment in proto.state_assessments:
         assessment = state_assessment_map[proto_assessment.state_assessment_id]
         assessment.conducting_agent = \
@@ -671,6 +702,15 @@ def convert_proto_to_ingest_info(
         incarceration_period.state_assessments = \
             [state_assessment_map[proto_id] for proto_id
              in proto_incarceration_period.state_assessment_ids]
+
+    # Wire child entities to respective incarceration incidents
+    for proto_incarceration_incident in proto.state_incarceration_incidents:
+        incarceration_incident = state_incarceration_incident_map[
+            proto_incarceration_incident.state_incarceration_incident_id]
+        incarceration_incident.state_incarceration_incident_outcomes = \
+            [state_incarceration_incident_outcome_map[proto_id] for proto_id
+             in proto_incarceration_incident.
+             state_incarceration_incident_outcome_ids]
 
     # Wire court cases and state bonds to respective state charges
     for proto_state_charge in proto.state_charges:
