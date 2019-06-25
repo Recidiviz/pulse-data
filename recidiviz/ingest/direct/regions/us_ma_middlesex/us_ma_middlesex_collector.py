@@ -26,7 +26,7 @@ import sqlalchemy
 from more_itertools import one
 
 from recidiviz import IngestInfo
-from recidiviz.common.constants.bond import BondStatus
+from recidiviz.common.constants.bond import BondStatus, BondType
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.county.booking import AdmissionReason, \
     ReleaseReason
@@ -163,17 +163,24 @@ class UsMaMiddlesexCollector(DirectIngestCollector):
         builder.add('15 DAY PAROLE DETAINER', AdmissionReason.PAROLE_VIOLATION)
         builder.add('2', ChargeStatus.SENTENCED)
         builder.add('BAIL', ReleaseReason.BOND)
+        builder.add('BAILED OUT', ChargeStatus.PRETRIAL)
         builder.ignore('C', BondStatus)
+        builder.add('CASU', BondType.CASH)
         builder.ignore('CIVIL CAPIAS', AdmissionReason)  # Civil bench warrant.
         builder.add('CONTEMPT OF COURT', AdmissionReason.NEW_COMMITMENT)
         builder.add('COURT ORDERED', ReleaseReason.OWN_RECOGNIZANCE)
         builder.add('END OF SENTENCE', ReleaseReason.EXPIRATION_OF_SENTENCE)
+        builder.add('HWO', BondType.DENIED)
         builder.ignore('N', BondStatus)
+        builder.add('NB', BondType.NOT_REQUIRED)
         builder.add('NOL PROS', ChargeStatus.DROPPED)
         builder.add('O', BondStatus.SET)
+        builder.ignore('OTH', BondType)
         builder.add('PERMANENT PAROLE DETAINER',
                     AdmissionReason.PAROLE_VIOLATION)
+        builder.add('PERSONAL RECOGNIZANCE', ChargeStatus.PRETRIAL)
         builder.add('PT', ChargeStatus.PRETRIAL)
+        builder.add('RELEASED BY AUTHORITY OF COURT', ChargeStatus.PRETRIAL)
         builder.ignore('S', BondStatus)
         # TODO (#1897) make sure charge class is filled in. This is a
         # parole violation.
