@@ -116,6 +116,7 @@ class StatePersonExternalId(Entity, BuildableAttr, DefaultableAttr):
     state_code: str = attr.ib()  # non-nullable
 
     #   - What
+    # TODO(1905): Not optional in schema
     id_type: Optional[str] = attr.ib()
 
     # Primary key - Only optional when hydrated in the data converter, before
@@ -131,6 +132,7 @@ class StatePersonAlias(Entity, BuildableAttr, DefaultableAttr):
     """Models an alias associated with a particular StatePerson."""
     # Attributes
     state_code: str = attr.ib()  # non-nullable
+    # TODO(1905): Remove defaults for string fields
     full_name: Optional[str] = attr.ib(default=None)
     surname: Optional[str] = attr.ib(default=None)
     given_names: Optional[str] = attr.ib(default=None)
