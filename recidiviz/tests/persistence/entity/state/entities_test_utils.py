@@ -33,7 +33,7 @@ from recidiviz.common.constants.state.state_fine import StateFineStatus
 from recidiviz.common.constants.state.state_incarceration import \
     StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_incident import \
-    StateIncarcerationIncidentOffense, StateIncarcerationIncidentOutcome
+    StateIncarcerationIncidentType, StateIncarcerationIncidentOutcomeType
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus, StateIncarcerationFacilitySecurityLevel, \
     StateIncarcerationPeriodAdmissionReason, \
@@ -323,17 +323,29 @@ def generate_full_graph_state_person(
         full_name='MR SIR',
     )
 
+    incident_outcome = \
+        entities.StateIncarcerationIncidentOutcome.new_with_defaults(
+            outcome_type=StateIncarcerationIncidentOutcomeType.WARNING,
+            outcome_type_raw_text='WARNING',
+            date_effective=datetime.date(year=2003, month=8, day=20),
+            state_code='us_ca',
+            outcome_description='LOSS OF COMMISSARY',
+            punishment_length_days=30,
+            person=person,
+        )
+
     incarceration_incident = \
         entities.StateIncarcerationIncident.new_with_defaults(
+            incident_type=StateIncarcerationIncidentType.CONTRABAND,
+            incident_type_raw_text='CONTRABAND',
             incident_date=datetime.date(year=2003, month=8, day=10),
             state_code='us_ca',
-            location_within_facility='CELL',
-            offense=StateIncarcerationIncidentOffense.CONTRABAND,
-            offense_raw_text='CONTRABAND',
-            outcome=StateIncarcerationIncidentOutcome.WRITE_UP,
-            outcome_raw_text='WRITE UP',
+            facility='ALCATRAZ',
+            location_within_facility='13B',
+            incident_details='Inmate was told to be quiet and would not comply',
             person=person,
             responding_officer=incident_responding_officer,
+            incarceration_incident_outcomes=[incident_outcome],
         )
 
     incarceration_period.incarceration_incidents = [incarceration_incident]
@@ -499,6 +511,13 @@ def generate_full_graph_state_person(
 
         for child in incarceration_period_children:
             child.incarceration_period = incarceration_period
+
+        # pylint:disable=not-an-iterable
+        incarceration_incident_children = \
+            incarceration_incident.incarceration_incident_outcomes
+
+        for child in incarceration_incident_children:
+            child.incarceration_incident = incarceration_incident
 
         supervision_period_children = \
             supervision_period.supervision_violations + \

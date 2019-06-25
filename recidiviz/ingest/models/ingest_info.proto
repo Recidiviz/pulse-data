@@ -54,10 +54,11 @@ message IngestInfo {
     repeated StateIncarcerationPeriod state_incarceration_periods = 22;
     repeated StateSupervisionPeriod state_supervision_periods = 23;
     repeated StateIncarcerationIncident state_incarceration_incidents = 24;
-    repeated StateParoleDecision state_parole_decisions = 25;
-    repeated StateSupervisionViolation state_supervision_violations = 26;
-    repeated StateSupervisionViolationResponse state_supervision_violation_responses = 27;
-    repeated StateAgent state_agents = 28;
+    repeated StateIncarcerationIncidentOutcome state_incarceration_incident_outcomes = 25;
+    repeated StateParoleDecision state_parole_decisions = 26;
+    repeated StateSupervisionViolation state_supervision_violations = 27;
+    repeated StateSupervisionViolationResponse state_supervision_violation_responses = 28;
+    repeated StateAgent state_agents = 29;
 }
 
 message Person {
@@ -375,14 +376,24 @@ message StateSupervisionPeriod {
 
 message StateIncarcerationIncident {
     optional string state_incarceration_incident_id = 1;
-    optional string incident_date = 2;
-    optional string state_code = 3;
-    optional string county_code = 4;
-    optional string location_within_facility = 5;
-    optional string offense = 6;
-    optional string outcome = 7;
+    optional string incident_type = 2;
+    optional string incident_date = 3;
+    optional string state_code = 4;
+    optional string facility = 5;
+    optional string location_within_facility = 6;
+    optional string incident_details = 7;
 
     optional string responding_officer_id = 8;
+    repeated string state_incarceration_incident_outcome_ids = 9;
+}
+
+message StateIncarcerationIncidentOutcome {
+    optional string state_incarceration_incident_outcome_id = 1;
+    optional string outcome_type = 2;
+    optional string date_effective = 3;
+    optional string state_code = 4;
+    optional string outcome_description = 5;
+    optional string punishment_length_days = 6;
 }
 
 message StateParoleDecision {

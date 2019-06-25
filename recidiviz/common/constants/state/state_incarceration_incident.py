@@ -22,22 +22,47 @@ import recidiviz.common.constants.state.enum_canonical_strings as \
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
-class StateIncarcerationIncidentOffense(EntityEnum, metaclass=EntityEnumMeta):
+class StateIncarcerationIncidentType(EntityEnum, metaclass=EntityEnumMeta):
     CONTRABAND = \
-        state_enum_strings.state_incarceration_incident_offense_contraband
-    VIOLENT = state_enum_strings.state_incarceration_incident_offense_violent
+        state_enum_strings.state_incarceration_incident_type_contraband
+    DISORDERLY_CONDUCT = \
+        state_enum_strings.state_incarceration_incident_type_disorderly_conduct
+    ESCAPE = state_enum_strings.state_incarceration_incident_type_escape
+    MINOR_OFFENSE = \
+        state_enum_strings.state_incarceration_incident_type_minor_offense
+    VIOLENCE = \
+        state_enum_strings.state_incarceration_incident_type_violence
 
     @staticmethod
     def _get_default_map():
         return _STATE_INCARCERATION_INCIDENT_OFFENSE_MAP
 
 
-class StateIncarcerationIncidentOutcome(EntityEnum, metaclass=EntityEnumMeta):
+class StateIncarcerationIncidentOutcomeType(EntityEnum,
+                                            metaclass=EntityEnumMeta):
+    DISCIPLINARY_LABOR = \
+        state_enum_strings.\
+        state_incarceration_incident_outcome_disciplinary_labor
+    EXTERNAL_PROSECUTION = \
+        state_enum_strings.\
+        state_incarceration_incident_outcome_external_prosecution
+    FINANCIAL_PENALTY = \
+        state_enum_strings.\
+        state_incarceration_incident_outcome_financial_penalty
+    GOOD_TIME_LOSS = \
+        state_enum_strings.\
+        state_incarceration_incident_outcome_good_time_loss
+    MISCELLANEOUS = \
+        state_enum_strings.state_incarceration_incident_outcome_miscellaneous
+    NOT_GUILTY = \
+        state_enum_strings.state_incarceration_incident_outcome_not_guilty
     PRIVILEGE_LOSS = \
         state_enum_strings.state_incarceration_incident_outcome_privilege_loss
-    SOLITARY = state_enum_strings.state_incarceration_incident_outcome_solitary
+    SOLITARY = \
+        state_enum_strings.state_incarceration_incident_outcome_solitary
+    TREATMENT = \
+        state_enum_strings.state_incarceration_incident_outcome_treatment
     WARNING = state_enum_strings.state_incarceration_incident_outcome_warning
-    WRITE_UP = state_enum_strings.state_incarceration_incident_outcome_write_up
 
     @staticmethod
     def _get_default_map():
@@ -45,19 +70,29 @@ class StateIncarcerationIncidentOutcome(EntityEnum, metaclass=EntityEnumMeta):
 
 
 _STATE_INCARCERATION_INCIDENT_OFFENSE_MAP = {
-    'CONTRABAND': StateIncarcerationIncidentOffense.CONTRABAND,
-    'VIOLENT': StateIncarcerationIncidentOffense.VIOLENT,
-    'VIOLENCE': StateIncarcerationIncidentOffense.VIOLENT,
+    'CONTRABAND': StateIncarcerationIncidentType.CONTRABAND,
+    'DISORDERLY CONDUCT': StateIncarcerationIncidentType.DISORDERLY_CONDUCT,
+    'ESCAPE': StateIncarcerationIncidentType.ESCAPE,
+    'MINOR OFFENSE': StateIncarcerationIncidentType.MINOR_OFFENSE,
+    'VIOLENT': StateIncarcerationIncidentType.VIOLENCE,
+    'VIOLENCE': StateIncarcerationIncidentType.VIOLENCE,
 }
 
 
 _STATE_INCARCERATION_INCIDENT_OUTCOME_MAP = {
-    'PRIVILEGE LOSS': StateIncarcerationIncidentOutcome.PRIVILEGE_LOSS,
-    'LOSS OF PRIVILEGE': StateIncarcerationIncidentOutcome.PRIVILEGE_LOSS,
-    'SOLITARY': StateIncarcerationIncidentOutcome.SOLITARY,
-    'SOLITARY CONFINEMENT': StateIncarcerationIncidentOutcome.SOLITARY,
-    'WARNING': StateIncarcerationIncidentOutcome.WARNING,
-    'WRITE_UP': StateIncarcerationIncidentOutcome.WRITE_UP,
-    'SHOT': StateIncarcerationIncidentOutcome.WRITE_UP,
-    'REPRIMAND': StateIncarcerationIncidentOutcome.WRITE_UP,
+    'DISCIPLINARY LABOR':
+        StateIncarcerationIncidentOutcomeType.DISCIPLINARY_LABOR,
+    'EXTERNAL PROSECUTION':
+        StateIncarcerationIncidentOutcomeType.EXTERNAL_PROSECUTION,
+    'FINANCIAL PENALTY':
+        StateIncarcerationIncidentOutcomeType.FINANCIAL_PENALTY,
+    'GOOD TIME LOSS': StateIncarcerationIncidentOutcomeType.GOOD_TIME_LOSS,
+    'MISCELLANEOUS': StateIncarcerationIncidentOutcomeType.MISCELLANEOUS,
+    'PRIVILEGE LOSS': StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS,
+    'LOSS OF PRIVILEGE': StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS,
+    'NOT GUILTY': StateIncarcerationIncidentOutcomeType.NOT_GUILTY,
+    'SOLITARY': StateIncarcerationIncidentOutcomeType.SOLITARY,
+    'SOLITARY CONFINEMENT': StateIncarcerationIncidentOutcomeType.SOLITARY,
+    'TREATMENT': StateIncarcerationIncidentOutcomeType.TREATMENT,
+    'WARNING': StateIncarcerationIncidentOutcomeType.WARNING,
 }
