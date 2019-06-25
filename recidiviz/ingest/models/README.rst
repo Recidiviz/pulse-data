@@ -180,7 +180,7 @@ The Arrest object represents information about the arrest that led to the associ
 **Field Name**   **Description**
 ================ =======================================================================================
 **arrest_id**    Unique identifier for an arrest. If not specified, one will be generated automatically.
-**date**         The date this person was arrested on this booking.
+**arrest_date**  The date this person was arrested on this booking.
 **location**     The location of arrest.
 **officer_name** The name of the arresting officer.
 **officer_id**   The ID of the arresting officer (e.g., badge number).
