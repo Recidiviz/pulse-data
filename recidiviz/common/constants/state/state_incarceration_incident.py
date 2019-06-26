@@ -71,8 +71,12 @@ class StateIncarcerationIncidentOutcomeType(EntityEnum,
 
 _STATE_INCARCERATION_INCIDENT_OFFENSE_MAP = {
     'CONTRABAND': StateIncarcerationIncidentType.CONTRABAND,
+    'DRUGS': StateIncarcerationIncidentType.CONTRABAND,
+    'ALCOHOL': StateIncarcerationIncidentType.CONTRABAND,
+    'TATTOO': StateIncarcerationIncidentType.CONTRABAND,
     'DISORDERLY CONDUCT': StateIncarcerationIncidentType.DISORDERLY_CONDUCT,
     'ESCAPE': StateIncarcerationIncidentType.ESCAPE,
+    'MINOR': StateIncarcerationIncidentType.MINOR_OFFENSE,
     'MINOR OFFENSE': StateIncarcerationIncidentType.MINOR_OFFENSE,
     'VIOLENT': StateIncarcerationIncidentType.VIOLENCE,
     'VIOLENCE': StateIncarcerationIncidentType.VIOLENCE,
