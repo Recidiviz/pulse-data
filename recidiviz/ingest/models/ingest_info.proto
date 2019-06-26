@@ -211,9 +211,8 @@ message StateAlias {
 
 message StatePersonExternalId {
     optional string state_person_external_id_id = 1;
-    optional string external_id = 2;
-    optional string id_type = 3;
-    optional string state_code = 4;
+    optional string id_type = 2;
+    optional string state_code = 3;
 }
 
 message StateAssessment {

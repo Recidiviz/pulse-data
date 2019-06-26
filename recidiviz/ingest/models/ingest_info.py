@@ -17,7 +17,7 @@
 
 """Represents data scraped for a single individual."""
 from abc import abstractmethod
-from typing import List, Optional, Dict
+from typing import List, Optional
 
 
 PLURALS = {'person': 'people', 'booking': 'bookings', 'charge': 'charges',
@@ -73,9 +73,6 @@ class IngestInfo(IngestObject):
         self.people: List[Person] = people or []
         self.state_people: List[StatePerson] = state_people or []
 
-        self._state_people_by_id: Dict[str, StatePerson] = {}
-        self._set_person_ids(state_people)
-
     def __eq__(self, other):
         return eq(self, other, exclude=['_state_people_by_id'])
 
@@ -91,14 +88,6 @@ class IngestInfo(IngestObject):
     def __setattr__(self, name, value):
         restricted_setattr(self, '_state_people_by_id', name, value)
 
-    # TODO(1626): Extract the caching mechanisms embedded in IngestInfo
-    # into an optional caching decorator of some sort
-    def _set_person_ids(self, state_people):
-        if state_people:
-            for person in state_people:
-                if person.state_person_id:
-                    self._state_people_by_id[person.state_person_id] = person
-
     def create_person(self, **kwargs) -> 'Person':
         person = Person(**kwargs)
         self.people.append(person)
@@ -112,7 +101,6 @@ class IngestInfo(IngestObject):
     def create_state_person(self, **kwargs) -> 'StatePerson':
         person = StatePerson(**kwargs)
         self.state_people.append(person)
-        self._set_person_ids([person])
         return person
 
     def get_recent_state_person(self) -> Optional['StatePerson']:
@@ -122,17 +110,8 @@ class IngestInfo(IngestObject):
 
     def get_state_person_by_id(self, state_person_id) \
             -> Optional['StatePerson']:
-        if state_person_id in self._state_people_by_id:
-            return self._state_people_by_id.get(state_person_id)
-
-        state_person = next((person for person in self.state_people
-                             if person.state_person_id == state_person_id),
-                            None)
-        if state_person:
-            if state_person.state_person_id:
-                self._state_people_by_id[state_person.state_person_id] = \
-                    state_person
-        return state_person
+        return next((sp for sp in self.state_people
+                     if sp.state_person_id == state_person_id), None)
 
     def prune(self) -> 'IngestInfo':
         self.people = [person.prune() for person in self.people if person]
@@ -630,10 +609,9 @@ class StatePersonExternalId(IngestObject):
     """
 
     def __init__(self, state_person_external_id_id=None,
-                 external_id=None, id_type=None, state_code=None):
+                 id_type=None, state_code=None):
         self.state_person_external_id_id: Optional[str] = \
             state_person_external_id_id
-        self.external_id: Optional[str] = external_id
         self.id_type: Optional[str] = id_type
         self.state_code: Optional[str] = state_code
 
