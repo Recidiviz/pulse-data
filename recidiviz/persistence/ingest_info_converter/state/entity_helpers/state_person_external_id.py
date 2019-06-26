@@ -31,7 +31,8 @@ def convert(proto: StatePersonExternalId,
     """Converts an ingest_info proto Hold to a persistence entity."""
     new = entities.StatePersonExternalId.builder()
 
-    new.external_id = fn(parse_external_id, 'external_id', proto)
+    new.external_id = \
+        fn(parse_external_id, 'state_person_external_id_id', proto)
     new.id_type = fn(normalize, 'id_type', proto)
     new.state_code = parse_region_code_with_override(
         proto, 'state_code', metadata)

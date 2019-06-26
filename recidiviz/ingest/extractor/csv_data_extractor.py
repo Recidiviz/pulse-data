@@ -29,6 +29,7 @@ import more_itertools
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.extractor.data_extractor import DataExtractor
 from recidiviz.ingest.models.ingest_info import IngestInfo, IngestObject
+from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 
 
 class IngestFieldCoordinates:
@@ -59,6 +60,7 @@ class CsvDataExtractor(DataExtractor):
     def __init__(self,
                  key_mapping_file=None,
                  row_post_hooks=None,
+                 file_post_hooks=None,
                  ancestor_key_override_callback=None,
                  primary_key_override_callback=None,
                  system_level=SystemLevel.COUNTY,
@@ -101,6 +103,12 @@ class CsvDataExtractor(DataExtractor):
             row_post_hooks = []
         self.row_post_hooks: List[Callable] = row_post_hooks
 
+        if file_post_hooks is None:
+            file_post_hooks = []
+        self.file_post_hooks: \
+            List[Callable[[IngestInfo, Optional[IngestObjectCache]], None]] \
+            = file_post_hooks
+
         self.ancestor_key_override_callback: Callable = \
             ancestor_key_override_callback
         self.primary_key_override_callback: Callable = \
@@ -133,6 +141,7 @@ class CsvDataExtractor(DataExtractor):
         if ingest_info is None:
             ingest_info = IngestInfo()
         self._extract(content, ingest_info)
+        self._run_file_post_hooks(ingest_info)
         return ingest_info.prune()
 
     def _extract(self, content: str, ingest_info: IngestInfo):
@@ -184,6 +193,10 @@ class CsvDataExtractor(DataExtractor):
                 extracted_objects_for_row.extend(extracted_objects_for_column)
 
             self._post_process_row(row, extracted_objects_for_row)
+
+    def _run_file_post_hooks(self, ingest_info: IngestInfo):
+        for post_hook in self.file_post_hooks:
+            post_hook(ingest_info, self.ingest_object_cache)
 
     def _set_value_if_key_exists(self,
                                  lookup_key: str, value: str,
