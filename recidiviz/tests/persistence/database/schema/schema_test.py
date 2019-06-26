@@ -26,6 +26,7 @@ import sqlalchemy
 
 import recidiviz.common.constants.bond as bond
 import recidiviz.common.constants.charge as charge
+import recidiviz.common.constants.county.charge
 import recidiviz.persistence.database.schema.shared_enums as shared_enums
 
 
@@ -55,7 +56,7 @@ class TestSchemaEnums(TestCase):
         'residency_status': person_characteristics.ResidencyStatus,
         'bond_type': bond.BondType,
         'bond_status': bond.BondStatus,
-        'degree': charge.ChargeDegree,
+        'degree': recidiviz.common.constants.county.charge.ChargeDegree,
         'charge_status': charge.ChargeStatus,
     }
 

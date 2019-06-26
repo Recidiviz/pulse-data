@@ -86,11 +86,6 @@ bond_status_set = 'SET'
 
 # charge.py
 
-degree_first = 'FIRST'
-degree_second = 'SECOND'
-degree_third = 'THIRD'
-degree_fourth = 'FOURTH'
-
 charge_status_acquitted = 'ACQUITTED'
 charge_status_completed = 'COMPLETED_SENTENCE'
 charge_status_convicted = 'CONVICTED'

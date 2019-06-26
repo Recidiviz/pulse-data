@@ -44,8 +44,8 @@ class TestStateSchemaEnums(TestSchemaEnums):
             'state_assessment_class': state_assessment.StateAssessmentClass,
             'state_assessment_level': state_assessment.StateAssessmentLevel,
             'state_assessment_type': state_assessment.StateAssessmentType,
-            'state_charge_classification':
-                state_charge.StateChargeClassification,
+            'state_charge_classification_type':
+                state_charge.StateChargeClassificationType,
             'state_sentence_status': state_sentence.StateSentenceStatus,
             'state_supervision_type': state_supervision.StateSupervisionType,
             'state_fine_status': state_fine.StateFineStatus,

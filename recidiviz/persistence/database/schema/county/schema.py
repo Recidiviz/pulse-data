@@ -52,7 +52,6 @@ from recidiviz.persistence.database.schema.shared_enums import (
     bond_status,
     bond_type,
     charge_status,
-    degree,
 )
 
 # SQLAlchemy enums. Created separately from the tables so they can be shared
@@ -137,6 +136,13 @@ charge_class = Enum(county_enum_strings.charge_class_civil,
                     # pylint:disable=line-too-long
                     county_enum_strings.charge_class_supervision_violation_for_sex_offense,
                     name='charge_class')
+
+degree = Enum(enum_strings.external_unknown,
+              county_enum_strings.degree_first,
+              county_enum_strings.degree_fourth,
+              county_enum_strings.degree_second,
+              county_enum_strings.degree_third,
+              name='degree')
 
 
 class _PersonSharedColumns:
