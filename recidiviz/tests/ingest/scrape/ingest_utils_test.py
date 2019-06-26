@@ -343,7 +343,7 @@ class TestIngestUtils:
         incarceration_sentence.state_incarceration_sentence_id = 'is1'
         charge1 = incarceration_sentence.create_state_charge()
         charge1.state_charge_id = 'charge1'
-        charge1.degree = 'F'
+        charge1.classification_type = 'F'
         incarceration_period = incarceration_sentence.\
             create_state_incarceration_period()
         incarceration_period.state_incarceration_period_id = 'ip1'
@@ -371,7 +371,7 @@ class TestIngestUtils:
         supervision_sentence.state_supervision_sentence_id = 'ss1'
         charge2 = supervision_sentence.create_state_charge()
         charge2.state_charge_id = 'charge2'
-        charge2.degree = 'M'
+        charge2.classification_type = 'M'
         supervision_period = supervision_sentence. \
             create_state_supervision_period()
         supervision_period.state_supervision_period_id = 'sp1'
@@ -434,7 +434,7 @@ class TestIngestUtils:
         supervision_sentence.state_charge_ids.append('charge2')
         charge2 = expected_proto.state_charges.add()
         charge2.state_charge_id = 'charge2'
-        charge2.degree = 'M'
+        charge2.classification_type = 'M'
         supervision_sentence.state_supervision_period_ids.append('sp1')
         supervision_period = expected_proto.state_supervision_periods.add()
         supervision_period.state_supervision_period_id = 'sp1'
@@ -454,7 +454,7 @@ class TestIngestUtils:
         incarceration_sentence.state_charge_ids.append('charge1')
         charge1 = expected_proto.state_charges.add()
         charge1.state_charge_id = 'charge1'
-        charge1.degree = 'F'
+        charge1.classification_type = 'F'
         incarceration_sentence.state_incarceration_period_ids.append('ip1')
         incarceration_period = expected_proto.state_incarceration_periods.add()
         incarceration_period.state_incarceration_period_id = 'ip1'

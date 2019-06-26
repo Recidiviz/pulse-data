@@ -765,8 +765,8 @@ class StateCharge(google___protobuf___message___Message):
     statute = ... # type: typing___Text
     description = ... # type: typing___Text
     attempted = ... # type: typing___Text
-    charge_classification = ... # type: typing___Text
-    degree = ... # type: typing___Text
+    classification_type = ... # type: typing___Text
+    classification_subtype = ... # type: typing___Text
     counts = ... # type: typing___Text
     charge_notes = ... # type: typing___Text
     charging_entity = ... # type: typing___Text
@@ -783,8 +783,8 @@ class StateCharge(google___protobuf___message___Message):
         statute : typing___Optional[typing___Text] = None,
         description : typing___Optional[typing___Text] = None,
         attempted : typing___Optional[typing___Text] = None,
-        charge_classification : typing___Optional[typing___Text] = None,
-        degree : typing___Optional[typing___Text] = None,
+        classification_type : typing___Optional[typing___Text] = None,
+        classification_subtype : typing___Optional[typing___Text] = None,
         counts : typing___Optional[typing___Text] = None,
         charge_notes : typing___Optional[typing___Text] = None,
         charging_entity : typing___Optional[typing___Text] = None,
@@ -796,11 +796,11 @@ class StateCharge(google___protobuf___message___Message):
     def MergeFrom(self, other_msg: google___protobuf___message___Message) -> None: ...
     def CopyFrom(self, other_msg: google___protobuf___message___Message) -> None: ...
     if sys.version_info >= (3,):
-        def HasField(self, field_name: typing_extensions___Literal[u"attempted",u"charge_classification",u"charge_notes",u"charging_entity",u"counts",u"county_code",u"date_charged",u"degree",u"description",u"offense_date",u"state_bond_id",u"state_charge_id",u"state_code",u"state_court_case_id",u"status",u"statute"]) -> bool: ...
-        def ClearField(self, field_name: typing_extensions___Literal[u"attempted",u"charge_classification",u"charge_notes",u"charging_entity",u"counts",u"county_code",u"date_charged",u"degree",u"description",u"offense_date",u"state_bond_id",u"state_charge_id",u"state_code",u"state_court_case_id",u"status",u"statute"]) -> None: ...
+        def HasField(self, field_name: typing_extensions___Literal[u"attempted",u"charge_notes",u"charging_entity",u"classification_subtype",u"classification_type",u"counts",u"county_code",u"date_charged",u"description",u"offense_date",u"state_bond_id",u"state_charge_id",u"state_code",u"state_court_case_id",u"status",u"statute"]) -> bool: ...
+        def ClearField(self, field_name: typing_extensions___Literal[u"attempted",u"charge_notes",u"charging_entity",u"classification_subtype",u"classification_type",u"counts",u"county_code",u"date_charged",u"description",u"offense_date",u"state_bond_id",u"state_charge_id",u"state_code",u"state_court_case_id",u"status",u"statute"]) -> None: ...
     else:
-        def HasField(self, field_name: typing_extensions___Literal[u"attempted",b"attempted",u"charge_classification",b"charge_classification",u"charge_notes",b"charge_notes",u"charging_entity",b"charging_entity",u"counts",b"counts",u"county_code",b"county_code",u"date_charged",b"date_charged",u"degree",b"degree",u"description",b"description",u"offense_date",b"offense_date",u"state_bond_id",b"state_bond_id",u"state_charge_id",b"state_charge_id",u"state_code",b"state_code",u"state_court_case_id",b"state_court_case_id",u"status",b"status",u"statute",b"statute"]) -> bool: ...
-        def ClearField(self, field_name: typing_extensions___Literal[b"attempted",b"charge_classification",b"charge_notes",b"charging_entity",b"counts",b"county_code",b"date_charged",b"degree",b"description",b"offense_date",b"state_bond_id",b"state_charge_id",b"state_code",b"state_court_case_id",b"status",b"statute"]) -> None: ...
+        def HasField(self, field_name: typing_extensions___Literal[u"attempted",b"attempted",u"charge_notes",b"charge_notes",u"charging_entity",b"charging_entity",u"classification_subtype",b"classification_subtype",u"classification_type",b"classification_type",u"counts",b"counts",u"county_code",b"county_code",u"date_charged",b"date_charged",u"description",b"description",u"offense_date",b"offense_date",u"state_bond_id",b"state_bond_id",u"state_charge_id",b"state_charge_id",u"state_code",b"state_code",u"state_court_case_id",b"state_court_case_id",u"status",b"status",u"statute",b"statute"]) -> bool: ...
+        def ClearField(self, field_name: typing_extensions___Literal[b"attempted",b"charge_notes",b"charging_entity",b"classification_subtype",b"classification_type",b"counts",b"county_code",b"date_charged",b"description",b"offense_date",b"state_bond_id",b"state_charge_id",b"state_code",b"state_court_case_id",b"status",b"statute"]) -> None: ...
 
 class StateCourtCase(google___protobuf___message___Message):
     state_court_case_id = ... # type: typing___Text

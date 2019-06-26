@@ -19,9 +19,9 @@
 import unittest
 from datetime import date
 
-from recidiviz.common.constants.charge import ChargeDegree, ChargeStatus
+from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.state.state_charge import \
-    StateChargeClassification
+    StateChargeClassificationType
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
@@ -38,8 +38,8 @@ class StateChargeConverterTest(unittest.TestCase):
         # Arrange
         ingest_charge = ingest_info_pb2.StateCharge(
             status='ACQUITTED',
-            charge_classification='FELONY',
-            degree='FIRST',
+            classification_type='FELONY',
+            classification_subtype='AA',
             state_charge_id='CHARGE_ID',
             offense_date='1/2/2111',
             date_charged='1/10/2111',
@@ -63,10 +63,9 @@ class StateChargeConverterTest(unittest.TestCase):
         expected_result = entities.StateCharge.new_with_defaults(
             status=ChargeStatus.ACQUITTED,
             status_raw_text='ACQUITTED',
-            charge_classification=StateChargeClassification.FELONY,
-            charge_classification_raw_text='FELONY',
-            degree=ChargeDegree.FIRST,
-            degree_raw_text='FIRST',
+            classification_type=StateChargeClassificationType.FELONY,
+            classification_type_raw_text='FELONY',
+            classification_subtype='AA',
             external_id='CHARGE_ID',
             offense_date=date(year=2111, month=1, day=2),
             date_charged=date(year=2111, month=1, day=10),
