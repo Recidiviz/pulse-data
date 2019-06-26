@@ -28,8 +28,8 @@ from recidiviz.common.constants.county.booking import (
     Classification,
     AdmissionReason,
 )
-from recidiviz.common.constants.charge import ChargeDegree, ChargeStatus
-from recidiviz.common.constants.county.charge import ChargeClass
+from recidiviz.common.constants.charge import ChargeStatus
+from recidiviz.common.constants.county.charge import ChargeClass, ChargeDegree
 from recidiviz.common.constants.county.hold import HoldStatus
 from recidiviz.common.constants.person_characteristics import (
     Gender,

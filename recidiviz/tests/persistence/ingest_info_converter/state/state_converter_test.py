@@ -21,12 +21,14 @@ import unittest
 from typing import List
 
 from recidiviz.common.constants.bond import BondStatus
-from recidiviz.common.constants.charge import ChargeStatus, ChargeDegree
+from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.person_characteristics import Race, Ethnicity
 from recidiviz.common.constants.state.external_id_types import US_ND_ELITE, \
     US_ND_SID
 from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentClass
+from recidiviz.common.constants.state.state_charge import \
+    StateChargeClassificationType
 from recidiviz.common.constants.state.state_fine import StateFineStatus
 from recidiviz.common.constants.state.state_incarceration_incident import \
     StateIncarcerationIncidentType, StateIncarcerationIncidentOutcomeType
@@ -192,17 +194,20 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             state_charge_id='CHARGE_ID1',
             state_court_case_id='CASE_ID',
             state_bond_id='BOND_ID',
-            degree='1'
+            classification_type='M',
+            classification_subtype='1',
         )
         ingest_info.state_charges.add(
             state_charge_id='CHARGE_ID2',
             state_court_case_id='CASE_ID',
-            degree='2'
+            classification_type='M',
+            classification_subtype='2',
         )
         ingest_info.state_charges.add(
             state_charge_id='CHARGE_ID3',
             state_court_case_id='CASE_ID',
-            degree='3'
+            classification_type='F',
+            classification_subtype='3'
         )
         ingest_info.state_court_cases.add(
             state_court_case_id='CASE_ID',
@@ -313,6 +318,55 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             ]
         )
 
+        court_case = StateCourtCase.new_with_defaults(
+            external_id='CASE_ID',
+            state_code='US_ND',
+            judge=StateAgent.new_with_defaults(
+                external_id='JUDGE_AGENT_ID_1',
+                state_code='US_ND',
+                full_name='JUDGE_JUDY',
+            )
+        )
+
+        charge_1 = StateCharge.new_with_defaults(
+            external_id='CHARGE_ID1',
+            classification_type=
+            StateChargeClassificationType.MISDEMEANOR,
+            classification_type_raw_text='M',
+            classification_subtype='1',
+            state_code='US_ND',
+            status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            court_case=court_case,
+            bond=StateBond.new_with_defaults(
+                external_id='BOND_ID',
+                state_code='US_ND',
+                status=BondStatus.POSTED,
+                status_raw_text='POSTED'
+            )
+        )
+
+        charge_2 = StateCharge.new_with_defaults(
+            external_id='CHARGE_ID2',
+            classification_type=
+            StateChargeClassificationType.MISDEMEANOR,
+            classification_type_raw_text='M',
+            classification_subtype='2',
+            state_code='US_ND',
+            status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            court_case=court_case
+        )
+
+        charge_3 = StateCharge.new_with_defaults(
+            external_id='CHARGE_ID3',
+            state_code='US_ND',
+            classification_type=
+            StateChargeClassificationType.FELONY,
+            classification_type_raw_text='F',
+            classification_subtype='3',
+            status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            court_case=court_case
+        )
+
         expected_result = [StatePerson.new_with_defaults(
             external_ids=[
                 StatePersonExternalId.new_with_defaults(
@@ -358,46 +412,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                             external_id='SUPERVISION_SENTENCE_ID1',
                             state_code='US_ND',
                             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                            charges=[
-                                StateCharge.new_with_defaults(
-                                    external_id='CHARGE_ID1',
-                                    degree=ChargeDegree.FIRST,
-                                    degree_raw_text='1',
-                                    state_code='US_ND',
-                                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                                    court_case=StateCourtCase.new_with_defaults(
-                                        external_id='CASE_ID',
-                                        state_code='US_ND',
-                                        judge=StateAgent.new_with_defaults(
-                                            external_id='JUDGE_AGENT_ID_1',
-                                            state_code='US_ND',
-                                            full_name='JUDGE_JUDY',
-                                        )
-                                    ),
-                                    bond=StateBond.new_with_defaults(
-                                        external_id='BOND_ID',
-                                        state_code='US_ND',
-                                        status=BondStatus.POSTED,
-                                        status_raw_text='POSTED'
-                                    )
-                                ),
-                                StateCharge.new_with_defaults(
-                                    external_id='CHARGE_ID2',
-                                    degree=ChargeDegree.SECOND,
-                                    degree_raw_text='2',
-                                    state_code='US_ND',
-                                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                                    court_case=StateCourtCase.new_with_defaults(
-                                        external_id='CASE_ID',
-                                        state_code='US_ND',
-                                        judge=StateAgent.new_with_defaults(
-                                            external_id='JUDGE_AGENT_ID_1',
-                                            state_code='US_ND',
-                                            full_name='JUDGE_JUDY',
-                                        )
-                                    )
-                                )
-                            ],
+                            charges=[charge_1, charge_2],
                             supervision_periods=[
                                 StateSupervisionPeriod.new_with_defaults(
                                     external_id='S_PERIOD_ID1',
@@ -418,30 +433,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                             external_id='INCARCERATION_SENTENCE_ID1',
                             state_code='US_ND',
                             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                            charges=[
-                                StateCharge.new_with_defaults(
-                                    external_id='CHARGE_ID1',
-                                    degree=ChargeDegree.FIRST,
-                                    degree_raw_text='1',
-                                    state_code='US_ND',
-                                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                                    court_case=StateCourtCase.new_with_defaults(
-                                        external_id='CASE_ID',
-                                        state_code='US_ND',
-                                        judge=StateAgent.new_with_defaults(
-                                            external_id='JUDGE_AGENT_ID_1',
-                                            state_code='US_ND',
-                                            full_name='JUDGE_JUDY',
-                                        )
-                                    ),
-                                    bond=StateBond.new_with_defaults(
-                                        external_id='BOND_ID',
-                                        state_code='US_ND',
-                                        status=BondStatus.POSTED,
-                                        status_raw_text='POSTED'
-                                    )
-                                )
-                            ],
+                            charges=[charge_1],
                             incarceration_periods=[
                                 StateIncarcerationPeriod.new_with_defaults(
                                     external_id='I_PERIOD_ID',
@@ -478,40 +470,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                             external_id='INCARCERATION_SENTENCE_ID2',
                             state_code='US_ND',
                             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                            charges=[
-                                StateCharge.new_with_defaults(
-                                    external_id='CHARGE_ID2',
-                                    state_code='US_ND',
-                                    degree=ChargeDegree.SECOND,
-                                    degree_raw_text='2',
-                                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                                    court_case=StateCourtCase.new_with_defaults(
-                                        external_id='CASE_ID',
-                                        state_code='US_ND',
-                                        judge=StateAgent.new_with_defaults(
-                                            external_id='JUDGE_AGENT_ID_1',
-                                            state_code='US_ND',
-                                            full_name='JUDGE_JUDY',
-                                        )
-                                    )
-                                ),
-                                StateCharge.new_with_defaults(
-                                    external_id='CHARGE_ID3',
-                                    state_code='US_ND',
-                                    degree=ChargeDegree.THIRD,
-                                    degree_raw_text='3',
-                                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                                    court_case=StateCourtCase.new_with_defaults(
-                                        external_id='CASE_ID',
-                                        state_code='US_ND',
-                                        judge=StateAgent.new_with_defaults(
-                                            external_id='JUDGE_AGENT_ID_1',
-                                            state_code='US_ND',
-                                            full_name='JUDGE_JUDY',
-                                        )
-                                    )
-                                )
-                            ],
+                            charges=[charge_2, charge_3],
                             supervision_periods=[
                                 StateSupervisionPeriod.new_with_defaults(
                                     external_id='S_PERIOD_ID3',
@@ -536,24 +495,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                             external_id='SUPERVISION_SENTENCE_ID2',
                             state_code='US_ND',
                             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                            charges=[
-                                StateCharge.new_with_defaults(
-                                    external_id='CHARGE_ID2',
-                                    state_code='US_ND',
-                                    degree=ChargeDegree.SECOND,
-                                    degree_raw_text='2',
-                                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                                    court_case=StateCourtCase.new_with_defaults(
-                                        external_id='CASE_ID',
-                                        state_code='US_ND',
-                                        judge=StateAgent.new_with_defaults(
-                                            external_id='JUDGE_AGENT_ID_1',
-                                            state_code='US_ND',
-                                            full_name='JUDGE_JUDY',
-                                        )
-                                    )
-                                )
-                            ],
+                            charges=[charge_2],
                             supervision_periods=[
                                 StateSupervisionPeriod.new_with_defaults(
                                     external_id='S_PERIOD_ID2',

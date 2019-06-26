@@ -302,8 +302,8 @@ message StateCharge {
     optional string statute = 7;
     optional string description = 8;
     optional string attempted = 9;
-    optional string charge_classification = 10;
-    optional string degree = 11;
+    optional string classification_type = 10;
+    optional string classification_subtype = 11;
     optional string counts = 12;
     optional string charge_notes = 13;
     optional string charging_entity = 14;

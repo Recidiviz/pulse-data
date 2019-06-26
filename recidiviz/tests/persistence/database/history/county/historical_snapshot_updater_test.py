@@ -23,8 +23,8 @@ from recidiviz.common.constants.bond import BondStatus, BondType
 from recidiviz.common.constants.county.booking import \
     AdmissionReason, Classification, CustodyStatus, ReleaseReason
 from recidiviz.common.constants.charge import \
-    ChargeDegree, ChargeStatus
-from recidiviz.common.constants.county.charge import ChargeClass
+    ChargeStatus
+from recidiviz.common.constants.county.charge import ChargeClass, ChargeDegree
 from recidiviz.common.constants.county.hold import HoldStatus
 from recidiviz.common.constants.person_characteristics import \
     Ethnicity, Gender, Race, ResidencyStatus

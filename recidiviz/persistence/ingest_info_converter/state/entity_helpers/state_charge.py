@@ -16,10 +16,9 @@
 # ============================================================================
 """Converts an ingest_info proto StateCharge to a persistence entity."""
 
-from recidiviz.common.constants.charge import (ChargeDegree,
-                                               ChargeStatus)
+from recidiviz.common.constants.charge import (ChargeStatus)
 from recidiviz.common.constants.state.state_charge import \
-    StateChargeClassification
+    StateChargeClassificationType
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import StateCharge
 from recidiviz.persistence.entity.state import entities
@@ -43,8 +42,7 @@ def copy_fields_to_builder(
 
     enum_fields = {
         'status': ChargeStatus,
-        'charge_classification': StateChargeClassification,
-        'degree': ChargeDegree,
+        'classification_type': StateChargeClassificationType,
     }
     enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
 
@@ -52,11 +50,10 @@ def copy_fields_to_builder(
     new.status = enum_mappings.get(ChargeStatus,
                                    default=ChargeStatus.PRESENT_WITHOUT_INFO)
     new.status_raw_text = fn(normalize, 'status', proto)
-    new.degree = enum_mappings.get(ChargeDegree)
-    new.degree_raw_text = fn(normalize, 'degree', proto)
-    new.charge_classification = enum_mappings.get(StateChargeClassification)
-    new.charge_classification_raw_text = fn(normalize, 'charge_classification',
-                                            proto)
+    new.classification_type = \
+        enum_mappings.get(StateChargeClassificationType)
+    new.classification_type_raw_text = \
+        fn(normalize, 'classification_type', proto)
 
     # 1-to-1 mappings
     new.external_id = fn(parse_external_id, 'state_charge_id', proto)
@@ -68,9 +65,11 @@ def copy_fields_to_builder(
     new.statute = fn(normalize, 'statute', proto)
     new.description = fn(normalize, 'description', proto)
     new.attempted = fn(parse_bool, 'attempted', proto)
-    if new.charge_classification is None:
-        new.charge_classification = \
-            StateChargeClassification.find_in_string(new.description)
+    if new.classification_type is None:
+        new.classification_type = \
+            StateChargeClassificationType.find_in_string(new.description)
+    new.classification_subtype = \
+        fn(normalize, 'classification_subtype', proto)
     new.counts = fn(parse_int, 'counts', proto)
     new.charge_notes = fn(normalize, 'charge_notes', proto)
     new.charging_entity = fn(normalize, 'charging_entity', proto)
