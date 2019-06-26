@@ -252,20 +252,6 @@ The Charge object holds information on a single charge. Each booking may have se
                      `Complete list of valid values <https://github.com/Recidiviz/pulse-data/blob/master/recidiviz/common/constants/charge.py#L87>`__
 **number_of_counts** The number of counts for this charge.
 **court_type**       The type of court this charge will be / was heard in.
-
-                     Valid values:
-
-                     -  Circuit
-
-                     -  Civil
-
-                     -  District
-
-                     -  Other
-
-                     -  Superior
-
-                     `Complete list of valid values <https://github.com/Recidiviz/pulse-data/blob/master/recidiviz/common/constants/charge.py#L98>`__
 **case_number**      Court case number for this charge.
 **next_court_date**  Date of the next scheduled court appearance on this charge.
 **judge_name**       Name of the judge who will hear this case.
