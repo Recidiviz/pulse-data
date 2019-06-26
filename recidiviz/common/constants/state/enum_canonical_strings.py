@@ -60,11 +60,11 @@ state_assessment_level_not_applicable = 'NOT_APPLICABLE'
 state_assessment_level_undetermined = 'UNDETERMINED'
 
 # state_charge.py
-state_charge_classification_civil = 'CIVIL'
-state_charge_classification_felony = 'FELONY'
-state_charge_classification_infraction = 'INFRACTION'
-state_charge_classification_misdemeanor = 'MISDEMEANOR'
-state_charge_classification_other = 'OTHER'
+state_charge_classification_type_civil = 'CIVIL'
+state_charge_classification_type_felony = 'FELONY'
+state_charge_classification_type_infraction = 'INFRACTION'
+state_charge_classification_type_misdemeanor = 'MISDEMEANOR'
+state_charge_classification_type_other = 'OTHER'
 
 # state_court_case.py
 # TODO(1697): Add enum strings here

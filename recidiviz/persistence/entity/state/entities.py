@@ -35,7 +35,7 @@ from recidiviz.common.constants.state.state_assessment import (
 )
 
 from recidiviz.common.constants.bond import BondType, BondStatus
-from recidiviz.common.constants.charge import ChargeDegree, ChargeStatus
+from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.person_characteristics import (
     Gender,
     Race,
@@ -60,7 +60,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 
 from recidiviz.common.constants.state.state_fine import StateFineStatus
 from recidiviz.common.constants.state.state_charge import (
-    StateChargeClassification,
+    StateChargeClassificationType,
 )
 from recidiviz.common.constants.state.state_parole_decision import \
     StateParoleDecisionOutcome
@@ -312,10 +312,10 @@ class StateCharge(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     statute: Optional[str] = attr.ib()
     description: Optional[str] = attr.ib()
     attempted: Optional[bool] = attr.ib()
-    charge_classification: Optional[StateChargeClassification] = attr.ib()
-    charge_classification_raw_text: Optional[str] = attr.ib()
-    degree: Optional[ChargeDegree] = attr.ib()
-    degree_raw_text: Optional[str] = attr.ib()
+    classification_type: Optional[StateChargeClassificationType] = attr.ib()
+    classification_type_raw_text: Optional[str] = attr.ib()
+    # E.g. 'A' for Class A, '1' for Level 1, etc
+    classification_subtype: Optional[str] = attr.ib()
     counts: Optional[int] = attr.ib()
     charge_notes: Optional[str] = attr.ib()
 

@@ -41,6 +41,18 @@ class ChargeClass(EntityEnum, metaclass=EntityEnumMeta):
         return _CHARGE_CLASS_MAP
 
 
+class ChargeDegree(EntityEnum, metaclass=EntityEnumMeta):
+    EXTERNAL_UNKNOWN = enum_strings.external_unknown
+    FIRST = county_enum_strings.degree_first
+    SECOND = county_enum_strings.degree_second
+    THIRD = county_enum_strings.degree_third
+    FOURTH = county_enum_strings.degree_fourth
+
+    @staticmethod
+    def _get_default_map():
+        return _CHARGE_DEGREE_MAP
+
+
 # MappableEnum.parse will strip punctuation and separate tokens with a single
 # space. Add mappings here using a single space between words and numbers.
 # For example, `N/A` can be written as `N A` and `(10%)` can be written as `10`.
@@ -89,4 +101,23 @@ _CHARGE_CLASS_MAP = {
     'UNKNOWN': ChargeClass.EXTERNAL_UNKNOWN,
     'VIOLATION OF COMMUNITY CONTROL': ChargeClass.PROBATION_VIOLATION,
     'WR VIOLATION': ChargeClass.PROBATION_VIOLATION,
+}
+
+_CHARGE_DEGREE_MAP = {
+    '1': ChargeDegree.FIRST,
+    '1ST': ChargeDegree.FIRST,
+    '2': ChargeDegree.SECOND,
+    '2ND': ChargeDegree.SECOND,
+    '3': ChargeDegree.THIRD,
+    '3RD': ChargeDegree.THIRD,
+    '4': ChargeDegree.FOURTH,
+    '4TH': ChargeDegree.FOURTH,
+    'F': ChargeDegree.FIRST,
+    'FIRST': ChargeDegree.FIRST,
+    'FOURTH': ChargeDegree.FOURTH,
+    'S': ChargeDegree.SECOND,
+    'SECOND': ChargeDegree.SECOND,
+    'T': ChargeDegree.THIRD,
+    'THIRD': ChargeDegree.THIRD,
+    'UNKNOWN': ChargeDegree.EXTERNAL_UNKNOWN,
 }

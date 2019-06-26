@@ -77,6 +77,11 @@ charge_class_probation_violation = 'PROBATION_VIOLATION'
 charge_class_supervision_violation_for_sex_offense = \
     'SUPERVISION_VIOLATION_FOR_SEX_OFFENSE'
 
+degree_first = 'FIRST'
+degree_second = 'SECOND'
+degree_third = 'THIRD'
+degree_fourth = 'FOURTH'
+
 # hold.py
 
 hold_status_active = 'ACTIVE'

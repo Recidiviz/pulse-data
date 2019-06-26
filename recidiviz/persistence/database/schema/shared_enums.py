@@ -81,13 +81,6 @@ bond_status = Enum(enum_strings.bond_status_pending,
 
 # Charge
 
-degree = Enum(enum_strings.external_unknown,
-              enum_strings.degree_first,
-              enum_strings.degree_fourth,
-              enum_strings.degree_second,
-              enum_strings.degree_third,
-              name='degree')
-
 charge_status = Enum(enum_strings.charge_status_acquitted,
                      enum_strings.charge_status_completed,
                      enum_strings.charge_status_convicted,

@@ -19,14 +19,14 @@
 import datetime
 
 from recidiviz.common.constants.bond import BondStatus, BondType
-from recidiviz.common.constants.charge import ChargeStatus, ChargeDegree
+from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.person_characteristics import Race, Ethnicity
 from recidiviz.common.constants.state.external_id_types import US_ND_ELITE
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentClass, StateAssessmentType, StateAssessmentLevel
 from recidiviz.common.constants.state.state_charge import \
-    StateChargeClassification
+    StateChargeClassificationType
 from recidiviz.common.constants.state.state_court_case import \
     StateCourtCaseStatus, StateCourtType
 from recidiviz.common.constants.state.state_fine import StateFineStatus
@@ -231,10 +231,9 @@ def generate_full_graph_state_person(
         statute='A102.3',
         description='DRUG POSSESSION',
         attempted=True,
-        charge_classification=StateChargeClassification.FELONY,
-        charge_classification_raw_text='F',
-        degree=ChargeDegree.FIRST,
-        degree_raw_text='1st',
+        classification_type=StateChargeClassificationType.FELONY,
+        classification_type_raw_text='F',
+        classification_subtype='A',
         counts=1,
         charge_notes=None,
         person=person,
@@ -252,10 +251,9 @@ def generate_full_graph_state_person(
         statute='A102.3',
         description='DRUG POSSESSION',
         attempted=True,
-        charge_classification=StateChargeClassification.FELONY,
-        charge_classification_raw_text='F',
-        degree=ChargeDegree.FIRST,
-        degree_raw_text='1st',
+        classification_type=StateChargeClassificationType.FELONY,
+        classification_type_raw_text='F',
+        classification_subtype='B',
         counts=1,
         charge_notes=None,
         person=person,
@@ -273,10 +271,9 @@ def generate_full_graph_state_person(
         statute='A102.3',
         description='DRUG POSSESSION',
         attempted=True,
-        charge_classification=StateChargeClassification.FELONY,
-        charge_classification_raw_text='F',
-        degree=ChargeDegree.FIRST,
-        degree_raw_text='1st',
+        classification_type=StateChargeClassificationType.FELONY,
+        classification_type_raw_text='F',
+        classification_subtype='AA',
         counts=1,
         charge_notes=None,
         person=person,

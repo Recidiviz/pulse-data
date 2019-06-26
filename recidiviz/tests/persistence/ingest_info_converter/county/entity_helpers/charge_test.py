@@ -18,8 +18,8 @@
 
 import unittest
 
-from recidiviz.common.constants.charge import ChargeDegree, ChargeStatus
-from recidiviz.common.constants.county.charge import ChargeClass
+from recidiviz.common.constants.charge import ChargeStatus
+from recidiviz.common.constants.county.charge import ChargeClass, ChargeDegree
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2

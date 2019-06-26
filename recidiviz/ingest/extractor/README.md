@@ -285,8 +285,7 @@ key_mappings:
   OFFENSE_DATE: state_charge.offense_date
   OFFENCE_CODE: state_charge.statute
   DESCRIPTION: state_charge.description
-  OFFENCE_TYPE: state_charge.charge_classification
-  OFFENCE_TYPE: state_charge.degree
+  OFFENCE_TYPE: state_charge.classification_type
   INITIAL_COUNTS: state_charge.counts
   COMMENT_TEXT: state_charge.charge_notes
 

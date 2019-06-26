@@ -62,7 +62,6 @@ from recidiviz.persistence.database.schema.shared_enums import (
     bond_status,
     bond_type,
     charge_status,
-    degree,
 )
 
 # SQLAlchemy enums. Created separately from the tables so they can be shared
@@ -113,14 +112,14 @@ state_supervision_type = Enum(
     state_enum_strings.state_supervision_type_probation,
     name='state_supervision_type')
 
-state_charge_classification = Enum(
-    state_enum_strings.state_charge_classification_civil,
+state_charge_classification_type = Enum(
+    state_enum_strings.state_charge_classification_type_civil,
     enum_strings.external_unknown,
-    state_enum_strings.state_charge_classification_felony,
-    state_enum_strings.state_charge_classification_infraction,
-    state_enum_strings.state_charge_classification_misdemeanor,
-    state_enum_strings.state_charge_classification_other,
-    name='state_charge_classification')
+    state_enum_strings.state_charge_classification_type_felony,
+    state_enum_strings.state_charge_classification_type_infraction,
+    state_enum_strings.state_charge_classification_type_misdemeanor,
+    state_enum_strings.state_charge_classification_type_other,
+    name='state_charge_classification_type')
 
 state_fine_status = Enum(
     enum_strings.external_unknown,
@@ -822,10 +821,9 @@ class _StateChargeSharedColumns(_ReferencesStatePersonSharedColumns):
     statute = Column(String(255))
     description = Column(Text)
     attempted = Column(Boolean)
-    charge_classification = Column(state_charge_classification)
-    charge_classification_raw_text = Column(String(255))
-    degree = Column(degree)
-    degree_raw_text = Column(String(255))
+    classification_type = Column(state_charge_classification_type)
+    classification_type_raw_text = Column(String(255))
+    classification_subtype = Column(String(255))
     counts = Column(Integer)
     charge_notes = Column(Text)
     charging_entity = Column(String(255))
