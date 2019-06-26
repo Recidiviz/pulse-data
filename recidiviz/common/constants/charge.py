@@ -92,6 +92,7 @@ _CHARGE_STATUS_MAP = {
     'AWAITING TRIAL': ChargeStatus.PRETRIAL,
     'BAIL SET': ChargeStatus.PRETRIAL,
     'BOND OUT': ChargeStatus.PRETRIAL,
+    'BONDED': ChargeStatus.PENDING,
     'BOUND OVER': ChargeStatus.PRETRIAL,
     'BOUND OVER TO GRAND JURY': ChargeStatus.PRETRIAL,
     'POST CASH BAIL': ChargeStatus.PRETRIAL,
@@ -128,6 +129,8 @@ _CHARGE_STATUS_MAP = {
     'DRUG COURT SANCTION': ChargeStatus.SENTENCED,
     'ENTERED IN ERROR': None,
     'ENHANCEMENT': None,
+    # End of Sentence
+    'EOS': ChargeStatus.COMPLETED_SENTENCE,
     'FILED PENDING TRIAL': ChargeStatus.PRETRIAL,
     'FINAL SENTENCED': ChargeStatus.SENTENCED,
     'FINE CREDIT': ChargeStatus.COMPLETED_SENTENCE,
@@ -148,11 +151,16 @@ _CHARGE_STATUS_MAP = {
     'M R S': None,
     'MOOT': ChargeStatus.DROPPED,
     'MUNICIPAL COURT': ChargeStatus.PRETRIAL,
+    # Defendant Not In Court
+    'NIC': ChargeStatus.PENDING,
+    'NOELLEPR': ChargeStatus.DROPPED,
+    'NOTFILED': ChargeStatus.DROPPED,
     'NOLLE PROS': ChargeStatus.DROPPED,
     'NOLLE PROSEQUI': ChargeStatus.DROPPED,
     'NOLLED PROSSED': ChargeStatus.DROPPED,
     'NOLPROSSED': ChargeStatus.DROPPED,
     'NG NOT GUILTY': ChargeStatus.ACQUITTED,
+    'NO INFO': None,
     'NO PROBABLE CAUSE': ChargeStatus.DROPPED,
     'NO TRUE BILL': ChargeStatus.PRETRIAL,
     'NOT FILED': ChargeStatus.DROPPED,
@@ -201,6 +209,16 @@ _CHARGE_STATUS_MAP = {
     'REPORT IN': ChargeStatus.SENTENCED,
     'RESCINDED': ChargeStatus.DROPPED,
     'REVOKED': ChargeStatus.SENTENCED,
+    # Release on your Own Recognizance
+    'ROR': ChargeStatus.PENDING,
+    # Probably: Sentenced / Community Control
+    'S COMM': ChargeStatus.SENTENCED,
+    # Probably: Sentenced / Department of Corrections
+    'S DOC': ChargeStatus.SENTENCED,
+    'S JAIL': ChargeStatus.SENTENCED,
+    'S PROB': ChargeStatus.SENTENCED,
+    # Probably: Sentenced / Probation
+    'S PROG': ChargeStatus.SENTENCED,
     'SAFE KEEPING': ChargeStatus.PENDING,
     'SENTENCE SERVED': ChargeStatus.COMPLETED_SENTENCE,
     'SENTENCED': ChargeStatus.SENTENCED,
@@ -216,7 +234,10 @@ _CHARGE_STATUS_MAP = {
     'SPECIFY AT NOTES': None,
     'SUMMONS': ChargeStatus.PRETRIAL,
     'SUPERVISED PROBATION': ChargeStatus.SENTENCED,
+    'T SERVD': ChargeStatus.COMPLETED_SENTENCE,
     'TEMPORARY CUSTODY ORDER': ChargeStatus.PENDING,
+    # Turned In By Bondsman
+    'TIBB': ChargeStatus.PENDING,
     'TIME EXPIRED': ChargeStatus.COMPLETED_SENTENCE,
     'TIME SERVED': ChargeStatus.COMPLETED_SENTENCE,
     'TIME SUSPENDED': ChargeStatus.SENTENCED,
