@@ -60,6 +60,15 @@ class DatabaseEntity:
             cls._RELATIONSHIP_PROPERTY_TYPE_NAME)
 
     @classmethod
+    def get_relationship_property_names_and_properties(cls):
+        """Returns a dictionary where the keys are the string names of all
+        properties of |cls| that correspond to relationships to other database
+        entities, and the values are the corresponding properties.
+        """
+        return cls._get_entity_names_and_properties_by_type(
+            cls._RELATIONSHIP_PROPERTY_TYPE_NAME)
+
+    @classmethod
     def get_property_name_by_column_name(cls, column_name):
         """Returns string name of ORM object attribute corresponding to
         |column_name| on table
@@ -90,3 +99,21 @@ class DatabaseEntity:
         # pylint: disable=protected-access
         return {name for name, property in inspect(cls)._props.items()
                 if type(property).__name__ == type_name}
+
+    @classmethod
+    def _get_entity_names_and_properties_by_type(cls, type_name):
+        """Returns a dictionary where the keys are the string names of all
+        properties of |cls| that match the type of |type_name|, and the
+        values are the corresponding properties.
+        """
+
+        names_to_properties = {}
+
+        # pylint: disable=protected-access
+        for name, property_object in inspect(cls)._props.items():
+            if type(property_object).__name__ == type_name and \
+                    hasattr(property_object, 'argument') and \
+                    hasattr(property_object.argument, 'arg'):
+                names_to_properties[name] = property_object
+
+        return names_to_properties

@@ -19,8 +19,34 @@
 
 import inspect
 from typing import Optional, Type, Union
-
 from enum import Enum
+
+import attr
+
+
+def is_property_list(obj, property_name) -> bool:
+    """Returns true if the attribute corresponding to |property_name| on the
+     given object is a List type."""
+    attribute = attr.fields_dict(obj.__class__).get(property_name)
+
+    return is_list(attribute)
+
+
+def is_property_forward_ref(obj, property_name) -> bool:
+    """Returns true if the attribute corresponding to |property_name| on the
+     given object is a ForwardRef type."""
+
+    attribute = attr.fields_dict(obj.__class__).get(property_name)
+
+    return is_forward_ref(attribute)
+
+
+def is_property_flat_field(obj, property_name) -> bool:
+    """Returns true if the attribute corresponding to |property_name| on the
+     given object is a flat field (not a List or ForwardRef)."""
+    attribute = attr.fields_dict(obj.__class__).get(property_name)
+
+    return not is_list(attribute) and not is_forward_ref(attribute)
 
 
 def is_forward_ref(attribute) -> bool:

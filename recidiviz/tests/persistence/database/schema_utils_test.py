@@ -16,9 +16,10 @@
 # =============================================================================
 """Tests for schema_utils.py."""
 from typing import List
+import pytest
 
 from recidiviz.persistence.database.schema_utils import get_all_table_classes,\
-    get_aggregate_table_classes
+    get_aggregate_table_classes, get_state_table_class_with_name
 
 from recidiviz.persistence.database.schema.aggregate import (
     schema as aggregate_schema
@@ -139,6 +140,20 @@ def test_get_aggregate_table_classes():
 
     assert _classes_to_qualified_names(get_aggregate_table_classes()) == \
         _prefix_module_name(aggregate_schema.__name__, aggregate_table_names)
+
+
+def test_get_state_table_class_with_name():
+    class_name = 'StateSupervisionViolation'
+
+    assert get_state_table_class_with_name(class_name) == \
+           state_schema.StateSupervisionViolation
+
+
+def test_get_state_table_class_with_name_invalid_name():
+    class_name = 'XXX'
+
+    with pytest.raises(LookupError):
+        get_state_table_class_with_name(class_name)
 
 
 def _prefix_module_name(module_name: str,
