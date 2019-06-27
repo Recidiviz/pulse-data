@@ -26,6 +26,7 @@ from recidiviz.common.str_field_utils import to_snake_case
 
 @attr.s(cmp=False)
 class Entity:
+    """Base class for all entity types."""
     # Consider Entity abstract and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is Entity:
@@ -50,6 +51,13 @@ class Entity:
 
     def __eq__(self, other):
         return entity_graph_eq(self, other)
+
+    @classmethod
+    def get_class_id_name(cls):
+        id_name = to_snake_case(cls.__name__) + '_id'
+        if id_name.startswith('state_'):
+            id_name = id_name.replace('state_', '')
+        return id_name
 
 
 @attr.s(cmp=False)

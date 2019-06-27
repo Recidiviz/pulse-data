@@ -193,6 +193,7 @@ class TestSchemaTableConsistency(TestCase):
                 self.assertTrue(primary_key_col_name in primary_key_prop_name)
                 # Just should not crash
                 cls.get_relationship_property_names()
+                cls.get_relationship_property_names_and_properties()
 
     @staticmethod
     def _get_all_schema_table_classes_in_module(

@@ -21,6 +21,7 @@ import inspect
 import sys
 from typing import Iterator, Optional, Type
 
+from functools import lru_cache
 from sqlalchemy import Table
 
 from recidiviz.persistence.database.schema.aggregate import \
@@ -54,6 +55,18 @@ def get_aggregate_table_classes() -> Iterator[Table]:
 
 def get_state_table_classes() -> Iterator[Table]:
     yield from _get_all_table_classes(state_schema.__name__)
+
+
+@lru_cache(maxsize=None)
+def get_state_table_class_with_name(class_name: str) -> Table:
+    state_table_classes = get_state_table_classes()
+
+    for member in state_table_classes:
+        if member.__name__ == class_name:
+            return member
+
+    raise LookupError(f"Entity class {class_name} does not exist in"
+                      f"{state_schema.__name__}.")
 
 
 _HISTORICAL_TABLE_CLASS_SUFFIX = 'History'

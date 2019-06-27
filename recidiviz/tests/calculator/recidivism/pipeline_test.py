@@ -36,37 +36,25 @@ from recidiviz.calculator.recidivism.metrics import RecidivismMethodologyType
 from recidiviz.calculator.recidivism.release_event import \
     ReincarcerationReturnType, ReleaseEvent, RecidivismReleaseEvent, \
     NonRecidivismReleaseEvent
-from recidiviz.calculator.utils import person_extractor, \
-    incarceration_period_extractor
-from recidiviz.common.constants.entity_enum import EntityEnum
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus, StateIncarcerationPeriodAdmissionReason, \
     StateIncarcerationPeriodReleaseReason, \
     StateIncarcerationFacilitySecurityLevel
-from recidiviz.common.constants.state.state_incarceration import \
-    StateIncarcerationType
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state.entities import StatePerson, \
-    StateIncarcerationPeriod, Gender, ResidencyStatus
-from recidiviz.persistence.database.database_entity import DatabaseEntity
-from recidiviz.persistence.database.schema_entity_converter.state.\
-    schema_entity_converter import (
-        StateSchemaToEntityConverter
-    )
+    StateIncarcerationPeriod, Gender, Race, ResidencyStatus, Ethnicity
+from recidiviz.persistence.entity.state.entities import StatePerson
+from recidiviz.tests.calculator.calculator_test_utils import \
+    normalized_database_base_dict
+from recidiviz.calculator.utils import extractor_utils
 
 
-# TODO(1852): Build entities as schema objects once the schema changes have
-#  landed. Then run through extractor and use converter logic to compare to
-#  entities.
 class TestRecidivismPipeline(unittest.TestCase):
     """Tests the entire recidivism pipeline."""
 
     def testRecidivismPipeline(self):
         """Tests the entire recidivism pipeline with one person and three
         incarceration periods."""
-
-        # TODO(1852): Build entities as schema objects once the schema changes
-        #  have landed.
 
         fake_person_id = 12345
 
@@ -75,7 +63,7 @@ class TestRecidivismPipeline(unittest.TestCase):
             birthdate=date(1970, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)
 
-        persons_data = [_normalized_db_entity_dict(fake_person)]
+        persons_data = [normalized_database_base_dict(fake_person)]
 
         initial_incarceration = schema.StateIncarcerationPeriod(
             incarceration_period_id=1111,
@@ -130,9 +118,9 @@ class TestRecidivismPipeline(unittest.TestCase):
             person_id=fake_person_id)
 
         incarceration_periods_data = [
-            _normalized_db_entity_dict(initial_incarceration),
-            _normalized_db_entity_dict(first_reincarceration),
-            _normalized_db_entity_dict(subsequent_reincarceration)
+            normalized_database_base_dict(initial_incarceration),
+            normalized_database_base_dict(first_reincarceration),
+            normalized_database_base_dict(subsequent_reincarceration)
         ]
 
         dimensions_to_filter = ['age_bucket', 'race', 'release_facility',
@@ -141,22 +129,33 @@ class TestRecidivismPipeline(unittest.TestCase):
         methodologies = [RecidivismMethodologyType.EVENT,
                          RecidivismMethodologyType.PERSON]
 
+        data_dict = {schema.StatePerson.__tablename__: persons_data,
+                     schema.StateIncarcerationPeriod.__tablename__:
+                         incarceration_periods_data}
+
         test_pipeline = TestPipeline()
 
-        # Read persons from input and load them into StatePerson entities
-        persons = (test_pipeline
-                   | 'Read Persons' >> beam.Create(persons_data)
-                   | 'Load StatePerson entities' >> beam.ParDo(
-                       person_extractor.HydratePersonEntity()))
+        # Get StatePersons
+        persons = (
+            test_pipeline
+            | 'Load Persons' >>
+            extractor_utils.BuildRootEntity(
+                dataset=None,
+                data_dict=data_dict,
+                root_schema_class=schema.StatePerson,
+                root_entity_class=StatePerson,
+                unifying_id_field='person_id'))
 
-        # Read incarceration periods from input and load them into
-        # StateIncarcerationPeriod entities
-        incarceration_periods = (test_pipeline
-                                 | 'Read Incarceration Periods' >>
-                                 beam.Create(incarceration_periods_data)
-                                 | 'Load StateIncarcerationPeriod entities' >>
-                                 beam.ParDo(incarceration_period_extractor.
-                                            HydrateIncarcerationPeriodEntity()))
+        # Get StateIncarcerationPeriods
+        incarceration_periods = (
+            test_pipeline
+            | 'Load IncarcerationPeriods' >>
+            extractor_utils.BuildRootEntity(
+                dataset=None,
+                data_dict=data_dict,
+                root_schema_class=schema.StateIncarcerationPeriod,
+                root_entity_class=StateIncarcerationPeriod,
+                unifying_id_field='person_id'))
 
         # Group each StatePerson with their StateIncarcerationPeriods
         person_and_incarceration_periods = \
@@ -197,9 +196,6 @@ class TestRecidivismPipeline(unittest.TestCase):
         supervision violation.
         """
 
-        # TODO(1852): Build entities as schema objects once the schema changes
-        #  have landed.
-
         fake_person_id_1 = 12345
 
         fake_person_1 = schema.StatePerson(
@@ -214,8 +210,8 @@ class TestRecidivismPipeline(unittest.TestCase):
             birthdate=date(1990, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)
 
-        persons_data = [_normalized_db_entity_dict(fake_person_1),
-                        _normalized_db_entity_dict(fake_person_2)]
+        persons_data = [normalized_database_base_dict(fake_person_1),
+                        normalized_database_base_dict(fake_person_2)]
 
         initial_incarceration_1 = schema.StateIncarcerationPeriod(
             incarceration_period_id=1111,
@@ -322,12 +318,12 @@ class TestRecidivismPipeline(unittest.TestCase):
                 person_id=fake_person_id_2)
 
         incarceration_periods_data = [
-            _normalized_db_entity_dict(initial_incarceration_1),
-            _normalized_db_entity_dict(first_reincarceration_1),
-            _normalized_db_entity_dict(subsequent_reincarceration_1),
-            _normalized_db_entity_dict(initial_incarceration_2),
-            _normalized_db_entity_dict(first_reincarceration_2),
-            _normalized_db_entity_dict(subsequent_reincarceration_2)
+            normalized_database_base_dict(initial_incarceration_1),
+            normalized_database_base_dict(first_reincarceration_1),
+            normalized_database_base_dict(subsequent_reincarceration_1),
+            normalized_database_base_dict(initial_incarceration_2),
+            normalized_database_base_dict(first_reincarceration_2),
+            normalized_database_base_dict(subsequent_reincarceration_2)
         ]
 
         dimensions_to_filter = ['age_bucket', 'race', 'release_facility',
@@ -336,22 +332,32 @@ class TestRecidivismPipeline(unittest.TestCase):
         methodologies = [RecidivismMethodologyType.EVENT,
                          RecidivismMethodologyType.PERSON]
 
+        data_dict = {schema.StatePerson.__tablename__: persons_data,
+                     schema.StateIncarcerationPeriod.__tablename__:
+                         incarceration_periods_data}
+
         test_pipeline = TestPipeline()
 
-        # Read persons from input and load them into StatePerson entities
+        # Get StatePersons
         persons = (test_pipeline
-                   | 'Read Persons' >> beam.Create(persons_data)
-                   | 'Load StatePerson entities' >> beam.ParDo(
-                       person_extractor.HydratePersonEntity()))
+                   | 'Get Persons' >>
+                   extractor_utils.BuildRootEntity(
+                       dataset=None,
+                       data_dict=data_dict,
+                       root_schema_class=schema.StatePerson,
+                       root_entity_class=StatePerson,
+                       unifying_id_field='person_id'))
 
-        # Read incarceration periods from input and load them into
-        # StateIncarcerationPeriod entities
-        incarceration_periods = (test_pipeline
-                                 | 'Read Incarceration Periods' >>
-                                 beam.Create(incarceration_periods_data)
-                                 | 'Load StateIncarcerationPeriod entities' >>
-                                 beam.ParDo(incarceration_period_extractor.
-                                            HydrateIncarcerationPeriodEntity()))
+        # Get StateIncarcerationPeriods
+        incarceration_periods = (
+            test_pipeline
+            | 'Get IncarcerationPeriods' >>
+            extractor_utils.BuildRootEntity(
+                dataset=None,
+                data_dict=data_dict,
+                root_schema_class=schema.StateIncarcerationPeriod,
+                root_entity_class=StateIncarcerationPeriod,
+                unifying_id_field='person_id'))
 
         # Group each StatePerson with their StateIncarcerationPeriods
         person_and_incarceration_periods = \
@@ -385,196 +391,6 @@ class TestRecidivismPipeline(unittest.TestCase):
         assert_that(filtered_metrics, AssertMatchers.validate_pipeline_test())
 
         test_pipeline.run()
-
-
-class TestExtractPerson(unittest.TestCase):
-    """Tests for the ExtractPerson DoFn."""
-
-    def testExtractPerson(self):
-        """Tests the extraction of a valid StatePerson entity."""
-
-        # TODO(1852): Build entities as schema objects once the schema changes
-        #  have landed.
-
-        fake_person = schema.StatePerson(
-            person_id=12345, current_address='123 Street',
-            full_name='Jack Smith', birthdate=date(1970, 1, 1),
-            gender=Gender.MALE,
-            residency_status=ResidencyStatus.PERMANENT
-        )
-
-        fake_person_data = _normalized_db_entity_dict(fake_person)
-
-        fake_person_entity = StateSchemaToEntityConverter().convert(fake_person)
-
-        test_pipeline = TestPipeline()
-
-        output = (test_pipeline
-                  | beam.Create([fake_person_data])
-                  | 'Load StatePerson entity' >>
-                  beam.ParDo(person_extractor.HydratePersonEntity())
-                  )
-
-        assert_that(output, equal_to([(12345, fake_person_entity)]))
-
-        test_pipeline.run()
-
-    def testExtractPerson_EmptyDict(self):
-        """Tests the extraction of a StatePerson entity when the dictionary is
-        empty."""
-
-        with pytest.raises(ValueError) as e:
-
-            test_pipeline = TestPipeline()
-
-            _ = (test_pipeline
-                 | beam.Create([{}])
-                 | 'Load StatePerson entity' >>
-                 beam.ParDo(person_extractor.HydratePersonEntity())
-                 )
-
-            test_pipeline.run()
-
-        assert str(e.value) == "build_dict cannot be empty " \
-                               "[while running 'Load StatePerson entity']"
-
-    def testExtractPerson_NoPersonID(self):
-        """Tests the extraction of a StatePerson entity when there is no
-        person_id given."""
-
-        # TODO(1852): Build entities as schema objects once the schema changes
-        #  have landed.
-
-        with pytest.raises(ValueError) as e:
-
-            fake_person = schema.StatePerson(
-                current_address='123 Street',
-                full_name='Jack Smith', birthdate=date(1970, 1, 1),
-                gender=Gender.MALE,
-                residency_status=ResidencyStatus.PERMANENT, aliases=[])
-
-            fake_person_data = _normalized_db_entity_dict(fake_person)
-
-            test_pipeline = TestPipeline()
-
-            _ = (test_pipeline
-                 | beam.Create([fake_person_data])
-                 | 'Load StatePerson entity' >>
-                 beam.ParDo(person_extractor.HydratePersonEntity())
-                 )
-
-            test_pipeline.run()
-
-        assert str(e.value) == "No person_id on this person. " \
-                               "[while running 'Load StatePerson entity']"
-
-
-class TestExtractIncarcerationPeriod(unittest.TestCase):
-    """Tests for the ExtractIncarcerationPeriod DoFn."""
-
-    def testExtractIncarcerationPeriod(self):
-        """Tests the extraction of a valid StateIncarcerationPeriod entity."""
-
-        # TODO(1852): Build entities as schema objects once the schema changes
-        #  have landed.
-
-        person_id = 6789
-
-        fake_incarceration_period = schema.StateIncarcerationPeriod(
-            incarceration_period_id=12345,
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            admission_date=date(2001, 1, 1),
-            state_code='CA',
-            county_code='124',
-            facility='San Quentin',
-            facility_security_level=StateIncarcerationFacilitySecurityLevel.
-            MAXIMUM,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.
-            NEW_ADMISSION,
-            projected_release_reason=StateIncarcerationPeriodReleaseReason.
-            CONDITIONAL_RELEASE,
-            person_id=person_id)
-
-        fake_incarceration_period_entity = \
-            StateSchemaToEntityConverter().convert(fake_incarceration_period)
-
-        test_pipeline = TestPipeline()
-
-        output = (test_pipeline
-                  | beam.Create([_normalized_db_entity_dict(
-                      fake_incarceration_period)])
-                  | 'Load StateIncarcerationPeriod entity' >>
-                  beam.ParDo(incarceration_period_extractor.
-                             HydrateIncarcerationPeriodEntity())
-                  )
-
-        assert_that(output,
-                    equal_to([(person_id, fake_incarceration_period_entity)]))
-
-        test_pipeline.run()
-
-    def testExtractIncarcerationPeriod_NoStatePersonID(self):
-        """Tests the extraction of a StateIncarcerationPeriod entity when
-        there is no person_id present."""
-
-        # TODO(1852): Build entities as schema objects once the schema changes
-        #  have landed.
-
-        fake_incarceration_period = \
-            schema.StateIncarcerationPeriod(
-                incarceration_period_id=12345,
-                status=StateIncarcerationPeriodStatus.IN_CUSTODY,
-                incarceration_type=StateIncarcerationType.STATE_PRISON,
-                admission_date=date(2001, 1, 1),
-                state_code='CA',
-                county_code='124',
-                facility='San Quentin',
-                facility_security_level=StateIncarcerationFacilitySecurityLevel.
-                MAXIMUM,
-                admission_reason=StateIncarcerationPeriodAdmissionReason.
-                NEW_ADMISSION,
-                projected_release_reason=StateIncarcerationPeriodReleaseReason.
-                CONDITIONAL_RELEASE)
-
-        with pytest.raises(ValueError) as e:
-
-            test_pipeline = TestPipeline()
-
-            _ = (test_pipeline
-                 | beam.Create([_normalized_db_entity_dict(
-                     fake_incarceration_period)])
-                 | 'Load StateIncarcerationPeriod entity' >>
-                 beam.ParDo(incarceration_period_extractor.
-                            HydrateIncarcerationPeriodEntity())
-                 )
-
-            test_pipeline.run()
-
-        assert str(e.value) == "No person_id associated with this " \
-                               "incarceration period. " \
-                               "[while running 'Load " \
-                               "StateIncarcerationPeriod entity']"
-
-    def testExtractIncarcerationPeriod_EmptyDict(self):
-        """Tests the extraction of a StateIncarcerationPeriod entity when the
-        dictionary is empty."""
-
-        with pytest.raises(ValueError) as e:
-
-            test_pipeline = TestPipeline()
-            _ = (test_pipeline
-                 | beam.Create([{}])
-                 | 'Load StateIncarcerationPeriod entity' >>
-                 beam.ParDo(incarceration_period_extractor.
-                            HydrateIncarcerationPeriodEntity())
-                 )
-
-            test_pipeline.run()
-
-        assert str(e.value) == "build_dict cannot be empty " \
-                               "[while running 'Load " \
-                               "StateIncarcerationPeriod entity']"
 
 
 class TestClassifyReleaseEvents(unittest.TestCase):
@@ -1309,25 +1125,6 @@ class TestFilterMetrics(unittest.TestCase):
                          MetricGroup.recidivism_metric_with_stay_length]))
 
         test_pipeline.run()
-
-
-def _normalized_db_entity_dict(database_entity: DatabaseEntity) -> dict:
-    """Takes in a DatabaseEntity object and returns a dictionary with only keys
-    that are column property names in the database. If any columns are not
-    currently represented in the entity, sets the value as None for that key.
-    For values that are EntityEnum, stores the value of the enum in the
-    dictionary instead of the entire enum."""
-    new_object_dict = {}
-
-    for column in database_entity.get_column_property_names():
-        # Set any required columns as None if they aren't present
-        v = getattr(database_entity, column, None)
-        if isinstance(v, EntityEnum):
-            new_object_dict[column] = v.value
-        else:
-            new_object_dict[column] = v
-
-    return new_object_dict
 
 
 class MetricGroup:

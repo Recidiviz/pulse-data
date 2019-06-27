@@ -19,7 +19,8 @@
 import inspect
 from enum import Enum
 from types import ModuleType
-from typing import Set, Type, List, Dict
+from typing import Dict, List, Set, Type
+from functools import lru_cache
 
 import attr
 
@@ -163,6 +164,19 @@ def get_all_entity_classes_in_module(
                 expected_classes.add(attribute)
 
     return expected_classes
+
+
+@lru_cache(maxsize=None)
+def get_entity_class_in_module_with_name(
+        entities_module: ModuleType, class_name: str) -> Type[Entity]:
+    entity_classes = get_all_entity_classes_in_module(entities_module)
+
+    for entity_class in entity_classes:
+        if entity_class.__name__ == class_name:
+            return entity_class
+
+    raise LookupError(f"Entity class {class_name} does not exist in"
+                      f"{entities_module}.")
 
 
 def get_all_entity_class_names_in_module(

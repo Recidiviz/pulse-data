@@ -60,9 +60,11 @@ from recidiviz.calculator.recidivism import identifier, calculator, \
     ReincarcerationRecidivismMetric
 from recidiviz.calculator.recidivism.release_event import ReleaseEvent
 from recidiviz.calculator.recidivism.metrics import RecidivismMethodologyType
-from recidiviz.calculator.utils import person_extractor, \
-    incarceration_period_extractor
-from recidiviz.persistence.entity.state.entities import StatePerson
+from recidiviz.calculator.utils.extractor_utils import BuildRootEntity
+from recidiviz.persistence.entity.state.entities import StatePerson, \
+    StateIncarcerationPeriod
+from recidiviz.persistence.database.schema.state import schema
+
 
 
 @with_input_types(beam.typehints.Tuple[int, Dict[str, Any]])
@@ -390,22 +392,29 @@ def run(argv=None):
         #  DataflowRunner
         # Change this to DataflowRunner to
         # run the pipeline on the Google Cloud Dataflow Service.
-        # '--runner=DirectRunner',
-        '--runner=DataflowRunner'
+        '--runner=DirectRunner',
     ])
 
     with beam.Pipeline(argv=pipeline_args) as p:
         # Get StatePersons
         persons = (p
-                   | 'Get hydrated StatePersons' >>
-                   person_extractor.ExtractPersons(dataset=known_args.dataset))
+                   | 'Load Persons' >>
+                   BuildRootEntity(dataset=known_args.dataset,
+                                   data_dict=None,
+                                   root_schema_class=schema.StatePerson,
+                                   root_entity_class=StatePerson,
+                                   unifying_id_field='person_id'))
 
         # Get StateIncarcerationPeriods
-        incarceration_periods = (
-            p
-            | 'Get hydrated IncarcerationPeriods' >>
-            incarceration_period_extractor.ExtractIncarcerationPeriods(
-                dataset=known_args.dataset))
+        incarceration_periods = (p
+                                 | 'Load IncarcerationPeriods' >>
+                                 BuildRootEntity(
+                                     dataset=known_args.dataset,
+                                     data_dict=None,
+                                     root_schema_class=
+                                     schema.StateIncarcerationPeriod,
+                                     root_entity_class=StateIncarcerationPeriod,
+                                     unifying_id_field='person_id'))
 
         # Group each StatePerson with their StateIncarcerationPeriods
         person_and_incarceration_periods = (
