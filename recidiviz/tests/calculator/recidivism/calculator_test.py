@@ -30,7 +30,8 @@ from recidiviz.calculator.recidivism import calculator, ReleaseEvent, \
 from recidiviz.calculator.recidivism.metrics import RecidivismMethodologyType
 from recidiviz.calculator.recidivism.release_event import \
     ReincarcerationReturnType
-from recidiviz.persistence.entity.state.entities import StatePerson, Gender
+from recidiviz.persistence.entity.state.entities import StatePerson, Gender,\
+    StatePersonRace, Race, StatePersonEthnicity, Ethnicity
 
 
 def test_reincarceration_dates():
@@ -323,29 +324,305 @@ def test_stay_length_bucket():
     assert calculator.stay_length_bucket(130) == '120<'
 
 
+def test_for_characteristics_races_ethnicities_one_race():
+    race_white = StatePersonRace.new_with_defaults(state_code='CA',
+                                                   race=Race.WHITE)
+
+    characteristics = {'gender': 'female', 'age': '<25'}
+
+    combinations = calculator.for_characteristics_races_ethnicities(
+        [race_white], [], characteristics)
+
+    assert combinations == [{},
+                            {'gender': 'female'},
+                            {'age': '<25'},
+                            {'gender': 'female', 'age': '<25'},
+                            {'race': Race.WHITE},
+                            {'race': Race.WHITE, 'gender': 'female'},
+                            {'age': '<25', 'race': Race.WHITE},
+                            {'age': '<25', 'race': Race.WHITE,
+                             'gender': 'female'}]
+
+
+def test_for_characteristics_races_ethnicities_two_races():
+    race_white = StatePersonRace.new_with_defaults(state_code='CA',
+                                                   race=Race.WHITE)
+
+    race_black = StatePersonRace.new_with_defaults(state_code='MT',
+                                                   race=Race.BLACK)
+
+    characteristics = {'gender': 'female', 'age': '<25'}
+
+    combinations = calculator.for_characteristics_races_ethnicities(
+        [race_white, race_black], [], characteristics)
+
+    assert combinations == [{},
+                            {'gender': 'female'},
+                            {'age': '<25'},
+                            {'gender': 'female', 'age': '<25'},
+                            {'race': Race.WHITE},
+                            {'race': Race.WHITE, 'gender': 'female'},
+                            {'age': '<25', 'race': Race.WHITE},
+                            {'age': '<25', 'race': Race.WHITE,
+                             'gender': 'female'},
+                            {'race': Race.BLACK},
+                            {'race': Race.BLACK, 'gender': 'female'},
+                            {'age': '<25', 'race': Race.BLACK},
+                            {'age': '<25', 'race': Race.BLACK,
+                             'gender': 'female'}]
+
+
+def test_for_characteristics_races_ethnicities_one_ethnicity():
+    ethnicity_hispanic = StatePersonEthnicity.new_with_defaults(
+        state_code='CA',
+        ethnicity=Ethnicity.HISPANIC)
+
+    characteristics = {'gender': 'female', 'age': '<25'}
+
+    combinations = calculator.for_characteristics_races_ethnicities(
+        [], [ethnicity_hispanic], characteristics)
+
+    assert combinations == [{},
+                            {'gender': 'female'},
+                            {'age': '<25'},
+                            {'gender': 'female', 'age': '<25'},
+                            {'ethnicity': Ethnicity.HISPANIC},
+                            {'ethnicity': Ethnicity.HISPANIC,
+                             'gender': 'female'},
+                            {'age': '<25', 'ethnicity': Ethnicity.HISPANIC},
+                            {'age': '<25', 'ethnicity': Ethnicity.HISPANIC,
+                             'gender': 'female'}]
+
+
+def test_for_characteristics_races_ethnicities_multiple_ethnicities():
+    ethnicity_hispanic = StatePersonEthnicity.new_with_defaults(
+        state_code='CA',
+        ethnicity=Ethnicity.HISPANIC)
+
+    ethnicity_not_hispanic = StatePersonEthnicity.new_with_defaults(
+        state_code='FL',
+        ethnicity=Ethnicity.NOT_HISPANIC)
+
+    characteristics = {'gender': 'female', 'age': '<25'}
+
+    combinations = calculator.for_characteristics_races_ethnicities(
+        [], [ethnicity_hispanic, ethnicity_not_hispanic], characteristics)
+
+    assert combinations == [{},
+                            {'gender': 'female'},
+                            {'age': '<25'},
+                            {'gender': 'female', 'age': '<25'},
+                            {'ethnicity': Ethnicity.HISPANIC},
+                            {'ethnicity': Ethnicity.HISPANIC,
+                             'gender': 'female'},
+                            {'age': '<25', 'ethnicity': Ethnicity.HISPANIC},
+                            {'age': '<25', 'ethnicity': Ethnicity.HISPANIC,
+                             'gender': 'female'},
+                            {'ethnicity': Ethnicity.NOT_HISPANIC},
+                            {'ethnicity': Ethnicity.NOT_HISPANIC,
+                             'gender': 'female'},
+                            {'age': '<25', 'ethnicity': Ethnicity.NOT_HISPANIC},
+                            {'age': '<25', 'ethnicity': Ethnicity.NOT_HISPANIC,
+                             'gender': 'female'}
+                            ]
+
+
+def test_for_characteristics_races_ethnicities_one_race_one_ethnicity():
+    race_white = StatePersonRace.new_with_defaults(state_code='CA',
+                                                   race=Race.WHITE)
+
+    ethnicity_hispanic = StatePersonEthnicity.new_with_defaults(
+        state_code='CA',
+        ethnicity=Ethnicity.HISPANIC)
+
+    characteristics = {'gender': 'female', 'age': '<25'}
+
+    combinations = calculator.for_characteristics_races_ethnicities(
+        [race_white], [ethnicity_hispanic], characteristics)
+
+    assert combinations == [{},
+                            {'gender': 'female'},
+                            {'age': '<25'},
+                            {'gender': 'female', 'age': '<25'},
+                            {'race': Race.WHITE},
+                            {'race': Race.WHITE, 'gender': 'female'},
+                            {'age': '<25', 'race': Race.WHITE},
+                            {'age': '<25', 'race': Race.WHITE,
+                             'gender': 'female'},
+                            {'ethnicity': Ethnicity.HISPANIC},
+                            {'ethnicity': Ethnicity.HISPANIC,
+                             'gender': 'female'},
+                            {'age': '<25', 'ethnicity': Ethnicity.HISPANIC},
+                            {'age': '<25', 'ethnicity': Ethnicity.HISPANIC,
+                             'gender': 'female'},
+                            {'race': Race.WHITE,
+                             'ethnicity': Ethnicity.HISPANIC},
+                            {'race': Race.WHITE,
+                             'ethnicity': Ethnicity.HISPANIC,
+                             'gender': 'female'},
+                            {'age': '<25', 'race': Race.WHITE,
+                             'ethnicity': Ethnicity.HISPANIC},
+                            {'race': Race.WHITE,
+                             'ethnicity': Ethnicity.HISPANIC,
+                             'age': '<25',
+                             'gender': 'female'},
+                            ]
+
+
+def test_for_characteristics_races_ethnicities_multiple_races_one_ethnicity():
+    race_white = StatePersonRace.new_with_defaults(state_code='CA',
+                                                   race=Race.WHITE)
+
+    race_black = StatePersonRace.new_with_defaults(state_code='CA',
+                                                   race=Race.BLACK)
+
+    ethnicity_hispanic = StatePersonEthnicity.new_with_defaults(
+        state_code='CA',
+        ethnicity=Ethnicity.HISPANIC)
+
+    characteristics = {'age': '<25'}
+
+    combinations = calculator.for_characteristics_races_ethnicities(
+        [race_white, race_black], [ethnicity_hispanic], characteristics)
+
+    assert combinations == [{},
+                            {'age': '<25'},
+                            {'race': Race.WHITE},
+                            {'age': '<25', 'race': Race.WHITE},
+                            {'race': Race.BLACK},
+                            {'age': '<25', 'race': Race.BLACK},
+                            {'ethnicity': Ethnicity.HISPANIC},
+                            {'age': '<25', 'ethnicity': Ethnicity.HISPANIC},
+                            {'race': Race.WHITE,
+                             'ethnicity': Ethnicity.HISPANIC},
+                            {'age': '<25', 'race': Race.WHITE,
+                             'ethnicity': Ethnicity.HISPANIC},
+                            {'race': Race.BLACK,
+                             'ethnicity': Ethnicity.HISPANIC},
+                            {'age': '<25', 'race': Race.BLACK,
+                             'ethnicity': Ethnicity.HISPANIC}
+                            ]
+
+
+def test_for_characteristics_races_ethnicities_one_race_multiple_ethnicities():
+    race_white = StatePersonRace.new_with_defaults(state_code='CA',
+                                                   race=Race.WHITE)
+
+    ethnicity_hispanic = StatePersonEthnicity.new_with_defaults(
+        state_code='CA',
+        ethnicity=Ethnicity.HISPANIC)
+
+    ethnicity_not_hispanic = StatePersonEthnicity.new_with_defaults(
+        state_code='CA',
+        ethnicity=Ethnicity.NOT_HISPANIC)
+
+    characteristics = {'age': '<25'}
+
+    combinations = calculator.for_characteristics_races_ethnicities(
+        [race_white], [ethnicity_hispanic, ethnicity_not_hispanic],
+        characteristics)
+
+    assert combinations == [{},
+                            {'age': '<25'},
+                            {'race': Race.WHITE},
+                            {'age': '<25', 'race': Race.WHITE},
+                            {'ethnicity': Ethnicity.HISPANIC},
+                            {'age': '<25', 'ethnicity': Ethnicity.HISPANIC},
+                            {'ethnicity': Ethnicity.NOT_HISPANIC},
+                            {'age': '<25', 'ethnicity': Ethnicity.NOT_HISPANIC},
+                            {'race': Race.WHITE,
+                             'ethnicity': Ethnicity.HISPANIC},
+                            {'age': '<25', 'race': Race.WHITE,
+                             'ethnicity': Ethnicity.HISPANIC},
+                            {'race': Race.WHITE,
+                             'ethnicity': Ethnicity.NOT_HISPANIC},
+                            {'age': '<25', 'race': Race.WHITE,
+                             'ethnicity': Ethnicity.NOT_HISPANIC}
+                            ]
+
+
+def test_for_characteristics_races_ethnicities_no_races_or_ethnicities():
+    characteristics = {'age': '<25'}
+
+    combinations = calculator.for_characteristics_races_ethnicities(
+        [], [], characteristics)
+
+    assert combinations == [{}, {'age': '<25'}]
+
+
+def test_for_characteristics_races_ethnicities_multiple_races_and_ethnicities():
+    race_white = StatePersonRace.new_with_defaults(state_code='CA',
+                                                   race=Race.WHITE)
+
+    race_black = StatePersonRace.new_with_defaults(state_code='CA',
+                                                   race=Race.BLACK)
+
+    ethnicity_hispanic = StatePersonEthnicity.new_with_defaults(
+        state_code='CA',
+        ethnicity=Ethnicity.HISPANIC)
+
+    ethnicity_not_hispanic = StatePersonEthnicity.new_with_defaults(
+        state_code='CA',
+        ethnicity=Ethnicity.NOT_HISPANIC)
+
+    characteristics = {'age': '<25'}
+
+    combinations = calculator.for_characteristics_races_ethnicities(
+        [race_white, race_black], [ethnicity_hispanic, ethnicity_not_hispanic],
+        characteristics)
+
+    assert combinations == [{},
+                            {'age': '<25'},
+                            {'race': Race.WHITE},
+                            {'age': '<25', 'race': Race.WHITE},
+                            {'race': Race.BLACK},
+                            {'age': '<25', 'race': Race.BLACK},
+                            {'ethnicity': Ethnicity.HISPANIC},
+                            {'age': '<25', 'ethnicity': Ethnicity.HISPANIC},
+                            {'ethnicity': Ethnicity.NOT_HISPANIC},
+                            {'age': '<25', 'ethnicity': Ethnicity.NOT_HISPANIC},
+                            {'race': Race.WHITE,
+                             'ethnicity': Ethnicity.HISPANIC},
+                            {'age': '<25', 'race': Race.WHITE,
+                             'ethnicity': Ethnicity.HISPANIC},
+                            {'race': Race.WHITE,
+                             'ethnicity': Ethnicity.NOT_HISPANIC},
+                            {'age': '<25', 'race': Race.WHITE,
+                             'ethnicity': Ethnicity.NOT_HISPANIC},
+                            {'race': Race.BLACK,
+                             'ethnicity': Ethnicity.HISPANIC},
+                            {'age': '<25', 'race': Race.BLACK,
+                             'ethnicity': Ethnicity.HISPANIC},
+                            {'race': Race.BLACK,
+                             'ethnicity': Ethnicity.NOT_HISPANIC},
+                            {'age': '<25', 'race': Race.BLACK,
+                             'ethnicity': Ethnicity.NOT_HISPANIC}
+                            ]
+
+
 def test_for_characteristics():
-    characteristics = {'race': 'black', 'sex': 'female', 'age': '<25'}
+    characteristics = {'race': 'black', 'gender': 'female', 'age': '<25'}
     combinations = calculator.for_characteristics(characteristics)
 
     assert combinations == [{},
                             {'race': 'black'},
-                            {'sex': 'female'},
+                            {'gender': 'female'},
                             {'age': '<25'},
-                            {'race': 'black', 'sex': 'female'},
+                            {'race': 'black', 'gender': 'female'},
                             {'age': '<25', 'race': 'black'},
-                            {'age': '<25', 'sex': 'female'},
-                            {'age': '<25', 'race': 'black', 'sex': 'female'}]
+                            {'age': '<25', 'gender': 'female'},
+                            {'age': '<25', 'race': 'black', 'gender': 'female'}]
 
 
 def test_for_characteristics_one_characteristic():
-    characteristics = {'sex': 'male'}
+    characteristics = {'gender': 'male'}
     combinations = calculator.for_characteristics(characteristics)
 
-    assert combinations == [{}, {'sex': 'male'}]
+    assert combinations == [{}, {'gender': 'male'}]
 
 
 def test_augment_combination():
-    combo = {'age': '<25', 'race': 'black', 'sex': 'female'}
+    combo = {'age': '<25', 'race': 'black', 'gender': 'female'}
     augmented = calculator.augment_combination(combo,
                                                RecidivismMethodologyType.EVENT,
                                                8)
@@ -354,7 +631,7 @@ def test_augment_combination():
                          'follow_up_period': 8,
                          'methodology': RecidivismMethodologyType.EVENT,
                          'race': 'black',
-                         'sex': 'female'}
+                         'gender': 'female'}
     assert augmented != combo
 
 
@@ -368,6 +645,10 @@ class TestMapRecidivismCombinations:
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
+        race = StatePersonRace.new_with_defaults(state_code='CA',
+                                                 race=Race.WHITE)
+        person.races = [race]
+
         release_events_by_cohort = {
             2008: [RecidivismReleaseEvent(
                 date(2005, 7, 19), date(2008, 9, 19), 'Hudson',
@@ -378,11 +659,9 @@ class TestMapRecidivismCombinations:
         recidivism_combinations = calculator.map_recidivism_combinations(
             person, release_events_by_cohort)
 
-        # 32 combinations of demographics, facility, and stay length
-        # * 2 methodologies * 10 periods = 640 metrics
-        # TODO(1781): Update this number once races and ethnicities are
-        #  implemented
-        assert len(recidivism_combinations) == 640
+        # 64 combinations of demographics, return type, facility, & stay length
+        # * 2 methodologies * 10 periods = 1280 metrics
+        assert len(recidivism_combinations) == 1280
 
         for combination, value in recidivism_combinations:
             if combination['follow_up_period'] <= 5:
@@ -396,6 +675,10 @@ class TestMapRecidivismCombinations:
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='CA',
+                                                 race=Race.BLACK)
+        person.races = [race]
 
         release_events_by_cohort = {
             1908: [RecidivismReleaseEvent(
@@ -413,17 +696,15 @@ class TestMapRecidivismCombinations:
 
         # For the first event:
         #   For the first 5 periods:
-        #       32 combinations of characteristics
-        #       * 2 methodologies * 5 periods = 320 metrics
+        #       64 combinations of characteristics
+        #       * 2 methodologies * 5 periods = 640 metrics
         #   For the second 5 periods, there is an additional event-based count:
-        #       32 combinations of demographics, facility, and stay length
-        #       * (2 methodologies + 1 more instance) * 5 periods = 480 metrics
+        #       64 combinations of demographics, facility, and stay length
+        #       * (2 methodologies + 1 more instance) * 5 periods = 960 metrics
         #
         # For the second event:
-        #   32 combinations * 2 methodologies * 10 periods = 640 metrics
-        # TODO(1781): Update this number once races and ethnicities are
-        #  implemented
-        assert len(recidivism_combinations) == (320 + 480 + 640)
+        #   64 combinations * 2 methodologies * 10 periods = 1280 metrics
+        assert len(recidivism_combinations) == (640 + 960 + 1280)
 
         for combination, value in recidivism_combinations:
             if combination['follow_up_period'] < 2:
@@ -438,6 +719,10 @@ class TestMapRecidivismCombinations:
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
+        race = StatePersonRace.new_with_defaults(state_code='CA',
+                                                 race=Race.BLACK)
+        person.races = [race]
+
         release_events_by_cohort = {
             2008: [NonRecidivismReleaseEvent(date(2005, 7, 19),
                                              date(2008, 9, 19), 'Hudson')]
@@ -448,9 +733,7 @@ class TestMapRecidivismCombinations:
 
         # 32 combinations of demographics, facility, and stay length
         # * 2 methodologies * 10 periods = 640 metrics
-        # TODO(1781): Update this number once races and ethnicities are
-        #  implemented
-        assert len(recidivism_combinations) == 320
+        assert len(recidivism_combinations) == 640
         assert all(value == 0 for _combination, value
                    in recidivism_combinations)
 
@@ -460,6 +743,10 @@ class TestMapRecidivismCombinations:
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='CA',
+                                                 race=Race.BLACK)
+        person.races = [race]
 
         release_events_by_cohort = {
             2008: [RecidivismReleaseEvent(
@@ -471,10 +758,167 @@ class TestMapRecidivismCombinations:
         recidivism_combinations = calculator.map_recidivism_combinations(
             person, release_events_by_cohort)
 
-        # 32 combinations of demographics, facility, and stay length
-        # * 2 methodologies * 10 periods = 640 metrics
-        # TODO(1781): Update this number once races and ethnicities are
-        #  implemented
-        assert len(recidivism_combinations) == 640
+        # 64 combinations of demographics, facility, and stay length
+        # * 2 methodologies * 10 periods = 1280 metrics
+        assert len(recidivism_combinations) == 1280
         assert all(value == 0 for _combination, value
                    in recidivism_combinations)
+
+    def test_map_recidivism_combinations_multiple_races(self):
+        """Tests the map_recidivism_combinations function where there is
+        recidivism, and the person has more than one race."""
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race_white = StatePersonRace.new_with_defaults(state_code='CA',
+                                                       race=Race.WHITE)
+
+        race_black = StatePersonRace.new_with_defaults(state_code='MT',
+                                                       race=Race.BLACK)
+
+        person.races = [race_white, race_black]
+
+        release_events_by_cohort = {
+            2008: [RecidivismReleaseEvent(
+                date(2005, 7, 19), date(2008, 9, 19), 'Hudson',
+                date(2014, 5, 12), 'Upstate',
+                ReincarcerationReturnType.NEW_ADMISSION)]
+        }
+
+        recidivism_combinations = calculator.map_recidivism_combinations(
+            person, release_events_by_cohort)
+
+        # 96 combinations of demographics, return type, facility, & stay length
+        # * 2 methodologies * 10 periods = 1920 metrics
+        assert len(recidivism_combinations) == 1920
+
+        for combination, value in recidivism_combinations:
+            if combination['follow_up_period'] <= 5:
+                assert value == 0
+            else:
+                assert value == 1
+
+    def test_map_recidivism_combinations_multiple_ethnicities(self):
+        """Tests the map_recidivism_combinations function where there is
+        recidivism, and the person has more than one ethnicity."""
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        ethnicity_hispanic = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.HISPANIC)
+
+        ethnicity_not_hispanic = StatePersonEthnicity.new_with_defaults(
+            state_code='MT',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity_hispanic, ethnicity_not_hispanic]
+
+        release_events_by_cohort = {
+            2008: [RecidivismReleaseEvent(
+                date(2005, 7, 19), date(2008, 9, 19), 'Hudson',
+                date(2014, 5, 12), 'Upstate',
+                ReincarcerationReturnType.NEW_ADMISSION)]
+        }
+
+        recidivism_combinations = calculator.map_recidivism_combinations(
+            person, release_events_by_cohort)
+
+        # 96 combinations of demographics, return type, facility, & stay length
+        # 2 methodologies * 10 periods = 1920 metrics
+        assert len(recidivism_combinations) == 1920
+
+        for combination, value in recidivism_combinations:
+            if combination['follow_up_period'] <= 5:
+                assert value == 0
+            else:
+                assert value == 1
+
+    def test_map_recidivism_combinations_multiple_races_one_ethnicity(self):
+        """Tests the map_recidivism_combinations function where there is
+        recidivism, and the person has multiple races and an ethnicity."""
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race_white = StatePersonRace.new_with_defaults(state_code='CA',
+                                                       race=Race.WHITE)
+
+        race_black = StatePersonRace.new_with_defaults(state_code='MT',
+                                                       race=Race.BLACK)
+
+        person.races = [race_white, race_black]
+
+        ethnicity_hispanic = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.HISPANIC)
+
+        person.ethnicities = [ethnicity_hispanic]
+
+        release_events_by_cohort = {
+            2008: [RecidivismReleaseEvent(
+                date(2005, 7, 19), date(2008, 9, 19), 'Hudson',
+                date(2014, 5, 12), 'Upstate',
+                ReincarcerationReturnType.NEW_ADMISSION)]
+        }
+
+        recidivism_combinations = calculator.map_recidivism_combinations(
+            person, release_events_by_cohort)
+
+        # 192 combinations of demographics, return type, facility, & stay length
+        # * 2 methodologies * 10 periods = 3840
+        assert len(recidivism_combinations) == 3840
+
+        for combination, value in recidivism_combinations:
+            if combination['follow_up_period'] <= 5:
+                assert value == 0
+            else:
+                assert value == 1
+
+    def test_map_recidivism_combinations_multiple_races_ethnicities(self):
+        """Tests the map_recidivism_combinations function where there is
+        recidivism, and the person has multiple races and multiple
+        ethnicities."""
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race_white = StatePersonRace.new_with_defaults(state_code='CA',
+                                                       race=Race.WHITE)
+
+        race_black = StatePersonRace.new_with_defaults(state_code='MT',
+                                                       race=Race.BLACK)
+
+        person.races = [race_white, race_black]
+
+        ethnicity_hispanic = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.HISPANIC)
+
+        ethnicity_not_hispanic = StatePersonEthnicity.new_with_defaults(
+            state_code='MT',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity_hispanic, ethnicity_not_hispanic]
+
+        release_events_by_cohort = {
+            2008: [RecidivismReleaseEvent(
+                date(2005, 7, 19), date(2008, 9, 19), 'Hudson',
+                date(2014, 5, 12), 'Upstate',
+                ReincarcerationReturnType.NEW_ADMISSION)]
+        }
+
+        recidivism_combinations = calculator.map_recidivism_combinations(
+            person, release_events_by_cohort)
+
+        # 288 combinations of demographics, return type, facility, & stay length
+        # * 2 methodologies * 10 periods = 5760
+        assert len(recidivism_combinations) == 5760
+
+        for combination, value in recidivism_combinations:
+            if combination['follow_up_period'] <= 5:
+                assert value == 0
+            else:
+                assert value == 1

@@ -20,7 +20,8 @@
 usage: pipeline.py --output=OUTPUT_LOCATION --project=PROJECT
                     --dataset=DATASET --methodology=METHODOLOGY
                     [--include_age] [--include_gender]
-                    [--include_race] [--include_release_facility]
+                    [--include_race] [--include_ethnicity]
+                    [--include_release_facility]
                     [--include_stay_length] [--release_count_min]
 
 Example output to GCP storage bucket:
@@ -306,6 +307,12 @@ def parse_arguments(argv):
                         help='Include metrics broken down by race.',
                         default=False)
 
+    parser.add_argument('--include_ethnicity',
+                        dest='include_ethnicity',
+                        type=bool,
+                        help='Include metrics broken down by ethnicity.',
+                        default=False)
+
     parser.add_argument('--include_release_facility',
                         dest='include_release_facility',
                         type=bool,
@@ -355,11 +362,11 @@ def dimensions_and_methodologies(known_args) -> \
 
     dimensions = []
 
-    # TODO(1781): Fix race to be races and include ethnicities
     filterable_dimensions_map = {
         'include_age': 'age_bucket',
         'include_gender': 'gender',
         'include_race': 'race',
+        'include_ethnicity': 'ethnicity',
         'include_release_facility': 'release_facility',
         'include_stay_length': 'stay_length_bucket'}
 

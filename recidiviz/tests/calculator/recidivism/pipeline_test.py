@@ -45,7 +45,7 @@ from recidiviz.persistence.entity.state.entities import StatePerson, \
     StateIncarcerationPeriod, Gender, Race, ResidencyStatus, Ethnicity
 from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.tests.calculator.calculator_test_utils import \
-    normalized_database_base_dict
+    normalized_database_base_dict, normalized_database_base_dict_list
 from recidiviz.calculator.utils import extractor_utils
 
 
@@ -64,6 +64,30 @@ class TestRecidivismPipeline(unittest.TestCase):
             residency_status=ResidencyStatus.PERMANENT)
 
         persons_data = [normalized_database_base_dict(fake_person)]
+
+        race_1 = schema.StatePersonRace(
+            person_race_id=111,
+            state_code='CA',
+            race=Race.BLACK,
+            person_id=fake_person_id
+        )
+
+        race_2 = schema.StatePersonRace(
+            person_race_id=111,
+            state_code='ND',
+            race=Race.WHITE,
+            person_id=fake_person_id
+        )
+
+        races_data = normalized_database_base_dict_list([race_1, race_2])
+
+        ethnicity = schema.StatePersonEthnicity(
+            person_ethnicity_id=111,
+            state_code='CA',
+            ethnicity=Ethnicity.HISPANIC,
+            person_id=fake_person_id)
+
+        ethnicity_data = normalized_database_base_dict_list([ethnicity])
 
         initial_incarceration = schema.StateIncarcerationPeriod(
             incarceration_period_id=1111,
@@ -124,12 +148,14 @@ class TestRecidivismPipeline(unittest.TestCase):
         ]
 
         dimensions_to_filter = ['age_bucket', 'race', 'release_facility',
-                                'stay_length_bucket']
+                                'stay_length_bucket', 'ethnicity']
 
         methodologies = [RecidivismMethodologyType.EVENT,
                          RecidivismMethodologyType.PERSON]
 
         data_dict = {schema.StatePerson.__tablename__: persons_data,
+                     schema.StatePersonRace.__tablename__: races_data,
+                     schema.StatePersonEthnicity.__tablename__: ethnicity_data,
                      schema.StateIncarcerationPeriod.__tablename__:
                          incarceration_periods_data}
 
@@ -947,7 +973,8 @@ class TestFilterMetrics(unittest.TestCase):
         """Tests the FilterMetrics DoFn when all metrics with specific
         dimensions should be filtered from the output."""
 
-        dimensions_to_filter = ['age_bucket', 'race', 'release_facility',
+        dimensions_to_filter = ['age_bucket', 'race', 'ethnicity',
+                                'release_facility',
                                 'gender', 'stay_length_bucket']
         methodologies = [RecidivismMethodologyType.EVENT,
                          RecidivismMethodologyType.PERSON]
@@ -977,8 +1004,8 @@ class TestFilterMetrics(unittest.TestCase):
          dimension should be included in the output. All other dimensions
          should be filtered from the output."""
 
-        dimensions_to_filter = ['gender', 'race', 'release_facility',
-                                'stay_length_bucket']
+        dimensions_to_filter = ['gender', 'race', 'ethnicity',
+                                'release_facility', 'stay_length_bucket']
         methodologies = [RecidivismMethodologyType.EVENT,
                          RecidivismMethodologyType.PERSON]
         release_count_min = 0
@@ -1007,8 +1034,8 @@ class TestFilterMetrics(unittest.TestCase):
          dimension should be included in the output. All other dimensions
          should be filtered from the output."""
 
-        dimensions_to_filter = ['age_bucket', 'race', 'release_facility',
-                                'stay_length_bucket']
+        dimensions_to_filter = ['age_bucket', 'race', 'ethnicity',
+                                'release_facility', 'stay_length_bucket']
         methodologies = [RecidivismMethodologyType.EVENT,
                          RecidivismMethodologyType.PERSON]
         release_count_min = 0
@@ -1032,14 +1059,72 @@ class TestFilterMetrics(unittest.TestCase):
 
         test_pipeline.run()
 
-    # TODO(1781): Test filtering races and ethnicities
+    def testFilterMetrics_IncludeRace(self):
+        """Tests the FilterMetrics DoFn when metrics including a race
+         dimension should be included in the output. All other dimensions
+         should be filtered from the output."""
+
+        dimensions_to_filter = ['age_bucket', 'gender', 'ethnicity',
+                                'release_facility', 'stay_length_bucket']
+        methodologies = [RecidivismMethodologyType.EVENT,
+                         RecidivismMethodologyType.PERSON]
+        release_count_min = 0
+
+        filter_metrics_kwargs = {
+            'dimensions_to_filter_out': dimensions_to_filter,
+            'methodologies': methodologies,
+            'release_count_min': release_count_min}
+
+        test_pipeline = TestPipeline()
+        output = (test_pipeline
+                  | beam.Create(MetricGroup.get_list())
+                  | 'Produce Recidivism Metric' >>
+                  beam.ParDo(pipeline.FilterMetrics(),
+                             **filter_metrics_kwargs))
+
+        assert_that(output,
+                    equal_to(
+                        [MetricGroup.recidivism_metric_without_dimensions,
+                         MetricGroup.recidivism_metric_with_race]))
+
+        test_pipeline.run()
+
+    def testFilterMetrics_IncludeEthnicity(self):
+        """Tests the FilterMetrics DoFn when metrics including an ethnicity
+         dimension should be included in the output. All other dimensions
+         should be filtered from the output."""
+
+        dimensions_to_filter = ['age_bucket', 'gender', 'race',
+                                'release_facility', 'stay_length_bucket']
+        methodologies = [RecidivismMethodologyType.EVENT,
+                         RecidivismMethodologyType.PERSON]
+        release_count_min = 0
+
+        filter_metrics_kwargs = {
+            'dimensions_to_filter_out': dimensions_to_filter,
+            'methodologies': methodologies,
+            'release_count_min': release_count_min}
+
+        test_pipeline = TestPipeline()
+        output = (test_pipeline
+                  | beam.Create(MetricGroup.get_list())
+                  | 'Produce Recidivism Metric' >>
+                  beam.ParDo(pipeline.FilterMetrics(),
+                             **filter_metrics_kwargs))
+
+        assert_that(output,
+                    equal_to(
+                        [MetricGroup.recidivism_metric_without_dimensions,
+                         MetricGroup.recidivism_metric_with_ethnicity]))
+
+        test_pipeline.run()
 
     def testFilterMetrics_IncludeReleaseFacility(self):
         """Tests the FilterMetrics DoFn when metrics including a release
          facility dimension should be included in the output. All other
          dimensions should be filtered from the output."""
 
-        dimensions_to_filter = ['age_bucket', 'gender', 'race',
+        dimensions_to_filter = ['age_bucket', 'gender', 'race', 'ethnicity',
                                 'stay_length_bucket']
         methodologies = [RecidivismMethodologyType.EVENT,
                          RecidivismMethodologyType.PERSON]
@@ -1069,7 +1154,7 @@ class TestFilterMetrics(unittest.TestCase):
         length dimension should be included in the output. All other
         dimensions should be filtered from the output."""
 
-        dimensions_to_filter = ['age_bucket', 'gender', 'race',
+        dimensions_to_filter = ['age_bucket', 'gender', 'race', 'ethnicity',
                                 'release_facility']
         methodologies = [RecidivismMethodologyType.EVENT,
                          RecidivismMethodologyType.PERSON]
@@ -1100,7 +1185,7 @@ class TestFilterMetrics(unittest.TestCase):
          or a stay length dimension should be included in the output. All other
         dimensions should be filtered from the output."""
 
-        dimensions_to_filter = ['age_bucket', 'race',
+        dimensions_to_filter = ['age_bucket', 'race', 'ethnicity',
                                 'release_facility']
         methodologies = [RecidivismMethodologyType.EVENT,
                          RecidivismMethodologyType.PERSON]
@@ -1135,12 +1220,21 @@ class MetricGroup:
         methodology=RecidivismMethodologyType.PERSON, age_bucket='25-29',
         total_releases=1000, recidivated_releases=900, recidivism_rate=0.9)
 
-    # TODO(1781): Add metricS with races and ethnicities
-
     recidivism_metric_with_gender = ReincarcerationRecidivismMetric(
         execution_id=12345, release_cohort=2015, follow_up_period=1,
         methodology=RecidivismMethodologyType.PERSON, gender=Gender.MALE,
         total_releases=1000, recidivated_releases=875, recidivism_rate=0.875)
+
+    recidivism_metric_with_race = ReincarcerationRecidivismMetric(
+        execution_id=12345, release_cohort=2015, follow_up_period=1,
+        methodology=RecidivismMethodologyType.PERSON, race=Race.BLACK,
+        total_releases=1000, recidivated_releases=875, recidivism_rate=0.875)
+
+    recidivism_metric_with_ethnicity = ReincarcerationRecidivismMetric(
+        execution_id=12345, release_cohort=2015, follow_up_period=1,
+        methodology=RecidivismMethodologyType.PERSON,
+        ethnicity=Ethnicity.HISPANIC, total_releases=1000,
+        recidivated_releases=875, recidivism_rate=0.875)
 
     recidivism_metric_with_release_facility = ReincarcerationRecidivismMetric(
         execution_id=12345, release_cohort=2015, follow_up_period=1,
@@ -1162,6 +1256,8 @@ class MetricGroup:
     def get_list():
         return [MetricGroup.recidivism_metric_with_age,
                 MetricGroup.recidivism_metric_with_gender,
+                MetricGroup.recidivism_metric_with_race,
+                MetricGroup.recidivism_metric_with_ethnicity,
                 MetricGroup.recidivism_metric_with_release_facility,
                 MetricGroup.recidivism_metric_with_stay_length,
                 MetricGroup.recidivism_metric_without_dimensions]
