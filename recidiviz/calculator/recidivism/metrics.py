@@ -26,7 +26,8 @@ import attr
 from recidiviz.calculator.recidivism.release_event import \
     ReincarcerationReturnType, ReincarcerationReturnFromSupervisionType
 from recidiviz.common.attr_mixins import BuildableAttr
-from recidiviz.common.constants.person_characteristics import Gender, Race
+from recidiviz.common.constants.person_characteristics import Gender, Race, \
+    Ethnicity
 
 
 class RecidivismMethodologyType(Enum):
@@ -102,6 +103,9 @@ class ReincarcerationRecidivismMetric(BuildableAttr):
     # The race of the persons the metric describes
     race: Optional[Race] = attr.ib(default=None)
 
+    # The ethnicity of the persons the metric describes
+    ethnicity: Optional[Ethnicity] = attr.ib(default=None)
+
     # The gender of the persons the metric describes
     gender: Optional[Gender] = attr.ib(default=None)
 
@@ -167,6 +171,8 @@ class ReincarcerationRecidivismMetric(BuildableAttr):
 
         if 'age' in metric_key:
             recidivism_metric.age_bucket = metric_key.get('age')
+        if 'ethnicity' in metric_key:
+            recidivism_metric.ethnicity = metric_key.get('ethnicity')
         if 'race' in metric_key:
             recidivism_metric.race = metric_key.get('race')
         if 'gender' in metric_key:
