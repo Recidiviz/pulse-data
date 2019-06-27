@@ -646,8 +646,9 @@ class StateIncarcerationPeriod(ExternalIdEntity,
     parole_decisions: List['StateParoleDecision'] = attr.ib(factory=list)
     assessments: List['StateAssessment'] = attr.ib(factory=list)
 
-    # When the admission reason is SUPERVISION_VIOLATION, this is the object
-    # with info about the violation/hearing that resulted in the revocation
+    # When the admission reason is PROBATION_REVOCATION or PAROLE_REVOCATION,
+    # this is the object with info about the violation/hearing that resulted in
+    # the revocation
     source_supervision_violation_response: \
         Optional['StateSupervisionViolationResponse'] = attr.ib(default=None)
 
@@ -788,6 +789,7 @@ class StateIncarcerationIncidentOutcome(ExternalIdEntity,
 class StateParoleDecision(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     """Models a Parole Decision for a StatePerson while under Incarceration."""
     # Status
+    # TODO(1697): Remove this redundant field (can infer from decision_outcome)
     received_parole: Optional[bool] = attr.ib()
 
     # Type
