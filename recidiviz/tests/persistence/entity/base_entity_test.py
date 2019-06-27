@@ -14,6 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
+
+# pylint: disable=unused-import,wrong-import-order
+
 """Tests for base_entity.py"""
 from unittest import TestCase
 
@@ -24,7 +27,8 @@ from recidiviz.persistence.entity.county.entities import Person, Booking, \
 from recidiviz.persistence.entity.entity_utils import \
     get_all_entity_classes_in_module
 from recidiviz.persistence.entity.state.entities import StatePerson, \
-    StatePersonRace, StateCourtCase, StateSupervisionViolationResponse
+    StatePersonRace, StateCourtCase, StateSupervisionViolationResponse, \
+    StateFine
 
 
 class TestBaseEntities(TestCase):
@@ -79,6 +83,24 @@ class TestBaseEntities(TestCase):
         self.assertEqual(789,
                          Hold.new_with_defaults(hold_id=789).get_id())
         self.assertIsNone(Charge.new_with_defaults().get_id())
+
+    def test_get_class_id_name_state_entity_sample(self):
+        self.assertEqual('person_id',
+                         StatePerson.get_class_id_name())
+        self.assertEqual('fine_id',
+                         StateFine.get_class_id_name())
+        self.assertEqual('court_case_id',
+                         StateCourtCase.get_class_id_name())
+        self.assertEqual('supervision_violation_response_id',
+                         StateSupervisionViolationResponse.get_class_id_name())
+
+    def test_class_id_name_county_entity_sample(self):
+        self.assertEqual('person_id',
+                         Person.get_class_id_name())
+        self.assertEqual('booking_id',
+                         Booking.get_class_id_name())
+        self.assertEqual('hold_id',
+                         Hold.get_class_id_name())
 
     # TODO(1894): Write unit tests for entity graph equality that reference the
     # schema defined in test_schema/test_entities.py.
