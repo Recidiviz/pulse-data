@@ -18,16 +18,13 @@
 """Requests handlers for direct ingest control requests.
 """
 
-import logging
 from http import HTTPStatus
 
 from flask import Blueprint
 
-from recidiviz.ingest.direct.errors import DirectIngestError
 from recidiviz.ingest.direct.regions.us_ma_middlesex.us_ma_middlesex_collector \
     import UsMaMiddlesexCollector
-from recidiviz.utils import environment, metadata, monitoring, \
-    structured_logging
+from recidiviz.utils import environment
 from recidiviz.utils.auth import authenticate_request
 
 direct_ingest_control = Blueprint('direct_ingest_control', __name__)
@@ -36,25 +33,14 @@ direct_ingest_control = Blueprint('direct_ingest_control', __name__)
 @direct_ingest_control.route('/us_ma_middlesex')
 @authenticate_request
 def us_ma_middlesex():
-    project_id = metadata.project_id()
     gae_env = environment.get_gae_environment()
     collector = UsMaMiddlesexCollector()
     if collector.region.environment != gae_env:
         return (f"Skipping Middlesex direct ingest in environment {gae_env}",
                 HTTPStatus.OK)
 
-    @structured_logging.copy_trace_id_to_thread
-    @monitoring.with_region_tag
-    # pylint: disable=unused-argument
-    def _us_ma_middlesex(region):
-        collector.go()
-
-    try:
-        _us_ma_middlesex('us_ma_middlesex')
-    except DirectIngestError:
-        logging.exception("Direct ingest failed.")
-        return ("Direct ingest data processing failed for region "
-                "us_ma_middlesex in project {}.".format(project_id),
-                HTTPStatus.INTERNAL_SERVER_ERROR)
+    # Iterate through export dates and write data one export at a time. Raises
+    # an exception the first time we fail to ingest an export.
+    collector.go()
 
     return '', HTTPStatus.OK
