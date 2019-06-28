@@ -70,6 +70,10 @@ Upgrade your `pip` to the latest version:
 $ pip install -U pip
 ```
 
+**NOTE**: if you get `ImportError: cannot import name 'main'` after upgrading
+pip, follow the suggestions in
+[this issue](https://github.com/pypa/pip/issues/5599).
+
 If you do not already have `pip` installed, you can install it on a Mac with these commands:
 ```bash
 $ curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
@@ -105,6 +109,10 @@ On a Linux machine, run the following:
 ```bash
 $ pipenv sync --dev
 ```
+
+**NOTE**: if you get `pipenv: command not found`, add the binary directory to
+your PATH as described
+[here](https://pipenv.readthedocs.io/en/latest/install#pragmatic-installation-of-pipenv).
 
 To activate your pipenv environment, run:
 ```bash
