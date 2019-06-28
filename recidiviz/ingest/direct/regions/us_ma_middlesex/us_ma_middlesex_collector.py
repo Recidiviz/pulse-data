@@ -159,6 +159,7 @@ class UsMaMiddlesexCollector(DirectIngestCollector):
                           export_time)
 
     def get_enum_overrides(self) -> EnumOverrides:
+        """Overridden values for enum fields."""
         builder = EnumOverrides.Builder()
         builder.add('15 DAY PAROLE DETAINER', AdmissionReason.PAROLE_VIOLATION)
         builder.add('2', ChargeStatus.SENTENCED)
@@ -178,10 +179,13 @@ class UsMaMiddlesexCollector(DirectIngestCollector):
         builder.ignore('OTH', BondType)
         builder.add('PERMANENT PAROLE DETAINER',
                     AdmissionReason.PAROLE_VIOLATION)
+        builder.add('P', BondStatus.POSTED)
         builder.add('PERSONAL RECOGNIZANCE', ChargeStatus.PRETRIAL)
         builder.add('PT', ChargeStatus.PRETRIAL)
         builder.add('RELEASED BY AUTHORITY OF COURT', ChargeStatus.PRETRIAL)
         builder.ignore('S', BondStatus)
+        builder.add('SENTENCED', ReleaseReason.TRANSFER)
+        builder.ignore('TURNED OVER TO NEW JURISDICTION', ChargeStatus)
         # TODO (#1897) make sure charge class is filled in. This is a
         # parole violation.
         builder.add('VL', ChargeStatus.PRETRIAL)
