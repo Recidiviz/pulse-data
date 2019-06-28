@@ -24,11 +24,10 @@ import pandas as pd
 import us
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
+from recidiviz.common import fips, str_field_utils
 from recidiviz.common.constants.aggregate import (
     enum_canonical_strings as enum_strings
 )
-from recidiviz.common import str_field_utils
-from recidiviz.common import fips
 from recidiviz.common.read_pdf import read_pdf
 from recidiviz.ingest.aggregate import aggregate_ingest_utils
 from recidiviz.persistence.database.schema.aggregate.schema import \
@@ -80,6 +79,7 @@ _MANUAL_FACILITY_TO_COUNTY_MAP = {
     'Johnson City (F)': 'Washington',
     'Kingsport': 'Sullivan',
     'Kingsport City': 'Sullivan',
+    'Silverdale CCA': 'Hamilton',
 }
 
 
@@ -106,9 +106,18 @@ def parse(location: str, filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
 
 
 def _parse_table(location: str, filename: str, is_female: bool) -> pd.DataFrame:
-    table = read_pdf(location, filename, pages=[2, 3, 4], multiple_tables=True)
+    # Most but not all PDFs have data on pages 2-4.
+    pages_map = {
+        'JailJuly2003.pdf': [1, 2],
+        'JailJuly2004.pdf': [1, 2],
+        'JailJuly2005.pdf': [1, 2],
+        'JailJuly2006.pdf': [3, 4, 5],
+        'JailJuly2009.pdf': [3, 4, 5]
+    }
+    pages = pages_map.get(filename, [2, 3, 4])
+    table = read_pdf(location, filename, pages=pages, multiple_tables=True)
 
-    formatted_dfs = [_format_table(df, is_female) for df in table]
+    formatted_dfs = [_format_table(df, filename, is_female) for df in table]
 
     table = pd.concat(formatted_dfs, ignore_index=True)
 
@@ -172,7 +181,8 @@ def _expand_columns_with_spaces_to_new_columns(
     return expanded_df
 
 
-def _format_table(df: pd.DataFrame, is_female: bool) -> pd.DataFrame:
+def _format_table(
+        df: pd.DataFrame, filename: str, is_female: bool) -> pd.DataFrame:
     """Format the dataframe that comes from one page of the PDF."""
 
     # The first four rows are parsed containing the column names.
@@ -195,6 +205,8 @@ def _format_table(df: pd.DataFrame, is_female: bool) -> pd.DataFrame:
                                                       val.endswith('%')).any()]
         df = df[keep_cols]
     else:
+        df = _drop_bad_columns(df, filename)
+
         df = df.iloc[:, 0:len(_JAIL_REPORT_COLUMN_NAMES)]
         df.columns = _JAIL_REPORT_COLUMN_NAMES
 
@@ -211,6 +223,23 @@ def _format_table(df: pd.DataFrame, is_female: bool) -> pd.DataFrame:
     df = df.replace('.', 0)
     df = df.replace('N/A', 0)
 
+    return df
+
+
+def _drop_bad_columns(df: pd.DataFrame, filename: str) -> pd.DataFrame:
+    """Some years have pages where an extra column of NaNs is read, which causes
+    data to be lost when we assume that our data is in the first 10 columns."""
+    if filename == 'JailJuly2006.pdf' and 'Pre- trial Misd. 17_1' in df.columns:
+        return df.drop('Pre- trial Misd. 17_1', axis=1)
+    if filename == 'JailJuly2007.pdf' and \
+            'Pre-   Pre- trial trial 115 77_2' in df.columns:
+        return df.drop('Pre-   Pre- trial trial 115 77_2', axis=1)
+    if filename == 'JailJuly2008.pdf' and \
+            'Pre-   Pre- trial trial_2' in df.columns:
+        return df.drop('Pre-   Pre- trial trial_2', axis=1)
+    if filename == 'JailJuly2009.pdf' and \
+            'Pre-   Pre- trial trial Felony Misd._2' in df.columns:
+        return df.drop('Pre-   Pre- trial trial Felony Misd._2', axis=1)
     return df
 
 
