@@ -52,6 +52,7 @@ _ID = 1
 _ID_2 = 2
 _ID_3 = 3
 _ID_TYPE = 'ID_TYPE'
+_ID_TYPE_ANOTHER = 'ID_TYPE_ANOTHER'
 _FULL_NAME = 'FULL_NAME'
 _FULL_NAME_ANOTHER = 'FULL_NAME_ANOTHER'
 _STATE_CODE = 'NC'
@@ -627,6 +628,35 @@ class TestStateEntityMatching(TestCase):
         # Assert
         self.assertEqual([expected_person], merged_entities.people)
         self.assertEqual(0, merged_entities.error_count)
+
+    def test_matchPersons_ingestedPersonWithNewExternalId(self):
+        db_external_id = StatePersonExternalId.new_with_defaults(
+            person_external_id_id=_ID, state_code=_STATE_CODE,
+            external_id=_EXTERNAL_ID, id_type=_ID_TYPE)
+        db_person = StatePerson.new_with_defaults(
+            person_id=_ID, full_name=_FULL_NAME,
+            external_ids=[db_external_id])
+
+        external_id = attr.evolve(db_external_id, person_external_id_id=None)
+        external_id_another = StatePersonExternalId.new_with_defaults(
+            state_code=_STATE_CODE, external_id=_EXTERNAL_ID_2,
+            id_type=_ID_TYPE_ANOTHER)
+        person = StatePerson.new_with_defaults(
+            external_ids=[external_id, external_id_another])
+
+        expected_external_id = attr.evolve(
+            external_id, person_external_id_id=_ID)
+        expected_external_id_another = attr.evolve(external_id_another)
+        expected_person = attr.evolve(db_person, external_ids=[
+            expected_external_id, expected_external_id_another])
+
+        # Act
+        merged_entities = state_entity_matcher._match_persons(
+            ingested_persons=[person], db_persons=[db_person])
+
+        # Assert
+        self.assertEqual(0, merged_entities.error_count)
+        self.assertEqual([expected_person], merged_entities.people)
 
     def test_matchPersons_holeInDbGraph(self):
         db_supervision_sentence = StateSupervisionSentence.new_with_defaults(
