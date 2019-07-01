@@ -180,6 +180,17 @@ class TestStateMatchingUtils(TestCase):
         entity.county_code = 'county_code'
         self.assertFalse(is_placeholder(entity))
 
+    def test_isPlaceholder_personWithExternalId(self):
+        sentence_group = StateSentenceGroup.new_with_defaults(
+            state_code=_STATE_CODE)
+        person = StatePerson.new_with_defaults(sentence_groups=[sentence_group])
+        self.assertTrue(is_placeholder(person))
+        person.external_ids.append(
+            StatePersonExternalId.new_with_defaults(
+                state_code=_STATE_CODE, external_id=_EXTERNAL_ID,
+                id_type=_ID_TYPE))
+        self.assertFalse(is_placeholder(person))
+
     def test_generateChildEntitiesWithAncestorChain(self):
         fine = StateFine.new_with_defaults(fine_id=_ID)
         fine_another = StateFine.new_with_defaults(fine_id=_ID_2)
