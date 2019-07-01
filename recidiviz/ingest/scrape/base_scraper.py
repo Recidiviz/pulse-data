@@ -140,6 +140,12 @@ class BaseScraper(Scraper):
                 return json.loads(response.text), cookies
             except json.JSONDecodeError:
                 raise ParsingError(response_type, response.text)
+        if response_type is constants.ResponseType.JSONP:
+            json_text = self._jsonp_to_json(response.text)
+            try:
+                return json.loads(json_text), cookies
+            except json.JSONDecodeError:
+                raise ParsingError(response_type, response.text)
         if response_type is constants.ResponseType.TEXT:
             return response.text, cookies
         if response_type is constants.ResponseType.RAW:
@@ -148,6 +154,13 @@ class BaseScraper(Scraper):
         raise ValueError(
             "Unexpected response type '{}' for endpoint '{}'".format(
                 response_type, endpoint))
+
+    @staticmethod
+    def _jsonp_to_json(jsonp: str) -> str:
+        """Takes 'JSONP' and turns it to a JSON string.
+        JSONP looks like foo(<regular serialized JSON>);
+         """
+        return jsonp[jsonp.index("(") + 1:jsonp.rindex(")")]
 
     def _parse_html_content(self, content_string: str) -> html.HtmlElement:
         """Parses a string into a structured HtmlElement.
