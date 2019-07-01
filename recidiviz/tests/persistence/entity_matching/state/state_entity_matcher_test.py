@@ -51,7 +51,9 @@ _EXTERNAL_ID_3 = 'EXTERNAL_ID_3'
 _ID = 1
 _ID_2 = 2
 _ID_3 = 3
+_ID_TYPE = 'ID_TYPE'
 _FULL_NAME = 'FULL_NAME'
+_FULL_NAME_ANOTHER = 'FULL_NAME_ANOTHER'
 _STATE_CODE = 'NC'
 
 
@@ -79,14 +81,14 @@ class TestStateEntityMatching(TestCase):
             fines=[db_fine])
         db_external_id = schema.StatePersonExternalId(
             person_external_id_id=_ID, state_code=_STATE_CODE,
-            external_id=_EXTERNAL_ID, id_type='type')
+            external_id=_EXTERNAL_ID, id_type=_ID_TYPE)
 
         db_person.sentence_groups = [db_sentence_group]
         db_person.external_ids = [db_external_id]
 
         db_external_id_another = schema.StatePersonExternalId(
             person_external_id_id=_ID_2, state_code=_STATE_CODE,
-            external_id=_EXTERNAL_ID_2, id_type='type')
+            external_id=_EXTERNAL_ID_2, id_type=_ID_TYPE)
         db_person_another = schema.StatePerson(
             person_id=_ID_2, full_name=_FULL_NAME,
             external_ids=[db_external_id_another])
@@ -113,14 +115,14 @@ class TestStateEntityMatching(TestCase):
             fines=[fine])
         external_id = StatePersonExternalId.new_with_defaults(
             state_code=_STATE_CODE,
-            external_id=_EXTERNAL_ID, id_type='type-updated')
+            external_id=_EXTERNAL_ID, id_type=_ID_TYPE)
         person = StatePerson.new_with_defaults(
             full_name=_FULL_NAME, external_ids=[external_id],
             sentence_groups=[sentence_group])
 
         external_id_another = StatePersonExternalId.new_with_defaults(
             state_code=_STATE_CODE,
-            external_id=_EXTERNAL_ID_2, id_type='type-updated')
+            external_id=_EXTERNAL_ID_2, id_type=_ID_TYPE)
         person_another = StatePerson.new_with_defaults(
             full_name=_FULL_NAME,
             external_ids=[external_id_another])
@@ -159,7 +161,7 @@ class TestStateEntityMatching(TestCase):
         # Arrange
         db_external_id = schema.StatePersonExternalId(
             person_external_id_id=_ID, state_code=_STATE_CODE,
-            external_id=_EXTERNAL_ID, id_type='type')
+            external_id=_EXTERNAL_ID, id_type=_ID_TYPE)
         db_person = schema.StatePerson(
             person_id=_ID, full_name=_FULL_NAME, external_ids=[db_external_id])
 
@@ -168,13 +170,13 @@ class TestStateEntityMatching(TestCase):
         session.commit()
 
         external_id = StatePersonExternalId.new_with_defaults(
-            state_code=_STATE_CODE, external_id=_EXTERNAL_ID,
-            id_type='type_updated')
+            state_code=_STATE_CODE, external_id=_EXTERNAL_ID, id_type=_ID_TYPE)
         person = StatePerson.new_with_defaults(
             full_name=_FULL_NAME, external_ids=[external_id])
 
-        external_id_dup = attr.evolve(external_id, id_type='type-duplicate')
-        person_dup = attr.evolve(person, external_ids=[external_id_dup])
+        external_id_dup = attr.evolve(external_id)
+        person_dup = attr.evolve(person, external_ids=[external_id_dup],
+                                 full_name=_FULL_NAME_ANOTHER)
 
         expected_person = attr.evolve(person, person_id=_ID)
         expected_external_id = attr.evolve(
@@ -245,7 +247,7 @@ class TestStateEntityMatching(TestCase):
             fines=[db_fine])
         db_external_id = StatePersonExternalId.new_with_defaults(
             person_external_id_id=_ID, state_code=_STATE_CODE,
-            external_id=_EXTERNAL_ID, id_type='type')
+            external_id=_EXTERNAL_ID, id_type=_ID_TYPE)
         db_person = StatePerson.new_with_defaults(
             person_id=_ID, full_name=_FULL_NAME,
             external_ids=[db_external_id], sentence_groups=[db_sentence_group])
@@ -337,7 +339,7 @@ class TestStateEntityMatching(TestCase):
             fines=[db_fine])
         db_external_id = StatePersonExternalId.new_with_defaults(
             person_external_id_id=_ID, state_code=_STATE_CODE,
-            external_id=_EXTERNAL_ID, id_type='type')
+            external_id=_EXTERNAL_ID, id_type=_ID_TYPE)
         db_person = StatePerson.new_with_defaults(
             person_id=_ID, full_name=_FULL_NAME,
             external_ids=[db_external_id], sentence_groups=[db_sentence_group])
@@ -359,7 +361,7 @@ class TestStateEntityMatching(TestCase):
             db_sentence_group, sentence_group_id=None,
             county_code='county_code-updated', fines=[fine])
         external_id = attr.evolve(
-            db_external_id, person_external_id_id=None, id_type='type-updated')
+            db_external_id, person_external_id_id=None, id_type=_ID_TYPE)
         person = attr.evolve(
             db_person, person_id=None, external_ids=[external_id],
             sentence_groups=[sentence_group])
@@ -856,7 +858,7 @@ class TestStateEntityMatching(TestCase):
             min_length_days=11)
         placeholder_sentence_group_another = \
             StateSentenceGroup.new_with_defaults(
-                 supervision_sentences=[supervision_sentence_another_updated])
+                supervision_sentences=[supervision_sentence_another_updated])
         placeholder_person_another = StatePerson.new_with_defaults(
             sentence_groups=[placeholder_sentence_group_another])
 

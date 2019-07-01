@@ -37,13 +37,15 @@ _ID_3 = 3
 _STATE_CODE = 'NC'
 _STATE_CODE_ANOTHER = 'CA'
 _FULL_NAME = 'NAME'
+_ID_TYPE = 'ID_TYPE'
+_ID_TYPE_ANOTHER = 'ID_TYPE_ANOTHER'
 
 
 # pylint: disable=protected-access
 class TestStateMatchingUtils(TestCase):
     """Tests for state entity matching utils"""
 
-    def test_isMatch_StatePerson(self):
+    def test_isMatch_statePerson(self):
         external_id = StatePersonExternalId.new_with_defaults(
             state_code=_STATE_CODE, external_id=_EXTERNAL_ID)
         external_id_different = attr.evolve(
@@ -59,17 +61,46 @@ class TestStateMatchingUtils(TestCase):
         self.assertFalse(
             _is_match(ingested_entity=person, db_entity=person_another))
 
-    def test_isMatch_StatePersonExternalId(self):
+    def test_isMatch_statePersonExternalId_type(self):
         external_id = StatePersonExternalId.new_with_defaults(
-            state_code=_STATE_CODE, id_type='type', external_id=_EXTERNAL_ID)
-        external_id_different = attr.evolve(external_id, id_type='type_2')
-        self.assertTrue(_is_match(
-            ingested_entity=external_id, db_entity=external_id_different))
-        external_id_different.external_id = _EXTERNAL_ID_2
-        self.assertFalse(_is_match(
-            ingested_entity=external_id, db_entity=external_id_different))
+            person_external_id_id=_ID, state_code=_STATE_CODE,
+            id_type=_ID_TYPE, external_id=_EXTERNAL_ID)
+        external_id_different = attr.evolve(
+            external_id, person_external_id_id=None)
+        self.assertTrue(_is_match(ingested_entity=external_id,
+                                  db_entity=external_id_different))
 
-    def test_isMatch_StatePersonAlias(self):
+        external_id.id_type = _ID_TYPE_ANOTHER
+        self.assertFalse(_is_match(ingested_entity=external_id,
+                                   db_entity=external_id_different))
+
+    def test_isMatch_statePersonExternalId_externalId(self):
+        external_id = StatePersonExternalId.new_with_defaults(
+            person_external_id_id=_ID, state_code=_STATE_CODE,
+            id_type=_ID_TYPE, external_id=_EXTERNAL_ID)
+        external_id_different = attr.evolve(
+            external_id, person_external_id_id=None)
+        self.assertTrue(_is_match(ingested_entity=external_id,
+                                  db_entity=external_id_different))
+
+        external_id.external_id = _EXTERNAL_ID_2
+        self.assertFalse(_is_match(ingested_entity=external_id,
+                                   db_entity=external_id_different))
+
+    def test_isMatch_statePersonExternalId_stateCode(self):
+        external_id = StatePersonExternalId.new_with_defaults(
+            person_external_id_id=_ID, state_code=_STATE_CODE,
+            id_type=_ID_TYPE, external_id=_EXTERNAL_ID)
+        external_id_different = attr.evolve(
+            external_id, person_external_id_id=None)
+        self.assertTrue(_is_match(ingested_entity=external_id,
+                                  db_entity=external_id_different))
+
+        external_id.state_code = _STATE_CODE_ANOTHER
+        self.assertFalse(_is_match(ingested_entity=external_id,
+                                   db_entity=external_id_different))
+
+    def test_isMatch_statePersonAlias(self):
         alias = StatePersonAlias.new_with_defaults(
             state_code=_STATE_CODE, full_name='full_name')
         alias_another = attr.evolve(alias, full_name='full_name_2')
