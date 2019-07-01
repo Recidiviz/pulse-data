@@ -140,7 +140,8 @@ def _is_match(*, ingested_entity: Entity, db_entity: Entity) -> bool:
     if isinstance(ingested_entity, StatePersonExternalId):
         db_entity = cast(StatePersonExternalId, db_entity)
         return ingested_entity.state_code == db_entity.state_code \
-               and ingested_entity.external_id == db_entity.external_id
+               and ingested_entity.external_id == db_entity.external_id \
+               and ingested_entity.id_type == db_entity.id_type
 
     # As person has already been matched, assume that any of these 'person
     # attribute' entities are matches if their state_codes align.
