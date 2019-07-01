@@ -88,13 +88,14 @@ def parse(location: str, filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
     # jail population. The reports are very similar, but need to be
     # handled slightly differently.
     is_female = 'female' in filename
+    report_date = _parse_date(filename)
 
-    table = _parse_table(location, filename, is_female)
+    table = _parse_table(location, filename, is_female, report_date.year)
 
     names = table.facility_name.apply(_pretend_facility_is_county)
     table = fips.add_column_to_df(table, names, us.states.TN)
 
-    table['report_date'] = _parse_date(filename)
+    table['report_date'] = report_date
     table['aggregation_window'] = enum_strings.daily_granularity
     table['report_frequency'] = enum_strings.monthly_granularity
 
@@ -105,19 +106,15 @@ def parse(location: str, filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
     }
 
 
-def _parse_table(location: str, filename: str, is_female: bool) -> pd.DataFrame:
+def _parse_table(location: str, filename: str, is_female: bool,
+                 year: int) -> pd.DataFrame:
     # Most but not all PDFs have data on pages 2-4.
-    pages_map = {
-        'JailJuly2003.pdf': [1, 2],
-        'JailJuly2004.pdf': [1, 2],
-        'JailJuly2005.pdf': [1, 2],
-        'JailJuly2006.pdf': [3, 4, 5],
-        'JailJuly2009.pdf': [3, 4, 5]
-    }
-    pages = pages_map.get(filename, [2, 3, 4])
+    pages = ([1, 2] if 2000 <= year <= 2005
+             else [3, 4, 5] if year in (2006, 2009)
+             else [2, 3, 4])
     table = read_pdf(location, filename, pages=pages, multiple_tables=True)
 
-    formatted_dfs = [_format_table(df, filename, is_female) for df in table]
+    formatted_dfs = [_format_table(df, is_female, year) for df in table]
 
     table = pd.concat(formatted_dfs, ignore_index=True)
 
@@ -181,8 +178,7 @@ def _expand_columns_with_spaces_to_new_columns(
     return expanded_df
 
 
-def _format_table(
-        df: pd.DataFrame, filename: str, is_female: bool) -> pd.DataFrame:
+def _format_table(df: pd.DataFrame, is_female: bool, year: int) -> pd.DataFrame:
     """Format the dataframe that comes from one page of the PDF."""
 
     # The first four rows are parsed containing the column names.
@@ -205,7 +201,7 @@ def _format_table(
                                                       val.endswith('%')).any()]
         df = df[keep_cols]
     else:
-        df = _drop_bad_columns(df, filename)
+        df = _drop_bad_columns(df, year)
 
         df = df.iloc[:, 0:len(_JAIL_REPORT_COLUMN_NAMES)]
         df.columns = _JAIL_REPORT_COLUMN_NAMES
@@ -226,19 +222,16 @@ def _format_table(
     return df
 
 
-def _drop_bad_columns(df: pd.DataFrame, filename: str) -> pd.DataFrame:
+def _drop_bad_columns(df: pd.DataFrame, year: int) -> pd.DataFrame:
     """Some years have pages where an extra column of NaNs is read, which causes
     data to be lost when we assume that our data is in the first 10 columns."""
-    if filename == 'JailJuly2006.pdf' and 'Pre- trial Misd. 17_1' in df.columns:
+    if year == 2006 and 'Pre- trial Misd. 17_1' in df.columns:
         return df.drop('Pre- trial Misd. 17_1', axis=1)
-    if filename == 'JailJuly2007.pdf' and \
-            'Pre-   Pre- trial trial 115 77_2' in df.columns:
+    if year == 2007 and 'Pre-   Pre- trial trial 115 77_2' in df.columns:
         return df.drop('Pre-   Pre- trial trial 115 77_2', axis=1)
-    if filename == 'JailJuly2008.pdf' and \
-            'Pre-   Pre- trial trial_2' in df.columns:
+    if year == 2008 and 'Pre-   Pre- trial trial_2' in df.columns:
         return df.drop('Pre-   Pre- trial trial_2', axis=1)
-    if filename == 'JailJuly2009.pdf' and \
-            'Pre-   Pre- trial trial Felony Misd._2' in df.columns:
+    if year == 2009 and 'Pre-   Pre- trial trial Felony Misd._2' in df.columns:
         return df.drop('Pre-   Pre- trial trial Felony Misd._2', axis=1)
     return df
 
@@ -256,6 +249,7 @@ def _pretend_facility_is_county(facility_name: str) -> str:
         'CWC (CDC',
         'CDC (F)',
         'CDC (M)',
+        'Det Cntr',
         'Det. Center',
         'Det, Center',
         'Extension',
@@ -265,6 +259,7 @@ def _pretend_facility_is_county(facility_name: str) -> str:
         '(Temporarily closed)',
         'Work Center',
         'Workhouse',
+        'WRC/Penal',
     ]
     for delimiter in words_after_county_name:
         facility_name = facility_name.split(delimiter)[0]
