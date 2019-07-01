@@ -46,6 +46,9 @@ class Entity:
     def get_id(self):
         return getattr(self, self._get_id_name())
 
+    def clear_id(self):
+        setattr(self, self._get_id_name(), None)
+
     def set_id(self, entity_id: int):
         return setattr(self, self._get_id_name(), entity_id)
 

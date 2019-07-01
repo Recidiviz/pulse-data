@@ -43,7 +43,6 @@ from recidiviz.persistence.entity.state.entities import StatePersonAlias, \
     StateSupervisionPeriod, StateSentenceGroup
 from recidiviz.persistence.entity_matching import entity_matching
 from recidiviz.persistence.entity_matching.state import state_entity_matcher
-from recidiviz.persistence.errors import EntityMatchingError
 from recidiviz.tests.utils import fakes
 
 _EXTERNAL_ID = 'EXTERNAL_ID'
@@ -190,7 +189,7 @@ class TestStateEntityMatching(TestCase):
         self.assertEqual(matched_entities.error_count, 1)
         self.assertEqual([expected_person], matched_entities.people)
 
-    def test_matchEntities_multipleMatchesToDb_throws(self):
+    def test_matchPersons_multipleMatchesToDb_oneSuccessOneError(self):
         db_external_id = StatePersonExternalId.new_with_defaults(
             person_external_id_id=_ID, state_code=_STATE_CODE,
             external_id=_EXTERNAL_ID)
@@ -200,14 +199,22 @@ class TestStateEntityMatching(TestCase):
         external_id = attr.evolve(db_external_id, person_external_id_id=None)
         person = attr.evolve(
             db_person, person_id=None, external_ids=[external_id])
-        person_dup = attr.evolve(person)
+        person_dup = attr.evolve(person, full_name='another')
 
-        # Act / Assert
-        with self.assertRaises(EntityMatchingError):
-            state_entity_matcher._match_entities(
-                ingested_entities=[person, person_dup], db_entities=[db_person])
+        expected_external_id = attr.evolve(external_id,
+                                           person_external_id_id=_ID)
+        expected_person = attr.evolve(person, person_id=_ID,
+                                      external_ids=[expected_external_id])
 
-    def test_matchEntities_conflictingExternalIds_throws(self):
+        # Act
+        merged_entities = state_entity_matcher._match_persons(
+            ingested_persons=[person, person_dup], db_persons=[db_person])
+
+        # Assert
+        self.assertEqual([expected_person], merged_entities.people)
+        self.assertEqual(1, merged_entities.error_count)
+
+    def test_matchPersons_conflictingExternalIds_error(self):
         # Arrange
         db_court_case = StateCourtCase.new_with_defaults(
             court_case_id=_ID,
@@ -256,12 +263,15 @@ class TestStateEntityMatching(TestCase):
             db_person, person_id=None, external_ids=[external_id],
             sentence_groups=[sentence_group])
 
-        # Act / Assert
-        with self.assertRaises(EntityMatchingError):
-            state_entity_matcher._match_entities(
-                ingested_entities=[person], db_entities=[db_person])
+        # Act
+        merged_entities = state_entity_matcher._match_persons(
+            ingested_persons=[person], db_persons=[db_person])
 
-    def test_matchEntities_noPlaceholders_newPerson(self):
+        # Assert
+        self.assertEqual([], merged_entities.people)
+        self.assertEqual(1, merged_entities.error_count)
+
+    def test_matchPersons_noPlaceholders_newPerson(self):
         # Arrange
         alias = StatePersonAlias.new_with_defaults(
             state_code=_STATE_CODE, full_name=_FULL_NAME)
@@ -278,13 +288,14 @@ class TestStateEntityMatching(TestCase):
         expected_person = attr.evolve(person)
 
         # Act
-        merged_entities = state_entity_matcher._match_entities(
-            ingested_entities=[person], db_entities=[])
+        merged_entities = state_entity_matcher._match_persons(
+            ingested_persons=[person], db_persons=[])
 
         # Assert
-        self.assertEqual([expected_person], merged_entities)
+        self.assertEqual([expected_person], merged_entities.people)
+        self.assertEqual(0, merged_entities.error_count)
 
-    def test_matchEntities_noPlaceholders_partialTreeIngested(self):
+    def test_matchPersons_noPlaceholders_partialTreeIngested(self):
         # Arrange
         db_court_case = StateCourtCase.new_with_defaults(
             court_case_id=_ID,
@@ -375,13 +386,14 @@ class TestStateEntityMatching(TestCase):
             sentence_groups=[expected_sentence_group])
 
         # Act
-        merged_entities = state_entity_matcher._match_entities(
-            ingested_entities=[person], db_entities=[db_person])
+        merged_entities = state_entity_matcher._match_persons(
+            ingested_persons=[person], db_persons=[db_person])
 
         # Assert
-        self.assertEqual([expected_person], merged_entities)
+        self.assertEqual([expected_person], merged_entities.people)
+        self.assertEqual(0, merged_entities.error_count)
 
-    def test_matchEntities_noPlaceholders_completeTreeUpdate(self):
+    def test_matchPersons_noPlaceholders_completeTreeUpdate(self):
         # Arrange
         db_bond = StateBond.new_with_defaults(
             bond_id=_ID, state_code=_STATE_CODE, external_id=_EXTERNAL_ID,
@@ -607,8 +619,567 @@ class TestStateEntityMatching(TestCase):
             sentence_groups=[expected_sentence_group])
 
         # Act
-        merged_entities = state_entity_matcher._match_entities(
-            ingested_entities=[person], db_entities=[db_person])
+        merged_entities = state_entity_matcher._match_persons(
+            ingested_persons=[person], db_persons=[db_person])
 
         # Assert
-        self.assertEqual([expected_person], merged_entities)
+        self.assertEqual([expected_person], merged_entities.people)
+        self.assertEqual(0, merged_entities.error_count)
+
+    def test_matchPersons_holeInDbGraph(self):
+        db_supervision_sentence = StateSupervisionSentence.new_with_defaults(
+            supervision_sentence_id=_ID, status=SentenceStatus.SERVING,
+            external_id=_EXTERNAL_ID,
+            state_code=_STATE_CODE,
+            min_length_days=0)
+        db_supervision_sentence_unchanged = \
+            StateSupervisionSentence.new_with_defaults(
+                supervision_sentence_id=_ID_2, status=SentenceStatus.SERVING,
+                external_id=_EXTERNAL_ID_2,
+                state_code=_STATE_CODE,
+                min_length_days=0)
+        db_placeholder_sentence_group = StateSentenceGroup.new_with_defaults(
+            sentence_group_id=_ID,
+            supervision_sentences=[db_supervision_sentence,
+                                   db_supervision_sentence_unchanged])
+
+        db_external_id = StatePersonExternalId.new_with_defaults(
+            person_external_id_id=_ID, state_code=_STATE_CODE,
+            external_id=_EXTERNAL_ID)
+        db_person = StatePerson.new_with_defaults(
+            person_id=_ID, full_name=_FULL_NAME,
+            external_ids=[db_external_id],
+            sentence_groups=[db_placeholder_sentence_group])
+
+        supervision_sentence_updated = attr.evolve(
+            db_supervision_sentence, supervision_sentence_id=None,
+            min_length_days=1)
+        new_sentence_group = attr.evolve(
+            db_placeholder_sentence_group, external_id=_EXTERNAL_ID,
+            supervision_sentences=[
+                supervision_sentence_updated])
+        external_id = attr.evolve(db_external_id, person_external_id_id=None)
+        person = attr.evolve(
+            db_person, person_id=None, external_ids=[external_id],
+            sentence_groups=[new_sentence_group])
+
+        expected_supervision_sentence = attr.evolve(
+            supervision_sentence_updated, supervision_sentence_id=_ID)
+        expected_supervision_sentence_unchanged = attr.evolve(
+            db_supervision_sentence_unchanged)
+        expected_placeholder_sentence_group = attr.evolve(
+            db_placeholder_sentence_group,
+            supervision_sentences=[expected_supervision_sentence_unchanged])
+        expected_new_sentence_group = attr.evolve(
+            new_sentence_group,
+            supervision_sentences=[expected_supervision_sentence])
+        expected_external_id = attr.evolve(
+            external_id, person_external_id_id=_ID)
+        expected_person = attr.evolve(
+            person, person_id=_ID, external_ids=[expected_external_id],
+            sentence_groups=[expected_new_sentence_group,
+                             expected_placeholder_sentence_group])
+
+        # Act
+        merged_entities = state_entity_matcher._match_persons(
+            ingested_persons=[person], db_persons=[db_person])
+
+        # Assert
+        self.assertEqual([expected_person], merged_entities.people)
+        self.assertEqual(0, merged_entities.error_count)
+
+    def test_matchPersons_holeInIngestedGraph(self):
+        db_supervision_sentence = StateSupervisionSentence.new_with_defaults(
+            supervision_sentence_id=_ID, status=SentenceStatus.SERVING,
+            external_id=_EXTERNAL_ID,
+            state_code=_STATE_CODE,
+            min_length_days=0)
+        db_supervision_sentence_another = \
+            StateSupervisionSentence.new_with_defaults(
+                supervision_sentence_id=_ID_2, status=SentenceStatus.SERVING,
+                external_id=_EXTERNAL_ID_2,
+                state_code=_STATE_CODE,
+                min_length_days=0)
+        db_sentence_group = StateSentenceGroup.new_with_defaults(
+            sentence_group_id=_ID,
+            external_id=_EXTERNAL_ID,
+            supervision_sentences=[
+                db_supervision_sentence, db_supervision_sentence_another])
+        db_external_id = StatePersonExternalId.new_with_defaults(
+            person_external_id_id=_ID, state_code=_STATE_CODE,
+            external_id=_EXTERNAL_ID)
+        db_person = StatePerson.new_with_defaults(
+            person_id=_ID, full_name=_FULL_NAME,
+            external_ids=[db_external_id],
+            sentence_groups=[db_sentence_group])
+
+        supervision_sentence_updated = attr.evolve(
+            db_supervision_sentence, supervision_sentence_id=None,
+            min_length_days=1)
+        sentence_group_placeholder = StateSentenceGroup.new_with_defaults(
+            supervision_sentences=[supervision_sentence_updated])
+        external_id = attr.evolve(
+            db_external_id, person_external_id_id=None)
+        person = attr.evolve(
+            db_person, person_id=None, external_ids=[external_id],
+            sentence_groups=[sentence_group_placeholder])
+
+        expected_supervision_sentence = attr.evolve(
+            supervision_sentence_updated, supervision_sentence_id=_ID)
+        expected_supervision_sentence_unchanged = attr.evolve(
+            db_supervision_sentence_another)
+        expected_sentence_group = attr.evolve(
+            db_sentence_group,
+            supervision_sentences=[expected_supervision_sentence,
+                                   expected_supervision_sentence_unchanged])
+        expected_external_id = attr.evolve(
+            external_id, person_external_id_id=_ID)
+        expected_person = attr.evolve(
+            person, person_id=_ID, external_ids=[expected_external_id],
+            sentence_groups=[expected_sentence_group])
+
+        # Act
+        merged_entities = state_entity_matcher._match_persons(
+            ingested_persons=[person], db_persons=[db_person])
+
+        # Assert
+        self.assertEqual([expected_person], merged_entities.people)
+        self.assertEqual(0, merged_entities.error_count)
+
+    def test_matchPersons_dbPlaceholderSplits(self):
+        db_supervision_sentence = StateSupervisionSentence.new_with_defaults(
+            supervision_sentence_id=_ID, status=SentenceStatus.SERVING,
+            external_id=_EXTERNAL_ID,
+            state_code=_STATE_CODE,
+            min_length_days=0)
+        db_supervision_sentence_another = \
+            StateSupervisionSentence.new_with_defaults(
+                supervision_sentence_id=_ID_2, status=SentenceStatus.SERVING,
+                external_id=_EXTERNAL_ID_2,
+                state_code=_STATE_CODE,
+                min_length_days=10)
+        db_placeholder_sentence_group = StateSentenceGroup.new_with_defaults(
+            sentence_group_id=_ID,
+            supervision_sentences=[db_supervision_sentence,
+                                   db_supervision_sentence_another])
+
+        db_external_id = StatePersonExternalId.new_with_defaults(
+            person_external_id_id=_ID, state_code=_STATE_CODE,
+            external_id=_EXTERNAL_ID)
+        db_person = StatePerson.new_with_defaults(
+            person_id=_ID, full_name=_FULL_NAME,
+            external_ids=[db_external_id],
+            sentence_groups=[db_placeholder_sentence_group])
+
+        supervision_sentence_updated = attr.evolve(
+            db_supervision_sentence, supervision_sentence_id=None,
+            min_length_days=1)
+        supervision_sentence_another_updated = attr.evolve(
+            db_supervision_sentence_another, supervision_sentence_id=None,
+            min_length_days=11)
+        sentence_group_new = StateSentenceGroup.new_with_defaults(
+            external_id=_EXTERNAL_ID,
+            supervision_sentences=[supervision_sentence_updated])
+        sentence_group_new_another = StateSentenceGroup.new_with_defaults(
+            external_id=_EXTERNAL_ID_2,
+            supervision_sentences=[supervision_sentence_another_updated])
+        external_id = attr.evolve(db_external_id, person_external_id_id=None)
+        person = attr.evolve(
+            db_person, person_id=None, external_ids=[external_id],
+            sentence_groups=[sentence_group_new, sentence_group_new_another])
+
+        expected_supervision_sentence = attr.evolve(
+            supervision_sentence_updated, supervision_sentence_id=_ID)
+        expected_supervision_sentence_another = attr.evolve(
+            supervision_sentence_another_updated, supervision_sentence_id=_ID_2)
+        expected_sentence_group = attr.evolve(
+            sentence_group_new,
+            supervision_sentences=[expected_supervision_sentence])
+        expected_sentence_group_another = attr.evolve(
+            sentence_group_new_another,
+            supervision_sentences=[expected_supervision_sentence_another])
+        expected_placeholder_sentence_group = attr.evolve(
+            db_placeholder_sentence_group, supervision_sentences=[])
+        expected_external_id = attr.evolve(external_id,
+                                           person_external_id_id=_ID)
+        expected_person = attr.evolve(
+            person, person_id=_ID, external_ids=[expected_external_id],
+            sentence_groups=[
+                expected_sentence_group, expected_sentence_group_another,
+                expected_placeholder_sentence_group])
+
+        # Act
+        merged_entities = state_entity_matcher._match_persons(
+            ingested_persons=[person], db_persons=[db_person])
+
+        # Assert
+        self.assertEqual([expected_person], merged_entities.people)
+        self.assertEqual(0, merged_entities.error_count)
+
+    def test_matchPersons_multipleIngestedPersonsMatchToPlaceholderDb(self):
+        db_supervision_sentence = StateSupervisionSentence.new_with_defaults(
+            supervision_sentence_id=_ID, status=SentenceStatus.SERVING,
+            external_id=_EXTERNAL_ID,
+            state_code=_STATE_CODE,
+            min_length_days=0)
+        db_supervision_sentence_another = \
+            StateSupervisionSentence.new_with_defaults(
+                supervision_sentence_id=_ID_2, status=SentenceStatus.SERVING,
+                external_id=_EXTERNAL_ID_2,
+                state_code=_STATE_CODE,
+                min_length_days=10)
+        db_sentence_group = StateSentenceGroup.new_with_defaults(
+            external_id=_EXTERNAL_ID,
+            sentence_group_id=_ID,
+            supervision_sentences=[db_supervision_sentence])
+        db_sentence_group_another = StateSentenceGroup.new_with_defaults(
+            sentence_group_id=_ID_2,
+            external_id=_EXTERNAL_ID_2,
+            supervision_sentences=[db_supervision_sentence_another])
+        db_external_id = StatePersonExternalId.new_with_defaults(
+            person_external_id_id=_ID, state_code=_STATE_CODE,
+            external_id=_EXTERNAL_ID)
+        db_person = StatePerson.new_with_defaults(
+            person_id=_ID, full_name=_FULL_NAME, external_ids=[db_external_id],
+            sentence_groups=[db_sentence_group, db_sentence_group_another])
+
+        supervision_sentence_updated = attr.evolve(
+            db_supervision_sentence, supervision_sentence_id=None,
+            min_length_days=1)
+        placeholder_sentence_group = StateSentenceGroup.new_with_defaults(
+            supervision_sentences=[supervision_sentence_updated])
+        placeholder_person = StatePerson.new_with_defaults(
+            sentence_groups=[placeholder_sentence_group])
+
+        supervision_sentence_another_updated = attr.evolve(
+            db_supervision_sentence_another, supervision_sentence_id=None,
+            min_length_days=11)
+        placeholder_sentence_group_another = \
+            StateSentenceGroup.new_with_defaults(
+                 supervision_sentences=[supervision_sentence_another_updated])
+        placeholder_person_another = StatePerson.new_with_defaults(
+            sentence_groups=[placeholder_sentence_group_another])
+
+        expected_supervision_sentence = attr.evolve(
+            supervision_sentence_updated, supervision_sentence_id=_ID)
+        expected_supervision_sentence_another = attr.evolve(
+            supervision_sentence_another_updated, supervision_sentence_id=_ID_2)
+        expected_sentence_group = attr.evolve(
+            db_sentence_group,
+            supervision_sentences=[expected_supervision_sentence])
+        expected_sentence_group_another = attr.evolve(
+            db_sentence_group_another,
+            supervision_sentences=[expected_supervision_sentence_another])
+        expected_external_id = attr.evolve(db_external_id)
+        expected_person = attr.evolve(
+            db_person, external_ids=[expected_external_id],
+            sentence_groups=[expected_sentence_group,
+                             expected_sentence_group_another])
+
+        # Act
+        merged_entities = state_entity_matcher._match_persons(
+            ingested_persons=[placeholder_person, placeholder_person_another],
+            db_persons=[db_person])
+
+        # Assert
+        self.assertEqual([expected_person], merged_entities.people)
+        self.assertEqual(0, merged_entities.error_count)
+
+    def test_matchPersons_ingestedPlaceholderSplits(self):
+        db_supervision_sentence = StateSupervisionSentence.new_with_defaults(
+            supervision_sentence_id=_ID, status=SentenceStatus.SERVING,
+            external_id=_EXTERNAL_ID,
+            state_code=_STATE_CODE,
+            min_length_days=0)
+        db_supervision_sentence_another = \
+            StateSupervisionSentence.new_with_defaults(
+                supervision_sentence_id=_ID_2, status=SentenceStatus.SERVING,
+                external_id=_EXTERNAL_ID_2,
+                state_code=_STATE_CODE,
+                min_length_days=10)
+        db_sentence_group = StateSentenceGroup.new_with_defaults(
+            external_id=_EXTERNAL_ID,
+            sentence_group_id=_ID,
+            supervision_sentences=[db_supervision_sentence])
+        db_sentence_group_another = StateSentenceGroup.new_with_defaults(
+            sentence_group_id=_ID_2,
+            external_id=_EXTERNAL_ID_2,
+            supervision_sentences=[db_supervision_sentence_another])
+        db_external_id = StatePersonExternalId.new_with_defaults(
+            person_external_id_id=_ID, state_code=_STATE_CODE,
+            external_id=_EXTERNAL_ID)
+        db_person = StatePerson.new_with_defaults(
+            person_id=_ID, full_name=_FULL_NAME, external_ids=[db_external_id],
+            sentence_groups=[db_sentence_group, db_sentence_group_another])
+
+        supervision_sentence_updated = attr.evolve(
+            db_supervision_sentence, supervision_sentence_id=None,
+            min_length_days=1)
+        supervision_sentence_another_updated = attr.evolve(
+            db_supervision_sentence_another, supervision_sentence_id=None,
+            min_length_days=11)
+        placeholder_sentence_group = StateSentenceGroup.new_with_defaults(
+            supervision_sentences=[
+                supervision_sentence_updated,
+                supervision_sentence_another_updated])
+        external_id = attr.evolve(db_external_id, person_external_id_id=None)
+        person = attr.evolve(
+            db_person, person_id=None,
+            external_ids=[external_id],
+            sentence_groups=[placeholder_sentence_group])
+
+        expected_supervision_sentence = attr.evolve(
+            supervision_sentence_updated, supervision_sentence_id=_ID)
+        expected_supervision_sentence_another = attr.evolve(
+            supervision_sentence_another_updated, supervision_sentence_id=_ID_2)
+        expected_sentence_group = attr.evolve(
+            db_sentence_group,
+            supervision_sentences=[expected_supervision_sentence])
+        expected_sentence_group_another = attr.evolve(
+            db_sentence_group_another,
+            supervision_sentences=[expected_supervision_sentence_another])
+        expected_external_id = attr.evolve(external_id,
+                                           person_external_id_id=_ID)
+        expected_person = attr.evolve(
+            person, person_id=_ID, external_ids=[expected_external_id],
+            sentence_groups=[
+                expected_sentence_group, expected_sentence_group_another])
+
+        # Act
+        merged_entities = state_entity_matcher._match_persons(
+            ingested_persons=[person], db_persons=[db_person])
+
+        # Assert
+        self.assertEqual([expected_person], merged_entities.people)
+        self.assertEqual(0, merged_entities.error_count)
+
+    def test_matchPersons_multipleHolesInIngestedGraph(self):
+        # Arrange
+        db_supervision_sentence = StateSupervisionSentence.new_with_defaults(
+            supervision_sentence_id=_ID, status=SentenceStatus.SERVING,
+            external_id=_EXTERNAL_ID,
+            state_code=_STATE_CODE,
+            min_length_days=0)
+        db_sentence_group = StateSentenceGroup.new_with_defaults(
+            external_id=_EXTERNAL_ID,
+            sentence_group_id=_ID,
+            supervision_sentences=[db_supervision_sentence])
+        db_external_id = StatePersonExternalId.new_with_defaults(
+            person_external_id_id=_ID, state_code=_STATE_CODE,
+            external_id=_EXTERNAL_ID)
+        db_person = StatePerson.new_with_defaults(
+            person_id=_ID, full_name=_FULL_NAME, external_ids=[db_external_id],
+            sentence_groups=[db_sentence_group])
+
+        supervision_sentence_updated = attr.evolve(
+            db_supervision_sentence,
+            supervision_sentence_id=None, min_length_days=1)
+        placeholder_sentence_group = StateSentenceGroup.new_with_defaults(
+            supervision_sentences=[supervision_sentence_updated])
+        placeholder_person = StatePerson.new_with_defaults(
+            sentence_groups=[placeholder_sentence_group])
+
+        expected_supervision_sentence = attr.evolve(
+            supervision_sentence_updated, supervision_sentence_id=_ID)
+        expected_sentence_group = attr.evolve(
+            db_sentence_group,
+            supervision_sentences=[expected_supervision_sentence])
+        expected_external_id = attr.evolve(db_external_id)
+        expected_person = attr.evolve(
+            db_person, external_ids=[expected_external_id],
+            sentence_groups=[expected_sentence_group])
+
+        # Act
+        merged_entities = state_entity_matcher._match_persons(
+            ingested_persons=[placeholder_person], db_persons=[db_person])
+
+        # Assert
+        self.assertEqual([expected_person], merged_entities.people)
+        self.assertEqual(0, merged_entities.error_count)
+
+    def test_matchPersons_multipleHolesInDbGraph(self):
+        # Arrange
+        db_supervision_sentence = StateSupervisionSentence.new_with_defaults(
+            supervision_sentence_id=_ID, status=SentenceStatus.SERVING,
+            external_id=_EXTERNAL_ID,
+            state_code=_STATE_CODE,
+            min_length_days=0)
+        db_placeholder_sentence_group = StateSentenceGroup.new_with_defaults(
+            sentence_group_id=_ID,
+            supervision_sentences=[db_supervision_sentence])
+        db_placeholder_person = StatePerson.new_with_defaults(
+            person_id=_ID,
+            sentence_groups=[db_placeholder_sentence_group])
+
+        supervision_sentence_updated = attr.evolve(
+            db_supervision_sentence, supervision_sentence_id=None,
+            min_length_days=1)
+        sentence_group = StateSentenceGroup.new_with_defaults(
+            external_id=_EXTERNAL_ID,
+            supervision_sentences=[supervision_sentence_updated])
+        external_id = StatePersonExternalId.new_with_defaults(
+            state_code=_STATE_CODE, external_id=_EXTERNAL_ID)
+        person = StatePerson.new_with_defaults(
+            person_id=_ID, full_name=_FULL_NAME, external_ids=[external_id],
+            sentence_groups=[sentence_group])
+
+        expected_supervision_sentence_updated = attr.evolve(
+            supervision_sentence_updated, supervision_sentence_id=_ID)
+        expected_sentence_group = attr.evolve(
+            sentence_group,
+            supervision_sentences=[expected_supervision_sentence_updated])
+        expected_placeholder_sentence_group = attr.evolve(
+            db_placeholder_sentence_group, supervision_sentences=[])
+        expected_external_id = attr.evolve(external_id)
+        expected_person = attr.evolve(
+            person, external_ids=[expected_external_id],
+            sentence_groups=[expected_sentence_group])
+        expected_placeholder_person = attr.evolve(
+            db_placeholder_person,
+            sentence_groups=[expected_placeholder_sentence_group])
+
+        # Act
+        merged_entities = state_entity_matcher._match_persons(
+            ingested_persons=[person], db_persons=[db_placeholder_person])
+
+        # Assert
+        self.assertEqual([expected_person, expected_placeholder_person],
+                         merged_entities.people)
+        self.assertEqual(0, merged_entities.error_count)
+
+    def test_matchPersons_holesInBothGraphs_ingestedPersonPlaceholder(self):
+        db_supervision_sentence = StateSupervisionSentence.new_with_defaults(
+            supervision_sentence_id=_ID, status=SentenceStatus.SERVING,
+            external_id=_EXTERNAL_ID,
+            state_code=_STATE_CODE,
+            min_length_days=0)
+        db_supervision_sentence_another = \
+            StateSupervisionSentence.new_with_defaults(
+                supervision_sentence_id=_ID_2, status=SentenceStatus.SERVING,
+                external_id=_EXTERNAL_ID_2,
+                state_code=_STATE_CODE,
+                min_length_days=10)
+        db_placeholder_sentence_group = StateSentenceGroup.new_with_defaults(
+            sentence_group_id=_ID,
+            supervision_sentences=[
+                db_supervision_sentence, db_supervision_sentence_another])
+
+        db_external_id = StatePersonExternalId.new_with_defaults(
+            person_external_id_id=_ID, state_code=_STATE_CODE,
+            external_id=_EXTERNAL_ID)
+        db_person = StatePerson.new_with_defaults(
+            person_id=_ID, full_name=_FULL_NAME,
+            external_ids=[db_external_id],
+            sentence_groups=[db_placeholder_sentence_group])
+
+        supervision_sentence_updated = attr.evolve(
+            db_supervision_sentence, supervision_sentence_id=None,
+            min_length_days=1)
+        supervision_sentence_another_updated = attr.evolve(
+            db_supervision_sentence_another, supervision_sentence_id=None,
+            min_length_days=11)
+        sentence_group_new = StateSentenceGroup.new_with_defaults(
+            external_id=_EXTERNAL_ID,
+            supervision_sentences=[supervision_sentence_updated])
+        sentence_group_new_another = StateSentenceGroup.new_with_defaults(
+            external_id=_EXTERNAL_ID_2,
+            supervision_sentences=[supervision_sentence_another_updated])
+
+        placeholder_person = StatePerson.new_with_defaults(
+            sentence_groups=[sentence_group_new, sentence_group_new_another])
+
+        expected_supervision_sentence = attr.evolve(
+            supervision_sentence_updated, supervision_sentence_id=_ID)
+        expected_supervision_sentence_another = attr.evolve(
+            supervision_sentence_another_updated, supervision_sentence_id=_ID_2)
+        expected_sentence_group = attr.evolve(
+            sentence_group_new,
+            supervision_sentences=[expected_supervision_sentence])
+        expected_sentence_group_another = attr.evolve(
+            sentence_group_new_another,
+            supervision_sentences=[expected_supervision_sentence_another])
+        expected_sentence_group_placeholder = \
+            StateSentenceGroup.new_with_defaults(sentence_group_id=_ID)
+        expected_external_id = attr.evolve(db_external_id)
+        expected_person = attr.evolve(
+            db_person, external_ids=[expected_external_id],
+            sentence_groups=[
+                expected_sentence_group, expected_sentence_group_another,
+                expected_sentence_group_placeholder])
+
+        # Act
+        merged_entities = state_entity_matcher._match_persons(
+            ingested_persons=[placeholder_person], db_persons=[db_person])
+
+        # Assert
+        self.assertEqual([expected_person], merged_entities.people)
+        self.assertEqual(0, merged_entities.error_count)
+
+    def test_matchPersons_holesInBothGraphs_dbPersonPlaceholder(self):
+        db_supervision_sentence = StateSupervisionSentence.new_with_defaults(
+            supervision_sentence_id=_ID, status=SentenceStatus.SERVING,
+            external_id=_EXTERNAL_ID,
+            state_code=_STATE_CODE,
+            min_length_days=0)
+        db_supervision_sentence_another = \
+            StateSupervisionSentence.new_with_defaults(
+                supervision_sentence_id=_ID_2, status=SentenceStatus.SERVING,
+                external_id=_EXTERNAL_ID_2, state_code=_STATE_CODE,
+                min_length_days=10)
+        db_sentence_group = StateSentenceGroup.new_with_defaults(
+            external_id=_EXTERNAL_ID,
+            sentence_group_id=_ID,
+            supervision_sentences=[db_supervision_sentence])
+        db_sentence_group_another = StateSentenceGroup.new_with_defaults(
+            sentence_group_id=_ID_2,
+            external_id=_EXTERNAL_ID_2,
+            supervision_sentences=[db_supervision_sentence_another])
+
+        db_placeholder_person = StatePerson.new_with_defaults(
+            person_id=_ID,
+            sentence_groups=[db_sentence_group, db_sentence_group_another])
+
+        supervision_sentence_updated = attr.evolve(
+            db_supervision_sentence, supervision_sentence_id=None,
+            min_length_days=1)
+        supervision_sentence_another_updated = attr.evolve(
+            db_supervision_sentence_another, supervision_sentence_id=None,
+            min_length_days=11)
+        placeholder_sentence_group = StateSentenceGroup.new_with_defaults(
+            supervision_sentences=[
+                supervision_sentence_updated,
+                supervision_sentence_another_updated])
+        external_id = StatePersonExternalId.new_with_defaults(
+            state_code=_STATE_CODE, external_id=_EXTERNAL_ID)
+        person = StatePerson.new_with_defaults(
+            full_name=_FULL_NAME,
+            external_ids=[external_id],
+            sentence_groups=[placeholder_sentence_group])
+
+        expected_supervision_sentence = attr.evolve(
+            supervision_sentence_updated, supervision_sentence_id=_ID)
+        expected_supervision_sentence_another = attr.evolve(
+            supervision_sentence_another_updated, supervision_sentence_id=_ID_2)
+        expected_sentence_group = attr.evolve(
+            db_sentence_group,
+            supervision_sentences=[expected_supervision_sentence])
+        expected_sentence_group_another = attr.evolve(
+            db_sentence_group_another,
+            supervision_sentences=[expected_supervision_sentence_another])
+        expected_external_id = attr.evolve(external_id)
+        expected_person = attr.evolve(
+            person, external_ids=[expected_external_id],
+            sentence_groups=[
+                expected_sentence_group, expected_sentence_group_another])
+
+        expected_placeholder_person = attr.evolve(db_placeholder_person,
+                                                  sentence_groups=[])
+
+        # Act
+        merged_entities = state_entity_matcher._match_persons(
+            ingested_persons=[person], db_persons=[db_placeholder_person])
+
+        # Assert
+        self.assertEqual([expected_person, expected_placeholder_person],
+                         merged_entities.people)
+        self.assertEqual(0, merged_entities.error_count)

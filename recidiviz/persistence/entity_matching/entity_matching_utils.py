@@ -18,15 +18,19 @@
 
 import datetime
 import logging
-from typing import Optional, Set, Callable, Sequence, Dict, Any, Iterable
+from typing import Optional, Set, Callable, Sequence, Dict, Any, Iterable, \
+    Union, List, cast
 
 import deepdiff
 
 from recidiviz.persistence.entity.base_entity import Entity, ExternalIdEntity
 from recidiviz.persistence.entity.entities import EntityPersonType
+from recidiviz.persistence.entity_matching.state.state_matching_utils import \
+    EntityTree
 from recidiviz.persistence.errors import MatchedMultipleDatabaseEntitiesError
 
 
+# TODO(2022): Update all utils methods to accept EntityTree and Entity types
 def diff_count(entity_a: Entity, entity_b: Entity) -> int:
     """Counts the number of differences between two entities, including
     their descendants."""
@@ -93,29 +97,6 @@ def get_next_available_match(
     return None
 
 
-def get_only_match(
-        ingested_entity: Entity,
-        db_entities: Sequence[Entity], matcher: Callable):
-    """
-       Finds the entity in |db_entites| that matches the |ingested_entity|.
-       Args:
-           ingested_entity: an entity ingested from source (usually website)
-           db_entities: List of entities from our db that are potential matches
-               for the |ingested_entity|
-           matcher:
-               (db_entity, ingested_entity) -> (bool)
-       Returns:
-           The entity from |db_entities| that matches the |ingested_entity|,
-           or None if no match is found.
-       Raises:
-           EntityMatchingError: if more than one match is found.
-       """
-    matches = get_all_matches(ingested_entity, db_entities, matcher)
-    if len(matches) > 1:
-        raise MatchedMultipleDatabaseEntitiesError(ingested_entity, matches)
-    return matches[0] if matches else None
-
-
 def get_best_match(
         ingest_entity: Entity,
         db_entities: Sequence[Entity],
@@ -143,9 +124,37 @@ def get_best_match(
                key=lambda db_entity: diff_count(ingest_entity, db_entity))
 
 
+def get_only_match(
+        ingested_entity: Union[Entity, EntityTree],
+        db_entities: Sequence[Union[Entity, EntityTree]], matcher: Callable):
+    """
+       Finds the entity in |db_entites| that matches the |ingested_entity|.
+       Args:
+           ingested_entity: an entity ingested from source (usually website)
+           db_entities: List of entities from our db that are potential matches
+               for the |ingested_entity|
+           matcher:
+               (db_entity, ingested_entity) -> (bool)
+       Returns:
+           The entity from |db_entities| that matches the |ingested_entity|,
+           or None if no match is found.
+       Raises:
+           EntityMatchingError: if more than one match is found.
+       """
+    matches = get_all_matches(ingested_entity, db_entities, matcher)
+    if len(matches) > 1:
+        if isinstance(ingested_entity, EntityTree):
+            matches = cast(List[EntityTree], matches)
+            matched_entities = [m.entity for m in matches]
+            raise MatchedMultipleDatabaseEntitiesError(
+                ingested_entity.entity, matched_entities)
+        raise MatchedMultipleDatabaseEntitiesError(ingested_entity, matches)
+    return matches[0] if matches else None
+
+
 def get_all_matches(
-        ingested_entity: Entity,
-        db_entities: Sequence[Entity], matcher: Callable):
+        ingested_entity: Union[Entity, EntityTree],
+        db_entities: Sequence[Union[Entity, EntityTree]], matcher: Callable):
     """
     Finds all |db_entities| that match the provided |ingested_entity| based
     on the |matcher| function
