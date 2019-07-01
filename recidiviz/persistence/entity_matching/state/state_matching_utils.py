@@ -221,10 +221,21 @@ def _set_person_on_entity(person: StatePerson, entity: Entity):
 
 
 def is_placeholder(entity: Entity) -> bool:
-    """Determines if the provided entity is a placeholder. An entity is
-    a placeholder if all of the optional flat fields are empty or set to a
-    default value.
+    """Determines if the provided entity is a placeholder. Conceptually, a
+    placeholder is an object that we have no information about, but have
+    inferred its existence based on other objects we do have information about.
+    Generally, an entity is a placeholder if all of the optional flat fields are
+    empty or set to a default value.
     """
+
+    # Although these are not flat fields, they represent characteristics of a
+    # person. If present, we do have information about the provided person, and
+    # therefore it is not a placeholder.
+    if isinstance(entity, StatePerson):
+        entity = cast(StatePerson, entity)
+        if any([entity.external_ids, entity.races, entity.aliases,
+                entity.ethnicities]):
+            return False
 
     copy = attr.evolve(entity)
 
