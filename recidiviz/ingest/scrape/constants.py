@@ -44,5 +44,6 @@ BATCH_PUBSUB_TYPE = 'scraper_batch'
 class ResponseType(enum.Enum):
     HTML = 'html'
     JSON = 'json'
+    JSONP = 'jsonp'
     TEXT = 'text'
     RAW = 'raw'
