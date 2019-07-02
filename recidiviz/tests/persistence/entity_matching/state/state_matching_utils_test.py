@@ -26,7 +26,7 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import \
     merge_flat_fields, remove_back_edges, add_person_to_entity_graph, \
     is_placeholder, _is_match, EntityTree, \
     generate_child_entity_trees, add_child_to_entity, \
-    remove_child_from_entity
+    remove_child_from_entity, has_default_status
 
 _EXTERNAL_ID = 'EXTERNAL_ID'
 _EXTERNAL_ID_2 = 'EXTERNAL_ID_2'
@@ -120,12 +120,22 @@ class TestStateMatchingUtils(TestCase):
         self.assertFalse(
             _is_match(ingested_entity=charge, db_entity=charge_another))
 
+    def test_hasDefaultStatus(self):
+        entity = StateSentenceGroup.new_with_defaults(
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
+        self.assertTrue(has_default_status(entity))
+        entity.status = StateSentenceStatus.SERVING
+        self.assertFalse(has_default_status(entity))
+
     def test_mergeFlatFields(self):
         ing_entity = StateSentenceGroup.new_with_defaults(
-            county_code='county_code-updated', max_length_days=10)
+            county_code='county_code-updated', max_length_days=10,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
         db_entity = StateSentenceGroup.new_with_defaults(
-            sentence_group_id=_ID, county_code='county_code')
-        expected_entity = attr.evolve(ing_entity, sentence_group_id=_ID)
+            sentence_group_id=_ID, county_code='county_code',
+            status=StateSentenceStatus.SERVING)
+        expected_entity = attr.evolve(ing_entity, sentence_group_id=_ID,
+                                      status=StateSentenceStatus.SERVING)
 
         self.assertEqual(
             expected_entity,
