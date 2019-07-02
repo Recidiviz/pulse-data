@@ -166,6 +166,10 @@ def merge_flat_fields(*, ingested_entity: Entity, db_entity: Entity) -> Entity:
     """
     for child_field_name in get_set_entity_field_names(
             ingested_entity, EntityFieldType.FLAT_FIELD):
+        # Do not overwrite with default status
+        if child_field_name == 'status' and has_default_status(ingested_entity):
+            continue
+
         set_field(db_entity, child_field_name,
                   get_field(ingested_entity, child_field_name))
 
@@ -220,6 +224,14 @@ def _set_person_on_entity(person: StatePerson, entity: Entity):
         set_field(entity, 'person', person)
 
 
+def has_default_status(entity: Entity) -> bool:
+    if hasattr(entity, 'status'):
+        status = get_field(entity, 'status')
+        return status \
+               and status.value == enum_canonical_strings.present_without_info
+    return False
+
+
 def is_placeholder(entity: Entity) -> bool:
     """Determines if the provided entity is a placeholder. Conceptually, a
     placeholder is an object that we have no information about, but have
@@ -247,11 +259,8 @@ def is_placeholder(entity: Entity) -> bool:
         set_field(copy, 'state_code', None)
 
     # Clear status if set to default value
-    if hasattr(copy, 'status'):
-        status = get_field(copy, 'status')
-        if status and status.value == \
-                enum_canonical_strings.present_without_info:
-            set_field(copy, 'status', None)
+    if has_default_status(entity):
+        set_field(copy, 'status', None)
 
     set_flat_fields = get_set_entity_field_names(
         copy, EntityFieldType.FLAT_FIELD)
