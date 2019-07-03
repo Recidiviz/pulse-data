@@ -21,6 +21,7 @@ import datetime
 import logging
 from typing import Iterable, Dict
 
+import gc
 import pandas as pd
 import sqlalchemy
 from more_itertools import one
@@ -86,13 +87,25 @@ class UsMaMiddlesexCollector(DirectIngestCollector):
         dropped from the cloud SQL database. If conversion or persistence run
         into an error, all following exports are not processed."""
         for export_time in sorted(set(self.booking_df['export_time'])):
+            logging.info("Starting ingest for export time [%s]", export_time)
             ii = self.parse(self.read_tables_to_json(export_time))
+            logging.info("Successfully parsed data for export time [%s]",
+                         export_time)
             success = self.persist(ii, export_time.to_pydatetime())
+            logging.info("Persisted with status [%r]", success)
+            logging.info("garbage collection stats before collection: [%s]",
+                         gc.get_stats())
+            gc.collect()
+            logging.info("garbage collection stats after collection: [%s]",
+                         gc.get_stats())
             if success:
+                logging.info("Successfully persisted export time [%s]",
+                             export_time)
                 self.clear(export_time)
             else:
                 raise DirectIngestError("Persisting failed for export time "
                                         f"[{export_time}], halting ingest.")
+        logging.info("Successfully persisted all data exports.")
 
     def read_tables_to_json(self, export_time: pd.Timestamp) -> Iterable[Dict]:
         """Queries the postgresql database for the most recent extract and reads
