@@ -97,6 +97,7 @@ _GENDER_MAP = {
 # For example, `N/A` can be written as `N A` and `(10%)` can be written as `10`.
 _RACE_MAP = {
     'A': Race.ASIAN,
+    'AFRICAN AMER': Race.BLACK,
     'AFRICAN AMERICAN': Race.BLACK,
     'ALL OTHERS': Race.OTHER,
     'AMERICAN INDIAN': Race.AMERICAN_INDIAN_ALASKAN_NATIVE,
