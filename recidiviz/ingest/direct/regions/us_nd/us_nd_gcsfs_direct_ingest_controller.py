@@ -366,6 +366,7 @@ class UsNdGcsfsDirectIngestController(GcsfsDirectIngestController):
         movement_date = row['MOVEMENT_DATE']
         movement_reason = row['MOVEMENT_REASON_CODE']
         to_facility = row['TO_AGY_LOC_ID']
+        from_facility = row['FROM_AGY_LOC_ID']
 
         # TODO(2002): If this edge is a transfer in or out of a hospital or
         #  other non-prison facility, create extra proper edges in and out
@@ -375,10 +376,11 @@ class UsNdGcsfsDirectIngestController(GcsfsDirectIngestController):
                 if is_admission:
                     extracted_object.admission_date = movement_date
                     extracted_object.admission_reason = movement_reason
+                    extracted_object.facility = to_facility
                 else:
                     extracted_object.release_date = movement_date
                     extracted_object.release_reason = movement_reason
-                extracted_object.facility = to_facility
+                    extracted_object.facility = from_facility
 
     @staticmethod
     def _label_external_id_as_elite(_row: Dict[str, str],

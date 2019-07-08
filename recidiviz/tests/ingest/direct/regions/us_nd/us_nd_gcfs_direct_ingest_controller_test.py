@@ -595,7 +595,7 @@ class TestUsNdGcsfsIngestController(unittest.TestCase):
             StateIncarcerationPeriod(state_incarceration_period_id='113377-2',
                                      status='REL',
                                      release_date='7/26/18  12:00:00 AM',
-                                     facility='OUT',
+                                     facility='NDSP',
                                      release_reason='RPAR'),
             StateIncarcerationPeriod(state_incarceration_period_id='113377-1',
                                      status='ADM',
@@ -608,32 +608,33 @@ class TestUsNdGcsfsIngestController(unittest.TestCase):
             StateIncarcerationPeriod(
                 state_incarceration_period_id='105640-1',
                 status='ADM',
-                admission_date='1/11/90  12:00:00 AM',
                 facility='NDSP',
+                admission_date='1/1/19  12:00:00 AM',
                 admission_reason='ADMN'),
             StateIncarcerationPeriod(
                 state_incarceration_period_id='105640-3',
-                status='CRT',
-                admission_date='5/29/15  12:00:00 AM',
-                facility='NDSP',
-                admission_reason='CRT'),
+                status='ADM',
+                facility='JRCC',
+                admission_date='2/1/19  12:00:00 AM',
+                admission_reason='INT'),
+            StateIncarcerationPeriod(
+                state_incarceration_period_id='105640-5',
+                status='TAP',
+                facility='JRCC',
+                admission_date='4/1/19  12:00:00 AM',
+                admission_reason='HOSPS'),
             StateIncarcerationPeriod(
                 state_incarceration_period_id='105640-2',
-                status='CRT',
-                release_date='5/1/15  12:00:00 AM',
-                facility='EAST',
-                release_reason='CRT'),
+                status='TRN',
+                facility='NDSP',
+                release_date='2/1/19  12:00:00 AM',
+                release_reason='INT'),
             StateIncarcerationPeriod(
                 state_incarceration_period_id='105640-4',
                 status='TAP',
-                release_date='6/24/15  12:00:00 AM',
-                release_reason='HOSPS'),
-            StateIncarcerationPeriod(
-                state_incarceration_period_id='105640-5',
-                status='REL',
-                release_date='6/26/15  12:00:00 AM',
-                facility='OUT',
-                release_reason='XSNT')
+                facility='JRCC',
+                release_date='3/1/19  12:00:00 AM',
+                release_reason='HOSPS')
         ]
 
         incarceration_periods_114909 = [
@@ -641,7 +642,7 @@ class TestUsNdGcsfsIngestController(unittest.TestCase):
                 state_incarceration_period_id='114909-2',
                 status='REL',
                 release_date='1/8/19  12:00:00 AM',
-                facility='OUT',
+                facility='NDSP',
                 release_reason='RPRB'),
             StateIncarcerationPeriod(
                 state_incarceration_period_id='114909-1',

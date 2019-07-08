@@ -38,7 +38,7 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import \
     add_person_to_entity_graph, EntityFieldType, IndividualMatchResult, \
     EntityTree, MatchResults, is_placeholder, \
     generate_child_entity_trees, remove_child_from_entity, \
-    add_child_to_entity, get_field, set_field
+    add_child_to_entity, get_field, set_field, merge_incarceration_periods
 
 from recidiviz.persistence.errors import EntityMatchingError, \
     MatchedMultipleIngestedEntitiesError
@@ -54,6 +54,8 @@ class StateEntityMatcher(BaseEntityMatcher[StatePerson]):
         corresponding persons in our database for the given |region|. Returns a
         MatchedEntities object that contains the results of matching.
         """
+
+        _perform_preprocessing(ingested_people)
 
         # TODO(1868): more specific query
         db_persons = dao.read_people(session)
@@ -80,11 +82,19 @@ class StateEntityMatcher(BaseEntityMatcher[StatePerson]):
 
         # TODO(1868): Merge entities that could have been created twice
         # (those with multiple parent branches)
-        # TODO(1868): State specific post processing
+        # TODO(2037): State specific post processing
         # TODO(1868): Remove any placeholders in graph without children after
         # write
         add_person_to_entity_graph(matched_entities.people)
         return matched_entities
+
+
+# TODO(2037): Move state specific logic into its own file.
+def _perform_preprocessing(ingested_persons: List[StatePerson]):
+    """Performs state specific preprocessing on the provided
+    |ingested_persons|.
+    """
+    merge_incarceration_periods(ingested_persons)
 
 
 def _match_persons(
@@ -96,6 +106,7 @@ def _match_persons(
     count that is incremented every time an error is raised matching an
     ingested person.
     """
+
     error_count = 0
     matched_persons_by_db_ids: Dict[int, Entity] = {}
 
@@ -198,6 +209,7 @@ def _match_entity_tree(
 
     # Currently only support one to one matches, but could transition to
     # get_best_match
+    # TODO(1868): Implement ND specific matching for incarceration periods.
     db_match_tree = entity_matching_utils.get_only_match(
         ingested_entity_tree, db_entity_trees,
         state_matching_utils.is_match)
@@ -445,7 +457,7 @@ def _match_matched_tree(
             set_field(db_entity, child_field_name, one(updated_children))
 
     merged_entity = merge_flat_fields(
-        ingested_entity=ingested_entity, db_entity=db_entity)
+        new_entity=ingested_entity, old_entity=db_entity)
     merged_entity_tree = EntityTree(
         entity=merged_entity, ancestor_chain=db_match_tree.ancestor_chain)
     return IndividualMatchResult(ingested_entity_tree=ingested_entity_tree,
