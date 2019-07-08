@@ -52,20 +52,42 @@ import argparse
 import logging
 
 from typing import Any, Dict, List, Tuple
+import datetime
+from enum import Enum
 from more_itertools import one
 
 import apache_beam as beam
+from apache_beam.options.pipeline_options import PipelineOptions
+from apache_beam.options.pipeline_options import SetupOptions
 from apache_beam.typehints import with_input_types, with_output_types
 
 from recidiviz.calculator.recidivism import identifier, calculator, \
     ReincarcerationRecidivismMetric
 from recidiviz.calculator.recidivism.release_event import ReleaseEvent
 from recidiviz.calculator.recidivism.metrics import RecidivismMethodologyType
+from recidiviz.calculator.utils.execution_utils import get_job_id
 from recidiviz.calculator.utils.extractor_utils import BuildRootEntity
 from recidiviz.persistence.entity.state.entities import StatePerson, \
     StateIncarcerationPeriod
 from recidiviz.persistence.database.schema.state import schema
+from recidiviz.utils import environment
 
+
+# Cached job_id value
+_job_id = None
+
+
+def job_id(pipeline_options: Dict[str, str]) -> str:
+    global _job_id
+    if not _job_id:
+        _job_id = get_job_id(pipeline_options)
+    return _job_id
+
+
+@environment.test_only
+def clear_job_id():
+    global _job_id
+    _job_id = None
 
 
 @with_input_types(beam.typehints.Tuple[int, Dict[str, Any]])
@@ -87,8 +109,9 @@ class GetReleaseEvents(beam.PTransform):
 class GetRecidivismMetrics(beam.PTransform):
     """Transforms a StatePerson and ReleaseEvents into RecidivismMetrics."""
 
-    def __init__(self):
+    def __init__(self, pipeline_options: Dict[str, str]):
         super(GetRecidivismMetrics, self).__init__()
+        self._pipeline_options = pipeline_options
 
     def expand(self, input_or_inputs):
         # Calculate recidivism metric combinations from a StatePerson and their
@@ -109,7 +132,8 @@ class GetRecidivismMetrics(beam.PTransform):
         # metric_keys
         return (grouped_metric_combinations
                 | 'Produce recidivism metrics' >>
-                beam.ParDo(ProduceReincarcerationRecidivismMetric()))
+                beam.ParDo(ProduceReincarcerationRecidivismMetric(),
+                           **self._pipeline_options))
 
 
 @with_input_types(beam.typehints.Tuple[int, Dict[str, Any]])
@@ -188,8 +212,13 @@ class CalculateRecidivismMetricCombinations(beam.DoFn):
         pass
 
 
-@with_input_types(beam.typehints.Tuple[
-    Dict[str, str], List[int]])
+@with_input_types(beam.typehints.Tuple[Dict[str, str], List[int]],
+                  **{'runner': str,
+                     'project': str,
+                     'job_name': str,
+                     'region': str,
+                     'job_timestamp': str}
+                  )
 @with_output_types(ReincarcerationRecidivismMetric)
 class ProduceReincarcerationRecidivismMetric(beam.DoFn):
     """Produces ReincarcerationRecidivismMetrics."""
@@ -198,22 +227,37 @@ class ProduceReincarcerationRecidivismMetric(beam.DoFn):
         """Converts a recidivism metric key into a
         ReincarcerationRecidivismMetric.
 
+        The pipeline options are sent in as the **kwargs so that the
+        job_id(pipeline_options) function can be called to retrieve the job_id.
+
         Args:
             element: A tuple containing a dictionary of the metric_key for a
-            given recidivism metric, and a list where each element corresponds
-            to a ReleaseEvent, with 1s representing RecidivismReleaseEvents, and
-            0s representing NonRecidivismReleaseEvents.
+                given recidivism metric, and a list where each element
+                corresponds to a ReleaseEvent, with 1s representing
+                RecidivismReleaseEvents, and 0s representing
+                NonRecidivismReleaseEvents.
+            **kwargs: This should be a dictionary with values for the
+                following keys:
+                    - runner: Either 'DirectRunner' or 'DataflowRunner'
+                    - project: GCP project ID
+                    - job_name: Name of the pipeline job
+                    - region: Region where the pipeline job is running
+                    - job_timestamp: Timestamp for the current job, to be used
+                        if the job is running locally.
 
         Yields:
             The ReincarcerationRecidivismMetric.
         """
+        pipeline_options = kwargs
+
+        pipeline_job_id = job_id(pipeline_options)
 
         (metric_key, release_group) = element
 
         recidivism_metric = \
             ReincarcerationRecidivismMetric.build_from_metric_key_release_group(
                 metric_key,
-                release_group)
+                release_group, pipeline_job_id)
 
         if recidivism_metric:
             yield recidivism_metric
@@ -223,7 +267,7 @@ class ProduceReincarcerationRecidivismMetric(beam.DoFn):
 
 
 @with_input_types(ReincarcerationRecidivismMetric,
-                  **{'dimensions_to_filter_out': [str],
+                  **{'dimensions_to_filter_out': List[str],
                      'methodologies': List[RecidivismMethodologyType],
                      'release_count_min': int})
 @with_output_types(ReincarcerationRecidivismMetric)
@@ -249,9 +293,9 @@ class FilterMetrics(beam.DoFn):
                 The ReincarcerationRecidivismMetric.
         """
 
-        dimensions_to_filter_out = kwargs['dimensions_to_filter_out']
-        methodologies = kwargs['methodologies']
-        release_count_min = kwargs['release_count_min']
+        dimensions_to_filter_out = kwargs.get('dimensions_to_filter_out')
+        methodologies = kwargs.get('methodologies')
+        release_count_min = kwargs.get('release_count_min')
 
         recidivism_metric = element
 
@@ -273,6 +317,44 @@ class FilterMetrics(beam.DoFn):
             return
 
         yield recidivism_metric
+
+    def to_runner_api_parameter(self, unused_context):
+        pass
+
+
+@with_input_types(ReincarcerationRecidivismMetric)
+@with_output_types(beam.typehints.Dict[str, Any])
+class RecidivismMetricWritableDict(beam.DoFn):
+    """Builds a dictionary in the format necessary to write the output to
+    BigQuery."""
+
+    def process(self, element, *args, **kwargs):
+        """The beam.io.WriteToBigQuery transform requires elements to be in
+        dictionary form, where the values are in formats as required by BigQuery
+        I/O connector.
+
+        For a list of required formats, see the "Data types" section of:
+            https://beam.apache.org/documentation/io/built-in/google-bigquery/
+
+        Args:
+            element: A ReincarcerationRecidivismMetric
+
+        Yields:
+            A dictionary representation of the ReincarcerationRecidivismMetric
+                in the format Dict[str, Any] so that it can be written to
+                BigQuery using beam.io.WriteToBigQuery.
+        """
+        element_dict = {}
+
+        for key, v in element.__dict__.items():
+            if isinstance(v, Enum) and v is not None:
+                element_dict[key] = v.value
+            elif isinstance(v, datetime.date) and v is not None:
+                element_dict[key] = v.strftime('%Y-%m-%d')
+            else:
+                element_dict[key] = v
+
+        yield element_dict
 
     def to_runner_api_parameter(self, unused_context):
         pass
@@ -325,6 +407,12 @@ def parse_arguments(argv):
                         help='Include metrics broken down by stay length.',
                         default=False)
 
+    parser.add_argument('--include_return_type',
+                        dest='include_return_type',
+                        type=bool,
+                        help='Include metrics broken down by return type.',
+                        default=False)
+
     parser.add_argument('--methodology',
                         dest='methodology',
                         type=str,
@@ -368,7 +456,9 @@ def dimensions_and_methodologies(known_args) -> \
         'include_race': 'race',
         'include_ethnicity': 'ethnicity',
         'include_release_facility': 'release_facility',
-        'include_stay_length': 'stay_length_bucket'}
+        'include_stay_length': 'stay_length_bucket',
+        'include_return_type': 'return_type'
+    }
 
     known_args_dict = vars(known_args)
 
@@ -393,14 +483,8 @@ def run(argv=None):
     # Parse command-line arguments
     known_args, pipeline_args = parse_arguments(argv)
 
-    # Extend pipeline arguments
-    pipeline_args.extend([
-        # TODO(1783): Check ability to specify Python version with
-        #  DataflowRunner
-        # Change this to DataflowRunner to
-        # run the pipeline on the Google Cloud Dataflow Service.
-        '--runner=DirectRunner',
-    ])
+    pipeline_options = PipelineOptions(pipeline_args)
+    pipeline_options.view_as(SetupOptions).save_main_session = True
 
     with beam.Pipeline(argv=pipeline_args) as p:
         # Get StatePersons
@@ -410,7 +494,8 @@ def run(argv=None):
                                    data_dict=None,
                                    root_schema_class=schema.StatePerson,
                                    root_entity_class=StatePerson,
-                                   unifying_id_field='person_id'))
+                                   unifying_id_field='person_id',
+                                   build_related_entities=False))
 
         # Get StateIncarcerationPeriods
         incarceration_periods = (p
@@ -421,7 +506,8 @@ def run(argv=None):
                                      root_schema_class=
                                      schema.StateIncarcerationPeriod,
                                      root_entity_class=StateIncarcerationPeriod,
-                                     unifying_id_field='person_id'))
+                                     unifying_id_field='person_id',
+                                     build_related_entities=False))
 
         # Group each StatePerson with their StateIncarcerationPeriods
         person_and_incarceration_periods = (
@@ -430,17 +516,26 @@ def run(argv=None):
             | 'Group StatePerson to StateIncarcerationPeriods' >>
             beam.CoGroupByKey()
         )
-        # Identify ReleaseEvents events from the StatePerson's
 
+        # Identify ReleaseEvents events from the StatePerson's
         # StateIncarcerationPeriods
         person_events = (
             person_and_incarceration_periods |
             'Get Recidivism Events' >>
             GetReleaseEvents())
 
+        # Get pipeline job details for accessing job_id
+        all_pipeline_options = pipeline_options.get_all_options()
+
+        # Add timestamp for local jobs
+        job_timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S.%f')
+        all_pipeline_options['job_timestamp'] = job_timestamp
+
+        # Get recidivism metrics
         recidivism_metrics = (person_events
                               | 'Get Recidivism Metrics' >>
-                              GetRecidivismMetrics())
+                              GetRecidivismMetrics(
+                                  pipeline_options=all_pipeline_options))
 
         # Get dimensions to filter out and methodologies to use
         dimensions, methodologies = dimensions_and_methodologies(known_args)
@@ -451,14 +546,21 @@ def run(argv=None):
             'release_count_min': known_args.release_count_min}
 
         # Filter out unneeded metrics
-        filtered_recidivism_metrics = (
+        final_recidivism_metrics = (
             recidivism_metrics
             | 'Filter out unwanted metrics' >>
             beam.ParDo(FilterMetrics(), **filter_metrics_kwargs))
 
-        # Write results to the output sink
-        _ = (filtered_recidivism_metrics
-             | 'Write Results' >> beam.io.WriteToText(known_args.output))
+        # Write the recidivism metrics to the destination table in BigQuery
+        _ = (final_recidivism_metrics
+             | 'Convert to dict to be written to BQ' >>
+             beam.ParDo(RecidivismMetricWritableDict())
+             | f"Write metrics to BQ table: {known_args.output}" >>
+             beam.io.WriteToBigQuery(
+                 table=known_args.output,
+                 create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
+                 write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
+             ))
 
 
 if __name__ == '__main__':

@@ -24,10 +24,13 @@ import unittest
 import apache_beam as beam
 from apache_beam.testing.util import assert_that, equal_to, BeamAssertException
 from apache_beam.testing.test_pipeline import TestPipeline
+from apache_beam.options.pipeline_options import PipelineOptions
 
+import datetime
 from datetime import date
 from dateutil.relativedelta import relativedelta
 import pytest
+from enum import Enum
 
 from recidiviz.calculator.recidivism import pipeline
 from recidiviz.calculator.recidivism import calculator, \
@@ -170,7 +173,8 @@ class TestRecidivismPipeline(unittest.TestCase):
                 data_dict=data_dict,
                 root_schema_class=schema.StatePerson,
                 root_entity_class=StatePerson,
-                unifying_id_field='person_id'))
+                unifying_id_field='person_id',
+                build_related_entities=True))
 
         # Get StateIncarcerationPeriods
         incarceration_periods = (
@@ -181,25 +185,36 @@ class TestRecidivismPipeline(unittest.TestCase):
                 data_dict=data_dict,
                 root_schema_class=schema.StateIncarcerationPeriod,
                 root_entity_class=StateIncarcerationPeriod,
-                unifying_id_field='person_id'))
+                unifying_id_field='person_id',
+                build_related_entities=True))
 
         # Group each StatePerson with their StateIncarcerationPeriods
-        person_and_incarceration_periods = \
-            ({'person': persons,
-              'incarceration_periods': incarceration_periods}
-             | 'Group StatePerson to StateIncarcerationPeriods' >>
-             beam.CoGroupByKey()
-             )
+        person_and_incarceration_periods = (
+            {'person': persons,
+             'incarceration_periods': incarceration_periods}
+            | 'Group StatePerson to StateIncarcerationPeriods' >>
+            beam.CoGroupByKey()
+        )
 
         # Identify ReleaseEvents events from the StatePerson's
         # StateIncarcerationPeriods
-        person_events = (person_and_incarceration_periods |
-                         'Get Release Events' >>
-                         pipeline.GetReleaseEvents())
+        person_events = (
+            person_and_incarceration_periods |
+            'Get Recidivism Events' >>
+            pipeline.GetReleaseEvents())
 
+        # Get pipeline job details for accessing job_id
+        all_pipeline_options = PipelineOptions().get_all_options()
+
+        # Add timestamp for local jobs
+        job_timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S.%f')
+        all_pipeline_options['job_timestamp'] = job_timestamp
+
+        # Get recidivism metrics
         recidivism_metrics = (person_events
                               | 'Get Recidivism Metrics' >>
-                              pipeline.GetRecidivismMetrics())
+                              pipeline.GetRecidivismMetrics(
+                                  all_pipeline_options))
 
         filter_metrics_kwargs = {
             'dimensions_to_filter_out': dimensions_to_filter,
@@ -207,12 +222,13 @@ class TestRecidivismPipeline(unittest.TestCase):
             'release_count_min': 0}
 
         # Filter out unneeded metrics
-        filtered_metrics = (recidivism_metrics
-                            | 'Filter out unwanted metrics' >>
-                            beam.ParDo(pipeline.FilterMetrics(),
-                                       **filter_metrics_kwargs))
+        final_recidivism_metrics = (
+            recidivism_metrics
+            | 'Filter out unwanted metrics' >>
+            beam.ParDo(pipeline.FilterMetrics(), **filter_metrics_kwargs))
 
-        assert_that(filtered_metrics, AssertMatchers.validate_pipeline_test())
+        assert_that(final_recidivism_metrics,
+                    AssertMatchers.validate_pipeline_test())
 
         test_pipeline.run()
 
@@ -365,43 +381,56 @@ class TestRecidivismPipeline(unittest.TestCase):
         test_pipeline = TestPipeline()
 
         # Get StatePersons
-        persons = (test_pipeline
-                   | 'Get Persons' >>
-                   extractor_utils.BuildRootEntity(
-                       dataset=None,
-                       data_dict=data_dict,
-                       root_schema_class=schema.StatePerson,
-                       root_entity_class=StatePerson,
-                       unifying_id_field='person_id'))
+        persons = (
+            test_pipeline
+            | 'Load Persons' >>
+            extractor_utils.BuildRootEntity(
+                dataset=None,
+                data_dict=data_dict,
+                root_schema_class=schema.StatePerson,
+                root_entity_class=StatePerson,
+                unifying_id_field='person_id',
+                build_related_entities=True))
 
         # Get StateIncarcerationPeriods
         incarceration_periods = (
             test_pipeline
-            | 'Get IncarcerationPeriods' >>
+            | 'Load IncarcerationPeriods' >>
             extractor_utils.BuildRootEntity(
                 dataset=None,
                 data_dict=data_dict,
                 root_schema_class=schema.StateIncarcerationPeriod,
                 root_entity_class=StateIncarcerationPeriod,
-                unifying_id_field='person_id'))
+                unifying_id_field='person_id',
+                build_related_entities=True))
 
         # Group each StatePerson with their StateIncarcerationPeriods
-        person_and_incarceration_periods = \
-            ({'person': persons,
-              'incarceration_periods': incarceration_periods}
-             | 'Group StatePerson to StateIncarcerationPeriods' >>
-             beam.CoGroupByKey()
-             )
+        person_and_incarceration_periods = (
+            {'person': persons,
+             'incarceration_periods': incarceration_periods}
+            | 'Group StatePerson to StateIncarcerationPeriods' >>
+            beam.CoGroupByKey()
+        )
 
-        # Classify ReleaseEvents from the StatePerson's
+        # Identify ReleaseEvents events from the StatePerson's
         # StateIncarcerationPeriods
-        person_events = (person_and_incarceration_periods |
-                         'Get Release Events' >>
-                         pipeline.GetReleaseEvents())
+        person_events = (
+            person_and_incarceration_periods |
+            'Get Recidivism Events' >>
+            pipeline.GetReleaseEvents())
 
+        # Get pipeline job details for accessing job_id
+        all_pipeline_options = PipelineOptions().get_all_options()
+
+        # Add timestamp for local jobs
+        job_timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S.%f')
+        all_pipeline_options['job_timestamp'] = job_timestamp
+
+        # Get recidivism metrics
         recidivism_metrics = (person_events
                               | 'Get Recidivism Metrics' >>
-                              pipeline.GetRecidivismMetrics())
+                              pipeline.GetRecidivismMetrics(
+                                  all_pipeline_options))
 
         filter_metrics_kwargs = {
             'dimensions_to_filter_out': dimensions_to_filter,
@@ -409,12 +438,13 @@ class TestRecidivismPipeline(unittest.TestCase):
             'release_count_min': 0}
 
         # Filter out unneeded metrics
-        filtered_metrics = (recidivism_metrics
-                            | 'Filter out unwanted metrics' >>
-                            beam.ParDo(pipeline.FilterMetrics(),
-                                       **filter_metrics_kwargs))
+        final_recidivism_metrics = (
+            recidivism_metrics
+            | 'Filter out unwanted metrics' >>
+            beam.ParDo(pipeline.FilterMetrics(), **filter_metrics_kwargs))
 
-        assert_that(filtered_metrics, AssertMatchers.validate_pipeline_test())
+        assert_that(final_recidivism_metrics,
+                    AssertMatchers.validate_pipeline_test())
 
         test_pipeline.run()
 
@@ -874,10 +904,16 @@ class TestProduceReincarcerationRecidivismMetric(unittest.TestCase):
 
         test_pipeline = TestPipeline()
 
+        all_pipeline_options = PipelineOptions().get_all_options()
+
+        job_timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S.%f')
+        all_pipeline_options['job_timestamp'] = job_timestamp
+
         output = (test_pipeline
                   | beam.Create([(metric_key, release_group)])
                   | 'Produce Recidivism Metric' >>
-                  beam.ParDo(pipeline.ProduceReincarcerationRecidivismMetric())
+                  beam.ParDo(pipeline.ProduceReincarcerationRecidivismMetric(),
+                             **all_pipeline_options)
                   )
 
         assert_that(output, AssertMatchers.
@@ -900,10 +936,16 @@ class TestProduceReincarcerationRecidivismMetric(unittest.TestCase):
 
         test_pipeline = TestPipeline()
 
+        all_pipeline_options = PipelineOptions().get_all_options()
+
+        job_timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S.%f')
+        all_pipeline_options['job_timestamp'] = job_timestamp
+
         output = (test_pipeline
                   | beam.Create([(metric_key, release_group)])
                   | 'Produce Recidivism Metric' >>
-                  beam.ParDo(pipeline.ProduceReincarcerationRecidivismMetric())
+                  beam.ParDo(pipeline.ProduceReincarcerationRecidivismMetric(),
+                             **all_pipeline_options)
                   )
 
         assert_that(output, AssertMatchers.
@@ -928,11 +970,17 @@ class TestProduceReincarcerationRecidivismMetric(unittest.TestCase):
 
             test_pipeline = TestPipeline()
 
+            all_pipeline_options = PipelineOptions().get_all_options()
+
+            job_timestamp = datetime.datetime.now().strftime(
+                '%Y-%m-%d_%H_%M_%S.%f')
+            all_pipeline_options['job_timestamp'] = job_timestamp
+
             _ = (test_pipeline
                  | beam.Create([(metric_key, release_group)])
                  | 'Produce Recidivism Metric' >>
-                 beam.ParDo(pipeline.ProduceReincarcerationRecidivismMetric())
-                 )
+                 beam.ParDo(pipeline.ProduceReincarcerationRecidivismMetric(),
+                            **all_pipeline_options))
 
             test_pipeline.run()
 
@@ -954,11 +1002,17 @@ class TestProduceReincarcerationRecidivismMetric(unittest.TestCase):
 
             test_pipeline = TestPipeline()
 
+            all_pipeline_options = PipelineOptions().get_all_options()
+
+            job_timestamp = datetime.datetime.now().strftime(
+                '%Y-%m-%d_%H_%M_%S.%f')
+            all_pipeline_options['job_timestamp'] = job_timestamp
+
             _ = (test_pipeline
                  | beam.Create([(metric_key, release_group)])
                  | 'Produce Recidivism Metric' >>
-                 beam.ParDo(pipeline.ProduceReincarcerationRecidivismMetric())
-                 )
+                 beam.ParDo(pipeline.ProduceReincarcerationRecidivismMetric(),
+                            **all_pipeline_options))
 
             test_pipeline.run()
 
@@ -1212,43 +1266,102 @@ class TestFilterMetrics(unittest.TestCase):
         test_pipeline.run()
 
 
+class TestRecidivismMetricWritableDict(unittest.TestCase):
+    """Tests the RecidivismMetricWritableDict DoFn in the pipeline."""
+
+    def testRecidivismMetricWritableDict(self):
+        """Tests converting the ReincarcerationRecidivismMetric to a dictionary
+        that can be written to BigQuery."""
+        metric = MetricGroup.recidivism_metric_with_race
+
+        test_pipeline = TestPipeline()
+
+        output = (test_pipeline
+                  | beam.Create([metric])
+                  | 'Convert to writable dict' >>
+                  beam.ParDo(pipeline.RecidivismMetricWritableDict()))
+
+        assert_that(output, AssertMatchers.
+                    validate_metric_writable_dict())
+
+        test_pipeline.run()
+
+    def testRecidivismMetricWritableDict_WithDateField(self):
+        """Tests converting the ReincarcerationRecidivismMetric to a dictionary
+        that can be written to BigQuery, where the metric contains a date
+        attribute."""
+        metric = MetricGroup.recidivism_metric_without_dimensions
+        metric.created_on = date.today()
+
+        test_pipeline = TestPipeline()
+
+        output = (test_pipeline
+                  | beam.Create([metric])
+                  | 'Convert to writable dict' >>
+                  beam.ParDo(pipeline.RecidivismMetricWritableDict()))
+
+        assert_that(output, AssertMatchers.
+                    validate_metric_writable_dict())
+
+        test_pipeline.run()
+
+    def testRecidivismMetricWritableDict_WithEmptyDateField(self):
+        """Tests converting the ReincarcerationRecidivismMetric to a dictionary
+        that can be written to BigQuery, where the metric contains None on a
+        date attribute."""
+        metric = MetricGroup.recidivism_metric_without_dimensions
+        metric.created_on = None
+
+        test_pipeline = TestPipeline()
+
+        output = (test_pipeline
+                  | beam.Create([metric])
+                  | 'Convert to writable dict' >>
+                  beam.ParDo(pipeline.RecidivismMetricWritableDict()))
+
+        assert_that(output, AssertMatchers.
+                    validate_metric_writable_dict())
+
+        test_pipeline.run()
+
+
 class MetricGroup:
     """Stores a set of metrics where every dimension is included for testing
     dimension filtering."""
     recidivism_metric_with_age = ReincarcerationRecidivismMetric(
-        execution_id=12345, release_cohort=2015, follow_up_period=1,
+        job_id='12345', release_cohort=2015, follow_up_period=1,
         methodology=RecidivismMethodologyType.PERSON, age_bucket='25-29',
         total_releases=1000, recidivated_releases=900, recidivism_rate=0.9)
 
     recidivism_metric_with_gender = ReincarcerationRecidivismMetric(
-        execution_id=12345, release_cohort=2015, follow_up_period=1,
+        job_id='12345', release_cohort=2015, follow_up_period=1,
         methodology=RecidivismMethodologyType.PERSON, gender=Gender.MALE,
         total_releases=1000, recidivated_releases=875, recidivism_rate=0.875)
 
     recidivism_metric_with_race = ReincarcerationRecidivismMetric(
-        execution_id=12345, release_cohort=2015, follow_up_period=1,
+        job_id='12345', release_cohort=2015, follow_up_period=1,
         methodology=RecidivismMethodologyType.PERSON, race=Race.BLACK,
         total_releases=1000, recidivated_releases=875, recidivism_rate=0.875)
 
     recidivism_metric_with_ethnicity = ReincarcerationRecidivismMetric(
-        execution_id=12345, release_cohort=2015, follow_up_period=1,
+        job_id='12345', release_cohort=2015, follow_up_period=1,
         methodology=RecidivismMethodologyType.PERSON,
         ethnicity=Ethnicity.HISPANIC, total_releases=1000,
         recidivated_releases=875, recidivism_rate=0.875)
 
     recidivism_metric_with_release_facility = ReincarcerationRecidivismMetric(
-        execution_id=12345, release_cohort=2015, follow_up_period=1,
+        job_id='12345', release_cohort=2015, follow_up_period=1,
         methodology=RecidivismMethodologyType.PERSON, release_facility='Red',
         total_releases=1000, recidivated_releases=300, recidivism_rate=0.30)
 
     recidivism_metric_with_stay_length = ReincarcerationRecidivismMetric(
-        execution_id=12345, release_cohort=2015, follow_up_period=1,
+        job_id='12345', release_cohort=2015, follow_up_period=1,
         methodology=RecidivismMethodologyType.PERSON,
         stay_length_bucket='12-24', total_releases=1000,
         recidivated_releases=300, recidivism_rate=0.30)
 
     recidivism_metric_without_dimensions = ReincarcerationRecidivismMetric(
-        execution_id=12345, release_cohort=2015,
+        job_id='12345', release_cohort=2015,
         follow_up_period=1, methodology=RecidivismMethodologyType.PERSON,
         total_releases=1500, recidivated_releases=1200, recidivism_rate=0.80)
 
@@ -1324,3 +1437,35 @@ class AssertMatchers:
                                           'not match expected value.')
 
         return _validate_recidivism_metric
+
+    @staticmethod
+    def validate_job_id_on_metric(expected_job_id):
+
+        def _validate_job_id_on_metric(output):
+
+            for metric in output:
+
+                if metric.job_id != expected_job_id:
+                    raise BeamAssertException('Failed assert. Output job_id: '
+                                              f"{metric.job_id} does not match"
+                                              "expected value: "
+                                              f"{expected_job_id}")
+
+        return _validate_job_id_on_metric
+
+    @staticmethod
+    def validate_metric_writable_dict():
+
+        def _validate_metric_writable_dict(output):
+            for metric_dict in output:
+                for _, value in metric_dict.items():
+                    if isinstance(value, Enum):
+                        raise BeamAssertException('Failed assert. Dictionary'
+                                                  'contains invalid Enum '
+                                                  f"value: {value}")
+                    if isinstance(value, datetime.date):
+                        raise BeamAssertException('Failed assert. Dictionary'
+                                                  'contains invalid date '
+                                                  f"value: {value}")
+
+        return _validate_metric_writable_dict
