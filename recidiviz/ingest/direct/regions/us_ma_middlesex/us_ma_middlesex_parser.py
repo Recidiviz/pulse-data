@@ -27,7 +27,8 @@ import more_itertools
 
 from recidiviz import IngestInfo
 from recidiviz.common.constants.bond import BondType
-from recidiviz.ingest.direct.errors import DirectIngestError
+from recidiviz.ingest.direct.errors import DirectIngestError, \
+    DirectIngestErrorType
 from recidiviz.ingest.extractor.json_data_extractor import JsonDataExtractor
 from recidiviz.ingest.models.ingest_info import Person
 from recidiviz.ingest.scrape import scraper_utils
@@ -148,6 +149,8 @@ class UsMaMiddlesexParser:
             return 'SENTENCE MITTIMUS'
         if len(admission_reasons) > 1:
             raise DirectIngestError(
+                error_type=DirectIngestErrorType.PARSE_ERROR,
+                msg=
                 f"Multiple admission document types found for person with sysid"
                 f" [{person_dict['booking']['sysid']}]: [{admission_reasons}]")
         return None
