@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for state_entity_matcher.py."""
+import datetime
 from unittest import TestCase
 
 import attr
@@ -27,7 +28,8 @@ from recidiviz.common.constants.person_characteristics import Gender, Race, \
     Ethnicity
 from recidiviz.common.constants.state.state_fine import StateFineStatus
 from recidiviz.common.constants.state.state_incarceration_period import \
-    StateIncarcerationPeriodStatus
+    StateIncarcerationPeriodStatus, StateIncarcerationPeriodAdmissionReason, \
+    StateIncarcerationPeriodReleaseReason
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_period import \
     StateSupervisionPeriodStatus
@@ -56,6 +58,8 @@ _ID_TYPE_ANOTHER = 'ID_TYPE_ANOTHER'
 _FULL_NAME = 'FULL_NAME'
 _FULL_NAME_ANOTHER = 'FULL_NAME_ANOTHER'
 _STATE_CODE = 'NC'
+_FACILITY = 'FACILITY'
+_FACILITY_2 = 'FACILITY_2'
 
 
 # pylint: disable=protected-access
@@ -1215,3 +1219,110 @@ class TestStateEntityMatching(TestCase):
         self.assertEqual([expected_person, expected_placeholder_person],
                          merged_entities.people)
         self.assertEqual(0, merged_entities.error_count)
+
+    # TODO(2037): Move test to state specific file.
+    def test_matchPersons_mergeIncomingIncarcerationSentences(self):
+        # Arrange
+        db_person = schema.StatePerson(person_id=_ID, full_name=_FULL_NAME)
+        db_incarceration_sentence = \
+            schema.StateIncarcerationSentence(
+                state_code=_STATE_CODE,
+                incarceration_sentence_id=_ID,
+                status=StateIncarcerationPeriodStatus.EXTERNAL_UNKNOWN.value,
+                external_id=_EXTERNAL_ID,
+                person=db_person)
+        db_sentence_group = schema.StateSentenceGroup(
+            state_code=_STATE_CODE,
+            sentence_group_id=_ID,
+            status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
+            external_id=_EXTERNAL_ID,
+            incarceration_sentences=[db_incarceration_sentence],
+            person=db_person)
+        db_external_id = schema.StatePersonExternalId(
+            person_external_id_id=_ID, state_code=_STATE_CODE,
+            id_type=_ID_TYPE, external_id=_EXTERNAL_ID,
+            person=db_person)
+        db_person.sentence_groups = [db_sentence_group]
+        db_person.external_ids = [db_external_id]
+
+        session = Session()
+        session.add(db_person)
+        session.commit()
+
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            state_code=_STATE_CODE,
+            external_id=_EXTERNAL_ID,
+            facility=_FACILITY,
+            admission_date=datetime.date(year=2019, month=1, day=1),
+            admission_reason=
+            StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION)
+        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            state_code=_STATE_CODE,
+            external_id=_EXTERNAL_ID_2,
+            facility=_FACILITY,
+            release_date=datetime.date(year=2019, month=1, day=2),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER)
+        incarceration_period_3 = StateIncarcerationPeriod.new_with_defaults(
+            state_code=_STATE_CODE,
+            external_id=_EXTERNAL_ID_3,
+            facility=_FACILITY_2,
+            admission_date=datetime.date(year=2019, month=1, day=2),
+            admission_reason=
+            StateIncarcerationPeriodAdmissionReason.TRANSFER)
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            external_id=_EXTERNAL_ID,
+            incarceration_periods=[incarceration_period,
+                                   incarceration_period_2,
+                                   incarceration_period_3])
+        placeholder_sentence_group = StateSentenceGroup.new_with_defaults(
+            incarceration_sentences=[incarceration_sentence])
+        placeholder_person = StatePerson.new_with_defaults(
+            sentence_groups=[placeholder_sentence_group])
+
+        expected_person = StatePerson.new_with_defaults(
+            person_id=_ID, full_name=_FULL_NAME)
+        expected_merged_incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                external_id=_EXTERNAL_ID + '|' + _EXTERNAL_ID_2,
+                state_code=_STATE_CODE,
+                facility=_FACILITY,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                admission_date=datetime.date(year=2019, month=1, day=1),
+                admission_reason=
+                StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+                release_date=datetime.date(year=2019, month=1, day=2),
+                release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+                person=expected_person)
+        expected_unmerged_incarceration_period = attr.evolve(
+            incarceration_period_3, person=expected_person)
+        expected_incarceration_sentence = \
+            StateIncarcerationSentence.new_with_defaults(
+                incarceration_sentence_id=_ID,
+                status=StateSentenceStatus.EXTERNAL_UNKNOWN,
+                state_code=_STATE_CODE,
+                external_id=_EXTERNAL_ID,
+                incarceration_periods=[
+                    expected_merged_incarceration_period,
+                    expected_unmerged_incarceration_period],
+                person=expected_person)
+        expected_sentence_group = StateSentenceGroup.new_with_defaults(
+            sentence_group_id=_ID,
+            status=StateSentenceStatus.EXTERNAL_UNKNOWN,
+            state_code=_STATE_CODE,
+            external_id=_EXTERNAL_ID,
+            incarceration_sentences=[expected_incarceration_sentence],
+            person=expected_person)
+        expected_external_id = StatePersonExternalId.new_with_defaults(
+            person_external_id_id=_ID, state_code=_STATE_CODE,
+            id_type=_ID_TYPE, external_id=_EXTERNAL_ID,
+            person=expected_person)
+        expected_person.external_ids = [expected_external_id]
+        expected_person.sentence_groups = [expected_sentence_group]
+
+        # Act
+        matched_entities = entity_matching.match(
+            Session(), _STATE_CODE, [placeholder_person])
+
+        # Assert
+        self.assertEqual([expected_person], matched_entities.people)
+        self.assertEqual(0, matched_entities.error_count)
