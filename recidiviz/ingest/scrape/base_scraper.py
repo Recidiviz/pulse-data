@@ -40,21 +40,15 @@ In order to subclass this the following functions must be implemented:
 import abc
 import json
 import logging
-from typing import Any, Dict, List, Optional, Tuple, cast
+from typing import Any, Dict, List, Optional, Tuple
 
 from lxml import html
 from lxml.etree import XMLSyntaxError  # pylint:disable=no-name-in-module
 
 from recidiviz.common.common_utils import get_trace_id_from_flask
-from recidiviz.common.constants.bond import BondStatus, BondType
-from recidiviz.common.constants.charge import ChargeStatus
-from recidiviz.common.constants.county.charge import ChargeClass
 from recidiviz.common.constants.enum_overrides import EnumOverrides
-from recidiviz.common.constants.person_characteristics import (
-    Race,
-    Ethnicity,
-    ETHNICITY_MAP,
-)
+from recidiviz.common.constants.standard_enum_overrides import \
+    get_standard_enum_overrides
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.scrape import constants, ingest_utils
@@ -366,29 +360,7 @@ class BaseScraper(Scraper):
         """
 
     def get_enum_overrides(self) -> EnumOverrides:
-        """
-        Returns a dict that contains all string to enum mappings that are
-        region specific. These overrides have a higher precedence than the
-        global mappings in ingest/constants.
-
-        Note: Before overriding this method, consider directly adding each
-        mapping directly into the respective global mappings instead.
-        """
-        overrides_builder = EnumOverrides.Builder()
-        for ethnicity_string in ETHNICITY_MAP:
-            # mypy is unable to correctly type the EntityEnums in
-            # constants.person. See https://github.com/python/mypy/issues/3327
-            ethnicity_enum = cast(Ethnicity, ETHNICITY_MAP[ethnicity_string])
-            if ethnicity_enum is Ethnicity.HISPANIC:
-                overrides_builder.add(ethnicity_string, ethnicity_enum, Race)
-
-        overrides_builder.add('OUT ON BOND', BondStatus.POSTED, BondType)
-        overrides_builder.add(lambda status: 'FELONY' in status,
-                              ChargeClass.FELONY, ChargeStatus)
-        overrides_builder.add(lambda status: 'MURDER' in status,
-                              ChargeClass.FELONY, ChargeStatus)
-
-        return overrides_builder.build()
+        return get_standard_enum_overrides()
 
     def transform_post_data(self, data):
         """If the child needs to transform the data in any way before it sends

@@ -115,29 +115,6 @@ class Region:
 
         return scraper_class()
 
-    def get_collector(self):
-        """Retrieve a direct ingest collector object for a particular region
-
-        Returns:
-            An instance of the region's direct ingest collector class (e.g.,
-             UsMaMiddlesexcollector)
-        """
-        collector_module_name = (
-            'recidiviz.ingest.direct.regions.'
-            '{region}.{region}_collector'.format(region=self.region_code))
-
-        # Allow for the direct ingest only case, where the requested
-        # module won't exist in the scrapers.
-        try:
-            collector_module = importlib.import_module(collector_module_name)
-        except ModuleNotFoundError:
-            return None
-
-        scraper_class = getattr(collector_module,
-                                collector_class_name(self.region_code))
-
-        return scraper_class()
-
     def get_enum_overrides(self):
         """Retrieves the overrides object of a region"""
         scraper = self.get_scraper()
@@ -230,8 +207,3 @@ def validate_region_code(region_code):
 def scraper_class_name(region_code: str) -> str:
     """Returns the scraper class name for a given region_code"""
     return ''.join(s.title() for s in region_code.split('_')) + 'Scraper'
-
-
-def collector_class_name(region_code: str) -> str:
-    """Returns the collector class name for a given region_code"""
-    return ''.join(s.title() for s in region_code.split('_')) + 'Collector'

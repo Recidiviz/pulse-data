@@ -1,0 +1,26 @@
+key_mappings:
+  ORDER_ID: state_court_case.state_court_case_id
+  ORDER_STATUS: state_court_case.status
+  CONVICTION_DATE: state_court_case.date_convicted
+  COURT_DATE: state_court_case.next_court_date
+  COUNTY_CODE: state_court_case.county_code
+
+ancestor_keys:
+  OFFENDER_BOOK_ID: state_sentence_group.state_sentence_group_id
+
+child_key_mappings:
+  JUDGE_NAME: state_agent.full_name
+
+enforced_ancestor_types:
+    state_sentence: state_incarceration_sentence
+
+primary_key:
+  ORDER_ID: state_court_case.state_court_case_id
+
+keys_to_ignore:
+  - COURT_INFO_ID         # TODO(1761) Should we track this?
+  - ISSUING_AGY_LOC_ID    # TODO(1761) Should we track this?
+  - EFFECTIVE_DATE        # No longer in use by source
+  - SENTENCE_START_DATE   # No longer in use by source
+  - CREATE_DATETIME       # No apparent use for these at the moment
+  - MODIFY_DATETIME       # No apparent use for these at the moment

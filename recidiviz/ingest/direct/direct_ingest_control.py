@@ -22,8 +22,8 @@ from http import HTTPStatus
 
 from flask import Blueprint
 
-from recidiviz.ingest.direct.regions.us_ma_middlesex.us_ma_middlesex_collector \
-    import UsMaMiddlesexCollector
+from recidiviz.ingest.direct.regions.us_ma_middlesex.\
+    us_ma_middlesex_controller import UsMaMiddlesexController
 from recidiviz.utils import environment
 from recidiviz.utils.auth import authenticate_request
 
@@ -34,13 +34,13 @@ direct_ingest_control = Blueprint('direct_ingest_control', __name__)
 @authenticate_request
 def us_ma_middlesex():
     gae_env = environment.get_gae_environment()
-    collector = UsMaMiddlesexCollector()
-    if collector.region.environment != gae_env:
+    controller = UsMaMiddlesexController()
+    if controller.region.environment != gae_env:
         return (f"Skipping Middlesex direct ingest in environment {gae_env}",
                 HTTPStatus.OK)
 
     # Iterate through export dates and write data one export at a time. Raises
     # an exception the first time we fail to ingest an export.
-    collector.go()
+    controller.go()
 
     return '', HTTPStatus.OK
