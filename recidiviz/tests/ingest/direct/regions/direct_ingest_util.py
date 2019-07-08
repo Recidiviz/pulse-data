@@ -14,20 +14,27 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""File that contains all errors specific to the direct ingest package"""
-from enum import Enum, auto
+"""Helpers for direct ingest tests."""
+import os
+
+from gcsfs import GCSFileSystem
+from mock import Mock
+
+from recidiviz.tests.ingest import fixtures
 
 
-class DirectIngestErrorType(Enum):
-    INPUT_ERROR = auto()
-    READ_ERROR = auto()
-    PARSE_ERROR = auto()
-    PERSISTENCE_ERROR = auto()
+def create_mock_gcsfs() -> GCSFileSystem:
+    def mock_open(file_path):
+        path, file_name = os.path.split(file_path)
 
+        mock_fp = Mock()
+        fixture_contents = fixtures.as_string(path, file_name)
+        mock_fp.read.return_value = bytes(fixture_contents, 'utf-8')
+        mock_fp_context_manager = Mock()
+        mock_fp_context_manager.__enter__ = Mock(return_value=mock_fp)
+        mock_fp_context_manager.__exit__ = Mock(return_value=False)
+        return mock_fp_context_manager
 
-class DirectIngestError(Exception):
-    """Raised when a direct ingest controller runs into an error."""
-
-    def __init__(self, *, msg: str, error_type: DirectIngestErrorType):
-        super().__init__(msg)
-        self.error_type = error_type
+    mock_fs = Mock()
+    mock_fs.open = mock_open
+    return mock_fs

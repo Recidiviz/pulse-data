@@ -1,0 +1,26 @@
+key_mappings:
+  CODE: state_charge.statute
+  LEVEL: state_charge.classification_type
+  COUNTS: state_charge.counts
+  OFFENSEDATE: state_charge.offense_date
+  COUNTY: state_charge.county_code
+
+ancestor_keys:
+  SID: state_person.state_person_id
+  CASE_NUMBER: state_supervision_sentence.state_supervision_sentence_id
+
+enforced_ancestor_types:
+    state_sentence: state_supervision_sentence
+
+primary_key:
+  RecID: state_charge.state_charge_id
+
+keys_to_ignore:
+  - COUNT                     # No apparent use for this
+  - COURT_NUMBER              # TODO(1892) Use this to link manually to Elite?
+  - INACTIVEDATE              # TODO(1892) What does this mean?
+  - RecDate                   # TODO(1892) What does this mean?
+  - YEAR                      # Less precise version of OFFENSEDATE
+  - LAST_UPDATE               # No apparent use for these
+  - CREATED_BY                # No apparent use for these
+  - MASTER_OFFENSE_IND        # Not in consistent use within source

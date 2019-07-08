@@ -1,0 +1,24 @@
+key_mappings:
+  SENTENCE_STATUS: state_incarceration_sentence.status
+  START_DATE: state_incarceration_sentence.date_imposed
+  PROBABLE_RELEASE_DATE: state_incarceration_sentence.projected_min_release_date
+  SENTENCE_EXPIRY_DATE: state_incarceration_sentence.projected_max_release_date
+
+ancestor_keys:
+  OFFENDER_BOOK_ID: state_sentence_group.state_sentence_group_id
+
+# There is a primary key override in us_nd_scraper for this file
+
+keys_to_ignore:
+  - COMMENT_TEXT            # No apparent use for these at the moment
+  - EFFECTIVE_DATE          # No longer in use by source
+  - EIGHTYFIVE_PERCENT_DATE # TODO(1759) Should this live on a Sentence?
+  - GOOD_TIME               # TODO(1759) Should this live on a Sentence?
+  - SENTENCE_CALC_TYPE      # Handled manually within us_nd_scraper
+  - CHARGE_SEQ              # Handled manually within us_nd_scraper
+  - CONSEC_TO_SENTENCE_SEQ  # Handled manually within us_nd_scraper
+  - CONSECUTIVE_COUNT_FLAG  # Handled manually within us_nd_scraper
+  - COUNTS                  # Handled manually within us_nd_scraper
+  - SENTENCE_SEQ            # Handled manually within us_nd_scraper
+  - CREATE_DATETIME         # No apparent use for these at the moment
+  - MODIFY_DATETIME         # No apparent use for these at the moment

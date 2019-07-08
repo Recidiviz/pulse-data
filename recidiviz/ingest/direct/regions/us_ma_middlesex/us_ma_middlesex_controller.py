@@ -17,11 +17,9 @@
 
 """Direct ingest for us_ma_middlesex.
 """
-import datetime
 import logging
 from typing import Iterable, Dict
 
-import gc
 import pandas as pd
 import sqlalchemy
 from more_itertools import one
@@ -32,13 +30,13 @@ from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.county.booking import AdmissionReason, \
     ReleaseReason
 from recidiviz.common.constants.enum_overrides import EnumOverrides
-from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.ingest.direct.collector import DirectIngestCollector
-from recidiviz.ingest.direct.errors import DirectIngestError
+from recidiviz.common.ingest_metadata import SystemLevel
+from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import \
+    BaseDirectIngestController, IngestArgs
+from recidiviz.ingest.direct.errors import DirectIngestError, \
+    DirectIngestErrorType
 from recidiviz.ingest.direct.regions.us_ma_middlesex.us_ma_middlesex_parser \
     import UsMaMiddlesexParser
-from recidiviz.ingest.scrape import ingest_utils
-from recidiviz.persistence import persistence
 from recidiviz.utils import secrets, environment
 
 _DATABASE_TYPE = 'postgresql'
@@ -48,15 +46,17 @@ _DB_NAME = secrets.get_secret('us_ma_middlesex_db_name')
 _CLOUDSQL_INSTANCE_ID = secrets.get_secret('us_ma_middlesex_instance_id')
 
 
-class UsMaMiddlesexCollector(DirectIngestCollector):
+class UsMaMiddlesexController(BaseDirectIngestController[IngestArgs,
+                                                         Iterable[Dict]]):
     """Reads tables from our us_ma_middlesex postgres db, which is an extract of
     the county's own sql database. The data flows through several formats, from
     postgres tables to dataframes to python dictionaries to IngestInfo objects.
     """
 
     def __init__(self):
-        """Initialize the collector and read tables from cloud SQL."""
-        super(UsMaMiddlesexCollector, self).__init__('us_ma_middlesex')
+        """Initialize the controller and read tables from cloud SQL."""
+        super(UsMaMiddlesexController, self).__init__('us_ma_middlesex',
+                                                      SystemLevel.COUNTY)
 
         self.engine = sqlalchemy.create_engine(
             sqlalchemy.engine.url.URL(
@@ -77,9 +77,10 @@ class UsMaMiddlesexCollector(DirectIngestCollector):
 
         self.parser = UsMaMiddlesexParser()
 
-    # pylint: disable=arguments-differ  # TODO(#1825)
-    def parse(self, json_people: Iterable[Dict]) -> IngestInfo:
-        return self.parser.parse(json_people)
+    def _parse(self,
+               args: IngestArgs,
+               contents: Iterable[Dict]) -> IngestInfo:
+        return self.parser.parse(contents)
 
     def go(self):
         """Iterates through data exports in chronological order and persists
@@ -87,35 +88,24 @@ class UsMaMiddlesexCollector(DirectIngestCollector):
         dropped from the cloud SQL database. If conversion or persistence run
         into an error, all following exports are not processed."""
         for export_time in sorted(set(self.booking_df['export_time'])):
-            logging.info("Starting ingest for export time [%s]", export_time)
-            ii = self.parse(self.read_tables_to_json(export_time))
-            logging.info("Successfully parsed data for export time [%s]",
-                         export_time)
-            success = self.persist(ii, export_time.to_pydatetime())
-            logging.info("Persisted with status [%r]", success)
-            logging.info("garbage collection stats before collection: [%s]",
-                         gc.get_stats())
-            gc.collect()
-            logging.info("garbage collection stats after collection: [%s]",
-                         gc.get_stats())
-            if success:
-                logging.info("Successfully persisted export time [%s]",
-                             export_time)
-                self.clear(export_time)
-            else:
-                raise DirectIngestError("Persisting failed for export time "
-                                        f"[{export_time}], halting ingest.")
+            self.run_ingest(IngestArgs(ingest_time=export_time))
         logging.info("Successfully persisted all data exports.")
 
-    def read_tables_to_json(self, export_time: pd.Timestamp) -> Iterable[Dict]:
+    def _job_tag(self, args: IngestArgs) -> str:
+        return f'{self.region.region_code}:{args.ingest_time}'
+
+    def _read_contents(self, args: IngestArgs) -> Iterable[Dict]:
         """Queries the postgresql database for the most recent extract and reads
         the results to JSON."""
+
+        export_time = args.ingest_time
 
         def get_current_export(df):
             curr = df[df['export_time'] == export_time].fillna('').astype(str)
             if curr.empty:
-                raise DirectIngestError("Table missing data for export time "
-                                        f"[{export_time}]")
+                raise DirectIngestError(
+                    error_type=DirectIngestErrorType.READ_ERROR,
+                    msg="Table missing data for export time [{export_time}]")
             return curr
 
         address_df = get_current_export(self.address_df)
@@ -142,23 +132,10 @@ class UsMaMiddlesexCollector(DirectIngestCollector):
                 'hold': person_holds.to_dict('records')}
             yield person_dict
 
-    # pylint: disable=arguments-differ  # TODO(#1825)
-    def persist(self, ingest_info: IngestInfo,  # type: ignore  # TODO(#1825)
-                export_time: datetime.datetime) -> bool:
-        """Writes ingested people to the database, using the data's export time
-        as the ingest time."""
-        ingest_info_proto = ingest_utils.convert_ingest_info_to_proto(
-            ingest_info)
-
-        metadata = IngestMetadata(self.region.region_code,
-                                  self.region.jurisdiction_id,
-                                  export_time,
-                                  self.get_enum_overrides())
-
-        return persistence.write(ingest_info_proto, metadata)
-
-    def clear(self, export_time: pd.Timestamp):
+    def _do_cleanup(self, args: IngestArgs):
         """Removes all rows in all tables for a single export time."""
+
+        export_time = args.ingest_time
         if environment.get_gae_environment() == 'production':
             for table in reversed(self.meta.sorted_tables):
                 result = self.engine.execute(
@@ -173,7 +150,8 @@ class UsMaMiddlesexCollector(DirectIngestCollector):
 
     def get_enum_overrides(self) -> EnumOverrides:
         """Overridden values for enum fields."""
-        builder = EnumOverrides.Builder()
+        builder = super(
+            UsMaMiddlesexController, self).get_enum_overrides().to_builder()
         builder.add('15 DAY PAROLE DETAINER', AdmissionReason.PAROLE_VIOLATION)
         builder.add('2', ChargeStatus.SENTENCED)
         builder.add('BAIL', ReleaseReason.BOND)
