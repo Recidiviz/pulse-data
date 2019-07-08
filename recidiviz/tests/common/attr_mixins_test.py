@@ -18,6 +18,7 @@
 
 from enum import Enum
 from typing import List, Optional
+from datetime import date
 import unittest
 import attr
 
@@ -56,6 +57,7 @@ class FakeBuildableAttrDeluxe(BuildableAttr):
     another_required_field = attr.ib()
     enum_nonnull_field: FakeEnum = attr.ib()
     enum_field: Optional[FakeEnum] = attr.ib(default=None)
+    date_field: Optional[date] = attr.ib(default=None)
     field_list: List[str] = attr.ib(factory=list)
     field_forward_ref: Optional['FakeBuildableAttr'] = attr.ib(default=None)
 
@@ -230,6 +232,68 @@ class BuildableAttrTests(unittest.TestCase):
                             'another_required_field': 'another_value',
                             'field_forward_ref':
                                 FakeBuildableAttr('a', ['a', 'b'])}
+
+            # Build from dictionary
+            _ = FakeBuildableAttrDeluxe.build_from_dictionary(subject_dict)
+
+    def testBuildFromDictionary_WithDate(self):
+        # Construct dictionary representation
+        subject_dict = {'required_field': 'value',
+                        'another_required_field': 'another_value',
+                        'enum_nonnull_field': FakeEnum.A.value,
+                        'date_field': '2001-01-08'}
+
+        # Build from dictionary
+        subject = FakeBuildableAttrDeluxe.build_from_dictionary(subject_dict)
+
+        # Assert
+        expected_result = FakeBuildableAttrDeluxe(
+            required_field='value',
+            another_required_field='another_value',
+            enum_nonnull_field=FakeEnum.A,
+            date_field=date.fromisoformat('2001-01-08'))
+
+        self.assertEqual(subject, expected_result)
+
+    def testBuildFromDictionary_WithEmptyDate(self):
+        # Construct dictionary representation
+        subject_dict = {'required_field': 'value',
+                        'another_required_field': 'another_value',
+                        'enum_nonnull_field': FakeEnum.A.value,
+                        'date_field': None}
+
+        # Build from dictionary
+        subject = FakeBuildableAttrDeluxe.build_from_dictionary(subject_dict)
+
+        # Assert
+        expected_result = FakeBuildableAttrDeluxe(
+            required_field='value',
+            another_required_field='another_value',
+            enum_nonnull_field=FakeEnum.A,
+            date_field=None)
+
+        self.assertEqual(subject, expected_result)
+
+    def testBuildFromDictionary_WithInvalidDateFormat(self):
+        with self.assertRaises(ValueError):
+
+            # Construct dictionary representation
+            subject_dict = {'required_field': 'value',
+                            'another_required_field': 'another_value',
+                            'enum_nonnull_field': FakeEnum.A.value,
+                            'date_field': '01-01-1999'}
+
+            # Build from dictionary
+            _ = FakeBuildableAttrDeluxe.build_from_dictionary(subject_dict)
+
+    def testBuildFromDictionary_WithInvalidDateString(self):
+        with self.assertRaises(ValueError):
+
+            # Construct dictionary representation
+            subject_dict = {'required_field': 'value',
+                            'another_required_field': 'another_value',
+                            'enum_nonnull_field': FakeEnum.A.value,
+                            'date_field': 'YYYY-MM-DD'}
 
             # Build from dictionary
             _ = FakeBuildableAttrDeluxe.build_from_dictionary(subject_dict)

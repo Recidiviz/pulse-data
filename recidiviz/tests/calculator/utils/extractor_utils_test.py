@@ -81,7 +81,8 @@ class TestBuildRootEntity(unittest.TestCase):
                       data_dict=data_dict,
                       root_schema_class=schema.StatePerson,
                       root_entity_class=entities.StatePerson,
-                      unifying_id_field='person_id'))
+                      unifying_id_field='person_id',
+                      build_related_entities=False))
 
         assert_that(output, equal_to([(12345, fake_person_entity)]))
 
@@ -202,7 +203,113 @@ class TestBuildRootEntity(unittest.TestCase):
                       data_dict=data_dict,
                       root_schema_class=schema.StatePerson,
                       root_entity_class=entities.StatePerson,
-                      unifying_id_field='person_id'))
+                      unifying_id_field='person_id',
+                      build_related_entities=True))
+
+        assert_that(output, equal_to([(12345, fake_person_entity)]))
+
+        test_pipeline.run()
+
+    def testBuildRootEntity_DoNotHydrateRelationshipProperties(self):
+        """Tests the extraction of a valid StatePerson entity with cross-entity
+        relationship properties that are present in the data_dict but should not
+        be hydrated."""
+
+        fake_person_id = 12345
+
+        fake_person = schema.StatePerson(
+            person_id=fake_person_id, current_address='123 Street',
+            full_name='Bernard Madoff', birthdate=date(1970, 1, 1),
+            gender=Gender.MALE,
+            residency_status=ResidencyStatus.PERMANENT
+        )
+
+        fake_person_data = [normalized_database_base_dict(fake_person)]
+
+        ethnicity_1 = schema.StatePersonEthnicity(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC,
+            person_id=fake_person_id,
+            person_ethnicity_id=234
+        )
+
+        ethnicities_data = [normalized_database_base_dict(ethnicity_1)]
+
+        alias_1 = schema.StatePersonAlias(
+            state_code='NY',
+            full_name='Bernie Madoff',
+            person_alias_id=18615,
+            person_id=fake_person_id
+        )
+
+        alias_data = [normalized_database_base_dict(alias_1)]
+
+        external_id_1 = schema.StatePersonExternalId(
+            person_external_id_id=999,
+            external_id=888,
+            state_code='CA',
+            person_id=fake_person_id)
+
+        external_ids_data = [normalized_database_base_dict(external_id_1)]
+
+        sentence_group_1 = schema.StateSentenceGroup(
+            status=StateSentenceStatus.SERVING,
+            date_imposed=date(2011, 3, 7),
+            state_code='CA',
+            min_length_days=199,
+            max_length_days=500,
+            sentence_group_id=213,
+            person_id=fake_person_id
+        )
+
+        sentence_group_data = [normalized_database_base_dict(sentence_group_1)]
+
+        race_1 = schema.StatePersonRace(race=Race.WHITE, state_code='CA',
+                                        person_id=fake_person_id)
+
+        race_2 = schema.StatePersonRace(race=Race.BLACK, state_code='CA',
+                                        person_id=fake_person_id)
+
+        races_data = [normalized_database_base_dict(race_1),
+                      normalized_database_base_dict(race_2)]
+
+        assessment_1 = schema.StateAssessment(
+            assessment_class=StateAssessmentClass.RISK,
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_date=date(2012, 4, 1),
+            state_code='CA',
+            assessment_score=29,
+            assessment_id=184672,
+            person_id=fake_person_id
+        )
+
+        assessment_data = [normalized_database_base_dict(assessment_1)]
+
+        data_dict = {schema.StatePerson.__tablename__: fake_person_data,
+                     schema.StatePersonEthnicity.__tablename__:
+                         ethnicities_data,
+                     schema.StatePersonAlias.__tablename__: alias_data,
+                     schema.StatePersonExternalId.__tablename__:
+                     external_ids_data,
+                     schema.StateSentenceGroup.__tablename__:
+                     sentence_group_data,
+                     schema.StateAssessment.__tablename__:
+                     assessment_data,
+                     schema.StatePersonRace.__tablename__: races_data}
+
+        fake_person_entity = StateSchemaToEntityConverter().convert(fake_person)
+
+        test_pipeline = TestPipeline()
+
+        output = (test_pipeline
+                  |
+                  extractor_utils.BuildRootEntity(
+                      dataset=None,
+                      data_dict=data_dict,
+                      root_schema_class=schema.StatePerson,
+                      root_entity_class=entities.StatePerson,
+                      unifying_id_field='person_id',
+                      build_related_entities=False))
 
         assert_that(output, equal_to([(12345, fake_person_entity)]))
 
@@ -223,7 +330,8 @@ class TestBuildRootEntity(unittest.TestCase):
                      data_dict={},
                      root_schema_class=schema.StateIncarcerationSentence,
                      root_entity_class=entities.StateIncarcerationSentence,
-                     unifying_id_field='person_id'))
+                     unifying_id_field='person_id',
+                     build_related_entities=True))
 
             test_pipeline.run()
 
@@ -256,7 +364,8 @@ class TestBuildRootEntity(unittest.TestCase):
                      data_dict=data_dict,
                      root_schema_class=schema.StateSupervisionViolation,
                      root_entity_class=entities.StateIncarcerationIncident,
-                     unifying_id_field='person_id'))
+                     unifying_id_field='person_id',
+                     build_related_entities=True))
 
             test_pipeline.run()
 
@@ -290,7 +399,8 @@ class TestBuildRootEntity(unittest.TestCase):
                      data_dict=data_dict,
                      root_schema_class=None,
                      root_entity_class=entities.StateSupervisionViolation,
-                     unifying_id_field='person_id'))
+                     unifying_id_field='person_id',
+                     build_related_entities=True))
 
             test_pipeline.run()
 
@@ -324,7 +434,8 @@ class TestBuildRootEntity(unittest.TestCase):
                      data_dict=data_dict,
                      root_schema_class=schema.StateSupervisionViolation,
                      root_entity_class=None,
-                     unifying_id_field='person_id'))
+                     unifying_id_field='person_id',
+                     build_related_entities=True))
 
             test_pipeline.run()
 
@@ -358,7 +469,8 @@ class TestBuildRootEntity(unittest.TestCase):
                      data_dict=data_dict,
                      root_schema_class=schema.StateSupervisionViolation,
                      root_entity_class=entities.StateSupervisionViolation,
-                     unifying_id_field='XX'))
+                     unifying_id_field='XX',
+                     build_related_entities=True))
 
             test_pipeline.run()
 
@@ -391,7 +503,8 @@ class TestBuildRootEntity(unittest.TestCase):
                      data_dict=data_dict,
                      root_schema_class=schema.StateSupervisionViolation,
                      root_entity_class=entities.StateSupervisionViolation,
-                     unifying_id_field=None))
+                     unifying_id_field=None,
+                     build_related_entities=True))
 
             test_pipeline.run()
 
@@ -442,7 +555,8 @@ class TestBuildRootEntity(unittest.TestCase):
                      data_dict=data_dict,
                      root_schema_class=schema.StateSupervisionViolation,
                      root_entity_class=entities.StateSupervisionViolation,
-                     unifying_id_field='supervision_period_id'))
+                     unifying_id_field='supervision_period_id',
+                     build_related_entities=True))
 
             test_pipeline.run()
 

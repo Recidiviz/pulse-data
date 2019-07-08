@@ -20,6 +20,7 @@
 import inspect
 from typing import Optional, Type, Union
 from enum import Enum
+import datetime
 
 import attr
 
@@ -65,6 +66,15 @@ def is_enum(attribute) -> bool:
     return _is_enum_cls(attribute.type)
 
 
+def is_date(attribute) -> bool:
+    """Returns true if the attribute is a date type."""
+
+    if _is_union(attribute.type):
+        return _is_date_is_union(attribute.type)
+
+    return _is_date_cls(attribute.type)
+
+
 def is_list(attribute) -> bool:
     """Returns true if the attribute is a List type."""
     return hasattr(attribute.type, '__origin__') \
@@ -91,6 +101,10 @@ def _is_union(attr_type) -> bool:
 
 def _is_enum_cls(attr_type) -> bool:
     return inspect.isclass(attr_type) and issubclass(attr_type, Enum)
+
+
+def _is_date_cls(attr_type) -> bool:
+    return inspect.isclass(attr_type) and issubclass(attr_type, datetime.date)
 
 
 def _is_forward_ref_in_union(union: Union) -> bool:
@@ -126,3 +140,20 @@ def _extract_mappable_enum_from_union(union: Union) \
     raise TypeError(
         f"Can't extract Enum from a union containing multiple Enums: "
         f"{union}")
+
+
+def _is_date_is_union(union: Union) -> bool:
+    """Looks for a single date in a Union. Returns whether exactly one
+     is present."""
+    result = set()
+    for type_in_union in union.__args__:  # type: ignore
+        if _is_date_cls(type_in_union):
+            result.add(type_in_union)
+
+    if not result:
+        return False
+
+    if len(result) == 1:
+        return True
+
+    raise TypeError(f"Union contains multiple dates: {union}")

@@ -42,7 +42,8 @@ class BuildRootEntity(beam.PTransform):
                  data_dict: Optional[Dict[str, Any]],
                  root_schema_class: Type[Base],
                  root_entity_class: Type[state_entities.Entity],
-                 unifying_id_field: str):
+                 unifying_id_field: str,
+                 build_related_entities: bool):
         """Initializes the PTransform with the required arguments.
 
         Arguments:
@@ -67,6 +68,7 @@ class BuildRootEntity(beam.PTransform):
         self._root_schema_class = root_schema_class
         self._root_entity_class = root_entity_class
         self._unifying_id_field = unifying_id_field
+        self._build_related_entities = build_related_entities
 
         if not dataset and not data_dict:
             raise ValueError("No valid data source passed to the pipeline.")
@@ -89,18 +91,22 @@ class BuildRootEntity(beam.PTransform):
                                         self._unifying_id_field,
                                         root_id_field=None))
 
-        # Get the related property entities
-        properties_dict = (input_or_inputs
-                           | 'Extract relationship property entities for the '
-                           f"{self._root_entity_class.__name__} instances" >>
-                           _ExtractRelationshipPropertyEntities(
-                               dataset=self._dataset,
-                               data_dict=self._data_dict,
-                               root_schema_class=self._root_schema_class,
-                               root_id_field=
-                               self._root_entity_class.get_class_id_name(),
-                               unifying_id_field=self._unifying_id_field
-                           ))
+        if self._build_related_entities:
+            # Get the related property entities
+            properties_dict = (input_or_inputs
+                               | 'Extract relationship property entities for '
+                               f"the {self._root_entity_class.__name__} "
+                               "instances" >>
+                               _ExtractRelationshipPropertyEntities(
+                                   dataset=self._dataset,
+                                   data_dict=self._data_dict,
+                                   root_schema_class=self._root_schema_class,
+                                   root_id_field=
+                                   self._root_entity_class.get_class_id_name(),
+                                   unifying_id_field=self._unifying_id_field
+                               ))
+        else:
+            properties_dict = {}
 
         # Add root entities to the properties dict
         properties_dict[root_entity_tablename] = root_entities
@@ -175,6 +181,7 @@ class _ExtractEntity(beam.PTransform):
                                           use_standard_sql=True)))
         else:
             raise ValueError("No valid data source passed to the pipeline.")
+
 
         hydrate_kwargs = {'entity_class': self._entity_class}
 
