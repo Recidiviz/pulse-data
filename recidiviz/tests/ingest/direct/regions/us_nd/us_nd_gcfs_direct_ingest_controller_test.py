@@ -313,7 +313,7 @@ class TestUsNdGcsfsIngestController(unittest.TestCase):
             state_incarceration_sentence_id='113377-4', max_length='360D')
 
         incarceration_sentence_113377_5 = StateIncarcerationSentence(
-            state_incarceration_sentence_id='113377-5', max_length='360D')
+            state_incarceration_sentence_id='113377-5', max_length='1000D')
 
         expected = IngestInfo(
             state_people=[
