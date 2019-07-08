@@ -99,10 +99,11 @@ class TestBaseScraper(TestCase):
         mock_flask_get.return_value = 'TRACE ID'
         mock_flask.headers.get = mock_flask_get
 
+        start_time = datetime.datetime.now()
         req = QueueRequest(
             scrape_type=constants.ScrapeType.BACKGROUND,
             next_task=TEST_TASK,
-            scraper_start_time=datetime.datetime.now()
+            scraper_start_time=start_time
         )
         scraper = FakeScraper('test')
         with self.assertRaises(ScraperGetMoreTasksError):
@@ -115,7 +116,8 @@ class TestBaseScraper(TestCase):
             error='TEST ERROR',
             trace_id='TRACE ID',
             task=TEST_TASK,
-            scrape_key=scrape_key
+            scrape_key=scrape_key,
+            start_time=start_time
         )
 
     @patch.object(BaseScraper, '_fetch_content')
@@ -447,6 +449,7 @@ class TestBaseScraper(TestCase):
         mock_batch_write.assert_called_once_with(
             ingest_info=self.ii,
             task=t,
-            scrape_key=scrape_key
+            scrape_key=scrape_key,
+            start_time=start_time,
         )
         self.assertEqual(len(scraper.tasks), 0)
