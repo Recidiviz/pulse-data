@@ -18,7 +18,7 @@
 """Releases that either lead to recidivism or non-recidivism for calculation."""
 
 from datetime import date
-from enum import Enum, auto
+from enum import Enum
 from typing import Optional
 
 import attr
@@ -28,20 +28,20 @@ from recidiviz.common.attr_mixins import BuildableAttr
 
 class ReincarcerationReturnType(Enum):
     # The person returned to incarceration on a new admission after being free.
-    NEW_ADMISSION = auto()
+    NEW_ADMISSION = 'NEW_ADMISSION'
 
     # The person returned to incarceration because their supervision was
     # revoked. Note this covers all reasons for revocation, including new
     # crimes that may have factored into the revocation decision.
-    REVOCATION = auto()
+    REVOCATION = 'REVOCATION'
 
 
 class ReincarcerationReturnFromSupervisionType(Enum):
     # The person returned from being on parole
-    PAROLE = auto()
+    PAROLE = 'PAROLE'
 
     # The person returned from being on probation
-    PROBATION = auto()
+    PROBATION = 'PROBATION'
 
 
 @attr.s
@@ -84,6 +84,7 @@ class RecidivismReleaseEvent(ReleaseEvent):
     from_supervision_type: \
         Optional[ReincarcerationReturnFromSupervisionType] = \
         attr.ib(default=None)
+
 
 @attr.s
 class NonRecidivismReleaseEvent(ReleaseEvent):
