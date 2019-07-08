@@ -16,17 +16,22 @@
 # ============================================================================
 """State schema specific utils for match database entities with ingested
 entities."""
+import datetime
+import logging
+from functools import cmp_to_key
 from typing import List, cast, Any
 
 import attr
 
 from recidiviz.common.constants import enum_canonical_strings
+from recidiviz.common.constants.state.state_incarceration_period import \
+    StateIncarcerationPeriodStatus
 from recidiviz.persistence.entity.base_entity import Entity, ExternalIdEntity
 from recidiviz.persistence.entity.entity_utils import \
     EntityFieldType, get_set_entity_field_names
 from recidiviz.persistence.entity.state.entities import StatePerson, \
     StatePersonExternalId, StatePersonAlias, StatePersonRace, \
-    StatePersonEthnicity
+    StatePersonEthnicity, StateIncarcerationPeriod
 from recidiviz.persistence.errors import EntityMatchingError
 
 
@@ -160,20 +165,20 @@ def _is_match(*, ingested_entity: Entity, db_entity: Entity) -> bool:
     return ingested_entity.external_id == db_entity.external_id
 
 
-def merge_flat_fields(*, ingested_entity: Entity, db_entity: Entity) -> Entity:
-    """Merges all set non-relationship fields on the |ingested_entity| onto the
-    |db_entity|. Returns the newly merged entity.
+def merge_flat_fields(*, new_entity: Entity, old_entity: Entity) -> Entity:
+    """Merges all set non-relationship fields on the |new_entity| onto the
+    |old_entity|. Returns the newly merged entity.
     """
     for child_field_name in get_set_entity_field_names(
-            ingested_entity, EntityFieldType.FLAT_FIELD):
+            new_entity, EntityFieldType.FLAT_FIELD):
         # Do not overwrite with default status
-        if child_field_name == 'status' and has_default_status(ingested_entity):
+        if child_field_name == 'status' and has_default_status(new_entity):
             continue
 
-        set_field(db_entity, child_field_name,
-                  get_field(ingested_entity, child_field_name))
+        set_field(old_entity, child_field_name,
+                  get_field(new_entity, child_field_name))
 
-    return db_entity
+    return old_entity
 
 
 def remove_back_edges(entity: Entity):
@@ -338,3 +343,112 @@ def add_child_to_entity(
                 f"{child_field}", entity.get_entity_name())
         child_field = child_to_add
     set_field(entity, child_field_name, child_field)
+
+
+# TODO(2037): Move the following into North Dakota specific file.
+def merge_incarceration_periods(ingested_persons: List[StatePerson]):
+    """Merges any incomplete StateIncarcerationPeriods in the provided
+    |ingested_persons|.
+    """
+    for person in ingested_persons:
+        for sentence_group in person.sentence_groups:
+            for incarceration_sentence in \
+                    sentence_group.incarceration_sentences:
+                incarceration_sentence.incarceration_periods = \
+                    _merge_incarceration_periods_helper(
+                        incarceration_sentence.incarceration_periods)
+
+
+def _compare_incomplete_periods(ip1: StateIncarcerationPeriod,
+                                ip2: StateIncarcerationPeriod) -> int:
+    """Comparator for ordering incomplete IncarcerationPeriods chronologically
+    by admission and release dates (depending on what is present).
+    """
+    # All ingested StateIncarcerationPeriods from ND have represent either a
+    # release or an admission.
+    ip1_date = ip1.admission_date if ip1.admission_date else ip1.release_date
+    ip2_date = ip2.admission_date if ip2.admission_date else ip2.release_date
+    ip1_date = cast(datetime.date, ip1_date)
+    ip2_date = cast(datetime.date, ip2_date)
+
+    # If they both have the same date, the incarceration period with a release
+    # date goes first. If they both have release dates, this relative order
+    # will not matter for merging.
+    if ip1_date == ip2_date:
+        if ip1.release_date:
+            return -1
+        return 1
+
+    # Otherwise order by date
+    return ip1_date.toordinal() - ip2_date.toordinal()
+
+
+def _merge_incarceration_periods_helper(
+        incomplete_incarceration_periods: List[StateIncarcerationPeriod]) \
+        -> List[StateIncarcerationPeriod]:
+    """Using the provided |incomplete_incarceration_periods|, attempts to merge
+    consecutive admission and release periods from the same facility.
+
+    Returns a list containing all merged incarceration periods as well as all
+    incarceration periods that could not be merged, all ordered chronologically
+    (using admission date if present, otherwise release date).
+    """
+    sorted_periods = sorted(incomplete_incarceration_periods,
+                            key=cmp_to_key(_compare_incomplete_periods))
+    merged_periods = []
+    last_admission_period = None
+    for period in sorted_periods:
+        if not last_admission_period:
+            if period.admission_date:
+                last_admission_period = period
+            else:
+                logging.info("Incomplete StateInccarcerationPeriod found with "
+                             "release info and external_id: %s",
+                             period.external_id)
+                merged_periods.append(period)
+            continue
+
+        if period.admission_date:
+            logging.info("Incomplete StateInccarcerationPeriod found with "
+                         "admission info and external_id: %s",
+                         last_admission_period.external_id)
+            merged_periods.append(last_admission_period)
+            last_admission_period = period
+        elif period.release_date:
+            if last_admission_period.facility == period.facility:
+                merged_periods.append(_merge_incomplete_periods(
+                    admission_period=last_admission_period,
+                    release_period=period))
+            else:
+                merged_periods.append(last_admission_period)
+                merged_periods.append(period)
+            last_admission_period = None
+    if last_admission_period:
+        merged_periods.append(last_admission_period)
+    return merged_periods
+
+
+_INCARCERATION_PERIOD_ID_DELIMITER = '|'
+
+
+def _merge_incomplete_periods(
+        *, admission_period: StateIncarcerationPeriod,
+        release_period: StateIncarcerationPeriod) -> StateIncarcerationPeriod:
+    merged_period = attr.evolve(admission_period)
+    admission_external_id = admission_period.external_id or ''
+    release_external_id = release_period.external_id or ''
+    new_external_id = admission_external_id \
+                      + _INCARCERATION_PERIOD_ID_DELIMITER \
+                      + release_external_id
+    merge_flat_fields(new_entity=release_period, old_entity=merged_period)
+
+    merged_period.external_id = new_external_id
+
+    # if a StateIncarcerationPeriod has finished, the status should always be
+    # set to NOT_IN_CUSTODY. If a release is due to a transfer, by default, ND
+    # keeps the status as IN_CUSTODY. We only want the status to be IN_CUSTODY
+    # only on an active StateIncarcerationPeriod
+    if merged_period.status != StateIncarcerationPeriodStatus.NOT_IN_CUSTODY:
+        merged_period.status = StateIncarcerationPeriodStatus.NOT_IN_CUSTODY
+        merged_period.status_raw_text = None
+    return merged_period
