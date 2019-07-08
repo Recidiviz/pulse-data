@@ -1,0 +1,46 @@
+key_mappings:
+  CASE_NUMBER: state_supervision_sentence.state_supervision_sentence_id
+  DESCRIPTION: state_supervision_sentence.supervision_type
+  PAROLE_TO: state_supervision_sentence.projected_completion_date
+
+child_key_mappings:
+  PAROLE_FR: state_supervision_period.start_date
+  TERM_DATE: state_supervision_period.termination_date
+  JUDGE: state_agent.full_name
+  REV_NOFF_YN: state_supervision_violation.violation_type
+  REV_DATE: state_supervision_violation_response.response_date
+  RevoDispo: state_supervision_violation_response.revocation_type
+
+ancestor_keys:
+  SID: state_person.state_person_id
+
+primary_key:
+  CASE_NUMBER: state_supervision_sentence.state_supervision_sentence_id
+
+keys_to_ignore:
+  - SENT_TYPE             # Redundant code that maps 1:1 with DESCRIPTION
+  - SENT_YY               # Handled manually within us_nd_scraper
+  - SENT_MM               # Handled manually within us_nd_scraper
+  - TA_TYPE               # TODO(1892) Is there somewhere to track this?
+  - TB_CTY                # TODO(1866) Do we want to track qualitative attrs?
+  - TD_PUB_AST
+  - TE_EMPLOY
+  - TF_RESPNSE
+  - TG_COMMRES
+  - TH_MARITAL
+  - TI_EMPLOY
+  - TJ_INCOME
+  - TK_LAST_GR
+  - TL_LIV_ARR
+  - NEW_OFF               # Handled manually within us_nd_scraper
+  - NEW_OFF2              # Handled manually within us_nd_scraper
+  - NEW_OFF3              # Handled manually within us_nd_scraper
+  - REV_NOFF_YN           # Handled manually within us_nd_scraper
+  - REV_ABSC_YN           # Handled manually within us_nd_scraper
+  - REV_TECH_YN           # Handled manually within us_nd_scraper
+  - TERMINATING_OFFICER   # TODO(1883) Should be a decision_agent on state_supervision_violation_response
+  - LAST_UPDATE           # No apparent use for these at the moment
+  - INACTIVEDATE          # Not in usable state within the source data
+  - RECORDCRDATE          # TODO(1892) What does this mean?
+  - RecDate               # TODO(1892) What does this mean?
+  - CHANGE_DATE_REASON    # No apparent use for these at the moment

@@ -1,0 +1,21 @@
+key_mappings:
+  OFFENDER_BOOK_ID: state_sentence_group.state_sentence_group_id
+  IN_OUT_STATUS: state_sentence_group.status  # TODO(1892) Is this the right column to use?
+
+ancestor_keys:
+  ROOT_OFFENDER_ID: state_person.state_person_id
+
+primary_key:
+  OFFENDER_BOOK_ID: state_sentence_group.state_sentence_group_id
+
+keys_to_ignore:
+  - BOOKING_NO          # This particular id appears unused elsewhere
+  - LIVING_UNIT_ID      # TODO(1918) Integrate with living unit file
+  - ACTIVE_FLAG         # TODO(1698) Should this live on SentenceGroup?
+  - BOOKING_STATUS      # TODO(1698) Should this live on SentenceGroup?
+  - BOOKING_BEGIN_DATE  # Self-reported as unreliable. Covered elsewhere anyway
+  - BOOKING_END_DATE    # Self-reported as unreliable. Covered elsewhere anyway
+  - BOOKING_TYPE        # Always institution commitment (INST), which is implied
+  - AGY_LOC_ID          # Provided in finer detail in External Movements file
+  - CREATE_DATETIME     # No apparent use for these at the moment
+  - MODIFY_DATETIME     # No apparent use for these at the moment

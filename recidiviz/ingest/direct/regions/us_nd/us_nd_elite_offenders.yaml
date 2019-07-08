@@ -1,0 +1,15 @@
+key_mappings:
+  ROOT_OFFENDER_ID: state_person.state_person_id
+  LAST_NAME: state_person.surname
+  FIRST_NAME: state_person.given_names
+  BIRTH_DATE: state_person.birthdate
+  SEX_CODE: state_person.gender
+
+child_key_mappings:
+  RACE_CODE: state_person_race.race
+
+primary_key:
+  ROOT_OFFENDER_ID: state_person.state_person_id
+
+keys_to_ignore:
+  - ALIAS_NAME_TYPE     # Provided by Aliases file

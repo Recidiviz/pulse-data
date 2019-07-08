@@ -1,0 +1,69 @@
+key_mappings:
+  SID: state_person.state_person_id
+  LAST_NAME: state_person.surname
+  FIRST: state_person.given_names
+  MIDDLE: state_person.middle_names
+  ADDRESS: state_person.current_address
+  DOB: state_person.birthdate
+  SEX: state_person.gender
+  HOMELESS: state_person.residency_status
+
+child_key_mappings:
+  RACE: state_person_race.race
+  LSITOTAL: state_assessment.assessment_score
+  SORAC_SCORE: state_assessment.assessment_score
+  ITAGROOT_ID: state_person_external_id.state_person_external_id_id
+
+primary_key:
+  SID: state_person.state_person_id
+
+keys_to_ignore:
+  - SUP_LVL             # TODO(1883) Add support for entity types with multiple parents
+  - SUPER_OVERRIDE      # TODO(1883) Add support for entity types with multiple parents
+  - RECORD_STATUS       # TODO(1761) This corresponds to elite_orders.court_info_id
+                        #  TODO(1892) RECORD_STATUS needs to map to a custody status somewhere?
+  - AGENT
+  - PREVIOUS_AGENT
+  - LAST_UPDATE           # No apparent use for these at the moment
+  - ALIASFLAG             # More detailed alias data in the Alias file
+  - CITY                  # Manually joined with address in us_nd_scraper
+  - STATE                 # Manually joined with address in us_nd_scraper
+  - ZIP                   # Manually joined with address in us_nd_scraper
+  - PHONE2                # Not storing phone numbers in our schema
+  - ADDRESS2              # Not storing multiple addresses in our schema
+  - CITY2                 # Not storing multiple addresses in our schema
+  - STATE2                # Not storing multiple addresses in our schema
+  - ZIP2                  # Not storing multiple addresses in our schema
+  - MAILING_ADDRESS2      # Not storing multiple addresses in our schema
+  - PHYSICAL_ADDRESS2     # Not storing multiple addresses in our schema
+  - SITEID                # No apparent use for these at the moment
+  - ABSDATE               # No longer in use within source
+  - ABSCONDER
+  - SEXOFF
+  - GOODTIMEDATE
+  - C_MARITAL             # TODO(1866) Do we want to track qualitative attrs?
+  - D_DEP
+  - E_LIV_ARR
+  - F_VETERAN
+  - G_INCOME
+  - H_EMPLOY
+  - I_JOB_CL
+  - J_LAST_GR
+  - K_PUB_ASST
+  - HEIGHT                # Not storing physical characteristics in our schema
+  - WEIGHT                # Not storing physical characteristics in our schema
+  - INACTIVEDATE          # No longer in use within source
+  - BIGSIXT1              # Manually added to Assessment data in us_nd_scraper
+  - BIGSIXT2              # Manually added to Assessment data in us_nd_scraper
+  - BIGSIXT3              # Manually added to Assessment data in us_nd_scraper
+  - BIGSIXT4              # Manually added to Assessment data in us_nd_scraper
+  - BIGSIXT5              # Manually added to Assessment data in us_nd_scraper
+  - BIGSIXT6              # Manually added to Assessment data in us_nd_scraper
+  - ACTIVEREVOCATION_IND
+  - CCCFLAG
+  - RecDate               # No apparent use for these at the moment
+  - CREATED_BY            # No apparent use for these at the moment
+  - RECORDCRDATE          # No apparent use for these at the moment
+  - LAST_HOME_VISIT
+  - LAST_FACE_TO_FACE
+  - COUNTY_RESIDENCE
