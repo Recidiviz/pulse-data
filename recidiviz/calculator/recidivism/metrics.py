@@ -18,7 +18,7 @@
 """Recidivism metrics we calculate."""
 
 from datetime import date
-from enum import Enum, auto
+from enum import Enum
 from typing import Any, Dict, List, Optional
 
 import attr
@@ -44,8 +44,8 @@ class RecidivismMethodologyType(Enum):
         instance of recidivism for measurement.
      """
 
-    EVENT = auto()
-    PERSON = auto()
+    EVENT = 'EVENT'
+    PERSON = 'PERSON'
 
 
 # TODO: Implement rearrest and reconviction recidivism metrics
@@ -63,8 +63,8 @@ class ReincarcerationRecidivismMetric(BuildableAttr):
 
     # Required characteristics
 
-    # The string id of the calculation pipeline that produced this metric.
-    execution_id: int = attr.ib()  # non-nullable
+    # The string id of the calculation pipeline job that produced this metric.
+    job_id: str = attr.ib()  # non-nullable
 
     # The integer year during which the persons were released
     release_cohort: int = attr.ib()  # non-nullable
@@ -135,7 +135,8 @@ class ReincarcerationRecidivismMetric(BuildableAttr):
 
     @staticmethod
     def build_from_metric_key_release_group(metric_key: Dict[str, Any],
-                                            release_group: List[int]) -> \
+                                            release_group: List[int],
+                                            job_id: str) -> \
             Optional['ReincarcerationRecidivismMetric']:
         """Builds a RecidivismMetric object from the given arguments.
 
@@ -162,8 +163,7 @@ class ReincarcerationRecidivismMetric(BuildableAttr):
             ((recidivism_metric.recidivated_releases + 0.0) /
              recidivism_metric.total_releases)
 
-        # TODO(1789): Implement pipeline execution_id
-        recidivism_metric.execution_id = 12345
+        recidivism_metric.job_id = job_id
         recidivism_metric.release_cohort = metric_key.get('release_cohort')
         recidivism_metric.follow_up_period = metric_key.get('follow_up_period')
         recidivism_metric.methodology = metric_key.get('methodology')
@@ -181,7 +181,8 @@ class ReincarcerationRecidivismMetric(BuildableAttr):
             recidivism_metric.release_facility = \
                 metric_key.get('release_facility')
         if 'stay_length' in metric_key:
-            recidivism_metric.stay_length_bucket = metric_key.get('stay_length')
+            recidivism_metric.stay_length_bucket = metric_key.get(
+                'stay_length')
         if 'return_type' in metric_key:
             recidivism_metric.return_type = metric_key.get('return_type')
         if 'from_supervision_type' in metric_key:

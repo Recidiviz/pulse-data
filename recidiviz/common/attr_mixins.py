@@ -17,10 +17,11 @@
 """Logic for Attr objects that can be built with a Builder."""
 
 from typing import Any, Dict, Optional
+import datetime
 import attr
 
 from recidiviz.common.attr_utils import is_enum, is_forward_ref, is_list, \
-    get_enum_cls
+    get_enum_cls, is_date
 
 
 class DefaultableAttr:
@@ -120,7 +121,8 @@ class BuildableAttr:
         """Builds a BuildableAttr with values from the given build_dict.
 
         Given build_dict must contain all required fields, and cannot contain
-        any fields with attribute types of List or ForwardRef.
+        any fields with attribute types of List or ForwardRef. Any date values
+        must be in the format 'YYYY-MM-DD' if they are present.
         """
         if not attr.has(cls):
             raise Exception("Parent class must be an attr class")
@@ -145,8 +147,9 @@ class BuildableAttr:
                                      f"ForwardRef fields: {build_dict}")
 
                 if is_enum(attribute):
-                    value = cls.extract_enum_value(
-                        build_dict, field, attribute)
+                    value = cls.extract_enum_value(build_dict, field, attribute)
+                elif is_date(attribute):
+                    value = cls.extract_date_value(build_dict, field)
                 else:
                     value = build_dict.get(field)
 
@@ -161,6 +164,16 @@ class BuildableAttr:
         value = build_dict.get(field)
 
         return enum_cls(value) if value else None
+
+    @classmethod
+    def extract_date_value(cls, build_dict, field):
+        value = build_dict.get(field)
+
+        if value and isinstance(value, str):
+            value = datetime.datetime.strptime(
+                value, '%Y-%m-%d').date()
+
+        return value
 
 
 class BuilderException(Exception):
