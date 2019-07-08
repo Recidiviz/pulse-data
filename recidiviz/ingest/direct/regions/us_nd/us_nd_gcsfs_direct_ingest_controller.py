@@ -25,7 +25,7 @@ from gcsfs import GCSFileSystem
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 from recidiviz.common.constants.enum_overrides import EnumOverrides
-from recidiviz.common.constants.person_characteristics import Gender, Race,\
+from recidiviz.common.constants.person_characteristics import Gender, Race, \
     Ethnicity
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import \
@@ -310,6 +310,18 @@ class UsNdGcsfsDirectIngestController(GcsfsDirectIngestController):
                 extracted_object.__setattr__('is_life', str(is_life_sentence))
 
     @staticmethod
+    def _ignore_unknown_max_lengths(row: Dict[str, str],
+                                    extracted_objects: List[IngestObject],
+                                    _cache: IngestObjectCache):
+        # TODO(2045): Correctly handle this information instead of ignoring.
+        ignore_length = row['MAX_TERM'] in ('LIFE', 'PRI')
+
+        for extracted_object in extracted_objects:
+            if ignore_length and isinstance(extracted_object,
+                                            StateSentenceGroup):
+                extracted_object.__setattr__('max_length', None)
+
+    @staticmethod
     def _normalize_external_id(_row: Dict[str, str],
                                extracted_objects: List[IngestObject],
                                _cache: IngestObjectCache):
@@ -326,9 +338,10 @@ class UsNdGcsfsDirectIngestController(GcsfsDirectIngestController):
         and DAYS fields, compose these into a single string and set it on the
         appropriate length field."""
         units = ['Y', 'M', 'D']
-        components = [row.get('YEARS', None),
-                      row.get('MONTHS', None),
-                      row.get('DAYS', None)]
+        days = row.get('DAYS', None)
+        if days is not None:
+            days = days.replace(',', '')
+        components = [row.get('YEARS', None), row.get('MONTHS', None), days]
 
         _concatenate_length_periods(units, components, extracted_objects)
 
@@ -719,10 +732,18 @@ class UsNdGcsfsDirectIngestController(GcsfsDirectIngestController):
         ignores: Dict[EntityEnumMeta, List[str]] = {
             # TODO(1892): What are the appropriate court case statuses?
             StateCourtCaseStatus: ['A', 'STEP'],
+            # TODO(2060): What are the appropriate reasons for:
+            #             NPRB, NTAD, NPROB, JOB
+            # TODO(2060): What to do about unexpected admission reasons:
+            #             RB, SUPL, RPRB, PARL
             StateIncarcerationPeriodAdmissionReason:
-                ['COM', 'CONF', 'CONT', 'CONV', 'PROG'],
+                ['COM', 'CONF', 'CONT', 'CONV', 'PROG', 'RB', 'SUPL', 'RPRB',
+                 'PARL', 'NPRB', 'NTAD', 'NPROB', 'JOB'],
+            # TODO(2060): What to do about unexpected release reasons:
+            #             ADMN, PRB, PV, 4139, REC
             StateIncarcerationPeriodReleaseReason:
-                ['COM', 'CONF', 'CONT', 'CONV', 'JOB', 'PROG'],
+                ['COM', 'CONF', 'CONT', 'CONV', 'JOB', 'PROG', 'PRB', 'PV',
+                 '4139', 'REC', 'NPRB', 'NTAD', 'NPROB', 'JOB'],
         }
 
         return self._create_overrides(overrides, ignores)
@@ -731,7 +752,7 @@ class UsNdGcsfsDirectIngestController(GcsfsDirectIngestController):
                           overrides: Dict[EntityEnum, List[str]],
                           ignores: Dict[EntityEnumMeta, List[str]]) \
             -> EnumOverrides:
-        overrides_builder = super(UsNdGcsfsDirectIngestController, self)\
+        overrides_builder = super(UsNdGcsfsDirectIngestController, self) \
             .get_enum_overrides().to_builder()
 
         for mapped_enum, text_tokens in overrides.items():
@@ -877,7 +898,6 @@ def _convert_person_ids_to_external_id_objects(
 
 def _parse_charge_classification(classification_str: Optional[str],
                                  extracted_objects: List[IngestObject]):
-
     if not classification_str:
         return
 
