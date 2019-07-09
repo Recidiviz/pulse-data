@@ -271,8 +271,9 @@ class BaseScraper(Scraper):
                         self.region.region_code, request.scrape_type)
                     batch_persistence.write(
                         ingest_info=scraped_data.ingest_info,
-                        task=task,
+                        start_time=request.scraper_start_time,
                         scrape_key=scrape_key,
+                        task=task,
                     )
                 else:
                     logging.info(
@@ -292,6 +293,7 @@ class BaseScraper(Scraper):
                     trace_id=get_trace_id_from_flask(),
                     task=task,
                     scrape_key=scrape_key,
+                    start_time=request.scraper_start_time,
                 )
             raise e
 
