@@ -124,7 +124,7 @@ venv.bak/
 
 # Local development
 local.yaml # keep in case any developers still have them
-secrets.yaml
+secrets.yaml # keep in case any developers still have them
 /queue.yaml
 
 #pytest
