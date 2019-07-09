@@ -106,6 +106,7 @@ BOND_TYPE_MAP = {
     'CASH PURGE': BondType.CASH,
     'CASH SURETY': BondType.SECURED,
     'CASH W BAIL CREDIT': BondType.CASH,
+    'C B': BondType.CASH,
     'CHILD SUPPORT': BondType.CASH,
     'CORPORATE BOND': BondType.SECURED,
     'COURT ORDER': BondType.NOT_REQUIRED,
