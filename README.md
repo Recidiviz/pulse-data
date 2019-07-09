@@ -192,16 +192,8 @@ Using this Docker container, you can edit your local repository files and use `g
 
 
 #### Adding secrets
-Recidiviz depends on sensitive information to run. This data is stored in datastore, which should be added
-manually to your production environment (see `utils/secrets` for more information on the datastore kind used).
-
-For local testing, these secrets are loaded from `secrets.yaml` in your top-level project directory, which is not
-provided in this repository. Instead, a template is provided (`secrets.example.yaml`) - run
-`$ cp secrets.example.yaml secrets.yaml` to copy the template, then edit the new file to add values specific to your
-project.
-
-_Note: Recidiviz team members and partners can download a pre-populated `secrets.yaml` for local development - check
-your onboarding document for details._
+Recidiviz depends on sensitive information to run. This data is stored in Cloud Datastore, which should be added
+manually to your production environment (see `utils/secrets` for more information on the Datastore kind used).
 
 #### Data model updates
 The two main data models used in the system are the [`IngestInfo`](recidiviz/ingest/models/ingest_info.proto) object and the database [`schema`](recidiviz/persistence/database/schema), defined in various `schema.py` files.
