@@ -37,7 +37,6 @@ from recidiviz.ingest.scrape.worker import worker
 from recidiviz.persistence.actions import actions
 from recidiviz.persistence.batch_persistence import batch_blueprint
 from recidiviz.persistence.database.base_schema import Base
-from recidiviz.tests.utils.populate_test_db import test_populator
 from recidiviz.utils import environment, secrets, structured_logging, metadata
 
 
@@ -61,8 +60,6 @@ app.register_blueprint(
     scrape_aggregate_reports_blueprint, url_prefix='/scrape_aggregate_reports')
 app.register_blueprint(export_manager_blueprint, url_prefix='/export_manager')
 app.register_blueprint(backup_manager_blueprint, url_prefix='/backup_manager')
-if not environment.in_gae():
-    app.register_blueprint(test_populator, url_prefix='/test_populator')
 
 
 if environment.in_gae():
