@@ -16,9 +16,7 @@
 # ============================================================================
 """State schema specific utils for match database entities with ingested
 entities."""
-import datetime
 import logging
-from functools import cmp_to_key
 from typing import List, cast, Any
 
 import attr
@@ -359,30 +357,6 @@ def merge_incarceration_periods(ingested_persons: List[StatePerson]):
                         incarceration_sentence.incarceration_periods)
 
 
-def _compare_incomplete_periods(ip1: StateIncarcerationPeriod,
-                                ip2: StateIncarcerationPeriod) -> int:
-    """Comparator for ordering incomplete IncarcerationPeriods chronologically
-    by admission and release dates (depending on what is present).
-    """
-    # All ingested StateIncarcerationPeriods from ND have represent either a
-    # release or an admission.
-    ip1_date = ip1.admission_date if ip1.admission_date else ip1.release_date
-    ip2_date = ip2.admission_date if ip2.admission_date else ip2.release_date
-    ip1_date = cast(datetime.date, ip1_date)
-    ip2_date = cast(datetime.date, ip2_date)
-
-    # If they both have the same date, the incarceration period with a release
-    # date goes first. If they both have release dates, this relative order
-    # will not matter for merging.
-    if ip1_date == ip2_date:
-        if ip1.release_date:
-            return -1
-        return 1
-
-    # Otherwise order by date
-    return ip1_date.toordinal() - ip2_date.toordinal()
-
-
 def _merge_incarceration_periods_helper(
         incomplete_incarceration_periods: List[StateIncarcerationPeriod]) \
         -> List[StateIncarcerationPeriod]:
@@ -391,10 +365,15 @@ def _merge_incarceration_periods_helper(
 
     Returns a list containing all merged incarceration periods as well as all
     incarceration periods that could not be merged, all ordered chronologically
-    (using admission date if present, otherwise release date).
+    (based on the movement sequence number provided directly from ND).
     """
+
+    # Within any IncarcerationSentence, IncarcerationPeriod external_ids are all
+    # equivalent, except for their suffixes. Each suffix is based on the
+    # ND-provided movement sequence number. Therefore, sorting by external_ids
+    # is equivalent to sorting by this movement sequence number.
     sorted_periods = sorted(incomplete_incarceration_periods,
-                            key=cmp_to_key(_compare_incomplete_periods))
+                            key=lambda x: x.external_id)
     merged_periods = []
     last_admission_period = None
     for period in sorted_periods:
@@ -402,14 +381,14 @@ def _merge_incarceration_periods_helper(
             if period.admission_date:
                 last_admission_period = period
             else:
-                logging.info("Incomplete StateInccarcerationPeriod found with "
+                logging.info("Incomplete StateIncarcerationPeriod found with "
                              "release info and external_id: %s",
                              period.external_id)
                 merged_periods.append(period)
             continue
 
         if period.admission_date:
-            logging.info("Incomplete StateInccarcerationPeriod found with "
+            logging.info("Incomplete StateIncarcerationPeriod found with "
                          "admission info and external_id: %s",
                          last_admission_period.external_id)
             merged_periods.append(last_admission_period)
