@@ -132,7 +132,7 @@ class _DatastoreIngestInfo:
         return batch_ingest_info_data
 
     @classmethod
-    def new(cls, key, scraper_start_time=None,
+    def new(cls, key, session_start_time=None,
             region=None, ingest_info=None, task_hash=None, error=None,
             trace_id=None):
         new_ingest_info = cls(datastore.Entity(key))
@@ -144,8 +144,8 @@ class _DatastoreIngestInfo:
         new_ingest_info._entity['region']: str = region
         new_ingest_info._entity['batch_ingest_info_data']: str = \
             batch_ingest_info_data.to_serializable()
-        new_ingest_info._entity['scraper_start_time']: datetime = \
-            scraper_start_time
+        new_ingest_info._entity['session_start_time']: datetime = \
+            session_start_time
         return new_ingest_info
 
     def __init__(self, entity):
@@ -159,22 +159,23 @@ INGEST_INFO_KIND = 'DatastoreIngestInfo'
 
 
 def write_ingest_info(region: str, task_hash: int,
-                      scraper_start_time: datetime,
+                      session_start_time: datetime,
                       ingest_info: IngestInfo) -> BatchIngestInfoData:
     """Writes a new ingest info for a given region.
 
     Args:
         region: (string) The region the ingest info is getting added for
         task_hash: (int) the hash of the task associated with the ingest info
-        scraper_start_time: (datetime) The start time of the scraper that got
+        session_start_time: (datetime) The start time of the scraper that got
           the ingest info
         ingest_info: (IngestInfo) The ingest info data
     """
-    logging.info("Writing a new ingest info for region: [%s]", region)
+    logging.info("Writing a new ingest info (with %d people) for region: [%s]",
+                 len(ingest_info.get_all_people()), region)
 
     new_ingest_info_entity = _DatastoreIngestInfo.new(
         key=ds().key(INGEST_INFO_KIND),
-        scraper_start_time=scraper_start_time,
+        session_start_time=session_start_time,
         region=region,
         ingest_info=ingest_info,
         task_hash=task_hash).to_entity()
@@ -192,7 +193,7 @@ def write_ingest_info(region: str, task_hash: int,
         new_ingest_info_entity)
 
 
-def write_error(region: str, scraper_start_time: datetime, error: str,
+def write_error(region: str, session_start_time: datetime, error: str,
                 trace_id: Optional[str],
                 task_hash: int) -> BatchIngestInfoData:
     """Writes a new ingest info for a given region.
@@ -200,7 +201,7 @@ def write_error(region: str, scraper_start_time: datetime, error: str,
 
        Args:
            region: (string) The region the ingest info is getting added for
-           scraper_start_time: (datetime) The start time of the scraper that
+           session_start_time: (datetime) The start time of the scraper that
             got the ingest info
            error: (string) the error message
            trace_id: (string) the trace id used to debug
@@ -211,7 +212,7 @@ def write_error(region: str, scraper_start_time: datetime, error: str,
 
     new_ingest_info_entity = _DatastoreIngestInfo.new(
         key=ds().key(INGEST_INFO_KIND),
-        scraper_start_time=scraper_start_time,
+        session_start_time=session_start_time,
         region=region,
         task_hash=task_hash,
         error=error,
@@ -231,19 +232,19 @@ def write_error(region: str, scraper_start_time: datetime, error: str,
 
 
 def batch_get_ingest_infos_for_region(region: str,
-                                      scraper_start_time: datetime) -> \
+                                      session_start_time: datetime) -> \
         List[BatchIngestInfoData]:
     """Batch retrieves ingest infos for a particular region.
 
     Args:
         region: (string) Region to fetch ingest_infos for
-        scraper_start_time: (datetime) Start time for the scraper
+        session_start_time: (datetime) Start time for the scraper
 
     Returns:
         A list of BatchIngestInfoData
     """
     return _batch_ingest_info_data_from_entities(
-        _get_ingest_info_entities_for_region(region, scraper_start_time))
+        _get_ingest_info_entities_for_region(region, session_start_time))
 
 
 def batch_delete_ingest_infos_for_region(region: str):
@@ -268,12 +269,14 @@ def _batch_ingest_info_data_from_entities(
             in entity_list]
 
 
-def _get_ingest_info_entities_for_region(region: str, scraper_start_time=None) \
+def _get_ingest_info_entities_for_region(region: str, session_start_time=None) \
         -> List[datastore.Entity]:
+    logging.info("Getting ingest info entities for region: [%s] and "
+                 "session_start_time: [%s]", region, session_start_time)
     session_query = ds().query(kind=INGEST_INFO_KIND)
     session_query.add_filter('region', '=', region)
-    if scraper_start_time:
-        session_query.add_filter('scraper_start_time', '=', scraper_start_time)
+    if session_start_time:
+        session_query.add_filter('session_start_time', '=', session_start_time)
 
     results = None
     try:
