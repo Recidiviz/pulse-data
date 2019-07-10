@@ -78,6 +78,7 @@ _CHARGE_CLASS_MAP = {
     'FLONY': ChargeClass.FELONY,
     'I': ChargeClass.INFRACTION,
     'INFRACTION': ChargeClass.INFRACTION,
+    'INFRACTIONS': ChargeClass.INFRACTION,
     'M': ChargeClass.MISDEMEANOR,
     'M F': None,
     'MIS': ChargeClass.MISDEMEANOR,
