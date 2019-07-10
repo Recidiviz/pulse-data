@@ -280,7 +280,7 @@ class TestStateMatchingUtils(TestCase):
             StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION)
         incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
             external_id=_EXTERNAL_ID_2,
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             facility=_FACILITY, release_date=_DATE_2,
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER)
         incarceration_period_3 = StateIncarcerationPeriod.new_with_defaults(
@@ -291,7 +291,7 @@ class TestStateMatchingUtils(TestCase):
             StateIncarcerationPeriodAdmissionReason.TRANSFER)
         incarceration_period_4 = StateIncarcerationPeriod.new_with_defaults(
             external_id=_EXTERNAL_ID_4,
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             facility=_FACILITY_2, release_date=_DATE_3,
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER)
         incarceration_period_5 = StateIncarcerationPeriod.new_with_defaults(
@@ -302,7 +302,7 @@ class TestStateMatchingUtils(TestCase):
             StateIncarcerationPeriodAdmissionReason.TRANSFER)
         incarceration_period_6 = StateIncarcerationPeriod.new_with_defaults(
             external_id=_EXTERNAL_ID_6,
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             facility=_FACILITY_3, release_date=_DATE_5,
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER)
 
@@ -355,7 +355,7 @@ class TestStateMatchingUtils(TestCase):
             StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION)
         incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
             external_id=_EXTERNAL_ID_2,
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             facility=_FACILITY, release_date=_DATE_2,
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER)
         incarceration_period_3 = StateIncarcerationPeriod.new_with_defaults(
@@ -366,7 +366,7 @@ class TestStateMatchingUtils(TestCase):
             StateIncarcerationPeriodAdmissionReason.TRANSFER)
         incarceration_period_4 = StateIncarcerationPeriod.new_with_defaults(
             external_id=_EXTERNAL_ID_4,
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             facility=_FACILITY_2, release_date=_DATE_2,
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER)
         incarceration_period_5 = StateIncarcerationPeriod.new_with_defaults(
@@ -377,7 +377,7 @@ class TestStateMatchingUtils(TestCase):
             StateIncarcerationPeriodAdmissionReason.TRANSFER)
         incarceration_period_6 = StateIncarcerationPeriod.new_with_defaults(
             external_id=_EXTERNAL_ID_6,
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             facility=_FACILITY_3, release_date=_DATE_2,
             release_reason=
             StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED)

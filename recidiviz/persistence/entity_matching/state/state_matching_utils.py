@@ -22,8 +22,6 @@ from typing import List, cast, Any
 import attr
 
 from recidiviz.common.constants import enum_canonical_strings
-from recidiviz.common.constants.state.state_incarceration_period import \
-    StateIncarcerationPeriodStatus
 from recidiviz.persistence.entity.base_entity import Entity, ExternalIdEntity
 from recidiviz.persistence.entity.entity_utils import \
     EntityFieldType, get_set_entity_field_names
@@ -422,12 +420,4 @@ def _merge_incomplete_periods(
     merge_flat_fields(new_entity=release_period, old_entity=merged_period)
 
     merged_period.external_id = new_external_id
-
-    # if a StateIncarcerationPeriod has finished, the status should always be
-    # set to NOT_IN_CUSTODY. If a release is due to a transfer, by default, ND
-    # keeps the status as IN_CUSTODY. We only want the status to be IN_CUSTODY
-    # only on an active StateIncarcerationPeriod
-    if merged_period.status != StateIncarcerationPeriodStatus.NOT_IN_CUSTODY:
-        merged_period.status = StateIncarcerationPeriodStatus.NOT_IN_CUSTODY
-        merged_period.status_raw_text = None
     return merged_period
