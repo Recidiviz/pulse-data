@@ -42,7 +42,7 @@ from recidiviz.common.constants.state.state_court_case import \
     StateCourtCaseStatus
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodAdmissionReason, \
-    StateIncarcerationPeriodReleaseReason, StateIncarcerationPeriodStatus
+    StateIncarcerationPeriodReleaseReason
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
@@ -676,8 +676,6 @@ class UsNdGcsfsDirectIngestController(GcsfsDirectIngestController):
             #  we understand what these values mean.
             StateChargeClassificationType.FELONY: ['IF'],
             StateChargeClassificationType.MISDEMEANOR: ['IM'],
-
-            StateIncarcerationPeriodStatus.IN_CUSTODY: ['CRT', 'TAP', 'TRN'],
 
             StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN:
                 ['OTHER'],

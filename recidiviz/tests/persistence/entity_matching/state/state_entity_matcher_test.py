@@ -1253,6 +1253,7 @@ class TestStateEntityMatching(TestCase):
             state_code=_STATE_CODE,
             external_id=_EXTERNAL_ID,
             facility=_FACILITY,
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             admission_date=datetime.date(year=2019, month=1, day=1),
             admission_reason=
             StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION)
@@ -1260,12 +1261,14 @@ class TestStateEntityMatching(TestCase):
             state_code=_STATE_CODE,
             external_id=_EXTERNAL_ID_2,
             facility=_FACILITY,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             release_date=datetime.date(year=2019, month=1, day=2),
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER)
         incarceration_period_3 = StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
             external_id=_EXTERNAL_ID_3,
             facility=_FACILITY_2,
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             admission_date=datetime.date(year=2019, month=1, day=2),
             admission_reason=
             StateIncarcerationPeriodAdmissionReason.TRANSFER)

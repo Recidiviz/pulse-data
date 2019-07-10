@@ -1,5 +1,5 @@
 key_mappings:
-  MOVEMENT_TYPE: state_incarceration_period.status
+  DIRECTION_CODE: state_incarceration_period.status
 
 ancestor_keys:
   OFFENDER_BOOK_ID: state_sentence_group.state_sentence_group_id
@@ -14,7 +14,7 @@ keys_to_ignore:
   - ARREST_AGENCY_LOC_ID  # No apparent use for these at the moment
   - COMMENT_TEXT          # TODO(1760) Rich, unstructured location info here
   - ESCORT_CODE           # TODO(1892) Should this live somewhere in our schema?
-  - DIRECTION_CODE        # Handled manually in us_nd_scraper
+  - MOVEMENT_TYPE         # No use for these. Status is inferred from DIRECTION_CODE
   - MOVEMENT_DATE         # Handled manually in us_nd_scraper
   - MOVEMENT_REASON_CODE  # Handled manually in us_nd_scraper
   - FROM_AGY_LOC_ID       # Handled manually in us_nd_scraper

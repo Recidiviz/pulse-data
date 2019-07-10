@@ -122,8 +122,10 @@ _STATE_INCARCERATION_FACILITY_SECURITY_LEVEL_MAP = {
 _STATE_INCARCERATION_PERIOD_STATUS_MAP = {
     'ADM': StateIncarcerationPeriodStatus.IN_CUSTODY,
     'CUSTODY': StateIncarcerationPeriodStatus.IN_CUSTODY,
+    'IN': StateIncarcerationPeriodStatus.IN_CUSTODY,
     'IN CUSTODY': StateIncarcerationPeriodStatus.IN_CUSTODY,
     'NOT IN CUSTODY': StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+    'OUT': StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
     'REL': StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
 }
 
