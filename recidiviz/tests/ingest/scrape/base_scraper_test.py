@@ -117,7 +117,6 @@ class TestBaseScraper(TestCase):
             trace_id='TRACE ID',
             task=TEST_TASK,
             scrape_key=scrape_key,
-            start_time=start_time
         )
 
     @patch.object(BaseScraper, '_fetch_content')
@@ -450,6 +449,5 @@ class TestBaseScraper(TestCase):
             ingest_info=self.ii,
             task=t,
             scrape_key=scrape_key,
-            start_time=start_time,
         )
         self.assertEqual(len(scraper.tasks), 0)

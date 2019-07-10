@@ -63,6 +63,15 @@ class BatchPersistError(Exception):
         super(BatchPersistError, self).__init__(msg)
 
 
+class DatastoreError(Exception):
+    """Raised when there was an error with Datastore."""
+
+    def __init__(self, region: str, call_type: str):
+        msg_template = "Error when calling '{}' for region {} in Datastore."
+        msg = msg_template.format(call_type, region)
+        super(DatastoreError, self).__init__(msg)
+
+
 def _get_proto_from_batch_ingest_info_data_list(
         batch_ingest_info_data_list: List[BatchIngestInfoData]) -> \
         Tuple[ingest_info_pb2.IngestInfo, Dict[int, BatchIngestInfoData]]:
@@ -104,17 +113,17 @@ def _get_proto_from_batch_ingest_info_data_list(
 
 
 def _get_batch_ingest_info_list(region_code: str,
-                                scraper_start_time: datetime.datetime) -> \
+                                session_start_time: datetime.datetime) -> \
         List[BatchIngestInfoData]:
     """Reads all of the messages from Datastore for the region.
         Args:
             region_code (str): The region code of the scraper.
-            scraper_start_time (datetime): The start time of the scraper.
+            session_start_time (datetime): The start time of the scraper.
         Returns:
             A list of BatchIngestInfoData.
         """
     return datastore_ingest_info \
-        .batch_get_ingest_infos_for_region(region_code, scraper_start_time)
+        .batch_get_ingest_infos_for_region(region_code, session_start_time)
 
 
 def _dedup_people(ingest_infos: List[IngestInfo]) -> IngestInfo:
@@ -145,10 +154,12 @@ def _should_abort(failed_tasks: int, total_people: int) -> bool:
     return False
 
 
-def write(ingest_info: IngestInfo, start_time: datetime.datetime,
-          scrape_key: ScrapeKey, task: Task):
+def write(ingest_info: IngestInfo, scrape_key: ScrapeKey, task: Task):
+    session = sessions.get_current_session(scrape_key)
+    if not session:
+        raise DatastoreError(scrape_key.region_code, "write")
     datastore_ingest_info.write_ingest_info(region=scrape_key.region_code,
-                                            scraper_start_time=start_time,
+                                            session_start_time=session.start,
                                             ingest_info=ingest_info,
                                             task_hash=hash(json.dumps(
                                                 task.to_serializable(),
@@ -156,17 +167,21 @@ def write(ingest_info: IngestInfo, start_time: datetime.datetime,
 
 
 def write_error(error: str, trace_id: Optional[str], task: Task,
-                scrape_key: ScrapeKey, start_time: datetime.datetime):
+                scrape_key: ScrapeKey):
+    session = sessions.get_current_session(scrape_key)
+    if not session:
+        raise DatastoreError(scrape_key.region_code, "write_error")
+
     datastore_ingest_info.write_error(region=scrape_key.region_code,
                                       error=error, trace_id=trace_id,
                                       task_hash=hash(json.dumps(
                                           task.to_serializable(),
                                           sort_keys=True)),
-                                      scraper_start_time=start_time)
+                                      session_start_time=session.start)
 
 
 def persist_to_database(region_code: str,
-                        scraper_start_time: datetime.datetime) -> bool:
+                        session_start_time: datetime.datetime) -> bool:
     """Reads all of the ingest infos from Datastore for a region and persists
     them to the database.
     """
@@ -174,7 +189,7 @@ def persist_to_database(region_code: str,
     overrides = region.get_enum_overrides()
 
     ingest_info_data_list = _get_batch_ingest_info_list(region_code,
-                                                        scraper_start_time)
+                                                        session_start_time)
 
     logging.info("Received %s total ingest infos", len(ingest_info_data_list))
     if ingest_info_data_list:
@@ -198,7 +213,7 @@ def persist_to_database(region_code: str,
 
         metadata = IngestMetadata(
             region=region_code, jurisdiction_id=region.jurisdiction_id,
-            ingest_time=scraper_start_time,
+            ingest_time=session_start_time,
             enum_overrides=overrides)
 
         did_write = persistence.write(proto, metadata)
@@ -230,10 +245,9 @@ def read_and_persist():
         session = sessions.get_most_recent_completed_session(
             region, ScrapeType.BACKGROUND)
         scrape_type = session.scrape_type
-        scraper_start_time = session.start
 
         try:
-            did_persist = persist_to_database(region, scraper_start_time)
+            did_persist = persist_to_database(region, session.start)
             batch_tags[monitoring.TagKey.PERSISTED] = did_persist
         except Exception as e:
             logging.exception("An exception occurred in read and persist: %s",
