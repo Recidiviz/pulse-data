@@ -51,7 +51,7 @@ class TestDatastoreIngestInfo(unittest.TestCase):
 
         start_time = datetime.now()
         ingest_info = datastore_ingest_info.write_ingest_info(
-            region='us_state_county', scraper_start_time=start_time,
+            region='us_state_county', session_start_time=start_time,
             ingest_info=sample_ingest_info('1'), task_hash=task_hash)
         results = datastore_ingest_info.batch_get_ingest_infos_for_region(
             'us_state_county', start_time)
@@ -69,22 +69,22 @@ class TestDatastoreIngestInfo(unittest.TestCase):
         start_time = datetime.now()
         first = datastore_ingest_info \
             .write_ingest_info(region='us_state_county',
-                               scraper_start_time=start_time,
+                               session_start_time=start_time,
                                ingest_info=sample_ingest_info('1'),
                                task_hash=task_hash)
         second = datastore_ingest_info \
             .write_ingest_info(region='us_state_county',
-                               scraper_start_time=start_time,
+                               session_start_time=start_time,
                                ingest_info=sample_ingest_info('2'),
                                task_hash=task_hash)
         third = datastore_ingest_info \
             .write_ingest_info(region='us_state_county',
-                               scraper_start_time=start_time,
+                               session_start_time=start_time,
                                ingest_info=sample_ingest_info('3'),
                                task_hash=task_hash)
         datastore_ingest_info \
             .write_ingest_info(region='unrelated',
-                               scraper_start_time=start_time,
+                               session_start_time=start_time,
                                ingest_info=sample_ingest_info('n/a'),
                                task_hash=task_hash)
 
@@ -104,20 +104,20 @@ class TestDatastoreIngestInfo(unittest.TestCase):
         start_time = datetime.now()
 
         datastore_ingest_info.write_ingest_info(region='us_state_county',
-                                                scraper_start_time=start_time,
+                                                session_start_time=start_time,
                                                 ingest_info=sample_ingest_info(
                                                     '1'), task_hash=task_hash)
         datastore_ingest_info.write_ingest_info(region='us_state_county',
-                                                scraper_start_time=start_time,
+                                                session_start_time=start_time,
                                                 ingest_info=sample_ingest_info(
                                                     '2'), task_hash=task_hash)
         datastore_ingest_info.write_ingest_info(region='us_state_county',
-                                                scraper_start_time=start_time,
+                                                session_start_time=start_time,
                                                 ingest_info=sample_ingest_info(
                                                     '3'), task_hash=task_hash)
         unrelated = datastore_ingest_info \
             .write_ingest_info(region='unrelated_us_state_county',
-                               scraper_start_time=start_time,
+                               session_start_time=start_time,
                                ingest_info=sample_ingest_info('n/a'),
                                task_hash=task_hash)
 
@@ -144,7 +144,7 @@ class TestDatastoreIngestInfo(unittest.TestCase):
         start_time = datetime.now()
         batch_ingest_info_data = datastore_ingest_info.write_error(
             region='us_state_county',
-            scraper_start_time=start_time,
+            session_start_time=start_time,
             error='error string',
             trace_id='trace', task_hash=task_hash)
 
