@@ -134,6 +134,30 @@ class TestDatastoreIngestInfo(unittest.TestCase):
         datastore_ingest_info.batch_delete_ingest_infos_for_region(
             'unrelated_us_state_county')
 
+    def test_batch_delete_over_500_ingest_infos_for_region(self):
+        task_hash = hash(json.dumps(
+            Task(task_type=constants.TaskType.SCRAPE_DATA,
+                 endpoint=TEST_ENDPOINT,
+                 response_type=constants.ResponseType.TEXT).to_serializable(),
+            sort_keys=True))
+        start_time = datetime.now()
+
+        # The Datastore limit for entity writes in one call is 500. Confirm
+        # that batch delete is properly handled when more than 500 entities
+        # exist for the same region.
+        for i in range(600):
+            datastore_ingest_info \
+                .write_ingest_info(region='us_state_county',
+                                   session_start_time=start_time,
+                                   ingest_info=sample_ingest_info(str(i)),
+                                   task_hash=task_hash)
+
+        datastore_ingest_info.batch_delete_ingest_infos_for_region(
+            'us_state_county')
+
+        assert datastore_ingest_info.batch_get_ingest_infos_for_region(
+            'us_state_county', start_time) == []
+
     def test_write_errors(self):
         task_hash = hash(json.dumps(
             Task(task_type=constants.TaskType.SCRAPE_DATA,
