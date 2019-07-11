@@ -135,7 +135,7 @@ class Scraper(metaclass=abc.ABCMeta):
                                    scraper_start_time=datetime.now(),
                                    next_task=self.get_initial_task()))
 
-    def stop_scrape(self, scrape_types, respect_is_stoppable=False):
+    def stop_scrape(self, scrape_types, respect_is_stoppable=False) -> bool:
         """Stops all active scraping tasks, resume non-targeted scrape types
 
         Stops the scraper, even if in the middle of a session. In
@@ -157,7 +157,7 @@ class Scraper(metaclass=abc.ABCMeta):
                 `is_stoppable` is set to true.
 
         Returns:
-            N/A
+            A bool indicating whether or not the scrape was stopped.
 
         """
         region = self.get_region()
@@ -167,7 +167,7 @@ class Scraper(metaclass=abc.ABCMeta):
                 "Stop scrape was called and ignored for the region: %s "
                 "because the region's manifest is flagged as not stoppable",
                 region.region_code)
-            return
+            return False
 
         logging.info("Stopping scrape for the region: %s", region.region_code)
         queues.purge_scrape_tasks(region_code=region.region_code,
@@ -186,6 +186,8 @@ class Scraper(metaclass=abc.ABCMeta):
         for scrape in other_scrapes:
             logging.info("Resuming unaffected scrape type: %s.", str(scrape))
             self.resume_scrape(scrape)
+
+        return True
 
     def resume_scrape(self, scrape_type):
         """Resume a stopped scrape from where it left off
