@@ -310,8 +310,10 @@ class TestScraperStop:
         mock_region.return_value.get_scraper().stop_scrape.assert_has_calls([
             call([constants.ScrapeType.BACKGROUND,
                   constants.ScrapeType.SNAPSHOT], 'false'),
+            call().__bool__(),
             call([constants.ScrapeType.BACKGROUND,
-                  constants.ScrapeType.SNAPSHOT], 'false')
+                  constants.ScrapeType.SNAPSHOT], 'false'),
+            call().__bool__()
         ])
         mock_supported.assert_called_with(timezone=None)
         mock_enqueue.assert_has_calls([
@@ -446,8 +448,10 @@ class TestScraperStop:
         mock_region.return_value.get_scraper().stop_scrape.assert_has_calls([
             call([constants.ScrapeType.BACKGROUND,
                   constants.ScrapeType.SNAPSHOT], None),
+            call().__bool__(),
             call([constants.ScrapeType.BACKGROUND,
-                  constants.ScrapeType.SNAPSHOT], None)
+                  constants.ScrapeType.SNAPSHOT], None),
+            call().__bool__()
         ])
 
         mock_supported.assert_called_with(timezone=None)
