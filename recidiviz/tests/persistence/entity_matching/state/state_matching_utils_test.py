@@ -28,18 +28,17 @@ from recidiviz.persistence.entity.state.entities import StatePersonExternalId, \
     StatePerson, StatePersonAlias, StateCharge, StateSentenceGroup, StateFine, \
     StateIncarcerationPeriod
 from recidiviz.persistence.entity_matching.state.state_matching_utils import \
-    merge_flat_fields, remove_back_edges, add_person_to_entity_graph, \
-    is_placeholder, _is_match, EntityTree, \
-    generate_child_entity_trees, add_child_to_entity, \
+    remove_back_edges, add_person_to_entity_graph, is_placeholder, _is_match, \
+    EntityTree, generate_child_entity_trees, add_child_to_entity, \
     remove_child_from_entity, _merge_incarceration_periods_helper, \
-    has_default_status
+    has_default_status, merge_flat_fields
 
 _DATE_1 = datetime.date(year=2019, month=1, day=1)
 _DATE_2 = datetime.date(year=2019, month=2, day=1)
 _DATE_3 = datetime.date(year=2019, month=3, day=1)
 _DATE_4 = datetime.date(year=2019, month=4, day=1)
 _DATE_5 = datetime.date(year=2019, month=5, day=1)
-_EXTERNAL_ID = 'EXTERNAL_ID'
+_EXTERNAL_ID = 'EXTERNAL_ID_1'
 _EXTERNAL_ID_2 = 'EXTERNAL_ID_2'
 _EXTERNAL_ID_3 = 'EXTERNAL_ID_3'
 _EXTERNAL_ID_4 = 'EXTERNAL_ID_4'
@@ -157,6 +156,33 @@ class TestStateMatchingUtils(TestCase):
         self.assertEqual(
             expected_entity,
             merge_flat_fields(new_entity=ing_entity, old_entity=db_entity))
+
+    def test_mergeFlatFields_incompleteIncarcerationPeriods(self):
+        ingested_entity = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=_ID,
+            external_id=_EXTERNAL_ID,
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            facility=_FACILITY, admission_date=_DATE_1,
+            admission_reason=
+            StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION)
+        db_entity = StateIncarcerationPeriod.new_with_defaults(
+            external_id=_EXTERNAL_ID_2,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            facility=_FACILITY, release_date=_DATE_2,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER)
+        expected_incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=_ID,
+                external_id=_EXTERNAL_ID + '|' + _EXTERNAL_ID_2,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                facility=_FACILITY, admission_date=_DATE_1,
+                admission_reason=
+                StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+                release_date=_DATE_2,
+                release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER)
+        self.assertEqual(
+            expected_incarceration_period,
+            merge_flat_fields(new_entity=ingested_entity, old_entity=db_entity))
 
     def test_removeBackedges(self):
         person = StatePerson.new_with_defaults(full_name=_FULL_NAME)
@@ -425,4 +451,39 @@ class TestStateMatchingUtils(TestCase):
         merged_periods = _merge_incarceration_periods_helper(
             ingested_incarceration_periods)
 
+        self.assertCountEqual(expected_incarceration_periods, merged_periods)
+
+    def test_mergeIncarcerationPeriods_doNotMergeNonConsecutiveSequences(self):
+        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            external_id=_EXTERNAL_ID,
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            facility=_FACILITY, admission_date=_DATE_1,
+            admission_reason=
+            StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION)
+        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            external_id=_EXTERNAL_ID_3,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            facility=_FACILITY, release_date=_DATE_2,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER)
+        ingested_incarceration_periods = [
+            incarceration_period_1, incarceration_period_2]
+
+        merged_periods = _merge_incarceration_periods_helper(
+            ingested_incarceration_periods)
+        self.assertCountEqual(ingested_incarceration_periods, merged_periods)
+
+        incarceration_period_2.external_id = _EXTERNAL_ID_2
+        expected_merged_incarceration_period_1 = \
+            StateIncarcerationPeriod.new_with_defaults(
+                external_id=_EXTERNAL_ID + '|' + _EXTERNAL_ID_2,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                facility=_FACILITY, admission_date=_DATE_1,
+                admission_reason=
+                StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+                release_date=_DATE_2,
+                release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER)
+        expected_incarceration_periods = [
+            expected_merged_incarceration_period_1]
+        merged_periods = _merge_incarceration_periods_helper(
+            ingested_incarceration_periods)
         self.assertCountEqual(expected_incarceration_periods, merged_periods)
