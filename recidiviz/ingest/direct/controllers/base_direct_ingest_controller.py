@@ -22,7 +22,6 @@ import datetime
 import logging
 from typing import TypeVar, Generic
 
-import gc
 import attr
 
 from recidiviz import IngestInfo
@@ -99,8 +98,6 @@ class BaseDirectIngestController(Generic[IngestArgsType, ContentsType]):
                                          self.system_level)
         persist_success = persistence.write(ingest_info_proto, ingest_metadata)
 
-        self._do_garbage_collect()
-
         if not persist_success:
             raise DirectIngestError(
                 error_type=DirectIngestErrorType.PERSISTENCE_ERROR,
@@ -143,10 +140,3 @@ class BaseDirectIngestController(Generic[IngestArgsType, ContentsType]):
     @abc.abstractmethod
     def get_enum_overrides(self) -> EnumOverrides:
         return get_standard_enum_overrides()
-
-    def _do_garbage_collect(self):
-        logging.info("garbage collection stats before collection: [%s]",
-                     gc.get_stats())
-        gc.collect()
-        logging.info("garbage collection stats after collection: [%s]",
-                     gc.get_stats())
