@@ -16,8 +16,7 @@
 # ============================================================================
 """State schema specific utils for match database entities with ingested
 entities."""
-import logging
-from typing import List, cast, Any
+from typing import List, cast, Any, Union
 
 import attr
 
@@ -34,6 +33,7 @@ from recidiviz.persistence.errors import EntityMatchingError
 class EntityTree:
     """Object that contains an entity and the list of ancestors traversed to get
     to this entity from the root Person node."""
+
     def __init__(self, entity: Entity, ancestor_chain: List[Entity]):
         if not entity:
             raise EntityMatchingError(
@@ -74,6 +74,7 @@ class EntityTree:
 class IndividualMatchResult:
     """Object that represents the result of a match attempt for an
     ingested_entity_tree."""
+
     def __init__(self, ingested_entity_tree: EntityTree,
                  merged_entity_trees: List[EntityTree]):
         if not ingested_entity_tree:
@@ -93,6 +94,7 @@ class IndividualMatchResult:
 class MatchResults:
     """Object that represents the results of a match attempt for a group of
     ingested and database EntityTree objects"""
+
     def __init__(self, individual_match_results: List[IndividualMatchResult],
                  unmatched_db_entities: List[Entity]):
         if not individual_match_results:
@@ -159,22 +161,6 @@ def _is_match(*, ingested_entity: Entity, db_entity: Entity) -> bool:
     db_entity = cast(ExternalIdEntity, db_entity)
     ingested_entity = cast(ExternalIdEntity, ingested_entity)
     return ingested_entity.external_id == db_entity.external_id
-
-
-def merge_flat_fields(*, new_entity: Entity, old_entity: Entity) -> Entity:
-    """Merges all set non-relationship fields on the |new_entity| onto the
-    |old_entity|. Returns the newly merged entity.
-    """
-    for child_field_name in get_set_entity_field_names(
-            new_entity, EntityFieldType.FLAT_FIELD):
-        # Do not overwrite with default status
-        if child_field_name == 'status' and has_default_status(new_entity):
-            continue
-
-        set_field(old_entity, child_field_name,
-                  get_field(new_entity, child_field_name))
-
-    return old_entity
 
 
 def remove_back_edges(entity: Entity):
@@ -370,38 +356,24 @@ def _merge_incarceration_periods_helper(
     # equivalent, except for their suffixes. Each suffix is based on the
     # ND-provided movement sequence number. Therefore, sorting by external_ids
     # is equivalent to sorting by this movement sequence number.
-    sorted_periods = sorted(incomplete_incarceration_periods,
-                            key=lambda x: x.external_id)
+    sorted_periods = sorted(
+        incomplete_incarceration_periods, key=_get_sequence_no)
     merged_periods = []
-    last_admission_period = None
+    last_period = None
     for period in sorted_periods:
-        if not last_admission_period:
-            if period.admission_date:
-                last_admission_period = period
-            else:
-                logging.info("Incomplete StateIncarcerationPeriod found with "
-                             "release info and external_id: %s",
-                             period.external_id)
-                merged_periods.append(period)
+        if not last_period:
+            last_period = period
             continue
+        if is_incomplete_incarceration_period_match(last_period, period):
+            merged_periods.append(
+                _merge_incomplete_periods(period, last_period))
+            last_period = None
+        else:
+            merged_periods.append(last_period)
+            last_period = period
 
-        if period.admission_date:
-            logging.info("Incomplete StateIncarcerationPeriod found with "
-                         "admission info and external_id: %s",
-                         last_admission_period.external_id)
-            merged_periods.append(last_admission_period)
-            last_admission_period = period
-        elif period.release_date:
-            if last_admission_period.facility == period.facility:
-                merged_periods.append(_merge_incomplete_periods(
-                    admission_period=last_admission_period,
-                    release_period=period))
-            else:
-                merged_periods.append(last_admission_period)
-                merged_periods.append(period)
-            last_admission_period = None
-    if last_admission_period:
-        merged_periods.append(last_admission_period)
+    if last_period:
+        merged_periods.append(last_period)
     return merged_periods
 
 
@@ -409,15 +381,113 @@ _INCARCERATION_PERIOD_ID_DELIMITER = '|'
 
 
 def _merge_incomplete_periods(
-        *, admission_period: StateIncarcerationPeriod,
-        release_period: StateIncarcerationPeriod) -> StateIncarcerationPeriod:
+        a: StateIncarcerationPeriod, b: StateIncarcerationPeriod) \
+        -> StateIncarcerationPeriod:
+    if bool(a.admission_date) and bool(b.release_date):
+        admission_period, release_period = a, b
+    elif bool(a.release_date) and bool(b.admission_date):
+        admission_period, release_period = b, a
+    else:
+        raise EntityMatchingError(
+            f"Expected one admission period and one release period when "
+            f"merging, instead found periods: {a}, {b}", a.get_entity_name())
+
     merged_period = attr.evolve(admission_period)
     admission_external_id = admission_period.external_id or ''
     release_external_id = release_period.external_id or ''
     new_external_id = admission_external_id \
                       + _INCARCERATION_PERIOD_ID_DELIMITER \
                       + release_external_id
-    merge_flat_fields(new_entity=release_period, old_entity=merged_period)
+    _default_merge_flat_fields(new_entity=release_period,
+                               old_entity=merged_period)
 
     merged_period.external_id = new_external_id
     return merged_period
+
+
+def is_incomplete_incarceration_period_match(
+        ingested_entity: Union[EntityTree, Entity],
+        db_entity: Union[EntityTree, Entity]) -> bool:
+    """Given two incomplete StateIncarcerationPeriods, determines if they
+    should be considered the same StateIncarcerationPeriod.
+    """
+
+    a, b = ingested_entity, db_entity
+    if isinstance(ingested_entity, EntityTree):
+        db_entity = cast(EntityTree, db_entity)
+        a, b = ingested_entity.entity, db_entity.entity
+    a = cast(StateIncarcerationPeriod, a)
+    b = cast(StateIncarcerationPeriod, b)
+
+    a_seq_no = _get_sequence_no(a)
+    b_seq_no = _get_sequence_no(b)
+
+    # Only match incomplete periods if they are adjacent based on seq no.
+    if abs(a_seq_no - b_seq_no) != 1:
+        return False
+
+    # Check that the first period is an admission and second a release
+    if a_seq_no < b_seq_no:
+        first, second = a, b
+    else:
+        first, second = b, a
+    if not first.admission_date or not second.release_date:
+        return False
+
+    # Must have same facility
+    if a.facility != b.facility:
+        return False
+
+    return True
+
+
+def _get_sequence_no(period: StateIncarcerationPeriod) -> int:
+    """Extracts the ND specific Movement Sequence Number from the external id
+    of the provided |period|.
+    """
+    try:
+        external_id = cast(str, period.external_id)
+        sequence_no = int(external_id.split('_')[-1])
+    except Exception:
+        raise EntityMatchingError(
+            f"Could not parse sequence number from external_id "
+            f"{period.external_id}", period.get_entity_name())
+    return sequence_no
+
+
+def is_incarceration_period_complete(period: StateIncarcerationPeriod) -> bool:
+    """Returns True if the period is considered complete (has both an admission
+    and release date).
+    """
+    return all([period.admission_date, period.release_date])
+
+
+def merge_flat_fields(new_entity: Entity, old_entity: Entity):
+    """Merges appropriate non-relationship fields on the |new_entity| onto the
+    |old_entity|. Returns the newly merged entity."""
+
+    # Special merge logic if we are merging 2 different incarceration periods.
+    if isinstance(new_entity, StateIncarcerationPeriod):
+        old_entity = cast(StateIncarcerationPeriod, old_entity)
+        if new_entity.external_id != old_entity.external_id:
+            return _merge_incomplete_periods(new_entity, old_entity)
+
+    return _default_merge_flat_fields(
+        new_entity=new_entity, old_entity=old_entity)
+
+
+def _default_merge_flat_fields(*, new_entity: Entity, old_entity: Entity) \
+        -> Entity:
+    """Merges all set non-relationship fields on the |new_entity| onto the
+    |old_entity|. Returns the newly merged entity.
+    """
+    for child_field_name in get_set_entity_field_names(
+            new_entity, EntityFieldType.FLAT_FIELD):
+        # Do not overwrite with default status
+        if child_field_name == 'status' and has_default_status(new_entity):
+            continue
+
+        set_field(old_entity, child_field_name,
+                  get_field(new_entity, child_field_name))
+
+    return old_entity
