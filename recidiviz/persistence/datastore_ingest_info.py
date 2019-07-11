@@ -1,6 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
 # Copyright (C) 2019 Recidiviz, Inc.
-#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -254,14 +253,35 @@ def batch_delete_ingest_infos_for_region(region: str):
             region: (string) Region to delete ingest infos for
         """
     results = _get_ingest_info_entities_for_region(region)
-    try:
-        retry_grpc(
-            NUM_GRPC_RETRIES, ds().delete_multi,
-            [result.key for result in results]
-        )
-    except Exception:
-        raise DatastoreBatchDeleteError(region)
+    # The Datastore limit for entity writes in one call is 500. Therefore,
+    # divide the entities to delete into chunks of 500.
+    if len(results) > 500:
+        list_of_chunks = _divide_into_chunks(results=results, chunk_size=500)
+        for chunk in list_of_chunks:
+            try:
+                retry_grpc(
+                    NUM_GRPC_RETRIES, ds().delete_multi,
+                    [chunk_item.key for chunk_item in chunk]
+                )
+            except Exception:
+                raise DatastoreBatchDeleteError(region)
+    else:
+        try:
+            retry_grpc(
+                NUM_GRPC_RETRIES, ds().delete_multi,
+                [result.key for result in results]
+            )
+        except Exception:
+            raise DatastoreBatchDeleteError(region)
 
+
+def _divide_into_chunks(results: List[datastore.Entity], chunk_size: int) -> \
+        List[List[datastore.Entity]]:
+    list_of_chunks = []
+    for i in range(0, len(results), chunk_size):
+        chunk = results[i: i + chunk_size]
+        list_of_chunks.append(chunk)
+    return list_of_chunks
 
 def _batch_ingest_info_data_from_entities(
         entity_list: List[datastore.Entity]) -> List[BatchIngestInfoData]:
