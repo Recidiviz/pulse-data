@@ -29,6 +29,8 @@ from recidiviz.common.constants.aggregate import (
 )
 from recidiviz import Session
 from recidiviz.ingest.aggregate.regions.tn import tn_aggregate_ingest
+from recidiviz.persistence.database.jails_base_schema import \
+    JailsBase
 from recidiviz.persistence.database.schema.aggregate import dao
 from recidiviz.persistence.database.schema.aggregate.schema import \
     TnFacilityAggregate, TnFacilityFemaleAggregate
@@ -51,7 +53,7 @@ class TestTnAggregateIngest(TestCase):
     """Test that tn_aggregate_ingest correctly parses the TN PDF."""
 
     def setup_method(self, _test_method):
-        fakes.use_in_memory_sqlite_database()
+        fakes.use_in_memory_sqlite_database(JailsBase)
 
     def testParse_ParsesHeadAndTail(self):
         result = self.parsed_pdf[TnFacilityAggregate]

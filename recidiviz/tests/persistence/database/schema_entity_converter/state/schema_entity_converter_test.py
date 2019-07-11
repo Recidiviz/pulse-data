@@ -20,7 +20,9 @@ from unittest import TestCase
 from mock import patch
 
 from recidiviz import Session
-from recidiviz.persistence.database.base_schema import Base
+from recidiviz.persistence.database.database_entity import DatabaseEntity
+from recidiviz.persistence.database.state_base_schema import \
+    StateBase
 from recidiviz.persistence.persistence_utils import primary_key_name_from_cls
 from recidiviz.persistence.database.schema_entity_converter.\
     state.schema_entity_converter import (
@@ -37,7 +39,7 @@ class TestStateSchemaEntityConverter(TestCase):
     """Tests for state/schema_entity_converter.py."""
 
     def setup_method(self, _test_method):
-        fakes.use_in_memory_sqlite_database()
+        fakes.use_in_memory_sqlite_database(StateBase)
 
     @staticmethod
     def _eq_ignore_primary_keys(*args):
@@ -58,7 +60,8 @@ class TestStateSchemaEntityConverter(TestCase):
         patcher.start()
         return patcher
 
-    def _get_schema_class_for_objects(self, schema_objects: List[Base]):
+    def _get_schema_class_for_objects(
+            self, schema_objects: List[DatabaseEntity]):
         schema_classes = \
             list({obj.__class__ for obj in schema_objects})
 

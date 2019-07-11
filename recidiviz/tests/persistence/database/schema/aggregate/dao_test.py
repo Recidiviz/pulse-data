@@ -28,6 +28,8 @@ from recidiviz import Session
 from recidiviz.common.constants.aggregate import (
     enum_canonical_strings as enum_strings
 )
+from recidiviz.persistence.database.jails_base_schema import \
+    JailsBase
 from recidiviz.persistence.database.schema.aggregate import dao
 from recidiviz.persistence.database.schema.aggregate.schema import \
     FlCountyAggregate, FlFacilityAggregate
@@ -40,7 +42,7 @@ class TestDao(TestCase):
     """Test that the methods in dao.py correctly read from the SQL database."""
 
     def setup_method(self, _test_method):
-        fakes.use_in_memory_sqlite_database()
+        fakes.use_in_memory_sqlite_database(JailsBase)
 
     def testWriteDf(self):
         # Arrange

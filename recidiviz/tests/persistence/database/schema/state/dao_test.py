@@ -22,6 +22,8 @@ from unittest import TestCase
 
 from recidiviz import Session
 from recidiviz.common.constants.state import external_id_types
+from recidiviz.persistence.database.state_base_schema import \
+    StateBase
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.database.schema_entity_converter import (
     schema_entity_converter as converter,
@@ -41,7 +43,7 @@ class TestDao(TestCase):
     """Test that the methods in dao.py correctly read from the SQL database."""
 
     def setup_method(self, _test_method):
-        fakes.use_in_memory_sqlite_database()
+        fakes.use_in_memory_sqlite_database(StateBase)
 
     def test_readPeople_byFullName(self):
         # Arrange

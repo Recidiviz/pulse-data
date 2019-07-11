@@ -41,6 +41,8 @@ def clear_ds():
 SECRET_KIND = 'Secret'
 CACHED_SECRETS: Dict[str, str] = {}
 
+# TODO(1831): Move secrets to files in GCSFS buckets and read from there
+#  instead so we can more flexibly configure ACLs on different secrets.
 def get_secret(name):
     """Retrieve secret from local cache or datastore
 

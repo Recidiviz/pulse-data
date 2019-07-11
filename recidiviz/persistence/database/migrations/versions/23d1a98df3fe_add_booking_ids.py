@@ -23,7 +23,7 @@ from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
-from recidiviz.persistence.database.base_schema import Base
+from recidiviz.persistence.database.jails_base_schema import JailsBase
 
 # revision identifiers, used by Alembic.
 revision = '23d1a98df3fe'
@@ -44,7 +44,7 @@ def upgrade():
             'booking_id', sa.Integer(), nullable=False, server_default='0'))
     bond_table_view = sa.Table(
         'bond',
-        Base.metadata,
+        JailsBase.metadata,
         sa.Column('bond_id', sa.Integer(), primary_key=True),
         sa.Column('booking_id', sa.Integer()),
         extend_existing=True)
@@ -73,7 +73,7 @@ def upgrade():
             'booking_id', sa.Integer(), nullable=False, server_default='0'))
     bond_history_table_view = sa.Table(
         'bond_history',
-        Base.metadata,
+        JailsBase.metadata,
         sa.Column('bond_history_id', sa.Integer(), primary_key=True),
         sa.Column('bond_id', sa.Integer()),
         sa.Column('booking_id', sa.Integer()),

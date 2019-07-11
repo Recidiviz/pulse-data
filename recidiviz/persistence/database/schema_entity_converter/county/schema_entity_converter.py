@@ -21,7 +21,7 @@ objects.
 
 from types import ModuleType
 
-from recidiviz.persistence.database.base_schema import Base
+from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema_entity_converter. \
     base_schema_entity_converter import (BaseSchemaEntityConverter,
                                          FieldNameType, DstBaseType,
@@ -52,9 +52,11 @@ class _CountySchemaEntityConverter(BaseSchemaEntityConverter[SrcBaseType,
         return field == 'related_sentences'
 
 
-class CountyEntityToSchemaConverter(_CountySchemaEntityConverter[Entity, Base]):
+class CountyEntityToSchemaConverter(
+        _CountySchemaEntityConverter[Entity, DatabaseEntity]):
     pass
 
 
-class CountySchemaToEntityConverter(_CountySchemaEntityConverter[Base, Entity]):
+class CountySchemaToEntityConverter(
+        _CountySchemaEntityConverter[DatabaseEntity, Entity]):
     pass

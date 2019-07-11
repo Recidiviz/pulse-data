@@ -24,17 +24,31 @@ from sqlalchemy.orm import Session
 import recidiviz.persistence.database.history.historical_snapshot_update as \
     update_snapshots
 from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.schema_person_type import \
     SchemaPersonType
 from recidiviz.persistence.entity import entities
 from recidiviz.persistence.database.schema_entity_converter import (
     schema_entity_converter as converter,
 )
-from recidiviz.persistence.database.base_schema import Base
 from recidiviz.persistence.database.schema.county import schema as county_schema
+from recidiviz.persistence.database.schema.state import schema as state_schema
 from recidiviz.persistence.entity.base_entity import Entity
 
 _DUMMY_BOOKING_ID = -1
+
+
+def _convert_entity_people_to_schema_people(
+        people: List[entities.EntityPersonType]) -> List[SchemaPersonType]:
+
+    def _as_schema_person_type(e: DatabaseEntity) -> SchemaPersonType:
+        if not isinstance(e, county_schema.Person) and \
+                not isinstance(e, state_schema.StatePerson):
+            raise ValueError(f"Unexpected database entity type: [{type(e)}]")
+        return e
+
+    return [_as_schema_person_type(p)
+            for p in converter.convert_entities_to_schema(people)]
 
 
 def write_people(session: Session,
@@ -50,7 +64,7 @@ def write_people(session: Session,
         orphaned_entities = []
     return _save_record_trees(
         session,
-        converter.convert_entities_to_schema(people),
+        _convert_entity_people_to_schema_people(people),
         converter.convert_entities_to_schema(orphaned_entities),
         metadata)
 
@@ -68,7 +82,7 @@ def write_person(session: Session,
         orphaned_entities = []
     persisted_people = _save_record_trees(
         session,
-        [converter.convert_entity_to_schema_object(person)],
+        _convert_entity_people_to_schema_people([person]),
         converter.convert_entities_to_schema(orphaned_entities),
         metadata)
     # persisted_people will only contain the single person passed in
@@ -77,7 +91,7 @@ def write_person(session: Session,
 
 def _save_record_trees(session: Session,
                        root_people: List[SchemaPersonType],
-                       orphaned_entities: List[Base],
+                       orphaned_entities: List[DatabaseEntity],
                        metadata: IngestMetadata):
     """Persists all record trees rooted at |root_people|. Also performs any
     historical snapshot updates required for any entities in any of these

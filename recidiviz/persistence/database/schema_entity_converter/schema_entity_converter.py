@@ -21,6 +21,7 @@ corresponding schema Base objects and vice versa.
 from types import ModuleType
 from typing import List, Any, Sequence
 
+from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema_entity_converter.county.\
     schema_entity_converter import (
         CountyEntityToSchemaConverter,
@@ -34,7 +35,6 @@ from recidiviz.persistence.database.schema_entity_converter.state.\
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.persistence.database.schema.county import schema as county_schema
-from recidiviz.persistence.database.base_schema import Base
 from recidiviz.persistence.database.schema.state import schema as state_schema
 from recidiviz.persistence.entity.state import entities as state_entities
 
@@ -43,7 +43,8 @@ def _is_obj_in_module(obj: Any, module: ModuleType) -> bool:
     return obj.__module__ == module.__name__
 
 
-def convert_entities_to_schema(entities: Sequence[Entity]) -> List[Base]:
+def convert_entities_to_schema(
+        entities: Sequence[Entity]) -> List[DatabaseEntity]:
     def _is_county_entity(obj: Any) -> bool:
         return _is_obj_in_module(obj, county_entities) and \
             issubclass(obj.__class__, Entity)
@@ -61,14 +62,14 @@ def convert_entities_to_schema(entities: Sequence[Entity]) -> List[Base]:
 
 
 def convert_schema_objects_to_entity(
-        schema_objects: List[Base]) -> List[Entity]:
+        schema_objects: List[DatabaseEntity]) -> List[Entity]:
     def _is_county_schema_object(obj: Any) -> bool:
         return _is_obj_in_module(obj, county_schema) and \
-            issubclass(obj.__class__, Base)
+            issubclass(obj.__class__, DatabaseEntity)
 
     def _is_state_schema_object(obj: Any) -> bool:
         return _is_obj_in_module(obj, state_schema) and \
-            issubclass(obj.__class__, Base)
+            issubclass(obj.__class__, DatabaseEntity)
 
     if all(_is_county_schema_object(obj) for obj in schema_objects):
         return CountySchemaToEntityConverter().convert_all(schema_objects)
@@ -78,7 +79,7 @@ def convert_schema_objects_to_entity(
                      f"[{county_schema.__name__}] or [{state_schema.__name__}]")
 
 
-def convert_entity_to_schema_object(entity: Entity) -> Base:
+def convert_entity_to_schema_object(entity: Entity) -> DatabaseEntity:
     result_list = convert_entities_to_schema([entity])
     if len(result_list) != 1:
         raise AssertionError(
@@ -86,7 +87,7 @@ def convert_entity_to_schema_object(entity: Entity) -> Base:
     return result_list[0]
 
 
-def convert_schema_object_to_entity(schema_object: Base) -> Entity:
+def convert_schema_object_to_entity(schema_object: DatabaseEntity) -> Entity:
     result_list = convert_schema_objects_to_entity([schema_object])
     if len(result_list) != 1:
         raise AssertionError(

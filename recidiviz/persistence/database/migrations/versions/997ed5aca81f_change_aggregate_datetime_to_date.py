@@ -24,7 +24,7 @@ from datetime import date
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
-from recidiviz.persistence.database.base_schema import Base
+from recidiviz.persistence.database.jails_base_schema import JailsBase
 
 # revision identifiers, used by Alembic.
 revision = '997ed5aca81f'
@@ -50,11 +50,12 @@ def upgrade():
         sa.Column('report_date', sa.Date(), nullable=True))
     # 3. Create a temporary view of the table containing both columns (These
     # columns must be explicitly declared, because the version of the table
-    # defined in Base.metadata will not reflect the new column naming. The table
-    # view must also include record_id to allow its use in a WHERE clause)
+    # defined in JailsBase.metadata will not reflect the
+    # new column naming. The table view must also include record_id to allow its
+    # use in a WHERE clause)
     dc_facility_table_view = sa.Table(
         'dc_facility_aggregate',
-        Base.metadata,
+        JailsBase.metadata,
         sa.Column('record_id', sa.Integer(), primary_key=True),
         sa.Column('report_date_old', postgresql.TIMESTAMP()),
         sa.Column('report_date', sa.Date()),
