@@ -16,15 +16,14 @@
 # =============================================================================
 """Utils for testing the calculator code."""
 
-# pylint: disable=unused-import,wrong-import-order
 from typing import Any, Dict, List
 
-from recidiviz.persistence.database.base_schema import Base
 from recidiviz.common.constants.entity_enum import EntityEnum
-from recidiviz.persistence.entity.state.entities import Entity
+from recidiviz.persistence.database.database_entity import DatabaseEntity
 
 
-def normalized_database_base_dict(database_base: Base) -> Dict[str, Any]:
+def normalized_database_base_dict(
+        database_base: DatabaseEntity) -> Dict[str, Any]:
     """Takes in a Base object and returns a dictionary with only keys
     that are column property names in the database. If any columns are not
     currently represented in the entity, sets the value as None for that key.
@@ -43,8 +42,8 @@ def normalized_database_base_dict(database_base: Base) -> Dict[str, Any]:
     return new_object_dict
 
 
-def normalized_database_base_dict_list(database_bases: List[Base]) -> \
-        List[Dict[str, Any]]:
+def normalized_database_base_dict_list(
+        database_bases: List[DatabaseEntity]) -> List[Dict[str, Any]]:
     """Returns a list of normalized database base dictionaries."""
     dict_list = []
 
@@ -54,7 +53,8 @@ def normalized_database_base_dict_list(database_bases: List[Base]) -> \
     return dict_list
 
 
-def remove_relationship_properties(database_base: Base) -> Base:
+def remove_relationship_properties(
+        database_base: DatabaseEntity) -> DatabaseEntity:
     """Removes the attributes corresponding to relationship properties
     on the Base. Used for tests to remove unwanted forward and back edges
     that mess with equality when hydrating only one degree away from a

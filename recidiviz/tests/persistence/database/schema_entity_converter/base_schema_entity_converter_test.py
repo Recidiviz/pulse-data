@@ -30,6 +30,8 @@ from recidiviz.tests.persistence.database.schema_entity_converter \
     import test_entities as entities
 from recidiviz.tests.persistence.database.schema_entity_converter \
     import test_schema as schema
+from recidiviz.tests.persistence.database.schema_entity_converter.\
+    test_base_schema import TestBase
 from recidiviz.tests.persistence.database.schema_entity_converter. \
     test_entities import RootType
 from recidiviz.tests.utils import fakes
@@ -67,7 +69,7 @@ class TestBaseSchemaEntityConverter(TestCase):
     """Tests for BaseSchemaEntityConverter"""
 
     def setup_method(self, _test_method):
-        fakes.use_in_memory_sqlite_database()
+        fakes.use_in_memory_sqlite_database(TestBase)
 
         session = Session()
         self.assertEqual(len(session.query(schema.Root).all()), 0)

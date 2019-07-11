@@ -30,6 +30,8 @@ from recidiviz.common.constants.aggregate import (
 )
 from recidiviz import Session
 from recidiviz.ingest.aggregate.regions.fl import fl_aggregate_ingest
+from recidiviz.persistence.database.jails_base_schema import \
+    JailsBase
 from recidiviz.persistence.database.schema.aggregate import dao
 from recidiviz.persistence.database.schema.aggregate.schema import \
     FlCountyAggregate, FlFacilityAggregate
@@ -49,7 +51,7 @@ class TestFlAggregateIngest(TestCase):
     """Test that fl_aggregate_ingest correctly parses the FL PDF."""
 
     def setup_method(self, _test_method):
-        fakes.use_in_memory_sqlite_database()
+        fakes.use_in_memory_sqlite_database(JailsBase)
 
     # ==================== TABLE 1 TESTS ====================
 

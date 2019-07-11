@@ -15,14 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 
-"""Defines the base class for all table classes across all schemas.
+"""Defines the base class for all table classes for the Jails schema.
 
-For actual schema definitions, see /aggregate/schema.py, /county/schema.py, and
-/state/schema.py.
+For actual schema definitions, see /aggregate/schema.py and /county/schema.py.
 """
 
 from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 
-# Base class for all table classes
-Base: DeclarativeMeta = declarative_base(cls=DatabaseEntity)
+# Base class for all table classes in the Jails schema
+JailsBase: DeclarativeMeta = declarative_base(cls=DatabaseEntity)

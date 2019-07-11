@@ -16,14 +16,13 @@
 # =============================================================================
 """Initialize our database schema for in-memory testing via sqlite3."""
 
-import sqlalchemy
+from sqlalchemy.ext.declarative import DeclarativeMeta
 
-import recidiviz
-from recidiviz import Session
-from recidiviz.persistence.database.base_schema import Base
+from recidiviz.persistence.database.db_connect import \
+    connect_session_to_database_instance
 
 
-def use_in_memory_sqlite_database() -> None:
+def use_in_memory_sqlite_database(declarative_base: DeclarativeMeta) -> None:
     """Creates a new SqlDatabase object used to communicate to a fake in-memory
     sqlite database.
 
@@ -32,14 +31,12 @@ def use_in_memory_sqlite_database() -> None:
     2. Create all tables in the newly created sqlite database
     3. Bind the global SessionMaker to the new fake database engine
     """
-    recidiviz.db_engine = sqlalchemy.create_engine('sqlite:///:memory:')
-    sqlalchemy.event.listen(
-        recidiviz.db_engine, 'connect', _enforce_foreign_key_constraints)
-    Base.metadata.create_all(recidiviz.db_engine)
-    Session.configure(bind=recidiviz.db_engine)
+
+    connect_session_to_database_instance(db_url='sqlite:///:memory:',
+                                         schema_base=declarative_base)
 
 
-def use_on_disk_sqlite_database() -> None:
+def use_on_disk_sqlite_database(declarative_base: DeclarativeMeta) -> None:
     """Creates a new SqlDatabase object used to communicate to an on-disk
     sqlite database.
 
@@ -48,11 +45,8 @@ def use_on_disk_sqlite_database() -> None:
     2. Create all tables in the newly created sqlite database
     3. Bind the global SessionMaker to the new database engine
     """
-    recidiviz.db_engine = sqlalchemy.create_engine('sqlite:///recidiviz.db')
-    sqlalchemy.event.listen(
-        recidiviz.db_engine, 'connect', _enforce_foreign_key_constraints)
-    Base.metadata.create_all(recidiviz.db_engine)
-    Session.configure(bind=recidiviz.db_engine)
+    connect_session_to_database_instance(db_url='sqlite:///recidiviz.db',
+                                         schema_base=declarative_base)
 
 
 def _enforce_foreign_key_constraints(connection, _) -> None:

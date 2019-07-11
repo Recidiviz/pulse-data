@@ -36,7 +36,9 @@ def write_df(table: DeclarativeMeta, df: pd.DataFrame) -> None:
     |table|, then that row will be skipped.
     """
     try:
-        df.to_sql(table.__tablename__, recidiviz.db_engine, if_exists='append',
+        df.to_sql(table.__tablename__,
+                  recidiviz.jails_db_engine,
+                  if_exists='append',
                   index=False)
     except IntegrityError:
         _write_df_only_successful_rows(table, df)
@@ -49,8 +51,10 @@ def _write_df_only_successful_rows(
     for i in range(len(df)):
         row = df.iloc[i:i + 1]
         try:
-            row.to_sql(table.__tablename__, recidiviz.db_engine,
-                       if_exists='append', index=False)
+            row.to_sql(table.__tablename__,
+                       recidiviz.jails_db_engine,
+                       if_exists='append',
+                       index=False)
         except IntegrityError:
             # Skip rows that can't be written
             logging.info("Skipping write_df to %s table: %s.", table, row)

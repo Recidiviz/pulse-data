@@ -28,6 +28,8 @@ from recidiviz.common.constants.aggregate import (
     enum_canonical_strings as enum_strings
 )
 from recidiviz.ingest.aggregate.regions.ca import ca_aggregate_ingest
+from recidiviz.persistence.database.jails_base_schema import \
+    JailsBase
 from recidiviz.persistence.database.schema.aggregate import dao
 from recidiviz.persistence.database.schema.aggregate.schema import \
     CaFacilityAggregate
@@ -43,7 +45,7 @@ class TestCaAggregateIngest(TestCase):
     """Test that ca_aggregate_ingest correctly parses the CA report file."""
 
     def setup_method(self, _test_method):
-        fakes.use_in_memory_sqlite_database()
+        fakes.use_in_memory_sqlite_database(JailsBase)
 
     def testParse_ParsesHeadAndTail(self):
         result = PARSED_RESULT[CaFacilityAggregate]

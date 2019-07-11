@@ -22,8 +22,7 @@ static and cannot be trivially made environment-specific. So this includes
 functionality for determining which environment we are in and loading the
 appropriate variables.
 """
-
-
+from enum import Enum
 from http import HTTPStatus
 import logging
 import os
@@ -35,7 +34,13 @@ from google.cloud import datastore, environment_vars
 import recidiviz
 
 
-GAE_ENVIRONMENTS = {'production', 'staging'}
+class GaeEnvironment(Enum):
+    STAGING = 'staging'
+    PRODUCTION = 'production'
+
+
+GAE_ENVIRONMENTS = {env.value for env in GaeEnvironment}
+
 def in_gae():
     """ Check whether we're currently running on local dev machine or in prod
 
@@ -61,6 +66,14 @@ def get_gae_environment():
         The gae instance we are running in, or None if it is not set
     """
     return os.getenv('RECIDIVIZ_ENV')
+
+
+def in_gae_production():
+    return in_gae() and get_gae_environment() == GaeEnvironment.PRODUCTION
+
+
+def in_gae_staging():
+    return in_gae() and get_gae_environment() == GaeEnvironment.STAGING
 
 
 def get_datastore_client() -> datastore.Client:

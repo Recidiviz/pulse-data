@@ -25,6 +25,8 @@ from recidiviz import Session
 from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info import IngestInfo
+from recidiviz.persistence.database.jails_base_schema import \
+    JailsBase
 from recidiviz.persistence.entity.county import entities
 from recidiviz.persistence.database.schema_entity_converter import (
     schema_entity_converter as converter,
@@ -52,7 +54,7 @@ class TestDao(TestCase):
     """Test that the methods in dao.py correctly read from the SQL database."""
 
     def setup_method(self, _test_method):
-        fakes.use_in_memory_sqlite_database()
+        fakes.use_in_memory_sqlite_database(JailsBase)
 
     def test_readPeopleWithOpenBookingsBeforeDate(self):
         # Arrange

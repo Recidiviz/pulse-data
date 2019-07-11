@@ -26,7 +26,7 @@ from apache_beam.typehints import with_input_types, with_output_types
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.common.attr_utils import is_property_list, \
     is_property_forward_ref
-from recidiviz.persistence.database.base_schema import Base
+from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.entity import entity_utils
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.database import schema_utils
@@ -40,7 +40,7 @@ class BuildRootEntity(beam.PTransform):
     # TODO(1913): Add more query filtering parameters
     def __init__(self, dataset: Optional[str],
                  data_dict: Optional[Dict[str, Any]],
-                 root_schema_class: Type[Base],
+                 root_schema_class: Type[DatabaseEntity],
                  root_entity_class: Type[state_entities.Entity],
                  unifying_id_field: str,
                  build_related_entities: bool):
@@ -210,7 +210,7 @@ class _ExtractRelationshipPropertyEntities(beam.PTransform):
     # TODO(1913): Add more query filtering parameters
     def __init__(self, dataset: Optional[str],
                  data_dict: Optional[Dict[str, Any]],
-                 root_schema_class: Type[Base], root_id_field: str,
+                 root_schema_class: Type[DatabaseEntity], root_id_field: str,
                  unifying_id_field: str):
         super(_ExtractRelationshipPropertyEntities, self).__init__()
         self._dataset = dataset
@@ -519,7 +519,7 @@ class _HydrateEntity(beam.DoFn):
 
 
 @with_input_types(beam.typehints.Tuple[int, Dict[str, Any]],
-                  **{'schema_class': Type[Base]})
+                  **{'schema_class': Type[DatabaseEntity]})
 @with_output_types(beam.typehints.Tuple[int, BuildableAttr])
 class _HydrateRootEntitiesWithRelationshipPropertyEntities(beam.DoFn):
     """Hydrates the cross-entity relationship properties on root entities."""
@@ -683,7 +683,7 @@ def _get_value_from_element(element: Dict[str, Any], field: str) -> Any:
     return value
 
 
-def _validate_schema_entity_pair(schema_class: Type[Base],
+def _validate_schema_entity_pair(schema_class: Type[DatabaseEntity],
                                  entity_class: Type[state_entities.Entity]):
     """Throws an error if the schema_class and entity_class do not match, or
     if either of them are None.

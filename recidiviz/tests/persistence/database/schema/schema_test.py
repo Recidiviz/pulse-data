@@ -17,9 +17,8 @@
 """
 Tests for SQLAlchemy enums defined in recidiviz.persistence.database.schema
 """
-from inspect import isclass
 from types import ModuleType
-from typing import List, Type
+from typing import List
 from unittest import TestCase
 
 import sqlalchemy
@@ -31,12 +30,13 @@ import recidiviz.persistence.database.schema.shared_enums as shared_enums
 
 
 from recidiviz.common.constants import person_characteristics
-from recidiviz.persistence.database.base_schema import Base
 from recidiviz.persistence.database.schema.aggregate import (
     schema as aggregate_schema
 )
 from recidiviz.persistence.database.schema.county import schema as county_schema
 from recidiviz.persistence.database.schema.state import schema as state_schema
+from recidiviz.persistence.database.schema_utils import \
+    get_all_table_classes_in_module
 
 ALL_SCHEMA_MODULES = [county_schema, state_schema, aggregate_schema]
 
@@ -144,8 +144,7 @@ class TestSchemaTableConsistency(TestCase):
     def testNoRepeatTableNames(self):
         table_names_set = set()
         for schema_module in ALL_SCHEMA_MODULES:
-            table_classes = \
-                self._get_all_schema_table_classes_in_module(schema_module)
+            table_classes = get_all_table_classes_in_module(schema_module)
             for cls in table_classes:
                 table_name = cls.__tablename__
                 self.assertNotIn(
@@ -159,8 +158,7 @@ class TestSchemaTableConsistency(TestCase):
     def testNoRepeatTableClassNames(self):
         table_class_names_set = set()
         for schema_module in ALL_SCHEMA_MODULES:
-            table_classes = \
-                self._get_all_schema_table_classes_in_module(schema_module)
+            table_classes = get_all_table_classes_in_module(schema_module)
             for cls in table_classes:
                 table_class_name = cls.__name__
                 self.assertNotIn(
@@ -172,8 +170,7 @@ class TestSchemaTableConsistency(TestCase):
 
     def testAllTableNamesMatchClassNames(self):
         for schema_module in ALL_SCHEMA_MODULES:
-            for cls in \
-                    self._get_all_schema_table_classes_in_module(schema_module):
+            for cls in get_all_table_classes_in_module(schema_module):
                 table_name = cls.__tablename__
                 table_name_to_capital_case = table_name.title().replace("_", "")
                 self.assertEqual(
@@ -184,8 +181,7 @@ class TestSchemaTableConsistency(TestCase):
 
     def testDatabaseEntityFunctionality(self):
         for schema_module in ALL_SCHEMA_MODULES:
-            for cls in \
-                    self._get_all_schema_table_classes_in_module(schema_module):
+            for cls in get_all_table_classes_in_module(schema_module):
                 primary_key_col_name = cls.get_primary_key_column_name()
                 self.assertIsNotNone(primary_key_col_name)
                 primary_key_prop_name = cls.get_column_property_names()
@@ -194,14 +190,3 @@ class TestSchemaTableConsistency(TestCase):
                 # Just should not crash
                 cls.get_relationship_property_names()
                 cls.get_relationship_property_names_and_properties()
-
-    @staticmethod
-    def _get_all_schema_table_classes_in_module(
-            schema_module: ModuleType) -> List[Type[Base]]:
-        subclass_types = []
-        for attribute_name in dir(schema_module):
-            attribute = getattr(schema_module, attribute_name)
-            if isclass(attribute) and attribute is not Base and \
-                    issubclass(attribute, Base):
-                subclass_types.append(attribute)
-        return subclass_types

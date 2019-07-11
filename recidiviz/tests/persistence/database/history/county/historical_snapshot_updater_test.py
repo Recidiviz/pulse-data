@@ -30,14 +30,16 @@ from recidiviz.common.constants.person_characteristics import \
     Ethnicity, Gender, Race, ResidencyStatus
 from recidiviz.common.constants.county.sentence import SentenceStatus
 from recidiviz.common.ingest_metadata import SystemLevel
-from recidiviz.persistence.database.base_schema import Base
+from recidiviz.persistence.database.jails_base_schema import \
+    JailsBase
+from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.county import schema as county_schema
 from recidiviz.persistence.persistence_utils import primary_key_value_from_obj
 from recidiviz.tests.persistence.database.history.\
     base_historical_snapshot_updater_test import (
         BaseHistoricalSnapshotUpdaterTest
     )
-
+from recidiviz.tests.utils import fakes
 
 _SCHEMA_OBJECT_TYPES_TO_IGNORE = [
     # TODO(#1145): remove once sentence relationships are implemented
@@ -47,6 +49,9 @@ _SCHEMA_OBJECT_TYPES_TO_IGNORE = [
 
 class TestCountyHistoricalSnapshotUpdater(BaseHistoricalSnapshotUpdaterTest):
     """Tests for CountyHistoricalSnapshotUpdater"""
+
+    def setup_method(self, _test_method):
+        fakes.use_in_memory_sqlite_database(JailsBase)
 
     def generate_schema_county_person_obj_tree(
             self) -> county_schema.Person:
@@ -195,14 +200,14 @@ class TestCountyHistoricalSnapshotUpdater(BaseHistoricalSnapshotUpdaterTest):
             county_schema.Person, county_schema, _SCHEMA_OBJECT_TYPES_TO_IGNORE)
 
         ingest_time_overrides_by_type: \
-            Dict[Type[Base], Dict[int, datetime.date]] = {
+            Dict[Type[DatabaseEntity], Dict[int, datetime.date]] = {
                 county_schema.Sentence: {
                     12345: datetime.datetime(2018, 7, 14),
                 }
             }
 
         def _get_ingest_time_override_for_obj(
-                obj: Base) -> Optional[datetime.date]:
+                obj: DatabaseEntity) -> Optional[datetime.date]:
             obj_type = type(obj)
             if obj_type in ingest_time_overrides_by_type:
                 overrides_for_type = ingest_time_overrides_by_type[obj_type]

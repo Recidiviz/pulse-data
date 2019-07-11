@@ -29,6 +29,8 @@ from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.person_characteristics import Race
 from recidiviz.common.constants.county.sentence import SentenceStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.persistence.database.jails_base_schema import \
+    JailsBase
 from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.persistence.database import database
 from recidiviz.persistence.database.schema_entity_converter import (
@@ -65,7 +67,7 @@ class TestDatabase(TestCase):
     database """
 
     def setup_method(self, _test_method):
-        fakes.use_in_memory_sqlite_database()
+        fakes.use_in_memory_sqlite_database(JailsBase)
 
     def testWritePerson_noExistingSnapshots_createsSnapshots(self):
         act_session = Session()

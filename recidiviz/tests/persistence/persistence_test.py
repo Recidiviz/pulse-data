@@ -34,6 +34,8 @@ from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo, Charge, \
     Sentence
 from recidiviz.ingest.scrape.ingest_utils import convert_ingest_info_to_proto
 from recidiviz.persistence import persistence
+from recidiviz.persistence.database.jails_base_schema import \
+    JailsBase
 from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.persistence.database import database
 from recidiviz.persistence.database.schema.county import schema, \
@@ -88,7 +90,7 @@ class TestPersistence(TestCase):
     """Test that the persistence layer correctly writes to the SQL database."""
 
     def setup_method(self, _test_method):
-        fakes.use_in_memory_sqlite_database()
+        fakes.use_in_memory_sqlite_database(JailsBase)
 
     def test_localRun(self):
         with patch('os.getenv', Mock(return_value='Local')):

@@ -28,7 +28,8 @@ from recidiviz.ingest.scrape import ingest_utils
 from recidiviz.utils import environment
 
 Session = sessionmaker()
-db_engine: Optional[Engine]
+jails_db_engine: Optional[Engine]
+state_db_engine: Optional[Engine]
 
 # We want to add these globally because the serialization hooks are used in
 # ingest and persistence.

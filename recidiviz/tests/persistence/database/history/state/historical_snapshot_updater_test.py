@@ -23,16 +23,22 @@ from more_itertools import one
 from recidiviz import Session
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.persistence.database.schema.state import schema as state_schema
+from recidiviz.persistence.database.state_base_schema import \
+    StateBase
 from recidiviz.tests.persistence.database.history.\
     base_historical_snapshot_updater_test import (
         BaseHistoricalSnapshotUpdaterTest
     )
 from recidiviz.tests.persistence.database.database_test_utils import \
     generate_schema_state_person_obj_tree
+from recidiviz.tests.utils import fakes
 
 
 class TestStateHistoricalSnapshotUpdater(BaseHistoricalSnapshotUpdaterTest):
     """Tests for StateHistoricalSnapshotUpdater"""
+
+    def setup_method(self, _test_method):
+        fakes.use_in_memory_sqlite_database(StateBase)
 
     def testStateRecordTreeSnapshotUpdate(self):
         person = generate_schema_state_person_obj_tree()

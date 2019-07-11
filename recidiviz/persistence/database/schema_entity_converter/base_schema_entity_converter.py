@@ -24,21 +24,21 @@ from collections import defaultdict
 from enum import Enum
 from types import ModuleType
 from typing import Generic, Dict, List, Type, Optional, Any, Tuple, Sequence, \
-    TypeVar
+    TypeVar, Union
 
 import attr
 
 from recidiviz.common.attr_utils import is_enum, get_enum_cls
 from recidiviz.common.attr_mixins import BuildableAttr
-from recidiviz.persistence.database.base_schema import Base
+from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import SchemaEdgeDirectionChecker
 
 SrcIdType = int
 FieldNameType = str
 
-SrcBaseType = TypeVar('SrcBaseType', Base, Entity)
-DstBaseType = TypeVar('DstBaseType', Base, Entity)
+SrcBaseType = TypeVar('SrcBaseType', DatabaseEntity, Entity)
+DstBaseType = TypeVar('DstBaseType', DatabaseEntity, Entity)
 
 
 class DatabaseConversionError(Exception):
@@ -52,11 +52,11 @@ class _Direction(Enum):
     ENTITY_TO_SCHEMA = 2
 
     @staticmethod
-    def for_cls(src_cls):
+    def for_cls(src_cls: Type):
         if issubclass(src_cls, Entity):
             return _Direction.ENTITY_TO_SCHEMA
 
-        if issubclass(src_cls, Base):
+        if issubclass(src_cls, DatabaseEntity):
             return _Direction.SCHEMA_TO_ENTITY
 
         raise DatabaseConversionError(
@@ -173,24 +173,26 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
         if src_id in self._converted_map:
             return self._converted_map[src_id]
 
-        direction = _Direction.for_cls(src.__class__)
-
-        schema_cls = self._get_schema_class(src)
-        entity_cls = self._get_entity_class(src)
+        schema_cls: Type[DatabaseEntity] = self._get_schema_class(src)
+        entity_cls: Type[Entity] = self._get_entity_class(src)
 
         if entity_cls is None or schema_cls is None:
             raise DatabaseConversionError("Both |entity_cls| and |schema_cls| "
                                           "should be not None")
 
-        if direction is _Direction.ENTITY_TO_SCHEMA:
-            dst = schema_cls()
-        else:
+        if isinstance(src, Entity):
+            dst_builder: \
+                Union[BuildableAttr.Builder, DatabaseEntity] = schema_cls()
+        elif isinstance(src, DatabaseEntity):
             if not issubclass(entity_cls, BuildableAttr):
                 raise DatabaseConversionError(
                     f"Expected [{entity_cls}] to be a subclass of "
                     f"BuildableAttr, but it is not")
 
-            dst = entity_cls.builder()
+            dst_builder = entity_cls.builder()
+        else:
+            raise DatabaseConversionError(
+                "Unable to convert class [{0}]".format(src.__class__))
 
         for field, attribute in attr.fields_dict(entity_cls).items():
             if self._should_skip_field(field):
@@ -215,7 +217,8 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
                     continue
 
                 value: Optional[Any] = values
-            elif issubclass(type(v), Entity) or issubclass(type(v), Base):
+            elif issubclass(type(v), Entity) or issubclass(type(v),
+                                                           DatabaseEntity):
                 next_src = v
                 if self._direction_checker.is_back_edge(src, next_src):
                     self._register_back_edge(src, next_src, field)
@@ -226,15 +229,19 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
             elif is_enum(attribute):
                 value = self._convert_enum(src,
                                            field,
-                                           attribute,
-                                           direction)
+                                           attribute)
             else:
                 value = v
 
-            setattr(dst, field, value)
+            setattr(dst_builder, field, value)
 
-        if direction is _Direction.SCHEMA_TO_ENTITY:
-            dst = dst.build()
+        if isinstance(dst_builder, BuildableAttr.Builder):
+            dst = dst_builder.build()
+        elif isinstance(dst_builder, DatabaseEntity):
+            dst = dst_builder
+        else:
+            raise DatabaseConversionError(
+                f"Unexpected type [{type(dst_builder)}] for dst_builder")
 
         self._converted_map[src_id] = dst
 
@@ -323,13 +330,13 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
         self._check_is_valid_src_module(src)
         return getattr(self._get_entities_module(), src.__class__.__name__)
 
-    def _get_schema_class(self, src: SrcBaseType) -> Type[Base]:
+    def _get_schema_class(self, src: SrcBaseType) -> Type[DatabaseEntity]:
         self._check_is_valid_src_module(src)
         return getattr(self._get_schema_module(), src.__class__.__name__)
 
     @staticmethod
-    def _convert_enum(src, field, attribute, direction):
-        if direction is _Direction.SCHEMA_TO_ENTITY:
+    def _convert_enum(src, field, attribute):
+        if isinstance(src, DatabaseEntity):
             enum_cls = get_enum_cls(attribute)
             return enum_cls(getattr(src, field))
 

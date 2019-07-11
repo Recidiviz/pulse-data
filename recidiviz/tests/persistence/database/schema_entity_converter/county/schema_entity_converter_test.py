@@ -38,6 +38,8 @@ from recidiviz.common.constants.person_characteristics import (
     ResidencyStatus,
 )
 from recidiviz.common.constants.county.sentence import SentenceStatus
+from recidiviz.persistence.database.jails_base_schema import \
+    JailsBase
 from recidiviz.persistence.database.schema_entity_converter.county.\
     schema_entity_converter import (
         CountyEntityToSchemaConverter,
@@ -159,7 +161,7 @@ _PERSON = entities.Person.new_with_defaults(
 class TestCountySchemaEntityConverter(TestCase):
 
     def setup_method(self, _test_method):
-        fakes.use_in_memory_sqlite_database()
+        fakes.use_in_memory_sqlite_database(JailsBase)
 
     def test_convert_person(self):
         schema_person = CountyEntityToSchemaConverter().convert(_PERSON)
