@@ -21,7 +21,7 @@ objects.
 
 from types import ModuleType
 
-from recidiviz.persistence.database.base_schema import Base
+from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema_entity_converter. \
     base_schema_entity_converter import (
         BaseSchemaEntityConverter,
@@ -53,9 +53,11 @@ class _StateSchemaEntityConverter(BaseSchemaEntityConverter[SrcBaseType,
         return False
 
 
-class StateEntityToSchemaConverter(_StateSchemaEntityConverter[Entity, Base]):
+class StateEntityToSchemaConverter(_StateSchemaEntityConverter[Entity,
+                                                               DatabaseEntity]):
     pass
 
 
-class StateSchemaToEntityConverter(_StateSchemaEntityConverter[Base, Entity]):
+class StateSchemaToEntityConverter(_StateSchemaEntityConverter[DatabaseEntity,
+                                                               Entity]):
     pass

@@ -27,7 +27,7 @@ from typing import List
 from sqlalchemy.orm import Session
 
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.persistence.database.base_schema import Base
+from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.history.county.historical_snapshot_updater \
     import CountyHistoricalSnapshotUpdater
 from recidiviz.persistence.database.history.state.historical_snapshot_updater \
@@ -41,7 +41,7 @@ from recidiviz.persistence.database.schema.state import schema as state_schema
 
 def update_historical_snapshots(session: Session,
                                 root_people: List[SchemaPersonType],
-                                orphaned_schema_objects: List[Base],
+                                orphaned_schema_objects: List[DatabaseEntity],
                                 ingest_metadata: IngestMetadata) -> None:
     """For all entities in all record trees rooted at |root_people| and all
     entities in |orphaned_schema_objects|, performs any required historical

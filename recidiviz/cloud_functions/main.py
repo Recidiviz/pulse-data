@@ -69,6 +69,10 @@ def direct_ingest(data, _):
     _: (google.cloud.functions.Context): Metadata of triggering event.
 
     """
+    # TODO(1831): We want to move to a world where some regions have their own
+    #  distinct buckets for permissions reasons. We need to update this code to
+    #  recognize when we have a region-specific bucket and look for region in
+    #  the bucket name rather than in the subfolder name.
     bucket = data['bucket']
     region, filename = data['name'].split('/')
     project_id = os.environ.get('GCP_PROJECT')

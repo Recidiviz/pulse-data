@@ -16,7 +16,6 @@
 # =============================================================================
 """Base test class for testing subclasses of BaseHistoricalSnapshotUpdater"""
 import datetime
-from inspect import isclass
 from types import ModuleType
 from typing import Set, List
 from unittest import TestCase
@@ -25,25 +24,24 @@ from more_itertools import one
 
 from recidiviz import Session
 from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
-from recidiviz.persistence.database.base_schema import Base
+from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.history.historical_snapshot_update import \
     update_historical_snapshots
+from recidiviz.persistence.database.schema.history_table_shared_columns_mixin \
+    import HistoryTableSharedColumns
 from recidiviz.persistence.database.schema.schema_person_type import \
     SchemaPersonType
 from recidiviz.persistence.database.schema_utils import \
-    historical_table_class_from_obj
+    historical_table_class_from_obj, get_all_table_classes_in_module, \
+    HISTORICAL_TABLE_CLASS_SUFFIX
 from recidiviz.persistence.persistence_utils import primary_key_name_from_obj, \
     primary_key_value_from_obj
-from recidiviz.tests.utils import fakes
 
 
 class BaseHistoricalSnapshotUpdaterTest(TestCase):
     """
     Base test class for testing subclasses of BaseHistoricalSnapshotUpdater
     """
-
-    def setup_method(self, _test_method):
-        fakes.use_in_memory_sqlite_database()
 
     @staticmethod
     def _commit_person(person: SchemaPersonType,
@@ -64,7 +62,7 @@ class BaseHistoricalSnapshotUpdaterTest(TestCase):
 
     def _check_all_non_history_schema_object_types_in_list(
             self,
-            schema_objects: List[Base],
+            schema_objects: List[DatabaseEntity],
             schema: ModuleType,
             schema_object_type_names_to_ignore: List[str]) -> None:
         expected_schema_object_types = \
@@ -82,14 +80,13 @@ class BaseHistoricalSnapshotUpdaterTest(TestCase):
     @staticmethod
     def _get_all_non_history_schema_object_type_names_in_module(
             schema: ModuleType) -> Set[str]:
+
+        all_table_classes = get_all_table_classes_in_module(schema)
         expected_schema_object_types: Set[str] = set()
-        for attribute_name in dir(schema):
-            attribute = getattr(schema, attribute_name)
-            # Find all master (non-historical) schema object types
-            if isclass(attribute) and attribute is not Base and \
-                    issubclass(attribute, Base) \
-                    and not attribute_name.endswith('History'):
-                expected_schema_object_types.add(attribute_name)
+        for table_class in all_table_classes:
+            class_name = table_class.__name__
+            if not class_name.endswith(HISTORICAL_TABLE_CLASS_SUFFIX):
+                expected_schema_object_types.add(class_name)
 
         return expected_schema_object_types
 
@@ -97,7 +94,8 @@ class BaseHistoricalSnapshotUpdaterTest(TestCase):
             self,
             schema_person_type: SchemaPersonType,
             schema: ModuleType,
-            schema_object_type_names_to_ignore: List[str]) -> List[Base]:
+            schema_object_type_names_to_ignore: List[str]
+    ) -> List[DatabaseEntity]:
         """Generates a list of all schema objects stored in the database that
         can be reached from an object with the provided type.
 
@@ -121,7 +119,7 @@ class BaseHistoricalSnapshotUpdaterTest(TestCase):
         session = Session()
         person = one(session.query(schema_person_type).all())
 
-        schema_objects: Set[Base] = {person}
+        schema_objects: Set[DatabaseEntity] = {person}
         unprocessed = list([person])
         while unprocessed:
             schema_object = unprocessed.pop()
@@ -132,7 +130,7 @@ class BaseHistoricalSnapshotUpdaterTest(TestCase):
                 related = getattr(schema_object, relationship_name)
 
                 # Relationship can return either a list or a single item
-                if isinstance(related, Base):
+                if isinstance(related, DatabaseEntity):
                     related_entities.append(related)
                 if isinstance(related, list):
                     related_entities.extend(related)
@@ -151,7 +149,7 @@ class BaseHistoricalSnapshotUpdaterTest(TestCase):
 
     def _assert_expected_snapshots_for_schema_object(
             self,
-            expected_schema_object: Base,
+            expected_schema_object: DatabaseEntity,
             ingest_times: List[datetime.date]) -> None:
         """
         Assert that we have expected history snapshots for the given schema
@@ -175,7 +173,7 @@ class BaseHistoricalSnapshotUpdaterTest(TestCase):
         self.assertIsNotNone(schema_obj_foreign_key_column_in_history_table)
 
         assert_session = Session()
-        history_snapshots: List[Base] = \
+        history_snapshots: List[DatabaseEntity] = \
             assert_session.query(history_table_class).filter(
                 schema_obj_foreign_key_column_in_history_table
                 == schema_obj_primary_key_value
@@ -183,14 +181,29 @@ class BaseHistoricalSnapshotUpdaterTest(TestCase):
 
         self.assertEqual(len(history_snapshots), len(ingest_times))
 
-        history_snapshots.sort(key=lambda snapshot: snapshot.valid_from)
+        self.assertTrue(
+            all(isinstance(s, HistoryTableSharedColumns)
+                for s in history_snapshots))
+
+        def as_history_cols(
+                snapshot: DatabaseEntity) -> HistoryTableSharedColumns:
+            if not isinstance(snapshot,
+                              HistoryTableSharedColumns):
+                self.fail(f"Snapshot class [{type(snapshot)}] must be a "
+                          f"subclass of [{HistoryTableSharedColumns.__name__}]")
+            return snapshot
+
+        history_snapshots.sort(
+            key=lambda snapshot: as_history_cols(snapshot).valid_from)
 
         for i, history_snapshot in enumerate(history_snapshots):
             expected_valid_from = ingest_times[i]
             expected_valid_to = ingest_times[i+1] \
                 if i < len(ingest_times) - 1 else None
-            self.assertEqual(expected_valid_from, history_snapshot.valid_from)
-            self.assertEqual(expected_valid_to, history_snapshot.valid_to)
+            self.assertEqual(expected_valid_from,
+                             as_history_cols(history_snapshot).valid_from)
+            self.assertEqual(expected_valid_to,
+                             as_history_cols(history_snapshot).valid_to)
 
         last_history_snapshot = history_snapshots[-1]
         assert last_history_snapshot is not None
@@ -202,7 +215,8 @@ class BaseHistoricalSnapshotUpdaterTest(TestCase):
         assert_session.close()
 
     def _assert_schema_object_and_historical_snapshot_match(
-            self, schema_object: Base, historical_snapshot: Base) -> None:
+            self, schema_object: DatabaseEntity,
+            historical_snapshot: DatabaseEntity) -> None:
         shared_property_names = \
             type(schema_object).get_column_property_names().intersection(
                 type(historical_snapshot).get_column_property_names())

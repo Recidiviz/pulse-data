@@ -20,7 +20,7 @@ from logging.config import fileConfig
 from sqlalchemy import create_engine
 
 from alembic import context
-from recidiviz.persistence.database.base_schema import Base
+from recidiviz.persistence.database.jails_base_schema import JailsBase
 
 # Import anything from the three schema.py files to ensure the table class
 # declarations are run within the Alembic environment
@@ -37,8 +37,10 @@ config = context.config
 # This line sets up loggers basically.
 fileConfig(config.config_file_name)
 
+# TODO(1831): Update migrations code to allow us to specify a schema
+#  (state vs jails).
 # Metadata from schema
-target_metadata = Base.metadata
+target_metadata = JailsBase.metadata
 
 # String defining database implementation used by SQLAlchemy engine
 _DB_TYPE = 'postgresql'

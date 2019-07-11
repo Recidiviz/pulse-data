@@ -29,6 +29,8 @@ from recidiviz.common.constants.aggregate import (
 )
 from recidiviz import Session
 from recidiviz.ingest.aggregate.regions.tx import tx_aggregate_ingest
+from recidiviz.persistence.database.jails_base_schema import \
+    JailsBase
 from recidiviz.persistence.database.schema.aggregate import dao
 from recidiviz.persistence.database.schema.aggregate.schema import \
     TxCountyAggregate
@@ -72,7 +74,7 @@ class TestTxAggregateIngest(TestCase):
     """Test that tx_aggregate_ingest correctly parses the TX PDF."""
 
     def setup_method(self, _test_method):
-        fakes.use_in_memory_sqlite_database()
+        fakes.use_in_memory_sqlite_database(JailsBase)
 
     def testParse_ParsesHeadAndTail_After_1996(self):
         result = self.parsed_pdf_after_1996[TxCountyAggregate]

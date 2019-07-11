@@ -22,7 +22,7 @@ sys.path.insert(0, os.path.dirname(module_path))
 from alembic import op
 import sqlalchemy as sa
 
-from recidiviz.persistence.database.base_schema import Base
+from recidiviz.persistence.database.jails_base_schema import JailsBase
 
 # revision identifiers, used by Alembic.
 revision = '91466ffebeb0'
@@ -42,7 +42,7 @@ def upgrade():
             'booking_id', sa.Integer(), nullable=False, server_default='0'))
     sentence_table_view = sa.Table(
         'sentence',
-        Base.metadata,
+        JailsBase.metadata,
         sa.Column('sentence_id', sa.Integer(), primary_key=True),
         sa.Column('booking_id', sa.Integer()),
         extend_existing=True)
@@ -72,7 +72,7 @@ def upgrade():
             'booking_id', sa.Integer(), nullable=False, server_default='0'))
     sentence_history_table_view = sa.Table(
         'sentence_history',
-        Base.metadata,
+        JailsBase.metadata,
         sa.Column('sentence_history_id', sa.Integer(), primary_key=True),
         sa.Column('sentence_id', sa.Integer()),
         sa.Column('booking_id', sa.Integer()),

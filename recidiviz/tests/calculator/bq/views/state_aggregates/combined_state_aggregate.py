@@ -25,6 +25,8 @@ import recidiviz.common.constants.enum_canonical_strings as enum_strings
 from recidiviz import Session
 from recidiviz.calculator.bq.views.state_aggregates import \
     combined_state_aggregate
+from recidiviz.persistence.database.jails_base_schema import \
+    JailsBase
 from recidiviz.persistence.database.schema.aggregate import dao
 from recidiviz.persistence.database.schema.aggregate.schema import \
     CaFacilityAggregate, FlFacilityAggregate
@@ -35,7 +37,7 @@ class TestAggregateView(TestCase):
     """Test for combining aggregate reports into a BQ view."""
 
     def setup_method(self, _test_method):
-        fakes.use_in_memory_sqlite_database()
+        fakes.use_in_memory_sqlite_database(JailsBase)
 
     def test_toQuery(self):
         # Arrange

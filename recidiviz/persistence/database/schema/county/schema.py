@@ -41,7 +41,7 @@ from recidiviz.common.constants.county import (
     enum_canonical_strings as county_enum_strings
 )
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
-from recidiviz.persistence.database.base_schema import Base
+from recidiviz.persistence.database.jails_base_schema import JailsBase
 from recidiviz.persistence.database.schema.history_table_shared_columns_mixin \
     import HistoryTableSharedColumns
 from recidiviz.persistence.database.schema.shared_enums import (
@@ -180,7 +180,7 @@ class _PersonSharedColumns:
         return jurisdiction_id
 
 
-class Person(Base, _PersonSharedColumns):
+class Person(JailsBase, _PersonSharedColumns):
     """Represents a person in the SQL schema"""
     __tablename__ = 'person'
     __table_args__ = (
@@ -197,7 +197,7 @@ class Person(Base, _PersonSharedColumns):
     bookings = relationship('Booking', lazy='joined')
 
 
-class PersonHistory(Base,
+class PersonHistory(JailsBase,
                     _PersonSharedColumns,
                     HistoryTableSharedColumns):
     """Represents the historical state of a person"""
@@ -254,7 +254,7 @@ class _BookingSharedColumns:
         return Column(Integer, ForeignKey('person.person_id'), nullable=False)
 
 
-class Booking(Base, _BookingSharedColumns):
+class Booking(JailsBase, _BookingSharedColumns):
     """Represents a booking in the SQL schema"""
     __tablename__ = 'booking'
 
@@ -267,7 +267,7 @@ class Booking(Base, _BookingSharedColumns):
     charges = relationship('Charge', lazy='joined')
 
 
-class BookingHistory(Base,
+class BookingHistory(JailsBase,
                      _BookingSharedColumns,
                      HistoryTableSharedColumns):
     """Represents the historical state of a booking"""
@@ -301,14 +301,14 @@ class _HoldSharedColumns:
             Integer, ForeignKey('booking.booking_id'), nullable=False)
 
 
-class Hold(Base, _HoldSharedColumns):
+class Hold(JailsBase, _HoldSharedColumns):
     """Represents a hold from another jurisdiction against a booking"""
     __tablename__ = 'hold'
 
     hold_id = Column(Integer, primary_key=True)
 
 
-class HoldHistory(Base,
+class HoldHistory(JailsBase,
                   _HoldSharedColumns,
                   HistoryTableSharedColumns):
     """Represents the historical state of a hold"""
@@ -344,14 +344,14 @@ class _ArrestSharedColumns:
             Integer, ForeignKey('booking.booking_id'), nullable=False)
 
 
-class Arrest(Base, _ArrestSharedColumns):
+class Arrest(JailsBase, _ArrestSharedColumns):
     """Represents an arrest in the SQL schema"""
     __tablename__ = 'arrest'
 
     arrest_id = Column(Integer, primary_key=True)
 
 
-class ArrestHistory(Base,
+class ArrestHistory(JailsBase,
                     _ArrestSharedColumns,
                     HistoryTableSharedColumns):
     """Represents the historical state of an arrest"""
@@ -400,14 +400,14 @@ class _BondSharedColumns:
             nullable=False)
 
 
-class Bond(Base, _BondSharedColumns):
+class Bond(JailsBase, _BondSharedColumns):
     """Represents a bond in the SQL schema"""
     __tablename__ = 'bond'
 
     bond_id = Column(Integer, primary_key=True)
 
 
-class BondHistory(Base,
+class BondHistory(JailsBase,
                   _BondSharedColumns,
                   HistoryTableSharedColumns):
     """Represents the historical state of a bond"""
@@ -466,7 +466,7 @@ class _SentenceSharedColumns:
             nullable=False)
 
 
-class Sentence(Base, _SentenceSharedColumns):
+class Sentence(JailsBase, _SentenceSharedColumns):
     """Represents a sentence in the SQL schema"""
     __tablename__ = 'sentence'
 
@@ -482,7 +482,7 @@ class Sentence(Base, _SentenceSharedColumns):
         'b_sentence_relations', 'sentence_b')
 
 
-class SentenceHistory(Base,
+class SentenceHistory(JailsBase,
                       _SentenceSharedColumns,
                       HistoryTableSharedColumns):
     """Represents the historical state of a sentence"""
@@ -537,7 +537,7 @@ class _SentenceRelationshipSharedColumns:
             Integer, ForeignKey('sentence.sentence_id'), nullable=False)
 
 
-class SentenceRelationship(Base,
+class SentenceRelationship(JailsBase,
                            _SentenceRelationshipSharedColumns):
     """Represents the relationship between two sentences"""
     __tablename__ = 'sentence_relationship'
@@ -554,7 +554,7 @@ class SentenceRelationship(Base,
         primaryjoin='Sentence.sentence_id==SentenceRelationship.sentence_a_id')
 
 
-class SentenceRelationshipHistory(Base,
+class SentenceRelationshipHistory(JailsBase,
                                   _SentenceRelationshipSharedColumns,
                                   HistoryTableSharedColumns):
     """Represents the historical state of the relationship between two sentences
@@ -616,7 +616,7 @@ class _ChargeSharedColumns:
         return Column(Integer, ForeignKey('sentence.sentence_id'))
 
 
-class Charge(Base, _ChargeSharedColumns):
+class Charge(JailsBase, _ChargeSharedColumns):
     """Represents a charge in the SQL schema"""
     __tablename__ = 'charge'
 
@@ -626,7 +626,7 @@ class Charge(Base, _ChargeSharedColumns):
     sentence = relationship('Sentence', lazy='joined')
 
 
-class ChargeHistory(Base,
+class ChargeHistory(JailsBase,
                     _ChargeSharedColumns,
                     HistoryTableSharedColumns):
     """Represents the historical state of a charge"""

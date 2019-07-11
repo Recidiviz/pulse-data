@@ -21,9 +21,7 @@ from opencensus.common.transports.async_ import AsyncTransport
 from opencensus.ext.flask.flask_middleware import FlaskMiddleware
 from opencensus.trace import config_integration
 from opencensus.trace.exporters import file_exporter, stackdriver_exporter
-import sqlalchemy
 
-import recidiviz
 from recidiviz.backup.backup_manager import backup_manager_blueprint
 from recidiviz.calculator.bq.export_manager import export_manager_blueprint
 from recidiviz.cloud_functions.cloud_functions import cloud_functions_blueprint
@@ -36,12 +34,8 @@ from recidiviz.ingest.scrape.scraper_status import scraper_status
 from recidiviz.ingest.scrape.worker import worker
 from recidiviz.persistence.actions import actions
 from recidiviz.persistence.batch_persistence import batch_blueprint
-from recidiviz.persistence.database.base_schema import Base
-from recidiviz.utils import environment, secrets, structured_logging, metadata
-
-
-# SQLAlchemy URL prefix declaring the database type
-_DATABASE_TYPE = 'postgresql'
+from recidiviz.persistence.database import server_db_connect
+from recidiviz.utils import environment, structured_logging, metadata
 
 
 structured_logging.setup()
@@ -63,21 +57,7 @@ app.register_blueprint(backup_manager_blueprint, url_prefix='/backup_manager')
 
 
 if environment.in_gae():
-    db_user = secrets.get_secret('sqlalchemy_db_user')
-    db_password = secrets.get_secret('sqlalchemy_db_password')
-    db_name = secrets.get_secret('sqlalchemy_db_name')
-    cloudsql_instance_id = secrets.get_secret('cloudsql_instance_id')
-
-    sqlalchemy_url = ('{database_type}://{db_user}:{db_password}@/{db_name}'
-                      '?host=/cloudsql/{cloudsql_instance_id}').format(
-                          database_type=_DATABASE_TYPE,
-                          db_user=db_user,
-                          db_password=db_password,
-                          db_name=db_name,
-                          cloudsql_instance_id=cloudsql_instance_id)
-    recidiviz.db_engine = sqlalchemy.create_engine(sqlalchemy_url)
-    Base.metadata.create_all(recidiviz.db_engine)
-    recidiviz.Session.configure(bind=recidiviz.db_engine)
+    server_db_connect.connect_session_to_server_postgres_instances()
 
 
 # Setup tracing of requests not traced by default

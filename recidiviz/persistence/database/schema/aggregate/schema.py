@@ -29,7 +29,7 @@ from sqlalchemy.orm import validates
 from recidiviz.common.constants.aggregate import (
     enum_canonical_strings as enum_strings
 )
-from recidiviz.persistence.database.base_schema import Base
+from recidiviz.persistence.database.jails_base_schema import JailsBase
 
 # SQLAlchemy enums. Created separately from the tables so they can be shared
 # between the master and historical tables for each entity.
@@ -83,7 +83,7 @@ class _AggregateTableMixin:
         return fips
 
 
-class CaFacilityAggregate(Base, _AggregateTableMixin):
+class CaFacilityAggregate(JailsBase, _AggregateTableMixin):
     """CA state-provided aggregate statistics."""
     __tablename__ = 'ca_facility_aggregate'
     __table_args__ = (
@@ -104,7 +104,7 @@ class CaFacilityAggregate(Base, _AggregateTableMixin):
     sentenced_female_adp = Column(Integer)
 
 
-class FlCountyAggregate(Base, _AggregateTableMixin):
+class FlCountyAggregate(JailsBase, _AggregateTableMixin):
     """FL state-provided aggregate statistics."""
     __tablename__ = 'fl_county_aggregate'
     __table_args__ = (
@@ -123,7 +123,7 @@ class FlCountyAggregate(Base, _AggregateTableMixin):
     date_reported = Column(Date)
 
 
-class FlFacilityAggregate(Base, _AggregateTableMixin):
+class FlFacilityAggregate(JailsBase, _AggregateTableMixin):
     """FL state-provided pretrial aggregate statistics.
 
     Note: This 2nd FL database table is special because FL reports contain a 2nd
@@ -145,7 +145,7 @@ class FlFacilityAggregate(Base, _AggregateTableMixin):
     number_misdemeanor_pretrial = Column(Integer)
 
 
-class GaCountyAggregate(Base, _AggregateTableMixin):
+class GaCountyAggregate(JailsBase, _AggregateTableMixin):
     """GA state-provided aggregate statistics."""
     __tablename__ = 'ga_county_aggregate'
     __table_args__ = (
@@ -165,7 +165,7 @@ class GaCountyAggregate(Base, _AggregateTableMixin):
     number_of_other_inmates = Column(Integer)
 
 
-class HiFacilityAggregate(Base, _AggregateTableMixin):
+class HiFacilityAggregate(JailsBase, _AggregateTableMixin):
     """HI state-provided aggregate statistics."""
     __tablename__ = 'hi_facility_aggregate'
     __table_args__ = (
@@ -211,7 +211,7 @@ class HiFacilityAggregate(Base, _AggregateTableMixin):
     probation_violation_female_population = Column(Integer)
 
 
-class KyFacilityAggregate(Base, _AggregateTableMixin):
+class KyFacilityAggregate(JailsBase, _AggregateTableMixin):
     """KY state-provided aggregate statistics."""
     __tablename__ = 'ky_facility_aggregate'
     __table_args__ = (
@@ -250,7 +250,7 @@ class KyFacilityAggregate(Base, _AggregateTableMixin):
     federal_female_population = Column(Integer)
 
 
-class NyFacilityAggregate(Base, _AggregateTableMixin):
+class NyFacilityAggregate(JailsBase, _AggregateTableMixin):
     """NY state-provided aggregate statistics."""
     __tablename__ = 'ny_facility_aggregate'
     __table_args__ = (
@@ -277,7 +277,7 @@ class NyFacilityAggregate(Base, _AggregateTableMixin):
     other_unsentenced = Column(Integer)
 
 
-class TxCountyAggregate(Base, _AggregateTableMixin):
+class TxCountyAggregate(JailsBase, _AggregateTableMixin):
     """TX state-provided aggregate statistics."""
     __tablename__ = 'tx_county_aggregate'
     __table_args__ = (
@@ -320,7 +320,7 @@ class TxCountyAggregate(Base, _AggregateTableMixin):
     available_beds = Column(Integer)
 
 
-class DcFacilityAggregate(Base, _AggregateTableMixin):
+class DcFacilityAggregate(JailsBase, _AggregateTableMixin):
     """DC state-provided aggregate statistics."""
     __tablename__ = 'dc_facility_aggregate'
     __table_args__ = (
@@ -346,7 +346,7 @@ class DcFacilityAggregate(Base, _AggregateTableMixin):
     juvenile_female_population = Column(Integer)
 
 
-class PaFacilityPopAggregate(Base, _AggregateTableMixin):
+class PaFacilityPopAggregate(JailsBase, _AggregateTableMixin):
     """PA state-provided aggregate population statistics."""
     __tablename__ = 'pa_facility_pop_aggregate'
     __table_args__ = (
@@ -368,7 +368,7 @@ class PaFacilityPopAggregate(Base, _AggregateTableMixin):
     discharge = Column(Integer)
 
 
-class PaCountyPreSentencedAggregate(Base, _AggregateTableMixin):
+class PaCountyPreSentencedAggregate(JailsBase, _AggregateTableMixin):
     """PA state-provided pre-sentenced statistics."""
     __tablename__ = 'pa_county_pre_sentenced_aggregate'
     __table_args__ = (
@@ -384,7 +384,7 @@ class PaCountyPreSentencedAggregate(Base, _AggregateTableMixin):
     pre_sentenced_population = Column(Integer)
 
 
-class TnFacilityAggregate(Base, _AggregateTableMixin):
+class TnFacilityAggregate(JailsBase, _AggregateTableMixin):
     """TN state-provided aggregate population statistics."""
     __tablename__ = 'tn_facility_aggregate'
     __table_args__ = (
@@ -408,7 +408,7 @@ class TnFacilityAggregate(Base, _AggregateTableMixin):
     total_beds = Column(Integer)
 
 
-class TnFacilityFemaleAggregate(Base, _AggregateTableMixin):
+class TnFacilityFemaleAggregate(JailsBase, _AggregateTableMixin):
     """TN state-provided aggregate population statistics."""
     __tablename__ = 'tn_facility_female_aggregate'
     __table_args__ = (

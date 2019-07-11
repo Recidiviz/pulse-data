@@ -29,6 +29,8 @@ from recidiviz.common.constants.aggregate import (
 )
 from recidiviz import Session
 from recidiviz.ingest.aggregate.regions.pa import pa_aggregate_ingest
+from recidiviz.persistence.database.jails_base_schema import \
+    JailsBase
 from recidiviz.persistence.database.schema.aggregate import dao
 from recidiviz.persistence.database.schema.aggregate.schema import \
     PaFacilityPopAggregate, PaCountyPreSentencedAggregate
@@ -46,7 +48,7 @@ class TestPaAggregateIngest(TestCase):
     """Test that pa_aggregate_ingest correctly parses the CA report file."""
 
     def setup_method(self, _test_method):
-        fakes.use_in_memory_sqlite_database()
+        fakes.use_in_memory_sqlite_database(JailsBase)
 
     def testParse_Table1_ParsesHeadAndTail(self):
         result = PARSED_RESULT[PaFacilityPopAggregate]

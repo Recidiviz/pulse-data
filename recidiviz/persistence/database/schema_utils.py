@@ -19,42 +19,49 @@
 
 import inspect
 import sys
-from typing import Iterator, Optional, Type
+from types import ModuleType
+from typing import Iterator, Optional, Type, List
 
 from functools import lru_cache
 from sqlalchemy import Table
 
+from recidiviz.persistence.database.jails_base_schema import JailsBase
+from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.aggregate import \
     schema as aggregate_schema
 from recidiviz.persistence.database.schema.county import schema as county_schema
-from recidiviz.persistence.database.base_schema import Base
 from recidiviz.persistence.database.schema.state import schema as state_schema
+from recidiviz.persistence.database.state_base_schema import \
+    StateBase
 
-_SCHEMA_MODULES = [aggregate_schema.__name__,
-                   county_schema.__name__,
-                   state_schema.__name__]
+_SCHEMA_MODULES: List[ModuleType] = \
+    [aggregate_schema, county_schema, state_schema]
 
 
 def get_all_table_classes() -> Iterator[Table]:
-    for module_name in _SCHEMA_MODULES:
-        yield from _get_all_table_classes(module_name)
+    for module in _SCHEMA_MODULES:
+        yield from get_all_table_classes_in_module(module)
 
 
-def _get_all_table_classes(module_name) -> Iterator[Table]:
-    all_members_in_current_module = inspect.getmembers(sys.modules[module_name])
+def get_all_table_classes_in_module(
+        module: ModuleType) -> Iterator[Type[DatabaseEntity]]:
+    all_members_in_current_module = \
+        inspect.getmembers(sys.modules[module.__name__])
     for _, member in all_members_in_current_module:
         if (inspect.isclass(member)
-                and issubclass(member, Base)
-                and member is not Base):
+                and issubclass(member, DatabaseEntity)
+                and member is not DatabaseEntity
+                and member is not JailsBase
+                and member is not StateBase):
             yield member
 
 
 def get_aggregate_table_classes() -> Iterator[Table]:
-    yield from _get_all_table_classes(aggregate_schema.__name__)
+    yield from get_all_table_classes_in_module(aggregate_schema)
 
 
 def get_state_table_classes() -> Iterator[Table]:
-    yield from _get_all_table_classes(state_schema.__name__)
+    yield from get_all_table_classes_in_module(state_schema)
 
 
 @lru_cache(maxsize=None)
@@ -69,19 +76,19 @@ def get_state_table_class_with_name(class_name: str) -> Table:
                       f"{state_schema.__name__}.")
 
 
-_HISTORICAL_TABLE_CLASS_SUFFIX = 'History'
+HISTORICAL_TABLE_CLASS_SUFFIX = 'History'
 
 
-def historical_table_class_name_from_obj(schema_object: Base) -> str:
+def historical_table_class_name_from_obj(schema_object: DatabaseEntity) -> str:
     obj_class_name = schema_object.__class__.__name__
-    if obj_class_name.endswith(_HISTORICAL_TABLE_CLASS_SUFFIX):
+    if obj_class_name.endswith(HISTORICAL_TABLE_CLASS_SUFFIX):
         return obj_class_name
 
-    return f'{obj_class_name}{_HISTORICAL_TABLE_CLASS_SUFFIX}'
+    return f'{obj_class_name}{HISTORICAL_TABLE_CLASS_SUFFIX}'
 
 
 def historical_table_class_from_obj(
-        schema_object: Base) -> Optional[Type[Base]]:
+        schema_object: DatabaseEntity) -> Optional[Type[DatabaseEntity]]:
     schema_module = inspect.getmodule(schema_object)
     history_table_class_name = \
         historical_table_class_name_from_obj(schema_object)
