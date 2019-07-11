@@ -27,6 +27,8 @@ from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.county.hold import HoldStatus
 from recidiviz.common.constants.person_characteristics import Gender
+from recidiviz.persistence.database.jails_base_schema import \
+    JailsBase
 from recidiviz.persistence.entity.county import entities
 from recidiviz.persistence.database.schema_entity_converter import (
     schema_entity_converter as converter,
@@ -72,7 +74,7 @@ class TestCountyEntityMatcher(TestCase):
     """Tests for entity matching logic"""
 
     def setup_method(self, _test_method):
-        fakes.use_in_memory_sqlite_database()
+        fakes.use_in_memory_sqlite_database(JailsBase)
 
     def test_matchPeople_errorCount(self):
         # Arrange

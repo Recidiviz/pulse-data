@@ -36,6 +36,8 @@ from recidiviz.common.constants.state.state_supervision_period import \
 from recidiviz.common.constants.state.state_supervision_violation_response \
     import StateSupervisionViolationResponseDecision
 from recidiviz.persistence.database.schema.state import schema
+from recidiviz.persistence.database.state_base_schema import \
+    StateBase
 from recidiviz.persistence.entity.state.entities import StatePersonAlias, \
     StatePersonExternalId, StatePersonRace, StatePersonEthnicity, StatePerson, \
     StateBond, StateCourtCase, StateCharge, StateFine, StateAgent, \
@@ -67,7 +69,7 @@ class TestStateEntityMatching(TestCase):
     """Tests for state specific entity matching logic."""
 
     def setup_method(self, _test_method):
-        fakes.use_in_memory_sqlite_database()
+        fakes.use_in_memory_sqlite_database(StateBase)
 
     def test_match_noPlaceholders_success(self):
         # Arrange

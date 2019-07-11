@@ -16,6 +16,7 @@ readiness_check:
   app_start_timeout_sec: 60
 
 beta_settings:
+  # TODO(1831): Add state cloudsql instance once it has been created
   cloud_sql_instances: recidiviz-123:us-east4:prod-data, recidiviz-123:us-east1:usmamiddlesex-redundant
 env_variables:
   RECIDIVIZ_ENV: production

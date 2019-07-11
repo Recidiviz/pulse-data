@@ -23,7 +23,8 @@ from sqlalchemy import (
     Table, Enum)
 from sqlalchemy.orm import relationship
 
-from recidiviz.persistence.database.base_schema import Base
+from recidiviz.tests.persistence.database.schema_entity_converter.\
+    test_base_schema import TestBase
 from recidiviz.tests.persistence.database.schema_entity_converter.\
     test_entities import RootType
 
@@ -33,7 +34,7 @@ root_type = Enum(RootType.SIMPSONS.value,
                  name='root_type')
 
 
-class Root(Base):
+class Root(TestBase):
     """Represents a Root object in the test schema"""
     __tablename__ = 'root'
 
@@ -45,7 +46,7 @@ class Root(Base):
 
 
 association_table = Table('state_parent_child_association',
-                          Base.metadata,
+                          TestBase.metadata,
                           Column('parent_id',
                                  Integer,
                                  ForeignKey('parent.parent_id')),
@@ -54,7 +55,7 @@ association_table = Table('state_parent_child_association',
                                  ForeignKey('child.child_id')))
 
 
-class Parent(Base):
+class Parent(TestBase):
     """Represents a Parent object in the test schema"""
     __tablename__ = 'parent'
 
@@ -70,7 +71,7 @@ class Parent(Base):
         back_populates='parents')
 
 
-class Child(Base):
+class Child(TestBase):
     """Represents a Child object in the test schema"""
     __tablename__ = 'child'
 
@@ -87,7 +88,7 @@ class Child(Base):
     favorite_toy = relationship('Toy', uselist=False)
 
 
-class Toy(Base):
+class Toy(TestBase):
     """Represents a Toy object in the test schema"""
     __tablename__ = 'toy'
 

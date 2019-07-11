@@ -136,7 +136,7 @@ class UsMaMiddlesexController(BaseDirectIngestController[IngestArgs,
         """Removes all rows in all tables for a single export time."""
 
         export_time = args.ingest_time
-        if environment.get_gae_environment() == 'production':
+        if environment.in_gae_production():
             for table in reversed(self.meta.sorted_tables):
                 result = self.engine.execute(
                     table.delete().where(table.c.export_time == export_time))
