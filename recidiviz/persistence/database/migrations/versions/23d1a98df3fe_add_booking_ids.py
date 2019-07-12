@@ -23,7 +23,7 @@ from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
-from recidiviz.persistence.database.jails_base_schema import JailsBase
+from recidiviz.persistence.database.base_schema import JailsBase
 
 # revision identifiers, used by Alembic.
 revision = '23d1a98df3fe'

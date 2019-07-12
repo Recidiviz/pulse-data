@@ -20,7 +20,7 @@ from typing import List, Optional
 
 from opencensus.stats import measure, view, aggregation
 
-from recidiviz import Session
+from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.persistence.entity.entities import EntityPersonType
 from recidiviz.persistence.entity.state import entities as state_entities

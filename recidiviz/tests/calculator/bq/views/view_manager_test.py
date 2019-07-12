@@ -22,15 +22,17 @@ from unittest import mock
 
 from google.cloud import bigquery
 
-from recidiviz.calculator.bq.views import view_manager
 from recidiviz.calculator.bq.views import bqview
+from recidiviz.persistence.database.base_schema import JailsBase
+from recidiviz.tests.utils import fakes
 
 
 class ViewManagerTest(unittest.TestCase):
     """Tests for view_manager.py."""
 
-
     def setUp(self):
+        fakes.use_in_memory_sqlite_database(JailsBase)
+
         sample_views = [
             {'view_id': 'my_fake_view',
              'view_query': 'SELECT NULL LIMIT 0'},
@@ -62,6 +64,13 @@ class ViewManagerTest(unittest.TestCase):
             if necessary, and updates all views.
         """
         self.mock_client.dataset.return_value = self.mock_dataset
+
+        # Note: This is a hack because view_manager imports global code that
+        # attempts to use the SessionFactory to create a Session object before
+        # we have initialized the database engine for that schema in setUp. In
+        # production code, server db engines are initialized globally as part of
+        # startup, so this will generally not be an issue.
+        from recidiviz.calculator.bq.views import view_manager
 
         view_manager.create_dataset_and_update_views(
             self.mock_view_dataset_name,

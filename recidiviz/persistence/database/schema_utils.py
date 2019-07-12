@@ -24,15 +24,16 @@ from typing import Iterator, Optional, Type, List
 
 from functools import lru_cache
 from sqlalchemy import Table
+from sqlalchemy.ext.declarative import DeclarativeMeta
 
-from recidiviz.persistence.database.jails_base_schema import JailsBase
+from recidiviz.common.ingest_metadata import SystemLevel
+from recidiviz.persistence.database.base_schema import JailsBase, \
+    StateBase
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.aggregate import \
     schema as aggregate_schema
 from recidiviz.persistence.database.schema.county import schema as county_schema
 from recidiviz.persistence.database.schema.state import schema as state_schema
-from recidiviz.persistence.database.state_base_schema import \
-    StateBase
 
 _SCHEMA_MODULES: List[ModuleType] = \
     [aggregate_schema, county_schema, state_schema]
@@ -93,3 +94,31 @@ def historical_table_class_from_obj(
     history_table_class_name = \
         historical_table_class_name_from_obj(schema_object)
     return getattr(schema_module, history_table_class_name, None)
+
+
+def schema_base_for_system_level(system_level: SystemLevel) -> DeclarativeMeta:
+    if system_level == SystemLevel.STATE:
+        return StateBase
+    if system_level == SystemLevel.COUNTY:
+        return JailsBase
+
+    raise ValueError(f"Unsupported SystemLevel type: {system_level}")
+
+
+def schema_base_for_schema_module(module: ModuleType) -> DeclarativeMeta:
+    if module in (aggregate_schema, county_schema):
+        return JailsBase
+    if module == state_schema:
+        return StateBase
+
+    raise ValueError(f"Unsupported module: {module}")
+
+
+def schema_base_for_object(schema_object: DatabaseEntity):
+    if isinstance(schema_object, JailsBase):
+        return JailsBase
+    if isinstance(schema_object, StateBase):
+        return StateBase
+
+    raise ValueError(
+        f"Object of type [{type(schema_object)}] has unknown schema base.")
