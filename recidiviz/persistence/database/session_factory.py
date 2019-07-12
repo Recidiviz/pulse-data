@@ -13,15 +13,23 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-# ============================================================================
-
-"""Defines the base class for all table classes for the Jails schema.
-
-For actual schema definitions, see /aggregate/schema.py and /county/schema.py.
+# =============================================================================
+"""
+Class for generating SQLAlchemy Sessions objects for the appropriate schema.
 """
 
-from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta
-from recidiviz.persistence.database.database_entity import DatabaseEntity
+from sqlalchemy.ext.declarative import DeclarativeMeta
 
-# Base class for all table classes in the Jails schema
-JailsBase: DeclarativeMeta = declarative_base(cls=DatabaseEntity)
+from recidiviz.persistence.database.sqlalchemy_engine_manager import \
+    SQLAlchemyEngineManager
+from recidiviz.persistence.database.session import Session
+
+
+class SessionFactory:
+    @classmethod
+    def for_schema_base(cls, schema_base: DeclarativeMeta) -> Session:
+        engine = SQLAlchemyEngineManager.get_engine_for_schema_base(schema_base)
+        if engine is None:
+            raise ValueError(f"No engine set for base [{schema_base.__name__}]")
+
+        return Session(bind=engine)

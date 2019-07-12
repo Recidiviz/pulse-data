@@ -29,7 +29,7 @@ from sqlalchemy.orm import validates
 from recidiviz.common.constants.aggregate import (
     enum_canonical_strings as enum_strings
 )
-from recidiviz.persistence.database.jails_base_schema import JailsBase
+from recidiviz.persistence.database.base_schema import JailsBase
 
 # SQLAlchemy enums. Created separately from the tables so they can be shared
 # between the master and historical tables for each entity.

@@ -21,11 +21,11 @@ import datetime
 from copy import deepcopy
 from unittest import TestCase
 
-from recidiviz import Session
 from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info import IngestInfo
-from recidiviz.persistence.database.jails_base_schema import \
+from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.base_schema import \
     JailsBase
 from recidiviz.persistence.entity.county import entities
 from recidiviz.persistence.database.schema_entity_converter import (
@@ -97,7 +97,7 @@ class TestDao(TestCase):
             first_seen_time=first_seen_time,
             last_seen_time=date_in_past)
 
-        session = Session()
+        session = SessionFactory.for_schema_base(JailsBase)
         session.add(person)
         session.add(person_resolved_booking)
         session.add(person_most_recent_scrape)
@@ -134,7 +134,7 @@ class TestDao(TestCase):
                                           bookings=[closed_booking],
                                           external_id=_EXTERNAL_ID)
 
-        session = Session()
+        session = SessionFactory.for_schema_base(JailsBase)
         session.add(person_no_match)
         session.add(person_match_external_id)
         session.commit()
@@ -176,7 +176,7 @@ class TestDao(TestCase):
                                          full_name=_FULL_NAME,
                                          bookings=[closed_booking])
 
-        session = Session()
+        session = SessionFactory.for_schema_base(JailsBase)
         session.add(person_no_match)
         session.add(person_no_open_bookings)
         session.add(person_match_full_name)

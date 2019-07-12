@@ -24,7 +24,7 @@ from typing import List, Dict, Tuple, Optional, cast
 
 from more_itertools import one
 
-from recidiviz import Session
+from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.entity.entity_utils import get_set_entity_field_names
 from recidiviz.persistence.database.schema.state import dao
 from recidiviz.persistence.entity.base_entity import Entity
