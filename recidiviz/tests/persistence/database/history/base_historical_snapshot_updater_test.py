@@ -22,9 +22,9 @@ from unittest import TestCase
 
 from more_itertools import one
 
-from recidiviz import Session
 from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
 from recidiviz.persistence.database.database_entity import DatabaseEntity
+from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.history.historical_snapshot_update import \
     update_historical_snapshots
 from recidiviz.persistence.database.schema.history_table_shared_columns_mixin \
@@ -33,7 +33,8 @@ from recidiviz.persistence.database.schema.schema_person_type import \
     SchemaPersonType
 from recidiviz.persistence.database.schema_utils import \
     historical_table_class_from_obj, get_all_table_classes_in_module, \
-    HISTORICAL_TABLE_CLASS_SUFFIX
+    HISTORICAL_TABLE_CLASS_SUFFIX, schema_base_for_system_level, \
+    schema_base_for_schema_module, schema_base_for_object
 from recidiviz.persistence.persistence_utils import primary_key_name_from_obj, \
     primary_key_value_from_obj
 
@@ -47,8 +48,8 @@ class BaseHistoricalSnapshotUpdaterTest(TestCase):
     def _commit_person(person: SchemaPersonType,
                        system_level: SystemLevel,
                        ingest_time: datetime.datetime):
-
-        act_session = Session()
+        act_session = SessionFactory.for_schema_base(
+            schema_base_for_system_level(system_level))
         merged_person = act_session.merge(person)
 
         metadata = IngestMetadata(region='somewhere',
@@ -116,7 +117,8 @@ class BaseHistoricalSnapshotUpdaterTest(TestCase):
             DB.
         """
 
-        session = Session()
+        session = SessionFactory.for_schema_base(
+            schema_base_for_schema_module(schema))
         person = one(session.query(schema_person_type).all())
 
         schema_objects: Set[DatabaseEntity] = {person}
@@ -172,7 +174,8 @@ class BaseHistoricalSnapshotUpdaterTest(TestCase):
 
         self.assertIsNotNone(schema_obj_foreign_key_column_in_history_table)
 
-        assert_session = Session()
+        assert_session = SessionFactory.for_schema_base(
+            schema_base_for_object(expected_schema_object))
         history_snapshots: List[DatabaseEntity] = \
             assert_session.query(history_table_class).filter(
                 schema_obj_foreign_key_column_in_history_table

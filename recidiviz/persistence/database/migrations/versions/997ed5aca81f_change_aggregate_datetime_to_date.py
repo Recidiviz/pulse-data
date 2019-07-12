@@ -24,7 +24,7 @@ from datetime import date
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
-from recidiviz.persistence.database.jails_base_schema import JailsBase
+from recidiviz.persistence.database.base_schema import JailsBase
 
 # revision identifiers, used by Alembic.
 revision = '997ed5aca81f'

@@ -14,13 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines the base class for all table classes in the state schema.
+"""Session class declaration for all SQLAlchemy database sessions."""
+from sqlalchemy.orm import sessionmaker
 
-For actual schema definitions, see /state/schema.py.
-"""
-
-from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta
-from recidiviz.persistence.database.database_entity import DatabaseEntity
-
-# Base class for all table classes in the state schema
-StateBase: DeclarativeMeta = declarative_base(cls=DatabaseEntity)
+Session = sessionmaker()

@@ -65,8 +65,7 @@ from recidiviz.persistence.database.schema.shared_enums import (
 
 # SQLAlchemy enums. Created separately from the tables so they can be shared
 # between the master and historical tables for each entity.
-from recidiviz.persistence.database.state_base_schema import \
-    StateBase
+from recidiviz.persistence.database.base_schema import StateBase
 
 state_assessment_class = Enum(
     state_enum_strings.state_assessment_class_mental_health,

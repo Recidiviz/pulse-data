@@ -22,7 +22,7 @@ import logging
 from collections import defaultdict
 from typing import List, Dict, cast, Set, Tuple
 
-from recidiviz import Session
+from recidiviz.persistence.database.session import Session
 from recidiviz.common.constants.bond import BondStatus
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.county.hold import HoldStatus

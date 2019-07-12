@@ -23,7 +23,7 @@ from typing import List, Generic
 import attr
 from opencensus.stats import measure, view, aggregation
 
-from recidiviz import Session
+from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entities import EntityPersonType
 from recidiviz.utils import monitoring

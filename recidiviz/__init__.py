@@ -17,19 +17,12 @@
 
 """Top-level recidiviz package."""
 import datetime
-from typing import Optional
 
 import cattr
-from sqlalchemy.engine import Engine
-from sqlalchemy.orm import sessionmaker
 
 from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.ingest.scrape import ingest_utils
 from recidiviz.utils import environment
-
-Session = sessionmaker()
-jails_db_engine: Optional[Engine]
-state_db_engine: Optional[Engine]
 
 # We want to add these globally because the serialization hooks are used in
 # ingest and persistence.

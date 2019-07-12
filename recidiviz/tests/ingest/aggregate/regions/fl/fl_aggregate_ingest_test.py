@@ -28,9 +28,9 @@ from sqlalchemy import func
 from recidiviz.common.constants.aggregate import (
     enum_canonical_strings as enum_strings
 )
-from recidiviz import Session
 from recidiviz.ingest.aggregate.regions.fl import fl_aggregate_ingest
-from recidiviz.persistence.database.jails_base_schema import \
+from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.base_schema import \
     JailsBase
 from recidiviz.persistence.database.schema.aggregate import dao
 from recidiviz.persistence.database.schema.aggregate.schema import \
@@ -110,7 +110,7 @@ class TestFlAggregateIngest(TestCase):
             dao.write_df(table, df)
 
         # Assert
-        query = Session() \
+        query = SessionFactory.for_schema_base(JailsBase) \
             .query(FlCountyAggregate) \
             .filter(FlCountyAggregate.county_name == 'Hernando')
 
@@ -128,7 +128,8 @@ class TestFlAggregateIngest(TestCase):
             dao.write_df(table, df)
 
         # Assert
-        query = Session().query(func.sum(FlCountyAggregate.county_population))
+        query = SessionFactory.for_schema_base(JailsBase).query(
+            func.sum(FlCountyAggregate.county_population))
         result = one(one(query.all()))
 
         expected_sum_county_populations = 20148654
@@ -199,7 +200,7 @@ class TestFlAggregateIngest(TestCase):
             dao.write_df(table, df)
 
         # Assert
-        query = Session().query(
+        query = SessionFactory.for_schema_base(JailsBase).query(
             func.sum(FlFacilityAggregate.average_daily_population))
         result = one(one(query.all()))
 

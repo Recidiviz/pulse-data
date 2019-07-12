@@ -34,7 +34,8 @@ from recidiviz.ingest.scrape.scraper_status import scraper_status
 from recidiviz.ingest.scrape.worker import worker
 from recidiviz.persistence.actions import actions
 from recidiviz.persistence.batch_persistence import batch_blueprint
-from recidiviz.persistence.database import server_db_connect
+from recidiviz.persistence.database.sqlalchemy_engine_manager import \
+    SQLAlchemyEngineManager
 from recidiviz.utils import environment, structured_logging, metadata
 
 
@@ -57,7 +58,7 @@ app.register_blueprint(backup_manager_blueprint, url_prefix='/backup_manager')
 
 
 if environment.in_gae():
-    server_db_connect.connect_session_to_server_postgres_instances()
+    SQLAlchemyEngineManager.init_engines_for_server_postgres_instances()
 
 
 # Setup tracing of requests not traced by default

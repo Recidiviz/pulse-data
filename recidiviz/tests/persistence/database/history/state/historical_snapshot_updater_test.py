@@ -20,11 +20,10 @@ import datetime
 
 from more_itertools import one
 
-from recidiviz import Session
 from recidiviz.common.ingest_metadata import SystemLevel
+from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.schema.state import schema as state_schema
-from recidiviz.persistence.database.state_base_schema import \
-    StateBase
+from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.tests.persistence.database.history.\
     base_historical_snapshot_updater_test import (
         BaseHistoricalSnapshotUpdaterTest
@@ -53,7 +52,7 @@ class TestStateHistoricalSnapshotUpdater(BaseHistoricalSnapshotUpdaterTest):
                 schema_object, [ingest_time_1])
 
         # Commit an update to the StatePerson
-        update_session = Session()
+        update_session = SessionFactory.for_schema_base(StateBase)
         person = one(update_session.query(state_schema.StatePerson).all())
         person.full_name = 'new name'
         ingest_time_2 = datetime.datetime(2018, 7, 31)
@@ -62,7 +61,7 @@ class TestStateHistoricalSnapshotUpdater(BaseHistoricalSnapshotUpdaterTest):
 
         # Check that StatePerson had a new history table row written, but not
         # its child SentenceGroup.
-        assert_session = Session()
+        assert_session = SessionFactory.for_schema_base(StateBase)
         person = one(assert_session.query(state_schema.StatePerson).all())
         sentence_group = \
             one(assert_session.query(state_schema.StateSentenceGroup).all())

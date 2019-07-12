@@ -21,13 +21,13 @@ from unittest import TestCase
 
 import attr
 
-from recidiviz import Session
 from recidiviz.common.constants.bond import BondStatus
 from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.county.hold import HoldStatus
 from recidiviz.common.constants.person_characteristics import Gender
-from recidiviz.persistence.database.jails_base_schema import \
+from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.base_schema import \
     JailsBase
 from recidiviz.persistence.entity.county import entities
 from recidiviz.persistence.database.schema_entity_converter import (
@@ -98,7 +98,7 @@ class TestCountyEntityMatcher(TestCase):
                                               full_name=_NAME_2,
                                               external_id=_EXTERNAL_ID_ANOTHER)
 
-        session = Session()
+        session = SessionFactory.for_schema_base(JailsBase)
         session.add(schema_person)
         session.add(schema_person_another)
         session.commit()
@@ -147,7 +147,7 @@ class TestCountyEntityMatcher(TestCase):
             jurisdiction_id=_JURISDICTION_ID, region=_REGION,
             bookings=[schema_booking])
 
-        session = Session()
+        session = SessionFactory.for_schema_base(JailsBase)
         session.add(schema_person)
         session.commit()
 
@@ -211,7 +211,7 @@ class TestCountyEntityMatcher(TestCase):
                                               region=_REGION,
                                               bookings=[schema_booking_another])
 
-        session = Session()
+        session = SessionFactory.for_schema_base(JailsBase)
         session.add(schema_person)
         session.add(schema_person_another)
         session.commit()
@@ -274,7 +274,7 @@ class TestCountyEntityMatcher(TestCase):
             jurisdiction_id=_JURISDICTION_ID, region=_REGION,
             bookings=[schema_booking_external_id])
 
-        session = Session()
+        session = SessionFactory.for_schema_base(JailsBase)
         session.add(schema_person)
         session.add(schema_person_external_id)
         session.commit()
@@ -330,7 +330,7 @@ class TestCountyEntityMatcher(TestCase):
         schema_person_mismatch.person_id = _PERSON_ID_ANOTHER
         schema_person_mismatch.gender = Gender.FEMALE.value
 
-        session = Session()
+        session = SessionFactory.for_schema_base(JailsBase)
         session.add(schema_person)
         session.add(schema_person_mismatch)
         session.commit()

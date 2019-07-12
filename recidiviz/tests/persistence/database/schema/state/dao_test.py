@@ -20,10 +20,9 @@
 import datetime
 from unittest import TestCase
 
-from recidiviz import Session
 from recidiviz.common.constants.state import external_id_types
-from recidiviz.persistence.database.state_base_schema import \
-    StateBase
+from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.database.schema_entity_converter import (
     schema_entity_converter as converter,
@@ -51,7 +50,7 @@ class TestDao(TestCase):
         person_different_name = schema.StatePerson(person_id=9,
                                                    full_name='diff_name')
 
-        session = Session()
+        session = SessionFactory.for_schema_base(StateBase)
         session.add(person)
         session.add(person_different_name)
         session.commit()
@@ -72,7 +71,7 @@ class TestDao(TestCase):
                                     month=1,
                                     day=2))
 
-        session = Session()
+        session = SessionFactory.for_schema_base(StateBase)
         session.add(person)
         session.add(person_different_birthdate)
         session.commit()
@@ -96,7 +95,7 @@ class TestDao(TestCase):
             birthdate=datetime.date(year=2002,
                                     month=1,
                                     day=2))
-        session = Session()
+        session = SessionFactory.for_schema_base(StateBase)
         session.add(person)
         session.add(person_different_name)
         session.add(person_different_birthdate)
@@ -128,7 +127,7 @@ class TestDao(TestCase):
         )
         person_match_external_id.external_ids = [person_external_id]
 
-        session = Session()
+        session = SessionFactory.for_schema_base(StateBase)
         session.add(person_no_match)
         session.add(person_match_external_id)
         session.commit()
@@ -172,7 +171,7 @@ class TestDao(TestCase):
         )
         person.external_ids = [person_external_id, person_external_id2]
 
-        session = Session()
+        session = SessionFactory.for_schema_base(StateBase)
         session.add(person)
         session.commit()
 
@@ -221,7 +220,7 @@ class TestDao(TestCase):
         )
         person2.external_ids = [person2_external_id]
 
-        session = Session()
+        session = SessionFactory.for_schema_base(StateBase)
         session.add(person1)
         session.add(person2)
         session.commit()
@@ -273,7 +272,7 @@ class TestDao(TestCase):
         )
         person2.external_ids = [person2_external_id]
 
-        session = Session()
+        session = SessionFactory.for_schema_base(StateBase)
         session.add(person1)
         session.add(person2)
         session.commit()
@@ -336,7 +335,7 @@ class TestDao(TestCase):
 
         person.external_ids = [person_external_id, person_external_id2]
 
-        session = Session()
+        session = SessionFactory.for_schema_base(StateBase)
         session.add(person)
         session.commit()
 

@@ -27,9 +27,9 @@ from sqlalchemy import func
 from recidiviz.common.constants.aggregate import (
     enum_canonical_strings as enum_strings
 )
-from recidiviz import Session
 from recidiviz.ingest.aggregate.regions.ny import ny_aggregate_ingest
-from recidiviz.persistence.database.jails_base_schema import \
+from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.base_schema import \
     JailsBase
 from recidiviz.persistence.database.schema.aggregate import dao
 from recidiviz.persistence.database.schema.aggregate.schema import \
@@ -178,7 +178,7 @@ class TestNyAggregateIngest(TestCase):
             dao.write_df(table, df)
 
         # Assert
-        query = Session().query(
+        query = SessionFactory.for_schema_base(JailsBase).query(
             func.sum(NyFacilityAggregate.in_house))
         result = one(one(query.all()))
 

@@ -20,7 +20,7 @@ from logging.config import fileConfig
 from sqlalchemy import create_engine
 
 from alembic import context
-from recidiviz.persistence.database.jails_base_schema import JailsBase
+from recidiviz.persistence.database.base_schema import JailsBase
 
 # Import anything from the three schema.py files to ensure the table class
 # declarations are run within the Alembic environment

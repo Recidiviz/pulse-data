@@ -23,7 +23,6 @@ from typing import List
 
 from opencensus.stats import aggregation, measure, view
 
-from recidiviz import Session
 from recidiviz.common.constants.bond import BondStatus
 from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.common.constants.charge import ChargeStatus
@@ -33,6 +32,10 @@ from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
 from recidiviz.ingest.scrape.constants import MAX_PEOPLE_TO_LOG
 from recidiviz.persistence import persistence_utils
+from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.base_schema import JailsBase
+from recidiviz.persistence.database.schema_utils import \
+    schema_base_for_system_level
 from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.persistence.ingest_info_validator import ingest_info_validator
 from recidiviz.persistence.database.schema.county import dao as county_dao
@@ -89,7 +92,7 @@ def infer_release_on_open_bookings(
            bookings. Defaults to INFERRED_RELEASE
    """
 
-    session = Session()
+    session = SessionFactory.for_schema_base(JailsBase)
     try:
         logging.info("Reading all bookings that happened before [%s]",
                      last_ingest_time)
@@ -245,7 +248,9 @@ def write(ingest_info, metadata):
             return True
 
         persisted = False
-        session = Session()
+
+        session = SessionFactory.for_schema_base(
+            schema_base_for_system_level(metadata.system_level))
         try:
             logging.info("Starting entity matching")
 

@@ -20,7 +20,6 @@ from unittest import TestCase
 
 import attr
 
-from recidiviz import Session
 from recidiviz.common.constants.bond import BondStatus
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.county.sentence import SentenceStatus
@@ -35,9 +34,9 @@ from recidiviz.common.constants.state.state_supervision_period import \
     StateSupervisionPeriodStatus
 from recidiviz.common.constants.state.state_supervision_violation_response \
     import StateSupervisionViolationResponseDecision
+from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.schema.state import schema
-from recidiviz.persistence.database.state_base_schema import \
-    StateBase
+from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.entity.state.entities import StatePersonAlias, \
     StatePersonExternalId, StatePersonRace, StatePersonEthnicity, StatePerson, \
     StateBond, StateCourtCase, StateCharge, StateFine, StateAgent, \
@@ -101,7 +100,7 @@ class TestStateEntityMatching(TestCase):
             person_id=_ID_2, full_name=_FULL_NAME,
             external_ids=[db_external_id_another])
 
-        session = Session()
+        session = SessionFactory.for_schema_base(StateBase)
         session.add(db_person)
         session.add(db_person_another)
         session.commit()
@@ -158,7 +157,7 @@ class TestStateEntityMatching(TestCase):
 
         # Act
         matched_entities = entity_matching.match(
-            Session(), _STATE_CODE, [person, person_another])
+            SessionFactory.for_schema_base(StateBase), _STATE_CODE, [person, person_another])
 
         # Assert
         self.assertEqual(matched_entities.error_count, 0)
@@ -173,7 +172,7 @@ class TestStateEntityMatching(TestCase):
         db_person = schema.StatePerson(
             person_id=_ID, full_name=_FULL_NAME, external_ids=[db_external_id])
 
-        session = Session()
+        session = SessionFactory.for_schema_base(StateBase)
         session.add(db_person)
         session.commit()
 
@@ -193,7 +192,7 @@ class TestStateEntityMatching(TestCase):
 
         # Act
         matched_entities = entity_matching.match(
-            Session(), _STATE_CODE, [person, person_dup])
+            SessionFactory.for_schema_base(StateBase), _STATE_CODE, [person, person_dup])
 
         # Assert
         self.assertEqual(matched_entities.error_count, 1)
@@ -1248,7 +1247,7 @@ class TestStateEntityMatching(TestCase):
         db_person.sentence_groups = [db_sentence_group]
         db_person.external_ids = [db_external_id]
 
-        session = Session()
+        session = SessionFactory.for_schema_base(StateBase)
         session.add(db_person)
         session.commit()
 
@@ -1327,7 +1326,7 @@ class TestStateEntityMatching(TestCase):
 
         # Act
         matched_entities = entity_matching.match(
-            Session(), _STATE_CODE, [placeholder_person])
+            SessionFactory.for_schema_base(StateBase), _STATE_CODE, [placeholder_person])
 
         # Assert
         self.assertEqual([expected_person], matched_entities.people)
