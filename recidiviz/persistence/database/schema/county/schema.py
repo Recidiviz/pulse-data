@@ -41,7 +41,7 @@ from recidiviz.common.constants.county import (
     enum_canonical_strings as county_enum_strings
 )
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
-from recidiviz.persistence.database.jails_base_schema import JailsBase
+from recidiviz.persistence.database.base_schema import JailsBase
 from recidiviz.persistence.database.schema.history_table_shared_columns_mixin \
     import HistoryTableSharedColumns
 from recidiviz.persistence.database.schema.shared_enums import (

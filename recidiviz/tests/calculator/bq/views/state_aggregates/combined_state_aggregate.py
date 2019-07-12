@@ -22,14 +22,14 @@ from unittest import TestCase
 import pandas as pd
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
-from recidiviz import Session
 from recidiviz.calculator.bq.views.state_aggregates import \
     combined_state_aggregate
-from recidiviz.persistence.database.jails_base_schema import \
+from recidiviz.persistence.database.base_schema import \
     JailsBase
 from recidiviz.persistence.database.schema.aggregate import dao
 from recidiviz.persistence.database.schema.aggregate.schema import \
     CaFacilityAggregate, FlFacilityAggregate
+from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.tests.utils import fakes
 
 
@@ -75,7 +75,9 @@ class TestAggregateView(TestCase):
         dao.write_df(FlFacilityAggregate, fl_data)
 
         # Act
-        query = Session().query(combined_state_aggregate._UNIONED_STATEMENT)  # pylint: disable=protected-access
+        # pylint: disable=protected-access
+        query = SessionFactory.for_schema_base(JailsBase).query(
+            combined_state_aggregate._UNIONED_STATEMENT)
         result = query.all()
 
         # Assert

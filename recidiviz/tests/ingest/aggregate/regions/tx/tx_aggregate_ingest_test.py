@@ -27,9 +27,9 @@ from sqlalchemy import func
 from recidiviz.common.constants.aggregate import (
     enum_canonical_strings as enum_strings
 )
-from recidiviz import Session
 from recidiviz.ingest.aggregate.regions.tx import tx_aggregate_ingest
-from recidiviz.persistence.database.jails_base_schema import \
+from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.base_schema import \
     JailsBase
 from recidiviz.persistence.database.schema.aggregate import dao
 from recidiviz.persistence.database.schema.aggregate.schema import \
@@ -138,7 +138,8 @@ class TestTxAggregateIngest(TestCase):
             dao.write_df(table, df)
 
         # Assert
-        query = Session().query(func.sum(TxCountyAggregate.available_beds))
+        query = SessionFactory.for_schema_base(JailsBase).query(
+            func.sum(TxCountyAggregate.available_beds))
         result = one(one(query.all()))
 
         expected_sum_available_beds = 20315
@@ -206,7 +207,8 @@ class TestTxAggregateIngest(TestCase):
             dao.write_df(table, df)
 
         # Assert
-        query = Session().query(func.sum(TxCountyAggregate.available_beds))
+        query = SessionFactory.for_schema_base(JailsBase).query(
+            func.sum(TxCountyAggregate.available_beds))
         result = one(one(query.all()))
 
         expected_sum_available_beds = 7044
@@ -268,7 +270,8 @@ class TestTxAggregateIngest(TestCase):
             dao.write_df(table, df)
 
         # Assert
-        query = Session().query(func.sum(TxCountyAggregate.pretrial_felons))
+        query = SessionFactory.for_schema_base(JailsBase).query(
+            func.sum(TxCountyAggregate.pretrial_felons))
         result = one(one(query.all()))
 
         expected_pretrial_felons = 14140
@@ -329,7 +332,8 @@ class TestTxAggregateIngest(TestCase):
             dao.write_df(table, df)
 
         # Assert
-        query = Session().query(func.sum(TxCountyAggregate.pretrial_felons))
+        query = SessionFactory.for_schema_base(JailsBase).query(
+            func.sum(TxCountyAggregate.pretrial_felons))
         result = one(one(query.all()))
 
         expected_pretrial_felons = 14727

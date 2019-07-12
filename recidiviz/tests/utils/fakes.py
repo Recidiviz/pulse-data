@@ -18,8 +18,8 @@
 
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
-from recidiviz.persistence.database.db_connect import \
-    connect_session_to_database_instance
+from recidiviz.persistence.database.sqlalchemy_engine_manager import \
+    SQLAlchemyEngineManager
 
 
 def use_in_memory_sqlite_database(declarative_base: DeclarativeMeta) -> None:
@@ -32,8 +32,9 @@ def use_in_memory_sqlite_database(declarative_base: DeclarativeMeta) -> None:
     3. Bind the global SessionMaker to the new fake database engine
     """
 
-    connect_session_to_database_instance(db_url='sqlite:///:memory:',
-                                         schema_base=declarative_base)
+    SQLAlchemyEngineManager.init_engine_for_db_instance(
+        db_url='sqlite:///:memory:',
+        schema_base=declarative_base)
 
 
 def use_on_disk_sqlite_database(declarative_base: DeclarativeMeta) -> None:
@@ -45,8 +46,9 @@ def use_on_disk_sqlite_database(declarative_base: DeclarativeMeta) -> None:
     2. Create all tables in the newly created sqlite database
     3. Bind the global SessionMaker to the new database engine
     """
-    connect_session_to_database_instance(db_url='sqlite:///recidiviz.db',
-                                         schema_base=declarative_base)
+    SQLAlchemyEngineManager.init_engine_for_db_instance(
+        db_url='sqlite:///recidiviz.db',
+        schema_base=declarative_base)
 
 
 def _enforce_foreign_key_constraints(connection, _) -> None:

@@ -19,10 +19,9 @@ from typing import List, Type
 from unittest import TestCase
 from mock import patch
 
-from recidiviz import Session
 from recidiviz.persistence.database.database_entity import DatabaseEntity
-from recidiviz.persistence.database.state_base_schema import \
-    StateBase
+from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.persistence_utils import primary_key_name_from_cls
 from recidiviz.persistence.database.schema_entity_converter.\
     state.schema_entity_converter import (
@@ -95,7 +94,7 @@ class TestStateSchemaEntityConverter(TestCase):
 
         # Optionally commit the schema objects to the DB
         if write_to_db:
-            session = Session()
+            session = SessionFactory.for_schema_base(StateBase)
             for schema_obj in schema_objects:
                 session.add(schema_obj)
             session.commit()
@@ -103,7 +102,7 @@ class TestStateSchemaEntityConverter(TestCase):
         # Get the list of schema objects we want to convert back to entities
         schema_objects_to_convert = schema_objects
         if write_to_db:
-            session = Session()
+            session = SessionFactory.for_schema_base(StateBase)
             schema_class = self._get_schema_class_for_objects(schema_objects)
             schema_objects_to_convert = session.query(schema_class).all()
             self.assertEqual(len(schema_objects), expected_length)

@@ -33,7 +33,7 @@ import attr
 
 from sqlalchemy import text
 
-from recidiviz import Session
+from recidiviz.persistence.database.session import Session
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.history_table_shared_columns_mixin \

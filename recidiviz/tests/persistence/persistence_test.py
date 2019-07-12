@@ -23,7 +23,6 @@ import attr
 from mock import patch, Mock
 
 import recidiviz.ingest.models.ingest_info as ii
-from recidiviz import Session
 from recidiviz.common.constants.bond import BondStatus
 from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.common.constants.charge import ChargeStatus
@@ -34,7 +33,8 @@ from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo, Charge, \
     Sentence
 from recidiviz.ingest.scrape.ingest_utils import convert_ingest_info_to_proto
 from recidiviz.persistence import persistence
-from recidiviz.persistence.database.jails_base_schema import \
+from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.base_schema import \
     JailsBase
 from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.persistence.database import database
@@ -100,7 +100,8 @@ class TestPersistence(TestCase):
 
             # Act
             persistence.write(ingest_info, DEFAULT_METADATA)
-            result = county_dao.read_people(Session())
+            result = county_dao.read_people(
+                SessionFactory.for_schema_base(JailsBase))
 
             # Assert
             assert not result
@@ -114,7 +115,8 @@ class TestPersistence(TestCase):
 
             # Act
             persistence.write(ingest_info, DEFAULT_METADATA)
-            result = county_dao.read_people(Session())
+            result = county_dao.read_people(
+                SessionFactory.for_schema_base(JailsBase))
 
             # Assert
             assert len(result) == 1
@@ -137,7 +139,8 @@ class TestPersistence(TestCase):
 
         # Act
         persistence.write(ingest_info, DEFAULT_METADATA)
-        result = county_dao.read_people(Session())
+        result = county_dao.read_people(
+            SessionFactory.for_schema_base(JailsBase))
 
         # Assert
         assert len(result) == 2
@@ -153,7 +156,8 @@ class TestPersistence(TestCase):
 
         # Act
         self.assertFalse(persistence.write(ingest_info, DEFAULT_METADATA))
-        result = county_dao.read_people(Session())
+        result = county_dao.read_people(
+            SessionFactory.for_schema_base(JailsBase))
 
         # Assert
         assert not result
@@ -172,7 +176,8 @@ class TestPersistence(TestCase):
 
         # Act
         self.assertFalse(persistence.write(ingest_info, DEFAULT_METADATA))
-        result = county_dao.read_people(Session())
+        result = county_dao.read_people(
+            SessionFactory.for_schema_base(JailsBase))
 
         # Assert
         assert not result
@@ -192,7 +197,8 @@ class TestPersistence(TestCase):
 
         # Act
         persistence.write(ingest_info, DEFAULT_METADATA)
-        result = county_dao.read_people(Session())
+        result = county_dao.read_people(
+            SessionFactory.for_schema_base(JailsBase))
 
         # Assert
         assert len(result) == 2
@@ -214,7 +220,8 @@ class TestPersistence(TestCase):
         # Act
         persistence.write(ingest_info, DEFAULT_METADATA)
         result = county_dao.read_people(
-            Session(), full_name=_format_full_name(FULL_NAME_1))
+            SessionFactory.for_schema_base(JailsBase),
+            full_name=_format_full_name(FULL_NAME_1))
 
         # Assert
         assert len(result) == 1
@@ -283,7 +290,8 @@ class TestPersistence(TestCase):
 
         # Act
         persistence.write(ingest_info, metadata)
-        result = county_dao.read_people(Session())
+        result = county_dao.read_people(
+            SessionFactory.for_schema_base(JailsBase))
 
         # Assert
         assert len(result) == 1
@@ -334,7 +342,7 @@ class TestPersistence(TestCase):
             region=REGION_1,
             bookings=[schema_booking])
 
-        session = Session()
+        session = SessionFactory.for_schema_base(JailsBase)
         session.add(schema_person)
         session.commit()
 
@@ -365,7 +373,9 @@ class TestPersistence(TestCase):
             region=REGION_1,
             jurisdiction_id=JURISDICTION_ID,
             bookings=[expected_booking])
-        self.assertEqual([expected_person], county_dao.read_people(Session()))
+        self.assertEqual([expected_person],
+                         county_dao.read_people(
+                             SessionFactory.for_schema_base(JailsBase)))
 
     def test_write_preexisting_person_duplicate_charges(self):
         # Arrange
@@ -396,7 +406,7 @@ class TestPersistence(TestCase):
             region=REGION_1,
             bookings=[schema_booking])
 
-        session = Session()
+        session = SessionFactory.for_schema_base(JailsBase)
         session.add(schema_person)
         session.commit()
 
@@ -441,7 +451,9 @@ class TestPersistence(TestCase):
             region=REGION_1,
             jurisdiction_id=JURISDICTION_ID,
             bookings=[expected_booking])
-        self.assertEqual([expected_person], county_dao.read_people(Session()))
+        self.assertEqual([expected_person],
+                         county_dao.read_people(
+                             SessionFactory.for_schema_base(JailsBase)))
 
     def test_write_noPeople(self):
         # Arrange
@@ -457,7 +469,8 @@ class TestPersistence(TestCase):
         persistence.write(ingest_info, metadata)
 
         # Assert
-        people = county_dao.read_people(Session())
+        people = county_dao.read_people(
+            SessionFactory.for_schema_base(JailsBase))
         self.assertFalse(people)
 
     def test_inferReleaseDateOnOpenBookings(self):
@@ -500,7 +513,7 @@ class TestPersistence(TestCase):
             person_id=ID_2, region=REGION_1, jurisdiction_id=JURISDICTION_ID,
             bookings=[booking_open_most_recent_scrape])
 
-        session = Session()
+        session = SessionFactory.for_schema_base(JailsBase)
         database.write_person(session, person, DEFAULT_METADATA)
         database.write_person(session, person_unmatched, DEFAULT_METADATA)
         session.commit()
@@ -533,7 +546,8 @@ class TestPersistence(TestCase):
             REGION_1, SCRAPER_START_DATETIME, CustodyStatus.INFERRED_RELEASE)
 
         # Assert
-        people = county_dao.read_people(Session())
+        people = county_dao.read_people(
+            SessionFactory.for_schema_base(JailsBase))
         self.assertCountEqual(people, [expected_person, person_unmatched])
 
 

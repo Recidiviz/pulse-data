@@ -24,11 +24,11 @@ from more_itertools import one
 import pandas as pd
 from sqlalchemy import func
 
-from recidiviz import Session
 from recidiviz.common.constants.aggregate import (
     enum_canonical_strings as enum_strings
 )
-from recidiviz.persistence.database.jails_base_schema import \
+from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.base_schema import \
     JailsBase
 from recidiviz.persistence.database.schema.aggregate import dao
 from recidiviz.persistence.database.schema.aggregate.schema import \
@@ -63,7 +63,7 @@ class TestDao(TestCase):
         dao.write_df(FlCountyAggregate, subject)
 
         # Assert
-        query = Session() \
+        query = SessionFactory.for_schema_base(JailsBase) \
             .query(FlCountyAggregate) \
             .filter(FlCountyAggregate.county_name == 'Bay')
         result = one(query.all())
@@ -109,7 +109,7 @@ class TestDao(TestCase):
         dao.write_df(FlFacilityAggregate, subject)
 
         # Assert
-        query = Session() \
+        query = SessionFactory.for_schema_base(JailsBase) \
             .query(FlCountyAggregate) \
             .filter(FlCountyAggregate.county_name == 'Bay')
         result = one(query.all())
@@ -136,7 +136,8 @@ class TestDao(TestCase):
         dao.write_df(FlCountyAggregate, subject)
 
         # Assert
-        query = Session().query(FlCountyAggregate)
+        query = \
+            SessionFactory.for_schema_base(JailsBase).query(FlCountyAggregate)
         self.assertEqual(len(query.all()), 1)
 
     def testWriteDf_OverlappingData_WritesNewAndIgnoresDuplicateRows(self):
@@ -170,7 +171,8 @@ class TestDao(TestCase):
         dao.write_df(FlCountyAggregate, subject)
 
         # Assert
-        query = Session().query(func.sum(FlCountyAggregate.county_population))
+        query = SessionFactory.for_schema_base(JailsBase).query(
+            func.sum(FlCountyAggregate.county_population))
         result = one(one(query.all()))
 
         # This sum includes intial_df + NewCounty and ignores other changes in

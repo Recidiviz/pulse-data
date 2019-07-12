@@ -22,14 +22,14 @@ from unittest import TestCase
 from more_itertools import one
 from sqlalchemy.sql import text
 
-from recidiviz import Session
 from recidiviz.common.constants.bond import BondStatus
 from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.person_characteristics import Race
 from recidiviz.common.constants.county.sentence import SentenceStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.persistence.database.jails_base_schema import \
+from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.base_schema import \
     JailsBase
 from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.persistence.database import database
@@ -70,7 +70,7 @@ class TestDatabase(TestCase):
         fakes.use_in_memory_sqlite_database(JailsBase)
 
     def testWritePerson_noExistingSnapshots_createsSnapshots(self):
-        act_session = Session()
+        act_session = SessionFactory.for_schema_base(JailsBase)
 
         person = county_entities.Person.new_with_defaults(
             region=_REGION, race=Race.OTHER, jurisdiction_id=_JURISDICTION_ID)
@@ -98,7 +98,7 @@ class TestDatabase(TestCase):
 
         act_session.close()
 
-        assert_session = Session()
+        assert_session = SessionFactory.for_schema_base(JailsBase)
 
         person_snapshots = assert_session.query(PersonHistory).filter(
             PersonHistory.person_id == person_id).all()
@@ -147,7 +147,7 @@ class TestDatabase(TestCase):
         existing_booking_id = 14
         existing_charge_id = 47
 
-        arrange_session = Session()
+        arrange_session = SessionFactory.for_schema_base(JailsBase)
 
         existing_person = Person(
             person_id=existing_person_id,
@@ -200,7 +200,7 @@ class TestDatabase(TestCase):
         arrange_session.commit()
         arrange_session.close()
 
-        act_session = Session()
+        act_session = SessionFactory.for_schema_base(JailsBase)
 
         # Ingested record tree has updates to person and charge but not booking
         ingested_person = county_entities.Person.new_with_defaults(
@@ -230,7 +230,7 @@ class TestDatabase(TestCase):
         act_session.commit()
         act_session.close()
 
-        assert_session = Session()
+        assert_session = SessionFactory.for_schema_base(JailsBase)
 
         person_snapshots = assert_session.query(PersonHistory) \
             .filter(PersonHistory.person_id == existing_person_id) \
@@ -284,7 +284,7 @@ class TestDatabase(TestCase):
         existing_person_id = 1
         existing_booking_id = 14
 
-        arrange_session = Session()
+        arrange_session = SessionFactory.for_schema_base(JailsBase)
 
         # Person and booking already exist, while charge is new.
         existing_person = Person(
@@ -324,7 +324,7 @@ class TestDatabase(TestCase):
         arrange_session.commit()
         arrange_session.close()
 
-        act_session = Session()
+        act_session = SessionFactory.for_schema_base(JailsBase)
 
         # Ingested record tree has update to person, no updates to booking, and
         # a new charge
@@ -357,7 +357,7 @@ class TestDatabase(TestCase):
 
         act_session.close()
 
-        assert_session = Session()
+        assert_session = SessionFactory.for_schema_base(JailsBase)
 
         person_snapshots = assert_session.query(PersonHistory) \
             .filter(PersonHistory.person_id == existing_person_id) \
@@ -400,7 +400,7 @@ class TestDatabase(TestCase):
         name = 'Steve Fakename'
         birthdate = datetime.date(year=1980, month=1, day=1)
 
-        arrange_session = Session()
+        arrange_session = SessionFactory.for_schema_base(JailsBase)
 
         person = Person(
             person_id=1, full_name=name, birthdate=birthdate,
@@ -457,7 +457,7 @@ class TestDatabase(TestCase):
         arrange_session.commit()
         arrange_session.close()
 
-        assert_session = Session()
+        assert_session = SessionFactory.for_schema_base(JailsBase)
 
         ingest_person = county_dao.read_people(
             assert_session, full_name=name, birthdate=birthdate)[0]
@@ -472,7 +472,7 @@ class TestDatabase(TestCase):
 
     def testWritePeople_duplicatePeople_raisesError(self):
         shared_id = 48
-        session = Session()
+        session = SessionFactory.for_schema_base(JailsBase)
 
         person_1 = county_entities.Person.new_with_defaults(
             region=_REGION, race=Race.OTHER, person_id=shared_id,
@@ -495,7 +495,7 @@ class TestDatabase(TestCase):
         booking_scrape_time = datetime.datetime(year=2020, month=7, day=7)
         booking_admission_date = datetime.datetime(year=2020, month=7, day=1)
 
-        arrange_session = Session()
+        arrange_session = SessionFactory.for_schema_base(JailsBase)
         person = county_entities.Person.new_with_defaults(
             full_name=_FULL_NAME, birthdate=_BIRTHDATE, region=_REGION,
             jurisdiction_id=_JURISDICTION_ID)
@@ -506,7 +506,7 @@ class TestDatabase(TestCase):
         person_id = persisted_person.person_id
         arrange_session.close()
 
-        act_session = Session()
+        act_session = SessionFactory.for_schema_base(JailsBase)
         queried_person = one(county_dao.read_people(
             session=act_session, full_name=_FULL_NAME, birthdate=_BIRTHDATE))
         booking = county_entities.Booking.new_with_defaults(
@@ -523,7 +523,7 @@ class TestDatabase(TestCase):
         booking_id = updated_person.bookings[0].booking_id
         act_session.close()
 
-        assert_session = Session()
+        assert_session = SessionFactory.for_schema_base(JailsBase)
 
         person_snapshot = one(assert_session.query(PersonHistory).filter(
             PersonHistory.person_id == person_id).all())
@@ -540,7 +540,7 @@ class TestDatabase(TestCase):
         scrape_time = datetime.datetime(year=2020, month=7, day=7)
         booking_release_date = datetime.datetime(year=2020, month=7, day=1)
 
-        act_session = Session()
+        act_session = SessionFactory.for_schema_base(JailsBase)
         person = county_entities.Person.new_with_defaults(
             full_name=_FULL_NAME, birthdate=_BIRTHDATE, region=_REGION,
             jurisdiction_id=_JURISDICTION_ID)
@@ -563,7 +563,7 @@ class TestDatabase(TestCase):
         charge_id = persisted_person.bookings[0].charges[0].charge_id
         act_session.close()
 
-        assert_session = Session()
+        assert_session = SessionFactory.for_schema_base(JailsBase)
 
         person_snapshot = one(assert_session.query(PersonHistory).filter(
             PersonHistory.person_id == person_id).all())
@@ -583,7 +583,7 @@ class TestDatabase(TestCase):
         scrape_time = datetime.datetime(year=2020, month=7, day=7)
         booking_release_date = datetime.datetime(year=2020, month=7, day=15)
 
-        act_session = Session()
+        act_session = SessionFactory.for_schema_base(JailsBase)
         person = county_entities.Person.new_with_defaults(
             full_name=_FULL_NAME, birthdate=_BIRTHDATE, region=_REGION,
             jurisdiction_id=_JURISDICTION_ID)
@@ -606,7 +606,7 @@ class TestDatabase(TestCase):
         charge_id = persisted_person.bookings[0].charges[0].charge_id
         act_session.close()
 
-        assert_session = Session()
+        assert_session = SessionFactory.for_schema_base(JailsBase)
 
         person_snapshot = one(assert_session.query(PersonHistory).filter(
             PersonHistory.person_id == person_id).all())
@@ -627,7 +627,7 @@ class TestDatabase(TestCase):
         admission_date = datetime.datetime(year=2020, month=6, day=1)
         release_date = datetime.datetime(year=2020, month=7, day=1)
 
-        act_session = Session()
+        act_session = SessionFactory.for_schema_base(JailsBase)
         person = county_entities.Person.new_with_defaults(
             full_name=_FULL_NAME, birthdate=_BIRTHDATE, region=_REGION,
             jurisdiction_id=_JURISDICTION_ID)
@@ -652,7 +652,7 @@ class TestDatabase(TestCase):
         charge_id = persisted_person.bookings[0].charges[0].charge_id
         act_session.close()
 
-        assert_session = Session()
+        assert_session = SessionFactory.for_schema_base(JailsBase)
 
         person_snapshot = one(assert_session.query(PersonHistory).filter(
             PersonHistory.person_id == person_id).all())
@@ -686,7 +686,7 @@ class TestDatabase(TestCase):
         date_imposed = datetime.datetime(year=2020, month=6, day=1)
         completion_date = datetime.datetime(year=2020, month=7, day=1)
 
-        act_session = Session()
+        act_session = SessionFactory.for_schema_base(JailsBase)
         person = county_entities.Person.new_with_defaults(
             full_name=_FULL_NAME, birthdate=_BIRTHDATE, region=_REGION,
             jurisdiction_id=_JURISDICTION_ID)
@@ -714,7 +714,7 @@ class TestDatabase(TestCase):
             persisted_person.bookings[0].charges[0].sentence.sentence_id
         act_session.close()
 
-        assert_session = Session()
+        assert_session = SessionFactory.for_schema_base(JailsBase)
 
         person_snapshot = one(assert_session.query(PersonHistory).filter(
             PersonHistory.person_id == person_id).all())
@@ -751,7 +751,7 @@ class TestDatabase(TestCase):
         date_imposed = datetime.datetime(year=2020, month=7, day=1)
         completion_date = datetime.datetime(year=2020, month=6, day=1)
 
-        act_session = Session()
+        act_session = SessionFactory.for_schema_base(JailsBase)
         person = county_entities.Person.new_with_defaults(
             full_name=_FULL_NAME, birthdate=_BIRTHDATE, region=_REGION,
             jurisdiction_id=_JURISDICTION_ID)
@@ -779,7 +779,7 @@ class TestDatabase(TestCase):
             persisted_person.bookings[0].charges[0].sentence.sentence_id
         act_session.close()
 
-        assert_session = Session()
+        assert_session = SessionFactory.for_schema_base(JailsBase)
 
         person_snapshot = one(assert_session.query(PersonHistory).filter(
             PersonHistory.person_id == person_id).all())
@@ -803,7 +803,7 @@ class TestDatabase(TestCase):
         update_scrape_time = datetime.datetime(year=2020, month=7, day=7)
         booking_admission_date = datetime.datetime(year=2020, month=7, day=1)
 
-        arrange_session = Session()
+        arrange_session = SessionFactory.for_schema_base(JailsBase)
         person = county_entities.Person.new_with_defaults(
             full_name=_FULL_NAME, birthdate=_BIRTHDATE, region=_REGION,
             jurisdiction_id=_JURISDICTION_ID)
@@ -819,7 +819,7 @@ class TestDatabase(TestCase):
         booking_id = persisted_person.bookings[0].booking_id
         arrange_session.close()
 
-        act_session = Session()
+        act_session = SessionFactory.for_schema_base(JailsBase)
         queried_person = one(county_dao.read_people(
             session=act_session, full_name=_FULL_NAME, birthdate=_BIRTHDATE))
         queried_person.bookings[0].admission_date = booking_admission_date
@@ -831,7 +831,7 @@ class TestDatabase(TestCase):
         act_session.commit()
         act_session.close()
 
-        assert_session = Session()
+        assert_session = SessionFactory.for_schema_base(JailsBase)
 
         booking_snapshots = assert_session.query(BookingHistory).filter(
             BookingHistory.booking_id == booking_id).all()
@@ -848,7 +848,7 @@ class TestDatabase(TestCase):
         scrape_time = datetime.datetime(year=2020, month=7, day=7)
         booking_admission_date = datetime.datetime(year=2020, month=7, day=1)
 
-        act_session = Session()
+        act_session = SessionFactory.for_schema_base(JailsBase)
         person = county_entities.Person.new_with_defaults(
             full_name=_FULL_NAME, birthdate=_BIRTHDATE, region=_REGION,
             jurisdiction_id=_JURISDICTION_ID)
@@ -867,7 +867,7 @@ class TestDatabase(TestCase):
         booking_id = persisted_person.bookings[0].booking_id
         act_session.close()
 
-        assert_session = Session()
+        assert_session = SessionFactory.for_schema_base(JailsBase)
 
         person_snapshot = one(assert_session.query(PersonHistory).filter(
             PersonHistory.person_id == person_id).all())
@@ -884,7 +884,7 @@ class TestDatabase(TestCase):
         scrape_time = datetime.datetime(year=2020, month=7, day=7)
         booking_admission_date = datetime.datetime(year=2020, month=7, day=1)
 
-        act_session = Session()
+        act_session = SessionFactory.for_schema_base(JailsBase)
         person = county_entities.Person.new_with_defaults(
             full_name=_FULL_NAME, birthdate=_BIRTHDATE, region=_REGION,
             jurisdiction_id=_JURISDICTION_ID)
@@ -909,7 +909,7 @@ class TestDatabase(TestCase):
         bond_id = persisted_person.bookings[0].charges[0].bond.bond_id
         act_session.close()
 
-        assert_session = Session()
+        assert_session = SessionFactory.for_schema_base(JailsBase)
 
         charge_snapshot = one(assert_session.query(ChargeHistory).filter(
             ChargeHistory.charge_id == charge_id).all())
@@ -927,7 +927,7 @@ class TestDatabase(TestCase):
         update_scrape_time = datetime.datetime(year=2020, month=7, day=7)
         booking_admission_date = datetime.datetime(year=2020, month=6, day=1)
 
-        arrange_session = Session()
+        arrange_session = SessionFactory.for_schema_base(JailsBase)
         person = county_entities.Person.new_with_defaults(
             full_name=_FULL_NAME, birthdate=_BIRTHDATE, region=_REGION,
             jurisdiction_id=_JURISDICTION_ID)
@@ -946,7 +946,7 @@ class TestDatabase(TestCase):
         booking_id = persisted_person.bookings[0].booking_id
         arrange_session.close()
 
-        act_session = Session()
+        act_session = SessionFactory.for_schema_base(JailsBase)
         queried_person = one(county_dao.read_people(
             session=act_session, full_name=_FULL_NAME, birthdate=_BIRTHDATE))
         charge = county_entities.Charge.new_with_defaults(
@@ -963,7 +963,7 @@ class TestDatabase(TestCase):
         bond_id = updated_person.bookings[0].charges[0].bond.bond_id
         act_session.close()
 
-        assert_session = Session()
+        assert_session = SessionFactory.for_schema_base(JailsBase)
 
         person_snapshot = one(assert_session.query(PersonHistory).filter(
             PersonHistory.person_id == person_id).all())
@@ -988,7 +988,7 @@ class TestDatabase(TestCase):
         booking_admission_date = datetime.datetime(year=2020, month=7, day=1)
         sentence_date_imposed = datetime.datetime(year=2020, month=7, day=3)
 
-        act_session = Session()
+        act_session = SessionFactory.for_schema_base(JailsBase)
         person = county_entities.Person.new_with_defaults(
             full_name=_FULL_NAME, birthdate=_BIRTHDATE, region=_REGION,
             jurisdiction_id=_JURISDICTION_ID)
@@ -1015,7 +1015,7 @@ class TestDatabase(TestCase):
             persisted_person.bookings[0].charges[0].sentence.sentence_id
         act_session.close()
 
-        assert_session = Session()
+        assert_session = SessionFactory.for_schema_base(JailsBase)
 
         booking_snapshot = one(assert_session.query(BookingHistory).filter(
             BookingHistory.booking_id == booking_id).all())
@@ -1029,7 +1029,7 @@ class TestDatabase(TestCase):
         assert_session.close()
 
     def test_removeBondFromCharge_shouldNotOrphanOldBond(self):
-        arrange_session = Session()
+        arrange_session = SessionFactory.for_schema_base(JailsBase)
 
         person = county_entities.Person.new_with_defaults(
             region=_REGION, race=Race.OTHER, jurisdiction_id=_JURISDICTION_ID)
@@ -1055,7 +1055,7 @@ class TestDatabase(TestCase):
         persisted_booking_id = persisted_person.bookings[0].booking_id
         arrange_session.close()
 
-        act_session = Session()
+        act_session = SessionFactory.for_schema_base(JailsBase)
         person_query = act_session.query(Person) \
             .filter(Person.person_id == persisted_person_id)
         fetched_person = \
@@ -1072,7 +1072,7 @@ class TestDatabase(TestCase):
         act_session.commit()
         act_session.close()
 
-        assert_session = Session()
+        assert_session = SessionFactory.for_schema_base(JailsBase)
 
         # Bond should still be associated with booking, even though it is no
         # longer associated with the charge
@@ -1085,7 +1085,7 @@ class TestDatabase(TestCase):
         assert_session.close()
 
     def test_removeSentenceFromCharge_shouldNotOrphanOldSentence(self):
-        arrange_session = Session()
+        arrange_session = SessionFactory.for_schema_base(JailsBase)
 
         person = county_entities.Person.new_with_defaults(
             region=_REGION, race=Race.OTHER, jurisdiction_id=_JURISDICTION_ID)
@@ -1110,7 +1110,7 @@ class TestDatabase(TestCase):
         persisted_booking_id = persisted_person.bookings[0].booking_id
         arrange_session.close()
 
-        act_session = Session()
+        act_session = SessionFactory.for_schema_base(JailsBase)
         person_query = act_session.query(Person) \
             .filter(Person.person_id == persisted_person_id)
         fetched_person = \
@@ -1126,7 +1126,7 @@ class TestDatabase(TestCase):
         act_session.commit()
         act_session.close()
 
-        assert_session = Session()
+        assert_session = SessionFactory.for_schema_base(JailsBase)
 
         # Sentence should still be associated with booking, even though it is no
         # longer associated with the charge
@@ -1141,7 +1141,7 @@ class TestDatabase(TestCase):
     def test_orphanedEntities_shouldStillWriteSnapshots(self):
         orphan_scrape_time = datetime.datetime(year=2020, month=7, day=8)
 
-        arrange_session = Session()
+        arrange_session = SessionFactory.for_schema_base(JailsBase)
 
         person = county_entities.Person.new_with_defaults(
             region=_REGION, jurisdiction_id=_JURISDICTION_ID)
@@ -1165,7 +1165,7 @@ class TestDatabase(TestCase):
         persisted_person_id = persisted_person.person_id
         arrange_session.close()
 
-        act_session = Session()
+        act_session = SessionFactory.for_schema_base(JailsBase)
         person_query = act_session.query(Person) \
             .filter(Person.person_id == persisted_person_id)
         fetched_person = \
@@ -1187,7 +1187,7 @@ class TestDatabase(TestCase):
         act_session.commit()
         act_session.close()
 
-        assert_session = Session()
+        assert_session = SessionFactory.for_schema_base(JailsBase)
 
         sentence_snapshot = assert_session.query(SentenceHistory) \
             .filter(
@@ -1204,7 +1204,7 @@ class TestDatabase(TestCase):
         assert_session.close()
 
     def test_addBondToExistingBooking_shouldSetBookingIdOnBond(self):
-        arrange_session = Session()
+        arrange_session = SessionFactory.for_schema_base(JailsBase)
 
         person = county_entities.Person.new_with_defaults(
             region=_REGION, race=Race.OTHER, jurisdiction_id=_JURISDICTION_ID)
@@ -1226,7 +1226,7 @@ class TestDatabase(TestCase):
         persisted_booking_id = persisted_person.bookings[0].booking_id
         arrange_session.close()
 
-        act_session = Session()
+        act_session = SessionFactory.for_schema_base(JailsBase)
         person_query = act_session.query(Person) \
             .filter(Person.person_id == persisted_person_id)
         fetched_person = \
@@ -1241,7 +1241,7 @@ class TestDatabase(TestCase):
         act_session.commit()
         act_session.close()
 
-        assert_session = Session()
+        assert_session = SessionFactory.for_schema_base(JailsBase)
 
         assert_person_query = assert_session.query(Person) \
             .filter(Person.person_id == persisted_person_id)

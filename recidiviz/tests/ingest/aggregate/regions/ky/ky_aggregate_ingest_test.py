@@ -24,16 +24,16 @@ import pytest
 from more_itertools import one
 from sqlalchemy import func
 
-from recidiviz import Session
 from recidiviz.common.constants.aggregate import (
     enum_canonical_strings as enum_strings
 )
 from recidiviz.ingest.aggregate.regions.ky import ky_aggregate_ingest
-from recidiviz.persistence.database.jails_base_schema import \
+from recidiviz.persistence.database.base_schema import \
     JailsBase
 from recidiviz.persistence.database.schema.aggregate import dao
 from recidiviz.persistence.database.schema.aggregate.schema import \
     KyFacilityAggregate
+from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.tests.ingest import fixtures
 from recidiviz.tests.utils import fakes
 
@@ -172,7 +172,7 @@ class TestKyAggregateIngest(TestCase):
             dao.write_df(table, df)
 
         # Assert
-        query = Session().query(
+        query = SessionFactory.for_schema_base(JailsBase).query(
             func.sum(KyFacilityAggregate.reported_population))
         result = one(one(query.all()))
 

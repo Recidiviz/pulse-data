@@ -30,7 +30,7 @@ from recidiviz.common.constants.person_characteristics import \
     Ethnicity, Gender, Race, ResidencyStatus
 from recidiviz.common.constants.county.sentence import SentenceStatus
 from recidiviz.common.ingest_metadata import SystemLevel
-from recidiviz.persistence.database.jails_base_schema import \
+from recidiviz.persistence.database.base_schema import \
     JailsBase
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.county import schema as county_schema

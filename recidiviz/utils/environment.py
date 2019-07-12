@@ -27,6 +27,7 @@ from http import HTTPStatus
 import logging
 import os
 from functools import wraps
+from typing import Optional
 
 import requests
 from google.cloud import datastore, environment_vars
@@ -41,7 +42,8 @@ class GaeEnvironment(Enum):
 
 GAE_ENVIRONMENTS = {env.value for env in GaeEnvironment}
 
-def in_gae():
+
+def in_gae() -> bool:
     """ Check whether we're currently running on local dev machine or in prod
 
     Checks whether the current instance is running hosted on GAE (if not, likely
@@ -56,7 +58,8 @@ def in_gae():
     """
     return get_gae_environment() in GAE_ENVIRONMENTS
 
-def get_gae_environment():
+
+def get_gae_environment() -> Optional[str]:
     """Get the environment we are running in
 
     Args:
@@ -68,12 +71,12 @@ def get_gae_environment():
     return os.getenv('RECIDIVIZ_ENV')
 
 
-def in_gae_production():
-    return in_gae() and get_gae_environment() == GaeEnvironment.PRODUCTION
+def in_gae_production() -> bool:
+    return in_gae() and get_gae_environment() == GaeEnvironment.PRODUCTION.value
 
 
-def in_gae_staging():
-    return in_gae() and get_gae_environment() == GaeEnvironment.STAGING
+def in_gae_staging() -> bool:
+    return in_gae() and get_gae_environment() == GaeEnvironment.STAGING.value
 
 
 def get_datastore_client() -> datastore.Client:

@@ -20,7 +20,6 @@ from unittest import TestCase
 
 from more_itertools import one
 
-from recidiviz import Session
 from recidiviz.common.constants.bond import BondType, BondStatus
 from recidiviz.common.constants.county.booking import (
     CustodyStatus,
@@ -38,7 +37,8 @@ from recidiviz.common.constants.person_characteristics import (
     ResidencyStatus,
 )
 from recidiviz.common.constants.county.sentence import SentenceStatus
-from recidiviz.persistence.database.jails_base_schema import \
+from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.base_schema import \
     JailsBase
 from recidiviz.persistence.database.schema_entity_converter.county.\
     schema_entity_converter import (
@@ -165,7 +165,7 @@ class TestCountySchemaEntityConverter(TestCase):
 
     def test_convert_person(self):
         schema_person = CountyEntityToSchemaConverter().convert(_PERSON)
-        session = Session()
+        session = SessionFactory.for_schema_base(JailsBase)
         session.add(schema_person)
         session.commit()
 
