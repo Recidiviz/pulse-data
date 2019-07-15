@@ -1,0 +1,5 @@
+agency_name: Brazos County Sheriff's Office
+agency_type: jail
+timezone: America/New_York
+environment: staging
+jurisdiction_id: '48041001'
