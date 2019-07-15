@@ -685,6 +685,8 @@ class UsNdGcsfsDirectIngestController(GcsfsDirectIngestController):
             RETURN_FROM_ERRONEOUS_RELEASE: ['READMN'],
             StateIncarcerationPeriodAdmissionReason.TRANSFER:
                 ['FED', 'HOSP', 'HOSPS', 'HOSPU', 'INT', 'OOS'],
+            StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION:
+                ['NPRB', 'NPROB'],
 
             StateIncarcerationPeriodReleaseReason.EXTERNAL_UNKNOWN: ['OTHER'],
             StateIncarcerationPeriodReleaseReason.COURT_ORDER: ['CO'],
@@ -730,15 +732,14 @@ class UsNdGcsfsDirectIngestController(GcsfsDirectIngestController):
         ignores: Dict[EntityEnumMeta, List[str]] = {
             # TODO(1892): What are the appropriate court case statuses?
             StateCourtCaseStatus: ['A', 'STEP'],
-            # TODO(2060): What are the appropriate reasons for:
-            #             NPRB, NTAD, NPROB, JOB
+            # TODO(2060): What are the appropriate reasons for: NTAD, JOB
             # TODO(2060): What to do about unexpected admission reasons:
             #             RB, SUPL, RPRB, PARL
             StateIncarcerationPeriodAdmissionReason:
                 ['COM', 'CONF', 'CONT', 'CONV', 'PROG', 'RB', 'SUPL', 'RPRB',
-                 'PARL', 'NPRB', 'NTAD', 'NPROB', 'JOB'],
+                 'PARL', 'NTAD', 'JOB'],
             # TODO(2060): What to do about unexpected release reasons:
-            #             ADMN, PRB, PV, 4139, REC
+            #             ADMN, PRB, PV, 4139, REC, NPRB, NPROB
             StateIncarcerationPeriodReleaseReason:
                 ['COM', 'CONF', 'CONT', 'CONV', 'JOB', 'PROG', 'PRB', 'PV',
                  '4139', 'REC', 'NPRB', 'NTAD', 'NPROB', 'JOB'],
