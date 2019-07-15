@@ -16,7 +16,8 @@
 # ============================================================================
 """State schema specific utils for match database entities with ingested
 entities."""
-from typing import List, cast, Any, Union
+import datetime
+from typing import List, cast, Any, Optional, Tuple, Union
 
 import attr
 
@@ -26,7 +27,8 @@ from recidiviz.persistence.entity.entity_utils import \
     EntityFieldType, get_set_entity_field_names
 from recidiviz.persistence.entity.state.entities import StatePerson, \
     StatePersonExternalId, StatePersonAlias, StatePersonRace, \
-    StatePersonEthnicity, StateIncarcerationPeriod
+    StatePersonEthnicity, StateIncarcerationPeriod, \
+    StateIncarcerationIncident, StateSentenceGroup
 from recidiviz.persistence.errors import EntityMatchingError
 
 
@@ -491,3 +493,95 @@ def _default_merge_flat_fields(*, new_entity: Entity, old_entity: Entity) \
                   get_field(new_entity, child_field_name))
 
     return old_entity
+
+
+def move_incidents_onto_periods(merged_persons: List[StatePerson]):
+    """Moves all StateIncarcerationIncidents that have placeholder
+    StateIncarcerationPeriod parents onto non-placeholder
+    StateIncarcerationPeriods if appropriate.
+    """
+    for person in merged_persons:
+        for sentence_group in person.sentence_groups:
+            placeholder_periods, non_placeholder_periods = \
+                _get_periods_in_sentence_group(sentence_group)
+            _move_incidents_onto_periods_helper(
+                placeholder_periods=placeholder_periods,
+                non_placeholder_periods=non_placeholder_periods)
+
+
+def _get_periods_in_sentence_group(sentence_group: StateSentenceGroup) \
+        -> Tuple[List[StateIncarcerationPeriod],
+                 List[StateIncarcerationPeriod]]:
+    """Finds all placeholder and non-placeholder StateIncarcerationPeriods in
+    the provided |sentence_group|, and returns the two lists in a tuple.
+    """
+    placeholder_periods = []
+    non_placeholder_periods = []
+
+    for incarceration_sentence in \
+            sentence_group.incarceration_sentences:
+        for incarceration_period in \
+                incarceration_sentence.incarceration_periods:
+            if is_placeholder(incarceration_period):
+                placeholder_periods.append(incarceration_period)
+            else:
+                non_placeholder_periods.append(incarceration_period)
+    return placeholder_periods, non_placeholder_periods
+
+
+def _move_incidents_onto_periods_helper(
+        *,
+        placeholder_periods: List[StateIncarcerationPeriod],
+        non_placeholder_periods: List[StateIncarcerationPeriod]):
+    """Moves all StateIncarcerationIncidents on any of the provided
+    |placeholder_periods| onto periods in |non_placeholder_periods|, if a
+    matching non-placeholder period exists.
+    """
+    for placeholder_period in placeholder_periods:
+        incidents_to_remove = []
+        for incident in placeholder_period.incarceration_incidents:
+            match = _find_matching_period(
+                incident, non_placeholder_periods)
+            if match:
+                add_child_to_entity(
+                    entity=match,
+                    child_field_name='incarceration_incidents',
+                    child_to_add=incident)
+                incidents_to_remove.append(incident)
+
+        # Remove incidents from placeholder parent after looping through all
+        # incidents.
+        for incident in incidents_to_remove:
+            remove_child_from_entity(
+                entity=placeholder_period,
+                child_field_name='incarceration_incidents',
+                child_to_remove=incident)
+
+
+def _find_matching_period(
+        incident: StateIncarcerationIncident,
+        potential_periods: List[StateIncarcerationPeriod]) -> \
+        Optional[StateIncarcerationPeriod]:
+    """Given the |incident|, finds a matching StateIncarcerationPeriod from
+    the provided |periods|, if one exists.
+    """
+    incident_date = incident.incident_date
+    if not incident_date:
+        return None
+
+    for potential_period in potential_periods:
+        admission_date = potential_period.admission_date
+        release_date = potential_period.release_date
+
+        # Only match to periods with admission_dates
+        if not admission_date:
+            continue
+
+        # If no release date, we assume the person is still in custody.
+        if not release_date:
+            release_date = datetime.date.max
+
+        if admission_date <= incident_date <= release_date \
+                and incident.facility == potential_period.facility:
+            return potential_period
+    return None

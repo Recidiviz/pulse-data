@@ -40,7 +40,7 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import \
     generate_child_entity_trees, remove_child_from_entity, \
     add_child_to_entity, get_field, set_field, merge_incarceration_periods, \
     merge_flat_fields, is_match, is_incomplete_incarceration_period_match, \
-    is_incarceration_period_complete
+    is_incarceration_period_complete, move_incidents_onto_periods
 
 from recidiviz.persistence.errors import EntityMatchingError, \
     MatchedMultipleIngestedEntitiesError
@@ -84,17 +84,16 @@ class StateEntityMatcher(BaseEntityMatcher[StatePerson]):
 
         # TODO(1868): Merge entities that could have been created twice
         # (those with multiple parent branches)
-        # TODO(2037): State specific post processing
         # TODO(1868): Remove any placeholders in graph without children after
         # write
+        move_incidents_onto_periods(matched_entities.people)
         add_person_to_entity_graph(matched_entities.people)
         return matched_entities
 
 
 # TODO(2037): Move state specific logic into its own file.
 def _perform_preprocessing(ingested_persons: List[StatePerson]):
-    """Performs state specific preprocessing on the provided
-    |ingested_persons|.
+    """Performs state specific preprocessing on the provided |ingested_persons|.
     """
     merge_incarceration_periods(ingested_persons)
 
