@@ -254,6 +254,7 @@ def read_and_persist():
                               type(e).__name__)
             batch_tags[monitoring.TagKey.STATUS] = 'ERROR: {}' \
                 .format(type(e).__name__)
+            sessions.update_phase(session, scrape_phase.ScrapePhase.DONE)
             raise BatchPersistError(region, scrape_type)
 
         if did_persist:
