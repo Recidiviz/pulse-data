@@ -49,6 +49,7 @@ class ChargeStatus(EntityEnum, metaclass=EntityEnumMeta):
 # space. Add mappings here using a single space between words and numbers.
 # For example, `N/A` can be written as `N A` and `(10%)` can be written as `10`.
 _CHARGE_STATUS_MAP = {
+    'ACCEPTED': ChargeStatus.PRETRIAL,
     'ACQUITTED': ChargeStatus.ACQUITTED,
     'ADMINISTRATIVE RELEASE': ChargeStatus.PRETRIAL,
     'ALT SENT': ChargeStatus.SENTENCED,
@@ -86,6 +87,7 @@ _CHARGE_STATUS_MAP = {
     'CONVICTED': ChargeStatus.CONVICTED,
     'COUNTY JAIL TIME': ChargeStatus.SENTENCED,
     'DECLINED TO PROSECUTE': ChargeStatus.DROPPED,
+    'DEFENDANT INDICTED': ChargeStatus.PRETRIAL,
     'DETAINED': ChargeStatus.PRETRIAL,
     'DISMISS': ChargeStatus.DROPPED,
     'DISMISSAL': ChargeStatus.DROPPED,
@@ -112,6 +114,7 @@ _CHARGE_STATUS_MAP = {
     'HELD TO GRAND JURY': ChargeStatus.PENDING,
     'INDICTED': ChargeStatus.PRETRIAL,
     'INDICTMENT BY GRAND JURY': ChargeStatus.PRETRIAL,
+    'INTAKE': ChargeStatus.PENDING,
     'INVESTIGATION': ChargeStatus.PRETRIAL,
     'INDICTED BY GJ': ChargeStatus.PRETRIAL,
     'LIFTED': ChargeStatus.DROPPED,
@@ -218,6 +221,7 @@ _CHARGE_STATUS_MAP = {
     'UNSENTENCED': ChargeStatus.PRETRIAL,
     'WAITING FOR TRIAL': ChargeStatus.PRETRIAL,
     'WARRANT': ChargeStatus.PRETRIAL,
+    'WARRANT ISSUED': ChargeStatus.PRETRIAL,
     'WARRANT SERVED': ChargeStatus.PRETRIAL,
     'WAVIER SIGNED': ChargeStatus.DROPPED,
     'WEEKENDER': ChargeStatus.SENTENCED,

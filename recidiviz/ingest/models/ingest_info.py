@@ -98,6 +98,9 @@ class IngestInfo(IngestObject):
             return self.people[-1]
         return None
 
+    def get_person_by_id(self, person_id) -> Optional['Person']:
+        return next((p for p in self.people if p.person_id == person_id), None)
+
     def create_state_person(self, **kwargs) -> 'StatePerson':
         person = StatePerson(**kwargs)
         self.state_people.append(person)
@@ -199,6 +202,10 @@ class Person(IngestObject):
             return self.bookings[-1]
         return None
 
+    def get_booking_by_id(self, booking_id) -> Optional['Booking']:
+        return next((b for b in self.bookings if b.booking_id == booking_id),
+                    None)
+
     def prune(self) -> 'Person':
         self.bookings = [booking.prune() for booking
                          in self.bookings if booking]
@@ -258,13 +265,25 @@ class Booking(IngestObject):
             return self.charges[-1]
         return None
 
+    def get_charge_by_id(self, charge_id) -> Optional['Charge']:
+        return next((c for c in self.charges if c.charge_id == charge_id),
+                    None)
+
     def get_recent_hold(self) -> Optional['Hold']:
         if self.holds:
             return self.holds[-1]
         return None
 
+    def get_hold_by_id(self, hold_id) -> Optional['Hold']:
+        return next((h for h in self.holds if h.hold_id == hold_id),
+                    None)
+
     def get_recent_arrest(self) -> Optional['Arrest']:
         return self.arrest
+
+    def get_arrest_by_id(self, arrest_id) -> Optional['Arrest']:
+        return self.arrest if self.arrest and \
+            self.arrest.arrest_id == arrest_id else None
 
     def prune(self) -> 'Booking':
         self.charges = [charge.prune() for charge in self.charges if charge]
@@ -344,6 +363,10 @@ class Charge(IngestObject):
 
     def get_recent_bond(self) -> Optional['Bond']:
         return self.bond
+
+    def get_bond_by_id(self, bond_id) -> Optional['Bond']:
+        return self.bond if self.bond and self.bond.bond_id == bond_id \
+            else None
 
     def get_recent_sentence(self) -> Optional['Sentence']:
         return self.sentence
