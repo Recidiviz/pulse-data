@@ -381,7 +381,8 @@ class DataExtractor(metaclass=abc.ABCMeta):
 
         # This is a hack that assumes that singular child fields will match the
         # name of the child class.
-        if hasattr(last_ancestor, next_child_class) \
+        if len(ancestor_objs) > 1 and \
+           hasattr(last_ancestor, next_child_class) \
                 and getattr(last_ancestor, next_child_class) is not None:
             _, grandparent = ancestor_objs[-2]
             last_ancestor = self._create(
