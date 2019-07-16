@@ -35,7 +35,8 @@ from enum import Enum
 from recidiviz.calculator.recidivism import pipeline
 from recidiviz.calculator.recidivism import calculator
 from recidiviz.calculator.recidivism.metrics import \
-    ReincarcerationRecidivismMetric, RecidivismMethodologyType
+    ReincarcerationRecidivismMetric,\
+    ReincarcerationRecidivismRateMetric, RecidivismMethodologyType
 from recidiviz.calculator.recidivism.release_event import \
     ReincarcerationReturnType, ReleaseEvent, RecidivismReleaseEvent, \
     NonRecidivismReleaseEvent
@@ -218,8 +219,7 @@ class TestRecidivismPipeline(unittest.TestCase):
 
         filter_metrics_kwargs = {
             'dimensions_to_filter_out': dimensions_to_filter,
-            'methodologies': methodologies,
-            'release_count_min': 0}
+            'methodologies': methodologies}
 
         # Filter out unneeded metrics
         final_recidivism_metrics = (
@@ -434,8 +434,7 @@ class TestRecidivismPipeline(unittest.TestCase):
 
         filter_metrics_kwargs = {
             'dimensions_to_filter_out': dimensions_to_filter,
-            'methodologies': methodologies,
-            'release_count_min': 0}
+            'methodologies': methodologies}
 
         # Filter out unneeded metrics
         final_recidivism_metrics = (
@@ -825,10 +824,15 @@ class TestCalculateRecidivismMetricCombinations(unittest.TestCase):
 
         periods = relativedelta(date.today(), date(2014, 4, 14)).years + 1
 
-        expected_combinations_count_2014 = num_combinations * 10 * periods
+        expected_combinations_count_2014 = (num_combinations * 10 * periods)
+
+        expected_count_metric_combinations = (num_combinations * 2 * 10 +
+                                              num_combinations * 2 * 10)
 
         expected_combination_counts = {2010: expected_combinations_count_2010,
-                                       2014: expected_combinations_count_2014}
+                                       2014: expected_combinations_count_2014,
+                                       'counts':
+                                           expected_count_metric_combinations}
 
         test_pipeline = TestPipeline()
 
@@ -897,11 +901,12 @@ class TestProduceReincarcerationRecidivismMetric(unittest.TestCase):
         metric_key = {'stay_length_bucket': '36-48', 'gender': Gender.MALE,
                       'release_cohort': 2014,
                       'methodology': RecidivismMethodologyType.PERSON,
-                      'follow_up_period': 1}
+                      'follow_up_period': 1,
+                      'metric_type': 'rate'}
 
-        release_group = [1, 0, 1, 0, 0, 0, 1, 1, 1, 1]
+        group = [1, 0, 1, 0, 0, 0, 1, 1, 1, 1]
         expected_recidivism_rate = \
-            (sum(release_group) + 0.0) / len(release_group)
+            (sum(group) + 0.0) / len(group)
 
         test_pipeline = TestPipeline()
 
@@ -911,14 +916,14 @@ class TestProduceReincarcerationRecidivismMetric(unittest.TestCase):
         all_pipeline_options['job_timestamp'] = job_timestamp
 
         output = (test_pipeline
-                  | beam.Create([(metric_key, release_group)])
+                  | beam.Create([(metric_key, group)])
                   | 'Produce Recidivism Metric' >>
                   beam.ParDo(pipeline.ProduceReincarcerationRecidivismMetric(),
                              **all_pipeline_options)
                   )
 
         assert_that(output, AssertMatchers.
-                    validate_recidivism_metric(expected_recidivism_rate))
+                    validate_recidivism_rate_metric(expected_recidivism_rate))
 
         test_pipeline.run()
 
@@ -929,11 +934,12 @@ class TestProduceReincarcerationRecidivismMetric(unittest.TestCase):
         metric_key = {'stay_length_bucket': '36-48', 'gender': Gender.MALE,
                       'release_cohort': 2014,
                       'methodology': RecidivismMethodologyType.PERSON,
-                      'follow_up_period': 1}
+                      'follow_up_period': 1,
+                      'metric_type': 'rate'}
 
-        release_group = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        group = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         expected_recidivism_rate = \
-            (sum(release_group) + 0.0) / len(release_group)
+            (sum(group) + 0.0) / len(group)
 
         test_pipeline = TestPipeline()
 
@@ -943,14 +949,14 @@ class TestProduceReincarcerationRecidivismMetric(unittest.TestCase):
         all_pipeline_options['job_timestamp'] = job_timestamp
 
         output = (test_pipeline
-                  | beam.Create([(metric_key, release_group)])
+                  | beam.Create([(metric_key, group)])
                   | 'Produce Recidivism Metric' >>
                   beam.ParDo(pipeline.ProduceReincarcerationRecidivismMetric(),
                              **all_pipeline_options)
                   )
 
         assert_that(output, AssertMatchers.
-                    validate_recidivism_metric(expected_recidivism_rate))
+                    validate_recidivism_rate_metric(expected_recidivism_rate))
 
         test_pipeline.run()
 
@@ -965,9 +971,10 @@ class TestProduceReincarcerationRecidivismMetric(unittest.TestCase):
             metric_key = {'stay_length_bucket': '36-48', 'gender': Gender.MALE,
                           'release_cohort': 2014,
                           'methodology': RecidivismMethodologyType.PERSON,
-                          'follow_up_period': 1}
+                          'follow_up_period': 1,
+                          'metric_type': 'rate'}
 
-            release_group = []
+            group = []
 
             test_pipeline = TestPipeline()
 
@@ -978,17 +985,110 @@ class TestProduceReincarcerationRecidivismMetric(unittest.TestCase):
             all_pipeline_options['job_timestamp'] = job_timestamp
 
             _ = (test_pipeline
-                 | beam.Create([(metric_key, release_group)])
+                 | beam.Create([(metric_key, group)])
                  | 'Produce Recidivism Metric' >>
                  beam.ParDo(pipeline.ProduceReincarcerationRecidivismMetric(),
                             **all_pipeline_options))
 
             test_pipeline.run()
 
-        assert str(e.value) == "The release_group is empty. " \
+        assert str(e.value) == "The group is empty. " \
                                "[while running 'Produce Recidivism Metric']"
 
     def testProduceReincarcerationRecidivismMetric_EmptyMetric(self):
+        """Tests the ProduceRecivismMetric DoFn in the pipeline when the
+        metric dictionary is empty.
+
+        This should not happen in the pipeline, but we test against it
+        anyways.
+        """
+
+        metric_key = {}
+
+        group = [0, 0, 0, 1, 0, 0, 0, 0, 1, 0]
+
+        test_pipeline = TestPipeline()
+
+        all_pipeline_options = PipelineOptions().get_all_options()
+
+        job_timestamp = datetime.datetime.now().strftime(
+            '%Y-%m-%d_%H_%M_%S.%f')
+        all_pipeline_options['job_timestamp'] = job_timestamp
+
+        output = (test_pipeline
+                  | beam.Create([(metric_key, group)])
+                  | 'Produce Recidivism Metric' >>
+                  beam.ParDo(pipeline.ProduceReincarcerationRecidivismMetric(),
+                             **all_pipeline_options))
+
+        assert_that(output, equal_to([]))
+
+        test_pipeline.run()
+
+    def testProduceReincarcerationRecidivismCountMetric(self):
+        """Tests the ProduceReincarcerationRecidivismMetric DoFn in the
+         pipeline for a ReincarcerationRecidivismCountMetric."""
+
+        metric_key = {'stay_length_bucket': '36-48', 'gender': Gender.MALE,
+                      'methodology': RecidivismMethodologyType.PERSON,
+                      'start_date': date(2010, 1, 1),
+                      'end_date': date(2010, 12, 31),
+                      'metric_type': 'count'}
+
+        group = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+        expected_count = (sum(group))
+
+        test_pipeline = TestPipeline()
+
+        all_pipeline_options = PipelineOptions().get_all_options()
+
+        job_timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S.%f')
+        all_pipeline_options['job_timestamp'] = job_timestamp
+
+        output = (test_pipeline
+                  | beam.Create([(metric_key, group)])
+                  | 'Produce Recidivism Metric' >>
+                  beam.ParDo(pipeline.ProduceReincarcerationRecidivismMetric(),
+                             **all_pipeline_options)
+                  )
+
+        assert_that(output, AssertMatchers.
+                    validate_recidivism_count_metric(expected_count))
+
+        test_pipeline.run()
+
+    def testProduceReincarcerationRecidivismCountMetric_NoRecidivism(self):
+        """Tests the ProduceRecivismMetric DoFn in the pipeline when the
+        number of returns is 0."""
+
+        metric_key = {'stay_length_bucket': '36-48', 'gender': Gender.MALE,
+                      'methodology':
+                          RecidivismMethodologyType.PERSON,
+                      'start_date': date(2010, 1, 1),
+                      'end_date': date(2010, 12, 31),
+                      'metric_type': 'count'}
+
+        group = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+        test_pipeline = TestPipeline()
+
+        all_pipeline_options = PipelineOptions().get_all_options()
+
+        job_timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S.%f')
+        all_pipeline_options['job_timestamp'] = job_timestamp
+
+        output = (test_pipeline
+                  | beam.Create([(metric_key, group)])
+                  | 'Produce Recidivism Metric' >>
+                  beam.ParDo(pipeline.ProduceReincarcerationRecidivismMetric(),
+                             **all_pipeline_options)
+                  )
+
+        assert_that(output, equal_to([]))
+
+        test_pipeline.run()
+
+    def testProduceReincarcerationRecidivismCountMetric_EmptyGroup(self):
         """Tests the ProduceRecivismMetric DoFn in the pipeline when there is
         no group associated with the metric.
 
@@ -996,10 +1096,14 @@ class TestProduceReincarcerationRecidivismMetric(unittest.TestCase):
         anyways."""
 
         with pytest.raises(ValueError) as e:
+            metric_key = {'stay_length_bucket': '36-48', 'gender': Gender.MALE,
+                          'methodology':
+                              RecidivismMethodologyType.PERSON,
+                          'start_date': date(2010, 1, 1),
+                          'end_date': date(2010, 12, 31),
+                          'metric_type': 'count'}
 
-            metric_key = {}
-
-            release_group = [0, 0, 0, 1, 0, 0, 0, 0, 1, 0]
+            group = []
 
             test_pipeline = TestPipeline()
 
@@ -1010,15 +1114,45 @@ class TestProduceReincarcerationRecidivismMetric(unittest.TestCase):
             all_pipeline_options['job_timestamp'] = job_timestamp
 
             _ = (test_pipeline
-                 | beam.Create([(metric_key, release_group)])
+                 | beam.Create([(metric_key, group)])
                  | 'Produce Recidivism Metric' >>
                  beam.ParDo(pipeline.ProduceReincarcerationRecidivismMetric(),
                             **all_pipeline_options))
 
             test_pipeline.run()
 
-        assert str(e.value) == "The metric_key is empty. " \
+        assert str(e.value) == "The group is empty. " \
                                "[while running 'Produce Recidivism Metric']"
+
+    def testProduceReincarcerationRecidivismCountMetric_EmptyMetric(self):
+        """Tests the ProduceRecivismMetric DoFn in the pipeline when the
+        metric dictionary is empty.
+
+        This should not happen in the pipeline, but we test against it
+        anyways.
+        """
+
+        metric_key = {}
+
+        group = [0, 0, 0, 1, 0, 0, 0, 0, 1, 0]
+
+        test_pipeline = TestPipeline()
+
+        all_pipeline_options = PipelineOptions().get_all_options()
+
+        job_timestamp = datetime.datetime.now().strftime(
+            '%Y-%m-%d_%H_%M_%S.%f')
+        all_pipeline_options['job_timestamp'] = job_timestamp
+
+        output = (test_pipeline
+                  | beam.Create([(metric_key, group)])
+                  | 'Produce Recidivism Metric' >>
+                  beam.ParDo(pipeline.ProduceReincarcerationRecidivismMetric(),
+                             **all_pipeline_options))
+
+        assert_that(output, equal_to([]))
+
+        test_pipeline.run()
 
 
 class TestFilterMetrics(unittest.TestCase):
@@ -1033,12 +1167,10 @@ class TestFilterMetrics(unittest.TestCase):
                                 'gender', 'stay_length_bucket']
         methodologies = [RecidivismMethodologyType.EVENT,
                          RecidivismMethodologyType.PERSON]
-        release_count_min = 0
 
         filter_metrics_kwargs = {
             'dimensions_to_filter_out': dimensions_to_filter,
-            'methodologies': methodologies,
-            'release_count_min': release_count_min}
+            'methodologies': methodologies}
 
         test_pipeline = TestPipeline()
 
@@ -1063,12 +1195,10 @@ class TestFilterMetrics(unittest.TestCase):
                                 'release_facility', 'stay_length_bucket']
         methodologies = [RecidivismMethodologyType.EVENT,
                          RecidivismMethodologyType.PERSON]
-        release_count_min = 0
 
         filter_metrics_kwargs = {
             'dimensions_to_filter_out': dimensions_to_filter,
-            'methodologies': methodologies,
-            'release_count_min': release_count_min}
+            'methodologies': methodologies}
 
         test_pipeline = TestPipeline()
         output = (test_pipeline
@@ -1093,12 +1223,10 @@ class TestFilterMetrics(unittest.TestCase):
                                 'release_facility', 'stay_length_bucket']
         methodologies = [RecidivismMethodologyType.EVENT,
                          RecidivismMethodologyType.PERSON]
-        release_count_min = 0
 
         filter_metrics_kwargs = {
             'dimensions_to_filter_out': dimensions_to_filter,
-            'methodologies': methodologies,
-            'release_count_min': release_count_min}
+            'methodologies': methodologies}
 
         test_pipeline = TestPipeline()
         output = (test_pipeline
@@ -1123,12 +1251,10 @@ class TestFilterMetrics(unittest.TestCase):
                                 'release_facility', 'stay_length_bucket']
         methodologies = [RecidivismMethodologyType.EVENT,
                          RecidivismMethodologyType.PERSON]
-        release_count_min = 0
 
         filter_metrics_kwargs = {
             'dimensions_to_filter_out': dimensions_to_filter,
-            'methodologies': methodologies,
-            'release_count_min': release_count_min}
+            'methodologies': methodologies}
 
         test_pipeline = TestPipeline()
         output = (test_pipeline
@@ -1153,12 +1279,10 @@ class TestFilterMetrics(unittest.TestCase):
                                 'release_facility', 'stay_length_bucket']
         methodologies = [RecidivismMethodologyType.EVENT,
                          RecidivismMethodologyType.PERSON]
-        release_count_min = 0
 
         filter_metrics_kwargs = {
             'dimensions_to_filter_out': dimensions_to_filter,
-            'methodologies': methodologies,
-            'release_count_min': release_count_min}
+            'methodologies': methodologies}
 
         test_pipeline = TestPipeline()
         output = (test_pipeline
@@ -1183,12 +1307,10 @@ class TestFilterMetrics(unittest.TestCase):
                                 'stay_length_bucket']
         methodologies = [RecidivismMethodologyType.EVENT,
                          RecidivismMethodologyType.PERSON]
-        release_count_min = 0
 
         filter_metrics_kwargs = {
             'dimensions_to_filter_out': dimensions_to_filter,
-            'methodologies': methodologies,
-            'release_count_min': release_count_min}
+            'methodologies': methodologies}
 
         test_pipeline = TestPipeline()
 
@@ -1213,12 +1335,10 @@ class TestFilterMetrics(unittest.TestCase):
                                 'release_facility']
         methodologies = [RecidivismMethodologyType.EVENT,
                          RecidivismMethodologyType.PERSON]
-        release_count_min = 0
 
         filter_metrics_kwargs = {
             'dimensions_to_filter_out': dimensions_to_filter,
-            'methodologies': methodologies,
-            'release_count_min': release_count_min}
+            'methodologies': methodologies}
 
         test_pipeline = TestPipeline()
 
@@ -1244,12 +1364,10 @@ class TestFilterMetrics(unittest.TestCase):
                                 'release_facility']
         methodologies = [RecidivismMethodologyType.EVENT,
                          RecidivismMethodologyType.PERSON]
-        release_count_min = 0
 
         filter_metrics_kwargs = {
             'dimensions_to_filter_out': dimensions_to_filter,
-            'methodologies': methodologies,
-            'release_count_min': release_count_min}
+            'methodologies': methodologies}
 
         test_pipeline = TestPipeline()
         output = (test_pipeline
@@ -1329,39 +1447,41 @@ class TestRecidivismMetricWritableDict(unittest.TestCase):
 class MetricGroup:
     """Stores a set of metrics where every dimension is included for testing
     dimension filtering."""
-    recidivism_metric_with_age = ReincarcerationRecidivismMetric(
+    recidivism_metric_with_age = ReincarcerationRecidivismRateMetric(
         job_id='12345', release_cohort=2015, follow_up_period=1,
         methodology=RecidivismMethodologyType.PERSON, age_bucket='25-29',
         total_releases=1000, recidivated_releases=900, recidivism_rate=0.9)
 
-    recidivism_metric_with_gender = ReincarcerationRecidivismMetric(
+    recidivism_metric_with_gender = ReincarcerationRecidivismRateMetric(
         job_id='12345', release_cohort=2015, follow_up_period=1,
         methodology=RecidivismMethodologyType.PERSON, gender=Gender.MALE,
         total_releases=1000, recidivated_releases=875, recidivism_rate=0.875)
 
-    recidivism_metric_with_race = ReincarcerationRecidivismMetric(
+    recidivism_metric_with_race = ReincarcerationRecidivismRateMetric(
         job_id='12345', release_cohort=2015, follow_up_period=1,
         methodology=RecidivismMethodologyType.PERSON, race=Race.BLACK,
         total_releases=1000, recidivated_releases=875, recidivism_rate=0.875)
 
-    recidivism_metric_with_ethnicity = ReincarcerationRecidivismMetric(
+    recidivism_metric_with_ethnicity = ReincarcerationRecidivismRateMetric(
         job_id='12345', release_cohort=2015, follow_up_period=1,
         methodology=RecidivismMethodologyType.PERSON,
         ethnicity=Ethnicity.HISPANIC, total_releases=1000,
         recidivated_releases=875, recidivism_rate=0.875)
 
-    recidivism_metric_with_release_facility = ReincarcerationRecidivismMetric(
-        job_id='12345', release_cohort=2015, follow_up_period=1,
-        methodology=RecidivismMethodologyType.PERSON, release_facility='Red',
-        total_releases=1000, recidivated_releases=300, recidivism_rate=0.30)
+    recidivism_metric_with_release_facility = \
+        ReincarcerationRecidivismRateMetric(
+            job_id='12345', release_cohort=2015, follow_up_period=1,
+            methodology=RecidivismMethodologyType.PERSON,
+            release_facility='Red',
+            total_releases=1000, recidivated_releases=300, recidivism_rate=0.30)
 
-    recidivism_metric_with_stay_length = ReincarcerationRecidivismMetric(
+    recidivism_metric_with_stay_length = ReincarcerationRecidivismRateMetric(
         job_id='12345', release_cohort=2015, follow_up_period=1,
         methodology=RecidivismMethodologyType.PERSON,
         stay_length_bucket='12-24', total_releases=1000,
         recidivated_releases=300, recidivism_rate=0.30)
 
-    recidivism_metric_without_dimensions = ReincarcerationRecidivismMetric(
+    recidivism_metric_without_dimensions = ReincarcerationRecidivismRateMetric(
         job_id='12345', release_cohort=2015,
         follow_up_period=1, methodology=RecidivismMethodologyType.PERSON,
         total_releases=1500, recidivated_releases=1200, recidivism_rate=0.80)
@@ -1402,30 +1522,34 @@ class AssertMatchers:
         def _count_combinations(output):
             actual_combination_counts = {}
 
-            for year in expected_combination_counts.keys():
-                actual_combination_counts[year] = 0
+            for key in expected_combination_counts.keys():
+                actual_combination_counts[key] = 0
 
             for result in output:
                 combination, _ = result
 
-                release_cohort_year = combination['release_cohort']
-                actual_combination_counts[release_cohort_year] = \
-                    actual_combination_counts[release_cohort_year] + 1
+                if combination.get('metric_type') == 'rate':
+                    release_cohort_year = combination['release_cohort']
+                    actual_combination_counts[release_cohort_year] = \
+                        actual_combination_counts[release_cohort_year] + 1
+                elif combination.get('metric_type') == 'count':
+                    actual_combination_counts['counts'] = \
+                        actual_combination_counts['counts'] + 1
 
-            for year in expected_combination_counts:
-                if expected_combination_counts[year] != \
-                        actual_combination_counts[year]:
+            for key in expected_combination_counts:
+                if expected_combination_counts[key] != \
+                        actual_combination_counts[key]:
                     raise BeamAssertException('Failed assert. Count does not'
                                               'match expected value.')
 
         return _count_combinations
 
     @staticmethod
-    def validate_recidivism_metric(expected_recidivism_rate):
+    def validate_recidivism_rate_metric(expected_recidivism_rate):
         """Asserts that the recidivism rate on the
-         ReincarcerationRecidivismMetric produced by the pipeline matches the
-          expected recidivism rate."""
-        def _validate_recidivism_metric(output):
+        ReincarcerationRecidivismRateMetric produced by the pipeline matches
+        the expected recidivism rate."""
+        def _validate_recidivism_rate_metric(output):
             if len(output) != 1:
                 raise BeamAssertException('Failed assert. Should be only one '
                                           'ReincarcerationRecidivismMetric'
@@ -1437,7 +1561,26 @@ class AssertMatchers:
                 raise BeamAssertException('Failed assert. Recidivism rate does'
                                           'not match expected value.')
 
-        return _validate_recidivism_metric
+        return _validate_recidivism_rate_metric
+
+    @staticmethod
+    def validate_recidivism_count_metric(expected_recidivism_count):
+        """Asserts that the recidivism count on the
+        ReincarcerationRecidivismCountMetric produced by the pipeline matches
+        the expected recidivism count."""
+        def _validate_recidivism_count_metric(output):
+            if len(output) != 1:
+                raise BeamAssertException('Failed assert. Should be only one '
+                                          'ReincarcerationRecidivismMetric'
+                                          ' returned.')
+
+            recidivism_metric = output[0]
+
+            if recidivism_metric.returns != expected_recidivism_count:
+                raise BeamAssertException('Failed assert. Recidivism count does'
+                                          'not match expected value.')
+
+        return _validate_recidivism_count_metric
 
     @staticmethod
     def validate_job_id_on_metric(expected_job_id):

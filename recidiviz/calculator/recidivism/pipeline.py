@@ -22,7 +22,7 @@ usage: pipeline.py --output=OUTPUT_LOCATION --project=PROJECT
                     [--include_age] [--include_gender]
                     [--include_race] [--include_ethnicity]
                     [--include_release_facility]
-                    [--include_stay_length] [--release_count_min]
+                    [--include_stay_length]
 
 Example output to GCP storage bucket:
 python -m recidiviz.calculator.recidivism.pipeline
@@ -64,7 +64,8 @@ from apache_beam.typehints import with_input_types, with_output_types
 from recidiviz.calculator.recidivism import identifier, calculator
 from recidiviz.calculator.recidivism.release_event import ReleaseEvent
 from recidiviz.calculator.recidivism.metrics import \
-    ReincarcerationRecidivismMetric, RecidivismMethodologyType
+    ReincarcerationRecidivismRateMetric, ReincarcerationRecidivismCountMetric, \
+    RecidivismMethodologyType, ReincarcerationRecidivismMetric
 from recidiviz.calculator.utils.execution_utils import get_job_id
 from recidiviz.calculator.utils.extractor_utils import BuildRootEntity
 from recidiviz.persistence.entity.state import entities
@@ -260,10 +261,21 @@ class ProduceReincarcerationRecidivismMetric(beam.DoFn):
 
         (metric_key, release_group) = element
 
-        recidivism_metric = \
-            ReincarcerationRecidivismMetric.build_from_metric_key_release_group(
-                metric_key,
-                release_group, pipeline_job_id)
+        if metric_key.get('metric_type') == 'count':
+            recidivism_metric = \
+                ReincarcerationRecidivismCountMetric. \
+                build_from_metric_key_group(
+                    metric_key, release_group, pipeline_job_id)
+        elif metric_key.get('metric_type') == 'rate':
+            recidivism_metric = \
+                ReincarcerationRecidivismRateMetric. \
+                build_from_metric_key_group(
+                    metric_key,
+                    release_group, pipeline_job_id)
+        else:
+            logging.error("Unexpected metric of type: %s",
+                          metric_key.get('metric_type'))
+            return
 
         if recidivism_metric:
             yield recidivism_metric
@@ -274,8 +286,7 @@ class ProduceReincarcerationRecidivismMetric(beam.DoFn):
 
 @with_input_types(ReincarcerationRecidivismMetric,
                   **{'dimensions_to_filter_out': List[str],
-                     'methodologies': List[RecidivismMethodologyType],
-                     'release_count_min': int})
+                     'methodologies': List[RecidivismMethodologyType]})
 @with_output_types(ReincarcerationRecidivismMetric)
 class FilterMetrics(beam.DoFn):
     """Filters out metrics that should not be included in the output."""
@@ -292,8 +303,6 @@ class FilterMetrics(beam.DoFn):
                             from the output.
                         - methodologies: The RecidivismMethodologyTypes to
                             report.
-                        - release_count_min: Minimum number of releases in the
-                            metric to be included in the output.
 
             Yields:
                 The ReincarcerationRecidivismMetric.
@@ -301,7 +310,6 @@ class FilterMetrics(beam.DoFn):
 
         dimensions_to_filter_out = kwargs.get('dimensions_to_filter_out')
         methodologies = kwargs.get('methodologies')
-        release_count_min = kwargs.get('release_count_min')
 
         recidivism_metric = element
 
@@ -316,10 +324,6 @@ class FilterMetrics(beam.DoFn):
 
         # Filter out unwanted methodologies
         if recidivism_metric.methodology not in methodologies:
-            return
-
-        # Filter metrics that have less than release_count_min releases
-        if recidivism_metric.total_releases < release_count_min:
             return
 
         yield recidivism_metric
@@ -360,7 +364,10 @@ class RecidivismMetricWritableDict(beam.DoFn):
             else:
                 element_dict[key] = v
 
-        yield element_dict
+        if isinstance(element, ReincarcerationRecidivismRateMetric):
+            yield beam.pvalue.TaggedOutput('rates', element_dict)
+        elif isinstance(element, ReincarcerationRecidivismCountMetric):
+            yield beam.pvalue.TaggedOutput('counts', element_dict)
 
     def to_runner_api_parameter(self, unused_context):
         pass
@@ -371,10 +378,10 @@ def parse_arguments(argv):
     parser = argparse.ArgumentParser()
 
     # Parse arguments
-    parser.add_argument('--dataset',
-                        dest='dataset',
+    parser.add_argument('--input',
+                        dest='input',
                         type=str,
-                        help='BigQuery data set to query.',
+                        help='BigQuery dataset to query.',
                         required=True)
 
     parser.add_argument('--include_age',
@@ -420,17 +427,10 @@ def parse_arguments(argv):
                         help='PERSON, EVENT, or BOTH',
                         required=True)
 
-    parser.add_argument('--release_count_min',
-                        dest='release_count_min',
-                        type=int,
-                        help='Filter metrics with total release count less '
-                             'than this.',
-                        default=0)
-
     parser.add_argument('--output',
                         dest='output',
                         type=str,
-                        help='Output location to write results to.',
+                        help='Output dataset to write results to.',
                         required=True)
 
     return parser.parse_known_args(argv)
@@ -493,11 +493,16 @@ def run(argv=None):
     pipeline_options = PipelineOptions(pipeline_args)
     pipeline_options.view_as(SetupOptions).save_main_session = True
 
+    # Get pipeline job details
+    all_pipeline_options = pipeline_options.get_all_options()
+
+    query_dataset = all_pipeline_options['project'] + '.' + known_args.input
+
     with beam.Pipeline(argv=pipeline_args) as p:
         # Get StatePersons
         persons = (p
                    | 'Load Persons' >>
-                   BuildRootEntity(dataset=known_args.dataset,
+                   BuildRootEntity(dataset=query_dataset,
                                    data_dict=None,
                                    root_schema_class=schema.StatePerson,
                                    root_entity_class=entities.StatePerson,
@@ -508,7 +513,7 @@ def run(argv=None):
         incarceration_periods = (p
                                  | 'Load IncarcerationPeriods' >>
                                  BuildRootEntity(
-                                     dataset=known_args.dataset,
+                                     dataset=query_dataset,
                                      data_dict=None,
                                      root_schema_class=
                                      schema.StateIncarcerationPeriod,
@@ -529,7 +534,7 @@ def run(argv=None):
         # StateIncarcerationPeriods
         person_events = (
             person_and_incarceration_periods |
-            'Get Recidivism Events' >>
+            'Get Release Events' >>
             GetReleaseEvents())
 
         # Get pipeline job details for accessing job_id
@@ -550,8 +555,7 @@ def run(argv=None):
 
         filter_metrics_kwargs = {
             'dimensions_to_filter_out': dimensions,
-            'methodologies': methodologies,
-            'release_count_min': known_args.release_count_min}
+            'methodologies': methodologies}
 
         # Filter out unneeded metrics
         final_recidivism_metrics = (
@@ -559,13 +563,29 @@ def run(argv=None):
             | 'Filter out unwanted metrics' >>
             beam.ParDo(FilterMetrics(), **filter_metrics_kwargs))
 
-        # Write the recidivism metrics to the destination table in BigQuery
-        _ = (final_recidivism_metrics
-             | 'Convert to dict to be written to BQ' >>
-             beam.ParDo(RecidivismMetricWritableDict())
-             | f"Write metrics to BQ table: {known_args.output}" >>
+        # Convert the metrics into a format that's writable to BQ
+        writable_metrics = (final_recidivism_metrics
+                            | 'Convert to dict to be written to BQ' >>
+                            beam.ParDo(
+                                RecidivismMetricWritableDict()).with_outputs(
+                                    'rates', 'counts'))
+
+        # Write the recidivism metrics to the output tables in BigQuery
+        rates_table = known_args.output + '.recidivism_rate_metrics'
+        counts_table = known_args.output + '.recidivism_count_metrics'
+
+        _ = (writable_metrics.rates
+             | f"Write rate metrics to BQ table: {rates_table}" >>
              beam.io.WriteToBigQuery(
-                 table=known_args.output,
+                 table=rates_table,
+                 create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
+                 write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
+             ))
+
+        _ = (writable_metrics.counts
+             | f"Write count metrics to BQ table: {counts_table}" >>
+             beam.io.WriteToBigQuery(
+                 table=counts_table,
                  create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
                  write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
              ))

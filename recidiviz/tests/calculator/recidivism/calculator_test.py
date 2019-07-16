@@ -85,7 +85,8 @@ def test_releases_in_window():
     start_date = date(2016, 5, 13)
 
     reincarcerations = calculator.reincarcerations_in_window(
-        start_date, 6, all_reincarcerations)
+        start_date, start_date +
+        relativedelta(years=6), all_reincarcerations)
     assert len(reincarcerations) == 3
 
 
@@ -109,7 +110,8 @@ def test_releases_in_window_all_early():
     start_date = date(2026, 5, 13)
 
     reincarcerations = calculator.reincarcerations_in_window(
-        start_date, 6, all_reincarcerations)
+        start_date, start_date +
+        relativedelta(years=6), all_reincarcerations)
 
     assert reincarcerations == []
 
@@ -134,7 +136,8 @@ def test_releases_in_window_all_late():
     start_date = date(2006, 5, 13)
 
     reincarcerations = calculator.reincarcerations_in_window(
-        start_date, 5, all_reincarcerations)
+        start_date, start_date +
+        relativedelta(years=5), all_reincarcerations)
 
     assert reincarcerations == []
 
@@ -168,7 +171,8 @@ def test_releases_in_window_with_revocation_returns():
     start_date = date(2016, 5, 13)
 
     reincarcerations = calculator.reincarcerations_in_window(
-        start_date, 6, all_reincarcerations)
+        start_date, start_date +
+        relativedelta(years=6), all_reincarcerations)
     assert len(reincarcerations) == 3
 
     assert reincarcerations[0].get('return_type') == \
@@ -875,11 +879,13 @@ class TestMapRecidivismCombinations:
 
         # 64 combinations of demographics, facility, & stay length
         # * 10 combinations of methodology/return type/supervision type
-        # * 10 periods = 6400 metrics
-        assert len(recidivism_combinations) == 6400
+        # * 10 periods +
+        # 64 * 2 count windows * 10 combos of methodology etc. = 7680 metrics
+        assert len(recidivism_combinations) == 7680
 
         for combination, value in recidivism_combinations:
-            if combination['follow_up_period'] <= 5 or \
+            if combination.get('metric_type') == 'rate' and \
+                    combination.get('follow_up_period') <= 5 or \
                     combination.get('return_type') == \
                     ReincarcerationReturnType.REVOCATION:
                 assert value == 0
@@ -921,18 +927,22 @@ class TestMapRecidivismCombinations:
         #   For the first 5 periods:
         #       64 combinations of characteristics
         #       * 10 combinations of methodology/return type/supervision type
-        #       * 5 periods = 3200 metrics
+        #       * 5 periods + 64 * 2 count windows * 10 combos of
+        #       methodology etc.= 4480 metrics
         #   For the second 5 periods, there is an additional event-based count:
         #       64 combinations of characteristics
         #       * (10 combinations of methodology/return type/supervision type
         #           + 5 more instances) * 5 periods = 4800 metrics
         #
         # For the second event:
-        #   64 combinations * 10 combos * 10 periods = 6400 metrics
-        assert len(recidivism_combinations) == (3200 + 4800 + 6400)
+        #   64 combinations * 10 combos * 10 periods +
+        #   64 combos * 2 count windows * 10 combos of methodology etc.
+        #   = 7680 metrics
+        assert len(recidivism_combinations) == (4480 + 4800 + 7680)
 
         for combination, value in recidivism_combinations:
-            if combination['follow_up_period'] < 2 or \
+            if combination.get('metric_type') == 'rate' and \
+                    combination.get('follow_up_period') < 2 or \
                     combination.get('return_type') == \
                     ReincarcerationReturnType.REVOCATION:
                 assert value == 0
@@ -966,7 +976,7 @@ class TestMapRecidivismCombinations:
 
         # 64 combinations of demographics, facility, & stay length
         # * 10 combinations of methodology/return type/supervision type
-        # * 10 periods = 6400 metrics
+        # * 10 periods + 0 count windows = 6400 metrics
 
         assert len(recidivism_combinations) == 6400
         assert all(value == 0 for _combination, value
@@ -1001,10 +1011,16 @@ class TestMapRecidivismCombinations:
 
         # 64 combinations of demographics, facility, & stay length
         # * 10 combinations of methodology/return type/supervision type
-        # * 10 periods = 6400 metrics
+        # * 10 periods + 0 count metrics. = 6400 metrics
         assert len(recidivism_combinations) == 6400
         assert all(value == 0 for _combination, value
-                   in recidivism_combinations)
+                   in recidivism_combinations if
+                   _combination['metric_type'] == 'rate')
+        assert all(value == 1 for _combination, value
+                   in recidivism_combinations if
+                   _combination['metric_type'] == 'count' and
+                   _combination.get('return_type') !=
+                   ReincarcerationReturnType.REVOCATION)
 
     def test_map_recidivism_combinations_multiple_races(self):
         """Tests the map_recidivism_combinations function where there is
@@ -1039,11 +1055,13 @@ class TestMapRecidivismCombinations:
 
         # 96 combinations of demographics, facility, & stay length
         # * 10 combinations of methodology/return type/supervision type
-        # * 10 periods = 9600 metrics
-        assert len(recidivism_combinations) == 9600
+        # * 10 periods + 96 * 2 count windows * 10 combos of methodology etc.
+        # = 11520 metrics
+        assert len(recidivism_combinations) == 11520
 
         for combination, value in recidivism_combinations:
-            if combination['follow_up_period'] <= 5 or \
+            if combination.get('metric_type') == 'rate' and \
+                    combination.get('follow_up_period') <= 5 or \
                     combination.get('return_type') == \
                     ReincarcerationReturnType.REVOCATION:
                 assert value == 0
@@ -1083,11 +1101,13 @@ class TestMapRecidivismCombinations:
 
         # 96 combinations of demographics, facility, & stay length
         # * 10 combinations of methodology/return type/supervision type
-        # * 10 periods = 6400 metrics
-        assert len(recidivism_combinations) == 9600
+        # * 10 periods + 96 * 2 count windows * 10 combos of methodology etc.
+        # = 11520 metrics
+        assert len(recidivism_combinations) == 11520
 
         for combination, value in recidivism_combinations:
-            if combination['follow_up_period'] <= 5 or \
+            if combination.get('metric_type') == 'rate' and \
+                    combination.get('follow_up_period') <= 5 or \
                     combination.get('return_type') == \
                     ReincarcerationReturnType.REVOCATION:
                 assert value == 0
@@ -1132,11 +1152,13 @@ class TestMapRecidivismCombinations:
 
         # 144 combinations of demographics, facility, & stay length
         # * 10 combinations of methodology/return type/supervision type
-        # * 10 periods = 14400 metrics
-        assert len(recidivism_combinations) == 14400
+        # * 10 periods + 144 * 2 count windows * 10 combos of methodology etc.
+        # = 17280 metrics
+        assert len(recidivism_combinations) == 17280
 
         for combination, value in recidivism_combinations:
-            if combination['follow_up_period'] <= 5 or \
+            if combination.get('metric_type') == 'rate' and \
+                    combination.get('follow_up_period') <= 5 or \
                     combination.get('return_type') == \
                     ReincarcerationReturnType.REVOCATION:
                 assert value == 0
@@ -1175,11 +1197,13 @@ class TestMapRecidivismCombinations:
 
         # 64 combinations of demographics, facility, & stay length
         # * 10 combinations of methodology/return type/supervision type
-        # * 10 periods = 6400 metrics
-        assert len(recidivism_combinations) == 6400
+        # * 10 periods + 64 * 2 count windows * 10 combos of methodology etc.
+        # = 7680 metrics
+        assert len(recidivism_combinations) == 7680
 
         for combination, value in recidivism_combinations:
-            if combination['follow_up_period'] <= 5 or \
+            if combination.get('metric_type') == 'rate' and \
+                    combination.get('follow_up_period') <= 5 or \
                     combination.get('return_type') == \
                     ReincarcerationReturnType.NEW_ADMISSION or \
                     combination.get('from_supervision_type') == \
@@ -1220,11 +1244,13 @@ class TestMapRecidivismCombinations:
 
         # 64 combinations of demographics, facility, & stay length
         # * 10 combinations of methodology/return type/supervision type
-        # * 10 periods = 6400 metrics
-        assert len(recidivism_combinations) == 6400
+        # * 10 periods + 64 * 2 count windows * 10 combos of methodology etc.
+        # = 7680 metrics
+        assert len(recidivism_combinations) == 7680
 
         for combination, value in recidivism_combinations:
-            if combination['follow_up_period'] <= 5 or \
+            if combination.get('metric_type') == 'rate' and \
+                    combination.get('follow_up_period') <= 5 or \
                     combination.get('return_type') == \
                     ReincarcerationReturnType.NEW_ADMISSION or \
                     combination.get('from_supervision_type') == \
@@ -1232,3 +1258,304 @@ class TestMapRecidivismCombinations:
                 assert value == 0
             else:
                 assert value == 1
+
+    def test_map_recidivism_combinations_count_metric_buckets(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='CA',
+                                                 race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        release_events_by_cohort = {
+            2008: [RecidivismReleaseEvent(
+                date(2005, 7, 19), date(2008, 9, 19), 'Hudson',
+                date(2014, 5, 12), 'Upstate',
+                ReincarcerationReturnType.NEW_ADMISSION)]
+        }
+
+        recidivism_combinations = calculator.map_recidivism_combinations(
+            person, release_events_by_cohort)
+
+        num_count_metrics = 0
+        num_year_metrics = 0
+        num_month_metrics = 0
+
+        for combo, value in recidivism_combinations:
+            if combo['metric_type'] == 'count':
+                num_count_metrics += 1
+
+                assert combo['start_date'].year == 2014
+                if combo['start_date'].month == 5:
+                    num_month_metrics += 1
+                    # Month bucket
+                    assert combo['start_date'] == date(2014, 5, 1)
+                    assert combo['end_date'] == date(2014, 5, 31)
+                else:
+                    num_year_metrics += 1
+                    # Year bucket
+                    assert combo['start_date'] == date(2014, 1, 1)
+                    assert combo['end_date'] == date(2014, 12, 31)
+                if combo.get('return_type') != \
+                        ReincarcerationReturnType.REVOCATION:
+                    assert value == 1
+                else:
+                    assert value == 0
+
+        # Expected count metrics: 64 * 2 count windows * 10 combos of
+        # methodology etc. = 1280
+        # Half of those should be year metrics, and half should be month metrics
+        assert num_count_metrics == 1280
+        assert num_year_metrics == 640
+        assert num_month_metrics == 640
+
+    def test_map_recidivism_combinations_count_metric_no_recidivism(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='CA',
+                                                 race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        release_events_by_cohort = {
+            2008: [NonRecidivismReleaseEvent(date(2005, 7, 19),
+                                             date(2008, 9, 19), 'Hudson')]
+        }
+
+        recidivism_combinations = calculator.map_recidivism_combinations(
+            person, release_events_by_cohort)
+
+        assert all(value == 0 for _combination, value
+                   in recidivism_combinations)
+        assert all(_combination['metric_type'] == 'rate' for _combination, value
+                   in recidivism_combinations)
+
+    def test_map_recidivism_combos_count_metric_return_after_last_period(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='CA',
+                                                 race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        release_events_by_cohort = {
+            1990: [RecidivismReleaseEvent(
+                date(1985, 7, 19), date(1990, 9, 19), 'Hudson',
+                date(2014, 5, 12), 'Upstate',
+                ReincarcerationReturnType.NEW_ADMISSION)]
+        }
+
+        recidivism_combinations = calculator.map_recidivism_combinations(
+            person, release_events_by_cohort)
+
+        assert all(value == 0 for _combination, value
+                   in recidivism_combinations)
+        assert all(_combination['metric_type'] == 'rate' for _combination, value
+                   in recidivism_combinations)
+
+    def test_map_recidivism_combinations_count_twice_in_year(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='CA',
+                                                 race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        release_events_by_cohort = {
+            1908: [RecidivismReleaseEvent(
+                date(1905, 7, 19), date(1908, 9, 19), 'Hudson',
+                date(1914, 3, 12), 'Upstate',
+                ReincarcerationReturnType.NEW_ADMISSION)],
+            1914: [RecidivismReleaseEvent(
+                date(1914, 3, 12), date(1914, 7, 3), 'Hudson',
+                date(1914, 9, 1), 'Upstate',
+                ReincarcerationReturnType.NEW_ADMISSION)]
+        }
+
+        recidivism_combinations = calculator.map_recidivism_combinations(
+            person, release_events_by_cohort)
+
+        # For the first event:
+        #   For the first 5 periods:
+        #       64 combinations of characteristics
+        #       * 10 combinations of methodology/return type/supervision type
+        #       * 5 periods = 3200 metrics
+        #   For the second 5 periods
+        #       64 combinations of characteristics
+        #       * (10 combinations of methodology/return type/supervision type
+        #           + 5 more instances) * 5 periods = 4800 metrics
+        #
+        #   Count window: 64 * 2 count windows * 10 combos = 1280
+        #
+        # For the second event:
+        #   64 combinations * 10 combos * 10 periods +
+        #   64 * 2 count windows * 5 event-based-combos  +
+        #   64 * 1 count window (month) * 5 person-based-combos = 7360 metrics
+        assert len(recidivism_combinations) == (3200 + 4800 + 1280 + 7360)
+
+        num_count_metrics = 0
+        num_person_year_metrics = 0
+        num_event_year_metrics = 0
+        num_march_month_metrics = 0
+        num_sept_month_metrics = 0
+
+        for combo, value in recidivism_combinations:
+            if combo['metric_type'] == 'count':
+                num_count_metrics += 1
+
+                assert combo['start_date'].year == 1914
+                if combo['start_date'].month == 3:
+                    num_march_month_metrics += 1
+                    # March month bucket
+                    assert combo['start_date'] == date(1914, 3, 1)
+                    assert combo['end_date'] == date(1914, 3, 31)
+                elif combo['start_date'].month == 9:
+                    num_sept_month_metrics += 1
+                    # September month bucket
+                    assert combo['start_date'] == date(1914, 9, 1)
+                    assert combo['end_date'] == date(1914, 9, 30)
+                else:
+                    if combo['methodology'] == RecidivismMethodologyType.EVENT:
+                        num_event_year_metrics += 1
+                    else:
+                        num_person_year_metrics += 1
+
+                    # Year bucket
+                    assert combo['start_date'] == date(1914, 1, 1)
+                    assert combo['end_date'] == date(1914, 12, 31)
+                if combo.get('return_type') != \
+                        ReincarcerationReturnType.REVOCATION:
+                    assert value == 1
+                else:
+                    assert value == 0
+
+        assert num_count_metrics == (1280 + 960)
+        assert num_person_year_metrics == 320
+        assert num_event_year_metrics == 640
+        assert num_march_month_metrics == 640
+        assert num_sept_month_metrics == 640
+
+    def test_map_recidivism_combinations_count_twice_in_month(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='CA',
+                                                 race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        release_events_by_cohort = {
+            1908: [RecidivismReleaseEvent(
+                date(1905, 7, 19), date(1908, 9, 19), 'Hudson',
+                date(1914, 3, 12), 'Upstate',
+                ReincarcerationReturnType.NEW_ADMISSION)],
+            1914: [RecidivismReleaseEvent(
+                date(1914, 3, 12), date(1914, 3, 19), 'Hudson',
+                date(1914, 3, 30), 'Upstate',
+                ReincarcerationReturnType.NEW_ADMISSION)]
+        }
+
+        recidivism_combinations = calculator.map_recidivism_combinations(
+            person, release_events_by_cohort)
+
+        # For the first event:
+        #   For the first 5 periods:
+        #       64 combinations of characteristics
+        #       * 10 combinations of methodology/return type/supervision type
+        #       * 5 periods = 3200 metrics
+        #   For the second 5 periods
+        #       64 combinations of characteristics
+        #       * (10 combinations of methodology/return type/supervision type
+        #           + 5 more instances) * 5 periods = 4800 metrics
+        #
+        #   Count window: 64 * 2 count windows * 10 combos = 1280
+        #
+        # For the second event:
+        #   64 combinations * 10 combos * 10 periods +
+        #   64 * 2 count windows * 5 event-based-combos  +
+        #   64 * 0 person-based-combos = 7040 metrics
+        assert len(recidivism_combinations) == (3200 + 4800 + 1280 + 7040)
+
+        num_count_metrics = 0
+        num_person_year_metrics = 0
+        num_event_year_metrics = 0
+        num_person_month_metrics = 0
+        num_event_month_metrics = 0
+        num_march_month_metrics = 0
+
+        for combo, value in recidivism_combinations:
+            if combo['metric_type'] == 'count':
+                num_count_metrics += 1
+
+                assert combo['start_date'].year == 1914
+                if combo['start_date'].month == 3:
+                    num_march_month_metrics += 1
+                    # March month bucket
+                    assert combo['start_date'] == date(1914, 3, 1)
+                    assert combo['end_date'] == date(1914, 3, 31)
+
+                    if combo['methodology'] == RecidivismMethodologyType.EVENT:
+                        num_event_month_metrics += 1
+                    else:
+                        num_person_month_metrics += 1
+
+                else:
+                    if combo['methodology'] == RecidivismMethodologyType.EVENT:
+                        num_event_year_metrics += 1
+                    else:
+                        num_person_year_metrics += 1
+
+                    # Year bucket
+                    assert combo['start_date'] == date(1914, 1, 1)
+                    assert combo['end_date'] == date(1914, 12, 31)
+                if combo.get('return_type') != \
+                        ReincarcerationReturnType.REVOCATION:
+                    assert value == 1
+                else:
+                    assert value == 0
+
+        assert num_count_metrics == (1280 + 640)
+        assert num_person_year_metrics == 320
+        assert num_event_year_metrics == 640
+        assert num_march_month_metrics == (640 + 320)
+        assert num_person_month_metrics == 320
+        assert num_event_month_metrics == 640
