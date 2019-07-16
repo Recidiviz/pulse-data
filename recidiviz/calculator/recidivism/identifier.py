@@ -69,13 +69,13 @@ def find_release_events_by_cohort_year(
         A dictionary mapping release cohorts to a list of ReleaseEvents
             for the given person in that cohort.
     """
+    release_events: Dict[int, List[ReleaseEvent]] = defaultdict(list)
 
     incarceration_periods = \
         validate_sort_and_collapse_incarceration_periods(incarceration_periods)
 
-    release_events: Dict[int, List[ReleaseEvent]] = defaultdict(list)
-
-    for index, incarceration_period in enumerate(incarceration_periods):
+    for index, incarceration_period in \
+            enumerate(incarceration_periods):
 
         admission_date = incarceration_period.admission_date
         status = incarceration_period.status
@@ -83,61 +83,38 @@ def find_release_events_by_cohort_year(
         release_reason = incarceration_period.release_reason
         release_facility = incarceration_period.facility
 
-        if not admission_date:
-            # This should never happen after validation. Throw error.
-            raise ValueError("admission_date should not be None on "
-                             f"{incarceration_period}.")
+        event = None
 
-        if not status:
-            # This should never happen after validation. Throw error.
-            raise ValueError("status should not be None on "
-                             f"{incarceration_period}.")
+        # Admission data and status have been validated already
+        if admission_date and status:
+            if index == len(incarceration_periods) - 1:
+                event = for_last_incarceration_period(admission_date,
+                                                      status,
+                                                      release_date,
+                                                      release_reason,
+                                                      release_facility)
+            else:
+                reincarceration_period = \
+                    incarceration_periods[index + 1]
+                reincarceration_date = reincarceration_period.admission_date
+                reincarceration_facility = reincarceration_period.facility
+                reincarceration_admission_reason = \
+                    reincarceration_period.admission_reason
 
-        if index == len(incarceration_periods) - 1:
-            event = for_last_incarceration_period(admission_date, status,
-                                                  release_date,
-                                                  release_reason,
-                                                  release_facility)
-        else:
-            reincarceration_period = incarceration_periods[index + 1]
-            reincarceration_date = reincarceration_period.admission_date
-            reincarceration_facility = reincarceration_period.facility
-            reincarceration_admission_reason = \
-                reincarceration_period.admission_reason
-
-            if not release_date:
-                # This should never happen after validation. Throw error.
-                raise ValueError("release_date should not be None on an"
-                                 "intermediate incarceration period "
-                                 f"{incarceration_period}.")
-
-            if not release_reason:
-                # This should never happen after validation. Throw error.
-                raise ValueError("release_reason should not be None on an "
-                                 "intermediate incarceration period "
-                                 f"{incarceration_period}.")
-
-            if not reincarceration_date:
-                # This should never happen after validation. Throw error.
-                raise ValueError("reincarceration_date should "
-                                 f"not be None on {incarceration_period}.")
-
-            if not reincarceration_admission_reason:
-                # This should never happen after validation. Throw error.
-                raise ValueError("reincarceration_admission_reason should "
-                                 f"not be None on {incarceration_period}.")
-
-            event = for_intermediate_incarceration_period(
-                admission_date, release_date, release_reason, release_facility,
-                reincarceration_date, reincarceration_facility,
-                reincarceration_admission_reason)
+                # These fields have been validated already
+                if release_date and release_reason and \
+                        reincarceration_date and \
+                        reincarceration_admission_reason:
+                    event = for_intermediate_incarceration_period(
+                        admission_date, release_date, release_reason,
+                        release_facility,
+                        reincarceration_date, reincarceration_facility,
+                        reincarceration_admission_reason)
 
         if event:
-            if not release_date:
-                raise ValueError("Release event should not have been generated"
-                                 "with a null release_date.")
-            release_cohort = release_date.year
-            release_events[release_cohort].append(event)
+            if release_date:
+                release_cohort = release_date.year
+                release_events[release_cohort].append(event)
 
     return release_events
 
@@ -147,30 +124,41 @@ def validate_sort_and_collapse_incarceration_periods(
         List[StateIncarcerationPeriod]:
     """Validates, sorts, and collapses the incarceration period inputs.
 
-    Ensures the necessary dates are set on each incarceration period. Sorts the
-    the list of StateIncarcerationPeriods sorted by admission_date, and
-    collapses the ones connected by a transfer.
+    Ensures the necessary dates and fields are set on each incarceration period.
+    If an incarceration period is found with missing data, returns an empty
+    list. If all are valid, sorts the list of StateIncarcerationPeriods by
+    admission_date, and collapses the ones connected by a transfer.
     """
+
     for incarceration_period in incarceration_periods:
-        if not incarceration_period.admission_date:
-            raise ValueError("No admission_date on incarceration period: "
-                             f"{incarceration_period}")
-        if not incarceration_period.admission_reason:
-            raise ValueError("No admission_reason on incarceration period: "
-                             f"{incarceration_period}")
         if not incarceration_period.status:
-            raise ValueError("No status on incarceration period: "
-                             f"{incarceration_period}")
+            logging.info("No status on incarceration period with id: %d",
+                         incarceration_period.incarceration_period_id)
+            return []
+        if not incarceration_period.admission_date:
+            logging.info("No admission_date on incarceration period with"
+                         " id: %d",
+                         incarceration_period.incarceration_period_id)
+            return []
+        if not incarceration_period.admission_reason:
+            logging.info("No admission_reason on incarceration period with"
+                         " id: %d",
+                         incarceration_period.incarceration_period_id)
+            return []
         if not incarceration_period.release_date and \
                 incarceration_period.status != \
                 StateIncarcerationPeriodStatus.IN_CUSTODY:
-            raise ValueError("No release_date on intermediate incarceration "
-                             f"period: {incarceration_period}")
+            logging.info("No release_date on intermediate incarceration "
+                         "period with id: %d",
+                         incarceration_period.incarceration_period_id)
+            return []
         if not incarceration_period.release_reason and \
                 incarceration_period.status != \
                 StateIncarcerationPeriodStatus.IN_CUSTODY:
-            raise ValueError("No release_reason on intermediate incarceration "
-                             f"period: {incarceration_period}")
+            logging.info("No release_reason on intermediate incarceration "
+                         "period with id: %d",
+                         incarceration_period.incarceration_period_id)
+            return []
 
     incarceration_periods.sort(key=lambda b: b.admission_date)
 
@@ -208,9 +196,9 @@ def collapse_incarceration_periods(incarceration_periods:
         if open_transfer:
             if incarceration_period.admission_reason == \
                     AdmissionReason.TRANSFER:
-                # If there is an open transfer period and they were transferred
-                # into this incarceration period, then combine this period with
-                # the open transfer period.
+                # If there is an open transfer period and they were
+                # transferred into this incarceration period, then combine this
+                # period with the open transfer period.
                 start_period = new_incarceration_periods.pop(-1)
                 combined_period = \
                     combine_incarceration_periods(start_period,
@@ -301,7 +289,7 @@ def for_last_incarceration_period(
         Returns:
             A non-recidivism event if released legitimately from this
                 StateIncarcerationPeriod. None otherwise.
-        """
+    """
 
     # If the person is still in custody, there is nothing to track.
     if status == StateIncarcerationPeriodStatus.IN_CUSTODY:
@@ -325,7 +313,13 @@ def for_last_incarceration_period(
         # If the person was released from this incarceration period because they
         # were transferred elsewhere, do not include them in the release cohort.
         return None
-    if release_reason in [ReleaseReason.CONDITIONAL_RELEASE,
+    if release_reason == ReleaseReason.COURT_ORDER:
+        # If the person was released from this incarceration period on a court
+        # order, do not include them in the release cohort.
+        return None
+    if release_reason in [ReleaseReason.COMMUTED,
+                          ReleaseReason.CONDITIONAL_RELEASE,
+                          ReleaseReason.EXTERNAL_UNKNOWN,
                           ReleaseReason.SENTENCE_SERVED]:
 
         return NonRecidivismReleaseEvent(admission_date, release_date,
@@ -426,17 +420,18 @@ def should_include_in_release_cohort(
         # If the person was released from this incarceration period because they
         # were transferred elsewhere, do not include them in the release cohort.
         return False
+    if release_reason == ReleaseReason.COURT_ORDER:
+        # If the person was released from this incarceration period due to a
+        # court order, do not include them in the release cohort.
+        return False
     if release_reason in (ReleaseReason.COMMUTED,
                           ReleaseReason.CONDITIONAL_RELEASE,
-                          ReleaseReason.COURT_ORDER,
                           ReleaseReason.EXTERNAL_UNKNOWN,
                           ReleaseReason.SENTENCE_SERVED):
         if reincarceration_admission_reason in (
                 AdmissionReason.RETURN_FROM_ESCAPE,
                 AdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE):
-            # If this person was not recorded as escaped, but returned on a
-            # release from escape, log this unexpected situation and exclude
-            # from the release cohort.
+            # Log this unexpected situation and exclude from the release cohort.
             logging.info("Unexpected reincarceration_admission_reason of "
                          "%s following a release reason of %s.",
                          reincarceration_admission_reason, release_reason)
@@ -491,7 +486,8 @@ def get_from_supervision_type(
 
     if reincarceration_admission_reason in [AdmissionReason.ADMITTED_IN_ERROR,
                                             AdmissionReason.EXTERNAL_UNKNOWN,
-                                            AdmissionReason.NEW_ADMISSION]:
+                                            AdmissionReason.NEW_ADMISSION,
+                                            AdmissionReason.TRANSFER]:
         return None
     if reincarceration_admission_reason == AdmissionReason.PAROLE_REVOCATION:
         return ReincarcerationReturnFromSupervisionType.PAROLE
@@ -499,8 +495,7 @@ def get_from_supervision_type(
         return ReincarcerationReturnFromSupervisionType.PROBATION
     if reincarceration_admission_reason in (
             AdmissionReason.RETURN_FROM_ESCAPE,
-            AdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE,
-            AdmissionReason.TRANSFER):
+            AdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE):
         # This should never happen. Should have been filtered by
         # should_include_in_release_cohort function. Throw error.
         raise ValueError("should_include_in_release_cohort is not effectively"

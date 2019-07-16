@@ -37,9 +37,8 @@ from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentType
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-from recidiviz.persistence.entity import entity_utils
-from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.database.schema.state import schema
+from recidiviz.persistence.entity import entity_utils
 from recidiviz.persistence.entity.state.entities import Gender, \
     Race, ResidencyStatus, Ethnicity
 from recidiviz.persistence.entity.state import entities
@@ -579,7 +578,7 @@ class TestExtractEntity(unittest.TestCase):
             StateSchemaToEntityConverter().convert(person)
 
         entity_class = entity_utils.get_entity_class_in_module_with_name(
-            state_entities, 'StatePerson')
+            entities, 'StatePerson')
 
         test_pipeline = TestPipeline()
 
@@ -609,7 +608,7 @@ class TestExtractEntity(unittest.TestCase):
         data_dict = {person.__tablename__: person_data}
 
         entity_class = entity_utils.get_entity_class_in_module_with_name(
-            state_entities, 'StatePerson')
+            entities, 'StatePerson')
 
         with pytest.raises(ValueError) as e:
             test_pipeline = TestPipeline()
@@ -638,7 +637,7 @@ class TestExtractEntity(unittest.TestCase):
         data_dict = {person.__tablename__: person_data}
 
         entity_class = entity_utils.get_entity_class_in_module_with_name(
-            state_entities, 'StatePerson')
+            entities, 'StatePerson')
 
         with pytest.raises(ValueError) as e:
             test_pipeline = TestPipeline()
@@ -750,7 +749,7 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
             validate_extract_relationship_property_entities(
                 outer_connection_id=supervision_period.person_id,
                 inner_connection_id=supervision_period.supervision_period_id,
-                class_type=state_entities.StateSupervisionViolation),
+                class_type=entities.StateSupervisionViolation),
             label="Validate supervision_violations output")
 
         output_incarceration_sentences = \
@@ -761,7 +760,7 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
             validate_extract_relationship_property_entities(
                 outer_connection_id=supervision_period.person_id,
                 inner_connection_id=supervision_period.supervision_period_id,
-                class_type=state_entities.StateIncarcerationSentence),
+                class_type=entities.StateIncarcerationSentence),
             label="Validate incarceration_sentences output")
 
         test_pipeline.run()
@@ -813,7 +812,7 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
                 outer_connection_id=incarceration_incident.person_id,
                 inner_connection_id=incarceration_incident.
                 incarceration_incident_id,
-                class_type=state_entities.StateIncarcerationPeriod),
+                class_type=entities.StateIncarcerationPeriod),
             label="Validate incarceration_period output")
 
         test_pipeline.run()
@@ -872,7 +871,7 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
                 outer_connection_id=incarceration_period_1.person_id,
                 inner_connection_id=
                 incarceration_period_1.incarceration_period_id,
-                class_type=state_entities.StateSupervisionViolationResponse),
+                class_type=entities.StateSupervisionViolationResponse),
             label="Validate incarceration_period relationship output")
 
         test_pipeline.run()
@@ -935,7 +934,7 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
                 outer_connection_id=incarceration_period_1.person_id,
                 inner_connection_id=
                 incarceration_period_1.incarceration_period_id,
-                class_type=state_entities.StateSupervisionViolationResponse),
+                class_type=entities.StateSupervisionViolationResponse),
             label="Validate incarceration_period relationship output")
 
         test_pipeline.run()
@@ -999,7 +998,7 @@ class TestExtractEntityWithAssociationTable(unittest.TestCase):
                     validate_extract_relationship_property_entities(
                         outer_connection_id=parole_decision.person_id,
                         inner_connection_id=parole_decision.parole_decision_id,
-                        class_type=state_entities.StateAgent),
+                        class_type=entities.StateAgent),
                     label="Validate StateAgent output")
 
 
@@ -1025,7 +1024,7 @@ class TestHydrateRootEntity(unittest.TestCase):
             StateSchemaToEntityConverter().convert(supervision_violation)
 
         entity_class = entity_utils.get_entity_class_in_module_with_name(
-            state_entities, 'StateSupervisionViolation')
+            entities, 'StateSupervisionViolation')
 
         test_pipeline = TestPipeline()
 
@@ -1071,7 +1070,7 @@ class TestHydrateEntity(unittest.TestCase):
                      charge_data}
 
         entity_class = entity_utils.get_entity_class_in_module_with_name(
-            state_entities, 'StateCharge')
+            entities, 'StateCharge')
 
         output_charge_entity = \
             StateSchemaToEntityConverter().convert(charge)
@@ -1117,7 +1116,7 @@ class TestHydrateEntity(unittest.TestCase):
                      charge_data}
 
         entity_class = entity_utils.get_entity_class_in_module_with_name(
-            state_entities, 'StateCharge')
+            entities, 'StateCharge')
 
         output_charge_entity = \
             StateSchemaToEntityConverter().convert(charge)
@@ -1164,7 +1163,7 @@ class TestHydrateEntity(unittest.TestCase):
                      charge_data}
 
         entity_class = entity_utils.get_entity_class_in_module_with_name(
-            state_entities, 'StateCharge')
+            entities, 'StateCharge')
 
         with pytest.raises(ValueError) as e:
 
@@ -1229,7 +1228,7 @@ class TestHydrateRootEntityWithRelationshipPropertyEntities(unittest.TestCase):
 
         output_fine = entities.StateFine.new_with_defaults(
             fine_id=3333,
-            status=state_entities.StateFineStatus.PAID,
+            status=entities.StateFineStatus.PAID,
             state_code='us_ca')
 
         output_fine.sentence_group = sentence_group_entity
@@ -1278,7 +1277,7 @@ class TestHydrateRootEntityWithRelationshipPropertyEntities(unittest.TestCase):
 
         fine_2 = schema.StateFine(
             fine_id=9999,
-            status=state_entities.StateFineStatus.PAID,
+            status=entities.StateFineStatus.PAID,
             state_code='us_ca',
             person_id=person_id
         )
@@ -1293,7 +1292,7 @@ class TestHydrateRootEntityWithRelationshipPropertyEntities(unittest.TestCase):
         charge_2_1 = schema.StateCharge(
             charge_id=1209,
             person_id=person_id,
-            status=state_entities.ChargeStatus.PENDING.value,
+            status=entities.ChargeStatus.PENDING.value,
             state_code='us_ca'
         )
 
@@ -1324,7 +1323,7 @@ class TestHydrateRootEntityWithRelationshipPropertyEntities(unittest.TestCase):
 
         output_fine_1 = entities.StateFine.new_with_defaults(
             fine_id=3333,
-            status=state_entities.StateFineStatus.PAID,
+            status=entities.StateFineStatus.PAID,
             state_code='us_ca')
 
         output_fine_1.sentence_group = sentence_group_entity_1
@@ -1332,7 +1331,7 @@ class TestHydrateRootEntityWithRelationshipPropertyEntities(unittest.TestCase):
 
         output_fine_2 = entities.StateFine.new_with_defaults(
             fine_id=fine_2.fine_id,
-            status=state_entities.StateFineStatus.PAID,
+            status=entities.StateFineStatus.PAID,
             state_code='us_ca'
         )
 
@@ -1473,7 +1472,7 @@ class ExtractAssertMatchers:
 
     @staticmethod
     def validate_build_root_entities(unifying_id: int,
-                                     class_type: Type[state_entities.Entity]):
+                                     class_type: Type[entities.Entity]):
         """Validates that the output of ExtractRelationshipPropertyEntities
         matches the expected format:
 
@@ -1495,7 +1494,7 @@ class ExtractAssertMatchers:
     @staticmethod
     def validate_extract_relationship_property_entities(
             outer_connection_id: int, inner_connection_id: int,
-            class_type: Type[state_entities.Entity]):
+            class_type: Type[entities.Entity]):
         """Validates that the output of ExtractRelationshipPropertyEntities
         matches the expected format:
 
