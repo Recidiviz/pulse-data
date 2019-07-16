@@ -19,7 +19,7 @@
 
 from datetime import date
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 import attr
 
@@ -54,11 +54,9 @@ class RecidivismMethodologyType(Enum):
 class ReincarcerationRecidivismMetric(BuildableAttr):
     """Models a single recidivism metric.
 
-    A recidivism metric contains a recidivism rate, including the numerator of
-    total instances of recidivism and a denominator of total instances of
-    release from incarceration. It also contains all of the identifying
-    characteristics of the metric, including required characteristics for
-    normalization as well as optional characteristics for slicing the data.
+    Contains all of the identifying characteristics of the metric, including
+    required characteristics for normalization as well as optional
+    characteristics for slicing the data.
     """
 
     # Required characteristics
@@ -66,29 +64,9 @@ class ReincarcerationRecidivismMetric(BuildableAttr):
     # The string id of the calculation pipeline job that produced this metric.
     job_id: str = attr.ib()  # non-nullable
 
-    # The integer year during which the persons were released
-    release_cohort: int = attr.ib()  # non-nullable
-
-    # The integer number of years after date of release during which
-    # recidivism was measured
-    follow_up_period: int = attr.ib()  # non-nullable
-
     # RecidivismMethodologyType enum for the calculation of the metric
-    methodology: RecidivismMethodologyType = attr.ib()  # non-nullable
-
-    # Required metric values
-
-    # The integer number of releases from incarceration that the
-    # characteristics in this metric describe
-    total_releases: int = attr.ib()  # non-nullable
-
-    # The total number of releases from incarceration that led to recidivism
-    # that the characteristics in this metric describe
-    recidivated_releases: float = attr.ib()  # non-nullable
-
-    # The float rate of recidivism for the releases that the characteristics in
-    # this metric describe
-    recidivism_rate: float = attr.ib()  # non-nullable
+    methodology: RecidivismMethodologyType = \
+        attr.ib(default=None)  # non-nullable
 
     # Optional characteristics
 
@@ -134,13 +112,115 @@ class ReincarcerationRecidivismMetric(BuildableAttr):
     updated_on: Optional[date] = attr.ib(default=None)
 
     @staticmethod
-    def build_from_metric_key_release_group(metric_key: Dict[str, Any],
-                                            release_group: List[int],
-                                            job_id: str) -> \
+    def build_from_metric_key_group(metric_key: Dict[str, Any],
+                                    group: List[int],
+                                    job_id: str) -> \
             Optional['ReincarcerationRecidivismMetric']:
-        """Builds a RecidivismMetric object from the given arguments.
+        """Builds a ReincarcerationRecidivismMetric object from the given
+         arguments.
+        """
 
-        Constructs a RecidivismMetric object from a dictionary containing all
+        if not metric_key:
+            raise ValueError("The metric_key is empty.")
+
+        if not group:
+            raise ValueError("The group is empty.")
+
+        metric_key['job_id'] = job_id
+        metric_key['created_on'] = date.today()
+
+        recidivism_metric = cast(ReincarcerationRecidivismMetric,
+                                 ReincarcerationRecidivismMetric.
+                                 build_from_dictionary(metric_key))
+
+        return recidivism_metric
+
+
+@attr.s
+class ReincarcerationRecidivismCountMetric(ReincarcerationRecidivismMetric):
+    """Subclass of ReincarcerationRecidivismMetric that contains count data.
+
+    A recidivism count metric contains the number of reincarceration returns in
+    a given window, with a start and end date.
+    """
+    # Required characteristics
+
+    # Starting date of the count window
+    start_date: int = attr.ib(default=None)
+
+    # Ending date of the count window
+    end_date: int = attr.ib(default=None)
+
+    # Number of reincarceration returns
+    returns: int = attr.ib(default=None)
+
+    @staticmethod
+    def build_from_metric_key_group(metric_key: Dict[str, Any],
+                                    group: List[int],
+                                    job_id: str) -> \
+            Optional['ReincarcerationRecidivismCountMetric']:
+
+        if not metric_key:
+            raise ValueError("The metric_key is empty.")
+
+        if not group:
+            raise ValueError("The group is empty.")
+
+        # TODO(2036): Look into using Combine transform instead of sum
+        returns = sum(group)
+
+        # Don't write metrics with no returns
+        if returns == 0:
+            return None
+
+        metric_key['returns'] = returns
+        metric_key['job_id'] = job_id
+        metric_key['created_on'] = date.today()
+
+        recidivism_metric = cast(ReincarcerationRecidivismCountMetric,
+                                 ReincarcerationRecidivismCountMetric.
+                                 build_from_dictionary(metric_key))
+
+        return recidivism_metric
+
+
+@attr.s
+class ReincarcerationRecidivismRateMetric(ReincarcerationRecidivismMetric):
+    """Subclass of ReincarcerationRecidivismMetric that contains rate data.
+
+    A recidivism rate metric contains a recidivism rate, including the numerator
+    of total instances of recidivism and a denominator of total instances of
+    release from incarceration.
+    """
+    # Required characteristics
+
+    # The integer year during which the persons were released
+    release_cohort: int = attr.ib(default=None)  # non-nullable
+
+    # The integer number of years after date of release during which
+    # recidivism was measured
+    follow_up_period: int = attr.ib(default=None)  # non-nullable
+
+    # Required metric values
+
+    # The integer number of releases from incarceration that the
+    # characteristics in this metric describe
+    total_releases: int = attr.ib(default=None)  # non-nullable
+
+    # The total number of releases from incarceration that led to recidivism
+    # that the characteristics in this metric describe
+    recidivated_releases: float = attr.ib(default=None)  # non-nullable
+
+    # The float rate of recidivism for the releases that the characteristics in
+    # this metric describe
+    recidivism_rate: float = attr.ib(default=None)  # non-nullable
+
+    @staticmethod
+    def build_from_metric_key_group(metric_key: Dict[str, Any],
+                                    group: List[int],
+                                    job_id: str) -> \
+            Optional['ReincarcerationRecidivismRateMetric']:
+        """Constructs a RecidivismMetric object from a dictionary containing all
         required values and the corresponding group of ReleaseEvents, with 1s
         representing RecidivismReleaseEvents, and 0s representing
         NonRecidivismReleaseEvents.
@@ -149,44 +229,20 @@ class ReincarcerationRecidivismMetric(BuildableAttr):
         if not metric_key:
             raise ValueError("The metric_key is empty.")
 
-        recidivism_metric = ReincarcerationRecidivismMetric.builder()
+        metric_key['job_id'] = job_id
+        metric_key['created_on'] = date.today()
+        metric_key['total_releases'] = len(list(group))
 
-        # Calculate number of releases and number resulting in recidivism
-        recidivism_metric.total_releases = len(list(release_group))
-        recidivism_metric.recidivated_releases = sum(release_group)
+        if metric_key['total_releases'] == 0:
+            raise ValueError("The group is empty.")
 
-        if recidivism_metric.total_releases == 0:
-            raise ValueError("The release_group is empty.")
+        # TODO(2036): Look into using Combine transform instead of sum
+        metric_key['recidivated_releases'] = sum(group)
+        metric_key['recidivism_rate'] = ((metric_key['recidivated_releases'] +
+                                          0.0) / metric_key['total_releases'])
 
-        # Calculate recidivism rate
-        recidivism_metric.recidivism_rate = \
-            ((recidivism_metric.recidivated_releases + 0.0) /
-             recidivism_metric.total_releases)
+        recidivism_metric = cast(ReincarcerationRecidivismRateMetric,
+                                 ReincarcerationRecidivismRateMetric.
+                                 build_from_dictionary(metric_key))
 
-        recidivism_metric.job_id = job_id
-        recidivism_metric.release_cohort = metric_key.get('release_cohort')
-        recidivism_metric.follow_up_period = metric_key.get('follow_up_period')
-        recidivism_metric.methodology = metric_key.get('methodology')
-        recidivism_metric.created_on = date.today()
-
-        if 'age' in metric_key:
-            recidivism_metric.age_bucket = metric_key.get('age')
-        if 'ethnicity' in metric_key:
-            recidivism_metric.ethnicity = metric_key.get('ethnicity')
-        if 'race' in metric_key:
-            recidivism_metric.race = metric_key.get('race')
-        if 'gender' in metric_key:
-            recidivism_metric.gender = metric_key.get('gender')
-        if 'release_facility' in metric_key:
-            recidivism_metric.release_facility = \
-                metric_key.get('release_facility')
-        if 'stay_length_bucket' in metric_key:
-            recidivism_metric.stay_length_bucket = metric_key.get(
-                'stay_length_bucket')
-        if 'return_type' in metric_key:
-            recidivism_metric.return_type = metric_key.get('return_type')
-        if 'from_supervision_type' in metric_key:
-            recidivism_metric.from_supervision_type = \
-                metric_key['from_supervision_type']
-
-        return recidivism_metric.build()
+        return recidivism_metric

@@ -146,6 +146,7 @@ class _ExtractEntity(beam.PTransform):
     this id to later stitch this related entity to its root entity.
     """
     # TODO(1913): Add more query filtering parameters
+
     def __init__(self, dataset: Optional[str],
                  data_dict: Optional[Dict[str, Any]],
                  table_name: str,
@@ -182,7 +183,6 @@ class _ExtractEntity(beam.PTransform):
         else:
             raise ValueError("No valid data source passed to the pipeline.")
 
-
         hydrate_kwargs = {'entity_class': self._entity_class}
 
         if self._root_id_field is None:
@@ -208,6 +208,7 @@ class _ExtractEntity(beam.PTransform):
 class _ExtractRelationshipPropertyEntities(beam.PTransform):
     """Extracts entities that are related to a root entity."""
     # TODO(1913): Add more query filtering parameters
+
     def __init__(self, dataset: Optional[str],
                  data_dict: Optional[Dict[str, Any]],
                  root_schema_class: Type[DatabaseEntity], root_id_field: str,
@@ -265,10 +266,8 @@ class _ExtractRelationshipPropertyEntities(beam.PTransform):
                                     data_dict=self._data_dict,
                                     table_name=table_name,
                                     entity_class=entity_class,
-                                    unifying_id_field=
-                                    self._unifying_id_field,
-                                    root_id_field=
-                                    self._root_id_field)
+                                    unifying_id_field=self._unifying_id_field,
+                                    root_id_field=self._root_id_field)
                                 )
 
                 # 1-to-1 relationship (from root schema class perspective)
@@ -620,6 +619,7 @@ class _RepackageUnifyingIdRootIdStructure(beam.DoFn):
     Yields one instance of this tuple for every root entity that this related
     entity is related to.
     """
+
     def process(self, element, *args, **kwargs):
         _, structure_dict = element
 
@@ -644,6 +644,7 @@ class _FormAssociationIDTuples(beam.DoFn):
     These ids can be None if there is an un-hydrated optional relationship on
     an entity, so this only yields a tuple if both ids exist.
     """
+
     def process(self, element, *args, **kwargs):
         root_id_field = kwargs.get('root_id_field')
         associated_id_field = kwargs.get('associated_id_field')
@@ -661,6 +662,7 @@ class _FormAssociationIDTuples(beam.DoFn):
 class _CreatePCollectionFromDict(beam.PTransform):
     """Creates a PCollection from the values in given data_dict corresponding to
     the given field."""
+
     def __init__(self, data_dict: Dict[str, Any], field: str):
         super(_CreatePCollectionFromDict, self).__init__()
         self._data_dict = data_dict

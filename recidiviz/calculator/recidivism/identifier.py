@@ -162,10 +162,10 @@ def validate_sort_and_collapse_incarceration_periods(
 
     incarceration_periods.sort(key=lambda b: b.admission_date)
 
-    incarceration_periods = \
+    collapsed_incarceration_periods = \
         collapse_incarceration_periods(incarceration_periods)
 
-    return incarceration_periods
+    return collapsed_incarceration_periods
 
 
 def collapse_incarceration_periods(incarceration_periods:
