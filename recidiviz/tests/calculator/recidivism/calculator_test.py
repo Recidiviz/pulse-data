@@ -25,11 +25,10 @@ from datetime import datetime
 
 from dateutil.relativedelta import relativedelta
 
-from recidiviz.calculator.recidivism import calculator, ReleaseEvent, \
-    RecidivismReleaseEvent, NonRecidivismReleaseEvent
+from recidiviz.calculator.recidivism import calculator
+from recidiviz.calculator.recidivism.release_event import ReleaseEvent, \
+    RecidivismReleaseEvent, NonRecidivismReleaseEvent, ReincarcerationReturnType
 from recidiviz.calculator.recidivism.metrics import RecidivismMethodologyType
-from recidiviz.calculator.recidivism.release_event import \
-    ReincarcerationReturnType
 from recidiviz.persistence.entity.state.entities import StatePerson, Gender,\
     StatePersonRace, Race, StatePersonEthnicity, Ethnicity
 

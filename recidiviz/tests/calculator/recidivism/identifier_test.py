@@ -24,10 +24,11 @@ import unittest
 from datetime import date
 from typing import Dict
 
-from recidiviz.calculator.recidivism import identifier, \
-    RecidivismReleaseEvent, NonRecidivismReleaseEvent
+from recidiviz.calculator.recidivism import identifier
+from recidiviz.calculator.recidivism.release_event import ReleaseEvent, \
+    RecidivismReleaseEvent, NonRecidivismReleaseEvent, ReincarcerationReturnType
 from recidiviz.calculator.recidivism.release_event import \
-    ReincarcerationReturnType, ReincarcerationReturnFromSupervisionType
+    ReincarcerationReturnFromSupervisionType
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus, StateIncarcerationFacilitySecurityLevel
 from recidiviz.common.constants.state.state_incarceration_period import \
@@ -506,45 +507,68 @@ class TestValidateSortAndCollapseIncarcerationPeriods:
         assert validated_incarceration_periods == input_incarceration_periods
 
     def test_validate_incarceration_periods_empty_admission_date(self):
-        initial_incarceration_period = \
+        """Tests that there are no incarceration periods returned when there's
+        an empty admission_date.
+        """
+        first_incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=1111,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 state_code='TX',
-                admission_date=date(2008, 11, 20),
                 admission_reason=AdmissionReason.NEW_ADMISSION,
-                release_date=date(2010, 12, 4),
+                release_date=date(2008, 4, 14),
                 release_reason=ReleaseReason.SENTENCE_SERVED)
 
-        first_reincarceration_period = \
+        input_incarceration_periods = [first_incarceration_period]
+
+        collapsed_incarceration_periods = \
+            identifier.validate_sort_and_collapse_incarceration_periods(
+                input_incarceration_periods)
+
+        assert not collapsed_incarceration_periods
+
+    def test_validate_incarceration_periods_empty_admission_reason(self):
+        """Tests that there are no incarceration periods returned when there's
+        an empty admission_reason.
+        """
+        first_incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=2222,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 state_code='TX',
-                admission_reason=AdmissionReason.NEW_ADMISSION,
-                release_date=date(2014, 4, 14),
+                admission_date=date(2006, 1, 7),
+                release_date=date(2008, 4, 14),
                 release_reason=ReleaseReason.SENTENCE_SERVED)
 
-        second_reincarceration_period = \
-            StateIncarcerationPeriod.new_with_defaults(
-                incarceration_period_id=3333,
-                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
-                admission_date=date(2012, 2, 4),
-                admission_reason=AdmissionReason.NEW_ADMISSION,
-                release_date=date(2014, 4, 14),
-                release_reason=ReleaseReason.SENTENCE_SERVED)
+        input_incarceration_periods = [first_incarceration_period]
 
-        input_incarceration_periods = [
-            initial_incarceration_period, first_reincarceration_period,
-            second_reincarceration_period]
-
-        with pytest.raises(ValueError) as e:
-            _ = identifier.validate_sort_and_collapse_incarceration_periods(
+        collapsed_incarceration_periods = \
+            identifier.validate_sort_and_collapse_incarceration_periods(
                 input_incarceration_periods)
 
-        assert str(e.value) == (f"No admission_date on incarceration period: "
-                                f"{first_reincarceration_period}")
+        assert not collapsed_incarceration_periods
+
+    def test_validate_incarceration_periods_empty_admission_data(self):
+        """Tests that there are no incarceration periods returned when there's
+        an empty admission_date and admission_reason.
+        """
+        first_incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=2222,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='TX',
+                admission_date=None,
+                admission_reason=None,
+                release_date=date(2008, 4, 14),
+                release_reason=ReleaseReason.SENTENCE_SERVED)
+
+        input_incarceration_periods = [first_incarceration_period]
+
+        collapsed_incarceration_periods = \
+            identifier.validate_sort_and_collapse_incarceration_periods(
+                input_incarceration_periods)
+
+        assert not collapsed_incarceration_periods
 
     def test_validate_incarceration_periods_empty_release_date(self):
         initial_incarceration_period = \
@@ -580,12 +604,11 @@ class TestValidateSortAndCollapseIncarcerationPeriods:
             initial_incarceration_period, first_reincarceration_period,
             second_reincarceration_period]
 
-        with pytest.raises(ValueError) as e:
-            _ = identifier.validate_sort_and_collapse_incarceration_periods(
+        collapsed_incarceration_periods = \
+            identifier.validate_sort_and_collapse_incarceration_periods(
                 input_incarceration_periods)
 
-        assert str(e.value) == (f"No release_date on intermediate incarceration"
-                                f" period: {second_reincarceration_period}")
+        assert not collapsed_incarceration_periods
 
     def test_validate_incarceration_periods_empty_release_reason(self):
         initial_incarceration_period = \
@@ -621,13 +644,11 @@ class TestValidateSortAndCollapseIncarcerationPeriods:
             initial_incarceration_period, first_reincarceration_period,
             second_reincarceration_period]
 
-        with pytest.raises(ValueError) as e:
-            _ = identifier.validate_sort_and_collapse_incarceration_periods(
+        collapsed_incarceration_periods = \
+            identifier.validate_sort_and_collapse_incarceration_periods(
                 input_incarceration_periods)
 
-        assert str(e.value) == (f"No release_reason on intermediate"
-                                f" incarceration period: "
-                                f"{second_reincarceration_period}")
+        assert not collapsed_incarceration_periods
 
     def test_validate_incarceration_periods_empty_release_in_custody(self):
         initial_incarceration_period = \
@@ -753,6 +774,99 @@ class TestValidateSortAndCollapseIncarcerationPeriods:
                 release_date=first_reincarceration_period.release_date,
                 release_reason=first_reincarceration_period.release_reason)
         ]
+
+    def test_collapse_incarceration_periods_missing_transfer_in(self):
+        initial_incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=1111,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='TX',
+                admission_date=date(2003, 1, 2),
+                admission_reason=AdmissionReason.NEW_ADMISSION,
+                release_date=date(2007, 4, 4),
+                release_reason=ReleaseReason.SENTENCE_SERVED)
+
+        first_reincarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=1111,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='TX',
+                admission_date=date(2008, 11, 20),
+                admission_reason=AdmissionReason.NEW_ADMISSION,
+                release_date=date(2010, 12, 4),
+                release_reason=ReleaseReason.TRANSFER)
+
+        second_reincarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=2222,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='TX',
+                admission_date=None,
+                admission_reason=None,
+                release_date=date(2014, 4, 14),
+                release_reason=ReleaseReason.SENTENCE_SERVED)
+
+        incarceration_periods = [initial_incarceration_period,
+                                 first_reincarceration_period,
+                                 second_reincarceration_period]
+
+        collapsed_incarceration_periods = \
+            identifier.validate_sort_and_collapse_incarceration_periods(
+                incarceration_periods)
+
+        assert not collapsed_incarceration_periods
+
+    def test_collapse_incarceration_periods_missing_transfer_in_twice(self):
+        initial_incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=1111,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='TX',
+                admission_date=date(2003, 1, 2),
+                admission_reason=AdmissionReason.NEW_ADMISSION,
+                release_date=date(2007, 4, 4),
+                release_reason=ReleaseReason.SENTENCE_SERVED)
+
+        first_reincarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=1111,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='TX',
+                admission_date=date(2008, 11, 20),
+                admission_reason=AdmissionReason.NEW_ADMISSION,
+                release_date=date(2010, 12, 4),
+                release_reason=ReleaseReason.TRANSFER)
+
+        second_reincarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=2222,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='TX',
+                admission_date=None,
+                admission_reason=None,
+                release_date=date(2014, 4, 14),
+                release_reason=ReleaseReason.SENTENCE_SERVED)
+
+        third_reincarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=2222,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='TX',
+                admission_date=None,
+                admission_reason=None,
+                release_date=date(2014, 4, 14),
+                release_reason=ReleaseReason.SENTENCE_SERVED)
+
+        incarceration_periods = [initial_incarceration_period,
+                                 first_reincarceration_period,
+                                 second_reincarceration_period,
+                                 third_reincarceration_period]
+
+        collapsed_incarceration_periods = \
+            identifier.validate_sort_and_collapse_incarceration_periods(
+                incarceration_periods)
+
+        assert not collapsed_incarceration_periods
 
 
 class TestCollapseIncarcerationPeriods:
@@ -1230,7 +1344,7 @@ SHOULD_INCLUDE_WITH_RETURN_TYPE: \
     Dict[ReleaseReason, Dict[AdmissionReason, ReincarcerationReturnType]] = \
     {ReleaseReason.COMMUTED: _RETURN_TYPES_BY_STANDARD_ADMISSION,
      ReleaseReason.CONDITIONAL_RELEASE: _RETURN_TYPES_BY_STANDARD_ADMISSION,
-     ReleaseReason.COURT_ORDER: _RETURN_TYPES_BY_STANDARD_ADMISSION,
+     ReleaseReason.COURT_ORDER: {},
      ReleaseReason.DEATH: {},
      ReleaseReason.ESCAPE: {},
      ReleaseReason.EXTERNAL_UNKNOWN: _RETURN_TYPES_BY_STANDARD_ADMISSION,
@@ -1264,6 +1378,14 @@ class TestShouldIncludeInReleaseCohort(unittest.TestCase):
             self.assertTrue(release_reason in release_reason_keys,
                             "StateIncarcerationPeriodReleaseReason enum not "
                             "handled in SHOULD_INCLUDE_WITH_RETURN_TYPE.")
+
+    def test_should_include_in_release_cohort_coverage(self):
+        for admission_reason in AdmissionReason:
+            for release_reason in ReleaseReason:
+                # Assert that no error is raised
+                identifier.should_include_in_release_cohort(
+                    release_reason,
+                    admission_reason)
 
 
 class TestGetReturnType:
@@ -1321,6 +1443,34 @@ class TestGetReturnType:
         assert str(e.value) == (f"Enum case not handled for "
                                 f"StateIncarcerationPeriodAdmissionReason of"
                                 f" type: INVALID.")
+
+
+class TestForLastIncarcerationPeriod:
+    """Tests the for_last_incarceration_period function."""
+
+    def test_for_last_incarceration_period(self):
+        admission_date = date(2000, 12, 1)
+        status = StateIncarcerationPeriodStatus.NOT_IN_CUSTODY
+        release_date = date(2005, 3, 8)
+        release_facility = 'Facility'
+
+        for release_reason in ReleaseReason:
+            # Will raise ValueError if enum case isn't handled
+            event = identifier.for_last_incarceration_period(admission_date,
+                                                             status,
+                                                             release_date,
+                                                             release_reason,
+                                                             release_facility)
+
+            if release_reason in [ReleaseReason.COMMUTED,
+                                  ReleaseReason.CONDITIONAL_RELEASE,
+                                  ReleaseReason.EXTERNAL_UNKNOWN,
+                                  ReleaseReason.SENTENCE_SERVED]:
+                assert event == NonRecidivismReleaseEvent(admission_date,
+                                                          release_date,
+                                                          release_facility)
+            else:
+                assert not event
 
 
 class TestGetFromSupervisionType:
