@@ -20,16 +20,17 @@ ingested entities.
 """
 import logging
 
-from typing import List, Dict, Tuple, Optional, cast
+from typing import List, Dict, Tuple, Optional, cast, Type
 
 from more_itertools import one
 
 from recidiviz.persistence.database.session import Session
-from recidiviz.persistence.entity.entity_utils import get_set_entity_field_names
+from recidiviz.persistence.entity.entity_utils import \
+    get_set_entity_field_names
 from recidiviz.persistence.database.schema.state import dao
-from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.base_entity import Entity, ExternalIdEntity
 from recidiviz.persistence.entity.state.entities import StatePerson, \
-    StateIncarcerationPeriod
+    StateIncarcerationPeriod, StateCharge, StateCourtCase, StateAgent
 from recidiviz.persistence.entity_matching import entity_matching_utils
 from recidiviz.persistence.entity_matching.base_entity_matcher import \
     BaseEntityMatcher, MatchedEntities, increment_error
@@ -82,10 +83,9 @@ class StateEntityMatcher(BaseEntityMatcher[StatePerson]):
         matched_entities = _match_persons(
             ingested_persons=ingested_people, db_persons=db_persons)
 
-        # TODO(1868): Merge entities that could have been created twice
-        # (those with multiple parent branches)
         # TODO(1868): Remove any placeholders in graph without children after
         # write
+        merge_multiparent_entities(matched_entities.people)
         move_incidents_onto_periods(matched_entities.people)
         add_person_to_entity_graph(matched_entities.people)
         return matched_entities
@@ -553,3 +553,161 @@ def _get_incomplete_incarceration_period_match(
     return entity_matching_utils.get_only_match(
         ingested_entity_tree, incomplete_db_trees,
         is_incomplete_incarceration_period_match)
+
+
+# TODO(2037): Move this into a post processing file.
+def merge_multiparent_entities(persons: List[StatePerson]):
+    """For each person in the provided |persons|, looks at all of the child
+    entities that can have multiple parents, and merges these entities where
+    possible.
+    """
+    for person in persons:
+        charge_map: Dict[str, List[_EntityWithParents]] = {}
+        _populate_multiparent_map(person, StateCharge, charge_map)
+        _merge_multiparent_entities_from_map(charge_map)
+
+        court_case_map: Dict[str, List[_EntityWithParents]] = {}
+        _populate_multiparent_map(person, StateCourtCase, court_case_map)
+        _merge_multiparent_entities_from_map(court_case_map)
+
+        agent_map: Dict[str, List[_EntityWithParents]] = {}
+        _populate_multiparent_map(person, StateAgent, agent_map)
+        _merge_multiparent_entities_from_map(agent_map)
+
+
+class _LinkedParents:
+    def __init__(self, parent: Entity, field_name: str):
+        self.parent = parent
+        self.field_name = field_name
+
+
+class _EntityWithParents:
+    def __init__(self, entity: Entity, linked_parents: List[_LinkedParents]):
+        self.entity = entity
+        self.linked_parents = linked_parents
+
+
+def _merge_multiparent_entities_from_map(
+        multiparent_map: Dict[str, List[_EntityWithParents]]):
+    """Merges entities from the provided |multiparent_map|."""
+    for entities_with_parents in multiparent_map.values():
+        merged_entity_with_parents = None
+        for entity_with_parents in entities_with_parents:
+            if not merged_entity_with_parents:
+                merged_entity_with_parents = entity_with_parents
+                continue
+
+            # Keep track of which one is a DB entity for matching below. If
+            # both are ingested, then order does not matter for matching.
+            if entity_with_parents.entity.get_id():
+                db_with_parents = entity_with_parents
+                ing_with_parents = merged_entity_with_parents
+            else:
+                db_with_parents = merged_entity_with_parents
+                ing_with_parents = entity_with_parents
+
+            # Merge the two objects via entity matching
+            db_tree = EntityTree(db_with_parents.entity, [])
+            ing_tree = EntityTree(ing_with_parents.entity, [])
+            match_result = _match_matched_tree(
+                ingested_entity_tree=ing_tree, db_match_tree=db_tree,
+                matched_entities_by_db_ids={})
+            updated_entity = one(match_result.merged_entity_trees).entity
+
+            # As entity matching automatically updates the input db entity, we
+            # only have to replace ing_with_parents.entity.
+            _replace_entity(
+                entity=updated_entity, to_replace=ing_with_parents.entity,
+                linked_parents=ing_with_parents.linked_parents)
+            db_with_parents.linked_parents.extend(
+                ing_with_parents.linked_parents)
+            merged_entity_with_parents = db_with_parents
+
+
+def _is_subset(entity: Entity, subset: Entity) -> bool:
+    """Checks if all fields on the provided |subset| are present in the provided
+    |entity|. Returns True if so, otherwise False.
+    """
+    for field_name in get_set_entity_field_names(
+            subset, EntityFieldType.FLAT_FIELD):
+        if get_field(entity, field_name) != get_field(subset, field_name):
+            return False
+    for field_name in get_set_entity_field_names(
+            subset, EntityFieldType.FORWARD_EDGE):
+        for field in _get_field_as_list(subset, field_name):
+            if field not in _get_field_as_list(entity, field_name):
+                return False
+    return True
+
+
+def _replace_entity(
+        *, entity: Entity, to_replace: Entity,
+        linked_parents: List[_LinkedParents]):
+    """For all parent entities in |to_replace_parents|, replaces |to_replace|
+    with |entity|.
+    """
+    for linked_parent in linked_parents:
+        remove_child_from_entity(
+            entity=linked_parent.parent,
+            child_field_name=linked_parent.field_name,
+            child_to_remove=to_replace)
+        add_child_to_entity(entity=linked_parent.parent,
+                            child_field_name=linked_parent.field_name,
+                            child_to_add=entity)
+
+
+def _get_field_as_list(entity: Entity, child_field_name: str) -> List[Entity]:
+    field = get_field(entity, child_field_name)
+    if isinstance(field, List):
+        return field
+    return [field]
+
+
+def _populate_multiparent_map(
+        entity: Entity, entity_cls: Type,
+        multiparent_map: Dict[str, List[_EntityWithParents]]):
+    """Looks through all children in the provided |entity|, and if they are of
+    type |entity_cls|, adds an entry to the provided |multiparent_map|.
+    """
+    for child_field_name in get_set_entity_field_names(
+            entity, EntityFieldType.FORWARD_EDGE):
+        linked_parent = _LinkedParents(entity, child_field_name)
+        for child in _get_field_as_list(entity, child_field_name):
+            _populate_multiparent_map(child, entity_cls, multiparent_map)
+
+            if not isinstance(child, entity_cls):
+                continue
+
+            # All persistence entities are ExternalIdEntities
+            child = cast(ExternalIdEntity, child)
+            external_id = child.external_id
+
+            # We're only matching entities if they have the same
+            # external_id.
+            if not external_id:
+                continue
+
+            if external_id in multiparent_map.keys():
+                entities_with_parents = multiparent_map[external_id]
+                found_entity = False
+
+                # If the child object itself has already been seen, simply add
+                # the |entity| parent to the list of linked parents
+                for entity_with_parents in entities_with_parents:
+                    if id(entity_with_parents.entity) == id(child):
+                        found_entity = True
+                        entity_with_parents.linked_parents.append(linked_parent)
+
+                # If the child object has not been seen, create a new
+                # _EntityWithParents object for this external_id
+                if not found_entity:
+                    entity_with_parents = \
+                        _EntityWithParents(child, [linked_parent])
+                    entities_with_parents.append(entity_with_parents)
+
+            # If the external_id has never been seen before, create a new
+            # entry for it.
+            else:
+                entity_with_parents = _EntityWithParents(
+                    child, [linked_parent])
+                multiparent_map[external_id] = [entity_with_parents]

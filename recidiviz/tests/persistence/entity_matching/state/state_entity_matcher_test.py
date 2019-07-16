@@ -46,6 +46,8 @@ from recidiviz.persistence.entity.state.entities import StatePersonAlias, \
     StateSupervisionPeriod, StateSentenceGroup
 from recidiviz.persistence.entity_matching import entity_matching
 from recidiviz.persistence.entity_matching.state import state_entity_matcher
+from recidiviz.persistence.entity_matching.state.state_entity_matcher import \
+    merge_multiparent_entities
 from recidiviz.tests.utils import fakes
 
 _EXTERNAL_ID = 'EXTERNAL_ID_1'
@@ -157,7 +159,8 @@ class TestStateEntityMatching(TestCase):
 
         # Act
         matched_entities = entity_matching.match(
-            SessionFactory.for_schema_base(StateBase), _STATE_CODE, [person, person_another])
+            SessionFactory.for_schema_base(StateBase), _STATE_CODE,
+            [person, person_another])
 
         # Assert
         self.assertEqual(matched_entities.error_count, 0)
@@ -192,7 +195,8 @@ class TestStateEntityMatching(TestCase):
 
         # Act
         matched_entities = entity_matching.match(
-            SessionFactory.for_schema_base(StateBase), _STATE_CODE, [person, person_dup])
+            SessionFactory.for_schema_base(StateBase), _STATE_CODE,
+            [person, person_dup])
 
         # Assert
         self.assertEqual(matched_entities.error_count, 1)
@@ -1326,7 +1330,8 @@ class TestStateEntityMatching(TestCase):
 
         # Act
         matched_entities = entity_matching.match(
-            SessionFactory.for_schema_base(StateBase), _STATE_CODE, [placeholder_person])
+            SessionFactory.for_schema_base(StateBase),
+            _STATE_CODE, [placeholder_person])
 
         # Assert
         self.assertEqual([expected_person], matched_entities.people)
@@ -1436,3 +1441,104 @@ class TestStateEntityMatching(TestCase):
         # Assert
         self.assertEqual([expected_person], merged_entities.people)
         self.assertEqual(0, merged_entities.error_count)
+
+    def test_mergeMultiParentEntities(self):
+        charge_merged = StateCharge.new_with_defaults(
+            charge_id=_ID,
+            external_id=_EXTERNAL_ID)
+        charge_unmerged = attr.evolve(charge_merged, charge_id=None)
+        charge_duplicate_unmerged = attr.evolve(charge_unmerged)
+        sentence = StateIncarcerationSentence.new_with_defaults(
+            external_id=_EXTERNAL_ID,
+            charges=[charge_unmerged])
+        sentence_2 = StateIncarcerationSentence.new_with_defaults(
+            external_id=_EXTERNAL_ID_2,
+            charges=[charge_duplicate_unmerged])
+        sentence_3 = StateIncarcerationSentence.new_with_defaults(
+            external_id=_EXTERNAL_ID_3,
+            charges=[charge_merged])
+        sentence_group = StateSentenceGroup.new_with_defaults(
+            external_id=_EXTERNAL_ID,
+            incarceration_sentences=[sentence, sentence_2, sentence_3])
+        person = StatePerson.new_with_defaults(
+            sentence_groups=[sentence_group])
+
+        expected_charge = attr.evolve(charge_merged)
+        expected_sentence = attr.evolve(sentence, charges=[expected_charge])
+        expected_sentence_2 = attr.evolve(sentence_2, charges=[expected_charge])
+        expected_sentence_3 = attr.evolve(sentence_3, charges=[expected_charge])
+        expected_sentence_group = attr.evolve(
+            sentence_group,
+            incarceration_sentences=[
+                expected_sentence, expected_sentence_2, expected_sentence_3])
+        expected_person = attr.evolve(
+            person, sentence_groups=[expected_sentence_group])
+
+        merge_multiparent_entities([person])
+        self.assertEqual(expected_person, person)
+        sentence_group = person.sentence_groups[0]
+        found_charge = sentence_group.incarceration_sentences[0].charges[0]
+        found_charge_2 = sentence_group.incarceration_sentences[1].charges[0]
+        found_charge_3 = sentence_group.incarceration_sentences[2].charges[0]
+        self.assertEqual(
+            id(found_charge), id(found_charge_2), id(found_charge_3))
+
+    def test_mergeMultiParentEntities_mergeChargesAndCourtCases(self):
+        court_case_merged = StateCourtCase.new_with_defaults(
+            court_case_id=_ID,
+            external_id=_EXTERNAL_ID)
+        court_case_unmerged = attr.evolve(court_case_merged, court_case_id=None)
+        charge_merged = StateCharge.new_with_defaults(
+            charge_id=_ID,
+            external_id=_EXTERNAL_ID,
+            court_case=court_case_merged)
+        charge_unmerged = attr.evolve(
+            charge_merged, charge_id=None, court_case=court_case_unmerged)
+        charge_2 = StateCharge.new_with_defaults(
+            external_id=_EXTERNAL_ID_2,
+            court_case=court_case_unmerged)
+        sentence = StateIncarcerationSentence.new_with_defaults(
+            external_id=_EXTERNAL_ID,
+            charges=[charge_unmerged])
+        sentence_2 = StateIncarcerationSentence.new_with_defaults(
+            external_id=_EXTERNAL_ID_2,
+            charges=[charge_merged])
+        sentence_3 = StateIncarcerationSentence.new_with_defaults(
+            external_id=_EXTERNAL_ID_3,
+            charges=[charge_2])
+        sentence_group = StateSentenceGroup.new_with_defaults(
+            external_id=_EXTERNAL_ID,
+            incarceration_sentences=[sentence, sentence_2, sentence_3])
+        person = StatePerson.new_with_defaults(
+            sentence_groups=[sentence_group])
+
+        expected_court_case = attr.evolve(court_case_merged)
+        expected_charge = attr.evolve(
+            charge_merged, court_case=expected_court_case)
+        expected_charge_2 = attr.evolve(
+            charge_2, court_case=expected_court_case)
+        expected_sentence = attr.evolve(sentence, charges=[expected_charge])
+        expected_sentence_2 = attr.evolve(sentence_2, charges=[expected_charge])
+        expected_sentence_3 = attr.evolve(
+            sentence_3, charges=[expected_charge_2])
+        expected_sentence_group = attr.evolve(
+            sentence_group, incarceration_sentences=[
+                expected_sentence, expected_sentence_2, expected_sentence_3])
+        expected_person = attr.evolve(
+            person, sentence_groups=[expected_sentence_group])
+
+        merge_multiparent_entities([person])
+        self.assertEqual(expected_person, person)
+        sentence_group = person.sentence_groups[0]
+        found_charge = sentence_group.incarceration_sentences[0].charges[0]
+        found_charge_2 = sentence_group.incarceration_sentences[1].charges[0]
+        self.assertEqual(id(found_charge), id(found_charge_2))
+
+        found_court_case = sentence_group.incarceration_sentences[0] \
+            .charges[0].court_case
+        found_court_case_2 = sentence_group.incarceration_sentences[1] \
+            .charges[0].court_case
+        found_court_case_3 = sentence_group.incarceration_sentences[2] \
+            .charges[0].court_case
+        self.assertEqual(id(found_court_case), id(found_court_case_2),
+                         id(found_court_case_3))
