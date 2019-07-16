@@ -1,15 +1,15 @@
 """Script to generate an alembic migration for adding a new value to an enum
 
 Usage:
-    python -m recidiviz.tools.create_enum_migration --master_table \
-        <master table name> --historical_table <historical table name> \
-        --type <enum type name> --column <column name> --migration_name \
-        <name for migration>
+    python -m recidiviz.tools.create_enum_migration --schema [jails|state] \
+        --master_table <master table name> --historical_table \
+        <historical table name> --type <enum type name> --column <column name> \
+        --migration_name <name for migration>
 
 Example:
-    python -m recidiviz.tools.create_enum_migration --master_table person \
-        --historical_table person_history --type race --column race \
-        --migration_name add_race_lizardperson
+    python -m recidiviz.tools.create_enum_migration --schema jails \
+    --master_table person --historical_table person_history --type race \
+    --column race --migration_name add_race_lizardperson
 """
 
 import argparse
@@ -19,38 +19,45 @@ import os
 _ALEMBIC_REVISION_COMMAND_TEMPLATE = \
     'alembic -c {config_path} revision -m {migration_name}'
 
-_PATH_TO_DATABASE_DIRECTORY = 'recidiviz/persistence/database'
-_PATH_TO_VERSIONS_DIRECTORY = _PATH_TO_DATABASE_DIRECTORY + \
-    '/migrations/versions'
-_PATH_TO_CONFIG_FILE = _PATH_TO_DATABASE_DIRECTORY + '/alembic.ini'
-_PATH_TO_BODY_SECTION_TEMPLATE = _PATH_TO_DATABASE_DIRECTORY + \
-    '/migrations/enum_migration_template.txt'
+_PATH_TO_MIGRATIONS_DIRECTORY = 'recidiviz/persistence/database/migrations'
+_PATH_TO_BODY_SECTION_TEMPLATE = _PATH_TO_MIGRATIONS_DIRECTORY + \
+    '/enum_migration_template.txt'
 
 _HEADER_SECTION_FINAL_LINE_START = 'depends_on'
 
 
-def _create_new_migration_and_return_filename(migration_name):
+def _path_to_versions_directory(schema: str):
+    return os.path.join(_PATH_TO_MIGRATIONS_DIRECTORY, schema, 'versions')
+
+
+def _path_to_config_file(schema: str):
+    return os.path.join(_PATH_TO_MIGRATIONS_DIRECTORY, f'{schema}_alembic.ini')
+
+
+def _create_new_migration_and_return_filename(schema: str, migration_name: str):
     """Calls alembic script to generate new empty migration with
     |migration_name| and returns its filename"""
-    initial_filenames = _get_all_filenames_in_versions_directory()
+    initial_filenames = _get_all_filenames_in_versions_directory(schema)
 
     command = _ALEMBIC_REVISION_COMMAND_TEMPLATE.format(
-        config_path=_PATH_TO_CONFIG_FILE, migration_name=migration_name)
+        config_path=_path_to_config_file(schema), migration_name=migration_name)
     exit_code = os.system(command)
     if exit_code != 0:
         raise RuntimeError("Call to generate alembic revision failed, any "
                            "error messages printed in preceding output")
 
-    new_filenames = _get_all_filenames_in_versions_directory()
+    new_filenames = _get_all_filenames_in_versions_directory(schema)
 
     # Versions directory should now have 1 new file
     return new_filenames.difference(initial_filenames).pop()
 
 
-def _get_all_filenames_in_versions_directory():
+def _get_all_filenames_in_versions_directory(schema: str):
     """Returns set of all filenames currently in versions directory"""
-    return {item for item in os.listdir(_PATH_TO_VERSIONS_DIRECTORY)
-            if os.path.isfile(os.path.join(_PATH_TO_VERSIONS_DIRECTORY, item))}
+    versions_directory = _path_to_versions_directory(schema)
+
+    return {item for item in os.listdir(versions_directory)
+            if os.path.isfile(os.path.join(versions_directory, item))}
 
 
 def _get_migration_header_section(migration_filepath):
@@ -84,6 +91,7 @@ def _get_migration_body_section(master_table_name, historical_table_name,
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument('--schema')
     parser.add_argument('--master_table')
     parser.add_argument('--historical_table')
     parser.add_argument('--type')
@@ -93,9 +101,9 @@ def main():
     args = parser.parse_args()
 
     migration_filename = _create_new_migration_and_return_filename(
-        args.migration_name)
+        args.schema, args.migration_name)
     migration_filepath = os.path.join(
-        _PATH_TO_VERSIONS_DIRECTORY, migration_filename)
+        _path_to_versions_directory(args.schema), migration_filename)
     header_section = _get_migration_header_section(migration_filepath)
     body_section = _get_migration_body_section(
         args.master_table, args.historical_table, args.type, args.column)

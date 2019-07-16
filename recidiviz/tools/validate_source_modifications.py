@@ -37,7 +37,10 @@ from recidiviz.ingest.models import ingest_info, ingest_info_pb2
 from recidiviz.persistence.database.schema.aggregate import \
     schema as aggregate_schema
 from recidiviz.persistence.database.schema.county import schema as county_schema
-from recidiviz.persistence.database.migrations import versions
+from recidiviz.persistence.database.migrations.jails import \
+    versions as jails_versions
+from recidiviz.persistence.database.migrations.state import \
+    versions as state_versions
 from recidiviz.persistence.database.schema.state import schema as state_schema
 
 # Sets of prefixes to check. For each set, if the changes modify a file matching
@@ -61,17 +64,20 @@ MODIFIED_FILE_ASSERTIONS = frozenset((
     # aggregate schema
     frozenset((
         os.path.relpath(aggregate_schema.__file__),  # aggregate schema
-        os.path.relpath(versions.__file__[:-len('__init__.py')])  # versions
+        os.path.relpath(
+            jails_versions.__file__[:-len('__init__.py')])  # versions
     )),
     # county schema
     frozenset((
         os.path.relpath(county_schema.__file__),  # county schema
-        os.path.relpath(versions.__file__[:-len('__init__.py')])  # versions
+        os.path.relpath(
+            jails_versions.__file__[:-len('__init__.py')])  # versions
     )),
     # state schema
     frozenset((
         os.path.relpath(state_schema.__file__),  # state schema
-        os.path.relpath(versions.__file__[:-len('__init__.py')])  # versions
+        os.path.relpath(
+            state_versions.__file__[:-len('__init__.py')])  # versions
     )),
 ))
 
