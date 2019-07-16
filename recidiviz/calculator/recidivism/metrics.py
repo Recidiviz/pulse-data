@@ -180,9 +180,9 @@ class ReincarcerationRecidivismMetric(BuildableAttr):
         if 'release_facility' in metric_key:
             recidivism_metric.release_facility = \
                 metric_key.get('release_facility')
-        if 'stay_length' in metric_key:
+        if 'stay_length_bucket' in metric_key:
             recidivism_metric.stay_length_bucket = metric_key.get(
-                'stay_length')
+                'stay_length_bucket')
         if 'return_type' in metric_key:
             recidivism_metric.return_type = metric_key.get('return_type')
         if 'from_supervision_type' in metric_key:

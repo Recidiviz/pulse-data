@@ -413,12 +413,6 @@ def parse_arguments(argv):
                         help='Include metrics broken down by stay length.',
                         default=False)
 
-    parser.add_argument('--include_return_type',
-                        dest='include_return_type',
-                        type=bool,
-                        help='Include metrics broken down by return type.',
-                        default=False)
-
     parser.add_argument('--methodology',
                         dest='methodology',
                         type=str,
@@ -462,8 +456,7 @@ def dimensions_and_methodologies(known_args) -> \
         'include_race': 'race',
         'include_ethnicity': 'ethnicity',
         'include_release_facility': 'release_facility',
-        'include_stay_length': 'stay_length_bucket',
-        'include_return_type': 'return_type'
+        'include_stay_length': 'stay_length_bucket'
     }
 
     known_args_dict = vars(known_args)
@@ -519,8 +512,8 @@ def run(argv=None):
                                      data_dict=None,
                                      root_schema_class=
                                      schema.StateIncarcerationPeriod,
-                                     root_entity_class=
-                                     entities.StateIncarcerationPeriod,
+                                     root_entity_class=entities.
+                                     StateIncarcerationPeriod,
                                      unifying_id_field='person_id',
                                      build_related_entities=False))
 
