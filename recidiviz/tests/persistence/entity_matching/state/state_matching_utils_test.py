@@ -27,7 +27,7 @@ from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.persistence.entity.state.entities import StatePersonExternalId, \
     StatePerson, StatePersonAlias, StateCharge, StateSentenceGroup, StateFine, \
     StateIncarcerationPeriod, StateIncarcerationIncident, \
-    StateIncarcerationSentence
+    StateIncarcerationSentence, StateCourtCase
 from recidiviz.persistence.entity_matching.state.state_matching_utils import \
     remove_back_edges, add_person_to_entity_graph, is_placeholder, _is_match, \
     EntityTree, generate_child_entity_trees, add_child_to_entity, \
@@ -285,6 +285,16 @@ class TestStateMatchingUtils(TestCase):
                             child_field_name='fines',
                             child_to_add=fine)
         self.assertEqual(expected_sentence_group, sentence_group)
+
+    def test_addChildToEntity_singular(self):
+        charge = StateCharge.new_with_defaults(charge_id=_ID)
+        court_case = StateCourtCase.new_with_defaults(court_case_id=_ID)
+
+        expected_charge = attr.evolve(charge, court_case=court_case)
+        add_child_to_entity(entity=charge,
+                            child_field_name='court_case',
+                            child_to_add=court_case)
+        self.assertEqual(expected_charge, charge)
 
     def test_removeChildFromEntity(self):
         fine = StateFine.new_with_defaults(fine_id=_ID)
