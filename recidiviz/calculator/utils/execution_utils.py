@@ -58,6 +58,8 @@ def get_job_id(pipeline_options: Dict[str, str]) -> str:
                              f"{pipeline_options}")
 
         try:
+            logging.info("Looking for job_id on Dataflow.")
+
             service_name = 'dataflow'
             dataflow_api_version = 'v1b3'
             credentials = GoogleCredentials.get_application_default()

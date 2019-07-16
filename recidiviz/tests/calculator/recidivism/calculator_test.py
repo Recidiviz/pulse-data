@@ -29,11 +29,13 @@ from recidiviz.calculator.recidivism import calculator
 from recidiviz.calculator.recidivism.release_event import ReleaseEvent, \
     RecidivismReleaseEvent, NonRecidivismReleaseEvent, ReincarcerationReturnType
 from recidiviz.calculator.recidivism.metrics import RecidivismMethodologyType
+from recidiviz.calculator.recidivism.release_event import \
+    ReincarcerationReturnType, ReincarcerationReturnFromSupervisionType
 from recidiviz.persistence.entity.state.entities import StatePerson, Gender,\
     StatePersonRace, Race, StatePersonEthnicity, Ethnicity
 
 
-def test_reincarceration_dates():
+def test_reincarcerations():
     release_date = date.today()
     original_admission_date = release_date - relativedelta(years=4)
     reincarceration_date = release_date + relativedelta(years=3)
@@ -41,21 +43,27 @@ def test_reincarceration_dates():
 
     first_event = RecidivismReleaseEvent(
         original_admission_date, release_date, 'Sing Sing',
-        reincarceration_date, 'Sing Sing')
+        reincarceration_date, 'Sing Sing',
+        ReincarcerationReturnType.NEW_ADMISSION)
     second_event = NonRecidivismReleaseEvent(
         reincarceration_date, second_release_date, 'Sing Sing')
     release_events = {2018: [first_event], 2022: [second_event]}
 
-    release_dates = calculator.reincarceration_dates(release_events)
-    assert release_dates == [reincarceration_date]
+    expected_reincarcerations = {reincarceration_date:
+                                 {'return_type': first_event.return_type,
+                                  'from_supervision_type':
+                                  first_event.from_supervision_type}}
+
+    reincarcerations = calculator.reincarcerations(release_events)
+    assert reincarcerations == expected_reincarcerations
 
 
-def test_reincarceration_dates_empty():
-    release_dates = calculator.reincarceration_dates({})
-    assert release_dates == []
+def test_reincarcerations_empty():
+    reincarcerations = calculator.reincarcerations({})
+    assert reincarcerations == {}
 
 
-def test_count_releases_in_window():
+def test_releases_in_window():
     # Too early
     release_2012 = date(2012, 4, 30)
     # Just right
@@ -64,48 +72,116 @@ def test_count_releases_in_window():
     release_2021 = date(2021, 5, 13)
     # Too late
     release_2022 = date(2022, 5, 13)
-    all_reincarceration_dates = [release_2012, release_2016, release_2020,
-                                 release_2021, release_2022]
+
+    reincarceration = {'return_type': ReincarcerationReturnType.NEW_ADMISSION,
+                       'from_supervision_type': None}
+
+    all_reincarcerations = {release_2012: reincarceration,
+                            release_2016: reincarceration,
+                            release_2020: reincarceration,
+                            release_2021: reincarceration,
+                            release_2022: reincarceration}
 
     start_date = date(2016, 5, 13)
 
-    reincarcerations = calculator.count_reincarcerations_in_window(
-        start_date, 6, all_reincarceration_dates)
-    assert reincarcerations == 3
+    reincarcerations = calculator.reincarcerations_in_window(
+        start_date, 6, all_reincarcerations)
+    assert len(reincarcerations) == 3
 
 
-def test_count_releases_in_window_all_early():
+def test_releases_in_window_all_early():
     # Too early
     release_2012 = date(2012, 4, 30)
     release_2016 = date(2016, 5, 13)
     release_2020 = date(2020, 11, 20)
     release_2021 = date(2021, 5, 13)
     release_2022 = date(2022, 5, 13)
-    all_reincarceration_dates = [release_2012, release_2016, release_2020,
-                                 release_2021, release_2022]
+
+    reincarceration = {'return_type': ReincarcerationReturnType.NEW_ADMISSION,
+                       'from_supervision_type': None}
+
+    all_reincarcerations = {release_2012: reincarceration,
+                            release_2016: reincarceration,
+                            release_2020: reincarceration,
+                            release_2021: reincarceration,
+                            release_2022: reincarceration}
 
     start_date = date(2026, 5, 13)
 
-    reincarcerations = calculator.count_reincarcerations_in_window(
-        start_date, 6, all_reincarceration_dates)
-    assert reincarcerations == 0
+    reincarcerations = calculator.reincarcerations_in_window(
+        start_date, 6, all_reincarcerations)
+
+    assert reincarcerations == []
 
 
-def test_count_releases_in_window_all_late():
+def test_releases_in_window_all_late():
     # Too late
     release_2012 = date(2012, 4, 30)
     release_2016 = date(2016, 5, 13)
     release_2020 = date(2020, 11, 20)
     release_2021 = date(2021, 5, 13)
     release_2022 = date(2022, 5, 13)
-    all_reincarceration_dates = [release_2012, release_2016, release_2020,
-                                 release_2021, release_2022]
+
+    reincarceration = {'return_type': ReincarcerationReturnType.NEW_ADMISSION,
+                       'from_supervision_type': None}
+
+    all_reincarcerations = {release_2012: reincarceration,
+                            release_2016: reincarceration,
+                            release_2020: reincarceration,
+                            release_2021: reincarceration,
+                            release_2022: reincarceration}
 
     start_date = date(2006, 5, 13)
 
-    reincarcerations = calculator.count_reincarcerations_in_window(
-        start_date, 5, all_reincarceration_dates)
-    assert reincarcerations == 0
+    reincarcerations = calculator.reincarcerations_in_window(
+        start_date, 5, all_reincarcerations)
+
+    assert reincarcerations == []
+
+
+def test_releases_in_window_with_revocation_returns():
+    # Too early
+    release_2012 = date(2012, 4, 30)
+    # Just right
+    release_2016 = date(2016, 5, 13)
+    release_2020 = date(2020, 11, 20)
+    release_2021 = date(2021, 5, 13)
+    # Too late
+    release_2022 = date(2022, 5, 13)
+
+    revocation_reincarceration = {
+        'return_type':
+            ReincarcerationReturnType.REVOCATION,
+        'from_supervision_type':
+            ReincarcerationReturnFromSupervisionType.PAROLE}
+
+    new_admission_reincarceration = {
+        'return_type': ReincarcerationReturnType.NEW_ADMISSION,
+        'from_supervision_type': None}
+
+    all_reincarcerations = {release_2012: new_admission_reincarceration,
+                            release_2016: revocation_reincarceration,
+                            release_2020: revocation_reincarceration,
+                            release_2021: new_admission_reincarceration,
+                            release_2022: new_admission_reincarceration}
+
+    start_date = date(2016, 5, 13)
+
+    reincarcerations = calculator.reincarcerations_in_window(
+        start_date, 6, all_reincarcerations)
+    assert len(reincarcerations) == 3
+
+    assert reincarcerations[0].get('return_type') == \
+        ReincarcerationReturnType.REVOCATION
+    assert reincarcerations[0].get('from_supervision_type') == \
+        ReincarcerationReturnFromSupervisionType.PAROLE
+    assert reincarcerations[1].get('return_type') == \
+        ReincarcerationReturnType.REVOCATION
+    assert reincarcerations[1].get('from_supervision_type') == \
+        ReincarcerationReturnFromSupervisionType.PAROLE
+    assert reincarcerations[2].get('return_type') == \
+        ReincarcerationReturnType.NEW_ADMISSION
+    assert reincarcerations[2].get('from_supervision_type') is None
 
 
 def test_earliest_recidivated_follow_up_period_later_month_in_year():
@@ -620,15 +696,147 @@ def test_for_characteristics_one_characteristic():
     assert combinations == [{}, {'gender': 'male'}]
 
 
+def test_augmented_combo_list_methodologies():
+    base_combo = {'age': '<25', 'race': 'black', 'gender': 'female'}
+
+    person_combo_list = calculator.augmented_combo_list(
+        base_combo, RecidivismMethodologyType.PERSON, 8)
+
+    for combo in person_combo_list:
+        assert combo['methodology'] == RecidivismMethodologyType.PERSON
+        assert combo['follow_up_period'] == 8
+
+    event_combo_list = calculator.augmented_combo_list(
+        base_combo, RecidivismMethodologyType.EVENT, 8)
+
+    for combo in event_combo_list:
+        assert combo['methodology'] == RecidivismMethodologyType.EVENT
+        assert combo['follow_up_period'] == 8
+
+def test_augmented_combo_list_return_info():
+
+    """Tests that all return_type and from_supervision_type values are being
+    covered."""
+    base_combo = {'age': '<25', 'race': 'black', 'gender': 'female'}
+
+    combo_list = calculator.augmented_combo_list(
+        base_combo, RecidivismMethodologyType.PERSON, 8)
+
+    parameter_list = {}
+
+    for return_type in ReincarcerationReturnType:
+        parameter_list[return_type] = False
+
+    for from_supervision_type in ReincarcerationReturnFromSupervisionType:
+        parameter_list[from_supervision_type] = False
+
+    for combo in combo_list:
+        assert combo['methodology'] == RecidivismMethodologyType.PERSON
+        assert combo['follow_up_period'] == 8
+
+        return_type = combo.get('return_type')
+
+        if return_type:
+            parameter_list[return_type] = True
+
+        from_supervision_type = combo.get('from_supervision_type')
+
+        if from_supervision_type:
+            parameter_list[from_supervision_type] = True
+
+    for value in parameter_list.values():
+        assert value
+
+
+def test_recidivism_value_for_metric():
+    combo = {'age': '<25', 'race': 'black', 'gender': 'female'}
+
+    value = calculator.recidivism_value_for_metric(combo, None, None)
+
+    assert value == 1
+
+
+def test_recidivism_value_for_metric_new_admission():
+    combo = {'age': '<25', 'race': 'black', 'gender': 'female',
+             'return_type': ReincarcerationReturnType.NEW_ADMISSION}
+
+    value = calculator.recidivism_value_for_metric(
+        combo, ReincarcerationReturnType.NEW_ADMISSION, None)
+
+    assert value == 1
+
+
+def test_recidivism_value_for_metric_not_new_admission():
+    combo = {'age': '<25', 'race': 'black', 'gender': 'female',
+             'return_type': ReincarcerationReturnType.NEW_ADMISSION}
+
+    value = calculator.recidivism_value_for_metric(
+        combo, ReincarcerationReturnType.REVOCATION, None)
+
+    assert value == 0
+
+
+def test_recidivism_value_for_metric_parole_revocation():
+    combo = {'age': '<25', 'race': 'black', 'gender': 'female',
+             'return_type': ReincarcerationReturnType.REVOCATION,
+             'from_supervision_type':
+                 ReincarcerationReturnFromSupervisionType.PAROLE}
+
+    value = calculator.recidivism_value_for_metric(
+        combo, ReincarcerationReturnType.REVOCATION,
+        ReincarcerationReturnFromSupervisionType.PAROLE)
+
+    assert value == 1
+
+
+def test_recidivism_value_for_metric_probation_revocation():
+    combo = {'age': '<25', 'race': 'black', 'gender': 'female',
+             'return_type': ReincarcerationReturnType.REVOCATION,
+             'from_supervision_type':
+                 ReincarcerationReturnFromSupervisionType.PROBATION}
+
+    value = calculator.recidivism_value_for_metric(
+        combo, ReincarcerationReturnType.REVOCATION,
+        ReincarcerationReturnFromSupervisionType.PROBATION)
+
+    assert value == 1
+
+
+def test_recidivism_value_for_metric_not_revocation():
+    combo = {'age': '<25', 'race': 'black', 'gender': 'female',
+             'return_type': ReincarcerationReturnType.REVOCATION,
+             'from_supervision_type':
+                 ReincarcerationReturnFromSupervisionType.PROBATION}
+
+    value = calculator.recidivism_value_for_metric(
+        combo, ReincarcerationReturnType.NEW_ADMISSION,
+        ReincarcerationReturnFromSupervisionType.PROBATION)
+
+    assert value == 0
+
+
+def test_recidivism_value_for_metric_not_supervision_type():
+    combo = {'age': '<25', 'race': 'black', 'gender': 'female',
+             'return_type': ReincarcerationReturnType.REVOCATION,
+             'from_supervision_type':
+                 ReincarcerationReturnFromSupervisionType.PROBATION}
+
+    value = calculator.recidivism_value_for_metric(
+        combo, ReincarcerationReturnType.REVOCATION,
+        ReincarcerationReturnFromSupervisionType.PAROLE)
+
+    assert value == 0
+
+
 def test_augment_combination():
     combo = {'age': '<25', 'race': 'black', 'gender': 'female'}
-    augmented = calculator.augment_combination(combo,
-                                               RecidivismMethodologyType.EVENT,
-                                               8)
+
+    parameters = {'A': 'a', 'B': 9}
+
+    augmented = calculator.augment_combination(combo, parameters)
 
     assert augmented == {'age': '<25',
-                         'follow_up_period': 8,
-                         'methodology': RecidivismMethodologyType.EVENT,
+                         'A': 'a', 'B': 9,
                          'race': 'black',
                          'gender': 'female'}
     assert augmented != combo
@@ -646,7 +854,14 @@ class TestMapRecidivismCombinations:
 
         race = StatePersonRace.new_with_defaults(state_code='CA',
                                                  race=Race.WHITE)
+
         person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
 
         release_events_by_cohort = {
             2008: [RecidivismReleaseEvent(
@@ -658,12 +873,15 @@ class TestMapRecidivismCombinations:
         recidivism_combinations = calculator.map_recidivism_combinations(
             person, release_events_by_cohort)
 
-        # 64 combinations of demographics, return type, facility, & stay length
-        # * 2 methodologies * 10 periods = 1280 metrics
-        assert len(recidivism_combinations) == 1280
+        # 64 combinations of demographics, facility, & stay length
+        # * 10 combinations of methodology/return type/supervision type
+        # * 10 periods = 6400 metrics
+        assert len(recidivism_combinations) == 6400
 
         for combination, value in recidivism_combinations:
-            if combination['follow_up_period'] <= 5:
+            if combination['follow_up_period'] <= 5 or \
+                    combination.get('return_type') == \
+                    ReincarcerationReturnType.REVOCATION:
                 assert value == 0
             else:
                 assert value == 1
@@ -678,6 +896,12 @@ class TestMapRecidivismCombinations:
         race = StatePersonRace.new_with_defaults(state_code='CA',
                                                  race=Race.BLACK)
         person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
 
         release_events_by_cohort = {
             1908: [RecidivismReleaseEvent(
@@ -696,17 +920,21 @@ class TestMapRecidivismCombinations:
         # For the first event:
         #   For the first 5 periods:
         #       64 combinations of characteristics
-        #       * 2 methodologies * 5 periods = 640 metrics
+        #       * 10 combinations of methodology/return type/supervision type
+        #       * 5 periods = 3200 metrics
         #   For the second 5 periods, there is an additional event-based count:
-        #       64 combinations of demographics, facility, and stay length
-        #       * (2 methodologies + 1 more instance) * 5 periods = 960 metrics
+        #       64 combinations of characteristics
+        #       * (10 combinations of methodology/return type/supervision type
+        #           + 5 more instances) * 5 periods = 4800 metrics
         #
         # For the second event:
-        #   64 combinations * 2 methodologies * 10 periods = 1280 metrics
-        assert len(recidivism_combinations) == (640 + 960 + 1280)
+        #   64 combinations * 10 combos * 10 periods = 6400 metrics
+        assert len(recidivism_combinations) == (3200 + 4800 + 6400)
 
         for combination, value in recidivism_combinations:
-            if combination['follow_up_period'] < 2:
+            if combination['follow_up_period'] < 2 or \
+                    combination.get('return_type') == \
+                    ReincarcerationReturnType.REVOCATION:
                 assert value == 0
             else:
                 assert value == 1
@@ -722,6 +950,12 @@ class TestMapRecidivismCombinations:
                                                  race=Race.BLACK)
         person.races = [race]
 
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
         release_events_by_cohort = {
             2008: [NonRecidivismReleaseEvent(date(2005, 7, 19),
                                              date(2008, 9, 19), 'Hudson')]
@@ -730,9 +964,11 @@ class TestMapRecidivismCombinations:
         recidivism_combinations = calculator.map_recidivism_combinations(
             person, release_events_by_cohort)
 
-        # 32 combinations of demographics, facility, and stay length
-        # * 2 methodologies * 10 periods = 640 metrics
-        assert len(recidivism_combinations) == 640
+        # 64 combinations of demographics, facility, & stay length
+        # * 10 combinations of methodology/return type/supervision type
+        # * 10 periods = 6400 metrics
+
+        assert len(recidivism_combinations) == 6400
         assert all(value == 0 for _combination, value
                    in recidivism_combinations)
 
@@ -747,6 +983,12 @@ class TestMapRecidivismCombinations:
                                                  race=Race.BLACK)
         person.races = [race]
 
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
         release_events_by_cohort = {
             2008: [RecidivismReleaseEvent(
                 date(2005, 7, 19), date(2008, 9, 19), 'Hudson',
@@ -757,9 +999,10 @@ class TestMapRecidivismCombinations:
         recidivism_combinations = calculator.map_recidivism_combinations(
             person, release_events_by_cohort)
 
-        # 64 combinations of demographics, facility, and stay length
-        # * 2 methodologies * 10 periods = 1280 metrics
-        assert len(recidivism_combinations) == 1280
+        # 64 combinations of demographics, facility, & stay length
+        # * 10 combinations of methodology/return type/supervision type
+        # * 10 periods = 6400 metrics
+        assert len(recidivism_combinations) == 6400
         assert all(value == 0 for _combination, value
                    in recidivism_combinations)
 
@@ -778,6 +1021,12 @@ class TestMapRecidivismCombinations:
 
         person.races = [race_white, race_black]
 
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
         release_events_by_cohort = {
             2008: [RecidivismReleaseEvent(
                 date(2005, 7, 19), date(2008, 9, 19), 'Hudson',
@@ -788,12 +1037,15 @@ class TestMapRecidivismCombinations:
         recidivism_combinations = calculator.map_recidivism_combinations(
             person, release_events_by_cohort)
 
-        # 96 combinations of demographics, return type, facility, & stay length
-        # * 2 methodologies * 10 periods = 1920 metrics
-        assert len(recidivism_combinations) == 1920
+        # 96 combinations of demographics, facility, & stay length
+        # * 10 combinations of methodology/return type/supervision type
+        # * 10 periods = 9600 metrics
+        assert len(recidivism_combinations) == 9600
 
         for combination, value in recidivism_combinations:
-            if combination['follow_up_period'] <= 5:
+            if combination['follow_up_period'] <= 5 or \
+                    combination.get('return_type') == \
+                    ReincarcerationReturnType.REVOCATION:
                 assert value == 0
             else:
                 assert value == 1
@@ -804,6 +1056,10 @@ class TestMapRecidivismCombinations:
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='CA',
+                                                 race=Race.BLACK)
+        person.races = [race]
 
         ethnicity_hispanic = StatePersonEthnicity.new_with_defaults(
             state_code='CA',
@@ -825,53 +1081,15 @@ class TestMapRecidivismCombinations:
         recidivism_combinations = calculator.map_recidivism_combinations(
             person, release_events_by_cohort)
 
-        # 96 combinations of demographics, return type, facility, & stay length
-        # 2 methodologies * 10 periods = 1920 metrics
-        assert len(recidivism_combinations) == 1920
+        # 96 combinations of demographics, facility, & stay length
+        # * 10 combinations of methodology/return type/supervision type
+        # * 10 periods = 6400 metrics
+        assert len(recidivism_combinations) == 9600
 
         for combination, value in recidivism_combinations:
-            if combination['follow_up_period'] <= 5:
-                assert value == 0
-            else:
-                assert value == 1
-
-    def test_map_recidivism_combinations_multiple_races_one_ethnicity(self):
-        """Tests the map_recidivism_combinations function where there is
-        recidivism, and the person has multiple races and an ethnicity."""
-        person = StatePerson.new_with_defaults(person_id=12345,
-                                               birthdate=date(1984, 8, 31),
-                                               gender=Gender.FEMALE)
-
-        race_white = StatePersonRace.new_with_defaults(state_code='CA',
-                                                       race=Race.WHITE)
-
-        race_black = StatePersonRace.new_with_defaults(state_code='MT',
-                                                       race=Race.BLACK)
-
-        person.races = [race_white, race_black]
-
-        ethnicity_hispanic = StatePersonEthnicity.new_with_defaults(
-            state_code='CA',
-            ethnicity=Ethnicity.HISPANIC)
-
-        person.ethnicities = [ethnicity_hispanic]
-
-        release_events_by_cohort = {
-            2008: [RecidivismReleaseEvent(
-                date(2005, 7, 19), date(2008, 9, 19), 'Hudson',
-                date(2014, 5, 12), 'Upstate',
-                ReincarcerationReturnType.NEW_ADMISSION)]
-        }
-
-        recidivism_combinations = calculator.map_recidivism_combinations(
-            person, release_events_by_cohort)
-
-        # 192 combinations of demographics, return type, facility, & stay length
-        # * 2 methodologies * 10 periods = 3840
-        assert len(recidivism_combinations) == 3840
-
-        for combination, value in recidivism_combinations:
-            if combination['follow_up_period'] <= 5:
+            if combination['follow_up_period'] <= 5 or \
+                    combination.get('return_type') == \
+                    ReincarcerationReturnType.REVOCATION:
                 assert value == 0
             else:
                 assert value == 1
@@ -912,12 +1130,105 @@ class TestMapRecidivismCombinations:
         recidivism_combinations = calculator.map_recidivism_combinations(
             person, release_events_by_cohort)
 
-        # 288 combinations of demographics, return type, facility, & stay length
-        # * 2 methodologies * 10 periods = 5760
-        assert len(recidivism_combinations) == 5760
+        # 144 combinations of demographics, facility, & stay length
+        # * 10 combinations of methodology/return type/supervision type
+        # * 10 periods = 14400 metrics
+        assert len(recidivism_combinations) == 14400
 
         for combination, value in recidivism_combinations:
-            if combination['follow_up_period'] <= 5:
+            if combination['follow_up_period'] <= 5 or \
+                    combination.get('return_type') == \
+                    ReincarcerationReturnType.REVOCATION:
+                assert value == 0
+            else:
+                assert value == 1
+
+    def test_map_recidivism_combinations_revocation_parole(self):
+        """Tests the map_recidivism_combinations function where there is
+        recidivism, and they returned from a revocation of parole."""
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='CA',
+                                                 race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        release_events_by_cohort = {
+            2008: [RecidivismReleaseEvent(
+                date(2005, 7, 19), date(2008, 9, 19), 'Hudson',
+                date(2014, 5, 12), 'Upstate',
+                ReincarcerationReturnType.REVOCATION,
+                from_supervision_type=
+                ReincarcerationReturnFromSupervisionType.PAROLE)]
+        }
+        recidivism_combinations = calculator.map_recidivism_combinations(
+
+            person, release_events_by_cohort)
+
+        # 64 combinations of demographics, facility, & stay length
+        # * 10 combinations of methodology/return type/supervision type
+        # * 10 periods = 6400 metrics
+        assert len(recidivism_combinations) == 6400
+
+        for combination, value in recidivism_combinations:
+            if combination['follow_up_period'] <= 5 or \
+                    combination.get('return_type') == \
+                    ReincarcerationReturnType.NEW_ADMISSION or \
+                    combination.get('from_supervision_type') == \
+                    ReincarcerationReturnFromSupervisionType.PROBATION:
+                assert value == 0
+            else:
+                assert value == 1
+
+    def test_map_recidivism_combinations_revocation_probation(self):
+        """Tests the map_recidivism_combinations function where there is
+        recidivism, and they returned from a revocation of parole."""
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='CA',
+                                                 race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        release_events_by_cohort = {
+            2008: [RecidivismReleaseEvent(
+                date(2005, 7, 19), date(2008, 9, 19), 'Hudson',
+                date(2014, 5, 12), 'Upstate',
+                ReincarcerationReturnType.REVOCATION,
+                from_supervision_type=
+                ReincarcerationReturnFromSupervisionType.PROBATION)]
+        }
+
+        recidivism_combinations = calculator.map_recidivism_combinations(
+            person, release_events_by_cohort)
+
+        # 64 combinations of demographics, facility, & stay length
+        # * 10 combinations of methodology/return type/supervision type
+        # * 10 periods = 6400 metrics
+        assert len(recidivism_combinations) == 6400
+
+        for combination, value in recidivism_combinations:
+            if combination['follow_up_period'] <= 5 or \
+                    combination.get('return_type') == \
+                    ReincarcerationReturnType.NEW_ADMISSION or \
+                    combination.get('from_supervision_type') == \
+                    ReincarcerationReturnFromSupervisionType.PAROLE:
                 assert value == 0
             else:
                 assert value == 1
