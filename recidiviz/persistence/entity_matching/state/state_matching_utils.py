@@ -319,7 +319,7 @@ def add_child_to_entity(
     if isinstance(child_field, list):
         if child_to_add not in child_field:
             child_field.append(child_to_add)
-    if isinstance(child_field, Entity):
+    else:
         if child_field and child_field != child_to_add:
             raise EntityMatchingError(
                 f"Attempting to add child {child_to_add} to entity {entity}, "
