@@ -33,9 +33,9 @@ import pytest
 from enum import Enum
 
 from recidiviz.calculator.recidivism import pipeline
-from recidiviz.calculator.recidivism import calculator, \
-    ReincarcerationRecidivismMetric
-from recidiviz.calculator.recidivism.metrics import RecidivismMethodologyType
+from recidiviz.calculator.recidivism import calculator
+from recidiviz.calculator.recidivism.metrics import \
+    ReincarcerationRecidivismMetric, RecidivismMethodologyType
 from recidiviz.calculator.recidivism.release_event import \
     ReincarcerationReturnType, ReleaseEvent, RecidivismReleaseEvent, \
     NonRecidivismReleaseEvent
@@ -581,7 +581,8 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
     def testClassifyReleaseEvents_NoIncarcerationPeriods(self):
         """Tests the ClassifyReleaseEvents DoFn in the pipeline when there
-        are no incarceration periods."""
+        are no incarceration periods. The person in this case should be
+        excluded from the calculations."""
 
         fake_person_id = 12345
 
@@ -593,7 +594,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         person_incarceration_periods = {'person': [fake_person],
                                         'incarceration_periods': []}
 
-        correct_output = [(fake_person, {})]
+        correct_output = []
 
         test_pipeline = TestPipeline()
 

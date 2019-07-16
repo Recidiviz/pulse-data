@@ -61,14 +61,13 @@ from apache_beam.options.pipeline_options import PipelineOptions
 from apache_beam.options.pipeline_options import SetupOptions
 from apache_beam.typehints import with_input_types, with_output_types
 
-from recidiviz.calculator.recidivism import identifier, calculator, \
-    ReincarcerationRecidivismMetric
+from recidiviz.calculator.recidivism import identifier, calculator
 from recidiviz.calculator.recidivism.release_event import ReleaseEvent
-from recidiviz.calculator.recidivism.metrics import RecidivismMethodologyType
+from recidiviz.calculator.recidivism.metrics import \
+    ReincarcerationRecidivismMetric, RecidivismMethodologyType
 from recidiviz.calculator.utils.execution_utils import get_job_id
 from recidiviz.calculator.utils.extractor_utils import BuildRootEntity
-from recidiviz.persistence.entity.state.entities import StatePerson, \
-    StateIncarcerationPeriod
+from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.utils import environment
 
@@ -91,7 +90,8 @@ def clear_job_id():
 
 
 @with_input_types(beam.typehints.Tuple[int, Dict[str, Any]])
-@with_output_types(beam.typehints.Tuple[StatePerson, List[ReleaseEvent]])
+@with_output_types(beam.typehints.Tuple[entities.StatePerson,
+                                        List[ReleaseEvent]])
 class GetReleaseEvents(beam.PTransform):
     """Transforms a StatePerson and their IncarcerationPeriods into
     ReleaseEvents."""
@@ -104,7 +104,8 @@ class GetReleaseEvents(beam.PTransform):
                 | beam.ParDo(ClassifyReleaseEvents()))
 
 
-@with_input_types(beam.typehints.Tuple[StatePerson, List[ReleaseEvent]])
+@with_input_types(beam.typehints.Tuple[entities.StatePerson,
+                                       List[ReleaseEvent]])
 @with_output_types(ReincarcerationRecidivismMetric)
 class GetRecidivismMetrics(beam.PTransform):
     """Transforms a StatePerson and ReleaseEvents into RecidivismMetrics."""
@@ -137,7 +138,7 @@ class GetRecidivismMetrics(beam.PTransform):
 
 
 @with_input_types(beam.typehints.Tuple[int, Dict[str, Any]])
-@with_output_types(beam.typehints.Tuple[StatePerson,
+@with_output_types(beam.typehints.Tuple[entities.StatePerson,
                                         Dict[int, List[ReleaseEvent]]])
 class ClassifyReleaseEvents(beam.DoFn):
     """Classifies releases as either recidivism or non-recidivism events."""
@@ -172,13 +173,18 @@ class ClassifyReleaseEvents(beam.DoFn):
             identifier.find_release_events_by_cohort_year(
                 incarceration_periods)
 
-        yield (person, release_events_by_cohort_year)
+        if not release_events_by_cohort_year:
+            logging.info("No valid release events identified for person with"
+                         "id: %d. Excluding them from the "
+                         "calculations.", person.person_id)
+        else:
+            yield (person, release_events_by_cohort_year)
 
     def to_runner_api_parameter(self, unused_context):
         pass
 
 
-@with_input_types(beam.typehints.Tuple[StatePerson,
+@with_input_types(beam.typehints.Tuple[entities.StatePerson,
                                        Dict[int, List[ReleaseEvent]]])
 @with_output_types(beam.typehints.Tuple[Dict[str, Any], Any])
 class CalculateRecidivismMetricCombinations(beam.DoFn):
@@ -480,6 +486,14 @@ def dimensions_and_methodologies(known_args) -> \
 def run(argv=None):
     """Runs the recidivism calculation pipeline."""
 
+    # Workaround to load SQLAlchemy objects at start of pipeline. This is
+    # necessary because the BuildRootEntity function tries to access attributes
+    # of relationship properties on the SQLAlchemy room_schema_class before they
+    # have been loaded. However, if *any* SQLAlchemy objects have been
+    # instantiated, then the relationship properties are loaded and their
+    # attributes can be successfully accessed.
+    _ = schema.StatePerson()
+
     # Parse command-line arguments
     known_args, pipeline_args = parse_arguments(argv)
 
@@ -493,9 +507,9 @@ def run(argv=None):
                    BuildRootEntity(dataset=known_args.dataset,
                                    data_dict=None,
                                    root_schema_class=schema.StatePerson,
-                                   root_entity_class=StatePerson,
+                                   root_entity_class=entities.StatePerson,
                                    unifying_id_field='person_id',
-                                   build_related_entities=False))
+                                   build_related_entities=True))
 
         # Get StateIncarcerationPeriods
         incarceration_periods = (p
@@ -505,7 +519,8 @@ def run(argv=None):
                                      data_dict=None,
                                      root_schema_class=
                                      schema.StateIncarcerationPeriod,
-                                     root_entity_class=StateIncarcerationPeriod,
+                                     root_entity_class=
+                                     entities.StateIncarcerationPeriod,
                                      unifying_id_field='person_id',
                                      build_related_entities=False))
 
