@@ -820,12 +820,12 @@ class TestCalculateRecidivismMetricCombinations(unittest.TestCase):
         periods_with_double = periods - periods_with_single
 
         expected_combinations_count_2010 = \
-            ((num_combinations * 2 * periods_with_single) +
-             (num_combinations * 3 * periods_with_double))
+            ((num_combinations * 10 * periods_with_single) +
+             (num_combinations * 15 * periods_with_double))
 
         periods = relativedelta(date.today(), date(2014, 4, 14)).years + 1
 
-        expected_combinations_count_2014 = num_combinations * 2 * periods
+        expected_combinations_count_2014 = num_combinations * 10 * periods
 
         expected_combination_counts = {2010: expected_combinations_count_2010,
                                        2014: expected_combinations_count_2014}
@@ -894,7 +894,7 @@ class TestProduceReincarcerationRecidivismMetric(unittest.TestCase):
         """Tests the ProduceReincarcerationRecidivismMetric DoFn in the
          pipeline."""
 
-        metric_key = {'stay_length': '36-48', 'gender': Gender.MALE,
+        metric_key = {'stay_length_bucket': '36-48', 'gender': Gender.MALE,
                       'release_cohort': 2014,
                       'methodology': RecidivismMethodologyType.PERSON,
                       'follow_up_period': 1}
@@ -926,7 +926,7 @@ class TestProduceReincarcerationRecidivismMetric(unittest.TestCase):
         """Tests the ProduceRecivismMetric DoFn in the pipeline when the
         recidivism rate for the metric is 0.0."""
 
-        metric_key = {'stay_length': '36-48', 'gender': Gender.MALE,
+        metric_key = {'stay_length_bucket': '36-48', 'gender': Gender.MALE,
                       'release_cohort': 2014,
                       'methodology': RecidivismMethodologyType.PERSON,
                       'follow_up_period': 1}
@@ -962,7 +962,7 @@ class TestProduceReincarcerationRecidivismMetric(unittest.TestCase):
         anyways."""
 
         with pytest.raises(ValueError) as e:
-            metric_key = {'stay_length': '36-48', 'gender': Gender.MALE,
+            metric_key = {'stay_length_bucket': '36-48', 'gender': Gender.MALE,
                           'release_cohort': 2014,
                           'methodology': RecidivismMethodologyType.PERSON,
                           'follow_up_period': 1}
