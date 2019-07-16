@@ -22,12 +22,11 @@ from sqlalchemy import create_engine
 from alembic import context
 from recidiviz.persistence.database.base_schema import JailsBase
 
-# Import anything from the three schema.py files to ensure the table class
+# Import anything from the two jails schema.py files to ensure the table class
 # declarations are run within the Alembic environment
 from recidiviz.persistence.database.schema.aggregate.schema import \
     CaFacilityAggregate
 from recidiviz.persistence.database.schema.county.schema import Person
-from recidiviz.persistence.database.schema.state.schema import StatePerson
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -37,8 +36,6 @@ config = context.config
 # This line sets up loggers basically.
 fileConfig(config.config_file_name)
 
-# TODO(1831): Update migrations code to allow us to specify a schema
-#  (state vs jails).
 # Metadata from schema
 target_metadata = JailsBase.metadata
 
