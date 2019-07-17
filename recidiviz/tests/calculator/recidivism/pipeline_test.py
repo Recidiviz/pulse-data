@@ -46,11 +46,13 @@ from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationFacilitySecurityLevel
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state.entities import StatePerson, \
-    StateIncarcerationPeriod, Gender, Race, ResidencyStatus, Ethnicity
+    StateIncarcerationPeriod, Gender, Race, ResidencyStatus, Ethnicity, \
+    StateSupervisionViolationResponse
 from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.tests.calculator.calculator_test_utils import \
     normalized_database_base_dict, normalized_database_base_dict_list
 from recidiviz.calculator.utils import extractor_utils
+from recidiviz.tests.persistence.database import database_test_utils
 
 
 class TestRecidivismPipeline(unittest.TestCase):
@@ -151,6 +153,14 @@ class TestRecidivismPipeline(unittest.TestCase):
             normalized_database_base_dict(subsequent_reincarceration)
         ]
 
+        supervision_violation_response = \
+            database_test_utils.generate_test_supervision_violation_response(
+                fake_person_id)
+
+        supervision_violation_response_data = [
+            normalized_database_base_dict(supervision_violation_response)
+        ]
+
         dimensions_to_filter = ['age_bucket', 'race', 'release_facility',
                                 'stay_length_bucket', 'ethnicity']
 
@@ -161,7 +171,9 @@ class TestRecidivismPipeline(unittest.TestCase):
                      schema.StatePersonRace.__tablename__: races_data,
                      schema.StatePersonEthnicity.__tablename__: ethnicity_data,
                      schema.StateIncarcerationPeriod.__tablename__:
-                         incarceration_periods_data}
+                         incarceration_periods_data,
+                     schema.StateSupervisionViolationResponse.__tablename__:
+                         supervision_violation_response_data}
 
         test_pipeline = TestPipeline()
 
@@ -189,10 +201,41 @@ class TestRecidivismPipeline(unittest.TestCase):
                 unifying_id_field='person_id',
                 build_related_entities=True))
 
+        # Get StateSupervisionViolationResponses
+        supervision_violation_responses = \
+            (test_pipeline
+             | 'Load SupervisionViolationResponses' >>
+             extractor_utils.BuildRootEntity(
+                 dataset=None,
+                 data_dict=data_dict,
+                 root_schema_class=schema.StateSupervisionViolationResponse,
+                 root_entity_class=StateSupervisionViolationResponse,
+                 unifying_id_field='person_id',
+                 build_related_entities=True
+             ))
+
+        incarceration_periods_and_violation_responses = (
+            {'incarceration_periods': incarceration_periods,
+             'violation_responses': supervision_violation_responses}
+            | 'Group StateIncarcerationPeriods to '
+            'StateSupervisionViolationResponses' >>
+            beam.CoGroupByKey()
+        )
+
+        # Set the fully hydrated StateSupervisionViolationResponse entities on
+        # the corresponding StateIncarcerationPeriods
+        incarceration_periods_with_source_violations = (
+            incarceration_periods_and_violation_responses
+            | 'Set hydrated StateSupervisionViolationResponses on'
+            'the StateIncarcerationPeriods' >>
+            beam.ParDo(
+                pipeline.SetViolationResponseOnIncarcerationPeriod()))
+
         # Group each StatePerson with their StateIncarcerationPeriods
         person_and_incarceration_periods = (
             {'person': persons,
-             'incarceration_periods': incarceration_periods}
+             'incarceration_periods':
+                 incarceration_periods_with_source_violations}
             | 'Group StatePerson to StateIncarcerationPeriods' >>
             beam.CoGroupByKey()
         )
@@ -235,7 +278,7 @@ class TestRecidivismPipeline(unittest.TestCase):
     def testRecidivismPipeline_WithConditionalReturns(self):
         """Tests the entire RecidivismPipeline with two person and three
         incarceration periods each. One StatePerson has a return from a
-        supervision violation.
+        technical supervision violation.
         """
 
         fake_person_id_1 = 12345
@@ -325,6 +368,25 @@ class TestRecidivismPipeline(unittest.TestCase):
             CONDITIONAL_RELEASE,
             person_id=fake_person_id_2)
 
+        supervision_violation_response = \
+            database_test_utils.generate_test_supervision_violation_response(
+                fake_person_id_2)
+
+        supervision_violation = \
+            database_test_utils.generate_test_supervision_violation(
+                fake_person_id_2, [supervision_violation_response])
+
+        supervision_violation_response.supervision_violation_id = \
+            supervision_violation.supervision_violation_id
+
+        supervision_violation_response_data = [
+            normalized_database_base_dict(supervision_violation_response)
+        ]
+
+        supervision_violation_data = [
+            normalized_database_base_dict(supervision_violation)
+        ]
+
         first_reincarceration_2 = schema.StateIncarcerationPeriod(
             incarceration_period_id=5555,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
@@ -341,6 +403,8 @@ class TestRecidivismPipeline(unittest.TestCase):
             release_date=date(2014, 1, 4),
             release_reason=StateIncarcerationPeriodReleaseReason.
             SENTENCE_SERVED,
+            source_supervision_violation_response_id=
+            supervision_violation_response.supervision_violation_response_id,
             person_id=fake_person_id_2)
 
         subsequent_reincarceration_2 = \
@@ -376,7 +440,11 @@ class TestRecidivismPipeline(unittest.TestCase):
 
         data_dict = {schema.StatePerson.__tablename__: persons_data,
                      schema.StateIncarcerationPeriod.__tablename__:
-                         incarceration_periods_data}
+                         incarceration_periods_data,
+                     schema.StateSupervisionViolationResponse.__tablename__:
+                         supervision_violation_response_data,
+                     schema.StateSupervisionViolation.__tablename__:
+                         supervision_violation_data}
 
         test_pipeline = TestPipeline()
 
@@ -404,10 +472,41 @@ class TestRecidivismPipeline(unittest.TestCase):
                 unifying_id_field='person_id',
                 build_related_entities=True))
 
+        # Get StateSupervisionViolationResponses
+        supervision_violation_responses = \
+            (test_pipeline
+             | 'Load SupervisionViolationResponses' >>
+             extractor_utils.BuildRootEntity(
+                 dataset=None,
+                 data_dict=data_dict,
+                 root_schema_class=schema.StateSupervisionViolationResponse,
+                 root_entity_class=StateSupervisionViolationResponse,
+                 unifying_id_field='person_id',
+                 build_related_entities=True
+             ))
+
+        incarceration_periods_and_violation_responses = (
+            {'incarceration_periods': incarceration_periods,
+             'violation_responses': supervision_violation_responses}
+            | 'Group StateIncarcerationPeriods to '
+            'StateSupervisionViolationResponses' >>
+            beam.CoGroupByKey()
+        )
+
+        # Set the fully hydrated StateSupervisionViolationResponse entities on
+        # the corresponding StateIncarcerationPeriods
+        incarceration_periods_with_source_violations = (
+            incarceration_periods_and_violation_responses
+            | 'Set hydrated StateSupervisionViolationResponses on'
+            'the StateIncarcerationPeriods' >>
+            beam.ParDo(
+                pipeline.SetViolationResponseOnIncarcerationPeriod()))
+
         # Group each StatePerson with their StateIncarcerationPeriods
         person_and_incarceration_periods = (
             {'person': persons,
-             'incarceration_periods': incarceration_periods}
+             'incarceration_periods':
+                 incarceration_periods_with_source_violations}
             | 'Group StatePerson to StateIncarcerationPeriods' >>
             beam.CoGroupByKey()
         )
@@ -819,15 +918,15 @@ class TestCalculateRecidivismMetricCombinations(unittest.TestCase):
         periods_with_double = periods - periods_with_single
 
         expected_combinations_count_2010 = \
-            ((num_combinations * 10 * periods_with_single) +
-             (num_combinations * 15 * periods_with_double))
+            ((num_combinations * 30 * periods_with_single) +
+             (num_combinations * 45 * periods_with_double))
 
         periods = relativedelta(date.today(), date(2014, 4, 14)).years + 1
 
-        expected_combinations_count_2014 = (num_combinations * 10 * periods)
+        expected_combinations_count_2014 = (num_combinations * 30 * periods)
 
-        expected_count_metric_combinations = (num_combinations * 2 * 10 +
-                                              num_combinations * 2 * 10)
+        expected_count_metric_combinations = (num_combinations * 2 * 30 +
+                                              num_combinations * 2 * 30)
 
         expected_combination_counts = {2010: expected_combinations_count_2010,
                                        2014: expected_combinations_count_2014,
