@@ -37,7 +37,10 @@ from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodAdmissionReason as AdmissionReason
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodReleaseReason as ReleaseReason
-from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
+from recidiviz.common.constants.state.state_supervision_violation import \
+    StateSupervisionViolationType
+from recidiviz.persistence.entity.state.entities import \
+    StateIncarcerationPeriod, StateSupervisionViolationResponse
 
 
 def find_release_events_by_cohort_year(
@@ -74,9 +77,7 @@ def find_release_events_by_cohort_year(
     incarceration_periods = \
         validate_sort_and_collapse_incarceration_periods(incarceration_periods)
 
-    for index, incarceration_period in \
-            enumerate(incarceration_periods):
-
+    for index, incarceration_period in enumerate(incarceration_periods):
         admission_date = incarceration_period.admission_date
         status = incarceration_period.status
         release_date = incarceration_period.release_date
@@ -101,15 +102,26 @@ def find_release_events_by_cohort_year(
                 reincarceration_admission_reason = \
                     reincarceration_period.admission_reason
 
+                if reincarceration_admission_reason in \
+                        [AdmissionReason.PROBATION_REVOCATION,
+                         AdmissionReason.PAROLE_REVOCATION]:
+                    source_supervision_violation_response = \
+                        reincarceration_period. \
+                        source_supervision_violation_response
+                else:
+                    source_supervision_violation_response = None
+
                 # These fields have been validated already
                 if release_date and release_reason and \
                         reincarceration_date and \
                         reincarceration_admission_reason:
+
                     event = for_intermediate_incarceration_period(
                         admission_date, release_date, release_reason,
                         release_facility,
                         reincarceration_date, reincarceration_facility,
-                        reincarceration_admission_reason)
+                        reincarceration_admission_reason,
+                        source_supervision_violation_response)
 
         if event:
             if release_date:
@@ -337,7 +349,9 @@ def for_intermediate_incarceration_period(
         release_facility: Optional[str],
         reincarceration_date: date,
         reincarceration_facility: Optional[str],
-        reincarceration_admission_reason: AdmissionReason) -> \
+        reincarceration_admission_reason: AdmissionReason,
+        source_supervision_violation_response:
+        Optional[StateSupervisionViolationResponse]) -> \
         Optional[ReleaseEvent]:
     """Returns the ReleaseEvent relevant to an intermediate
     StateIncarcerationPeriod.
@@ -358,6 +372,8 @@ def for_intermediate_incarceration_period(
             StateIncarcerationPeriod started
         reincarceration_admission_reason: reason they were admitted to the
             subsequent StateIncarcerationPeriod
+        source_supervision_violation_response: the response to a supervision
+            violation that resulted in the reincarceration
 
     Returns:
         A ReleaseEvent.
@@ -371,12 +387,14 @@ def for_intermediate_incarceration_period(
     return_type = get_return_type(reincarceration_admission_reason)
     from_supervision_type = \
         get_from_supervision_type(reincarceration_admission_reason)
+    source_violation_type = \
+        get_source_violation_type(source_supervision_violation_response)
 
     # This is a new admission recidivism event. Return it.
     return RecidivismReleaseEvent(admission_date, release_date,
                                   release_facility, reincarceration_date,
                                   reincarceration_facility, return_type,
-                                  from_supervision_type)
+                                  from_supervision_type, source_violation_type)
 
 
 def should_include_in_release_cohort(
@@ -505,3 +523,23 @@ def get_from_supervision_type(
     raise ValueError("Enum case not handled for "
                      "StateIncarcerationPeriodAdmissionReason of type:"
                      f" {reincarceration_admission_reason}.")
+
+
+def get_source_violation_type(source_supervision_violation_response:
+                              Optional[StateSupervisionViolationResponse]) -> \
+        Optional[StateSupervisionViolationType]:
+    """Returns, where applicable, the type of violation that caused the period
+    of incarceration.
+
+    If the person returned from supervision, and we know the supervision
+    violation response that caused the return, then this returns the type of
+    violation that prompted this revocation.
+    """
+
+    if source_supervision_violation_response:
+        supervision_violation = \
+            source_supervision_violation_response.supervision_violation
+        if supervision_violation:
+            return supervision_violation.violation_type
+
+    return None
