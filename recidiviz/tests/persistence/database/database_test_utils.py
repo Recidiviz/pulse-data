@@ -17,6 +17,8 @@ from recidiviz.common.constants.state.state_supervision_period import \
     StateSupervisionPeriodStatus
 from recidiviz.common.constants.state.state_incarceration_incident import \
     StateIncarcerationIncidentOutcomeType
+from recidiviz.common.constants.state.state_supervision_violation import \
+    StateSupervisionViolationType
 from recidiviz.persistence.database.schema.state import schema as state_schema
 
 
@@ -38,6 +40,7 @@ def generate_test_supervision_violation(person_id,
 
     instance = state_schema.StateSupervisionViolation(
         supervision_violation_id=321,
+        violation_type=StateSupervisionViolationType.TECHNICAL.value,
         state_code='us_ca',
         person_id=person_id,
         supervision_violation_responses=supervision_violation_responses

@@ -24,6 +24,8 @@ from typing import Optional
 import attr
 
 from recidiviz.common.attr_mixins import BuildableAttr
+from recidiviz.common.constants.state.state_supervision_violation import \
+    StateSupervisionViolationType
 
 
 class ReincarcerationReturnType(Enum):
@@ -83,6 +85,11 @@ class RecidivismReleaseEvent(ReleaseEvent):
     # supervision the person was on before they returned to incarceration.
     from_supervision_type: \
         Optional[ReincarcerationReturnFromSupervisionType] = \
+        attr.ib(default=None)
+
+    # StateSupervisionViolationType enum for the type of violation that
+    # eventually caused the revocation of supervision
+    source_violation_type: Optional[StateSupervisionViolationType] = \
         attr.ib(default=None)
 
 

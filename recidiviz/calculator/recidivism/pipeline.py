@@ -91,6 +91,63 @@ def clear_job_id():
 
 
 @with_input_types(beam.typehints.Tuple[int, Dict[str, Any]])
+@with_output_types(beam.typehints.Tuple[int, entities.StateIncarcerationPeriod])
+class SetViolationResponseOnIncarcerationPeriod(beam.DoFn):
+    """Sets a hydrated StateSupervisionviolationResponse onto the corresponding
+    StateIncarcerationPeriod."""
+    def process(self, element, *args, **kwargs):
+        """For the incarceration periods and supervision violation responses of
+        a given person, finds the matching hydrated supervision violation
+        response for a resulting incarceration period, and sets the hydrated
+        version onto the incarceration_period entity.
+
+        Args:
+            element: a tuple containing person_id and a dictionary of the
+                person's StateIncarcerationPeriods and
+                StateSupervisionviolationResponses
+
+        Yields:
+            For each incarceration period, a tuple containing the person_id and
+            the incarceration_period.
+        """
+        person_id, incarceration_periods_violation_responses = element
+
+        # Get the StateIncarcerationPeriods as a list
+        incarceration_periods = \
+            list(incarceration_periods_violation_responses[
+                'incarceration_periods'])
+
+        # Get the StateSupervisionViolationResponses as a list
+        violation_responses = \
+            list(incarceration_periods_violation_responses[
+                'violation_responses'])
+
+        if incarceration_periods:
+            for incarceration_period in incarceration_periods:
+                if incarceration_period.source_supervision_violation_response \
+                        and violation_responses:
+
+                    corresponding_response = [
+                        response for response in violation_responses
+                        if response.supervision_violation_response_id ==
+                        incarceration_period.
+                        source_supervision_violation_response.
+                        supervision_violation_response_id]
+
+                    # If there's a corresponding response, there should only
+                    # be 1 (this is enforced at a DB level)
+                    response = one(corresponding_response)
+
+                    incarceration_period. \
+                        source_supervision_violation_response = response
+
+                yield (person_id, incarceration_period)
+
+    def to_runner_api_parameter(self, unused_context):
+        pass
+
+
+@with_input_types(beam.typehints.Tuple[int, Dict[str, Any]])
 @with_output_types(beam.typehints.Tuple[entities.StatePerson,
                                         List[ReleaseEvent]])
 class GetReleaseEvents(beam.PTransform):
@@ -145,7 +202,7 @@ class ClassifyReleaseEvents(beam.DoFn):
     """Classifies releases as either recidivism or non-recidivism events."""
 
     def process(self, element, *args, **kwargs):
-        """ Identifies instances of recidivism and non-recidivism.
+        """Identifies instances of recidivism and non-recidivism.
 
         Sends the identifier the StateIncarcerationPeriods for a given
         StatePerson, which returns a list of ReleaseEvents for each year the
@@ -517,15 +574,47 @@ def run(argv=None):
                                      data_dict=None,
                                      root_schema_class=
                                      schema.StateIncarcerationPeriod,
-                                     root_entity_class=entities.
-                                     StateIncarcerationPeriod,
+                                     root_entity_class=
+                                     entities.StateIncarcerationPeriod,
                                      unifying_id_field='person_id',
-                                     build_related_entities=False))
+                                     build_related_entities=True))
+
+        # Get StateSupervisionViolationResponses
+        supervision_violation_responses = \
+            (p
+             | 'Load SupervisionViolationResponses' >>
+             BuildRootEntity(
+                 dataset=query_dataset,
+                 data_dict=None,
+                 root_schema_class=schema.StateSupervisionViolationResponse,
+                 root_entity_class=entities.StateSupervisionViolationResponse,
+                 unifying_id_field='person_id',
+                 build_related_entities=True
+             ))
+
+        # Group StateIncarcerationPeriods and StateSupervisionViolationResponses
+        # by person_id
+        incarceration_periods_and_violation_responses = (
+            {'incarceration_periods': incarceration_periods,
+             'violation_responses': supervision_violation_responses}
+            | 'Group StateIncarcerationPeriods to '
+              'StateSupervisionViolationResponses' >>
+            beam.CoGroupByKey()
+        )
+
+        # Set the fully hydrated StateSupervisionViolationResponse entities on
+        # the corresponding StateIncarcerationPeriods
+        incarceration_periods_with_source_violations = (
+            incarceration_periods_and_violation_responses
+            | 'Set hydrated StateSupervisionViolationResponses on '
+            'the StateIncarcerationPeriods' >>
+            beam.ParDo(SetViolationResponseOnIncarcerationPeriod()))
 
         # Group each StatePerson with their StateIncarcerationPeriods
         person_and_incarceration_periods = (
             {'person': persons,
-             'incarceration_periods': incarceration_periods}
+             'incarceration_periods':
+                 incarceration_periods_with_source_violations}
             | 'Group StatePerson to StateIncarcerationPeriods' >>
             beam.CoGroupByKey()
         )

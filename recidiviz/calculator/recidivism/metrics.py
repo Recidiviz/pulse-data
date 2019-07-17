@@ -28,6 +28,8 @@ from recidiviz.calculator.recidivism.release_event import \
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.common.constants.person_characteristics import Gender, Race, \
     Ethnicity
+from recidiviz.common.constants.state.state_supervision_violation import \
+    StateSupervisionViolationType
 
 
 class RecidivismMethodologyType(Enum):
@@ -99,6 +101,11 @@ class ReincarcerationRecidivismMetric(BuildableAttr):
     # supervision the persons were on before they returned to incarceration.
     from_supervision_type: ReincarcerationReturnFromSupervisionType = \
         attr.ib(default=None)
+
+    # StateSupervisionViolationType enum for the type of violation that
+    # eventually caused the revocation of supervision
+    source_violation_type: StateSupervisionViolationType = attr.ib(
+        default=None)
 
     # TODO(1793) Track whether revocation of supervision was for a purely
     #  technical violation
