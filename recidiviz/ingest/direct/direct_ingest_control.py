@@ -20,27 +20,35 @@
 
 from http import HTTPStatus
 
-from flask import Blueprint
+from flask import Blueprint, request
 
-from recidiviz.ingest.direct.regions.us_ma_middlesex.\
-    us_ma_middlesex_controller import UsMaMiddlesexController
-from recidiviz.utils import environment
+from recidiviz.utils import environment, regions
 from recidiviz.utils.auth import authenticate_request
+from recidiviz.utils.params import get_value
 
 direct_ingest_control = Blueprint('direct_ingest_control', __name__)
 
 
-@direct_ingest_control.route('/us_ma_middlesex')
+@direct_ingest_control.route('/start')
 @authenticate_request
-def us_ma_middlesex():
+def start():
     gae_env = environment.get_gae_environment()
-    controller = UsMaMiddlesexController()
-    if controller.region.environment != gae_env:
-        return (f"Skipping Middlesex direct ingest in environment {gae_env}",
-                HTTPStatus.OK)
+    region_value = get_value('region', request.args)
 
-    # Iterate through export dates and write data one export at a time. Raises
-    # an exception the first time we fail to ingest an export.
+    try:
+        region = regions.get_region(region_value, is_direct_ingest=True)
+    except FileNotFoundError:
+        return (f"Unsupported direct ingest region {region_value}",
+                HTTPStatus.BAD_REQUEST)
+
+    controller = region.get_ingestor()
+
+    if region.environment != gae_env:
+        return (
+            f"Bad environment {gae_env} for direct region {region_value}.",
+            HTTPStatus.BAD_REQUEST)
+
+    # TODO (#2099) enqueue a task to run this region.
     controller.go()
 
     return '', HTTPStatus.OK

@@ -90,7 +90,7 @@ def scraper_start():
         pubsub_helper.purge(scrape_key, BATCH_PUBSUB_TYPE)
 
         logging.info("Starting new scraper for: [%s]", scrape_key)
-        scraper = regions.get_region(region).get_scraper()
+        scraper = regions.get_region(region).get_ingestor()
 
         current_session = sessions.create_session(scrape_key)
 
@@ -238,7 +238,8 @@ def scraper_stop():
         was_stopped = False
         try:
             logging.info("Stopping scraper for region [%s].", region)
-            region_scraper = regions.get_region(region).get_scraper()
+            region_scraper = regions.get_region(region).get_ingestor()
+            region_scraper.stop_scrape(scrape_types, respect_is_stoppable)
             was_stopped = region_scraper.stop_scrape(scrape_types,
                                                      respect_is_stoppable)
         finally:
@@ -326,7 +327,7 @@ def scraper_resume():
             # vs updating that w/first task.
             time.sleep(5)
 
-            scraper = regions.get_region(region).get_scraper()
+            scraper = regions.get_region(region).get_ingestor()
             scraper.resume_scrape(scrape_type)
 
     return ('', HTTPStatus.OK)

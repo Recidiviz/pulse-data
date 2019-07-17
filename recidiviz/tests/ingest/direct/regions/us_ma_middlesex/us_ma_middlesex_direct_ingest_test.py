@@ -16,6 +16,7 @@
 # =============================================================================
 """Tests for the direct ingest parser.py."""
 import datetime
+from mock import patch
 from unittest import TestCase
 
 from recidiviz.common.ingest_metadata import IngestMetadata
@@ -32,15 +33,20 @@ _FAKE_START_TIME = datetime.datetime(year=2019, month=1, day=2)
 
 
 class UsMaMiddlesexDirectIngestParser(IndividualIngestTest, TestCase):
-    def testParse(self):
+    @patch('recidiviz.ingest.direct.regions.us_ma_middlesex.'
+           'us_ma_middlesex_controller.UsMaMiddlesexController._connect_to_db')
+    @patch('recidiviz.ingest.direct.regions.us_ma_middlesex.'
+           'us_ma_middlesex_controller.UsMaMiddlesexController._load_data')
+    def testParse(self, mock_connect, mock_data):
         region = regions.get_region('us_ma_middlesex', is_direct_ingest=True)
-        parser = UsMaMiddlesexParser()
+        controller = region.get_ingestor()
+        parser = controller.parser
 
         metadata = IngestMetadata(
             region.region_code,
             region.jurisdiction_id,
             _FAKE_START_TIME,
-            region.get_enum_overrides())
+            controller.get_enum_overrides())
 
         ingest_info = parser.parse(_ROSTER_JSON_PATH)
 

@@ -266,7 +266,7 @@ class TestScraperStart:
                               headers=headers)
         assert response.status_code == 400
         assert response.get_data().decode() == \
-               "Missing or invalid parameters, or no regions found, see logs."
+            "Missing or invalid parameters, or no regions found, see logs."
 
         mock_supported.assert_called_with(timezone=None)
 
@@ -307,14 +307,19 @@ class TestScraperStop:
             any_order=True)
         mock_phase.assert_has_calls(
             [call(session, scrape_phase.ScrapePhase.PERSIST)] * 4)
-        mock_region.return_value.get_scraper().stop_scrape.assert_has_calls([
-            call([constants.ScrapeType.BACKGROUND,
-                  constants.ScrapeType.SNAPSHOT], 'false'),
-            call().__bool__(),
-            call([constants.ScrapeType.BACKGROUND,
-                  constants.ScrapeType.SNAPSHOT], 'false'),
-            call().__bool__()
-        ])
+        mock_region.return_value.get_ingestor().\
+            stop_scrape.assert_has_calls([
+                call([constants.ScrapeType.BACKGROUND,
+                      constants.ScrapeType.SNAPSHOT], 'false'),
+                call([constants.ScrapeType.BACKGROUND,
+                      constants.ScrapeType.SNAPSHOT], 'false'),
+                call().__bool__(),
+                call([constants.ScrapeType.BACKGROUND,
+                      constants.ScrapeType.SNAPSHOT], 'false'),
+                call([constants.ScrapeType.BACKGROUND,
+                      constants.ScrapeType.SNAPSHOT], 'false'),
+                call().__bool__()
+            ])
         mock_supported.assert_called_with(timezone=None)
         mock_enqueue.assert_has_calls([
             call(region_code='us_ca', url='/read_and_persist'),
@@ -347,7 +352,8 @@ class TestScraperStop:
              call(ScrapeKey('us_ut', constants.ScrapeType.BACKGROUND)),
              call(ScrapeKey('us_ut', constants.ScrapeType.SNAPSHOT))],
             any_order=True)
-        assert not mock_region.return_value.get_scraper().stop_scrape.called
+        assert not mock_region.return_value.get_ingestor().\
+            stop_scrape.called
         mock_supported.assert_called_with(timezone=None)
         assert not mock_enqueue.called
 
@@ -386,9 +392,10 @@ class TestScraperStop:
         mock_phase.assert_has_calls(
             [call(session, scrape_phase.ScrapePhase.PERSIST)] * 2)
         mock_region.assert_has_calls([call('us_ut')])
-        mock_region.return_value.get_scraper().stop_scrape.assert_called_with([
-            constants.ScrapeType.BACKGROUND, constants.ScrapeType.SNAPSHOT
-        ], 'false')
+        mock_region.return_value.get_ingestor().stop_scrape.\
+            assert_called_with([
+                constants.ScrapeType.BACKGROUND, constants.ScrapeType.SNAPSHOT
+            ], 'false')
         mock_supported.assert_called_with(
             timezone=pytz.timezone('America/New_York'))
         mock_enqueue.assert_called_with(
@@ -407,7 +414,7 @@ class TestScraperStop:
                               headers=headers)
         assert response.status_code == 400
         assert response.get_data().decode() == \
-               "Missing or invalid parameters, see service logs."
+            "Missing or invalid parameters, see service logs."
 
         mock_supported.assert_called_with(timezone=None)
         assert not mock_enqueue.called
@@ -445,14 +452,19 @@ class TestScraperStop:
             any_order=True)
         mock_phase.assert_has_calls(
             [call(session, scrape_phase.ScrapePhase.PERSIST)] * 4)
-        mock_region.return_value.get_scraper().stop_scrape.assert_has_calls([
-            call([constants.ScrapeType.BACKGROUND,
-                  constants.ScrapeType.SNAPSHOT], None),
-            call().__bool__(),
-            call([constants.ScrapeType.BACKGROUND,
-                  constants.ScrapeType.SNAPSHOT], None),
-            call().__bool__()
-        ])
+        mock_region.return_value.get_ingestor().stop_scrape.\
+            assert_has_calls([
+                call([constants.ScrapeType.BACKGROUND,
+                      constants.ScrapeType.SNAPSHOT], None),
+                call([constants.ScrapeType.BACKGROUND,
+                      constants.ScrapeType.SNAPSHOT], None),
+                call().__bool__(),
+                call([constants.ScrapeType.BACKGROUND,
+                      constants.ScrapeType.SNAPSHOT], None),
+                call([constants.ScrapeType.BACKGROUND,
+                      constants.ScrapeType.SNAPSHOT], None),
+                call().__bool__()
+            ])
 
         mock_supported.assert_called_with(timezone=None)
         mock_enqueue.assert_has_calls([
@@ -497,7 +509,7 @@ class TestScraperResume:
                               headers=headers)
         assert response.status_code == 400
         assert response.get_data().decode() == \
-               "Missing or invalid parameters, see service logs."
+            "Missing or invalid parameters, see service logs."
 
         mock_supported.assert_called_with(timezone=None)
 
