@@ -123,21 +123,28 @@ def state_aggregate():
 def direct():
     """Calls direct ingest"""
 
+    # The bucket that the file to ingest lives in
     bucket = get_value('bucket', request.args)
+    # The region this data is associated with
     region_name = get_value('region', request.args)
-    filename = get_value('filename', request.args)
+    # The full path to the file to ingest, including the bucket name
+    file_path = get_value('file_path', request.args)
+    # The name of the bucket to move the file to once it has been processed
+    storage_bucket = get_value('storage_bucket', request.args)
+
     project_id = metadata.project_id()
     logging.info("The project id is %s", project_id)
-    if not bucket or not region_name or not filename:
+    if not bucket or not region_name or not file_path or not storage_bucket:
         raise DirectIngestError(
-            msg="All of region, bucket, and filename must be provided",
+            msg="All of region, bucket, file_path, and storage_bucket must be "
+                "provided.",
             error_type=DirectIngestErrorType.INPUT_ERROR,
         )
-    path = os.path.join(bucket, region_name, filename)
 
     # Don't use the gcsfs cache
     fs = gcsfs.GCSFileSystem(project=project_id, cache_timeout=-1)
-    logging.info("The path to process is %s", path)
+    logging.info("The file_path to process is %s", file_path)
+    logging.info("The storage_bucket is %s", storage_bucket)
     logging.info("The files in the directory are:")
     logging.info(fs.ls(bucket))
 
@@ -154,13 +161,14 @@ def direct():
     try:
         controller.run_ingest(GcsfsIngestArgs(
             ingest_time=datetime.datetime.now(),
-            file_path=path
+            file_path=file_path,
+            storage_bucket=storage_bucket,
         ))
     except DirectIngestError as e:
         message = \
             f"Error while processing region [{region_name}] from file " \
-            f"[{filename}] on bucket [{bucket}] and project [{project_id}]: " \
-            f"[{str(e)}]"
+            f"[{file_path}] on bucket [{bucket}] and storage_bucket " \
+            f"[{storage_bucket}] and project [{project_id}]: [{str(e)}]"
         return message, HTTPStatus.INTERNAL_SERVER_ERROR
 
     return '', HTTPStatus.OK
