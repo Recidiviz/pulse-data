@@ -19,11 +19,11 @@
 from typing import Any, Dict, List
 
 from recidiviz.common.constants.entity_enum import EntityEnum
-from recidiviz.persistence.database.database_entity import DatabaseEntity
+from recidiviz.persistence.database.base_schema import StateBase
 
 
 def normalized_database_base_dict(
-        database_base: DatabaseEntity) -> Dict[str, Any]:
+        database_base: StateBase) -> Dict[str, Any]:
     """Takes in a Base object and returns a dictionary with only keys
     that are column property names in the database. If any columns are not
     currently represented in the entity, sets the value as None for that key.
@@ -43,7 +43,7 @@ def normalized_database_base_dict(
 
 
 def normalized_database_base_dict_list(
-        database_bases: List[DatabaseEntity]) -> List[Dict[str, Any]]:
+        database_bases: List[StateBase]) -> List[Dict[str, Any]]:
     """Returns a list of normalized database base dictionaries."""
     dict_list = []
 
@@ -54,7 +54,7 @@ def normalized_database_base_dict_list(
 
 
 def remove_relationship_properties(
-        database_base: DatabaseEntity) -> DatabaseEntity:
+        database_base: StateBase) -> StateBase:
     """Removes the attributes corresponding to relationship properties
     on the Base. Used for tests to remove unwanted forward and back edges
     that mess with equality when hydrating only one degree away from a

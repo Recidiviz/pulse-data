@@ -41,6 +41,8 @@ from recidiviz.calculator.recidivism.release_event import ReleaseEvent, \
     RecidivismReleaseEvent, NonRecidivismReleaseEvent, \
     ReincarcerationReturnType, ReincarcerationReturnFromSupervisionType
 from recidiviz.calculator.recidivism.metrics import RecidivismMethodologyType
+from recidiviz.common.constants.state.state_supervision_violation import \
+    StateSupervisionViolationType
 from recidiviz.persistence.entity.state.entities import StatePerson, \
     StatePersonRace, StatePersonEthnicity
 
@@ -250,7 +252,8 @@ def reincarcerations(release_events: Dict[int, List[ReleaseEvent]]) \
             if isinstance(event, RecidivismReleaseEvent):
                 reincarcerations_dict[event.reincarceration_date] = \
                     {'return_type': event.return_type,
-                     'from_supervision_type': event.from_supervision_type}
+                     'from_supervision_type': event.from_supervision_type,
+                     'source_violation_type': event.source_violation_type}
 
     return reincarcerations_dict
 
@@ -696,7 +699,8 @@ def combination_rate_metrics(combo: Dict[str, Any], event: ReleaseEvent,
                 metrics.append((person_combo,
                                 recidivism_value_for_metric(
                                     person_combo, event.return_type,
-                                    event.from_supervision_type)))
+                                    event.from_supervision_type,
+                                    event.source_violation_type)))
 
             end_of_follow_up_period = event.release_date + \
                 relativedelta(years=period)
@@ -713,7 +717,8 @@ def combination_rate_metrics(combo: Dict[str, Any], event: ReleaseEvent,
                          recidivism_value_for_metric(
                              event_combo,
                              reincarceration.get('return_type'),
-                             reincarceration.get('from_supervision_type'))))
+                             reincarceration.get('from_supervision_type'),
+                             reincarceration.get('source_violation_type'))))
 
     return metrics
 
@@ -774,7 +779,8 @@ def combination_count_metrics(combo: Dict[str, Any], event:
                 metrics.append((person_combo,
                                 recidivism_value_for_metric(
                                     person_combo, event.return_type,
-                                    event.from_supervision_type)))
+                                    event.from_supervision_type,
+                                    event.source_violation_type)))
 
         for event_combo in event_based_combos:
             metrics.append(
@@ -782,7 +788,8 @@ def combination_count_metrics(combo: Dict[str, Any], event:
                  recidivism_value_for_metric(
                      event_combo,
                      event.return_type,
-                     event.from_supervision_type)))
+                     event.from_supervision_type,
+                     event.source_violation_type)))
 
     return metrics
 
@@ -824,11 +831,23 @@ def augmented_combo_list(combo: Dict[str, Any],
 
     parameters['from_supervision_type'] = \
         ReincarcerationReturnFromSupervisionType.PAROLE
-    combos.append(augment_combination(combo_revocation, parameters))
+    parole_combo = augment_combination(combo_revocation, parameters)
+    combos.append(parole_combo)
+
+    for violation_type in StateSupervisionViolationType:
+        parameters['source_violation_type'] = violation_type
+        combos.append(augment_combination(parole_combo, parameters))
+
+    parameters['source_violation_type'] = None
 
     parameters['from_supervision_type'] = \
         ReincarcerationReturnFromSupervisionType.PROBATION
-    combos.append(augment_combination(combo_revocation, parameters))
+    probation_combo = augment_combination(combo_revocation, parameters)
+    combos.append(probation_combo)
+
+    for violation_type in StateSupervisionViolationType:
+        parameters['source_violation_type'] = violation_type
+        combos.append(augment_combination(probation_combo, parameters))
 
     return combos
 
@@ -838,7 +857,9 @@ def recidivism_value_for_metric(
         event_return_type:
         Optional[ReincarcerationReturnType],
         event_from_supervision_type:
-        Optional[ReincarcerationReturnFromSupervisionType]) -> int:
+        Optional[ReincarcerationReturnFromSupervisionType],
+        event_source_violation_type: Optional[StateSupervisionViolationType]) \
+        -> int:
     """Returns the recidivism value corresponding to the given metric combo and
     details of the return.
 
@@ -847,6 +868,9 @@ def recidivism_value_for_metric(
         event_return_type: the ReincarcerationReturnType of the release event
         event_from_supervision_type:
             the ReincarcerationReturnFromSupervisionType of the release event
+        event_source_violation_type:
+            the StateSupervisionViolationType of the violation that eventually
+            resulted in this return
 
     Returns: 1 if the event_return_type and event_from_supervision_type match
         that of the combo. Else, returns 0.
@@ -865,6 +889,14 @@ def recidivism_value_for_metric(
             return 1
 
         if combo_from_supervision_type != event_from_supervision_type:
+            return 0
+
+        combo_source_violation_type = combo.get('source_violation_type')
+
+        if combo_source_violation_type is None:
+            return 1
+
+        if combo_source_violation_type != event_source_violation_type:
             return 0
 
     return 1
