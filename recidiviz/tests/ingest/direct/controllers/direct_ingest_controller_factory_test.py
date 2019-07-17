@@ -17,10 +17,12 @@
 """Tests for the DirectIngestControllerFactory."""
 import unittest
 
-from mock import Mock, patch
+from mock import Mock, patch, create_autospec
 
 from recidiviz.ingest.direct.controllers.direct_ingest_controller_factory \
     import DirectIngestControllerFactory
+from recidiviz.ingest.direct.regions.us_nd.us_nd_controller import \
+    UsNdController
 
 
 class TestDirectIngestControllerFactory(unittest.TestCase):
@@ -28,13 +30,12 @@ class TestDirectIngestControllerFactory(unittest.TestCase):
 
     def test_build_gcsfs_ingest_controller(self):
         mock_package = Mock()
-        mock_controller = Mock()
-        mock_package.UsNdGcsfsDirectIngestController.return_value = \
+        mock_controller = create_autospec(spec=UsNdController)
+        mock_package.UsNdController.return_value = \
             mock_controller
 
         with patch.dict('sys.modules', {
-                'recidiviz.ingest.direct.regions.us_nd.'
-                'us_nd_gcsfs_direct_ingest_controller':
+                'recidiviz.ingest.direct.regions.us_nd.us_nd_controller':
                 mock_package
         }):
             controller = DirectIngestControllerFactory.\

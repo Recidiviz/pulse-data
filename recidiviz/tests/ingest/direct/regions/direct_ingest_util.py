@@ -18,7 +18,7 @@
 import os
 
 from gcsfs import GCSFileSystem
-from mock import Mock
+from mock import Mock, create_autospec
 
 from recidiviz.tests.ingest import fixtures
 
@@ -35,6 +35,6 @@ def create_mock_gcsfs() -> GCSFileSystem:
         mock_fp_context_manager.__exit__ = Mock(return_value=False)
         return mock_fp_context_manager
 
-    mock_fs = Mock()
+    mock_fs = create_autospec(spec=GCSFileSystem)
     mock_fs.open = mock_open
     return mock_fs

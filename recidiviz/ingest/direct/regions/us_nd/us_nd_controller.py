@@ -70,11 +70,11 @@ _SUPERVISION_SENTENCE_ID_SUFFIX = '_SUPERVISION'
 _TEMPORARY_PRIMARY_ID = '_TEMPORARY_PRIMARY_ID'
 
 
-class UsNdGcsfsDirectIngestController(GcsfsDirectIngestController):
+class UsNdController(GcsfsDirectIngestController):
     """Direct ingest controller implementation for us_nd."""
 
     def __init__(self, fs: GCSFileSystem):
-        super(UsNdGcsfsDirectIngestController, self).__init__(
+        super(UsNdController, self).__init__(
             'us_nd',
             SystemLevel.STATE,
             fs)
@@ -197,7 +197,7 @@ class UsNdGcsfsDirectIngestController(GcsfsDirectIngestController):
     def _parse(self,
                args: GcsfsIngestArgs,
                contents: Any) -> IngestInfo:
-        file_tag = self.file_tag(args.file_path)
+        file_tag = self.file_tag(args)
 
         if file_tag not in self.file_mappings_by_file:
             raise DirectIngestError(
@@ -751,7 +751,7 @@ class UsNdGcsfsDirectIngestController(GcsfsDirectIngestController):
                           overrides: Dict[EntityEnum, List[str]],
                           ignores: Dict[EntityEnumMeta, List[str]]) \
             -> EnumOverrides:
-        overrides_builder = super(UsNdGcsfsDirectIngestController, self) \
+        overrides_builder = super(UsNdController, self) \
             .get_enum_overrides().to_builder()
 
         for mapped_enum, text_tokens in overrides.items():

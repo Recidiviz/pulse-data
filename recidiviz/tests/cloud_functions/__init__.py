@@ -14,21 +14,3 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""File that contains all errors specific to the direct ingest package"""
-from enum import Enum, auto
-
-
-class DirectIngestErrorType(Enum):
-    INPUT_ERROR = auto()
-    READ_ERROR = auto()
-    PARSE_ERROR = auto()
-    PERSISTENCE_ERROR = auto()
-    CLEANUP_ERROR = auto()
-
-
-class DirectIngestError(Exception):
-    """Raised when a direct ingest controller runs into an error."""
-
-    def __init__(self, *, msg: str, error_type: DirectIngestErrorType):
-        super().__init__(msg)
-        self.error_type = error_type
