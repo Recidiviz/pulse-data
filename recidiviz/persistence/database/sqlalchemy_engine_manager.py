@@ -51,13 +51,11 @@ class SQLAlchemyEngineManager:
         cls.init_engine_for_db_instance(
             db_url=cls._get_jails_server_postgres_instance_url(),
             schema_base=JailsBase)
-        if environment.in_gae_staging():
-            # TODO(1831): Turn on for production once cloudsql instance has been
-            #  configured
-            # Initialize State database instance
-            cls.init_engine_for_db_instance(
-                db_url=cls._get_state_server_postgres_instance_url(),
-                schema_base=StateBase)
+
+        # Initialize State database instance
+        cls.init_engine_for_db_instance(
+            db_url=cls._get_state_server_postgres_instance_url(),
+            schema_base=StateBase)
 
     @classmethod
     def get_engine_for_schema_base(
