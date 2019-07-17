@@ -46,9 +46,6 @@ from lxml import html
 from lxml.etree import XMLSyntaxError  # pylint:disable=no-name-in-module
 
 from recidiviz.common.common_utils import get_trace_id_from_flask
-from recidiviz.common.constants.enum_overrides import EnumOverrides
-from recidiviz.common.constants.standard_enum_overrides import \
-    get_standard_enum_overrides
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.scrape import constants, ingest_utils
@@ -356,9 +353,6 @@ class BaseScraper(Scraper):
             task: Task with parameters passed from the last scrape.
             ingest_info: The IngestInfo object to populate
         """
-
-    def get_enum_overrides(self) -> EnumOverrides:
-        return get_standard_enum_overrides()
 
     def transform_post_data(self, data):
         """If the child needs to transform the data in any way before it sends

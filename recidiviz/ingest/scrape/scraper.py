@@ -28,6 +28,7 @@ import requests
 import urllib3
 
 from recidiviz.common import queues
+from recidiviz.ingest.ingestor import Ingestor
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.scrape import (constants, scraper_utils,
                                      sessions, tracker)
@@ -57,7 +58,7 @@ class FetchPageError(Exception):
         super(FetchPageError, self).__init__(msg)
 
 
-class Scraper(metaclass=abc.ABCMeta):
+class Scraper(Ingestor, metaclass=abc.ABCMeta):
     """The base for all scraper objects. It handles basic setup, scrape
     process control (start, resume, stop), web requests, task
     queueing, state tracking, and a bunch of static convenience

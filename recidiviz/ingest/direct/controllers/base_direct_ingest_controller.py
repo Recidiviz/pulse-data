@@ -25,10 +25,8 @@ from typing import TypeVar, Generic
 import attr
 
 from recidiviz import IngestInfo
-from recidiviz.common.constants.enum_overrides import EnumOverrides
-from recidiviz.common.constants.standard_enum_overrides import \
-    get_standard_enum_overrides
 from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
+from recidiviz.ingest.ingestor import Ingestor
 from recidiviz.ingest.direct.errors import DirectIngestError, \
     DirectIngestErrorType
 from recidiviz.ingest.scrape import ingest_utils
@@ -45,7 +43,8 @@ ContentsType = TypeVar('ContentsType')
 IngestArgsType = TypeVar('IngestArgsType', bound=IngestArgs)
 
 
-class BaseDirectIngestController(Generic[IngestArgsType, ContentsType]):
+class BaseDirectIngestController(Ingestor,
+                                 Generic[IngestArgsType, ContentsType]):
     """Parses and persists individual-level info from direct ingest partners.
     """
 
@@ -136,7 +135,3 @@ class BaseDirectIngestController(Generic[IngestArgsType, ContentsType]):
         """Should be overridden by subclasses to do any necessary cleanup in the
         ingested source once contents have been successfully persisted.
         """
-
-    @abc.abstractmethod
-    def get_enum_overrides(self) -> EnumOverrides:
-        return get_standard_enum_overrides()
