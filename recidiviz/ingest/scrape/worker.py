@@ -117,7 +117,7 @@ def work(region):
         logging.info("Queue [%s], processing task [%s] for [%s].",
                      queue_name, task, region)
 
-        scraper = regions.get_region(region).get_scraper()
+        scraper = regions.get_region(region).get_ingestor()
         scraper_task = getattr(scraper, task)
 
         try:

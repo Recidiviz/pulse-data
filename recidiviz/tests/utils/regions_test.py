@@ -18,10 +18,6 @@
 # pylint: disable=unused-import,wrong-import-order
 
 """Tests for utils/regions.py."""
-import builtins
-import sys
-from functools import partial
-from typing import List, Tuple
 from unittest import TestCase
 
 import pytest
@@ -91,6 +87,13 @@ BAD_ENV_STR_MANIFEST_CONTENTS = """
       rate: 18/m
     jurisdiction_id: jid_bad
     """
+US_MA_MIDDLESEX_CONTENTS = """
+    agency_name: Middlesex Sheriff's Office
+    agency_type: jail
+    timezone: America/New_York
+    environment: staging
+    jurisdiction_id: jid
+"""
 REGION_TO_MANIFEST = {
     'us_ny': US_NY_MANIFEST_CONTENTS,
     'us_in': US_IN_MANIFEST_CONTENTS,
@@ -98,6 +101,7 @@ REGION_TO_MANIFEST = {
     'bad_queue': BAD_QUEUE_MANIFEST_CONTENTS,
     'bad_env_bool': BAD_ENV_BOOL_MANIFEST_CONTENTS,
     'bad_env_str': BAD_ENV_STR_MANIFEST_CONTENTS,
+    'us_ma_middlesex': US_MA_MIDDLESEX_CONTENTS,
 }
 
 def fake_modules(*names):
@@ -185,8 +189,23 @@ class TestRegions(TestCase):
                 mock_package
         }):
             region = with_manifest(regions.get_region, 'us_ny')
-            scraper = region.get_scraper()
+            scraper = region.get_ingestor()
             assert scraper is mock_scraper
+
+    def test_get_direct_controller(self):
+        mock_package = Mock()
+        mock_direct = Mock()
+        mock_package.UsMaMiddlesexController.return_value = mock_direct
+
+        with patch.dict('sys.modules', {
+                'recidiviz.ingest.direct.regions.us_ma_middlesex.'
+                'us_ma_middlesex_controller':
+                mock_package
+        }):
+            region = with_manifest(regions.get_region, 'us_ma_middlesex',
+                                   is_direct_ingest=True)
+            direct = region.get_ingestor()
+            assert direct is mock_direct
 
     def test_create_queue_name(self):
         region = with_manifest(regions.get_region, 'us_ny')

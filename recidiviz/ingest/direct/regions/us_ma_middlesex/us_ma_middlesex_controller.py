@@ -40,10 +40,6 @@ from recidiviz.ingest.direct.regions.us_ma_middlesex.us_ma_middlesex_parser \
 from recidiviz.utils import secrets, environment
 
 _DATABASE_TYPE = 'postgresql'
-_DB_USER = secrets.get_secret('us_ma_middlesex_db_user')
-_DB_PASSWORD = secrets.get_secret('us_ma_middlesex_db_password')
-_DB_NAME = secrets.get_secret('us_ma_middlesex_db_name')
-_CLOUDSQL_INSTANCE_ID = secrets.get_secret('us_ma_middlesex_instance_id')
 
 
 class UsMaMiddlesexController(BaseDirectIngestController[IngestArgs,
@@ -57,25 +53,32 @@ class UsMaMiddlesexController(BaseDirectIngestController[IngestArgs,
         """Initialize the controller and read tables from cloud SQL."""
         super(UsMaMiddlesexController, self).__init__('us_ma_middlesex',
                                                       SystemLevel.COUNTY)
+        self._connect_to_db()
+        self._load_data()
+        self.parser = UsMaMiddlesexParser()
 
+    def _connect_to_db(self):
+        db_user = secrets.get_secret('us_ma_middlesex_db_user')
+        db_password = secrets.get_secret('us_ma_middlesex_db_password')
+        db_name = secrets.get_secret('us_ma_middlesex_db_name')
+        cloudsql_instance_id = secrets.get_secret('us_ma_middlesex_instance_id')
         self.engine = sqlalchemy.create_engine(
             sqlalchemy.engine.url.URL(
                 drivername=_DATABASE_TYPE,
-                username=_DB_USER,
-                password=_DB_PASSWORD,
-                database=_DB_NAME,
-                query={'host': '/cloudsql/{}'.format(_CLOUDSQL_INSTANCE_ID)}))
+                username=db_user,
+                password=db_password,
+                database=db_name,
+                query={'host': '/cloudsql/{}'.format(cloudsql_instance_id)}))
         self.meta = sqlalchemy.MetaData()
         self.meta.reflect(bind=self.engine)
 
+    def _load_data(self):
         self.address_df = pd.read_sql_table('address', self.engine)
         self.booking_df = pd.read_sql_table('booking', self.engine)
         self.admission_df = pd.read_sql_table('admission', self.engine)
         self.charge_df = pd.read_sql_table('charge', self.engine)
         self.bond_df = pd.read_sql_table('bond', self.engine)
         self.hold_df = pd.read_sql_table('hold', self.engine)
-
-        self.parser = UsMaMiddlesexParser()
 
     def _parse(self,
                args: IngestArgs,
