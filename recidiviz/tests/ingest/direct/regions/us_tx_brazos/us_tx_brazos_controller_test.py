@@ -33,6 +33,7 @@ from recidiviz.utils import regions
 
 _ROSTER_PATH = fixtures.as_string('direct/regions/us_tx_brazos', 'test.csv')
 _FAKE_START_TIME = datetime.datetime(year=2019, month=1, day=2)
+_TEST_STORAGE_BUCKET = 'recidiviz-test-storage-bucket'
 
 
 class UsTxBrazosControllerTest(IndividualIngestTest, TestCase):
@@ -44,6 +45,7 @@ class UsTxBrazosControllerTest(IndividualIngestTest, TestCase):
         args = GcsfsIngestArgs(
             ingest_time=datetime.datetime.now(),
             file_path=_ROSTER_PATH,
+            storage_bucket=_TEST_STORAGE_BUCKET
         )
 
         # pylint:disable=protected-access

@@ -20,6 +20,9 @@
 Mostly copied from:
 https://cloud.google.com/iap/docs/authentication-howto#iap_make_request-python
 """
+import re
+from enum import Enum
+from typing import Optional, Match
 
 import requests
 
@@ -33,9 +36,11 @@ import google.oauth2.service_account
 
 _IAM_SCOPE = 'https://www.googleapis.com/auth/iam'
 _OAUTH_TOKEN_URI = 'https://www.googleapis.com/oauth2/v4/token'
+_STATE_DIRECT_INGEST_BUCKET_REGEX = re.compile(
+        r'(recidiviz-staging|recidiviz-123)-direct-ingest-state-'
+        r'([a-z]+-[a-z]+)$')
 
 # pylint: disable=protected-access
-
 
 def make_iap_request(url: str, client_id: str, method='GET', **kwargs):
     """Makes a request to an application protected by Identity-Aware Proxy.
@@ -118,3 +123,26 @@ def get_google_open_id_connect_token(
     token_response = google.oauth2._client._token_endpoint_request(
         request, _OAUTH_TOKEN_URI, body)
     return token_response['id_token']
+
+
+class DirectIngestRegionCategory(Enum):
+    # DO NOT CHANGE THESE STRING VALUES - THEY ARE USED TO CONSTRUCT BUCKET
+    # NAMES CORRESPONDING TO CLOUD BUCKETS.
+    COUNTY = 'county'
+    STATE = 'state'
+
+
+def get_direct_ingest_storage_bucket(
+        ingest_category: DirectIngestRegionCategory,
+        project_id: str) -> str:
+    return f'{project_id}-direct-ingest-{ingest_category.value}-storage'
+
+
+def get_state_region_code_from_direct_ingest_bucket(bucket) -> Optional[str]:
+    match_obj: Optional[Match] = \
+        re.match(_STATE_DIRECT_INGEST_BUCKET_REGEX, bucket)
+    if match_obj is None:
+        return None
+
+    region_code_match = match_obj.groups()[1]  # Object at index 0 is project_id
+    return region_code_match.replace('-', '_')

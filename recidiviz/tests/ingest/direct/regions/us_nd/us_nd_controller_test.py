@@ -34,18 +34,19 @@ from recidiviz.ingest.models.ingest_info import IngestInfo, \
     StateSupervisionViolationResponse, StateAgent, StateIncarcerationIncident, \
     StateIncarcerationIncidentOutcome
 from recidiviz.ingest.direct.regions.us_nd.\
-    us_nd_gcsfs_direct_ingest_controller import UsNdGcsfsDirectIngestController
+    us_nd_controller import UsNdController
 from recidiviz.tests.ingest import fixtures
 from recidiviz.tests.ingest.direct.regions.direct_ingest_util import \
     create_mock_gcsfs
 
 
-class TestUsNdGcsfsIngestController(unittest.TestCase):
+class TestUsNdController(unittest.TestCase):
     """Unit tests for each North Dakota file to be ingested by the
-    UsNdGcsfsDirectIngestController.
+    UsNdController.
     """
 
     FIXTURE_PATH_PREFIX = 'direct/regions/us_nd'
+    TEST_STORAGE_BUCKET = 'recidiviz-test-storage-bucket'
 
     def test_populate_data_elite_offenders(self):
         expected = IngestInfo(
@@ -1181,12 +1182,13 @@ class TestUsNdGcsfsIngestController(unittest.TestCase):
         self.run_file_test(expected, 'docstars_offenses')
 
     def run_file_test(self, expected: IngestInfo, file_tag: str):
-        controller = UsNdGcsfsDirectIngestController(create_mock_gcsfs())
+        controller = UsNdController(create_mock_gcsfs())
         fixture_contents = fixtures.as_string(
             self.FIXTURE_PATH_PREFIX, f'{file_tag}.csv')
         args = GcsfsIngestArgs(
             ingest_time=datetime.datetime.now(),
-            file_path=f'{self.FIXTURE_PATH_PREFIX}/{file_tag}.csv'
+            file_path=f'{self.FIXTURE_PATH_PREFIX}/{file_tag}.csv',
+            storage_bucket=self.TEST_STORAGE_BUCKET
         )
 
         # pylint:disable=protected-access
@@ -1197,25 +1199,36 @@ class TestUsNdGcsfsIngestController(unittest.TestCase):
         assert final_info == expected
 
     def test_run_full_ingest_all_files(self):
-        controller = UsNdGcsfsDirectIngestController(create_mock_gcsfs())
+        mock_fs = create_mock_gcsfs()
+        mock_fs.exists.return_value = False
+        controller = UsNdController(mock_fs)
         file_tags = sorted(controller.file_mappings_by_file.keys())
         for file_tag in file_tags:
             controller.run_ingest(GcsfsIngestArgs(
                 ingest_time=datetime.datetime.now(),
-                file_path=f'{self.FIXTURE_PATH_PREFIX}/{file_tag}.csv'
+                file_path=f'{self.FIXTURE_PATH_PREFIX}/{file_tag}.csv',
+                storage_bucket=self.TEST_STORAGE_BUCKET
             ))
+
+        self.assertEqual(mock_fs.mv.call_count, len(list(file_tags)))
 
         # TODO(2057): For now we just check that we don't crash, but we should
         #  test more comprehensively for state.
 
     def test_run_full_ingest_all_files_reverse(self):
-        controller = UsNdGcsfsDirectIngestController(create_mock_gcsfs())
-        file_tags = reversed(sorted(controller.file_mappings_by_file.keys()))
+        mock_fs = create_mock_gcsfs()
+        mock_fs.exists.return_value = False
+        controller = UsNdController(mock_fs)
+        file_tags = list(
+            reversed(sorted(controller.file_mappings_by_file.keys())))
         for file_tag in file_tags:
             controller.run_ingest(GcsfsIngestArgs(
                 ingest_time=datetime.datetime.now(),
-                file_path=f'{self.FIXTURE_PATH_PREFIX}/{file_tag}.csv'
+                file_path=f'{self.FIXTURE_PATH_PREFIX}/{file_tag}.csv',
+                storage_bucket=self.TEST_STORAGE_BUCKET
             ))
+
+        self.assertEqual(mock_fs.mv.call_count, len(file_tags))
 
         # TODO(2057): For now we just check that we don't crash, but we should
         #  test more comprehensively for state.
