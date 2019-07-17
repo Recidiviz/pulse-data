@@ -84,6 +84,7 @@ class Region:
     names_file: Optional[str] = attr.ib(default=None)
     should_proxy: Optional[bool] = attr.ib(default=False)
     is_stoppable: Optional[bool] = attr.ib(default=False)
+    is_direct_ingest: Optional[bool] = attr.ib(default=False)
 
     def __attrs_post_init__(self):
         if self.queue and self.shared_queue:
@@ -92,34 +93,29 @@ class Region:
         if self.environment not in {*environment.GAE_ENVIRONMENTS, False}:
             raise ValueError('Invalid environment: {}'.format(self.environment))
 
-    def get_scraper(self):
-        """Retrieve a scraper object for a particular region
+    def get_ingestor(self):
+        """Retrieve an ingest object for a particular region
 
         Returns:
-            An instance of the region's scraper class (e.g., UsNyScraper)
+            An instance of the region's ingest class (e.g., UsNyScraper)
         """
-        scraper_module_name = \
-            'recidiviz.ingest.scrape.regions.{region}.{region}_scraper'.format(
-                region=self.region_code
-            )
+        ingest_module = 'direct' if self.is_direct_ingest else 'scrape'
+        ingest_type_name = 'Controller' if self.is_direct_ingest else 'Scraper'
 
-        # Allow for the direct ingest only case, where the requested
-        # module won't exist in the scrapers.
-        try:
-            scraper_module = importlib.import_module(scraper_module_name)
-        except ModuleNotFoundError:
-            return None
+        module_name = \
+            f'recidiviz.ingest.{ingest_module}.regions.{self.region_code}' \
+            f'.{self.region_code}_{ingest_type_name.lower()}'
+        module = importlib.import_module(module_name)
+        ingest_class = getattr(
+            module, get_ingestor_name(self.region_code, ingest_type_name))
 
-        scraper_class = getattr(scraper_module,
-                                scraper_class_name(self.region_code))
-
-        return scraper_class()
+        return ingest_class()
 
     def get_enum_overrides(self):
         """Retrieves the overrides object of a region"""
-        scraper = self.get_scraper()
-        if scraper:
-            return scraper.get_enum_overrides()
+        obj = self.get_ingestor()
+        if obj:
+            return obj.get_enum_overrides()
         return EnumOverrides.empty()
 
     def get_queue_name(self):
@@ -134,8 +130,9 @@ REGIONS: Dict[str, 'Region'] = {}
 
 def get_region(region_code: str, is_direct_ingest: bool = False) -> Region:
     global REGIONS
-    if not region_code in REGIONS:
+    if region_code not in REGIONS:
         REGIONS[region_code] = Region(region_code=region_code,
+                                      is_direct_ingest=is_direct_ingest,
                                       **get_region_manifest(region_code,
                                                             is_direct_ingest))
     return REGIONS[region_code]
@@ -204,6 +201,6 @@ def validate_region_code(region_code):
     return region_code in get_supported_region_codes()
 
 
-def scraper_class_name(region_code: str) -> str:
-    """Returns the scraper class name for a given region_code"""
-    return ''.join(s.title() for s in region_code.split('_')) + 'Scraper'
+def get_ingestor_name(region_code: str, ingest_type_name: str) -> str:
+    """Returns the class name for a given region_code and ingest_module"""
+    return ''.join(s.title() for s in region_code.split('_')) + ingest_type_name
