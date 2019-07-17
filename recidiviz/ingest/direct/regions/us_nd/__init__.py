@@ -17,4 +17,4 @@
 
 """us_nd specific regional functionality."""
 from recidiviz.ingest.direct.regions.us_nd import \
-    us_nd_gcsfs_direct_ingest_controller
+    us_nd_controller

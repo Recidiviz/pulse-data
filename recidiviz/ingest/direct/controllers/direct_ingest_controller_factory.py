@@ -40,11 +40,11 @@ class DirectIngestControllerFactory:
 
         Returns:
             An instance of the region's direct ingest controller class (e.g.,
-             UsNdGcsfsDirectIngestController)
+             UsNdController)
         """
         controller_module_name = \
             f'{cls._DIRECT_INGEST_REGIONS_MODULE_NAME}.' \
-            f'{region_code}.{region_code}_gcsfs_direct_ingest_controller'
+            f'{region_code}.{region_code}_controller'
 
         try:
             controller_module = importlib.import_module(controller_module_name)
@@ -58,12 +58,15 @@ class DirectIngestControllerFactory:
         if not controller_class:
             return None
 
-        return controller_class(fs)
+        controller = controller_class(fs)
+        if not isinstance(controller, GcsfsDirectIngestController):
+            return None
+
+        return controller
 
     @classmethod
     def gcsfs_controller_class_name(cls, region_code: str) -> str:
         """Returns the GcsfsDirectIngestController class name for a given
         region_code.
         """
-        return ''.join(s.title() for s in region_code.split('_')) + \
-               GcsfsDirectIngestController.__name__
+        return ''.join(s.title() for s in region_code.split('_')) + 'Controller'
