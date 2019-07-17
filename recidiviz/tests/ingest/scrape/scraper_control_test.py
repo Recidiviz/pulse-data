@@ -311,11 +311,7 @@ class TestScraperStop:
             stop_scrape.assert_has_calls([
                 call([constants.ScrapeType.BACKGROUND,
                       constants.ScrapeType.SNAPSHOT], 'false'),
-                call([constants.ScrapeType.BACKGROUND,
-                      constants.ScrapeType.SNAPSHOT], 'false'),
                 call().__bool__(),
-                call([constants.ScrapeType.BACKGROUND,
-                      constants.ScrapeType.SNAPSHOT], 'false'),
                 call([constants.ScrapeType.BACKGROUND,
                       constants.ScrapeType.SNAPSHOT], 'false'),
                 call().__bool__()
@@ -456,11 +452,7 @@ class TestScraperStop:
             assert_has_calls([
                 call([constants.ScrapeType.BACKGROUND,
                       constants.ScrapeType.SNAPSHOT], None),
-                call([constants.ScrapeType.BACKGROUND,
-                      constants.ScrapeType.SNAPSHOT], None),
                 call().__bool__(),
-                call([constants.ScrapeType.BACKGROUND,
-                      constants.ScrapeType.SNAPSHOT], None),
                 call([constants.ScrapeType.BACKGROUND,
                       constants.ScrapeType.SNAPSHOT], None),
                 call().__bool__()

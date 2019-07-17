@@ -239,7 +239,6 @@ def scraper_stop():
         try:
             logging.info("Stopping scraper for region [%s].", region)
             region_scraper = regions.get_region(region).get_ingestor()
-            region_scraper.stop_scrape(scrape_types, respect_is_stoppable)
             was_stopped = region_scraper.stop_scrape(scrape_types,
                                                      respect_is_stoppable)
         finally:
