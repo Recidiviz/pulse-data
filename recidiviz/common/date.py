@@ -20,6 +20,7 @@ import re
 
 def munge_date_string(date_string: str) -> str:
     """Tranforms the input date string so it can be parsed, if necessary"""
+    date_string = re.sub(r'\b00:00\s*[Aa][Mm]\b', '12:00 AM', date_string)
     return re.sub(
         r'^((?P<year>\d+)y)?\s*((?P<month>\d+)m)?\s*((?P<day>\d+)d)?$',
         _date_component_match, date_string, flags=re.IGNORECASE)
