@@ -257,14 +257,13 @@ def _match_placeholder_tree(
 
         # If the child wasn't matched, leave it on the placeholder object.
         if not child_match_result.merged_entity_trees:
-            pass
+            return
 
         # Remove the matched child from the placeholder
-        if child_match_result.merged_entity_trees:
-            remove_child_from_entity(
-                entity=ingested_placeholder_tree.entity,
-                child_field_name=child_field_name,
-                child_to_remove=child_match_result.ingested_entity_tree.entity)
+        remove_child_from_entity(
+            entity=ingested_placeholder_tree.entity,
+            child_field_name=child_field_name,
+            child_to_remove=child_match_result.ingested_entity_tree.entity)
 
         # Ensure the merged children are on the correct DB entity
         for merged_child_tree in child_match_result.merged_entity_trees:
@@ -286,13 +285,15 @@ def _match_placeholder_tree(
         for child_match_result in match_results.individual_match_results:
             resolve_child_match_result()
 
-    # Only include the placeholder tree in our results if it still has children.
-    # If it doesn't have children, it doesn't need to be committed into our DB.
-    set_child_fields = get_set_entity_field_names(
-        ingested_placeholder_tree.entity,
-        entity_field_type=EntityFieldType.FORWARD_EDGE)
-    if set_child_fields:
-        updated_entity_trees.append(ingested_placeholder_tree)
+    # If we updated any of the entity trees, check to see if the placeholder
+    # tree still has any children. If it doesn't have any children, it doesn't
+    # need to be committed into our DB.
+    if updated_entity_trees:
+        set_child_fields = get_set_entity_field_names(
+            ingested_placeholder_tree.entity,
+            entity_field_type=EntityFieldType.FORWARD_EDGE)
+        if set_child_fields:
+            updated_entity_trees.append(ingested_placeholder_tree)
 
     return IndividualMatchResult(
         ingested_entity_tree=ingested_placeholder_tree,
