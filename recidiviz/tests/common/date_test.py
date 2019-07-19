@@ -41,3 +41,7 @@ def test_mungeDateString_noMonth():
 
 def test_mungeDateString_noDay():
     assert date.munge_date_string('4y 3m') == '4year 3month'
+
+def test_mungeDateString_ZeroAm():
+    assert date.munge_date_string('Jan 1, 2018 00:00 AM') == \
+        'Jan 1, 2018 12:00 AM'
