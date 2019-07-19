@@ -1226,6 +1226,55 @@ class TestStateEntityMatching(TestCase):
                          merged_entities.people)
         self.assertEqual(0, merged_entities.error_count)
 
+    def test_matchPersons_matchAfterManyIngestedPlaceholders(self):
+        # Arrange
+        db_sentence_group = StateSentenceGroup.new_with_defaults(
+            external_id=_EXTERNAL_ID, sentence_group_id=_ID)
+        db_external_id = StatePersonExternalId.new_with_defaults(
+            person_external_id_id=_ID,
+            state_code=_STATE_CODE, id_type=_ID_TYPE, external_id=_EXTERNAL_ID)
+        db_person = StatePerson(sentence_groups=[db_sentence_group],
+                                external_ids=[db_external_id])
+
+        incarceration_incident = StateIncarcerationIncident.new_with_defaults(
+            external_id=_EXTERNAL_ID)
+        placeholder_incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_incidents=[incarceration_incident])
+        placeholder_incarceration_sentence = \
+            StateIncarcerationSentence.new_with_defaults(
+                incarceration_periods=[placeholder_incarceration_period])
+        sentence_group = attr.evolve(db_sentence_group, sentence_group_id=None,
+                                     incarceration_sentences=[
+                                         placeholder_incarceration_sentence])
+        external_id = attr.evolve(db_external_id, person_external_id_id=None)
+        person = StatePerson.new_with_defaults(
+            sentence_groups=[sentence_group], external_ids=[external_id])
+
+        expected_incarceration_incident = attr.evolve(incarceration_incident)
+
+        expected_incarceration_period = attr.evolve(
+            placeholder_incarceration_period,
+            incarceration_incidents=[expected_incarceration_incident])
+        expected_incarceration_sentence = attr.evolve(
+            placeholder_incarceration_sentence,
+            incarceration_periods=[expected_incarceration_period])
+        expected_sentence_group = attr.evolve(
+            db_sentence_group,
+            incarceration_sentences=[expected_incarceration_sentence])
+        expected_external_id = attr.evolve(db_external_id)
+        expected_person = attr.evolve(
+            db_person, external_ids=[expected_external_id],
+            sentence_groups=[expected_sentence_group])
+
+        # Act
+        merged_entities = state_entity_matcher._match_persons(
+            ingested_persons=[person], db_persons=[db_person])
+
+        # Assert
+        self.assertEqual([expected_person], merged_entities.people)
+        self.assertEqual(0, merged_entities.error_count)
+
     # TODO(2037): Move test to state specific file.
     def test_matchPersons_mergeIncomingIncarcerationSentences(self):
         # Arrange
