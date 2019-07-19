@@ -50,10 +50,10 @@ from recidiviz.persistence.entity_matching.state.state_entity_matcher import \
     merge_multiparent_entities
 from recidiviz.tests.utils import fakes
 
-_EXTERNAL_ID = 'EXTERNAL_ID_1'
-_EXTERNAL_ID_2 = 'EXTERNAL_ID_2'
-_EXTERNAL_ID_3 = 'EXTERNAL_ID_3'
-_EXTERNAL_ID_4 = 'EXTERNAL_ID_4'
+_EXTERNAL_ID = 'EXTERNAL_ID-1'
+_EXTERNAL_ID_2 = 'EXTERNAL_ID-2'
+_EXTERNAL_ID_3 = 'EXTERNAL_ID-3'
+_EXTERNAL_ID_4 = 'EXTERNAL_ID-4'
 _ID = 1
 _ID_2 = 2
 _ID_3 = 3
