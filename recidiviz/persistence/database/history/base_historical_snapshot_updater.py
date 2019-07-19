@@ -397,22 +397,30 @@ class BaseHistoricalSnapshotUpdater(Generic[SchemaPersonType]):
 
     def _execute_action_for_all_entities(
             self,
-            start_schema_object: List[DatabaseEntity],
+            start_schema_objects: List[DatabaseEntity],
             action: Callable, *args) -> None:
-        """For every entity in every graph reachable from |start_entities|,
-        invokes |action|, passing the entity and |*args| as arguments"""
+        """For every entity in every graph reachable from
+        |start_schema_objects|, invokes |action|, passing the entity and
+        |*args| as arguments.
+        """
 
-        unprocessed = list(start_schema_object)
-        processed = []
+        unprocessed = list(start_schema_objects)
+        unprocessed_ids = {id(start_object) for start_object in
+                           start_schema_objects}
+        processed_ids = set()
+
         while unprocessed:
             entity = unprocessed.pop()
             action(entity, *args)
-            processed.append(entity)
+            unprocessed_ids.remove(id(entity))
+            processed_ids.add(id(entity))
 
-            unprocessed.extend([related_entity for related_entity
-                                in self._get_related_entities(entity)
-                                if related_entity not in processed
-                                and related_entity not in unprocessed])
+            for related_entity in self._get_related_entities(entity):
+                related_id = id(related_entity)
+                if related_id not in unprocessed_ids \
+                        and related_id not in processed_ids:
+                    unprocessed.append(related_entity)
+                    unprocessed_ids.add(related_id)
 
     @staticmethod
     def _get_related_entities(entity: DatabaseEntity) -> List[DatabaseEntity]:
