@@ -41,12 +41,12 @@ _DATE_4 = datetime.date(year=2019, month=4, day=1)
 _DATE_5 = datetime.date(year=2019, month=5, day=1)
 _DATE_6 = datetime.date(year=2019, month=6, day=1)
 _DATE_7 = datetime.date(year=2019, month=5, day=1)
-_EXTERNAL_ID = 'EXTERNAL_ID_1'
-_EXTERNAL_ID_2 = 'EXTERNAL_ID_2'
-_EXTERNAL_ID_3 = 'EXTERNAL_ID_3'
-_EXTERNAL_ID_4 = 'EXTERNAL_ID_4'
-_EXTERNAL_ID_5 = 'EXTERNAL_ID_5'
-_EXTERNAL_ID_6 = 'EXTERNAL_ID_6'
+_EXTERNAL_ID = 'EXTERNAL_ID-1'
+_EXTERNAL_ID_2 = 'EXTERNAL_ID-2'
+_EXTERNAL_ID_3 = 'EXTERNAL_ID-3'
+_EXTERNAL_ID_4 = 'EXTERNAL_ID-4'
+_EXTERNAL_ID_5 = 'EXTERNAL_ID-5'
+_EXTERNAL_ID_6 = 'EXTERNAL_ID-6'
 _ID = 1
 _ID_2 = 2
 _ID_3 = 3
@@ -345,6 +345,7 @@ class TestStateMatchingUtils(TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             facility=_FACILITY_3, release_date=_DATE_5,
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER)
+        placeholder_period = StateIncarcerationPeriod.new_with_defaults()
 
         expected_merged_incarceration_period_1 = \
             StateIncarcerationPeriod.new_with_defaults(
@@ -368,15 +369,17 @@ class TestStateMatchingUtils(TestCase):
             incarceration_period_5)
         expected_unmerged_incarceration_period_another = attr.evolve(
             incarceration_period_6)
+        expected_placeholder_period = attr.evolve(placeholder_period)
 
         expected_incarceration_periods = [
+            expected_placeholder_period,
             expected_merged_incarceration_period_1,
             expected_merged_incarceration_period_2,
             expected_unmerged_incarceration_period,
             expected_unmerged_incarceration_period_another]
 
         ingested_incarceration_periods = [
-            incarceration_period_1, incarceration_period_5,
+            placeholder_period, incarceration_period_1, incarceration_period_5,
             incarceration_period_2, incarceration_period_4,
             incarceration_period_3, incarceration_period_6
         ]

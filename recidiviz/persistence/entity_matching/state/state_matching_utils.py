@@ -354,12 +354,16 @@ def _merge_incarceration_periods_helper(
     (based on the movement sequence number provided directly from ND).
     """
 
+    placeholder_periods = [
+        p for p in incomplete_incarceration_periods if is_placeholder(p)]
+    non_placeholder_periods = [
+        p for p in incomplete_incarceration_periods if not is_placeholder(p)]
+
     # Within any IncarcerationSentence, IncarcerationPeriod external_ids are all
     # equivalent, except for their suffixes. Each suffix is based on the
     # ND-provided movement sequence number. Therefore, sorting by external_ids
     # is equivalent to sorting by this movement sequence number.
-    sorted_periods = sorted(
-        incomplete_incarceration_periods, key=_get_sequence_no)
+    sorted_periods = sorted(non_placeholder_periods, key=_get_sequence_no)
     merged_periods = []
     last_period = None
     for period in sorted_periods:
@@ -376,6 +380,7 @@ def _merge_incarceration_periods_helper(
 
     if last_period:
         merged_periods.append(last_period)
+    merged_periods.extend(placeholder_periods)
     return merged_periods
 
 
@@ -449,7 +454,7 @@ def _get_sequence_no(period: StateIncarcerationPeriod) -> int:
     """
     try:
         external_id = cast(str, period.external_id)
-        sequence_no = int(external_id.split('_')[-1])
+        sequence_no = int(external_id.split('-')[-1])
     except Exception:
         raise EntityMatchingError(
             f"Could not parse sequence number from external_id "
