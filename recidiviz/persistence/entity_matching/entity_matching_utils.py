@@ -139,16 +139,20 @@ def get_only_match(
            The entity from |db_entities| that matches the |ingested_entity|,
            or None if no match is found.
        Raises:
-           EntityMatchingError: if more than one match is found.
+           EntityMatchingError: if more than one unique match is found.
        """
     matches = get_all_matches(ingested_entity, db_entities, matcher)
     if len(matches) > 1:
+        matched_entities = matches
         if isinstance(ingested_entity, EntityTree):
+            ingested_entity = ingested_entity.entity
             matches = cast(List[EntityTree], matches)
             matched_entities = [m.entity for m in matches]
+
+        all_same = all(m == matched_entities[0] for m in matched_entities)
+        if not all_same:
             raise MatchedMultipleDatabaseEntitiesError(
-                ingested_entity.entity, matched_entities)
-        raise MatchedMultipleDatabaseEntitiesError(ingested_entity, matches)
+                ingested_entity, matched_entities)
     return matches[0] if matches else None
 
 
