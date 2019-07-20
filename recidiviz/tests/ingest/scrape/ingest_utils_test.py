@@ -123,7 +123,7 @@ class TestIngestUtils:
     def test_validate_scrape_types_one_ok(self):
         assert ingest_utils.validate_scrape_types(
             [constants.ScrapeType.SNAPSHOT.value]) == \
-            [constants.ScrapeType.SNAPSHOT]
+               [constants.ScrapeType.SNAPSHOT]
 
     def test_validate_scrape_types_one_all(self):
         assert ingest_utils.validate_scrape_types(['all']) == [
@@ -136,7 +136,7 @@ class TestIngestUtils:
         assert ingest_utils.validate_scrape_types(
             [constants.ScrapeType.BACKGROUND.value,
              constants.ScrapeType.SNAPSHOT.value]) == \
-            [constants.ScrapeType.BACKGROUND, constants.ScrapeType.SNAPSHOT]
+               [constants.ScrapeType.BACKGROUND, constants.ScrapeType.SNAPSHOT]
 
     def test_validate_scrape_types_multiple_invalid(self):
         assert not ingest_utils.validate_scrape_types(
@@ -145,7 +145,7 @@ class TestIngestUtils:
     def test_validate_scrape_types_multiple_all(self):
         assert ingest_utils.validate_scrape_types(
             [constants.ScrapeType.BACKGROUND.value, 'all']) == \
-            [constants.ScrapeType.BACKGROUND, constants.ScrapeType.SNAPSHOT]
+               [constants.ScrapeType.BACKGROUND, constants.ScrapeType.SNAPSHOT]
 
     def test_validate_scrape_types_multiple_all_invalid(self):
         assert not ingest_utils.validate_scrape_types(['all', 'invalid'])
@@ -344,7 +344,7 @@ class TestIngestUtils:
         charge1 = incarceration_sentence.create_state_charge()
         charge1.state_charge_id = 'charge1'
         charge1.classification_type = 'F'
-        incarceration_period = incarceration_sentence.\
+        incarceration_period = incarceration_sentence. \
             create_state_incarceration_period()
         incarceration_period.state_incarceration_period_id = 'ip1'
         incarceration_period.status = 'IN_CUSTODY'
@@ -448,7 +448,7 @@ class TestIngestUtils:
         response.state_supervision_violation_response_id = 'response1'
 
         group.state_incarceration_sentence_ids.append('is1')
-        incarceration_sentence = expected_proto.state_incarceration_sentences\
+        incarceration_sentence = expected_proto.state_incarceration_sentences \
             .add()
         incarceration_sentence.state_incarceration_sentence_id = 'is1'
         incarceration_sentence.state_charge_ids.append('charge1')
@@ -459,7 +459,7 @@ class TestIngestUtils:
         incarceration_period = expected_proto.state_incarceration_periods.add()
         incarceration_period.state_incarceration_period_id = 'ip1'
         incarceration_period.status = 'IN_CUSTODY'
-        incarceration_period.state_incarceration_incident_ids\
+        incarceration_period.state_incarceration_incident_ids \
             .append('incident1')
         incident = expected_proto.state_incarceration_incidents.add()
         incident.state_incarceration_incident_id = 'incident1'
@@ -507,3 +507,91 @@ class TestIngestUtils:
         for cls in proto_classes:
             if cls.startswith('state_'):
                 assert proto.__getattribute__(cls)
+
+    def test_convert_ingest_info_duplicate_incarceration_incidents(self):
+        # Arrange Python ingest info
+        info = ingest_info.IngestInfo()
+        person = info.create_state_person()
+        person.state_person_id = 'person1'
+        person.surname = 'testname'
+
+        group = person.create_state_sentence_group()
+        group.state_sentence_group_id = 'group1'
+
+        incarceration_sentence = group.create_state_incarceration_sentence()
+        incarceration_sentence.state_incarceration_sentence_id = 'is1'
+        incarceration_period = incarceration_sentence. \
+            create_state_incarceration_period()
+        incarceration_period.state_incarceration_period_id = 'ip1'
+        incarceration_period.status = 'IN_CUSTODY'
+
+        incident = incarceration_period.create_state_incarceration_incident()
+        incident.state_incarceration_incident_id = 'incident1'
+        incident.incident_type = 'FISTICUFFS'
+        incident_outcome = \
+            incident.create_state_incarceration_incident_outcome()
+        incident_outcome.state_incarceration_incident_outcome_id = 'incident1-1'
+        incident_outcome.outcome_type = 'FINE'
+
+        incident_dup = \
+            incarceration_period.create_state_incarceration_incident()
+        incident_dup.state_incarceration_incident_id = 'incident1'
+        incident_dup.incident_type = 'FISTICUFFS'
+        incident_outcome_2 = \
+            incident_dup.create_state_incarceration_incident_outcome()
+        incident_outcome_2.state_incarceration_incident_outcome_id = \
+            'incident1-2'
+        incident_outcome_2.outcome_type = 'FINE'
+
+        # Arrange Proto ingest info
+        expected_proto = ingest_info_pb2.IngestInfo()
+        pb_person = expected_proto.state_people.add()
+        pb_person.state_person_id = 'person1'
+        pb_person.surname = 'testname'
+        pb_person.state_sentence_group_ids.append('group1')
+        pb_group = expected_proto.state_sentence_groups.add()
+        pb_group.state_sentence_group_id = 'group1'
+        pb_group.state_incarceration_sentence_ids.append('is1')
+
+        pb_incarceration_sentence = \
+            expected_proto.state_incarceration_sentences.add()
+        pb_incarceration_sentence.state_incarceration_sentence_id = 'is1'
+        pb_incarceration_sentence.state_incarceration_period_ids.append('ip1')
+        pb_incarceration_period = \
+            expected_proto.state_incarceration_periods.add()
+        pb_incarceration_period.state_incarceration_period_id = 'ip1'
+        pb_incarceration_period.status = 'IN_CUSTODY'
+        pb_incarceration_period.state_incarceration_incident_ids \
+            .append('incident1')
+
+        pb_incident = expected_proto.state_incarceration_incidents.add()
+        pb_incident.state_incarceration_incident_id = 'incident1'
+        pb_incident.incident_type = 'FISTICUFFS'
+
+        pb_incident.state_incarceration_incident_outcome_ids.append(
+            'incident1-1')
+        pb_incident_outcome = \
+            expected_proto.state_incarceration_incident_outcomes.add()
+        pb_incident_outcome.state_incarceration_incident_outcome_id = \
+            'incident1-1'
+        pb_incident_outcome.outcome_type = 'FINE'
+
+        pb_incident.state_incarceration_incident_outcome_ids.append(
+            'incident1-2')
+        pb_incident_outcome = \
+            expected_proto.state_incarceration_incident_outcomes.add()
+        pb_incident_outcome.state_incarceration_incident_outcome_id = \
+            'incident1-2'
+        pb_incident_outcome.outcome_type = 'FINE'
+
+        # Act & Assert
+        proto = ingest_utils.convert_ingest_info_to_proto(info)
+        assert expected_proto == proto
+
+        # Duplicate IncarcerationIncident is gone.
+        info_back = ingest_utils.convert_proto_to_ingest_info(proto)
+        incarceration_period.state_incarceration_incidents = [incident]
+        incident.state_incarceration_incident_outcomes = [
+            incident_outcome, incident_outcome_2]
+
+        assert info_back == info
