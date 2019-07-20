@@ -238,8 +238,10 @@ def convert_ingest_info_to_proto(ingest_info_py: ingest_info.IngestInfo) \
                     'state_incarceration_incidents', incident,
                     'state_incarceration_incident_id',
                     state_incarceration_incident_map)
-                proto_period.state_incarceration_incident_ids.append(
-                    proto_incident.state_incarceration_incident_id)
+                if proto_incident.state_incarceration_incident_id not in \
+                        proto_period.state_incarceration_incident_ids:
+                    proto_period.state_incarceration_incident_ids.append(
+                        proto_incident.state_incarceration_incident_id)
 
                 if incident.responding_officer:
                     proto_agent = _populate_proto(
@@ -650,8 +652,9 @@ def convert_proto_to_ingest_info(
     for proto_incident in proto.state_incarceration_incidents:
         incarceration_incident = state_incarceration_incident_map[
             proto_incident.state_incarceration_incident_id]
-        incarceration_incident.responding_officer = \
-            state_agent_map[proto_incident.responding_officer_id]
+        if proto_incident.responding_officer_id:
+            incarceration_incident.responding_officer = \
+                state_agent_map[proto_incident.responding_officer_id]
 
         incarceration_incident_outcomes = []
         for proto_incident_outcome in \
@@ -666,8 +669,9 @@ def convert_proto_to_ingest_info(
 
     for proto_assessment in proto.state_assessments:
         assessment = state_assessment_map[proto_assessment.state_assessment_id]
-        assessment.conducting_agent = \
-            state_agent_map[proto_assessment.conducting_agent_id]
+        if proto_assessment.conducting_agent_id:
+            assessment.conducting_agent = \
+                state_agent_map[proto_assessment.conducting_agent_id]
 
     # Wire child entities to respective violations
     for proto_supervision_violation in proto.state_supervision_violations:
