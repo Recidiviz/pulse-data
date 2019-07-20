@@ -903,6 +903,77 @@ class TestStateEntityMatching(TestCase):
         self.assertEqual([expected_person], merged_entities.people)
         self.assertEqual(0, merged_entities.error_count)
 
+    def test_matchPersons_dbMatchesMultipleIngestedPlaceholders_success(self):
+        db_supervision_sentence = StateSupervisionSentence.new_with_defaults(
+            supervision_sentence_id=_ID, status=SentenceStatus.SERVING,
+            external_id=_EXTERNAL_ID,
+            state_code=_STATE_CODE,
+            min_length_days=0)
+        db_supervision_sentence_another = \
+            StateSupervisionSentence.new_with_defaults(
+                supervision_sentence_id=_ID_2, status=SentenceStatus.SERVING,
+                external_id=_EXTERNAL_ID_2,
+                state_code=_STATE_CODE,
+                min_length_days=10)
+        db_sentence_group = StateSentenceGroup.new_with_defaults(
+            external_id=_EXTERNAL_ID,
+            sentence_group_id=_ID,
+            supervision_sentences=[db_supervision_sentence,
+                                   db_supervision_sentence_another])
+        db_external_id = StatePersonExternalId.new_with_defaults(
+            person_external_id_id=_ID, state_code=_STATE_CODE,
+            external_id=_EXTERNAL_ID)
+        db_person = StatePerson.new_with_defaults(
+            person_id=_ID, full_name=_FULL_NAME, external_ids=[db_external_id],
+            sentence_groups=[db_sentence_group])
+
+        supervision_sentence_updated = attr.evolve(
+            db_supervision_sentence, supervision_sentence_id=None,
+            min_length_days=1)
+        placeholder_sentence_group = StateSentenceGroup.new_with_defaults(
+            supervision_sentences=[supervision_sentence_updated])
+
+        supervision_sentence_another_updated = attr.evolve(
+            db_supervision_sentence_another, supervision_sentence_id=None,
+            min_length_days=11)
+        fine = StateFine.new_with_defaults(external_id=_EXTERNAL_ID)
+        placeholder_sentence_group_another = \
+            StateSentenceGroup.new_with_defaults(
+                supervision_sentences=[supervision_sentence_another_updated],
+                fines=[fine])
+        placeholder_person = StatePerson.new_with_defaults(
+            sentence_groups=[placeholder_sentence_group,
+                             placeholder_sentence_group_another])
+
+        expected_supervision_sentence = attr.evolve(
+            supervision_sentence_updated, supervision_sentence_id=_ID)
+        expected_supervision_sentence_another = attr.evolve(
+            supervision_sentence_another_updated, supervision_sentence_id=_ID_2)
+        expected_sentence_group = attr.evolve(
+            db_sentence_group,
+            supervision_sentences=[expected_supervision_sentence,
+                                   expected_supervision_sentence_another])
+        expected_external_id = attr.evolve(db_external_id)
+        expected_person = attr.evolve(
+            db_person, external_ids=[expected_external_id],
+            sentence_groups=[expected_sentence_group])
+
+        expected_fine = attr.evolve(fine)
+        expected_placeholder_sentence_group = \
+            StateSentenceGroup.new_with_defaults(fines=[expected_fine])
+        expected_placeholder_person = StatePerson.new_with_defaults(
+            sentence_groups=[expected_placeholder_sentence_group])
+
+        # Act
+        merged_entities = state_entity_matcher._match_persons(
+            ingested_persons=[placeholder_person],
+            db_persons=[db_person])
+
+        # Assert
+        self.assertEqual([expected_person, expected_placeholder_person],
+                         merged_entities.people)
+        self.assertEqual(0, merged_entities.error_count)
+
     def test_matchPersons_multipleIngestedPersonsMatchToPlaceholderDb(self):
         db_supervision_sentence = StateSupervisionSentence.new_with_defaults(
             supervision_sentence_id=_ID, status=SentenceStatus.SERVING,
