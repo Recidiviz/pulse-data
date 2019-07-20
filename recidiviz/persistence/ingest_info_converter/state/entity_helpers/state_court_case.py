@@ -51,10 +51,12 @@ def copy_fields_to_builder(
     enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
 
     # enum values
-    new.status = enum_mappings.get(StateCourtCaseStatus)
+    new.status = enum_mappings.get(
+        StateCourtCaseStatus, default=StateCourtCaseStatus.PRESENT_WITHOUT_INFO)
     new.status_raw_text = fn(normalize, 'status', proto)
 
-    new.court_type = enum_mappings.get(StateCourtType)
+    new.court_type = enum_mappings.get(
+        StateCourtType, default=StateCourtType.PRESENT_WITHOUT_INFO)
     new.court_type_raw_text = fn(normalize, 'court_type', proto)
 
     # 1-to-1 mappings
