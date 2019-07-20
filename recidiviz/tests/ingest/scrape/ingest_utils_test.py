@@ -388,6 +388,10 @@ class TestIngestUtils:
         court_case = charge2.create_state_court_case()
         court_case.state_court_case_id = 'case1'
 
+        court_case_agent = court_case.create_state_agent()
+        court_case_agent.state_agent_id = 'agentJ'
+        court_case_agent.full_name = 'Judge Agent'
+
         # Arrange Proto ingest info
         expected_proto = ingest_info_pb2.IngestInfo()
         person = expected_proto.state_people.add()
@@ -465,6 +469,12 @@ class TestIngestUtils:
         incident.state_incarceration_incident_id = 'incident1'
         incident.incident_type = 'FISTICUFFS'
 
+        # An ordering requirement in the proto equality check at the end of this
+        # test requires that this agent be added after agent1 and before agent2
+        court_case_agent = expected_proto.state_agents.add()
+        court_case_agent.state_agent_id = 'agentJ'
+        court_case_agent.full_name = 'Judge Agent'
+
         incident.responding_officer_id = 'agent2'
         incident_agent = expected_proto.state_agents.add()
         incident_agent.state_agent_id = 'agent2'
@@ -492,6 +502,8 @@ class TestIngestUtils:
         charge2.state_court_case_id = 'case1'
         court_case = expected_proto.state_court_cases.add()
         court_case.state_court_case_id = 'case1'
+
+        court_case.judge_id = 'agentJ'
 
         # Act & Assert
 

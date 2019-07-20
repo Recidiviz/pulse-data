@@ -206,11 +206,20 @@ def convert_ingest_info_to_proto(ingest_info_py: ingest_info.IngestInfo) \
                 proto_state_charge.state_charge_id)
 
             if state_charge.state_court_case:
+                state_court_case = state_charge.state_court_case
+
                 proto_court_case = _populate_proto(
-                    'state_court_cases', state_charge.state_court_case,
+                    'state_court_cases', state_court_case,
                     'state_court_case_id', state_court_case_map)
                 proto_state_charge.state_court_case_id = \
                     proto_court_case.state_court_case_id
+
+                if state_court_case.judge:
+                    proto_judge = _populate_proto(
+                        'state_agents', state_court_case.judge,
+                        'state_agent_id', state_agent_map)
+                    proto_court_case.judge_id = \
+                        proto_judge.state_agent_id
 
             if state_charge.state_bond:
                 proto_state_bond = _populate_proto(
@@ -648,6 +657,12 @@ def convert_proto_to_ingest_info(
         parole_decision.decision_agents = \
             [state_agent_map[proto_id] for proto_id
              in proto_parole_decision.decision_agent_ids]
+
+    for proto_court_case in proto.state_court_cases:
+        state_court_case = state_court_case_map[
+            proto_court_case.state_court_case_id]
+        if proto_court_case.judge_id:
+            state_court_case.judge = state_agent_map[proto_court_case.judge_id]
 
     for proto_incident in proto.state_incarceration_incidents:
         incarceration_incident = state_incarceration_incident_map[
