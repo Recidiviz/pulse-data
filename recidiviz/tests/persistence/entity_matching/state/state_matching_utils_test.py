@@ -123,7 +123,7 @@ class TestStateMatchingUtils(TestCase):
     def test_isMatch_statePersonAlias(self):
         alias = StatePersonAlias.new_with_defaults(
             state_code=_STATE_CODE, full_name='full_name')
-        alias_another = attr.evolve(alias, full_name='full_name_2')
+        alias_another = attr.evolve(alias)
         self.assertTrue(
             _is_match(ingested_entity=alias, db_entity=alias_another))
         alias_another.state_code = _STATE_CODE_ANOTHER
