@@ -508,6 +508,9 @@ def _add_match_to_matched_entities_cache(
         if ingested_entity != matched_entities_by_db_ids[matched_db_id]:
             matches = [ingested_entity,
                        matched_entities_by_db_ids[matched_db_id]]
+            # It's ok for a DB object to match multiple ingested placeholders.
+            if is_placeholder(matches[0]) and is_placeholder(matches[1]):
+                return
             raise MatchedMultipleIngestedEntitiesError(db_entity_match, matches)
     else:
         matched_entities_by_db_ids[matched_db_id] = ingested_entity
