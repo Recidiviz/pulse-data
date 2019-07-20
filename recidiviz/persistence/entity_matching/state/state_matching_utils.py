@@ -152,13 +152,16 @@ def _is_match(*, ingested_entity: Entity, db_entity: Entity) -> bool:
     # attribute' entities are matches if their state_codes align.
     if isinstance(ingested_entity, StatePersonAlias):
         db_entity = cast(StatePersonAlias, db_entity)
-        return ingested_entity.state_code == db_entity.state_code
+        return ingested_entity.state_code == db_entity.state_code \
+                and ingested_entity.full_name == db_entity.full_name
     if isinstance(ingested_entity, StatePersonRace):
         db_entity = cast(StatePersonRace, db_entity)
-        return ingested_entity.state_code == db_entity.state_code
+        return ingested_entity.state_code == db_entity.state_code \
+                and ingested_entity.race == db_entity.race
     if isinstance(ingested_entity, StatePersonEthnicity):
         db_entity = cast(StatePersonEthnicity, db_entity)
-        return ingested_entity.state_code == db_entity.state_code
+        return ingested_entity.state_code == db_entity.state_code \
+                and ingested_entity.ethnicity == db_entity.ethnicity
 
     db_entity = cast(ExternalIdEntity, db_entity)
     ingested_entity = cast(ExternalIdEntity, ingested_entity)

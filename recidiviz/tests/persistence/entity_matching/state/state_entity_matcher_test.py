@@ -308,6 +308,51 @@ class TestStateEntityMatching(TestCase):
         self.assertEqual([expected_person], merged_entities.people)
         self.assertEqual(0, merged_entities.error_count)
 
+    def test_matchPersons_noPlaceholders_updatePersonAttributes(self):
+        # Arrange
+        db_race = StatePersonRace.new_with_defaults(
+            person_race_id=_ID, state_code=_STATE_CODE,
+            race=Race.WHITE)
+        db_alias = StatePersonAlias.new_with_defaults(
+            person_alias_id=_ID, state_code=_STATE_CODE,
+            full_name=_FULL_NAME)
+        db_ethnicity = StatePersonEthnicity.new_with_defaults(
+            person_ethnicity_id=_ID, state_code=_STATE_CODE,
+            ethnicity=Ethnicity.HISPANIC)
+        db_external_id = StatePersonExternalId.new_with_defaults(
+            person_external_id_id=_ID, state_code=_STATE_CODE,
+            external_id=_EXTERNAL_ID, id_type=_ID_TYPE)
+        db_person = StatePerson.new_with_defaults(
+            person_id=_ID, full_name=_FULL_NAME,
+            external_ids=[db_external_id],
+            races=[db_race], aliases=[db_alias], ethnicities=[db_ethnicity])
+
+        race = StatePersonRace.new_with_defaults(
+            state_code=_STATE_CODE, race=Race.BLACK)
+        alias = StatePersonAlias.new_with_defaults(
+            state_code=_STATE_CODE, full_name=_FULL_NAME_ANOTHER)
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code=_STATE_CODE, ethnicity=Ethnicity.NOT_HISPANIC)
+        external_id = attr.evolve(
+            db_external_id, person_external_id_id=None)
+        person = attr.evolve(
+            db_person, person_id=None,
+            external_ids=[external_id],
+            races=[race], aliases=[alias], ethnicities=[ethnicity])
+
+        expected_person = attr.evolve(
+            db_person, races=[db_race, race],
+            ethnicities=[db_ethnicity, ethnicity],
+            aliases=[db_alias, alias])
+
+        # Act
+        merged_entities = state_entity_matcher._match_persons(
+            ingested_persons=[person], db_persons=[db_person])
+
+        # Assert
+        self.assertEqual([expected_person], merged_entities.people)
+        self.assertEqual(0, merged_entities.error_count)
+
     def test_matchPersons_noPlaceholders_partialTreeIngested(self):
         # Arrange
         db_court_case = StateCourtCase.new_with_defaults(
