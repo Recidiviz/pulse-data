@@ -19,6 +19,8 @@
 import unittest
 from datetime import date
 
+from recidiviz.common.constants.state.state_court_case import \
+    StateCourtCaseStatus, StateCourtType
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
@@ -35,6 +37,7 @@ class StateCourtCaseConverterTest(unittest.TestCase):
         # Arrange
         ingest_case = ingest_info_pb2.StateCourtCase(
             status=None,
+            court_type=None,
             state_court_case_id='CASE_ID',
             date_convicted='1/2/2111',
             next_court_date='1/10/2111',
@@ -51,8 +54,10 @@ class StateCourtCaseConverterTest(unittest.TestCase):
 
         # Assert
         expected_result = entities.StateCourtCase.new_with_defaults(
-            status=None,
+            status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
             status_raw_text=None,
+            court_type=StateCourtType.PRESENT_WITHOUT_INFO,
+            court_type_raw_text=None,
             external_id='CASE_ID',
             date_convicted=date(year=2111, month=1, day=2),
             next_court_date=date(year=2111, month=1, day=10),

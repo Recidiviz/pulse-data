@@ -29,6 +29,8 @@ from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentClass
 from recidiviz.common.constants.state.state_charge import \
     StateChargeClassificationType
+from recidiviz.common.constants.state.state_court_case import \
+    StateCourtCaseStatus, StateCourtType
 from recidiviz.common.constants.state.state_fine import StateFineStatus
 from recidiviz.common.constants.state.state_incarceration_incident import \
     StateIncarcerationIncidentType, StateIncarcerationIncidentOutcomeType
@@ -321,6 +323,8 @@ class TestIngestInfoStateConverter(unittest.TestCase):
         court_case = StateCourtCase.new_with_defaults(
             external_id='CASE_ID',
             state_code='US_ND',
+            status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
+            court_type=StateCourtType.PRESENT_WITHOUT_INFO,
             judge=StateAgent.new_with_defaults(
                 external_id='JUDGE_AGENT_ID_1',
                 state_code='US_ND',

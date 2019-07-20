@@ -34,6 +34,7 @@ class StateCourtType(EntityEnum, metaclass=EntityEnumMeta):
 
 class StateCourtCaseStatus(EntityEnum, metaclass=EntityEnumMeta):
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
+    PRESENT_WITHOUT_INFO = enum_strings.present_without_info
 
     # TODO(1697): Add values here
 
