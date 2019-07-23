@@ -165,6 +165,10 @@ def _is_match(*, ingested_entity: Entity, db_entity: Entity) -> bool:
 
     db_entity = cast(ExternalIdEntity, db_entity)
     ingested_entity = cast(ExternalIdEntity, ingested_entity)
+
+    # Placeholders entities are considered equal
+    if ingested_entity.external_id is None and db_entity.external_id is None:
+        return is_placeholder(ingested_entity) and is_placeholder(db_entity)
     return ingested_entity.external_id == db_entity.external_id
 
 
@@ -428,6 +432,10 @@ def is_incomplete_incarceration_period_match(
         a, b = ingested_entity.entity, db_entity.entity
     a = cast(StateIncarcerationPeriod, a)
     b = cast(StateIncarcerationPeriod, b)
+
+    # Cannot match with a placeholder StateIncarcerationPeriod
+    if is_placeholder(a) or is_placeholder(b):
+        return False
 
     a_seq_no = _get_sequence_no(a)
     b_seq_no = _get_sequence_no(b)
