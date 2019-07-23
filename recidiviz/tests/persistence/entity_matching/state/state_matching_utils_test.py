@@ -140,6 +140,15 @@ class TestStateMatchingUtils(TestCase):
         self.assertFalse(
             _is_match(ingested_entity=charge, db_entity=charge_another))
 
+    def test_isMatch_defaultCompareNoExternalIds(self):
+        charge = StateCharge.new_with_defaults()
+        charge_another = attr.evolve(charge)
+        self.assertTrue(
+            _is_match(ingested_entity=charge, db_entity=charge_another))
+        charge.description = 'description'
+        self.assertFalse(
+            _is_match(ingested_entity=charge, db_entity=charge_another))
+
     def test_hasDefaultStatus(self):
         entity = StateSentenceGroup.new_with_defaults(
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
@@ -485,9 +494,12 @@ class TestStateMatchingUtils(TestCase):
         ingested_incarceration_periods = [
             incarceration_period_1, incarceration_period_2]
 
+        expected_incarceration_periods = [
+            attr.evolve(incarceration_period_1),
+            attr.evolve(incarceration_period_2)]
         merged_periods = _merge_incarceration_periods_helper(
             ingested_incarceration_periods)
-        self.assertCountEqual(ingested_incarceration_periods, merged_periods)
+        self.assertCountEqual(expected_incarceration_periods, merged_periods)
 
         incarceration_period_2.external_id = _EXTERNAL_ID_2
         expected_merged_incarceration_period_1 = \
@@ -504,6 +516,25 @@ class TestStateMatchingUtils(TestCase):
         merged_periods = _merge_incarceration_periods_helper(
             ingested_incarceration_periods)
         self.assertCountEqual(expected_incarceration_periods, merged_periods)
+
+    def test_mergeIncarcerationPeriods_doNotMergeWithPlaceholder(self):
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            external_id=_EXTERNAL_ID,
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            facility=_FACILITY, admission_date=_DATE_1,
+            admission_reason=
+            StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION)
+        placeholder_incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults()
+        ingested_incarceration_periods = [
+            incarceration_period, placeholder_incarceration_period]
+
+        expected_periods = [
+            attr.evolve(incarceration_period),
+            attr.evolve(placeholder_incarceration_period)]
+        merged_periods = _merge_incarceration_periods_helper(
+            ingested_incarceration_periods)
+        self.assertCountEqual(expected_periods, merged_periods)
 
     def test_moveIncidentsOntoPeriods(self):
         merged_incarceration_period_1 = \
