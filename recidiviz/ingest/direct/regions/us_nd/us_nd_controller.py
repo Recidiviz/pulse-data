@@ -154,6 +154,7 @@ class UsNdController(GcsfsDirectIngestController):
             'elite_aliases': [self._clear_temporary_alias_primary_ids],
             'elite_offenders': [self._rationalize_race_and_ethnicity],
             'elite_offender_identifiers': [self._normalize_external_id],
+            'elite_sentence_aggs': [self._ignore_unknown_max_lengths],
             'elite_sentences': [self._rationalize_life_sentence],
             'elite_sentence_terms': [self._concatenate_elite_length_periods,
                                      self._convert_to_supervision_sentence],
@@ -741,8 +742,8 @@ class UsNdController(GcsfsDirectIngestController):
             # TODO(2060): What to do about unexpected release reasons:
             #             ADMN, PRB, PV, 4139, REC, NPRB, NPROB
             StateIncarcerationPeriodReleaseReason:
-                ['COM', 'CONF', 'CONT', 'CONV', 'JOB', 'PROG', 'PRB', 'PV',
-                 '4139', 'REC', 'NPRB', 'NTAD', 'NPROB', 'JOB'],
+                ['ADMN', 'COM', 'CONF', 'CONT', 'CONV', 'JOB', 'PROG', 'PRB',
+                 'PV', '4139', 'REC', 'NPRB', 'NTAD', 'NPROB', 'JOB'],
         }
 
         return self._create_overrides(overrides, ignores)
