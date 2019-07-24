@@ -926,10 +926,10 @@ class TestMapRecidivismCombinations:
             person, release_events_by_cohort)
 
         # 64 combinations of demographics, facility, & stay length
-        # * 30 combinations of methodology/return type/supervision type
+        # * 40 combinations of methodology/return type/supervision type
         # * 10 periods +
-        # 64 * 2 count windows * 30 combos of methodology etc. = 23040 metrics
-        assert len(recidivism_combinations) == 23040
+        # 64 * 2 count windows * 40 combos of methodology etc. = 30720 metrics
+        assert len(recidivism_combinations) == 30720
 
         for combination, value in recidivism_combinations:
             if combination.get('metric_type') == 'rate' and \
@@ -974,19 +974,19 @@ class TestMapRecidivismCombinations:
         # For the first event:
         #   For the first 5 periods:
         #       64 combinations of characteristics
-        #       * 30 combinations of methodology/return type/supervision type
-        #       * 5 periods + 64 * 2 count windows * 30 combos of
-        #       methodology etc.= 13440 metrics
+        #       * 40 combinations of methodology/return type/supervision type
+        #       * 5 periods + 64 * 2 count windows * 40 combos of
+        #       methodology etc.= 17920 metrics
         #   For the second 5 periods, there is an additional event-based count:
         #       64 combinations of characteristics
-        #       * (30 combinations of methodology/return type/supervision type
-        #           + 15 more instances) * 5 periods = 14400 metrics
+        #       * (40 combinations of methodology/return type/supervision type
+        #           + 20 more instances) * 5 periods = 19200 metrics
         #
         # For the second event:
-        #   64 combinations * 30 combos * 10 periods +
-        #   64 combos * 2 count windows * 30 combos of methodology etc.
-        #   = 23040 metrics
-        assert len(recidivism_combinations) == (13440 + 14400 + 23040)
+        #   64 combinations * 40 combos * 10 periods +
+        #   64 combos * 2 count windows * 40 combos of methodology etc.
+        #   = 30720 metrics
+        assert len(recidivism_combinations) == (17920 + 19200 + 30720)
 
         for combination, value in recidivism_combinations:
             if combination.get('metric_type') == 'rate' and \
@@ -1023,10 +1023,10 @@ class TestMapRecidivismCombinations:
             person, release_events_by_cohort)
 
         # 64 combinations of demographics, facility, & stay length
-        # * 30 combinations of methodology/return type/supervision type
-        # * 10 periods + 0 count windows = 19200 metrics
+        # * 40 combinations of methodology/return type/supervision type
+        # * 10 periods + 0 count windows = 25600 metrics
 
-        assert len(recidivism_combinations) == 19200
+        assert len(recidivism_combinations) == 25600
         assert all(value == 0 for _combination, value
                    in recidivism_combinations)
 
@@ -1058,9 +1058,9 @@ class TestMapRecidivismCombinations:
             person, release_events_by_cohort)
 
         # 64 combinations of demographics, facility, & stay length
-        # * 30 combinations of methodology/return type/supervision type
-        # * 10 periods + 0 count metrics. = 19200 metrics
-        assert len(recidivism_combinations) == 19200
+        # * 40 combinations of methodology/return type/supervision type
+        # * 10 periods + 0 count metrics. = 25600 metrics
+        assert len(recidivism_combinations) == 25600
         assert all(value == 0 for _combination, value
                    in recidivism_combinations if
                    _combination['metric_type'] == 'rate')
@@ -1102,10 +1102,10 @@ class TestMapRecidivismCombinations:
             person, release_events_by_cohort)
 
         # 96 combinations of demographics, facility, & stay length
-        # * 30 combinations of methodology/return type/supervision type
-        # * 10 periods + 96 * 2 count windows * 30 combos of methodology etc.
-        # = 34560 metrics
-        assert len(recidivism_combinations) == 34560
+        # * 40 combinations of methodology/return type/supervision type
+        # * 10 periods + 96 * 2 count windows * 40 combos of methodology etc.
+        # = 46080 metrics
+        assert len(recidivism_combinations) == 46080
 
         for combination, value in recidivism_combinations:
             if combination.get('metric_type') == 'rate' and \
@@ -1148,10 +1148,10 @@ class TestMapRecidivismCombinations:
             person, release_events_by_cohort)
 
         # 96 combinations of demographics, facility, & stay length
-        # * 30 combinations of methodology/return type/supervision type
-        # * 10 periods + 96 * 2 count windows * 30 combos of methodology etc.
-        # = 34560 metrics
-        assert len(recidivism_combinations) == 34560
+        # * 40 combinations of methodology/return type/supervision type
+        # * 10 periods + 96 * 2 count windows * 40 combos of methodology etc.
+        # = 46080 metrics
+        assert len(recidivism_combinations) == 46080
 
         for combination, value in recidivism_combinations:
             if combination.get('metric_type') == 'rate' and \
@@ -1199,10 +1199,10 @@ class TestMapRecidivismCombinations:
             person, release_events_by_cohort)
 
         # 144 combinations of demographics, facility, & stay length
-        # * 30 combinations of methodology/return type/supervision type
-        # * 10 periods + 144 * 2 count windows * 30 combos of methodology etc.
-        # = 51840 metrics
-        assert len(recidivism_combinations) == 51840
+        # * 40 combinations of methodology/return type/supervision type
+        # * 10 periods + 144 * 2 count windows * 40 combos of methodology etc.
+        # = 69120 metrics
+        assert len(recidivism_combinations) == 69120
 
         for combination, value in recidivism_combinations:
             if combination.get('metric_type') == 'rate' and \
@@ -1244,10 +1244,10 @@ class TestMapRecidivismCombinations:
             person, release_events_by_cohort)
 
         # 64 combinations of demographics, facility, & stay length
-        # * 30 combinations of methodology/return type/supervision type
-        # * 10 periods + 64 * 2 count windows * 30 combos of methodology etc.
-        # = 23040 metrics
-        assert len(recidivism_combinations) == 23040
+        # * 40 combinations of methodology/return type/supervision type
+        # * 10 periods + 64 * 2 count windows * 40 combos of methodology etc.
+        # = 30720 metrics
+        assert len(recidivism_combinations) == 30720
 
         for combination, value in recidivism_combinations:
             if combination.get('metric_type') == 'rate' and \
@@ -1292,10 +1292,10 @@ class TestMapRecidivismCombinations:
             person, release_events_by_cohort)
 
         # 64 combinations of demographics, facility, & stay length
-        # * 30 combinations of methodology/return type/supervision type
-        # * 10 periods + 64 * 2 count windows * 30 combos of methodology etc.
-        # = 23040 metrics
-        assert len(recidivism_combinations) == 23040
+        # * 40 combinations of methodology/return type/supervision type
+        # * 10 periods + 64 * 2 count windows * 40 combos of methodology etc.
+        # = 30720 metrics
+        assert len(recidivism_combinations) == 30720
 
         for combination, value in recidivism_combinations:
             if combination.get('metric_type') == 'rate' and \
@@ -1342,10 +1342,10 @@ class TestMapRecidivismCombinations:
             person, release_events_by_cohort)
 
         # 64 combinations of demographics, facility, & stay length
-        # * 30 combinations of methodology/return type/supervision type
-        # * 10 periods + 64 * 2 count windows * 30 combos of methodology etc.
-        # = 23040 metrics
-        assert len(recidivism_combinations) == 23040
+        # * 40 combinations of methodology/return type/supervision type
+        # * 10 periods + 64 * 2 count windows * 40 combos of methodology etc.
+        # = 30720 metrics
+        assert len(recidivism_combinations) == 30720
 
         for combination, value in recidivism_combinations:
             if combination.get('metric_type') == 'rate' and \
@@ -1354,12 +1354,16 @@ class TestMapRecidivismCombinations:
             elif combination.get('return_type') == \
                     ReincarcerationReturnType.NEW_ADMISSION or \
                     combination.get('from_supervision_type') == \
-                    ReincarcerationReturnFromSupervisionType.PROBATION or \
-                    combination.get('from_supervision_type') == \
-                    ReincarcerationReturnFromSupervisionType.PAROLE and \
-                    combination.get('source_violation_type') not in \
-                    [None, StateSupervisionViolationType.TECHNICAL]:
+                    ReincarcerationReturnFromSupervisionType.PROBATION:
                 assert value == 0
+            elif combination.get('from_supervision_type') is None or \
+                    combination.get('from_supervision_type') == \
+                    ReincarcerationReturnFromSupervisionType.PAROLE:
+                if combination.get('source_violation_type') not in \
+                        [None, StateSupervisionViolationType.TECHNICAL]:
+                    assert value == 0
+                else:
+                    assert value == 1
             else:
                 assert value == 1
 
@@ -1414,12 +1418,12 @@ class TestMapRecidivismCombinations:
                 else:
                     assert value == 0
 
-        # Expected count metrics: 64 * 2 count windows * 30 combos of
+        # Expected count metrics: 64 * 2 count windows * 40 combos of
         # methodology etc. = 3840
         # Half of those should be year metrics, and half should be month metrics
-        assert num_count_metrics == 3840
-        assert num_year_metrics == 1920
-        assert num_month_metrics == 1920
+        assert num_count_metrics == 5120
+        assert num_year_metrics == 2560
+        assert num_month_metrics == 2560
 
     def test_map_recidivism_combinations_count_metric_no_recidivism(self):
         person = StatePerson.new_with_defaults(person_id=12345,
@@ -1514,20 +1518,20 @@ class TestMapRecidivismCombinations:
         # For the first event:
         #   For the first 5 periods:
         #       64 combinations of characteristics
-        #       * 30 combinations of methodology/return type/supervision type
-        #       * 5 periods = 9600 metrics
+        #       * 40 combinations of methodology/return type/supervision type
+        #       * 5 periods = 12800 metrics
         #   For the second 5 periods
         #       64 combinations of characteristics
-        #       * (30 combinations of methodology/return type/supervision type
-        #           + 15 more instances) * 5 periods = 14400 metrics
+        #       * (40 combinations of methodology/return type/supervision type
+        #           + 20 more instances) * 5 periods = 19200 metrics
         #
-        #   Count window: 64 * 2 count windows * 30 combos = 3840
+        #   Count window: 64 * 2 count windows * 40 combos = 5120
         #
         # For the second event:
-        #   64 combinations * 30 combos * 10 periods +
-        #   64 * 2 count windows * 15 event-based-combos  +
-        #   64 * 1 count window (month) * 15 person-based-combos = 22080 metrics
-        assert len(recidivism_combinations) == (9600 + 14400 + 3840 + 22080)
+        #   64 combinations * 40 combos * 10 periods +
+        #   64 * 2 count windows * 20 event-based-combos  +
+        #   64 * 1 count window (month) * 20 person-based-combos = 29440 metrics
+        assert len(recidivism_combinations) == (12800 + 19200 + 5120 + 29440)
 
         num_count_metrics = 0
         num_person_year_metrics = 0
@@ -1565,11 +1569,11 @@ class TestMapRecidivismCombinations:
                 else:
                     assert value == 0
 
-        assert num_count_metrics == (3840 + 2880)
-        assert num_person_year_metrics == 960
-        assert num_event_year_metrics == 1920
-        assert num_march_month_metrics == 1920
-        assert num_sept_month_metrics == 1920
+        assert num_count_metrics == (5120 + 3840)
+        assert num_person_year_metrics == 1280
+        assert num_event_year_metrics == 2560
+        assert num_march_month_metrics == 2560
+        assert num_sept_month_metrics == 2560
 
     def test_map_recidivism_combinations_count_twice_in_month(self):
         person = StatePerson.new_with_defaults(person_id=12345,
@@ -1604,20 +1608,20 @@ class TestMapRecidivismCombinations:
         # For the first event:
         #   For the first 5 periods:
         #       64 combinations of characteristics
-        #       * 30 combinations of methodology/return type/supervision type
-        #       * 5 periods = 9600 metrics
+        #       * 40 combinations of methodology/return type/supervision type
+        #       * 5 periods = 12800 metrics
         #   For the second 5 periods
         #       64 combinations of characteristics
-        #       * (30 combinations of methodology/return type/supervision type
-        #           + 15 more instances) * 5 periods = 14400 metrics
+        #       * (40 combinations of methodology/return type/supervision type
+        #           + 20 more instances) * 5 periods = 19200 metrics
         #
-        #   Count window: 64 * 2 count windows * 30 combos = 3840
+        #   Count window: 64 * 2 count windows * 40 combos = 5120
         #
         # For the second event:
-        #   64 combinations * 30 combos * 10 periods +
-        #   64 * 2 count windows * 15 event-based-combos  +
-        #   64 * 0 person-based-combos = 21120 metrics
-        assert len(recidivism_combinations) == (9600 + 14400 + 3840 + 21120)
+        #   64 combinations * 40 combos * 10 periods +
+        #   64 * 2 count windows * 20 event-based-combos  +
+        #   64 * 0 person-based-combos = 28160 metrics
+        assert len(recidivism_combinations) == (12800 + 19200 + 5120 + 28160)
 
         num_count_metrics = 0
         num_person_year_metrics = 0
@@ -1657,9 +1661,9 @@ class TestMapRecidivismCombinations:
                 else:
                     assert value == 0
 
-        assert num_count_metrics == (3840 + 1920)
-        assert num_person_year_metrics == 960
-        assert num_event_year_metrics == 1920
-        assert num_march_month_metrics == (1920 + 960)
-        assert num_person_month_metrics == 960
-        assert num_event_month_metrics == 1920
+        assert num_count_metrics == (5120 + 2560)
+        assert num_person_year_metrics == 1280
+        assert num_event_year_metrics == 2560
+        assert num_march_month_metrics == (2560 + 1280)
+        assert num_person_month_metrics == 1280
+        assert num_event_month_metrics == 2560

@@ -821,33 +821,46 @@ def augmented_combo_list(combo: Dict[str, Any],
     base_combo = augment_combination(combo, parameters)
     combos.append(base_combo)
 
-    parameters['return_type'] = \
+    new_admission_parameters = parameters.copy()
+    new_admission_parameters['return_type'] = \
         ReincarcerationReturnType.NEW_ADMISSION
-    combos.append(augment_combination(base_combo, parameters))
 
-    parameters['return_type'] = ReincarcerationReturnType.REVOCATION
-    combo_revocation = augment_combination(base_combo, parameters)
+    combos.append(augment_combination(base_combo, new_admission_parameters))
+
+    revocation_parameters = parameters.copy()
+    revocation_parameters['return_type'] = ReincarcerationReturnType.REVOCATION
+    combo_revocation = augment_combination(base_combo, revocation_parameters)
     combos.append(combo_revocation)
 
-    parameters['from_supervision_type'] = \
+    for violation_type in StateSupervisionViolationType:
+        violation_parameters = revocation_parameters.copy()
+        violation_parameters['source_violation_type'] = violation_type
+        combos.append(augment_combination(combo_revocation,
+                                          violation_parameters))
+
+    parole_parameters = revocation_parameters.copy()
+    parole_parameters['from_supervision_type'] = \
         ReincarcerationReturnFromSupervisionType.PAROLE
-    parole_combo = augment_combination(combo_revocation, parameters)
+    parole_combo = augment_combination(combo_revocation, parole_parameters)
     combos.append(parole_combo)
 
     for violation_type in StateSupervisionViolationType:
-        parameters['source_violation_type'] = violation_type
-        combos.append(augment_combination(parole_combo, parameters))
+        violation_parameters = parole_parameters.copy()
+        violation_parameters['source_violation_type'] = violation_type
+        combos.append(augment_combination(parole_combo, violation_parameters))
 
-    parameters['source_violation_type'] = None
-
-    parameters['from_supervision_type'] = \
+    probation_parameters = revocation_parameters.copy()
+    probation_parameters['from_supervision_type'] = \
         ReincarcerationReturnFromSupervisionType.PROBATION
-    probation_combo = augment_combination(combo_revocation, parameters)
+    probation_combo = augment_combination(combo_revocation,
+                                          probation_parameters)
     combos.append(probation_combo)
 
     for violation_type in StateSupervisionViolationType:
-        parameters['source_violation_type'] = violation_type
-        combos.append(augment_combination(probation_combo, parameters))
+        violation_parameters = probation_parameters.copy()
+        violation_parameters['source_violation_type'] = violation_type
+        combos.append(augment_combination(probation_combo,
+                                          violation_parameters))
 
     return combos
 
@@ -872,11 +885,17 @@ def recidivism_value_for_metric(
             the StateSupervisionViolationType of the violation that eventually
             resulted in this return
 
-    Returns: 1 if the event_return_type and event_from_supervision_type match
-        that of the combo. Else, returns 0.
+    Returns: 1 if the event_return_type, event_from_supervision_type, and
+        event_source_violation_type match that of the combo. If the value for
+        any of these fields on the combo is None, this is considered a match
+        with the event's value. Returns 0 if these fields do not match.
     """
     combo_return_type = combo.get('return_type')
-    if combo_return_type is None:
+    combo_from_supervision_type = combo.get('from_supervision_type')
+    combo_source_violation_type = combo.get('source_violation_type')
+
+    if combo_return_type is None and combo_from_supervision_type is None and \
+            combo_source_violation_type is None:
         return 1
 
     if combo_return_type != event_return_type:
@@ -884,14 +903,14 @@ def recidivism_value_for_metric(
 
     if combo_return_type == \
             ReincarcerationReturnType.REVOCATION:
-        combo_from_supervision_type = combo.get('from_supervision_type')
+
         if combo_from_supervision_type is None:
-            return 1
+            if combo_source_violation_type is None or \
+                    combo_source_violation_type == event_source_violation_type:
+                return 1
 
         if combo_from_supervision_type != event_from_supervision_type:
             return 0
-
-        combo_source_violation_type = combo.get('source_violation_type')
 
         if combo_source_violation_type is None:
             return 1
