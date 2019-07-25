@@ -31,6 +31,8 @@ from recidiviz.persistence.errors import MatchedMultipleDatabaseEntitiesError
 
 
 # TODO(2022): Update all utils methods to accept EntityTree and Entity types
+
+
 def diff_count(entity_a: Entity, entity_b: Entity) -> int:
     """Counts the number of differences between two entities, including
     their descendants."""

@@ -17,15 +17,21 @@
 """Tests for entity_utils.py"""
 from unittest import TestCase
 
+import pytest
+
 from recidiviz.persistence.entity.entity_utils import \
-    get_set_entity_field_names, EntityFieldType
+    get_set_entity_field_names, EntityFieldType, get_field, set_field, \
+    get_field_as_list, set_field_from_list
 from recidiviz.persistence.entity.state.entities import StateSentenceGroup, \
     StateFine, StatePerson
+from recidiviz.persistence.errors import EntityMatchingError
 
 _ID = 1
 
 
 class TestEntityUtils(TestCase):
+    """Tests the functionality of our entity utils."""
+
     def test_getEntityRelationshipFieldNames_children(self):
         entity = StateSentenceGroup.new_with_defaults(
             fines=[StateFine.new_with_defaults()],
@@ -49,3 +55,41 @@ class TestEntityUtils(TestCase):
         self.assertEqual(
             {'sentence_group_id'},
             get_set_entity_field_names(entity, EntityFieldType.FLAT_FIELD))
+
+    def test_getField(self):
+        entity = StateSentenceGroup.new_with_defaults(
+            state_code='us_nc', county_code=None)
+        self.assertEqual('us_nc', get_field(entity, 'state_code'))
+        with pytest.raises(EntityMatchingError):
+            get_field(entity, 'country_code')
+
+    def test_getFieldAsList(self):
+        fine = StateFine.new_with_defaults(external_id='ex1')
+        fine_2 = StateFine.new_with_defaults(external_id='ex2')
+        entity = StateSentenceGroup.new_with_defaults(
+            state_code='us_nc', fines=[fine, fine_2])
+        self.assertCountEqual(['us_nc'],
+                              get_field_as_list(entity, 'state_code'))
+        self.assertCountEqual([fine, fine_2],
+                              get_field_as_list(entity, 'fines'))
+
+    def test_setField(self):
+        entity = StateSentenceGroup.new_with_defaults()
+        set_field(entity, 'state_code', 'us_nc')
+        self.assertEqual('us_nc', entity.state_code)
+        with pytest.raises(EntityMatchingError):
+            set_field(entity, 'country_code', 'us')
+
+    def test_setFieldFromList(self):
+        entity = StateSentenceGroup.new_with_defaults()
+        fine = StateFine.new_with_defaults(external_id='ex1')
+        fine_2 = StateFine.new_with_defaults(external_id='ex2')
+        set_field_from_list(entity, 'state_code', ['us_nc'])
+        self.assertEqual('us_nc', entity.state_code)
+        set_field_from_list(entity, 'fines', [fine, fine_2])
+        self.assertCountEqual([fine, fine_2], entity.fines)
+
+    def test_setFieldFromList_raises(self):
+        entity = StateSentenceGroup.new_with_defaults()
+        with pytest.raises(EntityMatchingError):
+            set_field_from_list(entity, 'state_code', ['us_nc', 'us_sc'])

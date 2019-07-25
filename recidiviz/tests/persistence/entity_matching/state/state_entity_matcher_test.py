@@ -57,11 +57,13 @@ _EXTERNAL_ID_4 = 'EXTERNAL_ID-4'
 _ID = 1
 _ID_2 = 2
 _ID_3 = 3
+_ID_4 = 4
 _ID_TYPE = 'ID_TYPE'
 _ID_TYPE_ANOTHER = 'ID_TYPE_ANOTHER'
 _FULL_NAME = 'FULL_NAME'
 _FULL_NAME_ANOTHER = 'FULL_NAME_ANOTHER'
 _STATE_CODE = 'NC'
+_STATE_CODE_2 = 'SC'
 _FACILITY = 'FACILITY'
 _FACILITY_2 = 'FACILITY_2'
 
@@ -164,6 +166,7 @@ class TestStateEntityMatching(TestCase):
 
         # Assert
         self.assertEqual(matched_entities.error_count, 0)
+        self.assertEqual(2, matched_entities.total_root_entities)
         self.assertEqual([expected_person, expected_person_another],
                          matched_entities.people)
 
@@ -200,6 +203,7 @@ class TestStateEntityMatching(TestCase):
 
         # Assert
         self.assertEqual(matched_entities.error_count, 1)
+        self.assertEqual(2, matched_entities.total_root_entities)
         self.assertEqual([expected_person], matched_entities.people)
 
     def test_matchPersons_multipleMatchesToDb_oneSuccessOneError(self):
@@ -282,6 +286,110 @@ class TestStateEntityMatching(TestCase):
 
         # Assert
         self.assertEqual([], merged_entities.people)
+        self.assertEqual(1, merged_entities.total_root_entities)
+        self.assertEqual(1, merged_entities.error_count)
+
+    def test_matchPersons_sentenceGroupRootEntity_IngMatchesMultipleDb(self):
+        # Arrange
+        db_sentence_group = StateSentenceGroup.new_with_defaults(
+            external_id=_EXTERNAL_ID, sentence_group_id=_ID)
+        db_sentence_group_2 = StateSentenceGroup.new_with_defaults(
+            external_id=_EXTERNAL_ID_2, sentence_group_id=_ID_2)
+        db_sentence_group_3 = StateSentenceGroup.new_with_defaults(
+            external_id=_EXTERNAL_ID_3, sentence_group_id=_ID_3)
+        db_sentence_group_3_dup = StateSentenceGroup.new_with_defaults(
+            external_id=_EXTERNAL_ID_3, sentence_group_id=_ID_4)
+        db_external_id = StatePersonExternalId.new_with_defaults(
+            person_external_id_id=_ID, id_type=_ID_TYPE,
+            external_id=_EXTERNAL_ID)
+        db_person = StatePerson(
+            person_id=_ID,
+            sentence_groups=[
+                db_sentence_group, db_sentence_group_2, db_sentence_group_3,
+                db_sentence_group_3_dup],
+            external_ids=[db_external_id])
+
+        sentence_group = StateSentenceGroup.new_with_defaults(
+            external_id=_EXTERNAL_ID, state_code=_STATE_CODE)
+        sentence_group_2 = StateSentenceGroup.new_with_defaults(
+            external_id=_EXTERNAL_ID_2, state_code=_STATE_CODE)
+        sentence_group_3 = StateSentenceGroup.new_with_defaults(
+            external_id=_EXTERNAL_ID_3, state_code=_STATE_CODE)
+        person = StatePerson.new_with_defaults(
+            sentence_groups=[sentence_group, sentence_group_2,
+                             sentence_group_3])
+
+        expected_sentence_group = attr.evolve(
+            sentence_group, sentence_group_id=_ID)
+        expected_sentence_group_2 = attr.evolve(
+            sentence_group_2, sentence_group_id=_ID_2)
+        expected_sentence_group_3 = attr.evolve(db_sentence_group_3)
+        expected_sentence_group_4 = attr.evolve(db_sentence_group_3_dup)
+        expected_external_id = attr.evolve(db_external_id)
+        expected_person = attr.evolve(
+            db_person, external_ids=[expected_external_id],
+            sentence_groups=[
+                expected_sentence_group, expected_sentence_group_2,
+                expected_sentence_group_3, expected_sentence_group_4])
+
+        # Act
+        merged_entities = state_entity_matcher._match_persons(
+            ingested_persons=[person], db_persons=[db_person])
+
+        # Assert
+        self.assertEqual([expected_person], merged_entities.people)
+        self.assertEqual(3, merged_entities.total_root_entities)
+        self.assertEqual(1, merged_entities.error_count)
+
+    def test_matchPersons_sentenceGroupRootEntity_DbMatchesMultipleIng(self):
+        # Arrange
+        db_sentence_group = StateSentenceGroup.new_with_defaults(
+            external_id=_EXTERNAL_ID, sentence_group_id=_ID)
+        db_sentence_group_2 = StateSentenceGroup.new_with_defaults(
+            external_id=_EXTERNAL_ID_2, sentence_group_id=_ID_2)
+        db_sentence_group_3 = StateSentenceGroup.new_with_defaults(
+            external_id=_EXTERNAL_ID_3, sentence_group_id=_ID_3)
+        db_external_id = StatePersonExternalId.new_with_defaults(
+            person_external_id_id=_ID, id_type=_ID_TYPE,
+            external_id=_EXTERNAL_ID)
+        db_person = StatePerson(
+            person_id=_ID,
+            sentence_groups=[
+                db_sentence_group, db_sentence_group_2, db_sentence_group_3],
+            external_ids=[db_external_id])
+
+        sentence_group = StateSentenceGroup.new_with_defaults(
+            external_id=_EXTERNAL_ID, state_code=_STATE_CODE)
+        sentence_group_2 = StateSentenceGroup.new_with_defaults(
+            external_id=_EXTERNAL_ID_2, state_code=_STATE_CODE)
+        sentence_group_3 = StateSentenceGroup.new_with_defaults(
+            external_id=_EXTERNAL_ID_3, state_code=_STATE_CODE)
+        sentence_group_3_dup = StateSentenceGroup.new_with_defaults(
+            external_id=_EXTERNAL_ID_3, state_code=_STATE_CODE_2)
+        person = StatePerson.new_with_defaults(
+            sentence_groups=[sentence_group, sentence_group_2,
+                             sentence_group_3, sentence_group_3_dup])
+
+        expected_sentence_group = attr.evolve(
+            sentence_group, sentence_group_id=_ID)
+        expected_sentence_group_2 = attr.evolve(
+            sentence_group_2, sentence_group_id=_ID_2)
+        expected_sentence_group_3 = attr.evolve(
+            sentence_group_3, sentence_group_id=_ID_3)
+        expected_external_id = attr.evolve(db_external_id)
+        expected_person = attr.evolve(
+            db_person, external_ids=[expected_external_id],
+            sentence_groups=[
+                expected_sentence_group, expected_sentence_group_2,
+                expected_sentence_group_3])
+
+        # Act
+        merged_entities = state_entity_matcher._match_persons(
+            ingested_persons=[person], db_persons=[db_person])
+
+        # Assert
+        self.assertEqual([expected_person], merged_entities.people)
+        self.assertEqual(4, merged_entities.total_root_entities)
         self.assertEqual(1, merged_entities.error_count)
 
     def test_matchPersons_noPlaceholders_newPerson(self):
