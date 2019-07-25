@@ -53,17 +53,22 @@ class MatchedEntities(Generic[EntityPersonType]):
     - orphaned entities: All entities that were orphaned during matching.
         These will need to be added to the session separately from the
         returned people.
-    - error count: The number of errors raised during the matching process.
+    - error count: The number of errors raised while processing a root entity
+    - total root entities: The total number of root entities processed during
+        matching.
     """
     people: List[EntityPersonType] = attr.ib(factory=list)
     orphaned_entities: List[Entity] = attr.ib(factory=list)
     error_count: int = attr.ib(default=0)
+    total_root_entities: int = attr.ib(default=0)
 
     def __add__(self, other):
         return MatchedEntities(
             people=self.people + other.people,
             orphaned_entities=self.orphaned_entities + other.orphaned_entities,
-            error_count=self.error_count + other.error_count)
+            error_count=self.error_count + other.error_count,
+            total_root_entities=self.total_root_entities
+            + other.total_root_entities)
 
 
 class BaseEntityMatcher(Generic[EntityPersonType]):

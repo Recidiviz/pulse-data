@@ -158,7 +158,7 @@ def _should_persist():
 
 
 def _should_abort(
-        total_people,
+        total_root_entities,
         conversion_result: IngestInfoConversionResult,
         entity_matching_errors=0,
         data_validation_errors=0):
@@ -166,9 +166,9 @@ def _should_abort(
     Returns true if we should abort the current attempt to persist an IngestInfo
     object, given the number of errors we've encountered.
     """
-    if total_people == 0:
+    if total_root_entities == 0:
         logging.info("Aborting because the ingest info object contains no "
-                     "people objects to persist.")
+                     "root entity objects to persist.")
         return True
 
     # TODO: finalize the logic in here.
@@ -182,7 +182,7 @@ def _should_abort(
     if (conversion_result.enum_parsing_errors +
             conversion_result.general_parsing_errors +
             entity_matching_errors +
-            data_validation_errors) / total_people >= ERROR_THRESHOLD:
+            data_validation_errors) / total_root_entities >= ERROR_THRESHOLD:
         logging.error(
             "Aborting because we exceeded the error threshold of [%s] with "
             "[%s] enum_parsing errors, [%s] general_parsing_errors, [%s] "
@@ -236,7 +236,7 @@ def write(ingest_info, metadata):
         measurements.measure_int_put(m_people, len(people))
 
         if _should_abort(
-                total_people=total_people,
+                total_root_entities=total_people,
                 conversion_result=conversion_result,
                 data_validation_errors=data_validation_errors):
             #  TODO(#1665): remove once dangling PERSIST session investigation
@@ -251,18 +251,21 @@ def write(ingest_info, metadata):
 
         session = SessionFactory.for_schema_base(
             schema_base_for_system_level(metadata.system_level))
+
         try:
             logging.info("Starting entity matching")
 
             entity_matching_output = entity_matching.match(
                 session, metadata.region, people)
             people = entity_matching_output.people
-
+            total_root_entities = total_people \
+                if metadata.system_level == SystemLevel.COUNTY \
+                else entity_matching_output.total_root_entities
             logging.info(
                 "Completed entity matching with [%s] errors",
                 entity_matching_output.error_count)
             if _should_abort(
-                    total_people=total_people,
+                    total_root_entities=total_root_entities,
                     conversion_result=conversion_result,
                     entity_matching_errors=entity_matching_output.error_count,
                     data_validation_errors=data_validation_errors):
