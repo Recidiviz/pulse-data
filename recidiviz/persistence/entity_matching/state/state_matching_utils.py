@@ -17,14 +17,15 @@
 """State schema specific utils for match database entities with ingested
 entities."""
 import datetime
-from typing import List, cast, Any, Optional, Tuple, Union
+from typing import List, cast, Optional, Tuple, Union, Set, Type
 
 import attr
 
 from recidiviz.common.constants import enum_canonical_strings
 from recidiviz.persistence.entity.base_entity import Entity, ExternalIdEntity
 from recidiviz.persistence.entity.entity_utils import \
-    EntityFieldType, get_set_entity_field_names
+    EntityFieldType, get_set_entity_field_names, get_field, set_field, \
+    get_field_as_list
 from recidiviz.persistence.entity.state.entities import StatePerson, \
     StatePersonExternalId, StatePersonAlias, StatePersonRace, \
     StatePersonEthnicity, StateIncarcerationPeriod, \
@@ -78,7 +79,7 @@ class IndividualMatchResult:
     ingested_entity_tree."""
 
     def __init__(self, ingested_entity_tree: EntityTree,
-                 merged_entity_trees: List[EntityTree]):
+                 merged_entity_trees: List[EntityTree], error_count: int):
         if not ingested_entity_tree:
             raise EntityMatchingError(
                 "When creating IndividualMatchResult object, "
@@ -92,23 +93,25 @@ class IndividualMatchResult:
         # ingested_entity_tree with any of it's DB matches.
         self.merged_entity_trees = merged_entity_trees
 
+        # The number of errors encountered while matching this entity.
+        self.error_count = error_count
+
 
 class MatchResults:
     """Object that represents the results of a match attempt for a group of
     ingested and database EntityTree objects"""
 
     def __init__(self, individual_match_results: List[IndividualMatchResult],
-                 unmatched_db_entities: List[Entity]):
-        if not individual_match_results:
-            raise EntityMatchingError(
-                "When creating MatchResults object, individual_match_results "
-                "field must be set/non empty", 'individual_match_result')
+                 unmatched_db_entities: List[Entity], error_count: int):
 
         # Results for each individual ingested EntityTree.
         self.individual_match_results = individual_match_results
 
         # List of db entities that were unmatched.
         self.unmatched_db_entities = unmatched_db_entities
+
+        # The number of errors encountered while matching these entities.
+        self.error_count = error_count
 
 
 def is_match(*, ingested_entity: EntityTree, db_entity: EntityTree) -> bool:
@@ -261,22 +264,6 @@ def is_placeholder(entity: Entity) -> bool:
     set_flat_fields = get_set_entity_field_names(
         copy, EntityFieldType.FLAT_FIELD)
     return not bool(set_flat_fields)
-
-
-def get_field(entity: Entity, field_name: str):
-    if not hasattr(entity, field_name):
-        raise EntityMatchingError(
-            f"Expected entity {entity} to have field {field_name}, but it did "
-            f"not.", entity.get_entity_name())
-    return getattr(entity, field_name)
-
-
-def set_field(entity: Entity, field_name: str, value: Any):
-    if not hasattr(entity, field_name):
-        raise EntityMatchingError(
-            f"Expected entity {entity} to have field {field_name}, but it did "
-            f"not.", entity.get_entity_name())
-    return setattr(entity, field_name, value)
 
 
 def generate_child_entity_trees(
@@ -600,4 +587,59 @@ def _find_matching_period(
         if admission_date <= incident_date <= release_date \
                 and incident.facility == potential_period.facility:
             return potential_period
+    return None
+
+
+def get_total_entities_of_cls(persons: List[StatePerson], cls: Type) -> int:
+    """Counts the total number of unique objects of type |cls| in the entity
+    graphs passed in by |persons|.
+    """
+    seen_roots: Set[int] = set()
+    for person in persons:
+        _get_total_entities_of_cls(person, cls, seen_roots)
+    return len(seen_roots)
+
+
+def _get_total_entities_of_cls(
+        entity: Entity, cls: Type, seen: Set[int]):
+    if isinstance(entity, cls) and id(entity) not in seen:
+        seen.add(id(entity))
+        return
+    for child_field_name in get_set_entity_field_names(
+            entity, EntityFieldType.FORWARD_EDGE):
+        for child_field in get_field_as_list(entity, child_field_name):
+            _get_total_entities_of_cls(child_field, cls, seen)
+
+
+def get_root_entity_cls(ingested_persons: List[StatePerson]) -> Type:
+    """
+    Attempts to find the highest entity class within the |ingested_persons| for
+    which objects are not placeholders. Returns the class if found, otherwise
+    raises.
+
+    Note: This should only be used with persons ingested from a region directly
+    (and not with persons post entity matching), as this function uses DFS to
+    find the root entity cls. This therefore assumes that a) the passed in
+    StatePersons are trees and not DAGs (one parent per entity) and b) that the
+    structure of the passed in graph is symmetrical.
+    """
+    root_cls = None
+    if ingested_persons:
+        root_cls = _get_root_entity_helper(ingested_persons[0])
+    if root_cls is None:
+        raise EntityMatchingError(
+            "Could not find root class for ingested persons", 'state_person')
+    return root_cls
+
+
+def _get_root_entity_helper(entity: Entity) -> Optional[Type]:
+    if not is_placeholder(entity):
+        return entity.__class__
+
+    for field_name in get_set_entity_field_names(
+            entity, EntityFieldType.FORWARD_EDGE):
+        field = get_field_as_list(entity, field_name)[0]
+        result = _get_root_entity_helper(field)
+        if result is not None:
+            return result
     return None

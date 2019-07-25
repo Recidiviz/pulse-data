@@ -26,7 +26,8 @@ from more_itertools import one
 
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.entity.entity_utils import \
-    get_set_entity_field_names
+    get_set_entity_field_names, get_field_as_list, get_field, set_field, \
+    set_field_from_list
 from recidiviz.persistence.database.schema.state import dao
 from recidiviz.persistence.entity.base_entity import Entity, ExternalIdEntity
 from recidiviz.persistence.entity.state.entities import StatePerson, \
@@ -39,9 +40,10 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import \
     add_person_to_entity_graph, EntityFieldType, IndividualMatchResult, \
     EntityTree, MatchResults, is_placeholder, \
     generate_child_entity_trees, remove_child_from_entity, \
-    add_child_to_entity, get_field, set_field, merge_incarceration_periods, \
+    add_child_to_entity, merge_incarceration_periods, \
     merge_flat_fields, is_match, is_incomplete_incarceration_period_match, \
-    is_incarceration_period_complete, move_incidents_onto_periods
+    is_incarceration_period_complete, move_incidents_onto_periods, \
+    get_root_entity_cls, get_total_entities_of_cls
 
 from recidiviz.persistence.errors import EntityMatchingError, \
     MatchedMultipleIngestedEntitiesError
@@ -107,10 +109,6 @@ def _match_persons(
     count that is incremented every time an error is raised matching an
     ingested person.
     """
-
-    error_count = 0
-    matched_persons_by_db_ids: Dict[int, Entity] = {}
-
     db_person_trees = [
         EntityTree(entity=db_person, ancestor_chain=[])
         for db_person in db_persons]
@@ -118,62 +116,79 @@ def _match_persons(
         EntityTree(entity=ingested_person, ancestor_chain=[])
         for ingested_person in ingested_persons]
 
-    updated_person_trees = []
-    for ingested_person_tree in ingested_person_trees:
-        try:
-            match_result = _match_entity_tree(
-                ingested_entity_tree=ingested_person_tree,
-                db_entity_trees=db_person_trees,
-                matched_entities_by_db_ids=matched_persons_by_db_ids)
+    root_entity_cls = get_root_entity_cls(ingested_persons)
+    total_root_entities = get_total_entities_of_cls(
+        ingested_persons, root_entity_cls)
+    persons_match_results = _match_entity_trees(
+        ingested_entity_trees=ingested_person_trees,
+        db_entity_trees=db_person_trees,
+        root_entity_cls=root_entity_cls)
 
-            if not match_result.merged_entity_trees:
-                updated_person_trees.append(match_result.ingested_entity_tree)
-            else:
-                # It is possible that multiple ingested people match to the same
-                # DB person, in which case we should only keep one reference to
-                # that object.
-                for merged_person_tree in match_result.merged_entity_trees:
-                    if merged_person_tree not in updated_person_trees:
-                        updated_person_trees.append(merged_person_tree)
-        except EntityMatchingError as e:
-            logging.exception(
-                "Found error while matching ingested person. \nPerson: %s",
-                ingested_person_tree.entity)
-            increment_error(e.entity_name)
-            error_count += 1
-
-    updated_persons = [tree.entity for tree in updated_person_trees]
+    updated_persons = []
+    for match_result in persons_match_results.individual_match_results:
+        if not match_result.merged_entity_trees:
+            updated_persons.append(match_result.ingested_entity_tree.entity)
+        else:
+            # It is possible that multiple ingested people match to the same
+            # DB person, in which case we should only keep one reference to
+            # that object.
+            for merged_person_tree in match_result.merged_entity_trees:
+                if merged_person_tree.entity not in updated_persons:
+                    updated_persons.append(merged_person_tree.entity)
 
     # The only database persons that are unmatched that we potentially want to
     # update are placeholder persons. These may have had children removed as
     # a part of the matching process and therefore would need updating.
-    for db_person in db_persons:
-        if db_person.person_id not in matched_persons_by_db_ids \
-                and is_placeholder(db_person):
+    for db_person in persons_match_results.unmatched_db_entities:
+        if is_placeholder(db_person):
             updated_persons.append(db_person)
-    return MatchedEntities(people=updated_persons, error_count=error_count)
+
+    return MatchedEntities(
+        people=updated_persons, error_count=persons_match_results.error_count,
+        total_root_entities=total_root_entities)
 
 
 def _match_entity_trees(
         *, ingested_entity_trees: List[EntityTree],
-        db_entity_trees: List[EntityTree]) -> MatchResults:
+        db_entity_trees: List[EntityTree],
+        root_entity_cls: Type) -> MatchResults:
     """Attempts to match all of the |ingested_entity_trees| with one of the
     provided |db_entity_trees|. For all matches, merges the ingested entity
     information into the db entity, and continues entity matching for all
     child entities.
 
+    If the provided |root_entity_cls| corresponds to the class of the provided
+    |ingested_entity_trees|, increments an error count rather than raising when
+    one is encountered.
+
     Returns a MatchResults object which contains IndividualMatchResults for each
-    ingested tree and a list of unmatched DB entities.
+    ingested tree, a list of unmatched DB entities, and the number of errors
+    encountered while matching these trees.
     """
     individual_match_results: List[IndividualMatchResult] = []
     matched_entities_by_db_id: Dict[int, Entity] = {}
+    error_count = 0
 
     for ingested_entity_tree in ingested_entity_trees:
-        match_result = _match_entity_tree(
-            ingested_entity_tree=ingested_entity_tree,
-            db_entity_trees=db_entity_trees,
-            matched_entities_by_db_ids=matched_entities_by_db_id)
-        individual_match_results.append(match_result)
+        try:
+            match_result = _match_entity_tree(
+                ingested_entity_tree=ingested_entity_tree,
+                db_entity_trees=db_entity_trees,
+                matched_entities_by_db_ids=matched_entities_by_db_id,
+                root_entity_cls=root_entity_cls)
+            individual_match_results.append(match_result)
+            error_count += match_result.error_count
+        except EntityMatchingError as e:
+            if isinstance(ingested_entity_tree.entity, root_entity_cls):
+                ingested_entity = cast(Entity, ingested_entity_tree.entity)
+                logging.exception(
+                    "Found error while matching ingested %s. \nEntity: %s",
+                    ingested_entity.get_entity_name(),
+                    ingested_entity)
+                increment_error(e.entity_name)
+                error_count += 1
+            else:
+                raise e
 
     # Keep track of even unmatched DB entities, as the parent of this entity
     # layer must know about all of its children (even the unmatched ones). If
@@ -187,13 +202,14 @@ def _match_entity_trees(
         if db_entity.get_id() not in matched_entities_by_db_id.keys():
             unmatched_db_entities.append(db_entity)
 
-    return MatchResults(individual_match_results, unmatched_db_entities)
+    return MatchResults(
+        individual_match_results, unmatched_db_entities, error_count)
 
 
 def _match_entity_tree(
         *, ingested_entity_tree: EntityTree, db_entity_trees: List[EntityTree],
-        matched_entities_by_db_ids: Dict[int, Entity]) -> \
-        IndividualMatchResult:
+        matched_entities_by_db_ids: Dict[int, Entity],
+        root_entity_cls: Type) -> IndividualMatchResult:
     """Attempts to match the provided |ingested_entity_tree| to one of the
     provided |db_entity_trees|. If a successful match is found, merges the
     ingested entity onto the matching database entity and performs entity
@@ -206,25 +222,29 @@ def _match_entity_tree(
         return _match_placeholder_tree(
             ingested_placeholder_tree=ingested_entity_tree,
             db_entity_trees=db_entity_trees,
-            matched_entities_by_db_ids=matched_entities_by_db_ids)
+            matched_entities_by_db_ids=matched_entities_by_db_ids,
+            root_entity_cls=root_entity_cls)
 
     db_match_tree = _get_match(ingested_entity_tree, db_entity_trees)
 
     if not db_match_tree:
         return _match_unmatched_tree(
             ingested_unmatched_entity_tree=ingested_entity_tree,
-            db_entity_trees=db_entity_trees)
+            db_entity_trees=db_entity_trees,
+            root_entity_cls=root_entity_cls)
 
     return _match_matched_tree(
         ingested_entity_tree=ingested_entity_tree,
         db_match_tree=db_match_tree,
-        matched_entities_by_db_ids=matched_entities_by_db_ids)
+        matched_entities_by_db_ids=matched_entities_by_db_ids,
+        root_entity_cls=root_entity_cls)
 
 
 def _match_placeholder_tree(
         *, ingested_placeholder_tree: EntityTree,
         db_entity_trees: List[EntityTree],
-        matched_entities_by_db_ids: Dict[int, Entity]) \
+        matched_entities_by_db_ids: Dict[int, Entity],
+        root_entity_cls) \
         -> IndividualMatchResult:
     """Attempts to match the provided |ingested_placeholder_tree| to entities in
     the provided |db_entity_trees| based off any child matches. When such a
@@ -234,13 +254,16 @@ def _match_placeholder_tree(
     Returns the results of matching as an IndividualMatchResult.
     """
     updated_entity_trees: List[EntityTree] = []
+    error_count = 0
     match_results_by_child = _get_match_results_for_all_children(
         ingested_entity_tree=ingested_placeholder_tree,
-        db_entity_trees=db_entity_trees)
+        db_entity_trees=db_entity_trees,
+        root_entity_cls=root_entity_cls)
 
     # Initialize so pylint doesn't yell.
     child_field_name = None
     child_match_result = None
+    placeholder_children: List[Entity] = []
 
     def resolve_child_match_result():
         """Resolves any child matches by removing the child from the ingested
@@ -257,33 +280,42 @@ def _match_placeholder_tree(
 
         # If the child wasn't matched, leave it on the placeholder object.
         if not child_match_result.merged_entity_trees:
+            placeholder_children.append(
+                child_match_result.ingested_entity_tree.entity)
             return
 
-        # Remove the matched child from the placeholder
-        remove_child_from_entity(
-            entity=ingested_placeholder_tree.entity,
-            child_field_name=child_field_name,
-            child_to_remove=child_match_result.ingested_entity_tree.entity)
-
-        # Ensure the merged children are on the correct DB entity
+        # Ensure the merged children are on the correct entity
         for merged_child_tree in child_match_result.merged_entity_trees:
-            db_entity_tree = merged_child_tree.generate_parent_tree()
-            add_child_to_entity(entity=db_entity_tree.entity,
-                                child_field_name=child_field_name,
-                                child_to_add=merged_child_tree.entity)
+            merged_parent_tree = merged_child_tree.generate_parent_tree()
+
+            # If one of the merged parents is the ingested placeholder entity,
+            # simply keep track of the child in placeholder_children.
+            if merged_parent_tree.entity == ingested_placeholder_tree.entity:
+                placeholder_children.append(
+                    child_match_result.ingested_entity_tree.entity)
+                continue
+
+            add_child_to_entity(
+                entity=merged_parent_tree.entity,
+                child_field_name=child_field_name,
+                child_to_add=merged_child_tree.entity)
 
             # Keep track of all db parents of the merged children.
             updated_entities = [m.entity for m in updated_entity_trees]
-            if db_entity_tree.entity not in updated_entities:
+            if merged_parent_tree.entity not in updated_entities:
                 _add_match_to_matched_entities_cache(
-                    db_entity_match=db_entity_tree.entity,
+                    db_entity_match=merged_parent_tree.entity,
                     ingested_entity=ingested_placeholder_tree.entity,
                     matched_entities_by_db_ids=matched_entities_by_db_ids)
-                updated_entity_trees.append(db_entity_tree)
+                updated_entity_trees.append(merged_parent_tree)
 
     for child_field_name, match_results in match_results_by_child:
+        placeholder_children = []
+        error_count += match_results.error_count
         for child_match_result in match_results.individual_match_results:
             resolve_child_match_result()
+        set_field_from_list(ingested_placeholder_tree.entity, child_field_name,
+                            placeholder_children)
 
     # If we updated any of the entity trees, check to see if the placeholder
     # tree still has any children. If it doesn't have any children, it doesn't
@@ -297,12 +329,14 @@ def _match_placeholder_tree(
 
     return IndividualMatchResult(
         ingested_entity_tree=ingested_placeholder_tree,
-        merged_entity_trees=updated_entity_trees)
+        merged_entity_trees=updated_entity_trees,
+        error_count=error_count)
 
 
 def _match_unmatched_tree(
         ingested_unmatched_entity_tree: EntityTree,
-        db_entity_trees: List[EntityTree]) \
+        db_entity_trees: List[EntityTree],
+        root_entity_cls) \
         -> IndividualMatchResult:
     """
     Attempts to match the provided |ingested_unmatched_entity_tree| to any
@@ -315,9 +349,10 @@ def _match_unmatched_tree(
     db_placeholder_trees = [
         tree for tree in db_entity_trees if is_placeholder(tree.entity)]
 
+    error_count = 0
     match_results_by_child = _get_match_results_for_all_children(
         ingested_entity_tree=ingested_unmatched_entity_tree,
-        db_entity_trees=db_placeholder_trees)
+        db_entity_trees=db_placeholder_trees, root_entity_cls=root_entity_cls)
 
     # If the ingested entity is updated because of a child entity match, we
     # should update our ingested entity's ancestor chain to reflect that of it's
@@ -374,6 +409,7 @@ def _match_unmatched_tree(
 
     ingested_entity = ingested_unmatched_entity_tree.entity
     for child_field_name, match_results in match_results_by_child:
+        error_count += match_results.error_count
         ingested_child_field = get_field(ingested_entity, child_field_name)
         updated_child_trees: List[EntityTree] = []
         for child_match_result in match_results.individual_match_results:
@@ -393,12 +429,13 @@ def _match_unmatched_tree(
 
     return IndividualMatchResult(
         ingested_entity_tree=ingested_unmatched_entity_tree,
-        merged_entity_trees=updated_entities)
+        merged_entity_trees=updated_entities, error_count=error_count)
 
 
 def _match_matched_tree(
         *, ingested_entity_tree: EntityTree, db_match_tree: EntityTree,
-        matched_entities_by_db_ids: Dict[int, Entity]) \
+        matched_entities_by_db_ids: Dict[int, Entity],
+        root_entity_cls) \
         -> IndividualMatchResult:
     """Given an |ingested_entity_tree| and it's matched |db_match_tree|, this
     method merges any updated information from teh ingested entity onto the DB
@@ -413,9 +450,10 @@ def _match_matched_tree(
     _add_match_to_matched_entities_cache(
         db_entity_match=db_entity, ingested_entity=ingested_entity,
         matched_entities_by_db_ids=matched_entities_by_db_ids)
+    error_count = 0
     match_results_by_child = _get_match_results_for_all_children(
         ingested_entity_tree=ingested_entity_tree,
-        db_entity_trees=[db_match_tree])
+        db_entity_trees=[db_match_tree], root_entity_cls=root_entity_cls)
 
     # Initialize so pylint doesn't yell
     child_match_result = None
@@ -434,6 +472,7 @@ def _match_matched_tree(
             updated_child_trees.extend(child_match_result.merged_entity_trees)
 
     for child_field_name, match_results in match_results_by_child:
+        error_count += match_results.error_count
         ingested_child_field = getattr(ingested_entity, child_field_name)
         updated_child_trees: List[EntityTree] = []
         for child_match_result in match_results.individual_match_results:
@@ -458,11 +497,13 @@ def _match_matched_tree(
     merged_entity_tree = EntityTree(
         entity=merged_entity, ancestor_chain=db_match_tree.ancestor_chain)
     return IndividualMatchResult(ingested_entity_tree=ingested_entity_tree,
-                                 merged_entity_trees=[merged_entity_tree])
+                                 merged_entity_trees=[merged_entity_tree],
+                                 error_count=error_count)
 
 
 def _get_match_results_for_all_children(
-        ingested_entity_tree: EntityTree, db_entity_trees: List[EntityTree]) \
+        ingested_entity_tree: EntityTree, db_entity_trees: List[EntityTree],
+        root_entity_cls) \
         -> List[Tuple[str, MatchResults]]:
     """Attempts to match all children of the |ingested_entity_tree| to children
     of the |db_entity_trees|. Matching for each child is independent and can
@@ -491,7 +532,8 @@ def _get_match_results_for_all_children(
             ingested_entity_tree.generate_child_trees(ingested_child_list)
         match_results = _match_entity_trees(
             ingested_entity_trees=ingested_child_trees,
-            db_entity_trees=db_child_trees)
+            db_entity_trees=db_child_trees,
+            root_entity_cls=root_entity_cls)
         results.append((child_field_name, match_results))
     return results
 
@@ -615,7 +657,7 @@ def _merge_multiparent_entities_from_map(
             ing_tree = EntityTree(ing_with_parents.entity, [])
             match_result = _match_matched_tree(
                 ingested_entity_tree=ing_tree, db_match_tree=db_tree,
-                matched_entities_by_db_ids={})
+                matched_entities_by_db_ids={}, root_entity_cls=StatePerson)
             updated_entity = one(match_result.merged_entity_trees).entity
 
             # As entity matching automatically updates the input db entity, we
@@ -638,8 +680,8 @@ def _is_subset(entity: Entity, subset: Entity) -> bool:
             return False
     for field_name in get_set_entity_field_names(
             subset, EntityFieldType.FORWARD_EDGE):
-        for field in _get_field_as_list(subset, field_name):
-            if field not in _get_field_as_list(entity, field_name):
+        for field in get_field_as_list(subset, field_name):
+            if field not in get_field_as_list(entity, field_name):
                 return False
     return True
 
@@ -660,13 +702,6 @@ def _replace_entity(
                             child_to_add=entity)
 
 
-def _get_field_as_list(entity: Entity, child_field_name: str) -> List[Entity]:
-    field = get_field(entity, child_field_name)
-    if isinstance(field, List):
-        return field
-    return [field]
-
-
 def _populate_multiparent_map(
         entity: Entity, entity_cls: Type,
         multiparent_map: Dict[str, List[_EntityWithParents]]):
@@ -676,7 +711,7 @@ def _populate_multiparent_map(
     for child_field_name in get_set_entity_field_names(
             entity, EntityFieldType.FORWARD_EDGE):
         linked_parent = _LinkedParents(entity, child_field_name)
-        for child in _get_field_as_list(entity, child_field_name):
+        for child in get_field_as_list(entity, child_field_name):
             _populate_multiparent_map(child, entity_cls, multiparent_map)
 
             if not isinstance(child, entity_cls):
