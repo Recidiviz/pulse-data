@@ -19,6 +19,7 @@ import datetime
 from unittest import TestCase
 
 import attr
+import pytest
 
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus, StateIncarcerationPeriodAdmissionReason, \
@@ -27,12 +28,14 @@ from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.persistence.entity.state.entities import StatePersonExternalId, \
     StatePerson, StatePersonAlias, StateCharge, StateSentenceGroup, StateFine, \
     StateIncarcerationPeriod, StateIncarcerationIncident, \
-    StateIncarcerationSentence, StateCourtCase
+    StateIncarcerationSentence, StateCourtCase, StateSupervisionSentence
 from recidiviz.persistence.entity_matching.state.state_matching_utils import \
     remove_back_edges, add_person_to_entity_graph, is_placeholder, _is_match, \
     EntityTree, generate_child_entity_trees, add_child_to_entity, \
     remove_child_from_entity, _merge_incarceration_periods_helper, \
-    has_default_status, move_incidents_onto_periods, merge_flat_fields
+    has_default_status, move_incidents_onto_periods, merge_flat_fields, \
+    get_root_entity_cls, get_total_entities_of_cls
+from recidiviz.persistence.errors import EntityMatchingError
 
 _DATE_1 = datetime.date(year=2019, month=1, day=1)
 _DATE_2 = datetime.date(year=2019, month=2, day=1)
@@ -319,6 +322,59 @@ class TestStateMatchingUtils(TestCase):
             entity=sentence_group, child_field_name='fines',
             child_to_remove=fine_another)
         self.assertEqual(expected_sentence_group, sentence_group)
+
+    def test_getRootEntity(self):
+        incarceration_incident = StateIncarcerationIncident.new_with_defaults(
+            external_id=_EXTERNAL_ID)
+        placeholder_incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_incidents=[incarceration_incident])
+        placeholder_incarceration_sentence = \
+            StateIncarcerationSentence.new_with_defaults(
+                incarceration_periods=[placeholder_incarceration_period])
+        placeholder_sentence_group = StateSentenceGroup.new_with_defaults(
+            sentence_group_id=None,
+            incarceration_sentences=[placeholder_incarceration_sentence])
+        person = StatePerson.new_with_defaults(
+            sentence_groups=[placeholder_sentence_group])
+        self.assertEqual(StateIncarcerationIncident,
+                         get_root_entity_cls([person]))
+
+    def test_getRootEntity_emptyList_raises(self):
+        with pytest.raises(EntityMatchingError):
+            get_root_entity_cls([])
+
+    def test_getRootEntity_allPlaceholders_raises(self):
+        placeholder_incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults()
+        placeholder_incarceration_sentence = \
+            StateIncarcerationSentence.new_with_defaults(
+                incarceration_periods=[placeholder_incarceration_period])
+        placeholder_sentence_group = StateSentenceGroup.new_with_defaults(
+            incarceration_sentences=[placeholder_incarceration_sentence])
+        placeholder_person = StatePerson.new_with_defaults(
+            sentence_groups=[placeholder_sentence_group])
+        with pytest.raises(EntityMatchingError):
+            get_root_entity_cls([placeholder_person])
+
+    def test_getTotalEntitiesOfCls(self):
+        supervision_sentence = StateSupervisionSentence.new_with_defaults()
+        supervision_sentence_2 = attr.evolve(supervision_sentence)
+        supervision_sentence_3 = attr.evolve(supervision_sentence)
+        sentence_group = StateSentenceGroup.new_with_defaults(
+            supervision_sentences=[supervision_sentence,
+                                   supervision_sentence_2])
+        sentence_group_2 = StateSentenceGroup.new_with_defaults(
+            supervision_sentences=[supervision_sentence_2,
+                                   supervision_sentence_3])
+        person = StatePerson.new_with_defaults(
+            sentence_groups=[sentence_group, sentence_group_2])
+
+        self.assertEqual(3, get_total_entities_of_cls(
+            [person], StateSupervisionSentence))
+        self.assertEqual(2, get_total_entities_of_cls(
+            [person], StateSentenceGroup))
+        self.assertEqual(1, get_total_entities_of_cls([person], StatePerson))
 
     def test_mergeIncarcerationPeriods(self):
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(

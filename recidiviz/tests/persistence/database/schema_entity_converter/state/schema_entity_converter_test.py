@@ -56,7 +56,6 @@ class TestStateSchemaEntityConverter(TestCase):
         patcher = \
             patch('recidiviz.persistence.entity.base_entity.Entity.__eq__',
                   new=self._eq_ignore_primary_keys)
-        patcher.start()
         return patcher
 
     def _get_schema_class_for_objects(
@@ -116,8 +115,10 @@ class TestStateSchemaEntityConverter(TestCase):
         if write_to_db:
             # Writing to the DB will add primary keys if there aren't any - we
             # ignore these when we've committed to the DB.
-            with self._patch_entity_eq_to_ignore_primary_keys():
-                self.assertEqual(result, expected_entities)
+            patcher = self._patch_entity_eq_to_ignore_primary_keys()
+            patcher.start()
+            self.assertEqual(result, expected_entities)
+            patcher.stop()
         else:
             self.assertEqual(result, expected_entities)
 

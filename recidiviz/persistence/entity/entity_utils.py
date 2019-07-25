@@ -19,7 +19,7 @@
 import inspect
 from enum import Enum
 from types import ModuleType
-from typing import Dict, List, Set, Type
+from typing import Dict, List, Set, Type, Any
 from functools import lru_cache
 
 import attr
@@ -243,3 +243,46 @@ def get_set_entity_field_names(
     raise EntityMatchingError(
         f"Unrecognized EntityFieldType {entity_field_type}",
         'entity_field_type')
+
+
+# TODO(2163): Use get/set_field_from_list when possible to clean up code.
+def get_field_as_list(entity: Entity, child_field_name: str) -> List[Entity]:
+    field = get_field(entity, child_field_name)
+    if isinstance(field, List):
+        return field
+    return [field]
+
+
+def get_field(entity: Entity, field_name: str):
+    if not hasattr(entity, field_name):
+        raise EntityMatchingError(
+            f"Expected entity {entity} to have field {field_name}, but it did "
+            f"not.", entity.get_entity_name())
+    return getattr(entity, field_name)
+
+
+def set_field(entity: Entity, field_name: str, value: Any):
+    if not hasattr(entity, field_name):
+        raise EntityMatchingError(
+            f"Expected entity {entity} to have field {field_name}, but it did "
+            f"not.", entity.get_entity_name())
+    return setattr(entity, field_name, value)
+
+
+def set_field_from_list(entity: Entity, field_name: str, value: List):
+    """Given the provided |value|, sets the value onto the provided |entity|
+    based on the given |field_name|.
+    """
+    field = get_field(entity, field_name)
+    if isinstance(field, list):
+        set_field(entity, field_name, value)
+    else:
+        if not value:
+            set_field(entity, field_name, None)
+        elif len(value) == 1:
+            set_field(entity, field_name, value[0])
+        else:
+            raise EntityMatchingError(
+                f"Attempting to set singular field: {field_name} on entity: "
+                f"{entity.get_entity_name()}, but got multiple values: "
+                f"{value}.", entity.get_entity_name())

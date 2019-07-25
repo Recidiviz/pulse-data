@@ -47,7 +47,8 @@ monitoring.register_views([matching_errors_by_entity_view])
 
 _EMPTY_MATCH_OUTPUT = MatchedEntities(people=[],
                                       orphaned_entities=[],
-                                      error_count=0)
+                                      error_count=0,
+                                      total_root_entities=0)
 
 
 def match(session: Session,
