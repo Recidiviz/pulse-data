@@ -18,7 +18,7 @@
 """Direct ingest controller implementation for us_nd."""
 import json
 import os
-from typing import List, Optional, Dict, Callable, Any
+from typing import List, Optional, Dict, Callable, Any, cast
 
 from gcsfs import GCSFileSystem
 
@@ -501,35 +501,35 @@ class UsNdController(GcsfsDirectIngestController):
 
         for extracted_object in extracted_objects:
             if isinstance(extracted_object, StateSupervisionViolation):
+                extracted_object = cast(
+                    StateSupervisionViolation, extracted_object)
                 if revocation_occurred:
                     # TODO(1763): Add support for multiple violation types
                     # on one violation
+                    violation_type = None
                     if revocation_for_new_offense:
                         # TODO(1892): Find a way to enrich from NEW_OFF fields:
                         # violation_type, is_violent, violated_conditions
-                        extracted_object.__setattr__(
-                            'violation_type',
-                            StateSupervisionViolationType.FELONY.value)
-                    if revocation_for_absconsion:
-                        extracted_object.__setattr__(
-                            'violation_type',
-                            StateSupervisionViolationType.ABSCONDED.value)
-                    if revocation_for_technical:
-                        extracted_object.__setattr__(
-                            'violation_type',
-                            StateSupervisionViolationType.TECHNICAL.value)
+                        violation_type = \
+                            StateSupervisionViolationType.FELONY.value
+                    elif revocation_for_absconsion:
+                        violation_type = \
+                            StateSupervisionViolationType.ABSCONDED.value
+                    elif revocation_for_technical:
+                        violation_type = \
+                            StateSupervisionViolationType.TECHNICAL.value
+                    extracted_object.violation_type = violation_type
 
             if isinstance(extracted_object, StateSupervisionViolationResponse):
+                extracted_object = cast(
+                    StateSupervisionViolationResponse, extracted_object)
                 if revocation_occurred:
-                    extracted_object.__setattr__(
-                        'response_type',
-                        StateSupervisionViolationResponseType.
-                        PERMANENT_DECISION.value)
-
-                    extracted_object.__setattr__(
-                        'decision',
-                        StateSupervisionViolationResponseDecision.
-                        REVOCATION.value)
+                    extracted_object.response_type = \
+                        StateSupervisionViolationResponseType\
+                        .PERMANENT_DECISION.value
+                    extracted_object.decision = \
+                        StateSupervisionViolationResponseDecision\
+                        .REVOCATION.value
 
     @staticmethod
     def _rationalize_incident_type(_row: Dict[str, str],
