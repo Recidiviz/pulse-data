@@ -33,7 +33,7 @@ class StatePersonExternalIdConverterTest(unittest.TestCase):
     def testParseStatePersonExternalId(self):
         # Arrange
         ingest_external_id = ingest_info_pb2.StatePersonExternalId(
-            state_person_external_id_id='12345',
+            state_person_external_id_id='state_id:12345',
             id_type='state_id',
             state_code='us_nd',
         )
