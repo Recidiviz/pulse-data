@@ -17,7 +17,7 @@
 
 """Converts an ingest_info proto StatePersonExternalId to a persistence
 entity."""
-
+from recidiviz.common.common_utils import get_external_id
 from recidiviz.common.str_field_utils import normalize
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import StatePersonExternalId
@@ -32,9 +32,17 @@ def convert(proto: StatePersonExternalId,
     new = entities.StatePersonExternalId.builder()
 
     new.external_id = \
-        fn(parse_external_id, 'state_person_external_id_id', proto)
+        fn(_parse_state_external_id, 'state_person_external_id_id', proto)
     new.id_type = fn(normalize, 'id_type', proto)
     new.state_code = parse_region_code_with_override(
         proto, 'state_code', metadata)
 
     return new.build()
+
+
+def _parse_state_external_id(id_str):
+    """Undoes preprocessing of state_person_external_ids done when converting
+    from ingest_info py -> ingest_info proto.
+    """
+    synthetic_id = parse_external_id(id_str)
+    return get_external_id(synthetic_id=synthetic_id)

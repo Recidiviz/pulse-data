@@ -16,6 +16,7 @@
 # =============================================================================
 
 """Tests for ingest/ingest_utils.py."""
+import copy
 
 from mock import Mock, PropertyMock, patch
 
@@ -394,124 +395,131 @@ class TestIngestUtils:
 
         # Arrange Proto ingest info
         expected_proto = ingest_info_pb2.IngestInfo()
-        person = expected_proto.state_people.add()
-        person.state_person_id = 'person1'
-        person.surname = 'testname'
+        person_pb = expected_proto.state_people.add()
+        person_pb.state_person_id = 'person1'
+        person_pb.surname = 'testname'
 
-        person.state_person_race_ids.append('race1')
-        race = expected_proto.state_person_races.add()
-        race.state_person_race_id = 'race1'
-        race.race = 'white'
-        person.state_person_ethnicity_ids.append('ethnicity1')
-        ethnicity = expected_proto.state_person_ethnicities.add()
-        ethnicity.state_person_ethnicity_id = 'ethnicity1'
-        ethnicity.ethnicity = 'non-hispanic'
-        person.state_person_external_ids_ids.append('external_id1')
-        external_id = expected_proto.state_person_external_ids.add()
-        external_id.state_person_external_id_id = 'external_id1'
-        external_id.id_type = 'contrived'
-        person.state_alias_ids.append('alias1')
-        alias = expected_proto.state_aliases.add()
-        alias.state_alias_id = 'alias1'
-        alias.surname = 'testerson'
-        person.state_assessment_ids.append('assessment1')
-        assessment = expected_proto.state_assessments.add()
-        assessment.state_assessment_id = 'assessment1'
-        assessment.assessment_score = '42'
+        person_pb.state_person_race_ids.append('race1')
+        race_pb = expected_proto.state_person_races.add()
+        race_pb.state_person_race_id = 'race1'
+        race_pb.race = 'white'
+        person_pb.state_person_ethnicity_ids.append('ethnicity1')
+        ethnicity_pb = expected_proto.state_person_ethnicities.add()
+        ethnicity_pb.state_person_ethnicity_id = 'ethnicity1'
+        ethnicity_pb.ethnicity = 'non-hispanic'
+        person_pb.state_person_external_ids_ids.append('contrived:external_id1')
+        external_id_pb = expected_proto.state_person_external_ids.add()
+        external_id_pb.state_person_external_id_id = 'contrived:external_id1'
+        external_id_pb.id_type = 'contrived'
+        person_pb.state_alias_ids.append('alias1')
+        alias_pb = expected_proto.state_aliases.add()
+        alias_pb.state_alias_id = 'alias1'
+        alias_pb.surname = 'testerson'
+        person_pb.state_assessment_ids.append('assessment1')
+        assessment_pb = expected_proto.state_assessments.add()
+        assessment_pb.state_assessment_id = 'assessment1'
+        assessment_pb.assessment_score = '42'
 
-        assessment.conducting_agent_id = 'agent1'
-        assessment_agent = expected_proto.state_agents.add()
-        assessment_agent.state_agent_id = 'agent1'
-        assessment_agent.full_name = 'Officer Jones'
+        assessment_pb.conducting_agent_id = 'agent1'
+        assessment_agent_pb = expected_proto.state_agents.add()
+        assessment_agent_pb.state_agent_id = 'agent1'
+        assessment_agent_pb.full_name = 'Officer Jones'
 
-        person.state_sentence_group_ids.append('group1')
-        group = expected_proto.state_sentence_groups.add()
-        group.state_sentence_group_id = 'group1'
+        person_pb.state_sentence_group_ids.append('group1')
+        group_pb = expected_proto.state_sentence_groups.add()
+        group_pb.state_sentence_group_id = 'group1'
 
-        group.state_fine_ids.append('fine1')
-        fine = expected_proto.state_fines.add()
-        fine.state_fine_id = 'fine1'
+        group_pb.state_fine_ids.append('fine1')
+        fine_pb = expected_proto.state_fines.add()
+        fine_pb.state_fine_id = 'fine1'
 
-        group.state_supervision_sentence_ids.append('ss1')
-        supervision_sentence = expected_proto.state_supervision_sentences.add()
-        supervision_sentence.state_supervision_sentence_id = 'ss1'
-        supervision_sentence.state_charge_ids.append('charge2')
-        charge2 = expected_proto.state_charges.add()
-        charge2.state_charge_id = 'charge2'
-        charge2.classification_type = 'M'
-        supervision_sentence.state_supervision_period_ids.append('sp1')
-        supervision_period = expected_proto.state_supervision_periods.add()
-        supervision_period.state_supervision_period_id = 'sp1'
-        supervision_period.status = 'TERMINATED'
-        supervision_period.state_supervision_violation_ids.append('violation1')
-        violation = expected_proto.state_supervision_violations.add()
-        violation.state_supervision_violation_id = 'violation1'
-        violation.is_violent = 'false'
-        violation.state_supervision_violation_response_ids.append('response1')
-        response = expected_proto.state_supervision_violation_responses.add()
-        response.state_supervision_violation_response_id = 'response1'
+        group_pb.state_supervision_sentence_ids.append('ss1')
+        supervision_sentence_pb = \
+            expected_proto.state_supervision_sentences.add()
+        supervision_sentence_pb.state_supervision_sentence_id = 'ss1'
+        supervision_sentence_pb.state_charge_ids.append('charge2')
+        charge2_pb = expected_proto.state_charges.add()
+        charge2_pb.state_charge_id = 'charge2'
+        charge2_pb.classification_type = 'M'
+        supervision_sentence_pb.state_supervision_period_ids.append('sp1')
+        supervision_period_pb = expected_proto.state_supervision_periods.add()
+        supervision_period_pb.state_supervision_period_id = 'sp1'
+        supervision_period_pb.status = 'TERMINATED'
+        supervision_period_pb.state_supervision_violation_ids.append(
+            'violation1')
+        violation_pb = expected_proto.state_supervision_violations.add()
+        violation_pb.state_supervision_violation_id = 'violation1'
+        violation_pb.is_violent = 'false'
+        violation_pb.state_supervision_violation_response_ids.append(
+            'response1')
+        response_pb = expected_proto.state_supervision_violation_responses.add()
+        response_pb.state_supervision_violation_response_id = 'response1'
 
-        group.state_incarceration_sentence_ids.append('is1')
-        incarceration_sentence = expected_proto.state_incarceration_sentences \
-            .add()
-        incarceration_sentence.state_incarceration_sentence_id = 'is1'
-        incarceration_sentence.state_charge_ids.append('charge1')
-        charge1 = expected_proto.state_charges.add()
-        charge1.state_charge_id = 'charge1'
-        charge1.classification_type = 'F'
-        incarceration_sentence.state_incarceration_period_ids.append('ip1')
-        incarceration_period = expected_proto.state_incarceration_periods.add()
-        incarceration_period.state_incarceration_period_id = 'ip1'
-        incarceration_period.status = 'IN_CUSTODY'
-        incarceration_period.state_incarceration_incident_ids \
+        group_pb.state_incarceration_sentence_ids.append('is1')
+        incarceration_sentence_pb = \
+            expected_proto.state_incarceration_sentences.add()
+        incarceration_sentence_pb.state_incarceration_sentence_id = 'is1'
+        incarceration_sentence_pb.state_charge_ids.append('charge1')
+        charge1_pb = expected_proto.state_charges.add()
+        charge1_pb.state_charge_id = 'charge1'
+        charge1_pb.classification_type = 'F'
+        incarceration_sentence_pb.state_incarceration_period_ids.append('ip1')
+        incarceration_period_pb = \
+            expected_proto.state_incarceration_periods.add()
+        incarceration_period_pb.state_incarceration_period_id = 'ip1'
+        incarceration_period_pb.status = 'IN_CUSTODY'
+        incarceration_period_pb.state_incarceration_incident_ids \
             .append('incident1')
-        incident = expected_proto.state_incarceration_incidents.add()
-        incident.state_incarceration_incident_id = 'incident1'
-        incident.incident_type = 'FISTICUFFS'
+        incident_pb = expected_proto.state_incarceration_incidents.add()
+        incident_pb.state_incarceration_incident_id = 'incident1'
+        incident_pb.incident_type = 'FISTICUFFS'
 
         # An ordering requirement in the proto equality check at the end of this
         # test requires that this agent be added after agent1 and before agent2
-        court_case_agent = expected_proto.state_agents.add()
-        court_case_agent.state_agent_id = 'agentJ'
-        court_case_agent.full_name = 'Judge Agent'
+        court_case_agent_pb = expected_proto.state_agents.add()
+        court_case_agent_pb.state_agent_id = 'agentJ'
+        court_case_agent_pb.full_name = 'Judge Agent'
 
-        incident.responding_officer_id = 'agent2'
-        incident_agent = expected_proto.state_agents.add()
-        incident_agent.state_agent_id = 'agent2'
-        incident_agent.full_name = 'Officer Thompson'
+        incident_pb.responding_officer_id = 'agent2'
+        incident_agent_pb = expected_proto.state_agents.add()
+        incident_agent_pb.state_agent_id = 'agent2'
+        incident_agent_pb.full_name = 'Officer Thompson'
 
-        incident.state_incarceration_incident_outcome_ids.append('incident1-1')
-        incident_outcome = \
+        incident_pb.state_incarceration_incident_outcome_ids.append(
+            'incident1-1')
+        incident_outcome_pb = \
             expected_proto.state_incarceration_incident_outcomes.add()
-        incident_outcome.state_incarceration_incident_outcome_id = 'incident1-1'
-        incident_outcome.outcome_type = 'FINE'
+        incident_outcome_pb.state_incarceration_incident_outcome_id = \
+            'incident1-1'
+        incident_outcome_pb.outcome_type = 'FINE'
 
-        incarceration_period.state_parole_decision_ids.append('decision1')
-        decision = expected_proto.state_parole_decisions.add()
-        decision.state_parole_decision_id = 'decision1'
+        incarceration_period_pb.state_parole_decision_ids.append('decision1')
+        decision_pb = expected_proto.state_parole_decisions.add()
+        decision_pb.state_parole_decision_id = 'decision1'
 
-        decision.decision_agent_ids.append('agent3')
-        decision_agent = expected_proto.state_agents.add()
-        decision_agent.state_agent_id = 'agent3'
-        decision_agent.full_name = 'Officer Barkley'
+        decision_pb.decision_agent_ids.append('agent3')
+        decision_agent_pb = expected_proto.state_agents.add()
+        decision_agent_pb.state_agent_id = 'agent3'
+        decision_agent_pb.full_name = 'Officer Barkley'
 
-        charge1.state_bond_id = 'bond1'
-        bond = expected_proto.state_bonds.add()
-        bond.state_bond_id = 'bond1'
+        charge1_pb.state_bond_id = 'bond1'
+        bond_pb = expected_proto.state_bonds.add()
+        bond_pb.state_bond_id = 'bond1'
 
-        charge2.state_court_case_id = 'case1'
-        court_case = expected_proto.state_court_cases.add()
-        court_case.state_court_case_id = 'case1'
+        charge2_pb.state_court_case_id = 'case1'
+        court_case_pb = expected_proto.state_court_cases.add()
+        court_case_pb.state_court_case_id = 'case1'
 
-        court_case.judge_id = 'agentJ'
+        court_case_pb.judge_id = 'agentJ'
 
+        expected_info = copy.deepcopy(info)
         # Act & Assert
 
         proto = ingest_utils.convert_ingest_info_to_proto(info)
         assert expected_proto == proto
 
         info_back = ingest_utils.convert_proto_to_ingest_info(proto)
-        assert info_back == info
+        assert info_back == expected_info
 
         # Assert that none of the proto's collections are empty, i.e. we've
         # tested all of the object graph

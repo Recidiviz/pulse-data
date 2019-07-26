@@ -161,6 +161,15 @@ class TestUsNdController(unittest.TestCase):
                                 StatePersonExternalId(
                                     state_person_external_id_id='52163',
                                     id_type=US_ND_ELITE)
+                            ]),
+                StatePerson(state_person_id='92237',
+                            state_person_external_ids=[
+                                StatePersonExternalId(
+                                    state_person_external_id_id='12345',
+                                    id_type=US_ND_SID),
+                                StatePersonExternalId(
+                                    state_person_external_id_id='92237',
+                                    id_type=US_ND_ELITE)
                             ])
             ])
 
@@ -1314,6 +1323,21 @@ class TestUsNdController(unittest.TestCase):
         person_1.external_ids.append(person_1_external_id_2)
         person_2.external_ids.append(person_2_external_id_2)
 
+        person_3 = entities.StatePerson.new_with_defaults()
+        person_3_external_id_1 = \
+            entities.StatePersonExternalId.new_with_defaults(
+                external_id='92237', id_type=US_ND_ELITE,
+                state_code=_STATE_CODE,
+                person=person_3)
+        person_3_external_id_2 = \
+            entities.StatePersonExternalId.new_with_defaults(
+                external_id='12345', id_type=US_ND_SID,
+                state_code=_STATE_CODE,
+                person=person_3)
+        person_3.external_ids.append(person_3_external_id_1)
+        person_3.external_ids.append(person_3_external_id_2)
+        expected_people.append(person_3)
+
         # Act
         controller.run_ingest(GcsfsIngestArgs(
             ingest_time=datetime.datetime.now(),
@@ -1429,15 +1453,15 @@ class TestUsNdController(unittest.TestCase):
             year=2018, month=2, day=27)
         sentence_group_114909.max_length_days = 315
 
-        person_3 = entities.StatePerson.new_with_defaults()
+        person_4 = entities.StatePerson.new_with_defaults()
         sentence_group_115077 = entities.StateSentenceGroup.new_with_defaults(
             external_id='115077',
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             state_code=_STATE_CODE, max_length_days=1316,
             date_imposed=datetime.date(year=2018, month=10, day=29),
-            person=person_3)
-        person_3.sentence_groups.append(sentence_group_115077)
-        expected_people.append(person_3)
+            person=person_4)
+        person_4.sentence_groups.append(sentence_group_115077)
+        expected_people.append(person_4)
 
         # Act
         controller.run_ingest(GcsfsIngestArgs(
@@ -2210,13 +2234,13 @@ class TestUsNdController(unittest.TestCase):
             incarceration_sentence_110651_placeholder)
         person_2.sentence_groups.append(sentence_group_110651)
 
-        person_4 = entities.StatePerson.new_with_defaults()
-        person_4_external_id = entities.StatePersonExternalId.new_with_defaults(
+        person_5 = entities.StatePerson.new_with_defaults()
+        person_5_external_id = entities.StatePersonExternalId.new_with_defaults(
             external_id='21109', id_type=US_ND_ELITE, state_code=_STATE_CODE,
-            person=person_4)
+            person=person_5)
         sentence_group_5129 = entities.StateSentenceGroup.new_with_defaults(
             external_id='5129', status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            state_code=_STATE_CODE, person=person_4)
+            state_code=_STATE_CODE, person=person_5)
         incarceration_sentence_5129_placeholder = \
             entities.StateIncarcerationSentence.new_with_defaults(
                 status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
@@ -2230,13 +2254,13 @@ class TestUsNdController(unittest.TestCase):
                     incarceration_sentence_5129_placeholder],
                 person=sentence_group_5129.person)
 
-        person_4.external_ids.append(person_4_external_id)
-        person_4.sentence_groups.append(sentence_group_5129)
+        person_5.external_ids.append(person_5_external_id)
+        person_5.sentence_groups.append(sentence_group_5129)
         sentence_group_5129.incarceration_sentences.append(
             incarceration_sentence_5129_placeholder)
         incarceration_sentence_5129_placeholder.incarceration_periods.append(
             incarceration_period_5129_placeholder)
-        expected_people.append(person_4)
+        expected_people.append(person_5)
 
         incident_381647 = entities.StateIncarcerationIncident.new_with_defaults(
             external_id='381647',
@@ -2353,7 +2377,7 @@ class TestUsNdController(unittest.TestCase):
         person_2.gender_raw_text = '2'
         person_2.residency_status = ResidencyStatus.PERMANENT
 
-        person_5 = entities.StatePerson.new_with_defaults(
+        person_6 = entities.StatePerson.new_with_defaults(
             full_name='{"given_names": "MIKE", "surname": "SANDISON"}',
             birthdate=datetime.date(year=1970, month=6, day=1),
             birthdate_inferred_from_age=False,
@@ -2361,22 +2385,22 @@ class TestUsNdController(unittest.TestCase):
             residency_status=ResidencyStatus.PERMANENT,
             gender=Gender.MALE,
             gender_raw_text='1')
-        person_5_external_id = entities.StatePersonExternalId.new_with_defaults(
+        person_6_external_id = entities.StatePersonExternalId.new_with_defaults(
             external_id='92307',
             id_type=US_ND_SID,
             state_code=_STATE_CODE,
-            person=person_5)
-        person_5_race = entities.StatePersonRace.new_with_defaults(
+            person=person_6)
+        person_6_race = entities.StatePersonRace.new_with_defaults(
             state_code=_STATE_CODE, race=Race.OTHER, race_raw_text='5',
-            person=person_5)
-        person_5_ethnicity = entities.StatePersonEthnicity.new_with_defaults(
+            person=person_6)
+        person_6_ethnicity = entities.StatePersonEthnicity.new_with_defaults(
             state_code=_STATE_CODE, ethnicity=Ethnicity.HISPANIC,
             ethnicity_raw_text='HISPANIC',
-            person=person_5)
-        person_5.external_ids = [person_5_external_id]
-        person_5.races = [person_5_race]
-        person_5.ethnicities = [person_5_ethnicity]
-        expected_people.append(person_5)
+            person=person_6)
+        person_6.external_ids = [person_6_external_id]
+        person_6.races = [person_6_race]
+        person_6.ethnicities = [person_6_ethnicity]
+        expected_people.append(person_6)
 
         # Act
         controller.run_ingest(GcsfsIngestArgs(
