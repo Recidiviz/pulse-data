@@ -20,8 +20,8 @@ from mock import MagicMock, call
 
 from google.api_core import exceptions  # pylint: disable=no-name-in-module
 
-from recidiviz.common.common_utils import create_generated_id, is_generated_id,\
-    retry_grpc
+from recidiviz.common.common_utils import create_generated_id, \
+    is_generated_id, retry_grpc, create_synthetic_id, get_external_id
 
 GO_AWAY_ERROR = exceptions.InternalServerError('500 GOAWAY received')
 DEADLINE_EXCEEDED_ERROR = exceptions.InternalServerError('504 Deadline '
@@ -43,6 +43,16 @@ class CommonUtilsTest(unittest.TestCase):
     def test_is_not_generated_id(self):
         id_str = "id_str"
         self.assertFalse(is_generated_id(id_str))
+
+    def test_create_synthetic_id(self):
+        id_str = "id_str"
+        id_type = "id_type"
+        self.assertEqual("id_type:id_str", create_synthetic_id(
+            external_id=id_str, id_type=id_type))
+
+    def test_get_external_id(self):
+        synthetic_id = "id_type:11:111"
+        self.assertEqual("11:111", get_external_id(synthetic_id=synthetic_id))
 
     def test_retry_grpc_no_raise(self):
         fn = MagicMock()

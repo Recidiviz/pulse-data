@@ -115,12 +115,18 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             full_name='JUDGE_JUDY'
         )
 
+        # We expect the external_ids coming in to have the format
+        # [type]:[external_id]
+        ii_person_external_id_1 = US_ND_ELITE + ':' + 'EXTERNAL_ID1'
+        ii_person_external_id_2 = US_ND_SID + ':' + 'EXTERNAL_ID2'
+
         ingest_info.state_people.add(
             state_person_id='PERSON_ID',
             state_person_race_ids=['RACE_ID1', 'RACE_ID2'],
             state_person_ethnicity_ids=['ETHNICITY_ID'],
             state_alias_ids=['ALIAS_ID1', 'ALIAS_ID2'],
-            state_person_external_ids_ids=['EXTERNAL_ID1', 'EXTERNAL_ID2'],
+            state_person_external_ids_ids=[ii_person_external_id_1,
+                                           ii_person_external_id_2],
             state_assessment_ids=['ASSESSMENT_ID'],
             state_sentence_group_ids=['GROUP_ID1', 'GROUP_ID2']
         )
@@ -145,11 +151,11 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             full_name='FRANK OCEAN'
         )
         ingest_info.state_person_external_ids.add(
-            state_person_external_id_id='EXTERNAL_ID1',
+            state_person_external_id_id=ii_person_external_id_1,
             id_type=US_ND_ELITE
         )
         ingest_info.state_person_external_ids.add(
-            state_person_external_id_id='EXTERNAL_ID2',
+            state_person_external_id_id=ii_person_external_id_2,
             id_type=US_ND_SID
         )
         ingest_info.state_assessments.add(

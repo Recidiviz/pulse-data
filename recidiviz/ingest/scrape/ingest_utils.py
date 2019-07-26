@@ -18,12 +18,13 @@
 """Utils file for ingest module"""
 import logging
 from datetime import tzinfo
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Any, Dict, List, Optional, Set, Union, cast
 
 from google.protobuf import json_format
 import pytz
 
 from recidiviz.common import common_utils
+from recidiviz.common.common_utils import create_synthetic_id, get_external_id
 from recidiviz.ingest.models import ingest_info, ingest_info_pb2
 from recidiviz.ingest.scrape import constants
 from recidiviz.utils import environment, regions
@@ -111,6 +112,19 @@ def validate_scrape_types(
 def convert_ingest_info_to_proto(ingest_info_py: ingest_info.IngestInfo) \
         -> ingest_info_pb2.IngestInfo:
     """Converts an ingest_info python object to an ingest info proto."""
+
+    def _process_external_ids(ii: ingest_info.IngestInfo) -> None:
+        # As states can have multiple external_ids from different systems, we
+        # create new ids that contain type and external_id information so ids
+        # from different systems don't collide.
+        for p in ii.state_people:
+            for ex_id in p.state_person_external_ids:
+                id_type = cast(str, ex_id.id_type)
+                existing_id = cast(str, ex_id.state_person_external_id_id)
+                ex_id.state_person_external_id_id = create_synthetic_id(
+                    external_id=existing_id, id_type=id_type)
+
+    _process_external_ids(ingest_info_py)
     proto = ingest_info_pb2.IngestInfo()
 
     person_map: Dict[str, ingest_info.Person] = {}
@@ -804,11 +818,21 @@ def convert_proto_to_ingest_info(
             [state_sentence_group_map[proto_id] for proto_id
              in proto_state_person.state_sentence_group_ids]
 
+    def _process_external_ids(ii: ingest_info.IngestInfo) -> None:
+        # Undo preprocessing on external_ids performed when converting from
+        # py -> proto
+        for p in ii.state_people:
+            for ex_id in p.state_person_external_ids:
+                existing_id = cast(str, ex_id.state_person_external_id_id)
+                ex_id.state_person_external_id_id = get_external_id(
+                    synthetic_id=existing_id)
+
     # Wire people to ingest info
-    ii = ingest_info.IngestInfo()
-    ii.people.extend(person_map.values())
-    ii.state_people.extend(state_person_map.values())
-    return ii
+    ingest_info_py = ingest_info.IngestInfo()
+    ingest_info_py.people.extend(person_map.values())
+    ingest_info_py.state_people.extend(state_person_map.values())
+    _process_external_ids(ingest_info_py)
+    return ingest_info_py
 
 
 def _proto_to_py(proto, py_type, id_name):
