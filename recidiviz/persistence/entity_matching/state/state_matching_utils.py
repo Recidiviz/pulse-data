@@ -22,6 +22,10 @@ from typing import List, cast, Optional, Tuple, Union, Set, Type
 import attr
 
 from recidiviz.common.constants import enum_canonical_strings
+from recidiviz.common.constants.state.state_incarceration_period import \
+    StateIncarcerationPeriodAdmissionReason
+from recidiviz.common.constants.state.state_supervision_violation_response \
+    import StateSupervisionViolationResponseRevocationType
 from recidiviz.persistence.entity.base_entity import Entity, ExternalIdEntity
 from recidiviz.persistence.entity.entity_utils import \
     EntityFieldType, get_set_entity_field_names, get_field, set_field, \
@@ -29,7 +33,8 @@ from recidiviz.persistence.entity.entity_utils import \
 from recidiviz.persistence.entity.state.entities import StatePerson, \
     StatePersonExternalId, StatePersonAlias, StatePersonRace, \
     StatePersonEthnicity, StateIncarcerationPeriod, \
-    StateIncarcerationIncident, StateSentenceGroup
+    StateIncarcerationIncident, StateSentenceGroup, \
+    StateSupervisionViolationResponse
 from recidiviz.persistence.errors import EntityMatchingError
 
 
@@ -103,7 +108,6 @@ class MatchResults:
 
     def __init__(self, individual_match_results: List[IndividualMatchResult],
                  unmatched_db_entities: List[Entity], error_count: int):
-
         # Results for each individual ingested EntityTree.
         self.individual_match_results = individual_match_results
 
@@ -156,15 +160,15 @@ def _is_match(*, ingested_entity: Entity, db_entity: Entity) -> bool:
     if isinstance(ingested_entity, StatePersonAlias):
         db_entity = cast(StatePersonAlias, db_entity)
         return ingested_entity.state_code == db_entity.state_code \
-                and ingested_entity.full_name == db_entity.full_name
+               and ingested_entity.full_name == db_entity.full_name
     if isinstance(ingested_entity, StatePersonRace):
         db_entity = cast(StatePersonRace, db_entity)
         return ingested_entity.state_code == db_entity.state_code \
-                and ingested_entity.race == db_entity.race
+               and ingested_entity.race == db_entity.race
     if isinstance(ingested_entity, StatePersonEthnicity):
         db_entity = cast(StatePersonEthnicity, db_entity)
         return ingested_entity.state_code == db_entity.state_code \
-                and ingested_entity.ethnicity == db_entity.ethnicity
+               and ingested_entity.ethnicity == db_entity.ethnicity
 
     db_entity = cast(ExternalIdEntity, db_entity)
     ingested_entity = cast(ExternalIdEntity, ingested_entity)
@@ -496,6 +500,134 @@ def _default_merge_flat_fields(*, new_entity: Entity, old_entity: Entity) \
                   get_field(new_entity, child_field_name))
 
     return old_entity
+
+
+def _get_all_entities_of_type(root: Entity, cls: Type):
+    """Given a |root| entity, returns a list of all unique entities of type
+    |cls| that exist in the |root| graph.
+    """
+    seen: Set[int] = set()
+    entities_of_type: List[Entity] = []
+    _get_all_entities_of_type_helper(root, cls, seen, entities_of_type)
+    return entities_of_type
+
+
+def _get_all_entities_of_type_helper(
+        root: Entity, cls: Type, seen: Set[int],
+        entities_of_type: List[Entity]):
+    if isinstance(root, cls):
+        if id(root) not in seen:
+            root = cast(Entity, root)
+            entities_of_type.append(root)
+        return
+
+    for field_name in get_set_entity_field_names(
+            root, EntityFieldType.FORWARD_EDGE):
+        for field in get_field_as_list(root, field_name):
+            _get_all_entities_of_type_helper(field, cls, seen, entities_of_type)
+
+
+def admitted_for_revocation(ip: StateIncarcerationPeriod) -> bool:
+    """Determines if the provided |ip| began because of a revocation."""
+    if not ip.admission_reason:
+        return False
+    revocation_types = [
+        StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+        StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION]
+    non_revocation_types = [
+        StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR,
+        StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN,
+        StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+        StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE,
+        StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE,
+        StateIncarcerationPeriodAdmissionReason.TRANSFER]
+    if ip.admission_reason in revocation_types:
+        return True
+    if ip.admission_reason in non_revocation_types:
+        return False
+    raise EntityMatchingError(
+        f"Unexpected StateIncarcerationPeriodAdmissionReason "
+        f"{ip.admission_reason}.", ip.get_entity_name())
+
+
+def revoked_to_prison(svr: StateSupervisionViolationResponse) -> bool:
+    """Determines if the provided |svr| resulted in a revocation."""
+    if not svr.revocation_type:
+        return False
+    reincarceration_types = [
+        StateSupervisionViolationResponseRevocationType.REINCARCERATION,
+        StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
+        StateSupervisionViolationResponseRevocationType.TREATMENT_IN_PRISON]
+    non_reincarceration_types = [
+        StateSupervisionViolationResponseRevocationType.RETURN_TO_SUPERVISION]
+    if svr.revocation_type in reincarceration_types:
+        return True
+    if svr.revocation_type in non_reincarceration_types:
+        return False
+    raise EntityMatchingError(
+        f"Unexpected StateSupervisionViolationRevocationType "
+        f"{svr.revocation_type}.", svr.get_entity_name())
+
+
+def _get_closest_response(
+        ip: StateIncarcerationPeriod,
+        sorted_responses: List[StateSupervisionViolationResponse]
+        ) -> Optional[StateSupervisionViolationResponse]:
+    """Returns the most recent StateSupervisionViolationResponse when compared
+    to the beginning of the provided |incarceration_period|.
+
+    Assumes the provided |sorted_responses| are sorted chronologically by
+    response_date.
+    """
+    closest_response = None
+    admission_date = cast(datetime.date, ip.admission_date)
+    for response in sorted_responses:
+        response_date = cast(datetime.date, response.response_date)
+        if response_date > admission_date:
+            break
+        closest_response = response
+
+    return closest_response
+
+
+def associate_revocation_svrs_with_ips(merged_persons: List[StatePerson]):
+    """
+    For each person in the provided |merged_persons|, attempts to associate
+    StateSupervisionViolationResponses that result in revocation with their
+    corresponding StateIncarcerationPeriod.
+    """
+    for person in merged_persons:
+        svrs = _get_all_entities_of_type(
+            person, StateSupervisionViolationResponse)
+        ips = _get_all_entities_of_type(person, StateIncarcerationPeriod)
+
+        revocation_svrs = []
+        for svr in svrs:
+            svr = cast(StateSupervisionViolationResponse, svr)
+            if revoked_to_prison(svr) and svr.response_date:
+                revocation_svrs.append(svr)
+        revocation_ips = []
+        for ip in ips:
+            ip = cast(StateIncarcerationPeriod, ip)
+            if admitted_for_revocation(ip) and ip.admission_date:
+                revocation_ips.append(ip)
+
+        if not revocation_svrs or not revocation_ips:
+            return
+
+        sorted_revocation_svrs = sorted(
+            revocation_svrs, key=lambda x: x.response_date)
+        sorted_revocation_ips = sorted(
+            revocation_ips, key=lambda x: x.admission_date)
+
+        seen: Set[int] = set()
+        for ip in sorted_revocation_ips:
+            closest_svr = _get_closest_response(ip, sorted_revocation_svrs)
+            svr_id = id(closest_svr)
+
+            if closest_svr and svr_id not in seen:
+                seen.add(svr_id)
+                ip.source_supervision_violation_response = closest_svr
 
 
 def move_incidents_onto_periods(merged_persons: List[StatePerson]):

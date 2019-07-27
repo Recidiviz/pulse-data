@@ -2584,6 +2584,8 @@ class TestUsNdController(unittest.TestCase):
             court_type=StateCourtType.PRESENT_WITHOUT_INFO,
             judge=agent_person,
             charges=[charge_140408], person=charge_140408.person)
+        incarceration_period_114909_1.source_supervision_violation_response = \
+            supervision_violation_response_140408
         charge_140408.court_case = court_case_140408
         supervision_sentence_140408.charges = [charge_140408]
         supervision_violation_140408.supervision_violation_responses.append(

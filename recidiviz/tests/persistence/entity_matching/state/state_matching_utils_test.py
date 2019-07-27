@@ -25,16 +25,22 @@ from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus, StateIncarcerationPeriodAdmissionReason, \
     StateIncarcerationPeriodReleaseReason
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.constants.state.state_supervision_violation_response \
+    import StateSupervisionViolationResponseRevocationType
 from recidiviz.persistence.entity.state.entities import StatePersonExternalId, \
     StatePerson, StatePersonAlias, StateCharge, StateSentenceGroup, StateFine, \
     StateIncarcerationPeriod, StateIncarcerationIncident, \
-    StateIncarcerationSentence, StateCourtCase, StateSupervisionSentence
+    StateIncarcerationSentence, StateCourtCase, StateSupervisionSentence, \
+    StateSupervisionViolationResponse, StateSupervisionViolation, \
+    StateSupervisionPeriod
 from recidiviz.persistence.entity_matching.state.state_matching_utils import \
     remove_back_edges, add_person_to_entity_graph, is_placeholder, _is_match, \
     EntityTree, generate_child_entity_trees, add_child_to_entity, \
     remove_child_from_entity, _merge_incarceration_periods_helper, \
     has_default_status, move_incidents_onto_periods, merge_flat_fields, \
-    get_root_entity_cls, get_total_entities_of_cls
+    get_root_entity_cls, get_total_entities_of_cls, \
+    associate_revocation_svrs_with_ips, admitted_for_revocation, \
+    revoked_to_prison
 from recidiviz.persistence.errors import EntityMatchingError
 
 _DATE_1 = datetime.date(year=2019, month=1, day=1)
@@ -375,6 +381,209 @@ class TestStateMatchingUtils(TestCase):
         self.assertEqual(2, get_total_entities_of_cls(
             [person], StateSentenceGroup))
         self.assertEqual(1, get_total_entities_of_cls([person], StatePerson))
+
+    def test_completeEnumSet_AdmittedForRevication(self):
+        period = StateIncarcerationPeriod.new_with_defaults()
+        for admission_reason in StateIncarcerationPeriodAdmissionReason:
+            period.admission_reason = admission_reason
+            admitted_for_revocation(period)
+
+    def test_completeEnumSet_RevokedToPrison(self):
+        svr = StateSupervisionViolationResponse.new_with_defaults()
+        for revocation_type in StateSupervisionViolationResponseRevocationType:
+            svr.revocation_type = revocation_type
+            revoked_to_prison(svr)
+
+    def test_associateSvrsWithIps(self):
+        # Arrange
+        svr_1 = StateSupervisionViolationResponse.new_with_defaults(
+            response_date=_DATE_1,
+            revocation_type=StateSupervisionViolationResponseRevocationType.
+            REINCARCERATION)
+        svr_2 = StateSupervisionViolationResponse.new_with_defaults(
+            response_date=_DATE_3,
+            revocation_type=StateSupervisionViolationResponseRevocationType.
+            REINCARCERATION)
+        svr_3 = StateSupervisionViolationResponse.new_with_defaults(
+            response_date=_DATE_5,
+            revocation_type=StateSupervisionViolationResponseRevocationType.
+            RETURN_TO_SUPERVISION)
+        placeholder_sv = StateSupervisionViolation.new_with_defaults(
+            supervision_violation_responses=[svr_1, svr_2, svr_3])
+        placeholder_sp = StateSupervisionPeriod.new_with_defaults(
+            supervision_violations=[placeholder_sv])
+        placeholder_ss = StateSupervisionSentence.new_with_defaults(
+            supervision_periods=[placeholder_sp])
+
+        ip_1 = StateIncarcerationPeriod.new_with_defaults(
+            admission_date=_DATE_2,
+            admission_reason=
+            StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION)
+        ip_2 = StateIncarcerationPeriod.new_with_defaults(
+            admission_date=_DATE_4,
+            admission_reason=
+            StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION)
+        placeholder_is = StateIncarcerationSentence.new_with_defaults(
+            incarceration_periods=[ip_1, ip_2])
+        placeholder_sg = StateSentenceGroup.new_with_defaults(
+            incarceration_sentences=[placeholder_is],
+            supervision_sentences=[placeholder_ss])
+        placeholder_person = StatePerson.new_with_defaults(
+            sentence_groups=[placeholder_sg])
+
+        expected_svr_1 = attr.evolve(svr_1)
+        expected_svr_2 = attr.evolve(svr_2)
+        expected_svr_3 = attr.evolve(svr_3)
+        expected_placeholder_sv = attr.evolve(
+            placeholder_sv,
+            supervision_violation_responses=[expected_svr_1, expected_svr_2,
+                                             expected_svr_3])
+        expected_placeholder_sp = attr.evolve(
+            placeholder_sp, supervision_violations=[expected_placeholder_sv])
+        expected_placeholder_ss = attr.evolve(
+            placeholder_ss, supervision_periods=[expected_placeholder_sp])
+
+        expected_ip_1 = attr.evolve(ip_1,
+                                    source_supervision_violation_response=svr_1)
+        expected_ip_2 = attr.evolve(ip_2,
+                                    source_supervision_violation_response=svr_2)
+
+        expected_placeholder_is = attr.evolve(
+            placeholder_is,
+            incarceration_periods=[expected_ip_1, expected_ip_2])
+        expected_placeholder_sg = attr.evolve(
+            placeholder_sg,
+            supervision_sentences=[expected_placeholder_ss],
+            incarceration_sentences=[expected_placeholder_is])
+        expected_placeholder_person = attr.evolve(
+            placeholder_person, sentence_groups=[expected_placeholder_sg])
+
+        # Act
+        associate_revocation_svrs_with_ips([placeholder_person])
+
+        # Assert
+        self.assertEqual(expected_placeholder_person, placeholder_person)
+
+    def test_associateSvrsWithIps_onlyRevocationTypes(self):
+        # Arrange
+        svr_1 = StateSupervisionViolationResponse.new_with_defaults(
+            response_date=_DATE_1,
+            revocation_type=StateSupervisionViolationResponseRevocationType.
+            REINCARCERATION)
+        svr_2 = StateSupervisionViolationResponse.new_with_defaults(
+            response_date=_DATE_3,
+            revocation_type=StateSupervisionViolationResponseRevocationType.
+            RETURN_TO_SUPERVISION)
+        placeholder_sv = StateSupervisionViolation.new_with_defaults(
+            supervision_violation_responses=[svr_1, svr_2])
+        placeholder_sp = StateSupervisionPeriod.new_with_defaults(
+            supervision_violations=[placeholder_sv])
+        placeholder_ss = StateSupervisionSentence.new_with_defaults(
+            supervision_periods=[placeholder_sp])
+
+        ip_1 = StateIncarcerationPeriod.new_with_defaults(
+            admission_date=_DATE_2,
+            admission_reason=
+            StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION)
+        ip_2 = StateIncarcerationPeriod.new_with_defaults(
+            admission_date=_DATE_4,
+            admission_reason=
+            StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION)
+        placeholder_is = StateIncarcerationSentence.new_with_defaults(
+            incarceration_periods=[ip_1, ip_2])
+        placeholder_sg = StateSentenceGroup.new_with_defaults(
+            incarceration_sentences=[placeholder_is],
+            supervision_sentences=[placeholder_ss])
+        placeholder_person = StatePerson.new_with_defaults(
+            sentence_groups=[placeholder_sg])
+
+        expected_svr_1 = attr.evolve(svr_1)
+        expected_svr_2 = attr.evolve(svr_2)
+        expected_placeholder_sv = attr.evolve(
+            placeholder_sv,
+            supervision_violation_responses=[expected_svr_1, expected_svr_2])
+        expected_placeholder_sp = attr.evolve(
+            placeholder_sp, supervision_violations=[expected_placeholder_sv])
+        expected_placeholder_ss = attr.evolve(
+            placeholder_ss, supervision_periods=[expected_placeholder_sp])
+
+        expected_ip_1 = attr.evolve(ip_1)
+        expected_ip_2 = attr.evolve(
+            ip_2, source_supervision_violation_response=svr_1)
+
+        expected_placeholder_is = attr.evolve(
+            placeholder_is,
+            incarceration_periods=[expected_ip_1, expected_ip_2])
+        expected_placeholder_sg = attr.evolve(
+            placeholder_sg,
+            supervision_sentences=[expected_placeholder_ss],
+            incarceration_sentences=[expected_placeholder_is])
+        expected_placeholder_person = attr.evolve(
+            placeholder_person, sentence_groups=[expected_placeholder_sg])
+
+        # Act
+        associate_revocation_svrs_with_ips([placeholder_person])
+
+        # Assert
+        self.assertEqual(expected_placeholder_person, placeholder_person)
+
+    def test_associateSvrsWithIps_dontAssociateTheSameSvr(self):
+        # Arrange
+        svr_1 = StateSupervisionViolationResponse.new_with_defaults(
+            response_date=_DATE_1,
+            revocation_type=StateSupervisionViolationResponseRevocationType.
+            REINCARCERATION)
+        placeholder_sv = StateSupervisionViolation.new_with_defaults(
+            supervision_violation_responses=[svr_1])
+        placeholder_sp = StateSupervisionPeriod.new_with_defaults(
+            supervision_violations=[placeholder_sv])
+        placeholder_ss = StateSupervisionSentence.new_with_defaults(
+            supervision_periods=[placeholder_sp])
+
+        ip_1 = StateIncarcerationPeriod.new_with_defaults(
+            admission_date=_DATE_2,
+            admission_reason=
+            StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION)
+        ip_2 = StateIncarcerationPeriod.new_with_defaults(
+            admission_date=_DATE_4,
+            admission_reason=
+            StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION)
+        placeholder_is = StateIncarcerationSentence.new_with_defaults(
+            incarceration_periods=[ip_1, ip_2])
+        placeholder_sg = StateSentenceGroup.new_with_defaults(
+            incarceration_sentences=[placeholder_is],
+            supervision_sentences=[placeholder_ss])
+        placeholder_person = StatePerson.new_with_defaults(
+            sentence_groups=[placeholder_sg])
+
+        expected_svr_1 = attr.evolve(svr_1)
+        expected_placeholder_sv = attr.evolve(
+            placeholder_sv,
+            supervision_violation_responses=[expected_svr_1])
+        expected_placeholder_sp = attr.evolve(
+            placeholder_sp, supervision_violations=[expected_placeholder_sv])
+        expected_placeholder_ss = attr.evolve(
+            placeholder_ss, supervision_periods=[expected_placeholder_sp])
+
+        expected_ip_1 = attr.evolve(
+            ip_1, source_supervision_violation_response=svr_1)
+        expected_ip_2 = attr.evolve(ip_2)
+
+        expected_placeholder_is = attr.evolve(
+            placeholder_is,
+            incarceration_periods=[expected_ip_1, expected_ip_2])
+        expected_placeholder_sg = attr.evolve(
+            placeholder_sg,
+            supervision_sentences=[expected_placeholder_ss],
+            incarceration_sentences=[expected_placeholder_is])
+        expected_placeholder_person = attr.evolve(
+            placeholder_person, sentence_groups=[expected_placeholder_sg])
+
+        # Act
+        associate_revocation_svrs_with_ips([placeholder_person])
+
+        # Assert
+        self.assertEqual(expected_placeholder_person, placeholder_person)
 
     def test_mergeIncarcerationPeriods(self):
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
