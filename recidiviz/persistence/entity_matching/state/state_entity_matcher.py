@@ -43,7 +43,8 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import \
     add_child_to_entity, merge_incarceration_periods, \
     merge_flat_fields, is_match, is_incomplete_incarceration_period_match, \
     is_incarceration_period_complete, move_incidents_onto_periods, \
-    get_root_entity_cls, get_total_entities_of_cls
+    get_root_entity_cls, get_total_entities_of_cls, \
+    associate_revocation_svrs_with_ips
 
 from recidiviz.persistence.errors import EntityMatchingError, \
     MatchedMultipleIngestedEntitiesError
@@ -60,11 +61,8 @@ class StateEntityMatcher(BaseEntityMatcher[StatePerson]):
         MatchedEntities object that contains the results of matching.
         """
 
-        _perform_preprocessing(ingested_people)
-
         # TODO(1868): more specific query
         db_persons = dao.read_people(session)
-
         # Remove all back edges before entity matching. All entities in the
         # state schema have edges both to their children and their parents. We
         # remove these for simplicity as entity matching does not depend on
@@ -82,15 +80,29 @@ class StateEntityMatcher(BaseEntityMatcher[StatePerson]):
         for db_person in db_persons:
             remove_back_edges(db_person)
 
-        matched_entities = _match_persons(
-            ingested_persons=ingested_people, db_persons=db_persons)
-
-        # TODO(1868): Remove any placeholders in graph without children after
-        # write
-        merge_multiparent_entities(matched_entities.people)
-        move_incidents_onto_periods(matched_entities.people)
+        matched_entities = _run_match(ingested_people, db_persons)
         add_person_to_entity_graph(matched_entities.people)
         return matched_entities
+
+
+def _run_match(ingested_persons: List[StatePerson],
+               db_persons: List[StatePerson]) -> MatchedEntities:
+    """Attempts to match |ingested_persons| with people in |db_persons|.
+    Assumes no backedges are present in either |ingested_persons| or
+    |db_persons|.
+    """
+    _perform_preprocessing(ingested_persons)
+
+    matched_entities = _match_persons(
+        ingested_persons=ingested_persons, db_persons=db_persons)
+
+    # TODO(1868): Remove any placeholders in graph without children after
+    # write
+    merge_multiparent_entities(matched_entities.people)
+    move_incidents_onto_periods(matched_entities.people)
+    associate_revocation_svrs_with_ips(
+        matched_entities.people)
+    return matched_entities
 
 
 # TODO(2037): Move state specific logic into its own file.
