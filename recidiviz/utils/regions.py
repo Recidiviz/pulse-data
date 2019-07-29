@@ -25,6 +25,7 @@ import os
 import pkgutil
 from datetime import datetime, tzinfo
 from enum import Enum
+from itertools import chain
 from typing import Any, Dict, Optional, Set, Union
 
 import attr
@@ -203,4 +204,5 @@ def validate_region_code(region_code):
 
 def get_ingestor_name(region_code: str, ingest_type_name: str) -> str:
     """Returns the class name for a given region_code and ingest_module"""
-    return ''.join(s.title() for s in region_code.split('_')) + ingest_type_name
+    return ''.join(s.title() for s in
+                   chain(region_code.split('_'), [ingest_type_name]))
