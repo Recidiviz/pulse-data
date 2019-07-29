@@ -35,7 +35,8 @@ from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodAdmissionReason as AdmissionReason
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodReleaseReason as ReleaseReason
-from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
+from recidiviz.persistence.entity.state.entities import \
+    StateIncarcerationPeriod, StatePerson
 
 
 class TestClassifyReleaseEvents(unittest.TestCase):
@@ -688,6 +689,43 @@ class TestValidateSortAndCollapseIncarcerationPeriods:
                 input_incarceration_periods)
 
         assert validated_incarceration_periods == input_incarceration_periods
+
+    def test_validate_incarceration_periods_placeholder(self):
+        incarceration_periods = [StateIncarcerationPeriod.new_with_defaults(
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
+            state_code='XX',
+            person=[StatePerson.new_with_defaults()],
+            incarceration_period_id=1)]
+
+        validated_incarceration_periods = \
+            identifier.validate_sort_and_collapse_incarceration_periods(
+                incarceration_periods)
+
+        assert validated_incarceration_periods == []
+
+    def test_validate_incarceration_periods_placeholder_and_valid(self):
+        placeholder = StateIncarcerationPeriod.new_with_defaults(
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
+            state_code='XX',
+            person=[StatePerson.new_with_defaults()],
+            incarceration_period_id=1)
+
+        valid_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='TX',
+            admission_date=date(2008, 11, 20),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=date(2010, 12, 4),
+            release_reason=ReleaseReason.SENTENCE_SERVED)
+
+        incarceration_periods = [placeholder, valid_incarceration_period]
+
+        validated_incarceration_periods = \
+            identifier.validate_sort_and_collapse_incarceration_periods(
+                incarceration_periods)
+
+        assert validated_incarceration_periods == [valid_incarceration_period]
 
     def test_sort_incarceration_periods(self):
         initial_incarceration_period = \

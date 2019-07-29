@@ -19,14 +19,16 @@
 import inspect
 from enum import Enum
 from types import ModuleType
-from typing import Dict, List, Set, Type, Any
+from typing import Dict, List, Set, Type, Any, cast
 from functools import lru_cache
 
 import attr
 
+from recidiviz.common.constants import enum_canonical_strings
 from recidiviz.persistence.entity.base_entity import Entity, ExternalIdEntity
 from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.persistence.entity.state import entities as state_entities
+from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.persistence.errors import PersistenceError, EntityMatchingError
 
 _STATE_CLASS_HIERARCHY = [
@@ -286,3 +288,46 @@ def set_field_from_list(entity: Entity, field_name: str, value: List):
                 f"Attempting to set singular field: {field_name} on entity: "
                 f"{entity.get_entity_name()}, but got multiple values: "
                 f"{value}.", entity.get_entity_name())
+
+
+def is_placeholder(entity: Entity) -> bool:
+    """Determines if the provided entity is a placeholder. Conceptually, a
+    placeholder is an object that we have no information about, but have
+    inferred its existence based on other objects we do have information about.
+    Generally, an entity is a placeholder if all of the optional flat fields are
+    empty or set to a default value.
+    """
+
+    # Although these are not flat fields, they represent characteristics of a
+    # person. If present, we do have information about the provided person, and
+    # therefore it is not a placeholder.
+    if isinstance(entity, StatePerson):
+        entity = cast(StatePerson, entity)
+        if any([entity.external_ids, entity.races, entity.aliases,
+                entity.ethnicities]):
+            return False
+
+    copy = attr.evolve(entity)
+
+    # Clear id
+    copy.clear_id()
+
+    # Clear state code as it's non nullable
+    if hasattr(copy, 'state_code'):
+        set_field(copy, 'state_code', None)
+
+    # Clear status if set to default value
+    if has_default_status(entity):
+        set_field(copy, 'status', None)
+
+    set_flat_fields = get_set_entity_field_names(
+        copy, EntityFieldType.FLAT_FIELD)
+    return not bool(set_flat_fields)
+
+
+def has_default_status(entity: Entity) -> bool:
+    if hasattr(entity, 'status'):
+        status = get_field(entity, 'status')
+        return status \
+            and status.value == enum_canonical_strings.present_without_info
+    return False
