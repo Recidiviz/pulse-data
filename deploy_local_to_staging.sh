@@ -30,7 +30,10 @@ echo "Pushing image"
 run_cmd "docker push us.gcr.io/recidiviz-staging/appengine/$deploy_name"
 
 echo "Running deploy"
-run_cmd "gcloud -q app deploy staging.yaml --project recidiviz-staging
+run_cmd "gcloud -q app deploy --no-promote staging.yaml
+       --project recidiviz-staging
        --version $version_tag-$deploy_name
        --image-url us.gcr.io/recidiviz-staging/appengine/$deploy_name
        --verbosity=debug"
+
+echo "App deployed (but not promoted) to \`$version_tag-$deploy_name\`.recidiviz-staging.appspot.com"
