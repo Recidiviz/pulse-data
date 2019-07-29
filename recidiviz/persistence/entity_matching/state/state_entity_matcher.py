@@ -27,7 +27,7 @@ from more_itertools import one
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.entity.entity_utils import \
     get_set_entity_field_names, get_field_as_list, get_field, set_field, \
-    set_field_from_list
+    set_field_from_list, is_placeholder
 from recidiviz.persistence.database.schema.state import dao
 from recidiviz.persistence.entity.base_entity import Entity, ExternalIdEntity
 from recidiviz.persistence.entity.state.entities import StatePerson, \
@@ -38,8 +38,8 @@ from recidiviz.persistence.entity_matching.base_entity_matcher import \
 from recidiviz.persistence.entity_matching.state.state_matching_utils import \
     remove_back_edges, \
     add_person_to_entity_graph, EntityFieldType, IndividualMatchResult, \
-    EntityTree, MatchResults, is_placeholder, \
-    generate_child_entity_trees, remove_child_from_entity, \
+    EntityTree, MatchResults, generate_child_entity_trees,\
+    remove_child_from_entity, \
     add_child_to_entity, merge_incarceration_periods, \
     merge_flat_fields, is_match, is_incomplete_incarceration_period_match, \
     is_incarceration_period_complete, move_incidents_onto_periods, \

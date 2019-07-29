@@ -34,13 +34,15 @@ from recidiviz.persistence.entity.state.entities import StatePersonExternalId, \
     StateSupervisionViolationResponse, StateSupervisionViolation, \
     StateSupervisionPeriod
 from recidiviz.persistence.entity_matching.state.state_matching_utils import \
-    remove_back_edges, add_person_to_entity_graph, is_placeholder, _is_match, \
+    remove_back_edges, add_person_to_entity_graph, _is_match, \
     EntityTree, generate_child_entity_trees, add_child_to_entity, \
     remove_child_from_entity, _merge_incarceration_periods_helper, \
-    has_default_status, move_incidents_onto_periods, merge_flat_fields, \
+    move_incidents_onto_periods, merge_flat_fields, \
     get_root_entity_cls, get_total_entities_of_cls, \
     associate_revocation_svrs_with_ips, admitted_for_revocation, \
     revoked_to_prison
+from recidiviz.persistence.entity.entity_utils import is_placeholder, \
+    has_default_status
 from recidiviz.persistence.errors import EntityMatchingError
 
 _DATE_1 = datetime.date(year=2019, month=1, day=1)
@@ -158,13 +160,6 @@ class TestStateMatchingUtils(TestCase):
         self.assertFalse(
             _is_match(ingested_entity=charge, db_entity=charge_another))
 
-    def test_hasDefaultStatus(self):
-        entity = StateSentenceGroup.new_with_defaults(
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
-        self.assertTrue(has_default_status(entity))
-        entity.status = StateSentenceStatus.SERVING
-        self.assertFalse(has_default_status(entity))
-
     def test_mergeFlatFields(self):
         ing_entity = StateSentenceGroup.new_with_defaults(
             county_code='county_code-updated', max_length_days=10,
@@ -244,27 +239,6 @@ class TestStateMatchingUtils(TestCase):
 
         add_person_to_entity_graph([person])
         self.assertEqual(expected_person, person)
-
-    def test_isPlaceholder(self):
-        entity = StateSentenceGroup.new_with_defaults(
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            state_code=_STATE_CODE,
-            fines=[StateFine.new_with_defaults()],
-            person=[StatePerson.new_with_defaults()], sentence_group_id=_ID)
-        self.assertTrue(is_placeholder(entity))
-        entity.county_code = 'county_code'
-        self.assertFalse(is_placeholder(entity))
-
-    def test_isPlaceholder_personWithExternalId(self):
-        sentence_group = StateSentenceGroup.new_with_defaults(
-            state_code=_STATE_CODE)
-        person = StatePerson.new_with_defaults(sentence_groups=[sentence_group])
-        self.assertTrue(is_placeholder(person))
-        person.external_ids.append(
-            StatePersonExternalId.new_with_defaults(
-                state_code=_STATE_CODE, external_id=_EXTERNAL_ID,
-                id_type=_ID_TYPE))
-        self.assertFalse(is_placeholder(person))
 
     def test_generateChildEntitiesWithAncestorChain(self):
         fine = StateFine.new_with_defaults(fine_id=_ID)

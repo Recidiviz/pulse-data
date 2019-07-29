@@ -19,14 +19,18 @@ from unittest import TestCase
 
 import pytest
 
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.persistence.entity.entity_utils import \
     get_set_entity_field_names, EntityFieldType, get_field, set_field, \
-    get_field_as_list, set_field_from_list
+    get_field_as_list, set_field_from_list, is_placeholder, has_default_status
 from recidiviz.persistence.entity.state.entities import StateSentenceGroup, \
-    StateFine, StatePerson
+    StateFine, StatePerson, StatePersonExternalId
 from recidiviz.persistence.errors import EntityMatchingError
 
 _ID = 1
+_STATE_CODE = 'NC'
+_EXTERNAL_ID = 'EXTERNAL_ID-1'
+_ID_TYPE = 'ID_TYPE'
 
 
 class TestEntityUtils(TestCase):
@@ -93,3 +97,31 @@ class TestEntityUtils(TestCase):
         entity = StateSentenceGroup.new_with_defaults()
         with pytest.raises(EntityMatchingError):
             set_field_from_list(entity, 'state_code', ['us_nc', 'us_sc'])
+
+    def test_isPlaceholder(self):
+        entity = StateSentenceGroup.new_with_defaults(
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            state_code=_STATE_CODE,
+            fines=[StateFine.new_with_defaults()],
+            person=[StatePerson.new_with_defaults()], sentence_group_id=_ID)
+        self.assertTrue(is_placeholder(entity))
+        entity.county_code = 'county_code'
+        self.assertFalse(is_placeholder(entity))
+
+    def test_isPlaceholder_personWithExternalId(self):
+        sentence_group = StateSentenceGroup.new_with_defaults(
+            state_code=_STATE_CODE)
+        person = StatePerson.new_with_defaults(sentence_groups=[sentence_group])
+        self.assertTrue(is_placeholder(person))
+        person.external_ids.append(
+            StatePersonExternalId.new_with_defaults(
+                state_code=_STATE_CODE, external_id=_EXTERNAL_ID,
+                id_type=_ID_TYPE))
+        self.assertFalse(is_placeholder(person))
+
+    def test_hasDefaultStatus(self):
+        entity = StateSentenceGroup.new_with_defaults(
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
+        self.assertTrue(has_default_status(entity))
+        entity.status = StateSentenceStatus.SERVING
+        self.assertFalse(has_default_status(entity))
