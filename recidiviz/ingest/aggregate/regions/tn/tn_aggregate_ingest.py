@@ -244,6 +244,7 @@ def _pretend_facility_is_county(facility_name: str) -> str:
     words_after_county_name = [
         '-',
         'Annex',
+        'CCA (MDF)',
         'Co. Det. Center',
         'CJC',
         'CWC (CDC',
