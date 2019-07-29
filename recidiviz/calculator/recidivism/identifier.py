@@ -39,6 +39,7 @@ from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodReleaseReason as ReleaseReason
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
+from recidiviz.persistence.entity.entity_utils import is_placeholder
 from recidiviz.persistence.entity.state.entities import \
     StateIncarcerationPeriod, StateSupervisionViolationResponse
 
@@ -142,7 +143,12 @@ def validate_sort_and_collapse_incarceration_periods(
     admission_date, and collapses the ones connected by a transfer.
     """
 
+    validated_incarceration_periods: List[StateIncarcerationPeriod] = []
+
     for incarceration_period in incarceration_periods:
+        if is_placeholder(incarceration_period):
+            # Drop any placeholder incarceration periods from the calculations
+            continue
         if not incarceration_period.status:
             logging.info("No status on incarceration period with id: %d",
                          incarceration_period.incarceration_period_id)
@@ -172,10 +178,12 @@ def validate_sort_and_collapse_incarceration_periods(
                          incarceration_period.incarceration_period_id)
             return []
 
-    incarceration_periods.sort(key=lambda b: b.admission_date)
+        validated_incarceration_periods.append(incarceration_period)
+
+    validated_incarceration_periods.sort(key=lambda b: b.admission_date)
 
     collapsed_incarceration_periods = \
-        collapse_incarceration_periods(incarceration_periods)
+        collapse_incarceration_periods(validated_incarceration_periods)
 
     return collapsed_incarceration_periods
 

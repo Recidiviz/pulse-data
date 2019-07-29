@@ -21,7 +21,6 @@ from typing import List, cast, Optional, Tuple, Union, Set, Type
 
 import attr
 
-from recidiviz.common.constants import enum_canonical_strings
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodAdmissionReason
 from recidiviz.common.constants.state.state_supervision_violation_response \
@@ -29,7 +28,7 @@ from recidiviz.common.constants.state.state_supervision_violation_response \
 from recidiviz.persistence.entity.base_entity import Entity, ExternalIdEntity
 from recidiviz.persistence.entity.entity_utils import \
     EntityFieldType, get_set_entity_field_names, get_field, set_field, \
-    get_field_as_list
+    get_field_as_list, is_placeholder, has_default_status
 from recidiviz.persistence.entity.state.entities import StatePerson, \
     StatePersonExternalId, StatePersonAlias, StatePersonRace, \
     StatePersonEthnicity, StateIncarcerationPeriod, \
@@ -225,49 +224,6 @@ def _add_person_to_entity_graph_helper(person: StatePerson, entity: Entity):
 def _set_person_on_entity(person: StatePerson, entity: Entity):
     if hasattr(entity, 'person'):
         set_field(entity, 'person', person)
-
-
-def has_default_status(entity: Entity) -> bool:
-    if hasattr(entity, 'status'):
-        status = get_field(entity, 'status')
-        return status \
-               and status.value == enum_canonical_strings.present_without_info
-    return False
-
-
-def is_placeholder(entity: Entity) -> bool:
-    """Determines if the provided entity is a placeholder. Conceptually, a
-    placeholder is an object that we have no information about, but have
-    inferred its existence based on other objects we do have information about.
-    Generally, an entity is a placeholder if all of the optional flat fields are
-    empty or set to a default value.
-    """
-
-    # Although these are not flat fields, they represent characteristics of a
-    # person. If present, we do have information about the provided person, and
-    # therefore it is not a placeholder.
-    if isinstance(entity, StatePerson):
-        entity = cast(StatePerson, entity)
-        if any([entity.external_ids, entity.races, entity.aliases,
-                entity.ethnicities]):
-            return False
-
-    copy = attr.evolve(entity)
-
-    # Clear id
-    copy.clear_id()
-
-    # Clear state code as it's non nullable
-    if hasattr(copy, 'state_code'):
-        set_field(copy, 'state_code', None)
-
-    # Clear status if set to default value
-    if has_default_status(entity):
-        set_field(copy, 'status', None)
-
-    set_flat_fields = get_set_entity_field_names(
-        copy, EntityFieldType.FLAT_FIELD)
-    return not bool(set_flat_fields)
 
 
 def generate_child_entity_trees(
