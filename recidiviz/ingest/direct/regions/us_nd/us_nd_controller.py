@@ -686,7 +686,7 @@ class UsNdController(GcsfsDirectIngestController):
             RETURN_FROM_ERRONEOUS_RELEASE: ['READMN'],
             StateIncarcerationPeriodAdmissionReason.TRANSFER:
                 ['FED', 'HOSP', 'HOSPS', 'HOSPU', 'INT', 'OOS'],
-            StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION:
+            StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION:
                 ['NPRB', 'NPROB'],
 
             StateIncarcerationPeriodReleaseReason.EXTERNAL_UNKNOWN: ['OTHER'],
