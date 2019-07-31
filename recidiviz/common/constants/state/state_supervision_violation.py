@@ -36,6 +36,8 @@ class StateSupervisionViolationType(EntityEnum, metaclass=EntityEnumMeta):
 
 
 _STATE_SUPERVISION_VIOLATION_TYPE_MAP = {
+    'ABSCOND': StateSupervisionViolationType.ABSCONDED,
+    'ABSCONDED': StateSupervisionViolationType.ABSCONDED,
     'ABSCONDER': StateSupervisionViolationType.ABSCONDED,
     'FELONY': StateSupervisionViolationType.FELONY,
     'F': StateSupervisionViolationType.FELONY,
