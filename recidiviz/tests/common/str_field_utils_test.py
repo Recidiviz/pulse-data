@@ -69,6 +69,18 @@ class TestStrFieldUtils(TestCase):
 
         assert combo_duration_with_start_date == (2 * 30 + 3)
 
+    def test_parseDaysFromDurationPieces_negativePieces(self):
+        duration = parse_days_from_duration_pieces(years_str='2',
+                                                   months_str='-5')
+
+        assert duration == (2*365 + -5*30)
+
+        duration = parse_days_from_duration_pieces(years_str='2',
+                                                   months_str='-5',
+                                                   days_str='-15')
+
+        assert duration == (2*365 + -5*30 - 15)
+
     def test_parseBadTimeDuration(self):
         with pytest.raises(ValueError):
             parse_days('ABC')
