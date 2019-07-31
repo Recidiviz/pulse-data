@@ -35,7 +35,6 @@ keys_to_ignore:
   - NEW_OFF               # Handled manually within us_nd_scraper
   - NEW_OFF2              # Handled manually within us_nd_scraper
   - NEW_OFF3              # Handled manually within us_nd_scraper
-  - REV_NOFF_YN           # Handled manually within us_nd_scraper
   - REV_ABSC_YN           # Handled manually within us_nd_scraper
   - REV_TECH_YN           # Handled manually within us_nd_scraper
   - TERMINATING_OFFICER   # TODO(1883) Should be a decision_agent on state_supervision_violation_response

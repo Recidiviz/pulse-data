@@ -141,11 +141,54 @@ def parse_datetime(
         settings['RELATIVE_BASE'] = from_dt
 
     date_string = munge_date_string(date_string)
-    parsed = dateparser.parse(date_string, languages=['en'], settings=settings)
+
+    # Only special-case strings that start with a - (to avoid parsing regular
+    # timestamps like '2016-05-14') and that include non punctuation (to avoid
+    # ingested values like '--')
+    if date_string.startswith('-') and _has_non_punctuation(date_string):
+        parsed = parse_datetime_with_negative_component(date_string, settings)
+    else:
+        parsed = dateparser.parse(
+            date_string, languages=['en'], settings=settings)
     if parsed:
         return parsed
 
     raise ValueError("cannot parse date: %s" % date_string)
+
+
+def _has_non_punctuation(date_string: str) -> bool:
+    return any(ch not in string.punctuation for ch in date_string)
+
+
+def parse_datetime_with_negative_component(date_string: str,
+                                           settings: Dict[str, Any]):
+    """Handles relative date strings that have negative values in them, like
+    '2 year -5month'.
+
+    Instead of parsing the entire relative string all at once as in
+    parse_datetime, we parse each individual component one by one, converting
+    negative components to look ahead in time instead of backwards.
+
+    '5month' is parsed by dateparser as '5 months ago'. dateparser does not
+    automatically convert '-5month' into '-5 months ago' or 'in 5 months', so we
+    manually convert '-5month' into 'in 5month' to achieve the desired effect.
+    """
+    parsed_date = None
+    latest_relative = settings.get('RELATIVE_BASE', datetime.datetime.now())
+
+    components = date_string.split(' ')
+    for component in components:
+        settings['RELATIVE_BASE'] = latest_relative
+
+        updated_component = component
+        if updated_component.startswith('-'):
+            updated_component = updated_component.replace('-', 'in ')
+        parsed_date = dateparser.parse(
+            updated_component, languages=['en'], settings=settings)
+
+        latest_relative = parsed_date
+
+    return parsed_date
 
 
 def parse_date(

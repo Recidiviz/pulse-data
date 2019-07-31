@@ -115,7 +115,7 @@ _STATE_SUPERVISION_VIOLATION_RESPONSE_REVOCATION_TYPE_MAP = {
         StateSupervisionViolationResponseRevocationType.REINCARCERATION,
     'SUPERVISION TERMINATED':
         StateSupervisionViolationResponseRevocationType.REINCARCERATION,
-    'PLACED BACK ON PROBATION/PAROLE':
+    'PLACED BACK ON PROBATION PAROLE':
         StateSupervisionViolationResponseRevocationType.RETURN_TO_SUPERVISION,
     'SUPERVISION':
         StateSupervisionViolationResponseRevocationType.RETURN_TO_SUPERVISION,
