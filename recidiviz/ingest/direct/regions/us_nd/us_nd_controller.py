@@ -63,7 +63,7 @@ from recidiviz.ingest.models.ingest_info import IngestInfo, IngestObject, \
     StateIncarcerationPeriod, StatePersonExternalId, StateAssessment, \
     StateCharge, StateSupervisionViolation, StateSupervisionViolationResponse, \
     StateAgent, StateIncarcerationIncidentOutcome, StateIncarcerationIncident, \
-    StateAlias
+    StateAlias, StateSupervisionSentence
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 
 _SUPERVISION_SENTENCE_ID_SUFFIX = '_SUPERVISION'
@@ -477,13 +477,27 @@ class UsNdController(GcsfsDirectIngestController):
             row: Dict[str, str], extracted_objects: List[IngestObject],
             _cache: IngestObjectCache):
         """For a sentence row in Docstars that contains distinct SENT_YY and
-        SENT_MM fields, compose these into a single string and set it on the
-        appropriate length field."""
-        units = ['Y', 'M']
-        components = [row.get('SENT_YY', None),
-                      row.get('SENT_MM', None)]
+        SENT_MM fields, compose these into a single string of days and set it
+        on the appropriate length field."""
+        years = row.get('SENT_YY', None)
+        months = row.get('SENT_MM', None)
 
-        _concatenate_length_periods(units, components, extracted_objects)
+        if not years and not months:
+            return
+
+        effective_date = row['PAROLE_FR']
+
+        total_days = parse_days_from_duration_pieces(
+            years_str=years,
+            months_str=months,
+            days_str=None,
+            start_dt_str=effective_date)
+
+        for extracted_object in extracted_objects:
+            if total_days and isinstance(extracted_object,
+                                         StateSupervisionSentence):
+                day_string = "{}d".format(total_days)
+                extracted_object.__setattr__('max_length', day_string)
 
     @staticmethod
     def _record_revocation(row: Dict[str, str],
@@ -519,6 +533,8 @@ class UsNdController(GcsfsDirectIngestController):
                         violation_type = \
                             StateSupervisionViolationType.TECHNICAL.value
                     extracted_object.violation_type = violation_type
+                else:
+                    extracted_object.violation_type = None
 
             if isinstance(extracted_object, StateSupervisionViolationResponse):
                 extracted_object = cast(

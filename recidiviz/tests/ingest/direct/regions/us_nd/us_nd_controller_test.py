@@ -1074,7 +1074,7 @@ class TestUsNdController(unittest.TestCase):
                                         state_supervision_sentence_id='117110',
                                         supervision_type='Parole',
                                         projected_completion_date='10/6/2014',
-                                        max_length='0Y 3M',
+                                        max_length='92d',
                                         state_supervision_periods=[
                                             StateSupervisionPeriod(
                                                 start_date='7/17/2014',
@@ -1097,7 +1097,7 @@ class TestUsNdController(unittest.TestCase):
                                         state_supervision_sentence_id='117111',
                                         supervision_type='Parole',
                                         projected_completion_date='8/7/2015',
-                                        max_length='1Y 1M',
+                                        max_length='580d',
                                         state_supervision_periods=[
                                             StateSupervisionPeriod(
                                                 start_date='7/17/2014',
@@ -1326,12 +1326,12 @@ class TestUsNdController(unittest.TestCase):
         person_3 = entities.StatePerson.new_with_defaults()
         person_3_external_id_1 = \
             entities.StatePersonExternalId.new_with_defaults(
-                external_id='92237', id_type=US_ND_ELITE,
+                external_id='12345', id_type=US_ND_SID,
                 state_code=_STATE_CODE,
                 person=person_3)
         person_3_external_id_2 = \
             entities.StatePersonExternalId.new_with_defaults(
-                external_id='12345', id_type=US_ND_SID,
+                external_id='92237', id_type=US_ND_ELITE,
                 state_code=_STATE_CODE,
                 person=person_3)
         person_3.external_ids.append(person_3_external_id_1)
@@ -1451,7 +1451,7 @@ class TestUsNdController(unittest.TestCase):
 
         sentence_group_114909.date_imposed = datetime.date(
             year=2018, month=2, day=27)
-        sentence_group_114909.max_length_days = 315
+        sentence_group_114909.max_length_days = 316
 
         person_4 = entities.StatePerson.new_with_defaults()
         sentence_group_115077 = entities.StateSentenceGroup.new_with_defaults(
@@ -2431,7 +2431,7 @@ class TestUsNdController(unittest.TestCase):
                 supervision_type_raw_text='PAROLE',
                 projected_completion_date=datetime.date(year=2014, month=10,
                                                         day=6),
-                max_length_days=91, state_code=_STATE_CODE,
+                max_length_days=92, state_code=_STATE_CODE,
                 status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                 person=sentence_group_placeholder_ss.person,
                 sentence_group=sentence_group_placeholder_ss)
@@ -2470,7 +2470,7 @@ class TestUsNdController(unittest.TestCase):
                 supervision_type_raw_text='PAROLE',
                 projected_completion_date=datetime.date(year=2015, month=8,
                                                         day=7),
-                max_length_days=395, state_code=_STATE_CODE,
+                max_length_days=580, state_code=_STATE_CODE,
                 status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                 person=sentence_group_placeholder_ss.person,
                 sentence_group=sentence_group_placeholder_ss)
