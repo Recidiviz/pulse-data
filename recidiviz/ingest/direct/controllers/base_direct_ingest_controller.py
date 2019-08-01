@@ -18,29 +18,20 @@
 """Functionality to perform direct ingest.
 """
 import abc
-import datetime
 import logging
-from typing import TypeVar, Generic
-
-import attr
+from typing import Generic, Optional
 
 from recidiviz import IngestInfo
+from recidiviz.common.cloud_task_factory import CloudTaskFactory
 from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
-from recidiviz.ingest.ingestor import Ingestor
+from recidiviz.ingest.direct.controllers.direct_ingest_types import \
+    ContentsType, IngestArgsType
 from recidiviz.ingest.direct.errors import DirectIngestError, \
     DirectIngestErrorType
+from recidiviz.ingest.ingestor import Ingestor
 from recidiviz.ingest.scrape import ingest_utils
 from recidiviz.persistence import persistence
 from recidiviz.utils import regions
-
-
-@attr.s(frozen=True)
-class IngestArgs:
-    ingest_time: datetime.datetime = attr.ib()
-
-
-ContentsType = TypeVar('ContentsType')
-IngestArgsType = TypeVar('IngestArgsType', bound=IngestArgs)
 
 
 class BaseDirectIngestController(Ingestor,
@@ -57,14 +48,46 @@ class BaseDirectIngestController(Ingestor,
 
         self.region = regions.get_region(region_name, is_direct_ingest=True)
         self.system_level = system_level
+        self.cloud_task_factory = CloudTaskFactory()
 
-    def run_ingest(self, args: IngestArgsType):
+    def run_next_ingest_job_if_necessary_or_schedule_wait(
+            self, last_ingest_args: Optional[IngestArgsType]):
+        """Creates a cloud task to run the next ingest job. Depending on the
+        next job's IngestArgs, we either post a task to direct/scheduler/ if
+        a wait_time is specified or direct/process_job/ if we can run the next
+        job immediately."""
+        next_job_args = self._get_next_job_args(last_ingest_args)
+
+        if not next_job_args:
+            logging.info("No more jobs to run for region [%s] - returning",
+                         self.region.region_code)
+            return
+
+        wait_time_sec = self._wait_time_sec_for_next_args(next_job_args)
+        logging.info("Found next ingest job to run [%s] with wait time [%s].",
+                     self._job_tag(next_job_args), wait_time_sec)
+
+        if wait_time_sec:
+            logging.info("Creating cloud task to fire timer in [%s] seconds",
+                         wait_time_sec)
+            self.cloud_task_factory.create_direct_ingest_scheduler_queue_task(
+                region=self.region,
+                ingest_args=next_job_args,
+                delay_sec=wait_time_sec)
+        else:
+            logging.info(
+                "Creating cloud task to run job [%s]",
+                self._job_tag(next_job_args))
+            self.cloud_task_factory.create_direct_ingest_process_job_task(
+                region=self.region,
+                ingest_args=next_job_args)
+
+    def run_ingest_job(self, args: IngestArgsType):
         """
         Runs the full ingest process for this controller - reading and parsing
         raw input data, transforming it to our schema, then writing to the
         database.
         """
-
         logging.info("Starting ingest for ingest run [%s]",
                      self._job_tag(args))
         contents = self._read_contents(args)
@@ -109,6 +132,24 @@ class BaseDirectIngestController(Ingestor,
 
         logging.info("Finished ingest for ingest run [%s]",
                      self._job_tag(args))
+
+        self.run_next_ingest_job_if_necessary_or_schedule_wait(args)
+
+    @abc.abstractmethod
+    def _get_next_job_args(self, last_job_args: Optional[IngestArgsType]
+                           ) -> Optional[IngestArgsType]:
+        """Should be overridden to return args for the next ingest job, or
+        None if there is nothing to process."""
+
+    def _wait_time_sec_for_next_args(self, _: IngestArgsType) -> int:
+        """Should be overwritten to return the number of seconds we should
+        wait to try to run another job, given the args of the next job we would
+        run if we had to run a job right now. This gives controllers the ability
+        to back off if we want to attempt to enforce an ingest order for files
+        that might all be uploaded around the same time, but in inconsistent
+        order.
+        """
+        return 0
 
     @abc.abstractmethod
     def _job_tag(self, args: IngestArgsType) -> str:

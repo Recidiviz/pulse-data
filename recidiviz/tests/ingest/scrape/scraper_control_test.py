@@ -54,7 +54,7 @@ class TestScraperStart:
     """Tests for requests to the Scraper Start API."""
 
     @patch("recidiviz.utils.environment.get_gae_environment")
-    @patch("recidiviz.utils.regions.get_supported_region_codes")
+    @patch("recidiviz.utils.regions.get_supported_scrape_region_codes")
     @patch("recidiviz.utils.regions.get_region")
     @patch("recidiviz.ingest.scrape.sessions.update_phase")
     @patch("recidiviz.ingest.scrape.sessions.create_session")
@@ -96,7 +96,7 @@ class TestScraperStart:
         mock_supported.assert_called_with(timezone=None)
 
     @patch("recidiviz.utils.environment.get_gae_environment")
-    @patch("recidiviz.utils.regions.get_supported_region_codes")
+    @patch("recidiviz.utils.regions.get_supported_scrape_region_codes")
     @patch("recidiviz.utils.regions.get_region")
     @patch("recidiviz.ingest.scrape.sessions.update_phase")
     @patch("recidiviz.ingest.scrape.sessions.create_session")
@@ -140,7 +140,7 @@ class TestScraperStart:
             timezone=pytz.timezone('America/Los_Angeles'))
 
     @patch("recidiviz.utils.environment.get_gae_environment")
-    @patch("recidiviz.utils.regions.get_supported_region_codes")
+    @patch("recidiviz.utils.regions.get_supported_scrape_region_codes")
     @patch("recidiviz.utils.regions.get_region")
     @patch("recidiviz.ingest.scrape.sessions.create_session")
     @patch("recidiviz.ingest.scrape.tracker.purge_docket_and_session")
@@ -174,7 +174,7 @@ class TestScraperStart:
         mock_supported.assert_called_with(timezone=None)
 
     @patch("recidiviz.utils.environment.get_gae_environment")
-    @patch("recidiviz.utils.regions.get_supported_region_codes")
+    @patch("recidiviz.utils.regions.get_supported_scrape_region_codes")
     @patch("recidiviz.utils.regions.get_region")
     @patch("recidiviz.ingest.scrape.sessions.create_session")
     @patch("recidiviz.ingest.scrape.tracker.purge_docket_and_session")
@@ -211,7 +211,7 @@ class TestScraperStart:
         mock_supported.assert_called_with(timezone=None)
 
     @patch("recidiviz.utils.environment.get_gae_environment")
-    @patch("recidiviz.utils.regions.get_supported_region_codes")
+    @patch("recidiviz.utils.regions.get_supported_scrape_region_codes")
     @patch("recidiviz.utils.regions.get_region")
     @patch("recidiviz.ingest.scrape.sessions.update_phase")
     @patch("recidiviz.ingest.scrape.sessions.create_session")
@@ -255,7 +255,7 @@ class TestScraperStart:
         mock_region.assert_called_with('us_ut')
         mock_supported.assert_called_with(timezone=None)
 
-    @patch("recidiviz.utils.regions.get_supported_region_codes")
+    @patch("recidiviz.utils.regions.get_supported_scrape_region_codes")
     def test_start_unsupported_region(self, mock_supported, client):
         mock_supported.return_value = ['us_ny', 'us_pa']
 
@@ -274,7 +274,7 @@ class TestScraperStart:
 class TestScraperStop:
     """Tests for requests to the Scraper Stop API."""
 
-    @patch("recidiviz.utils.regions.get_supported_region_codes")
+    @patch("recidiviz.utils.regions.get_supported_scrape_region_codes")
     @patch("recidiviz.utils.regions.get_region")
     @patch("recidiviz.common.queues.enqueue_scraper_phase")
     @patch("recidiviz.ingest.scrape.sessions.update_phase")
@@ -322,7 +322,7 @@ class TestScraperStop:
             call(region_code='us_ut', url='/read_and_persist'),
         ], any_order=True)
 
-    @patch("recidiviz.utils.regions.get_supported_region_codes")
+    @patch("recidiviz.utils.regions.get_supported_scrape_region_codes")
     @patch("recidiviz.utils.regions.get_region")
     @patch("recidiviz.common.queues.enqueue_scraper_phase")
     @patch("recidiviz.ingest.scrape.sessions.close_session")
@@ -353,7 +353,7 @@ class TestScraperStop:
         mock_supported.assert_called_with(timezone=None)
         assert not mock_enqueue.called
 
-    @patch("recidiviz.utils.regions.get_supported_region_codes")
+    @patch("recidiviz.utils.regions.get_supported_scrape_region_codes")
     @patch("recidiviz.utils.regions.get_region")
     @patch("recidiviz.common.queues.enqueue_scraper_phase")
     @patch("recidiviz.ingest.scrape.sessions.update_phase")
@@ -398,7 +398,7 @@ class TestScraperStop:
             region_code='us_ut', url='/read_and_persist')
 
     @patch("recidiviz.common.queues.enqueue_scraper_phase")
-    @patch("recidiviz.utils.regions.get_supported_region_codes")
+    @patch("recidiviz.utils.regions.get_supported_scrape_region_codes")
     def test_stop_unsupported_region(
             self, mock_supported, mock_enqueue, client):
         mock_supported.return_value = ['us_ny', 'us_pa']
@@ -415,7 +415,7 @@ class TestScraperStop:
         mock_supported.assert_called_with(timezone=None)
         assert not mock_enqueue.called
 
-    @patch("recidiviz.utils.regions.get_supported_region_codes")
+    @patch("recidiviz.utils.regions.get_supported_scrape_region_codes")
     @patch("recidiviz.utils.regions.get_region")
     @patch("recidiviz.common.queues.enqueue_scraper_phase")
     @patch("recidiviz.ingest.scrape.sessions.update_phase")
@@ -468,7 +468,7 @@ class TestScraperStop:
 class TestScraperResume:
     """Tests for requests to the Scraper Resume API."""
 
-    @patch("recidiviz.utils.regions.get_supported_region_codes")
+    @patch("recidiviz.utils.regions.get_supported_scrape_region_codes")
     @patch("recidiviz.utils.regions.get_region")
     @patch("recidiviz.ingest.scrape.sessions.create_session")
     def test_resume(self, mock_sessions, mock_region, mock_supported, client):
@@ -490,7 +490,7 @@ class TestScraperResume:
         mock_region.assert_called_with(region)
         mock_supported.assert_called_with(timezone=None)
 
-    @patch("recidiviz.utils.regions.get_supported_region_codes")
+    @patch("recidiviz.utils.regions.get_supported_scrape_region_codes")
     def test_resume_unsupported_region(self, mock_supported, client):
         mock_supported.return_value = ['us_ny', 'us_pa']
 

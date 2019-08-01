@@ -17,38 +17,95 @@
 
 """Requests handlers for direct ingest control requests.
 """
-
+import json
+import logging
 from http import HTTPStatus
+from typing import Optional
 
 from flask import Blueprint, request
 
+from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import \
+    BaseDirectIngestController
+from recidiviz.ingest.direct.controllers.direct_ingest_types import IngestArgs
+from recidiviz.ingest.direct.errors import DirectIngestError, \
+    DirectIngestErrorType
 from recidiviz.utils import environment, regions
 from recidiviz.utils.auth import authenticate_request
 from recidiviz.utils.params import get_value
+from recidiviz.utils.regions import get_supported_direct_ingest_region_codes
 
 direct_ingest_control = Blueprint('direct_ingest_control', __name__)
 
 
-@direct_ingest_control.route('/start')
+@direct_ingest_control.route('/process_job', methods=['POST'])
 @authenticate_request
-def start():
+def process_job():
+    logging.info('Received request to process direct ingest job: [%s]',
+                 request.values)
+    region_value = get_value('region', request.values)
+    json_data = request.get_data(as_text=True)
+    ingest_args = _get_ingest_args(json_data)
+    if not ingest_args:
+        raise DirectIngestError(
+            msg=f"process_job was called with no IngestArgs.",
+            error_type=DirectIngestErrorType.INPUT_ERROR)
+    controller = controller_for_region_code(region_value)
+    controller.run_ingest_job(ingest_args)
+    return '', HTTPStatus.OK
+
+
+@direct_ingest_control.route('/scheduler', methods=['GET', 'POST'])
+@authenticate_request
+def scheduler():
+    logging.info('Received request for direct ingest scheduler: %s',
+                 request.values)
+    region_value = get_value('region', request.values)
+    json_data = request.get_data(as_text=True)
+    ingest_args = _get_ingest_args(json_data)
+    controller = controller_for_region_code(region_value)
+    controller.run_next_ingest_job_if_necessary_or_schedule_wait(ingest_args)
+    return '', HTTPStatus.OK
+
+
+def controller_for_region_code(region_code: str) -> BaseDirectIngestController:
+    """Returns an instance of the region's controller, if one exists."""
+    if region_code not in get_supported_direct_ingest_region_codes():
+        raise DirectIngestError(
+            msg=f"Unsupported direct ingest region {region_code}",
+            error_type=DirectIngestErrorType.INPUT_ERROR,
+        )
+
     gae_env = environment.get_gae_environment()
-    region_value = get_value('region', request.args)
 
     try:
-        region = regions.get_region(region_value, is_direct_ingest=True)
+        region = regions.get_region(region_code, is_direct_ingest=True)
     except FileNotFoundError:
-        return (f"Unsupported direct ingest region {region_value}",
-                HTTPStatus.BAD_REQUEST)
+        raise DirectIngestError(
+            msg=f"Unsupported direct ingest region {region_code}",
+            error_type=DirectIngestErrorType.INPUT_ERROR,
+        )
+
+    if region.environment != gae_env:
+        raise DirectIngestError(
+            msg=f"Bad environment {gae_env} for direct region {region_code}.",
+            error_type=DirectIngestErrorType.INPUT_ERROR,
+        )
 
     controller = region.get_ingestor()
 
-    if region.environment != gae_env:
-        return (
-            f"Bad environment {gae_env} for direct region {region_value}.",
-            HTTPStatus.BAD_REQUEST)
+    if not isinstance(controller, BaseDirectIngestController):
+        raise DirectIngestError(
+            msg=f"Unsupported direct ingest region {region_code}",
+            error_type=DirectIngestErrorType.INPUT_ERROR,
+        )
 
-    # TODO (#2099) enqueue a task to run this region.
-    controller.go()
+    return controller
 
-    return '', HTTPStatus.OK
+
+def _get_ingest_args(json_data: str) -> Optional[IngestArgs]:
+    if not json_data:
+        return None
+    data = json.loads(json_data)
+    if 'ingest_args' in data:
+        return IngestArgs.from_serializable(data['ingest_args'])
+    return None
