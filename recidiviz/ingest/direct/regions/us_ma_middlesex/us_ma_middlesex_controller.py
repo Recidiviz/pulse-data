@@ -18,7 +18,7 @@
 """Direct ingest for us_ma_middlesex.
 """
 import logging
-from typing import Iterable, Dict
+from typing import Iterable, Dict, Optional
 
 import pandas as pd
 import sqlalchemy
@@ -32,7 +32,8 @@ from recidiviz.common.constants.county.booking import AdmissionReason, \
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import \
-    BaseDirectIngestController, IngestArgs
+    BaseDirectIngestController
+from recidiviz.ingest.direct.controllers.direct_ingest_types import IngestArgs
 from recidiviz.ingest.direct.errors import DirectIngestError, \
     DirectIngestErrorType
 from recidiviz.ingest.direct.regions.us_ma_middlesex.us_ma_middlesex_parser \
@@ -47,52 +48,53 @@ class UsMaMiddlesexController(BaseDirectIngestController[IngestArgs,
     """Reads tables from our us_ma_middlesex postgres db, which is an extract of
     the county's own sql database. The data flows through several formats, from
     postgres tables to dataframes to python dictionaries to IngestInfo objects.
+
+    Each job reads the earliest data export in the database and persists
+    converted data. After each export is successfully persisted its rows are
+    dropped from the cloud SQL database. If conversion or persistence run
+    into an error, all following exports are not processed. Otherwise, another
+    job is queued and the next-oldest export is processed, until no rows are
+    left in the cloud SQL database.
     """
 
     def __init__(self):
-        """Initialize the controller and read tables from cloud SQL."""
         super(UsMaMiddlesexController, self).__init__('us_ma_middlesex',
                                                       SystemLevel.COUNTY)
-        self._connect_to_db()
-        self._load_data()
-        self.parser = UsMaMiddlesexParser()
 
-    def _connect_to_db(self):
+    def _create_engine(self):
         db_user = secrets.get_secret('us_ma_middlesex_db_user')
         db_password = secrets.get_secret('us_ma_middlesex_db_password')
         db_name = secrets.get_secret('us_ma_middlesex_db_name')
         cloudsql_instance_id = secrets.get_secret('us_ma_middlesex_instance_id')
-        self.engine = sqlalchemy.create_engine(
+        return sqlalchemy.create_engine(
             sqlalchemy.engine.url.URL(
                 drivername=_DATABASE_TYPE,
                 username=db_user,
                 password=db_password,
                 database=db_name,
                 query={'host': '/cloudsql/{}'.format(cloudsql_instance_id)}))
-        self.meta = sqlalchemy.MetaData()
-        self.meta.reflect(bind=self.engine)
-
-    def _load_data(self):
-        self.address_df = pd.read_sql_table('address', self.engine)
-        self.booking_df = pd.read_sql_table('booking', self.engine)
-        self.admission_df = pd.read_sql_table('admission', self.engine)
-        self.charge_df = pd.read_sql_table('charge', self.engine)
-        self.bond_df = pd.read_sql_table('bond', self.engine)
-        self.hold_df = pd.read_sql_table('hold', self.engine)
 
     def _parse(self,
                args: IngestArgs,
                contents: Iterable[Dict]) -> IngestInfo:
-        return self.parser.parse(contents)
+        return UsMaMiddlesexParser().parse(contents)
 
-    def go(self):
-        """Iterates through data exports in chronological order and persists
-        converted data. After each export is successfully persisted its rows are
-        dropped from the cloud SQL database. If conversion or persistence run
-        into an error, all following exports are not processed."""
-        for export_time in sorted(set(self.booking_df['export_time'])):
-            self.run_ingest(IngestArgs(ingest_time=export_time))
-        logging.info("Successfully persisted all data exports.")
+    def _get_next_job_args(self, last_job_args: Optional[IngestArgs]
+                           ) -> Optional[IngestArgs]:
+        df = pd.read_sql_query('SELECT MIN(export_time) FROM booking',
+                               self._create_engine())
+        ingest_time = df[min][0]
+        if not ingest_time:
+            logging.info("No more export times - successfully persisted all "
+                         "data exports.")
+            return None
+        if last_job_args and last_job_args.ingest_time == ingest_time:
+            raise DirectIngestError(
+                msg=f"Received a second job for ingest time [{ingest_time}]. "
+                "Did the previous job delete this export from the database?",
+                error_type=DirectIngestErrorType.CLEANUP_ERROR)
+
+        return IngestArgs(ingest_time=ingest_time)
 
     def _job_tag(self, args: IngestArgs) -> str:
         return f'{self.region.region_code}:{args.ingest_time}'
@@ -102,21 +104,19 @@ class UsMaMiddlesexController(BaseDirectIngestController[IngestArgs,
         the results to JSON."""
 
         export_time = args.ingest_time
+        engine = self._create_engine()
 
-        def get_current_export(df):
-            curr = df[df['export_time'] == export_time].fillna('').astype(str)
-            if curr.empty:
-                raise DirectIngestError(
-                    error_type=DirectIngestErrorType.READ_ERROR,
-                    msg="Table missing data for export time [{export_time}]")
-            return curr
+        def query_table(table_name: str) -> pd.DataFrame:
+            query = (f'select * from {table_name} '
+                     f"WHERE export_time = TIMESTAMP '{export_time}'")
+            return pd.read_sql_query(query, con=engine).fillna('').astype(str)
 
-        address_df = get_current_export(self.address_df)
-        booking_df = get_current_export(self.booking_df)
-        admission_df = get_current_export(self.admission_df)
-        charge_df = get_current_export(self.charge_df)
-        bond_df = get_current_export(self.bond_df)
-        hold_df = get_current_export(self.hold_df)
+        address_df = query_table('address')
+        booking_df = query_table('booking')
+        admission_df = query_table('admission')
+        charge_df = query_table('charge')
+        bond_df = query_table('bond')
+        hold_df = query_table('hold')
 
         for sysid in booking_df['sysid']:
             person_bookings = booking_df[booking_df['sysid'] == sysid]
@@ -140,16 +140,19 @@ class UsMaMiddlesexController(BaseDirectIngestController[IngestArgs,
 
         export_time = args.ingest_time
         if environment.in_gae_production():
-            for table in reversed(self.meta.sorted_tables):
-                result = self.engine.execute(
+            engine = self._create_engine()
+            meta = sqlalchemy.MetaData()
+            meta.reflect(bind=engine)
+            for table in reversed(meta.sorted_tables):
+                result = engine.execute(
                     table.delete().where(table.c.export_time == export_time))
-                logging.debug(
+                logging.info(
                     "Deleted [%d] rows from table [%s] with export time [%s]",
                     result.rowcount, table, export_time)
         else:
-            logging.debug("Skipping row deletion for us_ma_middlesex tables "
-                          "and export time [%s] outside of prod environment.",
-                          export_time)
+            logging.info("Skipping row deletion for us_ma_middlesex tables and "
+                         "export time [%s] outside of prod environment.",
+                         export_time)
 
     def get_enum_overrides(self) -> EnumOverrides:
         """Overridden values for enum fields."""
@@ -181,7 +184,7 @@ class UsMaMiddlesexController(BaseDirectIngestController[IngestArgs,
         builder.add('SENTENCED', ReleaseReason.TRANSFER)
         builder.ignore('TURNED OVER TO NEW JURISDICTION', ChargeStatus)
         # TODO (#1897) make sure charge class is filled in. This is a
-        # parole violation.
+        #  parole violation.
         builder.add('VL', ChargeStatus.PRETRIAL)
         builder.add('WARRANT MANAGEMENT SYSTEM', AdmissionReason.NEW_COMMITMENT)
 

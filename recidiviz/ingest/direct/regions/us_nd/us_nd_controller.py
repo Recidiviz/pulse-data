@@ -20,30 +20,28 @@ import json
 import os
 from typing import List, Optional, Dict, Callable, Any, cast
 
-from gcsfs import GCSFileSystem
-
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.person_characteristics import Gender, Race, \
     Ethnicity
+from recidiviz.common.constants.state.external_id_types import US_ND_ELITE, \
+    US_ND_SID
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentType, StateAssessmentClass
 from recidiviz.common.constants.state.state_charge import \
     StateChargeClassificationType
-from recidiviz.common.constants.state.state_incarceration_incident import \
-    StateIncarcerationIncidentOutcomeType, StateIncarcerationIncidentType
-from recidiviz.common.constants.state.state_supervision import \
-    StateSupervisionType
-from recidiviz.common.constants.state.external_id_types import US_ND_ELITE, \
-    US_ND_SID
 from recidiviz.common.constants.state.state_court_case import \
     StateCourtCaseStatus
+from recidiviz.common.constants.state.state_incarceration_incident import \
+    StateIncarcerationIncidentOutcomeType, StateIncarcerationIncidentType
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodAdmissionReason, \
     StateIncarcerationPeriodReleaseReason
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.constants.state.state_supervision import \
+    StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
 from recidiviz.common.constants.state.state_supervision_violation_response \
@@ -73,82 +71,8 @@ _TEMPORARY_PRIMARY_ID = '_TEMPORARY_PRIMARY_ID'
 class UsNdController(GcsfsDirectIngestController):
     """Direct ingest controller implementation for us_nd."""
 
-    def __init__(self, fs: GCSFileSystem):
-        super(UsNdController, self).__init__(
-            'us_nd',
-            SystemLevel.STATE,
-            fs)
-
-        # NOTE: The order of ingest here is important!
-        # Do not change unless you know what you're doing!
-
-        self.elite_offenders_mapping_filepath = _yaml_filepath(
-            'us_nd_elite_offenders.yaml')
-
-        self.elite_offender_identifiers_mapping_filepath = _yaml_filepath(
-            'us_nd_elite_offender_identifiers.yaml')
-
-        self.elite_aliases_mapping_filepath = _yaml_filepath(
-            'us_nd_elite_aliases.yaml')
-
-        self.elite_bookings_mapping_filepath = _yaml_filepath(
-            'us_nd_elite_bookings.yaml')
-
-        self.elite_sentence_aggs_mapping_filepath = _yaml_filepath(
-            'us_nd_elite_sentence_aggs.yaml')
-
-        self.elite_sentences_mapping_filepath = _yaml_filepath(
-            'us_nd_elite_sentences.yaml')
-
-        self.elite_sentence_terms_mapping_filepath = _yaml_filepath(
-            'us_nd_elite_sentence_terms.yaml')
-
-        self.elite_charges_mapping_filepath = _yaml_filepath(
-            'us_nd_elite_charges.yaml')
-
-        self.elite_orders_mapping_filepath = _yaml_filepath(
-            'us_nd_elite_orders.yaml')
-
-        self.elite_external_movements_mapping_filepath = _yaml_filepath(
-            'us_nd_elite_external_movements.yaml')
-
-        # TODO(1918): Integrate bed assignment / location history
-
-        self.elite_offense_in_custody_and_pos_report_data_filepath = \
-            _yaml_filepath(
-                'us_nd_elite_offense_in_custody_and_pos_report_data.yaml')
-
-        self.docstars_offenders_mapping_filepath = _yaml_filepath(
-            'us_nd_docstars_offenders.yaml')
-
-        self.docstars_cases_mapping_filepath = _yaml_filepath(
-            'us_nd_docstars_cases.yaml')
-
-        self.docstars_offenses_mapping_filepath = _yaml_filepath(
-            'us_nd_docstars_offenses.yaml')
-
-        self.file_mappings_by_file = {
-            # Elite - incarceration-focused
-            'elite_offenders': self.elite_offenders_mapping_filepath,
-            'elite_offender_identifiers':
-                self.elite_offender_identifiers_mapping_filepath,
-            'elite_aliases': self.elite_aliases_mapping_filepath,
-            'elite_bookings': self.elite_bookings_mapping_filepath,
-            'elite_sentence_aggs': self.elite_sentence_aggs_mapping_filepath,
-            'elite_sentences': self.elite_sentences_mapping_filepath,
-            'elite_sentence_terms': self.elite_sentence_terms_mapping_filepath,
-            'elite_charges': self.elite_charges_mapping_filepath,
-            'elite_orders': self.elite_orders_mapping_filepath,
-            'elite_external_movements':
-                self.elite_external_movements_mapping_filepath,
-            'elite_offense_in_custody_and_pos_report_data':
-                self.elite_offense_in_custody_and_pos_report_data_filepath,
-
-            # Docstars - supervision-focused
-            'docstars_offenders': self.docstars_offenders_mapping_filepath,
-            'docstars_cases': self.docstars_cases_mapping_filepath,
-            'docstars_offenses': self.docstars_offenses_mapping_filepath,
-        }
+    def __init__(self):
+        super(UsNdController, self).__init__('us_nd', SystemLevel.STATE)
 
         self.row_post_processors_by_file: Dict[str, List[Callable]] = {
             'elite_aliases': [self._clear_temporary_alias_primary_ids],
@@ -195,17 +119,43 @@ class UsNdController(GcsfsDirectIngestController):
             'elite_sentence_terms'
         ]
 
+    def _get_file_tag_rank_list(self) -> List[str]:
+        # NOTE: The order of ingest here is important!
+        # Do not change unless you know what you're doing!
+        return [
+            # Elite - incarceration-focused
+            'elite_offenders',
+            'elite_offender_identifiers',
+            'elite_aliases',
+            'elite_bookings',
+            'elite_sentence_aggs',
+            'elite_sentences',
+            'elite_sentence_terms',
+            'elite_charges',
+            'elite_orders',
+            'elite_external_movements',
+            'elite_offense_in_custody_and_pos_report_data',
+
+            # Docstars - supervision-focused
+            'docstars_offenders',
+            'docstars_cases',
+            'docstars_offenses',
+            # TODO(1918): Integrate bed assignment / location history
+        ]
+
     def _parse(self,
                args: GcsfsIngestArgs,
                contents: Any) -> IngestInfo:
-        file_tag = self.file_tag(args)
+        file_tag = self.file_tag(args.file_path)
 
-        if file_tag not in self.file_mappings_by_file:
+        if file_tag not in self._get_file_tag_rank_list():
             raise DirectIngestError(
                 msg=f"No mapping found for tag [{file_tag}]",
                 error_type=DirectIngestErrorType.INPUT_ERROR)
 
-        file_mapping = self.file_mappings_by_file[file_tag]
+        file_mapping = _yaml_filepath(
+            f'{self.region.region_code}_{file_tag}.yaml')
+
         row_post_processors = self._get_row_post_processors_for_file(file_tag)
         file_post_processors = self._get_file_post_processors_for_file(file_tag)
         primary_key_override = self._get_primary_key_override_for_file(file_tag)

@@ -28,10 +28,10 @@ from recidiviz.ingest.models.ingest_info import Arrest, Bond, Booking, Charge, \
 from recidiviz.tests.ingest import fixtures
 from recidiviz.tests.utils.individual_ingest_test import IndividualIngestTest
 from recidiviz.tests.ingest.direct.regions.direct_ingest_util import \
-    create_mock_gcsfs
+    create_mock_gcsfs, build_controller_for_tests
 from recidiviz.utils import regions
 
-_ROSTER_PATH = fixtures.as_string('direct/regions/us_tx_brazos', 'test.csv')
+_ROSTER_PATH = fixtures.as_string('direct/regions/us_tx_brazos', 'daily_data.csv')
 _FAKE_START_TIME = datetime.datetime(year=2019, month=1, day=2)
 _TEST_STORAGE_BUCKET = 'recidiviz-test-storage-bucket'
 
@@ -41,7 +41,10 @@ class UsTxBrazosControllerTest(IndividualIngestTest, TestCase):
     """
 
     def testParse(self):
-        controller = UsTxBrazosController(create_mock_gcsfs())
+        mock_fs = create_mock_gcsfs()
+
+        controller = build_controller_for_tests(mock_fs,
+                                                UsTxBrazosController)
         args = GcsfsIngestArgs(
             ingest_time=datetime.datetime.now(),
             file_path=_ROSTER_PATH,

@@ -17,23 +17,13 @@
 
 """Exposes API to parse and store state aggregates."""
 import datetime
-from http import HTTPStatus
 import logging
 import os
 import tempfile
-from typing import Optional
+from http import HTTPStatus
 
-from flask import Blueprint, request, jsonify
 import gcsfs
-
-from recidiviz.ingest.direct.controllers.direct_ingest_controller_factory \
-    import DirectIngestControllerFactory
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
-    GcsfsDirectIngestController, GcsfsIngestArgs
-from recidiviz.ingest.direct.errors import DirectIngestError, \
-    DirectIngestErrorType
-from recidiviz.persistence.database.schema.aggregate import dao
-from recidiviz.utils import metadata
+from flask import Blueprint, request, jsonify
 
 from recidiviz.ingest.aggregate.regions.ca import ca_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.fl import fl_aggregate_ingest
@@ -44,6 +34,13 @@ from recidiviz.ingest.aggregate.regions.ny import ny_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.pa import pa_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.tn import tn_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.tx import tx_aggregate_ingest
+from recidiviz.ingest.direct import direct_ingest_control
+from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
+    GcsfsIngestArgs
+from recidiviz.ingest.direct.errors import DirectIngestError, \
+    DirectIngestErrorType
+from recidiviz.persistence.database.schema.aggregate import dao
+from recidiviz.utils import metadata
 from recidiviz.utils.auth import authenticate_request
 from recidiviz.utils.params import get_value
 
@@ -142,24 +139,13 @@ def direct():
         )
 
     # Don't use the gcsfs cache
-    fs = gcsfs.GCSFileSystem(project=project_id, cache_timeout=-1)
     logging.info("The file_path to process is %s", file_path)
     logging.info("The storage_bucket is %s", storage_bucket)
-    logging.info("The files in the directory are:")
-    logging.info(fs.ls(bucket))
-
-    controller: Optional[GcsfsDirectIngestController] = \
-        DirectIngestControllerFactory.build_gcsfs_ingest_controller(
-            region_name, fs)
-
-    if not controller:
-        raise DirectIngestError(
-            msg=f"No controller found for region [{region_name}].",
-            error_type=DirectIngestErrorType.INPUT_ERROR,
-        )
 
     try:
-        controller.run_ingest(GcsfsIngestArgs(
+        controller = direct_ingest_control.controller_for_region_code(
+            region_name)
+        controller.queue_ingest_job(GcsfsIngestArgs(
             ingest_time=datetime.datetime.now(),
             file_path=file_path,
             storage_bucket=storage_bucket,

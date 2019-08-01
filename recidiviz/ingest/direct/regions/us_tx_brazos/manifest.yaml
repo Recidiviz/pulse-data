@@ -2,4 +2,5 @@ agency_name: Brazos County Sheriff's Office
 agency_type: jail
 timezone: America/New_York
 environment: staging
+shared_queue: direct-ingest-jpp-task-queue
 jurisdiction_id: '48041001'

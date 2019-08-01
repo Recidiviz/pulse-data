@@ -55,6 +55,8 @@ from recidiviz.common.constants.state.state_supervision_violation_response \
     StateSupervisionViolationResponseDecision
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
     GcsfsIngestArgs
+from recidiviz.ingest.direct.regions.us_nd. \
+    us_nd_controller import UsNdController
 from recidiviz.ingest.models.ingest_info import IngestInfo, \
     StateSentenceGroup, StatePerson, StateIncarcerationSentence, StateAlias, \
     StateSupervisionSentence, \
@@ -63,8 +65,6 @@ from recidiviz.ingest.models.ingest_info import IngestInfo, \
     StateSupervisionPeriod, StateSupervisionViolation, \
     StateSupervisionViolationResponse, StateAgent, StateIncarcerationIncident, \
     StateIncarcerationIncidentOutcome
-from recidiviz.ingest.direct.regions.us_nd. \
-    us_nd_controller import UsNdController
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema.state import dao
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -74,7 +74,7 @@ from recidiviz.persistence.entity.entity_utils import \
 from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.ingest import fixtures
 from recidiviz.tests.ingest.direct.regions.direct_ingest_util import \
-    create_mock_gcsfs
+    create_mock_gcsfs, build_controller_for_tests
 from recidiviz.tests.utils import fakes
 
 _INCIDENT_DETAILS_1 = \
@@ -110,6 +110,11 @@ class TestUsNdController(unittest.TestCase):
     TEST_STORAGE_BUCKET = 'recidiviz-test-storage-bucket'
 
     def setup_method(self, _test_method):
+        self.mock_fs = create_mock_gcsfs()
+        self.mock_fs.exists.return_value = False
+
+        self.controller = build_controller_for_tests(self.mock_fs,
+                                                     UsNdController)
         fakes.use_in_memory_sqlite_database(StateBase)
 
     def test_populate_data_elite_offenders(self):
@@ -859,8 +864,7 @@ class TestUsNdController(unittest.TestCase):
                     outcome_type='EXD',
                     date_effective='4/20/2018',
                     outcome_description='EXTRA DUTY',
-                    punishment_length_days=None
-                )
+                    punishment_length_days=None)
             ]
 
         expected = IngestInfo(state_people=[
@@ -1238,7 +1242,6 @@ class TestUsNdController(unittest.TestCase):
         self.run_file_test(expected, 'docstars_offenses')
 
     def run_file_test(self, expected: IngestInfo, file_tag: str):
-        controller = UsNdController(create_mock_gcsfs())
         fixture_contents = fixtures.as_string(
             self.FIXTURE_PATH_PREFIX, f'{file_tag}.csv')
         args = GcsfsIngestArgs(
@@ -1248,7 +1251,7 @@ class TestUsNdController(unittest.TestCase):
         )
 
         # pylint:disable=protected-access
-        final_info = controller._parse(args, fixture_contents)
+        final_info = self.controller._parse(args, fixture_contents)
 
         print(final_info)
         print(expected)
@@ -1257,10 +1260,6 @@ class TestUsNdController(unittest.TestCase):
     # TODO(2157): Move into integration specific file
     @patch.dict('os.environ', {'PERSIST_LOCALLY': 'true'})
     def test_run_full_ingest_all_files_specific_order(self):
-        mock_fs = create_mock_gcsfs()
-        mock_fs.exists.return_value = False
-        controller = UsNdController(mock_fs)
-
         ######################################
         # ELITE OFFENDERS
         ######################################
@@ -1296,7 +1295,7 @@ class TestUsNdController(unittest.TestCase):
         expected_people = [person_2, person_1]
 
         # Act
-        controller.run_ingest(GcsfsIngestArgs(
+        self.controller.queue_ingest_job(GcsfsIngestArgs(
             ingest_time=datetime.datetime.now(),
             file_path=f'{self.FIXTURE_PATH_PREFIX}/elite_offenders.csv',
             storage_bucket=self.TEST_STORAGE_BUCKET
@@ -1339,7 +1338,7 @@ class TestUsNdController(unittest.TestCase):
         expected_people.append(person_3)
 
         # Act
-        controller.run_ingest(GcsfsIngestArgs(
+        self.controller.queue_ingest_job(GcsfsIngestArgs(
             ingest_time=datetime.datetime.now(),
             file_path=f'{self.FIXTURE_PATH_PREFIX}/'
             f'elite_offender_identifiers.csv',
@@ -1376,7 +1375,7 @@ class TestUsNdController(unittest.TestCase):
         person_2.aliases.append(person_2_alias)
 
         # Act
-        controller.run_ingest(GcsfsIngestArgs(
+        self.controller.queue_ingest_job(GcsfsIngestArgs(
             ingest_time=datetime.datetime.now(),
             file_path=f'{self.FIXTURE_PATH_PREFIX}/elite_aliases.csv',
             storage_bucket=self.TEST_STORAGE_BUCKET
@@ -1406,7 +1405,7 @@ class TestUsNdController(unittest.TestCase):
         person_2.sentence_groups.append(sentence_group_114909)
 
         # Act
-        controller.run_ingest(GcsfsIngestArgs(
+        self.controller.queue_ingest_job(GcsfsIngestArgs(
             ingest_time=datetime.datetime.now(),
             file_path=f'{self.FIXTURE_PATH_PREFIX}/elite_bookings.csv',
             storage_bucket=self.TEST_STORAGE_BUCKET
@@ -1464,7 +1463,7 @@ class TestUsNdController(unittest.TestCase):
         expected_people.append(person_4)
 
         # Act
-        controller.run_ingest(GcsfsIngestArgs(
+        self.controller.queue_ingest_job(GcsfsIngestArgs(
             ingest_time=datetime.datetime.now(),
             file_path=f'{self.FIXTURE_PATH_PREFIX}/elite_sentence_aggs.csv',
             storage_bucket=self.TEST_STORAGE_BUCKET
@@ -1594,7 +1593,7 @@ class TestUsNdController(unittest.TestCase):
             incarceration_sentence_113377_4)
 
         # Act
-        controller.run_ingest(GcsfsIngestArgs(
+        self.controller.queue_ingest_job(GcsfsIngestArgs(
             ingest_time=datetime.datetime.now(),
             file_path=f'{self.FIXTURE_PATH_PREFIX}/elite_sentences.csv',
             storage_bucket=self.TEST_STORAGE_BUCKET
@@ -1660,7 +1659,7 @@ class TestUsNdController(unittest.TestCase):
             incarceration_sentence_113377_5)
 
         # Act
-        controller.run_ingest(GcsfsIngestArgs(
+        self.controller.queue_ingest_job(GcsfsIngestArgs(
             ingest_time=datetime.datetime.now(),
             file_path=f'{self.FIXTURE_PATH_PREFIX}/elite_sentence_terms.csv',
             storage_bucket=self.TEST_STORAGE_BUCKET
@@ -1867,7 +1866,7 @@ class TestUsNdController(unittest.TestCase):
         incarceration_sentence_114909_2.charges.append(charge_114909_2)
 
         # Act
-        controller.run_ingest(GcsfsIngestArgs(
+        self.controller.queue_ingest_job(GcsfsIngestArgs(
             ingest_time=datetime.datetime.now(),
             file_path=f'{self.FIXTURE_PATH_PREFIX}/elite_charges.csv',
             storage_bucket=self.TEST_STORAGE_BUCKET
@@ -1935,7 +1934,7 @@ class TestUsNdController(unittest.TestCase):
         court_case_154576.judge = agent_paul
 
         # Act
-        controller.run_ingest(GcsfsIngestArgs(
+        self.controller.queue_ingest_job(GcsfsIngestArgs(
             ingest_time=datetime.datetime.now(),
             file_path=f'{self.FIXTURE_PATH_PREFIX}/elite_orders.csv',
             storage_bucket=self.TEST_STORAGE_BUCKET
@@ -2059,7 +2058,7 @@ class TestUsNdController(unittest.TestCase):
             incarceration_period_114909_1)
 
         # Act
-        controller.run_ingest(GcsfsIngestArgs(
+        self.controller.queue_ingest_job(GcsfsIngestArgs(
             ingest_time=datetime.datetime.now(),
             file_path=f'{self.FIXTURE_PATH_PREFIX}/'
             f'elite_external_movements.csv',
@@ -2300,7 +2299,7 @@ class TestUsNdController(unittest.TestCase):
             incident_381647)
 
         # Act
-        controller.run_ingest(GcsfsIngestArgs(
+        self.controller.queue_ingest_job(GcsfsIngestArgs(
             ingest_time=datetime.datetime.now(),
             file_path=f'{self.FIXTURE_PATH_PREFIX}/'
             f'elite_offense_in_custody_and_pos_report_data.csv',
@@ -2403,7 +2402,7 @@ class TestUsNdController(unittest.TestCase):
         expected_people.append(person_6)
 
         # Act
-        controller.run_ingest(GcsfsIngestArgs(
+        self.controller.queue_ingest_job(GcsfsIngestArgs(
             ingest_time=datetime.datetime.now(),
             file_path=f'{self.FIXTURE_PATH_PREFIX}/docstars_offenders.csv',
             storage_bucket=self.TEST_STORAGE_BUCKET
@@ -2599,7 +2598,7 @@ class TestUsNdController(unittest.TestCase):
         person_2.sentence_groups.append(sentence_group_person_2_placeholder_ss)
 
         # Act
-        controller.run_ingest(GcsfsIngestArgs(
+        self.controller.queue_ingest_job(GcsfsIngestArgs(
             ingest_time=datetime.datetime.now(),
             file_path=f'{self.FIXTURE_PATH_PREFIX}/docstars_cases.csv',
             storage_bucket=self.TEST_STORAGE_BUCKET
@@ -2669,7 +2668,7 @@ class TestUsNdController(unittest.TestCase):
         supervision_sentence_140408.charges.append(charge_149349)
 
         # Act
-        controller.run_ingest(GcsfsIngestArgs(
+        self.controller.queue_ingest_job(GcsfsIngestArgs(
             ingest_time=datetime.datetime.now(),
             file_path=f'{self.FIXTURE_PATH_PREFIX}/docstars_offenses.csv',
             storage_bucket=self.TEST_STORAGE_BUCKET
@@ -2696,37 +2695,33 @@ class TestUsNdController(unittest.TestCase):
 
     @patch.dict('os.environ', {'PERSIST_LOCALLY': 'true'})
     def test_run_full_ingest_all_files(self):
-        mock_fs = create_mock_gcsfs()
-        mock_fs.exists.return_value = False
-        controller = UsNdController(mock_fs)
-        file_tags = sorted(controller.file_mappings_by_file.keys())
+        # pylint:disable=protected-access
+        file_tags = sorted(self.controller._get_file_tag_rank_list())
         for file_tag in file_tags:
-            controller.run_ingest(GcsfsIngestArgs(
+            self.controller.queue_ingest_job(GcsfsIngestArgs(
                 ingest_time=datetime.datetime.now(),
                 file_path=f'{self.FIXTURE_PATH_PREFIX}/{file_tag}.csv',
                 storage_bucket=self.TEST_STORAGE_BUCKET
             ))
 
-        self.assertEqual(mock_fs.mv.call_count, len(list(file_tags)))
+        self.assertEqual(self.mock_fs.mv.call_count, len(list(file_tags)))
 
         # TODO(2057): For now we just check that we don't crash, but we should
         #  test more comprehensively for state.
 
     @patch.dict('os.environ', {'PERSIST_LOCALLY': 'true'})
     def test_run_full_ingest_all_files_reverse(self):
-        mock_fs = create_mock_gcsfs()
-        mock_fs.exists.return_value = False
-        controller = UsNdController(mock_fs)
+        # pylint:disable=protected-access
         file_tags = list(
-            reversed(sorted(controller.file_mappings_by_file.keys())))
+            reversed(sorted(self.controller._get_file_tag_rank_list())))
         for file_tag in file_tags:
-            controller.run_ingest(GcsfsIngestArgs(
+            self.controller.queue_ingest_job(GcsfsIngestArgs(
                 ingest_time=datetime.datetime.now(),
                 file_path=f'{self.FIXTURE_PATH_PREFIX}/{file_tag}.csv',
                 storage_bucket=self.TEST_STORAGE_BUCKET
             ))
 
-        self.assertEqual(mock_fs.mv.call_count, len(file_tags))
+        self.assertEqual(self.mock_fs.mv.call_count, len(file_tags))
 
         # TODO(2057): For now we just check that we don't crash, but we should
         #  test more comprehensively for state.

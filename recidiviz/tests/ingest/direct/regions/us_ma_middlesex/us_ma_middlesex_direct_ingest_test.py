@@ -16,7 +16,6 @@
 # =============================================================================
 """Tests for the direct ingest parser.py."""
 import datetime
-from mock import patch
 from unittest import TestCase
 
 from recidiviz.common.ingest_metadata import IngestMetadata
@@ -27,20 +26,15 @@ from recidiviz.tests.ingest import fixtures
 from recidiviz.tests.utils.individual_ingest_test import IndividualIngestTest
 from recidiviz.utils import regions
 
-_ROSTER_JSON_PATH = fixtures.as_dict('direct/regions/us_ma_middlesex',
-                                     'roster.json')
+_ROSTER_JSON = fixtures.as_dict('direct/regions/us_ma_middlesex',
+                                'roster.json')
 _FAKE_START_TIME = datetime.datetime(year=2019, month=1, day=2)
 
 
 class UsMaMiddlesexDirectIngestParser(IndividualIngestTest, TestCase):
-    @patch('recidiviz.ingest.direct.regions.us_ma_middlesex.'
-           'us_ma_middlesex_controller.UsMaMiddlesexController._connect_to_db')
-    @patch('recidiviz.ingest.direct.regions.us_ma_middlesex.'
-           'us_ma_middlesex_controller.UsMaMiddlesexController._load_data')
-    def testParse(self, mock_connect, mock_data):
+    def testParse(self):
         region = regions.get_region('us_ma_middlesex', is_direct_ingest=True)
         controller = region.get_ingestor()
-        parser = controller.parser
 
         metadata = IngestMetadata(
             region.region_code,
@@ -48,7 +42,7 @@ class UsMaMiddlesexDirectIngestParser(IndividualIngestTest, TestCase):
             _FAKE_START_TIME,
             controller.get_enum_overrides())
 
-        ingest_info = parser.parse(_ROSTER_JSON_PATH)
+        ingest_info = UsMaMiddlesexParser().parse(_ROSTER_JSON)
 
         expected_info = IngestInfo()
         p1 = expected_info.create_person(
