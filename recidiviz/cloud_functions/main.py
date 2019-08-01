@@ -106,6 +106,8 @@ def _call_direct_ingest(bucket: str,
                         region_code: str,
                         relative_file_path: str,
                         region_category: DirectIngestRegionCategory):
+    """Calls direct ingest cloud function when a new file is dropped into a
+    bucket."""
     project_id = os.environ.get('GCP_PROJECT')
     if not project_id:
         logging.error('No project id set for call to direct ingest cloud '
@@ -113,6 +115,13 @@ def _call_direct_ingest(bucket: str,
         return
 
     file_path = os.path.join(bucket, relative_file_path)
+
+    # TODO(1628): Immediately rename to have the format
+    #  [ISO TIMESTAMP]_[FILE NAME](_[SEQ_NUM])?.[EXT] where sequence number is
+    #  optionally added if there is already another file name present on the
+    #  same day. This can use some of the same logic that is in the
+    #  GcsfsController for avoiding conflicts when writing to storage.
+    #  The logic for extracting the file_tag will also need to change.
 
     storage_bucket = \
         get_direct_ingest_storage_bucket(region_category, project_id)

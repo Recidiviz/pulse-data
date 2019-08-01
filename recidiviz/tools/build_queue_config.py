@@ -46,9 +46,43 @@ BIGQUERY_QUEUE_CONFIG = {
     }
 }
 
+DIRECT_INGEST_SCHEDULER_QUEUE_CONFIG = {
+    'name': queues.DIRECT_INGEST_SCHEDULER_QUEUE,
+    'mode': 'push',
+    'rate': '100/s',
+    'bucket_size': 1,
+    'max_concurrent_requests': 1,
+    'retry_parameters': {
+        'task_retry_limit': 5
+    }
+}
+
+DIRECT_INGEST_JAILS_TASK_QUEUE_CONFIG = {
+    'name': queues.DIRECT_INGEST_JAILS_TASK_QUEUE,
+    'mode': 'push',
+    'rate': '10/s',
+    'bucket_size': 1,
+    'max_concurrent_requests': 1,
+    'retry_parameters': {
+        'task_retry_limit': 5
+    }
+}
+
+DIRECT_INGEST_STATE_TASK_QUEUE_CONFIG = {
+    'name': queues.DIRECT_INGEST_STATE_TASK_QUEUE,
+    'mode': 'push',
+    'rate': '10/s',
+    'bucket_size': 1,
+    'max_concurrent_requests': 1,
+    'retry_parameters': {
+        'task_retry_limit': 5
+    }
+}
+
 class NoAliasDumper(yaml.Dumper):
     def ignore_aliases(self, data):
         return True
+
 
 def build_queues(environments: Set[str]):
     qs: List[Dict[str, Any]] = []
@@ -69,6 +103,10 @@ def build_queues(environments: Set[str]):
             'name': region.get_queue_name(),
             **BASE_QUEUE_CONFIG, **(region.queue or {})
         })
+
+    qs.append(DIRECT_INGEST_JAILS_TASK_QUEUE_CONFIG)
+    qs.append(DIRECT_INGEST_STATE_TASK_QUEUE_CONFIG)
+    qs.append(DIRECT_INGEST_SCHEDULER_QUEUE_CONFIG)
     qs.append(BIGQUERY_QUEUE_CONFIG)
     with open('queue.yaml', 'w') as queue_manifest:
         yaml.dump({'queue': qs}, queue_manifest,

@@ -16,12 +16,22 @@
 # =============================================================================
 
 """Tests for ingest/direct_control.py."""
+import datetime
+import importlib
+import unittest
+
+import attr
 import pytest
 import pytz
 from flask import Flask
 from mock import create_autospec, patch
 
 from recidiviz.ingest.direct import direct_ingest_control
+from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import \
+    BaseDirectIngestController
+from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
+    GcsfsIngestArgs
+from recidiviz.ingest.direct.errors import DirectIngestError
 from recidiviz.persistence import batch_persistence
 from recidiviz.utils.regions import Region
 
@@ -58,14 +68,14 @@ class TestDirectStart:
         mock_region.return_value = fake_region(environment='production')
         mock_environment.return_value = 'production'
 
-        region = 'us_ut'
+        region = 'us_nd'
         request_args = {'region': region}
         headers = {'X-Appengine-Cron': "test-cron"}
-        response = client.get('/start',
+        response = client.get('/scheduler',
                               query_string=request_args,
                               headers=headers)
         assert response.status_code == 200
-        mock_region.assert_called_with('us_ut', is_direct_ingest=True)
+        mock_region.assert_called_with('us_nd', is_direct_ingest=True)
 
     @patch("recidiviz.utils.environment.get_gae_environment")
     @patch("recidiviz.utils.regions.get_region")
@@ -75,31 +85,53 @@ class TestDirectStart:
         mock_environment.return_value = 'staging'
         mock_region.return_value = fake_region(environment='production')
 
-        region = 'us_wy'
+        region = 'us_nd'
         request_args = {'region': region}
         headers = {'X-Appengine-Cron': "test-cron"}
-        response = client.get('/start',
-                              query_string=request_args,
-                              headers=headers)
-        assert response.status_code == 400
+        with pytest.raises(DirectIngestError):
+            response = client.get('/scheduler',
+                                  query_string=request_args,
+                                  headers=headers)
+            assert response.status_code == 400
 
-        mock_region.assert_called_with('us_wy', is_direct_ingest=True)
+        mock_region.assert_called_with('us_nd', is_direct_ingest=True)
 
-    @patch("recidiviz.utils.regions.get_supported_region_codes")
+    @patch("recidiviz.utils.regions.get_supported_direct_ingest_region_codes")
     def test_start_unsupported_region(self, mock_supported, client):
         mock_supported.return_value = ['us_ny', 'us_pa']
 
         request_args = {'region': 'us_ca'}
         headers = {'X-Appengine-Cron': "test-cron"}
-        response = client.get('/start',
-                              query_string=request_args,
-                              headers=headers)
-        assert response.status_code == 400
-        assert response.get_data().decode() == \
-            "Unsupported direct ingest region us_ca"
+        with pytest.raises(DirectIngestError):
+            response = client.get('/scheduler',
+                                  query_string=request_args,
+                                  headers=headers)
+            assert response.status_code == 400
+            assert response.get_data().decode() == \
+                   "Unsupported direct ingest region us_ca"
 
 
 def fake_region(environment='local'):
     region = create_autospec(Region)
     region.environment = environment
+    region.get_ingestor.return_value.__class__ = BaseDirectIngestController
     return region
+
+
+class TestQueueArgs(unittest.TestCase):
+    def test_parse_args(self):
+        ingest_args = GcsfsIngestArgs(
+            ingest_time=datetime.datetime.now(),
+            file_path='/foo/bar',
+            storage_bucket='recidiviz-123-direct-ingest'
+        )
+
+        ingest_args_class_name = ingest_args.__class__.__name__
+        ingest_args_class_module = ingest_args.__module__
+        ingest_args_dict = attr.asdict(ingest_args)
+
+        module = importlib.import_module(ingest_args_class_module)
+        ingest_class = getattr(module, ingest_args_class_name)
+        result_args = ingest_class(**ingest_args_dict)
+
+        self.assertEqual(ingest_args, result_args)

@@ -27,6 +27,7 @@ from datetime import datetime, tzinfo
 from enum import Enum
 from itertools import chain
 from typing import Any, Dict, Optional, Set, Union
+from typing import List
 
 import attr
 import pytz
@@ -39,6 +40,13 @@ from recidiviz.utils import environment
 class RemovedFromWebsite(Enum):
     RELEASED = 'RELEASED'
     UNKNOWN_SIGNIFICANCE = 'UNKNOWN_SIGNIFICANCE'
+
+# Cache of the `Region` objects.
+REGIONS: Dict[str, 'Region'] = {}
+
+# TODO(1628): It's a HACK to have this here b/c there's a circular ref between
+# the controller and regions file.
+DIRECT_INGEST_CONTROLLERS_BY_REGION: Dict[str, Any] = {}
 
 
 @attr.s(frozen=True)
@@ -100,6 +108,11 @@ class Region:
         Returns:
             An instance of the region's ingest class (e.g., UsNyScraper)
         """
+        global DIRECT_INGEST_CONTROLLERS_BY_REGION
+        if self.is_direct_ingest:
+            if self.region_code in DIRECT_INGEST_CONTROLLERS_BY_REGION:
+                return DIRECT_INGEST_CONTROLLERS_BY_REGION[self.region_code]
+
         ingest_module = 'direct' if self.is_direct_ingest else 'scrape'
         ingest_type_name = 'Controller' if self.is_direct_ingest else 'Scraper'
 
@@ -110,7 +123,12 @@ class Region:
         ingest_class = getattr(
             module, get_ingestor_name(self.region_code, ingest_type_name))
 
-        return ingest_class()
+        ingestor = ingest_class()
+
+        if self.is_direct_ingest:
+            DIRECT_INGEST_CONTROLLERS_BY_REGION[self.region_code] = ingestor
+
+        return ingestor
 
     def get_enum_overrides(self):
         """Retrieves the overrides object of a region"""
@@ -123,10 +141,6 @@ class Region:
         """Returns the name of the queue to be used for the region"""
         return self.shared_queue if self.shared_queue \
             else '{}-scraper'.format(self.region_code.replace('_', '-'))
-
-
-# Cache of the `Region` objects.
-REGIONS: Dict[str, 'Region'] = {}
 
 
 def get_region(region_code: str, is_direct_ingest: bool = False) -> Region:
@@ -165,7 +179,7 @@ def get_region_manifest(region_code: str,
         return yaml.load(region_manifest)
 
 
-def get_supported_region_codes(timezone: tzinfo = None) -> Set[str]:
+def get_supported_scrape_region_codes(timezone: tzinfo = None) -> Set[str]:
     """Retrieve a list of known scraper regions / region codes
 
     Args:
@@ -174,19 +188,49 @@ def get_supported_region_codes(timezone: tzinfo = None) -> Set[str]:
     Returns:
         Set of region codes (strings)
     """
+    return _get_supported_region_codes_for_base_region_path(
+        SCRAPER_BASE_REGION_PATH,
+        is_direct_ingest=False,
+        timezone=timezone)
+
+
+def get_supported_direct_ingest_region_codes() -> Set[str]:
+    return _get_supported_region_codes_for_base_region_path(
+        DIRECT_INGEST_BASE_REGION_PATH,
+        is_direct_ingest=True)
+
+
+def _get_supported_region_codes_for_base_region_path(
+        base_region_path: str,
+        is_direct_ingest: bool,
+        timezone: tzinfo = None):
+
     all_region_codes = {region_module.name for region_module
-                        in pkgutil.iter_modules([SCRAPER_BASE_REGION_PATH])}
+                        in pkgutil.iter_modules([base_region_path])}
     if timezone:
         dt = datetime.now()
         return {region_code for region_code in all_region_codes
                 if timezone.utcoffset(dt) == \
-                get_region(region_code).timezone.utcoffset(dt)}
+                get_region(
+                    region_code,
+                    is_direct_ingest=is_direct_ingest
+                ).timezone.utcoffset(dt)}
     return all_region_codes
 
 
-def get_supported_regions():
-    return [get_region(region_code)
-            for region_code in get_supported_region_codes()]
+def get_supported_regions() -> List['Region']:
+    return get_supported_scrape_regions() + \
+           get_supported_direct_ingest_regions()
+
+
+def get_supported_scrape_regions() -> List['Region']:
+    return [get_region(region_code, is_direct_ingest=False)
+            for region_code in get_supported_scrape_region_codes()]
+
+
+def get_supported_direct_ingest_regions() -> List['Region']:
+    return [get_region(region_code, is_direct_ingest=True)
+            for region_code in get_supported_direct_ingest_region_codes()]
 
 
 def validate_region_code(region_code):
@@ -199,7 +243,7 @@ def validate_region_code(region_code):
         True if valid region
         False if invalid region
     """
-    return region_code in get_supported_region_codes()
+    return region_code in get_supported_scrape_region_codes()
 
 
 def get_ingestor_name(region_code: str, ingest_type_name: str) -> str:

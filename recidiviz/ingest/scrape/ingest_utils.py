@@ -63,7 +63,8 @@ def validate_regions(region_codes: List[str],
     """
     region_codes_output = set(region_codes)
 
-    supported_regions = regions.get_supported_region_codes(timezone=timezone)
+    supported_regions = regions.get_supported_scrape_region_codes(
+        timezone=timezone)
     for region in region_codes:
         if region == 'all':
             # We only do this if all is passed to still allow people to manually
@@ -280,9 +281,9 @@ def convert_ingest_info_to_proto(ingest_info_py: ingest_info.IngestInfo) \
                         incident_outcome,
                         'state_incarceration_incident_outcome_id',
                         state_incarceration_incident_outcome_map)
-                    proto_incident.state_incarceration_incident_outcome_ids.\
-                        append(proto_incident_outcome.
-                               state_incarceration_incident_outcome_id)
+                    proto_incident.state_incarceration_incident_outcome_ids \
+                        .append(proto_incident_outcome.
+                                state_incarceration_incident_outcome_id)
 
             for decision in incarceration_period.state_parole_decisions:
                 proto_decision = _populate_proto(
@@ -339,7 +340,7 @@ def convert_ingest_info_to_proto(ingest_info_py: ingest_info.IngestInfo) \
                         'state_supervision_violation_responses', response,
                         'state_supervision_violation_response_id',
                         state_supervision_violation_response_map)
-                    proto_violation.state_supervision_violation_response_ids\
+                    proto_violation.state_supervision_violation_response_ids \
                         .append(proto_response.
                                 state_supervision_violation_response_id)
 
@@ -468,7 +469,7 @@ def convert_ingest_info_to_proto(ingest_info_py: ingest_info.IngestInfo) \
                     'state_incarceration_sentences', incarceration_sentence,
                     'state_incarceration_sentence_id',
                     state_incarceration_sentence_map)
-                proto_sentence_group.state_incarceration_sentence_ids\
+                proto_sentence_group.state_incarceration_sentence_ids \
                     .append(proto_incarceration_sentence
                             .state_incarceration_sentence_id)
 

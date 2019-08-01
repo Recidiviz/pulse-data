@@ -23,10 +23,15 @@ import logging
 import uuid
 from typing import List
 
+from google.api_core import datetime_helpers
 from google.cloud import exceptions, tasks
+from google.protobuf import timestamp_pb2
 
 from recidiviz.common.common_utils import retry_grpc
+from recidiviz.ingest.direct.controllers.direct_ingest_types import \
+    IngestArgs
 from recidiviz.utils import environment, metadata
+from recidiviz.utils.regions import Region
 
 NUM_GRPC_RETRIES = 2
 
@@ -186,5 +191,81 @@ def create_bq_task(table_name: str, url: str):
         NUM_GRPC_RETRIES,
         client().create_task,
         format_queue_path(BIGQUERY_QUEUE),
+        task
+    )
+
+
+DIRECT_INGEST_SCHEDULER_QUEUE = 'direct-ingest-scheduler'
+
+
+def create_direct_ingest_scheduler_queue_task(
+        region: Region, ingest_args: IngestArgs, delay_sec: int):
+    """Creates a scheduler task for direct ingest for a given region. Scheduler
+    tasks should be short-running and queue process_job tasks if there is more
+    work to do.
+
+    Args:
+        region: `Region` direct ingest region.
+        ingest_args: `IngestArgs` args for the current direct ingest task.
+        delay_sec: `int` the number of seconds to wait before the next task.
+    """
+    body = {
+        'ingest_args': ingest_args.to_serializable()
+    }
+    schedule_time = datetime.datetime.now() + \
+                    datetime.timedelta(seconds=delay_sec)
+
+    schedule_time_sec = datetime_helpers.to_milliseconds(schedule_time) // 1000
+    schedule_timestamp = timestamp_pb2.Timestamp(seconds=schedule_time_sec)
+
+    task_id = '{}-{}-{}'.format(
+        region.region_code, str(datetime.date.today()), uuid.uuid4())
+    task_name = format_task_path(DIRECT_INGEST_SCHEDULER_QUEUE, task_id)
+    task = tasks.types.Task(
+        name=task_name,
+        schedule_time=schedule_timestamp,
+        app_engine_http_request={
+            'relative_uri': f'/direct/scheduler?region={region.region_code}',
+            'body': json.dumps(body).encode()
+        }
+    )
+    retry_grpc(
+        NUM_GRPC_RETRIES,
+        client().create_task,
+        format_queue_path(DIRECT_INGEST_SCHEDULER_QUEUE),
+        task
+    )
+
+
+DIRECT_INGEST_STATE_TASK_QUEUE = 'direct-ingest-state-task-queue'
+DIRECT_INGEST_JAILS_TASK_QUEUE = 'direct-ingest-jpp-task-queue'
+
+
+def create_direct_ingest_process_job_task(region: Region,
+                                          ingest_args: IngestArgs):
+    """Queues a direct ingest process job task. All direct ingest data
+    processing should happen through this endpoint.
+    Args:
+        region: `Region` direct ingest region.
+        ingest_args: `IngestArgs` args for the current direct ingest task.
+    """
+    body = {
+        'ingest_args': ingest_args.to_serializable(),
+    }
+    task_id = '{}-{}-{}'.format(
+        region.region_code, str(datetime.date.today()), uuid.uuid4())
+    task_name = format_task_path(region.get_queue_name(), task_id)
+    task = tasks.types.Task(
+        name=task_name,
+        app_engine_http_request={
+            'relative_uri':
+                f'/direct/process_job?region={region.region_code}',
+            'body': json.dumps(body).encode()
+        }
+    )
+    retry_grpc(
+        NUM_GRPC_RETRIES,
+        client().create_task,
+        format_queue_path(region.get_queue_name()),
         task
     )
