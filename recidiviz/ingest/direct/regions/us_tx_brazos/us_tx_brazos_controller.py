@@ -20,7 +20,7 @@ from collections import defaultdict
 import csv
 import logging
 import os
-from typing import Any, Optional
+from typing import Any, Optional, List
 
 from gcsfs import GCSFileSystem
 
@@ -110,12 +110,15 @@ class UsTxBrazosDataExtractor(CsvDataExtractor):
 class UsTxBrazosController(GcsfsDirectIngestController):
     """Direct ingest controller implementation for us_tx_brazos."""
 
-    def __init__(self, fs: GCSFileSystem):
-        super(UsTxBrazosController, self).__init__(
-            'us_tx_brazos', SystemLevel.COUNTY, fs)
+    def __init__(self):
+        super(UsTxBrazosController, self).__init__('us_tx_brazos',
+                                                   SystemLevel.COUNTY)
 
         self._mapping_filepath = os.path.join(
             os.path.dirname(__file__), 'us_tx_brazos.yaml')
+
+    def _get_file_tag_rank_list(self) -> List[str]:
+        return ['daily_data']
 
     def _parse(self, args: GcsfsIngestArgs, contents: Any) -> IngestInfo:
         data_extractor = UsTxBrazosDataExtractor(self._mapping_filepath)

@@ -15,14 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-# pylint: disable=unused-import,wrong-import-order
-
 """Tests for utils/regions.py."""
 from unittest import TestCase
+from unittest.mock import patch
 
 import pytest
 import pytz
-from mock import Mock, PropertyMock, mock_open, patch
+from mock import Mock, PropertyMock, mock_open
 
 from recidiviz.utils import regions
 
@@ -104,6 +103,7 @@ REGION_TO_MANIFEST = {
     'us_ma_middlesex': US_MA_MIDDLESEX_CONTENTS,
 }
 
+
 def fake_modules(*names):
     modules = []
     for name in names:
@@ -111,6 +111,7 @@ def fake_modules(*names):
         type(fake_module).name = PropertyMock(return_value=name)
         modules.append(fake_module)
     return modules
+
 
 class TestRegions(TestCase):
     """Tests for regions.py."""
@@ -150,7 +151,7 @@ class TestRegions(TestCase):
     @patch('pkgutil.iter_modules',
            return_value=fake_modules('us_ny', 'us_in', 'us_ca'))
     def test_get_supported_regions(self, _mock_modules):
-        supported_regions = with_manifest(regions.get_supported_regions)
+        supported_regions = with_manifest(regions.get_supported_scrape_regions)
         self.assertCountEqual(
             [region.region_code for region in supported_regions],
             ['us_ny', 'us_in', 'us_ca'])
@@ -158,14 +159,15 @@ class TestRegions(TestCase):
     @patch('pkgutil.iter_modules',
            return_value=fake_modules('us_ny', 'us_in', 'us_ca'))
     def test_get_supported_region_codes(self, _mock_modules):
-        supported_regions = with_manifest(regions.get_supported_region_codes)
+        supported_regions = with_manifest(
+            regions.get_supported_scrape_region_codes)
         assert supported_regions == {'us_ny', 'us_in', 'us_ca'}
 
     @patch('pkgutil.iter_modules',
            return_value=fake_modules('us_ny', 'us_in', 'us_ca'))
     def test_get_supported_region_codes_timezone(self, _mock_modules):
         supported_regions = with_manifest(
-            regions.get_supported_region_codes,
+            regions.get_supported_scrape_region_codes,
             timezone=pytz.timezone('America/New_York'))
         assert supported_regions == {'us_ny', 'us_in'}
 
@@ -184,24 +186,26 @@ class TestRegions(TestCase):
         mock_scraper = Mock()
         mock_package.UsNyScraper.return_value = mock_scraper
 
-        with patch.dict('sys.modules', {
-                'recidiviz.ingest.scrape.regions.us_ny.us_ny_scraper':
-                mock_package
-        }):
+        module_obj = {
+            'recidiviz.ingest.scrape.regions.us_ny.us_ny_scraper': mock_package}
+        with patch('importlib.import_module', module_obj.get):
             region = with_manifest(regions.get_region, 'us_ny')
             scraper = region.get_ingestor()
             assert scraper is mock_scraper
 
     def test_get_direct_controller(self):
+        # TODO(1628): Direct ingest controllers are being cached in the regions
+        #  module, causing this test to fail if the Middlesex controller is
+        #  created in another test. The below cache clear should be removed when
+        #  the cache is removed.
+        regions.DIRECT_INGEST_CONTROLLERS_BY_REGION.clear()
         mock_package = Mock()
         mock_direct = Mock()
         mock_package.UsMaMiddlesexController.return_value = mock_direct
 
-        with patch.dict('sys.modules', {
-                'recidiviz.ingest.direct.regions.us_ma_middlesex.'
-                'us_ma_middlesex_controller':
-                mock_package
-        }):
+        module_obj = {'recidiviz.ingest.direct.regions.us_ma_middlesex.'
+                      'us_ma_middlesex_controller': mock_package}
+        with patch('importlib.import_module', module_obj.get):
             region = with_manifest(regions.get_region, 'us_ma_middlesex',
                                    is_direct_ingest=True)
             direct = region.get_ingestor()
@@ -240,6 +244,7 @@ def mock_manifest_open(filename, *args):
             file_object.__iter__.return_value = content.splitlines(True)
             return file_object
     return open(filename, *args)
+
 
 def with_manifest(func, *args, **kwargs):
     with patch("recidiviz.utils.regions.open", new=mock_manifest_open):

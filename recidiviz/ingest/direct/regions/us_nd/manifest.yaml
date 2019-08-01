@@ -3,4 +3,5 @@ agency_type: prison
 base_url: unused
 timezone: America/North_Dakota/Center
 environment: staging
+shared_queue: direct-ingest-state-task-queue
 jurisdiction_id: unknown
