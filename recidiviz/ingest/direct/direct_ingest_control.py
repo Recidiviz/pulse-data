@@ -27,6 +27,8 @@ from flask import Blueprint, request
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import \
     BaseDirectIngestController
 from recidiviz.ingest.direct.controllers.direct_ingest_types import IngestArgs
+from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
+    GcsfsIngestArgs
 from recidiviz.ingest.direct.errors import DirectIngestError, \
     DirectIngestErrorType
 from recidiviz.utils import environment, regions
@@ -106,6 +108,12 @@ def _get_ingest_args(json_data: str) -> Optional[IngestArgs]:
     if not json_data:
         return None
     data = json.loads(json_data)
-    if 'ingest_args' in data:
-        return IngestArgs.from_serializable(data['ingest_args'])
+    if 'ingest_args' in data and 'args_type' in data:
+        args_type = data['args_type']
+        ingest_args = data['ingest_args']
+        if args_type == IngestArgs.__name__:
+            return IngestArgs.from_serializable(ingest_args)
+        if args_type == GcsfsIngestArgs.__name__:
+            return GcsfsIngestArgs.from_serializable(ingest_args)
+        logging.error('Unexpected args_type in json_data: %s', args_type)
     return None
