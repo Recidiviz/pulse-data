@@ -246,7 +246,8 @@ class BaseScraper(Scraper):
                 # ingest info.
                 if not scraped_data.ingest_info:
                     raise ScraperError("IngestInfo must be populated")
-                logging.info("Logging at most 4 people:")
+                logging.info("Logging at most 4 people (were %d):",
+                             len(scraped_data.ingest_info.people))
                 loop_count = min(len(scraped_data.ingest_info.people),
                                  constants.MAX_PEOPLE_TO_LOG)
                 for i in range(loop_count):

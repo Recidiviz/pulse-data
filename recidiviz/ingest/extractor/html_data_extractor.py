@@ -186,7 +186,8 @@ class HtmlDataExtractor(DataExtractor):
             key: (string) to search for
         """
         matches = content.xpath(
-            './/*[starts-with(normalize-space(text()),"%s")]' % key)
+            './/*[starts-with('
+            'normalize-space(translate(text(),"\xA0"," ")),"%s")]' % key)
         # results from the xpath call are references, so modifying them changes
         # |content|.
         for match in matches:
