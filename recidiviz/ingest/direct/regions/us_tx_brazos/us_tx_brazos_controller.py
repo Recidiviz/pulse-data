@@ -18,11 +18,8 @@
 """Direct ingest controller implementation for us_tx_brazos."""
 from collections import defaultdict
 import csv
-import logging
 import os
-from typing import Any, Optional, List
-
-from gcsfs import GCSFileSystem
+from typing import Any, List
 
 from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.common.constants.county.charge import ChargeDegree
@@ -34,7 +31,6 @@ from recidiviz.ingest.direct.errors import DirectIngestError, \
 from recidiviz.ingest.extractor.csv_data_extractor import CsvDataExtractor
 from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.ingest.scrape import scraper_utils
-from recidiviz.ingest.scrape.task_params import ScrapedData
 
 
 class UsTxBrazosDataExtractor(CsvDataExtractor):
@@ -50,8 +46,7 @@ class UsTxBrazosDataExtractor(CsvDataExtractor):
         super().__init__(key_mapping_file, should_cache=False)
 
     def extract_and_populate_data(
-            self, content: str, ingest_info: IngestInfo = None) -> \
-            Optional[ScrapedData]:
+            self, content: str, ingest_info: IngestInfo = None) -> IngestInfo:
         if not isinstance(content, str):
             raise DirectIngestError(msg=f"{content} is not a string",
                                     error_type=DirectIngestErrorType.READ_ERROR)
@@ -75,10 +70,11 @@ class UsTxBrazosDataExtractor(CsvDataExtractor):
             try:
                 self._merge_row_into_ingest_info(ingest_info, row_ii)
             except DirectIngestError as e:
-                e.msg = f"While parsing CSV row {row_index + 1}: " + e.msg
-                raise(e)
+                raise DirectIngestError(
+                    msg=f"While parsing CSV row {row_index + 1}: " + str(e),
+                    error_type=DirectIngestErrorType.READ_ERROR)
 
-        return ScrapedData(ingest_info, persist=True)
+        return ingest_info
 
     def _merge_row_into_ingest_info(self, ingest_info, row_ii):
         row_person = scraper_utils.one('person', row_ii)

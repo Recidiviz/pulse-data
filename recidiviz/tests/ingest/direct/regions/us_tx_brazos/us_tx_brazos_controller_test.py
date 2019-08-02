@@ -52,7 +52,7 @@ class UsTxBrazosControllerTest(IndividualIngestTest, TestCase):
         )
 
         # pylint:disable=protected-access
-        ingest_info = controller._parse(args, _ROSTER_PATH).ingest_info
+        ingest_info = controller._parse(args, _ROSTER_PATH)
         expected_info = IngestInfo(
             people=[
                 Person(
