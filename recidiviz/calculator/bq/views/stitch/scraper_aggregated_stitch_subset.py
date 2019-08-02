@@ -17,7 +17,7 @@
 """Scraper data used for stitch"""
 # pylint:disable=line-too-long
 
-from recidiviz.calculator.bq.views.bqview import BigQueryView
+from recidiviz.calculator.bq.bqview import BigQueryView
 from recidiviz.calculator.bq.views.population import \
     population_admissions_releases
 from recidiviz.calculator.bq.views.view_config import VIEWS_DATASET

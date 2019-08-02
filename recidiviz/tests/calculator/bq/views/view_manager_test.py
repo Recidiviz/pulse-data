@@ -22,7 +22,7 @@ from unittest import mock
 
 from google.cloud import bigquery
 
-from recidiviz.calculator.bq.views import bqview
+from recidiviz.calculator.bq import bqview
 from recidiviz.persistence.database.base_schema import JailsBase
 from recidiviz.tests.utils import fakes
 

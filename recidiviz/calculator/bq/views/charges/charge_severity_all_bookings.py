@@ -17,8 +17,7 @@
 """Assigns a 'most_severe_charge' to each Booking."""
 # pylint: disable=line-too-long
 
-from recidiviz.calculator.bq import export_config
-from recidiviz.calculator.bq.views import bqview
+from recidiviz.calculator.bq import export_config, bqview
 from recidiviz.calculator.bq.views import view_config
 from recidiviz.calculator.bq.views.charges.charges_and_severity import CHARGES_AND_SEVERITY_VIEW
 
