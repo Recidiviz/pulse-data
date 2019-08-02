@@ -192,6 +192,8 @@ class GcsfsDirectIngestController(BaseDirectIngestController[GcsfsIngestArgs,
                       storage_bucket: str,
                       ingest_time: datetime.datetime,
                       file_name: str) -> str:
+        """Returns the storage file path for the input |file_name|,
+        |storage_bucket|, and |ingest_time|"""
         ingest_date_str = ingest_time.date().isoformat()
 
         def _build_storage_path(storage_file_name: str):
@@ -204,6 +206,7 @@ class GcsfsDirectIngestController(BaseDirectIngestController[GcsfsIngestArgs,
 
         tries = 0
         while self.fs.exists(storage_path):
+            tries += 1
             if tries >= self._MAX_STORAGE_FILE_RENAME_TRIES:
                 raise DirectIngestError(
                     msg=f"Too many versions of file [{file_name}] stored in "

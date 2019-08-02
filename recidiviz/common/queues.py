@@ -21,7 +21,7 @@ import datetime
 import json
 import logging
 import uuid
-from typing import List
+from typing import List, Dict
 
 from google.api_core import datetime_helpers
 from google.cloud import exceptions, tasks
@@ -198,6 +198,14 @@ def create_bq_task(table_name: str, url: str):
 DIRECT_INGEST_SCHEDULER_QUEUE = 'direct-ingest-scheduler'
 
 
+def _get_body_from_args(ingest_args: IngestArgs) -> Dict:
+    body = {
+        'ingest_args': ingest_args.to_serializable(),
+        'args_type': ingest_args.__class__.__name__
+    }
+    return body
+
+
 def create_direct_ingest_scheduler_queue_task(
         region: Region, ingest_args: IngestArgs, delay_sec: int):
     """Creates a scheduler task for direct ingest for a given region. Scheduler
@@ -209,9 +217,7 @@ def create_direct_ingest_scheduler_queue_task(
         ingest_args: `IngestArgs` args for the current direct ingest task.
         delay_sec: `int` the number of seconds to wait before the next task.
     """
-    body = {
-        'ingest_args': ingest_args.to_serializable()
-    }
+    body = _get_body_from_args(ingest_args)
     schedule_time = datetime.datetime.now() + \
                     datetime.timedelta(seconds=delay_sec)
 
@@ -249,9 +255,7 @@ def create_direct_ingest_process_job_task(region: Region,
         region: `Region` direct ingest region.
         ingest_args: `IngestArgs` args for the current direct ingest task.
     """
-    body = {
-        'ingest_args': ingest_args.to_serializable(),
-    }
+    body = _get_body_from_args(ingest_args)
     task_id = '{}-{}-{}'.format(
         region.region_code, str(datetime.date.today()), uuid.uuid4())
     task_name = format_task_path(region.get_queue_name(), task_id)
