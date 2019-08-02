@@ -16,7 +16,7 @@
 # =============================================================================
 """View that combines county name, state name, and FIPS from Vera's ITP data."""
 
-from recidiviz.calculator.bq.views import bqview
+from recidiviz.calculator.bq import bqview
 
 from recidiviz.calculator.bq.views.vera import vera_view_constants
 

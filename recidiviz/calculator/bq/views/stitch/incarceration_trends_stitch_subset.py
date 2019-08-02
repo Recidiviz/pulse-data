@@ -16,7 +16,7 @@
 # =============================================================================
 """ITP data used for stitch"""
 
-from recidiviz.calculator.bq.views.bqview import BigQueryView
+from recidiviz.calculator.bq.bqview import BigQueryView
 from recidiviz.calculator.bq.views.vera.vera_view_constants import \
     VERA_DATASET, INCARCERATION_TRENDS_TABLE
 from recidiviz.utils import metadata

@@ -23,8 +23,11 @@ from google.cloud import bigquery
 from google.cloud import exceptions
 
 # Importing only for typing.
-from recidiviz.calculator.bq.views import bqview
+from recidiviz.calculator.bq import bqview
+from recidiviz.utils import metadata
 
+# Location of the GCP project that must be the same for bigquery.Client calls
+LOCATION = 'US'
 
 _client = None
 def client() -> bigquery.Client:
@@ -80,3 +83,108 @@ def create_or_update_view(
     else:
         logging.info("Creating view %s", str(bq_view))
         client().create_table(bq_view)
+
+
+def create_or_update_table_from_view(
+        dataset_ref: bigquery.dataset.DatasetReference,
+        view: bqview.BigQueryView,
+        state_code: str):
+    """Queries data in a view for a given state_code and loads it into a table.
+
+    If the table exists, overwrites existing data. Creates the table if it does
+    not exist.
+
+    This is a synchronous function that waits for the query job to complete
+    before returning.
+
+    Args:
+        dataset_ref: The BigQuery dataset where the view is.
+        view: The View to query.
+        state_code: The state code to query for.
+    """
+    if table_exists(dataset_ref, view.view_id):
+        view_output_table = _table_name_for_view(view, state_code)
+
+        job_config = bigquery.QueryJobConfig()
+        job_config.destination = \
+            client().dataset(dataset_ref.dataset_id).table(view_output_table)
+        job_config.write_disposition = \
+            bigquery.job.WriteDisposition.WRITE_TRUNCATE
+        query = "SELECT * FROM `{project_id}.{dataset}.{table}`" \
+                "WHERE state_code = '{state_code}'"\
+            .format(project_id=metadata.project_id(),
+                    dataset=dataset_ref.dataset_id,
+                    table=view.view_id,
+                    state_code=state_code)
+
+        logging.info("Querying table: %s with query: %s", view_output_table,
+                     query)
+
+        query_job = client().query(
+            query=query,
+            location=LOCATION,
+            job_config=job_config,
+        )
+        # Waits for job to complete
+        query_job.result()
+    else:
+        logging.error(
+            "View [%s] does not exist in dataset [%s]",
+            view.view_id, str(dataset_ref))
+
+
+def export_to_cloud_storage(dataset_ref: bigquery.dataset.DatasetReference,
+                            bucket: str,
+                            view: bqview.BigQueryView,
+                            state_code: str):
+    """Exports the table corresponding to the given view to the bucket.
+
+    Extracts the entire table and exports in JSON format to the given bucket in
+    Cloud Storage.
+
+    This is a synchronous function that waits for the query job to complete
+    before returning.
+
+    Args:
+        dataset_ref: The dataset where the view and table exist.
+        bucket: The bucket in Cloud Storage where the export should go.
+        view: The view whose corresponding table to export.
+        state_code: The state code of the data being exported.
+    """
+    source_tablename = _table_name_for_view(view, state_code)
+
+    if table_exists(dataset_ref, source_tablename):
+        destination_filename = _destination_filename_for_view(view, state_code)
+        destination_uri = "gs://{}/{}".format(bucket, destination_filename)
+
+        table_ref = dataset_ref.table(source_tablename)
+
+        job_config = bigquery.ExtractJobConfig()
+        job_config.destination_format = \
+            bigquery.DestinationFormat.NEWLINE_DELIMITED_JSON
+
+        extract_job = client().extract_table(
+            table_ref,
+            destination_uri,
+            # Location must match that of the source table.
+            location=LOCATION,
+            job_config=job_config
+        )
+        # Waits for job to complete
+        extract_job.result()
+    else:
+        logging.error(
+            "Table [%s] does not exist in dataset [%s]",
+            source_tablename, str(dataset_ref))
+
+
+def _table_name_for_view(view: bqview.BigQueryView,
+                         state_code: str) -> str:
+    """Returns the name of the table where the view's contents are."""
+    return view.view_id + '_table_' + state_code
+
+
+def _destination_filename_for_view(view: bqview.BigQueryView,
+                                   state_code: str) -> str:
+    """Returns the filename that should be used as an export destination."""
+    return state_code + '/' + view.view_id + '.json'

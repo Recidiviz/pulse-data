@@ -17,7 +17,7 @@
 """Creates a View that has a list of charge classes and their severity rank."""
 # pylint: disable=line-too-long
 
-from recidiviz.calculator.bq.views import bqview
+from recidiviz.calculator.bq import bqview
 
 from recidiviz.common.constants.county.enum_canonical_strings import (
     charge_class_civil,

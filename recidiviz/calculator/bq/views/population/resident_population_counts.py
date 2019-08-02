@@ -17,7 +17,7 @@
 """Resident population counts by race and gender for each year-fips."""
 # pylint: disable=line-too-long
 
-from recidiviz.calculator.bq.views import bqview
+from recidiviz.calculator.bq import bqview
 
 from recidiviz.calculator.bq.views.vera import vera_view_constants
 
