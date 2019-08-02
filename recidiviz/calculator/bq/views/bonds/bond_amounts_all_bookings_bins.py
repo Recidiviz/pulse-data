@@ -17,7 +17,7 @@
 """Add categorical bins to bond_amounts_all_bookings."""
 # pylint: disable=line-too-long
 
-from recidiviz.calculator.bq.views import bqview
+from recidiviz.calculator.bq import bqview
 from recidiviz.calculator.bq.views import view_config
 from recidiviz.calculator.bq.views.bonds.bond_amounts_all_bookings import BOND_AMOUNTS_ALL_BOOKINGS_VIEW
 from recidiviz.calculator.bq.views.vera.county_names import COUNTY_NAMES_VIEW

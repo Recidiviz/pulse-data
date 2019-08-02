@@ -23,8 +23,7 @@ they rely on in VIEWS_TO_UPDATE.
 
 from typing import List
 
-from recidiviz.calculator.bq import bq_utils
-from recidiviz.calculator.bq.views import bqview
+from recidiviz.calculator.bq import bq_utils, bqview
 from recidiviz.calculator.bq.views import view_config
 from recidiviz.calculator.bq.views.bonds import bond_views
 from recidiviz.calculator.bq.views.charges import charge_views

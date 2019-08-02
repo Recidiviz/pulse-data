@@ -17,7 +17,7 @@
 """Total population, admissions, releases by day-fips."""
 # pylint: disable=line-too-long
 
-from recidiviz.calculator.bq.views import bqview
+from recidiviz.calculator.bq import bqview
 from recidiviz.calculator.bq.views import view_config
 
 from recidiviz.calculator.bq.views.population.population_admissions_releases_race_gender import \

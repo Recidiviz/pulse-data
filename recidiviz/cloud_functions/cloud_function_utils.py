@@ -146,3 +146,7 @@ def get_state_region_code_from_direct_ingest_bucket(bucket) -> Optional[str]:
 
     region_code_match = match_obj.groups()[1]  # Object at index 0 is project_id
     return region_code_match.replace('-', '_')
+
+
+def get_dashboard_data_export_storage_bucket(project_id: str) -> str:
+    return f'{project_id}-dashboard-data'

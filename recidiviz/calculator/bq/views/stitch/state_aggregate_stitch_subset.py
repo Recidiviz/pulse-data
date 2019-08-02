@@ -17,7 +17,7 @@
 """State Aggregate data used for stitch"""
 # pylint:disable=line-too-long
 
-from recidiviz.calculator.bq.views.bqview import BigQueryView
+from recidiviz.calculator.bq.bqview import BigQueryView
 from recidiviz.calculator.bq.views.state_aggregates import \
     state_aggregate_collapsed_to_fips
 from recidiviz.calculator.bq.views.view_config import VIEWS_DATASET

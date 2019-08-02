@@ -19,7 +19,7 @@
 import sqlalchemy
 
 from recidiviz.calculator.bq import export_config
-from recidiviz.calculator.bq.views.bqview import BigQueryView
+from recidiviz.calculator.bq.bqview import BigQueryView
 from recidiviz.calculator.bq.views.state_aggregates import \
     state_aggregate_mappings
 from recidiviz.persistence.database import schema_utils

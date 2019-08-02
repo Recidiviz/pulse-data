@@ -17,8 +17,7 @@
 """Total population, admissions, releases by race, gender and day-fips."""
 # pylint: disable=line-too-long
 
-from recidiviz.calculator.bq import export_config
-from recidiviz.calculator.bq.views import bqview
+from recidiviz.calculator.bq import export_config, bqview
 from recidiviz.calculator.bq.views import view_config
 
 from recidiviz.calculator.bq.views.vera.county_names import COUNTY_NAMES_VIEW

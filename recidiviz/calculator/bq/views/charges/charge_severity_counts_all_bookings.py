@@ -17,8 +17,7 @@
 """Booking counts by day, fips, and most_severe_charge."""
 # pylint: disable=line-too-long
 
-from recidiviz.calculator.bq import export_config
-from recidiviz.calculator.bq.views import bqview
+from recidiviz.calculator.bq import export_config, bqview
 from recidiviz.calculator.bq.views import view_config
 from recidiviz.calculator.bq.views.charges.charge_severity_all_bookings import CHARGE_SEVERITY_ALL_BOOKINGS_VIEW
 from recidiviz.calculator.bq.views.vera.county_names import COUNTY_NAMES_VIEW

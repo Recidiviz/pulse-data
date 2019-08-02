@@ -17,7 +17,7 @@
 """Define views for collapsing state-aggregate data around fips."""
 # pylint:disable=line-too-long
 
-from recidiviz.calculator.bq.views.bqview import BigQueryView
+from recidiviz.calculator.bq.bqview import BigQueryView
 from recidiviz.calculator.bq.views.state_aggregates.combined_state_aggregate import \
     COMBINED_STATE_AGGREGATE_VIEW
 from recidiviz.calculator.bq.views.view_config import VIEWS_DATASET

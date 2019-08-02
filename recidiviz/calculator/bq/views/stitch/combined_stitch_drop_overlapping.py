@@ -17,7 +17,7 @@
 """Define views for combining scraper & state-reports & ITP."""
 # pylint:disable=line-too-long
 
-from recidiviz.calculator.bq.views.bqview import BigQueryView
+from recidiviz.calculator.bq.bqview import BigQueryView
 from recidiviz.calculator.bq.views.stitch import combined_stitch
 from recidiviz.calculator.bq.views.stitch.incarceration_trends_stitch_subset import INCARCERATION_TRENDS_STITCH_SUBSET_VIEW
 from recidiviz.calculator.bq.views.stitch.scraper_aggregated_stitch_subset import SCRAPER_AGGREGATED_STITCH_SUBSET_VIEW

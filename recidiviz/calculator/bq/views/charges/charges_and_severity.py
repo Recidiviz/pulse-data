@@ -17,8 +17,7 @@
 """Assigns a severity to each Charge record."""
 # pylint: disable=line-too-long
 
-from recidiviz.calculator.bq import export_config
-from recidiviz.calculator.bq.views import bqview
+from recidiviz.calculator.bq import export_config, bqview
 from recidiviz.calculator.bq.views import view_config
 from recidiviz.calculator.bq.views.charges.charge_class_severity_ranks import CHARGE_CLASS_SEVERITY_RANKS_VIEW
 
