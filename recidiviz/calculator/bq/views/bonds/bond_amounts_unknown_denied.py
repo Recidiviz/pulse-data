@@ -17,8 +17,7 @@
 """View that creates a Bond table with amounts and UNKNOWN or DENIED."""
 # pylint: disable=line-too-long
 
-from recidiviz.calculator.bq import export_config
-from recidiviz.calculator.bq.views import bqview
+from recidiviz.calculator.bq import export_config, bqview
 
 from recidiviz.common.constants.enum_canonical_strings import bond_status_posted
 from recidiviz.common.constants.enum_canonical_strings import bond_status_revoked

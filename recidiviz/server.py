@@ -56,7 +56,6 @@ app.register_blueprint(
 app.register_blueprint(export_manager_blueprint, url_prefix='/export_manager')
 app.register_blueprint(backup_manager_blueprint, url_prefix='/backup_manager')
 
-
 if environment.in_gae():
     SQLAlchemyEngineManager.init_engines_for_server_postgres_instances()
 

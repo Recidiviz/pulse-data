@@ -22,8 +22,10 @@ import os
 import tempfile
 from http import HTTPStatus
 
-import gcsfs
 from flask import Blueprint, request, jsonify
+import gcsfs
+
+from recidiviz.calculator.bq.dashboard import dashboard_export_manager
 
 from recidiviz.ingest.aggregate.regions.ca import ca_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.fl import fl_aggregate_ingest
@@ -156,5 +158,31 @@ def direct():
             f"[{file_path}] on bucket [{bucket}] and storage_bucket " \
             f"[{storage_bucket}] and project [{project_id}]: [{str(e)}]"
         return message, HTTPStatus.INTERNAL_SERVER_ERROR
+
+    return '', HTTPStatus.OK
+
+
+@cloud_functions_blueprint.route('/dashboard_export')
+@authenticate_request
+def dashboard_export():
+    """Calls the dashboard export manager.
+
+    Endpoint path parameters:
+        bucket: A string indicating the GCP cloud storage bucket to export to
+        data_type: A string, either DATAFLOW or STANDARD for the type of data
+             that should be exported
+    """
+
+    # The cloud storage bucket to export to
+    bucket = get_value('bucket', request.args)
+
+    # Get the type of data to export
+    data_type = get_value('data_type', request.args)
+
+    logging.info("Attempting to export dashboard %s data to cloud storage"
+                 " bucket: %s.", data_type, bucket)
+
+    dashboard_export_manager.export_dashboard_data_to_cloud_storage(bucket,
+                                                                    data_type)
 
     return '', HTTPStatus.OK

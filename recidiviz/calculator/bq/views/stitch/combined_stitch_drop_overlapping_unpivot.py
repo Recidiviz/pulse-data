@@ -16,7 +16,7 @@
 # =============================================================================
 """Unpivot stitch data"""
 
-from recidiviz.calculator.bq.views.bqview import BigQueryView
+from recidiviz.calculator.bq.bqview import BigQueryView
 from recidiviz.calculator.bq.views.stitch.combined_stitch_drop_overlapping \
     import COMBINED_STITCH_DROP_OVERLAPPING_VIEW
 from recidiviz.calculator.bq.views.view_config import VIEWS_DATASET

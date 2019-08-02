@@ -17,7 +17,7 @@
 """Collapses a booking's bonds into a total amounts and UNKNOWN or DENIED."""
 # pylint: disable=line-too-long
 
-from recidiviz.calculator.bq.views import bqview
+from recidiviz.calculator.bq import bqview
 from recidiviz.calculator.bq.views import view_config
 from recidiviz.calculator.bq.views.bonds.bond_amounts_unknown_denied import BOND_AMOUNTS_UNKNOWN_DENIED_VIEW
 
