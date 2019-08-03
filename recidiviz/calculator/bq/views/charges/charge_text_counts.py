@@ -28,7 +28,7 @@ from recidiviz.utils import metadata
 
 
 PROJECT_ID = metadata.project_id()
-BASE_DATASET = export_config.BASE_TABLES_BQ_DATASET
+BASE_DATASET = export_config.COUNTY_BASE_TABLES_BQ_DATASET
 VIEWS_DATASET = view_config.VIEWS_DATASET
 
 CHARGE_TEXT_COUNTS_VIEW_NAME = 'charge_text_counts'

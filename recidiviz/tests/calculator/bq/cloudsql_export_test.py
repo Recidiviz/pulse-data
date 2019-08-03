@@ -68,11 +68,11 @@ class CloudSqlExportTest(unittest.TestCase):
         test_tables = [Table('first_table'), Table('second_table')]
         export_config_values = {
             'gcs_export_uri.return_value': self.mock_export_uri,
-            'TABLE_EXPORT_QUERIES': {
+            'COUNTY_TABLE_EXPORT_QUERIES': {
                 self.mock_table_id: self.mock_table_query,
                 **{table.name: self.mock_table_query for table in test_tables}
             },
-            'TABLES_TO_EXPORT': test_tables
+            'COUNTY_TABLES_TO_EXPORT': test_tables
         }
         self.export_config_patcher = mock.patch(
             'recidiviz.calculator.bq.cloudsql_export.export_config',
@@ -175,7 +175,7 @@ class CloudSqlExportTest(unittest.TestCase):
         """Test that client().instances().export() is called and
             wait_until_operation_finished is called.
         """
-        cloudsql_export.export_table(self.mock_table_id)
+        cloudsql_export.export_table(self.mock_table_id, self.mock_table_query)
 
         mock_export = self.mock_client.instances.return_value.export
         mock_export.assert_called_with(
@@ -188,18 +188,6 @@ class CloudSqlExportTest(unittest.TestCase):
 
     @mock.patch(
         'recidiviz.calculator.bq.cloudsql_export.wait_until_operation_finished')
-    def test_export_table_fail(self, mock_wait):
-        """Test that export_table fails if its table is not defined."""
-        with self.assertLogs(level='ERROR'):
-            cloudsql_export.export_table('nonsense-table')
-
-        mock_export = self.mock_client.instances.return_value.export
-        mock_export.assert_not_called()
-        mock_wait.assert_not_called()
-
-
-    @mock.patch(
-        'recidiviz.calculator.bq.cloudsql_export.wait_until_operation_finished')
     def test_export_table_api_fail(self, mock_wait):
         """Test that export_table fails if the export API request fails."""
         mock_export = self.mock_client.instances.return_value.export
@@ -208,7 +196,8 @@ class CloudSqlExportTest(unittest.TestCase):
             googleapiclient.errors.HttpError('', content=b'')
 
         with self.assertLogs(level='ERROR'):
-            success = cloudsql_export.export_table(self.mock_table_id)
+            success = cloudsql_export.export_table(self.mock_table_id,
+                                                   self.mock_table_query)
 
         self.assertFalse(success)
         mock_wait.assert_not_called()
@@ -218,9 +207,26 @@ class CloudSqlExportTest(unittest.TestCase):
     def test_export_all_tables(self, mock_export):
         """Test that export_table is called for all tables specified."""
         cloudsql_export.export_all_tables(
-            self.mock_export_config.TABLES_TO_EXPORT)
+            self.mock_export_config.COUNTY_TABLES_TO_EXPORT,
+            self.mock_export_config.COUNTY_TABLE_EXPORT_QUERIES)
 
         mock_export.assert_has_calls(
-            [mock.call(table.name)
-             for table in self.mock_export_config.TABLES_TO_EXPORT]
+            [mock.call(table.name,
+                       self.mock_export_config.COUNTY_TABLE_EXPORT_QUERIES[
+                           table.name])
+             for table in self.mock_export_config.COUNTY_TABLES_TO_EXPORT]
         )
+
+
+    @mock.patch('recidiviz.calculator.bq.cloudsql_export.export_table')
+    def test_export_all_tables_fail_no_table(self, mock_export):
+        """Test that export all tables fails if there is a table without
+        a corresponding query."""
+        Table = collections.namedtuple('Table', ['name'])
+
+        with self.assertLogs(level='ERROR'):
+            cloudsql_export.export_all_tables(
+                (Table('fake_table'), Table('second_table')),
+                self.mock_export_config.COUNTY_TABLE_EXPORT_QUERIES)
+
+        mock_export.assert_not_called()

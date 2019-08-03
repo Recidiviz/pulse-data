@@ -40,13 +40,6 @@ class ExportConfigTest(unittest.TestCase):
             **metadata_values)
         self.metadata_patcher.start()
 
-
-    def test_TABLES_TO_EXPORT_types(self):
-        """Make sure that all TABLES_TO_EXPORT are of type sqlalchemy.Table."""
-        for table in export_config.TABLES_TO_EXPORT:
-            self.assertIsInstance(table, sqlalchemy.Table)
-
-
     def test_gcs_export_uri(self):
         """Test that gcs_expor_uri generates a GCS URI
             with the correct project ID and table name.
@@ -59,115 +52,244 @@ class ExportConfigTest(unittest.TestCase):
         self.assertEqual(
             gcs_export_uri, export_config.gcs_export_uri(fake_table))
 
+    def test_COUNTY_TABLES_TO_EXPORT_types(self):
+        """Make sure that all COUNTY_TABLES_TO_EXPORT are of type
+        sqlalchemy.Table."""
+        for table in export_config.COUNTY_TABLES_TO_EXPORT:
+            self.assertIsInstance(table, sqlalchemy.Table)
 
-    def test_BASE_TABLES_BQ_DATASET(self):
-        """Make sure BASE_TABLES_BQ_DATASET is defined correctly.
+    def test_STATE_TABLES_TO_EXPORT_types(self):
+        """Make sure that all STATE_TABLES_TO_EXPORT are of type
+        sqlalchemy.Table."""
+        for table in export_config.STATE_TABLES_TO_EXPORT:
+            self.assertIsInstance(table, sqlalchemy.Table)
 
-            Checks that it is a string, checks that it has characters,
-            and checks that those characters are letters, numbers, or _.
+    def test_COUNTY_BASE_TABLES_BQ_DATASET(self):
+        """Make sure COUNTY_BASE_TABLES_BQ_DATASET is defined correctly.
+
+        Checks that it is a string, checks that it has characters,
+        and checks that those characters are letters, numbers, or _.
         """
-        self.assertIsInstance(export_config.BASE_TABLES_BQ_DATASET, str)
+        self.assertIsInstance(export_config.COUNTY_BASE_TABLES_BQ_DATASET, str)
 
-        self.assertTrue(len(export_config.BASE_TABLES_BQ_DATASET) > 0)
+        self.assertTrue(len(export_config.COUNTY_BASE_TABLES_BQ_DATASET) > 0)
 
         allowed_characters = set(string.ascii_letters + string.digits + '_')
         self.assertTrue(
-            set(export_config.BASE_TABLES_BQ_DATASET)
+            set(export_config.COUNTY_BASE_TABLES_BQ_DATASET)
             .issubset(allowed_characters),
             msg='BigQuery Dataset names must only contain letters, numbers,'
-            ' and underscores. Check `export_config.BASE_TABLES_BQ_DATASET`.'
+            ' and underscores. Check `export_config.'
+            'COUNTY_BASE_TABLES_BQ_DATASET`.'
         )
 
+    def test_STATE_BASE_TABLES_BQ_DATASET(self):
+        """Make sure STATE_BASE_TABLES_BQ_DATASET is defined correctly.
 
-    def test_COLUMNS_TO_EXCLUDE_typos(self):
-        """Make sure COLUMNS_TO_EXCLUDE are defined correctly in case of typos.
+        Checks that it is a string, checks that it has characters,
+        and checks that those characters are letters, numbers, or _.
+        """
+        self.assertIsInstance(export_config.STATE_BASE_TABLES_BQ_DATASET, str)
+
+        self.assertTrue(len(export_config.STATE_BASE_TABLES_BQ_DATASET) > 0)
+
+        allowed_characters = set(string.ascii_letters + string.digits + '_')
+        self.assertTrue(
+            set(export_config.STATE_BASE_TABLES_BQ_DATASET)
+            .issubset(allowed_characters),
+            msg='BigQuery Dataset names must only contain letters, numbers,'
+            ' and underscores. Check `export_config.STATE_BASE_TABLES'
+            '_BQ_DATASET`.'
+        )
+
+    def test_COUNTY_COLUMNS_TO_EXCLUDE_typos(self):
+        """Make sure COUNTY_COLUMNS_TO_EXCLUDE are defined correctly in case of
+        typos.
 
         1) Check that all tables are defined in
-            export_config.TABLES_TO_EXPORT.
+            export_config.COUNTY_TABLES_TO_EXPORT.
 
         2) Check that all columns are defined in their respective tables.
         """
-
-        for table in export_config.COLUMNS_TO_EXCLUDE.keys(): # pylint: disable=consider-iterating-dictionary
+        # pylint: disable=consider-iterating-dictionary
+        for table in export_config.COUNTY_COLUMNS_TO_EXCLUDE.keys():
             self.assertTrue(
-                table in export_config.ALL_TABLE_COLUMNS.keys(),
-                msg='Table "{}" in `export_config.COLUMNS_TO_EXCLUDE`'
-                    ' not found in `export_config.TABLES_TO_EXPORT`.'
+                table in export_config.COUNTY_ALL_TABLE_COLUMNS.keys(),
+                msg='Table "{}" in `export_config.COUNTY_COLUMNS_TO_EXCLUDE`'
+                    ' not found in `export_config.COUNTY_TABLES_TO_EXPORT`.'
                     ' Did you spell it correctly?'.format(table)
             )
 
-        for table, columns in export_config.COLUMNS_TO_EXCLUDE.items():
+        for table, columns in export_config.COUNTY_COLUMNS_TO_EXCLUDE.items():
             for column in columns:
                 self.assertTrue(
-                    column in export_config.ALL_TABLE_COLUMNS.get(table),
-                    msg='Column "{}" in `export_config.COLUMNS_TO_EXCLUDE`'
-                    ' not found in table "{}".'
+                    column in export_config.COUNTY_ALL_TABLE_COLUMNS.get(table),
+                    msg='Column "{}" in `export_config.'
+                    'COUNTY_COLUMNS_TO_EXCLUDE` not found in table "{}".'
                     ' Did you spell it correctly?'.format(column, table)
                 )
 
+    def test_STATE_COLUMNS_TO_EXCLUDE_typos(self):
+        """Make sure STATE_COLUMNS_TO_EXCLUDE are defined correctly in case of
+         typos.
 
-    def test_COLUMNS_TO_EXCLUDE_excluded(self):
-        """Make sure COLUMNS_TO_EXCLUDE are excluded from
-            TABLE_COLUMNS_TO_EXPORT and other derived values such as
-            TABLE_EXPORT_QUERIES and TABLE_EXPORT_SCHEMA.
+        1) Check that all tables are defined in
+            export_config.STATE_TABLES_TO_EXPORT.
+
+        2) Check that all columns are defined in their respective tables.
         """
-        # Make sure COLUMNS_TO_EXCLUDE are excluded from TABLE_COLUMNS_TO_EXPORT
-        for table, columns in export_config.COLUMNS_TO_EXCLUDE.items():
+        # pylint: disable=consider-iterating-dictionary
+        for table in export_config.STATE_COLUMNS_TO_EXCLUDE.keys():
+            self.assertTrue(
+                table in export_config.STATE_ALL_TABLE_COLUMNS.keys(),
+                msg='Table "{}" in `export_config.STATE_COLUMNS_TO_EXCLUDE`'
+                    ' not found in `export_config.STATE_TABLES_TO_EXPORT`.'
+                    ' Did you spell it correctly?'.format(table)
+            )
+
+        for table, columns in export_config.STATE_COLUMNS_TO_EXCLUDE.items():
             for column in columns:
-                self.assertFalse(
-                    column in export_config.TABLE_COLUMNS_TO_EXPORT.get(table),
-                    msg='Column "{}" not excluded properly from table "{}".'
-                    ' Check export_config.TABLE_COLUMNS_TO_EXPORT'.format(
-                        column, table)
+                self.assertTrue(
+                    column in export_config.STATE_ALL_TABLE_COLUMNS.get(table),
+                    msg='Column "{}" in `export_config.'
+                    'STATE_COLUMNS_TO_EXCLUDE` not found in table "{}".'
+                    ' Did you spell it correctly?'.format(column, table)
                 )
 
-        # Make sure COLUMNS_TO_EXCLUDE are excluded from TABLE_EXPORT_QUERIES.
-        for table, columns in export_config.COLUMNS_TO_EXCLUDE.items():
-            table_query = export_config.TABLE_EXPORT_QUERIES.get(table)
+    def test_COUNTY_COLUMNS_TO_EXCLUDE_excluded(self):
+        """Make sure COUNTY_COLUMNS_TO_EXCLUDE are excluded from
+            COUNTY_TABLE_COLUMNS_TO_EXPORT and other derived values such as
+            COUNTY_TABLE_EXPORT_QUERIES and COUNTY_TABLE_EXPORT_SCHEMA.
+        """
+        # Make sure COUNTY_COLUMNS_TO_EXCLUDE are excluded from
+        # COUNTY_TABLE_COLUMNS_TO_EXPORT
+        for table, columns in export_config.COUNTY_COLUMNS_TO_EXCLUDE.items():
+            for column in columns:
+                self.assertFalse(
+                    column in
+                    export_config.COUNTY_TABLE_COLUMNS_TO_EXPORT.get(table),
+                    msg='Column "{}" not excluded properly from table "{}".'
+                        ' Check export_config.'
+                        'COUNTY_TABLE_COLUMNS_TO_EXPORT'.format(
+                            column, table)
+                )
+
+        # Make sure COUNTY_COLUMNS_TO_EXCLUDE are excluded from
+        # COUNTY_TABLE_EXPORT_QUERIES.
+        for table, columns in export_config.COUNTY_COLUMNS_TO_EXCLUDE.items():
+            table_query = export_config.COUNTY_TABLE_EXPORT_QUERIES.get(table)
             for column in columns:
                 search_pattern = '[ ]*{}[, ]+'.format(column)
                 self.assertNotRegex(
                     table_query, search_pattern,
                     msg='Column "{}" not excluded properly from table "{}".'
-                        ' Check export_config.TABLE_COLUMNS_TO_EXPORT and'
-                        ' export_config.TABLE_EXPORT_QUERIES'.format(
+                        ' Check export_config.COUNTY_TABLE_COLUMNS_TO_EXPORT '
+                        'and export_config.COUNTY_TABLE_EXPORT_QUERIES'.format(
                             column, table)
                 )
 
-        # Make sure COLUMNS_TO_EXCLUDE are excluded from TABLE_EXPORT_SCHEMA.
-        for table, columns in export_config.COLUMNS_TO_EXCLUDE.items():
+        # Make sure COUNTY_COLUMNS_TO_EXCLUDE are excluded from
+        # COUNTY_TABLE_EXPORT_SCHEMA.
+        for table, columns in export_config.COUNTY_COLUMNS_TO_EXCLUDE.items():
             table_schema_columns = [
                 column['name']
-                for column in export_config.TABLE_EXPORT_SCHEMA.get(table)
+                for column in
+                export_config.COUNTY_TABLE_EXPORT_SCHEMA.get(table)
             ]
             for column in columns:
                 self.assertFalse(
                     column in table_schema_columns,
                     msg='Column "{}" not excluded properly from table "{}".'
-                        ' Check export_config.TABLE_COLUMNS_TO_EXPORT and'
-                        ' export_config.TABLE_EXPORT_SCHEMA'.format(
+                        ' Check export_config.COUNTY_TABLE_COLUMNS_TO_EXPORT'
+                        ' and export_config.COUNTY_TABLE_EXPORT_SCHEMA'.format(
                             column, table)
                 )
 
+    def test_STATE_COLUMNS_TO_EXCLUDE_excluded(self):
+        """Make sure STATE_COLUMNS_TO_EXCLUDE are excluded from
+            STATE_TABLE_COLUMNS_TO_EXPORT and other derived values such as
+            STATE_TABLE_EXPORT_QUERIES and STATE_TABLE_EXPORT_SCHEMA.
+        """
+        # Make sure STATE_COLUMNS_TO_EXCLUDE are excluded from
+        # STATE_TABLE_COLUMNS_TO_EXPORT
+        for table, columns in export_config.STATE_COLUMNS_TO_EXCLUDE.items():
+            for column in columns:
+                self.assertFalse(
+                    column in
+                    export_config.STATE_TABLE_COLUMNS_TO_EXPORT.get(table),
+                    msg='Column "{}" not excluded properly from table "{}".'
+                    ' Check export_config.STATE_TABLE_COLUMNS_TO_EXPORT'.format(
+                        column, table)
+                )
 
-    def test_COLUMNS_TO_EXCLUDE_all_excluded(self):
+        # Make sure STATE_COLUMNS_TO_EXCLUDE are excluded from
+        # STATE_TABLE_EXPORT_QUERIES.
+        for table, columns in export_config.STATE_COLUMNS_TO_EXCLUDE.items():
+            table_query = export_config.STATE_TABLE_EXPORT_QUERIES.get(table)
+            for column in columns:
+                search_pattern = '[ ]*{}[, ]+'.format(column)
+                self.assertNotRegex(
+                    table_query, search_pattern,
+                    msg='Column "{}" not excluded properly from table "{}".'
+                        ' Check export_config.STATE_TABLE_COLUMNS_TO_EXPORT and'
+                        ' export_config.STATE_TABLE_EXPORT_QUERIES'.format(
+                            column, table)
+                )
+
+        # Make sure STATE_COLUMNS_TO_EXCLUDE are excluded from
+        # STATE_TABLE_EXPORT_SCHEMA.
+        for table, columns in export_config.STATE_COLUMNS_TO_EXCLUDE.items():
+            table_schema_columns = [
+                column['name']
+                for column in export_config.STATE_TABLE_EXPORT_SCHEMA.get(table)
+            ]
+            for column in columns:
+                self.assertFalse(
+                    column in table_schema_columns,
+                    msg='Column "{}" not excluded properly from table "{}".'
+                        ' Check export_config.STATE_TABLE_COLUMNS_TO_EXPORT and'
+                        ' export_config.STATE_TABLE_EXPORT_SCHEMA'.format(
+                            column, table)
+                )
+
+    def test_COUNTY_COLUMNS_TO_EXCLUDE_all_excluded(self):
         """Make sure a table is removed if all its columns are excluded."""
-        for table, columns in export_config.COLUMNS_TO_EXCLUDE.items():
+        for table, columns in export_config.COUNTY_COLUMNS_TO_EXCLUDE.items():
             self.assertFalse(
-                set(export_config.ALL_TABLE_COLUMNS.get(table))
+                set(export_config.COUNTY_ALL_TABLE_COLUMNS.get(table))
                 .issubset(columns),
                 msg='All columns from table {} are excluded. '
                 ' Remove the table from'
-                ' export_config.TABLES_TO_EXPORT.'.format(table)
+                ' export_config.COUNTY_TABLES_TO_EXPORT.'.format(table)
             )
 
+    def test_STATE_COLUMNS_TO_EXCLUDE_all_excluded(self):
+        """Make sure a table is removed if all its columns are excluded."""
+        for table, columns in export_config.STATE_COLUMNS_TO_EXCLUDE.items():
+            self.assertFalse(
+                set(export_config.STATE_ALL_TABLE_COLUMNS.get(table))
+                .issubset(columns),
+                msg='All columns from table {} are excluded. '
+                ' Remove the table from'
+                ' export_config.STATE_TABLES_TO_EXPORT.'.format(table)
+            )
 
-    def test_TABLES_TO_EXCLUDE_FROM_EXPORT_all_excluded(self):
-        """Make sure a table is excluded from TABLES_TO_EXPORT if listed in
-            TABLES_TO_EXCLUDE_FROM_EXPORT.
+    def test_COUNTY_TABLES_TO_EXCLUDE_FROM_EXPORT_all_excluded(self):
+        """Make sure a table is excluded from COUNTY_TABLES_TO_EXPORT if listed
+        in COUNTY_TABLES_TO_EXCLUDE_FROM_EXPORT.
         """
         to_export_names = \
-            [table.name for table in export_config.TABLES_TO_EXPORT]
+            [table.name for table in export_config.COUNTY_TABLES_TO_EXPORT]
 
-        for table in export_config.TABLES_TO_EXCLUDE_FROM_EXPORT:
+        for table in export_config.COUNTY_TABLES_TO_EXCLUDE_FROM_EXPORT:
+            self.assertNotIn(table.name, to_export_names)
+
+    def test_STATE_TABLES_TO_EXCLUDE_FROM_EXPORT_all_excluded(self):
+        """Make sure a table is excluded from STATE_TABLES_TO_EXPORT if listed
+        in STATE_TABLES_TO_EXCLUDE_FROM_EXPORT.
+        """
+        to_export_names = \
+            [table.name for table in export_config.STATE_TABLES_TO_EXPORT]
+
+        for table in export_config.STATE_TABLES_TO_EXCLUDE_FROM_EXPORT:
             self.assertNotIn(table.name, to_export_names)

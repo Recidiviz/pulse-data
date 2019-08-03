@@ -150,10 +150,19 @@ cron:
       max_doublings: 5
       job_age_limit: 9h
 
-  - description: Start Cloud SQL to BigQuery export tasks
+  - description: Start Cloud SQL to BigQuery export tasks for county tables
     url: /export_manager/create_export_tasks
     schedule: every day 12:05
     timezone: America/New_York
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
+
+  - description: Start Cloud SQL to BigQuery export tasks for state tables
+    url: /export_manager/create_state_export_tasks
+    schedule: every day 12:05
+    timezone: America/Los_Angeles
     retry_parameters:
       min_backoff_seconds: 2.5
       max_doublings: 5

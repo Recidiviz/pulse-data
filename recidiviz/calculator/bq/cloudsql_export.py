@@ -19,7 +19,7 @@
 
 import logging
 import time
-from typing import List
+from typing import Dict, Tuple
 
 import google.auth
 import googleapiclient.errors
@@ -138,26 +138,19 @@ def wait_until_operation_finished(operation_id: str) -> bool:
     return operation_success
 
 
-def export_table(table_name: str) -> bool:
+def export_table(table_name: str, export_query: str) -> bool:
     """Export a Cloud SQL table to a CSV file on GCS.
 
-    Given a table name, retrieve the export URI and query from export_config,
-    then execute the export operation and wait until it completes.
+    Given a table name and export_query, retrieve the export URI from
+    export_config, then execute the export operation and wait until it
+    completes.
 
     Args:
-        table_name: Table to export. Table must be defined
-            in export_config.TABLES_TO_EXPORT
+        table_name: Table to export.
+        export_query: Corresponding query for the table.
     Returns:
         True if operation succeeded without errors, False if not.
     """
-
-    try:
-        export_query = export_config.TABLE_EXPORT_QUERIES[table_name]
-    except KeyError:
-        logging.exception(
-            "Unknown table name [%s]. Is it listed in "
-            "export_config.TABLES_TO_EXPORT?", table_name)
-        return False
 
     export_uri = export_config.gcs_export_uri(table_name)
     export_context = create_export_context(
@@ -188,6 +181,15 @@ def export_table(table_name: str) -> bool:
     return operation_success
 
 
-def export_all_tables(tables: List[sqlalchemy.Table]):
+def export_all_tables(tables: Tuple[sqlalchemy.Table, ...],
+                      export_queries: Dict[str, str]):
     for table in tables:
-        export_table(table.name)
+        try:
+            export_query = export_queries[table.name]
+        except KeyError:
+            logging.exception(
+                "Unknown table name [%s]. Is it listed in "
+                "the TABLES_TO_EXPORT for this module?", table.name)
+            return
+
+        export_table(table.name, export_query)

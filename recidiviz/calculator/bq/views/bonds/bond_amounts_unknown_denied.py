@@ -32,7 +32,7 @@ from recidiviz.utils import metadata
 
 
 PROJECT_ID = metadata.project_id()
-BASE_DATASET = export_config.BASE_TABLES_BQ_DATASET
+BASE_DATASET = export_config.COUNTY_BASE_TABLES_BQ_DATASET
 
 BOND_AMOUNTS_UNKNOWN_DENIED_VIEW_NAME = 'bond_amounts_unknown_denied'
 

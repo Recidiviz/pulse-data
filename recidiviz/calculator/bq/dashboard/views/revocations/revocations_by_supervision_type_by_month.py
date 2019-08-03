@@ -16,12 +16,12 @@
 # =============================================================================
 """Revocations by supervision type by month."""
 # pylint: disable=line-too-long, trailing-whitespace
-from recidiviz.calculator.bq import bqview
-from recidiviz.calculator.bq.dashboard.views import view_config
+from recidiviz.calculator.bq import bqview, export_config
+
 from recidiviz.utils import metadata
 
 PROJECT_ID = metadata.project_id()
-BASE_DATASET = view_config.STATE_BASE_TABLES_BQ_DATASET
+BASE_DATASET = export_config.STATE_BASE_TABLES_BQ_DATASET
 
 REVOCATIONS_BY_SUPERVISION_TYPE_BY_MONTH_VIEW_NAME = \
     'revocations_by_supervision_type_by_month'

@@ -15,12 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """View for the incarceration admissions in the last 60 days"""
-from recidiviz.calculator.bq import bqview
-from recidiviz.calculator.bq.dashboard.views import view_config
+from recidiviz.calculator.bq import bqview, export_config
+
 from recidiviz.utils import metadata
 
 PROJECT_ID = metadata.project_id()
-BASE_DATASET = view_config.STATE_BASE_TABLES_BQ_DATASET
+BASE_DATASET = export_config.STATE_BASE_TABLES_BQ_DATASET
 
 INCARCERATION_ADMISSIONS_60_DAYS_VIEW_NAME = 'incarceration_admissions_60_days'
 

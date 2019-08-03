@@ -18,8 +18,9 @@
 """Helper functions to create and update BigQuery Views."""
 
 import concurrent
+import enum
 import logging
-from typing import List, Optional, Tuple
+from typing import Optional, Tuple
 
 from google.cloud import bigquery
 from google.cloud import exceptions
@@ -35,10 +36,16 @@ from recidiviz.calculator.bq import export_config
 _BQ_LOAD_WAIT_TIMEOUT_SECONDS = 300
 
 
+@enum.unique
+class ModuleType(enum.Enum):
+    COUNTY = 'COUNTY'
+    STATE = 'STATE'
+
+
 def start_table_load(
         dataset_ref: bigquery.dataset.DatasetReference,
-        table_name: str) -> Optional[Tuple[bigquery.job.LoadJob,
-                                           bigquery.table.TableReference]]:
+        table_name: str, module: ModuleType) -> \
+        Optional[Tuple[bigquery.job.LoadJob, bigquery.table.TableReference]]:
     """Loads a table from CSV data in GCS to BigQuery.
 
     Given a table name, retrieve the export URI and schema from export_config,
@@ -55,12 +62,22 @@ def start_table_load(
         dataset_ref: The BigQuery dataset to load the table into. Gets created
             if it does not already exist.
         table_name: Table to import. Table must be defined
-            in export_config.TABLES_TO_EXPORT
+            in the export_config.*_TABLES_TO_EXPORT for the given module
+        module: The module of the table being loaded, either ModuleType.COUNTY
+            or ModuleType.STATE.
     Returns:
         (load_job, table_ref) where load_job is the LoadJob object containing
             job details, and table_ref is the destination TableReference object.
             If the job fails to start, returns None.
     """
+    if module == ModuleType.COUNTY:
+        export_schema = export_config.COUNTY_TABLE_EXPORT_SCHEMA
+    elif module == ModuleType.STATE:
+        export_schema = export_config.STATE_TABLE_EXPORT_SCHEMA
+    else:
+        logging.exception("Unknown module name: %s", module)
+        return None
+
     bq_utils.create_dataset_if_necessary(dataset_ref)
 
     uri = export_config.gcs_export_uri(table_name)
@@ -70,12 +87,12 @@ def start_table_load(
         bq_schema = [
             bigquery.SchemaField(
                 field['name'], field['type'], field['mode'])
-            for field in export_config.TABLE_EXPORT_SCHEMA[table_name]
+            for field in export_schema[table_name]
         ]
     except KeyError:
         logging.exception(
             "Unknown table name '%s'. Is it listed in "
-            "export_config.TABLES_TO_EXPORT?", table_name)
+            "the TABLES_TO_EXPORT for the %s module?", module, table_name)
         return None
 
     job_config = bigquery.LoadJobConfig()
@@ -135,7 +152,7 @@ def wait_for_table_load(
 
 def start_table_load_and_wait(
         dataset_ref: bigquery.dataset.DatasetReference,
-        table_name: str) -> bool:
+        table_name: str, module: ModuleType) -> bool:
     """Loads a table from CSV data in GCS to BigQuery, waits until completion.
 
     See start_table_load and wait_for_table_load for details.
@@ -144,7 +161,7 @@ def start_table_load_and_wait(
         True if no errors were raised, else False.
     """
 
-    load_job_started = start_table_load(dataset_ref, table_name)
+    load_job_started = start_table_load(dataset_ref, table_name, module)
     if load_job_started:
         load_job, table_ref = load_job_started
         table_load_success = wait_for_table_load(load_job, table_ref)
@@ -156,14 +173,15 @@ def start_table_load_and_wait(
 
 def load_all_tables_concurrently(
         dataset_ref: bigquery.dataset.DatasetReference,
-        tables: List[sqlalchemy.Table]):
+        tables: Tuple[sqlalchemy.Table, ...],
+        module: ModuleType):
     """Start all table LoadJobs concurrently.
 
     Wait until completion to log results."""
 
     # Kick off all table LoadJobs at the same time.
     load_jobs = [
-        start_table_load(dataset_ref, table.name) for table in tables
+        start_table_load(dataset_ref, table.name, module) for table in tables
     ]
 
     # Wait for all jobs to finish, log results.

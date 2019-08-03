@@ -29,7 +29,7 @@ from recidiviz.utils import metadata
 def _to_bq_table(query_str: str) -> str:
     """Rename schema table_names with supported BQ syntax."""
     project_id = metadata.project_id()
-    base_dataset = export_config.BASE_TABLES_BQ_DATASET
+    base_dataset = export_config.COUNTY_BASE_TABLES_BQ_DATASET
 
     for table in schema_utils.get_aggregate_table_classes():
         bq_table_name = '`{project_id}.{base_dataset}.{table_name}`'.format(
