@@ -16,12 +16,12 @@
 # =============================================================================
 """Admissions by type in the last 60 days"""
 # pylint: disable=line-too-long, trailing-whitespace
-from recidiviz.calculator.bq import bqview
+from recidiviz.calculator.bq import bqview, export_config
 from recidiviz.calculator.bq.dashboard.views import view_config
 from recidiviz.utils import metadata
 
 PROJECT_ID = metadata.project_id()
-BASE_DATASET = view_config.STATE_BASE_TABLES_BQ_DATASET
+BASE_DATASET = export_config.STATE_BASE_TABLES_BQ_DATASET
 VIEWS_DATASET = view_config.DASHBOARD_VIEWS_DATASET
 
 ADMISSIONS_BY_TYPE_60_DAYS_VIEW_NAME = 'admissions_by_type_60_days'

@@ -61,6 +61,10 @@ def get_aggregate_table_classes() -> Iterator[Table]:
     yield from get_all_table_classes_in_module(aggregate_schema)
 
 
+def get_county_table_classes() -> Iterator[Table]:
+    yield from get_all_table_classes_in_module(county_schema)
+
+
 def get_state_table_classes() -> Iterator[Table]:
     yield from get_all_table_classes_in_module(state_schema)
 

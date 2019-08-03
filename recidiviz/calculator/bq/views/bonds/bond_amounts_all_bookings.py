@@ -29,7 +29,7 @@ from recidiviz.persistence.database.schema.county.schema import Booking, Person
 from recidiviz.utils import metadata
 
 PROJECT_ID = metadata.project_id()
-BASE_DATASET = export_config.BASE_TABLES_BQ_DATASET
+BASE_DATASET = export_config.COUNTY_BASE_TABLES_BQ_DATASET
 VIEWS_DATASET = view_config.VIEWS_DATASET
 
 BOND_AMOUNTS_ALL_BOOKINGS_VIEW_NAME = 'bond_amounts_all_bookings'
