@@ -21,6 +21,3 @@ DASHBOARD_VIEWS_DATASET: str = 'dashboard_views'
 
 # Where the metrics that Dataflow jobs produce live
 DATAFLOW_METRICS_DATASET: str = 'dataflow_metrics'
-
-# TODO(1627): Move this variable to bq/export_manager and update name to state
-STATE_BASE_TABLES_BQ_DATASET: str = 'pipeline_test_space'

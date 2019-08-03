@@ -168,17 +168,19 @@ def enqueue_scraper_phase(*, region_code, url):
 BIGQUERY_QUEUE = 'bigquery'
 
 
-def create_bq_task(table_name: str, url: str):
+def create_bq_task(table_name: str, module: str, url: str):
     """Create a BigQuery table export path.
 
     Args:
         table_name: Cloud SQL table to export to BQ. Must be defined in
-            recidiviz.calculator.bq.export_config.TABLES_TO_EXPORT.
+            the *_TABLES_TO_EXPORT for the given schema.
+        module: The module of the table being exported, either 'county' or
+            'state'.
         url: App Engine worker URL.
     """
-    body = {'table_name': table_name}
-    task_id = '{}-{}-{}'.format(
-        table_name, str(datetime.date.today()), uuid.uuid4())
+    body = {'table_name': table_name, 'module': module}
+    task_id = '{}-{}-{}-{}'.format(
+        table_name, module, str(datetime.date.today()), uuid.uuid4())
     task_name = format_task_path(BIGQUERY_QUEUE, task_id)
     task = tasks.types.Task(
         name=task_name,

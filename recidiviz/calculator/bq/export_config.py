@@ -14,47 +14,71 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-
 """Export configuration.
 
 By default, lists all tables in the various schema.py files to be exported by
-export_manager.py. To exclude tables from export, add them to
-TABLES_TO_EXCLUDE_FROM_EXPORT.
+export_manager.py for both COUNTY and STATE modules.
 
-Add columns to COLUMNS_TO_EXCLUDE to exclude them from the export.
+To exclude tables from export, add them to *_TABLES_TO_EXCLUDE_FROM_EXPORT.
 
-BASE_TABLES_BQ_DATASET is the BigQuery dataset to export the tables to.
+Add columns to *_COLUMNS_TO_EXCLUDE to exclude them from the export.
+
+*_BASE_TABLES_BQ_DATASET is the BigQuery dataset to export the tables to.
 
 gcs_export_uri defines the export URI location in Google Cloud Storage.
 """
+# pylint: disable=line-too-long
 import logging
+from typing import Dict, List
 
 import sqlalchemy
 
 from recidiviz.persistence.database import schema_utils
 from recidiviz.utils import metadata
 
+######### COUNTY EXPORT VALUES #########
 
-TABLES_TO_EXCLUDE_FROM_EXPORT = tuple( # type: ignore
+COUNTY_TABLES_TO_EXCLUDE_FROM_EXPORT = tuple( # type: ignore
     # List tables to be excluded from export here. For example:
     # schema.FakePersonHistoryTable
     table.__table__ for table in schema_utils.get_state_table_classes()
 )
 
 # By default, all tables in the various schema.py modules are exported
-# unless listed in TABLES_TO_EXCLUDE_FROM_EXPORT above.
-TABLES_TO_EXPORT = tuple(
+# unless listed in COUNTY_TABLES_TO_EXCLUDE_FROM_EXPORT above.
+COUNTY_TABLES_TO_EXPORT = tuple(
     table.__table__ for table in schema_utils.get_all_table_classes()
-    if table.__table__ not in TABLES_TO_EXCLUDE_FROM_EXPORT
+    if table.__table__ not in COUNTY_TABLES_TO_EXCLUDE_FROM_EXPORT
 )
 
 # Mapping from table name to a list of columns to be excluded for that table.
-COLUMNS_TO_EXCLUDE = {
+COUNTY_COLUMNS_TO_EXCLUDE = {
     'person': ['full_name', 'birthdate', 'birthdate_inferred_from_age']
 }
 
-BASE_TABLES_BQ_DATASET = 'census'
+COUNTY_BASE_TABLES_BQ_DATASET = 'census'
 
+######### STATE EXPORT VALUES #########
+
+# Excluding history tables
+STATE_TABLES_TO_EXCLUDE_FROM_EXPORT = tuple( # type: ignore
+    # List tables to be excluded from export here. For example:
+    # schema.FakePersonHistoryTable
+    table.__table__ for table in schema_utils.get_state_table_classes()
+    if 'history' in table.__tablename__
+)
+
+# By default, all tables in the state schema.py module are exported
+# unless listed in STATE_TABLES_TO_EXCLUDE_FROM_EXPORT above.
+STATE_TABLES_TO_EXPORT = tuple(
+    table.__table__ for table in schema_utils.get_state_table_classes()
+    if table.__table__ not in STATE_TABLES_TO_EXCLUDE_FROM_EXPORT
+)
+
+# As of right now, we aren't excluding any columns from the state schema export.
+STATE_COLUMNS_TO_EXCLUDE: Dict[str, List[str]] = {}
+
+STATE_BASE_TABLES_BQ_DATASET = 'state'
 
 def gcs_export_uri(table_name: str) -> str:
     """Return export URI location in Google Cloud Storage given a table name."""
@@ -84,33 +108,66 @@ BQ_TYPES = {
     sqlalchemy.Text: 'STRING'
 }
 
-ALL_TABLE_COLUMNS = {
-    table.name: [column.name for column in table.columns]
-    for table in TABLES_TO_EXPORT
-}
-
-TABLE_COLUMNS_TO_EXPORT = {
-    table_name: list(
-        column for column in ALL_TABLE_COLUMNS.get(table_name) # type: ignore
-        if column not in COLUMNS_TO_EXCLUDE.get(table_name, [])
-    )
-    for table_name in ALL_TABLE_COLUMNS
-}
-
 TABLE_EXPORT_QUERY = 'SELECT {columns} FROM {table}'
 
-TABLE_EXPORT_QUERIES = {
-    table: TABLE_EXPORT_QUERY.format(columns=', '.join(columns), table=table)
-    for table, columns in TABLE_COLUMNS_TO_EXPORT.items()
+### COUNTY VALUES ###
+
+COUNTY_ALL_TABLE_COLUMNS = {
+    table.name: [column.name for column in table.columns]
+    for table in COUNTY_TABLES_TO_EXPORT
 }
 
-TABLE_EXPORT_SCHEMA = {
+COUNTY_TABLE_COLUMNS_TO_EXPORT = {
+    table_name: list(
+        column for column in COUNTY_ALL_TABLE_COLUMNS.get(table_name)  # type: ignore
+        if column not in COUNTY_COLUMNS_TO_EXCLUDE.get(table_name, [])
+    )
+    for table_name in COUNTY_ALL_TABLE_COLUMNS
+}
+
+COUNTY_TABLE_EXPORT_QUERIES = {
+    table: TABLE_EXPORT_QUERY.format(columns=', '.join(columns), table=table)
+    for table, columns in COUNTY_TABLE_COLUMNS_TO_EXPORT.items()
+}
+
+COUNTY_TABLE_EXPORT_SCHEMA = {
     table.name: [
         {'name': column.name,
          'type': BQ_TYPES[type(column.type)],
          'mode': 'NULLABLE' if column.nullable else 'REQUIRED'}
         for column in table.columns
-        if column.name in TABLE_COLUMNS_TO_EXPORT[table.name]
+        if column.name in COUNTY_TABLE_COLUMNS_TO_EXPORT[table.name]
     ]
-    for table in TABLES_TO_EXPORT
+    for table in COUNTY_TABLES_TO_EXPORT
+}
+
+### STATE VALUES ###
+
+STATE_ALL_TABLE_COLUMNS = {
+    table.name: [column.name for column in table.columns]
+    for table in STATE_TABLES_TO_EXPORT
+}
+
+STATE_TABLE_COLUMNS_TO_EXPORT = {
+    table_name: list(
+        column for column in STATE_ALL_TABLE_COLUMNS.get(table_name)  # type: ignore
+        if column not in STATE_COLUMNS_TO_EXCLUDE.get(table_name, [])
+    )
+    for table_name in STATE_ALL_TABLE_COLUMNS
+}
+
+STATE_TABLE_EXPORT_QUERIES = {
+    table: TABLE_EXPORT_QUERY.format(columns=', '.join(columns), table=table)
+    for table, columns in STATE_TABLE_COLUMNS_TO_EXPORT.items()
+}
+
+STATE_TABLE_EXPORT_SCHEMA = {
+    table.name: [
+        {'name': column.name,
+         'type': BQ_TYPES[type(column.type)],
+         'mode': 'NULLABLE' if column.nullable else 'REQUIRED'}
+        for column in table.columns
+        if column.name in STATE_TABLE_COLUMNS_TO_EXPORT[table.name]
+    ]
+    for table in STATE_TABLES_TO_EXPORT
 }
