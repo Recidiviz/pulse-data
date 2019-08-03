@@ -25,17 +25,22 @@ from unittest import mock
 from google.cloud import bigquery
 
 from recidiviz.calculator.bq import export_manager
+from recidiviz.calculator.bq.export_manager import ModuleType
 
 
-class ExportManagerTest(unittest.TestCase):
+class ExportManagerTestCounty(unittest.TestCase):
     """Tests for export_manager.py."""
 
 
     def setUp(self):
+        self.module = ModuleType.COUNTY
+
         self.mock_project_id = 'fake-recidiviz-project'
         self.mock_dataset_name = 'base_dataset'
         self.mock_dataset = bigquery.dataset.DatasetReference(
             self.mock_project_id, self.mock_dataset_name)
+        self.mock_table_id = 'test_table'
+        self.mock_table_query = 'SELECT NULL LIMIT 0'
 
         self.bq_load_patcher = mock.patch(
             'recidiviz.calculator.bq.export_manager.bq_load')
@@ -52,8 +57,12 @@ class ExportManagerTest(unittest.TestCase):
         Table = collections.namedtuple('Table', ['name'])
         test_tables = [Table('first_table'), Table('second_table')]
         export_config_values = {
-            'BASE_TABLES_BQ_DATASET': self.mock_dataset_name,
-            'TABLES_TO_EXPORT': test_tables
+            'COUNTY_BASE_TABLES_BQ_DATASET': self.mock_dataset_name,
+            'COUNTY_TABLES_TO_EXPORT': test_tables,
+            'COUNTY_TABLE_EXPORT_QUERIES': {
+                self.mock_table_id: self.mock_table_query,
+                **{table.name: self.mock_table_query for table in test_tables}
+            }
         }
         self.export_config_patcher = mock.patch(
             'recidiviz.calculator.bq.export_manager.export_config',
@@ -68,30 +77,16 @@ class ExportManagerTest(unittest.TestCase):
         self.export_config_patcher.stop()
 
 
-    def test_export_table_then_load_table_default_dataset(self):
-        """Test that export_table_then_load_table uses the default dataset
-            if no dataset is specified.
-        """
-        table = 'random-table'
-        default_dataset = self.mock_client.dataset(
-            self.mock_export_config.BASE_TABLES_BQ_DATASET)
-
-        export_manager.export_table_then_load_table(table)
-
-        self.mock_bq_load.start_table_load_and_wait.assert_called_with(
-            default_dataset, table)
-
-
     def test_export_table_then_load_table_dataset(self):
         """Test that export_table_then_load_table uses a dataset if specified.
         """
-        table = 'random-table'
+        table = 'first_table'
         dataset = self.mock_client.dataset('random_dataset')
 
-        export_manager.export_table_then_load_table(table, dataset)
+        export_manager.export_table_then_load_table(table, dataset, self.module)
 
         self.mock_bq_load.start_table_load_and_wait.assert_called_with(
-            dataset, table)
+            dataset, table, self.module)
 
 
     def test_export_table_then_load_table_doesnt_load(self):
@@ -100,7 +95,9 @@ class ExportManagerTest(unittest.TestCase):
         self.mock_cloudsql_export.export_table.return_value = False
 
         with self.assertLogs(level='ERROR'):
-            export_manager.export_table_then_load_table('random-table')
+            export_manager.export_table_then_load_table('random-table',
+                                                        self.mock_dataset,
+                                                        self.module)
 
         self.mock_bq_load.assert_not_called()
 
@@ -108,11 +105,11 @@ class ExportManagerTest(unittest.TestCase):
     def test_export_then_load_all_sequentially(self):
         """Test that tables are exported then loaded sequentially."""
         default_dataset = self.mock_client.dataset(
-            self.mock_export_config.BASE_TABLES_BQ_DATASET)
+            self.mock_export_config.COUNTY_BASE_TABLES_BQ_DATASET)
 
         # Suppose all exports succeed.
         self.mock_cloudsql_export.export_table.side_effect = (
-            [True]*len(self.mock_export_config.TABLES_TO_EXPORT))
+            [True]*len(self.mock_export_config.COUNTY_TABLES_TO_EXPORT))
 
         mock_parent = mock.Mock()
         mock_parent.attach_mock(
@@ -121,14 +118,21 @@ class ExportManagerTest(unittest.TestCase):
             self.mock_bq_load.start_table_load_and_wait, 'load')
 
         export_then_load_calls = list(chain.from_iterable([
-            (mock.call.export(table.name),
-             mock.call.load(default_dataset, table.name))
-            for table in self.mock_export_config.TABLES_TO_EXPORT
+            (mock.call.export(table.name,
+                              self.mock_export_config.
+                              COUNTY_TABLE_EXPORT_QUERIES[table.name]),
+             mock.call.load(default_dataset, table.name, self.module))
+            for table in self.mock_export_config.COUNTY_TABLES_TO_EXPORT
         ]))
 
-        export_manager.export_then_load_all_sequentially()
+        export_manager.export_then_load_all_sequentially(self.module)
 
         mock_parent.assert_has_calls(export_then_load_calls)
+
+
+    def test_export_then_load_all_sequentially_fails_invalid_module(self):
+        with self.assertLogs(level='ERROR'):
+            export_manager.export_then_load_all_sequentially('nonsense')
 
 
     def test_export_all_then_load_all(self):
@@ -136,7 +140,7 @@ class ExportManagerTest(unittest.TestCase):
             tables.
         """
         default_dataset = self.mock_client.dataset(
-            self.mock_export_config.BASE_TABLES_BQ_DATASET)
+            self.mock_export_config.COUNTY_BASE_TABLES_BQ_DATASET)
 
         mock_parent = mock.Mock()
         mock_parent.attach_mock(
@@ -145,11 +149,19 @@ class ExportManagerTest(unittest.TestCase):
             self.mock_bq_load.load_all_tables_concurrently, 'load_all')
 
         export_all_then_load_all_calls = [
-            mock.call.export_all(self.mock_export_config.TABLES_TO_EXPORT),
+            mock.call.export_all(
+                self.mock_export_config.COUNTY_TABLES_TO_EXPORT,
+                self.mock_export_config.COUNTY_TABLE_EXPORT_QUERIES),
             mock.call.load_all(
-                default_dataset, self.mock_export_config.TABLES_TO_EXPORT)
+                default_dataset,
+                self.mock_export_config.COUNTY_TABLES_TO_EXPORT, self.module)
         ]
 
-        export_manager.export_all_then_load_all()
+        export_manager.export_all_then_load_all(self.module)
 
         mock_parent.assert_has_calls(export_all_then_load_all_calls)
+
+
+    def test_export_all_then_load_all_fails_invalid_module(self):
+        with self.assertLogs(level='ERROR'):
+            export_manager.export_all_then_load_all('nonsense')

@@ -131,20 +131,21 @@ class QueuesTest(unittest.TestCase):
         url = '/test/bq'
         queue_name = queues.BIGQUERY_QUEUE
         table_name = 'test_table'
+        module = 'test_module'
         uuid = 'random-uuid'
         date = '1900-01-01'
         queue_path = queue_name + '-path'
         mock_uuid.uuid4.return_value = uuid
         mock_datetime.datet.today.return_value = date
         mock_client.return_value.queue_path.return_value = queue_path
-        task_path = queue_path + '/{}-{}-{}'.format(
-            table_name, date, uuid)
+        task_path = queue_path + '/{}-{}-{}-{}'.format(
+            table_name, module, date, uuid)
         mock_client.return_value.task_path.return_value = task_path
 
         queues.create_bq_task(
-            table_name=table_name, url=url)
+            table_name=table_name, url=url, module=module)
 
-        params = {'table_name': table_name}
+        params = {'table_name': table_name, 'module': module}
         body_encoded = json.dumps(params).encode()
 
         task = tasks.types.Task(
