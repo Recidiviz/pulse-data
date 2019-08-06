@@ -569,7 +569,7 @@ def associate_revocation_svrs_with_ips(merged_persons: List[StatePerson]):
                 revocation_ips.append(ip)
 
         if not revocation_svrs or not revocation_ips:
-            return
+            continue
 
         sorted_revocation_svrs = sorted(
             revocation_svrs, key=lambda x: x.response_date)
