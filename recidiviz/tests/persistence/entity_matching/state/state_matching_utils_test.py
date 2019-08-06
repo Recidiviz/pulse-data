@@ -41,8 +41,6 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import \
     get_root_entity_cls, get_total_entities_of_cls, \
     associate_revocation_svrs_with_ips, admitted_for_revocation, \
     revoked_to_prison
-from recidiviz.persistence.entity.entity_utils import is_placeholder, \
-    has_default_status
 from recidiviz.persistence.errors import EntityMatchingError
 
 _DATE_1 = datetime.date(year=2019, month=1, day=1)
@@ -405,6 +403,11 @@ class TestStateMatchingUtils(TestCase):
         placeholder_person = StatePerson.new_with_defaults(
             sentence_groups=[placeholder_sg])
 
+        external_id = StatePersonExternalId.new_with_defaults(
+            external_id=_EXTERNAL_ID)
+        person_without_revocation = StatePerson.new_with_defaults(
+            external_ids=[external_id])
+
         expected_svr_1 = attr.evolve(svr_1)
         expected_svr_2 = attr.evolve(svr_2)
         expected_svr_3 = attr.evolve(svr_3)
@@ -431,11 +434,16 @@ class TestStateMatchingUtils(TestCase):
             incarceration_sentences=[expected_placeholder_is])
         expected_placeholder_person = attr.evolve(
             placeholder_person, sentence_groups=[expected_placeholder_sg])
+        expected_person_without_revocation = attr.evolve(
+            person_without_revocation)
 
         # Act
-        associate_revocation_svrs_with_ips([placeholder_person])
+        associate_revocation_svrs_with_ips(
+            [person_without_revocation, placeholder_person])
 
         # Assert
+        self.assertEqual(expected_person_without_revocation,
+                         person_without_revocation)
         self.assertEqual(expected_placeholder_person, placeholder_person)
 
     def test_associateSvrsWithIps_onlyRevocationTypes(self):
