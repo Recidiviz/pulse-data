@@ -672,10 +672,10 @@ def combination_rate_metrics(combo: Dict[str, Any], event: ReleaseEvent,
 
     for period in relevant_periods:
         person_based_combos = augmented_combo_list(
-            combo, RecidivismMethodologyType.PERSON, period)
+            combo, event.state_code, RecidivismMethodologyType.PERSON, period)
 
         event_based_combos = augmented_combo_list(
-            combo, RecidivismMethodologyType.EVENT, period)
+            combo, event.state_code, RecidivismMethodologyType.EVENT, period)
 
         # If they didn't recidivate at all or not yet for this period
         # (or they didn't recidivate until 10 years had passed),
@@ -756,10 +756,10 @@ def combination_count_metrics(combo: Dict[str, Any], event:
     # in a given window.
     if returned_within_follow_up_period(event, maximum_follow_up_period):
         person_based_combos = augmented_combo_list(
-            combo, RecidivismMethodologyType.PERSON, None)
+            combo, event.state_code, RecidivismMethodologyType.PERSON, None)
 
         event_based_combos = augmented_combo_list(
-            combo, RecidivismMethodologyType.EVENT, None)
+            combo, event.state_code, RecidivismMethodologyType.EVENT, None)
 
         # Adds one day because the reincarcerations_in_window function is
         # exclusive of the end date, and we want the count to include
@@ -795,6 +795,7 @@ def combination_count_metrics(combo: Dict[str, Any], event:
 
 
 def augmented_combo_list(combo: Dict[str, Any],
+                         state_code: str,
                          methodology: RecidivismMethodologyType,
                          period: Optional[int]) -> List[Dict[str, Any]]:
     """Returns a list of combo dictionaries that have been augmented with
@@ -806,6 +807,7 @@ def augmented_combo_list(combo: Dict[str, Any],
 
     Args:
         combo: the base combo to be augmented with methodology and period
+        state_code: the state code of the metric combo
         methodology: the RecidivismMethodologyType to add to each combo
         period: the follow_up_period value to add to each combo
 
@@ -813,7 +815,8 @@ def augmented_combo_list(combo: Dict[str, Any],
     """
 
     combos = []
-    parameters: Dict[str, Any] = {'methodology': methodology}
+    parameters: Dict[str, Any] = {'state_code': state_code,
+                                  'methodology': methodology}
 
     if period:
         parameters['follow_up_period'] = period

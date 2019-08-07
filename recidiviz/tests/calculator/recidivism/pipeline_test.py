@@ -598,6 +598,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                                             subsequent_reincarceration]}
 
         first_recidivism_release_event = RecidivismReleaseEvent(
+            state_code='TX',
             original_admission_date=initial_incarceration.admission_date,
             release_date=initial_incarceration.release_date,
             release_facility=None,
@@ -606,6 +607,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             return_type=ReincarcerationReturnType.NEW_ADMISSION)
 
         second_recidivism_release_event = RecidivismReleaseEvent(
+            state_code='TX',
             original_admission_date=first_reincarceration.admission_date,
             release_date=first_reincarceration.release_date,
             release_facility=None,
@@ -658,8 +660,8 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                                             [only_incarceration]}
 
         non_recidivism_release_event = NonRecidivismReleaseEvent(
-            only_incarceration.admission_date, only_incarceration.release_date,
-            only_incarceration.facility)
+            'TX', only_incarceration.admission_date,
+            only_incarceration.release_date, only_incarceration.facility)
 
         correct_output = [(fake_person,
                            {only_incarceration.release_date.year:
@@ -756,6 +758,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                                             subsequent_reincarceration]}
 
         first_recidivism_release_event = RecidivismReleaseEvent(
+            state_code='TX',
             original_admission_date=initial_incarceration.admission_date,
             release_date=initial_incarceration.release_date,
             release_facility=None,
@@ -764,6 +767,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             return_type=ReincarcerationReturnType.NEW_ADMISSION)
 
         second_recidivism_release_event = RecidivismReleaseEvent(
+            state_code='TX',
             original_admission_date=first_reincarceration.admission_date,
             release_date=first_reincarceration.release_date,
             release_facility=None,
@@ -836,6 +840,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                                             first_reincarceration]}
 
         first_recidivism_release_event = RecidivismReleaseEvent(
+            state_code='TX',
             original_admission_date=initial_incarceration.admission_date,
             release_date=initial_incarceration.release_date,
             release_facility=None,
@@ -844,6 +849,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             return_type=ReincarcerationReturnType.NEW_ADMISSION)
 
         second_recidivism_release_event = RecidivismReleaseEvent(
+            state_code='TX',
             original_admission_date=first_reincarceration.admission_date,
             release_date=first_reincarceration.release_date,
             release_facility=None,
@@ -886,6 +892,7 @@ class TestCalculateRecidivismMetricCombinations(unittest.TestCase):
             residency_status=ResidencyStatus.PERMANENT)
 
         first_recidivism_release_event = RecidivismReleaseEvent(
+            state_code='CA',
             original_admission_date=date(2008, 11, 20),
             release_date=date(2010, 12, 4), release_facility=None,
             reincarceration_date=date(2011, 4, 5),
@@ -893,6 +900,7 @@ class TestCalculateRecidivismMetricCombinations(unittest.TestCase):
             return_type=ReincarcerationReturnType.NEW_ADMISSION)
 
         second_recidivism_release_event = RecidivismReleaseEvent(
+            state_code='CA',
             original_admission_date=date(2011, 4, 5),
             release_date=date(2014, 4, 14), release_facility=None,
             reincarceration_date=date(2017, 1, 4),
@@ -1001,7 +1009,7 @@ class TestProduceReincarcerationRecidivismMetric(unittest.TestCase):
                       'release_cohort': 2014,
                       'methodology': RecidivismMethodologyType.PERSON,
                       'follow_up_period': 1,
-                      'metric_type': 'rate'}
+                      'metric_type': 'rate', 'state_code': 'CA'}
 
         group = [1, 0, 1, 0, 0, 0, 1, 1, 1, 1]
         expected_recidivism_rate = \
@@ -1034,7 +1042,7 @@ class TestProduceReincarcerationRecidivismMetric(unittest.TestCase):
                       'release_cohort': 2014,
                       'methodology': RecidivismMethodologyType.PERSON,
                       'follow_up_period': 1,
-                      'metric_type': 'rate'}
+                      'metric_type': 'rate', 'state_code': 'CA'}
 
         group = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         expected_recidivism_rate = \
@@ -1071,7 +1079,7 @@ class TestProduceReincarcerationRecidivismMetric(unittest.TestCase):
                           'release_cohort': 2014,
                           'methodology': RecidivismMethodologyType.PERSON,
                           'follow_up_period': 1,
-                          'metric_type': 'rate'}
+                          'metric_type': 'rate', 'state_code': 'CA'}
 
             group = []
 
@@ -1132,7 +1140,7 @@ class TestProduceReincarcerationRecidivismMetric(unittest.TestCase):
                       'methodology': RecidivismMethodologyType.PERSON,
                       'start_date': date(2010, 1, 1),
                       'end_date': date(2010, 12, 31),
-                      'metric_type': 'count'}
+                      'metric_type': 'count', 'state_code': 'CA'}
 
         group = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
         expected_count = (sum(group))
@@ -1165,7 +1173,7 @@ class TestProduceReincarcerationRecidivismMetric(unittest.TestCase):
                           RecidivismMethodologyType.PERSON,
                       'start_date': date(2010, 1, 1),
                       'end_date': date(2010, 12, 31),
-                      'metric_type': 'count'}
+                      'metric_type': 'count', 'state_code': 'CA'}
 
         group = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
@@ -1200,7 +1208,7 @@ class TestProduceReincarcerationRecidivismMetric(unittest.TestCase):
                               RecidivismMethodologyType.PERSON,
                           'start_date': date(2010, 1, 1),
                           'end_date': date(2010, 12, 31),
-                          'metric_type': 'count'}
+                          'metric_type': 'count', 'state_code': 'CA'}
 
             group = []
 
@@ -1547,41 +1555,44 @@ class MetricGroup:
     """Stores a set of metrics where every dimension is included for testing
     dimension filtering."""
     recidivism_metric_with_age = ReincarcerationRecidivismRateMetric(
-        job_id='12345', release_cohort=2015, follow_up_period=1,
-        methodology=RecidivismMethodologyType.PERSON, age_bucket='25-29',
-        total_releases=1000, recidivated_releases=900, recidivism_rate=0.9)
+        job_id='12345', state_code='CA', release_cohort=2015,
+        follow_up_period=1, methodology=RecidivismMethodologyType.PERSON,
+        age_bucket='25-29', total_releases=1000, recidivated_releases=900,
+        recidivism_rate=0.9)
 
     recidivism_metric_with_gender = ReincarcerationRecidivismRateMetric(
-        job_id='12345', release_cohort=2015, follow_up_period=1,
-        methodology=RecidivismMethodologyType.PERSON, gender=Gender.MALE,
-        total_releases=1000, recidivated_releases=875, recidivism_rate=0.875)
+        job_id='12345', state_code='CA', release_cohort=2015,
+        follow_up_period=1, methodology=RecidivismMethodologyType.PERSON,
+        gender=Gender.MALE, total_releases=1000, recidivated_releases=875,
+        recidivism_rate=0.875)
 
     recidivism_metric_with_race = ReincarcerationRecidivismRateMetric(
-        job_id='12345', release_cohort=2015, follow_up_period=1,
-        methodology=RecidivismMethodologyType.PERSON, race=Race.BLACK,
-        total_releases=1000, recidivated_releases=875, recidivism_rate=0.875)
+        job_id='12345', state_code='CA', release_cohort=2015,
+        follow_up_period=1, methodology=RecidivismMethodologyType.PERSON,
+        race=Race.BLACK, total_releases=1000, recidivated_releases=875,
+        recidivism_rate=0.875)
 
     recidivism_metric_with_ethnicity = ReincarcerationRecidivismRateMetric(
-        job_id='12345', release_cohort=2015, follow_up_period=1,
-        methodology=RecidivismMethodologyType.PERSON,
+        job_id='12345', state_code='CA', release_cohort=2015,
+        follow_up_period=1, methodology=RecidivismMethodologyType.PERSON,
         ethnicity=Ethnicity.HISPANIC, total_releases=1000,
         recidivated_releases=875, recidivism_rate=0.875)
 
     recidivism_metric_with_release_facility = \
         ReincarcerationRecidivismRateMetric(
-            job_id='12345', release_cohort=2015, follow_up_period=1,
-            methodology=RecidivismMethodologyType.PERSON,
+            job_id='12345', state_code='CA', release_cohort=2015,
+            follow_up_period=1, methodology=RecidivismMethodologyType.PERSON,
             release_facility='Red',
             total_releases=1000, recidivated_releases=300, recidivism_rate=0.30)
 
     recidivism_metric_with_stay_length = ReincarcerationRecidivismRateMetric(
-        job_id='12345', release_cohort=2015, follow_up_period=1,
-        methodology=RecidivismMethodologyType.PERSON,
+        job_id='12345', state_code='CA', release_cohort=2015,
+        follow_up_period=1, methodology=RecidivismMethodologyType.PERSON,
         stay_length_bucket='12-24', total_releases=1000,
         recidivated_releases=300, recidivism_rate=0.30)
 
     recidivism_metric_without_dimensions = ReincarcerationRecidivismRateMetric(
-        job_id='12345', release_cohort=2015,
+        job_id='12345', state_code='CA', release_cohort=2015,
         follow_up_period=1, methodology=RecidivismMethodologyType.PERSON,
         total_releases=1500, recidivated_releases=1200, recidivism_rate=0.80)
 

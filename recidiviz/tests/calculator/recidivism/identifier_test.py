@@ -85,6 +85,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         assert len(release_events_by_cohort) == 2
 
         assert release_events_by_cohort[2010] == [RecidivismReleaseEvent(
+            state_code='TX',
             original_admission_date=initial_incarceration_period.admission_date,
             release_date=initial_incarceration_period.release_date,
             release_facility=None,
@@ -93,6 +94,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             return_type=ReincarcerationReturnType.NEW_ADMISSION)]
 
         assert release_events_by_cohort[2014] == [RecidivismReleaseEvent(
+            state_code='TX',
             original_admission_date=first_reincarceration_period.admission_date,
             release_date=first_reincarceration_period.release_date,
             release_facility=None,
@@ -130,6 +132,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         assert release_events_by_cohort[2003] == [
             NonRecidivismReleaseEvent(
+                state_code='TX',
                 original_admission_date=only_incarceration_period.
                 admission_date,
                 release_date=only_incarceration_period.release_date,
@@ -175,6 +178,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         assert release_events_by_cohort[2003] == [
             NonRecidivismReleaseEvent(
+                state_code='TX',
                 original_admission_date=only_incarceration_period.
                 admission_date,
                 release_date=only_incarceration_period.release_date,
@@ -215,6 +219,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         assert len(release_events_by_cohort) == 2
 
         assert release_events_by_cohort[2010] == [RecidivismReleaseEvent(
+            state_code='TX',
             original_admission_date=initial_incarceration_period.admission_date,
             release_date=initial_incarceration_period.release_date,
             release_facility=None,
@@ -226,6 +231,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         assert release_events_by_cohort[2014] == [
             NonRecidivismReleaseEvent(
+                state_code='TX',
                 original_admission_date=first_reincarceration_period.
                 admission_date,
                 release_date=first_reincarceration_period.release_date,
@@ -266,6 +272,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         assert len(release_events_by_cohort) == 2
 
         assert release_events_by_cohort[2010] == [RecidivismReleaseEvent(
+            state_code='TX',
             original_admission_date=initial_incarceration_period.admission_date,
             release_date=initial_incarceration_period.release_date,
             release_facility=None,
@@ -277,6 +284,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         assert release_events_by_cohort[2014] == [
             NonRecidivismReleaseEvent(
+                state_code='TX',
                 original_admission_date=first_reincarceration_period.
                 admission_date,
                 release_date=first_reincarceration_period.release_date,
@@ -317,6 +325,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         assert len(release_events_by_cohort) == 2
 
         assert release_events_by_cohort[2010] == [RecidivismReleaseEvent(
+            state_code='TX',
             original_admission_date=initial_incarceration_period.admission_date,
             release_date=initial_incarceration_period.release_date,
             release_facility=None,
@@ -326,6 +335,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         assert release_events_by_cohort[2014] == [
             NonRecidivismReleaseEvent(
+                state_code='TX',
                 original_admission_date=first_reincarceration_period.
                 admission_date,
                 release_date=first_reincarceration_period.release_date,
@@ -366,6 +376,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         assert len(release_events_by_cohort) == 2
 
         assert release_events_by_cohort[2010] == [RecidivismReleaseEvent(
+            state_code='TX',
             original_admission_date=initial_incarceration_period.admission_date,
             release_date=initial_incarceration_period.release_date,
             release_facility=None,
@@ -377,6 +388,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         assert release_events_by_cohort[2014] == [
             NonRecidivismReleaseEvent(
+                state_code='TX',
                 original_admission_date=first_reincarceration_period.
                 admission_date,
                 release_date=first_reincarceration_period.release_date,
@@ -417,6 +429,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         assert release_events_by_cohort[2014] == [
             NonRecidivismReleaseEvent(
+                state_code='TX',
                 original_admission_date=initial_incarceration_period.
                 admission_date,
                 release_date=first_reincarceration_period.release_date,
@@ -457,6 +470,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         assert release_events_by_cohort[2014] == [
             NonRecidivismReleaseEvent(
+                state_code='TX',
                 original_admission_date=first_reincarceration_period.
                 admission_date,
                 release_date=first_reincarceration_period.release_date,
@@ -1487,6 +1501,7 @@ class TestForLastIncarcerationPeriod:
     """Tests the for_last_incarceration_period function."""
 
     def test_for_last_incarceration_period(self):
+        state_code = 'CA'
         admission_date = date(2000, 12, 1)
         status = StateIncarcerationPeriodStatus.NOT_IN_CUSTODY
         release_date = date(2005, 3, 8)
@@ -1494,7 +1509,8 @@ class TestForLastIncarcerationPeriod:
 
         for release_reason in ReleaseReason:
             # Will raise ValueError if enum case isn't handled
-            event = identifier.for_last_incarceration_period(admission_date,
+            event = identifier.for_last_incarceration_period(state_code,
+                                                             admission_date,
                                                              status,
                                                              release_date,
                                                              release_reason,
@@ -1504,7 +1520,8 @@ class TestForLastIncarcerationPeriod:
                                   ReleaseReason.CONDITIONAL_RELEASE,
                                   ReleaseReason.EXTERNAL_UNKNOWN,
                                   ReleaseReason.SENTENCE_SERVED]:
-                assert event == NonRecidivismReleaseEvent(admission_date,
+                assert event == NonRecidivismReleaseEvent(state_code,
+                                                          admission_date,
                                                           release_date,
                                                           release_facility)
             else:
