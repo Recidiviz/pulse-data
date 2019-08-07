@@ -34,7 +34,7 @@ for the HTML patterns we search over.
 import copy
 import logging
 from collections import defaultdict
-from typing import Optional, Iterator, List, Dict, Set
+from typing import Optional, Iterator, List, Dict, Set, Union
 
 from lxml.html import HtmlElement, tostring
 
@@ -149,7 +149,8 @@ class HtmlDataExtractor(DataExtractor):
                           needed_keys)
         return ingest_info.prune()
 
-    def get_value(self, key: str) -> Optional[str]:
+    def get_value(self, key: str, multiple: bool = False
+                  ) -> Union[List[Optional[str]], Optional[str]]:
         """
         This function iterates through every cell on the page, searching for a
         value that matches the provided |key|. Returns the string value if
@@ -157,13 +158,16 @@ class HtmlDataExtractor(DataExtractor):
 
         Args:
             key: A key on the web page, whose value should be returned
+            multiple: True if a list of values (below a cell) should be returned
 
         Returns:
-            The found value (if present), otherwise None.
+            The found value(s) (if present), otherwise None.
         """
         for cell in self.cells:
             cell_val = self._normalize_cell(cell)
             if cell_val == key:
+                if multiple:
+                    return self._get_values_below_cell(cell)
                 return self._get_value_cell(cell)
         return None
 
