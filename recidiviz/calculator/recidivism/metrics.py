@@ -66,6 +66,9 @@ class ReincarcerationRecidivismMetric(BuildableAttr):
     # The string id of the calculation pipeline job that produced this metric.
     job_id: str = attr.ib()  # non-nullable
 
+    # The state code of the metric this describes
+    state_code: str = attr.ib()
+
     # RecidivismMethodologyType enum for the calculation of the metric
     methodology: RecidivismMethodologyType = \
         attr.ib(default=None)  # non-nullable
