@@ -53,13 +53,16 @@ class ReleaseEvent(BuildableAttr):
     This includes the information pertaining to a release from incarceration
     that we will want to track when calculating recidivism metrics."""
 
+    # The state where the incarceration took place
+    state_code: str = attr.ib()
+
     # A Date for when the person first was admitted for this period of
     # incarceration.
-    original_admission_date: date = attr.ib(default=None)
+    original_admission_date: date = attr.ib()
 
     # A Date for when the person was last released from this period of
     # incarceration.
-    release_date: date = attr.ib(default=None)
+    release_date: date = attr.ib()
 
     # The facility that the person was last released from for this period of
     # incarceration.

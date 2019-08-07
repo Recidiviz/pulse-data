@@ -44,11 +44,11 @@ def test_reincarcerations():
     second_release_date = reincarceration_date + relativedelta(years=1)
 
     first_event = RecidivismReleaseEvent(
-        original_admission_date, release_date, 'Sing Sing',
+        'CA', original_admission_date, release_date, 'Sing Sing',
         reincarceration_date, 'Sing Sing',
         ReincarcerationReturnType.NEW_ADMISSION)
     second_event = NonRecidivismReleaseEvent(
-        reincarceration_date, second_release_date, 'Sing Sing')
+        'CA', reincarceration_date, second_release_date, 'Sing Sing')
     release_events = {2018: [first_event], 2022: [second_event]}
 
     expected_reincarcerations = {reincarceration_date:
@@ -328,7 +328,8 @@ def test_age_bucket():
 def test_stay_length_from_event_earlier_month_and_date():
     original_admission_date = date(2013, 6, 17)
     release_date = date(2014, 4, 15)
-    event = ReleaseEvent(original_admission_date, release_date, 'Sing Sing')
+    event = ReleaseEvent('CA', original_admission_date, release_date,
+                         'Sing Sing')
 
     assert calculator.stay_length_from_event(event) == 9
 
@@ -336,7 +337,8 @@ def test_stay_length_from_event_earlier_month_and_date():
 def test_stay_length_from_event_same_month_earlier_date():
     original_admission_date = date(2013, 6, 17)
     release_date = date(2014, 6, 16)
-    event = ReleaseEvent(original_admission_date, release_date, 'Sing Sing')
+    event = ReleaseEvent('NH', original_admission_date, release_date,
+                         'Sing Sing')
 
     assert calculator.stay_length_from_event(event) == 11
 
@@ -344,7 +346,8 @@ def test_stay_length_from_event_same_month_earlier_date():
 def test_stay_length_from_event_same_month_same_date():
     original_admission_date = date(2013, 6, 17)
     release_date = date(2014, 6, 17)
-    event = ReleaseEvent(original_admission_date, release_date, 'Sing Sing')
+    event = ReleaseEvent('TX', original_admission_date, release_date,
+                         'Sing Sing')
 
     assert calculator.stay_length_from_event(event) == 12
 
@@ -352,7 +355,8 @@ def test_stay_length_from_event_same_month_same_date():
 def test_stay_length_from_event_same_month_later_date():
     original_admission_date = date(2013, 6, 17)
     release_date = date(2014, 6, 18)
-    event = ReleaseEvent(original_admission_date, release_date, 'Sing Sing')
+    event = ReleaseEvent('UT', original_admission_date, release_date,
+                         'Sing Sing')
 
     assert calculator.stay_length_from_event(event) == 12
 
@@ -360,25 +364,26 @@ def test_stay_length_from_event_same_month_later_date():
 def test_stay_length_from_event_later_month():
     original_admission_date = date(2013, 6, 17)
     release_date = date(2014, 8, 11)
-    event = ReleaseEvent(original_admission_date, release_date, 'Sing Sing')
+    event = ReleaseEvent('HI', original_admission_date, release_date,
+                         'Sing Sing')
 
     assert calculator.stay_length_from_event(event) == 13
 
 
 def test_stay_length_from_event_original_admission_date_unknown():
     release_date = date(2014, 7, 11)
-    event = ReleaseEvent(None, release_date, 'Sing Sing')
+    event = ReleaseEvent('MT', None, release_date, 'Sing Sing')
     assert calculator.stay_length_from_event(event) is None
 
 
 def test_stay_length_from_event_release_date_unknown():
     original_admission_date = date(2014, 7, 11)
-    event = ReleaseEvent(original_admission_date, None, 'Sing Sing')
+    event = ReleaseEvent('UT', original_admission_date, None, 'Sing Sing')
     assert calculator.stay_length_from_event(event) is None
 
 
 def test_stay_length_from_event_both_dates_unknown():
-    event = ReleaseEvent(None, None, 'Sing Sing')
+    event = ReleaseEvent('NH', None, None, 'Sing Sing')
     assert calculator.stay_length_from_event(event) is None
 
 
@@ -707,14 +712,14 @@ def test_augmented_combo_list_methodologies():
     base_combo = {'age': '<25', 'race': 'black', 'gender': 'female'}
 
     person_combo_list = calculator.augmented_combo_list(
-        base_combo, RecidivismMethodologyType.PERSON, 8)
+        base_combo, 'CA', RecidivismMethodologyType.PERSON, 8)
 
     for combo in person_combo_list:
         assert combo['methodology'] == RecidivismMethodologyType.PERSON
         assert combo['follow_up_period'] == 8
 
     event_combo_list = calculator.augmented_combo_list(
-        base_combo, RecidivismMethodologyType.EVENT, 8)
+        base_combo, 'CA', RecidivismMethodologyType.EVENT, 8)
 
     for combo in event_combo_list:
         assert combo['methodology'] == RecidivismMethodologyType.EVENT
@@ -727,7 +732,7 @@ def test_augmented_combo_list_return_info():
     base_combo = {'age': '<25', 'race': 'black', 'gender': 'female'}
 
     combo_list = calculator.augmented_combo_list(
-        base_combo, RecidivismMethodologyType.PERSON, 8)
+        base_combo, 'CA', RecidivismMethodologyType.PERSON, 8)
 
     parameter_list = {}
 
@@ -917,7 +922,7 @@ class TestMapRecidivismCombinations:
 
         release_events_by_cohort = {
             2008: [RecidivismReleaseEvent(
-                date(2005, 7, 19), date(2008, 9, 19), 'Hudson',
+                'CA', date(2005, 7, 19), date(2008, 9, 19), 'Hudson',
                 date(2014, 5, 12), 'Upstate',
                 ReincarcerationReturnType.NEW_ADMISSION)]
         }
@@ -959,11 +964,11 @@ class TestMapRecidivismCombinations:
 
         release_events_by_cohort = {
             1908: [RecidivismReleaseEvent(
-                date(1905, 7, 19), date(1908, 9, 19), 'Hudson',
+                'CA', date(1905, 7, 19), date(1908, 9, 19), 'Hudson',
                 date(1910, 8, 12), 'Upstate',
                 ReincarcerationReturnType.NEW_ADMISSION)],
             1912: [RecidivismReleaseEvent(
-                date(1910, 8, 12), date(1912, 8, 19), 'Upstate',
+                'CA', date(1910, 8, 12), date(1912, 8, 19), 'Upstate',
                 date(1914, 7, 12), 'Sing Sing',
                 ReincarcerationReturnType.NEW_ADMISSION)]
         }
@@ -1015,7 +1020,7 @@ class TestMapRecidivismCombinations:
         person.ethnicities = [ethnicity]
 
         release_events_by_cohort = {
-            2008: [NonRecidivismReleaseEvent(date(2005, 7, 19),
+            2008: [NonRecidivismReleaseEvent('CA', date(2005, 7, 19),
                                              date(2008, 9, 19), 'Hudson')]
         }
 
@@ -1049,7 +1054,7 @@ class TestMapRecidivismCombinations:
 
         release_events_by_cohort = {
             2008: [RecidivismReleaseEvent(
-                date(2005, 7, 19), date(2008, 9, 19), 'Hudson',
+                'CA', date(2005, 7, 19), date(2008, 9, 19), 'Hudson',
                 date(2018, 10, 12), 'Upstate',
                 ReincarcerationReturnType.NEW_ADMISSION)]
         }
@@ -1093,7 +1098,7 @@ class TestMapRecidivismCombinations:
 
         release_events_by_cohort = {
             2008: [RecidivismReleaseEvent(
-                date(2005, 7, 19), date(2008, 9, 19), 'Hudson',
+                'CA', date(2005, 7, 19), date(2008, 9, 19), 'Hudson',
                 date(2014, 5, 12), 'Upstate',
                 ReincarcerationReturnType.NEW_ADMISSION)]
         }
@@ -1139,7 +1144,7 @@ class TestMapRecidivismCombinations:
 
         release_events_by_cohort = {
             2008: [RecidivismReleaseEvent(
-                date(2005, 7, 19), date(2008, 9, 19), 'Hudson',
+                'CA', date(2005, 7, 19), date(2008, 9, 19), 'Hudson',
                 date(2014, 5, 12), 'Upstate',
                 ReincarcerationReturnType.NEW_ADMISSION)]
         }
@@ -1190,7 +1195,7 @@ class TestMapRecidivismCombinations:
 
         release_events_by_cohort = {
             2008: [RecidivismReleaseEvent(
-                date(2005, 7, 19), date(2008, 9, 19), 'Hudson',
+                'CA', date(2005, 7, 19), date(2008, 9, 19), 'Hudson',
                 date(2014, 5, 12), 'Upstate',
                 ReincarcerationReturnType.NEW_ADMISSION)]
         }
@@ -1233,7 +1238,7 @@ class TestMapRecidivismCombinations:
 
         release_events_by_cohort = {
             2008: [RecidivismReleaseEvent(
-                date(2005, 7, 19), date(2008, 9, 19), 'Hudson',
+                'CA', date(2005, 7, 19), date(2008, 9, 19), 'Hudson',
                 date(2014, 5, 12), 'Upstate',
                 ReincarcerationReturnType.REVOCATION,
                 from_supervision_type=
@@ -1281,7 +1286,7 @@ class TestMapRecidivismCombinations:
 
         release_events_by_cohort = {
             2008: [RecidivismReleaseEvent(
-                date(2005, 7, 19), date(2008, 9, 19), 'Hudson',
+                'CA', date(2005, 7, 19), date(2008, 9, 19), 'Hudson',
                 date(2014, 5, 12), 'Upstate',
                 ReincarcerationReturnType.REVOCATION,
                 from_supervision_type=
@@ -1330,7 +1335,7 @@ class TestMapRecidivismCombinations:
 
         release_events_by_cohort = {
             2008: [RecidivismReleaseEvent(
-                date(2005, 7, 19), date(2008, 9, 19), 'Hudson',
+                'CA', date(2005, 7, 19), date(2008, 9, 19), 'Hudson',
                 date(2014, 5, 12), 'Upstate',
                 ReincarcerationReturnType.REVOCATION,
                 from_supervision_type=
@@ -1385,7 +1390,7 @@ class TestMapRecidivismCombinations:
 
         release_events_by_cohort = {
             2008: [RecidivismReleaseEvent(
-                date(2005, 7, 19), date(2008, 9, 19), 'Hudson',
+                'CA', date(2005, 7, 19), date(2008, 9, 19), 'Hudson',
                 date(2014, 5, 12), 'Upstate',
                 ReincarcerationReturnType.NEW_ADMISSION)]
         }
@@ -1442,7 +1447,7 @@ class TestMapRecidivismCombinations:
         person.ethnicities = [ethnicity]
 
         release_events_by_cohort = {
-            2008: [NonRecidivismReleaseEvent(date(2005, 7, 19),
+            2008: [NonRecidivismReleaseEvent('CA', date(2005, 7, 19),
                                              date(2008, 9, 19), 'Hudson')]
         }
 
@@ -1472,7 +1477,7 @@ class TestMapRecidivismCombinations:
 
         release_events_by_cohort = {
             1990: [RecidivismReleaseEvent(
-                date(1985, 7, 19), date(1990, 9, 19), 'Hudson',
+                'CA', date(1985, 7, 19), date(1990, 9, 19), 'Hudson',
                 date(2014, 5, 12), 'Upstate',
                 ReincarcerationReturnType.NEW_ADMISSION)]
         }
@@ -1503,11 +1508,11 @@ class TestMapRecidivismCombinations:
 
         release_events_by_cohort = {
             1908: [RecidivismReleaseEvent(
-                date(1905, 7, 19), date(1908, 9, 19), 'Hudson',
+                'TX', date(1905, 7, 19), date(1908, 9, 19), 'Hudson',
                 date(1914, 3, 12), 'Upstate',
                 ReincarcerationReturnType.NEW_ADMISSION)],
             1914: [RecidivismReleaseEvent(
-                date(1914, 3, 12), date(1914, 7, 3), 'Hudson',
+                'TX', date(1914, 3, 12), date(1914, 7, 3), 'Hudson',
                 date(1914, 9, 1), 'Upstate',
                 ReincarcerationReturnType.NEW_ADMISSION)]
         }
@@ -1593,11 +1598,11 @@ class TestMapRecidivismCombinations:
 
         release_events_by_cohort = {
             1908: [RecidivismReleaseEvent(
-                date(1905, 7, 19), date(1908, 9, 19), 'Hudson',
+                'CA', date(1905, 7, 19), date(1908, 9, 19), 'Hudson',
                 date(1914, 3, 12), 'Upstate',
                 ReincarcerationReturnType.NEW_ADMISSION)],
             1914: [RecidivismReleaseEvent(
-                date(1914, 3, 12), date(1914, 3, 19), 'Hudson',
+                'CA', date(1914, 3, 12), date(1914, 3, 19), 'Hudson',
                 date(1914, 3, 30), 'Upstate',
                 ReincarcerationReturnType.NEW_ADMISSION)]
         }

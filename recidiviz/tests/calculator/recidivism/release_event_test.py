@@ -24,6 +24,7 @@ from recidiviz.calculator.recidivism.release_event import \
 
 
 def test_recidivism_event():
+    state_code = 'CA'
     original_admission_date = datetime(2009, 6, 17)
     release_date = datetime(2012, 6, 17)
     release_facility = 'Hexagon Sun'
@@ -32,9 +33,10 @@ def test_recidivism_event():
     return_type = ReincarcerationReturnType.NEW_ADMISSION
 
     event = RecidivismReleaseEvent(
-        original_admission_date, release_date, release_facility,
+        state_code, original_admission_date, release_date, release_facility,
         reincarceration_date, reincarceration_facility, return_type)
 
+    assert state_code == event.state_code
     assert original_admission_date == event.original_admission_date
     assert release_date == event.release_date
     assert release_facility == event.release_facility
@@ -44,6 +46,7 @@ def test_recidivism_event():
 
 
 def test_recidivism_event_parole_revocation():
+    state_code = 'CA'
     original_admission_date = datetime(2009, 6, 17)
     release_date = datetime(2012, 6, 17)
     release_facility = 'Hexagon Sun'
@@ -52,9 +55,10 @@ def test_recidivism_event_parole_revocation():
     return_type = ReincarcerationReturnType.REVOCATION
 
     event = RecidivismReleaseEvent(
-        original_admission_date, release_date, release_facility,
+        state_code, original_admission_date, release_date, release_facility,
         reincarceration_date, reincarceration_facility, return_type)
 
+    assert state_code == event.state_code
     assert original_admission_date == event.original_admission_date
     assert release_date == event.release_date
     assert release_facility == event.release_facility
@@ -64,6 +68,7 @@ def test_recidivism_event_parole_revocation():
 
 
 def test_recidivism_event_probation_revocation():
+    state_code = 'MT'
     original_admission_date = datetime(2009, 6, 17)
     release_date = datetime(2012, 6, 17)
     release_facility = 'Hexagon Sun'
@@ -72,9 +77,10 @@ def test_recidivism_event_probation_revocation():
     return_type = ReincarcerationReturnType.REVOCATION
 
     event = RecidivismReleaseEvent(
-        original_admission_date, release_date, release_facility,
+        state_code, original_admission_date, release_date, release_facility,
         reincarceration_date, reincarceration_facility, return_type)
 
+    assert state_code == event.state_code
     assert original_admission_date == event.original_admission_date
     assert release_date == event.release_date
     assert release_facility == event.release_facility
@@ -84,13 +90,15 @@ def test_recidivism_event_probation_revocation():
 
 
 def test_non_recidivism_event():
+    state_code = 'UT'
     original_admission_date = datetime(2009, 6, 17)
     release_date = datetime(2012, 6, 17)
     release_facility = 'Hexagon Sun'
 
-    event = NonRecidivismReleaseEvent(original_admission_date,
+    event = NonRecidivismReleaseEvent(state_code, original_admission_date,
                                       release_date, release_facility)
 
+    assert state_code == event.state_code
     assert original_admission_date == event.original_admission_date
     assert release_date == event.release_date
     assert release_facility == event.release_facility
@@ -98,6 +106,7 @@ def test_non_recidivism_event():
 
 
 def test_eq_different_field():
+    state_code = 'NV'
     original_admission_date = datetime(2009, 6, 17)
     release_date = datetime(2012, 6, 17)
     release_facility = 'Hexagon Sun'
@@ -106,11 +115,11 @@ def test_eq_different_field():
     return_type = ReincarcerationReturnType.NEW_ADMISSION
 
     first = RecidivismReleaseEvent(
-        original_admission_date, release_date, release_facility,
+        state_code, original_admission_date, release_date, release_facility,
         reincarceration_date, reincarceration_facility, return_type)
 
     second = RecidivismReleaseEvent(
-        original_admission_date, release_date, release_facility,
+        state_code, original_admission_date, release_date, release_facility,
         reincarceration_date, 'A beautiful place out in the country',
         return_type)
 
@@ -118,6 +127,7 @@ def test_eq_different_field():
 
 
 def test_eq_different_events():
+    state_code = 'FL'
     original_admission_date = datetime(2009, 6, 17)
     release_date = datetime(2012, 6, 17)
     release_facility = 'Hexagon Sun'
@@ -126,16 +136,17 @@ def test_eq_different_events():
     return_type = ReincarcerationReturnType.NEW_ADMISSION
 
     first = RecidivismReleaseEvent(
-        original_admission_date, release_date, release_facility,
+        state_code, original_admission_date, release_date, release_facility,
         reincarceration_date, reincarceration_facility, return_type)
 
     second = NonRecidivismReleaseEvent(
-        original_admission_date, release_date, release_facility)
+        state_code, original_admission_date, release_date, release_facility)
 
     assert first != second
 
 
 def test_eq_different_types():
+    state_code = 'GA'
     original_admission_date = datetime(2009, 6, 17)
     release_date = datetime(2012, 6, 17)
     release_facility = 'Hexagon Sun'
@@ -144,7 +155,7 @@ def test_eq_different_types():
     return_type = ReincarcerationReturnType.NEW_ADMISSION
 
     event = RecidivismReleaseEvent(
-        original_admission_date, release_date, release_facility,
+        state_code, original_admission_date, release_date, release_facility,
         reincarceration_date, reincarceration_facility, return_type)
 
     different = "Everything you do is a balloon"
