@@ -111,7 +111,8 @@ def work(region):
         if not sessions.get_current_session(
                 ScrapeKey(region, params.scrape_type)):
             task_tags[monitoring.TagKey.STATUS] = 'SKIPPED'
-            logging.info("Queue [%s], skipping task [%s] for [%s].",
+            logging.info("Queue [%s], skipping task [%s] for [%s] because it "
+                         "is not in the current session.",
                          queue_name, task, region)
             return ('', HTTPStatus.OK)
         logging.info("Queue [%s], processing task [%s] for [%s].",
