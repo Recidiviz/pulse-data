@@ -42,6 +42,8 @@ from recidiviz.common.constants.state.state_incarceration_period import \
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import \
     StateSupervisionType
+from recidiviz.common.constants.state.state_supervision_period import \
+    StateSupervisionLevel
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
 from recidiviz.common.constants.state.state_supervision_violation_response \
@@ -693,7 +695,16 @@ class UsNdController(GcsfsDirectIngestController):
                 ['COMB', 'DELETED', 'RED', 'TRA'],
             StateIncarcerationIncidentOutcomeType.DISCIPLINARY_LABOR: ['EXD'],
             StateIncarcerationIncidentOutcomeType.GOOD_TIME_LOSS: ['LG', 'STP'],
-            StateIncarcerationIncidentOutcomeType.WARNING: ['WAR', 'NS']
+            StateIncarcerationIncidentOutcomeType.WARNING: ['WAR', 'NS'],
+
+            StateSupervisionLevel.MINIMUM: ['1'],
+            StateSupervisionLevel.MEDIUM: ['2'],
+            # 6 is Drug Court which is max with specific rules
+            StateSupervisionLevel.MAXIMUM: ['3', '6'],
+            StateSupervisionLevel.DIVERSION: ['7'],
+            StateSupervisionLevel.INTERSTATE_COMPACT: ['9'],
+            # 0 means no calculated level, 5 means not classified yet
+            StateSupervisionLevel.EXTERNAL_UNKNOWN: ['0', '5'],
         }
 
         ignores: Dict[EntityEnumMeta, List[str]] = {
