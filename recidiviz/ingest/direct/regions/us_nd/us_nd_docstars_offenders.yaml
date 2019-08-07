@@ -20,8 +20,8 @@ primary_key:
 keys_to_ignore:
   - SUP_LVL             # TODO(1883) Add support for entity types with multiple parents
   - SUPER_OVERRIDE      # TODO(1883) Add support for entity types with multiple parents
-  - RECORD_STATUS       # TODO(1761) This corresponds to elite_orders.court_info_id
-                        #  TODO(1892) RECORD_STATUS needs to map to a custody status somewhere?
+  - RECORD_STATUS       # TODO(1892) RECORD_STATUS needs to map to a custody status somewhere?
+
   - AGENT
   - PREVIOUS_AGENT
   - LAST_UPDATE           # No apparent use for these at the moment

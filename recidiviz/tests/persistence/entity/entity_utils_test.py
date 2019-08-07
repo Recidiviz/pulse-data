@@ -19,12 +19,15 @@ from unittest import TestCase
 
 import pytest
 
+from recidiviz.common.constants.state.state_incarceration import \
+    StateIncarcerationType
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.persistence.entity.entity_utils import \
     get_set_entity_field_names, EntityFieldType, get_field, set_field, \
-    get_field_as_list, set_field_from_list, is_placeholder, has_default_status
+    get_field_as_list, set_field_from_list, is_placeholder, \
+    has_default_status, has_default_enum
 from recidiviz.persistence.entity.state.entities import StateSentenceGroup, \
-    StateFine, StatePerson, StatePersonExternalId
+    StateFine, StatePerson, StatePersonExternalId, StateIncarcerationSentence
 from recidiviz.persistence.errors import EntityMatchingError
 
 _ID = 1
@@ -119,9 +122,32 @@ class TestEntityUtils(TestCase):
                 id_type=_ID_TYPE))
         self.assertFalse(is_placeholder(person))
 
+    def test_isPlaceholder_defaultEnumValue(self):
+        entity = StateIncarcerationSentence.new_with_defaults(
+            incarceration_type=StateIncarcerationType.STATE_PRISON)
+        self.assertTrue(is_placeholder(entity))
+
+        entity.incarceration_type_raw_text = 'PRISON'
+        self.assertFalse(is_placeholder(entity))
+
     def test_hasDefaultStatus(self):
         entity = StateSentenceGroup.new_with_defaults(
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
         self.assertTrue(has_default_status(entity))
         entity.status = StateSentenceStatus.SERVING
         self.assertFalse(has_default_status(entity))
+
+    def test_hasDefaultEnum(self):
+        entity = StateIncarcerationSentence.new_with_defaults(
+            incarceration_type=StateIncarcerationType.STATE_PRISON)
+        self.assertTrue(has_default_enum(entity, 'incarceration_type',
+                                         StateIncarcerationType.STATE_PRISON))
+
+        entity.incarceration_type_raw_text = 'PRISON'
+        self.assertFalse(has_default_enum(entity, 'incarceration_type',
+                                          StateIncarcerationType.STATE_PRISON))
+
+        entity.incarceration_type = StateIncarcerationType.COUNTY_JAIL
+        entity.incarceration_type_raw_text = None
+        self.assertFalse(has_default_enum(entity, 'incarceration_type',
+                                          StateIncarcerationType.STATE_PRISON))

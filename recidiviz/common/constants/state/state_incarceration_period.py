@@ -172,25 +172,14 @@ _STATE_INCARCERATION_PERIOD_RELEASE_REASON_MAP = {
     'ESCAPE': StateIncarcerationPeriodReleaseReason.ESCAPE,
     'EXPIRED': StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
     'GOOD TIME': StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-
-    # TODO(1697): Is this actually what these mean?
-    'HELD ELSEWHERE': StateIncarcerationPeriodReleaseReason.TRANSFER,
-    'HOLD': StateIncarcerationPeriodReleaseReason.TRANSFER,
-
     'PAROLE': StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
     'PARL': StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
     'RPAR': StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
     'RPRB': StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
     'SUPL': StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
-
-    # TODO(1697): Should this actually be SENTENCE_SERVED? The probation is now
-    #  a new stacked sentence that is being served?
     'PROBATION': StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
     'RELEASE TO PAROLE':
         StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
-
-    # TODO(1697): Should this actually be SENTENCE_SERVED? The probation is now
-    #  a new stacked sentence that is being served?
     'RELEASE TO PROBATION':
         StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
     'ERR': StateIncarcerationPeriodReleaseReason.RELEASED_IN_ERROR,

@@ -19,7 +19,7 @@ child_key_mappings:
 keys_to_ignore:
   - LAST_NAME                                       # TODO(1883): Handle once we can add non-id info to ancestor objects
   - FIRST_NAME                                      # TODO(1883): Handle once we can add non-id info to ancestor objects
-  - AGENCY_INCIDENT_ID                              # TODO(1892): What is this and how is it different from OIC_INCIDENT_ID?
+  - AGENCY_INCIDENT_ID                              # TODO(1892): What is this and how is it different from OIC_INCIDENT_ID? OIC_INCIDENT_ID is unique to incident+person, whereas AGENCY_INCIDENT_ID is unique to incident but shared across all people in the incident
   - INCIDENT_TYPE_DESC                              # Unused, maps 1:1 to INCIDENT_TYPE
   - OMS_OWNER_V_OIC_INCIDENTS_INT_LOC_DESCRIPTION   # Referenced manually in scraper to infer location_within_facility
   - REPORT_DATE                                     # Unused for now

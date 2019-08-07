@@ -25,6 +25,9 @@ from functools import lru_cache
 import attr
 
 from recidiviz.common.constants import enum_canonical_strings
+from recidiviz.common.constants.state.state_court_case import StateCourtType
+from recidiviz.common.constants.state.state_incarceration import \
+    StateIncarcerationType
 from recidiviz.persistence.entity.base_entity import Entity, ExternalIdEntity
 from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.persistence.entity.state import entities as state_entities
@@ -320,6 +323,17 @@ def is_placeholder(entity: Entity) -> bool:
     if has_default_status(entity):
         set_field(copy, 'status', None)
 
+    # Clear known default enum values
+    # TODO(2244): Change this to a general approach so we don't need to check
+    # explicit columns
+    if has_default_enum(entity, 'incarceration_type',
+                        StateIncarcerationType.STATE_PRISON):
+        set_field(copy, 'incarceration_type', None)
+
+    if has_default_enum(entity, 'court_type',
+                        StateCourtType.PRESENT_WITHOUT_INFO):
+        set_field(copy, 'court_type', None)
+
     set_flat_fields = get_set_entity_field_names(
         copy, EntityFieldType.FLAT_FIELD)
     return not bool(set_flat_fields)
@@ -330,4 +344,13 @@ def has_default_status(entity: Entity) -> bool:
         status = get_field(entity, 'status')
         return status \
             and status.value == enum_canonical_strings.present_without_info
+    return False
+
+
+def has_default_enum(entity: Entity, field_name: str, field_value: Enum) \
+        -> bool:
+    if hasattr(entity, field_name):
+        value = get_field(entity, field_name)
+        raw_value = get_field(entity, f'{field_name}_raw_text')
+        return value and value == field_value and not raw_value
     return False

@@ -21,7 +21,6 @@ import recidiviz.common.constants.state.enum_canonical_strings as \
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
-# TODO(1697): Revisit these values! What do all of them mean?
 class StateSupervisionType(EntityEnum, metaclass=EntityEnumMeta):
     CIVIL_COMMITMENT = \
         state_enum_strings.state_supervision_type_civil_commitment

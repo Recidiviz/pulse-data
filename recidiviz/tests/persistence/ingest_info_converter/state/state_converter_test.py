@@ -32,6 +32,8 @@ from recidiviz.common.constants.state.state_charge import \
 from recidiviz.common.constants.state.state_court_case import \
     StateCourtCaseStatus, StateCourtType
 from recidiviz.common.constants.state.state_fine import StateFineStatus
+from recidiviz.common.constants.state.state_incarceration import \
+    StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_incident import \
     StateIncarcerationIncidentType, StateIncarcerationIncidentOutcomeType
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
@@ -40,7 +42,7 @@ from recidiviz.common.constants.state.state_incarceration_period import \
 from recidiviz.common.constants.state.state_supervision import \
     StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import \
-    StateSupervisionPeriodStatus
+    StateSupervisionPeriodStatus, StateSupervisionLevel
 from recidiviz.common.constants.state.state_supervision_violation_response \
     import StateSupervisionViolationResponseType
 from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
@@ -228,7 +230,8 @@ class TestIngestInfoStateConverter(unittest.TestCase):
         ingest_info.state_supervision_periods.add(
             state_supervision_period_id='S_PERIOD_ID1',
             state_supervision_violation_ids=['VIOLATION_ID'],
-            supervision_type='PAROLE'
+            supervision_type='PAROLE',
+            supervision_level='MED'
         )
         ingest_info.state_supervision_periods.add(
             state_supervision_period_id='S_PERIOD_ID2',
@@ -429,6 +432,9 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                                     status=
                                     StateSupervisionPeriodStatus.
                                     PRESENT_WITHOUT_INFO,
+                                    supervision_level=
+                                    StateSupervisionLevel.MEDIUM,
+                                    supervision_level_raw_text='MED',
                                     state_code='US_ND',
                                     supervision_type=
                                     StateSupervisionType.PAROLE,
@@ -443,6 +449,8 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                             external_id='INCARCERATION_SENTENCE_ID1',
                             state_code='US_ND',
                             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                            incarceration_type=
+                            StateIncarcerationType.STATE_PRISON,
                             charges=[charge_1],
                             incarceration_periods=[
                                 StateIncarcerationPeriod.new_with_defaults(
@@ -450,6 +458,8 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                                     status=
                                     StateIncarcerationPeriodStatus.
                                     PRESENT_WITHOUT_INFO,
+                                    incarceration_type=
+                                    StateIncarcerationType.STATE_PRISON,
                                     state_code='US_ND',
                                     incarceration_incidents=[
                                         incident
@@ -480,6 +490,8 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                             external_id='INCARCERATION_SENTENCE_ID2',
                             state_code='US_ND',
                             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                            incarceration_type=
+                            StateIncarcerationType.STATE_PRISON,
                             charges=[charge_2, charge_3],
                             supervision_periods=[
                                 StateSupervisionPeriod.new_with_defaults(
