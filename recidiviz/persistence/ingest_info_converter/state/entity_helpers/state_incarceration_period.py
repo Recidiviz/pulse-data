@@ -60,7 +60,9 @@ def copy_fields_to_builder(
         StateIncarcerationPeriodStatus,
         default=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO)
     new.status_raw_text = fn(normalize, 'status', proto)
-    new.incarceration_type = enum_mappings.get(StateIncarcerationType)
+    new.incarceration_type = enum_mappings.get(
+        StateIncarcerationType,
+        default=StateIncarcerationType.STATE_PRISON)
     new.incarceration_type_raw_text = fn(normalize, 'incarceration_type', proto)
     new.facility_security_level = enum_mappings.get(
         StateIncarcerationFacilitySecurityLevel)

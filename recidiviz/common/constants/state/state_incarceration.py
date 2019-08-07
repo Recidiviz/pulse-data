@@ -33,7 +33,8 @@ class StateIncarcerationType(EntityEnum, metaclass=EntityEnumMeta):
 
 
 _STATE_INCARCERATION_TYPE_MAP: Dict[str, StateIncarcerationType] = {
-    # TODO(1697): Add values here
+    'JAIL': StateIncarcerationType.COUNTY_JAIL,
     'COUNTY JAIL': StateIncarcerationType.COUNTY_JAIL,
+    'PRISON': StateIncarcerationType.STATE_PRISON,
     'STATE PRISON': StateIncarcerationType.STATE_PRISON
 }

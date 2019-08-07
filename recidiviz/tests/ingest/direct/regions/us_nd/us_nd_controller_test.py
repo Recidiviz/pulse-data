@@ -37,6 +37,8 @@ from recidiviz.common.constants.state.state_charge import \
     StateChargeClassificationType
 from recidiviz.common.constants.state.state_court_case import \
     StateCourtCaseStatus, StateCourtType
+from recidiviz.common.constants.state.state_incarceration import \
+    StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_incident import \
     StateIncarcerationIncidentOutcomeType, StateIncarcerationIncidentType
 from recidiviz.common.constants.state.state_incarceration_period import \
@@ -1426,6 +1428,7 @@ class TestUsNdController(unittest.TestCase):
             entities.StateIncarcerationSentence.new_with_defaults(
                 state_code=_STATE_CODE,
                 status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 parole_eligibility_date=
                 datetime.date(year=2005, month=11, day=24),
                 sentence_group=sentence_group_105640, person=person_1)
@@ -1433,6 +1436,7 @@ class TestUsNdController(unittest.TestCase):
             entities.StateIncarcerationSentence.new_with_defaults(
                 state_code=_STATE_CODE,
                 status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 parole_eligibility_date=
                 datetime.date(year=2018, month=7, day=26),
                 sentence_group=sentence_group_113377, person=person_2)
@@ -1483,6 +1487,7 @@ class TestUsNdController(unittest.TestCase):
             entities.StateIncarcerationSentence.new_with_defaults(
                 external_id='114909-1', status=StateSentenceStatus.SERVING,
                 status_raw_text='A',
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 date_imposed=datetime.date(year=2018, month=2, day=27),
                 is_life=False,
                 projected_min_release_date=datetime.date(
@@ -1495,6 +1500,7 @@ class TestUsNdController(unittest.TestCase):
             entities.StateIncarcerationSentence.new_with_defaults(
                 external_id='114909-2', status=StateSentenceStatus.SERVING,
                 status_raw_text='A',
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 date_imposed=datetime.date(year=2018, month=2, day=27),
                 is_life=False,
                 projected_min_release_date=datetime.date(
@@ -1507,6 +1513,7 @@ class TestUsNdController(unittest.TestCase):
             entities.StateIncarcerationSentence.new_with_defaults(
                 external_id='105640-1',
                 status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 date_imposed=datetime.date(year=1990, month=1, day=8),
                 is_life=False,
                 projected_min_release_date=datetime.date(
@@ -1519,6 +1526,7 @@ class TestUsNdController(unittest.TestCase):
             entities.StateIncarcerationSentence.new_with_defaults(
                 external_id='105640-2',
                 status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 date_imposed=datetime.date(year=1990, month=1, day=8),
                 is_life=False,
                 projected_min_release_date=datetime.date(
@@ -1531,6 +1539,7 @@ class TestUsNdController(unittest.TestCase):
             entities.StateIncarcerationSentence.new_with_defaults(
                 external_id='105640-5',
                 status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 date_imposed=datetime.date(year=1996, month=10, day=21),
                 is_life=False,
                 projected_min_release_date=datetime.date(
@@ -1543,6 +1552,7 @@ class TestUsNdController(unittest.TestCase):
             entities.StateIncarcerationSentence.new_with_defaults(
                 external_id='105640-6',
                 status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 date_imposed=datetime.date(year=2012, month=2, day=15),
                 is_life=False,
                 projected_min_release_date=datetime.date(
@@ -1555,6 +1565,7 @@ class TestUsNdController(unittest.TestCase):
             entities.StateIncarcerationSentence.new_with_defaults(
                 external_id='105640-7', status=StateSentenceStatus.SERVING,
                 status_raw_text='A',
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 date_imposed=datetime.date(year=2012, month=2, day=15),
                 is_life=False,
                 projected_min_release_date=datetime.date(
@@ -1567,6 +1578,7 @@ class TestUsNdController(unittest.TestCase):
             entities.StateIncarcerationSentence.new_with_defaults(
                 external_id='113377-4', status=StateSentenceStatus.SERVING,
                 status_raw_text='A',
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 date_imposed=datetime.date(year=2018, month=2, day=27),
                 is_life=False,
                 projected_min_release_date=datetime.date(
@@ -1631,6 +1643,7 @@ class TestUsNdController(unittest.TestCase):
             entities.StateIncarcerationSentence.new_with_defaults(
                 external_id='113377-1',
                 status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 max_length_days=366, state_code=_STATE_CODE,
                 sentence_group=sentence_group_113377,
                 person=sentence_group_113377.person)
@@ -1638,6 +1651,7 @@ class TestUsNdController(unittest.TestCase):
             entities.StateIncarcerationSentence.new_with_defaults(
                 external_id='113377-5',
                 status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 max_length_days=1000, state_code=_STATE_CODE,
                 sentence_group=sentence_group_113377,
                 person=sentence_group_113377.person)
@@ -1679,6 +1693,7 @@ class TestUsNdController(unittest.TestCase):
             entities.StateIncarcerationSentence.new_with_defaults(
                 external_id='113377-2',
                 status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 state_code=_STATE_CODE, sentence_group=sentence_group_113377,
                 person=sentence_group_113377.person)
         sentence_group_113377.incarceration_sentences.append(
@@ -1954,6 +1969,7 @@ class TestUsNdController(unittest.TestCase):
         incarceration_sentence_113377_ips = \
             entities.StateIncarcerationSentence.new_with_defaults(
                 status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 state_code=_STATE_CODE, sentence_group=sentence_group_113377,
                 person=sentence_group_113377.person)
         sentence_group_113377.incarceration_sentences.append(
@@ -1962,7 +1978,9 @@ class TestUsNdController(unittest.TestCase):
             entities.StateIncarcerationPeriod.new_with_defaults(
                 external_id='113377-1|113377-2',
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                status_raw_text='OUT', facility='NDSP',
+                status_raw_text='OUT',
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                facility='NDSP',
                 admission_reason=
                 StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
                 admission_reason_raw_text='ADMN',
@@ -1977,7 +1995,9 @@ class TestUsNdController(unittest.TestCase):
         incarceration_sentence_105640_ips = \
             entities.StateIncarcerationSentence.new_with_defaults(
                 status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                state_code=_STATE_CODE, sentence_group=sentence_group_105640,
+                state_code=_STATE_CODE,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                sentence_group=sentence_group_105640,
                 person=sentence_group_105640.person)
         sentence_group_105640.incarceration_sentences.append(
             incarceration_sentence_105640_ips)
@@ -1985,7 +2005,9 @@ class TestUsNdController(unittest.TestCase):
             entities.StateIncarcerationPeriod.new_with_defaults(
                 external_id='105640-1|105640-2',
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                status_raw_text='OUT', facility='NDSP',
+                status_raw_text='OUT',
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                facility='NDSP',
                 admission_reason=
                 StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
                 admission_reason_raw_text='ADMN',
@@ -1999,7 +2021,9 @@ class TestUsNdController(unittest.TestCase):
             entities.StateIncarcerationPeriod.new_with_defaults(
                 external_id='105640-3|105640-4',
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                status_raw_text='OUT', facility='JRCC',
+                status_raw_text='OUT',
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                facility='JRCC',
                 admission_reason=
                 StateIncarcerationPeriodAdmissionReason.TRANSFER,
                 admission_reason_raw_text='INT',
@@ -2013,7 +2037,9 @@ class TestUsNdController(unittest.TestCase):
             entities.StateIncarcerationPeriod.new_with_defaults(
                 external_id='105640-5',
                 status=StateIncarcerationPeriodStatus.IN_CUSTODY,
-                status_raw_text='IN', facility='JRCC',
+                status_raw_text='IN',
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                facility='JRCC',
                 admission_reason=
                 StateIncarcerationPeriodAdmissionReason.TRANSFER,
                 admission_reason_raw_text='HOSPS',
@@ -2025,6 +2051,7 @@ class TestUsNdController(unittest.TestCase):
         incarceration_sentence_114909_ips = \
             entities.StateIncarcerationSentence.new_with_defaults(
                 status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 state_code=_STATE_CODE, sentence_group=sentence_group_114909,
                 person=sentence_group_114909.person)
         sentence_group_114909.incarceration_sentences.append(
@@ -2033,7 +2060,9 @@ class TestUsNdController(unittest.TestCase):
             entities.StateIncarcerationPeriod.new_with_defaults(
                 external_id='114909-1|114909-2',
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                status_raw_text='OUT', facility='NDSP',
+                status_raw_text='OUT',
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                facility='NDSP',
                 admission_reason=
                 StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
                 admission_reason_raw_text='PV',
@@ -2078,11 +2107,13 @@ class TestUsNdController(unittest.TestCase):
         incarceration_sentence_105640_placeholder = \
             entities.StateIncarcerationSentence.new_with_defaults(
                 status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 state_code=_STATE_CODE, sentence_group=sentence_group_105640,
                 person=sentence_group_105640.person)
         incarceration_period_105640_placeholder = \
             entities.StateIncarcerationPeriod.new_with_defaults(
                 status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 state_code=_STATE_CODE,
                 incarceration_sentences=[
                     incarceration_sentence_105640_placeholder],
@@ -2158,12 +2189,14 @@ class TestUsNdController(unittest.TestCase):
         incarceration_sentence_113377_placeholder = \
             entities.StateIncarcerationSentence.new_with_defaults(
                 status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 state_code=_STATE_CODE,
                 sentence_group=sentence_group_113377,
                 person=sentence_group_113377.person)
         incarceration_period_113377_placeholder = \
             entities.StateIncarcerationPeriod.new_with_defaults(
                 status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 state_code=_STATE_CODE,
                 incarceration_sentences=[
                     incarceration_sentence_113377_placeholder],
@@ -2194,11 +2227,13 @@ class TestUsNdController(unittest.TestCase):
         incarceration_sentence_110651_placeholder = \
             entities.StateIncarcerationSentence.new_with_defaults(
                 status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 state_code=_STATE_CODE, sentence_group=sentence_group_110651,
                 person=sentence_group_110651.person)
         incarceration_period_110651_placeholder = \
             entities.StateIncarcerationPeriod.new_with_defaults(
                 status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 state_code=_STATE_CODE,
                 incarceration_sentences=[
                     incarceration_sentence_110651_placeholder],
@@ -2243,11 +2278,13 @@ class TestUsNdController(unittest.TestCase):
         incarceration_sentence_5129_placeholder = \
             entities.StateIncarcerationSentence.new_with_defaults(
                 status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 state_code=_STATE_CODE, sentence_group=sentence_group_5129,
                 person=sentence_group_5129.person)
         incarceration_period_5129_placeholder = \
             entities.StateIncarcerationPeriod.new_with_defaults(
                 status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 state_code=_STATE_CODE,
                 incarceration_sentences=[
                     incarceration_sentence_5129_placeholder],

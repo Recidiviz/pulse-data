@@ -60,7 +60,18 @@ class StateSupervisionPeriodStatus(EntityEnum, metaclass=EntityEnumMeta):
 
 class StateSupervisionLevel(EntityEnum, metaclass=EntityEnumMeta):
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
-    # TODO(1697): Add values here
+    PRESENT_WITHOUT_INFO = enum_strings.present_without_info
+    MINIMUM = \
+        state_enum_strings.state_supervision_period_supervision_level_minimum
+    MEDIUM = \
+        state_enum_strings.state_supervision_period_supervision_level_medium
+    MAXIMUM = \
+        state_enum_strings.state_supervision_period_supervision_level_maximum
+    DIVERSION = \
+        state_enum_strings.state_supervision_period_supervision_level_diversion
+    INTERSTATE_COMPACT = \
+        state_enum_strings.\
+        state_supervision_period_supervision_level_interstate_compact
 
     @staticmethod
     def _get_default_map():
@@ -107,7 +118,15 @@ _STATE_SUPERVISION_STATUS_MAP = {
 }
 
 _STATE_SUPERVISION_LEVEL_MAP: Dict[str, StateSupervisionLevel] = {
-    # TODO(1697): Add values here
+    'MINIMUM': StateSupervisionLevel.MINIMUM,
+    'MIN': StateSupervisionLevel.MINIMUM,
+    'MEDIUM': StateSupervisionLevel.MEDIUM,
+    'MED': StateSupervisionLevel.MEDIUM,
+    'MAXIMUM': StateSupervisionLevel.MAXIMUM,
+    'MAX': StateSupervisionLevel.MAXIMUM,
+    'DIVERSION': StateSupervisionLevel.DIVERSION,
+    'INTERSTATE COMPACT': StateSupervisionLevel.INTERSTATE_COMPACT,
+    'INTERSTATE': StateSupervisionLevel.INTERSTATE_COMPACT,
 }
 
 _STATE_SUPERVISION_PERIOD_TERMINATION_REASON_MAP = {
