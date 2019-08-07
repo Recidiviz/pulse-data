@@ -24,6 +24,7 @@ import xml
 import html5lib
 from lxml import html
 
+
 def as_string(region_directory, filename):
     """Returns the contents of the given fixture file as a string.
 
@@ -84,6 +85,11 @@ def as_filepath(filename: str, subdir: str = 'fixtures') -> str:
 
     return os.path.abspath(
         os.path.join(caller_filepath, '..', subdir, filename))
+
+
+def as_html(region_directory, filename):
+    content_string = as_string(region_directory, filename)
+    return html.fromstring(content_string)
 
 
 def as_html5(region_directory, filename):
