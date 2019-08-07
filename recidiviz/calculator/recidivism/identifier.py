@@ -79,6 +79,7 @@ def find_release_events_by_cohort_year(
         validate_sort_and_collapse_incarceration_periods(incarceration_periods)
 
     for index, incarceration_period in enumerate(incarceration_periods):
+        state_code = incarceration_period.state_code
         admission_date = incarceration_period.admission_date
         status = incarceration_period.status
         release_date = incarceration_period.release_date
@@ -90,7 +91,8 @@ def find_release_events_by_cohort_year(
         # Admission data and status have been validated already
         if admission_date and status:
             if index == len(incarceration_periods) - 1:
-                event = for_last_incarceration_period(admission_date,
+                event = for_last_incarceration_period(state_code,
+                                                      admission_date,
                                                       status,
                                                       release_date,
                                                       release_reason,
@@ -118,8 +120,8 @@ def find_release_events_by_cohort_year(
                         reincarceration_admission_reason:
 
                     event = for_intermediate_incarceration_period(
-                        admission_date, release_date, release_reason,
-                        release_facility,
+                        state_code, admission_date, release_date,
+                        release_reason, release_facility,
                         reincarceration_date, reincarceration_facility,
                         reincarceration_admission_reason,
                         source_supervision_violation_response)
@@ -281,6 +283,7 @@ def combine_incarceration_periods(start: StateIncarcerationPeriod,
 
 
 def for_last_incarceration_period(
+        state_code: str,
         admission_date: date,
         status: StateIncarcerationPeriodStatus,
         release_date: Optional[date],
@@ -342,7 +345,8 @@ def for_last_incarceration_period(
                           ReleaseReason.EXTERNAL_UNKNOWN,
                           ReleaseReason.SENTENCE_SERVED]:
 
-        return NonRecidivismReleaseEvent(admission_date, release_date,
+        return NonRecidivismReleaseEvent(state_code, admission_date,
+                                         release_date,
                                          release_facility)
 
     raise ValueError("Enum case not handled for "
@@ -351,6 +355,7 @@ def for_last_incarceration_period(
 
 
 def for_intermediate_incarceration_period(
+        state_code: str,
         admission_date: date,
         release_date: date,
         release_reason: ReleaseReason,
@@ -399,7 +404,7 @@ def for_intermediate_incarceration_period(
         get_source_violation_type(source_supervision_violation_response)
 
     # This is a new admission recidivism event. Return it.
-    return RecidivismReleaseEvent(admission_date, release_date,
+    return RecidivismReleaseEvent(state_code, admission_date, release_date,
                                   release_facility, reincarceration_date,
                                   reincarceration_facility, return_type,
                                   from_supervision_type, source_violation_type)
