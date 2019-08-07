@@ -160,6 +160,13 @@ state_supervision_period_admission_reason_return_from_suspension = \
 state_supervision_period_status_terminated = 'TERMINATED'
 state_supervision_period_status_under_supervision = 'UNDER_SUPERVISION'
 
+state_supervision_period_supervision_level_minimum = 'MINIMUM'
+state_supervision_period_supervision_level_medium = 'MEDIUM'
+state_supervision_period_supervision_level_maximum = 'MAXIMUM'
+state_supervision_period_supervision_level_diversion = 'DIVERSION'
+state_supervision_period_supervision_level_interstate_compact = \
+    'INTERSTATE_COMPACT'
+
 state_supervision_period_termination_reason_absconsion = 'ABSCONSION'
 state_supervision_period_termination_reason_discharge = 'DISCHARGE'
 state_supervision_period_termination_reason_revocation = 'REVOCATION'
