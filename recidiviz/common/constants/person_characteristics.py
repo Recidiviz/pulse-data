@@ -74,7 +74,6 @@ class ResidencyStatus(EntityEnum, metaclass=EntityEnumMeta):
 
 PROTECTED_CLASSES = (Race, Ethnicity, Gender)
 
-
 # MappableEnum.parse will strip punctuation and separate tokens with a single
 # space. Add mappings here using a single space between words and numbers.
 # For example, `N/A` can be written as `N A` and `(10%)` can be written as `10`.
@@ -100,6 +99,7 @@ _RACE_MAP = {
     'AFRICAN AMER': Race.BLACK,
     'AFRICAN AMERICAN': Race.BLACK,
     'ALL OTHERS': Race.OTHER,
+    'AMER IND ALASKAN NAT': Race.AMERICAN_INDIAN_ALASKAN_NATIVE,
     'AMERICAN INDIAN': Race.AMERICAN_INDIAN_ALASKAN_NATIVE,
     'AMERICAN INDIAN ALASKAN NATIVE': Race.AMERICAN_INDIAN_ALASKAN_NATIVE,
     'AMERICAN INDIAN OF ALASKA NATIVE': Race.AMERICAN_INDIAN_ALASKAN_NATIVE,
@@ -176,7 +176,6 @@ ETHNICITY_MAP = {
     'N': Ethnicity.NOT_HISPANIC,
     'UNKNOWN': Ethnicity.EXTERNAL_UNKNOWN,
 }
-
 
 RESIDENCY_STATUS_SUBSTRING_MAP = {
     'HOMELESS': ResidencyStatus.HOMELESS,
