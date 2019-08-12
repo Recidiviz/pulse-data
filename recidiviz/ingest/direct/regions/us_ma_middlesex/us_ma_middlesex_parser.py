@@ -147,6 +147,8 @@ class UsMaMiddlesexParser:
             return 'BAIL MITTIMUS'
         if admission_reasons == {'BAIL MITTIMUS', 'SENTENCE MITTIMUS'}:
             return 'SENTENCE MITTIMUS'
+        if admission_reasons == {'BAIL MITTIMUS', 'GOVERNORS WARRANT'}:
+            return 'GOVERNORS WARRANT'
         if len(admission_reasons) > 1:
             raise DirectIngestError(
                 error_type=DirectIngestErrorType.PARSE_ERROR,
