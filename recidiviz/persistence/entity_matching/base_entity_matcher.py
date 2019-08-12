@@ -20,12 +20,12 @@
 from abc import abstractmethod
 from typing import List, Generic
 
-import attr
 from opencensus.stats import measure, view, aggregation
 
 from recidiviz.persistence.database.session import Session
-from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entities import EntityPersonType
+from recidiviz.persistence.entity_matching.entity_matching_types import \
+    MatchedEntities
 from recidiviz.utils import monitoring
 
 m_matching_errors = measure.MeasureInt(
@@ -40,35 +40,6 @@ matching_errors_by_entity_view = view.View(
     aggregation.SumAggregation())
 
 monitoring.register_views([matching_errors_by_entity_view])
-
-
-# TODO(1907): Rename people -> persons
-@attr.s(frozen=True, kw_only=True)
-class MatchedEntities(Generic[EntityPersonType]):
-    """
-    Object that contains output for entity matching
-    - people: List of all successfully matched and unmatched people.
-        This list does NOT include any people for which Entity Matching raised
-        an Exception.
-    - orphaned entities: All entities that were orphaned during matching.
-        These will need to be added to the session separately from the
-        returned people.
-    - error count: The number of errors raised while processing a root entity
-    - total root entities: The total number of root entities processed during
-        matching.
-    """
-    people: List[EntityPersonType] = attr.ib(factory=list)
-    orphaned_entities: List[Entity] = attr.ib(factory=list)
-    error_count: int = attr.ib(default=0)
-    total_root_entities: int = attr.ib(default=0)
-
-    def __add__(self, other):
-        return MatchedEntities(
-            people=self.people + other.people,
-            orphaned_entities=self.orphaned_entities + other.orphaned_entities,
-            error_count=self.error_count + other.error_count,
-            total_root_entities=self.total_root_entities
-            + other.total_root_entities)
 
 
 class BaseEntityMatcher(Generic[EntityPersonType]):
