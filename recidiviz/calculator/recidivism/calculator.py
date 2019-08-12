@@ -53,7 +53,8 @@ FOLLOW_UP_PERIODS = range(1, 11)
 
 def map_recidivism_combinations(person: StatePerson,
                                 release_events:
-                                Dict[int, List[ReleaseEvent]]) \
+                                Dict[int, List[ReleaseEvent]],
+                                inclusions: Dict[str, bool]) \
         -> List[Tuple[Dict[str, Any], Any]]:
     """Transforms ReleaseEvents and a StatePerson into metric combinations.
 
@@ -83,7 +84,16 @@ def map_recidivism_combinations(person: StatePerson,
         person: the StatePerson
         release_events: A dictionary mapping release cohorts to a list of
             ReleaseEvents for the given StatePerson.
-
+        inclusions: A dictionary containing the following keys that correspond
+            to characteristic dimensions:
+                - age_bucket
+                - ethnicity
+                - gender
+                - race
+                - release_facility
+                - stay_length_bucket
+            Where the values are boolean flags indicating whether to include
+            the dimension in the calculations.
     Returns:
         A list of key-value tuples representing specific metric combinations and
         the recidivism value corresponding to that metric.
@@ -94,7 +104,7 @@ def map_recidivism_combinations(person: StatePerson,
     for release_cohort, events in release_events.items():
         for event in events:
             characteristic_combos_rates = \
-                characteristic_combinations(person, event)
+                characteristic_combinations(person, event, inclusions)
             characteristic_combos_counts = deepcopy(
                 characteristic_combos_rates)
 
@@ -483,7 +493,9 @@ def stay_length_bucket(stay_length: Optional[int]) -> Optional[str]:
 
 
 def characteristic_combinations(person: StatePerson,
-                                event: ReleaseEvent) -> List[Dict[str, Any]]:
+                                event: ReleaseEvent,
+                                inclusions: Dict[str, bool]) -> \
+        List[Dict[str, Any]]:
     """Calculates all recidivism metric combinations.
 
     Returns the list of all combinations of the metric characteristics, of all
@@ -529,29 +541,51 @@ def characteristic_combinations(person: StatePerson,
     Args:
         person: the StatePerson we are picking characteristics from
         event: the ReleaseEvent we are picking characteristics from
+        inclusions: A dictionary containing the following keys that correspond
+            to characteristic dimensions:
+                - age_bucket
+                - ethnicity
+                - gender
+                - race
+                - release_facility
+                - stay_length_bucket
+            Where the values are boolean flags indicating whether to include
+            the dimension in the calculations.
 
     Returns:
         A list of dictionaries containing all unique combinations of
         characteristics.
     """
-    entry_age = age_at_date(person, event.original_admission_date)
-    entry_age_bucket = age_bucket(entry_age)
-    event_stay_length = stay_length_from_event(event)
-    event_stay_length_bucket = stay_length_bucket(event_stay_length)
+    characteristics: Dict[str, Any] = {}
 
-    characteristics: Dict[str, Any] = {'stay_length_bucket':
-                                       event_stay_length_bucket}
-
-    if entry_age_bucket is not None:
-        characteristics['age_bucket'] = entry_age_bucket
-    if person.gender is not None:
-        characteristics['gender'] = person.gender
-    if event.release_facility is not None:
-        characteristics['release_facility'] = event.release_facility
-
+    if inclusions.get('age_bucket'):
+        entry_age = age_at_date(person, event.original_admission_date)
+        entry_age_bucket = age_bucket(entry_age)
+        if entry_age_bucket is not None:
+            characteristics['age_bucket'] = entry_age_bucket
+    if inclusions.get('gender'):
+        if person.gender is not None:
+            characteristics['gender'] = person.gender
+    if inclusions.get('release_facility'):
+        if event.release_facility is not None:
+            characteristics['release_facility'] = event.release_facility
+    if inclusions.get('stay_length_bucket'):
+        event_stay_length = stay_length_from_event(event)
+        event_stay_length_bucket = stay_length_bucket(event_stay_length)
+        characteristics['stay_length_bucket'] = event_stay_length_bucket
     if person.races or person.ethnicities:
+        if inclusions.get('race'):
+            races = person.races
+        else:
+            races = []
+
+        if inclusions.get('ethnicity'):
+            ethnicities = person.ethnicities
+        else:
+            ethnicities = []
+
         return for_characteristics_races_ethnicities(
-            person.races, person.ethnicities, characteristics)
+            races, ethnicities, characteristics)
 
     return for_characteristics(characteristics)
 

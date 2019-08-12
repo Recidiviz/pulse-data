@@ -24,6 +24,7 @@ from datetime import date
 from datetime import datetime
 
 from dateutil.relativedelta import relativedelta
+from more_itertools import one
 
 from recidiviz.calculator.recidivism import calculator
 from recidiviz.calculator.recidivism.release_event import ReleaseEvent, \
@@ -927,8 +928,17 @@ class TestMapRecidivismCombinations:
                 ReincarcerationReturnType.NEW_ADMISSION)]
         }
 
+        inclusions = {
+            'age_bucket': True,
+            'gender': True,
+            'race': True,
+            'ethnicity': True,
+            'release_facility': True,
+            'stay_length_bucket': True
+        }
+
         recidivism_combinations = calculator.map_recidivism_combinations(
-            person, release_events_by_cohort)
+            person, release_events_by_cohort, inclusions)
 
         # 64 combinations of demographics, facility, & stay length
         # * 40 combinations of methodology/return type/supervision type
@@ -973,8 +983,17 @@ class TestMapRecidivismCombinations:
                 ReincarcerationReturnType.NEW_ADMISSION)]
         }
 
+        inclusions = {
+            'age_bucket': True,
+            'gender': True,
+            'race': True,
+            'ethnicity': True,
+            'release_facility': True,
+            'stay_length_bucket': True
+        }
+
         recidivism_combinations = calculator.map_recidivism_combinations(
-            person, release_events_by_cohort)
+            person, release_events_by_cohort, inclusions)
 
         # For the first event:
         #   For the first 5 periods:
@@ -1024,8 +1043,17 @@ class TestMapRecidivismCombinations:
                                              date(2008, 9, 19), 'Hudson')]
         }
 
+        inclusions = {
+            'age_bucket': True,
+            'gender': True,
+            'race': True,
+            'ethnicity': True,
+            'release_facility': True,
+            'stay_length_bucket': True
+        }
+
         recidivism_combinations = calculator.map_recidivism_combinations(
-            person, release_events_by_cohort)
+            person, release_events_by_cohort, inclusions)
 
         # 64 combinations of demographics, facility, & stay length
         # * 40 combinations of methodology/return type/supervision type
@@ -1059,8 +1087,17 @@ class TestMapRecidivismCombinations:
                 ReincarcerationReturnType.NEW_ADMISSION)]
         }
 
+        inclusions = {
+            'age_bucket': True,
+            'gender': True,
+            'race': True,
+            'ethnicity': True,
+            'release_facility': True,
+            'stay_length_bucket': True
+        }
+
         recidivism_combinations = calculator.map_recidivism_combinations(
-            person, release_events_by_cohort)
+            person, release_events_by_cohort, inclusions)
 
         # 64 combinations of demographics, facility, & stay length
         # * 40 combinations of methodology/return type/supervision type
@@ -1103,8 +1140,17 @@ class TestMapRecidivismCombinations:
                 ReincarcerationReturnType.NEW_ADMISSION)]
         }
 
+        inclusions = {
+            'age_bucket': True,
+            'gender': True,
+            'race': True,
+            'ethnicity': True,
+            'release_facility': True,
+            'stay_length_bucket': True
+        }
+
         recidivism_combinations = calculator.map_recidivism_combinations(
-            person, release_events_by_cohort)
+            person, release_events_by_cohort, inclusions)
 
         # 96 combinations of demographics, facility, & stay length
         # * 40 combinations of methodology/return type/supervision type
@@ -1149,8 +1195,17 @@ class TestMapRecidivismCombinations:
                 ReincarcerationReturnType.NEW_ADMISSION)]
         }
 
+        inclusions = {
+            'age_bucket': True,
+            'gender': True,
+            'race': True,
+            'ethnicity': True,
+            'release_facility': True,
+            'stay_length_bucket': True
+        }
+
         recidivism_combinations = calculator.map_recidivism_combinations(
-            person, release_events_by_cohort)
+            person, release_events_by_cohort, inclusions)
 
         # 96 combinations of demographics, facility, & stay length
         # * 40 combinations of methodology/return type/supervision type
@@ -1200,8 +1255,17 @@ class TestMapRecidivismCombinations:
                 ReincarcerationReturnType.NEW_ADMISSION)]
         }
 
+        inclusions = {
+            'age_bucket': True,
+            'gender': True,
+            'race': True,
+            'ethnicity': True,
+            'release_facility': True,
+            'stay_length_bucket': True
+        }
+
         recidivism_combinations = calculator.map_recidivism_combinations(
-            person, release_events_by_cohort)
+            person, release_events_by_cohort, inclusions)
 
         # 144 combinations of demographics, facility, & stay length
         # * 40 combinations of methodology/return type/supervision type
@@ -1244,9 +1308,18 @@ class TestMapRecidivismCombinations:
                 from_supervision_type=
                 ReincarcerationReturnFromSupervisionType.PAROLE)]
         }
-        recidivism_combinations = calculator.map_recidivism_combinations(
 
-            person, release_events_by_cohort)
+        inclusions = {
+            'age_bucket': True,
+            'gender': True,
+            'race': True,
+            'ethnicity': True,
+            'release_facility': True,
+            'stay_length_bucket': True
+        }
+
+        recidivism_combinations = calculator.map_recidivism_combinations(
+            person, release_events_by_cohort, inclusions)
 
         # 64 combinations of demographics, facility, & stay length
         # * 40 combinations of methodology/return type/supervision type
@@ -1293,8 +1366,17 @@ class TestMapRecidivismCombinations:
                 ReincarcerationReturnFromSupervisionType.PROBATION)]
         }
 
+        inclusions = {
+            'age_bucket': True,
+            'gender': True,
+            'race': True,
+            'ethnicity': True,
+            'release_facility': True,
+            'stay_length_bucket': True
+        }
+
         recidivism_combinations = calculator.map_recidivism_combinations(
-            person, release_events_by_cohort)
+            person, release_events_by_cohort, inclusions)
 
         # 64 combinations of demographics, facility, & stay length
         # * 40 combinations of methodology/return type/supervision type
@@ -1342,9 +1424,18 @@ class TestMapRecidivismCombinations:
                 ReincarcerationReturnFromSupervisionType.PAROLE,
                 source_violation_type=StateSupervisionViolationType.TECHNICAL)]
         }
-        recidivism_combinations = calculator.map_recidivism_combinations(
 
-            person, release_events_by_cohort)
+        inclusions = {
+            'age_bucket': True,
+            'gender': True,
+            'race': True,
+            'ethnicity': True,
+            'release_facility': True,
+            'stay_length_bucket': True
+        }
+
+        recidivism_combinations = calculator.map_recidivism_combinations(
+            person, release_events_by_cohort, inclusions)
 
         # 64 combinations of demographics, facility, & stay length
         # * 40 combinations of methodology/return type/supervision type
@@ -1395,8 +1486,17 @@ class TestMapRecidivismCombinations:
                 ReincarcerationReturnType.NEW_ADMISSION)]
         }
 
+        inclusions = {
+            'age_bucket': True,
+            'gender': True,
+            'race': True,
+            'ethnicity': True,
+            'release_facility': True,
+            'stay_length_bucket': True
+        }
+
         recidivism_combinations = calculator.map_recidivism_combinations(
-            person, release_events_by_cohort)
+            person, release_events_by_cohort, inclusions)
 
         num_count_metrics = 0
         num_year_metrics = 0
@@ -1451,8 +1551,17 @@ class TestMapRecidivismCombinations:
                                              date(2008, 9, 19), 'Hudson')]
         }
 
+        inclusions = {
+            'age_bucket': True,
+            'gender': True,
+            'race': True,
+            'ethnicity': True,
+            'release_facility': True,
+            'stay_length_bucket': True
+        }
+
         recidivism_combinations = calculator.map_recidivism_combinations(
-            person, release_events_by_cohort)
+            person, release_events_by_cohort, inclusions)
 
         assert all(value == 0 for _combination, value
                    in recidivism_combinations)
@@ -1482,8 +1591,17 @@ class TestMapRecidivismCombinations:
                 ReincarcerationReturnType.NEW_ADMISSION)]
         }
 
+        inclusions = {
+            'age_bucket': True,
+            'gender': True,
+            'race': True,
+            'ethnicity': True,
+            'release_facility': True,
+            'stay_length_bucket': True
+        }
+
         recidivism_combinations = calculator.map_recidivism_combinations(
-            person, release_events_by_cohort)
+            person, release_events_by_cohort, inclusions)
 
         assert all(value == 0 for _combination, value
                    in recidivism_combinations)
@@ -1517,8 +1635,17 @@ class TestMapRecidivismCombinations:
                 ReincarcerationReturnType.NEW_ADMISSION)]
         }
 
+        inclusions = {
+            'age_bucket': True,
+            'gender': True,
+            'race': True,
+            'ethnicity': True,
+            'release_facility': True,
+            'stay_length_bucket': True
+        }
+
         recidivism_combinations = calculator.map_recidivism_combinations(
-            person, release_events_by_cohort)
+            person, release_events_by_cohort, inclusions)
 
         # For the first event:
         #   For the first 5 periods:
@@ -1607,8 +1734,17 @@ class TestMapRecidivismCombinations:
                 ReincarcerationReturnType.NEW_ADMISSION)]
         }
 
+        inclusions = {
+            'age_bucket': True,
+            'gender': True,
+            'race': True,
+            'ethnicity': True,
+            'release_facility': True,
+            'stay_length_bucket': True
+        }
+
         recidivism_combinations = calculator.map_recidivism_combinations(
-            person, release_events_by_cohort)
+            person, release_events_by_cohort, inclusions)
 
         # For the first event:
         #   For the first 5 periods:
@@ -1672,3 +1808,354 @@ class TestMapRecidivismCombinations:
         assert num_march_month_metrics == (2560 + 1280)
         assert num_person_month_metrics == 1280
         assert num_event_month_metrics == 2560
+
+
+class TestCharacteristicCombinations:
+    """Tests the characteristic_combinations function."""
+    def test_characteristic_combinations(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='CA',
+                                                 race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        release_event = RecidivismReleaseEvent(
+            'CA', date(2005, 7, 19), date(2008, 9, 19), 'Hudson',
+            date(2014, 5, 12), 'Upstate',
+            ReincarcerationReturnType.NEW_ADMISSION)
+
+        inclusions = {
+            'age_bucket': True,
+            'gender': True,
+            'race': True,
+            'ethnicity': True,
+            'release_facility': True,
+            'stay_length_bucket': True
+        }
+
+        combinations = calculator.characteristic_combinations(
+            person, release_event, inclusions)
+
+        # 64 combinations of demographics, facility, & stay length
+        assert len(combinations) == 64
+
+    def test_characteristic_combinations_exclude_age(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='CA',
+                                                 race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        release_event = RecidivismReleaseEvent(
+            'CA', date(2005, 7, 19), date(2008, 9, 19), 'Hudson',
+            date(2014, 5, 12), 'Upstate',
+            ReincarcerationReturnType.NEW_ADMISSION)
+
+        inclusions = {
+            'age_bucket': False,
+            'gender': True,
+            'race': True,
+            'ethnicity': True,
+            'release_facility': True,
+            'stay_length_bucket': True
+        }
+
+        combinations = calculator.characteristic_combinations(
+            person, release_event, inclusions)
+
+        # 32 combinations of demographics, facility, & stay length
+        assert len(combinations) == 32
+
+        for combo in combinations:
+            assert combo.get('age_bucket') is None
+
+    def test_characteristic_combinations_exclude_gender(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='CA',
+                                                 race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        release_event = RecidivismReleaseEvent(
+            'CA', date(2005, 7, 19), date(2008, 9, 19), 'Hudson',
+            date(2014, 5, 12), 'Upstate',
+            ReincarcerationReturnType.NEW_ADMISSION)
+
+        inclusions = {
+            'age_bucket': True,
+            'gender': False,
+            'race': True,
+            'ethnicity': True,
+            'release_facility': True,
+            'stay_length_bucket': True
+        }
+
+        combinations = calculator.characteristic_combinations(
+            person, release_event, inclusions)
+
+        # 32 combinations of demographics, facility, & stay length
+        assert len(combinations) == 32
+
+        for combo in combinations:
+            assert combo.get('gender') is None
+
+    def test_characteristic_combinations_exclude_race(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='CA',
+                                                 race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        release_event = RecidivismReleaseEvent(
+            'CA', date(2005, 7, 19), date(2008, 9, 19), 'Hudson',
+            date(2014, 5, 12), 'Upstate',
+            ReincarcerationReturnType.NEW_ADMISSION)
+
+        inclusions = {
+            'age_bucket': True,
+            'gender': True,
+            'race': False,
+            'ethnicity': True,
+            'release_facility': True,
+            'stay_length_bucket': True
+        }
+
+        combinations = calculator.characteristic_combinations(
+            person, release_event, inclusions)
+
+        # 32 combinations of demographics, facility, & stay length
+        assert len(combinations) == 32
+
+        for combo in combinations:
+            assert combo.get('race') is None
+
+    def test_characteristic_combinations_exclude_ethnicity(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='CA',
+                                                 race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        release_event = RecidivismReleaseEvent(
+            'CA', date(2005, 7, 19), date(2008, 9, 19), 'Hudson',
+            date(2014, 5, 12), 'Upstate',
+            ReincarcerationReturnType.NEW_ADMISSION)
+
+        inclusions = {
+            'age_bucket': True,
+            'gender': True,
+            'race': True,
+            'ethnicity': False,
+            'release_facility': True,
+            'stay_length_bucket': True
+        }
+
+        combinations = calculator.characteristic_combinations(
+            person, release_event, inclusions)
+
+        # 32 combinations of demographics, facility, & stay length
+        assert len(combinations) == 32
+
+        for combo in combinations:
+            assert combo.get('ethnicity') is None
+
+    def test_characteristic_combinations_exclude_release_facility(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='CA',
+                                                 race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        release_event = RecidivismReleaseEvent(
+            'CA', date(2005, 7, 19), date(2008, 9, 19), 'Hudson',
+            date(2014, 5, 12), 'Upstate',
+            ReincarcerationReturnType.NEW_ADMISSION)
+
+        inclusions = {
+            'age_bucket': True,
+            'gender': True,
+            'race': True,
+            'ethnicity': True,
+            'release_facility': False,
+            'stay_length_bucket': True
+        }
+
+        combinations = calculator.characteristic_combinations(
+            person, release_event, inclusions)
+
+        # 32 combinations of demographics, facility, & stay length
+        assert len(combinations) == 32
+
+        for combo in combinations:
+            assert combo.get('release_facility') is None
+
+    def test_characteristic_combinations_exclude_stay_length(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='CA',
+                                                 race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        release_event = RecidivismReleaseEvent(
+            'CA', date(2005, 7, 19), date(2008, 9, 19), 'Hudson',
+            date(2014, 5, 12), 'Upstate',
+            ReincarcerationReturnType.NEW_ADMISSION)
+
+        inclusions = {
+            'age_bucket': True,
+            'gender': True,
+            'race': True,
+            'ethnicity': True,
+            'release_facility': True,
+            'stay_length_bucket': False
+        }
+
+        combinations = calculator.characteristic_combinations(
+            person, release_event, inclusions)
+
+        # 32 combinations of demographics, facility, & stay length
+        assert len(combinations) == 32
+
+        for combo in combinations:
+            assert combo.get('stay_length') is None
+
+    def test_characteristic_combinations_exclude_multiple(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='CA',
+                                                 race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        release_event = RecidivismReleaseEvent(
+            'CA', date(2005, 7, 19), date(2008, 9, 19), 'Hudson',
+            date(2014, 5, 12), 'Upstate',
+            ReincarcerationReturnType.NEW_ADMISSION)
+
+        inclusions = {
+            'age_bucket': False,
+            'gender': True,
+            'race': True,
+            'ethnicity': False,
+            'release_facility': True,
+            'stay_length_bucket': False
+        }
+
+        combinations = calculator.characteristic_combinations(
+            person, release_event, inclusions)
+
+        # 8 combinations of demographics, facility, & stay length
+        assert len(combinations) == 8
+
+        for combo in combinations:
+            assert combo.get('age_bucket') is None
+            assert combo.get('ethnicity') is None
+            assert combo.get('stay_length_bucket') is None
+
+    def test_characteristic_combinations_exclude_all(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='CA',
+                                                 race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        release_event = RecidivismReleaseEvent(
+            'CA', date(2005, 7, 19), date(2008, 9, 19), 'Hudson',
+            date(2014, 5, 12), 'Upstate',
+            ReincarcerationReturnType.NEW_ADMISSION)
+
+        inclusions = {
+            'age_bucket': False,
+            'gender': False,
+            'race': False,
+            'ethnicity': False,
+            'release_facility': False,
+            'stay_length_bucket': False
+        }
+
+        combinations = calculator.characteristic_combinations(
+            person, release_event, inclusions)
+
+        #  combinations of demographics, facility, & stay length
+        assert len(combinations) == 1
+        assert one(combinations) == {}
