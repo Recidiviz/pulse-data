@@ -31,7 +31,9 @@ from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.county import entities
 from recidiviz.persistence.database.schema.county import dao
 from recidiviz.persistence.entity_matching.base_entity_matcher import \
-    BaseEntityMatcher, MatchedEntities, increment_error
+    BaseEntityMatcher, increment_error
+from recidiviz.persistence.entity_matching.entity_matching_types import \
+    MatchedEntities
 from recidiviz.persistence.entity_matching.county import county_matching_utils
 from recidiviz.persistence.entity_matching.county.county_matching_utils import \
     is_booking_match, is_hold_match, is_charge_match_with_children, \

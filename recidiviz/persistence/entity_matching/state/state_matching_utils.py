@@ -34,87 +34,10 @@ from recidiviz.persistence.entity.state.entities import StatePerson, \
     StatePersonEthnicity, StateIncarcerationPeriod, \
     StateIncarcerationIncident, StateSentenceGroup, \
     StateSupervisionViolationResponse
+from recidiviz.persistence.entity_matching import entity_matching_utils
+from recidiviz.persistence.entity_matching.entity_matching_types import \
+    EntityTree
 from recidiviz.persistence.errors import EntityMatchingError
-
-
-class EntityTree:
-    """Object that contains an entity and the list of ancestors traversed to get
-    to this entity from the root Person node."""
-
-    def __init__(self, entity: Entity, ancestor_chain: List[Entity]):
-        if not entity:
-            raise EntityMatchingError(
-                "When creating EntityTree object, entity field must be set",
-                'entity_tree')
-
-        # The final child in this EntityTree.
-        self.entity = entity
-
-        # The list of ancestors for the entity above. This list is ordered from
-        # furthest to closest ancestor.
-        self.ancestor_chain = ancestor_chain[:]
-
-    def generate_parent_tree(self) -> 'EntityTree':
-        """Returns an EntityTree object for the direct parent of this
-        EntityTree.
-        """
-        return EntityTree(entity=self.ancestor_chain[-1],
-                          ancestor_chain=self.ancestor_chain[:-1])
-
-    def generate_child_trees(self, children: List[Entity]) \
-            -> List['EntityTree']:
-        """For each of the provided |children| creates a new EntityTree object
-        by adding the child to this EntityTree. Returns these new EntityTrees.
-        """
-        result = []
-        for child in children:
-            result.append(EntityTree(
-                entity=child,
-                ancestor_chain=self.ancestor_chain + [self.entity]))
-        return result
-
-    def __eq__(self, other):
-        return self.entity == other.entity \
-               and self.ancestor_chain == other.ancestor_chain
-
-
-class IndividualMatchResult:
-    """Object that represents the result of a match attempt for an
-    ingested_entity_tree."""
-
-    def __init__(self, ingested_entity_tree: EntityTree,
-                 merged_entity_trees: List[EntityTree], error_count: int):
-        if not ingested_entity_tree:
-            raise EntityMatchingError(
-                "When creating IndividualMatchResult object, "
-                "ingested_entity_tree field must be set",
-                'individual_match_result')
-
-        # The initial EntityTree to be matched to DB EntityTrees.
-        self.ingested_entity_tree = ingested_entity_tree
-
-        # If matching was successful, these are results of merging the
-        # ingested_entity_tree with any of it's DB matches.
-        self.merged_entity_trees = merged_entity_trees
-
-        # The number of errors encountered while matching this entity.
-        self.error_count = error_count
-
-
-class MatchResults:
-    """Object that represents the results of a match attempt for a group of
-    ingested and database EntityTree objects"""
-
-    def __init__(self, individual_match_results: List[IndividualMatchResult],
-                 unmatched_db_entities: List[Entity], error_count: int):
-        # Results for each individual ingested EntityTree.
-        self.individual_match_results = individual_match_results
-
-        # List of db entities that were unmatched.
-        self.unmatched_db_entities = unmatched_db_entities
-
-        # The number of errors encountered while matching these entities.
-        self.error_count = error_count
 
 
 def is_match(*, ingested_entity: EntityTree, db_entity: EntityTree) -> bool:
@@ -176,6 +99,69 @@ def _is_match(*, ingested_entity: Entity, db_entity: Entity) -> bool:
     if ingested_entity.external_id is None and db_entity.external_id is None:
         return is_placeholder(ingested_entity) and is_placeholder(db_entity)
     return ingested_entity.external_id == db_entity.external_id
+
+
+# TODO(2037): Move the following into North Dakota specific file.
+def base_entity_match(
+        ingested_entity: EntityTree, db_entity: EntityTree) -> bool:
+    """
+    Matching logic for comparing entities that might not have external ids, by
+    comparing all flat fields in the given entities. Should only be used for
+    entities that we know might not have external_ids based on the ingested
+    state data.
+    """
+    a = cast(ExternalIdEntity, ingested_entity.entity)
+    b = cast(ExternalIdEntity, db_entity.entity)
+
+    # Placeholders never match
+    if is_placeholder(a) or is_placeholder(b):
+        return False
+
+    # Compare external ids if one is present
+    if a.external_id or b.external_id:
+        return a.external_id == b.external_id
+
+    # Compare all flat fields of the two entities
+    all_set_flat_field_names = \
+        get_set_entity_field_names(a, EntityFieldType.FLAT_FIELD) | \
+        get_set_entity_field_names(b, EntityFieldType.FLAT_FIELD)
+    for field_name in all_set_flat_field_names:
+        # Skip primary key
+        if field_name == a.get_class_id_name():
+            continue
+        a_field = get_field(a, field_name)
+        b_field = get_field(b, field_name)
+        if a_field != b_field:
+            return False
+
+    return True
+
+
+def nd_get_incomplete_incarceration_period_match(
+        ingested_entity_tree: EntityTree, db_entity_trees: List[EntityTree]) \
+        -> Optional[EntityTree]:
+    """For the ingested StateIncarcerationPeriod in the provided
+    |ingested_entity_tree|, attempts to find a matching incomplete
+    StateIncarcerationPeriod in the provided |db_entity_trees|.
+
+    Returns the match if one is found, otherwise returns None.
+    """
+
+    # If the period is complete, it cannot match to an incomplete period.
+    ingested_period = cast(
+        StateIncarcerationPeriod, ingested_entity_tree.entity)
+    if is_incarceration_period_complete(ingested_period):
+        return None
+
+    incomplete_db_trees = []
+    for db_tree in db_entity_trees:
+        db_period = cast(StateIncarcerationPeriod, db_tree.entity)
+        if not is_incarceration_period_complete(db_period):
+            incomplete_db_trees.append(db_tree)
+
+    return entity_matching_utils.get_only_match(
+        ingested_entity_tree, incomplete_db_trees,
+        is_incomplete_incarceration_period_match)
 
 
 def remove_back_edges(entity: Entity):
