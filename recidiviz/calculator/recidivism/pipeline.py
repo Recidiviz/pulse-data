@@ -66,6 +66,7 @@ from recidiviz.calculator.recidivism.release_event import ReleaseEvent
 from recidiviz.calculator.recidivism.metrics import \
     ReincarcerationRecidivismRateMetric, ReincarcerationRecidivismCountMetric, \
     RecidivismMethodologyType, ReincarcerationRecidivismMetric
+from recidiviz.calculator.utils.beam_utils import SumFn, RecidivismRateFn
 from recidiviz.calculator.utils.execution_utils import get_job_id
 from recidiviz.calculator.utils.extractor_utils import BuildRootEntity
 from recidiviz.persistence.entity.state import entities
@@ -95,6 +96,7 @@ def clear_job_id():
 class SetViolationResponseOnIncarcerationPeriod(beam.DoFn):
     """Sets a hydrated StateSupervisionviolationResponse onto the corresponding
     StateIncarcerationPeriod."""
+
     def process(self, element, *args, **kwargs):
         """For the incarceration periods and supervision violation responses of
         a given person, finds the matching hydrated supervision violation
@@ -143,8 +145,8 @@ class SetViolationResponseOnIncarcerationPeriod(beam.DoFn):
 
                 yield (person_id, incarceration_period)
 
-    def to_runner_api_parameter(self, unused_context):
-        pass
+    def to_runner_api_parameter(self, _):
+        pass  # Passing unused abstract method.
 
 
 @with_input_types(beam.typehints.Tuple[int, Dict[str, Any]])
@@ -168,9 +170,11 @@ class GetReleaseEvents(beam.PTransform):
 class GetRecidivismMetrics(beam.PTransform):
     """Transforms a StatePerson and ReleaseEvents into RecidivismMetrics."""
 
-    def __init__(self, pipeline_options: Dict[str, str]):
+    def __init__(self, pipeline_options: Dict[str, str],
+                 inclusions: Dict[str, bool]):
         super(GetRecidivismMetrics, self).__init__()
         self._pipeline_options = pipeline_options
+        self.inclusions = inclusions
 
     def expand(self, input_or_inputs):
         # Calculate recidivism metric combinations from a StatePerson and their
@@ -178,21 +182,41 @@ class GetRecidivismMetrics(beam.PTransform):
         recidivism_metric_combinations = (
             input_or_inputs
             | 'Map to metric combinations' >>
-            beam.ParDo(CalculateRecidivismMetricCombinations()))
+            beam.ParDo(CalculateRecidivismMetricCombinations(),
+                       **self.inclusions).with_outputs('rates', 'counts'))
 
-        # Group metrics that have the same metric_key
-        # Note: We are preventing fusion here by having a GroupByKey in between
-        # this high fan-out ParDo and the metric ParDo
-        grouped_metric_combinations = (recidivism_metric_combinations
-                                       | 'Group metrics by metric key' >>
-                                       beam.GroupByKey())
+        # Calculate the recidivism count values for the metrics combined by key
+        counts_with_sums = (recidivism_metric_combinations.counts
+                            | 'Calculate recidivism counts values' >>
+                            beam.CombinePerKey(SumFn()))
+
+        # Calculate the recidivism rate values for the metrics combined by key
+        rates_with_values = (recidivism_metric_combinations.rates
+                             | 'Calculate recidivism rate values' >>
+                             beam.CombinePerKey(RecidivismRateFn()))
+
+        # Produce the ReincarcerationRecidivismCountMetrics
+        counts_metrics = (counts_with_sums
+                          | 'Produce recidivism count metrics' >>
+                          beam.ParDo(
+                              ProduceReincarcerationRecidivismCountMetric(),
+                              **self._pipeline_options))
+
+        # Produce the ReincarcerationRecidivismRateMetrics
+        rates_metrics = (rates_with_values
+                         | 'Produce recidivism rate metrics' >>
+                         beam.ParDo(
+                             ProduceReincarcerationRecidivismRateMetric(),
+                             **self._pipeline_options))
+
+        # Merge the metric groups
+        merged_metrics = ((counts_metrics, rates_metrics)
+                          | 'Merge counts and rates metrics' >>
+                          beam.Flatten())
 
         # Return ReincarcerationRecidivismMetric objects built from grouped
         # metric_keys
-        return (grouped_metric_combinations
-                | 'Produce recidivism metrics' >>
-                beam.ParDo(ProduceReincarcerationRecidivismMetric(),
-                           **self._pipeline_options))
+        return merged_metrics
 
 
 @with_input_types(beam.typehints.Tuple[int, Dict[str, Any]])
@@ -238,8 +262,9 @@ class ClassifyReleaseEvents(beam.DoFn):
         else:
             yield (person, release_events_by_cohort_year)
 
-    def to_runner_api_parameter(self, unused_context):
-        pass
+    def to_runner_api_parameter(self, _):
+        pass  # Passing unused abstract method.
+
 
 
 @with_input_types(beam.typehints.Tuple[entities.StatePerson,
@@ -256,9 +281,16 @@ class CalculateRecidivismMetricCombinations(beam.DoFn):
 
         Args:
             element: Tuple containing a StatePerson and their ReleaseEvents
-
+            **kwargs: This should be a dictionary with values for the
+                following keys:
+                    - age_bucket
+                    - gender
+                    - stay_length_bucket
+                    - release_facility
+                    - race
+                    - ethnicity
         Yields:
-            Each recidivism metric combination.
+            Each recidivism metric combination, tagged by metric type.
         """
 
         person, release_events = element
@@ -266,17 +298,28 @@ class CalculateRecidivismMetricCombinations(beam.DoFn):
         # Calculate recidivism metric combinations for this person and events
         metric_combinations = \
             calculator.map_recidivism_combinations(person,
-                                                   release_events)
+                                                   release_events, kwargs)
 
         # Return each of the recidivism metric combinations
         for metric_combination in metric_combinations:
-            yield metric_combination
+            metric_key, value = metric_combination
 
-    def to_runner_api_parameter(self, unused_context):
-        pass
+            # Freezing the metric key as a set so it is hashable
+            frozen_metric_key = frozenset(metric_key.items())
+
+            if metric_key.get('metric_type') == 'rate':
+                yield beam.pvalue.TaggedOutput('rates',
+                                               (frozen_metric_key, value))
+            elif metric_key.get('metric_type') == 'count':
+                yield beam.pvalue.TaggedOutput('counts',
+                                               (frozen_metric_key, value))
+
+    def to_runner_api_parameter(self, _):
+        pass  # Passing unused abstract method.
 
 
-@with_input_types(beam.typehints.Tuple[Dict[str, str], List[int]],
+
+@with_input_types(beam.typehints.Tuple[Dict[str, str], int],
                   **{'runner': str,
                      'project': str,
                      'job_name': str,
@@ -284,8 +327,8 @@ class CalculateRecidivismMetricCombinations(beam.DoFn):
                      'job_timestamp': str}
                   )
 @with_output_types(ReincarcerationRecidivismMetric)
-class ProduceReincarcerationRecidivismMetric(beam.DoFn):
-    """Produces ReincarcerationRecidivismMetrics."""
+class ProduceReincarcerationRecidivismCountMetric(beam.DoFn):
+    """Produces ReincarcerationRecidivismCountMetrics."""
 
     def process(self, element, *args, **kwargs):
         """Converts a recidivism metric key into a
@@ -296,10 +339,7 @@ class ProduceReincarcerationRecidivismMetric(beam.DoFn):
 
         Args:
             element: A tuple containing a dictionary of the metric_key for a
-                given recidivism metric, and a list where each element
-                corresponds to a ReleaseEvent, with 1s representing
-                RecidivismReleaseEvents, and 0s representing
-                NonRecidivismReleaseEvents.
+                given recidivism metric, and the value of that metric.
             **kwargs: This should be a dictionary with values for the
                 following keys:
                     - runner: Either 'DirectRunner' or 'DataflowRunner'
@@ -316,19 +356,23 @@ class ProduceReincarcerationRecidivismMetric(beam.DoFn):
 
         pipeline_job_id = job_id(pipeline_options)
 
-        (metric_key, release_group) = element
+        (metric_key, value) = element
 
-        if metric_key.get('metric_type') == 'count':
+        if value is None:
+            # Due to how the pipeline arrives at this function, this should be
+            # impossible.
+            raise ValueError("No value associated with this metric key.")
+
+        dict_metric_key = dict(metric_key)
+
+        if dict_metric_key.get('metric_type') == 'count':
+            # For count metrics, the value is the number of returns
+            dict_metric_key['returns'] = value
+
             recidivism_metric = \
                 ReincarcerationRecidivismCountMetric. \
                 build_from_metric_key_group(
-                    metric_key, release_group, pipeline_job_id)
-        elif metric_key.get('metric_type') == 'rate':
-            recidivism_metric = \
-                ReincarcerationRecidivismRateMetric. \
-                build_from_metric_key_group(
-                    metric_key,
-                    release_group, pipeline_job_id)
+                    dict_metric_key, pipeline_job_id)
         else:
             logging.error("Unexpected metric of type: %s",
                           metric_key.get('metric_type'))
@@ -337,13 +381,89 @@ class ProduceReincarcerationRecidivismMetric(beam.DoFn):
         if recidivism_metric:
             yield recidivism_metric
 
-    def to_runner_api_parameter(self, unused_context):
-        pass
+    def to_runner_api_parameter(self, _):
+        pass  # Passing unused abstract method.
+
+
+
+@with_input_types(beam.typehints.Tuple[Dict[str, str], Dict[str, int]],
+                  **{'runner': str,
+                     'project': str,
+                     'job_name': str,
+                     'region': str,
+                     'job_timestamp': str}
+                  )
+@with_output_types(ReincarcerationRecidivismMetric)
+class ProduceReincarcerationRecidivismRateMetric(beam.DoFn):
+    """Produces ReincarcerationRecidivismRateMetrics."""
+
+    def process(self, element, *args, **kwargs):
+        """Converts a recidivism metric key into a
+        ReincarcerationRecidivismMetric.
+
+        The pipeline options are sent in as the **kwargs so that the
+        job_id(pipeline_options) function can be called to retrieve the job_id.
+
+        Args:
+            element: A tuple containing a dictionary of the metric_key for a
+                given recidivism metric, and a dictionary containing the values
+                for the following keys:
+                    - total_releases
+                    - recidivated_releases
+                    - recidivism_rate
+            **kwargs: This should be a dictionary with values for the
+                following keys:
+                    - runner: Either 'DirectRunner' or 'DataflowRunner'
+                    - project: GCP project ID
+                    - job_name: Name of the pipeline job
+                    - region: Region where the pipeline job is running
+                    - job_timestamp: Timestamp for the current job, to be used
+                        if the job is running locally.
+
+        Yields:
+            The ReincarcerationRecidivismMetric.
+        """
+        pipeline_options = kwargs
+
+        pipeline_job_id = job_id(pipeline_options)
+
+        (metric_key, value) = element
+
+        if value is None:
+            # Due to how the pipeline arrives at this function, this should be
+            # impossible.
+            raise ValueError("No value associated with this metric key.")
+
+        dict_metric_key = dict(metric_key)
+
+        if dict_metric_key.get('metric_type') == 'rate':
+            # For rate metrics, the value is a dictionary storing the data
+            # necessary for recidivism rate metrics
+
+            dict_metric_key['total_releases'] = value.get('total_releases')
+            dict_metric_key['recidivated_releases'] = \
+                value.get('recidivated_releases')
+            dict_metric_key['recidivism_rate'] = value.get('recidivism_rate')
+
+            recidivism_metric = \
+                ReincarcerationRecidivismRateMetric. \
+                build_from_metric_key_group(
+                    dict_metric_key, pipeline_job_id)
+        else:
+            logging.error("Unexpected metric of type: %s",
+                          metric_key.get('metric_type'))
+            return
+
+        if recidivism_metric:
+            yield recidivism_metric
+
+    def to_runner_api_parameter(self, _):
+        pass  # Passing unused abstract method.
+
 
 
 @with_input_types(ReincarcerationRecidivismMetric,
-                  **{'dimensions_to_filter_out': List[str],
-                     'methodologies': List[RecidivismMethodologyType]})
+                  **{'methodologies': List[RecidivismMethodologyType]})
 @with_output_types(ReincarcerationRecidivismMetric)
 class FilterMetrics(beam.DoFn):
     """Filters out metrics that should not be included in the output."""
@@ -356,28 +476,15 @@ class FilterMetrics(beam.DoFn):
                 element: A ReincarcerationRecidivismMetric object
                 **kwargs: This should be a dictionary with values for the
                     following keys:
-                        - dimensions_to_filter_out: List of dimensions to filter
-                            from the output.
                         - methodologies: The RecidivismMethodologyTypes to
                             report.
 
             Yields:
                 The ReincarcerationRecidivismMetric.
         """
-
-        dimensions_to_filter_out = kwargs.get('dimensions_to_filter_out')
         methodologies = kwargs.get('methodologies')
 
         recidivism_metric = element
-
-        metric_dict = recidivism_metric.__dict__
-
-        # Filter out unwanted dimensions
-        for dimension in dimensions_to_filter_out:
-            value = metric_dict.get(dimension)
-
-            if value is not None:
-                return
 
         # Filter out unwanted methodologies
         if recidivism_metric.methodology not in methodologies:
@@ -385,8 +492,9 @@ class FilterMetrics(beam.DoFn):
 
         yield recidivism_metric
 
-    def to_runner_api_parameter(self, unused_context):
-        pass
+    def to_runner_api_parameter(self, _):
+        pass  # Passing unused abstract method.
+
 
 
 @with_input_types(ReincarcerationRecidivismMetric)
@@ -426,8 +534,9 @@ class RecidivismMetricWritableDict(beam.DoFn):
         elif isinstance(element, ReincarcerationRecidivismCountMetric):
             yield beam.pvalue.TaggedOutput('counts', element_dict)
 
-    def to_runner_api_parameter(self, unused_context):
-        pass
+    def to_runner_api_parameter(self, _):
+        pass  # Passing unused abstract method.
+
 
 
 def parse_arguments(argv):
@@ -494,24 +603,25 @@ def parse_arguments(argv):
 
 
 def dimensions_and_methodologies(known_args) -> \
-        Tuple[List[str], List[RecidivismMethodologyType]]:
-    """Identifies dimensions to filter from output, and the methodologies of
+        Tuple[Dict[str, bool], List[RecidivismMethodologyType]]:
+    """Identifies dimensions to include in the output, and the methodologies of
     counting recidivism to use.
 
         Args:
             known_args: Arguments identified by the argument parsers.
 
-        Returns: A tuple containing the list of dimensions to filter from
-            the output, and a list of methodologies to use.
+        Returns: A dictionary containing the dimensions and booleans indicating
+            whether they should be included in the output, and a list of
+            methodologies to use.
     """
 
-    dimensions = []
+    dimensions: Dict[str, bool] = {}
 
     filterable_dimensions_map = {
         'include_age': 'age_bucket',
+        'include_ethnicity': 'ethnicity',
         'include_gender': 'gender',
         'include_race': 'race',
-        'include_ethnicity': 'ethnicity',
         'include_release_facility': 'release_facility',
         'include_stay_length': 'stay_length_bucket'
     }
@@ -520,7 +630,9 @@ def dimensions_and_methodologies(known_args) -> \
 
     for dimension_key in filterable_dimensions_map:
         if not known_args_dict[dimension_key]:
-            dimensions.append(filterable_dimensions_map[dimension_key])
+            dimensions[filterable_dimensions_map[dimension_key]] = False
+        else:
+            dimensions[filterable_dimensions_map[dimension_key]] = True
 
     methodologies = []
 
@@ -626,6 +738,9 @@ def run(argv=None):
             'Get Release Events' >>
             GetReleaseEvents())
 
+        # Get dimensions to include and methodologies to use
+        inclusions, methodologies = dimensions_and_methodologies(known_args)
+
         # Get pipeline job details for accessing job_id
         all_pipeline_options = pipeline_options.get_all_options()
 
@@ -637,14 +752,10 @@ def run(argv=None):
         recidivism_metrics = (person_events
                               | 'Get Recidivism Metrics' >>
                               GetRecidivismMetrics(
-                                  pipeline_options=all_pipeline_options))
+                                  pipeline_options=all_pipeline_options,
+                                  inclusions=inclusions))
 
-        # Get dimensions to filter out and methodologies to use
-        dimensions, methodologies = dimensions_and_methodologies(known_args)
-
-        filter_metrics_kwargs = {
-            'dimensions_to_filter_out': dimensions,
-            'methodologies': methodologies}
+        filter_metrics_kwargs = {'methodologies': methodologies}
 
         # Filter out unneeded metrics
         final_recidivism_metrics = (

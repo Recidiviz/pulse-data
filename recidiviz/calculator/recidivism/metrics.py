@@ -19,7 +19,8 @@
 
 from datetime import date
 from enum import Enum
-from typing import Any, Dict, List, Optional, cast
+from math import isnan
+from typing import Any, Dict, Optional, cast
 
 import attr
 
@@ -123,7 +124,6 @@ class ReincarcerationRecidivismMetric(BuildableAttr):
 
     @staticmethod
     def build_from_metric_key_group(metric_key: Dict[str, Any],
-                                    group: List[int],
                                     job_id: str) -> \
             Optional['ReincarcerationRecidivismMetric']:
         """Builds a ReincarcerationRecidivismMetric object from the given
@@ -132,9 +132,6 @@ class ReincarcerationRecidivismMetric(BuildableAttr):
 
         if not metric_key:
             raise ValueError("The metric_key is empty.")
-
-        if not group:
-            raise ValueError("The group is empty.")
 
         metric_key['job_id'] = job_id
         metric_key['created_on'] = date.today()
@@ -166,24 +163,16 @@ class ReincarcerationRecidivismCountMetric(ReincarcerationRecidivismMetric):
 
     @staticmethod
     def build_from_metric_key_group(metric_key: Dict[str, Any],
-                                    group: List[int],
                                     job_id: str) -> \
             Optional['ReincarcerationRecidivismCountMetric']:
 
         if not metric_key:
             raise ValueError("The metric_key is empty.")
 
-        if not group:
-            raise ValueError("The group is empty.")
-
-        # TODO(2036): Look into using Combine transform instead of sum
-        returns = sum(group)
-
         # Don't write metrics with no returns
-        if returns == 0:
+        if metric_key['returns'] == 0:
             return None
 
-        metric_key['returns'] = returns
         metric_key['job_id'] = job_id
         metric_key['created_on'] = date.today()
 
@@ -227,7 +216,6 @@ class ReincarcerationRecidivismRateMetric(ReincarcerationRecidivismMetric):
 
     @staticmethod
     def build_from_metric_key_group(metric_key: Dict[str, Any],
-                                    group: List[int],
                                     job_id: str) -> \
             Optional['ReincarcerationRecidivismRateMetric']:
         """Constructs a RecidivismMetric object from a dictionary containing all
@@ -239,17 +227,12 @@ class ReincarcerationRecidivismRateMetric(ReincarcerationRecidivismMetric):
         if not metric_key:
             raise ValueError("The metric_key is empty.")
 
+        # Don't create metrics with invalid recidivism rates
+        if isnan(metric_key['recidivism_rate']):
+            return None
+
         metric_key['job_id'] = job_id
         metric_key['created_on'] = date.today()
-        metric_key['total_releases'] = len(list(group))
-
-        if metric_key['total_releases'] == 0:
-            raise ValueError("The group is empty.")
-
-        # TODO(2036): Look into using Combine transform instead of sum
-        metric_key['recidivated_releases'] = sum(group)
-        metric_key['recidivism_rate'] = ((metric_key['recidivated_releases'] +
-                                          0.0) / metric_key['total_releases'])
 
         recidivism_metric = cast(ReincarcerationRecidivismRateMetric,
                                  ReincarcerationRecidivismRateMetric.
