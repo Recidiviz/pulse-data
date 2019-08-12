@@ -16,7 +16,6 @@
 # =============================================================================
 """Utils for extracting entities from data sources to be used in pipeline
 calculations."""
-
 from typing import Any, Dict, Optional, Type, Tuple
 from more_itertools import one
 
@@ -497,19 +496,27 @@ class _HydrateEntity(beam.DoFn):
 
         hydrated_entity = entity_class.build_from_dictionary(element)
 
+        if outer_connection_id_field not in element:
+            raise ValueError(f"Invalid outer_connection_id_field:"
+                             f" {outer_connection_id_field}")
+
         outer_connection_id = _get_value_from_element(element,
                                                       outer_connection_id_field)
 
         if not outer_connection_id:
-            raise ValueError(f"Invalid outer_connection_id_field:"
-                             f" {outer_connection_id_field}")
+            # We won't be able to connect this entity to other entities
+            return
 
         inner_connection_id = _get_value_from_element(element,
                                                       inner_connection_id_field)
 
-        if not inner_connection_id:
+        if inner_connection_id_field not in element:
             raise ValueError(f"Invalid inner_connection_id_field:"
                              f" {inner_connection_id_field}")
+
+        if not inner_connection_id:
+            # We won't be able to connect this entity to other entities
+            return
 
         yield (outer_connection_id, (inner_connection_id, hydrated_entity))
 
@@ -623,12 +630,17 @@ class _RepackageUnifyingIdRootIdStructure(beam.DoFn):
     def process(self, element, *args, **kwargs):
         _, structure_dict = element
 
-        unifying_id, related_entity = \
-            one(structure_dict.get('unifying_id_related_entity'))
+        unifying_id_related_entity = \
+            structure_dict.get('unifying_id_related_entity')
+
         root_entity_ids = structure_dict.get('root_entity_ids')
 
-        for root_entity_id in root_entity_ids:
-            yield (unifying_id, (root_entity_id, related_entity))
+        if unifying_id_related_entity and root_entity_ids:
+            unifying_id, related_entity = \
+                one(unifying_id_related_entity)
+
+            for root_entity_id in root_entity_ids:
+                yield (unifying_id, (root_entity_id, related_entity))
 
     def to_runner_api_parameter(self, unused_context):
         pass
