@@ -31,20 +31,23 @@ from recidiviz.persistence.entity.entity_utils import \
 from recidiviz.persistence.database.schema.state import dao
 from recidiviz.persistence.entity.base_entity import Entity, ExternalIdEntity
 from recidiviz.persistence.entity.state.entities import StatePerson, \
-    StateIncarcerationPeriod, StateCharge, StateCourtCase, StateAgent
+    StateIncarcerationPeriod, StateCharge, StateCourtCase, StateAgent, \
+    StateIncarcerationSentence, StateAssessment, StateSupervisionPeriod, \
+    StateSupervisionViolation, StateSupervisionViolationResponse
 from recidiviz.persistence.entity_matching import entity_matching_utils
 from recidiviz.persistence.entity_matching.base_entity_matcher import \
-    BaseEntityMatcher, MatchedEntities, increment_error
+    BaseEntityMatcher, increment_error
 from recidiviz.persistence.entity_matching.state.state_matching_utils import \
     remove_back_edges, \
-    add_person_to_entity_graph, EntityFieldType, IndividualMatchResult, \
-    EntityTree, MatchResults, generate_child_entity_trees,\
+    add_person_to_entity_graph, EntityFieldType, generate_child_entity_trees, \
     remove_child_from_entity, \
     add_child_to_entity, merge_incarceration_periods, \
-    merge_flat_fields, is_match, is_incomplete_incarceration_period_match, \
-    is_incarceration_period_complete, move_incidents_onto_periods, \
+    merge_flat_fields, is_match, move_incidents_onto_periods, \
     get_root_entity_cls, get_total_entities_of_cls, \
-    associate_revocation_svrs_with_ips
+    associate_revocation_svrs_with_ips, base_entity_match, \
+    nd_get_incomplete_incarceration_period_match
+from recidiviz.persistence.entity_matching.entity_matching_types import \
+    EntityTree, IndividualMatchResult, MatchResults, MatchedEntities
 
 from recidiviz.persistence.errors import EntityMatchingError, \
     MatchedMultipleIngestedEntitiesError
@@ -498,9 +501,11 @@ def _match_matched_tree(
         else:
             if match_results.unmatched_db_entities:
                 raise EntityMatchingError(
-                    f"Singular ingested entity field should match one of the "
-                    f"provided db options, but it does not. Found match "
-                    f"results: {match_results}",
+                    f"Singular ingested entity field {child_field_name} "
+                    f"with value: {ingested_child_field} should "
+                    f"match one of the provided db options, but it does not. "
+                    f"Found unmatched db entities: "
+                    f"{match_results.unmatched_db_entities}",
                     ingested_entity.get_entity_name())
             set_field(db_entity, child_field_name, one(updated_children))
 
@@ -570,7 +575,6 @@ def _add_match_to_matched_entities_cache(
         matched_entities_by_db_ids[matched_db_id] = ingested_entity
 
 
-# TODO(2037): Move the following into North Dakota specific file.
 def _get_match(ingested_entity_tree: EntityTree,
                db_entity_trees: List[EntityTree]) -> Optional[EntityTree]:
     """With the provided |ingested_entity_tree|, this attempts to find a match
@@ -579,38 +583,17 @@ def _get_match(ingested_entity_tree: EntityTree,
     exact_match = entity_matching_utils.get_only_match(
         ingested_entity_tree, db_entity_trees, is_match)
 
-    if not exact_match and isinstance(
-            ingested_entity_tree.entity, StateIncarcerationPeriod):
-        return _get_incomplete_incarceration_period_match(
-            ingested_entity_tree, db_entity_trees)
+    if not exact_match:
+        if isinstance(ingested_entity_tree.entity, StateIncarcerationPeriod):
+            return nd_get_incomplete_incarceration_period_match(
+                ingested_entity_tree, db_entity_trees)
+        if isinstance(ingested_entity_tree.entity,
+                      (StateAgent, StateIncarcerationSentence, StateAssessment,
+                       StateSupervisionPeriod, StateSupervisionViolation,
+                       StateSupervisionViolationResponse)):
+            return entity_matching_utils.get_only_match(
+                ingested_entity_tree, db_entity_trees, base_entity_match)
     return exact_match
-
-
-def _get_incomplete_incarceration_period_match(
-        ingested_entity_tree: EntityTree, db_entity_trees: List[EntityTree]) \
-        -> Optional[EntityTree]:
-    """For the ingested StateIncarcerationPeriod in the provided
-    |ingested_entity_tree|, attempts to find a matching incomplete
-    StateIncarcerationPeriod in the provided |db_entity_trees|.
-
-    Returns the match if one is found, otherwise returns None.
-    """
-
-    # If the period is complete, it cannot match to an incomplete period.
-    ingested_period = cast(
-        StateIncarcerationPeriod, ingested_entity_tree.entity)
-    if is_incarceration_period_complete(ingested_period):
-        return None
-
-    incomplete_db_trees = []
-    for db_tree in db_entity_trees:
-        db_period = cast(StateIncarcerationPeriod, db_tree.entity)
-        if not is_incarceration_period_complete(db_period):
-            incomplete_db_trees.append(db_tree)
-
-    return entity_matching_utils.get_only_match(
-        ingested_entity_tree, incomplete_db_trees,
-        is_incomplete_incarceration_period_match)
 
 
 # TODO(2037): Move this into a post processing file.

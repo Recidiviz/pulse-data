@@ -25,7 +25,9 @@ from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.persistence.entity.entities import EntityPersonType
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity_matching.base_entity_matcher import \
-    BaseEntityMatcher, MatchedEntities
+    BaseEntityMatcher
+from recidiviz.persistence.entity_matching.entity_matching_types import \
+    MatchedEntities
 from recidiviz.persistence.entity_matching.county.county_entity_matcher import \
     CountyEntityMatcher
 from recidiviz.persistence.entity_matching.state.state_entity_matcher import \
