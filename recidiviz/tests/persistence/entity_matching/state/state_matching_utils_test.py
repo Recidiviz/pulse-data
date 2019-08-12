@@ -35,12 +35,14 @@ from recidiviz.persistence.entity.state.entities import StatePersonExternalId, \
     StateSupervisionPeriod
 from recidiviz.persistence.entity_matching.state.state_matching_utils import \
     remove_back_edges, add_person_to_entity_graph, _is_match, \
-    EntityTree, generate_child_entity_trees, add_child_to_entity, \
+    generate_child_entity_trees, add_child_to_entity, \
     remove_child_from_entity, _merge_incarceration_periods_helper, \
     move_incidents_onto_periods, merge_flat_fields, \
     get_root_entity_cls, get_total_entities_of_cls, \
     associate_revocation_svrs_with_ips, admitted_for_revocation, \
-    revoked_to_prison
+    revoked_to_prison, base_entity_match
+from recidiviz.persistence.entity_matching.entity_matching_types import \
+    EntityTree
 from recidiviz.persistence.errors import EntityMatchingError
 
 _DATE_1 = datetime.date(year=2019, month=1, day=1)
@@ -59,6 +61,7 @@ _EXTERNAL_ID_6 = 'EXTERNAL_ID-6'
 _ID = 1
 _ID_2 = 2
 _ID_3 = 3
+_COUNTY_CODE = 'COUNTY'
 _STATE_CODE = 'NC'
 _STATE_CODE_ANOTHER = 'CA'
 _FULL_NAME = 'NAME'
@@ -863,3 +866,38 @@ class TestStateMatchingUtils(TestCase):
 
         move_incidents_onto_periods([person])
         self.assertEqual(expected_person, person)
+
+    def test_baseEntityMatch_placeholder(self):
+        charge = StateCharge.new_with_defaults()
+        charge_another = StateCharge.new_with_defaults()
+        self.assertFalse(
+            base_entity_match(
+                ingested_entity=EntityTree(entity=charge, ancestor_chain=[]),
+                db_entity=EntityTree(entity=charge_another, ancestor_chain=[])))
+
+    def test_baseEntityMatch_externalIdCompare(self):
+        charge = StateCharge.new_with_defaults(external_id=_EXTERNAL_ID)
+        charge_another = StateCharge.new_with_defaults()
+        self.assertFalse(
+            base_entity_match(
+                ingested_entity=EntityTree(entity=charge, ancestor_chain=[]),
+                db_entity=EntityTree(entity=charge_another, ancestor_chain=[])))
+        charge_another.external_id = _EXTERNAL_ID
+        self.assertTrue(
+            base_entity_match(
+                ingested_entity=EntityTree(entity=charge, ancestor_chain=[]),
+                db_entity=EntityTree(entity=charge_another, ancestor_chain=[])))
+
+    def test_baseEntityMatch_flatFieldsCompare(self):
+        charge = StateCharge.new_with_defaults(
+            state_code=_STATE_CODE, county_code=_COUNTY_CODE)
+        charge_another = StateCharge.new_with_defaults(state_code=_STATE_CODE)
+        self.assertFalse(
+            base_entity_match(
+                ingested_entity=EntityTree(entity=charge, ancestor_chain=[]),
+                db_entity=EntityTree(entity=charge_another, ancestor_chain=[])))
+        charge_another.county_code = _COUNTY_CODE
+        self.assertTrue(
+            base_entity_match(
+                ingested_entity=EntityTree(entity=charge, ancestor_chain=[]),
+                db_entity=EntityTree(entity=charge_another, ancestor_chain=[])))

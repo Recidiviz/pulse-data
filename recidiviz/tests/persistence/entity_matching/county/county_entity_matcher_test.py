@@ -35,7 +35,7 @@ from recidiviz.persistence.database.schema_entity_converter import (
 )
 from recidiviz.persistence.database.schema.county import schema
 from recidiviz.persistence.entity_matching import entity_matching
-from recidiviz.persistence.entity_matching.base_entity_matcher import \
+from recidiviz.persistence.entity_matching.entity_matching_types import \
     MatchedEntities
 from recidiviz.persistence.entity_matching.county import county_entity_matcher,\
     county_matching_utils

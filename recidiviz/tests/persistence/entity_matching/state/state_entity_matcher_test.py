@@ -1507,6 +1507,35 @@ class TestStateEntityMatching(TestCase):
         self.assertEqual(0, merged_entities.error_count)
 
     # TODO(2037): Move test to state specific file.
+    def test_runMatch_sameEntities_noDuplicates(self):
+        db_is = StateIncarcerationSentence.new_with_defaults(
+            incarceration_sentence_id=_ID, date_imposed=_DATE_1)
+        db_sg = StateSentenceGroup.new_with_defaults(
+            sentence_group_id=_ID, external_id=_EXTERNAL_ID,
+            incarceration_sentences=[db_is])
+        db_placeholder_person = StatePerson.new_with_defaults(
+            person_id=_ID, sentence_groups=[db_sg])
+
+        inc_s = attr.evolve(db_is, incarceration_sentence_id=None)
+        sg = attr.evolve(
+            db_sg, sentence_group_id=None, incarceration_sentences=[inc_s])
+        placeholder_person = attr.evolve(
+            db_placeholder_person, person_id=None, sentence_groups=[sg])
+
+        expected_is = attr.evolve(db_is)
+        expected_sg = attr.evolve(db_sg, incarceration_sentences=[expected_is])
+        expected_placeholder_person = attr.evolve(
+            db_placeholder_person, sentence_groups=[expected_sg])
+
+        # Act
+        merged_entities = state_entity_matcher._match_persons(
+            ingested_persons=[placeholder_person],
+            db_persons=[db_placeholder_person])
+
+        # Assert
+        self.assertEqual([expected_placeholder_person], merged_entities.people)
+        self.assertEqual(0, merged_entities.error_count)
+
     def test_runMatch_associateSvrsToIps(self):
         # Arrange
         db_ip_1 = StateIncarcerationPeriod.new_with_defaults(

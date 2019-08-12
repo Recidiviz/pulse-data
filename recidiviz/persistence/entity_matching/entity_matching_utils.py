@@ -25,7 +25,7 @@ import deepdiff
 
 from recidiviz.persistence.entity.base_entity import Entity, ExternalIdEntity
 from recidiviz.persistence.entity.entities import EntityPersonType
-from recidiviz.persistence.entity_matching.state.state_matching_utils import \
+from recidiviz.persistence.entity_matching.entity_matching_types import \
     EntityTree
 from recidiviz.persistence.errors import MatchedMultipleDatabaseEntitiesError
 
