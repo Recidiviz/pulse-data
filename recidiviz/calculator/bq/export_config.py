@@ -78,7 +78,8 @@ STATE_TABLES_TO_EXPORT = tuple(
 # As of right now, we aren't excluding any columns from the state schema export.
 STATE_COLUMNS_TO_EXCLUDE: Dict[str, List[str]] = {}
 
-STATE_BASE_TABLES_BQ_DATASET = 'state'
+# TODO(1632): Change this to 'state' once nightly ingest is going to BQ
+STATE_BASE_TABLES_BQ_DATASET = 'recidiviz_state_scratch_space_2'
 
 def gcs_export_uri(table_name: str) -> str:
     """Return export URI location in Google Cloud Storage given a table name."""

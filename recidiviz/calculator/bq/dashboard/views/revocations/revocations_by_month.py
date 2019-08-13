@@ -35,7 +35,7 @@ REVOCATIONS_BY_MONTH_QUERY = \
     FROM
     (SELECT state_code, admission_date FROM `{project_id}.{base_dataset}.state_incarceration_period`
     WHERE admission_reason in ('PROBATION_REVOCATION', 'PAROLE_REVOCATION'))
-    GROUP BY state_code, year, month having year > EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -2 YEAR))
+    GROUP BY state_code, year, month having year > EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -3 YEAR))
     ORDER BY year, month ASC
     """.format(
         description=REVOCATIONS_BY_MONTH_DESCRIPTION,

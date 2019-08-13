@@ -32,7 +32,7 @@ class DataType(enum.Enum):
     STANDARD = 'standard'
 
 
-def export_dashboard_data_to_cloud_storage(bucket: str, data_type: DataType):
+def export_dashboard_data_to_cloud_storage(bucket: str, data_type: str):
     """Exports data needed by the dashboard to the cloud storage bucket.
 
     This is a two-step process. First, for each view, the view query is executed
@@ -75,3 +75,10 @@ def _export_view_tables_to_cloud_storage(
     for state in dashboard_export_config.STATES_TO_EXPORT:
         for view in views_to_export:
             bq_utils.export_to_cloud_storage(dataset_ref, bucket, view, state)
+
+
+if __name__ == '__main__':
+    logging.getLogger().setLevel(logging.INFO)
+
+    export_dashboard_data_to_cloud_storage('ENTER BUCKET HERE',
+                                           DataType.DATAFLOW.value)

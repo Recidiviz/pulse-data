@@ -41,7 +41,7 @@ REINCARCERATION_RATE_BY_RELEASE_FACILITY_QUERY = \
     """
     /*{description}*/
 
-    SELECT release_cohort, follow_up_period, recidivism_rate, release_facility
+    SELECT state_code, release_cohort, follow_up_period, recidivism_rate, release_facility
     FROM `{project_id}.{metrics_dataset}.recidivism_rate_metrics`
     WHERE methodology = 'PERSON' and age_bucket is null and stay_length_bucket is null
     and race is null and ethnicity is null and gender is null and return_type is null and from_supervision_type is null

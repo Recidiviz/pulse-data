@@ -33,12 +33,15 @@ from recidiviz.calculator.bq.dashboard.views.reincarcerations import \
     reincarcerations_views
 from recidiviz.calculator.bq.dashboard.views.revocations import \
     revocations_views
+from recidiviz.calculator.bq.dashboard.views.supervision import \
+    supervision_views
 
 VIEWS_TO_UPDATE: List[bqview.BigQueryView] = \
     reference_views.REF_VIEWS + \
     admissions_views.ADMISSIONS_VIEWS + \
     reincarcerations_views.REINCARCERATIONS_VIEWS + \
-    revocations_views.REVOCATIONS_VIEWS
+    revocations_views.REVOCATIONS_VIEWS + \
+    supervision_views.SUPERVISION_VIEWS
 
 # Views that rely on new data from a Dataflow job
 DATAFLOW_VIEWS: List[bqview.BigQueryView] = \
