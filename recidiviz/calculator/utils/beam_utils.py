@@ -15,9 +15,26 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utils for beam calculations."""
-# pylint: disable=arguments-differ, abstract-method, redefined-builtin
+# pylint: disable=abstract-method, arguments-differ, redefined-builtin
 
 import apache_beam as beam
+
+
+def _add_input_for_average_metric(accumulator, input):
+    """Adds input for a CombineFn that's calculating the average of a set of
+    numbers."""
+    (sum_of_values, number_of_values) = accumulator
+
+    sum_of_values += input
+    number_of_values += 1
+    return sum_of_values, number_of_values
+
+
+def _merge_accumulators_for_average_metric(accumulators):
+    """Merges accumulators of a CombineFn that's calculating the average of a
+    set of numbers."""
+    sums_of_values, numbers_of_values = zip(*accumulators)
+    return sum(sums_of_values), sum(numbers_of_values)
 
 
 class RecidivismRateFn(beam.CombineFn):
@@ -30,23 +47,18 @@ class RecidivismRateFn(beam.CombineFn):
     sum of the inputs, representing the number of releases resulting in
     recidivism. At the end, it produces a dictionary containing values for the
     following fields:
-        - total_releases: the count of all elements
-        - recidivated_releases: the sum of all elements
+        - total_releases: the count of all inputs
+        - recidivated_releases: the sum of all inputs
         - recidivism_rate: the rate of recidivated releases over total releases
     """
     def create_accumulator(self):
         return (0, 0)
 
     def add_input(self, accumulator, input):
-        (returns, releases) = accumulator
-
-        returns += input
-        releases += 1
-        return returns, releases
+        return _add_input_for_average_metric(accumulator, input)
 
     def merge_accumulators(self, accumulators):
-        returns, releases = zip(*accumulators)
-        return sum(returns), sum(releases)
+        return _merge_accumulators_for_average_metric(accumulators)
 
     def extract_output(self, accumulator):
         (returns, releases) = accumulator
@@ -57,6 +69,41 @@ class RecidivismRateFn(beam.CombineFn):
             'total_releases': releases,
             'recidivated_releases': returns,
             'recidivism_rate': recidivism_rate
+        }
+
+        return output
+
+
+class RecidivismLibertyFn(beam.CombineFn):
+    """Combine function that calculates the values of a recidivism liberty
+    metric.
+
+    All inputs are integer values representing the number of days at liberty
+    between release and reincarceration.
+
+    This function incrementally keeps track of the number of elements
+    corresponding to the key and the sum of those elements. At the end, it
+    produces a dictionary containing values for the following fields:
+        - returns: the count of all inputs
+        - avg_liberty: the average number of days at liberty over all inputs
+    """
+    def create_accumulator(self):
+        return (0, 0)
+
+    def add_input(self, accumulator, input):
+        return _add_input_for_average_metric(accumulator, input)
+
+    def merge_accumulators(self, accumulators):
+        return _merge_accumulators_for_average_metric(accumulators)
+
+    def extract_output(self, sum_count):
+        (sum_liberty_days, returns) = sum_count
+
+        avg_liberty = (sum_liberty_days + 0.0) / returns \
+            if returns else float('NaN')
+        output = {
+            'returns': returns,
+            'avg_liberty': avg_liberty
         }
 
         return output
