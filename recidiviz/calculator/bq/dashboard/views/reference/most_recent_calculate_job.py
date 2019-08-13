@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Most recent calculate job_id."""
-# pylint: disable=trailing-whitespace
+# pylint: disable=trailing-whitespace, line-too-long
 from recidiviz.calculator.bq import bqview
 from recidiviz.calculator.bq.dashboard.views import view_config
 from recidiviz.utils import metadata
@@ -37,9 +37,9 @@ MOST_RECENT_CALCULATE_JOB_QUERY = \
     """
     /*{description}*/
 
-    SELECT job_id FROM `{project_id}.{metrics_dataset}.recidivism_rate_metrics`
-    GROUP BY job_id
-    ORDER BY job_id DESC
+    SELECT state_code, job_id FROM `{project_id}.{metrics_dataset}.recidivism_rate_metrics`
+    GROUP BY state_code, job_id
+    ORDER BY state_code, job_id DESC
     LIMIT 1
     """.format(
         description=MOST_RECENT_CALCULATE_JOB_DESCRIPTION,

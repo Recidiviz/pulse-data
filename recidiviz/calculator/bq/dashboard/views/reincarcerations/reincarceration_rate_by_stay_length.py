@@ -40,7 +40,7 @@ REINCARCERATION_RATE_BY_STAY_LENGTH_QUERY = \
     """
     /*{description}*/
     
-    SELECT release_cohort, follow_up_period, recidivism_rate, stay_length_bucket
+    SELECT state_code, release_cohort, follow_up_period, recidivism_rate, stay_length_bucket
     FROM `{project_id}.{metrics_dataset}.recidivism_rate_metrics`
     WHERE methodology = 'PERSON' and age_bucket is null and race is null and ethnicity is null and gender is null and return_type is null and from_supervision_type is null and source_violation_type is null and release_facility is null and stay_length_bucket is not null
     and release_cohort = EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -2 YEAR)) and follow_up_period = 1
