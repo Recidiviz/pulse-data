@@ -41,19 +41,19 @@ ON inc.source_supervision_violation_response_id = resp.supervision_violation_res
 JOIN `{project_id}.{base_dataset}.state_supervision_violation` viol 
 ON resp.supervision_violation_id = viol.supervision_violation_id
 WHERE viol.violation_type = 'TECHNICAL') 
-GROUP BY state_code, admission_type, year, month having year > EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -2 YEAR))
+GROUP BY state_code, admission_type, year, month having year > EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -3 YEAR))
 UNION ALL
 -- New Admissions
 (SELECT state_code, admission_reason as admission_type, EXTRACT(YEAR FROM admission_date) as year, EXTRACT(MONTH FROM admission_date) as month, count(*) as revocation_count
 FROM `{project_id}.{base_dataset}.state_incarceration_period`
 WHERE admission_reason = 'NEW_ADMISSION'
-GROUP BY state_code, admission_type, year, month having year > EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -2 YEAR)))
+GROUP BY state_code, admission_type, year, month having year > EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -3 YEAR)))
 UNION ALL
 -- Unknown Revocations
 (SELECT state_code, 'UNKNOWN_REVOCATION' as admission_type, EXTRACT(YEAR FROM admission_date) as year, EXTRACT(MONTH FROM admission_date) as month, count(*) as revocation_count
 FROM `{project_id}.{base_dataset}.state_incarceration_period`
 WHERE admission_reason in ('PAROLE_REVOCATION', 'PROBATION_REVOCATION') and source_supervision_violation_response_id is null
-GROUP BY state_code, admission_type, year, month having year > EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -2 YEAR)))
+GROUP BY state_code, admission_type, year, month having year > EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -3 YEAR)))
 UNION ALL
 -- Non-Technical Revocations
 (SELECT inc.state_code, 'NON_TECHNICAL' as admission_type, EXTRACT(YEAR FROM admission_date) as year, EXTRACT(MONTH FROM admission_date) as month, count(*) as admission_count
@@ -63,7 +63,7 @@ ON inc.source_supervision_violation_response_id = resp.supervision_violation_res
 JOIN `{project_id}.{base_dataset}.state_supervision_violation` viol 
 ON resp.supervision_violation_id = viol.supervision_violation_id
 WHERE viol.violation_type != 'TECHNICAL'
-GROUP BY state_code, admission_type, year, month having year > EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -2 YEAR)))
+GROUP BY state_code, admission_type, year, month having year > EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -3 YEAR)))
 ORDER BY year, month ASC
 """.format(
         description=ADMISSIONS_BY_TYPE_BY_MONTH_DESCRIPTION,

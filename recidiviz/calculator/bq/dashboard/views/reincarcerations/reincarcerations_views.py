@@ -16,6 +16,8 @@
 # =============================================================================
 """Views related to reincarcerations."""
 # pylint: disable=line-too-long
+from recidiviz.calculator.bq.dashboard.views.reincarcerations.days_at_liberty_by_month import \
+    DAYS_AT_LIBERTY_BY_MONTH_VIEW
 from recidiviz.calculator.bq.dashboard.views.reincarcerations.reincarceration_rate_by_release_facility import \
     REINCARCERATION_RATE_BY_RELEASE_FACILITY_VIEW
 from recidiviz.calculator.bq.dashboard.views.reincarcerations.reincarceration_rate_by_stay_length import \
@@ -24,6 +26,7 @@ from recidiviz.calculator.bq.dashboard.views.reincarcerations.reincarcerations_b
     REINCARCERATIONS_BY_MONTH_VIEW
 
 REINCARCERATIONS_VIEWS = [
+    DAYS_AT_LIBERTY_BY_MONTH_VIEW,
     REINCARCERATION_RATE_BY_RELEASE_FACILITY_VIEW,
     REINCARCERATION_RATE_BY_STAY_LENGTH_VIEW,
     REINCARCERATIONS_BY_MONTH_VIEW,

@@ -49,7 +49,7 @@ WHERE release_reason in ('COMMUTED', 'CONDITIONAL_RELEASE', 'SENTENCE_SERVED')
 GROUP BY state_code, start_date, end_date
 ORDER BY end_date desc)) rel 
 ON adm.year = rel.year AND adm.month = rel.month
-WHERE IFNULL(adm.year, rel.year) > EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -2 YEAR))
+WHERE IFNULL(adm.year, rel.year) > EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -3 YEAR))
 ORDER BY year, month ASC 
 """.format(
         description=ADMISSIONS_VERSUS_RELEASES_BY_MONTH_DESCRIPTION,
