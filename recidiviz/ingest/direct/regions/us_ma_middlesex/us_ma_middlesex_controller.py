@@ -180,8 +180,10 @@ class UsMaMiddlesexController(BaseDirectIngestController[IngestArgs,
         builder.add('PERSONAL RECOGNIZANCE', ChargeStatus.PRETRIAL)
         builder.add('PT', ChargeStatus.PRETRIAL)
         builder.add('RELEASED BY AUTHORITY OF COURT', ChargeStatus.PRETRIAL)
+        builder.add('REMOVED TO A MENTAL HOSPITAL', ChargeStatus.PRETRIAL)
         builder.ignore('S', BondStatus)
         builder.add('SENTENCED', ReleaseReason.TRANSFER)
+        builder.ignore('TRANSFERRED TO CORRECTIONAL INSTI', ChargeStatus)
         builder.ignore('TURNED OVER TO NEW JURISDICTION', ChargeStatus)
         # TODO (#1897) make sure charge class is filled in. This is a
         #  parole violation.
