@@ -38,6 +38,14 @@ _CHARGE_MATCH_FIELDS = {
     'case_number',
 }
 
+_ARREST_MATCH_FIELDS = {
+    'arrest_date',
+    'location',
+    'officer_name',
+    'officer_id',
+    'agency',
+}
+
 _HOLD_MATCH_FIELDS = {
     'jurisdiction_name',
 }
@@ -147,6 +155,22 @@ def is_hold_match(
     Returns: (bool)
     """
     return is_match(db_entity, ingested_entity, _HOLD_MATCH_FIELDS)
+
+
+# '*' catches positional arguments, making our arguments named and required.
+def is_arrest_match(
+        *, db_entity: entities.Arrest,
+        ingested_entity: entities.Arrest) -> bool:
+    """
+    Given a database arrest and an ingested arrest, determine if they should
+    be considered the same arrest. Should only be used to compare arrests for
+    the same booking.
+    Args:
+        db_entity: (entities.Arrest)
+        ingested_entity: (entities.Arrest)
+    Returns: (bool)
+    """
+    return is_match(db_entity, ingested_entity, _ARREST_MATCH_FIELDS)
 
 
 def is_charge_match_with_children(

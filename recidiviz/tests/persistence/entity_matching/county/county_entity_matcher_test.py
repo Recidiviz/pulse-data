@@ -574,6 +574,21 @@ class TestCountyEntityMatcher(TestCase):
 
         self.assertEqual(ingested_arrest, expected_arrest)
 
+    def test_newArrest(self):
+        db_arrest = entities.Arrest.new_with_defaults(arrest_id=_ID,
+                                                      agency=_NAME)
+        ingested_arrest = entities.Arrest.new_with_defaults()
+
+        expected_arrest = attr.evolve(ingested_arrest,
+                                      arrest_id=db_arrest.arrest_id)
+
+        county_entity_matcher.match_arrest(
+            db_booking=entities.Booking.new_with_defaults(arrest=db_arrest),
+            ingested_booking=entities.Booking.new_with_defaults(
+                arrest=ingested_arrest))
+
+        self.assertNotEqual(ingested_arrest, expected_arrest)
+
     def test_matchCharges(self):
         db_charge = entities.Charge.new_with_defaults(
             charge_id=_ID, name=_NAME)
