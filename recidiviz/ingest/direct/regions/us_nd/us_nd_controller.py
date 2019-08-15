@@ -76,18 +76,29 @@ class UsNdController(GcsfsDirectIngestController):
     def __init__(self):
         super(UsNdController, self).__init__('us_nd', SystemLevel.STATE)
 
+        self.row_pre_processors_by_file: Dict[str, List[Callable]] = {
+            'elite_offenderidentifier': [self._normalize_id_fields],
+            'elite_alias': [self._normalize_id_fields],
+            'elite_offendersentenceterms': [self._normalize_id_fields],
+            'elite_offenderchargestable': [self._normalize_id_fields],
+            'elite_orderstable': [self._normalize_id_fields],
+            'elite_externalmovements': [self._normalize_id_fields],
+        }
+
         self.row_post_processors_by_file: Dict[str, List[Callable]] = {
-            'elite_aliases': [self._clear_temporary_alias_primary_ids],
+            'elite_alias': [self._clear_temporary_alias_primary_ids],
             'elite_offenders': [self._rationalize_race_and_ethnicity],
-            'elite_offender_identifiers': [self._normalize_external_id],
-            'elite_sentence_aggs': [self._ignore_unknown_max_lengths],
-            'elite_sentences': [self._rationalize_life_sentence],
-            'elite_sentence_terms': [self._concatenate_elite_length_periods,
-                                     self._convert_to_supervision_sentence],
-            'elite_charges': [self._parse_elite_charge_classification,
-                              self._set_elite_charge_status],
-            'elite_orders': [self._set_judge_agent_type],
-            'elite_external_movements': [self._process_external_movement],
+            'elite_offenderidentifier': [self._normalize_external_id],
+            'elite_offendersentenceaggs': [self._ignore_unknown_max_lengths],
+            'elite_offendersentences': [self._rationalize_life_sentence],
+            'elite_offendersentenceterms': [
+                self._concatenate_elite_length_periods,
+                self._convert_to_supervision_sentence],
+            'elite_offenderchargestable': [
+                self._parse_elite_charge_classification,
+                self._set_elite_charge_status],
+            'elite_orderstable': [self._set_judge_agent_type],
+            'elite_externalmovements': [self._process_external_movement],
             'elite_offense_in_custody_and_pos_report_data': [
                 self._rationalize_incident_type,
                 self._rationalize_outcome_type,
@@ -98,27 +109,32 @@ class UsNdController(GcsfsDirectIngestController):
                                    self._label_external_id_as_elite,
                                    self._enrich_addresses,
                                    self._enrich_assessments],
-            'docstars_cases': [self._concatenate_docstars_length_periods,
-                               self._record_revocation,
-                               self._set_judge_agent_type],
-            'docstars_offenses': [self._parse_docstars_charge_classification],
+            'docstars_offendercasestable': [
+                self._concatenate_docstars_length_periods,
+                self._record_revocation,
+                self._set_judge_agent_type],
+            'docstars_offensestable': [
+                self._parse_docstars_charge_classification
+            ],
         }
 
         self.primary_key_override_by_file: Dict[str, Callable] = {
-            'elite_sentences': _generate_sentence_primary_key,
-            'elite_sentence_terms': _generate_sentence_primary_key,
-            'elite_external_movements': _generate_period_primary_key,
-            'elite_charges': _generate_charge_primary_key,
-            'elite_aliases': _generate_alias_temporary_primary_key,
+            'elite_offendersentences': _generate_sentence_primary_key,
+            'elite_offendersentenceterms': _generate_sentence_primary_key,
+            'elite_externalmovements': _generate_period_primary_key,
+            'elite_offenderchargestable': _generate_charge_primary_key,
+            'elite_alias': _generate_alias_temporary_primary_key,
         }
 
         self.ancestor_key_override_by_file: Dict[str, Callable] = {
-            'elite_sentence_terms': _fill_in_incarceration_sentence_parent_id,
-            'elite_charges': _fill_in_incarceration_sentence_parent_id
+            'elite_offendersentenceterms':
+                _fill_in_incarceration_sentence_parent_id,
+            'elite_offenderchargestable':
+                _fill_in_incarceration_sentence_parent_id
         }
 
         self.files_to_set_with_empty_values = [
-            'elite_sentence_terms'
+            'elite_offendersentenceterms'
         ]
 
     def _get_file_tag_rank_list(self) -> List[str]:
@@ -127,23 +143,49 @@ class UsNdController(GcsfsDirectIngestController):
         return [
             # Elite - incarceration-focused
             'elite_offenders',
-            'elite_offender_identifiers',
-            'elite_aliases',
-            'elite_bookings',
-            'elite_sentence_aggs',
-            'elite_sentences',
-            'elite_sentence_terms',
-            'elite_charges',
-            'elite_orders',
-            'elite_external_movements',
+            'elite_offenderidentifier',
+            'elite_alias',
+            'elite_offenderbookingstable',
+            'elite_offendersentenceaggs',
+            'elite_offendersentences',
+            'elite_offendersentenceterms',
+            'elite_offenderchargestable',
+            'elite_orderstable',
+            'elite_externalmovements',
             'elite_offense_in_custody_and_pos_report_data',
 
             # Docstars - supervision-focused
             'docstars_offenders',
-            'docstars_cases',
-            'docstars_offenses',
+            'docstars_offendercasestable',
+            'docstars_offensestable',
             # TODO(1918): Integrate bed assignment / location history
         ]
+
+    def _normalize_id_fields(self, row: Dict[str, str]):
+        """A number of ID fields come in as comma-separated strings in some of
+        the files. This function converts those id column values to a standard
+        format without decimals or commas before the row is processed.
+
+        If the ID column is in the proper format, this function will no-op.
+        """
+
+        for field_name in {'ROOT_OFFENDER_ID',
+                           'ALIAS_OFFENDER_ID',
+                           'OFFENDER_ID',
+                           'OFFENDER_BOOK_ID',
+                           'ORDER_ID'}:
+            if field_name in row:
+                row[field_name] = \
+                    self._decimal_str_as_int_str(row[field_name])
+
+    @staticmethod
+    def _decimal_str_as_int_str(dec_str: str):
+        """Converts a comma-separated string representation of an integer into
+        a string representing a simple integer with no commas.
+
+        E.g. _decimal_str_as_int_str('1,234.00') -> '1234'
+        """
+        return str(int(float(dec_str.replace(',', ''))))
 
     def _parse(self,
                args: GcsfsIngestArgs,
@@ -158,6 +200,7 @@ class UsNdController(GcsfsDirectIngestController):
         file_mapping = _yaml_filepath(
             f'{self.region.region_code}_{file_tag}.yaml')
 
+        row_pre_processors = self._get_row_pre_processors_for_file(file_tag)
         row_post_processors = self._get_row_post_processors_for_file(file_tag)
         file_post_processors = self._get_file_post_processors_for_file(file_tag)
         primary_key_override = self._get_primary_key_override_for_file(file_tag)
@@ -168,6 +211,7 @@ class UsNdController(GcsfsDirectIngestController):
 
         # TODO(1840): Allow for users of CSV extractor to read file line-by-line
         data_extractor = CsvDataExtractor(file_mapping,
+                                          row_pre_processors,
                                           row_post_processors,
                                           file_post_processors,
                                           ancestor_key_override,
@@ -177,6 +221,9 @@ class UsNdController(GcsfsDirectIngestController):
                                           should_cache=True)
 
         return data_extractor.extract_and_populate_data(contents)
+
+    def _get_row_pre_processors_for_file(self, file: str) -> List[Callable]:
+        return self.row_pre_processors_by_file.get(file, [])
 
     def _get_row_post_processors_for_file(self, file: str) -> List[Callable]:
         return self.row_post_processors_by_file.get(file, [])

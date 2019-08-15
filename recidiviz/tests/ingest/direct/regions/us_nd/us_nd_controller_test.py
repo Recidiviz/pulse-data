@@ -148,7 +148,7 @@ class TestUsNdController(unittest.TestCase):
 
         self.run_file_test(expected, 'elite_offenders')
 
-    def test_populate_data_elite_offender_identifiers(self):
+    def test_populate_data_elite_offenderidentifier(self):
         expected = IngestInfo(
             state_people=[
                 StatePerson(state_person_id='39768',
@@ -180,9 +180,9 @@ class TestUsNdController(unittest.TestCase):
                             ])
             ])
 
-        self.run_file_test(expected, 'elite_offender_identifiers')
+        self.run_file_test(expected, 'elite_offenderidentifier')
 
-    def test_populate_data_elite_aliases(self):
+    def test_populate_data_elite_alias(self):
         expected = IngestInfo(
             state_people=[
                 StatePerson(state_person_id='39768',
@@ -210,9 +210,9 @@ class TestUsNdController(unittest.TestCase):
                             ])
             ])
 
-        self.run_file_test(expected, 'elite_aliases')
+        self.run_file_test(expected, 'elite_alias')
 
-    def test_populate_data_elite_bookings(self):
+    def test_populate_data_elite_offenderbookingstable(self):
         expected = IngestInfo(
             state_people=[
                 StatePerson(state_person_id='52163',
@@ -242,9 +242,9 @@ class TestUsNdController(unittest.TestCase):
                             ])
             ])
 
-        self.run_file_test(expected, 'elite_bookings')
+        self.run_file_test(expected, 'elite_offenderbookingstable')
 
-    def test_populate_data_elite_sentence_aggs(self):
+    def test_populate_data_elite_offendersentenceaggs(self):
         incarceration_sentence_105640 = StateIncarcerationSentence(
             parole_eligibility_date='11/24/2005')
 
@@ -275,9 +275,9 @@ class TestUsNdController(unittest.TestCase):
                 ]),
             ])
 
-        self.run_file_test(expected, 'elite_sentence_aggs')
+        self.run_file_test(expected, 'elite_offendersentenceaggs')
 
-    def test_populate_data_elite_sentences(self):
+    def test_populate_data_elite_offendersentences(self):
         sentences_114909 = [
             StateIncarcerationSentence(
                 state_incarceration_sentence_id='114909-1',
@@ -353,9 +353,9 @@ class TestUsNdController(unittest.TestCase):
             ]),
         ])
 
-        self.run_file_test(expected, 'elite_sentences')
+        self.run_file_test(expected, 'elite_offendersentences')
 
-    def test_populate_data_elite_sentence_terms(self):
+    def test_populate_data_elite_offendersentenceterms(self):
         supervision_sentence_105640_2 = StateSupervisionSentence(
             state_supervision_sentence_id='105640-2',
             supervision_type='PROBATION',
@@ -425,9 +425,9 @@ class TestUsNdController(unittest.TestCase):
                 ]),
             ])
 
-        self.run_file_test(expected, 'elite_sentence_terms')
+        self.run_file_test(expected, 'elite_offendersentenceterms')
 
-    def test_populate_data_elite_charges(self):
+    def test_populate_data_elite_offenderchargestable(self):
         state_charge_105640_1 = StateCharge(
             state_charge_id='105640-1',
             status='SENTENCED',
@@ -597,9 +597,9 @@ class TestUsNdController(unittest.TestCase):
             ]),
         ])
 
-        self.run_file_test(expected, 'elite_charges')
+        self.run_file_test(expected, 'elite_offenderchargestable')
 
-    def test_populate_data_elite_orders(self):
+    def test_populate_data_elite_orderstable(self):
         court_case_5190 = StateCourtCase(state_court_case_id='5190',
                                          status='A',
                                          date_convicted='6/19/89  12:00:00 AM',
@@ -668,9 +668,9 @@ class TestUsNdController(unittest.TestCase):
                 ]),
             ])
 
-        self.run_file_test(expected, 'elite_orders')
+        self.run_file_test(expected, 'elite_orderstable')
 
-    def test_populate_data_elite_external_movements(self):
+    def test_populate_data_elite_externalmovements(self):
         incarceration_periods_113377 = [
             StateIncarcerationPeriod(state_incarceration_period_id='113377-2',
                                      status='OUT',
@@ -756,7 +756,7 @@ class TestUsNdController(unittest.TestCase):
                 ]),
             ])
 
-        self.run_file_test(expected, 'elite_external_movements')
+        self.run_file_test(expected, 'elite_externalmovements')
 
     def test_populate_data_elite_elite_offense_in_custody_and_pos_report_data(
             self):
@@ -1046,7 +1046,7 @@ class TestUsNdController(unittest.TestCase):
 
         self.run_file_test(expected, 'docstars_offenders')
 
-    def test_populate_data_docstars_cases(self):
+    def test_populate_data_docstars_offendercasestable(self):
         violation_for_17111 = StateSupervisionViolation(
             state_supervision_violation_responses=[
                 StateSupervisionViolationResponse(
@@ -1168,9 +1168,9 @@ class TestUsNdController(unittest.TestCase):
                         )
         ])
 
-        self.run_file_test(expected, 'docstars_cases')
+        self.run_file_test(expected, 'docstars_offendercasestable')
 
-    def test_populate_data_docstars_offenses(self):
+    def test_populate_data_docstars_offensestable(self):
         expected = IngestInfo(
             state_people=[
                 StatePerson(
@@ -1241,7 +1241,7 @@ class TestUsNdController(unittest.TestCase):
                 )]
         )
 
-        self.run_file_test(expected, 'docstars_offenses')
+        self.run_file_test(expected, 'docstars_offensestable')
 
     def run_file_test(self, expected: IngestInfo, file_tag: str):
         fixture_contents = fixtures.as_string(
@@ -1343,7 +1343,7 @@ class TestUsNdController(unittest.TestCase):
         self.controller.queue_ingest_job(GcsfsIngestArgs(
             ingest_time=datetime.datetime.now(),
             file_path=f'{self.FIXTURE_PATH_PREFIX}/'
-            f'elite_offender_identifiers.csv',
+            f'elite_offenderidentifier.csv',
             storage_bucket=self.TEST_STORAGE_BUCKET
         ))
 
@@ -1379,7 +1379,7 @@ class TestUsNdController(unittest.TestCase):
         # Act
         self.controller.queue_ingest_job(GcsfsIngestArgs(
             ingest_time=datetime.datetime.now(),
-            file_path=f'{self.FIXTURE_PATH_PREFIX}/elite_aliases.csv',
+            file_path=f'{self.FIXTURE_PATH_PREFIX}/elite_alias.csv',
             storage_bucket=self.TEST_STORAGE_BUCKET
         ))
 
@@ -1409,7 +1409,8 @@ class TestUsNdController(unittest.TestCase):
         # Act
         self.controller.queue_ingest_job(GcsfsIngestArgs(
             ingest_time=datetime.datetime.now(),
-            file_path=f'{self.FIXTURE_PATH_PREFIX}/elite_bookings.csv',
+            file_path=
+            f'{self.FIXTURE_PATH_PREFIX}/elite_offenderbookingstable.csv',
             storage_bucket=self.TEST_STORAGE_BUCKET
         ))
 
@@ -1469,7 +1470,8 @@ class TestUsNdController(unittest.TestCase):
         # Act
         self.controller.queue_ingest_job(GcsfsIngestArgs(
             ingest_time=datetime.datetime.now(),
-            file_path=f'{self.FIXTURE_PATH_PREFIX}/elite_sentence_aggs.csv',
+            file_path=
+            f'{self.FIXTURE_PATH_PREFIX}/elite_offendersentenceaggs.csv',
             storage_bucket=self.TEST_STORAGE_BUCKET
         ))
 
@@ -1607,7 +1609,7 @@ class TestUsNdController(unittest.TestCase):
         # Act
         self.controller.queue_ingest_job(GcsfsIngestArgs(
             ingest_time=datetime.datetime.now(),
-            file_path=f'{self.FIXTURE_PATH_PREFIX}/elite_sentences.csv',
+            file_path=f'{self.FIXTURE_PATH_PREFIX}/elite_offendersentences.csv',
             storage_bucket=self.TEST_STORAGE_BUCKET
         ))
 
@@ -1675,7 +1677,8 @@ class TestUsNdController(unittest.TestCase):
         # Act
         self.controller.queue_ingest_job(GcsfsIngestArgs(
             ingest_time=datetime.datetime.now(),
-            file_path=f'{self.FIXTURE_PATH_PREFIX}/elite_sentence_terms.csv',
+            file_path=
+            f'{self.FIXTURE_PATH_PREFIX}/elite_offendersentenceterms.csv',
             storage_bucket=self.TEST_STORAGE_BUCKET
         ))
 
@@ -1883,7 +1886,8 @@ class TestUsNdController(unittest.TestCase):
         # Act
         self.controller.queue_ingest_job(GcsfsIngestArgs(
             ingest_time=datetime.datetime.now(),
-            file_path=f'{self.FIXTURE_PATH_PREFIX}/elite_charges.csv',
+            file_path=
+            f'{self.FIXTURE_PATH_PREFIX}/elite_offenderchargestable.csv',
             storage_bucket=self.TEST_STORAGE_BUCKET
         ))
 
@@ -1951,7 +1955,7 @@ class TestUsNdController(unittest.TestCase):
         # Act
         self.controller.queue_ingest_job(GcsfsIngestArgs(
             ingest_time=datetime.datetime.now(),
-            file_path=f'{self.FIXTURE_PATH_PREFIX}/elite_orders.csv',
+            file_path=f'{self.FIXTURE_PATH_PREFIX}/elite_orderstable.csv',
             storage_bucket=self.TEST_STORAGE_BUCKET
         ))
 
@@ -2090,7 +2094,7 @@ class TestUsNdController(unittest.TestCase):
         self.controller.queue_ingest_job(GcsfsIngestArgs(
             ingest_time=datetime.datetime.now(),
             file_path=f'{self.FIXTURE_PATH_PREFIX}/'
-            f'elite_external_movements.csv',
+            f'elite_externalmovements.csv',
             storage_bucket=self.TEST_STORAGE_BUCKET
         ))
 
@@ -2637,7 +2641,8 @@ class TestUsNdController(unittest.TestCase):
         # Act
         self.controller.queue_ingest_job(GcsfsIngestArgs(
             ingest_time=datetime.datetime.now(),
-            file_path=f'{self.FIXTURE_PATH_PREFIX}/docstars_cases.csv',
+            file_path=
+            f'{self.FIXTURE_PATH_PREFIX}/docstars_offendercasestable.csv',
             storage_bucket=self.TEST_STORAGE_BUCKET
         ))
 
@@ -2707,7 +2712,7 @@ class TestUsNdController(unittest.TestCase):
         # Act
         self.controller.queue_ingest_job(GcsfsIngestArgs(
             ingest_time=datetime.datetime.now(),
-            file_path=f'{self.FIXTURE_PATH_PREFIX}/docstars_offenses.csv',
+            file_path=f'{self.FIXTURE_PATH_PREFIX}/docstars_offensestable.csv',
             storage_bucket=self.TEST_STORAGE_BUCKET
         ))
 
