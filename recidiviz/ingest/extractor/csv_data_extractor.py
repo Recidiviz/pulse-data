@@ -59,6 +59,7 @@ class CsvDataExtractor(DataExtractor):
 
     def __init__(self,
                  key_mapping_file=None,
+                 row_pre_hooks=None,
                  row_post_hooks=None,
                  file_post_hooks=None,
                  ancestor_key_override_callback=None,
@@ -69,6 +70,8 @@ class CsvDataExtractor(DataExtractor):
         """
         Args:
             key_mapping_file: the path to the yaml file with key mappings
+            row_pre_hooks: an ordered list of hooks for pre-processing on each
+                ingested row in the CSV file
             row_post_hooks: an ordered list of hooks for post-processing on each
                 ingested row in the CSV file
             ancestor_key_override_callback: a callable that returns the key for
@@ -98,6 +101,10 @@ class CsvDataExtractor(DataExtractor):
             self.manifest.get('child_key_mappings', {})
         self.enforced_ancestor_types: Dict[str, str] = \
             self.manifest.get('enforced_ancestor_types', {})
+
+        if row_pre_hooks is None:
+            row_pre_hooks = []
+        self.row_pre_hooks: List[Callable] = row_pre_hooks
 
         if row_post_hooks is None:
             row_post_hooks = []
@@ -153,6 +160,7 @@ class CsvDataExtractor(DataExtractor):
         rows = csv.DictReader(content.splitlines())
         seen_map: Dict[int, Set[str]] = defaultdict(set)
         for row in rows:
+            self._pre_process_row(row)
             primary_coordinates = self._primary_coordinates(row)
             ancestor_chain: Dict[str, str] = self._ancestor_chain(
                 row, primary_coordinates)
@@ -218,6 +226,12 @@ class CsvDataExtractor(DataExtractor):
             ingest_info.create_person()
         else:
             ingest_info.create_state_person()
+
+    def _pre_process_row(self, row: Dict[str, str]):
+        """Applies pre-processing on the data in the given row, before we
+        try to extract ingested objects."""
+        for hook in self.row_pre_hooks:
+            hook(row)
 
     def _post_process_row(self, row: Dict[str, str],
                           extracted_objects: List[IngestObject]):
