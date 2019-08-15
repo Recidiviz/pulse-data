@@ -24,11 +24,11 @@ from typing import Optional
 
 from flask import Blueprint, request
 
+from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import \
+    DirectIngestCloudTaskManager
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import \
     BaseDirectIngestController
 from recidiviz.ingest.direct.controllers.direct_ingest_types import IngestArgs
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
-    GcsfsIngestArgs
 from recidiviz.ingest.direct.errors import DirectIngestError, \
     DirectIngestErrorType
 from recidiviz.utils import environment, regions
@@ -52,7 +52,7 @@ def process_job():
             msg=f"process_job was called with no IngestArgs.",
             error_type=DirectIngestErrorType.INPUT_ERROR)
     controller = controller_for_region_code(region_value)
-    controller.run_ingest_job(ingest_args)
+    controller.run_ingest_job_and_kick_scheduler_on_completion(ingest_args)
     return '', HTTPStatus.OK
 
 
@@ -62,10 +62,8 @@ def scheduler():
     logging.info('Received request for direct ingest scheduler: %s',
                  request.values)
     region_value = get_value('region', request.values)
-    json_data = request.get_data(as_text=True)
-    ingest_args = _get_ingest_args(json_data)
     controller = controller_for_region_code(region_value)
-    controller.run_next_ingest_job_if_necessary_or_schedule_wait(ingest_args)
+    controller.schedule_next_ingest_job_or_wait_if_necessary()
     return '', HTTPStatus.OK
 
 
@@ -104,16 +102,10 @@ def controller_for_region_code(region_code: str) -> BaseDirectIngestController:
     return controller
 
 
-def _get_ingest_args(json_data: str) -> Optional[IngestArgs]:
-    if not json_data:
+def _get_ingest_args(
+        json_data_str: str,
+) -> Optional[IngestArgs]:
+    if not json_data_str:
         return None
-    data = json.loads(json_data)
-    if 'ingest_args' in data and 'args_type' in data:
-        args_type = data['args_type']
-        ingest_args = data['ingest_args']
-        if args_type == IngestArgs.__name__:
-            return IngestArgs.from_serializable(ingest_args)
-        if args_type == GcsfsIngestArgs.__name__:
-            return GcsfsIngestArgs.from_serializable(ingest_args)
-        logging.error('Unexpected args_type in json_data: %s', args_type)
-    return None
+    data = json.loads(json_data_str)
+    return DirectIngestCloudTaskManager.json_to_ingest_args(data)

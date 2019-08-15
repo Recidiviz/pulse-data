@@ -24,16 +24,14 @@ import attr
 import pytest
 import pytz
 from flask import Flask
-from mock import create_autospec, patch
+from mock import patch
 
 from recidiviz.ingest.direct import direct_ingest_control
-from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import \
-    BaseDirectIngestController
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
+from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     GcsfsIngestArgs
 from recidiviz.ingest.direct.errors import DirectIngestError
 from recidiviz.persistence import batch_persistence
-from recidiviz.utils.regions import Region
+from recidiviz.tests.utils.fake_region import fake_region
 
 
 # pylint: disable=redefined-outer-name
@@ -111,19 +109,11 @@ class TestDirectStart:
                    "Unsupported direct ingest region us_ca"
 
 
-def fake_region(environment='local'):
-    region = create_autospec(Region)
-    region.environment = environment
-    region.get_ingestor.return_value.__class__ = BaseDirectIngestController
-    return region
-
-
 class TestQueueArgs(unittest.TestCase):
     def test_parse_args(self):
         ingest_args = GcsfsIngestArgs(
             ingest_time=datetime.datetime.now(),
             file_path='/foo/bar',
-            storage_bucket='recidiviz-123-direct-ingest'
         )
 
         ingest_args_class_name = ingest_args.__class__.__name__

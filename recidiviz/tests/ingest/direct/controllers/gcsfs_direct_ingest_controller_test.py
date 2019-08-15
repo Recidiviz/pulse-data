@@ -18,46 +18,148 @@
 import datetime
 import json
 import unittest
+from typing import List
 
+from mock import patch, Mock
+
+from recidiviz import IngestInfo
+from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.common.serialization import attr_to_json_dict, \
     datetime_to_serializable, serializable_to_datetime, attr_from_json_dict
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
-    GcsfsIngestArgs
+    GcsfsDirectIngestController
+from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
+    GcsfsIngestArgs, filename_parts_from_path
+from recidiviz.ingest.models.ingest_info import StatePerson, Person
+from recidiviz.tests.ingest.direct.direct_ingest_util import \
+    build_controller_for_tests, add_paths_with_tags_and_process
+from recidiviz.tests.utils.fake_region import TEST_STATE_REGION, \
+    TEST_COUNTY_REGION
 
 
+class StateTestGcsfsDirectIngestController(GcsfsDirectIngestController):
+    def __init__(self,
+                 ingest_directory_path: str,
+                 storage_directory_path: str):
+        super().__init__(TEST_STATE_REGION.region_code,
+                         SystemLevel.STATE,
+                         ingest_directory_path,
+                         storage_directory_path)
+
+    def _get_file_tag_rank_list(self) -> List[str]:
+        return ['tagA', 'tagB', 'tagC']
+
+    def _parse(self, args: GcsfsIngestArgs, contents: str) -> IngestInfo:
+        return IngestInfo(state_people=[
+            StatePerson(full_name="MARTHA STEWART")
+        ])
+
+
+class CountyTestGcsfsDirectIngestController(GcsfsDirectIngestController):
+    def __init__(self,
+                 ingest_directory_path: str,
+                 storage_directory_path: str):
+        super().__init__(TEST_COUNTY_REGION.region_code,
+                         SystemLevel.COUNTY,
+                         ingest_directory_path,
+                         storage_directory_path)
+
+    def _get_file_tag_rank_list(self) -> List[str]:
+        return ['tagA', 'tagB']
+
+    def _parse(self, args: GcsfsIngestArgs, contents: str) -> IngestInfo:
+        return IngestInfo(people=[
+            Person(full_name="AL CAPONE")
+        ])
+
+
+@patch('recidiviz.utils.metadata.project_id',
+       Mock(return_value='recidiviz-staging'))
 class TestGcsfsDirectIngestController(unittest.TestCase):
     """Tests for GcsfsDirectIngestController."""
+
+    FIXTURE_PATH_PREFIX = 'direct/controllers'
+
+    def run_file_order_test_for_controller_cls(self, controller_cls):
+        """Writes all expected files to the mock fs, then kicks the controller
+        and ensures that all jobs are run to completion in the proper order."""
+
+        controller = build_controller_for_tests(controller_cls,
+                                                self.FIXTURE_PATH_PREFIX)
+
+        # pylint:disable=protected-access
+        file_tags = list(
+            reversed(sorted(controller._get_file_tag_rank_list())))
+
+        add_paths_with_tags_and_process(controller, file_tags)
+
+        file_tags_processed = set()
+        for path in controller.fs.all_paths:
+            # Test all paths have been moved to storage
+            self.assertTrue(
+                path.startswith(controller.storage_directory_path),
+                f'{path} does not start with expected prefix')
+
+            file_tags_processed.add(filename_parts_from_path(path).file_tag)
+
+        # Test that each file tag has been processed
+        self.assertEqual(file_tags_processed, set(file_tags))
+
+    @patch("recidiviz.utils.regions.get_region",
+           Mock(return_value=TEST_STATE_REGION))
+    def test_state_runs_files_in_order(self):
+        self.run_file_order_test_for_controller_cls(
+            StateTestGcsfsDirectIngestController)
+
+    @patch("recidiviz.utils.regions.get_region",
+           Mock(return_value=TEST_COUNTY_REGION))
+    def test_county_runs_files_in_order(self):
+        self.run_file_order_test_for_controller_cls(
+            CountyTestGcsfsDirectIngestController)
+
+    @patch("recidiviz.utils.regions.get_region",
+           Mock(return_value=TEST_STATE_REGION))
+    def test_state_unexpected_tag(self):
+        controller = build_controller_for_tests(
+            StateTestGcsfsDirectIngestController,
+            self.FIXTURE_PATH_PREFIX)
+
+        # pylint:disable=protected-access
+        file_tags = ['tagA', 'unexpected_tag', 'tagB', 'tagC']
+
+        add_paths_with_tags_and_process(controller, file_tags)
+
+        file_tags_processed = set()
+        for path in controller.fs.all_paths:
+
+            file_tag = filename_parts_from_path(path).file_tag
+
+            if file_tag != 'unexpected_tag':
+                # Test all expected paths have been moved to storage
+                self.assertTrue(
+                    path.startswith(controller.storage_directory_path),
+                    f'{path} does not start with expected prefix')
+
+                file_tags_processed.add(filename_parts_from_path(path).file_tag)
+
+        # Test that each file tag has been processed
+        self.assertEqual(file_tags_processed, {'tagA', 'tagB', 'tagC'})
 
     def test_serialize_gcsfs_ingest_args(self):
         now = datetime.datetime.now()
 
         str_now = datetime_to_serializable(now)
-        print(str_now)
         now_converted = serializable_to_datetime(str_now)
-        print(now_converted)
 
         self.assertTrue(now, now_converted)
 
         args = GcsfsIngestArgs(
             ingest_time=datetime.datetime.now(),
             file_path='foo/bar.csv',
-            storage_bucket='recidiviz-storage'
         )
 
         args_dict = attr_to_json_dict(args)
-        print(f'type = {type(args_dict)}')
-        print(args_dict)
-
         serialized = json.dumps(args_dict).encode()
-        print(f'type = {type(serialized)}')
-        print(serialized)
-
         args_dict = json.loads(serialized)
-        print(f'type = {type(args_dict)}')
-        print(args_dict)
-
         result_args = attr_from_json_dict(args_dict)
-        print(f'type = {type(result_args)}')
-        print(result_args)
-
         self.assertEqual(args, result_args)

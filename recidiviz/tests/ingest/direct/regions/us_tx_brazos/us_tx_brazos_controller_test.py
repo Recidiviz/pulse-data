@@ -18,41 +18,39 @@
 import datetime
 from unittest import TestCase
 
+from mock import patch, Mock
+
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller \
-    import GcsfsIngestArgs
 from recidiviz.ingest.direct.regions.us_tx_brazos.us_tx_brazos_controller \
     import UsTxBrazosController
 from recidiviz.ingest.models.ingest_info import Arrest, Bond, Booking, Charge, \
     Hold, Person, IngestInfo
 from recidiviz.tests.ingest import fixtures
 from recidiviz.tests.utils.individual_ingest_test import IndividualIngestTest
-from recidiviz.tests.ingest.direct.regions.direct_ingest_util import \
-    create_mock_gcsfs, build_controller_for_tests
+from recidiviz.tests.ingest.direct.direct_ingest_util import \
+    build_controller_for_tests, ingest_args_for_fixture_file
 from recidiviz.utils import regions
 
-_ROSTER_PATH = fixtures.as_string('direct/regions/us_tx_brazos', 'daily_data.csv')
+
+FIXTURE_PATH_PREFIX = 'direct/regions/us_tx_brazos'
+_ROSTER_PATH_CONTENTS = fixtures.as_string(FIXTURE_PATH_PREFIX, 'daily_data.csv')
 _FAKE_START_TIME = datetime.datetime(year=2019, month=1, day=2)
-_TEST_STORAGE_BUCKET = 'recidiviz-test-storage-bucket'
 
 
+@patch('recidiviz.utils.metadata.project_id',
+       Mock(return_value='recidiviz-staging'))
 class UsTxBrazosControllerTest(IndividualIngestTest, TestCase):
     """Test Brazos direct ingest.
     """
 
     def testParse(self):
-        mock_fs = create_mock_gcsfs()
+        controller = build_controller_for_tests(UsTxBrazosController,
+                                                FIXTURE_PATH_PREFIX)
 
-        controller = build_controller_for_tests(mock_fs,
-                                                UsTxBrazosController)
-        args = GcsfsIngestArgs(
-            ingest_time=datetime.datetime.now(),
-            file_path=_ROSTER_PATH,
-            storage_bucket=_TEST_STORAGE_BUCKET
-        )
+        args = ingest_args_for_fixture_file(controller, 'daily_data.csv')
 
         # pylint:disable=protected-access
-        ingest_info = controller._parse(args, _ROSTER_PATH)
+        ingest_info = controller._parse(args, _ROSTER_PATH_CONTENTS)
         expected_info = IngestInfo(
             people=[
                 Person(
