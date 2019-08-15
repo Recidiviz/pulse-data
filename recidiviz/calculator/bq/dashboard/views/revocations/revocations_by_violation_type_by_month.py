@@ -34,10 +34,14 @@ REVOCATIONS_BY_VIOLATION_TYPE_BY_MONTH_QUERY = \
     
     SELECT state_code, EXTRACT(YEAR FROM admission_date) as year, EXTRACT(MONTH FROM admission_date) as month, violation_type, count(*) as revocation_count
     FROM
-    (SELECT sip.state_code, admission_reason, admission_date, violation_type FROM `{project_id}.{base_dataset}.state_incarceration_period` sip
+    ((SELECT sip.state_code, admission_reason, admission_date, IFNULL(violation_type, 'UNKNOWN_VIOLATION_TYPE') as violation_type FROM `{project_id}.{base_dataset}.state_incarceration_period` sip
     join `{project_id}.{base_dataset}.state_supervision_violation_response` resp on resp.supervision_violation_response_id = sip.source_supervision_violation_response_id 
     join `{project_id}.{base_dataset}.state_supervision_violation` viol on viol.supervision_violation_id = resp.supervision_violation_id 
     WHERE sip.admission_reason in ('PROBATION_REVOCATION', 'PAROLE_REVOCATION'))
+    UNION ALL
+    (SELECT state_code, admission_reason, admission_date, 'UNKNOWN_VIOLATION_TYPE' as violation_type
+    FROM `{project_id}.{base_dataset}.state_incarceration_period`
+    WHERE admission_reason in ('PROBATION_REVOCATION', 'PAROLE_REVOCATION') and source_supervision_violation_response_id is null))
     GROUP BY state_code, year, month, violation_type having year > EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -3 YEAR))
     ORDER BY year, month ASC
     """.format(
