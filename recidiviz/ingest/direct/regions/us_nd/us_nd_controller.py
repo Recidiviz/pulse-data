@@ -179,12 +179,15 @@ class UsNdController(GcsfsDirectIngestController):
                     self._decimal_str_as_int_str(row[field_name])
 
     @staticmethod
-    def _decimal_str_as_int_str(dec_str: str):
+    def _decimal_str_as_int_str(dec_str: str) -> str:
         """Converts a comma-separated string representation of an integer into
         a string representing a simple integer with no commas.
 
         E.g. _decimal_str_as_int_str('1,234.00') -> '1234'
         """
+        if not dec_str:
+            return dec_str
+
         return str(int(float(dec_str.replace(',', ''))))
 
     def _parse(self,
