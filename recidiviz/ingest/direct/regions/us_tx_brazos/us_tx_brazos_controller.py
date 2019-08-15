@@ -19,13 +19,15 @@
 from collections import defaultdict
 import csv
 import os
-from typing import Any, List
+from typing import Any, List, Optional
 
 from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.common.constants.county.charge import ChargeDegree
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller \
-    import GcsfsDirectIngestController, GcsfsIngestArgs
+    import GcsfsDirectIngestController
+from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
+    GcsfsIngestArgs
 from recidiviz.ingest.direct.errors import DirectIngestError, \
     DirectIngestErrorType
 from recidiviz.ingest.extractor.csv_data_extractor import CsvDataExtractor
@@ -106,9 +108,14 @@ class UsTxBrazosDataExtractor(CsvDataExtractor):
 class UsTxBrazosController(GcsfsDirectIngestController):
     """Direct ingest controller implementation for us_tx_brazos."""
 
-    def __init__(self):
-        super(UsTxBrazosController, self).__init__('us_tx_brazos',
-                                                   SystemLevel.COUNTY)
+    def __init__(self,
+                 ingest_directory_path: Optional[str] = None,
+                 storage_directory_path: Optional[str] = None):
+        super(UsTxBrazosController, self).__init__(
+            'us_tx_brazos',
+            SystemLevel.COUNTY,
+            ingest_directory_path,
+            storage_directory_path)
 
         self._mapping_filepath = os.path.join(
             os.path.dirname(__file__), 'us_tx_brazos.yaml')

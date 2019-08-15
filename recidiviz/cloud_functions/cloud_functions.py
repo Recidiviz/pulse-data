@@ -16,7 +16,6 @@
 # =============================================================================
 
 """Exposes API to parse and store state aggregates."""
-import datetime
 import logging
 import os
 import tempfile
@@ -26,6 +25,7 @@ from flask import Blueprint, request, jsonify
 import gcsfs
 
 from recidiviz.calculator.bq.dashboard import dashboard_export_manager
+from recidiviz.cloud_functions.cloud_function_utils import GCSFS_NO_CACHING
 
 from recidiviz.ingest.aggregate.regions.ca import ca_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.fl import fl_aggregate_ingest
@@ -37,10 +37,7 @@ from recidiviz.ingest.aggregate.regions.pa import pa_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.tn import tn_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.tx import tx_aggregate_ingest
 from recidiviz.ingest.direct import direct_ingest_control
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
-    GcsfsIngestArgs
-from recidiviz.ingest.direct.errors import DirectIngestError, \
-    DirectIngestErrorType
+from recidiviz.ingest.direct.errors import DirectIngestError
 from recidiviz.persistence.database.schema.aggregate import dao
 from recidiviz.utils import metadata
 from recidiviz.utils.auth import authenticate_request
@@ -85,7 +82,7 @@ def state_aggregate():
     path = os.path.join(bucket, state, filename)
     parser = state_to_parser[state]
     # Don't use the gcsfs cache
-    fs = gcsfs.GCSFileSystem(project=project_id, cache_timeout=-1)
+    fs = gcsfs.GCSFileSystem(project=project_id, cache_timeout=GCSFS_NO_CACHING)
     logging.info("The path to download from is %s", path)
     bucket_path = os.path.join(bucket, state)
     logging.info("The files in the directory are:")
@@ -116,47 +113,21 @@ def state_aggregate():
     except Exception as e:
         return jsonify(e), 500
 
-
-@cloud_functions_blueprint.route('/direct')
+@cloud_functions_blueprint.route('/start_direct_ingest')
 @authenticate_request
-def direct():
-    """Calls direct ingest"""
+def start_direct_ingest():
+    """Schedules direct ingest jobs for the given region, if necessary."""
 
-    # The bucket that the file to ingest lives in
-    bucket = get_value('bucket', request.args)
-    # The region this data is associated with
     region_name = get_value('region', request.args)
-    # The full path to the file to ingest, including the bucket name
-    file_path = get_value('file_path', request.args)
-    # The name of the bucket to move the file to once it has been processed
-    storage_bucket = get_value('storage_bucket', request.args)
-
-    project_id = metadata.project_id()
-    logging.info("The project id is %s", project_id)
-    if not bucket or not region_name or not file_path or not storage_bucket:
-        raise DirectIngestError(
-            msg="All of region, bucket, file_path, and storage_bucket must be "
-                "provided.",
-            error_type=DirectIngestErrorType.INPUT_ERROR,
-        )
-
-    # Don't use the gcsfs cache
-    logging.info("The file_path to process is %s", file_path)
-    logging.info("The storage_bucket is %s", storage_bucket)
-
     try:
-        controller = direct_ingest_control.controller_for_region_code(
-            region_name)
-        controller.queue_ingest_job(GcsfsIngestArgs(
-            ingest_time=datetime.datetime.now(),
-            file_path=file_path,
-            storage_bucket=storage_bucket,
-        ))
+        controller = \
+            direct_ingest_control.controller_for_region_code(region_name)
+        controller.kick_scheduler()
     except DirectIngestError as e:
+        project_id = metadata.project_id()
         message = \
-            f"Error while processing region [{region_name}] from file " \
-            f"[{file_path}] on bucket [{bucket}] and storage_bucket " \
-            f"[{storage_bucket}] and project [{project_id}]: [{str(e)}]"
+            f"Error scheduling next ingest job for region [{region_name}] on " \
+            f"project [{project_id}]: [{str(e)}]"
         return message, HTTPStatus.INTERNAL_SERVER_ERROR
 
     return '', HTTPStatus.OK

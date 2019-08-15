@@ -18,8 +18,7 @@
 from unittest import TestCase
 
 from recidiviz.cloud_functions.cloud_function_utils import \
-    get_state_region_code_from_direct_ingest_bucket, \
-    get_direct_ingest_storage_bucket, DirectIngestRegionCategory
+    get_state_region_code_from_direct_ingest_bucket
 
 
 class CloudFunctionUtilsTest(TestCase):
@@ -55,13 +54,3 @@ class CloudFunctionUtilsTest(TestCase):
             get_state_region_code_from_direct_ingest_bucket(
                 'recidiviz-staging-direct-ingest-us-nd'),
             None)
-
-    def test_get_storage_bucket(self) -> None:
-        self.assertEqual(
-            get_direct_ingest_storage_bucket(
-                DirectIngestRegionCategory.COUNTY, 'recidiviz-123'),
-            'recidiviz-123-direct-ingest-county-storage')
-        self.assertEqual(
-            get_direct_ingest_storage_bucket(
-                DirectIngestRegionCategory.STATE, 'recidiviz-staging'),
-            'recidiviz-staging-direct-ingest-state-storage')

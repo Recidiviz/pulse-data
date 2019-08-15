@@ -16,21 +16,21 @@
 # =============================================================================
 
 """This file contains all of the relevant cloud functions"""
-
 import logging
 import os
 
+from gcsfs import GCSFileSystem
+
 from cloud_function_utils import make_iap_request, \
-    get_direct_ingest_storage_bucket, \
     get_state_region_code_from_direct_ingest_bucket, \
-    DirectIngestRegionCategory, get_dashboard_data_export_storage_bucket
+    get_dashboard_data_export_storage_bucket, have_seen_file_path, \
+    to_normalized_unprocessed_file_path, GCSFS_NO_CACHING
 
 _STATE_AGGREGATE_CLOUD_FUNCTION_URL = (
     'http://{}.appspot.com/cloud_function/state_aggregate?bucket={}&state={}'
     '&filename={}')
 _DIRECT_INGEST_CLOUD_FUNCTION_URL = (
-    'http://{}.appspot.com/cloud_function/direct?bucket={}&region={}'
-    '&file_path={}&storage_bucket={}')
+    'http://{}.appspot.com/cloud_function/start_direct_ingest?region={}')
 _DASHBOARD_EXPORT_CLOUD_FUNCTION_URL = (
     'http://{}.appspot.com/cloud_function/dashboard_export?bucket={}'
     '&data_type={}'
@@ -81,8 +81,7 @@ def direct_ingest_county(data, _):
     relative_file_path = data['name']
     region_code, _ = relative_file_path.split('/')
 
-    _call_direct_ingest(bucket, region_code, relative_file_path,
-                        DirectIngestRegionCategory.COUNTY)
+    _call_direct_ingest(bucket, region_code, relative_file_path)
 
 
 def direct_ingest_state(data, _):
@@ -103,14 +102,12 @@ def direct_ingest_state(data, _):
                       bucket)
         return
 
-    _call_direct_ingest(bucket, region_code, relative_file_path,
-                        DirectIngestRegionCategory.STATE)
+    _call_direct_ingest(bucket, region_code, relative_file_path)
 
 
 def _call_direct_ingest(bucket: str,
                         region_code: str,
-                        relative_file_path: str,
-                        region_category: DirectIngestRegionCategory):
+                        relative_file_path: str):
     """Calls direct ingest cloud function when a new file is dropped into a
     bucket."""
     project_id = os.environ.get('GCP_PROJECT')
@@ -119,22 +116,34 @@ def _call_direct_ingest(bucket: str,
                       'function, returning.')
         return
 
-    file_path = os.path.join(bucket, relative_file_path)
+    original_file_path = os.path.join(bucket, relative_file_path)
 
-    # TODO(1628): Immediately rename to have the format
-    #  [ISO TIMESTAMP]_[FILE NAME](_[SEQ_NUM])?.[EXT] where sequence number is
-    #  optionally added if there is already another file name present on the
-    #  same day. This can use some of the same logic that is in the
-    #  GcsfsController for avoiding conflicts when writing to storage.
-    #  The logic for extracting the file_tag will also need to change.
-
-    storage_bucket = \
-        get_direct_ingest_storage_bucket(region_category, project_id)
     logging.info(
         "Running cloud function for bucket %s, region %s, file_path %s",
-        bucket, region_code, file_path)
+        bucket, region_code, original_file_path)
+
+    if have_seen_file_path(original_file_path):
+        logging.info(
+            "Not triggering direct ingest for already seen file: %s",
+            original_file_path)
+        return
+
+    fs = GCSFileSystem(project=project_id, cache_timeout=GCSFS_NO_CACHING)
+
+    updated_file_path = \
+        to_normalized_unprocessed_file_path(original_file_path)
+
+    if fs.exists(updated_file_path):
+        logging.error("Desired path [%s] already exists, returning",
+                      updated_file_path)
+        return
+
+    logging.info("Moving file from %s to %s",
+                 original_file_path, updated_file_path)
+    fs.mv(original_file_path, updated_file_path)
+
     url = _DIRECT_INGEST_CLOUD_FUNCTION_URL.format(
-        project_id, bucket, region_code, file_path, storage_bucket)
+        project_id, region_code)
 
     logging.info("Calling URL: %s", url)
 
@@ -142,6 +151,7 @@ def _call_direct_ingest(bucket: str,
     # database.
     response = make_iap_request(url, _CLIENT_ID[project_id])
     logging.info("The response status is %s", response.status_code)
+
 
 def export_dashboard_standard_data(_event, _context):
     """This function is triggered by a Pub/Sub event to begin the export of

@@ -19,27 +19,21 @@ import abc
 import datetime
 import logging
 import os
-from collections import defaultdict
-from typing import Optional, List, Dict, Sequence
-
-import attr
+from typing import Optional, List
 
 from recidiviz import IngestInfo
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import \
     BaseDirectIngestController
-from recidiviz.ingest.direct.controllers.direct_ingest_types import \
-    IngestArgs, \
-    ArgsPriorityQueue
+from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_job_prioritizer \
+    import GcsfsDirectIngestJobPrioritizer
+from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
+    GcsfsIngestArgs, filename_parts_from_path, \
+    gcsfs_direct_ingest_storage_directory_path_for_region, \
+    gcsfs_direct_ingest_directory_path_for_region
 from recidiviz.ingest.direct.controllers.gcsfs_factory import GcsfsFactory
 from recidiviz.ingest.direct.errors import DirectIngestError, \
     DirectIngestErrorType
-
-
-@attr.s(frozen=True)
-class GcsfsIngestArgs(IngestArgs):
-    file_path: str = attr.ib()
-    storage_bucket: str = attr.ib()
 
 
 class GcsfsDirectIngestController(BaseDirectIngestController[GcsfsIngestArgs,
@@ -48,122 +42,71 @@ class GcsfsDirectIngestController(BaseDirectIngestController[GcsfsIngestArgs,
 
     _MAX_STORAGE_FILE_RENAME_TRIES = 10
 
-    def __init__(self, region_name: str, system_level: SystemLevel):
+    def __init__(self,
+                 region_name: str,
+                 system_level: SystemLevel,
+                 ingest_directory_path: Optional[str] = None,
+                 storage_directory_path: Optional[str] = None):
         super().__init__(region_name, system_level)
         self.fs = GcsfsFactory.build()
-        # TODO(1628): If we re-deploy, this will get wiped - probably just need
-        # to always read all the files from disk every time we want to decide
-        # what to do next (only relevant incide the GCSFS controllers) and
-        # also trigger a job on startup (all controllers?).
-        self.pending_jobs_queue = ArgsPriorityQueue(
-            sort_key_gen=self._sort_key_for_args)
 
-        self.processed_by_date_str: Dict[str, List[GcsfsIngestArgs]] = \
-            defaultdict(list)
+        if ingest_directory_path:
+            self.ingest_directory_path = ingest_directory_path
+        else:
+            self.ingest_directory_path = \
+                gcsfs_direct_ingest_directory_path_for_region(region_name,
+                                                              system_level)
+        if storage_directory_path:
+            self.storage_directory_path = storage_directory_path
+        else:
+            self.storage_directory_path = \
+                gcsfs_direct_ingest_storage_directory_path_for_region(
+                    region_name, system_level)
 
-        self.ranks_by_file_tag: Dict[str, str] = self._build_ranks_by_file_tag()
+        self.file_prioritizer = \
+            GcsfsDirectIngestJobPrioritizer(
+                self.fs,
+                self.ingest_directory_path,
+                self._get_file_tag_rank_list())
 
-    def _num_as_rank_str(self, i: Optional[int]) -> str:
-        """Returns a number as a sortable string with up to 5 leading zeroes.
-        """
-        return str(i if i else 0).zfill(5)
+    # ============== #
+    # JOB SCHEDULING #
+    # ============== #
 
-    def _build_ranks_by_file_tag(self) -> Dict[str, str]:
-        return dict({(tag, self._num_as_rank_str(i))
-                     for i, tag in enumerate(self._get_file_tag_rank_list())})
+    @abc.abstractmethod
+    def _get_file_tag_rank_list(self) -> List[str]:
+        pass
 
-    def queue_ingest_job(self, args: GcsfsIngestArgs):
-        logging.info("Queueing ingest job [%s]. Queue size = [%s]",
-                     self._job_tag(args),
-                     self.pending_jobs_queue.size())
-        self.pending_jobs_queue.push(args)
-        self.run_next_ingest_job_if_necessary_or_schedule_wait(args)
-
-    def _get_next_job_args(self, _) -> Optional[GcsfsIngestArgs]:
-        return self.pending_jobs_queue.peek()
+    def _get_next_job_args(self) -> Optional[GcsfsIngestArgs]:
+        return self.file_prioritizer.get_next_job_args()
 
     def _wait_time_sec_for_next_args(self, args: GcsfsIngestArgs) -> int:
-        expected_next_sort_key = self._get_expected_next_sort_key_for_day(
-            args.ingest_time)
-
-        args_sort_key = self._sort_key_for_args(args)
-
-        if args_sort_key <= expected_next_sort_key:
+        if self.file_prioritizer.are_next_args_expected(args):
             # Run job immediately
-            print(f'Running {args_sort_key} - expected_next_sort_key = '
-                  f'{expected_next_sort_key}')
             return 0
 
-        # Otherwise wait for a backoff period
-        now = datetime.datetime.now()
+        now = datetime.datetime.utcnow()
 
-        # TODO(1628): MAKE THIS BACKOFF PERIOD LONGER
-        five_sec_from_ingest_time = \
-            datetime.datetime.now() + datetime.timedelta(seconds=5)
+        file_upload_time: datetime.datetime = \
+            filename_parts_from_path(args.file_path).utc_upload_datetime
 
-        wait_time = max((five_sec_from_ingest_time - now).seconds, 0)
-        print(f'Waiting {wait_time} sec for {args_sort_key}')
+        # TODO(1628): This calculation is buggy and seems to sometimes be
+        #  producing times up to 24 hours in the future. Needs debugging and
+        #  also should be updated to wait longer than 5 seconds in production.
+        five_sec_from_file_upload_time = \
+            file_upload_time + datetime.timedelta(seconds=5)
+
+        wait_time = max((five_sec_from_file_upload_time - now).seconds, 0)
+        logging.info("Waiting [%s] sec for [%s]",
+                     wait_time, self._job_tag(args))
         return wait_time
 
-    def _get_expected_next_sort_key_for_day(
-            self,
-            ingest_time: datetime.datetime):
-        all_expected = set(self._get_expected_sort_keys_for_day(ingest_time))
-        processed = set(
-            self._get_already_processed_sort_keys_for_day(ingest_time))
+    def _on_job_scheduled(self, ingest_args: GcsfsIngestArgs):
+        pass
 
-        to_be_processed = all_expected.difference(processed)
-        if not to_be_processed:
-            return None
-
-        return sorted(to_be_processed)[0]
-
-    def _get_expected_sort_keys_for_day(self,
-                                        ingest_time: datetime.datetime):
-        # Note: typically we only expect one file of a given type on a given day
-        seq_num = 0
-        return [self._sort_key(ingest_time, file_tag, seq_num)
-                for file_tag, rank_str in self.ranks_by_file_tag.items()]
-
-    def _get_already_processed_sort_keys_for_day(
-            self, ingest_time: datetime.datetime):
-        already_processed_paths = \
-            self._get_already_processed_file_paths_for_day(ingest_time)
-        return [self._sort_key_for_file_path(ingest_time, path)
-                for path in already_processed_paths]
-
-    def _get_already_processed_file_paths_for_day(
-            self,
-            ingest_time: datetime.datetime) -> List[str]:
-        # TODO(1628): Implement by reading from storage bucket (hack) or some
-        #  temp holding folder inside the normal ingest bucket (would have to
-        #  write code that later does cleanup to move to actual cold storage
-        #  for the previous day once we start processing for the next day).
-
-        args_list: Sequence[GcsfsIngestArgs] = \
-            self.processed_by_date_str.get(ingest_time.date().isoformat(), [])
-
-        return [args.file_path for args in args_list]
-
-    def _sort_key_for_args(self, args: GcsfsIngestArgs) -> str:
-        # By default, order by time job is queued
-        return self._sort_key_for_file_path(args.ingest_time, args.file_path)
-
-    def _sort_key_for_file_path(self,
-                                ingest_time: datetime.datetime,
-                                file_path: str) -> str:
-        # TODO(1628): Parse ingest time and sequence number out of file path
-        #  once we are modifying file names in the cloud function.
-        return self._sort_key(ingest_time, self.file_tag(file_path), 0)
-
-    def _sort_key(self,
-                  ingest_time: datetime.datetime,
-                  file_tag: str,
-                  seq_num: int):
-        date_str = ingest_time.date().isoformat()
-        file_tag_rank_str = self.ranks_by_file_tag[file_tag]
-        file_seq_rank_str = self._num_as_rank_str(seq_num)
-        return f'{date_str}_{file_tag_rank_str}_{file_seq_rank_str}'
+    # =================== #
+    # SINGLE JOB RUN CODE #
+    # =================== #
 
     def _job_tag(self, args: GcsfsIngestArgs) -> str:
         return f'{self.region.region_code}/{self.file_name(args.file_path)}:' \
@@ -179,73 +122,32 @@ class GcsfsDirectIngestController(BaseDirectIngestController[GcsfsIngestArgs,
             return fp.read().decode('utf-8')
 
     @abc.abstractmethod
-    def _get_file_tag_rank_list(self) -> List[str]:
-        pass
-
-    @abc.abstractmethod
     def _parse(self,
                args: GcsfsIngestArgs,
                contents: str) -> IngestInfo:
         pass
 
-    def _storage_path(self,
-                      storage_bucket: str,
-                      ingest_time: datetime.datetime,
-                      file_name: str) -> str:
-        """Returns the storage file path for the input |file_name|,
-        |storage_bucket|, and |ingest_time|"""
-        ingest_date_str = ingest_time.date().isoformat()
-
-        def _build_storage_path(storage_file_name: str):
-            return os.path.join(storage_bucket,
-                                self.region.region_code,
-                                ingest_date_str,
-                                storage_file_name)
-
-        storage_path = _build_storage_path(file_name)
-
-        tries = 0
-        while self.fs.exists(storage_path):
-            tries += 1
-            if tries >= self._MAX_STORAGE_FILE_RENAME_TRIES:
-                raise DirectIngestError(
-                    msg=f"Too many versions of file [{file_name}] stored in "
-                    f"bucket for date {ingest_date_str}",
-                    error_type=DirectIngestErrorType.CLEANUP_ERROR
-                )
-            file_tag, file_extension = file_name.split('.')
-            updated_file_name = f'{file_tag}_{tries}.{file_extension}'
-            logging.warning(
-                "Desired storage path %s already exists, updating name to %s.",
-                storage_path, updated_file_name)
-            storage_path = _build_storage_path(updated_file_name)
-
-        return storage_path
-
     def _do_cleanup(self, args: GcsfsIngestArgs):
-        self.pending_jobs_queue.pop()
-        date_str = args.ingest_time.date().isoformat()
-        self.processed_by_date_str[date_str].append(args)
+        self.fs.mv_path_to_processed_path(args.file_path)
 
-        if not args.storage_bucket:
-            raise DirectIngestError(
-                msg=f"No storage bucket for job [{self._job_tag(args)}]",
-                error_type=DirectIngestErrorType.INPUT_ERROR)
+        parts = filename_parts_from_path(args.file_path)
+        directory_path, _ = os.path.split(args.file_path)
 
-        file_name = self.file_name(args.file_path)
-        if not file_name:
-            raise DirectIngestError(
-                msg=f"No file name for job [{self._job_tag(args)}]",
-                error_type=DirectIngestErrorType.INPUT_ERROR)
+        next_args_for_day = \
+            self.file_prioritizer.get_next_job_args(date_str=parts.date_str)
 
-        storage_path = self._storage_path(args.storage_bucket,
-                                          args.ingest_time,
-                                          file_name)
+        # TODO(1628): Consider moving all files to storage after a whole day has
+        #  passed, even if there are still expected files?
+        day_complete = not next_args_for_day and not \
+            self.file_prioritizer.are_more_jobs_expected_for_day(parts.date_str)
 
-        logging.info("Moving file %s to storage path %s",
-                     args.file_path,
-                     storage_path)
-        self.fs.mv(args.file_path, storage_path)
+        if day_complete:
+            logging.info(
+                "All expected files found for day [%s]. Moving to storage.",
+                parts.date_str)
+            self.fs.mv_paths_from_date_to_storage(directory_path,
+                                                  parts.date_str,
+                                                  self.storage_directory_path)
 
     @staticmethod
     def file_name(file_path: Optional[str]) -> Optional[str]:
@@ -255,16 +157,6 @@ class GcsfsDirectIngestController(BaseDirectIngestController[GcsfsIngestArgs,
         _, file_name = os.path.split(file_path)
         return file_name
 
-    def file_tag(self,
-                 file_path: Optional[str]) -> str:
-        # TODO(2058): Right now this function assumes that paths will take the
-        #  form /path/to/file/{file_tag}.csv. We will eventually need to handle
-        #  file names that include dates or which have numbers from upload
-        #  conflicts.
-        file_name = self.file_name(file_path)
-        if not file_name:
-            raise DirectIngestError(
-                msg=f"No file name for path [{file_path}]",
-                error_type=DirectIngestErrorType.INPUT_ERROR)
-
-        return file_name.split('.')[0]
+    @staticmethod
+    def file_tag(file_path: str) -> str:
+        return filename_parts_from_path(file_path).file_tag

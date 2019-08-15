@@ -17,8 +17,9 @@
 
 """Direct ingest for us_ma_middlesex.
 """
+import datetime
 import logging
-from typing import Iterable, Dict, Optional
+from typing import Iterable, Dict, Optional, Set
 
 import pandas as pd
 import sqlalchemy
@@ -60,6 +61,7 @@ class UsMaMiddlesexController(BaseDirectIngestController[IngestArgs,
     def __init__(self):
         super(UsMaMiddlesexController, self).__init__('us_ma_middlesex',
                                                       SystemLevel.COUNTY)
+        self.scheduled_ingest_times: Set[datetime.datetime] = set()
 
     def _create_engine(self):
         db_user = secrets.get_secret('us_ma_middlesex_db_user')
@@ -74,13 +76,11 @@ class UsMaMiddlesexController(BaseDirectIngestController[IngestArgs,
                 database=db_name,
                 query={'host': '/cloudsql/{}'.format(cloudsql_instance_id)}))
 
-    def _parse(self,
-               args: IngestArgs,
-               contents: Iterable[Dict]) -> IngestInfo:
-        return UsMaMiddlesexParser().parse(contents)
+    # ============== #
+    # JOB SCHEDULING #
+    # ============== #
 
-    def _get_next_job_args(self, last_job_args: Optional[IngestArgs]
-                           ) -> Optional[IngestArgs]:
+    def _get_next_job_args(self) -> Optional[IngestArgs]:
         df = pd.read_sql_query('SELECT MIN(export_time) FROM booking',
                                self._create_engine())
         ingest_time = df[min][0]
@@ -88,13 +88,25 @@ class UsMaMiddlesexController(BaseDirectIngestController[IngestArgs,
             logging.info("No more export times - successfully persisted all "
                          "data exports.")
             return None
-        if last_job_args and last_job_args.ingest_time == ingest_time:
+        if ingest_time in self.scheduled_ingest_times:
             raise DirectIngestError(
                 msg=f"Received a second job for ingest time [{ingest_time}]. "
                 "Did the previous job delete this export from the database?",
                 error_type=DirectIngestErrorType.CLEANUP_ERROR)
 
         return IngestArgs(ingest_time=ingest_time)
+
+    def _on_job_scheduled(self, ingest_args: IngestArgs):
+        self.scheduled_ingest_times.add(ingest_args.ingest_time)
+
+    # =================== #
+    # SINGLE JOB RUN CODE #
+    # =================== #
+
+    def _parse(self,
+               args: IngestArgs,
+               contents: Iterable[Dict]) -> IngestInfo:
+        return UsMaMiddlesexParser().parse(contents)
 
     def _job_tag(self, args: IngestArgs) -> str:
         return f'{self.region.region_code}:{args.ingest_time}'

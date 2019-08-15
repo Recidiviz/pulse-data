@@ -20,6 +20,7 @@ from typing import Any, Dict, List, Set
 
 import yaml
 
+import recidiviz.ingest.direct.direct_ingest_cloud_task_manager
 from recidiviz.common import queues
 from recidiviz.utils import environment, regions, vendors
 
@@ -47,7 +48,9 @@ BIGQUERY_QUEUE_CONFIG = {
 }
 
 DIRECT_INGEST_SCHEDULER_QUEUE_CONFIG = {
-    'name': queues.DIRECT_INGEST_SCHEDULER_QUEUE,
+    'name':
+        recidiviz.ingest.direct.direct_ingest_cloud_task_manager.
+        DIRECT_INGEST_SCHEDULER_QUEUE,
     'mode': 'push',
     'rate': '100/s',
     'bucket_size': 1,
@@ -58,7 +61,9 @@ DIRECT_INGEST_SCHEDULER_QUEUE_CONFIG = {
 }
 
 DIRECT_INGEST_JAILS_TASK_QUEUE_CONFIG = {
-    'name': queues.DIRECT_INGEST_JAILS_TASK_QUEUE,
+    'name':
+        recidiviz.ingest.direct.direct_ingest_cloud_task_manager.
+        DIRECT_INGEST_JAILS_TASK_QUEUE,
     'mode': 'push',
     'rate': '10/s',
     'bucket_size': 1,
@@ -69,7 +74,9 @@ DIRECT_INGEST_JAILS_TASK_QUEUE_CONFIG = {
 }
 
 DIRECT_INGEST_STATE_TASK_QUEUE_CONFIG = {
-    'name': queues.DIRECT_INGEST_STATE_TASK_QUEUE,
+    'name':
+        recidiviz.ingest.direct.direct_ingest_cloud_task_manager.
+        DIRECT_INGEST_STATE_TASK_QUEUE,
     'mode': 'push',
     'rate': '10/s',
     'bucket_size': 1,

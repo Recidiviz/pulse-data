@@ -20,8 +20,9 @@
 Mostly copied from:
 https://cloud.google.com/iap/docs/authentication-howto#iap_make_request-python
 """
+import datetime
+import os
 import re
-from enum import Enum
 from typing import Optional, Match
 
 import requests
@@ -39,6 +40,13 @@ _OAUTH_TOKEN_URI = 'https://www.googleapis.com/oauth2/v4/token'
 _STATE_DIRECT_INGEST_BUCKET_REGEX = re.compile(
         r'(recidiviz-staging|recidiviz-123)-direct-ingest-state-'
         r'([a-z]+-[a-z]+)$')
+
+DIRECT_INGEST_UNPROCESSED_PREFIX = 'unprocessed'
+DIRECT_INGEST_PROCESSED_PREFIX = 'processed'
+
+# Value to be passed to the GCSFileSystem cache_timeout to indicate that we
+# should not cache.
+GCSFS_NO_CACHING = -1
 
 # pylint: disable=protected-access
 
@@ -125,19 +133,6 @@ def get_google_open_id_connect_token(
     return token_response['id_token']
 
 
-class DirectIngestRegionCategory(Enum):
-    # DO NOT CHANGE THESE STRING VALUES - THEY ARE USED TO CONSTRUCT BUCKET
-    # NAMES CORRESPONDING TO CLOUD BUCKETS.
-    COUNTY = 'county'
-    STATE = 'state'
-
-
-def get_direct_ingest_storage_bucket(
-        ingest_category: DirectIngestRegionCategory,
-        project_id: str) -> str:
-    return f'{project_id}-direct-ingest-{ingest_category.value}-storage'
-
-
 def get_state_region_code_from_direct_ingest_bucket(bucket) -> Optional[str]:
     match_obj: Optional[Match] = \
         re.match(_STATE_DIRECT_INGEST_BUCKET_REGEX, bucket)
@@ -150,3 +145,48 @@ def get_state_region_code_from_direct_ingest_bucket(bucket) -> Optional[str]:
 
 def get_dashboard_data_export_storage_bucket(project_id: str) -> str:
     return f'{project_id}-dashboard-data'
+
+
+# NOTE: While the functions below might semantically belong with the code in the
+# DirectIngestGCSFileSystem, they were intentionally kept separate so we would
+# not have to import DirectIngestGCSFileSystem, in an effort to reduce the
+# amount of code that lives in the cloud_functions directories.
+
+def _build_unprocessed_file_name(
+        *,
+        utc_iso_timestamp_str: str,
+        file_tag: str,
+        extension: str) -> str:
+
+    file_name_parts = [
+        DIRECT_INGEST_UNPROCESSED_PREFIX,
+        utc_iso_timestamp_str,
+        file_tag
+    ]
+
+    return "_".join(file_name_parts) + f".{extension}"
+
+
+def have_seen_file_path(original_file_path: str) -> bool:
+    _, file_name = os.path.split(original_file_path)
+
+    return file_name.startswith(DIRECT_INGEST_UNPROCESSED_PREFIX) or \
+           file_name.startswith(DIRECT_INGEST_PROCESSED_PREFIX)
+
+
+def to_normalized_unprocessed_file_path(
+        original_file_path: str,
+        dt: Optional[datetime.datetime] = None) -> str:
+    if not dt:
+        dt = datetime.datetime.utcnow()
+
+    directory, file_name = os.path.split(original_file_path)
+    utc_iso_timestamp_str = dt.strftime('%Y-%m-%dT%H:%M:%S:%f')
+    file_tag, extension = file_name.split('.')
+
+    updated_relative_path = _build_unprocessed_file_name(
+        utc_iso_timestamp_str=utc_iso_timestamp_str,
+        file_tag=file_tag,
+        extension=extension)
+
+    return os.path.join(directory, updated_relative_path)

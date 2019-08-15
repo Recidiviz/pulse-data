@@ -25,6 +25,7 @@ import gcsfs
 import tabula
 from flask import Flask, request
 
+from recidiviz.cloud_functions.cloud_function_utils import GCSFS_NO_CACHING
 from recidiviz.utils import metadata
 from recidiviz.utils.auth import authenticate_request
 
@@ -59,7 +60,7 @@ def read_pdf():
     logging.info("The project id is [%s]", project_id)
     path = os.path.join(location, filename)
     # Don't use the gcsfs cache
-    fs = gcsfs.GCSFileSystem(project=project_id, cache_timeout=-1)
+    fs = gcsfs.GCSFileSystem(project=project_id, cache_timeout=GCSFS_NO_CACHING)
     logging.info("The path to download from is [%s]", filename)
     logging.info("The files in the directory are:")
     logging.info(fs.ls(location))
