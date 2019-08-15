@@ -27,6 +27,7 @@ import requests
 from flask import Blueprint, request
 import gcsfs
 
+from recidiviz.cloud_functions.cloud_function_utils import GCSFS_NO_CACHING
 from recidiviz.ingest.aggregate.regions.ca import ca_aggregate_site_scraper
 from recidiviz.ingest.aggregate.regions.fl import fl_aggregate_site_scraper
 from recidiviz.ingest.aggregate.regions.ga import ga_aggregate_site_scraper
@@ -78,7 +79,8 @@ def scrape_aggregate_reports():
     gcp_project = metadata.project_id()
     historical_bucket = HISTORICAL_BUCKET.format(gcp_project)
     upload_bucket = UPLOAD_BUCKET.format(gcp_project)
-    fs = gcsfs.GCSFileSystem(project=gcp_project, cache_timeout=-1)
+    fs = gcsfs.GCSFileSystem(project=gcp_project,
+                             cache_timeout=GCSFS_NO_CACHING)
     logging.info("Scraping all pdfs for %s", state)
 
     for url in urls:

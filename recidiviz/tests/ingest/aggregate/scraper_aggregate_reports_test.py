@@ -26,6 +26,7 @@ import requests
 import gcsfs
 import pytz
 
+from recidiviz.cloud_functions.cloud_function_utils import GCSFS_NO_CACHING
 from recidiviz.ingest.aggregate import scrape_aggregate_reports
 from recidiviz.ingest.aggregate.regions.ca import ca_aggregate_site_scraper
 from recidiviz.ingest.aggregate.regions.ny import ny_aggregate_site_scraper
@@ -98,7 +99,8 @@ class TestScraperAggregateReports(TestCase):
             '/scrape_state?state=texas', headers=headers)
         self.assertEqual(response.status_code, 200)
 
-        mock_fs.assert_called_with(project=TEST_ENV, cache_timeout=-1)
+        mock_fs.assert_called_with(project=TEST_ENV,
+                                   cache_timeout=GCSFS_NO_CACHING)
         mock_fs_return.exists.assert_called_with(
             os.path.join(self.historical_bucket, 'texas', EXISTING_PDF_NAME))
         self.assertEqual(mock_fs_return.put.called, False)
@@ -127,7 +129,8 @@ class TestScraperAggregateReports(TestCase):
             '/scrape_state?state=new_york', headers=headers)
         self.assertEqual(response.status_code, 200)
 
-        mock_fs.assert_called_with(project=TEST_ENV, cache_timeout=-1)
+        mock_fs.assert_called_with(project=TEST_ENV,
+                                   cache_timeout=GCSFS_NO_CACHING)
         self.assertFalse(mock_fs_return.exists.called)
         mock_fs_return.put.assert_called_with(temploc, upload_bucket)
         mock_open.assert_called_with(temploc, 'wb')
@@ -156,7 +159,8 @@ class TestScraperAggregateReports(TestCase):
             '/scrape_state?state=texas', headers=headers)
         self.assertEqual(response.status_code, 200)
 
-        mock_fs.assert_called_with(project=TEST_ENV, cache_timeout=-1)
+        mock_fs.assert_called_with(project=TEST_ENV,
+                                   cache_timeout=GCSFS_NO_CACHING)
         mock_fs_return.exists.assert_called_with(
             os.path.join(self.historical_bucket, 'texas', EXISTING_PDF_NAME))
         mock_fs_return.put.assert_called_with(temploc, upload_bucket)
@@ -189,7 +193,8 @@ class TestScraperAggregateReports(TestCase):
             '/scrape_state?state=california', headers=headers)
         self.assertEqual(response.status_code, 200)
 
-        mock_fs.assert_called_with(project=TEST_ENV, cache_timeout=-1)
+        mock_fs.assert_called_with(project=TEST_ENV,
+                                   cache_timeout=GCSFS_NO_CACHING)
         mock_fs_return.exists.assert_called_with(
             os.path.join(
                 self.historical_bucket, 'california', EXISTING_CA_NAME))
@@ -223,7 +228,8 @@ class TestScraperAggregateReports(TestCase):
             '/scrape_state?state=texas', headers=headers)
         self.assertEqual(response.status_code, 200)
 
-        mock_fs.assert_called_with(project=TEST_ENV, cache_timeout=-1)
+        mock_fs.assert_called_with(project=TEST_ENV,
+                                   cache_timeout=GCSFS_NO_CACHING)
         self.assertEqual(mock_fs.call_count, 1)
         expected_exists_calls = [
             call(os.path.join(
@@ -276,7 +282,8 @@ class TestScraperAggregateReports(TestCase):
             '/scrape_state?state=texas', headers=headers)
         self.assertEqual(response.status_code, 200)
 
-        mock_fs.assert_called_with(project=TEST_ENV, cache_timeout=-1)
+        mock_fs.assert_called_with(project=TEST_ENV,
+                                   cache_timeout=GCSFS_NO_CACHING)
         self.assertEqual(mock_fs.call_count, 1)
         expected_exists_calls = [
             call(historical_path1),
