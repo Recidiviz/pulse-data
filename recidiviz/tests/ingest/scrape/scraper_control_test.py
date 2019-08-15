@@ -19,13 +19,13 @@
 import pytest
 import pytz
 from flask import Flask
-from mock import call, create_autospec, patch
+from mock import call, patch
 
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.scrape import (constants, scrape_phase, scraper_control,
                                      sessions)
 from recidiviz.persistence import batch_persistence
-from recidiviz.utils.regions import Region
+from recidiviz.tests.utils.fake_region import fake_region
 
 
 # pylint: disable=redefined-outer-name
@@ -504,9 +504,3 @@ class TestScraperResume:
             "Missing or invalid parameters, see service logs."
 
         mock_supported.assert_called_with(timezone=None)
-
-
-def fake_region(environment='local'):
-    region = create_autospec(Region)
-    region.environment = environment
-    return region

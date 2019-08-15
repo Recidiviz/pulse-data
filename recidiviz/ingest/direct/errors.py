@@ -20,6 +20,7 @@ from enum import Enum, auto
 
 class DirectIngestErrorType(Enum):
     INPUT_ERROR = auto()
+    TASKS_ERROR = auto()
     READ_ERROR = auto()
     PARSE_ERROR = auto()
     PERSISTENCE_ERROR = auto()

@@ -22,7 +22,8 @@ import logging
 from typing import Generic, Optional
 
 from recidiviz import IngestInfo
-from recidiviz.common.cloud_task_factory import CloudTaskFactory
+from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import \
+    DirectIngestCloudTaskManagerImpl
 from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
 from recidiviz.ingest.direct.controllers.direct_ingest_types import \
     ContentsType, IngestArgsType
@@ -48,15 +49,39 @@ class BaseDirectIngestController(Ingestor,
 
         self.region = regions.get_region(region_name, is_direct_ingest=True)
         self.system_level = system_level
-        self.cloud_task_factory = CloudTaskFactory()
+        self.cloud_task_manager = DirectIngestCloudTaskManagerImpl()
 
-    def run_next_ingest_job_if_necessary_or_schedule_wait(
-            self, last_ingest_args: Optional[IngestArgsType]):
+    # ============== #
+    # JOB SCHEDULING #
+    # ============== #
+    def kick_scheduler(self, delay_sec: int = 0):
+        logging.info("Creating cloud task to schedule next job.")
+        self.cloud_task_manager.create_direct_ingest_scheduler_queue_task(
+            region=self.region,
+            delay_sec=delay_sec)
+
+    def schedule_next_ingest_job_or_wait_if_necessary(self):
         """Creates a cloud task to run the next ingest job. Depending on the
         next job's IngestArgs, we either post a task to direct/scheduler/ if
         a wait_time is specified or direct/process_job/ if we can run the next
         job immediately."""
-        next_job_args = self._get_next_job_args(last_ingest_args)
+        in_progress_job_name = \
+            self.cloud_task_manager.in_progress_process_job_name(
+                self.region)
+
+        if in_progress_job_name:
+            logging.info(
+                "Already running job [%s] - will not schedule another job for "
+                "region [%s]",
+                in_progress_job_name,
+                self.region.region_code)
+            # TODO(1628): If scheduler queue is empty, schedule another job for
+            #  several seconds later to handle the race where the process work
+            #  job task hasn't fully cleared when the schedule job it has queued
+            #  fires.
+            return
+
+        next_job_args = self._get_next_job_args()
 
         if not next_job_args:
             logging.info("No more jobs to run for region [%s] - returning",
@@ -70,26 +95,68 @@ class BaseDirectIngestController(Ingestor,
         if wait_time_sec:
             logging.info("Creating cloud task to fire timer in [%s] seconds",
                          wait_time_sec)
-            self.cloud_task_factory.create_direct_ingest_scheduler_queue_task(
+
+            # TODO(1628): Probably should only queue another task if the
+            #  scheduler has < 2 tasks in it, to prevent a bunch of long-running
+            #  tasks getting scheduled when multiple files are dropped at once.
+            self.cloud_task_manager.create_direct_ingest_scheduler_queue_task(
                 region=self.region,
-                ingest_args=next_job_args,
                 delay_sec=wait_time_sec)
         else:
             logging.info(
                 "Creating cloud task to run job [%s]",
                 self._job_tag(next_job_args))
-            self.cloud_task_factory.create_direct_ingest_process_job_task(
+            self.cloud_task_manager.create_direct_ingest_process_job_task(
                 region=self.region,
                 ingest_args=next_job_args)
+            self._on_job_scheduled(next_job_args)
 
-    def run_ingest_job(self, args: IngestArgsType):
+    @abc.abstractmethod
+    def _get_next_job_args(self) -> Optional[IngestArgsType]:
+        """Should be overridden to return args for the next ingest job, or
+        None if there is nothing to process."""
+
+    @abc.abstractmethod
+    def _on_job_scheduled(self, ingest_args: IngestArgsType):
+        """Called from the scheduler queue when an individual direct ingest job
+        is scheduled.
+        """
+
+    def _wait_time_sec_for_next_args(self, _: IngestArgsType) -> int:
+        """Should be overwritten to return the number of seconds we should
+        wait to try to run another job, given the args of the next job we would
+        run if we had to run a job right now. This gives controllers the ability
+        to back off if we want to attempt to enforce an ingest order for files
+        that might all be uploaded around the same time, but in inconsistent
+        order.
+        """
+        return 0
+
+    # =================== #
+    # SINGLE JOB RUN CODE #
+    # =================== #
+    def run_ingest_job_and_kick_scheduler_on_completion(self,
+                                                        args: IngestArgsType):
+        self._run_ingest_job(args)
+        # TODO(1628): Without this delay_sec=2, there is a race between when the
+        #  scheduler job that we schedule here runs and when this current job
+        #  finishes executing. Since the scheduler checks if any more ingest
+        #  jobs are in the ingest queue before running, we want to wait to run
+        #  the scheduler job until after we're pretty sure this task has
+        #  returned and cleared from the queue. We should consider a more robust
+        #  way to ensure that we don't stall because we run a scheduler job too
+        #  early.
+        self.kick_scheduler(delay_sec=2)
+        logging.info("Done running task. Returning from "
+                     "run_ingest_job_and_kick_scheduler_on_completion")
+
+    def _run_ingest_job(self, args: IngestArgsType):
         """
         Runs the full ingest process for this controller - reading and parsing
         raw input data, transforming it to our schema, then writing to the
         database.
         """
-        logging.info("Starting ingest for ingest run [%s]",
-                     self._job_tag(args))
+        logging.info("Starting ingest for ingest run [%s]", self._job_tag(args))
         contents = self._read_contents(args)
 
         logging.info("Successfully read contents for ingest run [%s]",
@@ -132,24 +199,6 @@ class BaseDirectIngestController(Ingestor,
 
         logging.info("Finished ingest for ingest run [%s]",
                      self._job_tag(args))
-
-        self.run_next_ingest_job_if_necessary_or_schedule_wait(args)
-
-    @abc.abstractmethod
-    def _get_next_job_args(self, last_job_args: Optional[IngestArgsType]
-                           ) -> Optional[IngestArgsType]:
-        """Should be overridden to return args for the next ingest job, or
-        None if there is nothing to process."""
-
-    def _wait_time_sec_for_next_args(self, _: IngestArgsType) -> int:
-        """Should be overwritten to return the number of seconds we should
-        wait to try to run another job, given the args of the next job we would
-        run if we had to run a job right now. This gives controllers the ability
-        to back off if we want to attempt to enforce an ingest order for files
-        that might all be uploaded around the same time, but in inconsistent
-        order.
-        """
-        return 0
 
     @abc.abstractmethod
     def _job_tag(self, args: IngestArgsType) -> str:

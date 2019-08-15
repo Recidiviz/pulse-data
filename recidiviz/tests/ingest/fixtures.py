@@ -20,12 +20,12 @@
 import os
 import inspect
 import json
-import xml
+from xml.etree import ElementTree
 import html5lib
 from lxml import html
 
 
-def as_string(region_directory, filename):
+def as_string(region_directory: str, filename: str):
     """Returns the contents of the given fixture file as a string.
 
     Assumes the fixture file has the given name (with extension included), and
@@ -45,16 +45,31 @@ def as_string(region_directory, filename):
              for d in ('aggregate', 'extractor', 'direct')):
         subdir = ''
 
+    relative_path = os.path.join(
+        subdir,
+        region_directory,
+        'fixtures',
+        filename
+    )
+
+    return as_string_from_relative_path(relative_path)
+
+
+def as_string_from_relative_path(relative_path: str):
+    """Returns the contents of the given fixture file as a string.
+
+    Args:
+        relative_path: (string) Path of the fixture file relative to the
+            /recidiviz/tests/ingest directory.
+
+    """
     with open(os.path.join(os.path.dirname(__file__),
-                           subdir,
-                           region_directory,
-                           'fixtures',
-                           filename)) as fixture_file:
+                           relative_path)) as fixture_file:
         string = fixture_file.read()
     return string
 
 
-def as_dict(region_directory, filename):
+def as_dict(region_directory: str, filename: str):
     """Returns the contents of the given fixture file as a dictionary.
 
     Assumes the fixture file has the given name (with extension included), and
@@ -87,13 +102,13 @@ def as_filepath(filename: str, subdir: str = 'fixtures') -> str:
         os.path.join(caller_filepath, '..', subdir, filename))
 
 
-def as_html(region_directory, filename):
+def as_html(region_directory: str, filename: str):
     content_string = as_string(region_directory, filename)
     return html.fromstring(content_string)
 
 
-def as_html5(region_directory, filename):
+def as_html5(region_directory: str, filename: str):
     content_string = as_string(region_directory, filename)
     html5_etree = html5lib.parse(content_string)
-    html5_string = xml.etree.ElementTree.tostring(html5_etree)
+    html5_string = ElementTree.tostring(html5_etree)
     return html.fromstring(html5_string)

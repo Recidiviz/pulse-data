@@ -53,7 +53,9 @@ from recidiviz.common.constants.state.state_supervision_violation_response \
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.common.str_field_utils import parse_days_from_duration_pieces
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
-    GcsfsDirectIngestController, GcsfsIngestArgs
+    GcsfsDirectIngestController
+from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
+    GcsfsIngestArgs
 from recidiviz.ingest.direct.errors import DirectIngestError, \
     DirectIngestErrorType
 from recidiviz.ingest.extractor.csv_data_extractor import CsvDataExtractor, \
@@ -73,8 +75,14 @@ _TEMPORARY_PRIMARY_ID = '_TEMPORARY_PRIMARY_ID'
 class UsNdController(GcsfsDirectIngestController):
     """Direct ingest controller implementation for us_nd."""
 
-    def __init__(self):
-        super(UsNdController, self).__init__('us_nd', SystemLevel.STATE)
+    def __init__(self,
+                 ingest_directory_path: Optional[str] = None,
+                 storage_directory_path: Optional[str] = None):
+        super(UsNdController, self).__init__(
+            'us_nd',
+            SystemLevel.STATE,
+            ingest_directory_path,
+            storage_directory_path)
 
         self.row_pre_processors_by_file: Dict[str, List[Callable]] = {
             'elite_offenderidentifier': [self._normalize_id_fields],
