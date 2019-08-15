@@ -67,3 +67,6 @@ keys_to_ignore:
   - LAST_HOME_VISIT
   - LAST_FACE_TO_FACE
   - COUNTY_RESIDENCE
+  - COMPLETION_IND                    # TODO(2276): Review this col - should we be using it?
+  - EARLY_TERMINATION_DATE            # TODO(2276): Review this col - should we be using it?
+  - EARLY_TERMINATION_ACKNOWLEDGED    # TODO(2276): Review this col - should we be using it?

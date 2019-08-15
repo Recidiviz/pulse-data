@@ -362,6 +362,16 @@ a new CSV data extractor for each individual file you would like to ingest.
 
 The callbacks are as follows:
 
+* `row_pre_hooks` - a list of hooks that will be processed on each row
+~before~ it is ingested by the extractor. They will be invoked in order with the
+content of the row itself. It should make any necessary modifications in-place 
+to the row itself and should not return anything. The interface is:
+```python
+def my_row_pre_hook(row: Dict[str, str]):
+    # Do my stuff
+```
+
+
 * `row_post_hooks` - a list of hooks that will be processed on each row
 ingested by that extractor. They will be invoked in order with the content of 
 the row itself, the list of `IngestObjects` that were created or updated during

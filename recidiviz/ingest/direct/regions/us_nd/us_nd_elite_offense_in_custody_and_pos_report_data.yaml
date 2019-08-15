@@ -47,3 +47,4 @@ keys_to_ignore:
   - OMS_OWNER_V_OFFENDER_OIC_SANCTIONS_COMMENT_TEXT # Unused for now
   - EFFECTIVE_DATE                                  # Referenced manually in scraper to inform punishment_length_days
   - OMS_OWNER_V_OFFENDER_OIC_SANCTIONS_RESULT_SEQ   # Unused, same info as OMS_OWNER_V_OIC_HEARING_RESULTS_RESULT_SEQ
+  - ALIAS_NAME_TYPE                                 # Provided by Aliases file
