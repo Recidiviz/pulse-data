@@ -105,26 +105,38 @@ def direct_ingest_state(data, _):
     _call_direct_ingest(bucket, region_code, relative_file_path)
 
 
-def _call_direct_ingest(bucket: str,
-                        region_code: str,
-                        relative_file_path: str):
-    """Calls direct ingest cloud function when a new file is dropped into a
-    bucket."""
+def direct_ingest_rename_only(data, _):
+    """Cloud functions can be configured to trigger this function instead of
+    direct_ingest_state/direct_ingest_county when a region has turned on nightly
+    ingest before we are ready to schedule and process ingest jobs for that
+    region. This will just rename the incoming files to have a normalized path
+    with a timestamp so subsequent nightly uploads do not have naming conflicts.
+
+    data: A cloud storage object that holds name information and other metadata
+    related to the file that was dropped into the bucket.
+    _: (google.cloud.functions.Context): Metadata of triggering event.
+
+    """
+    bucket = data['bucket']
+    relative_file_path = data['name']
+
     project_id = os.environ.get('GCP_PROJECT')
     if not project_id:
         logging.error('No project id set for call to direct ingest cloud '
                       'function, returning.')
         return
 
+    _normalize_file_path_if_necessary(project_id, bucket, relative_file_path)
+    logging.info("Finished processing file [%s]", relative_file_path)
+
+
+def _normalize_file_path_if_necessary(project_id: str,
+                                      bucket: str,
+                                      relative_file_path: str):
     original_file_path = os.path.join(bucket, relative_file_path)
-
-    logging.info(
-        "Running cloud function for bucket %s, region %s, file_path %s",
-        bucket, region_code, original_file_path)
-
     if have_seen_file_path(original_file_path):
         logging.info(
-            "Not triggering direct ingest for already seen file: %s",
+            "Not normalizing file path for already seen file %s",
             original_file_path)
         return
 
@@ -142,13 +154,26 @@ def _call_direct_ingest(bucket: str,
                  original_file_path, updated_file_path)
     fs.mv(original_file_path, updated_file_path)
 
-    url = _DIRECT_INGEST_CLOUD_FUNCTION_URL.format(
-        project_id, region_code)
+
+def _call_direct_ingest(bucket: str,
+                        region_code: str,
+                        relative_file_path: str):
+    """Calls direct ingest cloud function when a new file is dropped into a
+    bucket."""
+    project_id = os.environ.get('GCP_PROJECT')
+    if not project_id:
+        logging.error('No project id set for call to direct ingest cloud '
+                      'function, returning.')
+        return
+
+    _normalize_file_path_if_necessary(project_id, bucket, relative_file_path)
+
+    url = _DIRECT_INGEST_CLOUD_FUNCTION_URL.format(project_id, region_code)
 
     logging.info("Calling URL: %s", url)
 
-    # Hit the cloud function backend, which parses the data and persists to our
-    # database.
+    # Hit the cloud function backend, which will schedule jobs to parse
+    # data for unprocessed files in this bucket and persist to our database.
     response = make_iap_request(url, _CLIENT_ID[project_id])
     logging.info("The response status is %s", response.status_code)
 
