@@ -696,8 +696,8 @@ class UsNdController(GcsfsDirectIngestController):
             Race.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: ['6', 'HAW'],
             Race.OTHER: ['5', 'HIS', 'MUL'],
 
-            StateSentenceStatus.COMPLETED: ['C', 'OUT'],
-            StateSentenceStatus.SERVING: ['A', 'IN', 'TRN'],
+            StateSentenceStatus.COMPLETED: ['C'],
+            StateSentenceStatus.SERVING: ['A', 'O'],
 
             # TODO(1892): Perhaps handle 'IF' and 'IM' values differently once
             #  we understand what these values mean.
