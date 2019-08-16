@@ -585,6 +585,88 @@ class TestValidateSortAndCollapseIncarcerationPeriods:
 
         assert not collapsed_incarceration_periods
 
+    def test_validate_incarceration_periods_empty_admission_data_us_nd(self):
+        """Tests that the incarceration periods are correctly collapsed when
+        there's an empty admission_date and admission_reason following a
+        transfer out, where the incarceration periods are from 'US_ND'.
+        """
+        first_incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                external_id='99983-1|99983-2',
+                incarceration_period_id=1111,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='US_ND',
+                admission_date=date(2004, 1, 3),
+                admission_reason=AdmissionReason.NEW_ADMISSION,
+                release_date=date(2008, 4, 14),
+                release_reason=ReleaseReason.TRANSFER)
+
+        second_incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                external_id='99983-3',
+                incarceration_period_id=2222,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='US_ND',
+                admission_date=None,
+                admission_reason=None,
+                release_date=date(2010, 4, 14),
+                release_reason=ReleaseReason.SENTENCE_SERVED)
+
+        input_incarceration_periods = [first_incarceration_period,
+                                       second_incarceration_period]
+
+        collapsed_incarceration_periods = \
+            identifier.validate_sort_and_collapse_incarceration_periods(
+                input_incarceration_periods)
+
+        assert collapsed_incarceration_periods == [
+            StateIncarcerationPeriod.new_with_defaults(
+                external_id='99983-1|99983-2',
+                incarceration_period_id=1111,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='US_ND',
+                admission_date=date(2004, 1, 3),
+                admission_reason=AdmissionReason.NEW_ADMISSION,
+                release_date=date(2010, 4, 14),
+                release_reason=ReleaseReason.SENTENCE_SERVED)
+        ]
+
+    # pylint: disable=line-too-long
+    def test_validate_incarceration_periods_empty_admission_data_not_us_nd(self):
+        """Tests that the validator does not call the state-specific code to
+        set empty admission data when the state code is not 'US_ND'.
+        """
+        first_incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                external_id='99983-1|99983-2',
+                incarceration_period_id=1111,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='US_CA',
+                admission_date=date(2004, 1, 3),
+                admission_reason=AdmissionReason.NEW_ADMISSION,
+                release_date=date(2008, 4, 14),
+                release_reason=ReleaseReason.TRANSFER)
+
+        second_incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                external_id='99983-3',
+                incarceration_period_id=2222,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='US_CA',
+                admission_date=None,
+                admission_reason=None,
+                release_date=date(2010, 4, 14),
+                release_reason=ReleaseReason.SENTENCE_SERVED)
+
+        input_incarceration_periods = [first_incarceration_period,
+                                       second_incarceration_period]
+
+        collapsed_incarceration_periods = \
+            identifier.validate_sort_and_collapse_incarceration_periods(
+                input_incarceration_periods)
+
+        assert collapsed_incarceration_periods == []
+
     def test_validate_incarceration_periods_empty_release_date(self):
         initial_incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
