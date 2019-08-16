@@ -44,11 +44,6 @@ class RemovedFromWebsite(Enum):
 # Cache of the `Region` objects.
 REGIONS: Dict[str, 'Region'] = {}
 
-# TODO(1628): It's a HACK to have this here b/c there's a circular ref between
-# the controller and regions file.
-DIRECT_INGEST_CONTROLLERS_BY_REGION: Dict[str, Any] = {}
-
-
 @attr.s(frozen=True)
 class Region:
     """Constructs region entity with attributes and helper functions
@@ -108,11 +103,6 @@ class Region:
         Returns:
             An instance of the region's ingest class (e.g., UsNyScraper)
         """
-        global DIRECT_INGEST_CONTROLLERS_BY_REGION
-        if self.is_direct_ingest:
-            if self.region_code in DIRECT_INGEST_CONTROLLERS_BY_REGION:
-                return DIRECT_INGEST_CONTROLLERS_BY_REGION[self.region_code]
-
         ingest_module = 'direct' if self.is_direct_ingest else 'scrape'
         ingest_type_name = 'Controller' if self.is_direct_ingest else 'Scraper'
 
@@ -123,12 +113,7 @@ class Region:
         ingest_class = getattr(
             module, get_ingestor_name(self.region_code, ingest_type_name))
 
-        ingestor = ingest_class()
-
-        if self.is_direct_ingest:
-            DIRECT_INGEST_CONTROLLERS_BY_REGION[self.region_code] = ingestor
-
-        return ingestor
+        return ingest_class()
 
     def get_enum_overrides(self):
         """Retrieves the overrides object of a region"""

@@ -194,11 +194,6 @@ class TestRegions(TestCase):
             assert scraper is mock_scraper
 
     def test_get_direct_controller(self):
-        # TODO(1628): Direct ingest controllers are being cached in the regions
-        #  module, causing this test to fail if the Middlesex controller is
-        #  created in another test. The below cache clear should be removed when
-        #  the cache is removed.
-        regions.DIRECT_INGEST_CONTROLLERS_BY_REGION.clear()
         mock_package = Mock()
         mock_direct = Mock()
         mock_package.UsMaMiddlesexController.return_value = mock_direct

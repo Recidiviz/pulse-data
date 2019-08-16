@@ -41,6 +41,7 @@ class GcsfsDirectIngestController(BaseDirectIngestController[GcsfsIngestArgs,
     """Controller for parsing and persisting a file in the GCS filesystem."""
 
     _MAX_STORAGE_FILE_RENAME_TRIES = 10
+    _MAX_PROCESS_JOB_WAIT_TIME_SEC = 300
 
     def __init__(self,
                  region_name: str,
@@ -86,17 +87,18 @@ class GcsfsDirectIngestController(BaseDirectIngestController[GcsfsIngestArgs,
             return 0
 
         now = datetime.datetime.utcnow()
-
         file_upload_time: datetime.datetime = \
             filename_parts_from_path(args.file_path).utc_upload_datetime
 
-        # TODO(1628): This calculation is buggy and seems to sometimes be
-        #  producing times up to 24 hours in the future. Needs debugging and
-        #  also should be updated to wait longer than 5 seconds in production.
-        five_sec_from_file_upload_time = \
-            file_upload_time + datetime.timedelta(seconds=5)
+        max_wait_from_file_upload_time = \
+            file_upload_time + datetime.timedelta(
+                seconds=self._MAX_PROCESS_JOB_WAIT_TIME_SEC)
 
-        wait_time = max((five_sec_from_file_upload_time - now).seconds, 0)
+        if max_wait_from_file_upload_time <= now:
+            wait_time = 0
+        else:
+            wait_time = (max_wait_from_file_upload_time - now).seconds
+
         logging.info("Waiting [%s] sec for [%s]",
                      wait_time, self._job_tag(args))
         return wait_time
@@ -112,14 +114,26 @@ class GcsfsDirectIngestController(BaseDirectIngestController[GcsfsIngestArgs,
         return f'{self.region.region_code}/{self.file_name(args.file_path)}:' \
             f'{args.ingest_time}'
 
-    def _read_contents(self, args: GcsfsIngestArgs) -> str:
+    def _read_contents(self, args: GcsfsIngestArgs) -> Optional[str]:
         if not args.file_path:
             raise DirectIngestError(
                 msg=f"File path not set for job [{self._job_tag(args)}]",
                 error_type=DirectIngestErrorType.INPUT_ERROR)
 
+        if not self.fs.exists(args.file_path):
+            logging.info(
+                "File path [%s] no longer exists - might have already been "
+                "processed or deleted", args.file_path)
+            return None
+
         with self.fs.open(args.file_path) as fp:
-            return fp.read().decode('utf-8')
+            logging.info(
+                "Opened path [%s] - now reading contents.", args.file_path)
+            binary_contents = fp.read()
+            logging.info(
+                "Finished reading binary contents for path [%s], now decoding.",
+                args.file_path)
+            return binary_contents.decode('utf-8')
 
     @abc.abstractmethod
     def _parse(self,

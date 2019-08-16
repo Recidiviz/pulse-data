@@ -122,7 +122,7 @@ def start_direct_ingest():
     try:
         controller = \
             direct_ingest_control.controller_for_region_code(region_name)
-        controller.kick_scheduler()
+        controller.kick_scheduler(just_finished_job=False)
     except DirectIngestError as e:
         project_id = metadata.project_id()
         message = \

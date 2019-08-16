@@ -20,7 +20,7 @@ import datetime
 import json
 import logging
 import uuid
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 
 from google.api_core import datetime_helpers
 from google.cloud import tasks
@@ -49,6 +49,13 @@ class DirectIngestCloudTaskManager:
         """
 
     @abc.abstractmethod
+    def scheduler_queue_size(self, region: Region) -> int:
+        """Returns the number of tasks currently queued in the scheduler queue
+        for the given region. If this is called from the scheduler queue itself,
+        it will return at least 1.
+        """
+
+    @abc.abstractmethod
     def create_direct_ingest_process_job_task(self,
                                               region: Region,
                                               ingest_args: IngestArgsType):
@@ -63,6 +70,7 @@ class DirectIngestCloudTaskManager:
     def create_direct_ingest_scheduler_queue_task(
             self,
             region: Region,
+            just_finished_job: bool,
             delay_sec: int):
         """Creates a scheduler task for direct ingest for a given region.
         Scheduler tasks should be short-running and queue process_job tasks if
@@ -70,6 +78,8 @@ class DirectIngestCloudTaskManager:
 
         Args:
             region: `Region` direct ingest region.
+            just_finished_job: True if this schedule is coming as a result
+                of just having finished a job.
             delay_sec: `int` the number of seconds to wait before the next task.
         """
 
@@ -98,12 +108,33 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
     """Real implementation of the DirectIngestCloudTaskManager that interacts
     with actual GCP Cloud Task queues."""
 
-    def in_progress_process_job_name(self, region: Region) -> Optional[str]:
-        task_prefix = format_task_path(region.get_queue_name(),
-                                       region.region_code)
+    @staticmethod
+    def _build_task_name_for_queue_and_region(
+            queue_name: str, region_code: str) -> List[tasks.types.Task]:
+        task_id = '{}-{}-{}'.format(
+            region_code, str(datetime.date.today()), uuid.uuid4())
+        return format_task_path(queue_name, task_id)
 
-        tasks_list = list_tasks_with_prefix(task_prefix,
-                                            region.get_queue_name())
+    @staticmethod
+    def _tasks_for_queue_and_region(queue_name: str,
+                                    region_code: str) -> List[tasks.types.Task]:
+        task_prefix = format_task_path(queue_name, region_code)
+        return list_tasks_with_prefix(task_prefix, queue_name)
+
+    @staticmethod
+    def _queue_task(queue_name: str, task: tasks.types.Task):
+        logging.info("Queueing task to queue [%s]: [%s]",
+                     queue_name, task.name)
+        retry_grpc(
+            NUM_GRPC_RETRIES,
+            client().create_task,
+            format_queue_path(queue_name),
+            task
+        )
+
+    def in_progress_process_job_name(self, region: Region) -> Optional[str]:
+        tasks_list = self._tasks_for_queue_and_region(region.get_queue_name(),
+                                                      region.region_code)
 
         if not tasks_list:
             return None
@@ -112,13 +143,17 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
         #  it has a failure status, etc.
         return tasks_list[0].name
 
+    def scheduler_queue_size(self, region: Region) -> int:
+        tasks_list = self._tasks_for_queue_and_region(
+            DIRECT_INGEST_SCHEDULER_QUEUE, region.region_code)
+        return len(tasks_list)
+
     def create_direct_ingest_process_job_task(self,
                                               region: Region,
                                               ingest_args: IngestArgsType):
         body = self._get_body_from_args(ingest_args)
-        task_id = '{}-{}-{}'.format(
-            region.region_code, str(datetime.date.today()), uuid.uuid4())
-        task_name = format_task_path(region.get_queue_name(), task_id)
+        task_name = self._build_task_name_for_queue_and_region(
+            region.get_queue_name(), region.region_code)
         task = tasks.types.Task(
             name=task_name,
             app_engine_http_request={
@@ -127,16 +162,12 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
                 'body': json.dumps(body).encode()
             }
         )
-        retry_grpc(
-            NUM_GRPC_RETRIES,
-            client().create_task,
-            format_queue_path(region.get_queue_name()),
-            task
-        )
+        self._queue_task(region.get_queue_name(), task)
 
     def create_direct_ingest_scheduler_queue_task(
             self,
             region: Region,
+            just_finished_job: bool,
             delay_sec: int,
     ):
         schedule_time = datetime.datetime.now() + \
@@ -146,21 +177,16 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
             schedule_time) // 1000
         schedule_timestamp = timestamp_pb2.Timestamp(seconds=schedule_time_sec)
 
-        task_id = '{}-{}-{}'.format(
-            region.region_code, str(datetime.date.today()), uuid.uuid4())
-        task_name = format_task_path(DIRECT_INGEST_SCHEDULER_QUEUE, task_id)
+        task_name = self._build_task_name_for_queue_and_region(
+            DIRECT_INGEST_SCHEDULER_QUEUE, region.region_code)
         task = tasks.types.Task(
             name=task_name,
             schedule_time=schedule_timestamp,
             app_engine_http_request={
                 'relative_uri':
-                    f'/direct/scheduler?region={region.region_code}',
+                    f'/direct/scheduler?region={region.region_code}&'
+                    f'just_finished_job={just_finished_job}',
                 'body': json.dumps({}).encode()
             }
         )
-        retry_grpc(
-            NUM_GRPC_RETRIES,
-            client().create_task,
-            format_queue_path(DIRECT_INGEST_SCHEDULER_QUEUE),
-            task
-        )
+        self._queue_task(DIRECT_INGEST_SCHEDULER_QUEUE, task)
