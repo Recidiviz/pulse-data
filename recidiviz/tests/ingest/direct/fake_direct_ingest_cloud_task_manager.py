@@ -90,9 +90,11 @@ class FakeDirectIngestCloudTaskManager(DirectIngestCloudTaskManager):
     def create_direct_ingest_scheduler_queue_task(
             self,
             region: Region,
+            just_finished_job: bool,
             delay_sec: int):
         self.scheduler_queue.add_task(
-            self.controller.schedule_next_ingest_job_or_wait_if_necessary)
+            self.controller.schedule_next_ingest_job_or_wait_if_necessary,
+            just_finished_job)
 
     def in_progress_process_job_name(self, region: Region) -> Optional[str]:
         with self.process_job_queue.mutex:
@@ -102,6 +104,9 @@ class FakeDirectIngestCloudTaskManager(DirectIngestCloudTaskManager):
         if has_unfinished_tasks:
             return 'in-progress-job-name'
         return None
+
+    def scheduler_queue_size(self, region: Region) -> int:
+        return self.scheduler_queue.qsize()
 
     def wait_for_all_tasks_to_run(self):
         while True:

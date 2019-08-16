@@ -62,8 +62,11 @@ def scheduler():
     logging.info('Received request for direct ingest scheduler: %s',
                  request.values)
     region_value = get_value('region', request.values)
+    just_finished_job_str = get_value('just_finished_job', request.values)
+    just_finished_job = just_finished_job_str is not None and \
+        just_finished_job_str.lower() == 'true'
     controller = controller_for_region_code(region_value)
-    controller.schedule_next_ingest_job_or_wait_if_necessary()
+    controller.schedule_next_ingest_job_or_wait_if_necessary(just_finished_job)
     return '', HTTPStatus.OK
 
 

@@ -29,7 +29,7 @@ from recidiviz.common.serialization import attr_to_json_dict, \
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
     GcsfsDirectIngestController
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
-    GcsfsIngestArgs, filename_parts_from_path
+    GcsfsIngestArgs
 from recidiviz.ingest.models.ingest_info import StatePerson, Person
 from recidiviz.tests.ingest.direct.direct_ingest_util import \
     build_controller_for_tests, add_paths_with_tags_and_process
@@ -91,19 +91,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         file_tags = list(
             reversed(sorted(controller._get_file_tag_rank_list())))
 
-        add_paths_with_tags_and_process(controller, file_tags)
-
-        file_tags_processed = set()
-        for path in controller.fs.all_paths:
-            # Test all paths have been moved to storage
-            self.assertTrue(
-                path.startswith(controller.storage_directory_path),
-                f'{path} does not start with expected prefix')
-
-            file_tags_processed.add(filename_parts_from_path(path).file_tag)
-
-        # Test that each file tag has been processed
-        self.assertEqual(file_tags_processed, set(file_tags))
+        add_paths_with_tags_and_process(self, controller, file_tags)
 
     @patch("recidiviz.utils.regions.get_region",
            Mock(return_value=TEST_STATE_REGION))
@@ -124,26 +112,11 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             StateTestGcsfsDirectIngestController,
             self.FIXTURE_PATH_PREFIX)
 
-        # pylint:disable=protected-access
         file_tags = ['tagA', 'unexpected_tag', 'tagB', 'tagC']
+        unexpected_tags = ['unexpected_tag']
 
-        add_paths_with_tags_and_process(controller, file_tags)
-
-        file_tags_processed = set()
-        for path in controller.fs.all_paths:
-
-            file_tag = filename_parts_from_path(path).file_tag
-
-            if file_tag != 'unexpected_tag':
-                # Test all expected paths have been moved to storage
-                self.assertTrue(
-                    path.startswith(controller.storage_directory_path),
-                    f'{path} does not start with expected prefix')
-
-                file_tags_processed.add(filename_parts_from_path(path).file_tag)
-
-        # Test that each file tag has been processed
-        self.assertEqual(file_tags_processed, {'tagA', 'tagB', 'tagC'})
+        add_paths_with_tags_and_process(
+            self, controller, file_tags, unexpected_tags)
 
     def test_serialize_gcsfs_ingest_args(self):
         now = datetime.datetime.now()

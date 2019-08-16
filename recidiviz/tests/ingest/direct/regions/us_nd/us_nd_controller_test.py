@@ -138,6 +138,15 @@ class TestUsNdController(unittest.TestCase):
         self.controller.cloud_task_manager.process_job_queue.add_task(
             fakes.use_in_memory_sqlite_database, StateBase)
 
+        if not isinstance(self.controller.cloud_task_manager,
+                          FakeDirectIngestCloudTaskManager):
+            raise ValueError(
+                f"Controller cloud task manager must have type "
+                f"FakeDirectIngestCloudTaskManager. Found instead "
+                f"type [{type(self.controller.cloud_task_manager)}]")
+
+        self.controller.cloud_task_manager.wait_for_all_tasks_to_run()
+
     def _init_test_thread_db_engine(self):
         """The tests will crash if we try to access the database from a thread
         that is different than the thread we created the DB engine on.
@@ -2719,7 +2728,7 @@ class TestUsNdController(unittest.TestCase):
         self._init_process_job_queue_thread_db_engine()
         # pylint:disable=protected-access
         file_tags = sorted(self.controller._get_file_tag_rank_list())
-        add_paths_with_tags_and_process(self.controller, file_tags)
+        add_paths_with_tags_and_process(self, self.controller, file_tags)
 
         # TODO(2057): For now we just check that we don't crash, but we should
         #  test more comprehensively for state.
@@ -2730,7 +2739,7 @@ class TestUsNdController(unittest.TestCase):
         # pylint:disable=protected-access
         file_tags = list(
             reversed(sorted(self.controller._get_file_tag_rank_list())))
-        add_paths_with_tags_and_process(self.controller, file_tags)
+        add_paths_with_tags_and_process(self, self.controller, file_tags)
 
         # TODO(2057): For now we just check that we don't crash, but we should
         #  test more comprehensively for state.

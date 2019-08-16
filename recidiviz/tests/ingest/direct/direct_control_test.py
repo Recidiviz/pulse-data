@@ -98,7 +98,7 @@ class TestDirectStart:
     def test_start_unsupported_region(self, mock_supported, client):
         mock_supported.return_value = ['us_ny', 'us_pa']
 
-        request_args = {'region': 'us_ca'}
+        request_args = {'region': 'us_ca', 'just_finished_job:': 'False'}
         headers = {'X-Appengine-Cron': "test-cron"}
         with pytest.raises(DirectIngestError):
             response = client.get('/scheduler',
