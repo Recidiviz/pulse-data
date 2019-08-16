@@ -16,6 +16,7 @@
 # =============================================================================
 """Utils for extracting entities from data sources to be used in pipeline
 calculations."""
+import logging
 from typing import Any, Dict, Optional, Type, Tuple
 from more_itertools import one
 
@@ -74,6 +75,10 @@ class BuildRootEntity(beam.PTransform):
 
         _validate_schema_entity_pair(self._root_schema_class,
                                      self._root_entity_class)
+
+        if not unifying_id_field:
+            raise ValueError("No valid unifying_id_field passed to the"
+                             " pipeline.")
 
     def expand(self, input_or_inputs):
         root_entity_tablename = self._root_schema_class.__tablename__
@@ -497,8 +502,9 @@ class _HydrateEntity(beam.DoFn):
         hydrated_entity = entity_class.build_from_dictionary(element)
 
         if outer_connection_id_field not in element:
-            raise ValueError(f"Invalid outer_connection_id_field:"
-                             f" {outer_connection_id_field}")
+            logging.warning("Invalid outer_connection_id_field: %s."
+                            "Dropping this entity.", outer_connection_id_field)
+            return
 
         outer_connection_id = _get_value_from_element(element,
                                                       outer_connection_id_field)
@@ -507,12 +513,13 @@ class _HydrateEntity(beam.DoFn):
             # We won't be able to connect this entity to other entities
             return
 
+        if inner_connection_id_field not in element:
+            logging.warning("Invalid inner_connection_id_field: %s."
+                            "Dropping this entity.", inner_connection_id_field)
+            return
+
         inner_connection_id = _get_value_from_element(element,
                                                       inner_connection_id_field)
-
-        if inner_connection_id_field not in element:
-            raise ValueError(f"Invalid inner_connection_id_field:"
-                             f" {inner_connection_id_field}")
 
         if not inner_connection_id:
             # We won't be able to connect this entity to other entities
