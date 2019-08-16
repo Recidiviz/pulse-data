@@ -30,6 +30,7 @@ from apache_beam.testing.test_pipeline import TestPipeline
 
 from datetime import date
 import pytest
+from mock import patch
 
 from recidiviz.calculator.utils import extractor_utils
 from recidiviz.common.constants.state.state_assessment import (
@@ -507,7 +508,8 @@ class TestBuildRootEntity(unittest.TestCase):
 
             test_pipeline.run()
 
-        assert "Invalid unifying_id_field: None" in str(e.value)
+        assert "No valid unifying_id_field passed to the pipeline." \
+               in str(e.value)
 
     def testBuildRootEntity_HydratedRelationships_InvalidUnifyingIdField(self):
         """Tests the BuildRootEntity PTransform when the the |unifying_id_field|
@@ -543,8 +545,7 @@ class TestBuildRootEntity(unittest.TestCase):
                      supervision_violation_response.__tablename__:
                      supervision_violation_response_data}
 
-        with pytest.raises(ValueError) as e:
-
+        with patch('logging.Logger.warning') as mock:
             test_pipeline = TestPipeline()
 
             _ = (test_pipeline
@@ -559,8 +560,9 @@ class TestBuildRootEntity(unittest.TestCase):
 
             test_pipeline.run()
 
-        assert "Invalid outer_connection_id_field: supervision_period_id" \
-               in str(e.value)
+            mock.assert_called_with("Invalid outer_connection_id_field: %s."
+                                    "Dropping this entity.",
+                                    'supervision_period_id')
 
 
 class TestExtractEntity(unittest.TestCase):
@@ -639,7 +641,7 @@ class TestExtractEntity(unittest.TestCase):
         entity_class = entity_utils.get_entity_class_in_module_with_name(
             entities, 'StatePerson')
 
-        with pytest.raises(ValueError) as e:
+        with patch('logging.Logger.warning') as mock:
             test_pipeline = TestPipeline()
 
             _ = (test_pipeline
@@ -655,7 +657,9 @@ class TestExtractEntity(unittest.TestCase):
 
             test_pipeline.run()
 
-        assert "Invalid outer_connection_id_field: XX" in str(e.value)
+            mock.assert_called_with("Invalid outer_connection_id_field: %s."
+                                    "Dropping this entity.",
+                                    'XX')
 
     def testExtractEntity_InvalidRootIdField(self):
         incarceration_period = remove_relationship_properties(
@@ -667,7 +671,7 @@ class TestExtractEntity(unittest.TestCase):
         data_dict = {incarceration_period.__tablename__:
                      incarceration_period_data}
 
-        with pytest.raises(ValueError) as e:
+        with patch('logging.Logger.warning') as mock:
             test_pipeline = TestPipeline()
 
             _ = (test_pipeline
@@ -683,7 +687,9 @@ class TestExtractEntity(unittest.TestCase):
 
             test_pipeline.run()
 
-        assert "Invalid inner_connection_id_field: AAA" in str(e.value)
+            mock.assert_called_with("Invalid inner_connection_id_field: %s."
+                                    "Dropping this entity.",
+                                    'AAA')
 
 
 class TestExtractRelationshipPropertyEntities(unittest.TestCase):
@@ -1165,8 +1171,7 @@ class TestHydrateEntity(unittest.TestCase):
         entity_class = entity_utils.get_entity_class_in_module_with_name(
             entities, 'StateCharge')
 
-        with pytest.raises(ValueError) as e:
-
+        with patch('logging.Logger.warning') as mock:
             test_pipeline = TestPipeline()
 
             # Read entities from data_dict
@@ -1189,7 +1194,9 @@ class TestHydrateEntity(unittest.TestCase):
 
             test_pipeline.run()
 
-        assert "Invalid outer_connection_id_field: XX" in str(e.value)
+            mock.assert_called_with("Invalid outer_connection_id_field: %s."
+                                    "Dropping this entity.",
+                                    'XX')
 
 
 class TestHydrateRootEntityWithRelationshipPropertyEntities(unittest.TestCase):

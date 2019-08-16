@@ -31,6 +31,7 @@ from collections import defaultdict
 from recidiviz.calculator.recidivism.release_event import \
     ReincarcerationReturnType, ReincarcerationReturnFromSupervisionType, \
     ReleaseEvent, RecidivismReleaseEvent, NonRecidivismReleaseEvent
+from recidiviz.calculator.utils import us_nd_utils
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus
 from recidiviz.common.constants.state.state_incarceration_period import \
@@ -144,6 +145,12 @@ def validate_sort_and_collapse_incarceration_periods(
     list. If all are valid, sorts the list of StateIncarcerationPeriods by
     admission_date, and collapses the ones connected by a transfer.
     """
+    if incarceration_periods and \
+            incarceration_periods[0].state_code == 'US_ND':
+        # If these are North Dakota incarceration periods, send to the
+        # state-specific ND data validation function
+        incarceration_periods = \
+            us_nd_utils.set_missing_admission_data(incarceration_periods)
 
     validated_incarceration_periods: List[StateIncarcerationPeriod] = []
 
