@@ -265,10 +265,10 @@ class TestUsNdController(unittest.TestCase):
                             state_sentence_groups=[
                                 StateSentenceGroup(state_sentence_group_id=
                                                    '113377',
-                                                   status='OUT'),
+                                                   status='C'),
                                 StateSentenceGroup(state_sentence_group_id=
                                                    '114909',
-                                                   status='OUT')
+                                                   status='C')
                             ]),
                 StatePerson(state_person_id='39768',
                             state_person_external_ids=[
@@ -279,7 +279,7 @@ class TestUsNdController(unittest.TestCase):
                             state_sentence_groups=[
                                 StateSentenceGroup(state_sentence_group_id=
                                                    '105640',
-                                                   status='OUT')
+                                                   status='C')
                             ])
             ])
 
@@ -1423,13 +1423,13 @@ class TestUsNdController(unittest.TestCase):
         # Arrange
         sentence_group_105640 = entities.StateSentenceGroup.new_with_defaults(
             external_id='105640', status=StateSentenceStatus.COMPLETED,
-            status_raw_text='OUT', state_code=_STATE_CODE, person=person_1)
+            status_raw_text='C', state_code=_STATE_CODE, person=person_1)
         sentence_group_113377 = entities.StateSentenceGroup.new_with_defaults(
             external_id='113377', status=StateSentenceStatus.COMPLETED,
-            status_raw_text='OUT', state_code=_STATE_CODE, person=person_2)
+            status_raw_text='C', state_code=_STATE_CODE, person=person_2)
         sentence_group_114909 = entities.StateSentenceGroup.new_with_defaults(
             external_id='114909', status=StateSentenceStatus.COMPLETED,
-            status_raw_text='OUT', state_code=_STATE_CODE, person=person_2)
+            status_raw_text='C', state_code=_STATE_CODE, person=person_2)
         person_1.sentence_groups.append(sentence_group_105640)
         person_2.sentence_groups.append(sentence_group_113377)
         person_2.sentence_groups.append(sentence_group_114909)
