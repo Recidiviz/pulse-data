@@ -54,13 +54,15 @@ class BaseDirectIngestController(Ingestor,
     # ============== #
     # JOB SCHEDULING #
     # ============== #
-    def kick_scheduler(self, delay_sec: int = 0):
+    def kick_scheduler(self, just_finished_job: bool):
         logging.info("Creating cloud task to schedule next job.")
         self.cloud_task_manager.create_direct_ingest_scheduler_queue_task(
             region=self.region,
-            delay_sec=delay_sec)
+            just_finished_job=just_finished_job,
+            delay_sec=0)
 
-    def schedule_next_ingest_job_or_wait_if_necessary(self):
+    def schedule_next_ingest_job_or_wait_if_necessary(self,
+                                                      just_finished_job: bool):
         """Creates a cloud task to run the next ingest job. Depending on the
         next job's IngestArgs, we either post a task to direct/scheduler/ if
         a wait_time is specified or direct/process_job/ if we can run the next
@@ -69,16 +71,12 @@ class BaseDirectIngestController(Ingestor,
             self.cloud_task_manager.in_progress_process_job_name(
                 self.region)
 
-        if in_progress_job_name:
+        if in_progress_job_name and not just_finished_job:
             logging.info(
                 "Already running job [%s] - will not schedule another job for "
                 "region [%s]",
                 in_progress_job_name,
                 self.region.region_code)
-            # TODO(1628): If scheduler queue is empty, schedule another job for
-            #  several seconds later to handle the race where the process work
-            #  job task hasn't fully cleared when the schedule job it has queued
-            #  fires.
             return
 
         next_job_args = self._get_next_job_args()
@@ -93,15 +91,22 @@ class BaseDirectIngestController(Ingestor,
                      self._job_tag(next_job_args), wait_time_sec)
 
         if wait_time_sec:
-            logging.info("Creating cloud task to fire timer in [%s] seconds",
-                         wait_time_sec)
-
-            # TODO(1628): Probably should only queue another task if the
-            #  scheduler has < 2 tasks in it, to prevent a bunch of long-running
-            #  tasks getting scheduled when multiple files are dropped at once.
-            self.cloud_task_manager.create_direct_ingest_scheduler_queue_task(
-                region=self.region,
-                delay_sec=wait_time_sec)
+            schedule_queue_size = \
+                self.cloud_task_manager.scheduler_queue_size(self.region)
+            if schedule_queue_size:
+                logging.info(
+                    "Creating cloud task to fire timer in [%s] seconds",
+                    wait_time_sec)
+                self.cloud_task_manager.\
+                    create_direct_ingest_scheduler_queue_task(
+                        region=self.region,
+                        just_finished_job=False,
+                        delay_sec=wait_time_sec)
+            else:
+                logging.info(
+                    "[%s] tasks already in the scheduler queue for region "
+                    "[%s] - not queueing another task.",
+                    str(schedule_queue_size), self.region.region_code)
         else:
             logging.info(
                 "Creating cloud task to run job [%s]",
@@ -138,15 +143,7 @@ class BaseDirectIngestController(Ingestor,
     def run_ingest_job_and_kick_scheduler_on_completion(self,
                                                         args: IngestArgsType):
         self._run_ingest_job(args)
-        # TODO(1628): Without this delay_sec=2, there is a race between when the
-        #  scheduler job that we schedule here runs and when this current job
-        #  finishes executing. Since the scheduler checks if any more ingest
-        #  jobs are in the ingest queue before running, we want to wait to run
-        #  the scheduler job until after we're pretty sure this task has
-        #  returned and cleared from the queue. We should consider a more robust
-        #  way to ensure that we don't stall because we run a scheduler job too
-        #  early.
-        self.kick_scheduler(delay_sec=2)
+        self.kick_scheduler(just_finished_job=True)
         logging.info("Done running task. Returning from "
                      "run_ingest_job_and_kick_scheduler_on_completion")
 
@@ -157,7 +154,14 @@ class BaseDirectIngestController(Ingestor,
         database.
         """
         logging.info("Starting ingest for ingest run [%s]", self._job_tag(args))
+
         contents = self._read_contents(args)
+
+        if contents is None:
+            logging.warning(
+                "Failed to read contents for ingest run [%s] - returning.",
+                self._job_tag(args))
+            return
 
         logging.info("Successfully read contents for ingest run [%s]",
                      self._job_tag(args))
@@ -207,9 +211,12 @@ class BaseDirectIngestController(Ingestor,
         """
 
     @abc.abstractmethod
-    def _read_contents(self, args: IngestArgsType) -> ContentsType:
+    def _read_contents(self, args: IngestArgsType) -> Optional[ContentsType]:
         """Should be overridden by subclasses to read contents that should be
         ingested into the format supported by this controller.
+
+        Will return None if the contents could not be read (i.e. if they no
+        longer exist).
         """
 
     @abc.abstractmethod

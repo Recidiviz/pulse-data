@@ -83,7 +83,8 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
             schedule_time=time_proto,
             app_engine_http_request={
                 'relative_uri':
-                    f'/direct/scheduler?region={_REGION.region_code}',
+                    f'/direct/scheduler?region={_REGION.region_code}&'
+                    f'just_finished_job=False',
                 'body': body_encoded
             }
         )
@@ -93,7 +94,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
 
         # Act
         DirectIngestCloudTaskManagerImpl().\
-            create_direct_ingest_scheduler_queue_task(_REGION, delay_sec)
+            create_direct_ingest_scheduler_queue_task(_REGION, False, delay_sec)
 
         # Assert
         mock_client.return_value.queue_path.assert_called_with(

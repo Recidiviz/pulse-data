@@ -17,6 +17,8 @@
 """Helpers for direct ingest tests."""
 import datetime
 import os
+import time
+import unittest
 from typing import Set, List
 
 from mock import Mock, patch
@@ -114,8 +116,17 @@ def ingest_args_for_fixture_file(controller: GcsfsDirectIngestController,
     )
 
 
-def add_paths_with_tags_and_process(controller: GcsfsDirectIngestController,
-                                    file_tags: List[str]):
+def add_paths_with_tags_and_process(test_case: unittest.TestCase,
+                                    controller: GcsfsDirectIngestController,
+                                    file_tags: List[str],
+                                    unexpected_tags: List[str] = None):
+    """Runs a test that queues files for all the provided file tags, waits
+    for the controller to finish processing everything, then makes sure that
+    all files not in |unexpected_tags| have been moved to storage.
+    """
+    if unexpected_tags is None:
+        unexpected_tags = []
+
     for file_tag in file_tags:
         args = ingest_args_for_fixture_file(controller,
                                             f'{file_tag}.csv')
@@ -126,7 +137,8 @@ def add_paths_with_tags_and_process(controller: GcsfsDirectIngestController,
 
         controller.fs.test_add_path(args.file_path)
 
-        controller.kick_scheduler()
+        controller.kick_scheduler(just_finished_job=False)
+        time.sleep(.05)
 
     if not isinstance(controller.cloud_task_manager,
                       FakeDirectIngestCloudTaskManager):
@@ -135,3 +147,22 @@ def add_paths_with_tags_and_process(controller: GcsfsDirectIngestController,
                          f"type [{type(controller.cloud_task_manager)}]")
 
     controller.cloud_task_manager.wait_for_all_tasks_to_run()
+
+    file_tags_processed = set()
+    for path in controller.fs.all_paths:
+        file_tag = filename_parts_from_path(path).file_tag
+
+        if file_tag not in unexpected_tags:
+            # Test all expected files have been moved to storage
+            test_case.assertTrue(
+                path.startswith(controller.storage_directory_path),
+                f'{path} does not start with expected prefix')
+
+            file_tags_processed.add(filename_parts_from_path(path).file_tag)
+        else:
+            _, file_name = os.path.split(path)
+            test_case.assertTrue(file_name.startswith('unprocessed'))
+
+    # Test that each expected file tag has been processed
+    test_case.assertEqual(file_tags_processed,
+                          set(file_tags).difference(set(unexpected_tags)))
