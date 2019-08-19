@@ -51,11 +51,11 @@ from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.scrape import constants, ingest_utils
 from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.ingest.scrape.errors import ScraperFetchError, \
-    ScraperGetMoreTasksError, ScraperPopulateDataError, ScraperError
+    ScraperGetMoreTasksError, ScraperPopulateDataError
 from recidiviz.ingest.scrape.scraper import Scraper
 from recidiviz.ingest.scrape.task_params import QueueRequest, ScrapedData, \
     Task
-from recidiviz.persistence import batch_persistence, persistence
+from recidiviz.persistence import batch_persistence, persistence, single_count
 
 
 class ParsingError(Exception):
@@ -242,45 +242,44 @@ class BaseScraper(Scraper):
                     ))
 
             if scraped_data is not None and scraped_data.persist:
-                # Something is wrong if we get here but no fields are set in the
-                # ingest info.
-                if not scraped_data.ingest_info:
-                    raise ScraperError("IngestInfo must be populated")
-                logging.info("Logging at most 4 people (were %d):",
-                             len(scraped_data.ingest_info.people))
-                loop_count = min(len(scraped_data.ingest_info.people),
-                                 constants.MAX_PEOPLE_TO_LOG)
-                for i in range(loop_count):
-                    logging.info("[%s]",
-                                 str(scraped_data.ingest_info.people[i]))
-                logging.info("Last seen time of person being set as: [%s]",
-                             request.scraper_start_time)
-                metadata = IngestMetadata(self.region.region_code,
-                                          self.region.jurisdiction_id,
-                                          request.scraper_start_time,
-                                          self.get_enum_overrides())
-                if self.BATCH_WRITES:
-                    logging.info(
-                        "Queuing ingest_info ([%d] people) to batch_persistence"
-                        " for [%s]",
-                        len(scraped_data.ingest_info.people),
-                        self.region.region_code)
-                    scrape_key = ScrapeKey(
-                        self.region.region_code, request.scrape_type)
-                    batch_persistence.write(
-                        ingest_info=scraped_data.ingest_info,
-                        scrape_key=scrape_key,
-                        task=task,
-                    )
-                else:
-                    logging.info(
-                        "Writing ingest_info ([%d] people) to the database for "
-                        "[%s]",
-                        len(scraped_data.ingest_info.people),
-                        self.region.region_code)
-                    persistence.write(
-                        ingest_utils.convert_ingest_info_to_proto(
-                            scraped_data.ingest_info), metadata)
+                if scraped_data.ingest_info:
+                    logging.info("Logging at most 4 people (were %d):",
+                                 len(scraped_data.ingest_info.people))
+                    loop_count = min(len(scraped_data.ingest_info.people),
+                                     constants.MAX_PEOPLE_TO_LOG)
+                    for i in range(loop_count):
+                        logging.info("[%s]",
+                                     str(scraped_data.ingest_info.people[i]))
+                    logging.info("Last seen time of person being set as: [%s]",
+                                 request.scraper_start_time)
+                    metadata = IngestMetadata(self.region.region_code,
+                                              self.region.jurisdiction_id,
+                                              request.scraper_start_time,
+                                              self.get_enum_overrides())
+                    if self.BATCH_WRITES:
+                        logging.info(
+                            "Queuing ingest_info ([%d] people) to "
+                            "batch_persistence for [%s]",
+                            len(scraped_data.ingest_info.people),
+                            self.region.region_code)
+                        scrape_key = ScrapeKey(
+                            self.region.region_code, request.scrape_type)
+                        batch_persistence.write(
+                            ingest_info=scraped_data.ingest_info,
+                            scrape_key=scrape_key,
+                            task=task,
+                        )
+                    else:
+                        logging.info(
+                            "Writing ingest_info ([%d] people) to the database"
+                            " for [%s]",
+                            len(scraped_data.ingest_info.people),
+                            self.region.region_code)
+                        persistence.write(
+                            ingest_utils.convert_ingest_info_to_proto(
+                                scraped_data.ingest_info), metadata)
+                for sc in scraped_data.single_counts:
+                    single_count.store_single_count(sc)
         except Exception as e:
             if self.BATCH_WRITES:
                 scrape_key = ScrapeKey(
@@ -345,7 +344,7 @@ class BaseScraper(Scraper):
 
     @abc.abstractmethod
     def populate_data(self, content, task: Task,
-                      ingest_info: IngestInfo) -> Optional[ScrapedData]:
+                      ingest_info: IngestInfo) -> ScrapedData:
         """
         Populates the ingest info object from the content and task given
 

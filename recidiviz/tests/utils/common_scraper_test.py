@@ -17,6 +17,7 @@
 
 """Base test class for scrapers."""
 from datetime import datetime
+
 import yaml
 
 from recidiviz.common.constants.person_characteristics import (
@@ -28,7 +29,6 @@ from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info
 from recidiviz.ingest.scrape import constants
 from recidiviz.ingest.scrape.task_params import Task
-
 from recidiviz.tests.utils.individual_ingest_test import IndividualIngestTest
 
 _FAKE_SCRAPER_START_TIME = datetime(year=2019, month=1, day=2)
@@ -122,8 +122,9 @@ class CommonScraperTest(IndividualIngestTest):
         assert result == expected_result
 
     def validate_and_return_populate_data(
-            self, content, expected_ingest_info, expected_persist=True,
-            task=None, info=None):
+            self, content, expected_ingest_info=None,
+            expected_single_counts=None, expected_persist=True, task=None,
+            info=None):
         """This function runs populate_data and runs some extra validation
         on the output.
 
@@ -132,6 +133,8 @@ class CommonScraperTest(IndividualIngestTest):
             expected_ingest_info: the ingest info expected to be returned from
                 `populate_data`. If `expected_ingest_info` is `None`, then
                 expects the return value of `populate_data` to be `None`.
+            expected_single_counts: the list of SingleCounts expected to be
+            returned from `populate_data`.
             expected_persist: the expected value of persist to be returned from
                 `populate_data`.
             task: the task that is being processed, optional.
@@ -147,9 +150,9 @@ class CommonScraperTest(IndividualIngestTest):
 
         scrape_data = self.scraper.populate_data(content, task, info)
 
-        if expected_ingest_info is None:
-            assert scrape_data == expected_ingest_info
-            return scrape_data
+        assert scrape_data.ingest_info == expected_ingest_info
+        self.assertCountEqual(scrape_data.single_counts,
+                              expected_single_counts or [])
 
         metadata = IngestMetadata(
             self.scraper.region.region_code,

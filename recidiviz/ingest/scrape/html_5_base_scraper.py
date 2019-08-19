@@ -22,7 +22,6 @@ preprocess HTML content that may only be accepted in the HTML5 spec.
 
 import abc
 import xml.etree.ElementTree
-from typing import Optional
 
 import html5lib
 from lxml import html
@@ -45,5 +44,5 @@ class Html5BaseScraper(BaseScraper):
 
     @abc.abstractmethod
     def populate_data(self, content, task: Task,
-                      ingest_info: IngestInfo) -> Optional[ScrapedData]:
+                      ingest_info: IngestInfo) -> ScrapedData:
         pass

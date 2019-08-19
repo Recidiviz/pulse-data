@@ -27,6 +27,7 @@ from recidiviz.calculator.bq.export_manager import export_manager_blueprint
 from recidiviz.cloud_functions.cloud_functions import cloud_functions_blueprint
 from recidiviz.ingest.aggregate.scrape_aggregate_reports import \
     scrape_aggregate_reports_blueprint
+from recidiviz.ingest.aggregate.single_count import store_single_count_blueprint
 from recidiviz.ingest.direct.direct_ingest_control import direct_ingest_control
 from recidiviz.ingest.scrape.infer_release import infer_release_blueprint
 from recidiviz.ingest.scrape.scraper_control import scraper_control
@@ -37,7 +38,6 @@ from recidiviz.persistence.batch_persistence import batch_blueprint
 from recidiviz.persistence.database.sqlalchemy_engine_manager import \
     SQLAlchemyEngineManager
 from recidiviz.utils import environment, structured_logging, metadata
-
 
 structured_logging.setup()
 
@@ -53,6 +53,7 @@ app.register_blueprint(cloud_functions_blueprint, url_prefix='/cloud_function')
 app.register_blueprint(batch_blueprint, url_prefix='/batch')
 app.register_blueprint(
     scrape_aggregate_reports_blueprint, url_prefix='/scrape_aggregate_reports')
+app.register_blueprint(store_single_count_blueprint, url_prefix='/single_count')
 app.register_blueprint(export_manager_blueprint, url_prefix='/export_manager')
 app.register_blueprint(backup_manager_blueprint, url_prefix='/backup_manager')
 
