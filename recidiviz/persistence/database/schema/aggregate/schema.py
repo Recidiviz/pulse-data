@@ -31,6 +31,12 @@ from recidiviz.common.constants.aggregate import (
 )
 from recidiviz.persistence.database.base_schema import JailsBase
 
+from recidiviz.persistence.database.schema.shared_enums import (
+    gender,
+    race,
+    ethnicity,
+)
+
 # SQLAlchemy enums. Created separately from the tables so they can be shared
 # between the master and historical tables for each entity.
 
@@ -430,3 +436,24 @@ class TnFacilityFemaleAggregate(JailsBase, _AggregateTableMixin):
     pretrial_misdemeanor_population = Column(Integer)
     female_jail_population = Column(Integer)
     female_beds = Column(Integer)
+
+
+class SingleCountAggregate(JailsBase):
+    __tablename__ = 'single_count_aggregate'
+
+    __table_args__ = (
+        UniqueConstraint(
+            'jid', 'date', 'ethnicity', 'gender', 'race'
+        ),
+        CheckConstraint(
+            'LENGTH(jid) = 8',
+            name='single_count_jid_length_check'),
+    )
+
+    record_id = Column(Integer, primary_key=True)
+    jid = Column(String(8), nullable=False)
+    date = Column(Date, nullable=False)
+    ethnicity = Column(ethnicity, nullable=True)
+    gender = Column(gender, nullable=True)
+    race = Column(race, nullable=True)
+    count = Column(Integer, nullable=False)

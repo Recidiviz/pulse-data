@@ -61,9 +61,11 @@ def get_value_from_html_tree(html_tree, attribute_value, attribute_name='id'):
     return None
 
 
-def _one(ingest_object: str, parent: IngestObject):
+def _one(ingest_object: str, parent: Optional[IngestObject]):
     none_found = ValueError(f"IngestInfo did not have a single {ingest_object} "
                             f"as expected.")
+    if parent is None:
+        raise none_found
     if ingest_object in PLURALS:
         lst = getattr(parent, PLURALS[ingest_object])
         if not lst:
@@ -79,7 +81,7 @@ def _one(ingest_object: str, parent: IngestObject):
 
 
 def one(ingest_object: str,
-        ingest_info_or_scraped_data: Union[IngestInfo, Optional[ScrapedData]]):
+        ingest_info_or_scraped_data: Union[IngestInfo, ScrapedData]):
     """Convenience function to return the single descendant of an IngestInfo
     object. For example, |one('arrest', ingest_info)| returns the single arrest
     of the single booking of the single person in |ingest_info| and raises an
