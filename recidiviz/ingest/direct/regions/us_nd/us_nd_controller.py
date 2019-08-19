@@ -18,7 +18,8 @@
 """Direct ingest controller implementation for us_nd."""
 import json
 import os
-from typing import List, Optional, Dict, Callable, Any, cast
+import re
+from typing import List, Optional, Dict, Callable, Any, cast, Pattern
 
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
@@ -70,6 +71,7 @@ from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 
 _SUPERVISION_SENTENCE_ID_SUFFIX = '_SUPERVISION'
 _TEMPORARY_PRIMARY_ID = '_TEMPORARY_PRIMARY_ID'
+_DOCSTARS_NEGATIVE_PATTERN: Pattern = re.compile(r'^\((?P<value>-?\d+)\)$')
 
 
 class UsNdController(GcsfsDirectIngestController):
@@ -87,6 +89,7 @@ class UsNdController(GcsfsDirectIngestController):
         self.row_pre_processors_by_file: Dict[str, List[Callable]] = {
             'elite_offenderidentifier': [self._normalize_id_fields],
             'elite_alias': [self._normalize_id_fields],
+            'elite_offendersentences': [self._normalize_id_fields],
             'elite_offendersentenceterms': [self._normalize_id_fields],
             'elite_offenderchargestable': [self._normalize_id_fields],
             'elite_orderstable': [self._normalize_id_fields],
@@ -492,6 +495,13 @@ class UsNdController(GcsfsDirectIngestController):
         years = row.get('SENT_YY', None)
         months = row.get('SENT_MM', None)
 
+        # It appears a recent change to Docstars files started passing negative
+        # values inside of parentheses instead of after a '-' sign
+        match = re.match(_DOCSTARS_NEGATIVE_PATTERN, months)
+        if match is not None:
+            value = match.group('value')
+            months = "-" + value
+
         if not years and not months:
             return
 
@@ -519,9 +529,13 @@ class UsNdController(GcsfsDirectIngestController):
             row.get('REV_DATE', None) or row.get('RevoDispo', None)
 
         # These three flags are either '0' (False) or '-1' (True)
-        revocation_for_new_offense = row.get('REV_NOFF_YN', None) == '-1'
-        revocation_for_absconsion = row.get('REV_ABSC_YN', None) == '-1'
-        revocation_for_technical = row.get('REV_TECH_YN', None) == '-1'
+        # That -1 may now be (1) after a recent Docstars change
+        revocation_for_new_offense = \
+            row.get('REV_NOFF_YN', None) in ['-1', '(1)']
+        revocation_for_absconsion = \
+            row.get('REV_ABSC_YN', None) in ['-1', '(1)']
+        revocation_for_technical = \
+            row.get('REV_TECH_YN', None) in ['-1', '(1)']
 
         for extracted_object in extracted_objects:
             if isinstance(extracted_object, StateSupervisionViolation):
@@ -707,7 +721,7 @@ class UsNdController(GcsfsDirectIngestController):
             StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN:
                 ['OTHER'],
             StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION:
-                ['PREA', 'RAB'],
+                ['PREA', 'RAB', 'DEF'],
             StateIncarcerationPeriodAdmissionReason.
             RETURN_FROM_ERRONEOUS_RELEASE: ['READMN'],
             StateIncarcerationPeriodAdmissionReason.TRANSFER:

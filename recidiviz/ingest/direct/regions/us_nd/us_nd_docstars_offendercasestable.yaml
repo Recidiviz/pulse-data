@@ -21,7 +21,7 @@ keys_to_ignore:
   - SENT_TYPE             # Redundant code that maps 1:1 with DESCRIPTION
   - SENT_YY               # Handled manually within us_nd_scraper
   - SENT_MM               # Handled manually within us_nd_scraper
-  - TA_TYPE               # TODO(1892) Is there somewhere to track this?
+  - TA_TYPE               # TODO(1892) Ingest this as termination reason
   - TB_CTY                # TODO(1866) Do we want to track qualitative attrs?
   - TD_PUB_AST
   - TE_EMPLOY
