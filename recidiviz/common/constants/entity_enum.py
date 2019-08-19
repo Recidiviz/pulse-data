@@ -18,9 +18,9 @@
 """Contains logic related to EntityEnums."""
 
 import re
-from enum import Enum, EnumMeta
 from typing import Dict, Optional
 
+from aenum import Enum, EnumMeta
 from opencensus.stats import aggregation, measure, view
 
 from recidiviz.common.str_field_utils import normalize
@@ -128,3 +128,7 @@ class EntityEnum(Enum, metaclass=EntityEnumMeta):
     @staticmethod
     def _get_default_map() -> Dict[str, 'EntityEnum']:
         raise NotImplementedError
+
+    @classmethod
+    def _missing_value_(cls, name: str):
+        return cls.parse_from_canonical_string(name.upper())

@@ -15,27 +15,42 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Holds paramaters for a specific scrape task"""
+"""Holds parameters for a specific scrape task"""
 
 import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import attr
 import cattr
 
-from recidiviz.ingest.scrape import constants
 from recidiviz.ingest.models.ingest_info import IngestInfo
+from recidiviz.ingest.models.single_count import SingleCount
+from recidiviz.ingest.scrape import constants
+from recidiviz.ingest.scrape.errors import ScraperError
+
+
+def validate_scraped_data(cls: 'ScrapedData', _, __):
+    if cls.persist and not (cls.ingest_info or cls.single_counts):
+        raise ScraperError(
+            "If persisting, at least one of ingest_info or single_counts "
+            "must be set.")
+
 
 @attr.s(frozen=True)
 class ScrapedData:
     """The data returned from a scrape"""
 
     # The ingest info scraped from the content
-    ingest_info: IngestInfo = attr.ib()
+    ingest_info: Optional[IngestInfo] = attr.ib(
+        default=None, validator=validate_scraped_data)
+    # Any single counts we might collect during scraping
+    single_counts: List[SingleCount] = attr.ib(
+        factory=list, validator=validate_scraped_data)
     # Whether to persist the `ingest_info` now. Set this to `False` if the data
     # for a person or booking is spread across multiple pages and you need to
     # pass this on to the next page instead of persisting it.
     persist: bool = attr.ib(default=True)
+
 
 @attr.s(frozen=True)
 class Task:
