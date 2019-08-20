@@ -33,6 +33,7 @@ from recidiviz.ingest.direct.errors import DirectIngestError, \
     DirectIngestErrorType
 from recidiviz.utils import environment, regions
 from recidiviz.utils.auth import authenticate_request
+from recidiviz.utils.environment import in_gae_production
 from recidiviz.utils.params import get_value
 from recidiviz.utils.regions import get_supported_direct_ingest_region_codes
 
@@ -78,8 +79,6 @@ def controller_for_region_code(region_code: str) -> BaseDirectIngestController:
             error_type=DirectIngestErrorType.INPUT_ERROR,
         )
 
-    gae_env = environment.get_gae_environment()
-
     try:
         region = regions.get_region(region_code, is_direct_ingest=True)
     except FileNotFoundError:
@@ -88,7 +87,11 @@ def controller_for_region_code(region_code: str) -> BaseDirectIngestController:
             error_type=DirectIngestErrorType.INPUT_ERROR,
         )
 
-    if region.environment != gae_env:
+    gae_env = environment.get_gae_environment()
+    # If we are in prod, the region config must be explicitly set to specify
+    #  this region can be run in prod. All regions can be triggered to run in
+    #  staging.
+    if in_gae_production() and region.environment != gae_env:
         raise DirectIngestError(
             msg=f"Bad environment {gae_env} for direct region {region_code}.",
             error_type=DirectIngestErrorType.INPUT_ERROR,
