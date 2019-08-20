@@ -42,14 +42,15 @@ import json
 import logging
 from typing import Any, Dict, List, Optional, Tuple
 
+import attr
 from lxml import html
 from lxml.etree import XMLSyntaxError  # pylint:disable=no-name-in-module
 
 from recidiviz.common.common_utils import get_trace_id_from_flask
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.ingest.models.scrape_key import ScrapeKey
-from recidiviz.ingest.scrape import constants, ingest_utils
 from recidiviz.ingest.models.ingest_info import IngestInfo
+from recidiviz.ingest.models.scrape_key import ScrapeKey
+from recidiviz.ingest.scrape import constants, ingest_utils, sessions
 from recidiviz.ingest.scrape.errors import ScraperFetchError, \
     ScraperGetMoreTasksError, ScraperPopulateDataError
 from recidiviz.ingest.scrape.scraper import Scraper
@@ -279,6 +280,12 @@ class BaseScraper(Scraper):
                             ingest_utils.convert_ingest_info_to_proto(
                                 scraped_data.ingest_info), metadata)
                 for sc in scraped_data.single_counts:
+                    if not sc.date:
+                        scrape_key = ScrapeKey(self.region.region_code,
+                                               constants.ScrapeType.BACKGROUND)
+                        session = sessions.get_current_session(scrape_key)
+                        if session:
+                            sc = attr.evolve(sc, date=session.start.date())
                     single_count.store_single_count(sc)
         except Exception as e:
             if self.BATCH_WRITES:
