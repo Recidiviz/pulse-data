@@ -161,6 +161,12 @@ class DirectIngestGCSFileSystemImpl(DirectIngestGCSFileSystem):
     def _ls_with_file_prefix(self,
                              directory_path: str,
                              file_prefix: str) -> List[str]:
-        path = os.path.join(directory_path, file_prefix)
-        file_paths = self.fs.ls(path=path)
-        return file_paths
+        # TODO(2293): Understand why ls doesn't work with the provided prefix
+        fps_in_directory = self.fs.ls(path=directory_path)
+        file_prefix = os.path.join(directory_path, file_prefix)
+
+        fps_with_prefix = []
+        for fp in fps_in_directory:
+            if fp.startswith(file_prefix):
+                fps_with_prefix.append(fp)
+        return fps_with_prefix
