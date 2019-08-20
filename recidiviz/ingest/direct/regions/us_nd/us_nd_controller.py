@@ -19,7 +19,7 @@
 import json
 import os
 import re
-from typing import List, Optional, Dict, Callable, Any, cast, Pattern
+from typing import List, Optional, Dict, Callable, Any, cast, Pattern, Tuple
 
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
@@ -119,7 +119,7 @@ class UsNdController(GcsfsDirectIngestController):
             'docstars_offenders': [self._rationalize_race_and_ethnicity,
                                    self._label_external_id_as_elite,
                                    self._enrich_addresses,
-                                   self._enrich_assessments],
+                                   self._enrich_sorac_assessments],
             'docstars_offendercasestable': [
                 self._concatenate_docstars_length_periods,
                 self._record_revocation,
@@ -127,6 +127,7 @@ class UsNdController(GcsfsDirectIngestController):
             'docstars_offensestable': [
                 self._parse_docstars_charge_classification
             ],
+            'docstars_lsichronology': [self._process_lsir_assessments],
         }
 
         self.primary_key_override_by_file: Dict[str, Callable] = {
@@ -169,6 +170,7 @@ class UsNdController(GcsfsDirectIngestController):
             'docstars_offenders',
             'docstars_offendercasestable',
             'docstars_offensestable',
+            'docstars_lsichronology',
             # TODO(1918): Integrate bed assignment / location history
         ]
 
@@ -437,53 +439,45 @@ class UsNdController(GcsfsDirectIngestController):
                 extracted_object.__setattr__('current_address', full_address)
 
     @staticmethod
-    def _enrich_assessments(row: Dict[str, str],
-                            extracted_objects: List[IngestObject],
-                            _cache: IngestObjectCache):
-        """For LSI and SORAC assessments in Docstars' incoming person data,
-        add metadata we can infer from context."""
-        lsi_score = row['LSITOTAL']
-        sorac_score = row['SORAC_SCORE']
-
-        have_updated_lsi = False
+    def _enrich_sorac_assessments(_row: Dict[str, str],
+                                  extracted_objects: List[IngestObject],
+                                  _cache: IngestObjectCache):
+        """For SORAC assessments in Docstars' incoming person data, add metadata
+        we can infer from context."""
         for extracted_object in extracted_objects:
             if isinstance(extracted_object, StateAssessment):
-                if not have_updated_lsi and \
-                        extracted_object.assessment_score == lsi_score:
-                    extracted_object.__setattr__(
-                        'assessment_class', StateAssessmentClass.RISK.value)
-                    extracted_object.__setattr__(
-                        'assessment_type', StateAssessmentType.LSIR.value)
+                extracted_object.__setattr__(
+                    'assessment_class', StateAssessmentClass.RISK.value)
+                extracted_object.__setattr__(
+                    'assessment_type', StateAssessmentType.SORAC.value)
 
-                    domain_1 = row.get('BIGSIXT1', None)
-                    domain_2 = row.get('BIGSIXT2', None)
-                    domain_3 = row.get('BIGSIXT3', None)
-                    domain_4 = row.get('BIGSIXT4', None)
-                    domain_5 = row.get('BIGSIXT5', None)
-                    domain_6 = row.get('BIGSIXT6', None)
-                    highest_scoring_lsi_domains = [
-                        domain_1, domain_2, domain_3,
-                        domain_4, domain_5, domain_6
-                    ]
-                    lsi_metadata = {
-                        'highest_scoring_domains': [domain for domain in
-                                                    highest_scoring_lsi_domains
-                                                    if domain]
-                    }
-                    extracted_object.__setattr__('assessment_metadata',
-                                                 json.dumps(lsi_metadata))
+    @staticmethod
+    def _process_lsir_assessments(row: Dict[str, str],
+                                  extracted_objects: List[IngestObject],
+                                  _cache: IngestObjectCache):
+        """For rich LSIR historical data from Docstars, manually process
+        individual domain and question values."""
+        domain_labels = ['CHtotal', 'EETotal', 'FnclTotal', 'FMTotal',
+                         'AccomTotal', 'LRTotal', 'Cptotal', 'Adtotal',
+                         'EPTotal', 'AOTotal']
+        total_score, domain_scores = _get_lsir_domain_scores_and_sum(
+            row, domain_labels)
 
-                    have_updated_lsi = True
-                elif extracted_object.assessment_score == sorac_score:
-                    # The SORAC "score" is actually an assessment level
-                    extracted_object.__setattr__(
-                        'assessment_level', extracted_object.assessment_score)
-                    extracted_object.__setattr__('assessment_score', None)
+        question_labels = ['Q18value', 'Q19value', 'Q20value', 'Q21value',
+                           'Q23Value', 'Q24Value', 'Q25Value', 'Q27Value',
+                           'Q31Value', 'Q39Value', 'Q40Value', 'Q51value',
+                           'Q52Value']
+        question_scores = _get_lsir_question_scores(row, question_labels)
 
-                    extracted_object.__setattr__(
-                        'assessment_class', StateAssessmentClass.RISK.value)
-                    extracted_object.__setattr__(
-                        'assessment_type', StateAssessmentType.SORAC.value)
+        for extracted_object in extracted_objects:
+            if isinstance(extracted_object, StateAssessment):
+                assessment = cast(StateAssessment, extracted_object)
+                assessment.assessment_class = StateAssessmentClass.RISK.value
+                assessment.assessment_type = StateAssessmentType.LSIR.value
+                assessment.assessment_score = str(total_score)
+
+                lsi_metadata = {**domain_scores, **question_scores}
+                assessment.assessment_metadata = json.dumps(lsi_metadata)
 
     @staticmethod
     def _concatenate_docstars_length_periods(
@@ -972,3 +966,76 @@ def _parse_charge_classification(classification_str: Optional[str],
                 classification_type
             extracted_object.classification_subtype = \
                 classification_subtype
+
+
+_LSIR_DOMAINS: Dict[str, str] = {
+    'chtotal': 'domain_criminal_history',
+    'eetotal': 'domain_education_employment',
+    'fncltotal': 'domain_financial',
+    'fmtotal': 'domain_family_marital',
+    'accomtotal': 'domain_accommodation',
+    'lrtotal': 'domain_leisure_recreation',
+    'cptotal': 'domain_companions',
+    'adtotal': 'domain_alcohol_drug_problems',
+    'eptotal': 'domain_emotional_personal',
+    'aototal': 'domain_attitudes_orientation'
+}
+
+
+def _get_lsir_domain_score(row: Dict[str, str], domain: str) -> int:
+    domain_score = row.get(domain, '0')
+    if domain_score.strip():
+        return int(domain_score)
+    return 0
+
+
+def _get_lsir_domain_scores_and_sum(
+        row: Dict[str, str], domains: List[str]) \
+        -> Tuple[int, Dict[str, int]]:
+    total_score = 0
+    domain_scores = {}
+
+    for domain in domains:
+        domain_score = _get_lsir_domain_score(row, domain)
+        total_score += domain_score
+
+        domain_label = _LSIR_DOMAINS[domain.lower()]
+        domain_scores[domain_label] = domain_score
+
+    return total_score, domain_scores
+
+
+_LSIR_QUESTIONS: Dict[str, str] = {
+    'q18value': 'question_18',
+    'q19value': 'question_19',
+    'q20value': 'question_20',
+    'q21value': 'question_21',
+    'q23value': 'question_23',
+    'q24value': 'question_24',
+    'q25value': 'question_25',
+    'q27value': 'question_27',
+    'q31value': 'question_31',
+    'q39value': 'question_39',
+    'q40value': 'question_40',
+    'q51value': 'question_51',
+    'q52value': 'question_52'
+}
+
+
+def _get_lsir_question_score(row: Dict[str, str], question: str) -> int:
+    question_score = row.get(question, '0')
+    if question_score.strip():
+        return int(question_score)
+    return 0
+
+
+def _get_lsir_question_scores(row: Dict[str, str], questions: List[str]) \
+        -> Dict[str, int]:
+    question_scores = {}
+
+    for question in questions:
+        question_score = _get_lsir_question_score(row, question)
+        question_label = _LSIR_QUESTIONS[question.lower()]
+        question_scores[question_label] = question_score
+
+    return question_scores

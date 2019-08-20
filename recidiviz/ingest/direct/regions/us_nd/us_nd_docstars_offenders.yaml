@@ -10,8 +10,7 @@ key_mappings:
 
 child_key_mappings:
   RACE: state_person_race.race
-  LSITOTAL: state_assessment.assessment_score
-  SORAC_SCORE: state_assessment.assessment_score
+  SORAC_SCORE: state_assessment.assessment_level
   ITAGROOT_ID: state_person_external_id.state_person_external_id_id
 
 primary_key:
@@ -53,12 +52,13 @@ keys_to_ignore:
   - HEIGHT                # Not storing physical characteristics in our schema
   - WEIGHT                # Not storing physical characteristics in our schema
   - INACTIVEDATE          # No longer in use within source
-  - BIGSIXT1              # Manually added to Assessment data in us_nd_scraper
-  - BIGSIXT2              # Manually added to Assessment data in us_nd_scraper
-  - BIGSIXT3              # Manually added to Assessment data in us_nd_scraper
-  - BIGSIXT4              # Manually added to Assessment data in us_nd_scraper
-  - BIGSIXT5              # Manually added to Assessment data in us_nd_scraper
-  - BIGSIXT6              # Manually added to Assessment data in us_nd_scraper
+  - LSITOTAL              # We receive detailed LSIR info from LSI Chronology
+  - BIGSIXT1              # We receive detailed LSIR info from LSI Chronology
+  - BIGSIXT2              # We receive detailed LSIR info from LSI Chronology
+  - BIGSIXT3              # We receive detailed LSIR info from LSI Chronology
+  - BIGSIXT4              # We receive detailed LSIR info from LSI Chronology
+  - BIGSIXT5              # We receive detailed LSIR info from LSI Chronology
+  - BIGSIXT6              # We receive detailed LSIR info from LSI Chronology
   - ACTIVEREVOCATION_IND
   - CCCFLAG
   - RecDate               # No apparent use for these at the moment
