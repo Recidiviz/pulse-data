@@ -77,11 +77,11 @@ class TestDirectStart:
 
     @patch("recidiviz.utils.environment.get_gae_environment")
     @patch("recidiviz.utils.regions.get_region")
-    def test_start_diff_environment(self, mock_region, mock_environment,
-                                    client):
+    def test_start_diff_environment_in_production(
+            self, mock_region, mock_environment, client):
         """Tests that the start operation chains together the correct calls."""
-        mock_environment.return_value = 'staging'
-        mock_region.return_value = fake_region(environment='production')
+        mock_environment.return_value = 'production'
+        mock_region.return_value = fake_region(environment='staging')
 
         region = 'us_nd'
         request_args = {'region': region}
@@ -91,6 +91,24 @@ class TestDirectStart:
                                   query_string=request_args,
                                   headers=headers)
             assert response.status_code == 400
+
+        mock_region.assert_called_with('us_nd', is_direct_ingest=True)
+
+    @patch("recidiviz.utils.environment.get_gae_environment")
+    @patch("recidiviz.utils.regions.get_region")
+    def test_start_diff_environment_in_staging(
+            self, mock_region, mock_environment, client):
+        """Tests that the start operation chains together the correct calls."""
+        mock_environment.return_value = 'staging'
+        mock_region.return_value = fake_region(environment='production')
+
+        region = 'us_nd'
+        request_args = {'region': region}
+        headers = {'X-Appengine-Cron': "test-cron"}
+        response = client.get('/scheduler',
+                              query_string=request_args,
+                              headers=headers)
+        assert response.status_code == 200
 
         mock_region.assert_called_with('us_nd', is_direct_ingest=True)
 
