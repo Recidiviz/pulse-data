@@ -1,0 +1,42 @@
+key_mappings:
+  RecID: state_assessment.state_assessment_id
+  AssessmentDate: state_assessment.assessment_date
+
+ancestor_keys:
+  SID: state_person.state_person_id
+
+primary_key:
+  RecID: state_assessment.state_assessment_id
+
+keys_to_ignore:
+  - LastUpdate      # No apparent use for this
+  - LSI_CHARGE      # No apparent use for this
+  - INACTIVEDATE    # No apparent use for this
+  - RecDate         # No apparent use for this
+  - CREATED_BY      # TODO(1892): Is this the person who administered the assessment?
+  - VERSION_ID      # No apparent use for this
+  - COMPLETE        # No apparent use for this
+  - SUPERLEVEL      # We get a more recent value in Docstars Offenders
+  - CHtotal         # The following domain/question values are handled manually
+  - EETotal
+  - FnclTotal
+  - FMTotal
+  - AccomTotal
+  - LRTotal
+  - Cptotal
+  - AdTotal
+  - EPTotal
+  - AOTotal
+  - Q18value
+  - Q19value
+  - Q20value
+  - Q21value
+  - Q23Value
+  - Q24Value
+  - Q25Value
+  - Q27Value
+  - Q31Value
+  - Q39Value
+  - Q40Value
+  - Q51value
+  - Q52Value
