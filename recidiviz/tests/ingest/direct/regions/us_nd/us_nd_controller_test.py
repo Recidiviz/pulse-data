@@ -117,6 +117,7 @@ class TestUsNdController(unittest.TestCase):
         self.controller = build_controller_for_tests(
             UsNdController,
             self.FIXTURE_PATH_PREFIX)
+        self.maxDiff = 250000
 
     def _run_ingest_job_for_filename(self, filename: str) -> None:
         args = ingest_args_for_fixture_file(self.controller, filename)
@@ -1006,13 +1007,6 @@ class TestUsNdController(unittest.TestCase):
                                  'elite_offense_in_custody_and_pos_report_data')
 
     def test_populate_data_docstars_offenders(self):
-        assessment_metadata_241896 = json.dumps({
-            'highest_scoring_domains': ['LR', 'AD', 'EE', 'CP', 'AO', 'FM']})
-
-        assessment_metadata_92237 = json.dumps(
-            {'highest_scoring_domains': ['LR', 'AD', 'CP', 'EE', 'AO', 'FM']}
-        )
-
         expected = IngestInfo(state_people=[
             StatePerson(state_person_id='241896',
                         surname='Knowles',
@@ -1033,11 +1027,6 @@ class TestUsNdController(unittest.TestCase):
                                 id_type=US_ND_SID)
                         ],
                         state_assessments=[
-                            StateAssessment(assessment_score='18',
-                                            assessment_class='RISK',
-                                            assessment_type='LSIR',
-                                            assessment_metadata=
-                                            assessment_metadata_241896),
                             StateAssessment(assessment_level='MODERATE',
                                             assessment_class='RISK',
                                             assessment_type='SORAC')
@@ -1059,11 +1048,6 @@ class TestUsNdController(unittest.TestCase):
                                 id_type=US_ND_SID)
                         ],
                         state_assessments=[
-                            StateAssessment(assessment_score='36',
-                                            assessment_class='RISK',
-                                            assessment_type='LSIR',
-                                            assessment_metadata=
-                                            assessment_metadata_92237),
                             StateAssessment(assessment_level='HIGH',
                                             assessment_class='RISK',
                                             assessment_type='SORAC'),
@@ -1284,6 +1268,85 @@ class TestUsNdController(unittest.TestCase):
 
         self.run_parse_file_test(expected, 'docstars_offensestable')
 
+    def test_populate_data_docstars_lsichronology(self):
+        metadata_12345 = json.dumps({
+            "domain_criminal_history": 7, "domain_education_employment": 7,
+            "domain_financial": 1, "domain_family_marital": 2,
+            "domain_accommodation": 0, "domain_leisure_recreation": 2,
+            "domain_companions": 3, "domain_alcohol_drug_problems": 0,
+            "domain_emotional_personal": 2, "domain_attitudes_orientation": 1,
+            "question_18": 0, "question_19": 0, "question_20": 0,
+            "question_21": 1, "question_23": 3, "question_24": 1,
+            "question_25": 1, "question_27": 3, "question_31": 1,
+            "question_39": 2, "question_40": 1, "question_51": 2,
+            "question_52": 3
+        })
+
+        metadata_12346 = json.dumps({
+            "domain_criminal_history": 6, "domain_education_employment": 8,
+            "domain_financial": 1, "domain_family_marital": 2,
+            "domain_accommodation": 0, "domain_leisure_recreation": 2,
+            "domain_companions": 2, "domain_alcohol_drug_problems": 0,
+            "domain_emotional_personal": 0, "domain_attitudes_orientation": 2,
+            "question_18": 0, "question_19": 0, "question_20": 0,
+            "question_21": 0, "question_23": 2, "question_24": 2,
+            "question_25": 0, "question_27": 2, "question_31": 0,
+            "question_39": 2, "question_40": 3, "question_51": 2,
+            "question_52": 2
+        })
+
+        metadata_55555 = json.dumps({
+            "domain_criminal_history": 6, "domain_education_employment": 10,
+            "domain_financial": 2, "domain_family_marital": 3,
+            "domain_accommodation": 0, "domain_leisure_recreation": 2,
+            "domain_companions": 2, "domain_alcohol_drug_problems": 0,
+            "domain_emotional_personal": 0, "domain_attitudes_orientation": 0,
+            "question_18": 0, "question_19": 0, "question_20": 0,
+            "question_21": 0, "question_23": 2, "question_24": 0,
+            "question_25": 0, "question_27": 2, "question_31": 1,
+            "question_39": 1, "question_40": 0, "question_51": 3,
+            "question_52": 3
+        })
+
+        expected = IngestInfo(state_people=[
+            StatePerson(state_person_id='92237',
+                        state_person_external_ids=[
+                            StatePersonExternalId(
+                                state_person_external_id_id='92237',
+                                id_type=US_ND_SID)
+                        ],
+                        state_assessments=[
+                            StateAssessment(state_assessment_id='12345',
+                                            assessment_class='RISK',
+                                            assessment_type='LSIR',
+                                            assessment_date='7/14/16',
+                                            assessment_score='25',
+                                            assessment_metadata=metadata_12345),
+                            StateAssessment(state_assessment_id='12346',
+                                            assessment_class='RISK',
+                                            assessment_type='LSIR',
+                                            assessment_date='1/13/17',
+                                            assessment_score='23',
+                                            assessment_metadata=metadata_12346),
+                        ]),
+            StatePerson(state_person_id='241896',
+                        state_person_external_ids=[
+                            StatePersonExternalId(
+                                state_person_external_id_id='241896',
+                                id_type=US_ND_SID)
+                        ],
+                        state_assessments=[
+                            StateAssessment(state_assessment_id='55555',
+                                            assessment_class='RISK',
+                                            assessment_type='LSIR',
+                                            assessment_date='12/10/18',
+                                            assessment_score='25',
+                                            assessment_metadata=metadata_55555),
+                        ])
+        ])
+
+        self.run_parse_file_test(expected, 'docstars_lsichronology')
+
     def run_parse_file_test(self, expected: IngestInfo, file_tag: str):
         fixture_contents = fixtures.as_string(
             self.FIXTURE_PATH_PREFIX, f'{file_tag}.csv')
@@ -1295,6 +1358,7 @@ class TestUsNdController(unittest.TestCase):
         final_info = self.controller._parse(args, fixture_contents)
 
         print(final_info)
+        print("\n\n\n")
         print(expected)
         assert final_info == expected
 
@@ -2349,26 +2413,14 @@ class TestUsNdController(unittest.TestCase):
         ######################################
         # Arrange
         # TODO(2156): custom matching logic for assessments?
-        assessment_metadata_241896 = json.dumps({
-            'HIGHEST_SCORING_DOMAINS': ['LR', 'AD', 'EE', 'CP', 'AO', 'FM']})
-
-        assessment_metadata_92237 = json.dumps(
-            {'HIGHEST_SCORING_DOMAINS': ['LR', 'AD', 'CP', 'EE', 'AO', 'FM']}
-        )
         person_1_assessment_1 = entities.StateAssessment.new_with_defaults(
-            assessment_score=36, assessment_class=StateAssessmentClass.RISK,
-            assessment_class_raw_text='RISK',
-            assessment_type=StateAssessmentType.LSIR,
-            assessment_type_raw_text='LSIR',
-            assessment_metadata=assessment_metadata_92237,
-            state_code=_STATE_CODE, person=person_1)
-        person_1_assessment_2 = entities.StateAssessment.new_with_defaults(
             assessment_level=StateAssessmentLevel.HIGH,
             assessment_level_raw_text='HIGH',
             assessment_class=StateAssessmentClass.RISK,
             assessment_class_raw_text='RISK',
             assessment_type=StateAssessmentType.SORAC,
-            assessment_type_raw_text='SORAC', state_code=_STATE_CODE,
+            assessment_type_raw_text='SORAC',
+            state_code=_STATE_CODE,
             person=person_1)
         # TODO(2134): Currently overwriting race entity when the Enum value
         # is unchanged.
@@ -2377,18 +2429,11 @@ class TestUsNdController(unittest.TestCase):
             person=person_1)
         person_1.races = [person_1_race_2]
         person_1.gender_raw_text = '1'
-        person_1.assessments = [person_1_assessment_1, person_1_assessment_2]
+        person_1.assessments = [person_1_assessment_1]
         person_1.current_address = '123 2ND ST N, FARGO, ND, 58102'
         person_1.residency_status = ResidencyStatus.PERMANENT
 
         person_2_assessment_1 = entities.StateAssessment.new_with_defaults(
-            assessment_score=18, assessment_class=StateAssessmentClass.RISK,
-            assessment_class_raw_text='RISK',
-            assessment_type=StateAssessmentType.LSIR,
-            assessment_type_raw_text='LSIR',
-            assessment_metadata=assessment_metadata_241896,
-            state_code=_STATE_CODE, person=person_2)
-        person_2_assessment_2 = entities.StateAssessment.new_with_defaults(
             assessment_level=StateAssessmentLevel.MODERATE,
             assessment_level_raw_text='MODERATE',
             assessment_class=StateAssessmentClass.RISK,
@@ -2400,7 +2445,7 @@ class TestUsNdController(unittest.TestCase):
             state_code=_STATE_CODE, race=Race.BLACK, race_raw_text='2',
             person=person_2)
         person_2.races = [person_2_race_2]
-        person_2.assessments = [person_2_assessment_1, person_2_assessment_2]
+        person_2.assessments = [person_2_assessment_1]
         person_2.full_name = '{"given_names": "SOLANGE", ' \
                              '"middle_names": "P", ' \
                              '"surname": "KNOWLES"}'
@@ -2693,6 +2738,99 @@ class TestUsNdController(unittest.TestCase):
 
         # Act
         self._run_ingest_job_for_filename('docstars_offensestable.csv')
+
+        # Assert
+        session = SessionFactory.for_schema_base(StateBase)
+        found_people = dao.read_people(session)
+        self.clear_db_ids(found_people)
+        self.assertCountEqual(found_people, expected_people)
+
+        ######################################
+        # DOCSTARS LSI CHRONOLOGY
+        ######################################
+        # Arrange
+        metadata_12345 = json.dumps({
+            "DOMAIN_CRIMINAL_HISTORY": 7, "DOMAIN_EDUCATION_EMPLOYMENT": 7,
+            "DOMAIN_FINANCIAL": 1, "DOMAIN_FAMILY_MARITAL": 2,
+            "DOMAIN_ACCOMMODATION": 0, "DOMAIN_LEISURE_RECREATION": 2,
+            "DOMAIN_COMPANIONS": 3, "DOMAIN_ALCOHOL_DRUG_PROBLEMS": 0,
+            "DOMAIN_EMOTIONAL_PERSONAL": 2, "DOMAIN_ATTITUDES_ORIENTATION": 1,
+            "QUESTION_18": 0, "QUESTION_19": 0, "QUESTION_20": 0,
+            "QUESTION_21": 1, "QUESTION_23": 3, "QUESTION_24": 1,
+            "QUESTION_25": 1, "QUESTION_27": 3, "QUESTION_31": 1,
+            "QUESTION_39": 2, "QUESTION_40": 1, "QUESTION_51": 2,
+            "QUESTION_52": 3
+        })
+
+        metadata_12346 = json.dumps({
+            "DOMAIN_CRIMINAL_HISTORY": 6, "DOMAIN_EDUCATION_EMPLOYMENT": 8,
+            "DOMAIN_FINANCIAL": 1, "DOMAIN_FAMILY_MARITAL": 2,
+            "DOMAIN_ACCOMMODATION": 0, "DOMAIN_LEISURE_RECREATION": 2,
+            "DOMAIN_COMPANIONS": 2, "DOMAIN_ALCOHOL_DRUG_PROBLEMS": 0,
+            "DOMAIN_EMOTIONAL_PERSONAL": 0, "DOMAIN_ATTITUDES_ORIENTATION": 2,
+            "QUESTION_18": 0, "QUESTION_19": 0, "QUESTION_20": 0,
+            "QUESTION_21": 0, "QUESTION_23": 2, "QUESTION_24": 2,
+            "QUESTION_25": 0, "QUESTION_27": 2, "QUESTION_31": 0,
+            "QUESTION_39": 2, "QUESTION_40": 3, "QUESTION_51": 2,
+            "QUESTION_52": 2
+        })
+
+        metadata_55555 = json.dumps({
+            "DOMAIN_CRIMINAL_HISTORY": 6, "DOMAIN_EDUCATION_EMPLOYMENT": 10,
+            "DOMAIN_FINANCIAL": 2, "DOMAIN_FAMILY_MARITAL": 3,
+            "DOMAIN_ACCOMMODATION": 0, "DOMAIN_LEISURE_RECREATION": 2,
+            "DOMAIN_COMPANIONS": 2, "DOMAIN_ALCOHOL_DRUG_PROBLEMS": 0,
+            "DOMAIN_EMOTIONAL_PERSONAL": 0, "DOMAIN_ATTITUDES_ORIENTATION": 0,
+            "QUESTION_18": 0, "QUESTION_19": 0, "QUESTION_20": 0,
+            "QUESTION_21": 0, "QUESTION_23": 2, "QUESTION_24": 0,
+            "QUESTION_25": 0, "QUESTION_27": 2, "QUESTION_31": 1,
+            "QUESTION_39": 1, "QUESTION_40": 0, "QUESTION_51": 3,
+            "QUESTION_52": 3
+        })
+
+        assessment_12345 = entities.StateAssessment.new_with_defaults(
+            external_id='12345',
+            state_code='US_ND',
+            assessment_class=StateAssessmentClass.RISK,
+            assessment_class_raw_text='RISK',
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_type_raw_text='LSIR',
+            assessment_date=datetime.date(year=2016, month=7, day=14),
+            assessment_score=25,
+            assessment_metadata=metadata_12345,
+            person=person_1
+        )
+        assessment_12346 = entities.StateAssessment.new_with_defaults(
+            external_id='12346',
+            state_code='US_ND',
+            assessment_class=StateAssessmentClass.RISK,
+            assessment_class_raw_text='RISK',
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_type_raw_text='LSIR',
+            assessment_date=datetime.date(year=2017, month=1, day=13),
+            assessment_score=23,
+            assessment_metadata=metadata_12346,
+            person=person_1
+        )
+        person_1.assessments.append(assessment_12345)
+        person_1.assessments.append(assessment_12346)
+
+        assessment_55555 = entities.StateAssessment.new_with_defaults(
+            external_id='55555',
+            state_code='US_ND',
+            assessment_class=StateAssessmentClass.RISK,
+            assessment_class_raw_text='RISK',
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_type_raw_text='LSIR',
+            assessment_date=datetime.date(year=2018, month=12, day=10),
+            assessment_score=25,
+            assessment_metadata=metadata_55555,
+            person=person_2
+        )
+        person_2.assessments.append(assessment_55555)
+
+        # Act
+        self._run_ingest_job_for_filename('docstars_lsichronology.csv')
 
         # Assert
         session = SessionFactory.for_schema_base(StateBase)
