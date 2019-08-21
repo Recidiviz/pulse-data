@@ -23,6 +23,7 @@ import os
 from typing import List
 
 from gcsfs import GCSFileSystem
+from gcsfs.core import GCSFile
 
 from recidiviz.cloud_functions.cloud_function_utils import \
     DIRECT_INGEST_UNPROCESSED_PREFIX, DIRECT_INGEST_PROCESSED_PREFIX
@@ -38,7 +39,7 @@ class DirectIngestGCSFileSystem:
         """Returns True if the path exists in the fs, False otherwise."""
 
     @abc.abstractmethod
-    def open(self, path: str):
+    def open(self, path: str) -> GCSFile:
         """Returns a TextIOWrapper for reading the file at the given path."""
 
     @abc.abstractmethod
@@ -152,7 +153,7 @@ class DirectIngestGCSFileSystemImpl(DirectIngestGCSFileSystem):
     def exists(self, path: str) -> bool:
         return self.fs.exists(path)
 
-    def open(self, path: str):
+    def open(self, path: str) -> GCSFile:
         return self.fs.open(path)
 
     def mv(self, path1: str, path2: str) -> None:

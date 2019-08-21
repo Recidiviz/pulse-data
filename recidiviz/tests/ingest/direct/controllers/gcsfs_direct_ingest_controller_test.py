@@ -22,22 +22,20 @@ from typing import List
 
 from mock import patch, Mock
 
-from recidiviz import IngestInfo
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.common.serialization import attr_to_json_dict, \
     datetime_to_serializable, serializable_to_datetime, attr_from_json_dict
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
-    GcsfsDirectIngestController
+from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller \
+    import CsvGcsfsDirectIngestController
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     GcsfsIngestArgs
-from recidiviz.ingest.models.ingest_info import StatePerson, Person
 from recidiviz.tests.ingest.direct.direct_ingest_util import \
     build_controller_for_tests, add_paths_with_tags_and_process
 from recidiviz.tests.utils.fake_region import TEST_STATE_REGION, \
     TEST_COUNTY_REGION
 
 
-class StateTestGcsfsDirectIngestController(GcsfsDirectIngestController):
+class StateTestGcsfsDirectIngestController(CsvGcsfsDirectIngestController):
     def __init__(self,
                  ingest_directory_path: str,
                  storage_directory_path: str):
@@ -49,13 +47,8 @@ class StateTestGcsfsDirectIngestController(GcsfsDirectIngestController):
     def _get_file_tag_rank_list(self) -> List[str]:
         return ['tagA', 'tagB', 'tagC']
 
-    def _parse(self, args: GcsfsIngestArgs, contents: str) -> IngestInfo:
-        return IngestInfo(state_people=[
-            StatePerson(full_name="MARTHA STEWART")
-        ])
 
-
-class CountyTestGcsfsDirectIngestController(GcsfsDirectIngestController):
+class CountyTestGcsfsDirectIngestController(CsvGcsfsDirectIngestController):
     def __init__(self,
                  ingest_directory_path: str,
                  storage_directory_path: str):
@@ -66,11 +59,6 @@ class CountyTestGcsfsDirectIngestController(GcsfsDirectIngestController):
 
     def _get_file_tag_rank_list(self) -> List[str]:
         return ['tagA', 'tagB']
-
-    def _parse(self, args: GcsfsIngestArgs, contents: str) -> IngestInfo:
-        return IngestInfo(people=[
-            Person(full_name="AL CAPONE")
-        ])
 
 
 @patch('recidiviz.utils.metadata.project_id',

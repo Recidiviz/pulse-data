@@ -18,16 +18,13 @@
 """Direct ingest controller implementation for us_tx_brazos."""
 from collections import defaultdict
 import csv
-import os
-from typing import Any, List, Optional
+from typing import List, Optional, Union, Iterable
 
 from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.common.constants.county.charge import ChargeDegree
 from recidiviz.common.ingest_metadata import SystemLevel
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller \
-    import GcsfsDirectIngestController
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
-    GcsfsIngestArgs
+from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller \
+    import CsvGcsfsDirectIngestController
 from recidiviz.ingest.direct.errors import DirectIngestError, \
     DirectIngestErrorType
 from recidiviz.ingest.extractor.csv_data_extractor import CsvDataExtractor
@@ -41,14 +38,36 @@ class UsTxBrazosDataExtractor(CsvDataExtractor):
     This is a child of CsvDataExtractor only for
     _set_value_if_key_exists.
 
-    TODO (#2104) add this functionality into CsvDataExtractor.
+    TODO(2104): Generalize CsvDataExtractor to handle rows containing redundant
+        info so we don't need to subclass.
     """
 
-    def __init__(self, key_mapping_file):
-        super().__init__(key_mapping_file, should_cache=False)
+    def __init__(self,
+                 key_mapping_file,
+                 row_pre_hooks,
+                 row_post_hooks,
+                 file_post_hooks,
+                 ancestor_key_override_callback,
+                 primary_key_override_callback,
+                 system_level,
+                 set_with_empty_value,
+                 should_cache):
+        super().__init__(key_mapping_file,
+                         row_pre_hooks=row_pre_hooks,
+                         row_post_hooks=row_post_hooks,
+                         file_post_hooks=file_post_hooks,
+                         ancestor_key_override_callback=
+                         ancestor_key_override_callback,
+                         primary_key_override_callback=
+                         primary_key_override_callback,
+                         system_level=system_level,
+                         set_with_empty_value=set_with_empty_value,
+                         should_cache=should_cache)
 
     def extract_and_populate_data(
-            self, content: str, ingest_info: IngestInfo = None) -> IngestInfo:
+            self,
+            content: Union[str, Iterable[str]],
+            ingest_info: IngestInfo = None) -> IngestInfo:
         if not isinstance(content, str):
             raise DirectIngestError(msg=f"{content} is not a string",
                                     error_type=DirectIngestErrorType.READ_ERROR)
@@ -105,7 +124,7 @@ class UsTxBrazosDataExtractor(CsvDataExtractor):
         existing_booking.charges.append(row_charge)
 
 
-class UsTxBrazosController(GcsfsDirectIngestController):
+class UsTxBrazosController(CsvGcsfsDirectIngestController):
     """Direct ingest controller implementation for us_tx_brazos."""
 
     def __init__(self,
@@ -115,18 +134,14 @@ class UsTxBrazosController(GcsfsDirectIngestController):
             'us_tx_brazos',
             SystemLevel.COUNTY,
             ingest_directory_path,
-            storage_directory_path)
-
-        self._mapping_filepath = os.path.join(
-            os.path.dirname(__file__), 'us_tx_brazos.yaml')
+            storage_directory_path,
+            UsTxBrazosDataExtractor)
 
     def _get_file_tag_rank_list(self) -> List[str]:
         return ['daily_data']
 
-    def _parse(self, args: GcsfsIngestArgs, contents: Any) -> IngestInfo:
-        data_extractor = UsTxBrazosDataExtractor(self._mapping_filepath)
-        data = data_extractor.extract_and_populate_data(contents)
-        return data
+    def _get_should_cache(self) -> bool:
+        return False
 
     def get_enum_overrides(self):
         overrides_builder = super(UsTxBrazosController,
