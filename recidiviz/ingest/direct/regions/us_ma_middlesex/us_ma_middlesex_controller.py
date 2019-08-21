@@ -23,7 +23,7 @@ from typing import Iterable, Dict, Optional, Set
 
 import pandas as pd
 import sqlalchemy
-from more_itertools import one
+from more_itertools import one, peekable
 
 from recidiviz import IngestInfo
 from recidiviz.common.constants.bond import BondStatus, BondType
@@ -110,6 +110,13 @@ class UsMaMiddlesexController(BaseDirectIngestController[IngestArgs,
 
     def _job_tag(self, args: IngestArgs) -> str:
         return f'{self.region.region_code}:{args.ingest_time}'
+
+    def _are_contents_empty(self,
+                            contents: Iterable[Dict]) -> bool:
+        """Checks if there are any content Dicts to process, returns True if not
+        (i.e. there are no elements in the Iterable).
+        """
+        return not bool(peekable(contents))
 
     def _read_contents(self, args: IngestArgs) -> Iterable[Dict]:
         """Queries the postgresql database for the most recent extract and reads

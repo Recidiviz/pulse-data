@@ -166,9 +166,27 @@ class BaseDirectIngestController(Ingestor,
         logging.info("Successfully read contents for ingest run [%s]",
                      self._job_tag(args))
 
-        ingest_info = self._parse(args, contents)
+        if not self._are_contents_empty(contents):
+            self._parse_and_persist_contents(args, contents)
+        else:
+            logging.warning(
+                "Contents are empty for ingest run [%s] - skipping parse and "
+                "persist steps.", self._job_tag(args))
 
-        # TODO #1738 implement retry on fail.
+        self._do_cleanup(args)
+
+        logging.info("Finished ingest for ingest run [%s]",
+                     self._job_tag(args))
+
+    def _parse_and_persist_contents(self,
+                                    args: IngestArgsType,
+                                    contents: ContentsType):
+        """
+        Runs the full ingest process for this controller for files with
+        non-empty contents.
+        """
+        ingest_info = self._parse(args, contents)
+        # TODO(1738): implement retry on fail.
         if not ingest_info:
             raise DirectIngestError(
                 error_type=DirectIngestErrorType.PARSE_ERROR,
@@ -199,11 +217,6 @@ class BaseDirectIngestController(Ingestor,
         logging.info("Successfully persisted for ingest run [%s]",
                      self._job_tag(args))
 
-        self._do_cleanup(args)
-
-        logging.info("Finished ingest for ingest run [%s]",
-                     self._job_tag(args))
-
     @abc.abstractmethod
     def _job_tag(self, args: IngestArgsType) -> str:
         """Should be overwritten to return a (short) string tag to identify an
@@ -217,6 +230,14 @@ class BaseDirectIngestController(Ingestor,
 
         Will return None if the contents could not be read (i.e. if they no
         longer exist).
+        """
+
+    @abc.abstractmethod
+    def _are_contents_empty(self,
+                            contents: ContentsType) -> bool:
+        """Should be overridden by subclasses to return True if the contents
+        should be considered "empty" and not parsed. For example, a CSV might
+        have a single header line but no actual data.
         """
 
     @abc.abstractmethod

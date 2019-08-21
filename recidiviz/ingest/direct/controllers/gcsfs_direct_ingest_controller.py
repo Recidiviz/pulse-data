@@ -19,7 +19,7 @@ import abc
 import datetime
 import logging
 import os
-from typing import Optional, List
+from typing import Optional, List, Iterable
 
 from recidiviz import IngestInfo
 from recidiviz.common.ingest_metadata import SystemLevel
@@ -37,7 +37,7 @@ from recidiviz.ingest.direct.errors import DirectIngestError, \
 
 
 class GcsfsDirectIngestController(BaseDirectIngestController[GcsfsIngestArgs,
-                                                             str]):
+                                                             Iterable[str]]):
     """Controller for parsing and persisting a file in the GCS filesystem."""
 
     _MAX_STORAGE_FILE_RENAME_TRIES = 10
@@ -114,7 +114,7 @@ class GcsfsDirectIngestController(BaseDirectIngestController[GcsfsIngestArgs,
         return f'{self.region.region_code}/{self.file_name(args.file_path)}:' \
             f'{args.ingest_time}'
 
-    def _read_contents(self, args: GcsfsIngestArgs) -> Optional[str]:
+    def _read_contents(self, args: GcsfsIngestArgs) -> Optional[Iterable[str]]:
         if not args.file_path:
             raise DirectIngestError(
                 msg=f"File path not set for job [{self._job_tag(args)}]",
@@ -126,6 +126,10 @@ class GcsfsDirectIngestController(BaseDirectIngestController[GcsfsIngestArgs,
                 "processed or deleted", args.file_path)
             return None
 
+        # TODO(1840): Turn this into a generator that only reads / yields lines
+        #  one at a time so we don't hold entire large files in memory. NOTE:
+        #  calling fp.readLine() does a GET request every time, so this impl
+        #  would have to be smarter about calling read() in chunks.
         with self.fs.open(args.file_path) as fp:
             logging.info(
                 "Opened path [%s] - now reading contents.", args.file_path)
@@ -133,12 +137,18 @@ class GcsfsDirectIngestController(BaseDirectIngestController[GcsfsIngestArgs,
             logging.info(
                 "Finished reading binary contents for path [%s], now decoding.",
                 args.file_path)
-            return binary_contents.decode('utf-8')
+
+        return binary_contents.decode('utf-8').splitlines()
+
+    @abc.abstractmethod
+    def _are_contents_empty(self,
+                            contents: Iterable[str]) -> bool:
+        pass
 
     @abc.abstractmethod
     def _parse(self,
                args: GcsfsIngestArgs,
-               contents: str) -> IngestInfo:
+               contents: Iterable[str]) -> IngestInfo:
         pass
 
     def _do_cleanup(self, args: GcsfsIngestArgs):

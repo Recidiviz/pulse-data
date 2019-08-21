@@ -157,6 +157,39 @@ class CsvDataExtractorTest(unittest.TestCase):
         key = extractor._primary_coordinates(first_row)
         self.assertIsNone(key)
 
+    def test_parse_file_headers_only(self):
+        """Tests that we don't crash on a CSV with only a header row and return
+         an empty IngestInfoObject.
+         """
+        extractor = _instantiate_extractor('header_cols_only_csv.yaml')
+        content = fixtures.as_string('testdata/data_extractor/csv',
+                                     'header_cols_only.csv')
+        ingest_info = extractor.extract_and_populate_data(content)
+
+        self.assertIsNotNone(ingest_info)
+        self.assertFalse(ingest_info)
+
+    def test_parse_file_headers_only_iterator_input(self):
+        extractor = _instantiate_extractor('header_cols_only_csv.yaml')
+        content = fixtures.as_string('testdata/data_extractor/csv',
+                                     'header_cols_only.csv')
+        ingest_info = \
+            extractor.extract_and_populate_data(iter(content.splitlines()))
+
+        self.assertIsNotNone(ingest_info)
+        self.assertFalse(ingest_info)
+
+    def test_parse_file_empty(self):
+        """Tests that we don't crash on a completely empty CSV and return an
+        empty IngestInfoObject"""
+        extractor = _instantiate_extractor('header_cols_only_csv.yaml')
+        content = fixtures.as_string('testdata/data_extractor/csv',
+                                     'empty.csv')
+        ingest_info = extractor.extract_and_populate_data(content)
+
+        self.assertIsNotNone(ingest_info)
+        self.assertFalse(ingest_info)
+
 
 def _instantiate_extractor(yaml_filename: str,
                            primary_key_override: Callable = None) \

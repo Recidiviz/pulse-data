@@ -19,7 +19,7 @@
 import json
 import os
 import re
-from typing import List, Optional, Dict, Callable, Any, cast, Pattern, Tuple
+from typing import List, Optional, Dict, Callable, cast, Pattern, Tuple
 
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
@@ -53,13 +53,9 @@ from recidiviz.common.constants.state.state_supervision_violation_response \
     StateSupervisionViolationResponseRevocationType
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.common.str_field_utils import parse_days_from_duration_pieces
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
-    GcsfsDirectIngestController
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
-    GcsfsIngestArgs
-from recidiviz.ingest.direct.errors import DirectIngestError, \
-    DirectIngestErrorType
-from recidiviz.ingest.extractor.csv_data_extractor import CsvDataExtractor, \
+from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller \
+    import CsvGcsfsDirectIngestController
+from recidiviz.ingest.extractor.csv_data_extractor import \
     IngestFieldCoordinates
 from recidiviz.ingest.models.ingest_info import IngestInfo, IngestObject, \
     StatePerson, StateIncarcerationSentence, StateSentenceGroup, \
@@ -74,7 +70,7 @@ _TEMPORARY_PRIMARY_ID = '_TEMPORARY_PRIMARY_ID'
 _DOCSTARS_NEGATIVE_PATTERN: Pattern = re.compile(r'^\((?P<value>-?\d+)\)$')
 
 
-class UsNdController(GcsfsDirectIngestController):
+class UsNdController(CsvGcsfsDirectIngestController):
     """Direct ingest controller implementation for us_nd."""
 
     def __init__(self,
@@ -203,41 +199,6 @@ class UsNdController(GcsfsDirectIngestController):
 
         return str(int(float(dec_str.replace(',', ''))))
 
-    def _parse(self,
-               args: GcsfsIngestArgs,
-               contents: Any) -> IngestInfo:
-        file_tag = self.file_tag(args.file_path)
-
-        if file_tag not in self._get_file_tag_rank_list():
-            raise DirectIngestError(
-                msg=f"No mapping found for tag [{file_tag}]",
-                error_type=DirectIngestErrorType.INPUT_ERROR)
-
-        file_mapping = _yaml_filepath(
-            f'{self.region.region_code}_{file_tag}.yaml')
-
-        row_pre_processors = self._get_row_pre_processors_for_file(file_tag)
-        row_post_processors = self._get_row_post_processors_for_file(file_tag)
-        file_post_processors = self._get_file_post_processors_for_file(file_tag)
-        primary_key_override = self._get_primary_key_override_for_file(file_tag)
-        ancestor_key_override = \
-            self._get_ancestor_key_override_for_file(file_tag)
-        should_set_with_empty_values = \
-            file_tag in self.files_to_set_with_empty_values
-
-        # TODO(1840): Allow for users of CSV extractor to read file line-by-line
-        data_extractor = CsvDataExtractor(file_mapping,
-                                          row_pre_processors,
-                                          row_post_processors,
-                                          file_post_processors,
-                                          ancestor_key_override,
-                                          primary_key_override,
-                                          self.system_level,
-                                          should_set_with_empty_values,
-                                          should_cache=True)
-
-        return data_extractor.extract_and_populate_data(contents)
-
     def _get_row_pre_processors_for_file(self, file: str) -> List[Callable]:
         return self.row_pre_processors_by_file.get(file, [])
 
@@ -261,6 +222,9 @@ class UsNdController(GcsfsDirectIngestController):
     def _get_primary_key_override_for_file(
             self, file: str) -> Optional[Callable]:
         return self.primary_key_override_by_file.get(file, None)
+
+    def _get_files_to_set_with_empty_values(self) -> List[str]:
+        return self.files_to_set_with_empty_values
 
     @staticmethod
     def _convert_elite_person_ids_to_external_id_objects(

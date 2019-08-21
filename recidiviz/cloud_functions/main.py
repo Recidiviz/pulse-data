@@ -127,7 +127,7 @@ def direct_ingest_rename_only(data, _):
         return
 
     _normalize_file_path_if_necessary(project_id, bucket, relative_file_path)
-    logging.info("Finished processing file [%s]", relative_file_path)
+    logging.info("Finished renaming file [%s]", relative_file_path)
 
 
 def _normalize_file_path_if_necessary(project_id: str,
