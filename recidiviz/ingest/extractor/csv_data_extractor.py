@@ -21,8 +21,8 @@ model and returned.
 """
 import csv
 import logging
-from collections import defaultdict
-from typing import Dict, Set, List, Callable, Optional
+from collections import defaultdict, OrderedDict
+from typing import Dict, Set, List, Callable, Optional, Iterable, Union
 
 import more_itertools
 
@@ -125,12 +125,12 @@ class CsvDataExtractor(DataExtractor):
 
         self.keys.update(self.child_keys)
 
-        self.all_keys: List[str] = set(self.keys.keys()) | set(
+        self.all_keys: Set[str] = set(self.keys.keys()) | set(
             self.child_keys.keys()) | set(self.keys_to_ignore) | set(
                 self.ancestor_keys.keys()) | set(self.primary_key.keys())
 
     def extract_and_populate_data(self,
-                                  content: str,
+                                  content: Union[str, Iterable[str]],
                                   ingest_info: IngestInfo = None) -> IngestInfo:
         """This function does all the work of taking the users yaml file
         and content and returning a populated data class.  This function
@@ -138,7 +138,9 @@ class CsvDataExtractor(DataExtractor):
         the keys that it sees.
 
         Args:
-            content: CSV-formatted text (string, not a file object)
+            content: CSV-formatted text (Either a string with the full file
+                contents, or an Interable where each element is a single line of
+                contents. Not a file object.)
             ingest_info: An IngestInfo object to use, if None we create a new
                 one by default
 
@@ -151,13 +153,24 @@ class CsvDataExtractor(DataExtractor):
         self._run_file_post_hooks(ingest_info)
         return ingest_info.prune()
 
-    def _extract(self, content: str, ingest_info: IngestInfo):
+    def _extract(self,
+                 content: Union[str, Iterable[str]],
+                 ingest_info: IngestInfo):
         """Converts entries in |content| and adds data to |ingest_info|."""
-        if not isinstance(content, str):
-            logging.error("%r is not a string", content)
+        if isinstance(content, str):
+            rows = csv.DictReader(content.splitlines())
+        elif isinstance(content, Iterable):
+            rows = csv.DictReader(content)
+        else:
+            logging.error("%r is not a string or an Iterable", content)
             return
 
-        rows = csv.DictReader(content.splitlines())
+        self._extract_rows(rows, ingest_info)
+
+    def _extract_rows(self,
+                      rows: Iterable[OrderedDict],
+                      ingest_info: IngestInfo):
+        """Converts entries in |rows| and adds data to |ingest_info|."""
         seen_map: Dict[int, Set[str]] = defaultdict(set)
         for row in rows:
             self._pre_process_row(row)
@@ -201,6 +214,7 @@ class CsvDataExtractor(DataExtractor):
                 extracted_objects_for_row.extend(extracted_objects_for_column)
 
             self._post_process_row(row, extracted_objects_for_row)
+
 
     def _run_file_post_hooks(self, ingest_info: IngestInfo):
         for post_hook in self.file_post_hooks:

@@ -72,7 +72,6 @@ from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import \
     get_set_entity_field_names, EntityFieldType
 from recidiviz.persistence.entity.state import entities
-from recidiviz.tests.ingest import fixtures
 from recidiviz.tests.ingest.direct.direct_ingest_util import \
     build_controller_for_tests, ingest_args_for_fixture_file, \
     add_paths_with_tags_and_process
@@ -1348,13 +1347,11 @@ class TestUsNdController(unittest.TestCase):
         self.run_parse_file_test(expected, 'docstars_lsichronology')
 
     def run_parse_file_test(self, expected: IngestInfo, file_tag: str):
-        fixture_contents = fixtures.as_string(
-            self.FIXTURE_PATH_PREFIX, f'{file_tag}.csv')
-
-        args = ingest_args_for_fixture_file(self.controller,
-                                            f'{file_tag}.csv')
+        args = ingest_args_for_fixture_file(self.controller, f'{file_tag}.csv')
+        self.controller.fs.test_add_path(args.file_path)
 
         # pylint:disable=protected-access
+        fixture_contents = self.controller._read_contents(args)
         final_info = self.controller._parse(args, fixture_contents)
 
         print(final_info)
