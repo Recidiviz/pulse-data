@@ -21,7 +21,8 @@ import time
 import unittest
 from typing import Set, List
 
-from mock import Mock, patch
+from gcsfs.core import GCSFile
+from mock import Mock, patch, create_autospec
 
 from recidiviz.cloud_functions.cloud_function_utils import \
     to_normalized_unprocessed_file_path
@@ -48,10 +49,8 @@ class FakeDirectIngestGCSFileSystem(DirectIngestGCSFileSystem):
     def exists(self, path: str) -> bool:
         return path in self.all_paths
 
-    def open(self, path: str):
+    def open(self, path: str) -> GCSFile:
         directory_path, _ = os.path.split(path)
-
-        mock_fp = Mock()
 
         parts = filename_parts_from_path(path)
         fixture_filename = f'{parts.file_tag}.{parts.extension}'
@@ -62,11 +61,11 @@ class FakeDirectIngestGCSFileSystem(DirectIngestGCSFileSystem):
         fixture_contents = fixtures.as_string_from_relative_path(
             actual_fixture_file_path)
 
-        mock_fp.read.return_value = bytes(fixture_contents, 'utf-8')
-        mock_fp_context_manager = Mock()
-        mock_fp_context_manager.__enter__ = Mock(return_value=mock_fp)
-        mock_fp_context_manager.__exit__ = Mock(return_value=False)
-        return mock_fp_context_manager
+        mock_gcs_file = create_autospec(GCSFile)
+        mock_gcs_file.read.return_value = bytes(fixture_contents, 'utf-8')
+        mock_gcs_file.__enter__ = Mock(return_value=mock_gcs_file)
+        mock_gcs_file.__exit__ = Mock(return_value=False)
+        return mock_gcs_file
 
     def mv(self, path1: str, path2: str) -> None:
         self.all_paths.remove(path1)
