@@ -1453,17 +1453,15 @@ class TestUsNdController(unittest.TestCase):
         # TODO(2158): Why do we fill out full_name and keep the distinct
         # parts (in comparison to Person).
         person_1_alias_1 = entities.StatePersonAlias.new_with_defaults(
-            surname='HOPKINS', given_names='TODD', name_suffix='III',
             full_name='{"given_names": "TODD", "name_suffix": "III", '
                       '"surname": "HOPKINS"}',
             state_code=_STATE_CODE, person=person_1)
         person_1_alias_2 = entities.StatePersonAlias.new_with_defaults(
-            surname='HODGSON', given_names='JON', middle_names='R',
             full_name='{"given_names": "JON", "middle_names": "R", '
                       '"surname": "HODGSON"}',
             state_code=_STATE_CODE, person=person_1)
         person_2_alias = entities.StatePersonAlias.new_with_defaults(
-            given_names='SOLANGE', state_code=_STATE_CODE,
+            state_code=_STATE_CODE,
             full_name='{"given_names": "SOLANGE"}', person=person_2)
         person_1.aliases.append(person_1_alias_1)
         person_1.aliases.append(person_1_alias_2)
@@ -1972,18 +1970,18 @@ class TestUsNdController(unittest.TestCase):
             agent_type=StateAgentType.JUDGE,
             agent_type_raw_text='JUDGE',
             state_code=_STATE_CODE,
-            full_name='SHEINDLIN, JUDY')
+            full_name='{"full_name": "SHEINDLIN, JUDY"}')
         agent_judy_dup = attr.evolve(agent_judy)
         agent_harvey = entities.StateAgent.new_with_defaults(
             agent_type=StateAgentType.JUDGE,
             agent_type_raw_text='JUDGE',
             state_code=_STATE_CODE,
-            full_name='BIRDMAN, HARVEY')
+            full_name='{"full_name": "BIRDMAN, HARVEY"}')
         agent_paul = entities.StateAgent.new_with_defaults(
             agent_type=StateAgentType.JUDGE,
             agent_type_raw_text='JUDGE',
             state_code=_STATE_CODE,
-            full_name='HOLLYWOOD, PAUL')
+            full_name='{"full_name": "HOLLYWOOD, PAUL"}')
 
         court_case_5190.date_convicted = datetime.date(
             year=1989, month=6, day=19)
@@ -2519,7 +2517,7 @@ class TestUsNdController(unittest.TestCase):
             person=supervision_sentence_117110.person)
         agent_judge = entities.StateAgent.new_with_defaults(
             agent_type=StateAgentType.JUDGE, agent_type_raw_text='JUDGE',
-            state_code=_STATE_CODE, full_name='THE JUDGE')
+            full_name='{"full_name": "THE JUDGE"}', state_code=_STATE_CODE)
         court_case_117110 = entities.StateCourtCase.new_with_defaults(
             state_code=_STATE_CODE,
             status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
@@ -2646,7 +2644,7 @@ class TestUsNdController(unittest.TestCase):
             person=supervision_sentence_140408.person)
         agent_person = entities.StateAgent.new_with_defaults(
             agent_type=StateAgentType.JUDGE, agent_type_raw_text='JUDGE',
-            state_code=_STATE_CODE, full_name='JUDGE PERSON')
+            full_name='{"full_name": "JUDGE PERSON"}', state_code=_STATE_CODE)
         court_case_140408 = entities.StateCourtCase.new_with_defaults(
             state_code=_STATE_CODE,
             status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,

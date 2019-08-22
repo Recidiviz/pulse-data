@@ -37,7 +37,6 @@ class StateParoleDecisionConverterTest(unittest.TestCase):
         # Arrange
         ingest_parole_decision = ingest_info_pb2.StateParoleDecision(
             state_parole_decision_id='PAROLE_DECISION_ID',
-            received_parole='TRUE',
             decision_date='1/2/2111',
             corrective_action_deadline='2/2/2111',
             state_code='us_nd',
@@ -56,7 +55,6 @@ class StateParoleDecisionConverterTest(unittest.TestCase):
         # Assert
         expected_result = entities.StateParoleDecision(
             external_id='PAROLE_DECISION_ID',
-            received_parole=True,
             decision_date=date(year=2111, month=1, day=2),
             corrective_action_deadline=date(year=2111, month=2, day=2),
             state_code='US_ND',

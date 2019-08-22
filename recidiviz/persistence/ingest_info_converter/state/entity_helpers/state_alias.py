@@ -17,11 +17,10 @@
 
 """Converts an ingest_info proto StateAlias to a persistence entity."""
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.common.str_field_utils import normalize
 from recidiviz.ingest.models.ingest_info_pb2 import StateAlias
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import \
-    fn, parse_region_code_with_override
+    parse_region_code_with_override
 from recidiviz.persistence.ingest_info_converter.utils.names import parse_name
 
 
@@ -33,9 +32,5 @@ def convert(proto: StateAlias, metadata: IngestMetadata) \
     new.state_code = parse_region_code_with_override(
         proto, 'state_code', metadata)
     new.full_name = parse_name(proto)
-    new.surname = fn(normalize, 'surname', proto)
-    new.given_names = fn(normalize, 'given_names', proto)
-    new.middle_names = fn(normalize, 'middle_names', proto)
-    new.name_suffix = fn(normalize, 'name_suffix', proto)
 
     return new.build()

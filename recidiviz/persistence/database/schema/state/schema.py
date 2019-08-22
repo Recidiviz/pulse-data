@@ -512,10 +512,6 @@ class _StatePersonAliasSharedColumns(_ReferencesStatePersonSharedColumns):
 
     state_code = Column(String(255), nullable=False, index=True)
     full_name = Column(String(255))
-    surname = Column(String(255))
-    given_names = Column(String(255))
-    middle_names = Column(String(255))
-    name_suffix = Column(String(255))
 
 
 class StatePersonAlias(StateBase,
@@ -1488,7 +1484,6 @@ class _StateParoleDecisionSharedColumns(
 
     external_id = Column(String(255), index=True)
 
-    received_parole = Column(Boolean)
     decision_date = Column(Date)
     corrective_action_deadline = Column(Date)
     state_code = Column(String(255), nullable=False, index=True)
