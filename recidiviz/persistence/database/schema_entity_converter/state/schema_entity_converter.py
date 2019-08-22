@@ -20,6 +20,9 @@ objects.
 """
 
 from types import ModuleType
+from typing import Type, TypeVar
+
+import attr
 
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema_entity_converter. \
@@ -30,10 +33,16 @@ from recidiviz.persistence.database.schema_entity_converter. \
         DstBaseType
     )
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.entity_utils import SchemaEdgeDirectionChecker
+from recidiviz.persistence.entity.entity_utils import \
+    SchemaEdgeDirectionChecker
 
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.database.schema.state import schema
+from recidiviz.persistence.entity.state.entities import StatePerson
+
+StatePersonType = TypeVar('StatePersonType',
+                          entities.StatePerson,
+                          schema.StatePerson)
 
 
 class _StateSchemaEntityConverter(BaseSchemaEntityConverter[SrcBaseType,
@@ -51,6 +60,39 @@ class _StateSchemaEntityConverter(BaseSchemaEntityConverter[SrcBaseType,
 
     def _should_skip_field(self, field: FieldNameType) -> bool:
         return False
+
+    def _populate_indirect_back_edges(self, dst: DstBaseType):
+        if isinstance(dst, (StatePerson, schema.StatePerson)):
+            self._add_person_to_dst(dst, dst)
+
+    def _add_person_to_dst(
+            self, person: StatePersonType, dst: DstBaseType):
+        self._set_person_on_dst(person, dst)
+        entity_cls: Type[Entity] = self._get_entity_class(dst)
+
+        for field, _ in attr.fields_dict(entity_cls).items():
+            if self._should_skip_field(field):
+                continue
+
+            v = getattr(dst, field)
+            if isinstance(v, list):
+                for next_dst in v:
+                    self._set_person_on_child(person, dst, next_dst)
+            if issubclass(type(v), Entity) \
+                    or issubclass(type(v), DatabaseEntity):
+                self._set_person_on_child(person, dst, v)
+
+    def _set_person_on_child(
+            self,
+            person: StatePersonType,
+            dst: DstBaseType,
+            next_dst: DstBaseType):
+        if not self._direction_checker.is_back_edge(dst, next_dst):
+            self._add_person_to_dst(person, next_dst)
+
+    def _set_person_on_dst(self, person: StatePersonType, dst: DstBaseType):
+        if hasattr(dst, 'person'):
+            setattr(dst, 'person', person)
 
 
 class StateEntityToSchemaConverter(_StateSchemaEntityConverter[Entity,
