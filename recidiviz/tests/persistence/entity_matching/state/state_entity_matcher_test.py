@@ -147,23 +147,19 @@ class TestStateEntityMatching(TestCase):
 
         expected_person = attr.evolve(
             person, person_id=_ID, external_ids=[], sentence_groups=[])
-        expected_charge = attr.evolve(
-            new_charge, person=expected_person)
+        expected_charge = attr.evolve(new_charge)
         expected_fine = attr.evolve(
-            fine, fine_id=_ID, person=expected_person,
-            charges=[expected_charge])
+            fine, fine_id=_ID, charges=[expected_charge])
         expected_sentence_group = attr.evolve(
-            sentence_group, sentence_group_id=_ID, person=expected_person,
-            fines=[expected_fine])
+            sentence_group, sentence_group_id=_ID, fines=[expected_fine])
         expected_external_id = attr.evolve(
-            external_id, person_external_id_id=_ID, person=expected_person)
+            external_id, person_external_id_id=_ID)
         expected_person.sentence_groups = [expected_sentence_group]
         expected_person.external_ids = [expected_external_id]
 
         expected_person_another = attr.evolve(person_another, person_id=_ID_2)
         expected_external_id = attr.evolve(
-            external_id_another, person_external_id_id=_ID_2,
-            person=expected_person_another)
+            external_id_another, person_external_id_id=_ID_2)
         expected_person_another.external_ids = [expected_external_id]
 
         # Act
@@ -200,7 +196,7 @@ class TestStateEntityMatching(TestCase):
 
         expected_person = attr.evolve(person, person_id=_ID)
         expected_external_id = attr.evolve(
-            external_id, person_external_id_id=_ID, person=expected_person)
+            external_id, person_external_id_id=_ID)
         expected_person.external_ids = [expected_external_id]
 
         # Act
@@ -1614,7 +1610,7 @@ class TestStateEntityMatching(TestCase):
         self.assertEqual([expected_placeholder_person], merged_entities.people)
         self.assertEqual(0, merged_entities.error_count)
 
-    def test_matchPersons_mergeIncomingIncarcerationSentences(self):
+    def test_match_mergeIncomingIncarcerationSentences(self):
         # Arrange
         db_person = schema.StatePerson(person_id=_ID, full_name=_FULL_NAME)
         db_incarceration_sentence = \
@@ -1687,10 +1683,9 @@ class TestStateEntityMatching(TestCase):
                 admission_reason=
                 StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
                 release_date=datetime.date(year=2019, month=1, day=2),
-                release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
-                person=expected_person)
+                release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER)
         expected_unmerged_incarceration_period = attr.evolve(
-            incarceration_period_3, person=expected_person)
+            incarceration_period_3)
         expected_incarceration_sentence = \
             StateIncarcerationSentence.new_with_defaults(
                 incarceration_sentence_id=_ID,
@@ -1699,19 +1694,16 @@ class TestStateEntityMatching(TestCase):
                 external_id=_EXTERNAL_ID,
                 incarceration_periods=[
                     expected_merged_incarceration_period,
-                    expected_unmerged_incarceration_period],
-                person=expected_person)
+                    expected_unmerged_incarceration_period])
         expected_sentence_group = StateSentenceGroup.new_with_defaults(
             sentence_group_id=_ID,
             status=StateSentenceStatus.EXTERNAL_UNKNOWN,
             state_code=_STATE_CODE,
             external_id=_EXTERNAL_ID,
-            incarceration_sentences=[expected_incarceration_sentence],
-            person=expected_person)
+            incarceration_sentences=[expected_incarceration_sentence])
         expected_external_id = StatePersonExternalId.new_with_defaults(
             person_external_id_id=_ID, state_code=_STATE_CODE,
-            id_type=_ID_TYPE, external_id=_EXTERNAL_ID,
-            person=expected_person)
+            id_type=_ID_TYPE, external_id=_EXTERNAL_ID)
         expected_person.external_ids = [expected_external_id]
         expected_person.sentence_groups = [expected_sentence_group]
 

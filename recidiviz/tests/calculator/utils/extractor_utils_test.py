@@ -43,10 +43,8 @@ from recidiviz.persistence.entity import entity_utils
 from recidiviz.persistence.entity.state.entities import Gender, \
     Race, ResidencyStatus, Ethnicity
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.database.schema_entity_converter.state.\
-    schema_entity_converter import (
-        StateSchemaToEntityConverter
-    )
+from recidiviz.persistence.database.schema_entity_converter.state. \
+    schema_entity_converter import StateSchemaToEntityConverter
 from recidiviz.tests.persistence.database import database_test_utils
 from recidiviz.tests.calculator.calculator_test_utils import \
     normalized_database_base_dict, normalized_database_base_dict_list, \
@@ -695,9 +693,9 @@ class TestExtractEntity(unittest.TestCase):
 class TestExtractRelationshipPropertyEntities(unittest.TestCase):
     """Tests the ExtractRelationshipPropertyEntities PTransform."""
 
-    def testExtractRelationshipPropertyEntities(self):
+    def testExtractRelationshipPropertyEntities_With1ToMany(self):
         """Tests the ExtractRelationshipPropertyEntities PTransform when there
-        are 1-to-many and many-to-many relationships to be hydrated."""
+        are 1-to-many relationships to be hydrated."""
         supervision_period = \
             database_test_utils.generate_test_supervision_period(123, [])
 
@@ -708,28 +706,11 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
         supervision_violation.supervision_period_id = \
             supervision_period.supervision_period_id
 
-        incarceration_sentence = \
-            database_test_utils.generate_test_incarceration_sentence(123, [])
-
-        # Build association table for many-to-many relationship
-        incarceration_sentence_supervision_period_association_table = [{
-            'supervision_period_id':
-                supervision_period.supervision_period_id,
-            'incarceration_sentence_id':
-                incarceration_sentence.incarceration_sentence_id
-        }]
-
         data_dict = {
             supervision_period.__tablename__:
                 normalized_database_base_dict_list([supervision_period]),
             supervision_violation.__tablename__:
                 normalized_database_base_dict_list([supervision_violation]),
-            incarceration_sentence.__tablename__:
-                normalized_database_base_dict_list([incarceration_sentence]),
-            schema.
-            state_incarceration_sentence_supervision_period_association_table.
-            name:
-                incarceration_sentence_supervision_period_association_table
         }
 
         test_pipeline = TestPipeline()
@@ -745,7 +726,7 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
                            ))
 
         # Assert it has the property fields we expect
-        assert len(properties_dict.keys()) == 2
+        assert len(properties_dict.keys()) == 1
 
         output_supervision_violations = \
             properties_dict.get('supervision_violations')
@@ -758,16 +739,62 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
                 class_type=entities.StateSupervisionViolation),
             label="Validate supervision_violations output")
 
-        output_incarceration_sentences = \
-            properties_dict.get('incarceration_sentences')
+        test_pipeline.run()
+
+    def testExtractRelationshipPropertyEntities_WithManyToMany(self):
+        """Tests the ExtractRelationshipPropertyEntities PTransform when there
+        are many-to-many relationships to be hydrated."""
+        incarceration_sentence = \
+            database_test_utils.generate_test_incarceration_sentence(123, [])
+
+        supervision_period = \
+            database_test_utils.generate_test_supervision_period(123, [])
+
+        # Build association table for many-to-many relationship
+        incarceration_sentence_supervision_period_association_table = [{
+            'supervision_period_id':
+                supervision_period.supervision_period_id,
+            'incarceration_sentence_id':
+                incarceration_sentence.incarceration_sentence_id
+        }]
+
+        data_dict = {
+            supervision_period.__tablename__:
+                normalized_database_base_dict_list([supervision_period]),
+            incarceration_sentence.__tablename__:
+                normalized_database_base_dict_list([incarceration_sentence]),
+            schema.
+            state_incarceration_sentence_supervision_period_association_table.
+            name:
+                incarceration_sentence_supervision_period_association_table
+        }
+
+        test_pipeline = TestPipeline()
+
+        properties_dict = (test_pipeline
+                           | 'Extract relationship properties for the '
+                             'StateIncarcerationSentence' >>
+                           extractor_utils._ExtractRelationshipPropertyEntities(
+                               dataset=None, data_dict=data_dict,
+                               root_schema_class=
+                               schema.StateIncarcerationSentence,
+                               root_id_field='incarceration_sentence_id',
+                               unifying_id_field='person_id'
+                           ))
+
+        # Assert it has the property fields we expect
+        assert len(properties_dict.keys()) == 1
+
+        output_supervision_periods = properties_dict.get('supervision_periods')
 
         assert_that(
-            output_incarceration_sentences, ExtractAssertMatchers.
+            output_supervision_periods, ExtractAssertMatchers.
             validate_extract_relationship_property_entities(
-                outer_connection_id=supervision_period.person_id,
-                inner_connection_id=supervision_period.supervision_period_id,
-                class_type=entities.StateIncarcerationSentence),
-            label="Validate incarceration_sentences output")
+                outer_connection_id=incarceration_sentence.person_id,
+                inner_connection_id=
+                incarceration_sentence.incarceration_sentence_id,
+                class_type=entities.StateSupervisionPeriod),
+            label="Validate supervision_period output")
 
         test_pipeline.run()
 
@@ -775,29 +802,30 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
         """Tests the ExtractRelationshipPropertyEntities PTransform when there
         is a 1-to-1 relationship to be hydrated (from the point of view of the
         root schema object)."""
+
         incarceration_incident = \
             database_test_utils.generate_test_incarceration_incident(123, [])
+        responding_officer = \
+            database_test_utils.generate_test_assessment_agent()
+        responding_officer.person_id = 123
 
-        incarceration_period = \
-            database_test_utils.generate_test_incarceration_period(
-                123, [incarceration_incident], [])
-
-        incarceration_incident.incarceration_period_id = \
-            incarceration_period.incarceration_period_id
+        # 1 to 1 relationship
+        incarceration_incident.responding_officer_id = \
+            responding_officer.agent_id
 
         data_dict = {
             incarceration_incident.__tablename__:
                 normalized_database_base_dict_list(
                     [incarceration_incident]),
-            incarceration_period.__tablename__:
-                normalized_database_base_dict_list([incarceration_period])
+            responding_officer.__tablename__:
+                normalized_database_base_dict_list([responding_officer])
         }
 
         test_pipeline = TestPipeline()
 
         properties_dict = (test_pipeline
                            | 'Extract relationship properties for the '
-                             'StateSupervisionPeriod' >>
+                             'IncarcerationIncident' >>
                            extractor_utils._ExtractRelationshipPropertyEntities(
                                dataset=None, data_dict=data_dict,
                                root_schema_class=
@@ -809,17 +837,16 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
         # Assert it has the property fields we expect
         assert len(properties_dict.keys()) == 1
 
-        output_incarceration_period = \
-            properties_dict.get('incarceration_period')
+        output_responding_officer = properties_dict.get('responding_officer')
 
         assert_that(
-            output_incarceration_period, ExtractAssertMatchers.
+            output_responding_officer, ExtractAssertMatchers.
             validate_extract_relationship_property_entities(
                 outer_connection_id=incarceration_incident.person_id,
                 inner_connection_id=incarceration_incident.
                 incarceration_incident_id,
-                class_type=entities.StateIncarcerationPeriod),
-            label="Validate incarceration_period output")
+                class_type=entities.StateAgent),
+            label="Validate state_agent output")
 
         test_pipeline.run()
 

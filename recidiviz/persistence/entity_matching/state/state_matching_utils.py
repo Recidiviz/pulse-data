@@ -164,54 +164,6 @@ def nd_get_incomplete_incarceration_period_match(
         is_incomplete_incarceration_period_match)
 
 
-def remove_back_edges(entity: Entity):
-    """ Removes all backedges from the provided |entity| and all of its
-    children.
-    """
-    for child_field_name in get_set_entity_field_names(
-            entity, EntityFieldType.BACK_EDGE):
-        child_field = get_field(entity, child_field_name)
-        if isinstance(child_field, list):
-            set_field(entity, child_field_name, [])
-        else:
-            set_field(entity, child_field_name, None)
-
-    for child_field_name in get_set_entity_field_names(
-            entity, EntityFieldType.FORWARD_EDGE):
-        child_field = get_field(entity, child_field_name)
-        if isinstance(child_field, list):
-            for child in child_field:
-                remove_back_edges(child)
-        else:
-            remove_back_edges(child_field)
-
-
-def add_person_to_entity_graph(persons: List[StatePerson]):
-    """Adds a person back edge to children of each provided person in
-    |persons|.
-    """
-    for person in persons:
-        _add_person_to_entity_graph_helper(person, person)
-
-
-def _add_person_to_entity_graph_helper(person: StatePerson, entity: Entity):
-    _set_person_on_entity(person, entity)
-
-    for child_field_name in get_set_entity_field_names(
-            entity, EntityFieldType.FORWARD_EDGE):
-        child_field = get_field(entity, child_field_name)
-        if isinstance(child_field, list):
-            for child in child_field:
-                _add_person_to_entity_graph_helper(person, child)
-        else:
-            _add_person_to_entity_graph_helper(person, child_field)
-
-
-def _set_person_on_entity(person: StatePerson, entity: Entity):
-    if hasattr(entity, 'person'):
-        set_field(entity, 'person', person)
-
-
 def generate_child_entity_trees(
         child_field_name: str, entity_trees: List[EntityTree]) \
         -> List[EntityTree]:

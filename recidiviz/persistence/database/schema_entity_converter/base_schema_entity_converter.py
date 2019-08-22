@@ -102,6 +102,12 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
     def _should_skip_field(self, field: FieldNameType) -> bool:
         pass
 
+    @abc.abstractmethod
+    def _populate_indirect_back_edges(self, dst: DstBaseType):
+        """Populates all back edges in the provided |dst| which point to
+        objects which are not parents (direct back edge). Direct back edges
+        are populated by_pouplate_direct_back_edge"""
+
     @staticmethod
     def _id_from_src_object(src: SrcBaseType) -> SrcIdType:
         return id(src)
@@ -136,34 +142,44 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
                 f"[{len(self._back_edges.keys())}] items. Should have been 0."
                 f"First unfilled edge: {key}: {self._back_edges[key]}")
 
-    def convert_all(self, src: Sequence[SrcBaseType]) -> List[DstBaseType]:
+    def convert_all(self, src: Sequence[SrcBaseType],
+                    populate_back_edges: bool = True) -> List[DstBaseType]:
         """Converts the given list of objects into their entity/schema
         counterparts.
 
         Args:
             src: list of schema objects or entity objects
+            populate_back_edges: Whether or not back edges should be
+                populated during conversion
         Returns:
             The converted list, a schema or entity list.
         """
-        result = [self._convert(s) for s in src]
-        self._check_back_edges_empty()
+        result = [self._convert(s, populate_back_edges) for s in src]
+        if populate_back_edges:
+            self._check_back_edges_empty()
         return result
 
-    def convert(self, src: SrcBaseType) -> DstBaseType:
+    def convert(self, src: SrcBaseType,
+                populate_back_edges: bool = True) -> DstBaseType:
         """Converts the given object into its entity/schema counterpart.
 
         Args:
             src: a schema object or entity object
+            populate_back_edges: Whether or not back edges should be
+                populated during conversion
         Returns:
             The converted object, a schema or entity object.
         """
-        result = self._convert(src)
-        self._check_back_edges_empty()
+        result = self._convert(src, populate_back_edges)
+        if populate_back_edges:
+            self._check_back_edges_empty()
         return result
 
-    def _convert(self, src: SrcBaseType) -> DstBaseType:
+    def _convert(self, src: SrcBaseType, populate_back_edges) -> DstBaseType:
         dst = self._convert_forward(src)
-        self._fill_back_edges()
+        if populate_back_edges:
+            self._populate_direct_back_edges()
+            self._populate_indirect_back_edges(dst)
         return dst
 
     def _convert_forward(self, src: SrcBaseType) -> DstBaseType:
@@ -274,9 +290,11 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
 
         return next_dst_objects, not_found_next_src_ids
 
-    def _fill_back_edges(self):
-        """Fills back edges that have been identified during conversion for any
-        objects that have been properly created.
+    def _populate_direct_back_edges(self):
+        """Fills direct parent back edges that have been identified during
+        conversion for any objects that have been properly created. Back edges
+        which point to entities which are not direct parents (but some more
+        distant ancestor) are not included here.
         """
 
         not_found_back_edges: \
@@ -319,19 +337,20 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
 
         self._back_edges = not_found_back_edges
 
-    def _check_is_valid_src_module(self, src: SrcBaseType):
-        if src.__module__ not in [self._get_schema_module().__name__,
+    def _check_is_valid_module(self, obj: Union[SrcBaseType, DstBaseType]):
+        if obj.__module__ not in [self._get_schema_module().__name__,
                                   self._get_entities_module().__name__]:
             raise DatabaseConversionError(
                 f"Attempting to convert class with unexpected"
-                f" module: [{src.__module__}]")
+                f" module: [{obj.__module__}]")
 
-    def _get_entity_class(self, src: SrcBaseType) -> Type[Entity]:
-        self._check_is_valid_src_module(src)
-        return getattr(self._get_entities_module(), src.__class__.__name__)
+    def _get_entity_class(
+            self, obj: Union[SrcBaseType, DstBaseType]) -> Type[Entity]:
+        self._check_is_valid_module(obj)
+        return getattr(self._get_entities_module(), obj.__class__.__name__)
 
     def _get_schema_class(self, src: SrcBaseType) -> Type[DatabaseEntity]:
-        self._check_is_valid_src_module(src)
+        self._check_is_valid_module(src)
         return getattr(self._get_schema_module(), src.__class__.__name__)
 
     @staticmethod

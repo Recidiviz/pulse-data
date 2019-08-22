@@ -38,8 +38,7 @@ from recidiviz.persistence.entity_matching import entity_matching_utils
 from recidiviz.persistence.entity_matching.base_entity_matcher import \
     BaseEntityMatcher, increment_error
 from recidiviz.persistence.entity_matching.state.state_matching_utils import \
-    remove_back_edges, \
-    add_person_to_entity_graph, EntityFieldType, generate_child_entity_trees, \
+    EntityFieldType, generate_child_entity_trees, \
     remove_child_from_entity, \
     add_child_to_entity, merge_incarceration_periods, \
     merge_flat_fields, is_match, move_incidents_onto_periods, \
@@ -65,26 +64,17 @@ class StateEntityMatcher(BaseEntityMatcher[StatePerson]):
         """
 
         # TODO(1868): more specific query
-        db_persons = dao.read_people(session)
-        # Remove all back edges before entity matching. All entities in the
+        # Do not populate back edges before entity matching. All entities in the
         # state schema have edges both to their children and their parents. We
         # remove these for simplicity as entity matching does not depend on
-        # these parent references (back edges), and as SqlAlchemy can infer a
-        # child->parent edge from the existence of the parent->child edge. If
-        # we did not remove these back edges, any time an entity relationship
+        # these parent references (back edges). Back edges are regenerated
+        # as a part of the conversion process from Entity -> Schema object.
+        # If we did not remove these back edges, any time an entity relationship
         # changes, we would have to update edges both on the parent and child,
         # instead of just on the parent.
-        #
-        # The one type of back edge that is not bidirectional, and therefore
-        # will not be automatically populated on write is the person references
-        # on all entities in the graph that are not direct children of the
-        # person. To preserve those references on write, we manually add them
-        # after entity matching is complete (see add_person_to_entity_graph)
-        for db_person in db_persons:
-            remove_back_edges(db_person)
+        db_persons = dao.read_people(session, populate_back_edges=False)
 
         matched_entities = _run_match(ingested_people, db_persons)
-        add_person_to_entity_graph(matched_entities.people)
         return matched_entities
 
 
@@ -103,8 +93,7 @@ def _run_match(ingested_persons: List[StatePerson],
     # write
     merge_multiparent_entities(matched_entities.people)
     move_incidents_onto_periods(matched_entities.people)
-    associate_revocation_svrs_with_ips(
-        matched_entities.people)
+    associate_revocation_svrs_with_ips(matched_entities.people)
     return matched_entities
 
 

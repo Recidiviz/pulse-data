@@ -17,7 +17,7 @@
 
 """Data Access Object (DAO) with logic for accessing state-level information
 from a SQL Database."""
-
+import datetime
 from collections import defaultdict
 import logging
 from typing import Dict, List
@@ -32,7 +32,8 @@ from recidiviz.persistence.database.schema.state import schema
 
 
 # TODO(1907): Rename to read_persons.
-def read_people(session, full_name=None, birthdate=None) \
+def read_people(session, full_name=None, birthdate=None,
+                populate_back_edges: bool = True) \
         -> List[entities.StatePerson]:
     """Read all people matching the optional surname and birthdate. If neither
     the surname or birthdate are provided, then read all people."""
@@ -41,7 +42,17 @@ def read_people(session, full_name=None, birthdate=None) \
         query = query.filter(schema.StatePerson.full_name == full_name)
     if birthdate is not None:
         query = query.filter(schema.StatePerson.birthdate == birthdate)
-    return _convert_and_normalize_record_trees(query.all())
+
+    people = query.all()
+    now = datetime.datetime.now()
+    logging.info("In read_people, finished query.all() at time [%s]",
+                 now.isoformat())
+    converted = _convert_and_normalize_record_trees(people, populate_back_edges)
+
+    now = datetime.datetime.now()
+    logging.info("In read_people, finished _convert_and_normalize_record_trees "
+                 "at time [%s]", now.isoformat())
+    return converted
 
 
 def read_people_by_external_ids(session: Session, _region: str,
@@ -72,7 +83,8 @@ def read_people_by_external_ids(session: Session, _region: str,
 
 
 def _convert_and_normalize_record_trees(
-        people: List[schema.StatePerson]) -> List[entities.StatePerson]:
+        people: List[schema.StatePerson],
+        populate_back_edges: bool = True) -> List[entities.StatePerson]:
     """Converts schema record trees to persistence layer models and removes
     any duplicate people created by how SQLAlchemy handles joins
     """
@@ -80,7 +92,8 @@ def _convert_and_normalize_record_trees(
     count_by_id: Dict[int, int] = defaultdict(lambda: 0)
     for person in people:
         if count_by_id[person.person_id] == 0:
-            converted = converter.convert_schema_object_to_entity(person)
+            converted = converter.convert_schema_object_to_entity(
+                person, populate_back_edges)
             if not isinstance(converted, entities.StatePerson):
                 raise ValueError(
                     f"Unexpected return type [{converted.__class__}]")
