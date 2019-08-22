@@ -33,11 +33,18 @@ REVOCATIONS_BY_SUPERVISION_TYPE_BY_MONTH_QUERY = \
     """
     /*{description}*/
     
-    SELECT state_code, EXTRACT(YEAR FROM admission_date) as year, EXTRACT(MONTH FROM admission_date) as month, admission_reason, count(*) as revocation_count
+    SELECT IFNULL(prob.state_code, parole.state_code) as state_code, IFNULL(prob.year, parole.year) as year,  IFNULL(prob.month, parole.month) as month, IFNULL(probation_count, 0) as probation_count, IFNULL(parole_count, 0) as parole_count
     FROM
-    (SELECT sip.state_code, admission_reason, admission_date FROM `{project_id}.{base_dataset}.state_incarceration_period` sip
-    WHERE sip.admission_reason in ('PROBATION_REVOCATION', 'PAROLE_REVOCATION'))
-    GROUP BY state_code, year, month, admission_reason having year > EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -3 YEAR))
+    (SELECT state_code, EXTRACT(YEAR FROM admission_date) as year, EXTRACT(MONTH FROM admission_date) as month, count(*) as probation_count
+    FROM `{project_id}.{base_dataset}.state_incarceration_period`
+    WHERE admission_reason in ('PROBATION_REVOCATION')
+    GROUP BY state_code, year, month, admission_reason having year > EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -3 YEAR))) prob
+    FULL OUTER JOIN
+    (SELECT state_code, EXTRACT(YEAR FROM admission_date) as year, EXTRACT(MONTH FROM admission_date) as month, count(*) as parole_count
+    FROM `{project_id}.{base_dataset}.state_incarceration_period`
+    WHERE admission_reason in ('PAROLE_REVOCATION')
+    GROUP BY state_code, year, month, admission_reason having year > EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -3 YEAR))) parole
+    ON prob.state_code = parole.state_code AND prob.year = parole.year and prob.month = parole.month
     ORDER BY year, month ASC
     """.format(
         description=REVOCATIONS_BY_SUPERVISION_TYPE_BY_MONTH_DESCRIPTION,
