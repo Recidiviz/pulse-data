@@ -38,14 +38,6 @@ _CHARGE_MATCH_FIELDS = {
     'case_number',
 }
 
-_ARREST_MATCH_FIELDS = {
-    'arrest_date',
-    'location',
-    'officer_name',
-    'officer_id',
-    'agency',
-}
-
 _HOLD_MATCH_FIELDS = {
     'jurisdiction_name',
 }
@@ -164,13 +156,15 @@ def is_arrest_match(
     """
     Given a database arrest and an ingested arrest, determine if they should
     be considered the same arrest. Should only be used to compare arrests for
-    the same booking.
+    the same booking. Because we've decided to never drop an arrest in favor
+    of a new one, the mere existence of an arrest is evidence of it's match.
+
     Args:
         db_entity: (entities.Arrest)
         ingested_entity: (entities.Arrest)
     Returns: (bool)
     """
-    return is_match(db_entity, ingested_entity, _ARREST_MATCH_FIELDS)
+    return db_entity is not None and ingested_entity is not None
 
 
 def is_charge_match_with_children(
