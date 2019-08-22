@@ -134,10 +134,6 @@ class StatePersonAlias(Entity, BuildableAttr, DefaultableAttr):
     state_code: str = attr.ib()  # non-nullable
     # TODO(1905): Remove defaults for string fields
     full_name: Optional[str] = attr.ib(default=None)
-    surname: Optional[str] = attr.ib(default=None)
-    given_names: Optional[str] = attr.ib(default=None)
-    middle_names: Optional[str] = attr.ib(default=None)
-    name_suffix: Optional[str] = attr.ib(default=None)
 
     # Primary key - Only optional when hydrated in the data converter, before
     # we have written this entity to the persistence layer
@@ -788,11 +784,6 @@ class StateIncarcerationIncidentOutcome(ExternalIdEntity,
 @attr.s(cmp=False)
 class StateParoleDecision(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     """Models a Parole Decision for a StatePerson while under Incarceration."""
-    # Status
-    # TODO(1697): Remove this redundant field (can infer from decision_outcome)
-    received_parole: Optional[bool] = attr.ib()
-
-    # Type
 
     # Attributes
     #   - When

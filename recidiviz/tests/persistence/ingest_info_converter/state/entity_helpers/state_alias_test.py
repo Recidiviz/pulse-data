@@ -53,10 +53,6 @@ class StateAliasConverterTest(unittest.TestCase):
                       '"middle_names": "LONNY", '
                       '"name_suffix": "BREAUX", '
                       '"surname": "OCEAN"}',
-            given_names='FRANK',
-            middle_names='LONNY',
-            surname='OCEAN',
-            name_suffix='BREAUX',
         )
 
         self.assertEqual(result, expected_result)

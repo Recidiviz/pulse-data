@@ -19,7 +19,7 @@
 from recidiviz.common.constants.state.state_parole_decision import \
     StateParoleDecisionOutcome
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.common.str_field_utils import parse_bool, parse_date, normalize
+from recidiviz.common.str_field_utils import parse_date, normalize
 
 from recidiviz.ingest.models.ingest_info_pb2 import StateParoleDecision
 from recidiviz.persistence.entity.state import entities
@@ -50,7 +50,6 @@ def copy_fields_to_builder(
     new.decision_outcome_raw_text = fn(normalize, 'decision_outcome', proto)
 
     new.external_id = fn(parse_external_id, 'state_parole_decision_id', proto)
-    new.received_parole = fn(parse_bool, 'received_parole', proto)
     new.decision_date = fn(parse_date, 'decision_date', proto)
     new.corrective_action_deadline = fn(parse_date,
                                         'corrective_action_deadline',

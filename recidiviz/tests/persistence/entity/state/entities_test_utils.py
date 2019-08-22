@@ -84,14 +84,10 @@ def generate_full_graph_state_person(
         entities.StatePersonAlias.new_with_defaults(
             state_code='us_ca',
             full_name='Beyoncé Giselle Knowles',
-            given_names='Beyoncé Giselle',
-            surname='Knowles',
         ),
         entities.StatePersonAlias.new_with_defaults(
             state_code='us_ca',
             full_name='Beyoncé Giselle Knowles-Carter',
-            given_names='Beyoncé Giselle',
-            surname='Knowles-Carter',
         )
     ]
 
@@ -336,7 +332,6 @@ def generate_full_graph_state_person(
     incarceration_period.incarceration_incidents = [incarceration_incident]
 
     parole_decision = entities.StateParoleDecision.new_with_defaults(
-        received_parole=True,
         decision_date=datetime.date(year=2004, month=7, day=1),
         corrective_action_deadline=None,
         state_code='us_ca',

@@ -49,7 +49,7 @@ class StateBondConverterTest(unittest.TestCase):
             agent_type_raw_text='JUDGE',
             external_id='AGENT_ID',
             state_code='US_ND',
-            full_name='JUDGE JOE BROWN',
+            full_name='{"full_name": "JUDGE JOE BROWN"}',
         )
 
         self.assertEqual(result, expected_result)
