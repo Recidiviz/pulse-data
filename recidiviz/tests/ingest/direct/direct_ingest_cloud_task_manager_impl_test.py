@@ -23,10 +23,12 @@ from google.cloud import tasks
 from google.protobuf import timestamp_pb2
 from mock import patch
 
+from recidiviz.cloud_functions.cloud_function_utils import \
+    to_normalized_unprocessed_file_path
 from recidiviz.common import queues
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import \
     DirectIngestCloudTaskManagerImpl, DIRECT_INGEST_STATE_TASK_QUEUE, \
-    DIRECT_INGEST_SCHEDULER_QUEUE
+    DIRECT_INGEST_SCHEDULER_QUEUE, CloudTaskQueueInfo, _build_task_id
 from recidiviz.ingest.direct.controllers.direct_ingest_types import IngestArgs
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     GcsfsIngestArgs
@@ -41,6 +43,51 @@ _REGION = regions.Region(
     timezone='America/New_York',
     jurisdiction_id='jid',
     environment='production')
+
+
+class TestCloudTaskQueueInfo(TestCase):
+    """Tests for the CloudTaskQueueInfo."""
+
+    def test_is_task_queued_no_tasks(self):
+        # Arrange
+        info = CloudTaskQueueInfo(queue_name='queue_name', task_names=[])
+
+        file_path = to_normalized_unprocessed_file_path('file_path.csv')
+        args = IngestArgs(ingest_time=datetime.datetime.now())
+        gcsfs_args = GcsfsIngestArgs(ingest_time=datetime.datetime.now(),
+                                     file_path=file_path)
+
+        # Act
+        basic_args_queued = info.is_task_queued(_REGION, args)
+        gcsfs_args_queued = info.is_task_queued(_REGION, gcsfs_args)
+
+        # Assert
+        self.assertFalse(basic_args_queued)
+        self.assertFalse(gcsfs_args_queued)
+
+        self.assertFalse(info.is_task_queued(_REGION, gcsfs_args))
+
+    def test_is_task_queued_has_tasks(self):
+        # Arrange
+        file_path = to_normalized_unprocessed_file_path('file_path.csv')
+        gcsfs_args = GcsfsIngestArgs(ingest_time=datetime.datetime.now(),
+                                     file_path=file_path)
+        full_task_name = \
+            _build_task_id(_REGION.region_code, gcsfs_args.task_id_tag())
+        info = CloudTaskQueueInfo(
+            queue_name='queue_name',
+            task_names=[f'projects/path/to/random_task',
+                        f'projects/path/to/{full_task_name}'])
+        file_path = to_normalized_unprocessed_file_path('file_path.csv')
+        gcsfs_args = GcsfsIngestArgs(
+            ingest_time=datetime.datetime.now(),
+            file_path=file_path)
+
+        # Act
+        gcsfs_args_queued = info.is_task_queued(_REGION, gcsfs_args)
+
+        # Assert
+        self.assertTrue(gcsfs_args_queued)
 
 
 class TestDirectIngestCloudTaskManagerImpl(TestCase):
@@ -152,7 +199,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         # Arrange
         ingest_args = GcsfsIngestArgs(
             datetime.datetime(year=2019, month=7, day=20),
-            file_path='file_path')
+            file_path=to_normalized_unprocessed_file_path('file_path.csv'))
         body = {'ingest_args': ingest_args.to_serializable(),
                 'args_type': 'GcsfsIngestArgs'}
         body_encoded = json.dumps(body).encode()

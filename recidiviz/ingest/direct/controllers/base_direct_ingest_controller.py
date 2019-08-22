@@ -67,15 +67,13 @@ class BaseDirectIngestController(Ingestor,
         next job's IngestArgs, we either post a task to direct/scheduler/ if
         a wait_time is specified or direct/process_job/ if we can run the next
         job immediately."""
-        in_progress_job_name = \
-            self.cloud_task_manager.in_progress_process_job_name(
-                self.region)
-
-        if in_progress_job_name and not just_finished_job:
+        process_job_queue_info = \
+            self.cloud_task_manager.get_process_job_queue_info(self.region)
+        if process_job_queue_info.size() and not just_finished_job:
             logging.info(
                 "Already running job [%s] - will not schedule another job for "
                 "region [%s]",
-                in_progress_job_name,
+                process_job_queue_info.task_names[0],
                 self.region.region_code)
             return
 
@@ -86,14 +84,20 @@ class BaseDirectIngestController(Ingestor,
                          self.region.region_code)
             return
 
+        if process_job_queue_info.is_task_queued(self.region, next_job_args):
+            logging.info(
+                "Already have task queued for next job [%s] - returning.",
+                self._job_tag(next_job_args))
+            return
+
         wait_time_sec = self._wait_time_sec_for_next_args(next_job_args)
         logging.info("Found next ingest job to run [%s] with wait time [%s].",
                      self._job_tag(next_job_args), wait_time_sec)
 
         if wait_time_sec:
-            schedule_queue_size = \
-                self.cloud_task_manager.scheduler_queue_size(self.region)
-            if schedule_queue_size:
+            scheduler_queue_info = \
+                self.cloud_task_manager.get_scheduler_queue_info(self.region)
+            if scheduler_queue_info.size() <= 1:
                 logging.info(
                     "Creating cloud task to fire timer in [%s] seconds",
                     wait_time_sec)
@@ -106,7 +110,7 @@ class BaseDirectIngestController(Ingestor,
                 logging.info(
                     "[%s] tasks already in the scheduler queue for region "
                     "[%s] - not queueing another task.",
-                    str(schedule_queue_size), self.region.region_code)
+                    str(scheduler_queue_info.size), self.region.region_code)
         else:
             logging.info(
                 "Creating cloud task to run job [%s]",

@@ -19,9 +19,11 @@ import abc
 import datetime
 import json
 import logging
+import os
 import uuid
 from typing import Optional, Dict, List
 
+import attr
 from google.api_core import datetime_helpers
 from google.cloud import tasks
 from google.protobuf import timestamp_pb2
@@ -30,7 +32,7 @@ from recidiviz.common.common_utils import retry_grpc
 from recidiviz.common.queues import format_task_path, NUM_GRPC_RETRIES, \
     client, format_queue_path, list_tasks_with_prefix
 from recidiviz.ingest.direct.controllers.direct_ingest_types import \
-    IngestArgsType, IngestArgs
+    IngestArgs
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     GcsfsIngestArgs
 from recidiviz.utils.regions import Region
@@ -40,25 +42,84 @@ DIRECT_INGEST_STATE_TASK_QUEUE = 'direct-ingest-state-task-queue'
 DIRECT_INGEST_JAILS_TASK_QUEUE = 'direct-ingest-jpp-task-queue'
 
 
-class DirectIngestCloudTaskManager:
-    """Abstract interface for a class that interacts with Cloud Task queues."""
-    @abc.abstractmethod
-    def in_progress_process_job_name(self, region: Region) -> Optional[str]:
-        """Returns the name of the first in-progress task scheduled in the job
-        processing queue (i.e. via create_direct_ingest_process_job_task).
+def _build_task_id(region_code: str,
+                   task_id_tag: Optional[str],
+                   prefix_only: bool = False):
+    """Creates a task id for a task running for a particular region. Ids take
+    the form:
+    <region_code>(-<task_id_tag>)(-<uuid>).
+
+    For example:
+    _build_task_id('us_nd', 'elite_offenders', prefix_only=False) ->
+        'us_nd-elite_offenders-d1315074-8cea-4848-afe1-af20af07e275
+
+    _build_task_id('us_nd', None, prefix_only=False) ->
+        'us_nd-d1315074-8cea-4848-afe1-af20af07e275
+
+    _build_task_id('us_nd', 'elite_offenders', prefix_only=True) ->
+        'us_nd-elite_offenders
+
+    """
+    task_id_parts = [region_code]
+    if task_id_tag:
+        task_id_parts.append(task_id_tag)
+    if not prefix_only:
+        task_id_parts.append(str(uuid.uuid4()))
+
+    return '-'.join(task_id_parts)
+
+
+@attr.s
+class CloudTaskQueueInfo:
+    """Holds info about a Cloud Task queue."""
+    queue_name: str = attr.ib()
+
+    # Task names for tasks in queue, in order.
+    # pylint:disable=not-an-iterable
+    task_names: List[str] = attr.ib(factory=list)
+
+    def is_task_queued(self,
+                       region: Region,
+                       ingest_args: IngestArgs) -> bool:
+        """Returns true if the ingest_args correspond to a task currently in
+        the queue.
         """
 
-    @abc.abstractmethod
-    def scheduler_queue_size(self, region: Region) -> int:
-        """Returns the number of tasks currently queued in the scheduler queue
-        for the given region. If this is called from the scheduler queue itself,
-        it will return at least 1.
+        task_id_prefix = _build_task_id(
+            region.region_code,
+            ingest_args.task_id_tag(),
+            prefix_only=True)
+
+        for task_name in self.task_names:
+            _, task_id = os.path.split(task_name)
+            if task_id.startswith(task_id_prefix):
+                return True
+        return False
+
+    def size(self):
+        """Number of tasks currently queued in the queue for the given region.
+        If this is generated from the queue itself, it will return at least 1.
         """
+        return len(self.task_names)
+
+
+class DirectIngestCloudTaskManager:
+    """Abstract interface for a class that interacts with Cloud Task queues."""
+
+    @abc.abstractmethod
+    def get_process_job_queue_info(self, region: Region) -> CloudTaskQueueInfo:
+        """Returns information about tasks in the job processing queue for the
+         given region."""
+
+    @abc.abstractmethod
+    def get_scheduler_queue_info(self, region: Region) -> CloudTaskQueueInfo:
+        """Returns information about the tasks in the job scheduler queue for
+        the given region."""
 
     @abc.abstractmethod
     def create_direct_ingest_process_job_task(self,
                                               region: Region,
-                                              ingest_args: IngestArgsType):
+                                              ingest_args: IngestArgs):
         """Queues a direct ingest process job task. All direct ingest data
         processing should happen through this endpoint.
         Args:
@@ -96,7 +157,7 @@ class DirectIngestCloudTaskManager:
         return None
 
     @staticmethod
-    def _get_body_from_args(ingest_args: IngestArgsType) -> Dict:
+    def _get_body_from_args(ingest_args: IngestArgs) -> Dict:
         body = {
             'ingest_args': ingest_args.to_serializable(),
             'args_type': ingest_args.__class__.__name__
@@ -110,9 +171,23 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
 
     @staticmethod
     def _build_task_name_for_queue_and_region(
-            queue_name: str, region_code: str) -> List[tasks.types.Task]:
-        task_id = '{}-{}-{}'.format(
-            region_code, str(datetime.date.today()), uuid.uuid4())
+            queue_name: str,
+            region_code: str,
+            task_id_tag: Optional[str]) -> List[tasks.types.Task]:
+        # pylint: disable=line-too-long
+        """
+        Creates a name for a task. Names take the form:
+        projects/<project_id>/locations/<locale>/queues/<queue_name>/tasks/<task_id>
+
+        Args:
+            queue_name: (str) The name of the queue to dispatch to
+            region_code: (str) Region code for this queue
+            task_id_tag: (str) Optional string added to the task id to allow us
+                to identify duplicate tasks.
+        """
+        task_id = _build_task_id(
+            region_code, task_id_tag, prefix_only=False)
+
         return format_task_path(queue_name, task_id)
 
     @staticmethod
@@ -120,6 +195,17 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
                                     region_code: str) -> List[tasks.types.Task]:
         task_prefix = format_task_path(queue_name, region_code)
         return list_tasks_with_prefix(task_prefix, queue_name)
+
+    def _get_queue_info(self,
+                        queue_name: str,
+                        region_code: str) -> CloudTaskQueueInfo:
+        tasks_list = self._tasks_for_queue_and_region(queue_name,
+                                                      region_code)
+        # TODO(1628): Consider looking more closely at the task to figure out if
+        #  it has a failure status, etc.
+        task_names = [task.name for task in tasks_list] if tasks_list else []
+        return CloudTaskQueueInfo(queue_name=queue_name,
+                                  task_names=task_names)
 
     @staticmethod
     def _queue_task(queue_name: str, task: tasks.types.Task):
@@ -132,28 +218,24 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
             task
         )
 
-    def in_progress_process_job_name(self, region: Region) -> Optional[str]:
-        tasks_list = self._tasks_for_queue_and_region(region.get_queue_name(),
-                                                      region.region_code)
+    def get_process_job_queue_info(self, region: Region) -> CloudTaskQueueInfo:
+        return self._get_queue_info(region.get_queue_name(),
+                                    region.region_code)
 
-        if not tasks_list:
-            return None
-
-        # TODO(1628): Consider looking more closely at the task to figure out if
-        #  it has a failure status, etc.
-        return tasks_list[0].name
-
-    def scheduler_queue_size(self, region: Region) -> int:
-        tasks_list = self._tasks_for_queue_and_region(
-            DIRECT_INGEST_SCHEDULER_QUEUE, region.region_code)
-        return len(tasks_list)
+    def get_scheduler_queue_info(self, region: Region) -> CloudTaskQueueInfo:
+        return self._get_queue_info(DIRECT_INGEST_SCHEDULER_QUEUE,
+                                    region.region_code)
 
     def create_direct_ingest_process_job_task(self,
                                               region: Region,
-                                              ingest_args: IngestArgsType):
+                                              ingest_args: IngestArgs):
         body = self._get_body_from_args(ingest_args)
+
         task_name = self._build_task_name_for_queue_and_region(
-            region.get_queue_name(), region.region_code)
+            region.get_queue_name(),
+            region.region_code,
+            ingest_args.task_id_tag())
+
         task = tasks.types.Task(
             name=task_name,
             app_engine_http_request={
@@ -178,7 +260,7 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
         schedule_timestamp = timestamp_pb2.Timestamp(seconds=schedule_time_sec)
 
         task_name = self._build_task_name_for_queue_and_region(
-            DIRECT_INGEST_SCHEDULER_QUEUE, region.region_code)
+            DIRECT_INGEST_SCHEDULER_QUEUE, region.region_code, None)
         task = tasks.types.Task(
             name=task_name,
             schedule_time=schedule_timestamp,

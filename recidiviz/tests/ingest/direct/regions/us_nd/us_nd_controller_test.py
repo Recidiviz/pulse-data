@@ -75,8 +75,8 @@ from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.ingest.direct.direct_ingest_util import \
     build_controller_for_tests, ingest_args_for_fixture_file, \
     add_paths_with_tags_and_process
-from recidiviz.tests.ingest.direct.fake_direct_ingest_cloud_task_manager \
-    import FakeDirectIngestCloudTaskManager
+from recidiviz.tests.ingest.direct.fake_async_direct_ingest_cloud_task_manager \
+    import FakeAsyncDirectIngestCloudTaskManager
 from recidiviz.tests.utils import fakes
 
 _INCIDENT_DETAILS_1 = \
@@ -132,17 +132,17 @@ class TestUsNdController(unittest.TestCase):
         processed on in the controller.
         """
         if not isinstance(self.controller.cloud_task_manager,
-                          FakeDirectIngestCloudTaskManager):
+                          FakeAsyncDirectIngestCloudTaskManager):
             self.fail()
 
         self.controller.cloud_task_manager.process_job_queue.add_task(
             fakes.use_in_memory_sqlite_database, StateBase)
 
         if not isinstance(self.controller.cloud_task_manager,
-                          FakeDirectIngestCloudTaskManager):
+                          FakeAsyncDirectIngestCloudTaskManager):
             raise ValueError(
                 f"Controller cloud task manager must have type "
-                f"FakeDirectIngestCloudTaskManager. Found instead "
+                f"FakeAsyncDirectIngestCloudTaskManager. Found instead "
                 f"type [{type(self.controller.cloud_task_manager)}]")
 
         self.controller.cloud_task_manager.wait_for_all_tasks_to_run()
@@ -155,7 +155,7 @@ class TestUsNdController(unittest.TestCase):
         """
 
         if not isinstance(self.controller.cloud_task_manager,
-                          FakeDirectIngestCloudTaskManager):
+                          FakeAsyncDirectIngestCloudTaskManager):
             self.fail()
 
         fakes.use_in_memory_sqlite_database(StateBase)
