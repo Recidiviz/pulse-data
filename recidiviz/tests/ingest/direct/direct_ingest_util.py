@@ -17,9 +17,10 @@
 """Helpers for direct ingest tests."""
 import datetime
 import os
+import threading
 import time
 import unittest
-from typing import Set, List
+from typing import Set, List, Optional
 
 from gcsfs.core import GCSFile
 from mock import Mock, patch, create_autospec
@@ -33,21 +34,26 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     filename_parts_from_path, GcsfsIngestArgs
 from recidiviz.ingest.direct.controllers.gcsfs_factory import GcsfsFactory
+from recidiviz.tests.ingest.direct.fake_async_direct_ingest_cloud_task_manager \
+    import FakeAsyncDirectIngestCloudTaskManager
+from recidiviz.tests.ingest import fixtures
 from recidiviz.tests.ingest.direct.fake_direct_ingest_cloud_task_manager \
     import FakeDirectIngestCloudTaskManager
-from recidiviz.tests.ingest import fixtures
 
 
 class FakeDirectIngestGCSFileSystem(DirectIngestGCSFileSystem):
     """Test-only implementation of the DirectIngestGCSFileSystem."""
     def __init__(self):
+        self.mutex = threading.Lock()
         self.all_paths: Set[str] = set()
 
     def test_add_path(self, path: str):
-        self.all_paths.add(path)
+        with self.mutex:
+            self.all_paths.add(path)
 
     def exists(self, path: str) -> bool:
-        return path in self.all_paths
+        with self.mutex:
+            return path in self.all_paths
 
     def open(self, path: str) -> GCSFile:
         directory_path, _ = os.path.split(path)
@@ -68,17 +74,19 @@ class FakeDirectIngestGCSFileSystem(DirectIngestGCSFileSystem):
         return mock_gcs_file
 
     def mv(self, path1: str, path2: str) -> None:
-        self.all_paths.remove(path1)
-        self.all_paths.add(path2)
+        with self.mutex:
+            self.all_paths.remove(path1)
+            self.all_paths.add(path2)
 
     def _ls_with_file_prefix(self,
                              directory_path: str,
                              file_prefix: str) -> List[str]:
-        path_file_name_tuples = \
-            [(path, os.path.split(path)[1])
-             for path in self.all_paths if path.startswith(directory_path)]
-        return [path for path, filename in path_file_name_tuples
-                if filename.startswith(file_prefix)]
+        with self.mutex:
+            path_file_name_tuples = \
+                [(path, os.path.split(path)[1])
+                 for path in self.all_paths if path.startswith(directory_path)]
+            return [path for path, filename in path_file_name_tuples
+                    if filename.startswith(file_prefix)]
 
 
 @patch('recidiviz.utils.metadata.project_id',
@@ -86,6 +94,7 @@ class FakeDirectIngestGCSFileSystem(DirectIngestGCSFileSystem):
 def build_controller_for_tests(
         controller_cls,
         fixture_path_prefix: str,
+        task_manager: Optional[FakeDirectIngestCloudTaskManager] = None
 ) -> GcsfsDirectIngestController:
 
     def mock_build_fs():
@@ -95,13 +104,15 @@ def build_controller_for_tests(
             'recidiviz.ingest.direct.controllers.'
             'base_direct_ingest_controller.DirectIngestCloudTaskManagerImpl') \
             as mock_task_factory_cls:
-        task_factory = FakeDirectIngestCloudTaskManager()
-        mock_task_factory_cls.return_value = task_factory
+        task_manager = \
+            task_manager \
+            if task_manager else FakeAsyncDirectIngestCloudTaskManager()
+        mock_task_factory_cls.return_value = task_manager
         with patch.object(GcsfsFactory, 'build', new=mock_build_fs):
             controller = controller_cls(
                 ingest_directory_path=f'{fixture_path_prefix}/fixtures',
                 storage_directory_path='storage/path')
-            task_factory.set_controller(controller)
+            task_manager.set_controller(controller)
             return controller
 
 
@@ -140,10 +151,11 @@ def add_paths_with_tags_and_process(test_case: unittest.TestCase,
         time.sleep(.05)
 
     if not isinstance(controller.cloud_task_manager,
-                      FakeDirectIngestCloudTaskManager):
+                      FakeAsyncDirectIngestCloudTaskManager):
         raise ValueError(f"Controller cloud task manager must have type "
-                         f"FakeDirectIngestCloudTaskManager. Found instead "
-                         f"type [{type(controller.cloud_task_manager)}]")
+                         f"FakeAsyncDirectIngestCloudTaskManager. Found "
+                         f"instead type "
+                         f"[{type(controller.cloud_task_manager)}]")
 
     controller.cloud_task_manager.wait_for_all_tasks_to_run()
 
