@@ -31,9 +31,10 @@ ADMISSIONS_BY_TYPE_BY_MONTH_QUERY = \
     """
 /*{description}*/
 
-SELECT state_code, admission_type, EXTRACT(YEAR FROM admission_date) as year, EXTRACT(MONTH FROM admission_date) as month, count(*) as admission_count
-FROM
+SELECT newadm.state_code, newadm.year, newadm.month, IFNULL(new_admissions, 0) as new_admissions, IFNULL(technicals, 0) as technicals, IFNULL(non_technicals, 0) as non_technicals, IFNULL(unknown_revocations, 0) as unknown_revocations FROM
 -- Technical Revocations
+(SELECT state_code, EXTRACT(YEAR FROM admission_date) as year, EXTRACT(MONTH FROM admission_date) as month, IFNULL(count(*), 0) as technicals
+FROM
 (SELECT inc.state_code, admission_date, violation_type as admission_type
 FROM `{project_id}.{base_dataset}.state_incarceration_period` inc
 JOIN `{project_id}.{base_dataset}.state_supervision_violation_response` resp
@@ -41,29 +42,32 @@ ON inc.source_supervision_violation_response_id = resp.supervision_violation_res
 JOIN `{project_id}.{base_dataset}.state_supervision_violation` viol 
 ON resp.supervision_violation_id = viol.supervision_violation_id
 WHERE viol.violation_type = 'TECHNICAL') 
-GROUP BY state_code, admission_type, year, month having year > EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -3 YEAR))
-UNION ALL
+GROUP BY state_code, year, month having year > EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -3 YEAR))) tech
+FULL OUTER JOIN
 -- New Admissions
-(SELECT state_code, admission_reason as admission_type, EXTRACT(YEAR FROM admission_date) as year, EXTRACT(MONTH FROM admission_date) as month, count(*) as revocation_count
+(SELECT state_code, EXTRACT(YEAR FROM admission_date) as year, EXTRACT(MONTH FROM admission_date) as month, IFNULL(count(*), 0) as new_admissions
 FROM `{project_id}.{base_dataset}.state_incarceration_period`
 WHERE admission_reason = 'NEW_ADMISSION'
-GROUP BY state_code, admission_type, year, month having year > EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -3 YEAR)))
-UNION ALL
+GROUP BY state_code, year, month having year > EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -3 YEAR))) newadm
+ON tech.year = newadm.year AND tech.month = newadm.month
+FULL OUTER JOIN
 -- Unknown Revocations
-(SELECT state_code, 'UNKNOWN_REVOCATION' as admission_type, EXTRACT(YEAR FROM admission_date) as year, EXTRACT(MONTH FROM admission_date) as month, count(*) as revocation_count
+(SELECT state_code, EXTRACT(YEAR FROM admission_date) as year, EXTRACT(MONTH FROM admission_date) as month, IFNULL(count(*), 0) as unknown_revocations
 FROM `{project_id}.{base_dataset}.state_incarceration_period`
 WHERE admission_reason in ('PAROLE_REVOCATION', 'PROBATION_REVOCATION') and source_supervision_violation_response_id is null
-GROUP BY state_code, admission_type, year, month having year > EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -3 YEAR)))
-UNION ALL
+GROUP BY state_code, year, month having year > EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -3 YEAR))) unk_rev
+ON newadm.year = unk_rev.year AND newadm.month = unk_rev.month
+FULL OUTER JOIN
 -- Non-Technical Revocations
-(SELECT inc.state_code, 'NON_TECHNICAL' as admission_type, EXTRACT(YEAR FROM admission_date) as year, EXTRACT(MONTH FROM admission_date) as month, count(*) as admission_count
+(SELECT inc.state_code, EXTRACT(YEAR FROM admission_date) as year, EXTRACT(MONTH FROM admission_date) as month, IFNULL(count(*), 0) as non_technicals
 FROM `{project_id}.{base_dataset}.state_incarceration_period` inc
 JOIN `{project_id}.{base_dataset}.state_supervision_violation_response` resp
 ON inc.source_supervision_violation_response_id = resp.supervision_violation_response_id
 JOIN `{project_id}.{base_dataset}.state_supervision_violation` viol 
 ON resp.supervision_violation_id = viol.supervision_violation_id
 WHERE viol.violation_type != 'TECHNICAL'
-GROUP BY state_code, admission_type, year, month having year > EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -3 YEAR)))
+GROUP BY state_code, year, month having year > EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -3 YEAR))) non_tech
+ON newadm.year = non_tech.year AND newadm.month = non_tech.month
 ORDER BY year, month ASC
 """.format(
         description=ADMISSIONS_BY_TYPE_BY_MONTH_DESCRIPTION,

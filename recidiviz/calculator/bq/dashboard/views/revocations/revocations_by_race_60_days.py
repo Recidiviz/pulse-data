@@ -34,13 +34,13 @@ REVOCATIONS_BY_RACE_60_DAYS_QUERY = \
     """
     /*{description}*/
     
-    SELECT state_code, EXTRACT(YEAR FROM admission_date) as year, EXTRACT(MONTH FROM admission_date) as month, race, count(*) as revocation_count
+    SELECT state_code, race, count(*) as revocation_count
     FROM
     (SELECT sip.state_code, spr.race, admission_date FROM `{project_id}.{views_dataset}.incarceration_admissions_60_days` sip
     join `{project_id}.{base_dataset}.state_person_race` spr on spr.person_id = sip.person_id
     WHERE sip.admission_reason in ('PROBATION_REVOCATION', 'PAROLE_REVOCATION'))
-    GROUP BY state_code, year, month, race
-    ORDER BY year, month, race ASC
+    GROUP BY state_code, race
+    ORDER BY race ASC
     
     """.format(
         description=REVOCATIONS_BY_RACE_60_DAYS_DESCRIPTION,
