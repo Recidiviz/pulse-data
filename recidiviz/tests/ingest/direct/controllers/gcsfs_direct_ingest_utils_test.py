@@ -72,6 +72,7 @@ class GcsfsDirectIngestUtilsTest(TestCase):
 
         self.assertEqual(parts.extension, 'csv')
         self.assertEqual(parts.file_tag, 'elite_offenders')
+        self.assertEqual(parts.filename_suffix, None)
         self.assertEqual(parts.utc_upload_datetime,
                          datetime.datetime.fromisoformat(
                              '2019-08-07T22:09:18:770655'))
@@ -82,6 +83,18 @@ class GcsfsDirectIngestUtilsTest(TestCase):
 
         self.assertEqual(parts.extension, 'csv')
         self.assertEqual(parts.file_tag, 'elite_offenders')
+        self.assertEqual(parts.filename_suffix, None)
+        self.assertEqual(parts.utc_upload_datetime,
+                         datetime.datetime.fromisoformat(
+                             '2019-09-07T00:09:18:770655'))
+        self.assertEqual(parts.date_str, '2019-09-07')
+
+        parts = filename_parts_from_path(
+            'processed_2019-09-07T00:09:18:770655_elite_offenders_1split.csv')
+
+        self.assertEqual(parts.extension, 'csv')
+        self.assertEqual(parts.file_tag, 'elite_offenders')
+        self.assertEqual(parts.filename_suffix, '1split')
         self.assertEqual(parts.utc_upload_datetime,
                          datetime.datetime.fromisoformat(
                              '2019-09-07T00:09:18:770655'))

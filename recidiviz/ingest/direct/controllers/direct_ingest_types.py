@@ -27,6 +27,9 @@ import cattr
 class IngestArgs:
     ingest_time: datetime.datetime = attr.ib()
 
+    def task_id_tag(self) -> Optional[str]:
+        return None
+
     def to_serializable(self):
         return cattr.unstructure(self)
 

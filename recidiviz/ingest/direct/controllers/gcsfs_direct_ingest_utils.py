@@ -32,7 +32,7 @@ from recidiviz.utils import metadata
 _FILEPATH_REGEX = \
     re.compile(
         r'.*(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}:\d{6})_'
-        r'([A-Za-z]+[A-Za-z_]*)(_.+)?\.(.*)')
+        r'([A-Za-z]+[A-Za-z_]*)(_(.+))?\.(.*)')
 
 
 @attr.s(frozen=True)
@@ -64,6 +64,10 @@ class GcsfsFilenameParts:
 @attr.s(frozen=True)
 class GcsfsIngestArgs(IngestArgs):
     file_path: str = attr.ib()
+
+    def task_id_tag(self) -> Optional[str]:
+        parts = filename_parts_from_path(self.file_path)
+        return f'{parts.file_tag}_{parts.filename_suffix}_{parts.date_str}'
 
 
 def gcsfs_direct_ingest_storage_directory_path_for_region(
@@ -114,6 +118,6 @@ def filename_parts_from_path(file_path: str) -> GcsfsFilenameParts:
         utc_upload_datetime=utc_upload_datetime,
         date_str=utc_upload_datetime.date().isoformat(),
         file_tag=match.group(2),
-        filename_suffix=match.group(3),
-        extension=match.group(4),
+        filename_suffix=match.group(4),
+        extension=match.group(5),
     )

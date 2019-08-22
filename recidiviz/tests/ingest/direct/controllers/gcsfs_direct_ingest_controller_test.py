@@ -30,7 +30,11 @@ from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller \
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     GcsfsIngestArgs
 from recidiviz.tests.ingest.direct.direct_ingest_util import \
-    build_controller_for_tests, add_paths_with_tags_and_process
+    build_controller_for_tests, add_paths_with_tags_and_process, \
+    ingest_args_for_fixture_file, FakeDirectIngestGCSFileSystem
+from recidiviz.tests.ingest.direct.\
+    fake_synchronous_direct_ingest_cloud_task_manager import \
+    FakeSynchronousDirectIngestCloudTaskManager
 from recidiviz.tests.utils.fake_region import TEST_STATE_REGION, \
     TEST_COUNTY_REGION
 
@@ -105,6 +109,131 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
         add_paths_with_tags_and_process(
             self, controller, file_tags, unexpected_tags)
+
+    def test_do_not_queue_same_job_twice(self):
+        task_manager = FakeSynchronousDirectIngestCloudTaskManager()
+        controller = build_controller_for_tests(
+            StateTestGcsfsDirectIngestController,
+            self.FIXTURE_PATH_PREFIX,
+            task_manager=task_manager)
+        task_manager.set_controller(controller)
+
+        args = ingest_args_for_fixture_file(controller,
+                                            f'tagA.csv')
+        args2 = ingest_args_for_fixture_file(controller,
+                                             f'tagB.csv')
+        if not isinstance(controller.fs, FakeDirectIngestGCSFileSystem):
+            raise ValueError(f"Controller fs must have type "
+                             f"FakeDirectIngestGCSFileSystem. Found instead "
+                             f"type [{type(controller.fs)}]")
+
+        controller.fs.test_add_path(args.file_path)
+        controller.kick_scheduler(just_finished_job=False)
+
+        task_manager.test_run_next_scheduler_task()
+        task_manager.test_pop_finished_scheduler_task()
+
+        controller.fs.test_add_path(args2.file_path)
+        controller.kick_scheduler(just_finished_job=False)
+
+        task_manager.test_run_next_process_job_task()
+        task_manager.test_pop_finished_process_job_task()
+
+        # This is the task that got queued by kick_schedule()
+        task_manager.test_run_next_scheduler_task()
+        task_manager.test_pop_finished_scheduler_task()
+
+        # This is the task that got queued by finishing a job
+        task_manager.test_run_next_scheduler_task()
+        task_manager.test_pop_finished_scheduler_task()
+
+        self.assertEqual(
+            0,
+            task_manager.get_scheduler_queue_info(controller.region).size())
+        self.assertEqual(
+            1,
+            task_manager.get_process_job_queue_info(controller.region).size())
+
+    def test_next_schedule_runs_before_process_job_clears(self):
+        task_manager = FakeSynchronousDirectIngestCloudTaskManager()
+        controller = build_controller_for_tests(
+            StateTestGcsfsDirectIngestController,
+            self.FIXTURE_PATH_PREFIX,
+            task_manager=task_manager)
+        task_manager.set_controller(controller)
+
+        args = ingest_args_for_fixture_file(controller,
+                                            f'tagA.csv')
+        args2 = ingest_args_for_fixture_file(controller,
+                                             f'tagB.csv')
+        if not isinstance(controller.fs, FakeDirectIngestGCSFileSystem):
+            raise ValueError(f"Controller fs must have type "
+                             f"FakeDirectIngestGCSFileSystem. Found instead "
+                             f"type [{type(controller.fs)}]")
+
+        controller.fs.test_add_path(args.file_path)
+        controller.fs.test_add_path(args2.file_path)
+
+        controller.kick_scheduler(just_finished_job=False)
+
+        task_manager.test_run_next_scheduler_task()
+        task_manager.test_pop_finished_scheduler_task()
+
+        task_manager.test_run_next_process_job_task()
+        task_manager.test_run_next_scheduler_task()
+        task_manager.test_pop_finished_process_job_task()
+        task_manager.test_pop_finished_scheduler_task()
+
+        # We should have still queued a process job, even though the last
+        # one hadn't run when schedule executes
+        task_manager.test_run_next_process_job_task()
+        task_manager.test_pop_finished_process_job_task()
+
+        task_manager.test_run_next_scheduler_task()
+        task_manager.test_pop_finished_scheduler_task()
+
+        self.assertEqual(
+            0,
+            task_manager.get_scheduler_queue_info(controller.region).size())
+        self.assertEqual(
+            0,
+            task_manager.get_process_job_queue_info(controller.region).size())
+
+    def test_do_not_schedule_more_than_one_delayed_scheduler_job(self):
+        task_manager = FakeSynchronousDirectIngestCloudTaskManager()
+        controller = build_controller_for_tests(
+            StateTestGcsfsDirectIngestController,
+            self.FIXTURE_PATH_PREFIX,
+            task_manager=task_manager)
+        task_manager.set_controller(controller)
+
+        args_with_wait_time = ingest_args_for_fixture_file(controller,
+                                                           f'tagB.csv')
+
+        if not isinstance(controller.fs, FakeDirectIngestGCSFileSystem):
+            raise ValueError(f"Controller fs must have type "
+                             f"FakeDirectIngestGCSFileSystem. Found instead "
+                             f"type [{type(controller.fs)}]")
+
+        controller.fs.test_add_path(args_with_wait_time.file_path)
+
+        # Kick the scheduler 5 times
+        for _ in range(5):
+            controller.kick_scheduler(just_finished_job=False)
+
+        # This will queue 5 immediate jobs
+        for _ in range(5):
+            task_manager.test_run_next_scheduler_task()
+            task_manager.test_pop_finished_scheduler_task()
+
+        # But after running all those jobs, there should only be one job in
+        # the queue.
+        self.assertEqual(
+            1,
+            task_manager.get_scheduler_queue_info(controller.region).size())
+        self.assertEqual(
+            0,
+            task_manager.get_process_job_queue_info(controller.region).size())
 
     def test_serialize_gcsfs_ingest_args(self):
         now = datetime.datetime.now()
