@@ -1313,13 +1313,12 @@ class StateParoleDecision(IngestObject):
     Referenced from IncarcerationPeriod.
     """
 
-    def __init__(self, state_parole_decision_id=None, received_parole=None,
-                 decision_date=None, corrective_action_deadline=None,
-                 state_code=None, county_code=None, decision_outcome=None,
+    def __init__(self, state_parole_decision_id=None, decision_date=None,
+                 corrective_action_deadline=None, state_code=None,
+                 county_code=None, decision_outcome=None,
                  decision_reasoning=None, corrective_action=None,
                  decision_agents=None):
         self.state_parole_decision_id: Optional[str] = state_parole_decision_id
-        self.received_parole: Optional[str] = received_parole
         self.decision_date: Optional[str] = decision_date
         self.corrective_action_deadline: Optional[str] = \
             corrective_action_deadline
@@ -1422,14 +1421,19 @@ class StateAgent(IngestObject):
     """
 
     def __init__(self, state_agent_id=None, agent_type=None, state_code=None,
-                 full_name=None):
+                 full_name=None, surname=None, given_names=None,
+                 middle_names=None, name_suffix=None):
         self.state_agent_id: Optional[str] = state_agent_id
         self.agent_type: Optional[str] = agent_type
         self.state_code: Optional[str] = state_code
         self.full_name: Optional[str] = full_name
+        self.surname: Optional[str] = surname
+        self.given_names: Optional[str] = given_names
+        self.middle_names: Optional[str] = middle_names
+        self.name_suffix: Optional[str] = name_suffix
 
     def __setattr__(self, name, value):
-        restricted_setattr(self, 'full_name', name, value)
+        restricted_setattr(self, 'name_suffix', name, value)
 
 
 def eq(self, other, exclude=None):
