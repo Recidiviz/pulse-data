@@ -42,6 +42,7 @@ from recidiviz.persistence.database.schema.county import schema, \
     dao as county_dao
 from recidiviz.tests.utils import fakes
 
+ARREST_ID = 'ARREST_ID_1'
 BIRTHDATE_1 = '11/15/1993'
 BIRTHDATE_1_DATE = date(year=1993, month=11, day=15)
 BIRTHDATE_2 = '11-2-1996'
@@ -64,6 +65,7 @@ FINE_1_INT = 1500
 FINE_2 = ' '
 FINE_2_INT = 0
 OFFICER_NAME = 'TEST_OFFICER_NAME'
+OFFICER_NAME_ANOTHER = 'SECOND_OFFICER_NAME'
 PERSON_ID = 9
 PLACE_1 = 'TEST_PLACE_1'
 PLACE_2 = 'TEST_PLACE_2'
@@ -549,6 +551,78 @@ class TestPersistence(TestCase):
         people = county_dao.read_people(
             SessionFactory.for_schema_base(JailsBase))
         self.assertCountEqual(people, [expected_person, person_unmatched])
+
+    def test_write_different_arrest(self):
+        # Arrange
+        most_recent_scrape_time = (SCRAPER_START_DATETIME + timedelta(days=1))
+        metadata = IngestMetadata.new_with_defaults(
+            region=REGION_1,
+            jurisdiction_id=JURISDICTION_ID,
+            ingest_time=most_recent_scrape_time)
+
+        schema_arrest = schema.Arrest(external_id=ARREST_ID,
+                                      officer_name=OFFICER_NAME)
+        schema_booking = schema.Booking(
+            booking_id=BOOKING_ID,
+            external_id=EXTERNAL_BOOKING_ID,
+            admission_date_inferred=True,
+            custody_status=CustodyStatus.IN_CUSTODY.value,
+            arrest=schema_arrest,
+            last_seen_time=SCRAPER_START_DATETIME,
+            first_seen_time=SCRAPER_START_DATETIME)
+        schema_person = schema.Person(
+            person_id=PERSON_ID,
+            jurisdiction_id=JURISDICTION_ID,
+            external_id=EXTERNAL_PERSON_ID,
+            region=REGION_1,
+            bookings=[schema_booking])
+
+        session = SessionFactory.for_schema_base(JailsBase)
+        session.add(schema_person)
+        session.commit()
+
+        ingest_info = IngestInfo()
+        ingest_info.people.add(full_name=FULL_NAME_1,
+                               person_id=EXTERNAL_PERSON_ID,
+                               booking_ids=[EXTERNAL_BOOKING_ID])
+        ingest_info.bookings.add(
+            booking_id=EXTERNAL_BOOKING_ID,
+            custody_status='IN CUSTODY',
+            arrest_id=ARREST_ID
+        )
+        ingest_info.arrests.add(
+            arrest_id=ARREST_ID,
+            officer_name=OFFICER_NAME_ANOTHER
+        )
+
+        # Act
+        persistence.write(ingest_info, metadata)
+
+        # Assert
+        expected_arrest = county_entities.Arrest.new_with_defaults(
+            external_id=ARREST_ID,
+            arrest_id=1,
+            officer_name=OFFICER_NAME_ANOTHER
+        )
+        expected_booking = county_entities.Booking.new_with_defaults(
+            booking_id=BOOKING_ID,
+            external_id=EXTERNAL_BOOKING_ID,
+            admission_date_inferred=True,
+            custody_status=CustodyStatus.IN_CUSTODY,
+            custody_status_raw_text=BOOKING_CUSTODY_STATUS.upper(),
+            arrest=expected_arrest,
+            last_seen_time=most_recent_scrape_time,
+            first_seen_time=SCRAPER_START_DATETIME)
+        expected_person = county_entities.Person.new_with_defaults(
+            person_id=PERSON_ID,
+            external_id=EXTERNAL_PERSON_ID,
+            region=REGION_1,
+            jurisdiction_id=JURISDICTION_ID,
+            bookings=[expected_booking])
+
+        self.assertEqual([expected_person],
+                         county_dao.read_people(
+                             SessionFactory.for_schema_base(JailsBase)))
 
 
 def _format_full_name(full_name: str) -> str:

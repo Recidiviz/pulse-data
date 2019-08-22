@@ -580,7 +580,8 @@ class TestCountyEntityMatcher(TestCase):
         ingested_arrest = entities.Arrest.new_with_defaults()
 
         expected_arrest = attr.evolve(ingested_arrest,
-                                      arrest_id=db_arrest.arrest_id)
+                                      arrest_id=db_arrest.arrest_id,
+                                      agency=_NAME_2)
 
         county_entity_matcher.match_arrest(
             db_booking=entities.Booking.new_with_defaults(arrest=db_arrest),
