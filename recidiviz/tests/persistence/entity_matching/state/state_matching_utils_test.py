@@ -34,8 +34,7 @@ from recidiviz.persistence.entity.state.entities import StatePersonExternalId, \
     StateSupervisionViolationResponse, StateSupervisionViolation, \
     StateSupervisionPeriod
 from recidiviz.persistence.entity_matching.state.state_matching_utils import \
-    remove_back_edges, add_person_to_entity_graph, _is_match, \
-    generate_child_entity_trees, add_child_to_entity, \
+    _is_match, generate_child_entity_trees, add_child_to_entity, \
     remove_child_from_entity, _merge_incarceration_periods_helper, \
     move_incidents_onto_periods, merge_flat_fields, \
     get_root_entity_cls, get_total_entities_of_cls, \
@@ -201,45 +200,6 @@ class TestStateMatchingUtils(TestCase):
         self.assertEqual(
             expected_incarceration_period,
             merge_flat_fields(new_entity=ingested_entity, old_entity=db_entity))
-
-    def test_removeBackedges(self):
-        person = StatePerson.new_with_defaults(full_name=_FULL_NAME)
-        sentence_group = StateSentenceGroup.new_with_defaults(
-            external_id=_EXTERNAL_ID, person=person)
-        fine = StateFine.new_with_defaults(
-            external_id=_EXTERNAL_ID,
-            sentence_group=sentence_group, person=person)
-
-        sentence_group.fines = [fine]
-        person.sentence_groups = [sentence_group]
-
-        expected_fine = attr.evolve(
-            fine, sentence_group=None, person=None)
-        expected_sentence_group = attr.evolve(
-            sentence_group, person=None, fines=[expected_fine])
-        expected_person = attr.evolve(
-            person, sentence_groups=[expected_sentence_group])
-
-        remove_back_edges(person)
-        self.assertEqual(expected_person, person)
-
-    def test_addPersonToEntityTree(self):
-        fine = StateFine.new_with_defaults(external_id=_EXTERNAL_ID)
-        sentence_group = StateSentenceGroup.new_with_defaults(
-            external_id=_EXTERNAL_ID,
-            fines=[fine])
-        person = StatePerson.new_with_defaults(
-            full_name=_FULL_NAME,
-            sentence_groups=[sentence_group])
-
-        expected_person = attr.evolve(person)
-        expected_fine = attr.evolve(fine, person=expected_person)
-        expected_sentence_group = attr.evolve(
-            sentence_group, person=expected_person, fines=[expected_fine])
-        expected_person.sentence_groups = [expected_sentence_group]
-
-        add_person_to_entity_graph([person])
-        self.assertEqual(expected_person, person)
 
     def test_generateChildEntitiesWithAncestorChain(self):
         fine = StateFine.new_with_defaults(fine_id=_ID)

@@ -64,6 +64,9 @@ class TestSchemaEntityConverter(BaseSchemaEntityConverter):
     def _should_skip_field(self, field: FieldNameType) -> bool:
         return False
 
+    def _populate_indirect_back_edges(self, _):
+        return
+
 
 class TestBaseSchemaEntityConverter(TestCase):
     """Tests for BaseSchemaEntityConverter"""
