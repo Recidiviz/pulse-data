@@ -397,16 +397,15 @@ message StateIncarcerationIncidentOutcome {
 
 message StateParoleDecision {
     optional string state_parole_decision_id = 1;
-    optional string received_parole = 2;
-    optional string decision_date = 3;
-    optional string corrective_action_deadline = 4;
-    optional string state_code = 5;
-    optional string county_code = 6;
-    optional string decision_outcome = 7;
-    optional string decision_reasoning = 8;
-    optional string corrective_action = 9;
+    optional string decision_date = 2;
+    optional string corrective_action_deadline = 3;
+    optional string state_code = 4;
+    optional string county_code = 5;
+    optional string decision_outcome = 6;
+    optional string decision_reasoning = 7;
+    optional string corrective_action = 8;
 
-    repeated string decision_agent_ids = 10;
+    repeated string decision_agent_ids = 9;
 }
 
 message StateSupervisionViolation {
@@ -435,4 +434,8 @@ message StateAgent {
     optional string agent_type = 2;
     optional string state_code = 3;
     optional string full_name = 4;
+    optional string surname = 5;
+    optional string given_names = 6;
+    optional string middle_names = 7;
+    optional string name_suffix = 8;
 }

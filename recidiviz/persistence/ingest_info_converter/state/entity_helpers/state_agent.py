@@ -23,9 +23,8 @@ from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import StateAgent
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
-    fn,
-    parse_external_id,
-    parse_region_code_with_override)
+    fn, parse_external_id, parse_region_code_with_override)
+from recidiviz.persistence.ingest_info_converter.utils.names import parse_name
 from recidiviz.persistence.ingest_info_converter.utils.enum_mappings \
     import EnumMappings
 
@@ -47,6 +46,6 @@ def convert(proto: StateAgent, metadata: IngestMetadata) -> entities.StateAgent:
     new.external_id = fn(parse_external_id, 'state_agent_id', proto)
     new.state_code = parse_region_code_with_override(
         proto, 'state_code', metadata)
-    new.full_name = fn(normalize, 'full_name', proto)
+    new.full_name = parse_name(proto)
 
     return new.build()

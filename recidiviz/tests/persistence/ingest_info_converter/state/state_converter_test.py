@@ -114,7 +114,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
         )
         ingest_info.state_agents.add(
             state_agent_id='JUDGE_AGENT_ID_1',
-            full_name='JUDGE_JUDY'
+            full_name='JUDGE JUDY'
         )
 
         # We expect the external_ids coming in to have the format
@@ -298,7 +298,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             responding_officer=StateAgent.new_with_defaults(
                 external_id='AGENT_ID2',
                 state_code='US_ND',
-                full_name='AGENT HERNANDEZ'
+                full_name='{"full_name": "AGENT HERNANDEZ"}',
             ),
             incarceration_incident_outcomes=[incident_outcome]
         )
@@ -311,7 +311,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             conducting_agent=StateAgent.new_with_defaults(
                 external_id='AGENT_ID1',
                 state_code='US_ND',
-                full_name='AGENT WILLIAMS'
+                full_name='{"full_name": "AGENT WILLIAMS"}',
             )
         )
 
@@ -337,7 +337,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             judge=StateAgent.new_with_defaults(
                 external_id='JUDGE_AGENT_ID_1',
                 state_code='US_ND',
-                full_name='JUDGE_JUDY',
+                full_name='{"full_name": "JUDGE JUDY"}',
             )
         )
 
@@ -472,12 +472,16 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                                                 StateAgent.new_with_defaults(
                                                     external_id='AGENT_ID2',
                                                     state_code='US_ND',
-                                                    full_name='AGENT HERNANDEZ'
+                                                    full_name=
+                                                    '{"full_name": '
+                                                    '"AGENT HERNANDEZ"}'
                                                 ),
                                                 StateAgent.new_with_defaults(
                                                     external_id='AGENT_ID3',
                                                     state_code='US_ND',
-                                                    full_name='AGENT SMITH'
+                                                    full_name=
+                                                    '{"full_name": '
+                                                    '"AGENT SMITH"}'
                                                 )
                                             ]
                                         )
