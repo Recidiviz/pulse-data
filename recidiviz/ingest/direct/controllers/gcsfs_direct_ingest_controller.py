@@ -131,12 +131,16 @@ class GcsfsDirectIngestController(BaseDirectIngestController[GcsfsIngestArgs,
         #  calling fp.readLine() does a GET request every time, so this impl
         #  would have to be smarter about calling read() in chunks.
         with self.fs.open(args.file_path) as fp:
+            now = datetime.datetime.now()
             logging.info(
-                "Opened path [%s] - now reading contents.", args.file_path)
+                "Opened path [%s] - now reading contents (time: [%s]).",
+                args.file_path, now.isoformat())
             binary_contents = fp.read()
+            now = datetime.datetime.now()
             logging.info(
-                "Finished reading binary contents for path [%s], now decoding.",
-                args.file_path)
+                "Finished reading binary contents for path [%s] (time: [%s]), "
+                "now decoding.",
+                args.file_path, now.isoformat())
 
         return binary_contents.decode('utf-8').splitlines()
 

@@ -51,6 +51,9 @@ class _CountySchemaEntityConverter(BaseSchemaEntityConverter[SrcBaseType,
         # for this field is finalized.
         return field == 'related_sentences'
 
+    def _populate_indirect_back_edges(self, _):
+        return
+
 
 class CountyEntityToSchemaConverter(
         _CountySchemaEntityConverter[Entity, DatabaseEntity]):

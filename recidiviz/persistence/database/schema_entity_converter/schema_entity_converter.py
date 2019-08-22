@@ -62,7 +62,8 @@ def convert_entities_to_schema(
 
 
 def convert_schema_objects_to_entity(
-        schema_objects: List[DatabaseEntity]) -> List[Entity]:
+        schema_objects: List[DatabaseEntity],
+        populate_back_edges: bool = True) -> List[Entity]:
     def _is_county_schema_object(obj: Any) -> bool:
         return _is_obj_in_module(obj, county_schema) and \
             issubclass(obj.__class__, DatabaseEntity)
@@ -74,7 +75,8 @@ def convert_schema_objects_to_entity(
     if all(_is_county_schema_object(obj) for obj in schema_objects):
         return CountySchemaToEntityConverter().convert_all(schema_objects)
     if all(_is_state_schema_object(obj) for obj in schema_objects):
-        return StateSchemaToEntityConverter().convert_all(schema_objects)
+        return StateSchemaToEntityConverter().convert_all(
+            schema_objects, populate_back_edges)
     raise ValueError(f"Expected all types to belong to the same schema, one of "
                      f"[{county_schema.__name__}] or [{state_schema.__name__}]")
 
@@ -87,8 +89,10 @@ def convert_entity_to_schema_object(entity: Entity) -> DatabaseEntity:
     return result_list[0]
 
 
-def convert_schema_object_to_entity(schema_object: DatabaseEntity) -> Entity:
-    result_list = convert_schema_objects_to_entity([schema_object])
+def convert_schema_object_to_entity(schema_object: DatabaseEntity,
+                                    populate_back_edges: bool = True) -> Entity:
+    result_list = convert_schema_objects_to_entity(
+        [schema_object], populate_back_edges)
     if len(result_list) != 1:
         raise AssertionError(
             f"Call to convert object should have only returned one result.")

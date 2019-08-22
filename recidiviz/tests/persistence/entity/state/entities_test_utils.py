@@ -54,7 +54,6 @@ from recidiviz.common.constants.state.\
         StateSupervisionViolationResponseDecision,
         StateSupervisionViolationResponseDecidingBodyType,
     )
-
 from recidiviz.persistence.entity.state import entities
 
 
@@ -65,9 +64,9 @@ def generate_full_graph_state_person(
     objects.
 
     Args:
-        set_back_edges: explicitly sets all the back edges on the graph that
-            will get automatically filled in when this entity graph is written
-            to the DB.
+        set_back_edges: explicitly sets all the back edges on the graph
+            that will get automatically filled in when this entity graph is
+            written to the DB.
 
     Returns:
         A test instance of a StatePerson.
@@ -155,7 +154,6 @@ def generate_full_graph_state_person(
             initial_time_served_days=None,
             good_time_days=10,
             earned_time_days=None,
-            person=person,
         )
 
     supervision_sentence = \
@@ -171,7 +169,6 @@ def generate_full_graph_state_person(
             state_code='us_ca',
             min_length_days=None,
             max_length_days=200,
-            person=person,
         )
 
     fine = entities.StateFine.new_with_defaults(
@@ -181,7 +178,6 @@ def generate_full_graph_state_person(
         date_paid=None,
         state_code='us_ca',
         fine_dollars=15000,
-        person=person,
     )
 
     sentence_group.incarceration_sentences = [incarceration_sentence]
@@ -205,7 +201,6 @@ def generate_full_graph_state_person(
         court_type_raw_text=None,
         court_fee_dollars=150,
         judge=judge,
-        person=person,
     )
 
     bond = entities.StateBond.new_with_defaults(
@@ -218,7 +213,6 @@ def generate_full_graph_state_person(
         state_code='us_ca',
         amount_dollars=45,
         bond_agent='CA BAILBONDSMEN',
-        person=person,
     )
 
     charge = entities.StateCharge.new_with_defaults(
@@ -236,7 +230,6 @@ def generate_full_graph_state_person(
         classification_subtype='A',
         counts=1,
         charge_notes=None,
-        person=person,
         court_case=court_case,
         bond=None,
     )
@@ -256,7 +249,6 @@ def generate_full_graph_state_person(
         classification_subtype='B',
         counts=1,
         charge_notes=None,
-        person=person,
         court_case=court_case,
         bond=None,
     )
@@ -276,7 +268,6 @@ def generate_full_graph_state_person(
         classification_subtype='AA',
         counts=1,
         charge_notes=None,
-        person=person,
         court_case=court_case,
         bond=None,
     )
@@ -308,7 +299,6 @@ def generate_full_graph_state_person(
             release_reason=
             StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
             release_reason_raw_text='CONDITIONAL RELEASE',
-            person=person,
         )
 
     incarceration_sentence.incarceration_periods = [incarceration_period]
@@ -328,7 +318,6 @@ def generate_full_graph_state_person(
             state_code='us_ca',
             outcome_description='LOSS OF COMMISSARY',
             punishment_length_days=30,
-            person=person,
         )
 
     incarceration_incident = \
@@ -340,7 +329,6 @@ def generate_full_graph_state_person(
             facility='ALCATRAZ',
             location_within_facility='13B',
             incident_details='Inmate was told to be quiet and would not comply',
-            person=person,
             responding_officer=incident_responding_officer,
             incarceration_incident_outcomes=[incident_outcome],
         )
@@ -355,8 +343,6 @@ def generate_full_graph_state_person(
         decision_outcome=StateParoleDecisionOutcome.PAROLE_GRANTED,
         decision_reasoning='GOOD BEHAVIOR',
         corrective_action=None,
-        person=person,
-        incarceration_period=incarceration_period,
     )
 
     incarceration_period.parole_decisions = [parole_decision]
@@ -378,8 +364,6 @@ def generate_full_graph_state_person(
         assessment_level=StateAssessmentLevel.MEDIUM,
         assessment_level_raw_text='MED',
         assessment_metadata='assessment metadata',
-        person=person,
-        incarceration_period=incarceration_period,
         supervision_period=None,
         conducting_agent=assessment_agent,
     )
@@ -402,7 +386,6 @@ def generate_full_graph_state_person(
         supervision_level=StateSupervisionLevel.EXTERNAL_UNKNOWN,
         supervision_level_raw_text='UNKNOWN',
         conditions='10PM CURFEW',
-        person=person,
     )
 
     incarceration_sentence.supervision_periods = [supervision_period]
@@ -419,9 +402,7 @@ def generate_full_graph_state_person(
         assessment_level=StateAssessmentLevel.LOW,
         assessment_level_raw_text='LOW',
         assessment_metadata='more assessment metadata',
-        person=person,
         incarceration_period=None,
-        supervision_period=supervision_period,
         conducting_agent=assessment_agent,
     )
     supervision_period.assessments = [assessment2]
@@ -434,7 +415,6 @@ def generate_full_graph_state_person(
             state_code='us_ca',
             is_violent=False,
             violated_conditions='MISSED CURFEW',
-            person=person,
         )
 
     supervision_period.supervision_violations = [supervision_violation]
@@ -457,23 +437,22 @@ def generate_full_graph_state_person(
             deciding_body_type=
             StateSupervisionViolationResponseDecidingBodyType.
             SUPERVISION_OFFICER,
-            person=person,
             decision_agents=[supervision_officer_agent]
         )
 
     supervision_violation.supervision_violation_responses = \
         [supervision_violation_response]
 
+    person.assessments.extend(incarceration_period.assessments)
+    person.assessments.extend(supervision_period.assessments)
+
     if set_back_edges:
         person_children = \
             person.external_ids + person.races + \
             person.aliases + person.ethnicities + \
-            person.sentence_groups
+            person.sentence_groups + person.assessments
         for child in person_children:
             child.person = person
-
-        person.assessments.extend(incarceration_period.assessments)
-        person.assessments.extend(supervision_period.assessments)
 
         sentence_group_children = \
             sentence_group.incarceration_sentences + \
@@ -481,6 +460,7 @@ def generate_full_graph_state_person(
             sentence_group.fines
         for child in sentence_group_children:
             child.sentence_group = sentence_group
+            child.person = person
 
         incarceration_sentence_children = \
             incarceration_sentence.charges + \
@@ -489,6 +469,7 @@ def generate_full_graph_state_person(
 
         for child in incarceration_sentence_children:
             child.incarceration_sentences = [incarceration_sentence]
+            child.person = person
 
         supervision_sentence_children = \
             supervision_sentence.charges + \
@@ -497,9 +478,12 @@ def generate_full_graph_state_person(
 
         for child in supervision_sentence_children:
             child.supervision_sentences = [supervision_sentence]
+            child.person = person
 
         court_case.charges = [charge, charge2, charge3]
+        court_case.person = person
         bond.charges = [charge, charge2, charge3]
+        bond.person = person
 
         incarceration_period_children = \
             incarceration_period.parole_decisions + \
@@ -508,6 +492,7 @@ def generate_full_graph_state_person(
 
         for child in incarceration_period_children:
             child.incarceration_period = incarceration_period
+            child.person = person
 
         # pylint:disable=not-an-iterable
         incarceration_incident_children = \
@@ -515,6 +500,7 @@ def generate_full_graph_state_person(
 
         for child in incarceration_incident_children:
             child.incarceration_incident = incarceration_incident
+            child.person = person
 
         supervision_period_children = \
             supervision_period.supervision_violations + \
@@ -522,8 +508,10 @@ def generate_full_graph_state_person(
 
         for child in supervision_period_children:
             child.supervision_period = supervision_period
+            child.person = person
 
         supervision_violation_response.supervision_violation = \
             supervision_violation
+        supervision_violation_response.person = person
 
     return person
