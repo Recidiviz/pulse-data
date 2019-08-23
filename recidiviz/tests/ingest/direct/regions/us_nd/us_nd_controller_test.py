@@ -75,8 +75,6 @@ from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.ingest.direct.direct_ingest_util import \
     build_controller_for_tests, ingest_args_for_fixture_file, \
     add_paths_with_tags_and_process
-from recidiviz.tests.ingest.direct.fake_async_direct_ingest_cloud_task_manager \
-    import FakeAsyncDirectIngestCloudTaskManager
 from recidiviz.tests.utils import fakes
 
 _INCIDENT_DETAILS_1 = \
@@ -115,7 +113,10 @@ class TestUsNdController(unittest.TestCase):
     def setup_method(self, _test_method):
         self.controller = build_controller_for_tests(
             UsNdController,
-            self.FIXTURE_PATH_PREFIX)
+            self.FIXTURE_PATH_PREFIX,
+            run_async=False)
+        fakes.use_in_memory_sqlite_database(StateBase)
+
         self.maxDiff = 250000
 
     def _run_ingest_job_for_filename(self, filename: str) -> None:
@@ -124,41 +125,6 @@ class TestUsNdController(unittest.TestCase):
 
         # pylint:disable=protected-access
         self.controller._run_ingest_job(args)
-
-    def _init_process_job_queue_thread_db_engine(self):
-        """The tests will crash if we try to access the database from a thread
-        that is different than the thread we created the DB engine on.
-        This initializes the database on a the thread that ingest jobs are
-        processed on in the controller.
-        """
-        if not isinstance(self.controller.cloud_task_manager,
-                          FakeAsyncDirectIngestCloudTaskManager):
-            self.fail()
-
-        self.controller.cloud_task_manager.process_job_queue.add_task(
-            fakes.use_in_memory_sqlite_database, StateBase)
-
-        if not isinstance(self.controller.cloud_task_manager,
-                          FakeAsyncDirectIngestCloudTaskManager):
-            raise ValueError(
-                f"Controller cloud task manager must have type "
-                f"FakeAsyncDirectIngestCloudTaskManager. Found instead "
-                f"type [{type(self.controller.cloud_task_manager)}]")
-
-        self.controller.cloud_task_manager.wait_for_all_tasks_to_run()
-
-    def _init_test_thread_db_engine(self):
-        """The tests will crash if we try to access the database from a thread
-        that is different than the thread we created the DB engine on.
-        This initializes the database on a the main test thread for tests that
-        run ingest on the main thread.
-        """
-
-        if not isinstance(self.controller.cloud_task_manager,
-                          FakeAsyncDirectIngestCloudTaskManager):
-            self.fail()
-
-        fakes.use_in_memory_sqlite_database(StateBase)
 
     def test_populate_data_elite_offenders(self):
         expected = IngestInfo(
@@ -1362,7 +1328,6 @@ class TestUsNdController(unittest.TestCase):
     # TODO(2157): Move into integration specific file
     @patch.dict('os.environ', {'PERSIST_LOCALLY': 'true'})
     def test_run_full_ingest_all_files_specific_order(self):
-        self._init_test_thread_db_engine()
 
         ######################################
         # ELITE OFFENDERS
@@ -2858,7 +2823,6 @@ class TestUsNdController(unittest.TestCase):
 
     @patch.dict('os.environ', {'PERSIST_LOCALLY': 'true'})
     def test_run_full_ingest_all_files(self):
-        self._init_process_job_queue_thread_db_engine()
         # pylint:disable=protected-access
         file_tags = sorted(self.controller._get_file_tag_rank_list())
         add_paths_with_tags_and_process(self, self.controller, file_tags)
@@ -2868,7 +2832,6 @@ class TestUsNdController(unittest.TestCase):
 
     @patch.dict('os.environ', {'PERSIST_LOCALLY': 'true'})
     def test_run_full_ingest_all_files_reverse(self):
-        self._init_process_job_queue_thread_db_engine()
         # pylint:disable=protected-access
         file_tags = list(
             reversed(sorted(self.controller._get_file_tag_rank_list())))
