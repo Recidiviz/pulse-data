@@ -20,7 +20,7 @@ import os
 import threading
 import time
 import unittest
-from typing import Set, List, Optional
+from typing import Set, List
 
 from gcsfs.core import GCSFile
 from mock import Mock, patch, create_autospec
@@ -37,8 +37,9 @@ from recidiviz.ingest.direct.controllers.gcsfs_factory import GcsfsFactory
 from recidiviz.tests.ingest.direct.fake_async_direct_ingest_cloud_task_manager \
     import FakeAsyncDirectIngestCloudTaskManager
 from recidiviz.tests.ingest import fixtures
-from recidiviz.tests.ingest.direct.fake_direct_ingest_cloud_task_manager \
-    import FakeDirectIngestCloudTaskManager
+from recidiviz.tests.ingest.direct.\
+    fake_synchronous_direct_ingest_cloud_task_manager import \
+    FakeSynchronousDirectIngestCloudTaskManager
 
 
 class FakeDirectIngestGCSFileSystem(DirectIngestGCSFileSystem):
@@ -94,7 +95,7 @@ class FakeDirectIngestGCSFileSystem(DirectIngestGCSFileSystem):
 def build_controller_for_tests(
         controller_cls,
         fixture_path_prefix: str,
-        task_manager: Optional[FakeDirectIngestCloudTaskManager] = None
+        run_async: bool
 ) -> GcsfsDirectIngestController:
 
     def mock_build_fs():
@@ -104,9 +105,8 @@ def build_controller_for_tests(
             'recidiviz.ingest.direct.controllers.'
             'base_direct_ingest_controller.DirectIngestCloudTaskManagerImpl') \
             as mock_task_factory_cls:
-        task_manager = \
-            task_manager \
-            if task_manager else FakeAsyncDirectIngestCloudTaskManager()
+        task_manager = FakeAsyncDirectIngestCloudTaskManager() \
+            if run_async else FakeSynchronousDirectIngestCloudTaskManager()
         mock_task_factory_cls.return_value = task_manager
         with patch.object(GcsfsFactory, 'build', new=mock_build_fs):
             controller = controller_cls(
@@ -150,14 +150,23 @@ def add_paths_with_tags_and_process(test_case: unittest.TestCase,
         controller.kick_scheduler(just_finished_job=False)
         time.sleep(.05)
 
-    if not isinstance(controller.cloud_task_manager,
-                      FakeAsyncDirectIngestCloudTaskManager):
-        raise ValueError(f"Controller cloud task manager must have type "
-                         f"FakeAsyncDirectIngestCloudTaskManager. Found "
-                         f"instead type "
+    if isinstance(controller.cloud_task_manager,
+                  FakeAsyncDirectIngestCloudTaskManager):
+        controller.cloud_task_manager.wait_for_all_tasks_to_run()
+    elif isinstance(controller.cloud_task_manager,
+                    FakeSynchronousDirectIngestCloudTaskManager):
+        tm = controller.cloud_task_manager
+        while tm.get_scheduler_queue_info(controller.region).size() \
+                or tm.get_process_job_queue_info(controller.region).size():
+            if tm.get_scheduler_queue_info(controller.region).size():
+                tm.test_run_next_scheduler_task()
+                tm.test_pop_finished_scheduler_task()
+            if tm.get_process_job_queue_info(controller.region).size():
+                tm.test_run_next_process_job_task()
+                tm.test_pop_finished_process_job_task()
+    else:
+        raise ValueError(f"Unexpected type for cloud task manager: "
                          f"[{type(controller.cloud_task_manager)}]")
-
-    controller.cloud_task_manager.wait_for_all_tasks_to_run()
 
     file_tags_processed = set()
     for path in controller.fs.all_paths:

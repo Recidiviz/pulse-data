@@ -45,7 +45,8 @@ class UsTxBrazosControllerTest(IndividualIngestTest, TestCase):
 
     def testParse(self):
         controller = build_controller_for_tests(UsTxBrazosController,
-                                                FIXTURE_PATH_PREFIX)
+                                                FIXTURE_PATH_PREFIX,
+                                                run_async=False)
 
         args = ingest_args_for_fixture_file(controller, 'daily_data.csv')
 
