@@ -27,6 +27,11 @@ from recidiviz.common.constants.state.state_incarceration_period import \
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_violation_response \
     import StateSupervisionViolationResponseRevocationType
+from recidiviz.persistence.database.base_schema import StateBase
+from recidiviz.persistence.database.schema.state import schema
+from recidiviz.persistence.database.schema_entity_converter.state\
+    .schema_entity_converter import StateSchemaToEntityConverter
+from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.entity.state.entities import StatePersonExternalId, \
     StatePerson, StatePersonAlias, StateCharge, StateSentenceGroup, StateFine, \
     StateIncarcerationPeriod, StateIncarcerationIncident, \
@@ -39,10 +44,11 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import \
     move_incidents_onto_periods, merge_flat_fields, \
     get_root_entity_cls, get_total_entities_of_cls, \
     associate_revocation_svrs_with_ips, admitted_for_revocation, \
-    revoked_to_prison, base_entity_match
+    revoked_to_prison, base_entity_match, get_external_ids_of_cls, read_persons
 from recidiviz.persistence.entity_matching.entity_matching_types import \
     EntityTree
 from recidiviz.persistence.errors import EntityMatchingError
+from recidiviz.tests.utils import fakes
 
 _DATE_1 = datetime.date(year=2019, month=1, day=1)
 _DATE_2 = datetime.date(year=2019, month=2, day=1)
@@ -75,6 +81,9 @@ _FACILITY_4 = 'FACILITY_4'
 # pylint: disable=protected-access
 class TestStateMatchingUtils(TestCase):
     """Tests for state entity matching utils"""
+
+    def setup_method(self, _test_method):
+        fakes.use_in_memory_sqlite_database(StateBase)
 
     def test_isMatch_statePerson(self):
         external_id = StatePersonExternalId.new_with_defaults(
@@ -317,7 +326,55 @@ class TestStateMatchingUtils(TestCase):
             [person], StateSentenceGroup))
         self.assertEqual(1, get_total_entities_of_cls([person], StatePerson))
 
-    def test_completeEnumSet_AdmittedForRevication(self):
+    def test_getExternalIdsOfCls(self):
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
+            external_id=_EXTERNAL_ID)
+        supervision_sentence_2 = attr.evolve(
+            supervision_sentence, external_id=_EXTERNAL_ID_2)
+        supervision_sentence_3 = attr.evolve(
+            supervision_sentence, external_id=_EXTERNAL_ID_3)
+        sentence_group = StateSentenceGroup.new_with_defaults(
+            external_id=_EXTERNAL_ID,
+            supervision_sentences=[supervision_sentence,
+                                   supervision_sentence_2])
+        sentence_group_2 = StateSentenceGroup.new_with_defaults(
+            external_id=_EXTERNAL_ID_2,
+            supervision_sentences=[supervision_sentence_2,
+                                   supervision_sentence_3])
+        external_id = StatePersonExternalId.new_with_defaults(
+            external_id=_EXTERNAL_ID)
+        person = StatePerson.new_with_defaults(
+            external_ids=[external_id],
+            sentence_groups=[sentence_group, sentence_group_2])
+
+        self.assertCountEqual(
+            [_EXTERNAL_ID, _EXTERNAL_ID_2, _EXTERNAL_ID_3],
+            get_external_ids_of_cls([person], StateSupervisionSentence))
+        self.assertCountEqual(
+            [_EXTERNAL_ID, _EXTERNAL_ID_2],
+            get_external_ids_of_cls([person], StateSentenceGroup))
+        self.assertCountEqual(
+            [_EXTERNAL_ID], get_external_ids_of_cls([person], StatePerson))
+
+    def test_getExternalIdsOfCls_emptyExternalId_raises(self):
+        sentence_group = StateSentenceGroup.new_with_defaults(
+            external_id=_EXTERNAL_ID)
+        sentence_group_2 = StateSentenceGroup.new_with_defaults()
+        external_id = StatePersonExternalId.new_with_defaults(
+            external_id=_EXTERNAL_ID)
+        person = StatePerson.new_with_defaults(
+            external_ids=[external_id],
+            sentence_groups=[sentence_group, sentence_group_2])
+
+        with pytest.raises(EntityMatchingError):
+            get_external_ids_of_cls([person], StateSentenceGroup)
+
+    def test_getExternalIdsOfCls_emptyPersonExternalId_raises(self):
+        person = StatePerson.new_with_defaults()
+        with pytest.raises(EntityMatchingError):
+            get_external_ids_of_cls([person], StatePerson)
+
+    def test_completeEnumSet_AdmittedForRevocation(self):
         period = StateIncarcerationPeriod.new_with_defaults()
         for admission_reason in StateIncarcerationPeriodAdmissionReason:
             period.admission_reason = admission_reason
@@ -861,3 +918,61 @@ class TestStateMatchingUtils(TestCase):
             base_entity_match(
                 ingested_entity=EntityTree(entity=charge, ancestor_chain=[]),
                 db_entity=EntityTree(entity=charge_another, ancestor_chain=[])))
+
+    def test_readPersons_default(self):
+        schema_person = schema.StatePerson(person_id=1)
+        schema_person_2 = schema.StatePerson(person_id=2)
+        session = SessionFactory.for_schema_base(StateBase)
+        session.add(schema_person)
+        session.add(schema_person_2)
+        session.commit()
+
+        expected_people = StateSchemaToEntityConverter().convert_all(
+            [schema_person, schema_person_2])
+        people = read_persons(session, _STATE_CODE, [])
+        self.assertCountEqual(expected_people, people)
+
+    def test_readPersons_ndSpecific(self):
+        schema_person = schema.StatePerson(person_id=1)
+        schema_sentence_group = schema.StateSentenceGroup(
+            sentence_group_id=1,
+            external_id=_EXTERNAL_ID,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
+            state_code='US_ND')
+        schema_sentence_group_2 = schema.StateSentenceGroup(
+            sentence_group_id=2,
+            external_id=_EXTERNAL_ID_2,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
+            state_code='US_ND')
+        schema_person.sentence_groups = [schema_sentence_group,
+                                         schema_sentence_group_2]
+        schema_person_2 = schema.StatePerson(person_id=2)
+
+        session = SessionFactory.for_schema_base(StateBase)
+        session.add(schema_person)
+        session.add(schema_person_2)
+        session.commit()
+
+        ingested_sentence_group = StateSentenceGroup.new_with_defaults(
+            state_code='us_nd', external_id=_EXTERNAL_ID)
+        ingested_person = StatePerson.new_with_defaults(
+            sentence_groups=[ingested_sentence_group])
+
+        expected_people = StateSchemaToEntityConverter().convert_all(
+            [schema_person], populate_back_edges=False)
+
+        people = read_persons(session, 'us_nd', [ingested_person])
+        self.assertCountEqual(expected_people, people)
+
+    def test_readPersons_ndSpecific_unexpectedRoot_raises(self):
+        ingested_supervision_sentence = \
+            StateSupervisionSentence.new_with_defaults(
+                external_id=_EXTERNAL_ID)
+        ingested_sentence_group = StateSentenceGroup.new_with_defaults(
+            supervision_sentences=[ingested_supervision_sentence])
+        ingested_person = StatePerson.new_with_defaults(
+            sentence_groups=[ingested_sentence_group])
+
+        with pytest.raises(EntityMatchingError):
+            session = SessionFactory.for_schema_base(StateBase)
+            read_persons(session, 'us_nd', [ingested_person])

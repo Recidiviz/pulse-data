@@ -21,6 +21,7 @@ import datetime
 from unittest import TestCase
 
 from recidiviz.common.constants.state import external_id_types
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.entity.state import entities
@@ -35,6 +36,7 @@ _REGION = 'region'
 _FULL_NAME = 'full_name'
 _EXTERNAL_ID = 'external_id'
 _EXTERNAL_ID2 = 'external_id_2'
+_STATE_CODE = 'US_ND'
 _BIRTHDATE = datetime.date(year=2012, month=1, day=2)
 
 
@@ -114,6 +116,98 @@ class TestDao(TestCase):
 
         self.assertCountEqual(people, expected_people)
 
+    def test_readPeopleByRootExternalIds(self):
+        # Arrange
+        person_no_match = schema.StatePerson(person_id=1)
+        person_match_external_id = schema.StatePerson(person_id=2)
+        person_external_id = schema.StatePersonExternalId(
+            person_external_id_id=1,
+            external_id=_EXTERNAL_ID,
+            id_type=external_id_types.US_ND_SID,
+            state_code=_STATE_CODE,
+            person=person_match_external_id,
+        )
+        person_match_external_id.external_ids = [person_external_id]
+
+        session = SessionFactory.for_schema_base(StateBase)
+        session.add(person_no_match)
+        session.add(person_match_external_id)
+        session.commit()
+
+        # Act
+        people = dao.read_people_by_cls_external_ids(
+            session, _STATE_CODE, entities.StatePerson, [_EXTERNAL_ID])
+
+        # Assert
+        expected_people = [
+            converter.convert_schema_object_to_entity(person_match_external_id)]
+
+        self.assertCountEqual(people, expected_people)
+
+    def test_readPeopleByRootExternalIds_entireTreeReturnedWithOneMatch(self):
+        # Arrange
+        person = schema.StatePerson(person_id=1)
+        external_id_match = schema.StatePersonExternalId(
+            person_external_id_id=1,
+            external_id=_EXTERNAL_ID,
+            id_type=external_id_types.US_ND_SID,
+            state_code=_STATE_CODE,
+            person=person,
+        )
+        external_id_no_match = schema.StatePersonExternalId(
+            person_external_id_id=2,
+            external_id=_EXTERNAL_ID,
+            id_type=external_id_types.US_ND_SID,
+            state_code=_STATE_CODE,
+            person=person,
+        )
+        person.external_ids = [external_id_match, external_id_no_match]
+
+        session = SessionFactory.for_schema_base(StateBase)
+        session.add(person)
+        session.commit()
+
+        # Act
+        people = dao.read_people_by_cls_external_ids(
+            session, _STATE_CODE, entities.StatePerson, [_EXTERNAL_ID])
+
+        # Assert
+        expected_people = [
+            converter.convert_schema_object_to_entity(person)]
+
+        self.assertCountEqual(people, expected_people)
+
+    def test_readPeopleByRootExternalIds_SentenceGroupExternalId(self):
+        # Arrange
+        person = schema.StatePerson(person_id=1)
+        sentence_group = schema.StateSentenceGroup(
+            sentence_group_id=1,
+            external_id=_EXTERNAL_ID,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
+            state_code=_STATE_CODE,
+            person=person)
+        sentence_group_2 = schema.StateSentenceGroup(
+            sentence_group_id=2,
+            external_id=_EXTERNAL_ID2,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
+            state_code=_STATE_CODE,
+            person=person)
+        person.sentence_groups = [sentence_group, sentence_group_2]
+
+        session = SessionFactory.for_schema_base(StateBase)
+        session.add(person)
+        session.commit()
+
+        # Act
+        people = dao.read_people_by_cls_external_ids(
+            session, _STATE_CODE, entities.StateSentenceGroup, [_EXTERNAL_ID])
+
+        # Assert
+        expected_people = [
+            converter.convert_schema_object_to_entity(person)]
+
+        self.assertCountEqual(people, expected_people)
+
     def test_readPeopleByExternalId(self):
         # Arrange
         person_no_match = schema.StatePerson(person_id=1)
@@ -122,7 +216,7 @@ class TestDao(TestCase):
             person_external_id_id=1,
             external_id=_EXTERNAL_ID,
             id_type=external_id_types.US_ND_SID,
-            state_code='us_nd',
+            state_code=_STATE_CODE,
             person=person_match_external_id,
         )
         person_match_external_id.external_ids = [person_external_id]
@@ -137,7 +231,7 @@ class TestDao(TestCase):
             [entities.StatePersonExternalId.new_with_defaults(
                 external_id=_EXTERNAL_ID,
                 id_type=external_id_types.US_ND_SID,
-                state_code='us_nd',
+                state_code=_STATE_CODE,
                 person=ingested_person,
             )]
 
@@ -158,7 +252,7 @@ class TestDao(TestCase):
             person_external_id_id=1,
             external_id=_EXTERNAL_ID,
             id_type=external_id_types.US_ND_SID,
-            state_code='us_nd',
+            state_code=_STATE_CODE,
             person=person,
         )
 
@@ -166,7 +260,7 @@ class TestDao(TestCase):
             person_external_id_id=2,
             external_id=_EXTERNAL_ID2,
             id_type=external_id_types.US_ND_SID,
-            state_code='us_nd',
+            state_code=_STATE_CODE,
             person=person,
         )
         person.external_ids = [person_external_id, person_external_id2]
@@ -182,11 +276,11 @@ class TestDao(TestCase):
                 entities.StatePersonExternalId.new_with_defaults(
                     external_id=_EXTERNAL_ID,
                     id_type=external_id_types.US_ND_SID,
-                    state_code='us_nd'),
+                    state_code=_STATE_CODE),
                 entities.StatePersonExternalId.new_with_defaults(
                     external_id=_EXTERNAL_ID2,
                     id_type=external_id_types.US_ND_SID,
-                    state_code='us_nd')
+                    state_code=_STATE_CODE)
             ]
 
         # Act
@@ -205,7 +299,7 @@ class TestDao(TestCase):
             person_external_id_id=1,
             external_id=_EXTERNAL_ID,
             id_type=external_id_types.US_ND_SID,
-            state_code='us_nd',
+            state_code=_STATE_CODE,
             person=person1,
         )
         person1.external_ids = [person1_external_id]
@@ -215,7 +309,7 @@ class TestDao(TestCase):
             person_external_id_id=2,
             external_id=_EXTERNAL_ID,
             id_type=external_id_types.US_ND_SID,
-            state_code='us_nd',
+            state_code=_STATE_CODE,
             person=person2,
         )
         person2.external_ids = [person2_external_id]
@@ -232,11 +326,11 @@ class TestDao(TestCase):
                 entities.StatePersonExternalId.new_with_defaults(
                     external_id=_EXTERNAL_ID,
                     id_type=external_id_types.US_ND_SID,
-                    state_code='us_nd'),
+                    state_code=_STATE_CODE),
                 entities.StatePersonExternalId.new_with_defaults(
                     external_id=_EXTERNAL_ID2,
                     id_type=external_id_types.US_ND_SID,
-                    state_code='us_nd')
+                    state_code=_STATE_CODE)
             ]
 
         # Act
@@ -257,7 +351,7 @@ class TestDao(TestCase):
             person_external_id_id=1,
             external_id=_EXTERNAL_ID,
             id_type=external_id_types.US_ND_SID,
-            state_code='us_nd',
+            state_code=_STATE_CODE,
             person=person1,
         )
         person1.external_ids = [person1_external_id]
@@ -267,7 +361,7 @@ class TestDao(TestCase):
             person_external_id_id=2,
             external_id=_EXTERNAL_ID,
             id_type=external_id_types.US_ND_SID,
-            state_code='us_nd',
+            state_code=_STATE_CODE,
             person=person2,
         )
         person2.external_ids = [person2_external_id]
@@ -282,7 +376,7 @@ class TestDao(TestCase):
                 entities.StatePersonExternalId.new_with_defaults(
                     external_id=_EXTERNAL_ID,
                     id_type=external_id_types.US_ND_SID,
-                    state_code='us_nd',
+                    state_code=_STATE_CODE,
                 )])
 
         ingested_person2 = entities.StatePerson.new_with_defaults(
@@ -290,7 +384,7 @@ class TestDao(TestCase):
                 entities.StatePersonExternalId.new_with_defaults(
                     external_id=_EXTERNAL_ID2,
                     id_type=external_id_types.US_ND_SID,
-                    state_code='us_nd',
+                    state_code=_STATE_CODE,
                 )])
 
         ingested_person3 = entities.StatePerson.new_with_defaults(
@@ -298,7 +392,7 @@ class TestDao(TestCase):
                 entities.StatePersonExternalId.new_with_defaults(
                     external_id='NONEXISTENT_ID',
                     id_type=external_id_types.US_ND_SID,
-                    state_code='us_nd',
+                    state_code=_STATE_CODE,
                 )])
 
         # Act
@@ -321,7 +415,7 @@ class TestDao(TestCase):
             person_external_id_id=1,
             external_id=_EXTERNAL_ID,
             id_type=external_id_types.US_ND_SID,
-            state_code='us_nd',
+            state_code=_STATE_CODE,
             person=person,
         )
 
@@ -329,7 +423,7 @@ class TestDao(TestCase):
             person_external_id_id=2,
             external_id=_EXTERNAL_ID2,
             id_type=external_id_types.US_ND_SID,
-            state_code='us_nd',
+            state_code=_STATE_CODE,
             person=person,
         )
 
@@ -344,7 +438,7 @@ class TestDao(TestCase):
                 entities.StatePersonExternalId.new_with_defaults(
                     external_id=_EXTERNAL_ID,
                     id_type=external_id_types.US_ND_SID,
-                    state_code='us_nd',
+                    state_code=_STATE_CODE,
                 )])
 
         ingested_person2 = entities.StatePerson.new_with_defaults(
@@ -352,7 +446,7 @@ class TestDao(TestCase):
                 entities.StatePersonExternalId.new_with_defaults(
                     external_id=_EXTERNAL_ID2,
                     id_type=external_id_types.US_ND_SID,
-                    state_code='us_nd',
+                    state_code=_STATE_CODE,
                 )])
 
         # Act

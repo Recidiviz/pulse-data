@@ -259,6 +259,8 @@ def write(ingest_info, metadata):
             logging.info(
                 "Completed entity matching with [%s] errors",
                 entity_matching_output.error_count)
+            logging.info("Completed entity matching and have [%s] total people "
+                         "to commit to DB", people)
             if _should_abort(
                     total_root_entities=total_root_entities,
                     conversion_result=conversion_result,
