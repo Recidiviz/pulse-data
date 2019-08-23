@@ -17,6 +17,7 @@
 """State schema specific utils for match database entities with ingested
 entities."""
 import datetime
+import logging
 from typing import List, cast, Optional, Tuple, Union, Set, Type
 
 import attr
@@ -25,6 +26,8 @@ from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodAdmissionReason
 from recidiviz.common.constants.state.state_supervision_violation_response \
     import StateSupervisionViolationResponseRevocationType
+from recidiviz.persistence.database.schema.state import dao
+from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.entity.base_entity import Entity, ExternalIdEntity
 from recidiviz.persistence.entity.entity_utils import \
     EntityFieldType, get_set_entity_field_names, get_field, set_field, \
@@ -620,21 +623,57 @@ def get_total_entities_of_cls(persons: List[StatePerson], cls: Type) -> int:
     """Counts the total number of unique objects of type |cls| in the entity
     graphs passed in by |persons|.
     """
-    seen_roots: Set[int] = set()
+    return len(_get_all_entities_of_cls(persons, cls))
+
+
+def get_external_ids_of_cls(persons: List[StatePerson], cls: Type) -> Set[str]:
+    """Returns the external ids of all entities of type |cls| found in the
+    provided |persons| trees.
+    """
+    ids: Set[str] = set()
+    entities = _get_all_entities_of_cls(persons, cls)
+    for entity in entities:
+        if isinstance(entity, StatePerson):
+            if not entity.external_ids:
+                raise EntityMatchingError(
+                    'No found external_ids on provided person',
+                    cls.__name__)
+            ids.update([ex.external_id for ex in entity.external_ids])
+        else:
+            entity = cast(ExternalIdEntity, entity)
+            if not entity.external_id:
+                raise EntityMatchingError(
+                    f'Expected all external_ids to be present in cls '
+                    f'[{cls.__name__}]', cls.__name__)
+            ids.add(entity.external_id)
+    return ids
+
+
+def _get_all_entities_of_cls(
+        persons: List[StatePerson], cls: Type) -> List[Entity]:
+    """Returns all entities found in the provided |persons| trees of type |cls|.
+    """
+    seen_ids: Set[int] = set()
+    seen_entities: List[Entity] = []
     for person in persons:
-        _get_total_entities_of_cls(person, cls, seen_roots)
-    return len(seen_roots)
+        _get_all_entities_of_cls_helper(person, cls, seen_ids, seen_entities)
+    return seen_entities
 
 
-def _get_total_entities_of_cls(
-        entity: Entity, cls: Type, seen: Set[int]):
-    if isinstance(entity, cls) and id(entity) not in seen:
-        seen.add(id(entity))
+def _get_all_entities_of_cls_helper(
+        entity: Entity,
+        cls: Type,
+        seen_ids: Set[int],
+        seen_entities: List[Entity]):
+    if isinstance(entity, cls) and id(entity) not in seen_ids:
+        seen_ids.add(id(entity))
+        seen_entities.append(entity)
         return
     for child_field_name in get_set_entity_field_names(
             entity, EntityFieldType.FORWARD_EDGE):
         for child_field in get_field_as_list(entity, child_field_name):
-            _get_total_entities_of_cls(child_field, cls, seen)
+            _get_all_entities_of_cls_helper(
+                child_field, cls, seen_ids, seen_entities)
 
 
 def get_root_entity_cls(ingested_persons: List[StatePerson]) -> Type:
@@ -669,3 +708,48 @@ def _get_root_entity_helper(entity: Entity) -> Optional[Type]:
         if result is not None:
             return result
     return None
+
+
+def read_persons(
+        session: Session,
+        region: str,
+        ingested_people: List[StatePerson]) -> List[StatePerson]:
+    """Looks up all people necessary for entity matching based on the provided
+    |region| and |ingested_people|.
+    """
+    if region.upper() == 'US_ND':
+        db_people = _nd_read_people(session, region, ingested_people)
+    else:
+        # TODO(1868): more specific query
+        # Do not populate back edges before entity matching. All entities in the
+        # state schema have edges both to their children and their parents. We
+        # remove these for simplicity as entity matching does not depend on
+        # these parent references (back edges). Back edges are regenerated
+        # as a part of the conversion process from Entity -> Schema object.
+        # If we did not remove these back edges, any time an entity relationship
+        # changes, we would have to update edges both on the parent and child,
+        # instead of just on the parent.
+        db_people = dao.read_people(session, populate_back_edges=False)
+    logging.info("Read [%d] people from DB in region [%s]",
+                 len(db_people), region)
+    return db_people
+
+
+def _nd_read_people(
+        session: Session,
+        region: str,
+        ingested_people: List[StatePerson]) -> List[StatePerson]:
+    """ND specific code that looks up all people necessary for entity matching
+    based on the provided |region| and |ingested_people|.
+    """
+    root_entity_cls = get_root_entity_cls(ingested_people)
+    if root_entity_cls not in (StatePerson, StateSentenceGroup):
+        raise EntityMatchingError(
+            f'For region [{region}] found unexpected root_entity_cls: '
+            f'[{root_entity_cls.__name__}]', 'root_entity_cls')
+    root_external_ids = get_external_ids_of_cls(
+        ingested_people, root_entity_cls)
+
+    return dao.read_people_by_cls_external_ids(
+        session, region, root_entity_cls, root_external_ids,
+        populate_back_edges=False)
