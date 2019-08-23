@@ -72,12 +72,13 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
     FIXTURE_PATH_PREFIX = 'direct/controllers'
 
-    def run_file_order_test_for_controller_cls(self, controller_cls):
+    def run_async_file_order_test_for_controller_cls(self, controller_cls):
         """Writes all expected files to the mock fs, then kicks the controller
         and ensures that all jobs are run to completion in the proper order."""
 
         controller = build_controller_for_tests(controller_cls,
-                                                self.FIXTURE_PATH_PREFIX)
+                                                self.FIXTURE_PATH_PREFIX,
+                                                run_async=True)
 
         # pylint:disable=protected-access
         file_tags = list(
@@ -88,13 +89,13 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
     @patch("recidiviz.utils.regions.get_region",
            Mock(return_value=TEST_STATE_REGION))
     def test_state_runs_files_in_order(self):
-        self.run_file_order_test_for_controller_cls(
+        self.run_async_file_order_test_for_controller_cls(
             StateTestGcsfsDirectIngestController)
 
     @patch("recidiviz.utils.regions.get_region",
            Mock(return_value=TEST_COUNTY_REGION))
     def test_county_runs_files_in_order(self):
-        self.run_file_order_test_for_controller_cls(
+        self.run_async_file_order_test_for_controller_cls(
             CountyTestGcsfsDirectIngestController)
 
     @patch("recidiviz.utils.regions.get_region",
@@ -102,7 +103,8 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
     def test_state_unexpected_tag(self):
         controller = build_controller_for_tests(
             StateTestGcsfsDirectIngestController,
-            self.FIXTURE_PATH_PREFIX)
+            self.FIXTURE_PATH_PREFIX,
+            run_async=True)
 
         file_tags = ['tagA', 'unexpected_tag', 'tagB', 'tagC']
         unexpected_tags = ['unexpected_tag']
@@ -111,12 +113,15 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             self, controller, file_tags, unexpected_tags)
 
     def test_do_not_queue_same_job_twice(self):
-        task_manager = FakeSynchronousDirectIngestCloudTaskManager()
         controller = build_controller_for_tests(
             StateTestGcsfsDirectIngestController,
             self.FIXTURE_PATH_PREFIX,
-            task_manager=task_manager)
-        task_manager.set_controller(controller)
+            run_async=False)
+        self.assertIsInstance(
+            controller.cloud_task_manager,
+            FakeSynchronousDirectIngestCloudTaskManager,
+            "Expected FakeSynchronousDirectIngestCloudTaskManager")
+        task_manager = controller.cloud_task_manager
 
         args = ingest_args_for_fixture_file(controller,
                                             f'tagA.csv')
@@ -155,12 +160,15 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             task_manager.get_process_job_queue_info(controller.region).size())
 
     def test_next_schedule_runs_before_process_job_clears(self):
-        task_manager = FakeSynchronousDirectIngestCloudTaskManager()
         controller = build_controller_for_tests(
             StateTestGcsfsDirectIngestController,
             self.FIXTURE_PATH_PREFIX,
-            task_manager=task_manager)
-        task_manager.set_controller(controller)
+            run_async=False)
+        self.assertIsInstance(
+            controller.cloud_task_manager,
+            FakeSynchronousDirectIngestCloudTaskManager,
+            "Expected FakeSynchronousDirectIngestCloudTaskManager")
+        task_manager = controller.cloud_task_manager
 
         args = ingest_args_for_fixture_file(controller,
                                             f'tagA.csv')
@@ -200,12 +208,15 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             task_manager.get_process_job_queue_info(controller.region).size())
 
     def test_do_not_schedule_more_than_one_delayed_scheduler_job(self):
-        task_manager = FakeSynchronousDirectIngestCloudTaskManager()
         controller = build_controller_for_tests(
             StateTestGcsfsDirectIngestController,
             self.FIXTURE_PATH_PREFIX,
-            task_manager=task_manager)
-        task_manager.set_controller(controller)
+            run_async=False)
+        self.assertIsInstance(
+            controller.cloud_task_manager,
+            FakeSynchronousDirectIngestCloudTaskManager,
+            "Expected FakeSynchronousDirectIngestCloudTaskManager")
+        task_manager = controller.cloud_task_manager
 
         args_with_wait_time = ingest_args_for_fixture_file(controller,
                                                            f'tagB.csv')
