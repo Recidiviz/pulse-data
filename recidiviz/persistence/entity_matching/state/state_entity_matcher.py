@@ -29,7 +29,6 @@ from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.entity.entity_utils import \
     get_set_entity_field_names, get_field_as_list, get_field, set_field, \
     set_field_from_list, is_placeholder
-from recidiviz.persistence.database.schema.state import dao
 from recidiviz.persistence.entity.base_entity import Entity, ExternalIdEntity
 from recidiviz.persistence.entity.state.entities import StatePerson, \
     StateIncarcerationPeriod, StateCharge, StateCourtCase, StateAgent, \
@@ -45,7 +44,7 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import \
     merge_flat_fields, is_match, move_incidents_onto_periods, \
     get_root_entity_cls, get_total_entities_of_cls, \
     associate_revocation_svrs_with_ips, base_entity_match, \
-    nd_get_incomplete_incarceration_period_match
+    nd_get_incomplete_incarceration_period_match, read_persons
 from recidiviz.persistence.entity_matching.entity_matching_types import \
     EntityTree, IndividualMatchResult, MatchResults, MatchedEntities
 
@@ -63,22 +62,12 @@ class StateEntityMatcher(BaseEntityMatcher[StatePerson]):
         corresponding persons in our database for the given |region|. Returns a
         MatchedEntities object that contains the results of matching.
         """
-
-        # TODO(1868): more specific query
-        # Do not populate back edges before entity matching. All entities in the
-        # state schema have edges both to their children and their parents. We
-        # remove these for simplicity as entity matching does not depend on
-        # these parent references (back edges). Back edges are regenerated
-        # as a part of the conversion process from Entity -> Schema object.
-        # If we did not remove these back edges, any time an entity relationship
-        # changes, we would have to update edges both on the parent and child,
-        # instead of just on the parent.
-        logging.info("[Entity matching] Starting reading and converting people"
+        logging.info("[Entity matching] Starting reading and converting people "
                      "at time [%s].", datetime.datetime.now().isoformat())
-        db_persons = dao.read_people(session, populate_back_edges=False)
+        db_persons = read_persons(
+            session=session, region=region, ingested_people=ingested_people)
         logging.info("[Entity matching] Completed DB read at time [%s].",
                      datetime.datetime.now().isoformat())
-
         matched_entities = _run_match(ingested_people, db_persons)
         return matched_entities
 

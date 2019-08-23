@@ -20,7 +20,7 @@ from a SQL Database."""
 import datetime
 from collections import defaultdict
 import logging
-from typing import Dict, List
+from typing import Dict, List, Type, Iterable
 
 from sqlalchemy.orm import Session
 
@@ -29,6 +29,32 @@ from recidiviz.persistence.database.schema_entity_converter import (
     schema_entity_converter as converter,
 )
 from recidiviz.persistence.database.schema.state import schema
+
+
+def read_people_by_cls_external_ids(
+        session: Session,
+        state_code: str,
+        cls: Type,
+        cls_external_ids: Iterable[str],
+        populate_back_edges: bool = True) -> List[entities.StatePerson]:
+    """Reads all people in the given |state_code| who have an entity of type
+    |cls| with an external id in |cls_external_ids| somewhere in their entity
+    tree.
+    """
+    if cls == entities.StatePerson:
+        cls = entities.StatePersonExternalId
+
+    schema_cls = getattr(schema, cls.__name__)
+    query = session.query(schema.StatePerson) \
+        .filter(schema.StatePerson.person_id == schema_cls.person_id) \
+        .filter(schema_cls.state_code == state_code.upper()) \
+        .filter(schema_cls.external_id.in_(cls_external_ids))
+    schema_persons = query.all()
+    now = datetime.datetime.now()
+    logging.info("In read_people_by_cls_external_ids, finished query.all() "
+                 "at time [%s]", now.isoformat())
+    return _convert_and_normalize_record_trees(
+        schema_persons, populate_back_edges)
 
 
 # TODO(1907): Rename to read_persons.
@@ -47,16 +73,12 @@ def read_people(session, full_name=None, birthdate=None,
     now = datetime.datetime.now()
     logging.info("In read_people, finished query.all() at time [%s]",
                  now.isoformat())
-    converted = _convert_and_normalize_record_trees(people, populate_back_edges)
-
-    now = datetime.datetime.now()
-    logging.info("In read_people, finished _convert_and_normalize_record_trees "
-                 "at time [%s]", now.isoformat())
-    return converted
+    return _convert_and_normalize_record_trees(people, populate_back_edges)
 
 
 def read_people_by_external_ids(session: Session, _region: str,
-                                ingested_people: List[entities.StatePerson]) \
+                                ingested_people: List[entities.StatePerson],
+                                populate_back_edges: bool = True) \
         -> List[entities.StatePerson]:
     """
     Reads all people for the given |region| that have external_ids that match
@@ -68,18 +90,12 @@ def read_people_by_external_ids(session: Session, _region: str,
             region_to_external_ids[external_id_info.state_code].append(
                 external_id_info.external_id)
 
-    state_persons: List[schema.StatePerson] = []
+    state_persons: List[entities.StatePerson] = []
     for state_code, external_ids in region_to_external_ids.items():
-        query = session.query(schema.StatePerson) \
-            .join(schema.StatePersonExternalId) \
-            .filter(schema.StatePersonExternalId.state_code == state_code) \
-            .filter(schema.StatePerson.person_id ==
-                    schema.StatePersonExternalId.person_id) \
-            .filter(schema.StatePersonExternalId.external_id.in_(external_ids))
-
-        state_persons += query.all()
-
-    return _convert_and_normalize_record_trees(state_persons)
+        state_persons += read_people_by_cls_external_ids(
+            session, state_code, entities.StatePerson, external_ids,
+            populate_back_edges)
+    return state_persons
 
 
 def _convert_and_normalize_record_trees(
@@ -109,4 +125,7 @@ def _convert_and_normalize_record_trees(
         logging.error(
             "Duplicate records returned for person IDs:\n%s", id_counts)
 
+    now = datetime.datetime.now()
+    logging.info("Finished _convert_and_normalize_record_trees at time [%s]",
+                 now.isoformat())
     return converted_people
