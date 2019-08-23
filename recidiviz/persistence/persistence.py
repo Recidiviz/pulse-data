@@ -30,7 +30,6 @@ from recidiviz.common.constants.county.hold import HoldStatus
 from recidiviz.common.constants.county.sentence import SentenceStatus
 from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
-from recidiviz.ingest.scrape.constants import MAX_PEOPLE_TO_LOG
 from recidiviz.persistence import persistence_utils
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.base_schema import JailsBase
@@ -223,16 +222,12 @@ def write(ingest_info, metadata):
             conversion_result.people)
         logging.info("Converted [%s] people with [%s] enum_parsing_errors, [%s]"
                      " general_parsing_errors, [%s] protected_class_errors and "
-                     "[%s] data_validation_errors, (logging max %d people):",
+                     "[%s] data_validation_errors",
                      len(people),
                      conversion_result.enum_parsing_errors,
                      conversion_result.general_parsing_errors,
                      conversion_result.protected_class_errors,
-                     data_validation_errors,
-                     MAX_PEOPLE_TO_LOG)
-        loop_count = min(len(people), MAX_PEOPLE_TO_LOG)
-        for i in range(loop_count):
-            logging.info(people[i])
+                     data_validation_errors)
         measurements.measure_int_put(m_people, len(people))
 
         if _should_abort(
