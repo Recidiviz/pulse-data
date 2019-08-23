@@ -18,6 +18,7 @@
 """Contains logic to match state-level database entities with state-level
 ingested entities.
 """
+import datetime
 import logging
 
 from typing import List, Dict, Tuple, Optional, cast, Type
@@ -72,7 +73,11 @@ class StateEntityMatcher(BaseEntityMatcher[StatePerson]):
         # If we did not remove these back edges, any time an entity relationship
         # changes, we would have to update edges both on the parent and child,
         # instead of just on the parent.
+        logging.info("[Entity matching] Starting reading and converting people"
+                     "at time [%s].", datetime.datetime.now().isoformat())
         db_persons = dao.read_people(session, populate_back_edges=False)
+        logging.info("[Entity matching] Completed DB read at time [%s].",
+                     datetime.datetime.now().isoformat())
 
         matched_entities = _run_match(ingested_people, db_persons)
         return matched_entities
@@ -84,15 +89,25 @@ def _run_match(ingested_persons: List[StatePerson],
     Assumes no backedges are present in either |ingested_persons| or
     |db_persons|.
     """
+    logging.info("[Entity matching] Pre-processing")
     _perform_preprocessing(ingested_persons)
 
+    logging.info("[Entity matching] Matching persons")
     matched_entities = _match_persons(
         ingested_persons=ingested_persons, db_persons=db_persons)
+    logging.info(
+        "[Entity matching] Matching persons returned [%s] matched people",
+        len(matched_entities.people))
 
     # TODO(1868): Remove any placeholders in graph without children after
     # write
+    logging.info("[Entity matching] Merge multi-parent entities")
     merge_multiparent_entities(matched_entities.people)
+
+    logging.info("[Entity matching] Move incidents into periods")
     move_incidents_onto_periods(matched_entities.people)
+
+    logging.info("[Entity matching] Associate revocation SVRS wtih IPs")
     associate_revocation_svrs_with_ips(matched_entities.people)
     return matched_entities
 

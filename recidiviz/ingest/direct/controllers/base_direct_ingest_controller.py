@@ -18,6 +18,7 @@
 """Functionality to perform direct ingest.
 """
 import abc
+import datetime
 import logging
 from typing import Generic, Optional
 
@@ -148,8 +149,7 @@ class BaseDirectIngestController(Ingestor,
                                                         args: IngestArgsType):
         self._run_ingest_job(args)
         self.kick_scheduler(just_finished_job=True)
-        logging.info("Done running task. Returning from "
-                     "run_ingest_job_and_kick_scheduler_on_completion")
+        logging.info("Done running task. Returning.")
 
     def _run_ingest_job(self, args: IngestArgsType):
         """
@@ -157,6 +157,7 @@ class BaseDirectIngestController(Ingestor,
         raw input data, transforming it to our schema, then writing to the
         database.
         """
+        start_time = datetime.datetime.now()
         logging.info("Starting ingest for ingest run [%s]", self._job_tag(args))
 
         contents = self._read_contents(args)
@@ -179,8 +180,9 @@ class BaseDirectIngestController(Ingestor,
 
         self._do_cleanup(args)
 
-        logging.info("Finished ingest for ingest run [%s]",
-                     self._job_tag(args))
+        duration_sec = (datetime.datetime.now() - start_time).total_seconds()
+        logging.info("Finished ingest in [%s] sec for ingest run [%s].",
+                     str(duration_sec), self._job_tag(args))
 
     def _parse_and_persist_contents(self,
                                     args: IngestArgsType,
