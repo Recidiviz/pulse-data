@@ -624,6 +624,72 @@ class TestPersistence(TestCase):
                          county_dao.read_people(
                              SessionFactory.for_schema_base(JailsBase)))
 
+    def test_write_new_empty_arrest(self):
+        # Arrange
+        most_recent_scrape_time = (SCRAPER_START_DATETIME + timedelta(days=1))
+        metadata = IngestMetadata.new_with_defaults(
+            region=REGION_1,
+            jurisdiction_id=JURISDICTION_ID,
+            ingest_time=most_recent_scrape_time)
+
+        schema_arrest = schema.Arrest(external_id=ARREST_ID,
+                                      officer_name=OFFICER_NAME)
+        schema_booking = schema.Booking(
+            booking_id=BOOKING_ID,
+            external_id=EXTERNAL_BOOKING_ID,
+            admission_date_inferred=True,
+            custody_status=CustodyStatus.IN_CUSTODY.value,
+            arrest=schema_arrest,
+            last_seen_time=SCRAPER_START_DATETIME,
+            first_seen_time=SCRAPER_START_DATETIME)
+        schema_person = schema.Person(
+            person_id=PERSON_ID,
+            jurisdiction_id=JURISDICTION_ID,
+            external_id=EXTERNAL_PERSON_ID,
+            region=REGION_1,
+            bookings=[schema_booking])
+
+        session = SessionFactory.for_schema_base(JailsBase)
+        session.add(schema_person)
+        session.commit()
+
+        ingest_info = IngestInfo()
+        ingest_info.people.add(full_name=FULL_NAME_1,
+                               person_id=EXTERNAL_PERSON_ID,
+                               booking_ids=[EXTERNAL_BOOKING_ID])
+        ingest_info.bookings.add(
+            booking_id=EXTERNAL_BOOKING_ID,
+            custody_status='IN CUSTODY',
+        )
+
+        # Act
+        persistence.write(ingest_info, metadata)
+
+        # Assert
+        expected_arrest = county_entities.Arrest.new_with_defaults(
+            arrest_id=1,
+        )
+        expected_booking = county_entities.Booking.new_with_defaults(
+            booking_id=BOOKING_ID,
+            external_id=EXTERNAL_BOOKING_ID,
+            admission_date_inferred=True,
+            custody_status=CustodyStatus.IN_CUSTODY,
+            custody_status_raw_text=BOOKING_CUSTODY_STATUS.upper(),
+            arrest=expected_arrest,
+            last_seen_time=most_recent_scrape_time,
+            first_seen_time=SCRAPER_START_DATETIME)
+        expected_person = county_entities.Person.new_with_defaults(
+            person_id=PERSON_ID,
+            external_id=EXTERNAL_PERSON_ID,
+            region=REGION_1,
+            jurisdiction_id=JURISDICTION_ID,
+            bookings=[expected_booking])
+
+        self.maxDiff = None
+        self.assertEqual([expected_person],
+                         county_dao.read_people(
+                             SessionFactory.for_schema_base(JailsBase)))
+
 
 def _format_full_name(full_name: str) -> str:
     return '{{"full_name": "{}"}}'.format(full_name)
