@@ -149,24 +149,6 @@ def is_hold_match(
     return is_match(db_entity, ingested_entity, _HOLD_MATCH_FIELDS)
 
 
-# '*' catches positional arguments, making our arguments named and required.
-def is_arrest_match(
-        *, db_entity: entities.Arrest,
-        ingested_entity: entities.Arrest) -> bool:
-    """
-    Given a database arrest and an ingested arrest, determine if they should
-    be considered the same arrest. Should only be used to compare arrests for
-    the same booking. Because we've decided to never drop an arrest in favor
-    of a new one, the mere existence of an arrest is evidence of it's match.
-
-    Args:
-        db_entity: (entities.Arrest)
-        ingested_entity: (entities.Arrest)
-    Returns: (bool)
-    """
-    return db_entity is not None and ingested_entity is not None
-
-
 def is_charge_match_with_children(
         *, db_entity: entities.Charge, ingested_entity: entities.Charge) \
         -> bool:

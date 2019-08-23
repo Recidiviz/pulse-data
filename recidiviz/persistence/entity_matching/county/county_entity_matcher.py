@@ -37,7 +37,7 @@ from recidiviz.persistence.entity_matching.entity_matching_types import \
 from recidiviz.persistence.entity_matching.county import county_matching_utils
 from recidiviz.persistence.entity_matching.county.county_matching_utils import \
     is_booking_match, is_hold_match, is_charge_match_with_children, \
-    is_charge_match, is_arrest_match
+    is_charge_match
 from recidiviz.persistence.entity_matching.entity_matching_utils import \
     get_only_match, get_next_available_match, generate_id_from_obj, \
     get_best_match
@@ -214,13 +214,16 @@ def match_arrest(
     |ingested_booking| if both exist. If there is a match, the primary key is
     added to the |ingested_booking|.
     """
-    if not ingested_booking.arrest or not db_booking.arrest:
+    if not db_booking.arrest:
         return
 
-    matched_db_arrest: entities.Arrest = get_only_match(
-        ingested_booking.arrest, [db_booking.arrest], is_arrest_match)
-    if matched_db_arrest:
-        ingested_booking.arrest.arrest_id = matched_db_arrest.arrest_id
+    if not ingested_booking.arrest:
+        ingested_booking.arrest = entities.Arrest.new_with_defaults(
+            arrest_id=db_booking.arrest.arrest_id,
+        )
+        return
+
+    ingested_booking.arrest.arrest_id = db_booking.arrest.arrest_id
 
 
 def match_holds(
