@@ -16,7 +16,7 @@
 # =============================================================================
 
 """Tests for utils/params.py."""
-
+import unittest
 
 from werkzeug.datastructures import MultiDict
 from recidiviz.ingest.scrape import constants
@@ -25,24 +25,53 @@ from recidiviz.utils import params
 
 PARAMS = MultiDict([('region', 'us_mo'),
                     ('scrape_type', constants.ScrapeType.BACKGROUND),
-                    ('region', 'us_wa')])
+                    ('region', 'us_wa'),
+                    ('false_bool_param', 'False'),
+                    ('true_bool_param', 'true'),
+                    ('malformed_bool_param', 'asdf'),
+                    ('empty_bool_param', '')])
 
 
-def test_get_value():
-    assert params.get_value('region', PARAMS) == 'us_mo'
+class TestParams(unittest.TestCase):
+    """Tests for params.py"""
 
+    def test_get_str_param_value(self):
+        self.assertEqual(params.get_str_param_value('region', PARAMS), 'us_mo')
 
-def test_get_values():
-    assert params.get_values('region', PARAMS) == ['us_mo', 'us_wa']
+    def test_get_str_param_values(self):
+        self.assertEqual(
+            params.get_str_param_values('region', PARAMS), ['us_mo', 'us_wa'])
 
+    def test_get_str_param_value_default(self):
+        self.assertEqual(
+            params.get_str_param_value('foo', PARAMS, default='bar'), 'bar')
 
-def test_get_value_default():
-    assert params.get_value('foo', PARAMS, default='bar') == 'bar'
+    def test_get_str_param_value_no_default(self):
+        self.assertIsNone(params.get_str_param_value('foo', PARAMS))
 
+    def test_get_str_param_value_explicitly_none_default(self):
+        self.assertIsNone(
+            params.get_str_param_value('foo', PARAMS, default=None))
 
-def test_get_value_no_default():
-    assert not params.get_value('foo', PARAMS)
+    def test_get_bool_param_value(self):
+        self.assertEqual(
+            params.get_bool_param_value('false_bool_param', PARAMS), False)
+        self.assertEqual(
+            params.get_bool_param_value('true_bool_param', PARAMS), True)
 
+    def test_get_bool_param_value_default(self):
+        self.assertEqual(
+            params.get_bool_param_value('foo', PARAMS, default=True), True)
+        self.assertEqual(
+            params.get_bool_param_value('foo', PARAMS, default=None), None)
 
-def test_get_value_explicitly_none_default():
-    assert not params.get_value('foo', PARAMS, default=None)
+    def test_get_bool_param_value_no_default(self):
+        self.assertEqual(
+            params.get_bool_param_value('foo', PARAMS), None)
+
+    def test_get_bool_param_value_malformed(self):
+        with self.assertRaises(ValueError):
+            params.get_bool_param_value('malformed_bool_param', PARAMS)
+
+        with self.assertRaises(ValueError):
+            params.get_bool_param_value('empty_bool_param', PARAMS)

@@ -20,7 +20,7 @@ import os
 import unittest
 from typing import List
 
-from recidiviz.cloud_functions.cloud_function_utils import \
+from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import \
     to_normalized_unprocessed_file_path
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_job_prioritizer \
     import GcsfsDirectIngestJobPrioritizer

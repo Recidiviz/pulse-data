@@ -25,10 +25,8 @@ from typing import Set, List
 from gcsfs.core import GCSFile
 from mock import Mock, patch, create_autospec
 
-from recidiviz.cloud_functions.cloud_function_utils import \
-    to_normalized_unprocessed_file_path
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import \
-    DirectIngestGCSFileSystem
+    DirectIngestGCSFileSystem, to_normalized_unprocessed_file_path
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
     GcsfsDirectIngestController
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
