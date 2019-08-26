@@ -28,7 +28,7 @@ from recidiviz.ingest.scrape import (constants, ingest_utils,
                                      scrape_phase, sessions)
 from recidiviz.utils import monitoring, regions, structured_logging
 from recidiviz.utils.auth import authenticate_request
-from recidiviz.utils.params import get_values
+from recidiviz.utils.params import get_str_param_values
 
 scraper_status = Blueprint('scraper_status', __name__)
 
@@ -59,7 +59,7 @@ def check_for_finished_scrapers():
                     region_code=region_code, url=next_phase_url)
 
     region_codes = ingest_utils.validate_regions(
-        get_values('region', request.args))
+        get_str_param_values('region', request.args))
 
     failed_regions = []
     with futures.ThreadPoolExecutor() as executor:

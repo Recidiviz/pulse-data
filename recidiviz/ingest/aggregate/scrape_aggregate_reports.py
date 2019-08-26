@@ -38,7 +38,7 @@ from recidiviz.ingest.aggregate.regions.tn import tn_aggregate_site_scraper
 from recidiviz.ingest.aggregate.regions.tx import tx_aggregate_site_scraper
 from recidiviz.utils import metadata
 from recidiviz.utils.auth import authenticate_request
-from recidiviz.utils.params import get_value
+from recidiviz.utils.params import get_str_param_value
 
 scrape_aggregate_reports_blueprint = Blueprint(
     'scrape_aggregate_reports', __name__)
@@ -70,7 +70,7 @@ def scrape_aggregate_reports():
         'tennessee': tn_aggregate_site_scraper.get_urls_to_download,
         'texas': tx_aggregate_site_scraper.get_urls_to_download,
     }
-    state = get_value('state', request.args)
+    state = get_str_param_value('state', request.args)
     # We want to always download the pdf if it is NY because they always have
     # the same name.
     always_download = (state == 'new_york')

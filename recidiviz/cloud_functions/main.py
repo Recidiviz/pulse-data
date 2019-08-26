@@ -19,18 +19,16 @@
 import logging
 import os
 
-from gcsfs import GCSFileSystem
-
 from cloud_function_utils import make_iap_request, \
     get_state_region_code_from_direct_ingest_bucket, \
-    get_dashboard_data_export_storage_bucket, have_seen_file_path, \
-    to_normalized_unprocessed_file_path, GCSFS_NO_CACHING
+    get_dashboard_data_export_storage_bucket
 
 _STATE_AGGREGATE_CLOUD_FUNCTION_URL = (
     'http://{}.appspot.com/cloud_function/state_aggregate?bucket={}&state={}'
     '&filename={}')
 _DIRECT_INGEST_CLOUD_FUNCTION_URL = (
-    'http://{}.appspot.com/cloud_function/start_direct_ingest?region={}')
+    'http://{}.appspot.com/direct/handle_direct_ingest_file?region={}'
+    '&bucket={}&relative_file_path={}&start_ingest={}')
 _DASHBOARD_EXPORT_CLOUD_FUNCTION_URL = (
     'http://{}.appspot.com/cloud_function/dashboard_export?bucket={}'
     '&data_type={}'
@@ -67,24 +65,7 @@ def parse_state_aggregate(data, _):
     logging.info("The response status is %s", response.status_code)
 
 
-def direct_ingest_county(data, _):
-    """This function is triggered when a file is dropped into the county direct
-    ingest bucket and makes a request to parse and write the data to
-    the database.
-
-    data: A cloud storage object that holds name information and other metadata
-    related to the file that was dropped into the bucket.
-    _: (google.cloud.functions.Context): Metadata of triggering event.
-
-    """
-    bucket = data['bucket']
-    relative_file_path = data['name']
-    region_code, _ = relative_file_path.split('/')
-
-    _call_direct_ingest(bucket, region_code, relative_file_path)
-
-
-def direct_ingest_state(data, _):
+def handle_state_direct_ingest_file(data, _):
     """This function is triggered when a file is dropped into any of the state
     direct ingest buckets and makes a request to parse and write the data to
     the database.
@@ -94,20 +75,12 @@ def direct_ingest_state(data, _):
     _: (google.cloud.functions.Context): Metadata of triggering event.
 
     """
-    bucket = data['bucket']
-    relative_file_path = data['name']
-    region_code = get_state_region_code_from_direct_ingest_bucket(bucket)
-    if not region_code:
-        logging.error('Cannot parse region code from bucket %s, returning.',
-                      bucket)
-        return
-
-    _call_direct_ingest(bucket, region_code, relative_file_path)
+    _handle_state_direct_ingest_file(data, start_ingest=True)
 
 
-def direct_ingest_rename_only(data, _):
+def handle_state_direct_ingest_file_rename_only(data, _):
     """Cloud functions can be configured to trigger this function instead of
-    direct_ingest_state/direct_ingest_county when a region has turned on nightly
+    handle_state_direct_ingest_file when a region has turned on nightly
     ingest before we are ready to schedule and process ingest jobs for that
     region. This will just rename the incoming files to have a normalized path
     with a timestamp so subsequent nightly uploads do not have naming conflicts.
@@ -117,47 +90,11 @@ def direct_ingest_rename_only(data, _):
     _: (google.cloud.functions.Context): Metadata of triggering event.
 
     """
-    bucket = data['bucket']
-    relative_file_path = data['name']
-
-    project_id = os.environ.get('GCP_PROJECT')
-    if not project_id:
-        logging.error('No project id set for call to direct ingest cloud '
-                      'function, returning.')
-        return
-
-    _normalize_file_path_if_necessary(project_id, bucket, relative_file_path)
-    logging.info("Finished renaming file [%s]", relative_file_path)
+    _handle_state_direct_ingest_file(data, start_ingest=False)
 
 
-def _normalize_file_path_if_necessary(project_id: str,
-                                      bucket: str,
-                                      relative_file_path: str):
-    original_file_path = os.path.join(bucket, relative_file_path)
-    if have_seen_file_path(original_file_path):
-        logging.info(
-            "Not normalizing file path for already seen file %s",
-            original_file_path)
-        return
-
-    fs = GCSFileSystem(project=project_id, cache_timeout=GCSFS_NO_CACHING)
-
-    updated_file_path = \
-        to_normalized_unprocessed_file_path(original_file_path)
-
-    if fs.exists(updated_file_path):
-        logging.error("Desired path [%s] already exists, returning",
-                      updated_file_path)
-        return
-
-    logging.info("Moving file from %s to %s",
-                 original_file_path, updated_file_path)
-    fs.mv(original_file_path, updated_file_path)
-
-
-def _call_direct_ingest(bucket: str,
-                        region_code: str,
-                        relative_file_path: str):
+def _handle_state_direct_ingest_file(data,
+                                     start_ingest: bool):
     """Calls direct ingest cloud function when a new file is dropped into a
     bucket."""
     project_id = os.environ.get('GCP_PROJECT')
@@ -166,9 +103,16 @@ def _call_direct_ingest(bucket: str,
                       'function, returning.')
         return
 
-    _normalize_file_path_if_necessary(project_id, bucket, relative_file_path)
+    bucket = data['bucket']
+    relative_file_path = data['name']
+    region_code = get_state_region_code_from_direct_ingest_bucket(bucket)
+    if not region_code:
+        logging.error('Cannot parse region code from bucket %s, returning.',
+                      bucket)
+        return
 
-    url = _DIRECT_INGEST_CLOUD_FUNCTION_URL.format(project_id, region_code)
+    url = _DIRECT_INGEST_CLOUD_FUNCTION_URL.format(
+        project_id, region_code, bucket, relative_file_path, str(start_ingest))
 
     logging.info("Calling URL: %s", url)
 

@@ -19,14 +19,56 @@ manipulating files and filenames expected by direct ingest.
 """
 
 import abc
+import datetime
+import logging
 import os
-from typing import List
+from typing import List, Optional
 
 from gcsfs import GCSFileSystem
 from gcsfs.core import GCSFile
 
-from recidiviz.cloud_functions.cloud_function_utils import \
-    DIRECT_INGEST_UNPROCESSED_PREFIX, DIRECT_INGEST_PROCESSED_PREFIX
+DIRECT_INGEST_UNPROCESSED_PREFIX = 'unprocessed'
+DIRECT_INGEST_PROCESSED_PREFIX = 'processed'
+
+
+def _build_unprocessed_file_name(
+        *,
+        utc_iso_timestamp_str: str,
+        file_tag: str,
+        extension: str) -> str:
+
+    file_name_parts = [
+        DIRECT_INGEST_UNPROCESSED_PREFIX,
+        utc_iso_timestamp_str,
+        file_tag
+    ]
+
+    return "_".join(file_name_parts) + f".{extension}"
+
+
+def have_seen_file_path(original_file_path: str) -> bool:
+    _, file_name = os.path.split(original_file_path)
+
+    return file_name.startswith(DIRECT_INGEST_UNPROCESSED_PREFIX) or \
+           file_name.startswith(DIRECT_INGEST_PROCESSED_PREFIX)
+
+
+def to_normalized_unprocessed_file_path(
+        original_file_path: str,
+        dt: Optional[datetime.datetime] = None) -> str:
+    if not dt:
+        dt = datetime.datetime.utcnow()
+
+    directory, file_name = os.path.split(original_file_path)
+    utc_iso_timestamp_str = dt.strftime('%Y-%m-%dT%H:%M:%S:%f')
+    file_tag, extension = file_name.split('.')
+
+    updated_relative_path = _build_unprocessed_file_name(
+        utc_iso_timestamp_str=utc_iso_timestamp_str,
+        file_tag=file_tag,
+        extension=extension)
+
+    return os.path.join(directory, updated_relative_path)
 
 
 class DirectIngestGCSFileSystem:
@@ -45,6 +87,35 @@ class DirectIngestGCSFileSystem:
     @abc.abstractmethod
     def mv(self, path1: str, path2: str) -> None:
         """Moves file at path1 to path2."""
+
+    @staticmethod
+    def have_seen_file_path(original_file_path: str) -> bool:
+        _, file_name = os.path.split(original_file_path)
+
+        return file_name.startswith(DIRECT_INGEST_UNPROCESSED_PREFIX) or \
+            file_name.startswith(DIRECT_INGEST_PROCESSED_PREFIX)
+
+    def normalize_file_path_if_necessary(self,
+                                         bucket: str,
+                                         relative_file_path: str):
+        original_file_path = os.path.join(bucket, relative_file_path)
+        if self.have_seen_file_path(original_file_path):
+            logging.info(
+                "Not normalizing file path for already seen file %s",
+                original_file_path)
+            return
+
+        updated_file_path = \
+            to_normalized_unprocessed_file_path(original_file_path)
+
+        if self.exists(updated_file_path):
+            logging.error("Desired path [%s] already exists, returning",
+                          updated_file_path)
+            return
+
+        logging.info("Moving file from %s to %s",
+                     original_file_path, updated_file_path)
+        self.mv(original_file_path, updated_file_path)
 
     def get_unprocessed_file_paths(self, directory_path: str):
         """Returns all paths in the given directory that have yet to be

@@ -41,7 +41,7 @@ from recidiviz.ingest.direct.errors import DirectIngestError
 from recidiviz.persistence.database.schema.aggregate import dao
 from recidiviz.utils import metadata
 from recidiviz.utils.auth import authenticate_request
-from recidiviz.utils.params import get_value
+from recidiviz.utils.params import get_str_param_value
 
 cloud_functions_blueprint = Blueprint('cloud_functions', __name__)
 
@@ -71,9 +71,9 @@ def state_aggregate():
         'texas': tx_aggregate_ingest.parse,
     }
 
-    bucket = get_value('bucket', request.args)
-    state = get_value('state', request.args)
-    filename = get_value('filename', request.args)
+    bucket = get_str_param_value('bucket', request.args)
+    state = get_str_param_value('state', request.args)
+    filename = get_str_param_value('filename', request.args)
     project_id = metadata.project_id()
     logging.info("The project id is %s", project_id)
     if not bucket or not state or not filename:
@@ -113,12 +113,14 @@ def state_aggregate():
     except Exception as e:
         return jsonify(e), 500
 
+# TODO(1628): Leave this until /direct/handle_direct_ingest_file has been fully
+#  deployed and all cloud functions are hitting it in stage/prod
 @cloud_functions_blueprint.route('/start_direct_ingest')
 @authenticate_request
 def start_direct_ingest():
     """Schedules direct ingest jobs for the given region, if necessary."""
 
-    region_name = get_value('region', request.args)
+    region_name = get_str_param_value('region', request.args)
     try:
         controller = \
             direct_ingest_control.controller_for_region_code(region_name)
@@ -145,10 +147,10 @@ def dashboard_export():
     """
 
     # The cloud storage bucket to export to
-    bucket = get_value('bucket', request.args)
+    bucket = get_str_param_value('bucket', request.args)
 
     # Get the type of data to export
-    data_type = get_value('data_type', request.args)
+    data_type = get_str_param_value('data_type', request.args)
 
     logging.info("Attempting to export dashboard %s data to cloud storage"
                  " bucket: %s.", data_type, bucket)
