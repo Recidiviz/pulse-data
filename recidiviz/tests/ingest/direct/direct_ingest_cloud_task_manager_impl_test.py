@@ -23,7 +23,7 @@ from google.cloud import tasks
 from google.protobuf import timestamp_pb2
 from mock import patch
 
-from recidiviz.cloud_functions.cloud_function_utils import \
+from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import \
     to_normalized_unprocessed_file_path
 from recidiviz.common import queues
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import \
