@@ -28,7 +28,7 @@ from recidiviz.ingest.scrape.ingest_utils import validate_regions
 from recidiviz.persistence import persistence
 from recidiviz.utils import monitoring
 from recidiviz.utils.auth import authenticate_request
-from recidiviz.utils.params import get_values
+from recidiviz.utils.params import get_str_param_values
 from recidiviz.utils.regions import Region, RemovedFromWebsite, get_region
 
 infer_release_blueprint = Blueprint('infer_release', __name__)
@@ -38,7 +38,8 @@ infer_release_blueprint = Blueprint('infer_release', __name__)
 @authenticate_request
 def infer_release():
     """Runs infer release for the given regions."""
-    region_codes = validate_regions(get_values('region', request.args))
+    region_codes = \
+        validate_regions(get_str_param_values('region', request.args))
     regions = [get_region(region_code) for region_code in region_codes]
 
     for region in regions:

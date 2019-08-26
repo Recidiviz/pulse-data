@@ -31,6 +31,8 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     GcsfsIngestArgs
 from recidiviz.ingest.direct.errors import DirectIngestError
 from recidiviz.persistence import batch_persistence
+from recidiviz.tests.ingest.direct.direct_ingest_util import \
+    FakeDirectIngestGCSFileSystem
 from recidiviz.tests.utils.fake_region import fake_region
 
 
@@ -56,8 +58,8 @@ def _MockSupported(timezone=None):
     return regions
 
 
-class TestDirectStart:
-    """Tests for requests to the Direct Start API."""
+class TestDirectIngestControl:
+    """Tests for requests to the Direct Ingest API."""
 
     @patch("recidiviz.utils.environment.get_gae_environment")
     @patch("recidiviz.utils.regions.get_region")
@@ -126,6 +128,89 @@ class TestDirectStart:
             assert response.get_data().decode() == \
                    "Unsupported direct ingest region us_ca"
 
+    @patch("recidiviz.ingest.direct.direct_ingest_control.GcsfsFactory")
+    def test_handle_file_no_start_ingest(
+            self, mock_fs_factory_cls, client):
+        fake_fs = FakeDirectIngestGCSFileSystem()
+        fake_fs.test_add_path('bucket-us-nd/elite_offenders.csv')
+        mock_fs_factory_cls.build.return_value = fake_fs
+
+        region = 'us_nd'
+        request_args = {
+            'region': region,
+            'bucket': 'bucket-us-nd',
+            'relative_file_path': 'elite_offenders.csv',
+            'start_ingest': 'false',
+        }
+        headers = {'X-Appengine-Cron': "test-cron"}
+        response = client.get('/handle_direct_ingest_file',
+                              query_string=request_args,
+                              headers=headers)
+
+        # Even though the region isn't supported, we don't crash
+        assert response.status_code == 200
+
+    @patch("recidiviz.ingest.direct.direct_ingest_control.GcsfsFactory")
+    @patch("recidiviz.utils.environment.get_gae_environment")
+    @patch("recidiviz.utils.regions.get_region")
+    def test_handle_file_start_ingest(
+            self, mock_region, mock_environment, mock_fs_factory_cls, client):
+        region_code = 'us_nd'
+
+        mock_environment.return_value = 'production'
+        mock_region.return_value = fake_region(region_code=region_code,
+                                               environment='production')
+
+        fake_fs = FakeDirectIngestGCSFileSystem()
+        fake_fs.test_add_path('bucket-us-nd/elite_offenders.csv')
+        mock_fs_factory_cls.build.return_value = fake_fs
+
+        request_args = {
+            'region': region_code,
+            'bucket': 'bucket-us-nd',
+            'relative_file_path': 'elite_offenders.csv',
+            'start_ingest': 'false',
+        }
+        headers = {'X-Appengine-Cron': "test-cron"}
+        response = client.get('/handle_direct_ingest_file',
+                              query_string=request_args,
+                              headers=headers)
+
+        # Even though the region isn't supported, we don't crash
+        assert response.status_code == 200
+
+    @patch("recidiviz.ingest.direct.direct_ingest_control.GcsfsFactory")
+    @patch("recidiviz.utils.environment.get_gae_environment")
+    @patch("recidiviz.utils.regions.get_region")
+    def test_handle_file_start_ingest_unsupported_region(
+            self, mock_region, mock_environment, mock_fs_factory_cls, client):
+        region_code = 'us_nd'
+
+        mock_environment.return_value = 'production'
+        mock_region.return_value = fake_region(region_code=region_code,
+                                               environment='staging')
+
+        fake_fs = FakeDirectIngestGCSFileSystem()
+        fake_fs.test_add_path('bucket-us-nd/elite_offenders.csv')
+        mock_fs_factory_cls.build.return_value = fake_fs
+
+        request_args = {
+            'region': region_code,
+            'bucket': 'bucket-us-nd',
+            'relative_file_path': 'elite_offenders.csv',
+            'start_ingest': 'true',
+        }
+        headers = {'X-Appengine-Cron': "test-cron"}
+
+        with pytest.raises(DirectIngestError):
+            response = client.get('/handle_direct_ingest_file',
+                                  query_string=request_args,
+                                  headers=headers)
+
+            # Even though the region isn't supported, we don't crash
+            assert response.status_code == 400
+
+        mock_region.assert_called_with('us_nd', is_direct_ingest=True)
 
 class TestQueueArgs(unittest.TestCase):
     def test_parse_args(self):

@@ -24,6 +24,7 @@ from typing import Optional
 
 from flask import Blueprint, request
 
+from recidiviz.ingest.direct.controllers.gcsfs_factory import GcsfsFactory
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import \
     DirectIngestCloudTaskManager
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import \
@@ -34,10 +35,34 @@ from recidiviz.ingest.direct.errors import DirectIngestError, \
 from recidiviz.utils import environment, regions
 from recidiviz.utils.auth import authenticate_request
 from recidiviz.utils.environment import in_gae_production
-from recidiviz.utils.params import get_value
+from recidiviz.utils.params import get_str_param_value, get_bool_param_value
 from recidiviz.utils.regions import get_supported_direct_ingest_region_codes
 
 direct_ingest_control = Blueprint('direct_ingest_control', __name__)
+
+
+@direct_ingest_control.route('/handle_direct_ingest_file')
+@authenticate_request
+def handle_direct_ingest_file():
+    """Handles renames of new direct ingest file uploads for the given region
+    and optionally kicks the ingest job scheduler."""
+
+    region_name = get_str_param_value('region', request.args)
+    # The bucket name for the file to ingest
+    bucket = get_str_param_value('bucket', request.args)
+    # The relative path to the file, not including the bucket name
+    relative_file_path = get_str_param_value('relative_file_path', request.args)
+    start_ingest = \
+        get_bool_param_value('start_ingest', request.args, default=False)
+
+    GcsfsFactory.build().normalize_file_path_if_necessary(bucket,
+                                                          relative_file_path)
+
+    if start_ingest:
+        controller = controller_for_region_code(region_name)
+        controller.kick_scheduler(just_finished_job=False)
+
+    return '', HTTPStatus.OK
 
 
 @direct_ingest_control.route('/process_job', methods=['POST'])
@@ -45,7 +70,7 @@ direct_ingest_control = Blueprint('direct_ingest_control', __name__)
 def process_job():
     logging.info('Received request to process direct ingest job: [%s]',
                  request.values)
-    region_value = get_value('region', request.values)
+    region_value = get_str_param_value('region', request.values)
     json_data = request.get_data(as_text=True)
     ingest_args = _get_ingest_args(json_data)
     if not ingest_args:
@@ -62,10 +87,9 @@ def process_job():
 def scheduler():
     logging.info('Received request for direct ingest scheduler: %s',
                  request.values)
-    region_value = get_value('region', request.values)
-    just_finished_job_str = get_value('just_finished_job', request.values)
-    just_finished_job = just_finished_job_str is not None and \
-        just_finished_job_str.lower() == 'true'
+    region_value = get_str_param_value('region', request.values)
+    just_finished_job = \
+        get_bool_param_value('just_finished_job', request.values, default=False)
     controller = controller_for_region_code(region_value)
     controller.schedule_next_ingest_job_or_wait_if_necessary(just_finished_job)
     return '', HTTPStatus.OK

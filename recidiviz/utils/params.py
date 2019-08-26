@@ -16,8 +16,11 @@
 # =============================================================================
 
 """Helpers for working with parameters from requests."""
+from typing import List, Optional
 
-def get_value(arg_key, args, default=None):
+
+def get_str_param_value(
+        arg_key: str, args, default: Optional[str] = None) -> Optional[str]:
     """Retrieves URL parameter from request handler params list
 
     Takes an MultiDict of key/value pairs (URL parameters from the request
@@ -27,8 +30,8 @@ def get_value(arg_key, args, default=None):
     given default will also be transformed like a found value.
 
     Args:
-        param_key: (string) Key of the URL parameter being sought
-        params: List of URL parameter key/value pairs, as a MultiDict (e.g.,
+        arg_key: (string) Key of the URL parameter being sought
+        args: List of URL parameter key/value pairs, as a MultiDict (e.g.,
             [("key", "val"), ("key2", "val2"), ...])
         default: The default value to return if the param name is not found
 
@@ -37,15 +40,33 @@ def get_value(arg_key, args, default=None):
         Provided default value if not found
         None if no default provided and not found
         """
-    return clean_value(args.get(arg_key, default))
+    return clean_str_param_value(args.get(arg_key, default))
 
 
-def get_values(arg_key, args):
+def get_bool_param_value(
+        arg_key: str, args, default: Optional[bool] = None) -> Optional[bool]:
+
+    str_value = get_str_param_value(arg_key, args)
+
+    if str_value is None:
+        return default
+
+    str_value_lower = str_value.lower()
+    if str_value_lower == 'true':
+        return True
+    if str_value_lower == 'false':
+        return False
+
+    raise ValueError(
+        f'Unexpected value {str_value} for bool param {arg_key}')
+
+
+def get_str_param_values(arg_key: str, args) -> List[str]:
     """Same as above, but returns all values for a given key"""
-    return [clean_value(val) for val in args.getlist(arg_key)]
+    return [clean_str_param_value(val) for val in args.getlist(arg_key)]
 
 
-def clean_value(value):
+def clean_str_param_value(value: str) -> str:
     if value:
         return value.lower().strip()
     return value

@@ -38,7 +38,7 @@ from recidiviz.ingest.scrape.constants import BATCH_PUBSUB_TYPE
 from recidiviz.utils import (monitoring, pubsub_helper, regions,
                              structured_logging)
 from recidiviz.utils.auth import authenticate_request
-from recidiviz.utils.params import get_value, get_values
+from recidiviz.utils.params import get_str_param_value, get_str_param_values
 
 scraper_control = Blueprint('scraper_control', __name__)
 
@@ -126,20 +126,20 @@ def scraper_start():
         load_docket_thread.join()
 
     timezone = ingest_utils.lookup_timezone(request.args.get("timezone"))
-    region_value = get_values("region", request.args)
+    region_value = get_str_param_values("region", request.args)
     # If a timezone wasn't provided start all regions. If it was only start
     # regions that match the timezone.
     scrape_regions = ingest_utils.validate_regions(
         region_value, timezone=timezone)
-    scrape_types = ingest_utils.validate_scrape_types(get_values("scrape_type",
-                                                                 request.args))
+    scrape_types = ingest_utils.validate_scrape_types(
+        get_str_param_values("scrape_type", request.args))
 
     if not scrape_regions or not scrape_types:
         return ('Missing or invalid parameters, or no regions found, see logs.',
                 HTTPStatus.BAD_REQUEST)
 
-    given_names = get_value("given_names", request.args, "")
-    surname = get_value("surname", request.args, "")
+    given_names = get_str_param_value("given_names", request.args, "")
+    surname = get_str_param_value("surname", request.args, "")
 
     failed_starts = []
     with futures.ThreadPoolExecutor() as executor:
@@ -211,14 +211,15 @@ def scraper_stop():
         N/A
     """
     timezone = ingest_utils.lookup_timezone(request.args.get("timezone"))
-    respect_is_stoppable = get_value("respect_is_stoppable", request.args)
+    respect_is_stoppable = get_str_param_value("respect_is_stoppable",
+                                               request.args)
 
     # If a timezone wasn't provided stop all regions. If it was only stop
     # regions that match the timezone.
     scrape_regions = ingest_utils.validate_regions(
-        get_values("region", request.args), timezone=timezone)
-    scrape_types = ingest_utils.validate_scrape_types(get_values("scrape_type",
-                                                                 request.args))
+        get_str_param_values("region", request.args), timezone=timezone)
+    scrape_types = ingest_utils.validate_scrape_types(
+        get_str_param_values("scrape_type", request.args))
 
     next_phase = scrape_phase.next_phase(request.endpoint)
     next_phase_url = url_for(next_phase) if next_phase else None
@@ -306,10 +307,10 @@ def scraper_resume():
     Returns:
         N/A
     """
-    scrape_regions = ingest_utils.validate_regions(get_values("region",
-                                                              request.args))
-    scrape_types = ingest_utils.validate_scrape_types(get_values("scrape_type",
-                                                                 request.args))
+    scrape_regions = ingest_utils.validate_regions(
+        get_str_param_values("region", request.args))
+    scrape_types = ingest_utils.validate_scrape_types(
+        get_str_param_values("scrape_type", request.args))
 
     if not scrape_regions or not scrape_types:
         return ('Missing or invalid parameters, see service logs.',
