@@ -20,7 +20,8 @@ from typing import List, Optional
 
 
 def get_str_param_value(
-        arg_key: str, args, default: Optional[str] = None) -> Optional[str]:
+        arg_key: str, args, default: Optional[str] = None,
+        preserve_case: bool = False) -> Optional[str]:
     """Retrieves URL parameter from request handler params list
 
     Takes an MultiDict of key/value pairs (URL parameters from the request
@@ -34,13 +35,15 @@ def get_str_param_value(
         args: List of URL parameter key/value pairs, as a MultiDict (e.g.,
             [("key", "val"), ("key2", "val2"), ...])
         default: The default value to return if the param name is not found
+        preserve_case: Whether to preserve the original string case [False]
 
     Returns:
         First value for given param_name if found
         Provided default value if not found
         None if no default provided and not found
         """
-    return clean_str_param_value(args.get(arg_key, default))
+    return clean_str_param_value(args.get(arg_key, default),
+                                 preserve_case=preserve_case)
 
 
 def get_bool_param_value(
@@ -66,7 +69,9 @@ def get_str_param_values(arg_key: str, args) -> List[str]:
     return [clean_str_param_value(val) for val in args.getlist(arg_key)]
 
 
-def clean_str_param_value(value: str) -> str:
+def clean_str_param_value(value: str, preserve_case: bool = False) -> str:
     if value:
+        if preserve_case:
+            return value.strip()
         return value.lower().strip()
     return value
