@@ -26,14 +26,14 @@
         "case_pk": "111.0",
         "sysid": "1.0",
         "case_number": "17-111",
-        "booking_admission_doc_type": "",
+        "booking_admission_doc_type": "FEDERAL DETAINER",
         "export_time": "2019-05-24 03:00:00.460"
       },
       {
         "case_pk": "222.0",
         "sysid": "1.0",
         "case_number": "17CR222",
-        "booking_admission_doc_type": "",
+        "booking_admission_doc_type": "BAIL MITTIMUS",
         "export_time": "2019-05-24 03:00:00.460"
       }
     ],
@@ -153,8 +153,14 @@
         "case_pk": "555.0",
         "sysid": "333.0",
         "case_number": "17-1403",
-        "booking_admission_doc_type": "",
+        "booking_admission_doc_type": "SENTENCE MITTIMUS",
         "export_time": "2019-05-24 03:00:00.460"
+      },
+      {
+        "booking_admission_doc_type": "BAIL MITTIMUS"
+      },
+      {
+        "booking_admission_doc_type": "GOVERNORS WARRANT"
       }
     ],
     "address": [
