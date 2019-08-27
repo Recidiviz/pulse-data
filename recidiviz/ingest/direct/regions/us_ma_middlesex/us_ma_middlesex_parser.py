@@ -143,21 +143,28 @@ class UsMaMiddlesexParser:
                              if admission['booking_admission_doc_type']}
         if len(admission_reasons) == 1:
             return admission_reasons.pop()
-        if admission_reasons == {'BAIL MITTIMUS', 'WARRANT MANAGEMENT SYSTEM'}:
-            return 'BAIL MITTIMUS'
-        if admission_reasons == {'BAIL MITTIMUS', 'SENTENCE MITTIMUS'}:
-            return 'SENTENCE MITTIMUS'
-        if admission_reasons == {'BAIL MITTIMUS', 'GOVERNORS WARRANT'}:
-            return 'GOVERNORS WARRANT'
-        if admission_reasons == {'SENTENCE MITTIMUS', 'BAIL MITTIMUS',
-                                 'WARRANT MANAGEMENT SYSTEM'}:
-            return 'SENTENCE MITTIMUS'
-        if len(admission_reasons) > 1:
-            raise DirectIngestError(
-                error_type=DirectIngestErrorType.PARSE_ERROR,
-                msg=
-                f"Multiple admission document types found for person with sysid"
-                f" [{person_dict['booking']['sysid']}]: [{admission_reasons}]")
+
+        admission_reason_hierarchy = [
+            'SENTENCE MITTIMUS',
+            'BAIL MITTIMUS',
+            'GOVERNORS WARRANT',
+            'WARRANT MANAGEMENT SYSTEM',
+            'FEDERAL DETAINER',
+        ]
+
+        for reason in admission_reasons:
+            if reason not in admission_reason_hierarchy:
+                raise DirectIngestError(
+                    error_type=DirectIngestErrorType.PARSE_ERROR,
+                    msg=
+                    f"Unknown admission document type seen for person with "
+                    f"sysid [{person_dict['booking']['sysid']}]: [{reason}]")
+
+
+        for reason in admission_reason_hierarchy:
+            if reason in admission_reasons:
+                return reason
+
         return None
 
     def get_charge_status(

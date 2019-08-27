@@ -51,7 +51,9 @@ class UsMaMiddlesexDirectIngestParser(IndividualIngestTest, TestCase):
             place_of_residence='123 ST DORCHESTER MA 01234     ')
 
         b1 = p1.create_booking(
-            booking_id='1.0', admission_date='2017-01-01 00:00:00.000',
+            booking_id='1.0',
+            admission_date='2017-01-01 00:00:00.000',
+            admission_reason='BAIL MITTIMUS',
             facility='MAIN      ')
         b1.create_charge(
             charge_id='1245.0', statute='90/24/K',
@@ -75,6 +77,7 @@ class UsMaMiddlesexDirectIngestParser(IndividualIngestTest, TestCase):
         b2 = p2.create_booking(
             booking_id='333.0',
             admission_date='2018-02-02 00:00:00.000',
+            admission_reason='SENTENCE MITTIMUS',
             facility='MAIN      ')
         b2.create_arrest(agency='Cambridge PD')
         b2.create_charge(charge_id='12341234.0', statute='269/10/J',

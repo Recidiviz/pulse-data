@@ -187,6 +187,7 @@ class UsMaMiddlesexController(BaseDirectIngestController[IngestArgs,
         builder.add('CONTEMPT OF COURT', AdmissionReason.NEW_COMMITMENT)
         builder.add('COURT ORDERED', ReleaseReason.OWN_RECOGNIZANCE)
         builder.add('END OF SENTENCE', ReleaseReason.EXPIRATION_OF_SENTENCE)
+        builder.add('FEDERAL DETAINER', AdmissionReason.NEW_COMMITMENT)
         builder.add('HWO', BondType.DENIED)
         builder.ignore('N', BondStatus)
         builder.add('NB', BondType.NOT_REQUIRED)
