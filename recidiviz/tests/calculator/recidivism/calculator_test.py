@@ -1120,9 +1120,10 @@ class TestMapRecidivismCombinations:
 
         # 64 combinations of demographics, facility, & stay length
         # * 40 combinations of methodology/return type/supervision type
-        # * 10 periods + 0 count metrics. +
+        # * 10 periods +
+        # 64 combos * 2 count windows * 40 combos of methodology etc. +
         # * 64 * 2 * 4 relevant combos = 26112 metrics
-        assert len(recidivism_combinations) == 26112
+        assert len(recidivism_combinations) == 31232
         assert all(value == 0 for _combination, value
                    in recidivism_combinations if
                    _combination['metric_type'] == 'rate')
@@ -1620,47 +1621,6 @@ class TestMapRecidivismCombinations:
                    in recidivism_combinations)
         assert all(_combination['metric_type'] == 'rate' for _combination, value
                    in recidivism_combinations)
-
-    def test_map_recidivism_combos_count_metric_return_after_last_period(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
-                                               birthdate=date(1984, 8, 31),
-                                               gender=Gender.FEMALE)
-
-        race = StatePersonRace.new_with_defaults(state_code='CA',
-                                                 race=Race.WHITE)
-
-        person.races = [race]
-
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='CA',
-            ethnicity=Ethnicity.NOT_HISPANIC)
-
-        person.ethnicities = [ethnicity]
-
-        release_events_by_cohort = {
-            1990: [RecidivismReleaseEvent(
-                'CA', date(1985, 7, 19), date(1990, 9, 19), 'Hudson',
-                date(2014, 5, 12), 'Upstate',
-                ReincarcerationReturnType.NEW_ADMISSION)]
-        }
-
-        inclusions = {
-            'age_bucket': True,
-            'gender': True,
-            'race': True,
-            'ethnicity': True,
-            'release_facility': True,
-            'stay_length_bucket': True
-        }
-
-        recidivism_combinations = calculator.map_recidivism_combinations(
-            person, release_events_by_cohort, inclusions)
-
-        assert all(value == 0 for _combination, value
-                   in recidivism_combinations
-                   if _combination['metric_type'] == 'rate')
-        assert all(_combination['metric_type'] != 'count'
-                   for _combination, value in recidivism_combinations)
 
     def test_map_recidivism_combinations_count_twice_in_year(self):
         person = StatePerson.new_with_defaults(person_id=12345,

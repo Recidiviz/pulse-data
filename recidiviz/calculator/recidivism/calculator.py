@@ -847,48 +847,45 @@ def combination_count_metrics(combo: Dict[str, Any], event:
             dictionaries and the recidivism value corresponding to that metric.
     """
     metrics = []
-    maximum_follow_up_period = 10
 
-    # If they recidivated within 10 years of their release, the reincarceration
-    # should be counted. Each return is included for event-based measurement.
+    # Each return is included for event-based measurement.
     # However, for person-based measurement, only one instance may be counted
     # in a given window.
-    if returned_within_follow_up_period(event, maximum_follow_up_period):
-        person_based_combos = augmented_combo_list(
-            combo, event.state_code, RecidivismMethodologyType.PERSON, None)
+    person_based_combos = augmented_combo_list(
+        combo, event.state_code, RecidivismMethodologyType.PERSON, None)
 
-        event_based_combos = augmented_combo_list(
-            combo, event.state_code, RecidivismMethodologyType.EVENT, None)
+    event_based_combos = augmented_combo_list(
+        combo, event.state_code, RecidivismMethodologyType.EVENT, None)
 
-        # Adds one day because the reincarcerations_in_window function is
-        # exclusive of the end date, and we want the count to include
-        # reincarcerations that happen on the last day of this count window.
-        end_date = combo['end_date'] + datetime.timedelta(days=1)
+    # Adds one day because the reincarcerations_in_window function is
+    # exclusive of the end date, and we want the count to include
+    # reincarcerations that happen on the last day of this count window.
+    end_date = combo['end_date'] + datetime.timedelta(days=1)
 
-        all_reincarcerations_in_window = \
-            reincarcerations_in_window(
-                event.reincarceration_date, end_date, all_reincarcerations)
+    all_reincarcerations_in_window = \
+        reincarcerations_in_window(
+            event.reincarceration_date, end_date, all_reincarcerations)
 
-        if len(all_reincarcerations_in_window) == 1:
-            # This function will be called for every single one of the person's
-            # release events that resulted in a reincarceration. If this is
-            # the last instance of reincarceration before the end of the
-            # window, then include this in the person-based count.
-            for person_combo in person_based_combos:
-                metrics.append((person_combo,
-                                recidivism_value_for_metric(
-                                    person_combo, event.return_type,
-                                    event.from_supervision_type,
-                                    event.source_violation_type)))
+    if len(all_reincarcerations_in_window) == 1:
+        # This function will be called for every single one of the person's
+        # release events that resulted in a reincarceration. If this is
+        # the last instance of reincarceration before the end of the
+        # window, then include this in the person-based count.
+        for person_combo in person_based_combos:
+            metrics.append((person_combo,
+                            recidivism_value_for_metric(
+                                person_combo, event.return_type,
+                                event.from_supervision_type,
+                                event.source_violation_type)))
 
-        for event_combo in event_based_combos:
-            metrics.append(
-                (event_combo,
-                 recidivism_value_for_metric(
-                     event_combo,
-                     event.return_type,
-                     event.from_supervision_type,
-                     event.source_violation_type)))
+    for event_combo in event_based_combos:
+        metrics.append(
+            (event_combo,
+             recidivism_value_for_metric(
+                 event_combo,
+                 event.return_type,
+                 event.from_supervision_type,
+                 event.source_violation_type)))
 
     return metrics
 
