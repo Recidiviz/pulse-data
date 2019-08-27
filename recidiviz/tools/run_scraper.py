@@ -41,6 +41,9 @@ from functools import partial
 from recidiviz.ingest.scrape import constants
 from recidiviz.ingest.scrape.ingest_utils import validate_regions
 from recidiviz.ingest.scrape.task_params import QueueRequest
+from recidiviz.persistence.database.base_schema import \
+    JailsBase
+from recidiviz.tests.utils.fakes import use_in_memory_sqlite_database
 from recidiviz.utils import regions
 
 
@@ -67,6 +70,8 @@ def start_scrape(queue, self, scrape_type):
 
 
 def run_scraper(args):
+    use_in_memory_sqlite_database(JailsBase)
+
     region_codes = validate_regions(args.region.split(','))
     if not region_codes:
         sys.exit(1)
@@ -95,6 +100,7 @@ def run_scraper_for_region(region, args):
 
     Creates and manages an in-memory FIFO queue to replicate production.
     """
+
     scraper = region.get_ingestor()
     scraper.BATCH_WRITES = False
     task_queue = deque()
