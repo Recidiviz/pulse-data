@@ -27,6 +27,7 @@ class TaskType(enum.Flag):
 
     # Convenience definitions for scraper task types
     INITIAL_AND_MORE = INITIAL | GET_MORE_TASKS
+    INITIAL_AND_SCRAPE_AND_MORE = INITIAL | GET_MORE_TASKS | SCRAPE_DATA
     SCRAPE_DATA_AND_MORE = SCRAPE_DATA | GET_MORE_TASKS
 
 
