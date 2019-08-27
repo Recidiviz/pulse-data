@@ -288,14 +288,12 @@ class TestUsNdController(unittest.TestCase):
         sentences_114909 = [
             StateIncarcerationSentence(
                 state_incarceration_sentence_id='114909-1',
-                status='A',
                 date_imposed='2/27/18  12:00:00 AM',
                 projected_min_release_date='12/16/18  12:00:00 AM',
                 projected_max_release_date='12/26/18  12:00:00 AM',
                 is_life='False'),
             StateIncarcerationSentence(
                 state_incarceration_sentence_id='114909-2',
-                status='A',
                 date_imposed='2/27/18  12:00:00 AM',
                 projected_min_release_date='1/8/19  12:00:00 AM',
                 projected_max_release_date='1/8/19  12:00:00 AM',
@@ -329,7 +327,6 @@ class TestUsNdController(unittest.TestCase):
                 is_life='False'),
             StateIncarcerationSentence(
                 state_incarceration_sentence_id='105640-7',
-                status='A',
                 date_imposed='2/15/12  12:00:00 AM',
                 projected_min_release_date='10/18/13  12:00:00 AM',
                 projected_max_release_date='2/15/14  12:00:00 AM',
@@ -339,7 +336,6 @@ class TestUsNdController(unittest.TestCase):
         sentences_113377 = [
             StateIncarcerationSentence(
                 state_incarceration_sentence_id='113377-4',
-                status='A',
                 date_imposed='2/27/18  12:00:00 AM',
                 projected_min_release_date='9/30/18  12:00:00 AM',
                 projected_max_release_date='11/24/18  12:00:00 AM',
@@ -1529,8 +1525,8 @@ class TestUsNdController(unittest.TestCase):
         # Arrange
         incarceration_sentence_114909_1 = \
             entities.StateIncarcerationSentence.new_with_defaults(
-                external_id='114909-1', status=StateSentenceStatus.SERVING,
-                status_raw_text='A',
+                external_id='114909-1',
+                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 date_imposed=datetime.date(year=2018, month=2, day=27),
                 is_life=False,
@@ -1542,8 +1538,8 @@ class TestUsNdController(unittest.TestCase):
                 person=sentence_group_114909.person)
         incarceration_sentence_114909_2 = \
             entities.StateIncarcerationSentence.new_with_defaults(
-                external_id='114909-2', status=StateSentenceStatus.SERVING,
-                status_raw_text='A',
+                external_id='114909-2',
+                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 date_imposed=datetime.date(year=2018, month=2, day=27),
                 is_life=False,
@@ -1607,8 +1603,8 @@ class TestUsNdController(unittest.TestCase):
                 person=sentence_group_105640.person)
         incarceration_sentence_105640_7 = \
             entities.StateIncarcerationSentence.new_with_defaults(
-                external_id='105640-7', status=StateSentenceStatus.SERVING,
-                status_raw_text='A',
+                external_id='105640-7',
+                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 date_imposed=datetime.date(year=2012, month=2, day=15),
                 is_life=False,
@@ -1620,8 +1616,8 @@ class TestUsNdController(unittest.TestCase):
                 person=sentence_group_105640.person)
         incarceration_sentence_113377_4 = \
             entities.StateIncarcerationSentence.new_with_defaults(
-                external_id='113377-4', status=StateSentenceStatus.SERVING,
-                status_raw_text='A',
+                external_id='113377-4',
+                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 date_imposed=datetime.date(year=2018, month=2, day=27),
                 is_life=False,

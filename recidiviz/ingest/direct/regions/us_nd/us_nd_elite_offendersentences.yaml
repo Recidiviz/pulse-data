@@ -1,5 +1,4 @@
 key_mappings:
-  SENTENCE_STATUS: state_incarceration_sentence.status
   START_DATE: state_incarceration_sentence.date_imposed
   PROBABLE_RELEASE_DATE: state_incarceration_sentence.projected_min_release_date
   SENTENCE_EXPIRY_DATE: state_incarceration_sentence.projected_max_release_date
@@ -10,6 +9,7 @@ ancestor_keys:
 # There is a primary key override in us_nd_scraper for this file
 
 keys_to_ignore:
+  - SENTENCE_STATUS         # Not useful: has the same value for nearly all rows
   - COMMENT_TEXT            # No apparent use for these at the moment
   - EFFECTIVE_DATE          # No longer in use by source
   - EIGHTYFIVE_PERCENT_DATE # TODO(1759) Should this live on a Sentence?
