@@ -16,7 +16,10 @@
 # =============================================================================
 """Define views for combining scraper & state-reports & ITP."""
 
+import os
+
 from recidiviz.calculator.bq.bqview import BigQueryView
+from recidiviz.calculator.bq.views.stitch import combined_stitch
 from recidiviz.calculator.bq.views.stitch.incarceration_trends_stitch_subset \
     import INCARCERATION_TRENDS_STITCH_SUBSET_VIEW
 from recidiviz.calculator.bq.views.stitch.scraper_aggregated_stitch_subset \
@@ -30,42 +33,31 @@ from recidiviz.utils import metadata
 
 PROJECT_ID: str = metadata.project_id()
 
-_DESCRIPTION = """
-Combine {interpolated_state_aggregate}, {scraper_data_aggregated},
-{incarceration_trends_aggregate}, and {single_count} into one unified view
-""".format(interpolated_state_aggregate=
-           STATE_AGGREGATE_STITCH_SUBSET_VIEW.view_id,
-           scraper_data_aggregated=
-           SCRAPER_AGGREGATED_STITCH_SUBSET_VIEW.view_id,
-           single_count=
-           SINGLE_COUNT_STITCH_SUBSET_VIEW.view_id,
-           incarceration_trends_aggregate=
-           INCARCERATION_TRENDS_STITCH_SUBSET_VIEW.view_id)
+_DESCRIPTION = """ Combine {itp}, {state}, {scraper}, and {single_count} into
+one unified view, limited to total jail population only. When overlapping
+data exists, we select {state} data first. We then select any {itp}
+data that exists before {state} data. We then select any {scraper}
+data that exists after {state} data and finally the {single_count}
+data after that.
 
-_QUERY = """
-/*{description}*/
+Note: we use valid_from to check cutoffs, instead of checking
+valid_from and valid_to (eg: {itp}.valid_to < {state}.valid_from).
+This is because all data points are plotted using valid_from.  """.format(
+    state=INCARCERATION_TRENDS_STITCH_SUBSET_VIEW.view_id,
+    scraper=SCRAPER_AGGREGATED_STITCH_SUBSET_VIEW.view_id,
+    single_count=SINGLE_COUNT_STITCH_SUBSET_VIEW.view_id,
+    itp=STATE_AGGREGATE_STITCH_SUBSET_VIEW.view_id)
 
-SELECT * FROM `{project_id}.{views_dataset}.{interpolated_state_aggregate}`
-UNION ALL
-SELECT * FROM `{project_id}.{views_dataset}.{single_count_aggregate}`
-UNION ALL
-SELECT * FROM `{project_id}.{views_dataset}.{scraper_data_aggregated}`
-UNION ALL
-SELECT * FROM `{project_id}.{views_dataset}.{incarceration_trends_aggregate}`
-""".format(project_id=PROJECT_ID, views_dataset=VIEWS_DATASET,
-           interpolated_state_aggregate=
-           STATE_AGGREGATE_STITCH_SUBSET_VIEW.view_id,
-           single_count_aggregate=SINGLE_COUNT_STITCH_SUBSET_VIEW.view_id,
-           scraper_data_aggregated=
-           SCRAPER_AGGREGATED_STITCH_SUBSET_VIEW.view_id,
-           incarceration_trends_aggregate=
-           INCARCERATION_TRENDS_STITCH_SUBSET_VIEW.view_id,
-           description=_DESCRIPTION)
+with open(os.path.splitext(__file__)[0] + '.sql') as fp:
+    _QUERY = fp.read().format(
+        project_id=PROJECT_ID, views_dataset=VIEWS_DATASET,
+        combined_stitch=combined_stitch.COMBINED_STITCH_VIEW.view_id,
+        description=_DESCRIPTION)
 
-COMBINED_STITCH_VIEW = BigQueryView(
-    view_id='combined_stitch',
+COMBINED_STITCH_DROP_OVERLAPPING_TOTAL_JAIL_POP_VIEW = BigQueryView(
+    view_id='combined_stitch_drop_overlapping_total_jail_pop',
     view_query=_QUERY
 )
 
 if __name__ == '__main__':
-    print(COMBINED_STITCH_VIEW.view_query)
+    print(COMBINED_STITCH_DROP_OVERLAPPING_TOTAL_JAIL_POP_VIEW.view_query)
