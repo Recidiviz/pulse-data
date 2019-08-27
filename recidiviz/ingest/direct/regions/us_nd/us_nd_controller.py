@@ -669,7 +669,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
             Race.OTHER: ['5', 'HIS', 'MUL'],
 
             StateSentenceStatus.COMPLETED: ['C'],
-            StateSentenceStatus.SERVING: ['A', 'O'],
+            StateSentenceStatus.SERVING: ['O'],
 
             # TODO(1892): Perhaps handle 'IF' and 'IM' values differently once
             #  we understand what these values mean.
