@@ -51,7 +51,9 @@ def handle_direct_ingest_file():
     # The bucket name for the file to ingest
     bucket = get_str_param_value('bucket', request.args)
     # The relative path to the file, not including the bucket name
-    relative_file_path = get_str_param_value('relative_file_path', request.args)
+    relative_file_path = get_str_param_value('relative_file_path',
+                                             request.args, preserve_case=True)
+
     start_ingest = \
         get_bool_param_value('start_ingest', request.args, default=False)
 

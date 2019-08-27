@@ -132,14 +132,14 @@ class TestDirectIngestControl:
     def test_handle_file_no_start_ingest(
             self, mock_fs_factory_cls, client):
         fake_fs = FakeDirectIngestGCSFileSystem()
-        fake_fs.test_add_path('bucket-us-nd/elite_offenders.csv')
+        fake_fs.test_add_path('bucket-us-nd/Elite_Offenders.csv')
         mock_fs_factory_cls.build.return_value = fake_fs
 
         region = 'us_nd'
         request_args = {
             'region': region,
             'bucket': 'bucket-us-nd',
-            'relative_file_path': 'elite_offenders.csv',
+            'relative_file_path': 'Elite_Offenders.csv',
             'start_ingest': 'false',
         }
         headers = {'X-Appengine-Cron': "test-cron"}
