@@ -37,7 +37,7 @@ keys_to_ignore:
   - NEW_OFF3              # Handled manually within us_nd_scraper
   - REV_ABSC_YN           # Handled manually within us_nd_scraper
   - REV_TECH_YN           # Handled manually within us_nd_scraper
-  - TERMINATING_OFFICER   # TODO(1883) Should be a decision_agent on state_supervision_violation_response
+  - TERMINATING_OFFICER   # TODO(2225) Should be a decision_agent on state_supervision_violation_response
   - LAST_UPDATE           # No apparent use for these at the moment
   - INACTIVEDATE          # Not in usable state within the source data
   - RECORDCRDATE          # TODO(1892) What does this mean?

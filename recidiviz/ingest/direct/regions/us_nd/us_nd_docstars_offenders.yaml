@@ -21,7 +21,7 @@ keys_to_ignore:
   - SUPER_OVERRIDE      # TODO(1883) Add support for entity types with multiple parents
   - RECORD_STATUS       # TODO(1892) RECORD_STATUS needs to map to a custody status somewhere?
 
-  - AGENT
+  - AGENT                 # TODO(2225) Consider setting as a decision_agent on state_supervision_violation_response
   - PREVIOUS_AGENT
   - LAST_UPDATE           # No apparent use for these at the moment
   - ALIASFLAG             # More detailed alias data in the Alias file
