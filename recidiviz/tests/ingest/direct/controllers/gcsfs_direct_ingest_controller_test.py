@@ -106,8 +106,8 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             self.FIXTURE_PATH_PREFIX,
             run_async=True)
 
-        file_tags = ['tagA', 'unexpected_tag', 'tagB', 'tagC']
-        unexpected_tags = ['unexpected_tag']
+        file_tags = ['tagA', 'Unexpected_Tag', 'tagB', 'tagC']
+        unexpected_tags = ['Unexpected_Tag']
 
         add_paths_with_tags_and_process(
             self, controller, file_tags, unexpected_tags)
