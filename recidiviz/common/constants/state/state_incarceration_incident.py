@@ -17,12 +17,15 @@
 
 """Constants related to the StateIncarcerationIncident entity."""
 
+import recidiviz.common.constants.enum_canonical_strings as enum_strings
 import recidiviz.common.constants.state.enum_canonical_strings as \
     state_enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
 class StateIncarcerationIncidentType(EntityEnum, metaclass=EntityEnumMeta):
+    """Possible State Incarceration Incident types."""
+    PRESENT_WITHOUT_INFO = enum_strings.present_without_info
     CONTRABAND = \
         state_enum_strings.state_incarceration_incident_type_contraband
     DISORDERLY_CONDUCT = \
@@ -30,6 +33,8 @@ class StateIncarcerationIncidentType(EntityEnum, metaclass=EntityEnumMeta):
     ESCAPE = state_enum_strings.state_incarceration_incident_type_escape
     MINOR_OFFENSE = \
         state_enum_strings.state_incarceration_incident_type_minor_offense
+    POSITIVE = state_enum_strings.state_incarceration_incident_type_positive
+    REPORT = state_enum_strings.state_incarceration_incident_type_report
     VIOLENCE = \
         state_enum_strings.state_incarceration_incident_type_violence
 
@@ -40,9 +45,12 @@ class StateIncarcerationIncidentType(EntityEnum, metaclass=EntityEnumMeta):
 
 class StateIncarcerationIncidentOutcomeType(EntityEnum,
                                             metaclass=EntityEnumMeta):
+    """Possible State Incarceration Incident outcome types."""
     DISCIPLINARY_LABOR = \
         state_enum_strings.\
         state_incarceration_incident_outcome_disciplinary_labor
+    DISMISSED = \
+        state_enum_strings.state_incarceration_incident_outcome_dismissed
     EXTERNAL_PROSECUTION = \
         state_enum_strings.\
         state_incarceration_incident_outcome_external_prosecution
