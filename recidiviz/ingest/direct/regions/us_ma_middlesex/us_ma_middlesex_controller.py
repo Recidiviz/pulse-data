@@ -185,6 +185,7 @@ class UsMaMiddlesexController(BaseDirectIngestController[IngestArgs,
         builder.add('CASU', BondType.CASH)
         builder.ignore('CIVIL CAPIAS', AdmissionReason)  # Civil bench warrant.
         builder.add('CONTEMPT OF COURT', AdmissionReason.NEW_COMMITMENT)
+        builder.add('CRIMINAL COMPLAINT', AdmissionReason.NEW_COMMITMENT)
         builder.add('COURT ORDERED', ReleaseReason.OWN_RECOGNIZANCE)
         builder.add('END OF SENTENCE', ReleaseReason.EXPIRATION_OF_SENTENCE)
         builder.add('FEDERAL DETAINER', AdmissionReason.NEW_COMMITMENT)
