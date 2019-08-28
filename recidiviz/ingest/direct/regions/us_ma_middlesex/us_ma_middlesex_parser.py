@@ -146,7 +146,7 @@ class UsMaMiddlesexParser:
 
         admission_reason_hierarchy = [
             'SENTENCE MITTIMUS',
-            '15 DAY PAROLE DETAINER',
+            '15-DAY PAROLE DETAINER',
             'PERMANENT PAROLE DETAINER',
             'BAIL MITTIMUS',
             'CRIMINAL COMPLAINT',
