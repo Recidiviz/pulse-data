@@ -24,10 +24,12 @@ from functools import lru_cache
 
 import attr
 
+from recidiviz.common.attr_utils import get_non_flat_property_class_name
 from recidiviz.common.constants import enum_canonical_strings
 from recidiviz.common.constants.state.state_court_case import StateCourtType
 from recidiviz.common.constants.state.state_incarceration import \
     StateIncarcerationType
+from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.entity.base_entity import Entity, ExternalIdEntity
 from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.persistence.entity.state import entities as state_entities
@@ -85,22 +87,35 @@ class SchemaEdgeDirectionChecker:
     def county_direction_checker(cls):
         return cls(_COUNTY_CLASS_HIERARCHY, county_entities)
 
-    def is_back_edge(self, from_obj, to_obj) -> bool:
-        """Given two object types, returns whether traversing from the first to
-        the second object would be traveling along a 'back edge' in the object
-        graph. A back edge is an edge that might introduce a cycle in the graph.
+    def is_back_edge(self, from_obj, to_field_name) -> bool:
+        """Given an object and a field name on that object, returns whether
+        traversing from the obj to an object in that field would be traveling
+        along a 'back edge' in the object graph. A back edge is an edge that
+        might introduce a cycle in the graph.
         Without back edges, the object graph should have no cycles.
 
         Args:
             from_obj: An object that is the origin of this edge
-            to_obj: An object that is the destination of this edge
+            to_field_name: A string field name for the field on from_obj
+                containing the destination object of this edge
         Returns:
-            True if a graph edge travelling from from_src_obj to to_src_obj is
-                a back edge, i.e. it travels in a direction opposite to the
-                class hierarchy.
+            True if a graph edge travelling from from_src_obj to an object in
+                to_field_name is a back edge, i.e. it travels in a direction
+                opposite to the class hierarchy.
         """
         from_class_name = from_obj.__class__.__name__
-        to_class_name = to_obj.__class__.__name__
+
+        if isinstance(from_obj, DatabaseEntity):
+            to_class_name = \
+                from_obj.get_relationship_property_class_name(to_field_name)
+        elif isinstance(from_obj, Entity):
+            to_class_name = get_non_flat_property_class_name(from_obj,
+                                                             to_field_name)
+        else:
+            raise ValueError(f'Unexpected type [{type(from_obj)}]')
+
+        if to_class_name is None:
+            return False
 
         if from_class_name not in self._class_hierarchy_map:
             raise PersistenceError(
@@ -222,7 +237,7 @@ def get_set_entity_field_names(
         # TODO(1908): Update traversal logic if relationship fields can be
         # different types aside from Entity and List
         if issubclass(type(v), Entity):
-            is_back_edge = direction_checker.is_back_edge(entity, v)
+            is_back_edge = direction_checker.is_back_edge(entity, field)
             if is_back_edge:
                 back_edges.add(field)
             else:
@@ -231,7 +246,7 @@ def get_set_entity_field_names(
             # Disregard empty lists
             if not v:
                 continue
-            is_back_edge = direction_checker.is_back_edge(entity, v[0])
+            is_back_edge = direction_checker.is_back_edge(entity, field)
             if is_back_edge:
                 back_edges.add(field)
             else:

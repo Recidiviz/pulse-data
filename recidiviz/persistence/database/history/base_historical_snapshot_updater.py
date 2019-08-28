@@ -34,7 +34,7 @@ import attr
 from sqlalchemy import text
 
 from recidiviz.persistence.database.session import Session
-from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.history_table_shared_columns_mixin \
     import HistoryTableSharedColumns
@@ -42,6 +42,7 @@ from recidiviz.persistence.database.schema.schema_person_type import \
     SchemaPersonType
 from recidiviz.persistence.database.schema_utils import \
     HISTORICAL_TABLE_CLASS_SUFFIX
+from recidiviz.persistence.entity.entity_utils import SchemaEdgeDirectionChecker
 
 
 class BaseHistoricalSnapshotUpdater(Generic[SchemaPersonType]):
@@ -59,6 +60,10 @@ class BaseHistoricalSnapshotUpdater(Generic[SchemaPersonType]):
     If either of these assumptions are broken, this module will not behave
     as expected.
     """
+
+    @abc.abstractmethod
+    def get_system_level(self) -> SystemLevel:
+        """Returns the system level for this snapshot updater."""
 
     @abc.abstractmethod
     def get_schema_module(self) -> ModuleType:
@@ -422,13 +427,22 @@ class BaseHistoricalSnapshotUpdater(Generic[SchemaPersonType]):
                     unprocessed.append(related_entity)
                     unprocessed_ids.add(related_id)
 
-    @staticmethod
-    def _get_related_entities(entity: DatabaseEntity) -> List[DatabaseEntity]:
+    def _get_related_entities(self, entity: DatabaseEntity) \
+            -> List[DatabaseEntity]:
         """Returns list of all entities related to |entity|"""
 
         related_entities = []
-
         for relationship_name in entity.get_relationship_property_names():
+            # TODO(1145): For County schema, fix direction checker to gracefully
+            # handle the fact that SentenceRelationship exists in the schema
+            # but not in the entity layer.
+            if self.get_system_level() == SystemLevel.STATE:
+                # Skip back edges
+                direction_checker = \
+                    SchemaEdgeDirectionChecker.state_direction_checker()
+                if direction_checker.is_back_edge(entity, relationship_name):
+                    continue
+
             related = getattr(entity, relationship_name)
 
             # Relationship can return either a list or a single item
@@ -436,7 +450,6 @@ class BaseHistoricalSnapshotUpdater(Generic[SchemaPersonType]):
                 related_entities.extend(related)
             elif related is not None:
                 related_entities.append(related)
-
         return related_entities
 
     def _does_entity_match_historical_snapshot(

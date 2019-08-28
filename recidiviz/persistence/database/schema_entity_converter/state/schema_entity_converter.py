@@ -74,21 +74,22 @@ class _StateSchemaEntityConverter(BaseSchemaEntityConverter[SrcBaseType,
             if self._should_skip_field(field):
                 continue
 
+            if self._direction_checker.is_back_edge(dst, field):
+                continue
+
             v = getattr(dst, field)
             if isinstance(v, list):
                 for next_dst in v:
-                    self._set_person_on_child(person, dst, next_dst)
+                    self._set_person_on_child(person, next_dst)
             if issubclass(type(v), Entity) \
                     or issubclass(type(v), DatabaseEntity):
-                self._set_person_on_child(person, dst, v)
+                self._set_person_on_child(person, v)
 
     def _set_person_on_child(
             self,
             person: StatePersonType,
-            dst: DstBaseType,
             next_dst: DstBaseType):
-        if not self._direction_checker.is_back_edge(dst, next_dst):
-            self._add_person_to_dst(person, next_dst)
+        self._add_person_to_dst(person, next_dst)
 
     def _set_person_on_dst(self, person: StatePersonType, dst: DstBaseType):
         if hasattr(dst, 'person'):

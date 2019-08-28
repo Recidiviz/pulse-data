@@ -156,27 +156,31 @@ def generate_test_charge(person_id, charge_id, court_case, bond) -> \
     return instance
 
 
-def generate_test_supervision_sentence(person_id, charges) -> \
-        state_schema.StateSupervisionSentence:
+def generate_test_supervision_sentence(
+        person_id, charges, supervision_periods) \
+        -> state_schema.StateSupervisionSentence:
     instance = state_schema.StateSupervisionSentence(
         supervision_sentence_id=1111,
         status=StateSentenceStatus.SERVING.value,
         state_code='us_ca',
         person_id=person_id,
         charges=charges,
+        supervision_periods=supervision_periods,
     )
 
     return instance
 
 
-def generate_test_incarceration_sentence(person_id, charges) -> \
-        state_schema.StateIncarcerationSentence:
+def generate_test_incarceration_sentence(
+        person_id, charges, incarceration_periods) \
+        -> state_schema.StateIncarcerationSentence:
     instance = state_schema.StateIncarcerationSentence(
         incarceration_sentence_id=2222,
         status=StateSentenceStatus.SUSPENDED.value,
         state_code='us_ca',
         person_id=person_id,
         charges=charges,
+        incarceration_periods=incarceration_periods,
     )
 
     return instance
@@ -327,10 +331,12 @@ def generate_schema_state_person_obj_tree() -> state_schema.StatePerson:
                                          test_bond)
 
     test_supervision_sentence = generate_test_supervision_sentence(
-        test_person_id, [test_charge_1, test_charge_2])
+        test_person_id, [test_charge_1, test_charge_2],
+        [test_supervision_period])
 
     test_incarceration_sentence = generate_test_incarceration_sentence(
-        test_person_id, [test_charge_1, test_charge_2])
+        test_person_id, [test_charge_1, test_charge_2],
+        [test_incarceration_period])
 
     test_fine = generate_test_fine(test_person_id)
 

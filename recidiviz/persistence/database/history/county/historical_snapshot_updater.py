@@ -23,6 +23,7 @@ from datetime import date, datetime
 
 from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.common.constants.county.sentence import SentenceStatus
+from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.persistence.database.history.base_historical_snapshot_updater \
     import BaseHistoricalSnapshotUpdater, _SnapshotContextRegistry, \
     _SnapshotContext
@@ -41,6 +42,9 @@ _BOOKING_DESCENDANT_END_DATE_FIELD = {
 class CountyHistoricalSnapshotUpdater(
         BaseHistoricalSnapshotUpdater[schema.Person]):
     """County schema-specific implementation of BaseHistoricalSnapshotUpdater"""
+
+    def get_system_level(self) -> SystemLevel:
+        return SystemLevel.COUNTY
 
     def get_schema_module(self) -> ModuleType:
         return schema
