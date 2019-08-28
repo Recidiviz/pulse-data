@@ -48,7 +48,7 @@ from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import \
     StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import \
-    StateSupervisionPeriodStatus
+    StateSupervisionPeriodStatus, StateSupervisionPeriodTerminationReason
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
 from recidiviz.common.constants.state.state_supervision_violation_response \
@@ -1070,7 +1070,8 @@ class TestUsNdController(unittest.TestCase):
                                         state_supervision_periods=[
                                             StateSupervisionPeriod(
                                                 start_date='7/17/2014',
-                                                termination_date='10/6/2014')
+                                                termination_date='10/6/2014',
+                                                termination_reason='7')
                                         ],
                                         state_charges=[
                                             StateCharge(
@@ -1094,6 +1095,7 @@ class TestUsNdController(unittest.TestCase):
                                             StateSupervisionPeriod(
                                                 start_date='7/17/2014',
                                                 termination_date='12/8/2014',
+                                                termination_reason='9',
                                                 state_supervision_violations=[
                                                     violation_for_17111
                                                 ]
@@ -1132,6 +1134,7 @@ class TestUsNdController(unittest.TestCase):
                                             StateSupervisionPeriod(
                                                 start_date='3/24/2017',
                                                 termination_date='2/27/2018',
+                                                termination_reason='9',
                                                 state_supervision_violations=[
                                                     violation_for_140408
                                                 ]
@@ -1183,7 +1186,7 @@ class TestUsNdController(unittest.TestCase):
                                             state_charge_id='122554',
                                             county_code='008',
                                             statute='3550',
-                                            classification_type='IF',
+                                            classification_type='F',
                                             counts='1'
                                         )]
                                 ),
@@ -2468,6 +2471,9 @@ class TestUsNdController(unittest.TestCase):
             entities.StateSupervisionPeriod.new_with_defaults(
                 start_date=datetime.date(year=2014, month=7, day=17),
                 termination_date=datetime.date(year=2014, month=10, day=6),
+                termination_reason=
+                StateSupervisionPeriodTerminationReason.EXPIRATION,
+                termination_reason_raw_text='7',
                 status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
                 state_code=_STATE_CODE,
                 supervision_sentences=[supervision_sentence_117110],
@@ -2521,6 +2527,9 @@ class TestUsNdController(unittest.TestCase):
             entities.StateSupervisionPeriod.new_with_defaults(
                 start_date=datetime.date(year=2014, month=7, day=17),
                 termination_date=datetime.date(year=2014, month=12, day=8),
+                termination_reason=
+                StateSupervisionPeriodTerminationReason.REVOCATION,
+                termination_reason_raw_text='9',
                 status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
                 state_code=_STATE_CODE,
                 supervision_sentences=[supervision_sentence_117111],
@@ -2574,6 +2583,9 @@ class TestUsNdController(unittest.TestCase):
             entities.StateSupervisionPeriod.new_with_defaults(
                 start_date=datetime.date(year=2017, month=3, day=24),
                 termination_date=datetime.date(year=2018, month=2, day=27),
+                termination_reason=
+                StateSupervisionPeriodTerminationReason.REVOCATION,
+                termination_reason_raw_text='9',
                 status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
                 state_code=_STATE_CODE,
                 supervision_sentences=[supervision_sentence_140408],
@@ -2655,7 +2667,7 @@ class TestUsNdController(unittest.TestCase):
             county_code='008',
             statute='3550',
             classification_type=StateChargeClassificationType.FELONY,
-            classification_type_raw_text='IF',
+            classification_type_raw_text='F',
             counts=1,
             state_code=_STATE_CODE,
             status=ChargeStatus.PRESENT_WITHOUT_INFO,

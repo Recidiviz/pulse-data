@@ -227,22 +227,29 @@ state_supervision_level = Enum(
     name='state_supervision_level')
 
 state_supervision_period_termination_reason = Enum(
+    enum_strings.external_unknown,
     state_enum_strings.state_supervision_period_termination_reason_absconsion,
+    state_enum_strings.state_supervision_period_termination_reason_death,
     state_enum_strings.state_supervision_period_termination_reason_discharge,
+    state_enum_strings.state_supervision_period_termination_reason_expiration,
     state_enum_strings.state_supervision_period_termination_reason_revocation,
     state_enum_strings.state_supervision_period_termination_reason_suspension,
     name='state_supervision_period_termination_reason')
 
 state_incarceration_incident_type = Enum(
+    enum_strings.present_without_info,
     state_enum_strings.state_incarceration_incident_type_contraband,
     state_enum_strings.state_incarceration_incident_type_disorderly_conduct,
     state_enum_strings.state_incarceration_incident_type_escape,
     state_enum_strings.state_incarceration_incident_type_minor_offense,
+    state_enum_strings.state_incarceration_incident_type_positive,
+    state_enum_strings.state_incarceration_incident_type_report,
     state_enum_strings.state_incarceration_incident_type_violence,
     name='state_incarceration_incident_type')
 
 state_incarceration_incident_outcome_type = Enum(
     state_enum_strings.state_incarceration_incident_outcome_disciplinary_labor,
+    state_enum_strings.state_incarceration_incident_outcome_dismissed,
     state_enum_strings.
     state_incarceration_incident_outcome_external_prosecution,
     state_enum_strings.state_incarceration_incident_outcome_financial_penalty,

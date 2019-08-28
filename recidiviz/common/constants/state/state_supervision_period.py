@@ -80,10 +80,15 @@ class StateSupervisionLevel(EntityEnum, metaclass=EntityEnumMeta):
 
 class StateSupervisionPeriodTerminationReason(EntityEnum,
                                               metaclass=EntityEnumMeta):
+    EXTERNAL_UNKNOWN = enum_strings.external_unknown
     ABSCONSION = state_enum_strings.\
         state_supervision_period_termination_reason_absconsion
+    DEATH = state_enum_strings.state_supervision_period_termination_reason_death
     DISCHARGE = \
         state_enum_strings.state_supervision_period_termination_reason_discharge
+    EXPIRATION = \
+        state_enum_strings.\
+        state_supervision_period_termination_reason_expiration
     REVOCATION = \
         state_enum_strings.\
         state_supervision_period_termination_reason_revocation
@@ -109,7 +114,6 @@ _STATE_SUPERVISION_ADMISSION_TYPE_MAP = {
     'SUSPENDED': StateSupervisionPeriodAdmissionReason.RETURN_FROM_SUSPENSION,
 }
 
-
 _STATE_SUPERVISION_STATUS_MAP = {
     'TERMINATED': StateSupervisionPeriodStatus.TERMINATED,
     'RELEASED': StateSupervisionPeriodStatus.TERMINATED,
@@ -132,8 +136,12 @@ _STATE_SUPERVISION_LEVEL_MAP: Dict[str, StateSupervisionLevel] = {
 _STATE_SUPERVISION_PERIOD_TERMINATION_REASON_MAP = {
     'ABSCOND': StateSupervisionPeriodTerminationReason.ABSCONSION,
     'ABSCONDED': StateSupervisionPeriodTerminationReason.ABSCONSION,
+    'DEATH': StateSupervisionPeriodTerminationReason.DEATH,
+    'DECEASED': StateSupervisionPeriodTerminationReason.DEATH,
     'DISCHARGE': StateSupervisionPeriodTerminationReason.DISCHARGE,
     'DISCHARGED': StateSupervisionPeriodTerminationReason.DISCHARGE,
+    'EXPIRATION': StateSupervisionPeriodTerminationReason.EXPIRATION,
+    'EXPIRED': StateSupervisionPeriodTerminationReason.EXPIRATION,
     'REVOCATION': StateSupervisionPeriodTerminationReason.REVOCATION,
     'REVOKED': StateSupervisionPeriodTerminationReason.REVOCATION,
     'SUSPENDED': StateSupervisionPeriodAdmissionReason.RETURN_FROM_SUSPENSION,
