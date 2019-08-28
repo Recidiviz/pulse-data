@@ -16,6 +16,7 @@
 # =============================================================================
 
 """Mixin class for database entities"""
+from typing import Optional
 
 from sqlalchemy.inspection import inspect
 
@@ -56,8 +57,19 @@ class DatabaseEntity:
         """Returns set of string names of all properties of the entity that
         correspond to relationships to other database entities.
         """
-        return cls._get_entity_property_names_by_type(
-            cls._RELATIONSHIP_PROPERTY_TYPE_NAME)
+        return inspect(cls).relationships.keys()
+
+    @classmethod
+    def is_relationship_property(cls, property_name):
+        return property_name in cls.get_relationship_property_names()
+
+    @classmethod
+    def get_relationship_property_class_name(
+            cls, property_name) -> Optional[str]:
+        if not cls.is_relationship_property(property_name):
+            return None
+        prop = inspect(cls).relationships[property_name]
+        return prop.entity.class_.__name__
 
     @classmethod
     def get_relationship_property_names_and_properties(cls):

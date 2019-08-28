@@ -18,6 +18,7 @@
 from types import ModuleType
 from typing import Any, List
 
+from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.persistence.database.history.base_historical_snapshot_updater \
     import BaseHistoricalSnapshotUpdater, _SnapshotContextRegistry, \
     _SnapshotContext
@@ -29,6 +30,9 @@ from recidiviz.persistence.database.schema.state import schema
 class StateHistoricalSnapshotUpdater(
         BaseHistoricalSnapshotUpdater[schema.StatePerson]):
     """State schema-specific implementation of BaseHistoricalSnapshotUpdater"""
+
+    def get_system_level(self) -> SystemLevel:
+        return SystemLevel.STATE
 
     def get_schema_module(self) -> ModuleType:
         return schema

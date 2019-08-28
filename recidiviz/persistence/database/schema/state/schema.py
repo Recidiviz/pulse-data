@@ -1381,7 +1381,8 @@ class StateIncarcerationIncident(StateBase,
     incarceration_incident_id = Column(Integer, primary_key=True)
 
     person = relationship('StatePerson', uselist=False)
-    responding_officer = relationship('StateAgent', uselist=False)
+    responding_officer = relationship(
+        'StateAgent', uselist=False, lazy='joined')
 
     incarceration_incident_outcomes = relationship(
         'StateIncarcerationIncidentOutcome',

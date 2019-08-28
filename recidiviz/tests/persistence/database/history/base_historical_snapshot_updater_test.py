@@ -201,7 +201,7 @@ class BaseHistoricalSnapshotUpdaterTest(TestCase):
 
         for i, history_snapshot in enumerate(history_snapshots):
             expected_valid_from = ingest_times[i]
-            expected_valid_to = ingest_times[i+1] \
+            expected_valid_to = ingest_times[i + 1] \
                 if i < len(ingest_times) - 1 else None
             self.assertEqual(expected_valid_from,
                              as_history_cols(history_snapshot).valid_from)

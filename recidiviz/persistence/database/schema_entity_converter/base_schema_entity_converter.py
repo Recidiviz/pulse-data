@@ -175,14 +175,16 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
             self._check_back_edges_empty()
         return result
 
-    def _convert(self, src: SrcBaseType, populate_back_edges) -> DstBaseType:
-        dst = self._convert_forward(src)
+    def _convert(
+            self, src: SrcBaseType, populate_back_edges: bool) -> DstBaseType:
+        dst = self._convert_forward(src, populate_back_edges)
         if populate_back_edges:
             self._populate_direct_back_edges()
             self._populate_indirect_back_edges(dst)
         return dst
 
-    def _convert_forward(self, src: SrcBaseType) -> DstBaseType:
+    def _convert_forward(
+            self, src: SrcBaseType, populate_back_edges: bool) -> DstBaseType:
         """Converts the given src object to its entity/schema counterpart."""
 
         src_id = self._id_from_src_object(src)
@@ -214,6 +216,10 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
             if self._should_skip_field(field):
                 continue
 
+            if self._direction_checker.is_back_edge(src, field) and \
+                    not populate_back_edges:
+                continue
+
             v = getattr(src, field)
 
             if not isinstance(attribute, attr.Attribute):
@@ -224,10 +230,11 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
             if isinstance(v, list):
                 values = []
                 for next_src in v:
-                    if self._direction_checker.is_back_edge(src, next_src):
+                    if self._direction_checker.is_back_edge(src, field):
                         self._register_back_edge(src, next_src, field)
                         continue
-                    values.append(self._convert_forward(next_src))
+                    values.append(self._convert_forward(next_src,
+                                                        populate_back_edges))
 
                 if not values:
                     continue
@@ -236,10 +243,10 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
             elif issubclass(type(v), Entity) or issubclass(type(v),
                                                            DatabaseEntity):
                 next_src = v
-                if self._direction_checker.is_back_edge(src, next_src):
+                if self._direction_checker.is_back_edge(src, field):
                     self._register_back_edge(src, next_src, field)
                     continue
-                value = self._convert_forward(v)
+                value = self._convert_forward(v, populate_back_edges)
             elif v is None:
                 value = None
             elif is_enum(attribute):
