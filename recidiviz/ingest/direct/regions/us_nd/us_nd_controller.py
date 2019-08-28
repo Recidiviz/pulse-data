@@ -44,7 +44,7 @@ from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import \
     StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import \
-    StateSupervisionLevel
+    StateSupervisionLevel, StateSupervisionPeriodTerminationReason
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
 from recidiviz.common.constants.state.state_supervision_violation_response \
@@ -504,8 +504,8 @@ class UsNdController(CsvGcsfsDirectIngestController):
                     # on one violation
                     violation_type = None
                     if revocation_for_new_offense:
-                        # TODO(1892): Find a way to enrich from NEW_OFF fields:
-                        # violation_type, is_violent, violated_conditions
+                        # TODO(2229): Lookup NCIC codes from NEW_OFF to
+                        # determine is_violent
                         violation_type = \
                             StateSupervisionViolationType.FELONY.value
                     elif revocation_for_absconsion:
@@ -671,8 +671,6 @@ class UsNdController(CsvGcsfsDirectIngestController):
             StateSentenceStatus.COMPLETED: ['C'],
             StateSentenceStatus.SERVING: ['O'],
 
-            # TODO(1892): Perhaps handle 'IF' and 'IM' values differently once
-            #  we understand what these values mean.
             StateChargeClassificationType.FELONY: ['IF'],
             StateChargeClassificationType.MISDEMEANOR: ['IM'],
 
@@ -694,7 +692,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
                 ['HOSP', 'HOSPS', 'HOSPU', 'INT', 'RB'],
 
             StateSupervisionType.HALFWAY_HOUSE: ['COMMUNITY PLACEMENT PGRM'],
-            StateSupervisionType.PAROLE: ['SSOP'],  # TODO(1892): What is SSOP?
+            StateSupervisionType.PAROLE: ['SSOP'],
 
             StateSupervisionViolationResponseRevocationType.REINCARCERATION:
                 ['COUNTY JAIL SENTENCE',
@@ -707,19 +705,24 @@ class UsNdController(CsvGcsfsDirectIngestController):
                 ['DAMAGE', 'DISCON', 'ESCAPE_ATT', 'INS', 'SEXCONTACT',
                  'UNAUTH', 'NON'],
             StateIncarcerationIncidentType.CONTRABAND:
-                ['PROP', 'TOB', 'GANG'],
+                ['CONT', 'GANG', 'GANGREL', 'PROP', 'TOB'],
             StateIncarcerationIncidentType.MINOR_OFFENSE: ['SWIFT'],
+            StateIncarcerationIncidentType.POSITIVE: ['POSREPORT'],
+            StateIncarcerationIncidentType.REPORT: ['STAFFREP'],
+            StateIncarcerationIncidentType.PRESENT_WITHOUT_INFO: ['CONV'],
             StateIncarcerationIncidentType.VIOLENCE:
-                ['IIASSAULT', 'IIASSAULTINJ', 'IIFIGHT', 'IISUBNOINJ',
+                ['IIASSAULT', 'IIASSAULTINJ', 'IIFIGHT', 'FGHT', 'IISUBNOINJ',
                  'ISASSAULT', 'ISASSAULTINJ', 'ISSUBNOINJ', 'SEXUAL', 'THREAT'],
 
             StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS:
                 ['LCP', 'LOR', 'LCO', 'LVPVV', 'LOP', 'LVP', 'LPJES', 'FREM',
-                 'RTQ', 'UREST', 'LPH'],
+                 'RTQ', 'UREST', 'LPH', 'LSE', 'CCF', 'SREM'],
             StateIncarcerationIncidentOutcomeType.FINANCIAL_PENALTY:
                 ['RES', 'PAY', 'FIN', 'PRO', 'LJB'],
-            StateIncarcerationIncidentOutcomeType.SOLITARY: ['SEG', 'DD'],
+            StateIncarcerationIncidentOutcomeType.SOLITARY:
+                ['SEG', 'DD', 'RAS'],
             StateIncarcerationIncidentOutcomeType.TREATMENT: ['RTX'],
+            StateIncarcerationIncidentOutcomeType.DISMISSED: ['DSM'],
             StateIncarcerationIncidentOutcomeType.EXTERNAL_PROSECUTION: ['RSA'],
             StateIncarcerationIncidentOutcomeType.MISCELLANEOUS:
                 ['COMB', 'DELETED', 'RED', 'TRA'],
@@ -735,10 +738,20 @@ class UsNdController(CsvGcsfsDirectIngestController):
             StateSupervisionLevel.INTERSTATE_COMPACT: ['9'],
             # 0 means no calculated level, 5 means not classified yet
             StateSupervisionLevel.EXTERNAL_UNKNOWN: ['0', '5'],
+
+            StateSupervisionPeriodTerminationReason.ABSCONSION: ['13'],
+            StateSupervisionPeriodTerminationReason.DEATH: ['11'],
+            StateSupervisionPeriodTerminationReason.DISCHARGE:
+                ['1', '2', '3', '8', '12', '15', '16', '17', '18'],
+            StateSupervisionPeriodTerminationReason.EXPIRATION:
+                ['4', '7', '19', '20'],
+            StateSupervisionPeriodTerminationReason.EXTERNAL_UNKNOWN: ['14'],
+            StateSupervisionPeriodTerminationReason.REVOCATION: ['9', '10'],
+            StateSupervisionPeriodTerminationReason.SUSPENSION: ['5', '6'],
         }
 
         ignores: Dict[EntityEnumMeta, List[str]] = {
-            # TODO(1892): What are the appropriate court case statuses?
+            # TODO(2305): What are the appropriate court case statuses?
             StateCourtCaseStatus: ['A', 'STEP'],
             # TODO(2060): What are the appropriate reasons for: NTAD, JOB
             # TODO(2060): What to do about unexpected admission reasons:
@@ -917,9 +930,7 @@ def _parse_charge_classification(classification_str: Optional[str],
         if upper_classification_str[1:]:
             classification_subtype = upper_classification_str[1:]
     elif upper_classification_str in {'IF', 'IM'}:
-        # TODO(1892): Perhaps handle 'IF' and 'IM' values differently once we
-        #  understand what these values mean.
-        classification_type = upper_classification_str
+        classification_type = upper_classification_str[1]
     else:
         raise ValueError(
             f"Cannot parse classification string: [{classification_str}]")
