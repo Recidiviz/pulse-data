@@ -745,7 +745,8 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
         """Tests the ExtractRelationshipPropertyEntities PTransform when there
         are many-to-many relationships to be hydrated."""
         incarceration_sentence = \
-            database_test_utils.generate_test_incarceration_sentence(123, [])
+            database_test_utils.generate_test_incarceration_sentence(
+                123, [], [])
 
         supervision_period = \
             database_test_utils.generate_test_supervision_period(123, [])
