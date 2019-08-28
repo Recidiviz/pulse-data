@@ -6,6 +6,7 @@ key_mappings:
 child_key_mappings:
   PAROLE_FR: state_supervision_period.start_date
   TERM_DATE: state_supervision_period.termination_date
+  TA_TYPE: state_supervision_period.termination_reason
   JUDGE: state_agent.full_name
   REV_NOFF_YN: state_supervision_violation.violation_type
   REV_DATE: state_supervision_violation_response.response_date
@@ -21,7 +22,6 @@ keys_to_ignore:
   - SENT_TYPE             # Redundant code that maps 1:1 with DESCRIPTION
   - SENT_YY               # Handled manually within us_nd_scraper
   - SENT_MM               # Handled manually within us_nd_scraper
-  - TA_TYPE               # TODO(1892) Ingest this as termination reason
   - TB_CTY                # TODO(1866) Do we want to track qualitative attrs?
   - TD_PUB_AST
   - TE_EMPLOY
@@ -39,7 +39,7 @@ keys_to_ignore:
   - REV_TECH_YN           # Handled manually within us_nd_scraper
   - TERMINATING_OFFICER   # TODO(2225) Should be a decision_agent on state_supervision_violation_response
   - LAST_UPDATE           # No apparent use for these at the moment
-  - INACTIVEDATE          # Not in usable state within the source data
-  - RECORDCRDATE          # TODO(1892) What does this mean?
-  - RecDate               # TODO(1892) What does this mean?
+  - INACTIVEDATE          # No longer in use within source
+  - RECORDCRDATE          # No apparent use for these at the moment
+  - RecDate               # No apparent use for these at the moment
   - CHANGE_DATE_REASON    # No apparent use for these at the moment

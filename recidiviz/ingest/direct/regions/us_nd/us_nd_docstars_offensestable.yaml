@@ -17,9 +17,9 @@ primary_key:
 
 keys_to_ignore:
   - COUNT                     # No apparent use for this
-  - COURT_NUMBER              # TODO(1892) Use this to link manually to Elite?
-  - INACTIVEDATE              # TODO(1892) What does this mean?
-  - RecDate                   # TODO(1892) What does this mean?
+  - COURT_NUMBER              # TODO(2311) Use this to do better entity matching between incarceration and supervision
+  - INACTIVEDATE              # No longer in use within source
+  - RecDate                   # No apparent use for these at the moment
   - YEAR                      # Less precise version of OFFENSEDATE
   - LAST_UPDATE               # No apparent use for these
   - CREATED_BY                # No apparent use for these

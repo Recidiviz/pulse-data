@@ -82,9 +82,12 @@ state_incarceration_incident_type_contraband = 'CONTRABAND'
 state_incarceration_incident_type_disorderly_conduct = 'DISORDERLY_CONDUCT'
 state_incarceration_incident_type_escape = 'ESCAPE'
 state_incarceration_incident_type_minor_offense = 'MINOR_OFFENSE'
+state_incarceration_incident_type_positive = 'POSITIVE'
+state_incarceration_incident_type_report = 'REPORT'
 state_incarceration_incident_type_violence = 'VIOLENCE'
 
 state_incarceration_incident_outcome_disciplinary_labor = 'DISCIPLINARY_LABOR'
+state_incarceration_incident_outcome_dismissed = 'DISMISSED'
 state_incarceration_incident_outcome_external_prosecution = \
     'EXTERNAL_PROSECUTION'
 state_incarceration_incident_outcome_financial_penalty = 'FINANCIAL_PENALTY'
@@ -168,7 +171,9 @@ state_supervision_period_supervision_level_interstate_compact = \
     'INTERSTATE_COMPACT'
 
 state_supervision_period_termination_reason_absconsion = 'ABSCONSION'
+state_supervision_period_termination_reason_death = 'DEATH'
 state_supervision_period_termination_reason_discharge = 'DISCHARGE'
+state_supervision_period_termination_reason_expiration = 'EXPIRATION'
 state_supervision_period_termination_reason_revocation = 'REVOCATION'
 state_supervision_period_termination_reason_suspension = 'SUSPENSION'
 
