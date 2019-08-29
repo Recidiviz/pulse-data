@@ -62,5 +62,4 @@ class SingleCount:
     race: Optional[Race] = attr.ib(
         default=None, converter=attr.converters.optional(Race))
     # Date, or today
-    date: datetime.date = attr.ib(default=datetime.date.today(),
-                                  converter=_date_converter)
+    date: datetime.date = attr.ib(default=None, converter=_date_converter)

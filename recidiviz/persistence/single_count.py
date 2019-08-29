@@ -17,8 +17,6 @@
 """Store single count.
 """
 
-import datetime
-
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.models.single_count import SingleCount
 from recidiviz.persistence.database.schema.aggregate.schema import \
@@ -37,7 +35,7 @@ def store_single_count(sc: SingleCount):
         gender=sc.gender.value if sc.gender else None,
         race=sc.race.value if sc.race else None,
         count=sc.count,
-        date=sc.date if sc.date else datetime.date.today(),
+        date=sc.date,
     )
 
     session = SessionFactory.for_schema_base(
