@@ -52,6 +52,15 @@ def get(county_name: str, state: us.states) -> str:
     return _to_jurisdiction_id(county_fips)
 
 
+def validate_jid(jid: str) -> str:
+    """Raises an error if the jurisdiction id string is not properly formatted.
+    """
+    if len(str(jid)) != 8 or not int(str(jid)):
+        raise ValueError(f"Improperly formatted JID [{jid}], must be an 8 "
+                         "character integer.")
+    return str(jid)
+
+
 def _to_county_fips(county_name: str, state: us.states) -> int:
     """Lookup fips by county_name, filtering within the given state"""
     all_fips_for_state_df = get_fips_for(state)

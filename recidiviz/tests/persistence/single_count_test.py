@@ -52,12 +52,7 @@ class TestSingleCountPersist(TestCase):
 
     @patch('recidiviz.ingest.models.single_count.datetime.date', MockDate)
     def testWrite_SingleCount(self):
-        store_single_count(
-            SingleCount(
-                jid='01001001',
-                count=_COUNT,
-            )
-        )
+        store_single_count(SingleCount(count=_COUNT), '01001001')
 
         query = SessionFactory.for_schema_base(JailsBase).query(
             SingleCountAggregate)
@@ -69,12 +64,7 @@ class TestSingleCountPersist(TestCase):
 
     @patch('recidiviz.ingest.models.single_count.datetime.date', MockDate)
     def testWrite_SingleStrCount(self):
-        store_single_count(
-            SingleCount(
-                jid='01001001',
-                count=str(_COUNT),
-            )
-        )
+        store_single_count(SingleCount(count=str(_COUNT)), '01001001')
 
         query = SessionFactory.for_schema_base(JailsBase).query(
             SingleCountAggregate)
@@ -86,12 +76,7 @@ class TestSingleCountPersist(TestCase):
 
     def testWrite_SingleCountWithDate(self):
         store_single_count(
-            SingleCount(
-                jid='01001001',
-                count=_COUNT,
-                date=_TODAY
-            )
-        )
+            SingleCount(count=_COUNT, date=_TODAY), '01001001')
 
         query = SessionFactory.for_schema_base(JailsBase).query(
             SingleCountAggregate)
@@ -103,12 +88,8 @@ class TestSingleCountPersist(TestCase):
 
     def testWrite_SingleCountWithEthnicity(self):
         store_single_count(
-            SingleCount(
-                jid='01001001',
-                count=_COUNT,
-                ethnicity=Ethnicity.HISPANIC,
-            )
-        )
+            SingleCount(count=_COUNT, ethnicity=Ethnicity.HISPANIC),
+            '01001001')
 
         query = SessionFactory.for_schema_base(JailsBase).query(
             SingleCountAggregate)
@@ -119,13 +100,8 @@ class TestSingleCountPersist(TestCase):
         self.assertEqual(Ethnicity(result.ethnicity), Ethnicity.HISPANIC)
 
     def testWrite_SingleCountWithGender(self):
-        store_single_count(
-            SingleCount(
-                jid='01001001',
-                count=_COUNT,
-                gender=Gender.FEMALE,
-            )
-        )
+        store_single_count(SingleCount(count=_COUNT, gender=Gender.FEMALE),
+                           '01001001')
 
         query = SessionFactory.for_schema_base(JailsBase).query(
             SingleCountAggregate)
@@ -136,13 +112,8 @@ class TestSingleCountPersist(TestCase):
         self.assertEqual(Gender(result.gender), Gender.FEMALE)
 
     def testWrite_SingleCountWithRace(self):
-        store_single_count(
-            SingleCount(
-                jid='01001001',
-                count=_COUNT,
-                race=Race.ASIAN,
-            )
-        )
+        store_single_count(SingleCount(count=_COUNT, race=Race.ASIAN),
+                           '01001001')
 
         query = SessionFactory.for_schema_base(JailsBase).query(
             SingleCountAggregate)
@@ -159,50 +130,26 @@ class TestSingleCountPersist(TestCase):
             self.assertEqual(query.all(), [])
 
         with self.assertRaises(ValueError):
-            store_single_count(
-                SingleCount(
-                    jid='1001001',
-                    count=311,
-                )
-            )
+            store_single_count(SingleCount(count=311), '1001001')
         test_db_empty()
 
         with self.assertRaises(EnumParsingError):
             store_single_count(
-                SingleCount(
-                    jid='01001001',
-                    count=311,
-                    ethnicity='Not an Ethnicity'
-                )
-            )
+                SingleCount(count=311, ethnicity='Not an Ethnicity'),
+                '01001001')
         test_db_empty()
 
         with self.assertRaises(EnumParsingError):
-            store_single_count(
-                SingleCount(
-                    jid='01001001',
-                    count=311,
-                    gender='Not a Gender'
-                )
-            )
+            store_single_count(SingleCount(count=311, gender='Not a Gender'),
+                               '01001001')
         test_db_empty()
 
         with self.assertRaises(EnumParsingError):
-            store_single_count(
-                SingleCount(
-                    jid='01001001',
-                    count=311,
-                    race='Not a Race'
-                )
-            )
+            store_single_count(SingleCount(count=311, race='Not a Race'),
+                               '01001001')
         test_db_empty()
 
         with self.assertRaises(ValueError):
-            store_single_count(
-                SingleCount(
-                    jid='01001001',
-                    count=311,
-                    date='Not a date'
-                )
-            )
+            store_single_count(SingleCount(count=311, date='Not a date'),
+                               '01001001')
         test_db_empty()

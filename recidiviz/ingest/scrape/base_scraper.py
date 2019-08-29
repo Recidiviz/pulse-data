@@ -61,6 +61,7 @@ from recidiviz.persistence import batch_persistence, persistence, single_count
 
 class ParsingError(Exception):
     """Exception containing the text that failed to parse"""
+
     def __init__(self, response_type: constants.ResponseType, text: str):
         msg = 'Error parsing response as {}:\n{}'.format(response_type, text)
         super(ParsingError, self).__init__(msg)
@@ -119,7 +120,7 @@ class BaseScraper(Scraper):
         # detected encoding instead of defaulting to 'ISO-8859-1'. See
         # http://docs.python-requests.org/en/master/user/advanced/#encodings
         if 'charset' not in response.headers['content-type'] and \
-            not response.apparent_encoding == 'ascii':
+                not response.apparent_encoding == 'ascii':
             response.encoding = response.apparent_encoding
 
         if response_type is constants.ResponseType.HTML:
@@ -286,7 +287,8 @@ class BaseScraper(Scraper):
                         session = sessions.get_current_session(scrape_key)
                         if session:
                             sc = attr.evolve(sc, date=session.start.date())
-                    single_count.store_single_count(sc)
+                    single_count.store_single_count(sc,
+                                                    self.region.jurisdiction_id)
         except Exception as e:
             if self.BATCH_WRITES:
                 scrape_key = ScrapeKey(
