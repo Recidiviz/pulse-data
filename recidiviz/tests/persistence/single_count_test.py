@@ -18,6 +18,7 @@
 import datetime
 from unittest import TestCase
 
+from mock import patch
 from more_itertools import one
 
 from recidiviz.common.constants.entity_enum import EnumParsingError
@@ -34,6 +35,13 @@ from recidiviz.tests.utils import fakes
 
 _JID = '01001001'
 _COUNT = 311
+_TODAY = datetime.date(2000, 1, 1)
+
+
+class MockDate(datetime.date):
+    @classmethod
+    def today(cls):
+        return cls(2000, 1, 1)
 
 
 class TestSingleCountPersist(TestCase):
@@ -42,6 +50,7 @@ class TestSingleCountPersist(TestCase):
     def setup_method(self, _test_method):
         fakes.use_in_memory_sqlite_database(JailsBase)
 
+    @patch('recidiviz.ingest.models.single_count.datetime.date', MockDate)
     def testWrite_SingleCount(self):
         store_single_count(
             SingleCount(
@@ -56,8 +65,9 @@ class TestSingleCountPersist(TestCase):
 
         self.assertEqual(result.jid, _JID)
         self.assertEqual(result.count, _COUNT)
-        self.assertEqual(result.date, datetime.date.today())
+        self.assertEqual(result.date, _TODAY)
 
+    @patch('recidiviz.ingest.models.single_count.datetime.date', MockDate)
     def testWrite_SingleStrCount(self):
         store_single_count(
             SingleCount(
@@ -72,14 +82,14 @@ class TestSingleCountPersist(TestCase):
 
         self.assertEqual(result.jid, _JID)
         self.assertEqual(result.count, _COUNT)
-        self.assertEqual(result.date, datetime.date.today())
+        self.assertEqual(result.date, _TODAY)
 
     def testWrite_SingleCountWithDate(self):
         store_single_count(
             SingleCount(
                 jid='01001001',
                 count=_COUNT,
-                date=datetime.date.today()
+                date=_TODAY
             )
         )
 
@@ -89,7 +99,7 @@ class TestSingleCountPersist(TestCase):
 
         self.assertEqual(result.jid, _JID)
         self.assertEqual(result.count, _COUNT)
-        self.assertEqual(result.date, datetime.date.today())
+        self.assertEqual(result.date, _TODAY)
 
     def testWrite_SingleCountWithEthnicity(self):
         store_single_count(
