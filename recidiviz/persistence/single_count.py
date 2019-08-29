@@ -18,19 +18,22 @@
 """
 
 from recidiviz.common.ingest_metadata import SystemLevel
+from recidiviz.common.jid import validate_jid
 from recidiviz.ingest.models.single_count import SingleCount
 from recidiviz.persistence.database.schema.aggregate.schema import \
     SingleCountAggregate
-from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.schema_utils import \
     schema_base_for_system_level
+from recidiviz.persistence.database.session_factory import SessionFactory
 
 
-def store_single_count(sc: SingleCount):
+def store_single_count(sc: SingleCount, jurisdiction_id: str):
     """Store a single count"""
 
+    jurisdiction_id = validate_jid(jurisdiction_id)
+
     sca = SingleCountAggregate(
-        jid=sc.jid,
+        jid=jurisdiction_id,
         ethnicity=sc.ethnicity.value if sc.ethnicity else None,
         gender=sc.gender.value if sc.gender else None,
         race=sc.race.value if sc.race else None,
