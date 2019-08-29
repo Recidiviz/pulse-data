@@ -152,6 +152,7 @@ BOND_TYPE_MAP = {
     'NO BOND UNTIL DRUG SCREEN TAKEN': BondType.DENIED,
     'NO INFO': None,
     'NO SURETY NO CC NO 10': BondType.CASH,
+    'NOBOND': BondType.DENIED,
     'NON REFUNDABLE': BondType.CASH,
     'NONE SET': BondType.NOT_REQUIRED,
     'NONE': BondType.DENIED,
