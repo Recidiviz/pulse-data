@@ -36,11 +36,11 @@ class TestScrapedData(TestCase):
             persist=True)
 
     def testSingleCount(self):
-        ScrapedData(single_counts=[SingleCount(jid='01001001', count=123)],
+        ScrapedData(single_counts=[SingleCount(count=123)],
                     persist=True)
 
     def testBoth(self):
         ScrapedData(
             ingest_info=IngestInfo(people=[Person(race=Race("ASIAN"))]),
-            single_counts=[SingleCount(jid='01001001', count=123)],
+            single_counts=[SingleCount(count=123)],
             persist=True)
