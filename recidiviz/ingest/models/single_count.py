@@ -26,12 +26,6 @@ from recidiviz.common.constants.person_characteristics import Ethnicity, \
     Gender, Race
 
 
-def _validate_jid(instance: 'SingleCount', _, __):
-    if len(instance.jid) != 8 or not int(instance.jid):
-        raise ValueError("Improperly formatted JID, must be an 8 "
-                         "character integer.")
-
-
 def _date_converter(value: Any) -> datetime.date:
     if not value:
         return datetime.date.today()
@@ -50,8 +44,6 @@ def _date_converter(value: Any) -> datetime.date:
 class SingleCount:
     """Single count measure"""
 
-    # The jurisdiction id.
-    jid: str = attr.ib(validator=_validate_jid)
     # The count.
     count: int = attr.ib(converter=int)
     # Optionally, this count can be ethnicity, race, or gender specific.

@@ -46,14 +46,13 @@ def store_single_count_endpoint():
     count = get_str_param_value('count', request.args)
     date = get_str_param_value('date', request.args)
     sc = SingleCount(
-        jid=jid,
         count=count,
         ethnicity=ethnicity,
         gender=gender,
         race=race,
         date=date,
     )
-    stored = store_single_count(sc)
+    stored = store_single_count(sc, jid)
 
     if stored:
         logging.info("Stored [%d] as [%s] for [%s]",
