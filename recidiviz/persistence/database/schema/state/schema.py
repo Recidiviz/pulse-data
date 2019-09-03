@@ -955,6 +955,7 @@ class _StateSentenceGroupSharedColumns(_ReferencesStatePersonSharedColumns):
     county_code = Column(String(255), index=True)
     min_length_days = Column(Integer)
     max_length_days = Column(Integer)
+    is_life = Column(Boolean)
 
 
 class StateSentenceGroup(StateBase,
