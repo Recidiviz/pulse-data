@@ -278,7 +278,10 @@ class TestUsNdController(unittest.TestCase):
                                        ]),
                     StateSentenceGroup(state_sentence_group_id='115077',
                                        date_imposed='10/29/2018',
-                                       max_length='3Y 7M 8D')
+                                       max_length='3Y 7M 8D'),
+                    StateSentenceGroup(state_sentence_group_id='44444',
+                                       date_imposed='10/29/2018',
+                                       is_life='True')
                 ]),
             ])
 
@@ -1512,6 +1515,16 @@ class TestUsNdController(unittest.TestCase):
             person=person_4)
         person_4.sentence_groups.append(sentence_group_115077)
         expected_people.append(person_4)
+
+        sentence_group_44444 = entities.StateSentenceGroup.new_with_defaults(
+            external_id='44444',
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            state_code=_STATE_CODE,
+            max_length_days=None,
+            date_imposed=datetime.date(year=2018, month=10, day=29),
+            is_life=True,
+            person=person_4)
+        person_4.sentence_groups.append(sentence_group_44444)
 
         # Act
         self._run_ingest_job_for_filename('elite_offendersentenceaggs.csv')
