@@ -1497,7 +1497,7 @@ class TestUsNdController(unittest.TestCase):
             incarceration_sentence_2)
         sentence_group_113377.date_imposed = datetime.date(
             year=2018, month=3, day=27)
-        sentence_group_113377.max_length_days = 283
+        sentence_group_113377.max_length_days = 284
 
         sentence_group_114909.date_imposed = datetime.date(
             year=2018, month=2, day=27)
