@@ -700,7 +700,7 @@ class StateSentenceGroup(IngestObject):
 
     def __init__(self, state_sentence_group_id=None, status=None,
                  date_imposed=None, state_code=None, county_code=None,
-                 min_length=None, max_length=None,
+                 min_length=None, max_length=None, is_life=None,
                  state_supervision_sentences=None,
                  state_incarceration_sentences=None, state_fines=None):
         self.state_sentence_group_id: Optional[str] = state_sentence_group_id
@@ -710,6 +710,7 @@ class StateSentenceGroup(IngestObject):
         self.county_code: Optional[str] = county_code
         self.min_length: Optional[str] = min_length
         self.max_length: Optional[str] = max_length
+        self.is_life: Optional[str] = is_life
 
         self.state_supervision_sentences: List[StateSupervisionSentence] = \
             state_supervision_sentences or []

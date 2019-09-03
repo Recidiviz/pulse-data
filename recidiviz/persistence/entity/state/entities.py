@@ -412,6 +412,8 @@ class StateSentenceGroup(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     min_length_days: Optional[int] = attr.ib()
     max_length_days: Optional[int] = attr.ib()
 
+    is_life: Optional[bool] = attr.ib()
+
     #   - Who
     # See |person| in entity relationships below.
 

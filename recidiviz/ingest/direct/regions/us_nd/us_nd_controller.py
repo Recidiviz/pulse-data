@@ -96,7 +96,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
             'elite_alias': [self._clear_temporary_alias_primary_ids],
             'elite_offenders': [self._rationalize_race_and_ethnicity],
             'elite_offenderidentifier': [self._normalize_external_id],
-            'elite_offendersentenceaggs': [self._ignore_unknown_max_lengths],
+            'elite_offendersentenceaggs': [self._rationalize_max_length],
             'elite_offendersentences': [self._rationalize_life_sentence],
             'elite_offendersentenceterms': [
                 self._concatenate_elite_length_periods,
@@ -290,16 +290,21 @@ class UsNdController(CsvGcsfsDirectIngestController):
                 extracted_object.__setattr__('is_life', str(is_life_sentence))
 
     @staticmethod
-    def _ignore_unknown_max_lengths(row: Dict[str, str],
-                                    extracted_objects: List[IngestObject],
-                                    _cache: IngestObjectCache):
-        # TODO(2045): Correctly handle this information instead of ignoring.
-        ignore_length = row['MAX_TERM'] in ('LIFE', 'PRI')
+    def _rationalize_max_length(row: Dict[str, str],
+                                extracted_objects: List[IngestObject],
+                                _cache: IngestObjectCache):
+        """PRI means Prison sentence, which is redundant. It is only ever
+        used in a small number of erroneous cases long ago that had no data on
+        max sentence length available."""
+        is_life_sentence = row['MAX_TERM'] == 'LIFE'
+        is_redundant_pri = row['MAX_TERM'] == 'PRI'
 
         for extracted_object in extracted_objects:
-            if ignore_length and isinstance(extracted_object,
-                                            StateSentenceGroup):
+            if (is_life_sentence or is_redundant_pri) \
+                    and isinstance(extracted_object, StateSentenceGroup):
                 extracted_object.__setattr__('max_length', None)
+            if is_life_sentence:
+                extracted_object.__setattr__('is_life', str(is_life_sentence))
 
     @staticmethod
     def _normalize_external_id(_row: Dict[str, str],

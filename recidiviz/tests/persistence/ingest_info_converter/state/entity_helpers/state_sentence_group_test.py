@@ -43,6 +43,7 @@ class StateSentenceGroupConverterTest(unittest.TestCase):
             county_code='CO',
             min_length='200D',
             max_length='600D',
+            is_life='false',
         )
 
         # Act
@@ -61,6 +62,7 @@ class StateSentenceGroupConverterTest(unittest.TestCase):
             county_code='CO',
             min_length_days=200,
             max_length_days=600,
+            is_life=False,
         )
 
         self.assertEqual(result, expected_result)

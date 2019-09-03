@@ -16,7 +16,8 @@
 # ============================================================================
 """Converts an ingest_info proto StateSentenceGroup to a persistence entity."""
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-from recidiviz.common.str_field_utils import normalize, parse_date, parse_days
+from recidiviz.common.str_field_utils import normalize, parse_date, \
+    parse_days, parse_bool
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import StateSentenceGroup
 from recidiviz.persistence.entity.state import entities
@@ -56,3 +57,4 @@ def copy_fields_to_builder(
     new.county_code = fn(normalize, 'county_code', proto)
     new.min_length_days = fn(parse_days, 'min_length', proto)
     new.max_length_days = fn(parse_days, 'max_length', proto)
+    new.is_life = fn(parse_bool, 'is_life', proto)
