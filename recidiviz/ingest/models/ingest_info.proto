@@ -236,10 +236,11 @@ message StateSentenceGroup {
     optional string county_code = 5;
     optional string min_length = 6;
     optional string max_length = 7;
+    optional string is_life = 8;
 
-    repeated string state_supervision_sentence_ids = 8;
-    repeated string state_incarceration_sentence_ids = 9;
-    repeated string state_fine_ids = 10;
+    repeated string state_supervision_sentence_ids = 9;
+    repeated string state_incarceration_sentence_ids = 10;
+    repeated string state_fine_ids = 11;
 }
 
 message StateSupervisionSentence {
