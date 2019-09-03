@@ -236,14 +236,12 @@ def scraper_stop():
         if not closed_sessions:
             return
 
-        was_stopped = False
         try:
             logging.info("Stopping scraper for region [%s].", region)
             region_scraper = regions.get_region(region).get_ingestor()
-            was_stopped = region_scraper.stop_scrape(scrape_types,
-                                                     respect_is_stoppable)
+            region_scraper.stop_scrape(scrape_types, respect_is_stoppable)
         finally:
-            if next_phase and was_stopped:
+            if next_phase:
                 logging.info("Enqueueing %s for region [%s].",
                              next_phase, region)
                 queues.enqueue_scraper_phase(region_code=region,
