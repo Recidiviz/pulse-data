@@ -132,6 +132,8 @@ class UsNdController(CsvGcsfsDirectIngestController):
             'elite_externalmovements': _generate_period_primary_key,
             'elite_offenderchargestable': _generate_charge_primary_key,
             'elite_alias': _generate_alias_temporary_primary_key,
+            'elite_offense_in_custody_and_pos_report_data':
+                _generate_incident_primary_key,
         }
 
         self.ancestor_key_override_by_file: Dict[str, Callable] = {
@@ -607,7 +609,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
     def _set_incident_outcome_id(row: Dict[str, str],
                                  extracted_objects: List[IngestObject],
                                  _cache: IngestObjectCache):
-        incident_id = row['OIC_INCIDENT_ID']
+        incident_id = _generate_incident_id(row)
         sanction_seq = row['SANCTION_SEQ']
 
         if not incident_id or not sanction_seq:
@@ -813,6 +815,20 @@ def _generate_sentence_id(row: Dict[str, str]) -> str:
         sentence_id = sentence_id + _SUPERVISION_SENTENCE_ID_SUFFIX
 
     return sentence_id
+
+
+def _generate_incident_primary_key(row: Dict[str, str]) \
+        -> IngestFieldCoordinates:
+    return IngestFieldCoordinates('state_incarceration_incident',
+                                  'state_incarceration_incident_id',
+                                  _generate_incident_id(row))
+
+
+def _generate_incident_id(row: Dict[str, str]) -> str:
+    overall_incident_id = row['AGENCY_INCIDENT_ID']
+    person_incident_id = row['OIC_INCIDENT_ID']
+
+    return '-'.join([overall_incident_id, person_incident_id])
 
 
 def _convert_to_supervision_sentence(just_updated: StateIncarcerationSentence,

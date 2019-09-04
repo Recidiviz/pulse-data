@@ -6,7 +6,7 @@ key_mappings:
 ancestor_keys:
   OFFENDER_BOOK_ID: state_sentence_group.state_sentence_group_id
 
-# There is a primary key override in us_nd_scraper for this file
+# There is a primary key override in us_nd_controller for this file
 
 keys_to_ignore:
   - START_DATE            # TODO(1759) Should this live on a Sentence?
