@@ -26,6 +26,7 @@ import setuptools
 
 # Packages required by the pipeline
 REQUIRED_PACKAGES = [
+    'aenum',
     'apache-beam',
     'cattrs',
     'dateparser',
@@ -46,7 +47,7 @@ REQUIRED_PACKAGES = [
 setuptools.setup(
     name='recidiviz-calculation-pipelines',
     # TODO(2031): Dynamically set the package version
-    version='1.0.43',
+    version='1.0.76',
     install_requires=REQUIRED_PACKAGES,
     packages=setuptools.find_packages()
 )

@@ -1,3 +1,4 @@
 -i https://pypi.org/simple
 requests==2.20.0
+oauth2client
 gcsfs==0.2.3

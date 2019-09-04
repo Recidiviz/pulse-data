@@ -32,6 +32,8 @@ import google.auth.iam
 from google.auth.transport.requests import Request
 import google.oauth2.credentials
 import google.oauth2.service_account
+from googleapiclient.discovery import build
+from oauth2client.client import GoogleCredentials
 
 _IAM_SCOPE = 'https://www.googleapis.com/auth/iam'
 _OAUTH_TOKEN_URI = 'https://www.googleapis.com/oauth2/v4/token'
@@ -108,6 +110,28 @@ def make_iap_request(url: str, client_id: str, method='GET', **kwargs):
         raise Exception(
             'Bad response from application: {!r} / {!r} / {!r}'.format(
                 response.status_code, response.headers, response.text))
+    return response
+
+
+def trigger_dataflow_job_from_template(project_id: str, bucket: str,
+                                       template: str, job_name: str):
+    """Trigger the Dataflow job at the given template location and execute it
+    with the given `job_name`."""
+    credentials = GoogleCredentials.get_application_default()
+    service = build('dataflow', 'v1b3', credentials=credentials)
+
+    body = {
+        "jobName": "{job_name}".format(job_name=job_name),
+        "gcsPath": "gs://{bucket}/templates/{template}".format(
+            bucket=bucket, template=template),
+        "environment": {
+            "tempLocation": "gs://{bucket}/temp".format(bucket=bucket),
+        }
+    }
+
+    request = service.projects().templates().create(
+        projectId=project_id, body=body)
+    response = request.execute()
     return response
 
 
