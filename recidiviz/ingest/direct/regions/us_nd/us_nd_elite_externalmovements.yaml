@@ -7,7 +7,7 @@ ancestor_keys:
 enforced_ancestor_types:
     state_sentence: state_incarceration_sentence
 
-# There is a primary key override in us_nd_scraper for this file
+# There is a primary key override in us_nd_controller for this file
 
 keys_to_ignore:
   - ACTIVE_FLAG           # More detailed information from other fields here
