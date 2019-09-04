@@ -44,6 +44,7 @@ class StateChargeConverterTest(unittest.TestCase):
             offense_date='1/2/2111',
             date_charged='1/10/2111',
             state_code='us_nd',
+            ncic_code='4801',
             statute='ab54.21c',
             description='CONSPIRACY',
             attempted='False',
@@ -71,6 +72,7 @@ class StateChargeConverterTest(unittest.TestCase):
             offense_date=date(year=2111, month=1, day=2),
             date_charged=date(year=2111, month=1, day=10),
             state_code='US_ND',
+            ncic_code='4801',
             statute='AB54.21C',
             description='CONSPIRACY',
             attempted=False,
@@ -79,6 +81,81 @@ class StateChargeConverterTest(unittest.TestCase):
                          "OPEN FOR OF MONTREAL AT THE 9:30 CLUB?",
             is_controlling=True,
             charging_entity='SCOTUS'
+        )
+
+        self.assertEqual(result, expected_result)
+
+    def testParseStateCharge_ncicCodeButNoDescription(self):
+        # Arrange
+        ingest_charge = ingest_info_pb2.StateCharge(
+            status='ACQUITTED',
+            classification_type='FELONY',
+            classification_subtype='AA',
+            state_charge_id='CHARGE_ID',
+            offense_date='1/2/2111',
+            date_charged='1/10/2111',
+            state_code='us_nd',
+            ncic_code='4801',
+            attempted='False',
+        )
+
+        # Act
+        charge_builder = entities.StateCharge.builder()
+        state_charge.copy_fields_to_builder(
+            charge_builder, ingest_charge, _EMPTY_METADATA)
+        result = charge_builder.build()
+
+        # Assert
+        expected_result = entities.StateCharge.new_with_defaults(
+            status=ChargeStatus.ACQUITTED,
+            status_raw_text='ACQUITTED',
+            classification_type=StateChargeClassificationType.FELONY,
+            classification_type_raw_text='FELONY',
+            classification_subtype='AA',
+            external_id='CHARGE_ID',
+            offense_date=date(year=2111, month=1, day=2),
+            date_charged=date(year=2111, month=1, day=10),
+            state_code='US_ND',
+            ncic_code='4801',
+            description='RESISTING ARREST',
+            attempted=False,
+        )
+
+        self.assertEqual(result, expected_result)
+
+    def testParseStateCharge_ncicCodeButNoDescription_codeNotFound(self):
+        # Arrange
+        ingest_charge = ingest_info_pb2.StateCharge(
+            status='ACQUITTED',
+            classification_type='FELONY',
+            classification_subtype='AA',
+            state_charge_id='CHARGE_ID',
+            offense_date='1/2/2111',
+            date_charged='1/10/2111',
+            state_code='us_nd',
+            ncic_code='9999',
+            attempted='False',
+        )
+
+        # Act
+        charge_builder = entities.StateCharge.builder()
+        state_charge.copy_fields_to_builder(
+            charge_builder, ingest_charge, _EMPTY_METADATA)
+        result = charge_builder.build()
+
+        # Assert
+        expected_result = entities.StateCharge.new_with_defaults(
+            status=ChargeStatus.ACQUITTED,
+            status_raw_text='ACQUITTED',
+            classification_type=StateChargeClassificationType.FELONY,
+            classification_type_raw_text='FELONY',
+            classification_subtype='AA',
+            external_id='CHARGE_ID',
+            offense_date=date(year=2111, month=1, day=2),
+            date_charged=date(year=2111, month=1, day=10),
+            state_code='US_ND',
+            ncic_code='9999',
+            attempted=False,
         )
 
         self.assertEqual(result, expected_result)

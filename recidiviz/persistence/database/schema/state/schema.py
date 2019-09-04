@@ -814,6 +814,7 @@ class _StateChargeSharedColumns(_ReferencesStatePersonSharedColumns):
     date_charged = Column(Date)
     state_code = Column(String(255), nullable=False, index=True)
     county_code = Column(String(255), index=True)
+    ncic_code = Column(String(255))
     statute = Column(String(255))
     description = Column(Text)
     attempted = Column(Boolean)
