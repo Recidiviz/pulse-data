@@ -148,7 +148,7 @@ class TestStopScraper:
         mock_purge_scrape_tasks.return_value = None
 
         scraper = FakeScraper(region, initial_task)
-        scraper.stop_scrape([scrape_type])
+        scraper.stop_scrape(scrape_type)
 
         mock_get_region.assert_called_with(region)
         mock_sessions.assert_called_with(region, include_closed=False)
@@ -210,7 +210,7 @@ class TestStopScraper:
         mock_purge_scrape_tasks.return_value = None
 
         scraper = FakeScraper(region, initial_task)
-        scraper.stop_scrape([scrape_type])
+        scraper.stop_scrape(scrape_type)
 
         mock_get_region.assert_called_with(region)
         mock_sessions.assert_called_with(region, include_closed=False)

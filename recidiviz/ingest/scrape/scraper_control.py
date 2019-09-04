@@ -181,32 +181,25 @@ def scraper_start():
 @authenticate_request
 def scraper_stop():
     """Request handler to stop one or several running scrapers.
-
     Note: Stopping any scrape type for a region involves purging the
     scraping task queue for that region, necessarily killing any other
     in-progress scrape types. Untargeted scrapes killed by this request
     handler will be noted and resumed a moment or two later.
-
     Unlike the other Scraper action methods, stop_scrape doesn't call
     individually for each scrape type. That could create a race condition,
     as each call noticed the other scrape type was running at the same
     time, kicked off a resume effort with a delay, and then our second
     call came to kill the other type and missed the (delayed / not yet
     in taskqueue) call - effectively not stopping the scrape.
-
     Instead, we send the full list of scrape_types to stop, and
     Scraper.stop_scrape is responsible for fan-out.
-
     Example query:
         /scraper_control/stop?region=us_ny&scrape_type=background
-
     URL parameters:
         region: (string) Region to take action for, or 'all'
         scrape_type: (string) Type of scrape to take action for, or 'all'
-
     Args:
         N/A
-
     Returns:
         N/A
     """
@@ -227,25 +220,29 @@ def scraper_stop():
     @structured_logging.copy_trace_id_to_thread
     @monitoring.with_region_tag
     def _stop_scraper(region: str):
-        closed_sessions = []
+        logging.info("Trying to stop scraper for region [%s].", region)
         for scrape_type in scrape_types:
-            closed_sessions.extend(
-                sessions.close_session(ScrapeKey(region, scrape_type)))
-        for session in closed_sessions:
-            sessions.update_phase(session, scrape_phase.ScrapePhase.PERSIST)
-        if not closed_sessions:
-            return
+            key = ScrapeKey(region_code=region, scrape_type=scrape_type)
+            session = sessions.get_current_session(key)
+            if not session:
+                logging.info(
+                    "No [%s] scrape to stop for region: [%s]", scrape_type,
+                    region)
+                continue
 
-        try:
-            logging.info("Stopping scraper for region [%s].", region)
             region_scraper = regions.get_region(region).get_ingestor()
-            region_scraper.stop_scrape(scrape_types, respect_is_stoppable)
-        finally:
-            if next_phase:
-                logging.info("Enqueueing %s for region [%s].",
-                             next_phase, region)
-                queues.enqueue_scraper_phase(region_code=region,
-                                             url=next_phase_url)
+            was_stopped = region_scraper.stop_scrape(scrape_type,
+                                                     respect_is_stoppable)
+            if was_stopped:
+                closed_sessions = sessions.close_session(key)
+                for closed_session in closed_sessions:
+                    sessions.update_phase(closed_session,
+                                          scrape_phase.ScrapePhase.PERSIST)
+                if next_phase:
+                    logging.info("Enqueueing %s for region [%s].",
+                                 next_phase, region)
+                    queues.enqueue_scraper_phase(region_code=region,
+                                                 url=next_phase_url)
 
     if not scrape_regions or not scrape_types:
         return ('Missing or invalid parameters, see service logs.',
