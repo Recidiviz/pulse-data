@@ -207,6 +207,7 @@ message StateAlias {
     optional string given_names = 5;
     optional string middle_names = 6;
     optional string name_suffix = 7;
+    optional string alias_type = 8;
 }
 
 message StatePersonExternalId {
