@@ -1,5 +1,5 @@
 key_mappings:
-  CODE: state_charge.statute
+  CODE: state_charge.ncic_code
   LEVEL: state_charge.classification_type
   COUNTS: state_charge.counts
   OFFENSEDATE: state_charge.offense_date

@@ -216,6 +216,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             state_bond_id='BOND_ID',
             classification_type='M',
             classification_subtype='1',
+            ncic_code='5006',
         )
         ingest_info.state_charges.add(
             state_charge_id='CHARGE_ID2',
@@ -227,7 +228,9 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             state_charge_id='CHARGE_ID3',
             state_court_case_id='CASE_ID',
             classification_type='F',
-            classification_subtype='3'
+            classification_subtype='3',
+            ncic_code='5006',
+            description='Obstruction of investigation',
         )
         ingest_info.state_court_cases.add(
             state_court_case_id='CASE_ID',
@@ -366,6 +369,8 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             StateChargeClassificationType.MISDEMEANOR,
             classification_type_raw_text='M',
             classification_subtype='1',
+            ncic_code='5006',
+            description='FALSE STATEMENT',
             state_code='US_ND',
             status=ChargeStatus.PRESENT_WITHOUT_INFO,
             court_case=court_case,
@@ -395,6 +400,8 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             StateChargeClassificationType.FELONY,
             classification_type_raw_text='F',
             classification_subtype='3',
+            ncic_code='5006',
+            description='OBSTRUCTION OF INVESTIGATION',
             status=ChargeStatus.PRESENT_WITHOUT_INFO,
             court_case=court_case
         )

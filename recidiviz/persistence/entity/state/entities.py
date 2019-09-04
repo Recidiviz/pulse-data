@@ -304,6 +304,7 @@ class StateCharge(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     county_code: str = attr.ib()
 
     #   - What
+    ncic_code: Optional[str] = attr.ib()
     # A code corresponding to actual sentencing terms that
     statute: Optional[str] = attr.ib()
     description: Optional[str] = attr.ib()

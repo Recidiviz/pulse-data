@@ -1073,6 +1073,21 @@ class TestUsNdController(unittest.TestCase):
                     )])
             ])
 
+        violation_for_147777 = StateSupervisionViolation(
+            violation_type='FELONY',
+            is_violent='True',
+            state_supervision_violation_responses=[
+                StateSupervisionViolationResponse(
+                    response_type='PERMANENT_DECISION',
+                    response_date='2/27/2016',
+                    decision='REVOCATION',
+                    revocation_type='DOCR Inmate Sentence',
+                    decision_agents=[StateAgent(
+                        state_agent_id='77',
+                        agent_type='SUPERVISION_OFFICER'
+                    )])
+            ])
+
         expected = IngestInfo(state_people=[
             StatePerson(state_person_id='92237',
                         state_person_external_ids=[
@@ -1173,7 +1188,35 @@ class TestUsNdController(unittest.TestCase):
                                                 )
                                             )
                                         ]
-                                    )]
+                                    ),
+                                    StateSupervisionSentence(
+                                        state_supervision_sentence_id='147777',
+                                        supervision_type='Suspended',
+                                        projected_completion_date='3/23/2015',
+                                        state_supervision_periods=[
+                                            StateSupervisionPeriod(
+                                                start_date='3/24/2013',
+                                                termination_date='2/27/2016',
+                                                termination_reason='9',
+                                                state_supervision_violations=[
+                                                    violation_for_147777
+                                                ]
+                                            )
+                                        ],
+                                        state_charges=[
+                                            StateCharge(
+                                                state_court_case=
+                                                StateCourtCase(
+                                                    judge=StateAgent(
+                                                        agent_type='JUDGE',
+                                                        full_name=
+                                                        'Judge Person',
+                                                    ),
+                                                )
+                                            )
+                                        ]
+                                    )
+                                ]
                             )]
                         )
         ])
@@ -1199,14 +1242,14 @@ class TestUsNdController(unittest.TestCase):
                                         StateCharge(
                                             state_charge_id='122553',
                                             county_code='008',
-                                            statute='3522',
+                                            ncic_code='3522',
                                             classification_type='F',
                                             counts='1'
                                         ),
                                         StateCharge(
                                             state_charge_id='122554',
                                             county_code='008',
-                                            statute='3550',
+                                            ncic_code='3550',
                                             classification_type='F',
                                             counts='1'
                                         )]
@@ -1217,7 +1260,7 @@ class TestUsNdController(unittest.TestCase):
                                         StateCharge(
                                             state_charge_id='122552',
                                             county_code='008',
-                                            statute='3562',
+                                            ncic_code='3562',
                                             classification_type='F',
                                             counts='1'
                                         )]
@@ -1241,7 +1284,7 @@ class TestUsNdController(unittest.TestCase):
                                             state_charge_id='149349',
                                             offense_date='7/30/2016',
                                             county_code='020',
-                                            statute='2204',
+                                            ncic_code='2204',
                                             classification_type='M',
                                             classification_subtype='A',
                                             counts='1'
@@ -2613,6 +2656,7 @@ class TestUsNdController(unittest.TestCase):
                 state_code=_STATE_CODE,
                 status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                 person=person_2)
+
         supervision_sentence_140408 = \
             entities.StateSupervisionSentence.new_with_defaults(
                 external_id='140408',
@@ -2677,6 +2721,73 @@ class TestUsNdController(unittest.TestCase):
             court_type=StateCourtType.PRESENT_WITHOUT_INFO,
             judge=agent_person,
             charges=[charge_140408], person=charge_140408.person)
+
+        supervision_sentence_147777 = \
+            entities.StateSupervisionSentence.new_with_defaults(
+                external_id='147777',
+                supervision_type=StateSupervisionType.PROBATION,
+                supervision_type_raw_text='SUSPENDED',
+                projected_completion_date=datetime.date(
+                    year=2015, month=3, day=23),
+                state_code=_STATE_CODE,
+                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                person=sentence_group_person_2_placeholder_ss.person,
+                sentence_group=sentence_group_person_2_placeholder_ss)
+        supervision_period_147777 = \
+            entities.StateSupervisionPeriod.new_with_defaults(
+                start_date=datetime.date(year=2013, month=3, day=24),
+                termination_date=datetime.date(year=2016, month=2, day=27),
+                termination_reason=
+                StateSupervisionPeriodTerminationReason.REVOCATION,
+                termination_reason_raw_text='9',
+                status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+                state_code=_STATE_CODE,
+                supervision_sentences=[supervision_sentence_147777],
+                person=supervision_sentence_147777.person)
+        supervision_violation_147777 = \
+            entities.StateSupervisionViolation.new_with_defaults(
+                violation_type=StateSupervisionViolationType.FELONY,
+                violation_type_raw_text='FELONY',
+                is_violent=True,
+                state_code=_STATE_CODE,
+                supervision_period=supervision_period_147777,
+                person=supervision_period_147777.person)
+        supervision_violation_response_147777 = \
+            entities.StateSupervisionViolationResponse.new_with_defaults(
+                response_type=
+                StateSupervisionViolationResponseType.PERMANENT_DECISION,
+                response_type_raw_text='PERMANENT_DECISION',
+                response_date=datetime.date(year=2016, month=2, day=27),
+                decision=StateSupervisionViolationResponseDecision.REVOCATION,
+                decision_raw_text='REVOCATION',
+                revocation_type=
+                StateSupervisionViolationResponseRevocationType.REINCARCERATION,
+                revocation_type_raw_text='DOCR INMATE SENTENCE',
+                decision_agents=[
+                    entities.StateAgent.new_with_defaults(
+                        external_id='77',
+                        state_code=_STATE_CODE,
+                        agent_type=StateAgentType.SUPERVISION_OFFICER,
+                        agent_type_raw_text='SUPERVISION_OFFICER',
+                    )
+                ],
+                state_code=_STATE_CODE,
+                supervision_violation=supervision_violation_147777,
+                person=supervision_violation_147777.person)
+        charge_147777 = entities.StateCharge.new_with_defaults(
+            state_code=_STATE_CODE, status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            supervision_sentences=[supervision_sentence_147777],
+            person=supervision_sentence_147777.person)
+        agent_person = entities.StateAgent.new_with_defaults(
+            agent_type=StateAgentType.JUDGE, agent_type_raw_text='JUDGE',
+            full_name='{"full_name": "JUDGE PERSON"}', state_code=_STATE_CODE)
+        court_case_147777 = entities.StateCourtCase.new_with_defaults(
+            state_code=_STATE_CODE,
+            status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
+            court_type=StateCourtType.PRESENT_WITHOUT_INFO,
+            judge=agent_person,
+            charges=[charge_147777], person=charge_147777.person)
+
         incarceration_period_114909_1.source_supervision_violation_response = \
             supervision_violation_response_140408
         charge_140408.court_case = court_case_140408
@@ -2689,6 +2800,18 @@ class TestUsNdController(unittest.TestCase):
             supervision_period_140408)
         sentence_group_person_2_placeholder_ss.supervision_sentences.append(
             supervision_sentence_140408)
+
+        charge_147777.court_case = court_case_147777
+        supervision_sentence_147777.charges = [charge_147777]
+        supervision_violation_147777.supervision_violation_responses.append(
+            supervision_violation_response_147777)
+        supervision_period_147777.supervision_violations.append(
+            supervision_violation_147777)
+        supervision_sentence_147777.supervision_periods.append(
+            supervision_period_147777)
+        sentence_group_person_2_placeholder_ss.supervision_sentences.append(
+            supervision_sentence_147777)
+
         person_2.sentence_groups.append(sentence_group_person_2_placeholder_ss)
 
         # Act
@@ -2707,7 +2830,8 @@ class TestUsNdController(unittest.TestCase):
         charge_122553 = entities.StateCharge.new_with_defaults(
             external_id='122553',
             county_code='008',
-            statute='3522',
+            ncic_code='3522',
+            description='OPIUM OR DERIV-POSSESS',
             classification_type=StateChargeClassificationType.FELONY,
             classification_type_raw_text='F',
             counts=1,
@@ -2718,7 +2842,8 @@ class TestUsNdController(unittest.TestCase):
         charge_122554 = entities.StateCharge.new_with_defaults(
             external_id='122554',
             county_code='008',
-            statute='3550',
+            ncic_code='3550',
+            description='NARCOTIC EQUIP-POSSESS',
             classification_type=StateChargeClassificationType.FELONY,
             classification_type_raw_text='F',
             counts=1,
@@ -2732,7 +2857,8 @@ class TestUsNdController(unittest.TestCase):
         charge_122552 = entities.StateCharge.new_with_defaults(
             external_id='122552',
             county_code='008',
-            statute='3562',
+            ncic_code='3562',
+            description='MARIJUANA-POSSESS',
             classification_type=StateChargeClassificationType.FELONY,
             classification_type_raw_text='F',
             counts=1,
@@ -2745,7 +2871,8 @@ class TestUsNdController(unittest.TestCase):
         charge_149349 = entities.StateCharge.new_with_defaults(
             external_id='149349',
             county_code='020',
-            statute='2204',
+            ncic_code='2204',
+            description='CRIMINAL TRESPASS',
             offense_date=datetime.date(year=2016, month=7, day=30),
             classification_type=StateChargeClassificationType.MISDEMEANOR,
             classification_type_raw_text='M',
