@@ -21,7 +21,8 @@ import os
 
 from cloud_function_utils import make_iap_request, \
     get_state_region_code_from_direct_ingest_bucket, \
-    get_dashboard_data_export_storage_bucket
+    get_dashboard_data_export_storage_bucket, \
+    trigger_dataflow_job_from_template
 
 _STATE_AGGREGATE_CLOUD_FUNCTION_URL = (
     'http://{}.appspot.com/cloud_function/state_aggregate?bucket={}&state={}'
@@ -157,3 +158,38 @@ def _call_dashboard_export(data_type: str):
     # the given cloud storage bucket
     response = make_iap_request(url, _CLIENT_ID[project_id])
     logging.info("The response status is %s", response.status_code)
+
+
+def run_calculation_pipelines(_event, _context):
+    """This function, which is triggered by a Pub/Sub event, kicks off a
+    Dataflow job with the given job_name where the template for the job lives at
+    gs://{bucket}/templates/{template_name} for the given project.
+    """
+    project_id = os.environ.get('GCP_PROJECT')
+    if not project_id:
+        logging.error('No project id set for call to run a calculation'
+                      ' pipeline, returning.')
+        return
+
+    bucket = os.environ.get('BUCKET')
+
+    if not bucket:
+        logging.error('No bucket set, returning.')
+        return
+
+    template_name = os.environ.get('TEMPLATE_NAME')
+
+    if not template_name:
+        logging.error('No template_name set, returning.')
+        return
+
+    job_name = os.environ.get('JOB_NAME')
+
+    if not job_name:
+        logging.error('No job_name set, returning.')
+        return
+
+    response = trigger_dataflow_job_from_template(project_id, bucket,
+                                                  template_name, job_name)
+
+    logging.info("The response is %s", response)
