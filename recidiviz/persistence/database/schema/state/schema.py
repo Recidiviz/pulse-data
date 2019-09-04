@@ -1312,6 +1312,13 @@ class _StateSupervisionPeriodSharedColumns(_ReferencesStatePersonSharedColumns):
     supervision_level_raw_text = Column(String(255))
     conditions = Column(String(255))
 
+    @declared_attr
+    def supervising_officer_id(self):
+        return Column(
+            Integer,
+            ForeignKey('state_agent.agent_id'),
+            nullable=True)
+
 
 class StateSupervisionPeriod(StateBase,
                              _StateSupervisionPeriodSharedColumns):
@@ -1321,6 +1328,8 @@ class StateSupervisionPeriod(StateBase,
     supervision_period_id = Column(Integer, primary_key=True)
 
     person = relationship('StatePerson', uselist=False)
+    supervising_officer = relationship(
+        'StateAgent', uselist=False, lazy='joined')
     supervision_violations = relationship(
         'StateSupervisionViolation',
         backref='supervision_period',

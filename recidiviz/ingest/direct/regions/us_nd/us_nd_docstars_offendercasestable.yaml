@@ -37,7 +37,7 @@ keys_to_ignore:
   - NEW_OFF3              # Handled manually within us_nd_scraper
   - REV_ABSC_YN           # Handled manually within us_nd_scraper
   - REV_TECH_YN           # Handled manually within us_nd_scraper
-  - TERMINATING_OFFICER   # TODO(2225) Should be a decision_agent on state_supervision_violation_response
+  - TERMINATING_OFFICER   # Handled manually within us_nd_scraper
   - LAST_UPDATE           # No apparent use for these at the moment
   - INACTIVEDATE          # No longer in use within source
   - RECORDCRDATE          # No apparent use for these at the moment

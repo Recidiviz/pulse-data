@@ -20,7 +20,7 @@ keys_to_ignore:
   - SUP_LVL             # TODO(1883) Add support for entity types with multiple parents
   - SUPER_OVERRIDE      # TODO(1883) Add support for entity types with multiple parents
 
-  - AGENT                 # TODO(2225) Consider setting as a decision_agent on state_supervision_violation_response
+  - AGENT                 # TODO(1883) Setting as supervision officer on state_supervision_period
   - PREVIOUS_AGENT
   - RECORD_STATUS         # No apparent use for these at the moment
   - LAST_UPDATE           # No apparent use for these at the moment

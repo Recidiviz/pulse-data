@@ -369,10 +369,11 @@ message StateSupervisionPeriod {
     optional string admission_reason = 8;
     optional string termination_reason = 9;
     optional string supervision_level = 10;
-    repeated string conditions = 11;
+    optional string supervising_officer_id = 11;
 
-    repeated string state_supervision_violation_ids = 12;
-    repeated string state_assessment_ids = 13;
+    repeated string conditions = 12;
+    repeated string state_supervision_violation_ids = 13;
+    repeated string state_assessment_ids = 14;
 }
 
 message StateIncarcerationIncident {
@@ -429,6 +430,8 @@ message StateSupervisionViolationResponse {
     optional string decision = 5;
     optional string revocation_type = 6;
     optional string deciding_body_type = 7;
+
+    repeated string decision_agent_ids = 8;
 }
 
 message StateAgent {

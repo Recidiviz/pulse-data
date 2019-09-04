@@ -103,11 +103,14 @@ class TestIngestInfo(unittest.TestCase):
         parole_decision_fields_ignore = \
             ['decision_agent_ids', 'decision_agents']
         supervision_period_fields_ignore = \
-            ['state_supervision_violation_ids', 'state_supervision_violations',
+            ['supervising_officer_id', 'supervising_officer',
+             'state_supervision_violation_ids', 'state_supervision_violations',
              'state_assessment_ids', 'state_assessments']
         supervision_violation_fields_ignore = \
             ['state_supervision_violation_response_ids',
              'state_supervision_violation_responses']
+        supervision_violation_response_fields_ignore = \
+            ['decision_agent_ids', 'decision_agents']
 
         _verify_fields(Person, ingest_info.Person(), person_fields_ignore)
         _verify_fields(Booking, ingest_info.Booking(), booking_fields_ignore)
@@ -153,7 +156,8 @@ class TestIngestInfo(unittest.TestCase):
                        ingest_info.StateSupervisionViolation(),
                        supervision_violation_fields_ignore)
         _verify_fields(StateSupervisionViolationResponse,
-                       ingest_info.StateSupervisionViolationResponse())
+                       ingest_info.StateSupervisionViolationResponse(),
+                       supervision_violation_response_fields_ignore)
 
         return True
 

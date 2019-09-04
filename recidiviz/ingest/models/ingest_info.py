@@ -1183,7 +1183,8 @@ class StateSupervisionPeriod(IngestObject):
                  termination_date=None, state_code=None, county_code=None,
                  admission_reason=None, termination_reason=None,
                  supervision_level=None, conditions=None,
-                 state_supervision_violations=None, state_assessments=None):
+                 supervising_officer=None, state_supervision_violations=None,
+                 state_assessments=None):
         self.state_supervision_period_id: Optional[str] = \
             state_supervision_period_id
         self.status: Optional[str] = status
@@ -1197,12 +1198,17 @@ class StateSupervisionPeriod(IngestObject):
         self.supervision_level: Optional[str] = supervision_level
         self.conditions: List[str] = conditions or []
 
+        self.supervising_officer: Optional[StateAgent] = supervising_officer
         self.state_supervision_violations: List[StateSupervisionViolation] = \
             state_supervision_violations or []
         self.state_assessments: List[StateAssessment] = state_assessments or []
 
     def __setattr__(self, name, value):
         restricted_setattr(self, 'state_assessments', name, value)
+
+    def create_state_agent(self, **kwargs) -> 'StateAgent':
+        self.supervising_officer = StateAgent(**kwargs)
+        return self.supervising_officer
 
     def create_state_supervision_violation(self, **kwargs) \
             -> 'StateSupervisionViolation':
@@ -1223,6 +1229,9 @@ class StateSupervisionPeriod(IngestObject):
                      state_supervision_violation_id), None)
 
     def prune(self) -> 'StateSupervisionPeriod':
+        if not self.supervising_officer:
+            self.supervising_officer = None
+
         self.state_supervision_violations = \
             [sv for sv in self.state_supervision_violations if sv]
         self.state_assessments = [a for a in self.state_assessments if a]
@@ -1402,7 +1411,8 @@ class StateSupervisionViolationResponse(IngestObject):
 
     def __init__(self, state_supervision_violation_response_id=None,
                  response_type=None, response_date=None, state_code=None,
-                 decision=None, revocation_type=None, deciding_body_type=None):
+                 decision=None, revocation_type=None, deciding_body_type=None,
+                 decision_agents=None):
         self.state_supervision_violation_response_id: Optional[str] = \
             state_supervision_violation_response_id
         self.response_type: Optional[str] = response_type
@@ -1411,9 +1421,22 @@ class StateSupervisionViolationResponse(IngestObject):
         self.decision: Optional[str] = decision
         self.revocation_type: Optional[str] = revocation_type
         self.deciding_body_type: Optional[str] = deciding_body_type
+        self.decision_agents: List[StateAgent] = decision_agents or []
 
     def __setattr__(self, name, value):
-        restricted_setattr(self, 'deciding_body_type', name, value)
+        restricted_setattr(self, 'decision_agents', name, value)
+
+    def create_state_agent(self, **kwargs) -> 'StateAgent':
+        decision_agent = StateAgent(**kwargs)
+        self.decision_agents.append(decision_agent)
+        return decision_agent
+
+    def prune(self) -> 'StateSupervisionViolationResponse':
+        self.decision_agents = [da for da in self.decision_agents if da]
+        return self
+
+    def sort(self):
+        self.decision_agents.sort()
 
 
 class StateAgent(IngestObject):

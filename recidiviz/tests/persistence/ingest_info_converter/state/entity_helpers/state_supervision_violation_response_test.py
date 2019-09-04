@@ -49,8 +49,10 @@ class StateSupervisionViolationResponseConverterTest(unittest.TestCase):
         )
 
         # Act
-        result = state_supervision_violation_response.convert(ingest_response,
-                                                              _EMPTY_METADATA)
+        response_builder = entities.StateSupervisionViolationResponse.builder()
+        state_supervision_violation_response.copy_fields_to_builder(
+            response_builder, ingest_response, _EMPTY_METADATA)
+        result = response_builder.build()
 
         # Assert
         expected_result = entities.StateSupervisionViolationResponse(
