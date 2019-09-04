@@ -1477,6 +1477,7 @@ _RETURN_TYPES_BY_STANDARD_ADMISSION: Dict[
 SHOULD_INCLUDE_WITH_RETURN_TYPE: \
     Dict[ReleaseReason, Dict[AdmissionReason, ReincarcerationReturnType]] = \
     {ReleaseReason.COMMUTED: _RETURN_TYPES_BY_STANDARD_ADMISSION,
+     ReleaseReason.COMPASSIONATE: _RETURN_TYPES_BY_STANDARD_ADMISSION,
      ReleaseReason.CONDITIONAL_RELEASE: _RETURN_TYPES_BY_STANDARD_ADMISSION,
      ReleaseReason.COURT_ORDER: {},
      ReleaseReason.DEATH: {},
@@ -1599,6 +1600,7 @@ class TestForLastIncarcerationPeriod:
                                                              release_facility)
 
             if release_reason in [ReleaseReason.COMMUTED,
+                                  ReleaseReason.COMPASSIONATE,
                                   ReleaseReason.CONDITIONAL_RELEASE,
                                   ReleaseReason.EXTERNAL_UNKNOWN,
                                   ReleaseReason.SENTENCE_SERVED]:

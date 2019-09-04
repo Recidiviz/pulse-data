@@ -86,6 +86,9 @@ class StateIncarcerationPeriodReleaseReason(EntityEnum,
         state_incarceration_period_release_reason_commuted
     # This release type corresponds to any release into some sort of
     # supervision.
+    COMPASSIONATE = \
+        state_enum_strings.\
+        state_incarceration_period_release_reason_compassionate
     CONDITIONAL_RELEASE = \
         state_enum_strings.\
         state_incarceration_period_release_reason_conditional_release
