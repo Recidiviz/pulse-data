@@ -25,6 +25,7 @@ from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.person_characteristics import Race, Ethnicity
 from recidiviz.common.constants.state.external_id_types import US_ND_ELITE, \
     US_ND_SID
+from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentClass
 from recidiviz.common.constants.state.state_charge import \
@@ -115,6 +116,15 @@ class TestIngestInfoStateConverter(unittest.TestCase):
         ingest_info.state_agents.add(
             state_agent_id='JUDGE_AGENT_ID_1',
             full_name='JUDGE JUDY'
+        )
+        ingest_info.state_agents.add(
+            state_agent_id='AGENT_ID_PO',
+            full_name='AGENT PAROLEY'
+        )
+        ingest_info.state_agents.add(
+            state_agent_id='AGENT_ID_TERM',
+            full_name='AGENT TERMY',
+            agent_type='SUPERVISION_OFFICER'
         )
 
         # We expect the external_ids coming in to have the format
@@ -240,6 +250,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
         ingest_info.state_supervision_periods.add(
             state_supervision_period_id='S_PERIOD_ID3',
             state_assessment_ids=['ASSESSMENT_ID'],
+            supervising_officer_id='AGENT_ID_PO',
             supervision_type='PROBATION'
         )
         ingest_info.state_incarceration_periods.add(
@@ -254,6 +265,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
         )
         ingest_info.state_supervision_violation_responses.add(
             state_supervision_violation_response_id='RESPONSE_ID',
+            decision_agent_ids=['AGENT_ID_TERM'],
             response_type='CITATION'
         )
         ingest_info.state_incarceration_incidents.add(
@@ -324,7 +336,14 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                     state_code='US_ND',
                     response_type=
                     StateSupervisionViolationResponseType.CITATION,
-                    response_type_raw_text='CITATION'
+                    response_type_raw_text='CITATION',
+                    decision_agents=[StateAgent.new_with_defaults(
+                        external_id='AGENT_ID_TERM',
+                        state_code='US_ND',
+                        full_name='{"full_name": "AGENT TERMY"}',
+                        agent_type=StateAgentType.SUPERVISION_OFFICER,
+                        agent_type_raw_text='SUPERVISION_OFFICER',
+                    )]
                 )
             ]
         )
@@ -506,7 +525,14 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                                     supervision_type=
                                     StateSupervisionType.PROBATION,
                                     supervision_type_raw_text='PROBATION',
-                                    assessments=[assessment]
+                                    assessments=[assessment],
+                                    supervising_officer=
+                                    StateAgent.new_with_defaults(
+                                        external_id='AGENT_ID_PO',
+                                        state_code='US_ND',
+                                        full_name=
+                                        '{"full_name": "AGENT PAROLEY"}',
+                                    ),
                                 )
                             ]
                         )

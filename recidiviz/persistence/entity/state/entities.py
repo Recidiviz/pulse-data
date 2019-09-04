@@ -699,6 +699,7 @@ class StateSupervisionPeriod(ExternalIdEntity, BuildableAttr, DefaultableAttr):
 
     # Cross-entity relationships
     person: Optional['StatePerson'] = attr.ib(default=None)
+    supervising_officer: Optional['StateAgent'] = attr.ib(default=None)
 
     # NOTE: A supervision period might count towards multiple sentences
     incarceration_sentences: List['StateIncarcerationSentence'] = \
@@ -897,7 +898,7 @@ class StateSupervisionViolationResponse(ExternalIdEntity,
     deciding_body_type: \
         Optional[StateSupervisionViolationResponseDecidingBodyType] = attr.ib()
     deciding_body_type_raw_text: Optional[str] = attr.ib()
-    # See also |deciding_agents| below
+    # See also |decision_agents| below
 
     # Primary key - Only optional when hydrated in the data converter, before
     # we have written this entity to the persistence layer

@@ -365,6 +365,12 @@ def generate_full_graph_state_person(
 
     incarceration_period.assessments = [assessment1]
 
+    supervising_officer = entities.StateAgent.new_with_defaults(
+        agent_type=StateAgentType.SUPERVISION_OFFICER,
+        state_code='us_ca',
+        full_name='MS MADAM',
+    )
+
     supervision_period = entities.StateSupervisionPeriod.new_with_defaults(
         status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
         status_raw_text='UNDER SUPERVISION',
@@ -381,6 +387,7 @@ def generate_full_graph_state_person(
         supervision_level=StateSupervisionLevel.EXTERNAL_UNKNOWN,
         supervision_level_raw_text='UNKNOWN',
         conditions='10PM CURFEW',
+        supervising_officer=supervising_officer
     )
 
     incarceration_sentence.supervision_periods = [supervision_period]
