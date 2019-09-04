@@ -823,6 +823,7 @@ class _StateChargeSharedColumns(_ReferencesStatePersonSharedColumns):
     counts = Column(Integer)
     charge_notes = Column(Text)
     charging_entity = Column(String(255))
+    is_controlling = Column(Boolean)
 
     @declared_attr
     def court_case_id(self):

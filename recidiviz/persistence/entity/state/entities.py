@@ -314,6 +314,7 @@ class StateCharge(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     classification_subtype: Optional[str] = attr.ib()
     counts: Optional[int] = attr.ib()
     charge_notes: Optional[str] = attr.ib()
+    is_controlling: Optional[bool] = attr.ib()
 
     #   - Who
     charging_entity: Optional[str] = attr.ib()

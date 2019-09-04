@@ -443,6 +443,7 @@ class TestUsNdController(unittest.TestCase):
             classification_type='F',
             classification_subtype='B',
             counts='1',
+            is_controlling='False',
             state_court_case=StateCourtCase(state_court_case_id='5190'))
 
         state_charge_105640_2 = StateCharge(
@@ -455,6 +456,7 @@ class TestUsNdController(unittest.TestCase):
             classification_subtype='A',
             counts='1',
             charge_notes='TO REGISTER AS A SEX OFFENDER (PLEA OF GUILTY)',
+            is_controlling='False',
             state_court_case=StateCourtCase(state_court_case_id='5190'))
 
         state_charge_105640_5 = StateCharge(
@@ -466,6 +468,7 @@ class TestUsNdController(unittest.TestCase):
             classification_subtype='A',
             counts='1',
             charge_notes='ATTEMPTED',
+            is_controlling='False',
             state_court_case=StateCourtCase(state_court_case_id='5192'))
 
         state_charge_105640_6 = StateCharge(
@@ -476,6 +479,7 @@ class TestUsNdController(unittest.TestCase):
             classification_type='F',
             classification_subtype='B',
             counts='1',
+            is_controlling='True',
             state_court_case=StateCourtCase(state_court_case_id='5193'))
 
         state_charge_105640_7 = StateCharge(
@@ -487,6 +491,7 @@ class TestUsNdController(unittest.TestCase):
             classification_subtype='C',
             counts='1',
             charge_notes='On a CO',
+            is_controlling='False',
             state_court_case=StateCourtCase(state_court_case_id='154576'))
 
         state_charge_113377_2 = StateCharge(
@@ -497,6 +502,7 @@ class TestUsNdController(unittest.TestCase):
             classification_type='M',
             classification_subtype='A',
             counts='1',
+            is_controlling='False',
             state_court_case=StateCourtCase(state_court_case_id='178986'))
 
         state_charge_113377_4 = StateCharge(
@@ -507,6 +513,7 @@ class TestUsNdController(unittest.TestCase):
             classification_type='M',
             classification_subtype='A',
             counts='1',
+            is_controlling='False',
             state_court_case=StateCourtCase(state_court_case_id='178987'))
 
         state_charge_113377_1 = StateCharge(
@@ -517,6 +524,7 @@ class TestUsNdController(unittest.TestCase):
             classification_type='F',
             classification_subtype='C',
             counts='1',
+            is_controlling='True',
             state_court_case=StateCourtCase(state_court_case_id='178768'))
 
         state_charge_114909_1 = StateCharge(
@@ -527,6 +535,7 @@ class TestUsNdController(unittest.TestCase):
             classification_type='F',
             classification_subtype='C',
             counts='1',
+            is_controlling='False',
             state_court_case=StateCourtCase(state_court_case_id='181820'))
 
         state_charge_114909_2 = StateCharge(
@@ -537,6 +546,7 @@ class TestUsNdController(unittest.TestCase):
             classification_type='M',
             classification_subtype='A',
             counts='1',
+            is_controlling='True',
             state_court_case=StateCourtCase(state_court_case_id='181821'))
 
         expected = IngestInfo(state_people=[
@@ -1753,7 +1763,7 @@ class TestUsNdController(unittest.TestCase):
             statute='1801', description='KIDNAPPING',
             classification_type=StateChargeClassificationType.FELONY,
             classification_type_raw_text='F', classification_subtype='B',
-            counts=1, state_code=_STATE_CODE,
+            counts=1, is_controlling=False, state_code=_STATE_CODE,
             incarceration_sentences=[incarceration_sentence_105640_1],
             person=incarceration_sentence_105640_1.person)
         charge_105640_2 = entities.StateCharge.new_with_defaults(
@@ -1763,7 +1773,7 @@ class TestUsNdController(unittest.TestCase):
             statute='A2003', description='GROSS SEXUAL IMPOSITION',
             classification_type=StateChargeClassificationType.FELONY,
             classification_type_raw_text='F', classification_subtype='A',
-            counts=1,
+            counts=1, is_controlling=False,
             charge_notes='TO REGISTER AS A SEX OFFENDER (PLEA OF GUILTY)',
             state_code=_STATE_CODE,
             incarceration_sentences=[incarceration_sentence_105640_2],
@@ -1775,8 +1785,8 @@ class TestUsNdController(unittest.TestCase):
             statute='1601',
             classification_type=StateChargeClassificationType.FELONY,
             classification_type_raw_text='F', classification_subtype='A',
-            counts=1,
-            charge_notes='ATTEMPTED', state_code=_STATE_CODE,
+            counts=1, charge_notes='ATTEMPTED', is_controlling=False,
+            state_code=_STATE_CODE,
             incarceration_sentences=[incarceration_sentence_105640_5],
             person=incarceration_sentence_105640_5.person)
         charge_105640_6 = entities.StateCharge.new_with_defaults(
@@ -1786,7 +1796,7 @@ class TestUsNdController(unittest.TestCase):
             statute='A2003',
             classification_type=StateChargeClassificationType.FELONY,
             classification_type_raw_text='F', classification_subtype='B',
-            counts=1, state_code=_STATE_CODE,
+            counts=1, is_controlling=True, state_code=_STATE_CODE,
             incarceration_sentences=[incarceration_sentence_105640_6],
             person=incarceration_sentence_105640_6.person)
         charge_105640_7 = entities.StateCharge.new_with_defaults(
@@ -1797,7 +1807,8 @@ class TestUsNdController(unittest.TestCase):
             classification_type=StateChargeClassificationType.FELONY,
             classification_type_raw_text='F',
             classification_subtype='C',
-            counts=1, charge_notes='ON A CO', state_code=_STATE_CODE,
+            counts=1, charge_notes='ON A CO', is_controlling=False,
+            state_code=_STATE_CODE,
             incarceration_sentences=[incarceration_sentence_105640_7],
             person=incarceration_sentence_105640_7.person)
         charge_113377_1 = entities.StateCharge.new_with_defaults(
@@ -1807,7 +1818,8 @@ class TestUsNdController(unittest.TestCase):
             statute='362102',
             classification_type=StateChargeClassificationType.FELONY,
             classification_type_raw_text='F',
-            classification_subtype='C', counts=1, state_code=_STATE_CODE,
+            classification_subtype='C', counts=1, is_controlling=True,
+            state_code=_STATE_CODE,
             incarceration_sentences=[incarceration_sentence_113377_1],
             person=incarceration_sentence_113377_1.person)
         charge_113377_2 = entities.StateCharge.new_with_defaults(
@@ -1817,7 +1829,8 @@ class TestUsNdController(unittest.TestCase):
             statute='2203',
             classification_type=StateChargeClassificationType.MISDEMEANOR,
             classification_type_raw_text='M',
-            classification_subtype='A', counts=1, state_code=_STATE_CODE,
+            classification_subtype='A', counts=1, is_controlling=False,
+            state_code=_STATE_CODE,
             incarceration_sentences=[incarceration_sentence_113377_2],
             person=incarceration_sentence_113377_2.person)
         charge_113377_4 = entities.StateCharge.new_with_defaults(
@@ -1827,7 +1840,8 @@ class TestUsNdController(unittest.TestCase):
             statute='2203',
             classification_type=StateChargeClassificationType.MISDEMEANOR,
             classification_type_raw_text='M',
-            classification_subtype='A', counts=1, state_code=_STATE_CODE,
+            classification_subtype='A', counts=1, is_controlling=False,
+            state_code=_STATE_CODE,
             incarceration_sentences=[incarceration_sentence_113377_4],
             person=incarceration_sentence_113377_4.person)
         charge_114909_1 = entities.StateCharge.new_with_defaults(
@@ -1837,7 +1851,8 @@ class TestUsNdController(unittest.TestCase):
             statute='362102',
             classification_type=StateChargeClassificationType.FELONY,
             classification_type_raw_text='F',
-            classification_subtype='C', counts=1, state_code=_STATE_CODE,
+            classification_subtype='C', counts=1, is_controlling=False,
+            state_code=_STATE_CODE,
             incarceration_sentences=[incarceration_sentence_114909_1],
             person=incarceration_sentence_114909_1.person)
         charge_114909_2 = entities.StateCharge.new_with_defaults(
@@ -1847,7 +1862,8 @@ class TestUsNdController(unittest.TestCase):
             statute='2203',
             classification_type=StateChargeClassificationType.MISDEMEANOR,
             classification_type_raw_text='M',
-            classification_subtype='A', counts=1, state_code=_STATE_CODE,
+            classification_subtype='A', counts=1, is_controlling=True,
+            state_code=_STATE_CODE,
             incarceration_sentences=[incarceration_sentence_114909_2],
             person=incarceration_sentence_114909_2.person)
 
