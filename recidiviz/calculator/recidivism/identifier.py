@@ -348,6 +348,7 @@ def for_last_incarceration_period(
         # order, do not include them in the release cohort.
         return None
     if release_reason in [ReleaseReason.COMMUTED,
+                          ReleaseReason.COMPASSIONATE,
                           ReleaseReason.CONDITIONAL_RELEASE,
                           ReleaseReason.EXTERNAL_UNKNOWN,
                           ReleaseReason.SENTENCE_SERVED]:
@@ -463,6 +464,7 @@ def should_include_in_release_cohort(
         # court order, do not include them in the release cohort.
         return False
     if release_reason in (ReleaseReason.COMMUTED,
+                          ReleaseReason.COMPASSIONATE,
                           ReleaseReason.CONDITIONAL_RELEASE,
                           ReleaseReason.EXTERNAL_UNKNOWN,
                           ReleaseReason.SENTENCE_SERVED):
