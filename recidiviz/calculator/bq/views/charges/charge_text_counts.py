@@ -106,6 +106,7 @@ JOIN
   `{project_id}.{views_dataset}.{county_names_view}` CountyNames
 ON
   PersonCountTable.fips = CountyNames.fips
+ORDER BY day DESC, fips, person_count DESC
 """.format(
     description=CHARGE_TEXT_COUNTS_DESCRIPTION,
     project_id=PROJECT_ID,
