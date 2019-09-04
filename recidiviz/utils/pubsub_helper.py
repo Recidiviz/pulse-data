@@ -126,3 +126,10 @@ def purge(scrape_key: ScrapeKey, pubsub_type: str):
         pass
 
     create_topic_and_subscription(scrape_key, pubsub_type=pubsub_type)
+
+
+def publish_message_to_topic(message: str, topic: str):
+    logging.info("Publishing message: '%s' to topic: %s", message, topic)
+    publisher = get_publisher()
+    topic_path = publisher.topic_path(metadata.project_id(), topic)
+    publisher.publish(topic_path, data=message.encode('utf-8'))

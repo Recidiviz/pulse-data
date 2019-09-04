@@ -23,7 +23,9 @@ import logging
 import uuid
 from typing import List
 
+from google.api_core import datetime_helpers
 from google.cloud import exceptions, tasks
+from google.protobuf import timestamp_pb2
 
 from recidiviz.common.common_utils import retry_grpc
 from recidiviz.utils import environment, metadata
@@ -194,5 +196,36 @@ def create_bq_task(table_name: str, module: str, url: str):
         NUM_GRPC_RETRIES,
         client().create_task,
         format_queue_path(BIGQUERY_QUEUE),
+        task
+    )
+
+
+BQ_MONITOR_QUEUE = 'bq_monitor'
+
+
+def create_bq_monitor_task(topic: str, message: str, url: str):
+    body = {'topic': topic, 'message': message}
+    task_topic = topic.replace('.', '-')
+    task_id = '{}-{}-{}'.format(
+        task_topic, str(datetime.date.today()), uuid.uuid4())
+    task_name = format_task_path(BQ_MONITOR_QUEUE, task_id)
+
+    schedule_time = datetime.datetime.now() + datetime.timedelta(seconds=60)
+    schedule_time_sec = datetime_helpers.to_milliseconds(
+        schedule_time) // 1000
+    schedule_timestamp = timestamp_pb2.Timestamp(seconds=schedule_time_sec)
+
+    task = tasks.types.Task(
+        schedule_time=schedule_timestamp,
+        name=task_name,
+        app_engine_http_request={
+            'relative_uri': url,
+            'body': json.dumps(body).encode()
+        }
+    )
+    retry_grpc(
+        NUM_GRPC_RETRIES,
+        client().create_task,
+        format_queue_path(BQ_MONITOR_QUEUE),
         task
     )
