@@ -21,7 +21,7 @@ from recidiviz.common.constants.state import state_assessment, state_charge, \
     state_court_case, state_agent, state_incarceration_period, \
     state_supervision_period, state_incarceration_incident, \
     state_supervision_violation, state_supervision_violation_response, \
-    state_parole_decision
+    state_parole_decision, state_person_alias
 from recidiviz.persistence.database.schema import shared_enums
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_utils import \
@@ -69,6 +69,7 @@ class TestStateSchemaEnums(TestSchemaEnums):
                 StateIncarcerationPeriodReleaseReason,
             'state_parole_decision_outcome':
                 state_parole_decision.StateParoleDecisionOutcome,
+            'state_person_alias_type': state_person_alias.StatePersonAliasType,
             'state_supervision_period_status':
                 state_supervision_period.StateSupervisionPeriodStatus,
             'state_supervision_period_admission_reason':

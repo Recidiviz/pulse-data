@@ -617,7 +617,7 @@ class StateAlias(IngestObject):
 
     def __init__(self, state_alias_id=None, state_code=None, full_name=None,
                  surname=None, given_names=None, middle_names=None,
-                 name_suffix=None):
+                 name_suffix=None, alias_type=None):
         self.state_alias_id: Optional[str] = state_alias_id
         self.state_code: Optional[str] = state_code
         self.full_name: Optional[str] = full_name
@@ -625,9 +625,10 @@ class StateAlias(IngestObject):
         self.given_names: Optional[str] = given_names
         self.middle_names: Optional[str] = middle_names
         self.name_suffix: Optional[str] = name_suffix
+        self.alias_type: Optional[str] = alias_type
 
     def __setattr__(self, name, value):
-        restricted_setattr(self, 'name_suffix', name, value)
+        restricted_setattr(self, 'alias_type', name, value)
 
 
 class StatePersonRace(IngestObject):

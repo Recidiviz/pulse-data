@@ -138,6 +138,13 @@ state_incarceration_period_release_reason_transfer = 'TRANSFER'
 state_parole_decision_parole_denied = 'PAROLE_DENIED'
 state_parole_decision_parole_granted = 'PAROLE_GRANTED'
 
+# state_person_alias.py
+state_person_alias_alias_type_affiliation_name = 'AFFILIATION_NAME'
+state_person_alias_alias_type_alias = 'ALIAS'
+state_person_alias_alias_type_given_name = 'GIVEN_NAME'
+state_person_alias_alias_type_maiden_name = 'MAIDEN_NAME'
+state_person_alias_alias_type_nickname = 'NICKNAME'
+
 # state_sentence.py
 state_sentence_status_commuted = 'COMMUTED'
 state_sentence_status_completed = 'COMPLETED'

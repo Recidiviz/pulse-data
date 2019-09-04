@@ -3,6 +3,7 @@ key_mappings:
   FIRST_NAME: state_alias.given_names
   MIDDLE_NAME: state_alias.middle_names
   SUFFIX: state_alias.name_suffix
+  ALIAS_NAME_TYPE: state_alias.alias_type
 
 ancestor_keys:
   ROOT_OFFENDER_ID: state_person.state_person_id
@@ -10,8 +11,7 @@ ancestor_keys:
 keys_to_ignore:
   - OFFENDER_ID           # This particular id appears unused elsewhere
   - ALIAS_OFFENDER_ID     # This particular id appears unused elsewhere
-  - ALIAS_NAME_TYPE       # No apparent use for these at the moment
-  - RACE_CODE             # TODO(1883) Use this to add to StatePerson.races
-  - SEX_CODE              # TODO(1883) Use this to add to StatePerson.gender
+  - RACE_CODE             # Handled manually in us_nd_controller
+  - SEX_CODE              # Handled manually in us_nd_controller
   - CREATE_DATETIME       # No apparent use for these at the moment
   - MODIFY_DATETIME       # No apparent use for these at the moment
