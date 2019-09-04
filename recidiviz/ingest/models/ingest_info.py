@@ -994,10 +994,9 @@ class StateCharge(IngestObject):
     def __init__(self, state_charge_id=None, status=None, offense_date=None,
                  date_charged=None, state_code=None, county_code=None,
                  statute=None, description=None, attempted=None,
-                 classification_type=None,
-                 classification_subtype=None, counts=None,
-                 charge_notes=None, charging_entity=None, state_court_case=None,
-                 state_bond=None):
+                 classification_type=None, classification_subtype=None,
+                 counts=None, charge_notes=None, is_controlling=None,
+                 charging_entity=None, state_court_case=None, state_bond=None):
         self.state_charge_id: Optional[str] = state_charge_id
         self.status: Optional[str] = status
         self.offense_date: Optional[str] = offense_date
@@ -1012,6 +1011,7 @@ class StateCharge(IngestObject):
             classification_subtype
         self.counts: Optional[str] = counts
         self.charge_notes: Optional[str] = charge_notes
+        self.is_controlling: Optional[str] = is_controlling
         self.charging_entity: Optional[str] = charging_entity
 
         self.state_court_case: Optional[StateCourtCase] = state_court_case
