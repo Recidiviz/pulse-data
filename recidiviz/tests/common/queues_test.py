@@ -156,7 +156,7 @@ class QueuesTest(unittest.TestCase):
                                     mock_datetime, mock_datetime_helpers):
         """Tests that a BQ monitor task is created."""
         url = '/test/bq_monitor'
-        queue_name = queues.BQ_MONITOR_QUEUE
+        queue_name = queues.JOB_MONITOR_QUEUE
         topic = 'test.topic'
         topic_dashes = topic.replace('.', '-')
         message = 'test message'

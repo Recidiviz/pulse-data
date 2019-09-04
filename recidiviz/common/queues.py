@@ -200,7 +200,7 @@ def create_bq_task(table_name: str, module: str, url: str):
     )
 
 
-BQ_MONITOR_QUEUE = 'bq_monitor'
+JOB_MONITOR_QUEUE = 'job-monitor'
 
 
 def create_bq_monitor_task(topic: str, message: str, url: str):
@@ -208,7 +208,7 @@ def create_bq_monitor_task(topic: str, message: str, url: str):
     task_topic = topic.replace('.', '-')
     task_id = '{}-{}-{}'.format(
         task_topic, str(datetime.date.today()), uuid.uuid4())
-    task_name = format_task_path(BQ_MONITOR_QUEUE, task_id)
+    task_name = format_task_path(JOB_MONITOR_QUEUE, task_id)
 
     schedule_time = datetime.datetime.now() + datetime.timedelta(seconds=60)
     schedule_time_sec = datetime_helpers.to_milliseconds(
@@ -226,6 +226,6 @@ def create_bq_monitor_task(topic: str, message: str, url: str):
     retry_grpc(
         NUM_GRPC_RETRIES,
         client().create_task,
-        format_queue_path(BQ_MONITOR_QUEUE),
+        format_queue_path(JOB_MONITOR_QUEUE),
         task
     )
