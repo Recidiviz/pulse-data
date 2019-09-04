@@ -86,6 +86,17 @@ DIRECT_INGEST_STATE_TASK_QUEUE_CONFIG = {
     }
 }
 
+BQ_MONITOR_QUEUE_CONFIG = {
+    'name': queues.BQ_MONITOR_QUEUE,
+    'mode': 'push',
+    'rate': '1/s',
+    'bucket_size': 1,
+    'max_concurrent_requests': 1,
+    'retry_parameters': {
+        'task_retry_limit': 0
+    }
+}
+
 class NoAliasDumper(yaml.Dumper):
     def ignore_aliases(self, data):
         return True
@@ -115,6 +126,7 @@ def build_queues(environments: Set[str]):
     qs.append(DIRECT_INGEST_STATE_TASK_QUEUE_CONFIG)
     qs.append(DIRECT_INGEST_SCHEDULER_QUEUE_CONFIG)
     qs.append(BIGQUERY_QUEUE_CONFIG)
+    qs.append(BQ_MONITOR_QUEUE_CONFIG)
     with open('queue.yaml', 'w') as queue_manifest:
         yaml.dump({'queue': qs}, queue_manifest,
                   default_flow_style=False, Dumper=NoAliasDumper)
