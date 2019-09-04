@@ -8,18 +8,18 @@ ancestor_keys:
   ROOT_OFFENDER_ID: state_person.state_person_id
   OFFENDER_BOOK_ID: state_sentence_group.sentence_group_id
 
-primary_key:
-  OIC_INCIDENT_ID: state_incarceration_incident.state_incarceration_incident_id
-
 child_key_mappings:
   OIC_SANCTION_CODE: state_incarceration_incident_outcome.outcome_type
   OIC_SANCTION_DESC: state_incarceration_incident_outcome.outcome_description
   EFFECTIVE_DATE: state_incarceration_incident_outcome.date_effective
 
+# There is a primary key override in us_nd_controller for this file
+
 keys_to_ignore:
   - LAST_NAME                                       # TODO(1883): Handle once we can add non-id info to ancestor objects
   - FIRST_NAME                                      # TODO(1883): Handle once we can add non-id info to ancestor objects
-  - AGENCY_INCIDENT_ID                              # TODO(2223): Augment the incarceration incident external id to include this
+  - OIC_INCIDENT_ID                                 # Used in primary key override
+  - AGENCY_INCIDENT_ID                              # Used in primary key override
   - INCIDENT_TYPE_DESC                              # Unused, maps 1:1 to INCIDENT_TYPE
   - OMS_OWNER_V_OIC_INCIDENTS_INT_LOC_DESCRIPTION   # Referenced manually in scraper to infer location_within_facility
   - REPORT_DATE                                     # Unused for now

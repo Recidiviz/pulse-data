@@ -767,7 +767,7 @@ class TestUsNdController(unittest.TestCase):
     def test_populate_data_elite_elite_offense_in_custody_and_pos_report_data(
             self):
         state_incarceration_incident_353844 = StateIncarcerationIncident(
-            state_incarceration_incident_id='353844',
+            state_incarceration_incident_id='347484-353844',
             incident_type=None,  # TODO(1948): Make MISC types more specific
             incident_date='1/27/2019',
             facility='NDSP',
@@ -775,7 +775,7 @@ class TestUsNdController(unittest.TestCase):
             incident_details=_INCIDENT_DETAILS_1,
             state_incarceration_incident_outcomes=[
                 StateIncarcerationIncidentOutcome(
-                    state_incarceration_incident_outcome_id='353844-41',
+                    state_incarceration_incident_outcome_id='347484-353844-41',
                     outcome_type='LCP',
                     date_effective='3/19/2019',
                     outcome_description='Loss of Commissary Privileges',
@@ -785,7 +785,7 @@ class TestUsNdController(unittest.TestCase):
         )
 
         state_incarceration_incident_354527 = StateIncarcerationIncident(
-            state_incarceration_incident_id='354527',
+            state_incarceration_incident_id='348086-354527',
             incident_type='MINOR',
             incident_date='4/10/2019',
             facility='JRCC',
@@ -794,7 +794,7 @@ class TestUsNdController(unittest.TestCase):
         )
 
         state_incarceration_incident_378515 = StateIncarcerationIncident(
-            state_incarceration_incident_id='378515',
+            state_incarceration_incident_id='369791-378515',
             incident_type='INS',
             incident_date='1/17/2019',
             facility='NDSP',
@@ -802,7 +802,7 @@ class TestUsNdController(unittest.TestCase):
             incident_details=_INCIDENT_DETAILS_3,
             state_incarceration_incident_outcomes=[
                 StateIncarcerationIncidentOutcome(
-                    state_incarceration_incident_outcome_id='378515-57',
+                    state_incarceration_incident_outcome_id='369791-378515-57',
                     outcome_type='RTQ',
                     date_effective='1/27/2019',
                     outcome_description='RESTRICTED TO QUARTERS',
@@ -812,7 +812,7 @@ class TestUsNdController(unittest.TestCase):
         )
 
         state_incarceration_incident_363863 = StateIncarcerationIncident(
-            state_incarceration_incident_id='363863',
+            state_incarceration_incident_id='356508-363863',
             incident_type='MINOR',
             incident_date='3/22/2018',
             facility='NDSP',
@@ -821,7 +821,7 @@ class TestUsNdController(unittest.TestCase):
         )
 
         state_incarceration_incident_366571 = StateIncarcerationIncident(
-            state_incarceration_incident_id='366571',
+            state_incarceration_incident_id='359062-366571',
             incident_type='IIASSAULT',
             incident_date='1/27/2019',
             facility='NDSP',
@@ -829,7 +829,7 @@ class TestUsNdController(unittest.TestCase):
             incident_details=_INCIDENT_DETAILS_5,
             state_incarceration_incident_outcomes=[
                 StateIncarcerationIncidentOutcome(
-                    state_incarceration_incident_outcome_id='366571-29',
+                    state_incarceration_incident_outcome_id='359062-366571-29',
                     outcome_type='NOT_GUILTY',
                     date_effective='8/18/2017',
                     outcome_description='LOSS OF PRIVILEGES',
@@ -839,7 +839,7 @@ class TestUsNdController(unittest.TestCase):
         )
 
         state_incarceration_incident_381647 = StateIncarcerationIncident(
-            state_incarceration_incident_id='381647',
+            state_incarceration_incident_id='372645-381647',
             incident_type=None,  # TODO(1948): Make MISC types more specific
             incident_date='4/17/2018',
             facility='MRCC',
@@ -858,7 +858,7 @@ class TestUsNdController(unittest.TestCase):
         state_incarceration_incident_381647. \
             state_incarceration_incident_outcomes = [
                 StateIncarcerationIncidentOutcome(
-                    state_incarceration_incident_outcome_id='381647-36',
+                    state_incarceration_incident_outcome_id='372645-381647-36',
                     outcome_type='PAY',
                     date_effective='4/20/2018',
                     outcome_description='LOSS OF PAY',
@@ -868,7 +868,7 @@ class TestUsNdController(unittest.TestCase):
         state_incarceration_incident_381647_2. \
             state_incarceration_incident_outcomes = [
                 StateIncarcerationIncidentOutcome(
-                    state_incarceration_incident_outcome_id='381647-37',
+                    state_incarceration_incident_outcome_id='372645-381647-37',
                     outcome_type='EXD',
                     date_effective='4/20/2018',
                     outcome_description='EXTRA DUTY',
@@ -2158,7 +2158,7 @@ class TestUsNdController(unittest.TestCase):
         sentence_group_105640.incarceration_sentences.append(
             incarceration_sentence_105640_placeholder)
         incident_353844 = entities.StateIncarcerationIncident.new_with_defaults(
-            external_id='353844',
+            external_id='347484-353844',
             incident_date=datetime.date(year=2019, month=1, day=27),
             facility='NDSP', location_within_facility='TRAF',
             state_code=_STATE_CODE,
@@ -2167,7 +2167,7 @@ class TestUsNdController(unittest.TestCase):
             person=incarceration_sentence_105640_1.person)
         outcome_353844_41 = \
             entities.StateIncarcerationIncidentOutcome.new_with_defaults(
-                external_id='353844-41',
+                external_id='347484-353844-41',
                 outcome_type=
                 StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS,
                 outcome_type_raw_text='LCP', state_code=_STATE_CODE,
@@ -2182,7 +2182,7 @@ class TestUsNdController(unittest.TestCase):
             incident_353844)
 
         incident_354527 = entities.StateIncarcerationIncident.new_with_defaults(
-            external_id='354527',
+            external_id='348086-354527',
             incident_date=datetime.date(year=2019, month=4, day=10),
             incident_type=StateIncarcerationIncidentType.MINOR_OFFENSE,
             incident_type_raw_text='MINOR', facility='JRCC',
@@ -2194,7 +2194,7 @@ class TestUsNdController(unittest.TestCase):
             incident_354527)
 
         incident_378515 = entities.StateIncarcerationIncident.new_with_defaults(
-            external_id='378515',
+            external_id='369791-378515',
             incident_type=StateIncarcerationIncidentType.DISORDERLY_CONDUCT,
             incident_type_raw_text='INS',
             incident_date=datetime.date(year=2019, month=1, day=17),
@@ -2205,7 +2205,7 @@ class TestUsNdController(unittest.TestCase):
             person=incarceration_sentence_105640_1.person)
         outcome_378515_57 = \
             entities.StateIncarcerationIncidentOutcome.new_with_defaults(
-                external_id='378515-57',
+                external_id='369791-378515-57',
                 outcome_type=
                 StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS,
                 outcome_type_raw_text='RTQ',
@@ -2242,7 +2242,7 @@ class TestUsNdController(unittest.TestCase):
             incarceration_sentence_113377_placeholder)
 
         incident_363863 = entities.StateIncarcerationIncident.new_with_defaults(
-            external_id='363863',
+            external_id='356508-363863',
             incident_type=StateIncarcerationIncidentType.MINOR_OFFENSE,
             incident_type_raw_text='MINOR',
             incident_date=datetime.date(year=2018, month=3, day=22),
@@ -2274,7 +2274,7 @@ class TestUsNdController(unittest.TestCase):
                     incarceration_sentence_110651_placeholder],
                 person=sentence_group_110651.person)
         incident_366571 = entities.StateIncarcerationIncident.new_with_defaults(
-            external_id='366571',
+            external_id='359062-366571',
             incident_type=StateIncarcerationIncidentType.VIOLENCE,
             incident_type_raw_text='IIASSAULT',
             incident_date=datetime.date(year=2019, month=1, day=27),
@@ -2285,7 +2285,7 @@ class TestUsNdController(unittest.TestCase):
             person=incarceration_period_110651_placeholder.person)
         outcome_366571_29 = \
             entities.StateIncarcerationIncidentOutcome.new_with_defaults(
-                external_id='366571-29',
+                external_id='359062-366571-29',
                 outcome_type=StateIncarcerationIncidentOutcomeType.NOT_GUILTY,
                 outcome_type_raw_text='NOT_GUILTY',
                 date_effective=datetime.date(year=2017, month=8, day=18),
@@ -2334,7 +2334,7 @@ class TestUsNdController(unittest.TestCase):
         expected_people.append(person_5)
 
         incident_381647 = entities.StateIncarcerationIncident.new_with_defaults(
-            external_id='381647',
+            external_id='372645-381647',
             incident_date=datetime.date(year=2018, month=4, day=17),
             facility='MRCC',
             location_within_facility='HRT1',
@@ -2344,7 +2344,7 @@ class TestUsNdController(unittest.TestCase):
             person=incarceration_sentence_5129_placeholder.person)
         outcome_381647_36 = \
             entities.StateIncarcerationIncidentOutcome.new_with_defaults(
-                external_id='381647-36',
+                external_id='372645-381647-36',
                 outcome_type=
                 StateIncarcerationIncidentOutcomeType.FINANCIAL_PENALTY,
                 outcome_type_raw_text='PAY',
@@ -2354,7 +2354,7 @@ class TestUsNdController(unittest.TestCase):
                 person=incident_381647.person)
         outcome_381647_37 = \
             entities.StateIncarcerationIncidentOutcome.new_with_defaults(
-                external_id='381647-37',
+                external_id='372645-381647-37',
                 outcome_type=
                 StateIncarcerationIncidentOutcomeType.DISCIPLINARY_LABOR,
                 outcome_type_raw_text='EXD',
