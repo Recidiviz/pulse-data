@@ -504,6 +504,8 @@ class UsNdController(CsvGcsfsDirectIngestController):
         revocation_for_technical = \
             row.get('REV_TECH_YN', None) in ['-1', '(1)']
 
+        terminating_officer_id = row.get('TERMINATING_OFFICER', None)
+
         for extracted_object in extracted_objects:
             if isinstance(extracted_object, StateSupervisionViolation):
                 extracted_object = cast(
@@ -537,6 +539,11 @@ class UsNdController(CsvGcsfsDirectIngestController):
                     extracted_object.decision = \
                         StateSupervisionViolationResponseDecision\
                         .REVOCATION.value
+                    if terminating_officer_id:
+                        extracted_object.create_state_agent(
+                            state_agent_id=terminating_officer_id,
+                            agent_type=StateAgentType.SUPERVISION_OFFICER.value
+                        )
 
     @staticmethod
     def _rationalize_incident_type(_row: Dict[str, str],

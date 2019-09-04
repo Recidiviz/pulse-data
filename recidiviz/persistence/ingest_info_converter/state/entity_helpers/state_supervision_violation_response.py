@@ -36,12 +36,14 @@ from recidiviz.persistence.ingest_info_converter.utils.enum_mappings \
     import EnumMappings
 
 
-def convert(proto: StateSupervisionViolationResponse,
-            metadata: IngestMetadata) \
-        -> entities.StateSupervisionViolationResponse:
+def copy_fields_to_builder(
+        supervision_violation_response_builder:
+        entities.StateSupervisionViolationResponse.Builder,
+        proto: StateSupervisionViolationResponse,
+        metadata: IngestMetadata) -> None:
     """Converts an ingest_info proto StateSupervisionViolationResponse to a
     persistence entity."""
-    new = entities.StateSupervisionViolationResponse.builder()
+    new = supervision_violation_response_builder
 
     enum_fields = {
         'response_type': StateSupervisionViolationResponseType,
@@ -70,5 +72,3 @@ def convert(proto: StateSupervisionViolationResponse,
     new.response_date = fn(parse_date, 'response_date', proto)
     new.state_code = parse_region_code_with_override(
         proto, 'state_code', metadata)
-
-    return new.build()

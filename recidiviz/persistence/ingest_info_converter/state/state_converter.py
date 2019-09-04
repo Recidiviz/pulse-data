@@ -21,7 +21,8 @@ from recidiviz.ingest.models.ingest_info_pb2 import StateSentenceGroup, \
     StatePerson, StateSupervisionSentence, StateIncarcerationSentence, \
     StateCharge, StateIncarcerationPeriod, StateSupervisionPeriod, \
     StateSupervisionViolation, StateFine, StateParoleDecision, \
-    StateIncarcerationIncident, StateAssessment, StateCourtCase
+    StateIncarcerationIncident, StateAssessment, StateCourtCase, \
+    StateSupervisionViolationResponse
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.ingest_info_converter.base_converter import \
     BaseConverter
@@ -357,6 +358,11 @@ class StateConverter(BaseConverter[entities.StatePerson]):
             ingest_supervision_period,
             self.metadata)
 
+        supervision_period_builder.supervising_officer = \
+            fn(lambda i: state_agent.convert(self.agents[i], self.metadata),
+               'supervising_officer_id',
+               ingest_supervision_period)
+
         converted_violations = [
             self._convert_supervision_violation(
                 self.supervision_violations[violation_id])
@@ -387,8 +393,8 @@ class StateConverter(BaseConverter[entities.StatePerson]):
             self.metadata)
 
         converted_violation_responses = [
-            state_supervision_violation_response.convert(
-                self.violation_responses[response_id], self.metadata)
+            self._convert_supervision_violation_response(
+                self.violation_responses[response_id])
             for response_id in
             ingest_supervision_violation.
             state_supervision_violation_response_ids
@@ -397,6 +403,29 @@ class StateConverter(BaseConverter[entities.StatePerson]):
             converted_violation_responses
 
         return supervision_violation_builder.build()
+
+    def _convert_supervision_violation_response(
+            self, ingest_supervision_violation_response:
+            StateSupervisionViolationResponse) \
+            -> entities.StateSupervisionViolationResponse:
+
+        supervision_violation_response_builder = \
+            entities.StateSupervisionViolationResponse.builder()
+
+        state_supervision_violation_response.copy_fields_to_builder(
+            supervision_violation_response_builder,
+            ingest_supervision_violation_response,
+            self.metadata)
+
+        converted_agents = [
+            state_agent.convert(self.agents[agent_id], self.metadata)
+            for agent_id
+            in ingest_supervision_violation_response.decision_agent_ids
+        ]
+        supervision_violation_response_builder.decision_agents = \
+            converted_agents
+
+        return supervision_violation_response_builder.build()
 
     def _convert_assessment(self, ingest_assessment: StateAssessment) \
             -> entities.StateAssessment:
