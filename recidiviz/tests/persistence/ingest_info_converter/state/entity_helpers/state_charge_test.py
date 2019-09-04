@@ -50,6 +50,7 @@ class StateChargeConverterTest(unittest.TestCase):
             counts='4',
             charge_notes="Have I told you about that time I saw Janelle Monae "
                          "open for of Montreal at the 9:30 Club?",
+            is_controlling='True',
             charging_entity='SCOTUS'
         )
 
@@ -76,6 +77,7 @@ class StateChargeConverterTest(unittest.TestCase):
             counts=4,
             charge_notes="HAVE I TOLD YOU ABOUT THAT TIME I SAW JANELLE MONAE "
                          "OPEN FOR OF MONTREAL AT THE 9:30 CLUB?",
+            is_controlling=True,
             charging_entity='SCOTUS'
         )
 

@@ -103,7 +103,9 @@ class UsNdController(CsvGcsfsDirectIngestController):
                 self._convert_to_supervision_sentence],
             'elite_offenderchargestable': [
                 self._parse_elite_charge_classification,
-                self._set_elite_charge_status],
+                self._set_elite_charge_status,
+                self._rationalize_controlling_charge
+            ],
             'elite_orderstable': [self._set_judge_agent_type],
             'elite_externalmovements': [self._process_external_movement],
             'elite_offense_in_custody_and_pos_report_data': [
@@ -637,6 +639,17 @@ class UsNdController(CsvGcsfsDirectIngestController):
                 # Note: If we hear about a charge in Elite, the person has
                 # already been sentenced.
                 extracted_object.status = ChargeStatus.SENTENCED.value
+
+    @staticmethod
+    def _rationalize_controlling_charge(row: Dict[str, str],
+                                        extracted_objects: List[IngestObject],
+                                        _cache: IngestObjectCache):
+        status = row.get('CHARGE_STATUS', None)
+        is_controlling = status and status.upper() in ['C', 'CT']
+
+        for extracted_object in extracted_objects:
+            if isinstance(extracted_object, StateCharge):
+                extracted_object.is_controlling = str(is_controlling)
 
     @staticmethod
     def _parse_elite_charge_classification(

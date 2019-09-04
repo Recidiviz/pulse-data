@@ -10,7 +10,7 @@ ancestor_keys:
   CASE_NUMBER: state_supervision_sentence.state_supervision_sentence_id
 
 enforced_ancestor_types:
-    state_sentence: state_supervision_sentence
+  state_sentence: state_supervision_sentence
 
 primary_key:
   RecID: state_charge.state_charge_id
