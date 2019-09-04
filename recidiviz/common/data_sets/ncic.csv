@@ -1,0 +1,372 @@
+ncic_code,description,is_violent
+0900,Homicide - (free text),Y
+0901,Murder-Kill-Family,Y
+0902,Murder-Kill-Family,Y
+0903,Murder-Kill-Nonfamily,Y
+0904,Murder-Kill-Nonfamily,Y
+0905,Manslaughter Kill-Family,Y
+0906,Manslaughter Kill-NonFamily,Y
+0907,Attempted Murder,Y
+0908,Attempted Manslaughter,Y
+0909,Neglig Homicide Vehicle,Y
+0910,Neglig Homicide Weapon,Y
+0911,Homicide-Willful Kill-Gun,Y
+0912,Homicide-Willful Kill-Weapon,Y
+0923,Neglig Homicide Unborn,Y
+0999,Assist a Suicide,Y
+1000,Kidnap - (free text),Y
+1001,Kidnap-Did not Release,Y
+1002,Kidnap-Released,Y
+1003,Felonious Restraint,Y
+1004,Unlawful Imprisonment,Y
+1005,Kidnap Minor,Y
+1006,Kidnap Adult,Y
+1099,Kidnapping - (free text),Y
+1100,Sex Asslt - (free text),Y
+1101,Gross Sexual Imp-Gun,Y
+1102,Gross Sexual Imp-Other Weapon,Y
+1103,Gross Sexual Imp-ForceNoWeap,Y
+1104,Gross Sexual Imp-Vol Part,Y
+1105,Sexual Imp-Victim not minor,Y
+1106,Sexual Imp-Minor 15-17yrs,Y
+1107,Corrup/Sol of Minor 15-17yrs,Y
+1108,Sex Abuse of Wards,Y
+1109,Sex Asslt of Adult,Y
+1110,Sex Asslt of Minor 15-17yrs,Y
+1111,GSI-Stat Rape Vic <15yrs,Y
+1112,Sex Transfer of Fluids-AIDS,Y
+1114,Sex Asslt-Sodomy-Girl-Stgarm,Y
+1115,Sex Asslt-Sodomy-Woman-Stgarm,Y
+1116,Stat Rape< 15yrs,Y
+1117,Sex Asslt-Carnal Abuse,Y
+1199,Sex Asslt - (free text),Y
+1200,Robbery - (free text),Y
+1201,Robbery-Fired Gun,Y
+1202,Robbery-Possess/Pret Weap,Y
+1203,Robbery-Strong Arm,Y
+1204,Robbery-Street-Gun,Y
+1205,Robbery-Street-Weapon,Y
+1206,Robbery-Street-Stgarm,Y
+1207,Robbery-Resid-Gun,Y
+1208,Robbery-Resid-Weapon,Y
+1209,Robbery-Resid-Stgarm,Y
+1210,Forcible Purse Snatching,Y
+1211,Robbery-Banking-Type Inst,Y
+1299,Robbery - (free text),Y
+1300,Asslt - (free text),Y
+1301,Aggrav Asslt by Firearm,Y
+1302,Aggrav Asslt by Hands/Feet,Y
+1303,Aggrav Asslt by Knife,Y
+1304,Willful Assault,Y
+1305,Aggrav Reckless Endangerment,Y
+1306,Reckless Endangerment,Y
+1307,Criminal Coercion,Y
+1308,Terrorizing,Y
+1309,Menacing,Y
+1310,Assault of Police Off Gun,Y
+1311,Assault Police Off Knife,Y
+1312,Assault Police Off Stgarm,Y
+1313,Simple Assault,Y
+1314,Harass Threat to Inflict,Y
+1315,Harassment W/O Threat,Y
+1316,Stalking,Y
+1317,Stalking,Y
+1318,Endangerment of Child/Vulnerable Adult,Y
+2000,Arson - (free text),Y
+2001,Arson-Business,Y
+2002,Arson-Resid,Y
+2003,Arson-Business-Def Insurer,Y
+2004,Arson-Resid-Def Insurer,Y
+2005,Endangering by Fire(Life),Y
+2006,Endangering by Fire,Y
+2007,Failure to COntrol Fire,N
+2008,Neglig Act to Cause Fire,Y
+2009,Arson-Pub-Bldg,Y
+2099,Arson - (free text),Y
+2101,Extortion of <$500,N
+2102,Extortion of >$500,N
+2103,"Extortion of >$10,000",N
+2199,Extortion - (free text),N
+2200,Burgl - (free text),N
+2201,Burglary-Night/Armed,Y
+2202,Burglary Entry-Resid,N
+2203,Burglary Entry-Nonresid,N
+2204,Criminal Trespass,N
+2205,Criminal Trespass,N
+2206,Criminal Trespass,N
+2207,Breaking into Veh Armed,Y
+2208,Breaking into Vehicle,N
+2209,Stowaway,N
+2299,Burglary - (free text),N
+2300,Larc - (free text),N
+2301,Pocketpicking,N
+2302,Purse Snatching,N
+2303,Shoplifting,N
+2304,TheftParts From Veh,N
+2305,Theft From Auto,N
+2306,Theft Farm Machine,N
+2307,Theft From Vending Machine,N
+2308,Theft From Bldg,N
+2309,Theft of Service,N
+2310,Theft Prop Mislaid,N
+2311,Theft of Bicycle,N
+2312,Theft of Cable TV,N
+2313,Theft by Deception >$500,N
+2314,Fail to Pay Motel/Café,N
+2315,Theft of Weapons,N
+2316,Larc-Postal,N
+2399,Theft of Property - (free text),N
+2400,Stolen Vehicle - (free text),N
+2401,Theft-Auto,N
+2402,Theft-Motorhome/Camper,N
+2403,Theft-Motorcycle,N
+2404,Theft-Nonmotor Vehicle,N
+2405,Theft-Snowmobile,N
+2406,"Theft-Trucks,Buses",N
+2407,Strip Stolen Vehicle,N
+2408,Possess Stolen Vehicle,N
+2409,Interstate Transp Stolen Vehicle,N
+2411,Unauth Use Of Vehicle,N
+2499,Stolen Vehicle - (free text),N
+2500,Forgery - (free text),N
+2501,"Forgery >$10,000",N
+2502,"Forgery >$100<$10,000",N
+2503,Forgery <$100,N
+2504,Facilitation of Cntrft,N
+2505,Deceptive Writings,N
+2506,Making/Utter Slugs,N
+2507,Possess Counterfeited,N
+2508,Possess Tools For Forgery/Counterfeiting,N
+2589,Forgery,N
+2599,Forgery - (free text),N
+2600,Fraud - (free text),N
+2601,Fraud-Confidence Game,N
+2602,Defraud Secured Invest,N
+2603,Mail Fraud,N
+2604,Fraud-Imperson,N
+2605,Illeg Use Credit Cards,N
+2606,NSF Check/No Acc,N
+2607,Welfare Fraud,N
+2608,Fraud-By Wire,N
+2609,Computer Fraud,N
+2699,Fraud - (free text),N
+2700,Embezzle - (free text),N
+2701,Embezzle-Business,N
+2702,Misapp of Property,N
+2703,Embezzle-Banking-Type Inst,N
+2704,Embezzle-Public Property,N
+2799,Embezzle - (free text),N
+2800,Stolen Prop - (free text),N
+2801,Dealing in Stolen Property,N
+2802,Remove ID Marks,N
+2803,Receive Stolen Property,N
+2804,Possess Stolen Property,N
+2805,Poss Altered Property,N
+2806,Duplication of Keys,N
+2899,Stolen Prop - (free text),N
+2900,Damage Prop - (free text),N
+2901,Crim Mischief-Business,N
+2902,Crim Mischief-Private,N
+2903,Crim Mischief-Public,N
+2905,Damage Prop-Private-With Explosive,N
+2999,Criminal Mischief - (free text),N
+3500,Dangerous Drugs - (free text),N
+3501,Hallucinogen-Mfr,N
+3502,Hallucinogen-Distrib,N
+3503,Hallucinogen-Sell,N
+3504,Hallucinogen-Possess,N
+3505,Hallucinogen,N
+3510,Heroin-Sell,N
+3511,Heroin-Smuggl,N
+3512,Heroin-Posess,N
+3513,Heroin-Delivery,N
+3520,Opium Or Deriv-Sell,N
+3521,Opium Or Deriv-Smuggl,N
+3522,Opium Or Deriv-Possess,N
+3523,Opium Or Deriv-Delivery,N
+3530,Cocaine-Sell,N
+3531,Cocaine-Smuggl,N
+3532,Cocaine-Possess,N
+3533,Cocaine-Delivery,N
+3540,Synth Narcotic-Sell,N
+3541,Synth Narcotic-Smuggl,N
+3542,Synth Narcotic-Possess,N
+3543,Synth Narcotic Mfr,N
+3550,Narcotic Equip-Possess,N
+3560,Marijuana-Sell,N
+3561,Marijuana-Smuggl,N
+3562,Marijuana-Possess,N
+3563,Marijuana-Producing,N
+3564,Marijuana,N
+3570,Amphetamine-Mfr,N
+3571,Amphetamine-Sell,N
+3572,Amphetamine-Possess,N
+3573,Amphetamine-Delivery,N
+3580,Barbiturate-Mfr,N
+3581,Barbiturate-Sell,N
+3582,Barbiturate-Possess,N
+3583,Barbiturate-Delivery,N
+3585,"Cntrft SchedI,II,II Non-Narcotic",N
+3586,"Cntrft Sched I,II Narcotic",N
+3587,Cntrft Sched IV,N
+3588,Cntrft Sched V,N
+3590,Advertise Imitations,N
+3591,"Mfr,Sell,Dist Imitations",N
+3592,USe/Poss Imitations,N
+3595,Inhalation of Vapors,N
+3596,Unlawfull Disp of Needles,N
+3598,Poss/Ingestion of Controlled Sub.,N
+3599,Delivery of Controlled Sub. - (free text),N
+3600,Sex Offense - (free text),Y
+3601,Sex Offense-Against Child-Fondling,Y
+3602,Homosexual Act With Girl,Y
+3603,Homosexual Act With Boy,Y
+3604,Incest With Minor,Y
+3605,Indecent Exposure,Y
+3606,Deviate Sexual Act,Y
+3607,Incest With Adult,Y
+3611,Fornication in Pub-Adult,N
+3613,Unlawfull Cohabitation,N
+3614,Failure to Register as a Sex Offender,N
+3699,Sex Offense - (free text),Y
+3700,Disp Obscene to Minor,N
+3702,Permit Obsce Perf by Minor,Y
+3703,Present/Dir Obscene Performance,Y
+3704,Prom Child Obsce Sex Performance,Y
+3705,Obscene Material-Distrib,Y
+3706,Promote Child Sex Performance,Y
+3707,Promote Obsc Perf to Minor,Y
+3708,Use Child in Sex Performance,Y
+3799,Obscenity-Free Text,N
+3800,Family Offense - (free text),N
+3801,Neglect Family,N
+3802,Child Neglect,Y
+3803,Cruelty Toward Wife,Y
+3804,Contrib Deliq Minor Sexual,Y
+3805,Contib Delinq Minor,Y
+3806,Child Neglect,Y
+3807,Nonsupport-Spouse,N
+3808,Nonsupport of Child,N
+3810,Viol of Protect Order,Y
+3899,Family Offense - (free text),N
+3900,Gambling - (free text),N
+3901,Bookmaking,N
+3902,Card Game-Operating,N
+3904,Bogus Chips/Cheat,N
+3905,Games Chance Violations,N
+3918,Lottery,N
+3999,Gambling - (free text),N
+4000,Commercial Sex - (free text),N
+4002,Promoting Prostitution,N
+4004,Prostitution,N
+40A,All Other Offenses,N
+4100,Liquor - (free text),N
+4101,Liquor-Mfr,N
+4102,Liquor-Sell to Minor,N
+4103,Liquor-Deliver to Minor,N
+4104,Minor in Poss Alcohol,N
+4105,Bar Open After Hours,N
+4106,Minor Attempt to Purchase,N
+4107,Minor in Liquor Estab,N
+4199,Liquor - (free text),N
+4200,Drunkenness - (free text),N
+4800,Obstruct Police - (free text),N
+4801,Resisting Arrest,Y
+4802,Hindering Law Enforcement,N
+4803,False Info to Law Enforcement,N
+4804,Haboring Runaway,N
+4805,Tampering Witness/Infor,N
+4806,Witness-Deceiving,N
+4808,Compounding Crime,N
+4810,Aid in Crim Offense,N
+4811,Poss/Intro to Escape,N
+4812,Failure Report Crime,N
+4813,Failure To Move On,N
+4899,Obstruct Police - (free text),N
+4901,Escape,N
+4902,"Flight To Avoid (prosecution,confinement)",N
+4903,Aiding Prisoner Escape,N
+4999,Flight-Escape - (free text),N
+5000,Obstruct - (free text),N
+5001,Bail Jumping on Felony,N
+5002,Bail Jumping on Misd,N
+5003,Perjury,N
+5004,Harassment of Jurors,Y
+5005,Contempt Of Crt,N
+5006,False Statement,N
+5007,Disobey Court Order,N
+5009,Refuse to Testify,N
+5010,Tampering with Evidence,N
+5011,Hindering Proceedings,N
+5012,Prob Violation,N
+5013,Solicit Obsrt of Procd,N
+5014,Tampering with Witness,N
+5015,Failure To Appear,N
+5099,Obstruct - (free text),N
+5101,Bribe/Unlawful Comp,N
+5102,Bribe-Offering,N
+5103,Bribe-Accepting,N
+5108,Gratuity-Receiving,N
+5200,Weapon Offense - (free text),N
+5201,Prohibted Altering,N
+5202,Carrying Concealed Weapon,N
+5203,Poss Firearm Felon,N
+5204,Possess Short Barrel Weapon,N
+5205,Possess Explosives,N
+5206,"Poss Auto Rifle,Sil,Bomb",N
+5207,Loaded Firearm in Vehicle,N
+5208,Incendiary Device,N
+5210,Pistol Permit Violation,N
+5211,Poss Explos in Gvt Blg,Y
+5212,Possession Firarm-Other,N
+5213,Discharge Firearm in City,N
+5214,Supply Illeagal Weapon,N
+5216,Provide Minor with Firearm,N
+5218,Firearm Bar/Gamble Site,N
+5299,Weapon Offense - (free text),N
+5300,Public Peace - (free text),N
+5302,Riot-Inciting,Y
+5303,Riot-Engaging In,Y
+5305,Disobey Public Safe Orders,N
+5309,Harass/Obsce/Threat Comm,N
+5311,Disorderly Conduct,N
+5399,Public Peace - (free text),N
+5400,Traffic Offense - (free text),Y
+5401,Hit And Run,N
+5402,Drive Under Suspend,N
+5403,Drive Under Influence,Y
+5404,DUI/APC,Y
+5405,Moving Traffic Violation,N
+5499,Traffic Offense - (free text),Y
+5500,Health-Safety - (free text),N
+5501,Drugs-Adulterated,N
+5599,Health-Safety - (free text),N
+5700,Invade Privacy - (free text),N
+5701,Disclose Eavesdrop Info,N
+5702,Poss/Sell Wiretap Services,N
+5703,Advertise Wiretap Devices,N
+5704,Eavesdropping No Device,N
+5705,Eavesdrop Using Equip,N
+5706,Interception of Mail,N
+5707,Trespassing,N
+5708,Libel Criminal Defamation,N
+5799,Invade Privacy - (free text),N
+5800,Smuggling - (free text),N
+5801,Smuggle Contraband,N
+5803,Del Drugs to Pen,N
+5804,Poss Alcohol by Inmate,N
+5805,Poss Drugs by Inmate,N
+5899,Smuggling - (free text),N
+6000,Antitrust - (free text),N
+6101,Income Tax,N
+6102,Sales Tax,N
+6199,Tax Revenue - (free text),N
+6200,Conservation - (free text),N
+6201,Conservation-Animals,N
+6205,Conservation-Environment,N
+6299,Conservation - (free text),N
+6499,Possession of Certain Materials Prohibited,N
+7099,Crimes Against Person - (free text),Y
+7199,Property Crimes - (free text),N
+7299,Morals-Decency Crimes - (free text),N
+7399,Public Order Crimes - (free text),N

@@ -993,7 +993,7 @@ class StateCharge(IngestObject):
 
     def __init__(self, state_charge_id=None, status=None, offense_date=None,
                  date_charged=None, state_code=None, county_code=None,
-                 statute=None, description=None, attempted=None,
+                 ncic_code=None, statute=None, description=None, attempted=None,
                  classification_type=None, classification_subtype=None,
                  counts=None, charge_notes=None, is_controlling=None,
                  charging_entity=None, state_court_case=None, state_bond=None):
@@ -1003,6 +1003,7 @@ class StateCharge(IngestObject):
         self.date_charged: Optional[str] = date_charged
         self.state_code: Optional[str] = state_code
         self.county_code: Optional[str] = county_code
+        self.ncic_code: Optional[str] = ncic_code
         self.statute: Optional[str] = statute
         self.description: Optional[str] = description
         self.attempted: Optional[str] = attempted

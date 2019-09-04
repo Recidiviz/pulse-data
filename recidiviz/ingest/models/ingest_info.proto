@@ -300,18 +300,19 @@ message StateCharge {
     optional string date_charged = 4;
     optional string state_code = 5;
     optional string county_code = 6;
-    optional string statute = 7;
-    optional string description = 8;
-    optional string attempted = 9;
-    optional string classification_type = 10;
-    optional string classification_subtype = 11;
-    optional string counts = 12;
-    optional string charge_notes = 13;
-    optional string is_controlling = 14;
-    optional string charging_entity = 15;
+    optional string ncic_code = 7;
+    optional string statute = 8;
+    optional string description = 9;
+    optional string attempted = 10;
+    optional string classification_type = 11;
+    optional string classification_subtype = 12;
+    optional string counts = 13;
+    optional string charge_notes = 14;
+    optional string is_controlling = 15;
+    optional string charging_entity = 16;
 
-    optional string state_court_case_id = 16;
-    optional string state_bond_id = 17;
+    optional string state_court_case_id = 17;
+    optional string state_bond_id = 18;
 }
 
 message StateCourtCase {
