@@ -688,15 +688,22 @@ class UsNdController(CsvGcsfsDirectIngestController):
             StateIncarcerationPeriodAdmissionReason.
             RETURN_FROM_ERRONEOUS_RELEASE: ['READMN'],
             StateIncarcerationPeriodAdmissionReason.TRANSFER:
-                ['FED', 'HOSP', 'HOSPS', 'HOSPU', 'INT', 'OOS'],
+                ['CONF', 'FED', 'HOSP', 'HOSPS', 'HOSPU', 'INT', 'JOB',
+                 'OOS', 'PROG', 'RB', 'SUPL'],
+            StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION:
+                ['PARL'],
             StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION:
-                ['NPRB', 'NPROB'],
+                ['NPRB', 'NPROB', 'RPRB'],
 
             StateIncarcerationPeriodReleaseReason.EXTERNAL_UNKNOWN: ['OTHER'],
+            StateIncarcerationPeriodReleaseReason.COMPASSIONATE: ['COM'],
+            StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE:
+                ['PRB', 'PV'],
             StateIncarcerationPeriodReleaseReason.COURT_ORDER: ['CO'],
             StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED: ['XSNT'],
             StateIncarcerationPeriodReleaseReason.TRANSFER:
-                ['HOSP', 'HOSPS', 'HOSPU', 'INT', 'RB'],
+                ['CONF', 'HOSP', 'HOSPS', 'HOSPU', 'INT', 'JOB', 'PROG', 'RB',
+                 'SUPL'],
 
             StateSupervisionType.HALFWAY_HOUSE: ['COMMUNITY PLACEMENT PGRM'],
             StateSupervisionType.PAROLE: ['SSOP'],
@@ -760,17 +767,10 @@ class UsNdController(CsvGcsfsDirectIngestController):
         ignores: Dict[EntityEnumMeta, List[str]] = {
             # TODO(2305): What are the appropriate court case statuses?
             StateCourtCaseStatus: ['A', 'STEP'],
-            # TODO(2060): What are the appropriate reasons for: NTAD, JOB
-            # TODO(2060): What to do about unexpected admission reasons:
-            #             RB, SUPL, RPRB, PARL
             StateIncarcerationPeriodAdmissionReason:
-                ['COM', 'CONF', 'CONT', 'CONV', 'PROG', 'RB', 'SUPL', 'RPRB',
-                 'PARL', 'NTAD', 'JOB'],
-            # TODO(2060): What to do about unexpected release reasons:
-            #             ADMN, PRB, PV, 4139, REC, NPRB, NPROB
+                ['COM', 'CONT', 'CONV', 'NTAD'],
             StateIncarcerationPeriodReleaseReason:
-                ['ADMN', 'COM', 'CONF', 'CONT', 'CONV', 'JOB', 'PROG', 'PRB',
-                 'PV', '4139', 'REC', 'NPRB', 'NTAD', 'NPROB', 'JOB'],
+                ['ADMN', 'CONT', 'CONV', 'REC', '4139'],
         }
 
         return self._create_overrides(overrides, ignores)

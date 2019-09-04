@@ -183,6 +183,7 @@ state_incarceration_period_admission_reason = Enum(
 
 state_incarceration_period_release_reason = Enum(
     state_enum_strings.state_incarceration_period_release_reason_commuted,
+    state_enum_strings.state_incarceration_period_release_reason_compassionate,
     state_enum_strings.
     state_incarceration_period_release_reason_conditional_release,
     state_enum_strings.state_incarceration_period_release_reason_court_order,
