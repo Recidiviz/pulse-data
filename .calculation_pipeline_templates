@@ -1,0 +1,2 @@
+# List of pipeline templates to deploy in the format <pipeline> <job_name> <input> <output>
+recidivism full-recidivism-calculations recidiviz_state_scratch_space_2 dataflow_metrics

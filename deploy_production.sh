@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+source ./recidiviz/tools/deploy_pipeline_from_yaml.sh
 
 echo "Fetching all tags"
 git fetch --all --tags --prune
@@ -12,6 +13,9 @@ gcloud app deploy cron.yaml --project=recidiviz-123
 echo "Starting deploy of queue.yaml"
 python -m recidiviz.tools.build_queue_config --environment production
 gcloud app deploy queue.yaml --project=recidiviz-123
+
+echo "Deploying calculation pipelines to templates"
+deploy_pipelines ./deploy_pipeline_to_template.sh recidiviz-123 recidiviz-123-dataflow-templates ./calculation_pipeline_templates.yaml
 
 VERSION=$(echo $1 | tr '.' '-')
 STAGING_IMAGE_URL=us.gcr.io/recidiviz-staging/appengine/default.$VERSION:latest

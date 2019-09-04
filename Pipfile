@@ -63,6 +63,7 @@ google-auth = "*"
 deepdiff = "*"
 "mmh3" = "*"
 aenum = "*"
+yq = "*"
 
 [requires]
 python_version = "3.7"

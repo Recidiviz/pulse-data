@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+source ./recidiviz/tools/deploy_pipeline_from_yaml.sh
+source ./recidiviz/tools/run_commands.sh
 
 deploy_name=$1
 version_tag=$(echo $2 | tr '.' '-')
@@ -8,17 +10,8 @@ if [ x"$deploy_name" == x -o x"$version_tag" == x ]; then
     exit 1
 fi
 
-function run_cmd {
-    cmd="$1"
-    echo "Running \`$cmd\`"
-    $cmd
-
-    ret_code=$?
-    if [ $ret_code -ne 0 ]; then
-        echo "Failed with exit code $ret_code"
-        exit $ret_code
-    fi
-}
+echo "Deploying calculation pipelines to templates"
+deploy_pipelines ./deploy_pipeline_to_template.sh recidiviz-staging recidiviz-staging-dataflow-templates ./calculation_pipeline_templates.yaml
 
 echo "Building docker image"
 run_cmd "docker build -t recidiviz-image ."
