@@ -307,10 +307,11 @@ message StateCharge {
     optional string classification_subtype = 11;
     optional string counts = 12;
     optional string charge_notes = 13;
-    optional string charging_entity = 14;
+    optional string is_controlling = 14;
+    optional string charging_entity = 15;
 
-    optional string state_court_case_id = 15;
-    optional string state_bond_id = 16;
+    optional string state_court_case_id = 16;
+    optional string state_bond_id = 17;
 }
 
 message StateCourtCase {

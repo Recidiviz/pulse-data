@@ -72,4 +72,5 @@ def copy_fields_to_builder(
         fn(normalize, 'classification_subtype', proto)
     new.counts = fn(parse_int, 'counts', proto)
     new.charge_notes = fn(normalize, 'charge_notes', proto)
+    new.is_controlling = fn(parse_bool, 'is_controlling', proto)
     new.charging_entity = fn(normalize, 'charging_entity', proto)
