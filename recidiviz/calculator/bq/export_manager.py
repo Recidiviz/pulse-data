@@ -16,7 +16,6 @@
 # =============================================================================
 
 """Export data from Cloud SQL and load it into BigQuery."""
-
 from http import HTTPStatus
 import json
 import logging
@@ -33,6 +32,7 @@ from recidiviz.calculator.bq import export_config
 from recidiviz.calculator.bq.bq_load import ModuleType
 from recidiviz.common import queues
 from recidiviz.utils.auth import authenticate_request
+from recidiviz.utils import pubsub_helper
 
 
 def export_table_then_load_table(
@@ -178,13 +178,41 @@ def handle_bq_export_task():
         dataset_ref = bq_utils.client().dataset(
             export_config.STATE_BASE_TABLES_BQ_DATASET)
     else:
-        return HTTPStatus.INTERNAL_SERVER_ERROR
+        return '', HTTPStatus.INTERNAL_SERVER_ERROR
 
     logging.info("Starting BQ export task for table: %s", table_name)
 
     success = export_table_then_load_table(table_name, dataset_ref, module_type)
 
     return ('', HTTPStatus.OK if success else HTTPStatus.INTERNAL_SERVER_ERROR)
+
+
+@export_manager_blueprint.route('/bq_monitor', methods=['POST'])
+@authenticate_request
+def handle_bq_monitor_task():
+    """Worker function to publish a message to a Pub/Sub topic once all tasks in
+    the BIGQUERY_QUEUE queue have completed.
+    """
+    json_data = request.get_data(as_text=True)
+    data = json.loads(json_data)
+    topic = data['topic']
+    message = data['message']
+
+    bq_tasks_in_queue = queues.list_tasks_with_prefix(
+        '', queues.BIGQUERY_QUEUE)
+
+    # If there are BQ tasks in the queue, then re-queue this task in a minute
+    if bq_tasks_in_queue:
+        logging.info("Tasks still in bigquery queue. Re-queuing bq monitor"
+                     " task.")
+        queues.create_bq_monitor_task(
+            topic, message, '/export_manager/bq_monitor')
+        return ('', HTTPStatus.OK)
+
+    # Publish a message to the Pub/Sub topic once all BQ exports are complete
+    pubsub_helper.publish_message_to_topic(topic, message)
+
+    return ('', HTTPStatus.OK)
 
 
 @export_manager_blueprint.route('/create_export_tasks')
@@ -222,6 +250,11 @@ def create_all_state_bq_export_tasks():
 
     for table in export_config.STATE_TABLES_TO_EXPORT:
         queues.create_bq_task(table.name, module, '/export_manager/export')
+
+    pub_sub_topic = 'v1.calculator.recidivism'
+    pub_sub_message = 'State export to BQ complete'
+    queues.create_bq_monitor_task(
+        pub_sub_topic, pub_sub_message, '/export_manager/bq_monitor')
     return ('', HTTPStatus.OK)
 
 

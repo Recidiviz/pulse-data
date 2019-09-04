@@ -16,10 +16,12 @@
 # =============================================================================
 
 """Cloud Tasks queue helper function tests."""
+import datetime
 import json
 import unittest
 
 from google.cloud import tasks
+from google.protobuf import timestamp_pb2
 from mock import call, patch
 
 from recidiviz.common import queues
@@ -134,6 +136,55 @@ class QueuesTest(unittest.TestCase):
         body_encoded = json.dumps(params).encode()
 
         task = tasks.types.Task(
+            name=task_path,
+            app_engine_http_request={
+                'relative_uri': url,
+                'body': body_encoded
+            }
+        )
+
+        mock_client.return_value.queue_path.assert_called_with(
+            metadata.project_id(), metadata.region(), queue_name)
+        mock_client.return_value.create_task.assert_called_with(
+            queue_path, task)
+
+    @patch('recidiviz.common.queues.datetime_helpers')
+    @patch('recidiviz.common.queues.datetime')
+    @patch('recidiviz.common.queues.uuid')
+    @patch('google.cloud.tasks.CloudTasksClient')
+    def test_create_bq_monitor_task(self, mock_client, mock_uuid,
+                                    mock_datetime, mock_datetime_helpers):
+        """Tests that a BQ monitor task is created."""
+        url = '/test/bq_monitor'
+        queue_name = queues.BQ_MONITOR_QUEUE
+        topic = 'test.topic'
+        topic_dashes = topic.replace('.', '-')
+        message = 'test message'
+        uuid = 'random-uuid'
+        date = '1900-01-01'
+        queue_path = queue_name + '-path'
+        mock_uuid.uuid4.return_value = uuid
+
+        time = datetime.datetime(year=2019, month=7, day=20)
+        mock_datetime.datetime.now.return_value = time
+
+        mock_datetime_helpers.to_milliseconds.return_value = 60000
+        time_in_seconds = 60
+        time_proto = timestamp_pb2.Timestamp(seconds=time_in_seconds)
+
+        mock_datetime.date.today.return_value = date
+        mock_client.return_value.queue_path.return_value = queue_path
+        task_path = queue_path + '/{}-{}-{}'.format(
+            topic_dashes, date, uuid)
+        mock_client.return_value.task_path.return_value = task_path
+
+        queues.create_bq_monitor_task(topic=topic, message=message, url=url)
+
+        params = {'topic': topic, 'message': message}
+        body_encoded = json.dumps(params).encode()
+
+        task = tasks.types.Task(
+            schedule_time=time_proto,
             name=task_path,
             app_engine_http_request={
                 'relative_uri': url,
