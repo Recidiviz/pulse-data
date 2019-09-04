@@ -123,6 +123,7 @@ state_incarceration_period_admission_reason_return_from_escape = \
 state_incarceration_period_admission_reason_transfer = 'TRANSFER'
 
 state_incarceration_period_release_reason_commuted = 'COMMUTED'
+state_incarceration_period_release_reason_compassionate = 'COMPASSIONATE'
 state_incarceration_period_release_reason_conditional_release = \
     'CONDITIONAL_RELEASE'
 state_incarceration_period_release_reason_court_order = 'COURT_ORDER'
