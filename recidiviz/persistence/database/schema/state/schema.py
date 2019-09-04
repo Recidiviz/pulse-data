@@ -151,6 +151,14 @@ state_agent_type = Enum(
     state_enum_strings.state_agent_unit_supervisor,
     name='state_agent_type')
 
+state_person_alias_type = Enum(
+    state_enum_strings.state_person_alias_alias_type_affiliation_name,
+    state_enum_strings.state_person_alias_alias_type_alias,
+    state_enum_strings.state_person_alias_alias_type_given_name,
+    state_enum_strings.state_person_alias_alias_type_maiden_name,
+    state_enum_strings.state_person_alias_alias_type_nickname,
+    name='state_person_alias_type')
+
 state_incarceration_period_status = Enum(
     enum_strings.external_unknown,
     state_enum_strings.state_incarceration_period_status_in_custody,
@@ -520,6 +528,8 @@ class _StatePersonAliasSharedColumns(_ReferencesStatePersonSharedColumns):
 
     state_code = Column(String(255), nullable=False, index=True)
     full_name = Column(String(255))
+    alias_type = Column(state_person_alias_type)
+    alias_type_raw_text = Column(String(255))
 
 
 class StatePersonAlias(StateBase,

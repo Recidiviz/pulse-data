@@ -41,6 +41,8 @@ from recidiviz.common.constants.state.state_incarceration_incident import \
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodAdmissionReason, \
     StateIncarcerationPeriodReleaseReason
+from recidiviz.common.constants.state.state_person_alias import \
+    StatePersonAliasType
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import \
     StateSupervisionType
@@ -94,8 +96,10 @@ class UsNdController(CsvGcsfsDirectIngestController):
         }
 
         self.row_post_processors_by_file: Dict[str, List[Callable]] = {
-            'elite_alias': [self._clear_temporary_alias_primary_ids],
-            'elite_offenders': [self._rationalize_race_and_ethnicity],
+            'elite_alias': [self._clear_temporary_alias_primary_ids,
+                            self._set_demographics_on_person],
+            'elite_offenders': [self._rationalize_race_and_ethnicity,
+                                self._copy_name_to_alias],
             'elite_offenderidentifier': [self._normalize_external_id],
             'elite_offendersentenceaggs': [self._rationalize_max_length],
             'elite_offendersentences': [self._rationalize_life_sentence],
@@ -118,7 +122,8 @@ class UsNdController(CsvGcsfsDirectIngestController):
             'docstars_offenders': [self._rationalize_race_and_ethnicity,
                                    self._label_external_id_as_elite,
                                    self._enrich_addresses,
-                                   self._enrich_sorac_assessments],
+                                   self._enrich_sorac_assessments,
+                                   self._copy_name_to_alias],
             'docstars_offendercasestable': [
                 self._concatenate_docstars_length_periods,
                 self._record_revocation,
@@ -270,6 +275,40 @@ class UsNdController(CsvGcsfsDirectIngestController):
                     cache.clear_object_by_id(
                         'state_alias',
                         _TEMPORARY_PRIMARY_ID)
+
+    @staticmethod
+    def _copy_name_to_alias(_row: Dict[str, str],
+                            extracted_objects: List[IngestObject],
+                            _cache: IngestObjectCache):
+        for extracted_object in extracted_objects:
+            if isinstance(extracted_object, StatePerson):
+                extracted_object.create_state_alias(
+                    full_name=extracted_object.full_name,
+                    surname=extracted_object.surname,
+                    given_names=extracted_object.given_names,
+                    middle_names=extracted_object.middle_names,
+                    name_suffix=extracted_object.name_suffix,
+                    alias_type=StatePersonAliasType.GIVEN_NAME.value
+                )
+
+    @staticmethod
+    def _set_demographics_on_person(row: Dict[str, str],
+                                    _extracted_objects: List[IngestObject],
+                                    cache: IngestObjectCache):
+        """The Elite Alias file contains race and sex fields which we need to
+        set on the parent StatePerson object. TODO(1883): We need to enhance the
+        CSV data extractor to make it possible to set this directly through YAML
+        mappings. Until then, we use this post-row hook."""
+        race = row.get('RACE_CODE', None)
+        sex = row.get('SEX_CODE', None)
+        person_id = row['ROOT_OFFENDER_ID']
+
+        person = cache.get_object_by_id('state_person', person_id)
+        if person:
+            if sex:
+                person.gender = sex
+            if race:
+                person.create_state_person_race(race=race)
 
     @staticmethod
     def _rationalize_race_and_ethnicity(_row: Dict[str, str],
@@ -705,6 +744,12 @@ class UsNdController(CsvGcsfsDirectIngestController):
             Race.ASIAN: ['4'],
             Race.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: ['6', 'HAW'],
             Race.OTHER: ['5', 'HIS', 'MUL'],
+
+            StatePersonAliasType.AFFILIATION_NAME: ['GNG'],
+            StatePersonAliasType.ALIAS: ['A'],
+            StatePersonAliasType.GIVEN_NAME: ['G', 'CN'],
+            StatePersonAliasType.MAIDEN_NAME: ['M'],
+            StatePersonAliasType.NICKNAME: ['N'],
 
             StateSentenceStatus.COMPLETED: ['C'],
             StateSentenceStatus.SERVING: ['O'],

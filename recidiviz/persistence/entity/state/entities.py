@@ -64,6 +64,8 @@ from recidiviz.common.constants.state.state_charge import (
 )
 from recidiviz.common.constants.state.state_parole_decision import \
     StateParoleDecisionOutcome
+from recidiviz.common.constants.state.state_person_alias import \
+    StatePersonAliasType
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import (
     StateSupervisionType,
@@ -132,6 +134,8 @@ class StatePersonAlias(Entity, BuildableAttr, DefaultableAttr):
     """Models an alias associated with a particular StatePerson."""
     # Attributes
     state_code: str = attr.ib()  # non-nullable
+    alias_type: Optional[StatePersonAliasType] = attr.ib()
+    alias_type_raw_text: Optional[str] = attr.ib()
     # TODO(1905): Remove defaults for string fields
     full_name: Optional[str] = attr.ib(default=None)
 

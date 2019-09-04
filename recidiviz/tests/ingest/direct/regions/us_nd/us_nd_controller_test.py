@@ -44,6 +44,8 @@ from recidiviz.common.constants.state.state_incarceration_incident import \
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus, StateIncarcerationPeriodReleaseReason, \
     StateIncarcerationPeriodAdmissionReason
+from recidiviz.common.constants.state.state_person_alias import \
+    StatePersonAliasType
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import \
     StateSupervisionType
@@ -139,6 +141,11 @@ class TestUsNdController(unittest.TestCase):
                             ],
                             state_person_races=[
                                 StatePersonRace(race='CAUCASIAN')
+                            ],
+                            state_aliases=[
+                                StateAlias(surname='HOPKINS',
+                                           given_names='JON',
+                                           alias_type='GIVEN_NAME')
                             ]),
                 StatePerson(state_person_id='52163', surname='KNOWLES',
                             given_names='SOLANGE', birthdate='6/24/1986',
@@ -150,7 +157,12 @@ class TestUsNdController(unittest.TestCase):
                             ],
                             state_person_races=[
                                 StatePersonRace(race='BLACK')
-                            ])
+                            ],
+                            state_aliases=[
+                                StateAlias(surname='KNOWLES',
+                                           given_names='SOLANGE',
+                                           alias_type='GIVEN_NAME')
+                            ]),
             ])
 
         self.run_parse_file_test(expected, 'elite_offenders')
@@ -193,6 +205,7 @@ class TestUsNdController(unittest.TestCase):
         expected = IngestInfo(
             state_people=[
                 StatePerson(state_person_id='39768',
+                            gender='M',
                             state_person_external_ids=[
                                 StatePersonExternalId(
                                     state_person_external_id_id='39768',
@@ -201,19 +214,26 @@ class TestUsNdController(unittest.TestCase):
                             state_aliases=[
                                 StateAlias(surname='HOPKINS',
                                            given_names='TODD',
-                                           name_suffix='III'),
+                                           name_suffix='III',
+                                           alias_type='A'),
                                 StateAlias(surname='HODGSON',
                                            given_names='JON',
-                                           middle_names='R')
+                                           middle_names='R',
+                                           alias_type='A')
                             ]),
                 StatePerson(state_person_id='52163',
+                            gender='F',
                             state_person_external_ids=[
                                 StatePersonExternalId(
                                     state_person_external_id_id='52163',
                                     id_type=US_ND_ELITE)
                             ],
                             state_aliases=[
-                                StateAlias(given_names='SOLANGE')
+                                StateAlias(given_names='SOLANGE',
+                                           alias_type='A')
+                            ],
+                            state_person_races=[
+                                StatePersonRace(race='BLACK')
                             ])
             ])
 
@@ -1004,6 +1024,12 @@ class TestUsNdController(unittest.TestCase):
                             StateAssessment(assessment_level='MODERATE',
                                             assessment_class='RISK',
                                             assessment_type='SORAC')
+                        ],
+                        state_aliases=[
+                            StateAlias(surname='Knowles',
+                                       given_names='Solange',
+                                       middle_names='P',
+                                       alias_type='GIVEN_NAME')
                         ]),
             StatePerson(state_person_id='92237',
                         surname='Hopkins',
@@ -1025,6 +1051,11 @@ class TestUsNdController(unittest.TestCase):
                             StateAssessment(assessment_level='HIGH',
                                             assessment_class='RISK',
                                             assessment_type='SORAC'),
+                        ],
+                        state_aliases=[
+                            StateAlias(surname='Hopkins',
+                                       given_names='Jon',
+                                       alias_type='GIVEN_NAME')
                         ]),
             StatePerson(state_person_id='92307',
                         surname='Sandison',
@@ -1040,6 +1071,11 @@ class TestUsNdController(unittest.TestCase):
                             StatePersonExternalId(
                                 state_person_external_id_id='92307',
                                 id_type=US_ND_SID)
+                        ],
+                        state_aliases=[
+                            StateAlias(surname='Sandison',
+                                       given_names='Mike',
+                                       alias_type='GIVEN_NAME')
                         ])
         ])
 
@@ -1407,8 +1443,15 @@ class TestUsNdController(unittest.TestCase):
         person_1_race = entities.StatePersonRace.new_with_defaults(
             state_code=_STATE_CODE, race=Race.WHITE, race_raw_text='CAUCASIAN',
             person=person_1)
+        person_1_alias_1 = entities.StatePersonAlias.new_with_defaults(
+            full_name='{"given_names": "JON", "surname": "HOPKINS"}',
+            alias_type=StatePersonAliasType.GIVEN_NAME,
+            alias_type_raw_text='GIVEN_NAME',
+            state_code=_STATE_CODE,
+            person=person_1)
         person_1.external_ids = [person_1_external_id]
         person_1.races = [person_1_race]
+        person_1.aliases = [person_1_alias_1]
 
         person_2 = entities.StatePerson.new_with_defaults(
             full_name='{"given_names": "SOLANGE", "surname": "KNOWLES"}',
@@ -1421,8 +1464,15 @@ class TestUsNdController(unittest.TestCase):
         person_2_race = entities.StatePersonRace.new_with_defaults(
             state_code=_STATE_CODE, race=Race.BLACK, race_raw_text='BLACK',
             person=person_2)
+        person_2_alias_1 = entities.StatePersonAlias.new_with_defaults(
+            full_name='{"given_names": "SOLANGE", "surname": "KNOWLES"}',
+            alias_type=StatePersonAliasType.GIVEN_NAME,
+            alias_type_raw_text='GIVEN_NAME',
+            state_code=_STATE_CODE,
+            person=person_2)
         person_2.external_ids = [person_2_external_id]
         person_2.races = [person_2_race]
+        person_2.aliases = [person_2_alias_1]
 
         expected_people = [person_2, person_1]
 
@@ -1480,20 +1530,29 @@ class TestUsNdController(unittest.TestCase):
         # Arrange
         # TODO(2158): Why do we fill out full_name and keep the distinct
         # parts (in comparison to Person).
-        person_1_alias_1 = entities.StatePersonAlias.new_with_defaults(
+        person_1_alias_2 = entities.StatePersonAlias.new_with_defaults(
             full_name='{"given_names": "TODD", "name_suffix": "III", '
                       '"surname": "HOPKINS"}',
-            state_code=_STATE_CODE, person=person_1)
-        person_1_alias_2 = entities.StatePersonAlias.new_with_defaults(
+            alias_type=StatePersonAliasType.ALIAS,
+            alias_type_raw_text='A',
+            state_code=_STATE_CODE,
+            person=person_1)
+        person_1_alias_3 = entities.StatePersonAlias.new_with_defaults(
             full_name='{"given_names": "JON", "middle_names": "R", '
                       '"surname": "HODGSON"}',
-            state_code=_STATE_CODE, person=person_1)
-        person_2_alias = entities.StatePersonAlias.new_with_defaults(
+            alias_type=StatePersonAliasType.ALIAS,
+            alias_type_raw_text='A',
             state_code=_STATE_CODE,
-            full_name='{"given_names": "SOLANGE"}', person=person_2)
-        person_1.aliases.append(person_1_alias_1)
+            person=person_1)
+        person_2_alias_2 = entities.StatePersonAlias.new_with_defaults(
+            full_name='{"given_names": "SOLANGE"}',
+            alias_type=StatePersonAliasType.ALIAS,
+            alias_type_raw_text='A',
+            state_code=_STATE_CODE,
+            person=person_2)
         person_1.aliases.append(person_1_alias_2)
-        person_2.aliases.append(person_2_alias)
+        person_1.aliases.append(person_1_alias_3)
+        person_2.aliases.append(person_2_alias_2)
 
         # Act
         self._run_ingest_job_for_filename('elite_alias.csv')
@@ -2466,6 +2525,8 @@ class TestUsNdController(unittest.TestCase):
         person_1_race_2 = entities.StatePersonRace.new_with_defaults(
             state_code=_STATE_CODE, race=Race.WHITE, race_raw_text='1',
             person=person_1)
+        # No additional alias for this Docstars Offenders record
+        # because it's identical to a previous alias
         person_1.races = [person_1_race_2]
         person_1.gender_raw_text = '1'
         person_1.assessments = [person_1_assessment_1]
@@ -2483,6 +2544,14 @@ class TestUsNdController(unittest.TestCase):
         person_2_race_2 = entities.StatePersonRace.new_with_defaults(
             state_code=_STATE_CODE, race=Race.BLACK, race_raw_text='2',
             person=person_2)
+        person_2_alias_3 = entities.StatePersonAlias.new_with_defaults(
+            full_name='{"given_names": "SOLANGE", "middle_names": "P", '
+                      '"surname": "KNOWLES"}',
+            alias_type=StatePersonAliasType.GIVEN_NAME,
+            alias_type_raw_text='GIVEN_NAME',
+            state_code=_STATE_CODE,
+            person=person_2)
+        person_2.aliases.append(person_2_alias_3)
         person_2.races = [person_2_race_2]
         person_2.assessments = [person_2_assessment_1]
         person_2.full_name = '{"given_names": "SOLANGE", ' \
@@ -2512,6 +2581,13 @@ class TestUsNdController(unittest.TestCase):
             state_code=_STATE_CODE, ethnicity=Ethnicity.HISPANIC,
             ethnicity_raw_text='HISPANIC',
             person=person_6)
+        person_6_alias = entities.StatePersonAlias.new_with_defaults(
+            full_name='{"given_names": "MIKE", "surname": "SANDISON"}',
+            alias_type=StatePersonAliasType.GIVEN_NAME,
+            alias_type_raw_text='GIVEN_NAME',
+            state_code=_STATE_CODE,
+            person=person_6)
+        person_6.aliases = [person_6_alias]
         person_6.external_ids = [person_6_external_id]
         person_6.races = [person_6_race]
         person_6.ethnicities = [person_6_ethnicity]

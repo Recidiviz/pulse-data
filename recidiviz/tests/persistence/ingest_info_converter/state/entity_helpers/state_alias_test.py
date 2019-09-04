@@ -19,6 +19,8 @@ import unittest
 
 import pytest
 
+from recidiviz.common.constants.state.state_person_alias import \
+    StatePersonAliasType
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
@@ -41,6 +43,7 @@ class StateAliasConverterTest(unittest.TestCase):
             middle_names='LONNY',
             surname='OCEAN',
             name_suffix='BREAUX',
+            alias_type='GIVEN',
         )
 
         # Act
@@ -53,6 +56,8 @@ class StateAliasConverterTest(unittest.TestCase):
                       '"middle_names": "LONNY", '
                       '"name_suffix": "BREAUX", '
                       '"surname": "OCEAN"}',
+            alias_type=StatePersonAliasType.GIVEN_NAME,
+            alias_type_raw_text='GIVEN',
         )
 
         self.assertEqual(result, expected_result)
@@ -63,6 +68,7 @@ class StateAliasConverterTest(unittest.TestCase):
             state_code='US_ND',
             state_alias_id='ALIAS_ID',
             full_name='FRANK OCEAN',
+            alias_type='NICKNAME',
         )
 
         # Act
@@ -72,6 +78,8 @@ class StateAliasConverterTest(unittest.TestCase):
         expected_result = entities.StatePersonAlias(
             state_code='US_ND',
             full_name='{"full_name": "FRANK OCEAN"}',
+            alias_type=StatePersonAliasType.NICKNAME,
+            alias_type_raw_text='NICKNAME',
         )
 
         self.assertEqual(result, expected_result)
@@ -86,6 +94,7 @@ class StateAliasConverterTest(unittest.TestCase):
             middle_names='LONNY',
             surname='OCEAN',
             name_suffix='BREAUX',
+            alias_type='NICKNAME',
         )
 
         # Act
