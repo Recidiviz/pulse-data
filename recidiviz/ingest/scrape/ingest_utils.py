@@ -268,11 +268,11 @@ def convert_ingest_info_to_proto(ingest_info_py: ingest_info.IngestInfo) \
                         proto_incident.state_incarceration_incident_id)
 
                 if incident.responding_officer:
-                    proto_agent = _populate_proto(
+                    proto_responding_officer = _populate_proto(
                         'state_agents', incident.responding_officer,
                         'state_agent_id', state_agent_map)
                     proto_incident.responding_officer_id = \
-                        proto_agent.state_agent_id
+                        proto_responding_officer.state_agent_id
 
                 for incident_outcome in \
                         incident.state_incarceration_incident_outcomes:
@@ -293,11 +293,11 @@ def convert_ingest_info_to_proto(ingest_info_py: ingest_info.IngestInfo) \
                     proto_decision.state_parole_decision_id)
 
                 for agent in decision.decision_agents:
-                    proto_agent = _populate_proto(
+                    proto_decision_agent = _populate_proto(
                         'state_agents', agent,
                         'state_agent_id', state_agent_map)
                     proto_decision.decision_agent_ids.append(
-                        proto_agent.state_agent_id)
+                        proto_decision_agent.state_agent_id)
 
             for period_assessment in incarceration_period.state_assessments:
                 proto_period_assessment = _populate_proto(
@@ -307,11 +307,11 @@ def convert_ingest_info_to_proto(ingest_info_py: ingest_info.IngestInfo) \
                     proto_period_assessment.state_assessment_id)
 
                 if period_assessment.conducting_agent:
-                    proto_agent = _populate_proto(
+                    proto_conducting_agent = _populate_proto(
                         'state_agents', period_assessment.conducting_agent,
                         'state_agent_id', state_agent_map)
                     proto_period_assessment.conducting_agent_id = \
-                        proto_agent.state_agent_id
+                        proto_conducting_agent.state_agent_id
 
     def _populate_supervision_period_protos(parent_ingest_object,
                                             parent_proto):
@@ -326,6 +326,13 @@ def convert_ingest_info_to_proto(ingest_info_py: ingest_info.IngestInfo) \
                 'state_supervision_period_id', state_supervision_period_map)
             parent_proto.state_supervision_period_ids.append(
                 proto_period.state_supervision_period_id)
+
+            if supervision_period.supervising_officer:
+                proto_supervising_officer = _populate_proto(
+                    'state_agents', supervision_period.supervising_officer,
+                    'state_agent_id', state_agent_map)
+                proto_period.supervising_officer_id = \
+                    proto_supervising_officer.state_agent_id
 
             for violation in supervision_period.state_supervision_violations:
                 proto_violation = _populate_proto(
@@ -344,6 +351,13 @@ def convert_ingest_info_to_proto(ingest_info_py: ingest_info.IngestInfo) \
                         .append(proto_response.
                                 state_supervision_violation_response_id)
 
+                    for agent in response.decision_agents:
+                        proto_decision_agent = _populate_proto(
+                            'state_agents', agent,
+                            'state_agent_id', state_agent_map)
+                        proto_response.decision_agent_ids.append(
+                            proto_decision_agent.state_agent_id)
+
             for period_assessment in supervision_period.state_assessments:
                 proto_period_assessment = _populate_proto(
                     'state_assessments', period_assessment,
@@ -352,11 +366,11 @@ def convert_ingest_info_to_proto(ingest_info_py: ingest_info.IngestInfo) \
                     proto_period_assessment.state_assessment_id)
 
                 if period_assessment.conducting_agent:
-                    proto_agent = _populate_proto(
+                    proto_conducting_agent = _populate_proto(
                         'state_agents', period_assessment.conducting_agent,
                         'state_agent_id', state_agent_map)
                     proto_period_assessment.conducting_agent_id = \
-                        proto_agent.state_agent_id
+                        proto_conducting_agent.state_agent_id
 
     for person in ingest_info_py.people:
         proto_person = _populate_proto(
@@ -704,6 +718,13 @@ def convert_proto_to_ingest_info(
                 state_agent_map[proto_assessment.conducting_agent_id]
 
     # Wire child entities to respective violations
+    for proto_response in proto.state_supervision_violation_responses:
+        violation_response = state_supervision_violation_response_map[
+            proto_response.state_supervision_violation_response_id]
+        violation_response.decision_agents = \
+            [state_agent_map[proto_id] for proto_id
+             in proto_response.decision_agent_ids]
+
     for proto_supervision_violation in proto.state_supervision_violations:
         supervision_violation = state_supervision_violation_map[
             proto_supervision_violation.state_supervision_violation_id]
@@ -716,6 +737,9 @@ def convert_proto_to_ingest_info(
     for proto_supervision_period in proto.state_supervision_periods:
         supervision_period = state_supervision_period_map[
             proto_supervision_period.state_supervision_period_id]
+        if proto_supervision_period.supervising_officer_id:
+            supervision_period.supervising_officer = \
+                state_agent_map[proto_supervision_period.supervising_officer_id]
         supervision_period.state_supervision_violations = \
             [state_supervision_violation_map[proto_id] for proto_id
              in proto_supervision_period.state_supervision_violation_ids]

@@ -1052,7 +1052,11 @@ class TestUsNdController(unittest.TestCase):
                     response_type='PERMANENT_DECISION',
                     response_date='12/8/2014',
                     decision='REVOCATION',
-                    revocation_type='DOCR Inmate Sentence')
+                    revocation_type='DOCR Inmate Sentence',
+                    decision_agents=[StateAgent(
+                        state_agent_id='63',
+                        agent_type='SUPERVISION_OFFICER',
+                    )])
             ])
 
         violation_for_140408 = StateSupervisionViolation(
@@ -1062,7 +1066,11 @@ class TestUsNdController(unittest.TestCase):
                     response_type='PERMANENT_DECISION',
                     response_date='2/27/2018',
                     decision='REVOCATION',
-                    revocation_type='DOCR Inmate Sentence')
+                    revocation_type='DOCR Inmate Sentence',
+                    decision_agents=[StateAgent(
+                        state_agent_id='77',
+                        agent_type='SUPERVISION_OFFICER',
+                    )])
             ])
 
         expected = IngestInfo(state_people=[
@@ -2580,6 +2588,14 @@ class TestUsNdController(unittest.TestCase):
                 StateSupervisionViolationResponseRevocationType.REINCARCERATION,
                 revocation_type_raw_text='DOCR INMATE SENTENCE',
                 state_code=_STATE_CODE,
+                decision_agents=[
+                    entities.StateAgent.new_with_defaults(
+                        external_id='63',
+                        state_code=_STATE_CODE,
+                        agent_type=StateAgentType.SUPERVISION_OFFICER,
+                        agent_type_raw_text='SUPERVISION_OFFICER',
+                    )
+                ],
                 supervision_violation=supervision_violation_117111,
                 person=supervision_violation_117111.person)
         supervision_violation_117111.supervision_violation_responses.append(
@@ -2638,6 +2654,14 @@ class TestUsNdController(unittest.TestCase):
                 StateSupervisionViolationResponseRevocationType.REINCARCERATION,
                 revocation_type_raw_text='DOCR INMATE SENTENCE',
                 state_code=_STATE_CODE,
+                decision_agents=[
+                    entities.StateAgent.new_with_defaults(
+                        external_id='77',
+                        state_code=_STATE_CODE,
+                        agent_type=StateAgentType.SUPERVISION_OFFICER,
+                        agent_type_raw_text='SUPERVISION_OFFICER',
+                    )
+                ],
                 supervision_violation=supervision_violation_140408,
                 person=supervision_violation_140408.person)
         charge_140408 = entities.StateCharge.new_with_defaults(

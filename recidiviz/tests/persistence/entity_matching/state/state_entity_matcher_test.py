@@ -55,10 +55,14 @@ _EXTERNAL_ID = 'EXTERNAL_ID-1'
 _EXTERNAL_ID_2 = 'EXTERNAL_ID-2'
 _EXTERNAL_ID_3 = 'EXTERNAL_ID-3'
 _EXTERNAL_ID_4 = 'EXTERNAL_ID-4'
+_EXTERNAL_ID_5 = 'EXTERNAL_ID-5'
+_EXTERNAL_ID_6 = 'EXTERNAL_ID-6'
 _ID = 1
 _ID_2 = 2
 _ID_3 = 3
 _ID_4 = 4
+_ID_5 = 5
+_ID_6 = 6
 _ID_TYPE = 'ID_TYPE'
 _ID_TYPE_ANOTHER = 'ID_TYPE_ANOTHER'
 _FULL_NAME = 'FULL_NAME'
@@ -596,6 +600,12 @@ class TestStateEntityMatching(TestCase):
         db_agent_2 = StateAgent.new_with_defaults(
             agent_id=_ID_2, state_code=_STATE_CODE, external_id=_EXTERNAL_ID_2,
             full_name='full_name_2')
+        db_agent_po = StateAgent.new_with_defaults(
+            agent_id=_ID_5, state_code=_STATE_CODE, external_id=_EXTERNAL_ID_5,
+            full_name='full_name_po')
+        db_agent_term = StateAgent.new_with_defaults(
+            agent_id=_ID_6, state_code=_STATE_CODE, external_id=_EXTERNAL_ID_6,
+            full_name='full_name_term')
         db_incarceration_incident = \
             StateIncarcerationIncident.new_with_defaults(
                 incarceration_incident_id=_ID, state_code=_STATE_CODE,
@@ -627,7 +637,8 @@ class TestStateEntityMatching(TestCase):
             StateSupervisionViolationResponse.new_with_defaults(
                 supervision_violation_response_id=_ID, state_code=_STATE_CODE,
                 external_id=_EXTERNAL_ID,
-                decision=StateSupervisionViolationResponseDecision.CONTINUANCE)
+                decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
+                decision_agents=[db_agent_term])
         db_supervision_violation = StateSupervisionViolation.new_with_defaults(
             supervision_violation_id=_ID, state_code=_STATE_CODE,
             external_id=_EXTERNAL_ID, is_violent=True,
@@ -637,7 +648,8 @@ class TestStateEntityMatching(TestCase):
             status=StateSupervisionPeriodStatus.EXTERNAL_UNKNOWN,
             state_code=_STATE_CODE, county_code='county_code',
             assessments=[db_assessment_2],
-            supervision_violations=[db_supervision_violation])
+            supervision_violations=[db_supervision_violation],
+            supervising_officer=db_agent_po)
         db_supervision_sentence = StateSupervisionSentence.new_with_defaults(
             supervision_sentence_id=_ID, status=SentenceStatus.SERVING,
             external_id=_EXTERNAL_ID,
@@ -683,6 +695,10 @@ class TestStateEntityMatching(TestCase):
             db_agent, agent_id=None, full_name='full_name-updated')
         agent_2 = attr.evolve(
             db_agent_2, agent_id=None, full_name='full_name_2-updated')
+        agent_po = attr.evolve(
+            db_agent_po, agent_id=None, full_name='full_name_po-updated')
+        agent_term = attr.evolve(
+            db_agent_term, agent_id=None, full_name='full_name_term-updated')
         incarceration_incident = attr.evolve(
             db_incarceration_incident, incarceration_incident_id=None,
             incident_details='details-updated', responding_officer=agent)
@@ -705,7 +721,8 @@ class TestStateEntityMatching(TestCase):
         supervision_violation_response = attr.evolve(
             db_supervision_violation_response,
             supervision_violation_response_id=None,
-            decision=StateSupervisionViolationResponseDecision.EXTENSION)
+            decision=StateSupervisionViolationResponseDecision.EXTENSION,
+            decision_agents=[agent_term])
         supervision_violation = attr.evolve(
             db_supervision_violation, supervision_violation_id=None,
             is_violent=False,
@@ -714,7 +731,8 @@ class TestStateEntityMatching(TestCase):
             db_supervision_period, supervision_period_id=None,
             county_code='county_code-updated',
             assessments=[assessment_2],
-            supervision_violations=[supervision_violation])
+            supervision_violations=[supervision_violation],
+            supervising_officer=agent_po)
         supervision_sentence = attr.evolve(
             db_supervision_sentence, supervision_sentence_id=None,
             min_length_days=1, supervision_periods=[supervision_period])
@@ -743,6 +761,8 @@ class TestStateEntityMatching(TestCase):
         expected_assessment_2 = attr.evolve(assessment_2, assessment_id=_ID_2)
         expected_agent = attr.evolve(agent, agent_id=_ID)
         expected_agent_2 = attr.evolve(agent_2, agent_id=_ID_2)
+        expected_agent_po = attr.evolve(agent_po, agent_id=_ID_5)
+        expected_agent_term = attr.evolve(agent_term, agent_id=_ID_6)
         expected_incarceration_incident = attr.evolve(
             incarceration_incident, incarceration_incident_id=_ID,
             responding_officer=expected_agent)
@@ -764,7 +784,8 @@ class TestStateEntityMatching(TestCase):
             incarceration_periods=[expected_incarceration_period])
         expected_supervision_violation_response = attr.evolve(
             supervision_violation_response,
-            supervision_violation_response_id=_ID)
+            supervision_violation_response_id=_ID,
+            decision_agents=[expected_agent_term])
         expected_supervision_violation = attr.evolve(
             supervision_violation, supervision_violation_id=_ID,
             supervision_violation_responses=[
@@ -772,7 +793,8 @@ class TestStateEntityMatching(TestCase):
         expected_supervision_period = attr.evolve(
             supervision_period, supervision_period_id=_ID,
             assessments=[expected_assessment_2],
-            supervision_violations=[expected_supervision_violation])
+            supervision_violations=[expected_supervision_violation],
+            supervising_officer=expected_agent_po)
         expected_supervision_sentence = attr.evolve(
             supervision_sentence, supervision_sentence_id=_ID,
             supervision_periods=[expected_supervision_period])

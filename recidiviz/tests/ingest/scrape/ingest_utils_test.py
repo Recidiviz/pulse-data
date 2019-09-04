@@ -377,11 +377,17 @@ class TestIngestUtils:
             create_state_supervision_period()
         supervision_period.state_supervision_period_id = 'sp1'
         supervision_period.status = 'TERMINATED'
+        supervision_period_agent = supervision_period.create_state_agent()
+        supervision_period_agent.state_agent_id = 'agentPO'
+        supervision_period_agent.full_name = 'Officer Paroley'
         violation = supervision_period.create_state_supervision_violation()
         violation.state_supervision_violation_id = 'violation1'
         violation.is_violent = 'false'
         response = violation.create_state_supervision_violation_response()
         response.state_supervision_violation_response_id = 'response1'
+        response_decision_agent = response.create_state_agent()
+        response_decision_agent.state_agent_id = 'agentTERM'
+        response_decision_agent.full_name = 'Officer Termy'
 
         bond = charge1.create_state_bond()
         bond.state_bond_id = 'bond1'
@@ -445,6 +451,18 @@ class TestIngestUtils:
         supervision_period_pb = expected_proto.state_supervision_periods.add()
         supervision_period_pb.state_supervision_period_id = 'sp1'
         supervision_period_pb.status = 'TERMINATED'
+
+        # An ordering requirement in the proto equality check at the end of this
+        # test requires that this agent be added after agent1 and before agentPO
+        court_case_agent_pb = expected_proto.state_agents.add()
+        court_case_agent_pb.state_agent_id = 'agentJ'
+        court_case_agent_pb.full_name = 'Judge Agent'
+
+        supervision_period_pb.supervising_officer_id = 'agentPO'
+        supervision_period_agent_pb = expected_proto.state_agents.add()
+        supervision_period_agent_pb.state_agent_id = 'agentPO'
+        supervision_period_agent_pb.full_name = 'Officer Paroley'
+
         supervision_period_pb.state_supervision_violation_ids.append(
             'violation1')
         violation_pb = expected_proto.state_supervision_violations.add()
@@ -454,6 +472,10 @@ class TestIngestUtils:
             'response1')
         response_pb = expected_proto.state_supervision_violation_responses.add()
         response_pb.state_supervision_violation_response_id = 'response1'
+        response_pb.decision_agent_ids.append('agentTERM')
+        response_decision_agent_pb = expected_proto.state_agents.add()
+        response_decision_agent_pb.state_agent_id = 'agentTERM'
+        response_decision_agent_pb.full_name = 'Officer Termy'
 
         group_pb.state_incarceration_sentence_ids.append('is1')
         incarceration_sentence_pb = \
@@ -473,12 +495,6 @@ class TestIngestUtils:
         incident_pb = expected_proto.state_incarceration_incidents.add()
         incident_pb.state_incarceration_incident_id = 'incident1'
         incident_pb.incident_type = 'FISTICUFFS'
-
-        # An ordering requirement in the proto equality check at the end of this
-        # test requires that this agent be added after agent1 and before agent2
-        court_case_agent_pb = expected_proto.state_agents.add()
-        court_case_agent_pb.state_agent_id = 'agentJ'
-        court_case_agent_pb.full_name = 'Judge Agent'
 
         incident_pb.responding_officer_id = 'agent2'
         incident_agent_pb = expected_proto.state_agents.add()
