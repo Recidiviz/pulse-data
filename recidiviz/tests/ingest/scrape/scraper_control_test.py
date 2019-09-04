@@ -279,14 +279,16 @@ class TestScraperStop:
     @patch("recidiviz.common.queues.enqueue_scraper_phase")
     @patch("recidiviz.ingest.scrape.sessions.update_phase")
     @patch("recidiviz.ingest.scrape.sessions.close_session")
+    @patch("recidiviz.ingest.scrape.sessions.get_current_session")
     def test_stop(
-            self, mock_sessions, mock_phase, mock_enqueue, mock_region,
-            mock_supported, client):
+            self, mock_get_session, mock_sessions, mock_phase, mock_enqueue,
+            mock_region, mock_supported, client):
         session = sessions.ScrapeSession.new(
             key=None, region='us_xx',
             scrape_type=constants.ScrapeType.BACKGROUND,
             phase=scrape_phase.ScrapePhase.SCRAPE
         )
+        mock_get_session.return_value = session
         mock_sessions.return_value = [session]
         mock_region.return_value = fake_region()
         mock_supported.return_value = ['us_ca', 'us_ut']
@@ -309,10 +311,14 @@ class TestScraperStop:
             [call(session, scrape_phase.ScrapePhase.PERSIST)] * 4)
         mock_region.return_value.get_ingestor().\
             stop_scrape.assert_has_calls([
-                call([constants.ScrapeType.BACKGROUND,
-                      constants.ScrapeType.SNAPSHOT], 'false'),
-                call([constants.ScrapeType.BACKGROUND,
-                      constants.ScrapeType.SNAPSHOT], 'false'),
+                call(constants.ScrapeType.BACKGROUND, 'false'),
+                call().__bool__(),
+                call(constants.ScrapeType.SNAPSHOT, 'false'),
+                call().__bool__(),
+                call(constants.ScrapeType.BACKGROUND, 'false'),
+                call().__bool__(),
+                call(constants.ScrapeType.SNAPSHOT, 'false'),
+                call().__bool__(),
             ])
         mock_supported.assert_called_with(timezone=None)
         mock_enqueue.assert_has_calls([
@@ -323,11 +329,11 @@ class TestScraperStop:
     @patch("recidiviz.utils.regions.get_supported_scrape_region_codes")
     @patch("recidiviz.utils.regions.get_region")
     @patch("recidiviz.common.queues.enqueue_scraper_phase")
-    @patch("recidiviz.ingest.scrape.sessions.close_session")
+    @patch("recidiviz.ingest.scrape.sessions.get_current_session")
     def test_stop_no_session(
             self, mock_sessions, mock_enqueue, mock_region, mock_supported,
             client):
-        mock_sessions.return_value = []
+        mock_sessions.return_value = None
         mock_region.return_value = fake_region()
         mock_supported.return_value = ['us_ca', 'us_ut']
 
@@ -344,8 +350,7 @@ class TestScraperStop:
             [call(ScrapeKey('us_ca', constants.ScrapeType.BACKGROUND)),
              call(ScrapeKey('us_ca', constants.ScrapeType.SNAPSHOT)),
              call(ScrapeKey('us_ut', constants.ScrapeType.BACKGROUND)),
-             call(ScrapeKey('us_ut', constants.ScrapeType.SNAPSHOT))],
-            any_order=True)
+             call(ScrapeKey('us_ut', constants.ScrapeType.SNAPSHOT))])
         assert not mock_region.return_value.get_ingestor().\
             stop_scrape.called
         mock_supported.assert_called_with(timezone=None)
@@ -356,15 +361,17 @@ class TestScraperStop:
     @patch("recidiviz.common.queues.enqueue_scraper_phase")
     @patch("recidiviz.ingest.scrape.sessions.update_phase")
     @patch("recidiviz.ingest.scrape.sessions.close_session")
+    @patch("recidiviz.ingest.scrape.sessions.get_current_session")
     def test_stop_timezone(
-            self, mock_sessions, mock_phase, mock_enqueue, mock_region,
-            mock_supported, client):
+            self, mock_sessions, mock_close, mock_phase, mock_enqueue,
+            mock_region, mock_supported, client):
         session = sessions.ScrapeSession.new(
             key=None, region='us_ut',
             scrape_type=constants.ScrapeType.BACKGROUND,
             phase=scrape_phase.ScrapePhase.SCRAPE
         )
-        mock_sessions.return_value = [session]
+        mock_sessions.return_value = session
+        mock_close.return_value = [session]
         mock_region.return_value = fake_region()
         mock_supported.side_effect = _MockSupported
 
@@ -387,9 +394,8 @@ class TestScraperStop:
             [call(session, scrape_phase.ScrapePhase.PERSIST)] * 2)
         mock_region.assert_has_calls([call('us_ut')])
         mock_region.return_value.get_ingestor().stop_scrape.\
-            assert_called_with([
-                constants.ScrapeType.BACKGROUND, constants.ScrapeType.SNAPSHOT
-            ], 'false')
+            assert_called_with(
+                constants.ScrapeType.SNAPSHOT, 'false')
         mock_supported.assert_called_with(
             timezone=pytz.timezone('America/New_York'))
         mock_enqueue.assert_called_with(
@@ -418,15 +424,17 @@ class TestScraperStop:
     @patch("recidiviz.common.queues.enqueue_scraper_phase")
     @patch("recidiviz.ingest.scrape.sessions.update_phase")
     @patch("recidiviz.ingest.scrape.sessions.close_session")
+    @patch("recidiviz.ingest.scrape.sessions.get_current_session")
     def test_stop_respects_region_is_not_stoppable(
-            self, mock_sessions, mock_phase, mock_enqueue, mock_region,
-            mock_supported, client):
+            self, mock_sessions, mock_close, mock_phase, mock_enqueue,
+            mock_region, mock_supported, client):
         session = sessions.ScrapeSession.new(
             key=None, region='us_xx',
             scrape_type=constants.ScrapeType.BACKGROUND,
             phase=scrape_phase.ScrapePhase.SCRAPE
         )
-        mock_sessions.return_value = [session]
+        mock_sessions.return_value = session
+        mock_close.return_value = [session]
         mock_region.return_value = fake_region()
         mock_region.return_value.is_stoppable = False
         mock_supported.return_value = ['us_ca', 'us_ut']
@@ -442,16 +450,19 @@ class TestScraperStop:
             [call(ScrapeKey('us_ca', constants.ScrapeType.BACKGROUND)),
              call(ScrapeKey('us_ca', constants.ScrapeType.SNAPSHOT)),
              call(ScrapeKey('us_ut', constants.ScrapeType.BACKGROUND)),
-             call(ScrapeKey('us_ut', constants.ScrapeType.SNAPSHOT))],
-            any_order=True)
+             call(ScrapeKey('us_ut', constants.ScrapeType.SNAPSHOT))])
         mock_phase.assert_has_calls(
             [call(session, scrape_phase.ScrapePhase.PERSIST)] * 4)
         mock_region.return_value.get_ingestor().stop_scrape.\
             assert_has_calls([
-                call([constants.ScrapeType.BACKGROUND,
-                      constants.ScrapeType.SNAPSHOT], None),
-                call([constants.ScrapeType.BACKGROUND,
-                      constants.ScrapeType.SNAPSHOT], None),
+                call(constants.ScrapeType.BACKGROUND, None),
+                call().__bool__(),
+                call(constants.ScrapeType.SNAPSHOT, None),
+                call().__bool__(),
+                call(constants.ScrapeType.BACKGROUND, None),
+                call().__bool__(),
+                call(constants.ScrapeType.SNAPSHOT, None),
+                call().__bool__(),
             ])
 
         mock_supported.assert_called_with(timezone=None)

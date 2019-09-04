@@ -30,8 +30,8 @@ import urllib3
 from recidiviz.common import queues
 from recidiviz.ingest.ingestor import Ingestor
 from recidiviz.ingest.models.scrape_key import ScrapeKey
-from recidiviz.ingest.scrape import (constants, scraper_utils,
-                                     sessions, tracker)
+from recidiviz.ingest.scrape import (constants, scraper_utils, sessions,
+                                     tracker)
 from recidiviz.ingest.scrape.constants import BATCH_PUBSUB_TYPE
 from recidiviz.ingest.scrape.task_params import QueueRequest, Task
 from recidiviz.utils import regions, pubsub_helper
@@ -136,27 +136,25 @@ class Scraper(Ingestor, metaclass=abc.ABCMeta):
                                    scraper_start_time=datetime.now(),
                                    next_task=self.get_initial_task()))
 
-    def stop_scrape(self, scrape_types, respect_is_stoppable=False) -> None:
+    def stop_scrape(self, scrape_type, respect_is_stoppable=False) -> bool:
         """Stops all active scraping tasks, resume non-targeted scrape types
-
         Stops the scraper, even if in the middle of a session. In
         production, this is called by a cron job scheduled to prevent
         interference with the normal operation of the scraped site.
-
         We share the scraping taskqueue between snapshot and
         background scraping to be certain of our throttling for the
         third-party service. As a result, cleaning up / purging the
         taskqueue necessarily kills all scrape types.  We kick off
         resume_scrape for any ongoing scraping types that aren't
         targets.
-
         Args:
-            scrape_types: (list of ScrapeType) Scrape types to terminate
+            scrape_type: Scrape type to terminate
             respect_is_stoppable: Defaults to false, in which case the scraper
                 will be stopped regardless of whether `is_stoppable` is set to
                 true. Otherwise, stops the region's scraper only if its
                 `is_stoppable` is set to true.
-
+        Returns:
+            A bool indicating whether or not the scrape was stopped.
         """
         region = self.get_region()
 
@@ -165,25 +163,32 @@ class Scraper(Ingestor, metaclass=abc.ABCMeta):
                 "Stop scrape was called and ignored for the region: %s "
                 "because the region's manifest is flagged as not stoppable",
                 region.region_code)
-            return
+            return False
 
         logging.info("Stopping scrape for the region: %s", region.region_code)
-        queues.purge_scrape_tasks(region_code=region.region_code,
-                                  queue_name=region.get_queue_name())
+
+        try:
+            queues.purge_scrape_tasks(region_code=region.region_code,
+                                      queue_name=region.get_queue_name())
+        except Exception as e:
+            logging.error("Caught an exception while trying to purge scrape "
+                          "tasks. The message was:\n%s", str(e))
+            return False
 
         # Check for other running scrapes, and if found kick off a delayed
         # resume for them since the taskqueue purge will kill them.
         other_scrapes = set([])
-
         open_sessions = sessions.get_sessions(region.region_code,
                                               include_closed=False)
         for session in open_sessions:
-            if session.scrape_type not in scrape_types:
+            if session.scrape_type != scrape_type:
                 other_scrapes.add(session.scrape_type)
 
         for scrape in other_scrapes:
             logging.info("Resuming unaffected scrape type: %s.", str(scrape))
             self.resume_scrape(scrape)
+
+        return True
 
     def resume_scrape(self, scrape_type):
         """Resume a stopped scrape from where it left off
