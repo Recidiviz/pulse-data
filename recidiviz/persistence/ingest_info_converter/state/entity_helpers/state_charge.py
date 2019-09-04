@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Converts an ingest_info proto StateCharge to a persistence entity."""
-
+from recidiviz.common import ncic
 from recidiviz.common.constants.charge import (ChargeStatus)
 from recidiviz.common.constants.state.state_charge import \
     StateChargeClassificationType
@@ -63,7 +63,14 @@ def copy_fields_to_builder(
         proto, 'state_code', metadata)
     new.county_code = fn(normalize, 'county_code', proto)
     new.statute = fn(normalize, 'statute', proto)
+
+    new.ncic_code = fn(normalize, 'ncic_code', proto)
     new.description = fn(normalize, 'description', proto)
+    if new.description is None and new.ncic_code is not None:
+        ncic_description = ncic.get_description(new.ncic_code)
+        if ncic_description:
+            new.description = normalize(ncic_description)
+
     new.attempted = fn(parse_bool, 'attempted', proto)
     if new.classification_type is None:
         new.classification_type = \

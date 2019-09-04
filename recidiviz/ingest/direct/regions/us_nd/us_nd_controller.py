@@ -21,6 +21,7 @@ import os
 import re
 from typing import List, Optional, Dict, Callable, cast, Pattern, Tuple
 
+from recidiviz.common import ncic
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 from recidiviz.common.constants.enum_overrides import EnumOverrides
@@ -506,6 +507,13 @@ class UsNdController(CsvGcsfsDirectIngestController):
 
         terminating_officer_id = row.get('TERMINATING_OFFICER', None)
 
+        def _get_ncic_codes():
+            first = row.get('NEW_OFF', None)
+            second = row.get('NEW_OFF2', None)
+            third = row.get('NEW_OFF3', None)
+
+            return [code for code in [first, second, third] if code]
+
         for extracted_object in extracted_objects:
             if isinstance(extracted_object, StateSupervisionViolation):
                 extracted_object = cast(
@@ -515,10 +523,13 @@ class UsNdController(CsvGcsfsDirectIngestController):
                     # on one violation
                     violation_type = None
                     if revocation_for_new_offense:
-                        # TODO(2229): Lookup NCIC codes from NEW_OFF to
-                        # determine is_violent
                         violation_type = \
                             StateSupervisionViolationType.FELONY.value
+
+                        ncic_codes = _get_ncic_codes()
+                        violent_flags = [ncic.get_is_violent(code)
+                                         for code in ncic_codes]
+                        extracted_object.is_violent = str(any(violent_flags))
                     elif revocation_for_absconsion:
                         violation_type = \
                             StateSupervisionViolationType.ABSCONDED.value
