@@ -64,6 +64,7 @@ deepdiff = "*"
 "mmh3" = "*"
 aenum = "*"
 yq = "*"
+oauth2client = "==3.0.0"
 
 [requires]
 python_version = "3.7"
