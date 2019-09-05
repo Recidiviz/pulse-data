@@ -42,6 +42,7 @@ _next_phase = {
     'infer_release.infer_release': None,
 }
 
+
 def next_phase(current_phase: Optional[str]) -> Optional[str]:
     if current_phase is None:
         raise ValueError("Unable to identify current scrape phase.")
