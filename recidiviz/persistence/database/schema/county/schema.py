@@ -638,3 +638,18 @@ class ChargeHistory(JailsBase,
 
     charge_id = Column(
         Integer, ForeignKey('charge.charge_id'), nullable=False, index=True)
+
+
+class ScraperSuccess(JailsBase):
+    """Represents the successful completion of a scrape session."""
+    __tablename__ = 'scraper_success'
+
+    __table_args__ = (
+        CheckConstraint(
+            'LENGTH(jid) = 8',
+            name='single_count_jid_length_check'),
+    )
+
+    scraper_success_id = Column(Integer, primary_key=True)
+    jid = Column(String(8), nullable=False)
+    date = Column(Date, nullable=False)

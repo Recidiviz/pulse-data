@@ -261,8 +261,8 @@ def read_and_persist():
             next_phase = scrape_phase.next_phase(request.endpoint)
             sessions.update_phase(session, scrape_phase.ScrapePhase.RELEASE)
             if next_phase:
-                logging.info("Enqueueing %s for region %s.", region,
-                             next_phase)
+                logging.info("Enqueueing %s for region %s.", next_phase,
+                             region)
                 queues.enqueue_scraper_phase(
                     region_code=region, url=url_for(next_phase))
             return '', HTTPStatus.OK

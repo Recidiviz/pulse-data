@@ -44,6 +44,7 @@ from recidiviz.tests.utils import fakes
 _SCHEMA_OBJECT_TYPES_TO_IGNORE = [
     # TODO(#1145): remove once sentence relationships are implemented
     'SentenceRelationship',
+    'ScraperSuccess',
 ]
 
 

@@ -64,6 +64,7 @@ def test_get_all_table_classes():
         'SentenceHistory',
         'SentenceRelationship',
         'SentenceRelationshipHistory',
+        'ScraperSuccess',
     ]
     state_table_names = [
         'StateAgent',

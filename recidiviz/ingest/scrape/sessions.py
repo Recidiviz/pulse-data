@@ -26,7 +26,9 @@ from google.cloud import datastore
 
 from recidiviz.common.common_utils import retry_grpc
 from recidiviz.ingest.models.scrape_key import ScrapeKey
+from recidiviz.ingest.models.scraper_success import ScraperSuccess
 from recidiviz.ingest.scrape import constants, scrape_phase
+from recidiviz.persistence.scraper_success import store_scraper_success
 from recidiviz.utils import environment
 
 _ds = None
@@ -201,8 +203,16 @@ def update_phase(session: ScrapeSession, phase: scrape_phase.ScrapePhase):
     #  TODO(#1665): remove once dangling PERSIST session investigation
     #   is complete.
     logging.info("Updating phase from %s to %s", session.phase, phase)
+
+    previous_phase = session.phase
+
     session.phase = phase
     retry_grpc(NUM_GRPC_RETRIES, ds().put, session.to_entity())
+
+    if previous_phase == scrape_phase.ScrapePhase.RELEASE and \
+       phase == scrape_phase.ScrapePhase.DONE:
+        store_scraper_success(ScraperSuccess(),
+                              session.region.jurisdiction_id)
 
 
 def add_docket_item_to_current_session(
