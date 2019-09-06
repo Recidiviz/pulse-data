@@ -29,7 +29,7 @@ from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.models.scraper_success import ScraperSuccess
 from recidiviz.ingest.scrape import constants, scrape_phase
 from recidiviz.persistence.scraper_success import store_scraper_success
-from recidiviz.utils import environment
+from recidiviz.utils import environment, regions
 
 _ds = None
 
@@ -211,8 +211,8 @@ def update_phase(session: ScrapeSession, phase: scrape_phase.ScrapePhase):
 
     if previous_phase == scrape_phase.ScrapePhase.RELEASE and \
        phase == scrape_phase.ScrapePhase.DONE:
-        store_scraper_success(ScraperSuccess(),
-                              session.region.jurisdiction_id)
+        jid = regions.get_region(session.region).jurisdiction_id
+        store_scraper_success(ScraperSuccess(), jid)
 
 
 def add_docket_item_to_current_session(
