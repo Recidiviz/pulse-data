@@ -35,8 +35,6 @@ from recidiviz.persistence.database.schema_entity_converter import (
 )
 from recidiviz.persistence.database.schema.county import schema
 from recidiviz.persistence.entity_matching import entity_matching
-from recidiviz.persistence.entity_matching.entity_matching_types import \
-    MatchedEntities
 from recidiviz.persistence.entity_matching.county import county_entity_matcher,\
     county_matching_utils
 from recidiviz.persistence.errors import EntityMatchingError
@@ -73,7 +71,7 @@ _JURISDICTION_ID = '12345678'
 class TestCountyEntityMatcher(TestCase):
     """Tests for entity matching logic"""
 
-    def setup_method(self, _test_method):
+    def setUp(self) -> None:
         fakes.use_in_memory_sqlite_database(JailsBase)
 
     def test_matchPeople_errorCount(self):
@@ -125,9 +123,14 @@ class TestCountyEntityMatcher(TestCase):
         # Assert
         expected_person = attr.evolve(ingested_person_another,
                                       person_id=schema_person_another.person_id)
-        expected_out = MatchedEntities(
-            people=[expected_person], error_count=1, orphaned_entities=[])
-        self.assertEqual(out, expected_out)
+
+        self.assertCountEqual(
+            converter.convert_schema_objects_to_entity(out.people),
+            [expected_person])
+        self.assertCountEqual(
+            converter.convert_schema_objects_to_entity(out.orphaned_entities),
+            [])
+        self.assertEqual(out.error_count, 1)
 
     def test_matchPerson_updateStatusOnOrphanedEntities(self):
         # Arrange
@@ -180,11 +183,14 @@ class TestCountyEntityMatcher(TestCase):
         expected_person = attr.evolve(
             ingested_person, person_id=schema_person.person_id,
             bookings=[expected_booking])
-        expected_out = MatchedEntities(
-            people=[expected_person], error_count=0,
-            orphaned_entities=[expected_orphaned_bond])
 
-        self.assertEqual(out, expected_out)
+        self.assertCountEqual(
+            converter.convert_schema_objects_to_entity(out.people),
+            [expected_person])
+        self.assertCountEqual(
+            converter.convert_schema_objects_to_entity(out.orphaned_entities),
+            [expected_orphaned_bond])
+        self.assertEqual(out.error_count, 0)
 
     def test_matchPeople_differentBookingIds(self):
         # Arrange
@@ -246,10 +252,14 @@ class TestCountyEntityMatcher(TestCase):
         expected_person_another = attr.evolve(
             ingested_person_another, person_id=_PERSON_ID_ANOTHER,
             bookings=[expected_booking_another])
-        expected_out = MatchedEntities(
-            error_count=0, people=[expected_person, expected_person_another],
-            orphaned_entities=[])
-        self.assertEqual(out, expected_out)
+        self.assertCountEqual(
+            converter.convert_schema_objects_to_entity(out.people),
+            [expected_person, expected_person_another])
+        self.assertCountEqual(
+            converter.convert_schema_objects_to_entity(out.orphaned_entities),
+            [])
+        self.assertEqual(out.error_count, 0)
+
 
     def test_matchPeople(self):
         # Arrange
@@ -312,11 +322,13 @@ class TestCountyEntityMatcher(TestCase):
             ingested_person_external_id,
             person_id=_PERSON_ID_ANOTHER,
             bookings=[expected_booking_external_id])
-
-        expected_out = MatchedEntities(
-            people=[expected_person_external_id, expected_person],
-            error_count=0, orphaned_entities=[])
-        self.assertEqual(out, expected_out)
+        self.assertCountEqual(
+            converter.convert_schema_objects_to_entity(out.people),
+            [expected_person_external_id, expected_person])
+        self.assertCountEqual(
+            converter.convert_schema_objects_to_entity(out.orphaned_entities),
+            [])
+        self.assertEqual(out.error_count, 0)
 
     def test_matchPeople_twoMatchingPeople_PicksMostSimilar(self):
         # Arrange

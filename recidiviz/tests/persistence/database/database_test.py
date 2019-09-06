@@ -25,12 +25,14 @@ from sqlalchemy.sql import text
 from recidiviz.common.constants.bond import BondStatus
 from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.common.constants.charge import ChargeStatus
+from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.person_characteristics import Race
 from recidiviz.common.constants.county.sentence import SentenceStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.base_schema import \
     JailsBase
+from recidiviz.persistence.database.schema.county import schema as county_schema
 from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.persistence.database import database
 from recidiviz.persistence.database.schema_entity_converter import (
@@ -55,9 +57,9 @@ _EXTERNAL_ID = 'external_id'
 _BIRTHDATE = datetime.date(year=2012, month=1, day=2)
 _INGEST_TIME = datetime.datetime(year=2020, month=7, day=4)
 _FACILITY = 'facility'
-_DEFAULT_METADATA = IngestMetadata.new_with_defaults(
+_DEFAULT_METADATA = IngestMetadata(
     region='default_region', jurisdiction_id='jid',
-    ingest_time=_INGEST_TIME, enum_overrides={})
+    ingest_time=_INGEST_TIME, enum_overrides=EnumOverrides.empty())
 
 DATE_SCRAPED = datetime.date(year=2019, month=1, day=1)
 
@@ -66,25 +68,26 @@ class TestDatabase(TestCase):
     """Test that the methods in database.py correctly read from the SQL
     database """
 
-    def setup_method(self, _test_method):
+    def setUp(self):
         fakes.use_in_memory_sqlite_database(JailsBase)
 
     def testWritePerson_noExistingSnapshots_createsSnapshots(self):
         act_session = SessionFactory.for_schema_base(JailsBase)
 
-        person = county_entities.Person.new_with_defaults(
-            region=_REGION, race=Race.OTHER, jurisdiction_id=_JURISDICTION_ID)
+        person = county_schema.Person(
+            region=_REGION, race=Race.OTHER.value,
+            jurisdiction_id=_JURISDICTION_ID)
 
-        booking = county_entities.Booking.new_with_defaults(
-            custody_status=CustodyStatus.IN_CUSTODY,
+        booking = county_schema.Booking(
+            custody_status=CustodyStatus.IN_CUSTODY.value,
             first_seen_time=_INGEST_TIME,
             last_seen_time=_INGEST_TIME)
         person.bookings = [booking]
 
-        charge_1 = county_entities.Charge.new_with_defaults(
-            status=ChargeStatus.PENDING)
-        charge_2 = county_entities.Charge.new_with_defaults(
-            status=ChargeStatus.PRETRIAL)
+        charge_1 = county_schema.Charge(
+            status=ChargeStatus.PENDING.value)
+        charge_2 = county_schema.Charge(
+            status=ChargeStatus.PRETRIAL.value)
         booking.charges = [charge_1, charge_2]
 
         persisted_person = database.write_person(
@@ -203,25 +206,25 @@ class TestDatabase(TestCase):
         act_session = SessionFactory.for_schema_base(JailsBase)
 
         # Ingested record tree has updates to person and charge but not booking
-        ingested_person = county_entities.Person.new_with_defaults(
+        ingested_person = county_schema.Person(
             person_id=existing_person_id,
             region=_REGION,
             jurisdiction_id=_JURISDICTION_ID,
-            race=Race.EXTERNAL_UNKNOWN)
+            race=Race.EXTERNAL_UNKNOWN.value)
 
         # Ingested booking has new last_seen_time but this is ignored, as it
         # is not included on the historical table.
-        ingested_booking = county_entities.Booking.new_with_defaults(
+        ingested_booking = county_schema.Booking(
             booking_id=existing_booking_id,
-            custody_status=CustodyStatus.IN_CUSTODY,
+            custody_status=CustodyStatus.IN_CUSTODY.value,
             facility=_FACILITY,
             first_seen_time=updated_last_seen_time,
             last_seen_time=updated_last_seen_time)
         ingested_person.bookings = [ingested_booking]
 
-        ingested_charge = county_entities.Charge.new_with_defaults(
+        ingested_charge = county_schema.Charge(
             charge_id=existing_charge_id,
-            status=ChargeStatus.PENDING,
+            status=ChargeStatus.PENDING.value,
             name=charge_name_2)
         ingested_booking.charges = [ingested_charge]
 
@@ -328,24 +331,24 @@ class TestDatabase(TestCase):
 
         # Ingested record tree has update to person, no updates to booking, and
         # a new charge
-        ingested_person = county_entities.Person.new_with_defaults(
+        ingested_person = county_schema.Person(
             person_id=existing_person_id,
             region=_REGION,
             jurisdiction_id=_JURISDICTION_ID,
-            race=Race.EXTERNAL_UNKNOWN)
+            race=Race.EXTERNAL_UNKNOWN.value)
 
         # Ingested booking has new last_seen_time but this is ignored, as it
         # is not included on the historical table.
-        ingested_booking = county_entities.Booking.new_with_defaults(
+        ingested_booking = county_schema.Booking(
             booking_id=existing_booking_id,
-            custody_status=CustodyStatus.IN_CUSTODY,
+            custody_status=CustodyStatus.IN_CUSTODY.value,
             facility=_FACILITY,
             first_seen_time=_INGEST_TIME,
             last_seen_time=updated_last_seen_time)
         ingested_person.bookings = [ingested_booking]
 
-        ingested_charge = county_entities.Charge.new_with_defaults(
-            status=ChargeStatus.PENDING,
+        ingested_charge = county_schema.Charge(
+            status=ChargeStatus.PENDING.value,
             name=charge_name)
         ingested_booking.charges = [ingested_charge]
 
@@ -464,9 +467,13 @@ class TestDatabase(TestCase):
         ingest_person.bookings[0].custody_status = CustodyStatus.RELEASED
 
         try:
-            database.write_person(assert_session, ingest_person, IngestMetadata(
-                _REGION, _JURISDICTION_ID,
-                datetime.datetime(year=2020, month=7, day=8), {}))
+            database.write_people(
+                assert_session,
+                converter.convert_entity_people_to_schema_people(
+                    [ingest_person]),
+                IngestMetadata(
+                    _REGION, _JURISDICTION_ID,
+                    datetime.datetime(year=2020, month=7, day=8), {}))
         except Exception as e:
             self.fail('Writing person failed with error: {}'.format(e))
 
@@ -474,11 +481,13 @@ class TestDatabase(TestCase):
         shared_id = 48
         session = SessionFactory.for_schema_base(JailsBase)
 
-        person_1 = county_entities.Person.new_with_defaults(
-            region=_REGION, race=Race.OTHER, person_id=shared_id,
+        person_1 = county_schema.Person(
+            region=_REGION, race=Race.OTHER.value, person_id=shared_id,
             jurisdiction_id=_JURISDICTION_ID)
-        person_2 = county_entities.Person.new_with_defaults(
-            region=_REGION, race=Race.EXTERNAL_UNKNOWN, person_id=shared_id,
+        person_2 = county_schema.Person(
+            region=_REGION,
+            race=Race.EXTERNAL_UNKNOWN.value,
+            person_id=shared_id,
             jurisdiction_id=_JURISDICTION_ID)
 
         self.assertRaises(
@@ -496,7 +505,7 @@ class TestDatabase(TestCase):
         booking_admission_date = datetime.datetime(year=2020, month=7, day=1)
 
         arrange_session = SessionFactory.for_schema_base(JailsBase)
-        person = county_entities.Person.new_with_defaults(
+        person = county_schema.Person(
             full_name=_FULL_NAME, birthdate=_BIRTHDATE, region=_REGION,
             jurisdiction_id=_JURISDICTION_ID)
         persisted_person = database.write_person(
@@ -516,8 +525,12 @@ class TestDatabase(TestCase):
             first_seen_time=booking_scrape_time,
             last_seen_time=booking_scrape_time)
         queried_person.bookings = [booking]
+
         updated_person = database.write_person(
-            act_session, queried_person, IngestMetadata(
+            act_session,
+            converter.convert_entity_people_to_schema_people(
+                [queried_person])[0],
+            IngestMetadata(
                 _REGION, _JURISDICTION_ID, booking_scrape_time, {}))
         act_session.commit()
         booking_id = updated_person.bookings[0].booking_id
@@ -541,18 +554,18 @@ class TestDatabase(TestCase):
         booking_release_date = datetime.datetime(year=2020, month=7, day=1)
 
         act_session = SessionFactory.for_schema_base(JailsBase)
-        person = county_entities.Person.new_with_defaults(
+        person = county_schema.Person(
             full_name=_FULL_NAME, birthdate=_BIRTHDATE, region=_REGION,
             jurisdiction_id=_JURISDICTION_ID)
-        booking = county_entities.Booking.new_with_defaults(
-            custody_status=CustodyStatus.RELEASED,
+        booking = county_schema.Booking(
+            custody_status=CustodyStatus.RELEASED.value,
             release_date=booking_release_date,
             release_date_inferred=False,
             first_seen_time=scrape_time,
             last_seen_time=scrape_time)
         person.bookings = [booking]
-        charge = county_entities.Charge.new_with_defaults(
-            status=ChargeStatus.PENDING)
+        charge = county_schema.Charge(
+            status=ChargeStatus.PENDING.value)
         booking.charges = [charge]
         persisted_person = database.write_person(
             act_session, person, IngestMetadata(
@@ -584,18 +597,18 @@ class TestDatabase(TestCase):
         booking_release_date = datetime.datetime(year=2020, month=7, day=15)
 
         act_session = SessionFactory.for_schema_base(JailsBase)
-        person = county_entities.Person.new_with_defaults(
+        person = county_schema.Person(
             full_name=_FULL_NAME, birthdate=_BIRTHDATE, region=_REGION,
             jurisdiction_id=_JURISDICTION_ID)
-        booking = county_entities.Booking.new_with_defaults(
-            custody_status=CustodyStatus.RELEASED,
+        booking = county_schema.Booking(
+            custody_status=CustodyStatus.RELEASED.value,
             release_date=booking_release_date,
             release_date_inferred=False,
             first_seen_time=scrape_time,
             last_seen_time=scrape_time)
         person.bookings = [booking]
-        charge = county_entities.Charge.new_with_defaults(
-            status=ChargeStatus.PENDING)
+        charge = county_schema.Charge(
+            status=ChargeStatus.PENDING.value)
         booking.charges = [charge]
         persisted_person = database.write_person(
             act_session, person, IngestMetadata(
@@ -628,11 +641,11 @@ class TestDatabase(TestCase):
         release_date = datetime.datetime(year=2020, month=7, day=1)
 
         act_session = SessionFactory.for_schema_base(JailsBase)
-        person = county_entities.Person.new_with_defaults(
+        person = county_schema.Person(
             full_name=_FULL_NAME, birthdate=_BIRTHDATE, region=_REGION,
             jurisdiction_id=_JURISDICTION_ID)
-        booking = county_entities.Booking.new_with_defaults(
-            custody_status=CustodyStatus.RELEASED,
+        booking = county_schema.Booking(
+            custody_status=CustodyStatus.RELEASED.value,
             admission_date=admission_date,
             admission_date_inferred=False,
             release_date=release_date,
@@ -640,8 +653,8 @@ class TestDatabase(TestCase):
             first_seen_time=scrape_time,
             last_seen_time=scrape_time)
         person.bookings = [booking]
-        charge = county_entities.Charge.new_with_defaults(
-            status=ChargeStatus.PENDING)
+        charge = county_schema.Charge(
+            status=ChargeStatus.PENDING.value)
         booking.charges = [charge]
         persisted_person = database.write_person(
             act_session, person, IngestMetadata(
@@ -687,19 +700,19 @@ class TestDatabase(TestCase):
         completion_date = datetime.datetime(year=2020, month=7, day=1)
 
         act_session = SessionFactory.for_schema_base(JailsBase)
-        person = county_entities.Person.new_with_defaults(
+        person = county_schema.Person(
             full_name=_FULL_NAME, birthdate=_BIRTHDATE, region=_REGION,
             jurisdiction_id=_JURISDICTION_ID)
-        booking = county_entities.Booking.new_with_defaults(
-            custody_status=CustodyStatus.RELEASED,
+        booking = county_schema.Booking(
+            custody_status=CustodyStatus.RELEASED.value,
             first_seen_time=scrape_time,
             last_seen_time=scrape_time)
         person.bookings = [booking]
-        charge = county_entities.Charge.new_with_defaults(
-            status=ChargeStatus.PENDING)
+        charge = county_schema.Charge(
+            status=ChargeStatus.PENDING.value)
         booking.charges = [charge]
-        sentence = county_entities.Sentence.new_with_defaults(
-            status=SentenceStatus.COMPLETED,
+        sentence = county_schema.Sentence(
+            status=SentenceStatus.COMPLETED.value,
             completion_date=completion_date,
             date_imposed=date_imposed)
         charge.sentence = sentence
@@ -752,19 +765,19 @@ class TestDatabase(TestCase):
         completion_date = datetime.datetime(year=2020, month=6, day=1)
 
         act_session = SessionFactory.for_schema_base(JailsBase)
-        person = county_entities.Person.new_with_defaults(
+        person = county_schema.Person(
             full_name=_FULL_NAME, birthdate=_BIRTHDATE, region=_REGION,
             jurisdiction_id=_JURISDICTION_ID)
-        booking = county_entities.Booking.new_with_defaults(
-            custody_status=CustodyStatus.IN_CUSTODY,
+        booking = county_schema.Booking(
+            custody_status=CustodyStatus.IN_CUSTODY.value,
             first_seen_time=scrape_time,
             last_seen_time=scrape_time)
         person.bookings = [booking]
-        charge = county_entities.Charge.new_with_defaults(
-            status=ChargeStatus.PENDING)
+        charge = county_schema.Charge(
+            status=ChargeStatus.PENDING.value)
         booking.charges = [charge]
-        sentence = county_entities.Sentence.new_with_defaults(
-            status=SentenceStatus.PRESENT_WITHOUT_INFO,
+        sentence = county_schema.Sentence(
+            status=SentenceStatus.PRESENT_WITHOUT_INFO.value,
             completion_date=completion_date,
             date_imposed=date_imposed)
         charge.sentence = sentence
@@ -804,11 +817,11 @@ class TestDatabase(TestCase):
         booking_admission_date = datetime.datetime(year=2020, month=7, day=1)
 
         arrange_session = SessionFactory.for_schema_base(JailsBase)
-        person = county_entities.Person.new_with_defaults(
+        person = county_schema.Person(
             full_name=_FULL_NAME, birthdate=_BIRTHDATE, region=_REGION,
             jurisdiction_id=_JURISDICTION_ID)
-        booking = county_entities.Booking.new_with_defaults(
-            custody_status=CustodyStatus.IN_CUSTODY,
+        booking = county_schema.Booking(
+            custody_status=CustodyStatus.IN_CUSTODY.value,
             first_seen_time=initial_scrape_time,
             last_seen_time=initial_scrape_time)
         person.bookings = [booking]
@@ -825,8 +838,11 @@ class TestDatabase(TestCase):
         queried_person.bookings[0].admission_date = booking_admission_date
         queried_person.bookings[0].admission_date_inferred = False
         queried_person.bookings[0].last_seen_time = update_scrape_time
-        database.write_person(
-            act_session, queried_person, IngestMetadata(
+
+        database.write_people(
+            act_session,
+            converter.convert_entity_people_to_schema_people([queried_person]),
+            IngestMetadata(
                 _REGION, _JURISDICTION_ID, update_scrape_time, {}))
         act_session.commit()
         act_session.close()
@@ -849,11 +865,11 @@ class TestDatabase(TestCase):
         booking_admission_date = datetime.datetime(year=2020, month=7, day=1)
 
         act_session = SessionFactory.for_schema_base(JailsBase)
-        person = county_entities.Person.new_with_defaults(
+        person = county_schema.Person(
             full_name=_FULL_NAME, birthdate=_BIRTHDATE, region=_REGION,
             jurisdiction_id=_JURISDICTION_ID)
-        booking = county_entities.Booking.new_with_defaults(
-            custody_status=CustodyStatus.IN_CUSTODY,
+        booking = county_schema.Booking(
+            custody_status=CustodyStatus.IN_CUSTODY.value,
             admission_date=booking_admission_date,
             admission_date_inferred=False,
             first_seen_time=scrape_time,
@@ -885,21 +901,21 @@ class TestDatabase(TestCase):
         booking_admission_date = datetime.datetime(year=2020, month=7, day=1)
 
         act_session = SessionFactory.for_schema_base(JailsBase)
-        person = county_entities.Person.new_with_defaults(
+        person = county_schema.Person(
             full_name=_FULL_NAME, birthdate=_BIRTHDATE, region=_REGION,
             jurisdiction_id=_JURISDICTION_ID)
-        booking = county_entities.Booking.new_with_defaults(
-            custody_status=CustodyStatus.IN_CUSTODY,
+        booking = county_schema.Booking(
+            custody_status=CustodyStatus.IN_CUSTODY.value,
             admission_date=booking_admission_date,
             admission_date_inferred=False,
             first_seen_time=scrape_time,
             last_seen_time=scrape_time)
         person.bookings = [booking]
-        charge = county_entities.Charge.new_with_defaults(
-            status=ChargeStatus.PENDING)
+        charge = county_schema.Charge(
+            status=ChargeStatus.PENDING.value)
         booking.charges = [charge]
-        bond = county_entities.Bond.new_with_defaults(
-            status=BondStatus.PRESENT_WITHOUT_INFO)
+        bond = county_schema.Bond(
+            status=BondStatus.PRESENT_WITHOUT_INFO.value)
         charge.bond = bond
         persisted_person = database.write_person(
             act_session, person, IngestMetadata(
@@ -928,11 +944,11 @@ class TestDatabase(TestCase):
         booking_admission_date = datetime.datetime(year=2020, month=6, day=1)
 
         arrange_session = SessionFactory.for_schema_base(JailsBase)
-        person = county_entities.Person.new_with_defaults(
+        person = county_schema.Person(
             full_name=_FULL_NAME, birthdate=_BIRTHDATE, region=_REGION,
             jurisdiction_id=_JURISDICTION_ID)
-        booking = county_entities.Booking.new_with_defaults(
-            custody_status=CustodyStatus.IN_CUSTODY,
+        booking = county_schema.Booking(
+            custody_status=CustodyStatus.IN_CUSTODY.value,
             admission_date=booking_admission_date,
             admission_date_inferred=False,
             first_seen_time=initial_scrape_time,
@@ -956,7 +972,10 @@ class TestDatabase(TestCase):
             status=BondStatus.PRESENT_WITHOUT_INFO)
         charge.bond = bond
         updated_person = database.write_person(
-            act_session, queried_person, IngestMetadata(
+            act_session,
+            converter.convert_entity_people_to_schema_people(
+                [queried_person])[0],
+            IngestMetadata(
                 _REGION, _JURISDICTION_ID, update_scrape_time, {}))
         act_session.commit()
         charge_id = updated_person.bookings[0].charges[0].charge_id
@@ -989,21 +1008,21 @@ class TestDatabase(TestCase):
         sentence_date_imposed = datetime.datetime(year=2020, month=7, day=3)
 
         act_session = SessionFactory.for_schema_base(JailsBase)
-        person = county_entities.Person.new_with_defaults(
+        person = county_schema.Person(
             full_name=_FULL_NAME, birthdate=_BIRTHDATE, region=_REGION,
             jurisdiction_id=_JURISDICTION_ID)
-        booking = county_entities.Booking.new_with_defaults(
-            custody_status=CustodyStatus.IN_CUSTODY,
+        booking = county_schema.Booking(
+            custody_status=CustodyStatus.IN_CUSTODY.value,
             admission_date=booking_admission_date,
             admission_date_inferred=False,
             first_seen_time=scrape_time,
             last_seen_time=scrape_time)
         person.bookings = [booking]
-        charge = county_entities.Charge.new_with_defaults(
-            status=ChargeStatus.PENDING)
+        charge = county_schema.Charge(
+            status=ChargeStatus.PENDING.value)
         booking.charges = [charge]
-        sentence = county_entities.Sentence.new_with_defaults(
-            status=SentenceStatus.PRESENT_WITHOUT_INFO,
+        sentence = county_schema.Sentence(
+            status=SentenceStatus.PRESENT_WITHOUT_INFO.value,
             date_imposed=sentence_date_imposed)
         charge.sentence = sentence
         persisted_person = database.write_person(
@@ -1031,18 +1050,19 @@ class TestDatabase(TestCase):
     def test_removeBondFromCharge_shouldNotOrphanOldBond(self):
         arrange_session = SessionFactory.for_schema_base(JailsBase)
 
-        person = county_entities.Person.new_with_defaults(
-            region=_REGION, race=Race.OTHER, jurisdiction_id=_JURISDICTION_ID)
-        booking = county_entities.Booking.new_with_defaults(
-            custody_status=CustodyStatus.IN_CUSTODY,
+        person = county_schema.Person(
+            region=_REGION, race=Race.OTHER.value,
+            jurisdiction_id=_JURISDICTION_ID)
+        booking = county_schema.Booking(
+            custody_status=CustodyStatus.IN_CUSTODY.value,
             first_seen_time=_INGEST_TIME,
             last_seen_time=_INGEST_TIME)
         person.bookings = [booking]
-        charge = county_entities.Charge.new_with_defaults(
-            status=ChargeStatus.PENDING)
+        charge = county_schema.Charge(
+            status=ChargeStatus.PENDING.value)
         booking.charges = [charge]
-        bond = county_entities.Bond.new_with_defaults(
-            status=BondStatus.PRESENT_WITHOUT_INFO)
+        bond = county_schema.Bond(
+            status=BondStatus.PRESENT_WITHOUT_INFO.value)
         charge.bond = bond
 
         persisted_person = database.write_person(
@@ -1058,8 +1078,7 @@ class TestDatabase(TestCase):
         act_session = SessionFactory.for_schema_base(JailsBase)
         person_query = act_session.query(Person) \
             .filter(Person.person_id == persisted_person_id)
-        fetched_person = \
-            converter.convert_schema_object_to_entity(person_query.first())
+        fetched_person = person_query.first()
         # Remove bond from charge so bond is no longer directly associated
         # with ORM copy of the record tree
         fetched_charge = fetched_person.bookings[0].charges[0]
@@ -1087,18 +1106,19 @@ class TestDatabase(TestCase):
     def test_removeSentenceFromCharge_shouldNotOrphanOldSentence(self):
         arrange_session = SessionFactory.for_schema_base(JailsBase)
 
-        person = county_entities.Person.new_with_defaults(
-            region=_REGION, race=Race.OTHER, jurisdiction_id=_JURISDICTION_ID)
-        booking = county_entities.Booking.new_with_defaults(
-            custody_status=CustodyStatus.IN_CUSTODY,
+        person = county_schema.Person(
+            region=_REGION, race=Race.OTHER.value,
+            jurisdiction_id=_JURISDICTION_ID)
+        booking = county_schema.Booking(
+            custody_status=CustodyStatus.IN_CUSTODY.value,
             first_seen_time=_INGEST_TIME,
             last_seen_time=_INGEST_TIME)
         person.bookings = [booking]
-        charge = county_entities.Charge.new_with_defaults(
-            status=ChargeStatus.PENDING)
+        charge = county_schema.Charge(
+            status=ChargeStatus.PENDING.value)
         booking.charges = [charge]
-        sentence = county_entities.Sentence.new_with_defaults(
-            status=SentenceStatus.PRESENT_WITHOUT_INFO)
+        sentence = county_schema.Sentence(
+            status=SentenceStatus.PRESENT_WITHOUT_INFO.value)
         charge.sentence = sentence
 
         persisted_person = database.write_person(
@@ -1113,8 +1133,7 @@ class TestDatabase(TestCase):
         act_session = SessionFactory.for_schema_base(JailsBase)
         person_query = act_session.query(Person) \
             .filter(Person.person_id == persisted_person_id)
-        fetched_person = \
-            converter.convert_schema_object_to_entity(person_query.first())
+        fetched_person = person_query.first()
         # Remove sentence from charge so sentence is no longer directly
         # associated with ORM copy of the record tree
         fetched_charge = fetched_person.bookings[0].charges[0]
@@ -1139,22 +1158,23 @@ class TestDatabase(TestCase):
         assert_session.close()
 
     def test_orphanedEntities_shouldStillWriteSnapshots(self):
+        fakes.use_in_memory_sqlite_database(JailsBase)
         orphan_scrape_time = datetime.datetime(year=2020, month=7, day=8)
 
         arrange_session = SessionFactory.for_schema_base(JailsBase)
 
-        person = county_entities.Person.new_with_defaults(
+        person = county_schema.Person(
             region=_REGION, jurisdiction_id=_JURISDICTION_ID)
-        booking = county_entities.Booking.new_with_defaults(
-            custody_status=CustodyStatus.IN_CUSTODY,
+        booking = county_schema.Booking(
+            custody_status=CustodyStatus.IN_CUSTODY.value,
             first_seen_time=_INGEST_TIME,
             last_seen_time=_INGEST_TIME)
         person.bookings = [booking]
-        charge = county_entities.Charge.new_with_defaults(
-            status=ChargeStatus.PENDING)
+        charge = county_schema.Charge(
+            status=ChargeStatus.PENDING.value)
         booking.charges = [charge]
-        sentence = county_entities.Sentence.new_with_defaults(
-            status=SentenceStatus.PRESENT_WITHOUT_INFO)
+        sentence = county_schema.Sentence(
+            status=SentenceStatus.PRESENT_WITHOUT_INFO.value)
         charge.sentence = sentence
 
         persisted_person = database.write_person(
@@ -1168,15 +1188,14 @@ class TestDatabase(TestCase):
         act_session = SessionFactory.for_schema_base(JailsBase)
         person_query = act_session.query(Person) \
             .filter(Person.person_id == persisted_person_id)
-        fetched_person = \
-            converter.convert_schema_object_to_entity(person_query.first())
+        fetched_person = person_query.first()
         # Remove sentence from charge so sentence is no longer directly
         # associated with ORM copy of the record tree
         fetched_charge = fetched_person.bookings[0].charges[0]
         fetched_sentence = fetched_charge.sentence
         fetched_charge.sentence = None
         # Update sentence status so new snapshot will be required
-        fetched_sentence.status = SentenceStatus.REMOVED_WITHOUT_INFO
+        fetched_sentence.status = SentenceStatus.REMOVED_WITHOUT_INFO.value
         database.write_person(
             act_session,
             fetched_person,
@@ -1185,13 +1204,14 @@ class TestDatabase(TestCase):
                 ingest_time=orphan_scrape_time),
             orphaned_entities=[fetched_sentence])
         act_session.commit()
+        fetched_sentence_id = fetched_sentence.sentence_id
         act_session.close()
 
         assert_session = SessionFactory.for_schema_base(JailsBase)
 
         sentence_snapshot = assert_session.query(SentenceHistory) \
             .filter(
-                SentenceHistory.sentence_id == fetched_sentence.sentence_id) \
+                SentenceHistory.sentence_id == fetched_sentence_id) \
             .order_by(SentenceHistory.valid_from.desc()) \
             .first()
 
@@ -1206,15 +1226,16 @@ class TestDatabase(TestCase):
     def test_addBondToExistingBooking_shouldSetBookingIdOnBond(self):
         arrange_session = SessionFactory.for_schema_base(JailsBase)
 
-        person = county_entities.Person.new_with_defaults(
-            region=_REGION, race=Race.OTHER, jurisdiction_id=_JURISDICTION_ID)
-        booking = county_entities.Booking.new_with_defaults(
-            custody_status=CustodyStatus.IN_CUSTODY,
+        person = county_schema.Person(
+            region=_REGION, race=Race.OTHER.value,
+            jurisdiction_id=_JURISDICTION_ID)
+        booking = county_schema.Booking(
+            custody_status=CustodyStatus.IN_CUSTODY.value,
             first_seen_time=_INGEST_TIME,
             last_seen_time=_INGEST_TIME)
         person.bookings = [booking]
-        charge = county_entities.Charge.new_with_defaults(
-            status=ChargeStatus.PENDING)
+        charge = county_schema.Charge(
+            status=ChargeStatus.PENDING.value)
         booking.charges = [charge]
 
         persisted_person = database.write_person(
@@ -1229,10 +1250,10 @@ class TestDatabase(TestCase):
         act_session = SessionFactory.for_schema_base(JailsBase)
         person_query = act_session.query(Person) \
             .filter(Person.person_id == persisted_person_id)
-        fetched_person = \
-            converter.convert_schema_object_to_entity(person_query.first())
-        new_bond = county_entities.Bond.new_with_defaults(
-            status=BondStatus.PRESENT_WITHOUT_INFO)
+        fetched_person = person_query.first()
+
+        new_bond = county_schema.Bond(
+            status=BondStatus.PRESENT_WITHOUT_INFO.value)
         fetched_person.bookings[0].charges[0].bond = new_bond
         database.write_person(
             act_session, fetched_person, IngestMetadata.new_with_defaults(

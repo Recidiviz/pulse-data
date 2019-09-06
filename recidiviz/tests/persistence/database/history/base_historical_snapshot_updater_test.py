@@ -35,8 +35,8 @@ from recidiviz.persistence.database.schema_utils import \
     historical_table_class_from_obj, get_all_table_classes_in_module, \
     HISTORICAL_TABLE_CLASS_SUFFIX, schema_base_for_system_level, \
     schema_base_for_schema_module, schema_base_for_object
-from recidiviz.persistence.persistence_utils import primary_key_name_from_obj, \
-    primary_key_value_from_obj
+from recidiviz.persistence.entity.core_entity import \
+    primary_key_name_from_obj, primary_key_value_from_obj
 
 
 class BaseHistoricalSnapshotUpdaterTest(TestCase):

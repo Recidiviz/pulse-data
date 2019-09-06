@@ -19,21 +19,22 @@
 import inspect
 from enum import Enum
 from types import ModuleType
-from typing import Dict, List, Set, Type, Any, cast
+from typing import Dict, List, Set, Type, Sequence
 from functools import lru_cache
 
 import attr
 
 from recidiviz.common.attr_utils import get_non_flat_property_class_name
-from recidiviz.common.constants import enum_canonical_strings
 from recidiviz.common.constants.state.state_court_case import StateCourtType
 from recidiviz.common.constants.state.state_incarceration import \
     StateIncarcerationType
 from recidiviz.persistence.database.database_entity import DatabaseEntity
+from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.base_entity import Entity, ExternalIdEntity
+from recidiviz.persistence.entity.core_entity import CoreEntity
 from recidiviz.persistence.entity.county import entities as county_entities
-from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity.state.entities import StatePerson
+from recidiviz.persistence.entity.state import entities as state_entities, \
+    entities
 from recidiviz.persistence.errors import PersistenceError, EntityMatchingError
 
 _STATE_CLASS_HIERARCHY = [
@@ -128,7 +129,7 @@ class SchemaEdgeDirectionChecker:
                 f"hierarchy map")
 
         return self._class_hierarchy_map[from_class_name] >= \
-               self._class_hierarchy_map[to_class_name]
+            self._class_hierarchy_map[to_class_name]
 
 
 def _build_class_hierarchy_map(class_hierarchy: List[str],
@@ -213,8 +214,26 @@ class EntityFieldType(Enum):
     BACK_EDGE = 3
 
 
+# TODO(2383): Move all functions that take in a CoreEntity onto the CoreEntity
+#  object itself, once we figure out the circular dependency with the
+#  SchemaEdgeDirectionChecker.
 def get_set_entity_field_names(
-        entity: Entity,
+        entity: CoreEntity,
+        entity_field_type: EntityFieldType) -> Set[str]:
+    result = set()
+    for field_name in get_all_core_entity_field_names(entity,
+                                                      entity_field_type):
+        v = entity.get_field(field_name)
+        if isinstance(v, list):
+            if v:
+                result.add(field_name)
+        elif v is not None:
+            result.add(field_name)
+    return result
+
+
+def get_all_core_entity_field_names(
+        entity: CoreEntity,
         entity_field_type: EntityFieldType) -> Set[str]:
     """Returns a set of field_names that correspond to any set fields on the
     provided |entity| that match the provided |entity_field_type|.
@@ -225,6 +244,55 @@ def get_set_entity_field_names(
         direction_checker = \
             SchemaEdgeDirectionChecker.county_direction_checker()
 
+    if isinstance(entity, DatabaseEntity):
+        return _get_all_database_entity_field_names(entity,
+                                                    entity_field_type,
+                                                    direction_checker)
+    if isinstance(entity, Entity):
+        return _get_all_entity_field_names(entity,
+                                           entity_field_type,
+                                           direction_checker)
+
+    raise ValueError(f"Invalid entity type [{type(entity)}]")
+
+
+def _get_all_database_entity_field_names(entity: DatabaseEntity,
+                                         entity_field_type: EntityFieldType,
+                                         direction_checker):
+    """Returns a set of field_names that correspond to any set fields on the
+    provided DatabaseEntity |entity| that match the provided
+    |entity_field_type|.
+    """
+    back_edges = set()
+    forward_edges = set()
+    flat_fields = set()
+
+    for relationship_field_name in entity.get_relationship_property_names():
+        if direction_checker.is_back_edge(entity, relationship_field_name):
+            back_edges.add(relationship_field_name)
+        else:
+            forward_edges.add(relationship_field_name)
+
+    for column_field_name in entity.get_column_property_names():
+        flat_fields.add(column_field_name)
+
+    if entity_field_type is EntityFieldType.FLAT_FIELD:
+        return flat_fields
+    if entity_field_type is EntityFieldType.FORWARD_EDGE:
+        return forward_edges
+    if entity_field_type is EntityFieldType.BACK_EDGE:
+        return back_edges
+    raise EntityMatchingError(
+        f"Unrecognized EntityFieldType {entity_field_type}",
+        'entity_field_type')
+
+
+def _get_all_entity_field_names(entity: Entity,
+                                entity_field_type: EntityFieldType,
+                                direction_checker):
+    """Returns a set of field_names that correspond to any set fields on the
+    provided Entity |entity| that match the provided |entity_field_type|.
+    """
     back_edges = set()
     forward_edges = set()
     flat_fields = set()
@@ -265,50 +333,7 @@ def get_set_entity_field_names(
         'entity_field_type')
 
 
-# TODO(2163): Use get/set_field_from_list when possible to clean up code.
-def get_field_as_list(entity: Entity, child_field_name: str) -> List[Entity]:
-    field = get_field(entity, child_field_name)
-    if isinstance(field, List):
-        return field
-    return [field]
-
-
-def get_field(entity: Entity, field_name: str):
-    if not hasattr(entity, field_name):
-        raise EntityMatchingError(
-            f"Expected entity {entity} to have field {field_name}, but it did "
-            f"not.", entity.get_entity_name())
-    return getattr(entity, field_name)
-
-
-def set_field(entity: Entity, field_name: str, value: Any):
-    if not hasattr(entity, field_name):
-        raise EntityMatchingError(
-            f"Expected entity {entity} to have field {field_name}, but it did "
-            f"not.", entity.get_entity_name())
-    return setattr(entity, field_name, value)
-
-
-def set_field_from_list(entity: Entity, field_name: str, value: List):
-    """Given the provided |value|, sets the value onto the provided |entity|
-    based on the given |field_name|.
-    """
-    field = get_field(entity, field_name)
-    if isinstance(field, list):
-        set_field(entity, field_name, value)
-    else:
-        if not value:
-            set_field(entity, field_name, None)
-        elif len(value) == 1:
-            set_field(entity, field_name, value[0])
-        else:
-            raise EntityMatchingError(
-                f"Attempting to set singular field: {field_name} on entity: "
-                f"{entity.get_entity_name()}, but got multiple values: "
-                f"{value}.", entity.get_entity_name())
-
-
-def is_placeholder(entity: Entity) -> bool:
+def is_placeholder(entity: CoreEntity) -> bool:
     """Determines if the provided entity is a placeholder. Conceptually, a
     placeholder is an object that we have no information about, but have
     inferred its existence based on other objects we do have information about.
@@ -319,53 +344,133 @@ def is_placeholder(entity: Entity) -> bool:
     # Although these are not flat fields, they represent characteristics of a
     # person. If present, we do have information about the provided person, and
     # therefore it is not a placeholder.
-    if isinstance(entity, StatePerson):
-        entity = cast(StatePerson, entity)
+    if isinstance(entity, (schema.StatePerson, entities.StatePerson)):
         if any([entity.external_ids, entity.races, entity.aliases,
                 entity.ethnicities]):
             return False
 
-    copy = attr.evolve(entity)
+    set_flat_fields = get_set_entity_field_names(
+        entity, EntityFieldType.FLAT_FIELD)
 
-    # Clear id
-    copy.clear_id()
+    primary_key_name = entity.get_primary_key_column_name()
+    if primary_key_name in set_flat_fields:
+        set_flat_fields.remove(primary_key_name)
 
-    # Clear state code as it's non nullable
-    if hasattr(copy, 'state_code'):
-        set_field(copy, 'state_code', None)
-
-    # Clear status if set to default value
-    if has_default_status(entity):
-        set_field(copy, 'status', None)
-
-    # Clear known default enum values
     # TODO(2244): Change this to a general approach so we don't need to check
     # explicit columns
-    if has_default_enum(entity, 'incarceration_type',
-                        StateIncarcerationType.STATE_PRISON):
-        set_field(copy, 'incarceration_type', None)
+    if 'state_code' in set_flat_fields:
+        set_flat_fields.remove('state_code')
 
-    if has_default_enum(entity, 'court_type',
-                        StateCourtType.PRESENT_WITHOUT_INFO):
-        set_field(copy, 'court_type', None)
+    if 'status' in set_flat_fields:
+        if entity.has_default_status():
+            set_flat_fields.remove('status')
 
-    set_flat_fields = get_set_entity_field_names(
-        copy, EntityFieldType.FLAT_FIELD)
+    if 'incarceration_type' in set_flat_fields:
+        if entity.has_default_enum(
+                'incarceration_type', StateIncarcerationType.STATE_PRISON):
+            set_flat_fields.remove('incarceration_type')
+
+    if 'court_type' in set_flat_fields:
+        if entity.has_default_enum('court_type',
+                                   StateCourtType.PRESENT_WITHOUT_INFO):
+            set_flat_fields.remove('court_type')
+
+    to_remove = []
+    for field in set_flat_fields:
+        if field.endswith('_id') and field != 'external_id':
+            to_remove.append(field)
+
+    for field in to_remove:
+        set_flat_fields.remove(field)
+
     return not bool(set_flat_fields)
 
 
-def has_default_status(entity: Entity) -> bool:
-    if hasattr(entity, 'status'):
-        status = get_field(entity, 'status')
-        return status \
-            and status.value == enum_canonical_strings.present_without_info
-    return False
+def _print_indented(s: str, indent: int):
+    print(f'{" " * indent}{s}')
 
 
-def has_default_enum(entity: Entity, field_name: str, field_value: Enum) \
-        -> bool:
-    if hasattr(entity, field_name):
-        value = get_field(entity, field_name)
-        raw_value = get_field(entity, f'{field_name}_raw_text')
-        return value and value == field_value and not raw_value
-    return False
+def _obj_id_str(entity: CoreEntity):
+    return f'{entity.get_entity_name()} ({id(entity)})'
+
+
+def print_entity_tree(entity: CoreEntity, indent: int = 0):
+    """Recursively prints out all objects in the tree below the given entity."""
+    _print_indented(_obj_id_str(entity), indent)
+
+    indent = indent + 2
+    for field in get_all_core_entity_field_names(entity,
+                                                 EntityFieldType.FLAT_FIELD):
+        val = entity.get_field(field)
+        _print_indented(f'{field}: {str(val)}', indent)
+
+    for child_field in \
+            get_all_core_entity_field_names(entity,
+                                            EntityFieldType.FORWARD_EDGE):
+        child = entity.get_field(child_field)
+
+        if child is not None:
+            if isinstance(child, list):
+                if not child:
+                    _print_indented(f'{child_field}: []', indent)
+                else:
+                    _print_indented(f'{child_field}: [', indent)
+                    for c in child:
+                        print_entity_tree(c, indent + 2)
+                    _print_indented(f']', indent)
+
+            else:
+                _print_indented(f'{child_field}:', indent)
+                print_entity_tree(child, indent + 2)
+        else:
+            _print_indented(f'{child_field}: None', indent)
+
+    for child_field in \
+            get_all_core_entity_field_names(entity, EntityFieldType.BACK_EDGE):
+        child = entity.get_field(child_field)
+        if child:
+            if isinstance(child, list):
+                first_child = next(iter(child))
+                _print_indented(
+                    f'{child_field}: '
+                    f'[{_obj_id_str(first_child)}, ...] - backedge', indent)
+            else:
+                _print_indented(
+                    f'{child_field}: {_obj_id_str(child)} - backedge', indent)
+        else:
+            _print_indented(f'{child_field}: None - backedge', indent)
+
+
+def get_all_db_objs_from_trees(db_objs: Sequence[DatabaseEntity], result=None):
+    if result is None:
+        result = set()
+    for root_obj in db_objs:
+        for obj in get_all_db_objs_from_tree(root_obj, result):
+            result.add(obj)
+    return result
+
+
+def get_all_db_objs_from_tree(db_obj: DatabaseEntity,
+                              result=None) -> Set[DatabaseEntity]:
+    if result is None:
+        result = set()
+
+    if db_obj in result:
+        return result
+
+    result.add(db_obj)
+    fields = get_all_core_entity_field_names(db_obj,
+                                             EntityFieldType.FORWARD_EDGE)
+
+    for field in fields:
+        child = db_obj.get_field(field)
+
+        if child is None:
+            continue
+
+        if isinstance(child, list):
+            get_all_db_objs_from_trees(child, result)
+        else:
+            get_all_db_objs_from_tree(child, result)
+
+    return result
