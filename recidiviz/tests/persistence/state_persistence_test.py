@@ -28,6 +28,9 @@ from recidiviz.persistence import persistence
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema.state import schema, dao
+from recidiviz.persistence.database.schema_entity_converter import (
+    schema_entity_converter as converter,
+)
 from recidiviz.persistence.entity.state.entities import StatePerson, \
     StatePersonExternalId, StateSentenceGroup
 from recidiviz.tests.utils import fakes
@@ -57,7 +60,7 @@ class TestStatePersistence(TestCase):
     """Test that the persistence layer correctly writes to the SQL database for
     the state schema specifically."""
 
-    def setup_method(self, _test_method):
+    def setUp(self) -> None:
         fakes.use_in_memory_sqlite_database(StateBase)
 
     def test_state_threeSentenceGroups_dontPersistAboveThreshold(self):
@@ -135,7 +138,8 @@ class TestStatePersistence(TestCase):
         persons = dao.read_people(session)
 
         # Assert
-        self.assertEqual([expected_person], persons)
+        self.assertEqual([expected_person],
+                         converter.convert_schema_objects_to_entity(persons))
 
     def test_state_threeSentenceGroups_persistsTwoBelowThreshold(self):
         # Arrange
@@ -229,4 +233,5 @@ class TestStatePersistence(TestCase):
         persons = dao.read_people(session)
 
         # Assert
-        self.assertEqual([expected_person], persons)
+        self.assertEqual([expected_person],
+                         converter.convert_schema_objects_to_entity(persons))

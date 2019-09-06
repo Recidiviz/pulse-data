@@ -22,7 +22,7 @@ import attr
 
 from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.persistence.entity.county import entities as county_entities
-from recidiviz.persistence.entity_matching import entity_matching_utils
+from recidiviz.persistence.entity_matching.county import county_matching_utils
 from recidiviz.persistence.entity_matching.entity_matching_utils import \
     get_only_match
 
@@ -41,7 +41,7 @@ class TestEntityMatchingUtils(TestCase):
 
         person_another = attr.evolve(person, birthdate=_DATE_OTHER)
         self.assertEqual(
-            entity_matching_utils.diff_count(person, person_another), 1)
+            county_matching_utils.diff_count(person, person_another), 1)
 
     def test_get_only_match_duplicates(self):
         def match(db_entity, ingested_entity):

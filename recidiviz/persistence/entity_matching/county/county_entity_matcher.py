@@ -22,6 +22,9 @@ import logging
 from collections import defaultdict
 from typing import List, Dict, cast, Set, Tuple
 
+from recidiviz.persistence.database.schema_entity_converter import (
+    schema_entity_converter as converter
+)
 from recidiviz.persistence.database.session import Session
 from recidiviz.common.constants.bond import BondStatus
 from recidiviz.common.constants.charge import ChargeStatus
@@ -37,10 +40,10 @@ from recidiviz.persistence.entity_matching.entity_matching_types import \
 from recidiviz.persistence.entity_matching.county import county_matching_utils
 from recidiviz.persistence.entity_matching.county.county_matching_utils import \
     is_booking_match, is_hold_match, is_charge_match_with_children, \
-    is_charge_match
+    is_charge_match, get_best_match, get_next_available_match, \
+    generate_id_from_obj
 from recidiviz.persistence.entity_matching.entity_matching_utils import \
-    get_only_match, get_next_available_match, generate_id_from_obj, \
-    get_best_match
+    get_only_match
 from recidiviz.persistence.errors import MatchedMultipleIngestedEntitiesError, \
     EntityMatchingError
 
@@ -111,8 +114,12 @@ def match_people_and_return_error_count(
                 ingested_person)
             increment_error(e.entity_name)
             error_count += 1
-    return MatchedEntities(people=people,
-                           orphaned_entities=orphaned_entities,
+
+    schema_people = converter.convert_entity_people_to_schema_people(people)
+    schema_orphaned_entities = \
+        converter.convert_entities_to_schema(orphaned_entities)
+    return MatchedEntities(people=schema_people,
+                           orphaned_entities=schema_orphaned_entities,
                            error_count=error_count)
 
 
@@ -164,8 +171,10 @@ def match_bookings(
     matched_bookings_by_db_id: Dict[int, entities.Booking] = {}
     for ingested_booking in ingested_person.bookings:
         db_booking: entities.Booking = \
-            get_only_match(ingested_booking, db_person.bookings,
-                           is_booking_match)
+            cast(entities.Booking,
+                 get_only_match(ingested_booking,
+                                db_person.bookings,
+                                is_booking_match))
         if db_booking:
             logging.debug('Successfully matched to booking with ID %s',
                           db_booking.booking_id)
@@ -238,8 +247,8 @@ def match_holds(
 
     matched_holds_by_db_id: Dict[int, entities.Hold] = {}
     for ingested_hold in ingested_booking.holds:
-        db_hold: entities.Hold = get_only_match(
-            ingested_hold, db_booking.holds, is_hold_match)
+        db_hold = cast(entities.Hold, get_only_match(
+            ingested_hold, db_booking.holds, is_hold_match))
 
         if db_hold:
             logging.debug(

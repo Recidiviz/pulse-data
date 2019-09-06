@@ -16,11 +16,14 @@
 # =============================================================================
 """Tests for state_matching_utils.py"""
 import datetime
+from typing import List
 from unittest import TestCase
 
 import attr
 import pytest
 
+from recidiviz.common.constants.state.state_incarceration import \
+    StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus, StateIncarcerationPeriodAdmissionReason, \
     StateIncarcerationPeriodReleaseReason
@@ -29,11 +32,11 @@ from recidiviz.common.constants.state.state_supervision_violation_response \
     import StateSupervisionViolationResponseRevocationType
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema.state import schema
-from recidiviz.persistence.database.schema_entity_converter.state\
-    .schema_entity_converter import StateSchemaToEntityConverter
+from recidiviz.persistence.database.schema_entity_converter import \
+    schema_entity_converter as converter
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.entity.state.entities import StatePersonExternalId, \
-    StatePerson, StatePersonAlias, StateCharge, StateSentenceGroup, StateFine, \
+    StatePerson, StateCharge, StateSentenceGroup, StateFine, \
     StateIncarcerationPeriod, StateIncarcerationIncident, \
     StateIncarcerationSentence, StateCourtCase, StateSupervisionSentence, \
     StateSupervisionViolationResponse, StateSupervisionViolation, \
@@ -44,7 +47,9 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import \
     move_incidents_onto_periods, merge_flat_fields, \
     get_root_entity_cls, get_total_entities_of_cls, \
     associate_revocation_svrs_with_ips, admitted_for_revocation, \
-    revoked_to_prison, base_entity_match, get_external_ids_of_cls, read_persons
+    revoked_to_prison, base_entity_match, get_external_ids_of_cls, \
+    _read_persons
+from recidiviz.persistence.entity.entity_utils import is_placeholder
 from recidiviz.persistence.entity_matching.entity_matching_types import \
     EntityTree
 from recidiviz.persistence.errors import EntityMatchingError
@@ -82,18 +87,49 @@ _FACILITY_4 = 'FACILITY_4'
 class TestStateMatchingUtils(TestCase):
     """Tests for state entity matching utils"""
 
-    def setup_method(self, _test_method):
+    def setUp(self) -> None:
         fakes.use_in_memory_sqlite_database(StateBase)
 
+    def assert_schema_objects_equal(self,
+                                    expected: StateBase,
+                                    actual: StateBase):
+        self.assertEqual(
+            converter.convert_schema_object_to_entity(expected),
+            converter.convert_schema_object_to_entity(actual)
+        )
+
+    def assert_schema_object_lists_equal(self,
+                                         expected: List[StateBase],
+                                         actual: List[StateBase]):
+        self.assertCountEqual(
+            converter.convert_schema_objects_to_entity(expected),
+            converter.convert_schema_objects_to_entity(actual)
+        )
+
+    def assert_people_match(self,
+                            expected_people: List[StatePerson],
+                            matched_people: List[schema.StatePerson]):
+        converted_matched = \
+            converter.convert_schema_objects_to_entity(matched_people)
+        db_expected_with_backedges = \
+            converter.convert_entity_people_to_schema_people(expected_people)
+        expected_with_backedges = \
+            converter.convert_schema_objects_to_entity(
+                db_expected_with_backedges)
+        self.assertEqual(expected_with_backedges, converted_matched)
+
     def test_isMatch_statePerson(self):
-        external_id = StatePersonExternalId.new_with_defaults(
+        external_id = schema.StatePersonExternalId(
             state_code=_STATE_CODE, external_id=_EXTERNAL_ID)
-        external_id_different = attr.evolve(
-            external_id, external_id=_EXTERNAL_ID_2)
-        person = StatePerson.new_with_defaults(
+        external_id_same = schema.StatePersonExternalId(
+            state_code=_STATE_CODE, external_id=_EXTERNAL_ID)
+        external_id_different = schema.StatePersonExternalId(
+            state_code=_STATE_CODE, external_id=_EXTERNAL_ID_2)
+
+        person = schema.StatePerson(
             full_name='name', external_ids=[external_id])
-        person_another = StatePerson.new_with_defaults(
-            full_name='name_2', external_ids=[external_id])
+        person_another = schema.StatePerson(
+            full_name='name_2', external_ids=[external_id_same])
 
         self.assertTrue(
             _is_match(ingested_entity=person, db_entity=person_another))
@@ -102,11 +138,12 @@ class TestStateMatchingUtils(TestCase):
             _is_match(ingested_entity=person, db_entity=person_another))
 
     def test_isMatch_statePersonExternalId_type(self):
-        external_id = StatePersonExternalId.new_with_defaults(
+        external_id = schema.StatePersonExternalId(
             person_external_id_id=_ID, state_code=_STATE_CODE,
             id_type=_ID_TYPE, external_id=_EXTERNAL_ID)
-        external_id_different = attr.evolve(
-            external_id, person_external_id_id=None)
+        external_id_different = schema.StatePersonExternalId(
+            person_external_id_id=None, state_code=_STATE_CODE,
+            id_type=_ID_TYPE, external_id=_EXTERNAL_ID)
         self.assertTrue(_is_match(ingested_entity=external_id,
                                   db_entity=external_id_different))
 
@@ -115,11 +152,12 @@ class TestStateMatchingUtils(TestCase):
                                    db_entity=external_id_different))
 
     def test_isMatch_statePersonExternalId_externalId(self):
-        external_id = StatePersonExternalId.new_with_defaults(
+        external_id = schema.StatePersonExternalId(
             person_external_id_id=_ID, state_code=_STATE_CODE,
             id_type=_ID_TYPE, external_id=_EXTERNAL_ID)
-        external_id_different = attr.evolve(
-            external_id, person_external_id_id=None)
+        external_id_different = schema.StatePersonExternalId(
+            person_external_id_id=None, state_code=_STATE_CODE,
+            id_type=_ID_TYPE, external_id=_EXTERNAL_ID)
         self.assertTrue(_is_match(ingested_entity=external_id,
                                   db_entity=external_id_different))
 
@@ -128,11 +166,12 @@ class TestStateMatchingUtils(TestCase):
                                    db_entity=external_id_different))
 
     def test_isMatch_statePersonExternalId_stateCode(self):
-        external_id = StatePersonExternalId.new_with_defaults(
+        external_id = schema.StatePersonExternalId(
             person_external_id_id=_ID, state_code=_STATE_CODE,
             id_type=_ID_TYPE, external_id=_EXTERNAL_ID)
-        external_id_different = attr.evolve(
-            external_id, person_external_id_id=None)
+        external_id_different = schema.StatePersonExternalId(
+            person_external_id_id=None, state_code=_STATE_CODE,
+            id_type=_ID_TYPE, external_id=_EXTERNAL_ID)
         self.assertTrue(_is_match(ingested_entity=external_id,
                                   db_entity=external_id_different))
 
@@ -141,9 +180,10 @@ class TestStateMatchingUtils(TestCase):
                                    db_entity=external_id_different))
 
     def test_isMatch_statePersonAlias(self):
-        alias = StatePersonAlias.new_with_defaults(
+        alias = schema.StatePersonAlias(
             state_code=_STATE_CODE, full_name='full_name')
-        alias_another = attr.evolve(alias)
+        alias_another = schema.StatePersonAlias(
+            state_code=_STATE_CODE, full_name='full_name')
         self.assertTrue(
             _is_match(ingested_entity=alias, db_entity=alias_another))
         alias_another.state_code = _STATE_CODE_ANOTHER
@@ -151,9 +191,10 @@ class TestStateMatchingUtils(TestCase):
             _is_match(ingested_entity=alias, db_entity=alias_another))
 
     def test_isMatch_defaultCompareExternalId(self):
-        charge = StateCharge.new_with_defaults(
+        charge = schema.StateCharge(
             external_id=_EXTERNAL_ID, description='description')
-        charge_another = attr.evolve(charge, description='description_another')
+        charge_another = schema.StateCharge(
+            external_id=_EXTERNAL_ID, description='description_another')
         self.assertTrue(
             _is_match(ingested_entity=charge, db_entity=charge_another))
         charge.external_id = _EXTERNAL_ID_2
@@ -161,8 +202,8 @@ class TestStateMatchingUtils(TestCase):
             _is_match(ingested_entity=charge, db_entity=charge_another))
 
     def test_isMatch_defaultCompareNoExternalIds(self):
-        charge = StateCharge.new_with_defaults()
-        charge_another = attr.evolve(charge)
+        charge = schema.StateCharge()
+        charge_another = schema.StateCharge()
         self.assertTrue(
             _is_match(ingested_entity=charge, db_entity=charge_another))
         charge.description = 'description'
@@ -170,34 +211,37 @@ class TestStateMatchingUtils(TestCase):
             _is_match(ingested_entity=charge, db_entity=charge_another))
 
     def test_mergeFlatFields(self):
-        ing_entity = StateSentenceGroup.new_with_defaults(
+        ing_entity = schema.StateSentenceGroup(
             county_code='county_code-updated', max_length_days=10,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
-        db_entity = StateSentenceGroup.new_with_defaults(
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value)
+        db_entity = schema.StateSentenceGroup(
             sentence_group_id=_ID, county_code='county_code',
             status=StateSentenceStatus.SERVING)
-        expected_entity = attr.evolve(ing_entity, sentence_group_id=_ID,
-                                      status=StateSentenceStatus.SERVING)
+        expected_entity = schema.StateSentenceGroup(
+            sentence_group_id=_ID,
+            county_code='county_code-updated',
+            max_length_days=10,
+            status=StateSentenceStatus.SERVING.value)
 
-        self.assertEqual(
-            expected_entity,
-            merge_flat_fields(new_entity=ing_entity, old_entity=db_entity))
+        merged_entity = merge_flat_fields(new_entity=ing_entity,
+                                          old_entity=db_entity)
+        self.assert_schema_objects_equal(expected_entity, merged_entity)
 
     def test_mergeFlatFields_incompleteIncarcerationPeriods(self):
-        ingested_entity = StateIncarcerationPeriod.new_with_defaults(
+        ingested_entity = schema.StateIncarcerationPeriod(
             incarceration_period_id=_ID,
             external_id=_EXTERNAL_ID,
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             facility=_FACILITY, admission_date=_DATE_1,
             admission_reason=
             StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION)
-        db_entity = StateIncarcerationPeriod.new_with_defaults(
+        db_entity = schema.StateIncarcerationPeriod(
             external_id=_EXTERNAL_ID_2,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             facility=_FACILITY, release_date=_DATE_2,
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER)
         expected_incarceration_period = \
-            StateIncarcerationPeriod.new_with_defaults(
+            schema.StateIncarcerationPeriod(
                 incarceration_period_id=_ID,
                 external_id=_EXTERNAL_ID + '|' + _EXTERNAL_ID_2,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
@@ -206,7 +250,7 @@ class TestStateMatchingUtils(TestCase):
                 StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
                 release_date=_DATE_2,
                 release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER)
-        self.assertEqual(
+        self.assert_schema_objects_equal(
             expected_incarceration_period,
             merge_flat_fields(new_entity=ingested_entity, old_entity=db_entity))
 
@@ -274,21 +318,27 @@ class TestStateMatchingUtils(TestCase):
         self.assertEqual(expected_sentence_group, sentence_group)
 
     def test_getRootEntity(self):
-        incarceration_incident = StateIncarcerationIncident.new_with_defaults(
+        # Arrange
+        incarceration_incident = schema.StateIncarcerationIncident(
             external_id=_EXTERNAL_ID)
         placeholder_incarceration_period = \
-            StateIncarcerationPeriod.new_with_defaults(
+            schema.StateIncarcerationPeriod(
                 incarceration_incidents=[incarceration_incident])
         placeholder_incarceration_sentence = \
-            StateIncarcerationSentence.new_with_defaults(
+            schema.StateIncarcerationSentence(
                 incarceration_periods=[placeholder_incarceration_period])
-        placeholder_sentence_group = StateSentenceGroup.new_with_defaults(
+        placeholder_sentence_group = schema.StateSentenceGroup(
             sentence_group_id=None,
             incarceration_sentences=[placeholder_incarceration_sentence])
-        person = StatePerson.new_with_defaults(
+        person = schema.StatePerson(
             sentence_groups=[placeholder_sentence_group])
-        self.assertEqual(StateIncarcerationIncident,
-                         get_root_entity_cls([person]))
+
+        # Act
+        root_entity_cls = get_root_entity_cls([person])
+
+        # Assert
+        self.assertEqual(schema.StateIncarcerationIncident,
+                         root_entity_cls)
 
     def test_getRootEntity_emptyList_raises(self):
         with pytest.raises(EntityMatchingError):
@@ -296,94 +346,96 @@ class TestStateMatchingUtils(TestCase):
 
     def test_getRootEntity_allPlaceholders_raises(self):
         placeholder_incarceration_period = \
-            StateIncarcerationPeriod.new_with_defaults()
+            schema.StateIncarcerationPeriod()
         placeholder_incarceration_sentence = \
-            StateIncarcerationSentence.new_with_defaults(
+            schema.StateIncarcerationSentence(
                 incarceration_periods=[placeholder_incarceration_period])
-        placeholder_sentence_group = StateSentenceGroup.new_with_defaults(
+        placeholder_sentence_group = schema.StateSentenceGroup(
             incarceration_sentences=[placeholder_incarceration_sentence])
-        placeholder_person = StatePerson.new_with_defaults(
+        placeholder_person = schema.StatePerson(
             sentence_groups=[placeholder_sentence_group])
         with pytest.raises(EntityMatchingError):
             get_root_entity_cls([placeholder_person])
 
     def test_getTotalEntitiesOfCls(self):
-        supervision_sentence = StateSupervisionSentence.new_with_defaults()
-        supervision_sentence_2 = attr.evolve(supervision_sentence)
-        supervision_sentence_3 = attr.evolve(supervision_sentence)
-        sentence_group = StateSentenceGroup.new_with_defaults(
+        supervision_sentence = schema.StateSupervisionSentence()
+        supervision_sentence_2 = schema.StateSupervisionSentence()
+        supervision_sentence_3 = schema.StateSupervisionSentence()
+        sentence_group = schema.StateSentenceGroup(
             supervision_sentences=[supervision_sentence,
                                    supervision_sentence_2])
-        sentence_group_2 = StateSentenceGroup.new_with_defaults(
+        sentence_group_2 = schema.StateSentenceGroup(
             supervision_sentences=[supervision_sentence_2,
                                    supervision_sentence_3])
-        person = StatePerson.new_with_defaults(
+        person = schema.StatePerson(
             sentence_groups=[sentence_group, sentence_group_2])
 
         self.assertEqual(3, get_total_entities_of_cls(
-            [person], StateSupervisionSentence))
+            [person], schema.StateSupervisionSentence))
         self.assertEqual(2, get_total_entities_of_cls(
-            [person], StateSentenceGroup))
-        self.assertEqual(1, get_total_entities_of_cls([person], StatePerson))
+            [person], schema.StateSentenceGroup))
+        self.assertEqual(1,
+                         get_total_entities_of_cls([person],
+                                                   schema.StatePerson))
 
     def test_getExternalIdsOfCls(self):
-        supervision_sentence = StateSupervisionSentence.new_with_defaults(
+        supervision_sentence = schema.StateSupervisionSentence(
             external_id=_EXTERNAL_ID)
-        supervision_sentence_2 = attr.evolve(
-            supervision_sentence, external_id=_EXTERNAL_ID_2)
-        supervision_sentence_3 = attr.evolve(
-            supervision_sentence, external_id=_EXTERNAL_ID_3)
-        sentence_group = StateSentenceGroup.new_with_defaults(
+        supervision_sentence_2 = schema.StateSupervisionSentence(
+            external_id=_EXTERNAL_ID_2)
+        supervision_sentence_3 = schema.StateSupervisionSentence(
+            external_id=_EXTERNAL_ID_3)
+        sentence_group = schema.StateSentenceGroup(
             external_id=_EXTERNAL_ID,
             supervision_sentences=[supervision_sentence,
                                    supervision_sentence_2])
-        sentence_group_2 = StateSentenceGroup.new_with_defaults(
+        sentence_group_2 = schema.StateSentenceGroup(
             external_id=_EXTERNAL_ID_2,
             supervision_sentences=[supervision_sentence_2,
                                    supervision_sentence_3])
-        external_id = StatePersonExternalId.new_with_defaults(
+        external_id = schema.StatePersonExternalId(
             external_id=_EXTERNAL_ID)
-        person = StatePerson.new_with_defaults(
+        person = schema.StatePerson(
             external_ids=[external_id],
             sentence_groups=[sentence_group, sentence_group_2])
 
         self.assertCountEqual(
             [_EXTERNAL_ID, _EXTERNAL_ID_2, _EXTERNAL_ID_3],
-            get_external_ids_of_cls([person], StateSupervisionSentence))
+            get_external_ids_of_cls([person], schema.StateSupervisionSentence))
         self.assertCountEqual(
             [_EXTERNAL_ID, _EXTERNAL_ID_2],
-            get_external_ids_of_cls([person], StateSentenceGroup))
+            get_external_ids_of_cls([person], schema.StateSentenceGroup))
         self.assertCountEqual(
-            [_EXTERNAL_ID], get_external_ids_of_cls([person], StatePerson))
+            [_EXTERNAL_ID], get_external_ids_of_cls([person], schema.StatePerson))
 
     def test_getExternalIdsOfCls_emptyExternalId_raises(self):
-        sentence_group = StateSentenceGroup.new_with_defaults(
+        sentence_group = schema.StateSentenceGroup(
             external_id=_EXTERNAL_ID)
-        sentence_group_2 = StateSentenceGroup.new_with_defaults()
-        external_id = StatePersonExternalId.new_with_defaults(
+        sentence_group_2 = schema.StateSentenceGroup()
+        external_id = schema.StatePersonExternalId(
             external_id=_EXTERNAL_ID)
-        person = StatePerson.new_with_defaults(
+        person = schema.StatePerson(
             external_ids=[external_id],
             sentence_groups=[sentence_group, sentence_group_2])
 
         with pytest.raises(EntityMatchingError):
-            get_external_ids_of_cls([person], StateSentenceGroup)
+            get_external_ids_of_cls([person], schema.StateSentenceGroup)
 
     def test_getExternalIdsOfCls_emptyPersonExternalId_raises(self):
-        person = StatePerson.new_with_defaults()
+        person = schema.StatePerson()
         with pytest.raises(EntityMatchingError):
-            get_external_ids_of_cls([person], StatePerson)
+            get_external_ids_of_cls([person], schema.StatePerson)
 
     def test_completeEnumSet_AdmittedForRevocation(self):
-        period = StateIncarcerationPeriod.new_with_defaults()
+        period = schema.StateIncarcerationPeriod()
         for admission_reason in StateIncarcerationPeriodAdmissionReason:
-            period.admission_reason = admission_reason
+            period.admission_reason = admission_reason.value
             admitted_for_revocation(period)
 
     def test_completeEnumSet_RevokedToPrison(self):
-        svr = StateSupervisionViolationResponse.new_with_defaults()
+        svr = schema.StateSupervisionViolationResponse()
         for revocation_type in StateSupervisionViolationResponseRevocationType:
-            svr.revocation_type = revocation_type
+            svr.revocation_type = revocation_type.value
             revoked_to_prison(svr)
 
     def test_associateSvrsWithIps(self):
@@ -441,9 +493,9 @@ class TestStateMatchingUtils(TestCase):
             placeholder_ss, supervision_periods=[expected_placeholder_sp])
 
         expected_ip_1 = attr.evolve(ip_1,
-                                    source_supervision_violation_response=svr_1)
+                                    source_supervision_violation_response=expected_svr_1)
         expected_ip_2 = attr.evolve(ip_2,
-                                    source_supervision_violation_response=svr_2)
+                                    source_supervision_violation_response=expected_svr_2)
 
         expected_placeholder_is = attr.evolve(
             placeholder_is,
@@ -458,13 +510,15 @@ class TestStateMatchingUtils(TestCase):
             person_without_revocation)
 
         # Act
-        associate_revocation_svrs_with_ips(
-            [person_without_revocation, placeholder_person])
+        input_people = \
+            converter.convert_entity_people_to_schema_people(
+                [person_without_revocation, placeholder_person])
+        associate_revocation_svrs_with_ips(input_people)
 
         # Assert
-        self.assertEqual(expected_person_without_revocation,
-                         person_without_revocation)
-        self.assertEqual(expected_placeholder_person, placeholder_person)
+        self.assert_people_match(
+            [expected_person_without_revocation, expected_placeholder_person],
+            input_people)
 
     def test_associateSvrsWithIps_onlyRevocationTypes(self):
         # Arrange
@@ -511,7 +565,7 @@ class TestStateMatchingUtils(TestCase):
 
         expected_ip_1 = attr.evolve(ip_1)
         expected_ip_2 = attr.evolve(
-            ip_2, source_supervision_violation_response=svr_1)
+            ip_2, source_supervision_violation_response=expected_svr_1)
 
         expected_placeholder_is = attr.evolve(
             placeholder_is,
@@ -524,10 +578,15 @@ class TestStateMatchingUtils(TestCase):
             placeholder_person, sentence_groups=[expected_placeholder_sg])
 
         # Act
-        associate_revocation_svrs_with_ips([placeholder_person])
+        input_people = \
+            converter.convert_entity_people_to_schema_people(
+                [placeholder_person])
+        associate_revocation_svrs_with_ips(input_people)
 
         # Assert
-        self.assertEqual(expected_placeholder_person, placeholder_person)
+        self.assert_people_match(
+            [expected_placeholder_person],
+            input_people)
 
     def test_associateSvrsWithIps_dontAssociateTheSameSvr(self):
         # Arrange
@@ -568,7 +627,7 @@ class TestStateMatchingUtils(TestCase):
             placeholder_ss, supervision_periods=[expected_placeholder_sp])
 
         expected_ip_1 = attr.evolve(
-            ip_1, source_supervision_violation_response=svr_1)
+            ip_1, source_supervision_violation_response=expected_svr_1)
         expected_ip_2 = attr.evolve(ip_2)
 
         expected_placeholder_is = attr.evolve(
@@ -582,10 +641,15 @@ class TestStateMatchingUtils(TestCase):
             placeholder_person, sentence_groups=[expected_placeholder_sg])
 
         # Act
-        associate_revocation_svrs_with_ips([placeholder_person])
+        input_people = \
+            converter.convert_entity_people_to_schema_people(
+                [placeholder_person])
+        associate_revocation_svrs_with_ips(input_people)
 
         # Assert
-        self.assertEqual(expected_placeholder_person, placeholder_person)
+        self.assert_people_match(
+            [expected_placeholder_person],
+            input_people)
 
     def test_mergeIncarcerationPeriods(self):
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
@@ -927,10 +991,9 @@ class TestStateMatchingUtils(TestCase):
         session.add(schema_person_2)
         session.commit()
 
-        expected_people = StateSchemaToEntityConverter().convert_all(
-            [schema_person, schema_person_2])
-        people = read_persons(session, _STATE_CODE, [])
-        self.assertCountEqual(expected_people, people)
+        expected_people = [schema_person, schema_person_2]
+        people = _read_persons(session, _STATE_CODE, [])
+        self.assert_schema_object_lists_equal(expected_people, people)
 
     def test_readPersons_ndSpecific(self):
         schema_person = schema.StatePerson(person_id=1)
@@ -953,26 +1016,54 @@ class TestStateMatchingUtils(TestCase):
         session.add(schema_person_2)
         session.commit()
 
-        ingested_sentence_group = StateSentenceGroup.new_with_defaults(
+        ingested_sentence_group = schema.StateSentenceGroup(
             state_code='us_nd', external_id=_EXTERNAL_ID)
-        ingested_person = StatePerson.new_with_defaults(
+        ingested_person = schema.StatePerson(
             sentence_groups=[ingested_sentence_group])
 
-        expected_people = StateSchemaToEntityConverter().convert_all(
-            [schema_person], populate_back_edges=False)
+        expected_people = [schema_person]
 
-        people = read_persons(session, 'us_nd', [ingested_person])
-        self.assertCountEqual(expected_people, people)
+        people = _read_persons(session, 'us_nd', [ingested_person])
+        self.assert_schema_object_lists_equal(expected_people, people)
 
     def test_readPersons_ndSpecific_unexpectedRoot_raises(self):
         ingested_supervision_sentence = \
-            StateSupervisionSentence.new_with_defaults(
+            schema.StateSupervisionSentence(
                 external_id=_EXTERNAL_ID)
-        ingested_sentence_group = StateSentenceGroup.new_with_defaults(
+        ingested_sentence_group = schema.StateSentenceGroup(
             supervision_sentences=[ingested_supervision_sentence])
-        ingested_person = StatePerson.new_with_defaults(
+        ingested_person = schema.StatePerson(
             sentence_groups=[ingested_sentence_group])
 
         with pytest.raises(EntityMatchingError):
             session = SessionFactory.for_schema_base(StateBase)
-            read_persons(session, 'us_nd', [ingested_person])
+            _read_persons(session, 'us_nd', [ingested_person])
+
+    def test_isPlaceholder(self):
+        entity = schema.StateSentenceGroup(
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
+            state_code=_STATE_CODE,
+            fines=[schema.StateFine()],
+            person=schema.StatePerson(), sentence_group_id=_ID)
+        self.assertTrue(is_placeholder(entity))
+        entity.county_code = 'county_code'
+        self.assertFalse(is_placeholder(entity))
+
+    def test_isPlaceholder_personWithExternalId(self):
+        sentence_group = StateSentenceGroup.new_with_defaults(
+            state_code=_STATE_CODE)
+        person = StatePerson.new_with_defaults(sentence_groups=[sentence_group])
+        self.assertTrue(is_placeholder(person))
+        person.external_ids.append(
+            StatePersonExternalId.new_with_defaults(
+                state_code=_STATE_CODE, external_id=_EXTERNAL_ID,
+                id_type=_ID_TYPE))
+        self.assertFalse(is_placeholder(person))
+
+    def test_isPlaceholder_defaultEnumValue(self):
+        entity = schema.StateIncarcerationSentence(
+            incarceration_type=StateIncarcerationType.STATE_PRISON.value)
+        self.assertTrue(is_placeholder(entity))
+
+        entity.incarceration_type_raw_text = 'PRISON'
+        self.assertFalse(is_placeholder(entity))
