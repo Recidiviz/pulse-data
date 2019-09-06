@@ -17,7 +17,6 @@
 
 """Data Access Object (DAO) with logic for accessing state-level information
 from a SQL Database."""
-import datetime
 from collections import defaultdict
 import logging
 from typing import Dict, List, Type, Iterable
@@ -41,14 +40,21 @@ def read_people_by_cls_external_ids(
     if schema_cls == schema.StatePerson:
         schema_cls = schema.StatePersonExternalId
 
+    logging.info("[DAO] Starting read of external ids of class [%s]",
+                 schema_cls.__name__)
+    person_ids_result = session.query(schema_cls.person_id) \
+        .filter(schema_cls.external_id.in_(cls_external_ids)) \
+        .filter(schema_cls.state_code == state_code.upper()).all()
+    person_ids = [res[0] for res in person_ids_result]
+    logging.info("[DAO] Finished read of external ids of class [%s]. "
+                 "Found [%s] person ids.",
+                 schema_cls.__name__,
+                 len(person_ids))
+
     query = session.query(schema.StatePerson) \
-        .filter(schema.StatePerson.person_id == schema_cls.person_id) \
-        .filter(schema_cls.state_code == state_code.upper()) \
-        .filter(schema_cls.external_id.in_(cls_external_ids))
+        .filter(schema.StatePerson.person_id.in_(person_ids))
     schema_persons = query.all()
-    now = datetime.datetime.now()
-    logging.info("In read_people_by_cls_external_ids, finished query.all() "
-                 "at time [%s]", now.isoformat())
+    logging.info("[DAO] Finished read of [%s] persons.", len(schema_persons))
     return _normalize_record_trees(schema_persons)
 
 
