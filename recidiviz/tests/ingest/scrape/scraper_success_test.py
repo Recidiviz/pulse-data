@@ -45,11 +45,11 @@ class TestScraperStop(TestCase):
     def setup_method(self, _test_method):
         fakes.use_in_memory_sqlite_database(JailsBase)
 
+    # pylint:disable=unused-argument
     @patch('recidiviz.ingest.models.model_utils.datetime.date', MockDate)
     @patch('recidiviz.ingest.models.single_count.datetime.date', MockDate)
-    @patch('google.cloud.datastore.batch.Batch.put')
-    def test_scraper_success(self, mock_put):
-        mock_put.return_value = None
+    @patch('google.cloud.datastore.Client')
+    def test_scraper_success(self, mock_client):
         session = sessions.ScrapeSession.new(
             key=None, region=_REGION_CODE,
             scrape_type=constants.ScrapeType.BACKGROUND,
