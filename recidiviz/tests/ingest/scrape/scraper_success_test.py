@@ -26,9 +26,10 @@ from recidiviz.persistence.database.base_schema import \
     JailsBase
 from recidiviz.persistence.database.schema.county.schema import ScraperSuccess
 from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.tests.utils import fake_region, fakes
+from recidiviz.utils import regions
+from recidiviz.tests.utils import fakes
 
-_JID = '01001001'
+_REGION_CODE = 'us_al_jackson'
 _TODAY = datetime.date(2000, 1, 1)
 
 
@@ -49,9 +50,8 @@ class TestScraperStop(TestCase):
     @patch('google.cloud.datastore.batch.Batch.put')
     def test_scraper_success(self, mock_put):
         mock_put.return_value = None
-        region = fake_region.fake_region(jurisdiction_id=_JID)
         session = sessions.ScrapeSession.new(
-            key=None, region=region,
+            key=None, region=_REGION_CODE,
             scrape_type=constants.ScrapeType.BACKGROUND,
             phase=scrape_phase.ScrapePhase.RELEASE
         )
@@ -61,5 +61,6 @@ class TestScraperStop(TestCase):
         query = SessionFactory.for_schema_base(JailsBase).query(ScraperSuccess)
         result = one(query.all())
 
-        self.assertEqual(result.jid, _JID)
+        region = regions.get_region(_REGION_CODE)
+        self.assertEqual(result.jid, region.jurisdiction_id)
         self.assertEqual(result.date, _TODAY)
