@@ -796,6 +796,7 @@ def _nd_read_people(
             f'[{root_entity_cls.__name__}]', 'root_entity_cls')
     root_external_ids = get_external_ids_of_cls(
         ingested_people, root_entity_cls)
-
+    logging.info("[Entity Matching] Reading [%s] external ids of class [%s]",
+                 len(root_external_ids), root_entity_cls.__name__)
     return dao.read_people_by_cls_external_ids(
         session, region, root_entity_cls, root_external_ids)
