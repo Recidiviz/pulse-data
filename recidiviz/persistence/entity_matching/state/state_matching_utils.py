@@ -20,30 +20,27 @@ import datetime
 import logging
 from typing import List, cast, Optional, Tuple, Union, Set, Type
 
-import attr
-
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodAdmissionReason
 from recidiviz.common.constants.state.state_supervision_violation_response \
     import StateSupervisionViolationResponseRevocationType
+from recidiviz.persistence.database.base_schema import StateBase
+from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.state import dao
+from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.session import Session
-from recidiviz.persistence.entity.base_entity import Entity, ExternalIdEntity
 from recidiviz.persistence.entity.entity_utils import \
-    EntityFieldType, get_set_entity_field_names, get_field, set_field, \
-    get_field_as_list, is_placeholder, has_default_status
-from recidiviz.persistence.entity.state.entities import StatePerson, \
-    StatePersonExternalId, StatePersonAlias, StatePersonRace, \
-    StatePersonEthnicity, StateIncarcerationPeriod, \
-    StateIncarcerationIncident, StateSentenceGroup, \
-    StateSupervisionViolationResponse
+    EntityFieldType, is_placeholder, \
+    get_set_entity_field_names
+from recidiviz.common.common_utils import check_all_objs_have_type
 from recidiviz.persistence.entity_matching import entity_matching_utils
 from recidiviz.persistence.entity_matching.entity_matching_types import \
     EntityTree
 from recidiviz.persistence.errors import EntityMatchingError
 
 
-def is_match(*, ingested_entity: EntityTree, db_entity: EntityTree) -> bool:
+def is_match(ingested_entity: EntityTree,
+             db_entity: EntityTree) -> bool:
     """Returns true if the provided |ingested_entity| matches the provided
     |db_entity|. Otherwise returns False.
     """
@@ -51,7 +48,9 @@ def is_match(*, ingested_entity: EntityTree, db_entity: EntityTree) -> bool:
                      db_entity=db_entity.entity)
 
 
-def _is_match(*, ingested_entity: Entity, db_entity: Entity) -> bool:
+def _is_match(*,
+              ingested_entity: DatabaseEntity,
+              db_entity: DatabaseEntity) -> bool:
     """Returns true if the provided |ingested_entity| matches the provided
     |db_entity|. Otherwise returns False.
     """
@@ -65,8 +64,17 @@ def _is_match(*, ingested_entity: Entity, db_entity: Entity) -> bool:
             f"db_entity {db_entity.__class__.__name__}",
             ingested_entity.get_entity_name())
 
-    if isinstance(ingested_entity, StatePerson):
-        db_entity = cast(StatePerson, db_entity)
+    if not isinstance(ingested_entity, DatabaseEntity):
+        raise EntityMatchingError(
+            f"Unexpected type for ingested entity[{type(ingested_entity)}]",
+            'unknown')
+    if not isinstance(db_entity, DatabaseEntity):
+        raise EntityMatchingError(
+            f"Unexpected type for db entity[{type(db_entity)}]",
+            'unknown')
+
+    if isinstance(ingested_entity, schema.StatePerson):
+        db_entity = cast(schema.StatePerson, db_entity)
         for ingested_external_id in ingested_entity.external_ids:
             for db_external_id in db_entity.external_ids:
                 if _is_match(ingested_entity=ingested_external_id,
@@ -74,55 +82,54 @@ def _is_match(*, ingested_entity: Entity, db_entity: Entity) -> bool:
                     return True
         return False
 
-    if isinstance(ingested_entity, StatePersonExternalId):
-        db_entity = cast(StatePersonExternalId, db_entity)
+    if isinstance(ingested_entity, schema.StatePersonExternalId):
+        db_entity = cast(schema.StatePersonExternalId, db_entity)
         return ingested_entity.state_code == db_entity.state_code \
                and ingested_entity.external_id == db_entity.external_id \
                and ingested_entity.id_type == db_entity.id_type
 
     # As person has already been matched, assume that any of these 'person
     # attribute' entities are matches if their state_codes align.
-    if isinstance(ingested_entity, StatePersonAlias):
-        db_entity = cast(StatePersonAlias, db_entity)
+    if isinstance(ingested_entity, schema.StatePersonAlias):
+        db_entity = cast(schema.StatePersonAlias, db_entity)
         return ingested_entity.state_code == db_entity.state_code \
                and ingested_entity.full_name == db_entity.full_name
-    if isinstance(ingested_entity, StatePersonRace):
-        db_entity = cast(StatePersonRace, db_entity)
+    if isinstance(ingested_entity, schema.StatePersonRace):
+        db_entity = cast(schema.StatePersonRace, db_entity)
         return ingested_entity.state_code == db_entity.state_code \
                and ingested_entity.race == db_entity.race
-    if isinstance(ingested_entity, StatePersonEthnicity):
-        db_entity = cast(StatePersonEthnicity, db_entity)
+    if isinstance(ingested_entity, schema.StatePersonEthnicity):
+        db_entity = cast(schema.StatePersonEthnicity, db_entity)
         return ingested_entity.state_code == db_entity.state_code \
                and ingested_entity.ethnicity == db_entity.ethnicity
 
-    db_entity = cast(ExternalIdEntity, db_entity)
-    ingested_entity = cast(ExternalIdEntity, ingested_entity)
-
     # Placeholders entities are considered equal
-    if ingested_entity.external_id is None and db_entity.external_id is None:
+    if ingested_entity.get_external_id() is None \
+            and db_entity.get_external_id() is None:
         return is_placeholder(ingested_entity) and is_placeholder(db_entity)
-    return ingested_entity.external_id == db_entity.external_id
+    return ingested_entity.get_external_id() == db_entity.get_external_id()
 
 
 # TODO(2037): Move the following into North Dakota specific file.
 def base_entity_match(
-        ingested_entity: EntityTree, db_entity: EntityTree) -> bool:
+        ingested_entity: EntityTree,
+        db_entity: EntityTree) -> bool:
     """
     Matching logic for comparing entities that might not have external ids, by
     comparing all flat fields in the given entities. Should only be used for
     entities that we know might not have external_ids based on the ingested
     state data.
     """
-    a = cast(ExternalIdEntity, ingested_entity.entity)
-    b = cast(ExternalIdEntity, db_entity.entity)
+    a = ingested_entity.entity
+    b = db_entity.entity
 
     # Placeholders never match
     if is_placeholder(a) or is_placeholder(b):
         return False
 
     # Compare external ids if one is present
-    if a.external_id or b.external_id:
-        return a.external_id == b.external_id
+    if a.get_external_id() or b.get_external_id():
+        return a.get_external_id() == b.get_external_id()
 
     # Compare all flat fields of the two entities
     all_set_flat_field_names = \
@@ -132,8 +139,10 @@ def base_entity_match(
         # Skip primary key
         if field_name == a.get_class_id_name():
             continue
-        a_field = get_field(a, field_name)
-        b_field = get_field(b, field_name)
+        if field_name.endswith('_id'):
+            continue
+        a_field = a.get_field(field_name)
+        b_field = b.get_field(field_name)
         if a_field != b_field:
             return False
 
@@ -141,7 +150,8 @@ def base_entity_match(
 
 
 def nd_get_incomplete_incarceration_period_match(
-        ingested_entity_tree: EntityTree, db_entity_trees: List[EntityTree]) \
+        ingested_entity_tree: EntityTree,
+        db_entity_trees: List[EntityTree]) \
         -> Optional[EntityTree]:
     """For the ingested StateIncarcerationPeriod in the provided
     |ingested_entity_tree|, attempts to find a matching incomplete
@@ -152,30 +162,35 @@ def nd_get_incomplete_incarceration_period_match(
 
     # If the period is complete, it cannot match to an incomplete period.
     ingested_period = cast(
-        StateIncarcerationPeriod, ingested_entity_tree.entity)
+        schema.StateIncarcerationPeriod, ingested_entity_tree.entity)
     if is_incarceration_period_complete(ingested_period):
         return None
 
     incomplete_db_trees = []
     for db_tree in db_entity_trees:
-        db_period = cast(StateIncarcerationPeriod, db_tree.entity)
+        db_period = cast(schema.StateIncarcerationPeriod, db_tree.entity)
         if not is_incarceration_period_complete(db_period):
             incomplete_db_trees.append(db_tree)
 
-    return entity_matching_utils.get_only_match(
+    ret = entity_matching_utils.get_only_match(
         ingested_entity_tree, incomplete_db_trees,
         is_incomplete_incarceration_period_match)
 
+    if ret is not None and not isinstance(ret, EntityTree):
+        raise EntityMatchingError(f"Bad return value of type [{type(ret)}].",
+                                  'state_incarceration_period')
+    return ret
+
 
 def generate_child_entity_trees(
-        child_field_name: str, entity_trees: List[EntityTree]) \
-        -> List[EntityTree]:
+        child_field_name: str, entity_trees: List[EntityTree]
+) -> List[EntityTree]:
     """Generates a new EntityTree object for each found child of the provided
     |entity_trees| with the field name |child_field_name|.
     """
     child_trees = []
     for entity_tree in entity_trees:
-        child_field = get_field(entity_tree.entity, child_field_name)
+        child_field = entity_tree.entity.get_field(child_field_name)
 
         # If child_field is unset, skip
         if not child_field:
@@ -189,27 +204,35 @@ def generate_child_entity_trees(
 
 
 def remove_child_from_entity(
-        *, entity: Entity, child_field_name: str, child_to_remove: Entity):
+        *,
+        entity: DatabaseEntity,
+        child_field_name: str,
+        child_to_remove: DatabaseEntity):
     """If present, removes the |child_to_remove| from the |child_field_name|
     field on the |entity|.
     """
-    child_field = get_field(entity, child_field_name)
+
+    child_field = entity.get_field(child_field_name)
 
     if isinstance(child_field, list):
         if child_to_remove in child_field:
             child_field.remove(child_to_remove)
-    elif isinstance(child_field, Entity):
+    elif isinstance(child_field, DatabaseEntity):
         if child_field == child_to_remove:
             child_field = None
-    set_field(entity, child_field_name, child_field)
+    entity.set_field(child_field_name, child_field)
 
 
 def add_child_to_entity(
-        *, entity: Entity, child_field_name: str, child_to_add: Entity):
+        *,
+        entity: DatabaseEntity,
+        child_field_name: str,
+        child_to_add: DatabaseEntity):
     """Adds the |child_to_add| to the |child_field_name| field on the
     |entity|.
     """
-    child_field = get_field(entity, child_field_name)
+
+    child_field = entity.get_field(child_field_name)
 
     if isinstance(child_field, list):
         if child_to_add not in child_field:
@@ -221,11 +244,11 @@ def add_child_to_entity(
                 f"but {child_field_name} already had different value "
                 f"{child_field}", entity.get_entity_name())
         child_field = child_to_add
-    set_field(entity, child_field_name, child_field)
+        entity.set_field(child_field_name, child_field)
 
 
 # TODO(2037): Move the following into North Dakota specific file.
-def merge_incarceration_periods(ingested_persons: List[StatePerson]):
+def merge_incarceration_periods(ingested_persons: List[schema.StatePerson]):
     """Merges any incomplete StateIncarcerationPeriods in the provided
     |ingested_persons|.
     """
@@ -239,8 +262,8 @@ def merge_incarceration_periods(ingested_persons: List[StatePerson]):
 
 
 def _merge_incarceration_periods_helper(
-        incomplete_incarceration_periods: List[StateIncarcerationPeriod]) \
-        -> List[StateIncarcerationPeriod]:
+        incomplete_incarceration_periods: List[schema.StateIncarcerationPeriod]
+) -> List[schema.StateIncarcerationPeriod]:
     """Using the provided |incomplete_incarceration_periods|, attempts to merge
     consecutive admission and release periods from the same facility.
 
@@ -283,8 +306,8 @@ _INCARCERATION_PERIOD_ID_DELIMITER = '|'
 
 
 def _merge_incomplete_periods(
-        a: StateIncarcerationPeriod, b: StateIncarcerationPeriod) \
-        -> StateIncarcerationPeriod:
+        a: schema.StateIncarcerationPeriod, b: schema.StateIncarcerationPeriod
+) -> schema.StateIncarcerationPeriod:
     if bool(a.admission_date) and bool(b.release_date):
         admission_period, release_period = a, b
     elif bool(a.release_date) and bool(b.admission_date):
@@ -294,22 +317,21 @@ def _merge_incomplete_periods(
             f"Expected one admission period and one release period when "
             f"merging, instead found periods: {a}, {b}", a.get_entity_name())
 
-    merged_period = attr.evolve(admission_period)
     admission_external_id = admission_period.external_id or ''
     release_external_id = release_period.external_id or ''
     new_external_id = admission_external_id \
                       + _INCARCERATION_PERIOD_ID_DELIMITER \
                       + release_external_id
     _default_merge_flat_fields(new_entity=release_period,
-                               old_entity=merged_period)
+                               old_entity=admission_period)
 
-    merged_period.external_id = new_external_id
-    return merged_period
+    admission_period.external_id = new_external_id
+    return admission_period
 
 
 def is_incomplete_incarceration_period_match(
-        ingested_entity: Union[EntityTree, Entity],
-        db_entity: Union[EntityTree, Entity]) -> bool:
+        ingested_entity: Union[EntityTree, StateBase],
+        db_entity: Union[EntityTree, StateBase]) -> bool:
     """Given two incomplete StateIncarcerationPeriods, determines if they
     should be considered the same StateIncarcerationPeriod.
     """
@@ -318,8 +340,8 @@ def is_incomplete_incarceration_period_match(
     if isinstance(ingested_entity, EntityTree):
         db_entity = cast(EntityTree, db_entity)
         a, b = ingested_entity.entity, db_entity.entity
-    a = cast(StateIncarcerationPeriod, a)
-    b = cast(StateIncarcerationPeriod, b)
+    a = cast(schema.StateIncarcerationPeriod, a)
+    b = cast(schema.StateIncarcerationPeriod, b)
 
     # Cannot match with a placeholder StateIncarcerationPeriod
     if is_placeholder(a) or is_placeholder(b):
@@ -347,7 +369,7 @@ def is_incomplete_incarceration_period_match(
     return True
 
 
-def _get_sequence_no(period: StateIncarcerationPeriod) -> int:
+def _get_sequence_no(period: schema.StateIncarcerationPeriod) -> int:
     """Extracts the ND specific Movement Sequence Number from the external id
     of the provided |period|.
     """
@@ -361,20 +383,21 @@ def _get_sequence_no(period: StateIncarcerationPeriod) -> int:
     return sequence_no
 
 
-def is_incarceration_period_complete(period: StateIncarcerationPeriod) -> bool:
+def is_incarceration_period_complete(
+        period: schema.StateIncarcerationPeriod) -> bool:
     """Returns True if the period is considered complete (has both an admission
     and release date).
     """
     return all([period.admission_date, period.release_date])
 
 
-def merge_flat_fields(new_entity: Entity, old_entity: Entity):
+def merge_flat_fields(new_entity: DatabaseEntity, old_entity: DatabaseEntity):
     """Merges appropriate non-relationship fields on the |new_entity| onto the
     |old_entity|. Returns the newly merged entity."""
 
     # Special merge logic if we are merging 2 different incarceration periods.
-    if isinstance(new_entity, StateIncarcerationPeriod):
-        old_entity = cast(StateIncarcerationPeriod, old_entity)
+    if isinstance(new_entity, schema.StateIncarcerationPeriod):
+        old_entity = cast(schema.StateIncarcerationPeriod, old_entity)
         if new_entity.external_id != old_entity.external_id:
             return _merge_incomplete_periods(new_entity, old_entity)
 
@@ -382,62 +405,67 @@ def merge_flat_fields(new_entity: Entity, old_entity: Entity):
         new_entity=new_entity, old_entity=old_entity)
 
 
-def _default_merge_flat_fields(*, new_entity: Entity, old_entity: Entity) \
-        -> Entity:
+def _default_merge_flat_fields(
+        *, new_entity: DatabaseEntity, old_entity: DatabaseEntity
+) -> DatabaseEntity:
     """Merges all set non-relationship fields on the |new_entity| onto the
     |old_entity|. Returns the newly merged entity.
     """
     for child_field_name in get_set_entity_field_names(
             new_entity, EntityFieldType.FLAT_FIELD):
         # Do not overwrite with default status
-        if child_field_name == 'status' and has_default_status(new_entity):
+        if child_field_name == 'status' and new_entity.has_default_status():
             continue
 
-        set_field(old_entity, child_field_name,
-                  get_field(new_entity, child_field_name))
+        old_entity.set_field(child_field_name,
+                             new_entity.get_field(child_field_name))
 
     return old_entity
 
 
-def _get_all_entities_of_type(root: Entity, cls: Type):
+def _get_all_entities_of_type(root: DatabaseEntity,
+                              cls: Type[DatabaseEntity]):
     """Given a |root| entity, returns a list of all unique entities of type
     |cls| that exist in the |root| graph.
     """
     seen: Set[int] = set()
-    entities_of_type: List[Entity] = []
+    entities_of_type: List[DatabaseEntity] = []
     _get_all_entities_of_type_helper(root, cls, seen, entities_of_type)
     return entities_of_type
 
 
 def _get_all_entities_of_type_helper(
-        root: Entity, cls: Type, seen: Set[int],
-        entities_of_type: List[Entity]):
+        root: DatabaseEntity,
+        cls: Type[DatabaseEntity],
+        seen: Set[int],
+        entities_of_type: List[DatabaseEntity]):
     if isinstance(root, cls):
         if id(root) not in seen:
-            root = cast(Entity, root)
+            root = cast(DatabaseEntity, root)
             entities_of_type.append(root)
         return
 
     for field_name in get_set_entity_field_names(
             root, EntityFieldType.FORWARD_EDGE):
-        for field in get_field_as_list(root, field_name):
+        for field in root.get_field_as_list(field_name):
             _get_all_entities_of_type_helper(field, cls, seen, entities_of_type)
 
 
-def admitted_for_revocation(ip: StateIncarcerationPeriod) -> bool:
+def admitted_for_revocation(ip: schema.StateIncarcerationPeriod) -> bool:
     """Determines if the provided |ip| began because of a revocation."""
     if not ip.admission_reason:
         return False
     revocation_types = [
-        StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
-        StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION]
+        StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION.value,
+        StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION.value]
     non_revocation_types = [
-        StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR,
-        StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN,
-        StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-        StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE,
-        StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE,
-        StateIncarcerationPeriodAdmissionReason.TRANSFER]
+        StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR.value,
+        StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN.value,
+        StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION.value,
+        StateIncarcerationPeriodAdmissionReason.
+        RETURN_FROM_ERRONEOUS_RELEASE.value,
+        StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE.value,
+        StateIncarcerationPeriodAdmissionReason.TRANSFER.value]
     if ip.admission_reason in revocation_types:
         return True
     if ip.admission_reason in non_revocation_types:
@@ -447,16 +475,19 @@ def admitted_for_revocation(ip: StateIncarcerationPeriod) -> bool:
         f"{ip.admission_reason}.", ip.get_entity_name())
 
 
-def revoked_to_prison(svr: StateSupervisionViolationResponse) -> bool:
+def revoked_to_prison(svr: schema.StateSupervisionViolationResponse) -> bool:
     """Determines if the provided |svr| resulted in a revocation."""
     if not svr.revocation_type:
         return False
     reincarceration_types = [
-        StateSupervisionViolationResponseRevocationType.REINCARCERATION,
-        StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
-        StateSupervisionViolationResponseRevocationType.TREATMENT_IN_PRISON]
+        StateSupervisionViolationResponseRevocationType.REINCARCERATION.value,
+        StateSupervisionViolationResponseRevocationType.
+        SHOCK_INCARCERATION.value,
+        StateSupervisionViolationResponseRevocationType.
+        TREATMENT_IN_PRISON.value]
     non_reincarceration_types = [
-        StateSupervisionViolationResponseRevocationType.RETURN_TO_SUPERVISION]
+        StateSupervisionViolationResponseRevocationType.
+        RETURN_TO_SUPERVISION.value]
     if svr.revocation_type in reincarceration_types:
         return True
     if svr.revocation_type in non_reincarceration_types:
@@ -467,9 +498,9 @@ def revoked_to_prison(svr: StateSupervisionViolationResponse) -> bool:
 
 
 def _get_closest_response(
-        ip: StateIncarcerationPeriod,
-        sorted_responses: List[StateSupervisionViolationResponse]
-        ) -> Optional[StateSupervisionViolationResponse]:
+        ip: schema.StateIncarcerationPeriod,
+        sorted_responses: List[schema.StateSupervisionViolationResponse]
+        ) -> Optional[schema.StateSupervisionViolationResponse]:
     """Returns the most recent StateSupervisionViolationResponse when compared
     to the beginning of the provided |incarceration_period|.
 
@@ -487,7 +518,8 @@ def _get_closest_response(
     return closest_response
 
 
-def associate_revocation_svrs_with_ips(merged_persons: List[StatePerson]):
+def associate_revocation_svrs_with_ips(
+        merged_persons: List[schema.StatePerson]):
     """
     For each person in the provided |merged_persons|, attempts to associate
     StateSupervisionViolationResponses that result in revocation with their
@@ -495,17 +527,17 @@ def associate_revocation_svrs_with_ips(merged_persons: List[StatePerson]):
     """
     for person in merged_persons:
         svrs = _get_all_entities_of_type(
-            person, StateSupervisionViolationResponse)
-        ips = _get_all_entities_of_type(person, StateIncarcerationPeriod)
+            person, schema.StateSupervisionViolationResponse)
+        ips = _get_all_entities_of_type(person, schema.StateIncarcerationPeriod)
 
         revocation_svrs = []
         for svr in svrs:
-            svr = cast(StateSupervisionViolationResponse, svr)
+            svr = cast(schema.StateSupervisionViolationResponse, svr)
             if revoked_to_prison(svr) and svr.response_date:
                 revocation_svrs.append(svr)
         revocation_ips = []
         for ip in ips:
-            ip = cast(StateIncarcerationPeriod, ip)
+            ip = cast(schema.StateIncarcerationPeriod, ip)
             if admitted_for_revocation(ip) and ip.admission_date:
                 revocation_ips.append(ip)
 
@@ -527,7 +559,7 @@ def associate_revocation_svrs_with_ips(merged_persons: List[StatePerson]):
                 ip.source_supervision_violation_response = closest_svr
 
 
-def move_incidents_onto_periods(merged_persons: List[StatePerson]):
+def move_incidents_onto_periods(merged_persons: List[schema.StatePerson]):
     """Moves all StateIncarcerationIncidents that have placeholder
     StateIncarcerationPeriod parents onto non-placeholder
     StateIncarcerationPeriods if appropriate.
@@ -541,9 +573,10 @@ def move_incidents_onto_periods(merged_persons: List[StatePerson]):
                 non_placeholder_periods=non_placeholder_periods)
 
 
-def _get_periods_in_sentence_group(sentence_group: StateSentenceGroup) \
-        -> Tuple[List[StateIncarcerationPeriod],
-                 List[StateIncarcerationPeriod]]:
+def _get_periods_in_sentence_group(
+        sentence_group: schema.StateSentenceGroup
+) -> Tuple[List[schema.StateIncarcerationPeriod],
+           List[schema.StateIncarcerationPeriod]]:
     """Finds all placeholder and non-placeholder StateIncarcerationPeriods in
     the provided |sentence_group|, and returns the two lists in a tuple.
     """
@@ -563,8 +596,8 @@ def _get_periods_in_sentence_group(sentence_group: StateSentenceGroup) \
 
 def _move_incidents_onto_periods_helper(
         *,
-        placeholder_periods: List[StateIncarcerationPeriod],
-        non_placeholder_periods: List[StateIncarcerationPeriod]):
+        placeholder_periods: List[schema.StateIncarcerationPeriod],
+        non_placeholder_periods: List[schema.StateIncarcerationPeriod]):
     """Moves all StateIncarcerationIncidents on any of the provided
     |placeholder_periods| onto periods in |non_placeholder_periods|, if a
     matching non-placeholder period exists.
@@ -575,15 +608,15 @@ def _move_incidents_onto_periods_helper(
             match = _find_matching_period(
                 incident, non_placeholder_periods)
             if match:
-                add_child_to_entity(
-                    entity=match,
-                    child_field_name='incarceration_incidents',
-                    child_to_add=incident)
-                incidents_to_remove.append(incident)
+                incidents_to_remove.append((match, incident))
 
         # Remove incidents from placeholder parent after looping through all
         # incidents.
-        for incident in incidents_to_remove:
+        for match_period, incident in incidents_to_remove:
+            add_child_to_entity(
+                entity=match_period,
+                child_field_name='incarceration_incidents',
+                child_to_add=incident)
             remove_child_from_entity(
                 entity=placeholder_period,
                 child_field_name='incarceration_incidents',
@@ -591,9 +624,9 @@ def _move_incidents_onto_periods_helper(
 
 
 def _find_matching_period(
-        incident: StateIncarcerationIncident,
-        potential_periods: List[StateIncarcerationPeriod]) -> \
-        Optional[StateIncarcerationPeriod]:
+        incident: schema.StateIncarcerationIncident,
+        potential_periods: List[schema.StateIncarcerationPeriod]) -> \
+        Optional[schema.StateIncarcerationPeriod]:
     """Given the |incident|, finds a matching StateIncarcerationPeriod from
     the provided |periods|, if one exists.
     """
@@ -619,64 +652,71 @@ def _find_matching_period(
     return None
 
 
-def get_total_entities_of_cls(persons: List[StatePerson], cls: Type) -> int:
+def get_total_entities_of_cls(
+        persons: List[schema.StatePerson], cls: Type) -> int:
     """Counts the total number of unique objects of type |cls| in the entity
     graphs passed in by |persons|.
     """
+    check_all_objs_have_type(persons, schema.StatePerson)
     return len(_get_all_entities_of_cls(persons, cls))
 
 
-def get_external_ids_of_cls(persons: List[StatePerson], cls: Type) -> Set[str]:
+def get_external_ids_of_cls(persons: List[schema.StatePerson],
+                            cls: Type[DatabaseEntity]) -> Set[str]:
     """Returns the external ids of all entities of type |cls| found in the
     provided |persons| trees.
     """
+    check_all_objs_have_type(persons, schema.StatePerson)
+
     ids: Set[str] = set()
-    entities = _get_all_entities_of_cls(persons, cls)
-    for entity in entities:
-        if isinstance(entity, StatePerson):
+    entities_of_cls = _get_all_entities_of_cls(persons, cls)
+    for entity in entities_of_cls:
+        if isinstance(entity, schema.StatePerson):
             if not entity.external_ids:
                 raise EntityMatchingError(
                     'No found external_ids on provided person',
                     cls.__name__)
             ids.update([ex.external_id for ex in entity.external_ids])
         else:
-            entity = cast(ExternalIdEntity, entity)
-            if not entity.external_id:
+            external_id = entity.get_external_id()
+            if not external_id:
                 raise EntityMatchingError(
                     f'Expected all external_ids to be present in cls '
                     f'[{cls.__name__}]', cls.__name__)
-            ids.add(entity.external_id)
+            ids.add(external_id)
     return ids
 
 
 def _get_all_entities_of_cls(
-        persons: List[StatePerson], cls: Type) -> List[Entity]:
+        persons: List[schema.StatePerson],
+        cls: Type[DatabaseEntity]) -> List[DatabaseEntity]:
     """Returns all entities found in the provided |persons| trees of type |cls|.
     """
     seen_ids: Set[int] = set()
-    seen_entities: List[Entity] = []
+    seen_entities: List[DatabaseEntity] = []
     for person in persons:
         _get_all_entities_of_cls_helper(person, cls, seen_ids, seen_entities)
     return seen_entities
 
 
 def _get_all_entities_of_cls_helper(
-        entity: Entity,
-        cls: Type,
+        entity: DatabaseEntity,
+        cls: Type[DatabaseEntity],
         seen_ids: Set[int],
-        seen_entities: List[Entity]):
+        seen_entities: List[DatabaseEntity]):
     if isinstance(entity, cls) and id(entity) not in seen_ids:
         seen_ids.add(id(entity))
         seen_entities.append(entity)
         return
     for child_field_name in get_set_entity_field_names(
             entity, EntityFieldType.FORWARD_EDGE):
-        for child_field in get_field_as_list(entity, child_field_name):
+        for child_field in entity.get_field_as_list(child_field_name):
             _get_all_entities_of_cls_helper(
                 child_field, cls, seen_ids, seen_entities)
 
 
-def get_root_entity_cls(ingested_persons: List[StatePerson]) -> Type:
+def get_root_entity_cls(
+        ingested_persons: List[schema.StatePerson]) -> Type[DatabaseEntity]:
     """
     Attempts to find the highest entity class within the |ingested_persons| for
     which objects are not placeholders. Returns the class if found, otherwise
@@ -688,6 +728,8 @@ def get_root_entity_cls(ingested_persons: List[StatePerson]) -> Type:
     StatePersons are trees and not DAGs (one parent per entity) and b) that the
     structure of the passed in graph is symmetrical.
     """
+    check_all_objs_have_type(ingested_persons, schema.StatePerson)
+
     root_cls = None
     if ingested_persons:
         root_cls = _get_root_entity_helper(ingested_persons[0])
@@ -697,26 +739,30 @@ def get_root_entity_cls(ingested_persons: List[StatePerson]) -> Type:
     return root_cls
 
 
-def _get_root_entity_helper(entity: Entity) -> Optional[Type]:
+def _get_root_entity_helper(
+        entity: DatabaseEntity) -> Optional[Type[DatabaseEntity]]:
     if not is_placeholder(entity):
         return entity.__class__
 
     for field_name in get_set_entity_field_names(
             entity, EntityFieldType.FORWARD_EDGE):
-        field = get_field_as_list(entity, field_name)[0]
+        field = entity.get_field_as_list(field_name)[0]
         result = _get_root_entity_helper(field)
         if result is not None:
             return result
     return None
 
 
-def read_persons(
+def _read_persons(
         session: Session,
         region: str,
-        ingested_people: List[StatePerson]) -> List[StatePerson]:
+        ingested_people: List[schema.StatePerson]
+) -> List[schema.StatePerson]:
     """Looks up all people necessary for entity matching based on the provided
     |region| and |ingested_people|.
     """
+    check_all_objs_have_type(ingested_people, schema.StatePerson)
+
     if region.upper() == 'US_ND':
         db_people = _nd_read_people(session, region, ingested_people)
     else:
@@ -729,7 +775,7 @@ def read_persons(
         # If we did not remove these back edges, any time an entity relationship
         # changes, we would have to update edges both on the parent and child,
         # instead of just on the parent.
-        db_people = dao.read_people(session, populate_back_edges=False)
+        db_people = dao.read_people(session)
     logging.info("Read [%d] people from DB in region [%s]",
                  len(db_people), region)
     return db_people
@@ -738,12 +784,13 @@ def read_persons(
 def _nd_read_people(
         session: Session,
         region: str,
-        ingested_people: List[StatePerson]) -> List[StatePerson]:
+        ingested_people: List[schema.StatePerson]
+) -> List[schema.StatePerson]:
     """ND specific code that looks up all people necessary for entity matching
     based on the provided |region| and |ingested_people|.
     """
     root_entity_cls = get_root_entity_cls(ingested_people)
-    if root_entity_cls not in (StatePerson, StateSentenceGroup):
+    if root_entity_cls not in (schema.StatePerson, schema.StateSentenceGroup):
         raise EntityMatchingError(
             f'For region [{region}] found unexpected root_entity_cls: '
             f'[{root_entity_cls.__name__}]', 'root_entity_cls')
@@ -751,5 +798,4 @@ def _nd_read_people(
         ingested_people, root_entity_cls)
 
     return dao.read_people_by_cls_external_ids(
-        session, region, root_entity_cls, root_external_ids,
-        populate_back_edges=False)
+        session, region, root_entity_cls, root_external_ids)

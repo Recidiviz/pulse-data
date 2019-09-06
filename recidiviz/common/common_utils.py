@@ -20,7 +20,7 @@ import logging
 import random
 import time
 import uuid
-from typing import Optional
+from typing import Optional, Iterable, Any, Type
 
 import flask
 from google.api_core import exceptions  # pylint: disable=no-name-in-module
@@ -87,3 +87,8 @@ def retry_grpc(num_retries, fn, *args, **kwargs):
                     time.sleep(time_to_sleep)
             else:
                 raise
+
+
+def check_all_objs_have_type(objs: Iterable[Any], expected_type: Type):
+    if not all(isinstance(o, expected_type) for o in objs):
+        raise ValueError(f"Not all objects are type [{expected_type.__name__}]")

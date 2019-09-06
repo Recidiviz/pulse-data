@@ -69,10 +69,12 @@ from recidiviz.ingest.models.ingest_info import IngestInfo, \
     StateIncarcerationIncidentOutcome
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema.state import dao
+from recidiviz.persistence.database.schema_entity_converter.state.\
+    schema_entity_converter import StateSchemaToEntityConverter
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import \
-    get_set_entity_field_names, EntityFieldType
+    EntityFieldType, get_set_entity_field_names
 from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.ingest.direct.direct_ingest_util import \
     build_controller_for_tests, ingest_args_for_fixture_file, \
@@ -112,7 +114,7 @@ class TestUsNdController(unittest.TestCase):
 
     FIXTURE_PATH_PREFIX = 'direct/regions/us_nd'
 
-    def setup_method(self, _test_method):
+    def setUp(self) -> None:
         self.controller = build_controller_for_tests(
             UsNdController,
             self.FIXTURE_PATH_PREFIX,
@@ -1482,7 +1484,7 @@ class TestUsNdController(unittest.TestCase):
         # Assert
         session = SessionFactory.for_schema_base(StateBase)
         found_people = dao.read_people(session)
-        self.clear_db_ids(found_people)
+        found_people = self.convert_and_clear_db_ids(found_people)
         self.assertCountEqual(found_people, expected_people)
 
         ######################################
@@ -1498,7 +1500,7 @@ class TestUsNdController(unittest.TestCase):
                 external_id='241896', id_type=US_ND_SID, state_code=_STATE_CODE,
                 person=person_2)
         person_1.external_ids.append(person_1_external_id_2)
-        person_2.external_ids.append(person_2_external_id_2)
+        person_2.external_ids.insert(0, person_2_external_id_2)
 
         person_3 = entities.StatePerson.new_with_defaults()
         person_3_external_id_1 = \
@@ -1521,7 +1523,7 @@ class TestUsNdController(unittest.TestCase):
         # Assert
         session = SessionFactory.for_schema_base(StateBase)
         found_people = dao.read_people(session)
-        self.clear_db_ids(found_people)
+        found_people = self.convert_and_clear_db_ids(found_people)
         self.assertCountEqual(found_people, expected_people)
 
         ######################################
@@ -1560,7 +1562,7 @@ class TestUsNdController(unittest.TestCase):
         # Assert
         session = SessionFactory.for_schema_base(StateBase)
         found_people = dao.read_people(session)
-        self.clear_db_ids(found_people)
+        found_people = self.convert_and_clear_db_ids(found_people)
         self.assertCountEqual(found_people, expected_people)
 
         ######################################
@@ -1586,7 +1588,7 @@ class TestUsNdController(unittest.TestCase):
         # Assert
         session = SessionFactory.for_schema_base(StateBase)
         found_people = dao.read_people(session)
-        self.clear_db_ids(found_people)
+        found_people = self.convert_and_clear_db_ids(found_people)
         self.assertCountEqual(found_people, expected_people)
 
         ######################################
@@ -1652,7 +1654,7 @@ class TestUsNdController(unittest.TestCase):
         # Assert
         session = SessionFactory.for_schema_base(StateBase)
         found_people = dao.read_people(session)
-        self.clear_db_ids(found_people)
+        found_people = self.convert_and_clear_db_ids(found_people)
         self.assertCountEqual(found_people, expected_people)
 
         ######################################
@@ -1786,7 +1788,7 @@ class TestUsNdController(unittest.TestCase):
         # Assert
         session = SessionFactory.for_schema_base(StateBase)
         found_people = dao.read_people(session)
-        self.clear_db_ids(found_people)
+        found_people = self.convert_and_clear_db_ids(found_people)
         self.assertCountEqual(found_people, expected_people)
 
         ######################################
@@ -1850,7 +1852,7 @@ class TestUsNdController(unittest.TestCase):
         # Assert
         session = SessionFactory.for_schema_base(StateBase)
         found_people = dao.read_people(session)
-        self.clear_db_ids(found_people)
+        found_people = self.convert_and_clear_db_ids(found_people)
         self.assertCountEqual(found_people, expected_people)
 
         ######################################
@@ -2060,7 +2062,7 @@ class TestUsNdController(unittest.TestCase):
         # Assert
         session = SessionFactory.for_schema_base(StateBase)
         found_people = dao.read_people(session)
-        self.clear_db_ids(found_people)
+        found_people = self.convert_and_clear_db_ids(found_people)
         self.assertCountEqual(found_people, expected_people)
 
         ######################################
@@ -2124,8 +2126,7 @@ class TestUsNdController(unittest.TestCase):
         # Assert
         session = SessionFactory.for_schema_base(StateBase)
         found_people = dao.read_people(session)
-        self.clear_db_ids(found_people)
-
+        found_people = self.convert_and_clear_db_ids(found_people)
         self.assertCountEqual(found_people, expected_people)
 
         ######################################
@@ -2258,7 +2259,7 @@ class TestUsNdController(unittest.TestCase):
         # Assert
         session = SessionFactory.for_schema_base(StateBase)
         found_people = dao.read_people(session)
-        self.clear_db_ids(found_people)
+        found_people = self.convert_and_clear_db_ids(found_people)
         self.assertCountEqual(found_people, expected_people)
 
         ##############################################
@@ -2503,7 +2504,7 @@ class TestUsNdController(unittest.TestCase):
         # Assert
         session = SessionFactory.for_schema_base(StateBase)
         found_people = dao.read_people(session)
-        self.clear_db_ids(found_people)
+        found_people = self.convert_and_clear_db_ids(found_people)
         self.assertCountEqual(found_people, expected_people)
 
         ######################################
@@ -2599,7 +2600,7 @@ class TestUsNdController(unittest.TestCase):
         # Assert
         session = SessionFactory.for_schema_base(StateBase)
         found_people = dao.read_people(session)
-        self.clear_db_ids(found_people)
+        found_people = self.convert_and_clear_db_ids(found_people)
         self.assertCountEqual(found_people, expected_people)
 
         ######################################
@@ -2896,7 +2897,7 @@ class TestUsNdController(unittest.TestCase):
         # Assert
         session = SessionFactory.for_schema_base(StateBase)
         found_people = dao.read_people(session)
-        self.clear_db_ids(found_people)
+        found_people = self.convert_and_clear_db_ids(found_people)
         self.assertCountEqual(found_people, expected_people)
 
         ######################################
@@ -2966,7 +2967,7 @@ class TestUsNdController(unittest.TestCase):
         # Assert
         session = SessionFactory.for_schema_base(StateBase)
         found_people = dao.read_people(session)
-        self.clear_db_ids(found_people)
+        found_people = self.convert_and_clear_db_ids(found_people)
         self.assertCountEqual(found_people, expected_people)
 
         ######################################
@@ -3059,7 +3060,7 @@ class TestUsNdController(unittest.TestCase):
         # Assert
         session = SessionFactory.for_schema_base(StateBase)
         found_people = dao.read_people(session)
-        self.clear_db_ids(found_people)
+        found_people = self.convert_and_clear_db_ids(found_people)
         self.assertCountEqual(found_people, expected_people)
 
         # pylint:disable=protected-access
@@ -3069,15 +3070,21 @@ class TestUsNdController(unittest.TestCase):
 
         session = SessionFactory.for_schema_base(StateBase)
         found_people = dao.read_people(session)
-        self.clear_db_ids(found_people)
+        found_people = self.convert_and_clear_db_ids(found_people)
         self.assertCountEqual(found_people, expected_people)
 
-    def clear_db_ids(self, db_entities: List[Entity]):
+    def convert_and_clear_db_ids(self, db_entities: List[StateBase]):
+        converted = StateSchemaToEntityConverter().convert_all(
+            db_entities, populate_back_edges=True)
+        self._clear_db_ids(converted)
+        return converted
+
+    def _clear_db_ids(self, db_entities: List[Entity]):
         for entity in db_entities:
             entity.clear_id()
             for field_name in get_set_entity_field_names(
                     entity, EntityFieldType.FORWARD_EDGE):
-                self.clear_db_ids(self.get_field_as_list(entity, field_name))
+                self._clear_db_ids(self.get_field_as_list(entity, field_name))
 
     def get_field_as_list(self, entity, field_name):
         field = getattr(entity, field_name)

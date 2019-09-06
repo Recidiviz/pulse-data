@@ -38,6 +38,9 @@ from recidiviz.persistence.database.schema_utils import \
 from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.persistence.ingest_info_validator import ingest_info_validator
 from recidiviz.persistence.database.schema.county import dao as county_dao
+from recidiviz.persistence.database.schema_entity_converter import (
+    schema_entity_converter as converter,
+)
 from recidiviz.persistence.entity_matching import entity_matching
 from recidiviz.persistence.entity_validator import entity_validator
 from recidiviz.persistence.database import database
@@ -97,6 +100,7 @@ def infer_release_on_open_bookings(
                      last_ingest_time)
         people = county_dao.read_people_with_open_bookings_scraped_before_time(
             session, region_code, last_ingest_time)
+
         logging.info(
             "Found [%s] people with bookings that will be inferred released",
             len(people))
@@ -104,7 +108,8 @@ def infer_release_on_open_bookings(
             persistence_utils.remove_pii_for_person(person)
             _infer_release_date_for_bookings(person.bookings, last_ingest_time,
                                              custody_status)
-        database.write_people(session, people, IngestMetadata(
+        db_people = converter.convert_entity_people_to_schema_people(people)
+        database.write_people(session, db_people, IngestMetadata(
             region=region_code, jurisdiction_id='',
             ingest_time=last_ingest_time))
         session.commit()

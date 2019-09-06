@@ -27,35 +27,17 @@ from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.schema_person_type import \
     SchemaPersonType
-from recidiviz.persistence.entity import entities
-from recidiviz.persistence.database.schema_entity_converter import (
-    schema_entity_converter as converter,
-)
 from recidiviz.persistence.database.schema.county import schema as county_schema
-from recidiviz.persistence.database.schema.state import schema as state_schema
-from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.common.common_utils import check_all_objs_have_type
 from recidiviz.persistence.errors import PersistenceError
 
 _DUMMY_BOOKING_ID = -1
 
 
-def _convert_entity_people_to_schema_people(
-        people: List[entities.EntityPersonType]) -> List[SchemaPersonType]:
-
-    def _as_schema_person_type(e: DatabaseEntity) -> SchemaPersonType:
-        if not isinstance(e, county_schema.Person) and \
-                not isinstance(e, state_schema.StatePerson):
-            raise ValueError(f"Unexpected database entity type: [{type(e)}]")
-        return e
-
-    return [_as_schema_person_type(p)
-            for p in converter.convert_entities_to_schema(people)]
-
-
 def write_people(session: Session,
-                 people: List[entities.EntityPersonType],
+                 people: List[SchemaPersonType],
                  metadata: IngestMetadata,
-                 orphaned_entities: List[Entity] = None):
+                 orphaned_entities: List[DatabaseEntity] = None):
     """
     Converts the given |people| into (SchemaPersonType) objects and persists
     their corresponding record trees. Returns the list of persisted
@@ -64,26 +46,13 @@ def write_people(session: Session,
     if not orphaned_entities:
         orphaned_entities = []
 
-    logging.info(
-        "Converting [%s] people and [%s] orphaned entities to schema objects.",
-        len(people), len(orphaned_entities))
-    schema_people = \
-        _convert_entity_people_to_schema_people(people)
-    schema_orphaned_entities = \
-        converter.convert_entities_to_schema(orphaned_entities)
-    logging.info("Done converting to schema objects.")
-
-    return _save_record_trees(
-        session,
-        schema_people,
-        schema_orphaned_entities,
-        metadata)
+    return _save_record_trees(session, people, orphaned_entities, metadata)
 
 
 def write_person(session: Session,
-                 person: entities.EntityPersonType,
+                 person: SchemaPersonType,
                  metadata: IngestMetadata,
-                 orphaned_entities: List[Entity] = None):
+                 orphaned_entities: List[DatabaseEntity] = None):
     """
     Converts the given |person| into a (SchemaPersonType) object and persists
     the record tree rooted at that |person|. Returns the persisted
@@ -91,11 +60,10 @@ def write_person(session: Session,
     """
     if not orphaned_entities:
         orphaned_entities = []
-    persisted_people = _save_record_trees(
-        session,
-        _convert_entity_people_to_schema_people([person]),
-        converter.convert_entities_to_schema(orphaned_entities),
-        metadata)
+    persisted_people = _save_record_trees(session,
+                                          [person],
+                                          orphaned_entities,
+                                          metadata)
     # persisted_people will only contain the single person passed in
     return one(persisted_people)
 
@@ -110,51 +78,54 @@ def _save_record_trees(session: Session,
     """
 
     if metadata.system_level == SystemLevel.COUNTY:
-        if not all(isinstance(person, county_schema.Person)
-                   for person in root_people):
-            raise PersistenceError(
-                "Not all persons are type county_schema.Person")
-
+        check_all_objs_have_type(root_people, county_schema.Person)
         _set_dummy_booking_ids(root_people)
 
-    # Merge is recursive for all related entities, so this persists all master
-    # entities in all record trees
-    #
-    # Merge and flush is required to ensure all master entities, including
-    # newly created ones, have primary keys set before performing historical
-    # snapshot operations
+        # Merge is recursive for all related entities, so this persists all
+        # master entities in all record trees
+        #
+        # Merge and flush is required to ensure all master entities, including
+        # newly created ones, have primary keys set before performing historical
+        # snapshot operations
 
-    logging.info("Starting Session merge of [%s] persons.",
-                 str(len(root_people)))
+        logging.info("Starting Session merge of [%s] persons.",
+                     str(len(root_people)))
 
-    merged_root_people = []
-    for root_person in root_people:
-        merged_root_people.append(session.merge(root_person))
-        if len(merged_root_people) % 200 == 0:
-            logging.info("Merged [%s] of [%s] people.",
-                         str(len(merged_root_people)),
-                         str(len(root_people)))
+        # TODO(2382): Once County entity matching is updated to use
+        #  DatabaseEntity objects directly, we shouldn't need to do this merge.
+        merged_root_people = []
+        for root_person in root_people:
+            merged_root_people.append(session.merge(root_person))
+            if len(merged_root_people) % 200 == 0:
+                logging.info("Merged [%s] of [%s] people.",
+                             str(len(merged_root_people)),
+                             str(len(root_people)))
 
-    logging.info("Starting Session merge of [%s] orphaned entities.",
-                 str(len(orphaned_entities)))
-    merged_orphaned_entities = []
-    for entity in orphaned_entities:
-        merged_orphaned_entities.append(session.merge(entity))
-        if len(merged_orphaned_entities) % 200 == 0:
-            logging.info("Merged [%s] of [%s] entities.",
-                         str(len(merged_orphaned_entities)),
-                         str(len(orphaned_entities)))
+        logging.info("Starting Session merge of [%s] orphaned entities.",
+                     str(len(orphaned_entities)))
+        merged_orphaned_entities = []
+        for entity in orphaned_entities:
+            merged_orphaned_entities.append(session.merge(entity))
+            if len(merged_orphaned_entities) % 200 == 0:
+                logging.info("Merged [%s] of [%s] entities.",
+                             str(len(merged_orphaned_entities)),
+                             str(len(orphaned_entities)))
+
+    elif metadata.system_level == SystemLevel.STATE:
+        merged_root_people = root_people
+        if orphaned_entities:
+            raise PersistenceError("State doesn't use orphaned entities")
+        merged_orphaned_entities = []
+    else:
+        raise PersistenceError(
+            f"Unexpected system level [{metadata.system_level}]")
 
     logging.info("Session flush start.")
     session.flush()
     logging.info("Session flush complete.")
 
     if metadata.system_level == SystemLevel.COUNTY:
-        if not all(isinstance(person, county_schema.Person)
-                   for person in merged_root_people):
-            raise PersistenceError(
-                "Not all persons are type county_schema.Person")
-
+        check_all_objs_have_type(merged_root_people, county_schema.Person)
         _overwrite_dummy_booking_ids(merged_root_people)
 
     update_snapshots.update_historical_snapshots(

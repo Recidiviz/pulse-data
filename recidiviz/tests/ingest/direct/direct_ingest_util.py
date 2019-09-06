@@ -142,7 +142,6 @@ def add_paths_with_tags_and_process(test_case: unittest.TestCase,
             raise ValueError(f"Controller fs must have type "
                              f"FakeDirectIngestGCSFileSystem. Found instead "
                              f"type [{type(controller.fs)}]")
-
         controller.fs.test_add_path(args.file_path)
 
         controller.kick_scheduler(just_finished_job=False)

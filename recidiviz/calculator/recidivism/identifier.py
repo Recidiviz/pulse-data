@@ -40,9 +40,9 @@ from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodReleaseReason as ReleaseReason
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
-from recidiviz.persistence.entity.entity_utils import is_placeholder
 from recidiviz.persistence.entity.state.entities import \
     StateIncarcerationPeriod, StateSupervisionViolationResponse
+from recidiviz.persistence.entity.entity_utils import is_placeholder
 
 
 def find_release_events_by_cohort_year(

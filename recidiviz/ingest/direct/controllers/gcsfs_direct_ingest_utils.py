@@ -31,7 +31,7 @@ from recidiviz.utils import metadata
 
 _FILEPATH_REGEX = \
     re.compile(
-        r'.*(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}:\d{6})_'
+        r'.*(\d{4}-\d{2}-\d{2}T\d{2}[:_]\d{2}[:_]\d{2}[:_]\d{6})_'
         r'([A-Za-z]+[A-Za-z_]*)(_(.+))?\.(.*)')
 
 

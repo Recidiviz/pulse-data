@@ -22,6 +22,8 @@ from types import ModuleType
 from typing import List, Any, Sequence
 
 from recidiviz.persistence.database.database_entity import DatabaseEntity
+from recidiviz.persistence.database.schema.schema_person_type import \
+    SchemaPersonType
 from recidiviz.persistence.database.schema_entity_converter.county.\
     schema_entity_converter import (
         CountyEntityToSchemaConverter,
@@ -36,6 +38,7 @@ from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.persistence.database.schema.county import schema as county_schema
 from recidiviz.persistence.database.schema.state import schema as state_schema
+from recidiviz.persistence.entity.entities import EntityPersonType
 from recidiviz.persistence.entity.state import entities as state_entities
 
 
@@ -43,8 +46,22 @@ def _is_obj_in_module(obj: Any, module: ModuleType) -> bool:
     return obj.__module__ == module.__name__
 
 
+def convert_entity_people_to_schema_people(
+        people: List[EntityPersonType],
+        populate_back_edges: bool = True) -> List[SchemaPersonType]:
+
+    def _as_schema_person_type(e: DatabaseEntity) -> SchemaPersonType:
+        if not isinstance(e, county_schema.Person) and \
+                not isinstance(e, state_schema.StatePerson):
+            raise ValueError(f"Unexpected database entity type: [{type(e)}]")
+        return e
+
+    return [_as_schema_person_type(p)
+            for p in convert_entities_to_schema(people, populate_back_edges)]
+
 def convert_entities_to_schema(
-        entities: Sequence[Entity]) -> List[DatabaseEntity]:
+        entities: Sequence[Entity],
+        populate_back_edges: bool = True) -> List[DatabaseEntity]:
     def _is_county_entity(obj: Any) -> bool:
         return _is_obj_in_module(obj, county_entities) and \
             issubclass(obj.__class__, Entity)
@@ -54,9 +71,12 @@ def convert_entities_to_schema(
             issubclass(obj.__class__, Entity)
 
     if all(_is_county_entity(obj) for obj in entities):
-        return list(CountyEntityToSchemaConverter().convert_all(entities))
+        return list(CountyEntityToSchemaConverter().convert_all(
+            entities, populate_back_edges))
     if all(_is_state_entity(obj) for obj in entities):
-        return StateEntityToSchemaConverter().convert_all(entities)
+        return StateEntityToSchemaConverter().convert_all(
+            entities, populate_back_edges)
+
     raise ValueError(f"Expected all types to belong to the same schema, one of "
                      f"[{county_schema.__name__}] or [{state_schema.__name__}]")
 

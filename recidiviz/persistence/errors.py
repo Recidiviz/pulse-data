@@ -17,7 +17,7 @@
 """Contains errors for the persistence directory."""
 from typing import Sequence
 
-from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.core_entity import CoreEntity
 
 
 class PersistenceError(Exception):
@@ -37,7 +37,10 @@ class MatchedMultipleDatabaseEntitiesError(EntityMatchingError):
     entities."""
 
     def __init__(
-            self, ingested_entity: Entity, database_entities: Sequence[Entity]):
+            self,
+            ingested_entity: CoreEntity,
+            database_entities: Sequence[CoreEntity]):
+
         msg_template = (
             "Matched one ingested entity to multiple database entities."
             "\nIngested entity: {}"
@@ -53,7 +56,9 @@ class MatchedMultipleIngestedEntitiesError(EntityMatchingError):
     entities."""
 
     def __init__(
-            self, database_entity: Entity, ingested_entities: Sequence[Entity]):
+            self,
+            database_entity: CoreEntity,
+            ingested_entities: Sequence[CoreEntity]):
         msg_template = (
             "Matched one database entity to multiple ingested entities."
             "\nDatabase entity: {}"

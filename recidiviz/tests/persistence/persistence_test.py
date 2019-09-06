@@ -40,6 +40,9 @@ from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.persistence.database import database
 from recidiviz.persistence.database.schema.county import schema, \
     dao as county_dao
+from recidiviz.persistence.database.schema_entity_converter import (
+    schema_entity_converter as converter,
+)
 from recidiviz.tests.utils import fakes
 
 ARREST_ID = 'ARREST_ID_1'
@@ -516,8 +519,11 @@ class TestPersistence(TestCase):
             bookings=[booking_open_most_recent_scrape])
 
         session = SessionFactory.for_schema_base(JailsBase)
-        database.write_person(session, person, DEFAULT_METADATA)
-        database.write_person(session, person_unmatched, DEFAULT_METADATA)
+        database.write_people(
+            session,
+            converter.convert_entity_people_to_schema_people(
+                [person, person_unmatched]),
+            DEFAULT_METADATA)
         session.commit()
         session.close()
 
