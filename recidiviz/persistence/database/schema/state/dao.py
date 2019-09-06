@@ -24,27 +24,23 @@ from typing import Dict, List, Type, Iterable
 
 from sqlalchemy.orm import Session
 
+from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.database.schema_entity_converter import (
-    schema_entity_converter as converter,
-)
 from recidiviz.persistence.database.schema.state import schema
 
 
 def read_people_by_cls_external_ids(
         session: Session,
         state_code: str,
-        cls: Type,
-        cls_external_ids: Iterable[str],
-        populate_back_edges: bool = True) -> List[entities.StatePerson]:
+        schema_cls: Type[StateBase],
+        cls_external_ids: Iterable[str]) -> List[schema.StatePerson]:
     """Reads all people in the given |state_code| who have an entity of type
-    |cls| with an external id in |cls_external_ids| somewhere in their entity
-    tree.
+    |schema_cls| with an external id in |cls_external_ids| somewhere in their
+    entity tree.
     """
-    if cls == entities.StatePerson:
-        cls = entities.StatePersonExternalId
+    if schema_cls == schema.StatePerson:
+        schema_cls = schema.StatePersonExternalId
 
-    schema_cls = getattr(schema, cls.__name__)
     query = session.query(schema.StatePerson) \
         .filter(schema.StatePerson.person_id == schema_cls.person_id) \
         .filter(schema_cls.state_code == state_code.upper()) \
@@ -53,14 +49,13 @@ def read_people_by_cls_external_ids(
     now = datetime.datetime.now()
     logging.info("In read_people_by_cls_external_ids, finished query.all() "
                  "at time [%s]", now.isoformat())
-    return _convert_and_normalize_record_trees(
-        schema_persons, populate_back_edges)
+    return _normalize_record_trees(schema_persons)
 
 
 # TODO(1907): Rename to read_persons.
-def read_people(session, full_name=None, birthdate=None,
-                populate_back_edges: bool = True) \
-        -> List[entities.StatePerson]:
+def read_people(
+        session, full_name=None, birthdate=None
+) -> List[schema.StatePerson]:
     """Read all people matching the optional surname and birthdate. If neither
     the surname or birthdate are provided, then read all people."""
     query = session.query(schema.StatePerson)
@@ -70,16 +65,14 @@ def read_people(session, full_name=None, birthdate=None,
         query = query.filter(schema.StatePerson.birthdate == birthdate)
 
     people = query.all()
-    now = datetime.datetime.now()
-    logging.info("In read_people, finished query.all() at time [%s]",
-                 now.isoformat())
-    return _convert_and_normalize_record_trees(people, populate_back_edges)
+    return _normalize_record_trees(people)
 
 
-def read_people_by_external_ids(session: Session, _region: str,
-                                ingested_people: List[entities.StatePerson],
-                                populate_back_edges: bool = True) \
-        -> List[entities.StatePerson]:
+def read_people_by_external_ids(
+        session: Session,
+        _region: str,
+        ingested_people: List[entities.StatePerson]
+) -> List[schema.StatePerson]:
     """
     Reads all people for the given |region| that have external_ids that match
     the external_ids from the |ingested_people|.
@@ -90,30 +83,21 @@ def read_people_by_external_ids(session: Session, _region: str,
             region_to_external_ids[external_id_info.state_code].append(
                 external_id_info.external_id)
 
-    state_persons: List[entities.StatePerson] = []
+    state_persons: List[schema.StatePerson] = []
     for state_code, external_ids in region_to_external_ids.items():
         state_persons += read_people_by_cls_external_ids(
-            session, state_code, entities.StatePerson, external_ids,
-            populate_back_edges)
+            session, state_code, schema.StatePerson, external_ids)
     return state_persons
 
 
-def _convert_and_normalize_record_trees(
-        people: List[schema.StatePerson],
-        populate_back_edges: bool = True) -> List[entities.StatePerson]:
-    """Converts schema record trees to persistence layer models and removes
-    any duplicate people created by how SQLAlchemy handles joins
-    """
-    converted_people: List[entities.StatePerson] = []
+def _normalize_record_trees(
+        people: List[schema.StatePerson]) -> List[schema.StatePerson]:
+    """Removes any duplicate people created by how SQLAlchemy handles joins"""
+    deduped_people: List[schema.StatePerson] = []
     count_by_id: Dict[int, int] = defaultdict(lambda: 0)
     for person in people:
         if count_by_id[person.person_id] == 0:
-            converted = converter.convert_schema_object_to_entity(
-                person, populate_back_edges)
-            if not isinstance(converted, entities.StatePerson):
-                raise ValueError(
-                    f"Unexpected return type [{converted.__class__}]")
-            converted_people.append(converted)
+            deduped_people.append(person)
         count_by_id[person.person_id] += 1
 
     duplicates = [(person_id, count) for person_id, count
@@ -125,7 +109,4 @@ def _convert_and_normalize_record_trees(
         logging.error(
             "Duplicate records returned for person IDs:\n%s", id_counts)
 
-    now = datetime.datetime.now()
-    logging.info("Finished _convert_and_normalize_record_trees at time [%s]",
-                 now.isoformat())
-    return converted_people
+    return deduped_people

@@ -22,7 +22,7 @@ from collections import defaultdict
 import logging
 from typing import Dict, List
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, Query
 
 from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.persistence.entity.county import entities
@@ -32,7 +32,8 @@ from recidiviz.persistence.database.schema_entity_converter import (
 from recidiviz.persistence.database.schema.county.schema import Person, Booking
 
 
-def read_people(session, full_name=None, birthdate=None):
+def read_people(
+        session, full_name=None, birthdate=None) -> List[entities.Person]:
     """
     Read all people matching the optional surname and birthdate. If neither
     the surname or birthdate are provided, then read all people.
@@ -50,19 +51,6 @@ def read_people(session, full_name=None, birthdate=None):
     if birthdate is not None:
         query = query.filter(Person.birthdate == birthdate)
     return _convert_and_normalize_record_trees(query.all())
-
-
-def read_bookings(session):
-    """
-    Reads all bookings in the db.
-
-    Args:
-        session: The transaction to read from
-    Return:
-        List of all bookings
-    """
-    return converter.convert_schema_objects_to_entity(
-        session.query(Booking).all())
 
 
 def read_people_by_external_ids(
@@ -85,7 +73,8 @@ def read_people_by_external_ids(
     return _convert_and_normalize_record_trees(query.all())
 
 
-def read_people_with_open_bookings(session, region, ingested_people):
+def read_people_with_open_bookings(
+        session, region, ingested_people) -> List[entities.Person]:
     """
     Reads all people for a given |region| that have open bookings and can be
     matched with the provided |ingested_people|.
@@ -105,7 +94,8 @@ def read_people_with_open_bookings(session, region, ingested_people):
         [person for person, _ in query.all()])
 
 
-def read_people_with_open_bookings_scraped_before_time(session, region, time):
+def read_people_with_open_bookings_scraped_before_time(
+        session, region, time) -> List[entities.Person]:
     """
     Reads all people with open bookings in the given region that have a
     last_scraped_time set to a time earlier than the provided datetime.
@@ -124,7 +114,7 @@ def read_people_with_open_bookings_scraped_before_time(session, region, time):
         [person for person, _ in query.all()])
 
 
-def _query_people_and_open_bookings(session, region):
+def _query_people_and_open_bookings(session, region) -> Query:
     """
     Returns a list of tuples of (person, booking) for all open bookings.
 

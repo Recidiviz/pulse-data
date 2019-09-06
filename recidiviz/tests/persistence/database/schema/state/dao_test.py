@@ -25,9 +25,6 @@ from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.database.schema_entity_converter import (
-    schema_entity_converter as converter,
-)
 from recidiviz.persistence.database.schema.state import dao
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.tests.utils import fakes
@@ -61,7 +58,7 @@ class TestDao(TestCase):
         people = dao.read_people(session, full_name=_FULL_NAME, birthdate=None)
 
         # Assert
-        expected_people = [converter.convert_schema_object_to_entity(person)]
+        expected_people = [person]
         self.assertCountEqual(people, expected_people)
 
     def test_readPeople_byBirthdate(self):
@@ -82,7 +79,7 @@ class TestDao(TestCase):
         people = dao.read_people(session, full_name=None, birthdate=_BIRTHDATE)
 
         # Assert
-        expected_people = [converter.convert_schema_object_to_entity(person)]
+        expected_people = [person]
         self.assertCountEqual(people, expected_people)
 
     def test_readPeople(self):
@@ -108,10 +105,9 @@ class TestDao(TestCase):
 
         # Assert
         expected_people = [
-            converter.convert_schema_object_to_entity(person),
-            converter.convert_schema_object_to_entity(person_different_name),
-            converter.convert_schema_object_to_entity(
-                person_different_birthdate)
+            person,
+            person_different_name,
+            person_different_birthdate
         ]
 
         self.assertCountEqual(people, expected_people)
@@ -136,11 +132,10 @@ class TestDao(TestCase):
 
         # Act
         people = dao.read_people_by_cls_external_ids(
-            session, _STATE_CODE, entities.StatePerson, [_EXTERNAL_ID])
+            session, _STATE_CODE, schema.StatePerson, [_EXTERNAL_ID])
 
         # Assert
-        expected_people = [
-            converter.convert_schema_object_to_entity(person_match_external_id)]
+        expected_people = [person_match_external_id]
 
         self.assertCountEqual(people, expected_people)
 
@@ -169,11 +164,10 @@ class TestDao(TestCase):
 
         # Act
         people = dao.read_people_by_cls_external_ids(
-            session, _STATE_CODE, entities.StatePerson, [_EXTERNAL_ID])
+            session, _STATE_CODE, schema.StatePerson, [_EXTERNAL_ID])
 
         # Assert
-        expected_people = [
-            converter.convert_schema_object_to_entity(person)]
+        expected_people = [person]
 
         self.assertCountEqual(people, expected_people)
 
@@ -200,11 +194,10 @@ class TestDao(TestCase):
 
         # Act
         people = dao.read_people_by_cls_external_ids(
-            session, _STATE_CODE, entities.StateSentenceGroup, [_EXTERNAL_ID])
+            session, _STATE_CODE, schema.StateSentenceGroup, [_EXTERNAL_ID])
 
         # Assert
-        expected_people = [
-            converter.convert_schema_object_to_entity(person)]
+        expected_people = [person]
 
         self.assertCountEqual(people, expected_people)
 
@@ -240,8 +233,7 @@ class TestDao(TestCase):
                                                  [ingested_person])
 
         # Assert
-        expected_people = [
-            converter.convert_schema_object_to_entity(person_match_external_id)]
+        expected_people = [person_match_external_id]
 
         self.assertCountEqual(people, expected_people)
 
@@ -288,7 +280,7 @@ class TestDao(TestCase):
                                                  [ingested_person])
 
         # Assert
-        expected_people = [converter.convert_schema_object_to_entity(person)]
+        expected_people = [person]
 
         self.assertCountEqual(people, expected_people)
 
@@ -338,9 +330,7 @@ class TestDao(TestCase):
                                                  [ingested_person])
 
         # Assert
-        expected_people = [
-            converter.convert_schema_object_to_entity(person1),
-            converter.convert_schema_object_to_entity(person2)]
+        expected_people = [person1, person2]
 
         self.assertCountEqual(people, expected_people)
 
@@ -402,9 +392,7 @@ class TestDao(TestCase):
                                ingested_person3])
 
         # Assert
-        expected_people = [
-            converter.convert_schema_object_to_entity(person1),
-            converter.convert_schema_object_to_entity(person2)]
+        expected_people = [person1, person2]
 
         self.assertCountEqual(people, expected_people)
 
@@ -455,6 +443,6 @@ class TestDao(TestCase):
                                ingested_person2])
 
         # Assert
-        expected_people = [converter.convert_schema_object_to_entity(person)]
+        expected_people = [person]
 
         self.assertCountEqual(people, expected_people)

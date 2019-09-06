@@ -19,13 +19,12 @@ from typing import Optional, Dict, Type, Callable, List
 
 import attr
 
-from recidiviz.common.str_field_utils import to_snake_case
-
 # TODO(1885): Enforce all ForwardRef attributes on an Entity are optional
+from recidiviz.persistence.entity.core_entity import CoreEntity
 
 
 @attr.s(cmp=False)
-class Entity:
+class Entity(CoreEntity):
     """Base class for all entity types."""
     # Consider Entity abstract and only allow instantiating subclasses
     def __new__(cls, *_, **__):
@@ -33,34 +32,8 @@ class Entity:
             raise Exception('Abstract class cannot be instantiated')
         return super().__new__(cls)
 
-    # TODO(1876): Merge these with persistence_utils versions
-    def get_entity_name(self):
-        return to_snake_case(self.__class__.__name__)
-
-    def _get_id_name(self):
-        id_name = self.get_entity_name() + '_id'
-        if id_name.startswith('state_'):
-            id_name = id_name.replace('state_', '')
-        return id_name
-
-    def get_id(self):
-        return getattr(self, self._get_id_name())
-
-    def clear_id(self):
-        setattr(self, self._get_id_name(), None)
-
-    def set_id(self, entity_id: int):
-        return setattr(self, self._get_id_name(), entity_id)
-
     def __eq__(self, other):
         return entity_graph_eq(self, other)
-
-    @classmethod
-    def get_class_id_name(cls):
-        id_name = to_snake_case(cls.__name__) + '_id'
-        if id_name.startswith('state_'):
-            id_name = id_name.replace('state_', '')
-        return id_name
 
 
 @attr.s(cmp=False)

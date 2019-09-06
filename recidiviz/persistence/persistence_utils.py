@@ -17,12 +17,8 @@
 
 """Utils for the persistence layer."""
 import datetime
-from typing import Union, Type, Optional
 
 from recidiviz.common.constants.county.booking import CustodyStatus
-from recidiviz.common.str_field_utils import to_snake_case
-from recidiviz.persistence.database.database_entity import DatabaseEntity
-from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.county import entities as county_entities
 
 
@@ -51,23 +47,3 @@ def is_booking_active(booking: county_entities.Booking) -> bool:
 def has_active_booking(person: county_entities.Person) -> bool:
     """Determines if a person has an active booking"""
     return any(is_booking_active(booking) for booking in person.bookings)
-
-
-def primary_key_name_from_cls(
-        schema_cls: Union[Type[DatabaseEntity], Type[Entity]]) -> str:
-    def _strip_prefix(s: str, prefix: str) -> str:
-        return s[len(prefix):] if s.startswith(prefix) else s
-
-    snake_case_name = to_snake_case(schema_cls.__name__)
-    return f"{_strip_prefix(snake_case_name, 'state_')}_id"
-
-
-def primary_key_name_from_obj(
-        schema_object: Union[DatabaseEntity, Entity]) -> str:
-    return primary_key_name_from_cls(schema_object.__class__)
-
-
-def primary_key_value_from_obj(
-        schema_object: Union[DatabaseEntity, Entity]) -> Optional[int]:
-    primary_key_column_name = primary_key_name_from_obj(schema_object)
-    return getattr(schema_object, primary_key_column_name, None)

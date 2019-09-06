@@ -20,8 +20,10 @@ from typing import Optional
 
 from sqlalchemy.inspection import inspect
 
+from recidiviz.persistence.entity.core_entity import CoreEntity
 
-class DatabaseEntity:
+
+class DatabaseEntity(CoreEntity):
     """Mixin class to provide helper methods to expose database entity
     properties
     """

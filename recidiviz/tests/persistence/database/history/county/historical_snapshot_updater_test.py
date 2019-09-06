@@ -34,7 +34,7 @@ from recidiviz.persistence.database.base_schema import \
     JailsBase
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.county import schema as county_schema
-from recidiviz.persistence.persistence_utils import primary_key_value_from_obj
+from recidiviz.persistence.entity.core_entity import primary_key_value_from_obj
 from recidiviz.tests.persistence.database.history.\
     base_historical_snapshot_updater_test import (
         BaseHistoricalSnapshotUpdaterTest

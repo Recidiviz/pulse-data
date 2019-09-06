@@ -28,7 +28,7 @@ from unittest import TestCase
 
 import attr
 
-from recidiviz.persistence.persistence_utils import primary_key_name_from_cls
+from recidiviz.persistence.entity.core_entity import primary_key_name_from_cls
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import \
     get_all_entity_classes_in_module
