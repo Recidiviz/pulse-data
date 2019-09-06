@@ -40,7 +40,7 @@ _BIRTHDATE = datetime.date(year=2012, month=1, day=2)
 class TestDao(TestCase):
     """Test that the methods in dao.py correctly read from the SQL database."""
 
-    def setup_method(self, _test_method):
+    def setUp(self) -> None:
         fakes.use_in_memory_sqlite_database(StateBase)
 
     def test_readPeople_byFullName(self):
