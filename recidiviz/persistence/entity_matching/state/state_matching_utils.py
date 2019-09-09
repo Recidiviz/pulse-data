@@ -423,34 +423,6 @@ def _default_merge_flat_fields(
     return old_entity
 
 
-def _get_all_entities_of_type(root: DatabaseEntity,
-                              cls: Type[DatabaseEntity]):
-    """Given a |root| entity, returns a list of all unique entities of type
-    |cls| that exist in the |root| graph.
-    """
-    seen: Set[int] = set()
-    entities_of_type: List[DatabaseEntity] = []
-    _get_all_entities_of_type_helper(root, cls, seen, entities_of_type)
-    return entities_of_type
-
-
-def _get_all_entities_of_type_helper(
-        root: DatabaseEntity,
-        cls: Type[DatabaseEntity],
-        seen: Set[int],
-        entities_of_type: List[DatabaseEntity]):
-    if isinstance(root, cls):
-        if id(root) not in seen:
-            root = cast(DatabaseEntity, root)
-            entities_of_type.append(root)
-        return
-
-    for field_name in get_set_entity_field_names(
-            root, EntityFieldType.FORWARD_EDGE):
-        for field in root.get_field_as_list(field_name):
-            _get_all_entities_of_type_helper(field, cls, seen, entities_of_type)
-
-
 def admitted_for_revocation(ip: schema.StateIncarcerationPeriod) -> bool:
     """Determines if the provided |ip| began because of a revocation."""
     if not ip.admission_reason:
@@ -526,16 +498,17 @@ def associate_revocation_svrs_with_ips(
     corresponding StateIncarcerationPeriod.
     """
     for person in merged_persons:
-        svrs = _get_all_entities_of_type(
-            person, schema.StateSupervisionViolationResponse)
-        ips = _get_all_entities_of_type(person, schema.StateIncarcerationPeriod)
+        svrs = _get_all_entities_of_cls(
+            [person], schema.StateSupervisionViolationResponse)
+        ips = _get_all_entities_of_cls(
+            [person], schema.StateIncarcerationPeriod)
 
-        revocation_svrs = []
+        revocation_svrs: List[schema.StateSupervisionViolationResponse] = []
         for svr in svrs:
             svr = cast(schema.StateSupervisionViolationResponse, svr)
             if revoked_to_prison(svr) and svr.response_date:
                 revocation_svrs.append(svr)
-        revocation_ips = []
+        revocation_ips: List[schema.StateIncarcerationPeriod] = []
         for ip in ips:
             ip = cast(schema.StateIncarcerationPeriod, ip)
             if admitted_for_revocation(ip) and ip.admission_date:
@@ -669,50 +642,77 @@ def get_external_ids_of_cls(persons: List[schema.StatePerson],
     check_all_objs_have_type(persons, schema.StatePerson)
 
     ids: Set[str] = set()
-    entities_of_cls = _get_all_entities_of_cls(persons, cls)
-    for entity in entities_of_cls:
-        if isinstance(entity, schema.StatePerson):
-            if not entity.external_ids:
-                raise EntityMatchingError(
-                    'No found external_ids on provided person',
-                    cls.__name__)
-            ids.update([ex.external_id for ex in entity.external_ids])
-        else:
-            external_id = entity.get_external_id()
-            if not external_id:
-                raise EntityMatchingError(
-                    f'Expected all external_ids to be present in cls '
-                    f'[{cls.__name__}]', cls.__name__)
-            ids.add(external_id)
+    entities = _get_all_entities_of_cls(persons, cls)
+    for entity in entities:
+        external_ids = get_external_ids_from_entity(entity)
+        if not external_ids:
+            raise EntityMatchingError(
+                f'Expected all external_ids to be present in cls '
+                f'[{cls.__name__}]', cls.__name__)
+        ids.update(external_ids)
     return ids
+
+
+def get_external_ids_from_entity(entity: DatabaseEntity):
+    external_ids = []
+    if isinstance(entity, schema.StatePerson):
+        for external_id in entity.external_ids:
+            if external_id:
+                external_ids.append(external_id.external_id)
+    else:
+        if entity.get_external_id():
+            external_ids.append(entity.get_external_id())
+    return external_ids
 
 
 def _get_all_entities_of_cls(
         persons: List[schema.StatePerson],
-        cls: Type[DatabaseEntity]) -> List[DatabaseEntity]:
+        cls: Type[DatabaseEntity]):
     """Returns all entities found in the provided |persons| trees of type |cls|.
     """
-    seen_ids: Set[int] = set()
     seen_entities: List[DatabaseEntity] = []
-    for person in persons:
-        _get_all_entities_of_cls_helper(person, cls, seen_ids, seen_entities)
+    for tree in get_all_entity_trees_of_cls(persons, cls):
+        seen_entities.append(tree.entity)
     return seen_entities
 
 
-def _get_all_entities_of_cls_helper(
-        entity: DatabaseEntity,
+def get_all_entity_trees_of_cls(
+        persons: List[schema.StatePerson],
+        cls: Type[DatabaseEntity]) -> List[EntityTree]:
+    """
+    Finds all unique entities of type |cls| in the provided |persons|, and
+    returns their corresponding EntityTrees.
+    """
+    seen_ids: Set[int] = set()
+    seen_trees: List[EntityTree] = []
+    for person in persons:
+        tree = EntityTree(entity=person, ancestor_chain=[])
+        _get_all_entity_trees_of_cls_helper(tree, cls, seen_ids, seen_trees)
+    return seen_trees
+
+
+def _get_all_entity_trees_of_cls_helper(
+        tree: EntityTree,
         cls: Type[DatabaseEntity],
         seen_ids: Set[int],
-        seen_entities: List[DatabaseEntity]):
+        seen_trees: List[EntityTree]):
+    """
+    Finds all objects in the provided |tree| graph which have the type |cls|.
+    When an object of type |cls| is found, updates the provided |seen_ids| and
+    |seen_trees| with the object's id and EntityTree respectively.
+    """
+    entity = tree.entity
     if isinstance(entity, cls) and id(entity) not in seen_ids:
         seen_ids.add(id(entity))
-        seen_entities.append(entity)
+        seen_trees.append(tree)
         return
     for child_field_name in get_set_entity_field_names(
             entity, EntityFieldType.FORWARD_EDGE):
-        for child_field in entity.get_field_as_list(child_field_name):
-            _get_all_entities_of_cls_helper(
-                child_field, cls, seen_ids, seen_entities)
+        child_trees = tree.generate_child_trees(
+            entity.get_field_as_list(child_field_name))
+        for child_tree in child_trees:
+            _get_all_entity_trees_of_cls_helper(
+                child_tree, cls, seen_ids, seen_trees)
 
 
 def get_root_entity_cls(
