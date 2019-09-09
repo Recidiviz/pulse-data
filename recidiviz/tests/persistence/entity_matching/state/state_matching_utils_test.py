@@ -48,7 +48,7 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import \
     get_root_entity_cls, get_total_entities_of_cls, \
     associate_revocation_svrs_with_ips, admitted_for_revocation, \
     revoked_to_prison, base_entity_match, get_external_ids_of_cls, \
-    _read_persons
+    _read_persons, get_all_entity_trees_of_cls
 from recidiviz.persistence.entity.entity_utils import is_placeholder
 from recidiviz.persistence.entity_matching.entity_matching_types import \
     EntityTree
@@ -357,6 +357,23 @@ class TestStateMatchingUtils(TestCase):
         with pytest.raises(EntityMatchingError):
             get_root_entity_cls([placeholder_person])
 
+    def test_getAllEntityTreesOfCls(self):
+        sentence_group = schema.StateSentenceGroup(
+            sentence_group_id=_ID)
+        sentence_group_2 = schema.StateSentenceGroup(
+            sentence_group_id=_ID_2)
+        person = schema.StatePerson(
+            person_id=_ID,
+            sentence_groups=[sentence_group, sentence_group_2])
+
+        self.assertEqual(
+            [EntityTree(entity=sentence_group, ancestor_chain=[person]),
+             EntityTree(entity=sentence_group_2, ancestor_chain=[person])],
+            get_all_entity_trees_of_cls([person], schema.StateSentenceGroup))
+        self.assertEqual(
+            [EntityTree(entity=person, ancestor_chain=[])],
+            get_all_entity_trees_of_cls([person], schema.StatePerson))
+
     def test_getTotalEntitiesOfCls(self):
         supervision_sentence = schema.StateSupervisionSentence()
         supervision_sentence_2 = schema.StateSupervisionSentence()
@@ -406,7 +423,8 @@ class TestStateMatchingUtils(TestCase):
             [_EXTERNAL_ID, _EXTERNAL_ID_2],
             get_external_ids_of_cls([person], schema.StateSentenceGroup))
         self.assertCountEqual(
-            [_EXTERNAL_ID], get_external_ids_of_cls([person], schema.StatePerson))
+            [_EXTERNAL_ID],
+            get_external_ids_of_cls([person], schema.StatePerson))
 
     def test_getExternalIdsOfCls_emptyExternalId_raises(self):
         sentence_group = schema.StateSentenceGroup(
@@ -492,10 +510,10 @@ class TestStateMatchingUtils(TestCase):
         expected_placeholder_ss = attr.evolve(
             placeholder_ss, supervision_periods=[expected_placeholder_sp])
 
-        expected_ip_1 = attr.evolve(ip_1,
-                                    source_supervision_violation_response=expected_svr_1)
-        expected_ip_2 = attr.evolve(ip_2,
-                                    source_supervision_violation_response=expected_svr_2)
+        expected_ip_1 = attr.evolve(
+            ip_1, source_supervision_violation_response=expected_svr_1)
+        expected_ip_2 = attr.evolve(
+            ip_2, source_supervision_violation_response=expected_svr_2)
 
         expected_placeholder_is = attr.evolve(
             placeholder_is,
