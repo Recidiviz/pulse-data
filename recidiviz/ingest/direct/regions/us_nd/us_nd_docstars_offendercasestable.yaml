@@ -7,6 +7,7 @@ child_key_mappings:
   PAROLE_FR: state_supervision_period.start_date
   TERM_DATE: state_supervision_period.termination_date
   TA_TYPE: state_supervision_period.termination_reason
+  TB_CTY: state_supervision_period.county_code
   JUDGE: state_agent.full_name
   REV_NOFF_YN: state_supervision_violation.violation_type
   REV_DATE: state_supervision_violation_response.response_date
@@ -22,8 +23,7 @@ keys_to_ignore:
   - SENT_TYPE             # Redundant code that maps 1:1 with DESCRIPTION
   - SENT_YY               # Handled manually within us_nd_scraper
   - SENT_MM               # Handled manually within us_nd_scraper
-  - TB_CTY                # TODO(1866) Do we want to track qualitative attrs?
-  - TD_PUB_AST
+  - TD_PUB_AST            # TODO(1866) Do we want to track qualitative attrs?
   - TE_EMPLOY
   - TF_RESPNSE
   - TG_COMMRES

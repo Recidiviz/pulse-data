@@ -15,7 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Scraper tests for us_nd."""
+"""Unit and integration tests for North Dakota direct ingest."""
+
 import copy
 import datetime
 import json
@@ -642,7 +643,7 @@ class TestUsNdController(unittest.TestCase):
                                          status='A',
                                          date_convicted='6/19/89  12:00:00 AM',
                                          next_court_date='6/19/89  12:00:00 AM',
-                                         county_code='CA',
+                                         county_code='US_ND_CASS',
                                          judge=StateAgent(
                                              agent_type='JUDGE',
                                              full_name='Sheindlin, Judy',
@@ -653,7 +654,7 @@ class TestUsNdController(unittest.TestCase):
                                          status='A',
                                          date_convicted='6/19/89  12:00:00 AM',
                                          next_court_date='6/19/89  12:00:00 AM',
-                                         county_code='CA',
+                                         county_code='US_ND_CASS',
                                          judge=StateAgent(
                                              agent_type='JUDGE',
                                              full_name='Sheindlin, Judy',
@@ -664,7 +665,7 @@ class TestUsNdController(unittest.TestCase):
                                          status='A',
                                          date_convicted='4/29/91  12:00:00 AM',
                                          next_court_date='4/29/91  12:00:00 AM',
-                                         county_code='BR',
+                                         county_code='US_ND_BURLEIGH',
                                          judge=StateAgent(
                                              agent_type='JUDGE',
                                              full_name='BIRDMAN, HARVEY',
@@ -675,7 +676,7 @@ class TestUsNdController(unittest.TestCase):
             status='A',
             date_convicted='8/10/10  12:00:00 AM',
             next_court_date='8/10/10  12:00:00 AM',
-            county_code='BR',
+            county_code='US_ND_BURLEIGH',
             judge=StateAgent(
                 agent_type='JUDGE',
                 full_name='Hollywood, Paul',
@@ -1145,7 +1146,8 @@ class TestUsNdController(unittest.TestCase):
                                             StateSupervisionPeriod(
                                                 start_date='7/17/2014',
                                                 termination_date='10/6/2014',
-                                                termination_reason='7')
+                                                termination_reason='7',
+                                                county_code='US_ND_CASS')
                                         ],
                                         state_charges=[
                                             StateCharge(
@@ -1154,7 +1156,6 @@ class TestUsNdController(unittest.TestCase):
                                                     judge=StateAgent(
                                                         agent_type='JUDGE',
                                                         full_name='The Judge',
-
                                                     ),
                                                 )
                                             )
@@ -1172,7 +1173,8 @@ class TestUsNdController(unittest.TestCase):
                                                 termination_reason='9',
                                                 state_supervision_violations=[
                                                     violation_for_17111
-                                                ]
+                                                ],
+                                                county_code='INVALID'
                                             )
                                         ],
                                         state_charges=[
@@ -1211,7 +1213,8 @@ class TestUsNdController(unittest.TestCase):
                                                 termination_reason='9',
                                                 state_supervision_violations=[
                                                     violation_for_140408
-                                                ]
+                                                ],
+                                                county_code='US_ND_GRIGGS'
                                             )
                                         ],
                                         state_charges=[
@@ -1238,7 +1241,8 @@ class TestUsNdController(unittest.TestCase):
                                                 termination_reason='9',
                                                 state_supervision_violations=[
                                                     violation_for_147777
-                                                ]
+                                                ],
+                                                county_code='US_ND_GRIGGS'
                                             )
                                         ],
                                         state_charges=[
@@ -1279,14 +1283,14 @@ class TestUsNdController(unittest.TestCase):
                                     state_charges=[
                                         StateCharge(
                                             state_charge_id='122553',
-                                            county_code='008',
+                                            county_code='US_ND_BURLEIGH',
                                             ncic_code='3522',
                                             classification_type='F',
                                             counts='1'
                                         ),
                                         StateCharge(
                                             state_charge_id='122554',
-                                            county_code='008',
+                                            county_code='US_ND_BURLEIGH',
                                             ncic_code='3550',
                                             classification_type='F',
                                             counts='1'
@@ -1297,7 +1301,7 @@ class TestUsNdController(unittest.TestCase):
                                     state_charges=[
                                         StateCharge(
                                             state_charge_id='122552',
-                                            county_code='008',
+                                            county_code='US_ND_BURLEIGH',
                                             ncic_code='3562',
                                             classification_type='F',
                                             counts='1'
@@ -1321,7 +1325,7 @@ class TestUsNdController(unittest.TestCase):
                                         StateCharge(
                                             state_charge_id='149349',
                                             offense_date='7/30/2016',
-                                            county_code='020',
+                                            county_code='US_ND_GRIGGS',
                                             ncic_code='2204',
                                             classification_type='M',
                                             classification_subtype='A',
@@ -2092,7 +2096,7 @@ class TestUsNdController(unittest.TestCase):
             year=1989, month=6, day=19)
         court_case_5190.next_court_date = datetime.date(
             year=1989, month=6, day=19)
-        court_case_5190.county_code = 'CA'
+        court_case_5190.county_code = 'US_ND_CASS'
         court_case_5190.status_raw_text = 'A'
         court_case_5190.judge = agent_judy
 
@@ -2100,7 +2104,7 @@ class TestUsNdController(unittest.TestCase):
             year=1989, month=6, day=19)
         court_case_5192.next_court_date = datetime.date(
             year=1989, month=6, day=19)
-        court_case_5192.county_code = 'CA'
+        court_case_5192.county_code = 'US_ND_CASS'
         court_case_5192.status_raw_text = 'A'
         court_case_5192.judge = agent_judy_dup
 
@@ -2108,7 +2112,7 @@ class TestUsNdController(unittest.TestCase):
             year=1991, month=4, day=29)
         court_case_5193.next_court_date = datetime.date(
             year=1991, month=4, day=29)
-        court_case_5193.county_code = 'BR'
+        court_case_5193.county_code = 'US_ND_BURLEIGH'
         court_case_5193.status_raw_text = 'A'
         court_case_5193.judge = agent_harvey
 
@@ -2116,7 +2120,7 @@ class TestUsNdController(unittest.TestCase):
             year=2010, month=8, day=10)
         court_case_154576.next_court_date = datetime.date(
             year=2010, month=8, day=10)
-        court_case_154576.county_code = 'BR'
+        court_case_154576.county_code = 'US_ND_BURLEIGH'
         court_case_154576.status_raw_text = 'A'
         court_case_154576.judge = agent_paul
 
@@ -2633,6 +2637,7 @@ class TestUsNdController(unittest.TestCase):
                 termination_reason_raw_text='7',
                 status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
                 state_code=_STATE_CODE,
+                county_code='US_ND_CASS',
                 supervision_sentences=[supervision_sentence_117110],
                 person=supervision_sentence_117110.person)
         charge_117110 = entities.StateCharge.new_with_defaults(
@@ -2689,6 +2694,7 @@ class TestUsNdController(unittest.TestCase):
                 termination_reason_raw_text='9',
                 status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
                 state_code=_STATE_CODE,
+                county_code='INVALID',
                 supervision_sentences=[supervision_sentence_117111],
                 person=supervision_sentence_117111.person)
         supervision_violation_117111 = \
@@ -2754,6 +2760,7 @@ class TestUsNdController(unittest.TestCase):
                 termination_reason_raw_text='9',
                 status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
                 state_code=_STATE_CODE,
+                county_code='US_ND_GRIGGS',
                 supervision_sentences=[supervision_sentence_140408],
                 person=supervision_sentence_140408.person)
         supervision_violation_140408 = \
@@ -2819,6 +2826,7 @@ class TestUsNdController(unittest.TestCase):
                 termination_reason_raw_text='9',
                 status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
                 state_code=_STATE_CODE,
+                county_code='US_ND_GRIGGS',
                 supervision_sentences=[supervision_sentence_147777],
                 person=supervision_sentence_147777.person)
         supervision_violation_147777 = \
@@ -2906,7 +2914,7 @@ class TestUsNdController(unittest.TestCase):
         # Arrange
         charge_122553 = entities.StateCharge.new_with_defaults(
             external_id='122553',
-            county_code='008',
+            county_code='US_ND_BURLEIGH',
             ncic_code='3522',
             description='OPIUM OR DERIV-POSSESS',
             classification_type=StateChargeClassificationType.FELONY,
@@ -2918,7 +2926,7 @@ class TestUsNdController(unittest.TestCase):
             person=supervision_sentence_117111.person)
         charge_122554 = entities.StateCharge.new_with_defaults(
             external_id='122554',
-            county_code='008',
+            county_code='US_ND_BURLEIGH',
             ncic_code='3550',
             description='NARCOTIC EQUIP-POSSESS',
             classification_type=StateChargeClassificationType.FELONY,
@@ -2933,7 +2941,7 @@ class TestUsNdController(unittest.TestCase):
 
         charge_122552 = entities.StateCharge.new_with_defaults(
             external_id='122552',
-            county_code='008',
+            county_code='US_ND_BURLEIGH',
             ncic_code='3562',
             description='MARIJUANA-POSSESS',
             classification_type=StateChargeClassificationType.FELONY,
@@ -2947,7 +2955,7 @@ class TestUsNdController(unittest.TestCase):
 
         charge_149349 = entities.StateCharge.new_with_defaults(
             external_id='149349',
-            county_code='020',
+            county_code='US_ND_GRIGGS',
             ncic_code='2204',
             description='CRIMINAL TRESPASS',
             offense_date=datetime.date(year=2016, month=7, day=30),
