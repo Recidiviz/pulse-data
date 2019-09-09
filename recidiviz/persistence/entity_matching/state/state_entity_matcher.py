@@ -42,7 +42,8 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import \
     merge_flat_fields, is_match, move_incidents_onto_periods, \
     get_root_entity_cls, get_total_entities_of_cls, \
     associate_revocation_svrs_with_ips, base_entity_match, \
-    nd_get_incomplete_incarceration_period_match, _read_persons
+    nd_get_incomplete_incarceration_period_match, _read_persons, \
+    get_all_entity_trees_of_cls, get_external_ids_from_entity
 from recidiviz.persistence.entity.entity_utils import is_placeholder, \
     get_set_entity_field_names, get_all_core_entity_field_names, \
     get_all_db_objs_from_tree, get_all_db_objs_from_trees
@@ -85,8 +86,28 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
             Dict[int, Set[DatabaseEntity]] = \
             defaultdict(set)
 
+        # The first class found in our ingested object graph for which we have
+        # information (i.e. non-placeholder). We make the assumption that all
+        # ingested object graphs have the same root entity class and that this
+        # root entity class can be matched via external_id.
+        self.root_entity_cls = None
+
+        # Cache of DB objects of type self.root_entity_cls (above) keyed by
+        # their external ids.
+        self.root_entity_cache: Dict[str, List[EntityTree]] = defaultdict(list)
+
         # Set this to True if you want to run with consistency checking
         self.do_ingest_obj_consistency_check = False
+
+    def set_root_entity_cache(self, db_people: List[schema.StatePerson]):
+        if not db_people:
+            return
+
+        trees = get_all_entity_trees_of_cls(db_people, self.root_entity_cls)
+        for tree in trees:
+            external_ids = get_external_ids_from_entity(tree.entity)
+            for external_id in external_ids:
+                self.root_entity_cache[external_id].append(tree)
 
     def set_ingest_objs_for_people(
             self, ingested_db_people: List[schema.StatePerson]):
@@ -177,6 +198,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
                 convert_entity_people_to_schema_people(
                     ingested_people, populate_back_edges=False)
             self.set_ingest_objs_for_people(ingested_db_people)
+            self.root_entity_cls = get_root_entity_cls(ingested_db_people)
 
             logging.info(
                 "[Entity matching] Starting reading and converting people "
@@ -186,6 +208,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
                 session=session,
                 region=region,
                 ingested_people=ingested_db_people)
+            self.set_root_entity_cache(db_persons)
 
             logging.info("[Entity matching] Completed DB read at time [%s].",
                          datetime.datetime.now().isoformat())
@@ -779,6 +802,13 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         else:
             matched_entities_by_db_ids[matched_db_id] = ingested_entity
 
+    def get_cached_matches(self, entity: DatabaseEntity) -> List[EntityTree]:
+        external_ids = get_external_ids_from_entity(entity)
+        cached_matches = []
+        for external_id in external_ids:
+            cached_matches.extend(self.root_entity_cache[external_id])
+        return cached_matches
+
     def _get_match(
             self,
             ingested_entity_tree: EntityTree,
@@ -788,8 +818,14 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         match among the provided |db_entity_trees|. If a match is found, it is
         returned.
         """
-        exact_match = entity_matching_utils.get_only_match(
-            ingested_entity_tree, db_entity_trees, is_match)
+        if isinstance(ingested_entity_tree.entity, self.root_entity_cls):
+            cached_matches = \
+                self.get_cached_matches(ingested_entity_tree.entity)
+            exact_match = entity_matching_utils.get_only_match(
+                ingested_entity_tree, cached_matches, is_match)
+        else:
+            exact_match = entity_matching_utils.get_only_match(
+                ingested_entity_tree, db_entity_trees, is_match)
 
         if not exact_match:
             if isinstance(ingested_entity_tree.entity,
