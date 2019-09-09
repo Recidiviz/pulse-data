@@ -5,7 +5,7 @@ ancestor_keys:
   OFFENDER_BOOK_ID: state_sentence_group.state_sentence_group_id
 
 enforced_ancestor_types:
-    state_sentence: state_incarceration_sentence
+  state_sentence: state_incarceration_sentence
 
 # There is a primary key override in us_nd_controller for this file
 

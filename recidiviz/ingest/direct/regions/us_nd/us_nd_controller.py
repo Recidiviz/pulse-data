@@ -19,7 +19,7 @@
 import json
 import os
 import re
-from typing import List, Optional, Dict, Callable, cast, Pattern, Tuple
+from typing import List, Optional, Dict, Callable, cast, Pattern, Tuple, Type
 
 from recidiviz.common import ncic
 from recidiviz.common.constants.charge import ChargeStatus
@@ -58,6 +58,8 @@ from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.common.str_field_utils import parse_days_from_duration_pieces
 from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller \
     import CsvGcsfsDirectIngestController
+from recidiviz.ingest.direct.regions.us_nd.county_code_reference import \
+    normalized_county_code
 from recidiviz.ingest.extractor.csv_data_extractor import \
     IngestFieldCoordinates
 from recidiviz.ingest.models.ingest_info import IngestInfo, IngestObject, \
@@ -65,7 +67,7 @@ from recidiviz.ingest.models.ingest_info import IngestInfo, IngestObject, \
     StateIncarcerationPeriod, StatePersonExternalId, StateAssessment, \
     StateCharge, StateSupervisionViolation, StateSupervisionViolationResponse, \
     StateAgent, StateIncarcerationIncidentOutcome, StateIncarcerationIncident, \
-    StateAlias, StateSupervisionSentence
+    StateAlias, StateSupervisionSentence, StateCourtCase, StateSupervisionPeriod
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 
 _SUPERVISION_SENTENCE_ID_SUFFIX = '_SUPERVISION'
@@ -111,7 +113,8 @@ class UsNdController(CsvGcsfsDirectIngestController):
                 self._set_elite_charge_status,
                 self._rationalize_controlling_charge
             ],
-            'elite_orderstable': [self._set_judge_agent_type],
+            'elite_orderstable': [self._set_judge_agent_type,
+                                  self._normalize_county_code_elite_orders],
             'elite_externalmovements': [self._process_external_movement],
             'elite_offense_in_custody_and_pos_report_data': [
                 self._rationalize_incident_type,
@@ -127,9 +130,12 @@ class UsNdController(CsvGcsfsDirectIngestController):
             'docstars_offendercasestable': [
                 self._concatenate_docstars_length_periods,
                 self._record_revocation,
-                self._set_judge_agent_type],
+                self._set_judge_agent_type,
+                self._normalize_county_code_docstars_offender_cases
+            ],
             'docstars_offensestable': [
-                self._parse_docstars_charge_classification
+                self._parse_docstars_charge_classification,
+                self._normalize_county_code_docstars_offenses
             ],
             'docstars_lsichronology': [self._process_lsir_assessments],
         }
@@ -726,6 +732,29 @@ class UsNdController(CsvGcsfsDirectIngestController):
         _parse_charge_classification(classification_str,
                                      extracted_objects)
 
+    @staticmethod
+    def _normalize_county_code_elite_orders(
+            row: Dict[str, str],
+            extracted_objects: List[IngestObject],
+            _cache: IngestObjectCache):
+        _normalize_county_code(row, 'COUNTY_CODE', StateCourtCase,
+                               extracted_objects)
+
+    @staticmethod
+    def _normalize_county_code_docstars_offender_cases(
+            row: Dict[str, str],
+            extracted_objects: List[IngestObject],
+            _cache: IngestObjectCache):
+        _normalize_county_code(row, 'TB_CTY', StateSupervisionPeriod,
+                               extracted_objects)
+
+    @staticmethod
+    def _normalize_county_code_docstars_offenses(
+            row: Dict[str, str],
+            extracted_objects: List[IngestObject],
+            _cache: IngestObjectCache):
+        _normalize_county_code(row, 'COUNTY', StateCharge, extracted_objects)
+
     def get_enum_overrides(self) -> EnumOverrides:
         """Provides North Dakota-specific overrides for enum mappings.
 
@@ -1111,3 +1140,17 @@ def _get_lsir_question_scores(row: Dict[str, str], questions: List[str]) \
         question_scores[question_label] = question_score
 
     return question_scores
+
+
+def _normalize_county_code(
+        row: Dict[str, str],
+        column_name: str,
+        ingest_type: Type[IngestObject],
+        extracted_objects: List[IngestObject]):
+    county_code = row[column_name]
+    normalized_code = normalized_county_code(county_code)
+
+    for extracted_object in extracted_objects:
+        if isinstance(extracted_object, ingest_type):
+            if normalized_code:
+                extracted_object.__setattr__('county_code', normalized_code)
