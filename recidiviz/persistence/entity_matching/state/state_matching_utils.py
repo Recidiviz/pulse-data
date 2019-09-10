@@ -279,8 +279,7 @@ def _merge_incarceration_periods_helper(
 
     # Within any IncarcerationSentence, IncarcerationPeriod external_ids are all
     # equivalent, except for their suffixes. Each suffix is based on the
-    # ND-provided movement sequence number. Therefore, sorting by external_ids
-    # is equivalent to sorting by this movement sequence number.
+    # ND-provided movement sequence number. We sort directly by that number.
     sorted_periods = sorted(non_placeholder_periods, key=_get_sequence_no)
     merged_periods = []
     last_period = None
