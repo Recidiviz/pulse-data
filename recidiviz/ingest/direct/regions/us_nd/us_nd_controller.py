@@ -861,7 +861,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
             StateSupervisionPeriodTerminationReason.ABSCONSION: ['13'],
             StateSupervisionPeriodTerminationReason.DEATH: ['11'],
             StateSupervisionPeriodTerminationReason.DISCHARGE:
-                ['1', '2', '3', '5', '8', '12', '15', '16', '17', '18'],
+                ['1', '2', '5', '8', '12', '15', '16', '17', '18'],
             StateSupervisionPeriodTerminationReason.EXPIRATION:
                 ['4', '7', '19', '20'],
             StateSupervisionPeriodTerminationReason.EXTERNAL_UNKNOWN: ['14'],
