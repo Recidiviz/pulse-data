@@ -102,3 +102,19 @@ def get_job_id(pipeline_options: Dict[str, str]) -> str:
         pipeline_job_id = job_timestamp + pipeline_job_id
 
     return pipeline_job_id
+
+
+def get_job_with_id(project, job_id, location) -> Dict[str, str]:
+    """Returns information about the Dataflow job with the given `job_id`."""
+    service_name = 'dataflow'
+    dataflow_api_version = 'v1b3'
+    credentials = GoogleCredentials.get_application_default()
+
+    dataflow = build(serviceName=service_name,
+                     version=dataflow_api_version,
+                     credentials=credentials)
+
+    return dataflow.projects().locations().jobs().get(
+        projectId=project,
+        jobId=job_id,
+        location=location).execute()
