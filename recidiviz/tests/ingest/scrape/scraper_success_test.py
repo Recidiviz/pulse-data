@@ -28,6 +28,7 @@ from recidiviz.persistence.database.schema.county.schema import ScraperSuccess
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.utils import regions
 from recidiviz.tests.utils import fakes
+from recidiviz.utils.regions import Region
 
 _REGION_CODE = 'us_al_jackson'
 _TODAY = datetime.date(2000, 1, 1)
@@ -49,7 +50,10 @@ class TestScraperStop(TestCase):
     @patch('recidiviz.ingest.models.model_utils.datetime.date', MockDate)
     @patch('recidiviz.ingest.models.single_count.datetime.date', MockDate)
     @patch('google.cloud.datastore.Client')
-    def test_scraper_success(self, mock_client):
+    @patch("recidiviz.utils.regions.get_region")
+    def test_scraper_success(self, mock_get_region, mock_client):
+        mock_get_region.return_value = _mock_region()
+
         session = sessions.ScrapeSession.new(
             key=None, region=_REGION_CODE,
             scrape_type=constants.ScrapeType.BACKGROUND,
@@ -64,3 +68,18 @@ class TestScraperStop(TestCase):
         region = regions.get_region(_REGION_CODE)
         self.assertEqual(result.jid, region.jurisdiction_id)
         self.assertEqual(result.date, _TODAY)
+
+
+def _mock_region():
+    return Region(
+        region_code=_REGION_CODE,
+        shared_queue='queue',
+        agency_name='the agency',
+        agency_type='benevolent',
+        base_url='localhost:3000',
+        names_file='names.txt',
+        timezone='America/Chicago',
+        environment='production',
+        jurisdiction_id='01071001',
+        is_stoppable=False,
+    )
