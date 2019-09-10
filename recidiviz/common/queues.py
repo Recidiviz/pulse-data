@@ -21,7 +21,7 @@ import datetime
 import json
 import logging
 import uuid
-from typing import List
+from typing import List, Dict
 
 from google.api_core import datetime_helpers
 from google.cloud import exceptions, tasks
@@ -204,13 +204,62 @@ JOB_MONITOR_QUEUE = 'job-monitor'
 
 
 def create_bq_monitor_task(topic: str, message: str, url: str):
+    """Create a task to monitor the progress of an export to BQ.
+
+    Args:
+        topic: Pub/Sub topic where a message will be published when the BQ
+            export tasks are complete.
+        message: The message that will be sent to the topic.
+        url: App Engine worker URL.
+    """
     body = {'topic': topic, 'message': message}
     task_topic = topic.replace('.', '-')
     task_id = '{}-{}-{}'.format(
         task_topic, str(datetime.date.today()), uuid.uuid4())
-    task_name = format_task_path(JOB_MONITOR_QUEUE, task_id)
+    # 1-minute delay
+    schedule_delay_seconds = 60
 
-    schedule_time = datetime.datetime.now() + datetime.timedelta(seconds=60)
+    create_task(task_id, JOB_MONITOR_QUEUE, schedule_delay_seconds, url, body)
+
+
+def create_dataflow_monitor_task(project_id: str, job_id: str, location: str,
+                                 topic: str, url: str):
+    """Create a task to monitor the progress of a Dataflow job.
+
+    Args:
+        project_id: The project of the running Dataflow job
+        job_id: The unique id of the Dataflow job
+        location: The region where the job is being run
+        topic: Pub/Sub topic where a message will be published if the job
+            completes successfully
+        url: App Engine worker URL.
+    """
+    body = {'project_id': project_id, 'job_id': job_id, 'location': location,
+            'topic': topic}
+    task_id = '{}-{}-{}'.format(
+        job_id, str(datetime.date.today()), uuid.uuid4())
+    # 5-minute delay
+    schedule_delay_seconds = 300
+
+    create_task(task_id, JOB_MONITOR_QUEUE, schedule_delay_seconds, url, body)
+
+
+def create_task(task_id: str, queue_name: str, schedule_delay_seconds: int,
+                url: str, body: Dict[str, str]):
+    """Creates a task with the given details.
+
+    Args:
+        task_id: Id of the task to include in the task name
+        queue_name: The queue on which to schedule the task
+        schedule_delay_seconds: The number of seconds by which to delay the
+            scheduling of the given task.
+        url: The relative uri to hit.
+        body: Dictionary of values that will be converted to JSON and included
+            in the request.
+    """
+    task_name = format_task_path(queue_name, task_id)
+    schedule_time = datetime.datetime.now() + datetime.timedelta(
+        seconds=schedule_delay_seconds)
     schedule_time_sec = datetime_helpers.to_milliseconds(
         schedule_time) // 1000
     schedule_timestamp = timestamp_pb2.Timestamp(seconds=schedule_time_sec)
@@ -226,6 +275,6 @@ def create_bq_monitor_task(topic: str, message: str, url: str):
     retry_grpc(
         NUM_GRPC_RETRIES,
         client().create_task,
-        format_queue_path(JOB_MONITOR_QUEUE),
+        format_queue_path(queue_name),
         task
     )

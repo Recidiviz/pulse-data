@@ -22,6 +22,7 @@ import os
 from cloud_function_utils import make_iap_request, \
     get_state_region_code_from_direct_ingest_bucket, \
     get_dashboard_data_export_storage_bucket, \
+    get_dataflow_template_bucket, \
     trigger_dataflow_job_from_template
 
 _STATE_AGGREGATE_CLOUD_FUNCTION_URL = (
@@ -34,7 +35,10 @@ _DASHBOARD_EXPORT_CLOUD_FUNCTION_URL = (
     'http://{}.appspot.com/cloud_function/dashboard_export?bucket={}'
     '&data_type={}'
 )
-
+_DATAFLOW_MONITOR_URL = (
+    'http://{}.appspot.com/cloud_function/dataflow_monitor?job_id={}'
+    '&location={}&topic={}'
+)
 _CLIENT_ID = {
     'recidiviz-staging': ('984160736970-flbivauv2l7sccjsppe34p7436l6890m.apps.'
                           'googleusercontent.com'),
@@ -164,6 +168,9 @@ def run_calculation_pipelines(_event, _context):
     """This function, which is triggered by a Pub/Sub event, kicks off a
     Dataflow job with the given job_name where the template for the job lives at
     gs://{bucket}/templates/{template_name} for the given project.
+
+    On successful triggering of the job, this function makes a call to the app
+    to begin monitoring the progress of the job.
     """
     project_id = os.environ.get('GCP_PROJECT')
     if not project_id:
@@ -171,25 +178,34 @@ def run_calculation_pipelines(_event, _context):
                       ' pipeline, returning.')
         return
 
-    bucket = os.environ.get('BUCKET')
-
-    if not bucket:
-        logging.error('No bucket set, returning.')
-        return
+    bucket = get_dataflow_template_bucket(project_id)
 
     template_name = os.environ.get('TEMPLATE_NAME')
-
     if not template_name:
         logging.error('No template_name set, returning.')
         return
 
     job_name = os.environ.get('JOB_NAME')
-
     if not job_name:
         logging.error('No job_name set, returning.')
+        return
+
+    topic = os.environ.get('TOPIC')
+    if not topic:
+        logging.error('No topic set, returning.')
         return
 
     response = trigger_dataflow_job_from_template(project_id, bucket,
                                                   template_name, job_name)
 
-    logging.info("The response is %s", response)
+    logging.info("The response to triggering the Dataflow job is: %s", response)
+
+    job_id = response['id']
+    location = response['location']
+    topic = topic.replace('.', '-')
+
+    # Monitor the successfully triggered Dataflow job
+    url = _DATAFLOW_MONITOR_URL.format(project_id, job_id, location, topic)
+
+    monitor_response = make_iap_request(url, _CLIENT_ID[project_id])
+    logging.info("The monitoring Dataflow response is %s", monitor_response)

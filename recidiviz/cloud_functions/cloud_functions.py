@@ -25,6 +25,7 @@ from flask import Blueprint, request, jsonify
 import gcsfs
 
 from recidiviz.calculator.bq.dashboard import dashboard_export_manager
+from recidiviz.calculator.utils import dataflow_monitor_manager
 from recidiviz.cloud_functions.cloud_function_utils import GCSFS_NO_CACHING
 
 from recidiviz.ingest.aggregate.regions.ca import ca_aggregate_ingest
@@ -157,5 +158,29 @@ def dashboard_export():
 
     dashboard_export_manager.export_dashboard_data_to_cloud_storage(bucket,
                                                                     data_type)
+
+    return '', HTTPStatus.OK
+
+
+@cloud_functions_blueprint.route('/dataflow_monitor')
+@authenticate_request
+def dataflow_monitor():
+    """Calls the dataflow monitor manager to begin monitoring a Dataflow job.
+
+    Endpoint path parameters:
+        job_id: The unique id of the job to monitor
+        location: The region where the job is being run
+        topic: The Pub/Sub topic to publish a message to if the job is
+            successful
+    """
+    job_id = get_str_param_value('job_id', request.args)
+    location = get_str_param_value('location', request.args)
+    topic = get_str_param_value('topic', request.args)
+
+    logging.info("Attempting to monitor the job with id: %s. Will "
+                 "publish to %s on success.", job_id, topic)
+
+    dataflow_monitor_manager.create_dataflow_monitor_task(job_id, location,
+                                                          topic)
 
     return '', HTTPStatus.OK

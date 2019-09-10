@@ -24,6 +24,8 @@ from opencensus.trace.exporters import file_exporter, stackdriver_exporter
 
 from recidiviz.backup.backup_manager import backup_manager_blueprint
 from recidiviz.calculator.bq.export_manager import export_manager_blueprint
+from recidiviz.calculator.utils.dataflow_monitor_manager import \
+    dataflow_monitor_blueprint
 from recidiviz.cloud_functions.cloud_functions import cloud_functions_blueprint
 from recidiviz.ingest.aggregate.scrape_aggregate_reports import \
     scrape_aggregate_reports_blueprint
@@ -56,6 +58,8 @@ app.register_blueprint(
 app.register_blueprint(store_single_count_blueprint, url_prefix='/single_count')
 app.register_blueprint(export_manager_blueprint, url_prefix='/export_manager')
 app.register_blueprint(backup_manager_blueprint, url_prefix='/backup_manager')
+app.register_blueprint(dataflow_monitor_blueprint,
+                       url_prefix='/dataflow_monitor')
 
 if environment.in_gae():
     SQLAlchemyEngineManager.init_engines_for_server_postgres_instances()
