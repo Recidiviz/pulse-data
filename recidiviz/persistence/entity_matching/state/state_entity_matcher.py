@@ -42,8 +42,8 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import \
     merge_flat_fields, is_match, move_incidents_onto_periods, \
     get_root_entity_cls, get_total_entities_of_cls, \
     associate_revocation_svrs_with_ips, base_entity_match, \
-    nd_get_incomplete_incarceration_period_match, _read_persons, \
-    get_all_entity_trees_of_cls, get_external_ids_from_entity
+    _read_persons, get_all_entity_trees_of_cls, get_external_ids_from_entity, \
+    nd_is_incarceration_period_match
 from recidiviz.persistence.entity.entity_utils import is_placeholder, \
     get_set_entity_field_names, get_all_core_entity_field_names, \
     get_all_db_objs_from_tree, get_all_db_objs_from_trees
@@ -830,8 +830,9 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         if not exact_match:
             if isinstance(ingested_entity_tree.entity,
                           schema.StateIncarcerationPeriod):
-                return nd_get_incomplete_incarceration_period_match(
-                    ingested_entity_tree, db_entity_trees)
+                return entity_matching_utils.get_only_match(
+                    ingested_entity_tree, db_entity_trees,
+                    nd_is_incarceration_period_match)
             if isinstance(ingested_entity_tree.entity,
                           (schema.StateAgent,
                            schema.StateIncarcerationSentence,
