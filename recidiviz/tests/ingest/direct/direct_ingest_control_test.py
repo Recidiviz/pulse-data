@@ -16,19 +16,13 @@
 # =============================================================================
 
 """Tests for ingest/direct_control.py."""
-import datetime
-import importlib
-import unittest
-
-import attr
 import pytest
 import pytz
 from flask import Flask
 from mock import patch
 
 from recidiviz.ingest.direct import direct_ingest_control
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
-    GcsfsIngestArgs
+from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.errors import DirectIngestError
 from recidiviz.persistence import batch_persistence
 from recidiviz.tests.ingest.direct.direct_ingest_util import \
@@ -132,14 +126,16 @@ class TestDirectIngestControl:
     def test_handle_file_no_start_ingest(
             self, mock_fs_factory_cls, client):
         fake_fs = FakeDirectIngestGCSFileSystem()
-        fake_fs.test_add_path('bucket-us-nd/Elite_Offenders.csv')
+        path = GcsfsFilePath.from_absolute_path(
+            'bucket-us-nd/Elite_Offenders.csv')
+        fake_fs.test_add_path(path)
         mock_fs_factory_cls.build.return_value = fake_fs
 
         region = 'us_nd'
         request_args = {
             'region': region,
-            'bucket': 'bucket-us-nd',
-            'relative_file_path': 'Elite_Offenders.csv',
+            'bucket': path.bucket_name,
+            'relative_file_path': path.blob_name,
             'start_ingest': 'false',
         }
         headers = {'X-Appengine-Cron': "test-cron"}
@@ -162,13 +158,15 @@ class TestDirectIngestControl:
                                                environment='production')
 
         fake_fs = FakeDirectIngestGCSFileSystem()
-        fake_fs.test_add_path('bucket-us-nd/elite_offenders.csv')
+        path = GcsfsFilePath.from_absolute_path(
+            'bucket-us-nd/elite_offenders.csv')
+        fake_fs.test_add_path(path)
         mock_fs_factory_cls.build.return_value = fake_fs
 
         request_args = {
             'region': region_code,
-            'bucket': 'bucket-us-nd',
-            'relative_file_path': 'elite_offenders.csv',
+            'bucket': path.bucket_name,
+            'relative_file_path': path.blob_name,
             'start_ingest': 'false',
         }
         headers = {'X-Appengine-Cron': "test-cron"}
@@ -191,13 +189,15 @@ class TestDirectIngestControl:
                                                environment='staging')
 
         fake_fs = FakeDirectIngestGCSFileSystem()
-        fake_fs.test_add_path('bucket-us-nd/elite_offenders.csv')
+        path = GcsfsFilePath.from_absolute_path(
+            'bucket-us-nd/elite_offenders.csv')
+        fake_fs.test_add_path(path)
         mock_fs_factory_cls.build.return_value = fake_fs
 
         request_args = {
             'region': region_code,
-            'bucket': 'bucket-us-nd',
-            'relative_file_path': 'elite_offenders.csv',
+            'bucket': path.bucket_name,
+            'relative_file_path': path.blob_name,
             'start_ingest': 'true',
         }
         headers = {'X-Appengine-Cron': "test-cron"}
@@ -211,20 +211,3 @@ class TestDirectIngestControl:
             assert response.status_code == 400
 
         mock_region.assert_called_with('us_nd', is_direct_ingest=True)
-
-class TestQueueArgs(unittest.TestCase):
-    def test_parse_args(self):
-        ingest_args = GcsfsIngestArgs(
-            ingest_time=datetime.datetime.now(),
-            file_path='/foo/bar',
-        )
-
-        ingest_args_class_name = ingest_args.__class__.__name__
-        ingest_args_class_module = ingest_args.__module__
-        ingest_args_dict = attr.asdict(ingest_args)
-
-        module = importlib.import_module(ingest_args_class_module)
-        ingest_class = getattr(module, ingest_args_class_name)
-        result_args = ingest_class(**ingest_args_dict)
-
-        self.assertEqual(ingest_args, result_args)

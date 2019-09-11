@@ -22,10 +22,12 @@ import abc
 import datetime
 import logging
 import os
-from typing import List, Optional
+from typing import List, Optional, Union
 
-from gcsfs import GCSFileSystem
-from gcsfs.core import GCSFile
+from google.cloud import storage
+
+from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsPath, \
+    GcsfsFilePath, GcsfsDirectoryPath, GcsfsBucketPath
 
 DIRECT_INGEST_UNPROCESSED_PREFIX = 'unprocessed'
 DIRECT_INGEST_PROCESSED_PREFIX = 'processed'
@@ -44,13 +46,6 @@ def _build_unprocessed_file_name(
     ]
 
     return "_".join(file_name_parts) + f".{extension}"
-
-
-def have_seen_file_path(original_file_path: str) -> bool:
-    _, file_name = os.path.split(original_file_path)
-
-    return file_name.startswith(DIRECT_INGEST_UNPROCESSED_PREFIX) or \
-           file_name.startswith(DIRECT_INGEST_PROCESSED_PREFIX)
 
 
 def to_normalized_unprocessed_file_path(
@@ -77,47 +72,61 @@ class DirectIngestGCSFileSystem:
     """
 
     @abc.abstractmethod
-    def exists(self, path: str) -> bool:
-        """Returns True if the path exists in the fs, False otherwise."""
+    def exists(self, path: Union[GcsfsBucketPath, GcsfsFilePath]) -> bool:
+        """Returns True if the object exists in the fs, False otherwise."""
 
     @abc.abstractmethod
-    def open(self, path: str) -> GCSFile:
-        """Returns a TextIOWrapper for reading the file at the given path."""
+    def download_as_string(self, path: GcsfsFilePath) -> bytes:
+        pass
+
+    def mv(self,
+           src_path: GcsfsFilePath,
+           dst_path: GcsfsPath) -> None:
+        """Moves object from bucket 1 to bucket 2 with optional rename. Note:
+        this is *not* an atomic move - there is a failure case where you'd end
+        up with a copied version of the file at |dst_path| but it has not been
+        deleted from the original location.
+        """
+        self.copy(src_path, dst_path)
+        self.delete(src_path)
 
     @abc.abstractmethod
-    def mv(self, path1: str, path2: str) -> None:
-        """Moves file at path1 to path2."""
+    def copy(self,
+             src_path: GcsfsFilePath,
+             dst_path: GcsfsPath) -> None:
+        """Copies object at |src_path| to |dst_path|."""
+
+    @abc.abstractmethod
+    def delete(self, path: GcsfsFilePath) -> None:
+        """Deletes object at |path|."""
 
     @staticmethod
-    def have_seen_file_path(original_file_path: str) -> bool:
-        _, file_name = os.path.split(original_file_path)
+    def have_seen_file_path(path: GcsfsFilePath) -> bool:
+        return path.file_name.startswith(DIRECT_INGEST_UNPROCESSED_PREFIX) or \
+            path.file_name.startswith(DIRECT_INGEST_PROCESSED_PREFIX)
 
-        return file_name.startswith(DIRECT_INGEST_UNPROCESSED_PREFIX) or \
-            file_name.startswith(DIRECT_INGEST_PROCESSED_PREFIX)
-
-    def normalize_file_path_if_necessary(self,
-                                         bucket: str,
-                                         relative_file_path: str):
-        original_file_path = os.path.join(bucket, relative_file_path)
-        if self.have_seen_file_path(original_file_path):
+    def normalize_file_path_if_necessary(self, path: GcsfsFilePath):
+        if self.have_seen_file_path(path):
             logging.info(
                 "Not normalizing file path for already seen file %s",
-                original_file_path)
+                path.abs_path())
             return
 
         updated_file_path = \
-            to_normalized_unprocessed_file_path(original_file_path)
+            GcsfsFilePath.from_absolute_path(
+                to_normalized_unprocessed_file_path(path.abs_path()))
 
         if self.exists(updated_file_path):
             logging.error("Desired path [%s] already exists, returning",
-                          updated_file_path)
+                          updated_file_path.abs_path())
             return
 
         logging.info("Moving file from %s to %s",
-                     original_file_path, updated_file_path)
-        self.mv(original_file_path, updated_file_path)
+                     path.abs_path(), updated_file_path.abs_path())
+        self.mv(path, updated_file_path)
 
-    def get_unprocessed_file_paths(self, directory_path: str):
+    def get_unprocessed_file_paths(
+            self, directory_path: GcsfsDirectoryPath) -> List[GcsfsFilePath]:
         """Returns all paths in the given directory that have yet to be
         processed.
         """
@@ -125,9 +134,10 @@ class DirectIngestGCSFileSystem:
             directory_path,
             DIRECT_INGEST_UNPROCESSED_PREFIX)
 
-    def get_unprocessed_file_paths_for_day(self,
-                                           directory_path: str,
-                                           date_str: str) -> List[str]:
+    def get_unprocessed_file_paths_for_day(
+            self,
+            directory_path: GcsfsDirectoryPath,
+            date_str: str) -> List[GcsfsFilePath]:
         """Returns all paths in the given directory that were uploaded on the
         day specified in date_str that have yet to be processed.
         """
@@ -135,8 +145,9 @@ class DirectIngestGCSFileSystem:
             directory_path,
             f"{DIRECT_INGEST_UNPROCESSED_PREFIX}_{date_str}")
 
-    def get_processed_file_paths(self,
-                                 directory_path: str) -> List[str]:
+    def get_processed_file_paths(
+            self,
+            directory_path: GcsfsDirectoryPath) -> List[GcsfsFilePath]:
         """Returns all paths in the given directory that have been
         processed.
         """
@@ -144,8 +155,8 @@ class DirectIngestGCSFileSystem:
                                          DIRECT_INGEST_PROCESSED_PREFIX)
 
     def get_processed_file_paths_for_day(self,
-                                         directory_path: str,
-                                         date_str: str) -> List[str]:
+                                         directory_path: GcsfsDirectoryPath,
+                                         date_str: str) -> List[GcsfsFilePath]:
         """Returns all paths in the given directory that were uploaded on the
         day specified in date_str that have been processed.
         """
@@ -153,92 +164,136 @@ class DirectIngestGCSFileSystem:
             directory_path,
             f"{DIRECT_INGEST_PROCESSED_PREFIX}_{date_str}")
 
-    def mv_path_to_processed_path(self, path: str):
+    def mv_path_to_processed_path(self, path: GcsfsFilePath):
         self.mv(path, self._to_processed_file_path(path))
 
-    def mv_paths_from_date_to_storage(self,
-                                      directory_path: str,
-                                      date_str: str,
-                                      storage_directory_path: str):
+    def mv_paths_from_date_to_storage(
+            self,
+            directory_path: GcsfsDirectoryPath,
+            date_str: str,
+            storage_directory_path: GcsfsDirectoryPath):
         file_paths = self.get_processed_file_paths_for_day(
             directory_path, date_str)
 
         for file_path in file_paths:
             stripped_path = self._strip_processed_file_name_prefix(file_path)
-            file_name = os.path.split(stripped_path)[1]
             storage_path = self._storage_path(
-                storage_directory_path, date_str, file_name)
+                storage_directory_path,
+                date_str,
+                stripped_path.file_name)
             self.mv(file_path, storage_path)
 
-    @abc.abstractmethod
     def _ls_with_file_prefix(self,
-                             directory_path: str,
-                             file_prefix: str) -> List[str]:
+                             directory_path: GcsfsDirectoryPath,
+                             file_prefix: str) -> List[GcsfsFilePath]:
         """Returns absolute paths of files in the directory with the given
         |file_prefix|.
         """
+        blob_prefix = os.path.join(*[directory_path.relative_path, file_prefix])
+        return self._ls_with_blob_prefix(directory_path.bucket_name,
+                                         blob_prefix)
+
+    @abc.abstractmethod
+    def _ls_with_blob_prefix(self,
+                             bucket_name: str,
+                             blob_prefix: str) -> List[GcsfsFilePath]:
+        """Returns absolute paths of files in the bucket with the given
+        |relative_path|.
+        """
 
     @staticmethod
-    def _to_processed_file_path(unprocessed_file_path: str):
-        directory, unprocessed_name = os.path.split(unprocessed_file_path)
-        processed_file_name = unprocessed_name.replace(
+    def _to_processed_file_path(
+            unprocessed_file_path: GcsfsFilePath) -> GcsfsFilePath:
+        processed_file_name = unprocessed_file_path.file_name.replace(
             DIRECT_INGEST_UNPROCESSED_PREFIX, DIRECT_INGEST_PROCESSED_PREFIX)
 
-        return os.path.join(directory, processed_file_name)
+        return GcsfsFilePath.with_new_file_name(unprocessed_file_path,
+                                                processed_file_name)
 
     @staticmethod
-    def _strip_processed_file_name_prefix(processed_file_path: str) -> str:
-        directory, processed_name = os.path.split(processed_file_path)
-        processed_file_name = \
-            processed_name.replace(f'{DIRECT_INGEST_PROCESSED_PREFIX}_', '')
-        return os.path.join(directory, processed_file_name)
+    def _strip_processed_file_name_prefix(
+            processed_file_path: GcsfsFilePath) -> GcsfsFilePath:
+        stripped_file_name = \
+            processed_file_path.file_name.replace(
+                f'{DIRECT_INGEST_PROCESSED_PREFIX}_', '')
+        return GcsfsFilePath.with_new_file_name(processed_file_path,
+                                                stripped_file_name)
 
     def _storage_path(self,
-                      storage_directory_path: str,
+                      storage_directory_path: GcsfsDirectoryPath,
                       date_str: str,
-                      file_name: str) -> str:
+                      file_name: str) -> GcsfsFilePath:
         """Returns the storage file path for the input |file_name|,
         |storage_bucket|, and |ingest_date_str|"""
 
-        storage_path = os.path.join(storage_directory_path,
+        storage_path = os.path.join(storage_directory_path.bucket_name,
+                                    storage_directory_path.relative_path,
                                     date_str,
                                     file_name)
+        path = GcsfsFilePath.from_absolute_path(storage_path)
 
         # TODO(1628): We should not fail the whole task on a failure to move
         #  to storage - let's just flexibly rename and fire an error.
-        if self.exists(storage_path):
+        if self.exists(path):
             raise ValueError(f'Storage path [{storage_path}] already exists, '
                              f'not moving file to storage.')
 
-        return storage_path
+        return path
 
 
 class DirectIngestGCSFileSystemImpl(DirectIngestGCSFileSystem):
     """An implementation of the DirectIngestGCSFileSystem built on top of a real
     GCSFileSystem.
     """
+    def __init__(self, client: storage.Client):
+        self.storage_client = client
 
-    def __init__(self, fs: GCSFileSystem):
-        self.fs = fs
+    def exists(self, path: Union[GcsfsBucketPath, GcsfsFilePath]) -> bool:
+        bucket = self.storage_client.get_bucket(path.bucket_name)
+        if isinstance(path, GcsfsBucketPath):
+            return bucket.exists(self.storage_client)
 
-    def exists(self, path: str) -> bool:
-        return self.fs.exists(path)
+        if isinstance(path, GcsfsFilePath):
+            blob = bucket.get_blob(path.blob_name)
+            return blob.exists(self.storage_client)
 
-    def open(self, path: str) -> GCSFile:
-        return self.fs.open(path)
+        raise ValueError(f'Unexpected path type [{type(path)}]')
 
-    def mv(self, path1: str, path2: str) -> None:
-        self.fs.mv(path1, path2)
+    def download_as_string(self, path: GcsfsFilePath) -> bytes:
+        bucket = self.storage_client.get_bucket(path.bucket_name)
+        blob = bucket.get_blob(path.blob_name)
+        return blob.download_as_string()
 
-    def _ls_with_file_prefix(self,
-                             directory_path: str,
-                             file_prefix: str) -> List[str]:
-        # TODO(2293): Understand why ls doesn't work with the provided prefix
-        fps_in_directory = self.fs.ls(path=directory_path)
-        file_prefix = os.path.join(directory_path, file_prefix)
+    def copy(self,
+             src_path: GcsfsFilePath,
+             dst_path: GcsfsPath) -> None:
+        src_bucket = self.storage_client.get_bucket(src_path.bucket_name)
+        src_blob = src_bucket.blob(src_path.blob_name)
+        src_bucket = \
+            self.storage_client.get_bucket(dst_path.bucket_name)
 
-        fps_with_prefix = []
-        for fp in fps_in_directory:
-            if fp.startswith(file_prefix):
-                fps_with_prefix.append(fp)
-        return fps_with_prefix
+        if isinstance(dst_path, GcsfsFilePath):
+            dst_blob_name = dst_path.blob_name
+        elif isinstance(dst_path, GcsfsDirectoryPath):
+            dst_blob_name = \
+                GcsfsFilePath.from_directory_and_file_name(
+                    dst_path, src_path.file_name)
+        else:
+            raise ValueError(f'Unexpected path type [{type(dst_path)}]')
+
+        src_bucket.copy_blob(
+            src_blob, src_bucket, dst_blob_name)
+
+    def delete(self, path: GcsfsFilePath) -> None:
+        if not isinstance(path, GcsfsFilePath):
+            raise ValueError(f'Unexpected path type [{type(path)}]')
+
+        source_bucket = self.storage_client.get_bucket(path.bucket_name)
+        source_blob = source_bucket.blob(path.blob_name)
+        source_blob.delete(self.storage_client)
+
+    def _ls_with_blob_prefix(
+            self, bucket_name: str, blob_prefix: str) -> List[GcsfsFilePath]:
+        return [GcsfsFilePath.from_blob(blob)
+                for blob in self.storage_client.list_blobs(
+                    bucket_name, prefix=blob_prefix)]
