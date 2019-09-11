@@ -24,6 +24,8 @@ from typing import Optional
 
 from flask import Blueprint, request
 
+from recidiviz.ingest.direct.controllers.gcsfs_path import \
+    GcsfsFilePath
 from recidiviz.ingest.direct.controllers.gcsfs_factory import GcsfsFactory
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import \
     DirectIngestCloudTaskManager
@@ -57,8 +59,8 @@ def handle_direct_ingest_file():
     start_ingest = \
         get_bool_param_value('start_ingest', request.args, default=False)
 
-    GcsfsFactory.build().normalize_file_path_if_necessary(bucket,
-                                                          relative_file_path)
+    GcsfsFactory.build().normalize_file_path_if_necessary(
+        GcsfsFilePath(bucket_name=bucket, blob_name=relative_file_path))
 
     if start_ingest:
         controller = controller_for_region_code(region_name)

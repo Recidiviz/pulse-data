@@ -24,6 +24,7 @@ from typing import Optional
 import attr
 
 from recidiviz.common.ingest_metadata import SystemLevel
+from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.controllers.direct_ingest_types import IngestArgs
 from recidiviz.ingest.direct.errors import DirectIngestError, \
     DirectIngestErrorType
@@ -63,7 +64,7 @@ class GcsfsFilenameParts:
 
 @attr.s(frozen=True)
 class GcsfsIngestArgs(IngestArgs):
-    file_path: str = attr.ib()
+    file_path: GcsfsFilePath = attr.ib()
 
     def task_id_tag(self) -> Optional[str]:
         parts = filename_parts_from_path(self.file_path)
@@ -101,13 +102,12 @@ def gcsfs_direct_ingest_directory_path_for_region(
     )
 
 
-def filename_parts_from_path(file_path: str) -> GcsfsFilenameParts:
-    _, filename = os.path.split(file_path)
-    match = re.match(_FILEPATH_REGEX, filename)
+def filename_parts_from_path(file_path: GcsfsFilePath) -> GcsfsFilenameParts:
+    match = re.match(_FILEPATH_REGEX, file_path.file_name)
     if not match:
         raise DirectIngestError(
             msg=f"Could not parse upload_ts, file_tag, extension "
-            f"from path [{file_path}]",
+            f"from path [{file_path.abs_path()}]",
             error_type=DirectIngestErrorType.INPUT_ERROR)
 
     full_upload_timestamp_str = match.group(1)

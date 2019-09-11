@@ -15,17 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Factory for GCSFileSystem objects"""
-from gcsfs import GCSFileSystem
+from google.cloud import storage
 
-from recidiviz.cloud_functions.cloud_function_utils import GCSFS_NO_CACHING
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import \
     DirectIngestGCSFileSystem, DirectIngestGCSFileSystemImpl
-from recidiviz.utils import metadata
 
 
 class GcsfsFactory:
     @classmethod
     def build(cls) -> DirectIngestGCSFileSystem:
-        return DirectIngestGCSFileSystemImpl(
-            GCSFileSystem(project=metadata.project_id(),
-                          cache_timeout=GCSFS_NO_CACHING))
+        return DirectIngestGCSFileSystemImpl(storage.Client())

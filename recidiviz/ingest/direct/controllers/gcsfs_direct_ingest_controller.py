@@ -18,13 +18,14 @@
 import abc
 import datetime
 import logging
-import os
 from typing import Optional, List, Iterable
 
 from recidiviz import IngestInfo
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import \
     BaseDirectIngestController
+from recidiviz.ingest.direct.controllers.gcsfs_path import \
+    GcsfsFilePath, GcsfsDirectoryPath
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_job_prioritizer \
     import GcsfsDirectIngestJobPrioritizer
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
@@ -51,18 +52,20 @@ class GcsfsDirectIngestController(BaseDirectIngestController[GcsfsIngestArgs,
         super().__init__(region_name, system_level)
         self.fs = GcsfsFactory.build()
 
-        if ingest_directory_path:
-            self.ingest_directory_path = ingest_directory_path
-        else:
-            self.ingest_directory_path = \
+        if not ingest_directory_path:
+            ingest_directory_path = \
                 gcsfs_direct_ingest_directory_path_for_region(region_name,
                                                               system_level)
-        if storage_directory_path:
-            self.storage_directory_path = storage_directory_path
-        else:
-            self.storage_directory_path = \
+        self.ingest_directory_path = \
+            GcsfsDirectoryPath.from_absolute_path(ingest_directory_path)
+
+        if not storage_directory_path:
+            storage_directory_path = \
                 gcsfs_direct_ingest_storage_directory_path_for_region(
                     region_name, system_level)
+
+        self.storage_directory_path = \
+            GcsfsDirectoryPath.from_absolute_path(storage_directory_path)
 
         self.file_prioritizer = \
             GcsfsDirectIngestJobPrioritizer(
@@ -111,7 +114,7 @@ class GcsfsDirectIngestController(BaseDirectIngestController[GcsfsIngestArgs,
     # =================== #
 
     def _job_tag(self, args: GcsfsIngestArgs) -> str:
-        return f'{self.region.region_code}/{self.file_name(args.file_path)}:' \
+        return f'{self.region.region_code}/{args.file_path.file_name}:' \
             f'{args.ingest_time}'
 
     def _read_contents(self, args: GcsfsIngestArgs) -> Optional[Iterable[str]]:
@@ -130,17 +133,23 @@ class GcsfsDirectIngestController(BaseDirectIngestController[GcsfsIngestArgs,
         #  one at a time so we don't hold entire large files in memory. NOTE:
         #  calling fp.readLine() does a GET request every time, so this impl
         #  would have to be smarter about calling read() in chunks.
-        with self.fs.open(args.file_path) as fp:
-            now = datetime.datetime.now()
-            logging.info(
-                "Opened path [%s] - now reading contents (time: [%s]).",
-                args.file_path, now.isoformat())
-            binary_contents = fp.read()
-            now = datetime.datetime.now()
-            logging.info(
-                "Finished reading binary contents for path [%s] (time: [%s]), "
-                "now decoding.",
-                args.file_path, now.isoformat())
+
+        logging.info(
+            'Getting storage_client with bucket [%s] and filepath [%s] '
+            '(time: [%s])',
+            args.file_path.bucket_name,
+            args.file_path.blob_name,
+            datetime.datetime.now().isoformat())
+        now = datetime.datetime.now()
+        logging.info(
+            "Opening path [%s] and reading contents (time: [%s]).",
+            args.file_path, now.isoformat())
+        binary_contents = self.fs.download_as_string(args.file_path)
+        now = datetime.datetime.now()
+        logging.info(
+            "Finished reading binary contents for path [%s] (time: [%s]), "
+            "now decoding.",
+            args.file_path, now.isoformat())
 
         return binary_contents.decode('utf-8').splitlines()
 
@@ -159,7 +168,6 @@ class GcsfsDirectIngestController(BaseDirectIngestController[GcsfsIngestArgs,
         self.fs.mv_path_to_processed_path(args.file_path)
 
         parts = filename_parts_from_path(args.file_path)
-        directory_path, _ = os.path.split(args.file_path)
 
         next_args_for_day = \
             self.file_prioritizer.get_next_job_args(date_str=parts.date_str)
@@ -173,18 +181,10 @@ class GcsfsDirectIngestController(BaseDirectIngestController[GcsfsIngestArgs,
             logging.info(
                 "All expected files found for day [%s]. Moving to storage.",
                 parts.date_str)
-            self.fs.mv_paths_from_date_to_storage(directory_path,
+            self.fs.mv_paths_from_date_to_storage(self.ingest_directory_path,
                                                   parts.date_str,
                                                   self.storage_directory_path)
 
     @staticmethod
-    def file_name(file_path: Optional[str]) -> Optional[str]:
-        if not file_path:
-            return None
-
-        _, file_name = os.path.split(file_path)
-        return file_name
-
-    @staticmethod
-    def file_tag(file_path: str) -> str:
+    def file_tag(file_path: GcsfsFilePath) -> str:
         return filename_parts_from_path(file_path).file_tag

@@ -27,6 +27,7 @@ from recidiviz.common.serialization import attr_to_json_dict, \
     datetime_to_serializable, serializable_to_datetime, attr_from_json_dict
 from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller \
     import CsvGcsfsDirectIngestController
+from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     GcsfsIngestArgs
 from recidiviz.tests.ingest.direct.direct_ingest_util import \
@@ -256,7 +257,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
         args = GcsfsIngestArgs(
             ingest_time=datetime.datetime.now(),
-            file_path='foo/bar.csv',
+            file_path=GcsfsFilePath.from_absolute_path('foo/bar.csv'),
         )
 
         args_dict = attr_to_json_dict(args)

@@ -25,6 +25,8 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     GcsfsIngestArgs, filename_parts_from_path
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import \
     DirectIngestGCSFileSystem
+from recidiviz.ingest.direct.controllers.gcsfs_path import \
+    GcsfsFilePath, GcsfsDirectoryPath
 
 
 class GcsfsDirectIngestJobPrioritizer:
@@ -34,10 +36,10 @@ class GcsfsDirectIngestJobPrioritizer:
 
     def __init__(self,
                  fs: DirectIngestGCSFileSystem,
-                 ingest_directory_path: str,
+                 ingest_directory_path: GcsfsDirectoryPath,
                  file_tag_rank_list: List[str]):
         self.fs = fs
-        self.directory_path = ingest_directory_path
+        self.ingest_directory_path = ingest_directory_path
         self.ranks_by_file_tag: Dict[str, str] = \
             self._build_ranks_by_file_tag(file_tag_rank_list)
 
@@ -91,17 +93,18 @@ class GcsfsDirectIngestJobPrioritizer:
 
     def _get_next_valid_unprocessed_file_path(
             self,
-            date_str: Optional[str]) -> Optional[str]:
+            date_str: Optional[str]) -> Optional[GcsfsFilePath]:
         """Returns the path of the unprocessed file in the ingest cloud storage
         bucket that should be processed next.
         """
         if date_str:
             unprocessed_paths = \
-                self.fs.get_unprocessed_file_paths_for_day(self.directory_path,
-                                                           date_str)
+                self.fs.get_unprocessed_file_paths_for_day(
+                    self.ingest_directory_path,
+                    date_str)
         else:
             unprocessed_paths = \
-                self.fs.get_unprocessed_file_paths(self.directory_path)
+                self.fs.get_unprocessed_file_paths(self.ingest_directory_path)
 
         if not unprocessed_paths:
             return None
@@ -163,7 +166,7 @@ class GcsfsDirectIngestJobPrioritizer:
         This set is built for comparison against the set of expected sort keys.
         """
         already_processed_paths = \
-            self.fs.get_processed_file_paths_for_day(self.directory_path,
+            self.fs.get_processed_file_paths_for_day(self.ingest_directory_path,
                                                      date_str)
 
         sort_keys: Set[str] = set()
@@ -178,7 +181,7 @@ class GcsfsDirectIngestJobPrioritizer:
         return sort_keys
 
     def _sort_key_for_file_path(self,
-                                file_path: str,
+                                file_path: GcsfsFilePath,
                                 prefix_only: bool) -> Optional[str]:
         """Returns a sort key that will allow us to prioritize when to run an
         ingest job for a file at the given path.

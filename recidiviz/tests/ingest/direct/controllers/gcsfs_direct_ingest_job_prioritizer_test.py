@@ -22,6 +22,8 @@ from typing import List
 
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import \
     to_normalized_unprocessed_file_path
+from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsDirectoryPath, \
+    GcsfsFilePath
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_job_prioritizer \
     import GcsfsDirectIngestJobPrioritizer
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
@@ -52,27 +54,32 @@ class TestGcsfsDirectIngestJobPrioritizer(unittest.TestCase):
     _DAY_1 = _DAY_1_TIME_1.date()
     _DAY_2 = _DAY_2_TIME_1.date()
 
-    _INGEST_DIRECTORY_PATH = 'ingest-directory/path'
+    _INGEST_BUCKET_PATH = \
+        GcsfsDirectoryPath.from_absolute_path('ingest-directory/path')
 
-    def setup_method(self, _test_method):
+    def setUp(self) -> None:
         self.fs = FakeDirectIngestGCSFileSystem()
         self.prioritizer = GcsfsDirectIngestJobPrioritizer(
-            self.fs, self._INGEST_DIRECTORY_PATH, ['tagA', 'tagB'])
+            self.fs, self._INGEST_BUCKET_PATH, ['tagA', 'tagB'])
 
     def _normalized_path_for_filename(self,
                                       filename: str,
-                                      dt: datetime.datetime):
+                                      dt: datetime.datetime) -> GcsfsFilePath:
         normalized_path = \
             to_normalized_unprocessed_file_path(
-                os.path.join(self._INGEST_DIRECTORY_PATH, filename), dt)
-        return normalized_path
+                os.path.join(self._INGEST_BUCKET_PATH.abs_path(),
+                             filename), dt)
+        return GcsfsFilePath.from_absolute_path(normalized_path)
 
     def _process_jobs_for_paths_with_no_gaps_in_expected_order(
-            self, paths: List[str]):
+            self, paths: List[GcsfsFilePath]):
         for path in paths:
             date_str = filename_parts_from_path(path).date_str
             next_job_args = self.prioritizer.get_next_job_args()
             self.assertIsNotNone(next_job_args)
+            if next_job_args is None:
+                # Make mypy happy
+                self.fail()
             self.assertEqual(next_job_args.file_path, path)
             self.assertTrue(
                 self.prioritizer.are_next_args_expected(next_job_args))
