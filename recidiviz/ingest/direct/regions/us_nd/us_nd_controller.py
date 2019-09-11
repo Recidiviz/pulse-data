@@ -69,6 +69,7 @@ from recidiviz.ingest.models.ingest_info import IngestInfo, IngestObject, \
     StateAgent, StateIncarcerationIncidentOutcome, StateIncarcerationIncident, \
     StateAlias, StateSupervisionSentence, StateCourtCase, StateSupervisionPeriod
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
+from recidiviz.utils import environment
 
 _SUPERVISION_SENTENCE_ID_SUFFIX = '_SUPERVISION'
 _TEMPORARY_PRIMARY_ID = '_TEMPORARY_PRIMARY_ID'
@@ -164,7 +165,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
     def _get_file_tag_rank_list(self) -> List[str]:
         # NOTE: The order of ingest here is important!
         # Do not change unless you know what you're doing!
-        return [
+        tags = [
             # Elite - incarceration-focused
             'elite_offenders',
             'elite_offenderidentifier',
@@ -176,15 +177,33 @@ class UsNdController(CsvGcsfsDirectIngestController):
             'elite_offenderchargestable',
             'elite_orderstable',
             'elite_externalmovements',
-            'elite_offense_in_custody_and_pos_report_data',
+        ]
 
+        # TODO(2399): Once we are capable of handling historical and nightly
+        #  ingest of 'elite_offense_in_custody_and_pos_report_data', remove
+        #  this check.
+        if not environment.in_gae_production():
+            tags.append('elite_offense_in_custody_and_pos_report_data')
+
+        tags += [
             # Docstars - supervision-focused
             'docstars_offenders',
             'docstars_offendercasestable',
             'docstars_offensestable',
-            'docstars_lsichronology',
             # TODO(1918): Integrate bed assignment / location history
         ]
+
+        # TODO(2404): Enable once we're ready to do historical ingest of
+        #  docstars_lsichronology and we have better support for files that we
+        #  do not get on a nightly basis. Right now, if we don't get one of our
+        #  files in a nightly ingest, we will never move all of the files from
+        #  that night to storage.
+        if not environment.in_gae_production() and \
+                not environment.in_gae_staging():
+            tags.append('docstars_lsichronology')
+
+
+        return tags
 
     def _normalize_id_fields(self, row: Dict[str, str]):
         """A number of ID fields come in as comma-separated strings in some of
