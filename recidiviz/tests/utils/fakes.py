@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Initialize our database schema for in-memory testing via sqlite3."""
-
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
 from recidiviz.persistence.database.sqlalchemy_engine_manager import \
@@ -49,6 +48,25 @@ def use_on_disk_sqlite_database(declarative_base: DeclarativeMeta) -> None:
     SQLAlchemyEngineManager.init_engine_for_db_instance(
         db_url='sqlite:///recidiviz.db',
         schema_base=declarative_base)
+
+
+def use_on_disk_postgresql_database(declarative_base: DeclarativeMeta) -> None:
+    """Creates a new SqlDatabase object used to communicate to an on-disk
+    PostgreSQL database.
+
+    This includes:
+    1. Create all tables in the newly created sqlite database
+    2. Bind the global SessionMaker to the new database engine
+
+    Note, this assumes the following is true:
+    - A local postgres server has been started
+      (`pg_ctl -D /usr/local/var/postgres start`)
+    - A DB named `recidiviz_test` exists (`createdb recidiviz_test`)
+    - A User `usr` has been created with no password (`createdb usr`)
+    """
+    url = 'postgresql://usr:@localhost:5432/recidiviz_test'
+    SQLAlchemyEngineManager.init_engine_for_db_instance(
+        db_url=url, schema_base=declarative_base)
 
 
 def _enforce_foreign_key_constraints(connection, _) -> None:
