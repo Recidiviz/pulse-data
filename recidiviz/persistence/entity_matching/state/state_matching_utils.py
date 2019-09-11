@@ -33,7 +33,6 @@ from recidiviz.persistence.entity.entity_utils import \
     EntityFieldType, is_placeholder, \
     get_set_entity_field_names
 from recidiviz.common.common_utils import check_all_objs_have_type
-from recidiviz.persistence.entity_matching import entity_matching_utils
 from recidiviz.persistence.entity_matching.entity_matching_types import \
     EntityTree
 from recidiviz.persistence.errors import EntityMatchingError
@@ -147,39 +146,6 @@ def base_entity_match(
             return False
 
     return True
-
-
-def nd_get_incomplete_incarceration_period_match(
-        ingested_entity_tree: EntityTree,
-        db_entity_trees: List[EntityTree]) \
-        -> Optional[EntityTree]:
-    """For the ingested StateIncarcerationPeriod in the provided
-    |ingested_entity_tree|, attempts to find a matching incomplete
-    StateIncarcerationPeriod in the provided |db_entity_trees|.
-
-    Returns the match if one is found, otherwise returns None.
-    """
-
-    # If the period is complete, it cannot match to an incomplete period.
-    ingested_period = cast(
-        schema.StateIncarcerationPeriod, ingested_entity_tree.entity)
-    if is_incarceration_period_complete(ingested_period):
-        return None
-
-    incomplete_db_trees = []
-    for db_tree in db_entity_trees:
-        db_period = cast(schema.StateIncarcerationPeriod, db_tree.entity)
-        if not is_incarceration_period_complete(db_period):
-            incomplete_db_trees.append(db_tree)
-
-    ret = entity_matching_utils.get_only_match(
-        ingested_entity_tree, incomplete_db_trees,
-        is_incomplete_incarceration_period_match)
-
-    if ret is not None and not isinstance(ret, EntityTree):
-        raise EntityMatchingError(f"Bad return value of type [{type(ret)}].",
-                                  'state_incarceration_period')
-    return ret
 
 
 def generate_child_entity_trees(
@@ -308,82 +274,117 @@ def _merge_incomplete_periods(
         new: schema.StateIncarcerationPeriod,
         old: schema.StateIncarcerationPeriod
 ) -> schema.StateIncarcerationPeriod:
-    """Merges two incomplete incarceration periods with information about
-    admission and release, respectively, into one period. Assumes the status of
+    """Merges two incarceration periods with information about
+    admission and release into one period. Assumes the status of
     the release event is the most relevant, up-to-date status.
 
     Args:
         new: The out-of-session period (i.e. new to this ingest run).
         old: The in-session period (i.e. pulled out of the DB), if there is one.
     """
-    if bool(new.admission_date) and bool(old.release_date):
-        admission_period, release_period = new, old
-    elif bool(new.release_date) and bool(old.admission_date):
-        admission_period, release_period = old, new
-    else:
-        raise EntityMatchingError(
-            f"Expected one admission period and one release period when "
-            f"merging, instead found periods: {new}, {old}",
-            new.get_entity_name())
 
-    admission_external_id = admission_period.external_id or ''
-    release_external_id = release_period.external_id or ''
-    new_external_id = admission_external_id \
+    # Complete match, perform normal merge.
+    if new.external_id == old.external_id:
+        _default_merge_flat_fields(new_entity=new, old_entity=old)
+        return old
+
+    # Determine updated external_id
+    new_complete = is_incarceration_period_complete(new)
+    old_complete = is_incarceration_period_complete(old)
+    if new_complete != old_complete:
+        updated_external_id = new.external_id \
+            if new_complete else old.external_id
+    else:
+        admission_period, release_period = \
+            (new, old) if new.admission_date else (old, new)
+        updated_external_id = admission_period.external_id \
                       + _INCARCERATION_PERIOD_ID_DELIMITER \
-                      + release_external_id
-    old_fields = \
-        get_set_entity_field_names(old, EntityFieldType.FLAT_FIELD)
+                      + release_period.external_id
+
+    # Keep the new status if the new period is a release period
+    updated_status = new.status if new.release_date else old.status
+    updated_status_raw_text = new.status_raw_text \
+        if new.release_date else old.status_raw_text
+
+    # Copy all fields from new onto old
     new_fields = \
         get_set_entity_field_names(new, EntityFieldType.FLAT_FIELD)
-
-    fields_empty_on_both = new_fields.difference(old_fields)
-    for child_field_name in fields_empty_on_both:
+    for child_field_name in new_fields:
         old.set_field(child_field_name, new.get_field(child_field_name))
 
-    old.external_id = new_external_id
-    if new == release_period:
-        # Always take the status of the release period
-        old.status = new.status
-        old.status_raw_text = new.status_raw_text
+    # Always update the external id and status
+    old.external_id = updated_external_id
+    old.status = updated_status
+    old.status_raw_text = updated_status_raw_text
 
     return old
 
 
-def is_incomplete_incarceration_period_match(
+def nd_is_incarceration_period_match(
         ingested_entity: Union[EntityTree, StateBase],
         db_entity: Union[EntityTree, StateBase]) -> bool:
+    """
+    Determines if the provided |ingested_entity| matches the |db_entity| based
+    on ND specific StateIncarcerationPeriod matching.
+    """
+    if isinstance(ingested_entity, EntityTree):
+        db_entity = cast(EntityTree, db_entity.entity)
+        ingested_entity = ingested_entity.entity
+
+    ingested_entity = cast(schema.StateIncarcerationPeriod, ingested_entity)
+    db_entity = cast(schema.StateIncarcerationPeriod, db_entity)
+
+    ingested_complete = is_incarceration_period_complete(ingested_entity)
+    db_complete = is_incarceration_period_complete(db_entity)
+    if not ingested_complete and not db_complete:
+        return is_incomplete_incarceration_period_match(
+            ingested_entity, db_entity)
+    if ingested_complete and db_complete:
+        return ingested_entity.external_id == db_entity.external_id
+
+    # Only one of the two is complete
+    complete, incomplete = (ingested_entity, db_entity) \
+        if ingested_complete else (db_entity, ingested_entity)
+
+    complete_external_ids = complete.external_id.split(
+        _INCARCERATION_PERIOD_ID_DELIMITER)
+    incomplete_external_id = incomplete.external_id
+
+    if len(complete_external_ids) != 2:
+        raise EntityMatchingError(
+            f"Could not split external id of complete incarceration period "
+            f"{complete.external_id} as expected", "state_incarceration_period")
+
+    return incomplete_external_id in complete_external_ids
+
+
+def is_incomplete_incarceration_period_match(
+        ingested_entity: schema.StateIncarcerationPeriod,
+        db_entity: schema.StateIncarcerationPeriod) -> bool:
     """Given two incomplete StateIncarcerationPeriods, determines if they
     should be considered the same StateIncarcerationPeriod.
     """
-
-    a, b = ingested_entity, db_entity
-    if isinstance(ingested_entity, EntityTree):
-        db_entity = cast(EntityTree, db_entity)
-        a, b = ingested_entity.entity, db_entity.entity
-    a = cast(schema.StateIncarcerationPeriod, a)
-    b = cast(schema.StateIncarcerationPeriod, b)
-
     # Cannot match with a placeholder StateIncarcerationPeriod
-    if is_placeholder(a) or is_placeholder(b):
+    if is_placeholder(ingested_entity) or is_placeholder(db_entity):
         return False
 
-    a_seq_no = _get_sequence_no(a)
-    b_seq_no = _get_sequence_no(b)
+    ingested_seq_no = _get_sequence_no(ingested_entity)
+    db_seq_no = _get_sequence_no(db_entity)
 
     # Only match incomplete periods if they are adjacent based on seq no.
-    if abs(a_seq_no - b_seq_no) != 1:
+    if abs(ingested_seq_no - db_seq_no) != 1:
         return False
 
     # Check that the first period is an admission and second a release
-    if a_seq_no < b_seq_no:
-        first, second = a, b
+    if ingested_seq_no < db_seq_no:
+        first, second = ingested_entity, db_entity
     else:
-        first, second = b, a
+        first, second = db_entity, ingested_entity
     if not first.admission_date or not second.release_date:
         return False
 
     # Must have same facility
-    if a.facility != b.facility:
+    if ingested_entity.facility != db_entity.facility:
         return False
 
     return True
@@ -418,8 +419,7 @@ def merge_flat_fields(new_entity: DatabaseEntity, old_entity: DatabaseEntity):
     # Special merge logic if we are merging 2 different incarceration periods.
     if isinstance(new_entity, schema.StateIncarcerationPeriod):
         old_entity = cast(schema.StateIncarcerationPeriod, old_entity)
-        if new_entity.external_id != old_entity.external_id:
-            return _merge_incomplete_periods(new_entity, old_entity)
+        return _merge_incomplete_periods(new_entity, old_entity)
 
     return _default_merge_flat_fields(
         new_entity=new_entity, old_entity=old_entity)

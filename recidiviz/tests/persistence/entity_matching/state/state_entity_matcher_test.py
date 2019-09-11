@@ -79,6 +79,7 @@ _ID_TYPE = 'ID_TYPE'
 _ID_TYPE_ANOTHER = 'ID_TYPE_ANOTHER'
 _FULL_NAME = 'FULL_NAME'
 _FULL_NAME_ANOTHER = 'FULL_NAME_ANOTHER'
+_COUNTY_CODE = 'Iredell'
 _STATE_CODE = 'NC'
 _STATE_CODE_2 = 'SC'
 _FACILITY = 'FACILITY'
@@ -174,7 +175,6 @@ class TestStateEntityMatching(TestCase):
         self.assert_people_match([expected_db_person, expected_db_person_2],
                                  result_db_people)
         assert_session.close()
-
 
     def test_match_noPlaceholders_simple(self):
         # Arrange 1 - Match
@@ -2059,7 +2059,7 @@ class TestStateEntityMatching(TestCase):
 
         expected_person = StatePerson.new_with_defaults(
             person_id=_ID, full_name=_FULL_NAME)
-        expected_merged_incarceration_period = \
+        expected_complete_incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
                 external_id=_EXTERNAL_ID + '|' + _EXTERNAL_ID_2,
                 state_code=_STATE_CODE,
@@ -2070,7 +2070,7 @@ class TestStateEntityMatching(TestCase):
                 StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
                 release_date=datetime.date(year=2019, month=1, day=2),
                 release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER)
-        expected_unmerged_incarceration_period = attr.evolve(
+        expected_incomplete_incarceration_period = attr.evolve(
             incarceration_period_3)
         expected_incarceration_sentence = \
             StateIncarcerationSentence.new_with_defaults(
@@ -2079,8 +2079,8 @@ class TestStateEntityMatching(TestCase):
                 state_code=_STATE_CODE,
                 external_id=_EXTERNAL_ID,
                 incarceration_periods=[
-                    expected_merged_incarceration_period,
-                    expected_unmerged_incarceration_period])
+                    expected_complete_incarceration_period,
+                    expected_incomplete_incarceration_period])
         expected_sentence_group = StateSentenceGroup.new_with_defaults(
             sentence_group_id=_ID,
             status=StateSentenceStatus.EXTERNAL_UNKNOWN,
@@ -2104,8 +2104,8 @@ class TestStateEntityMatching(TestCase):
         self.assertEqual(1, matched_entities.total_root_entities)
 
         # Arrange 2 - Commit
-        expected_merged_incarceration_period.incarceration_period_id = 1
-        expected_unmerged_incarceration_period.incarceration_period_id = 2
+        expected_complete_incarceration_period.incarceration_period_id = 1
+        expected_incomplete_incarceration_period.incarceration_period_id = 2
 
         # Act 2 - Commit
         act_session.commit()
@@ -2118,10 +2118,335 @@ class TestStateEntityMatching(TestCase):
         self.assert_people_match([expected_person], result_db_people)
         assert_session.close()
 
-    def test_matchPersons_mergeIngestedAndDbIncarcerationSentences(self):
+    def test_matchPersons_mergeIncompleteIncarcerationPeriodOntoComplete(self):
+        """Tests correct matching behavior when an incomplete period is ingested
+        and a matching complete period is in the db.
+        """
         # Arrange 1 - Match
         db_person = generate_person(person_id=_ID, full_name=_FULL_NAME)
-        db_unmerged_incarceration_period = \
+        db_complete_incarceration_period = \
+            generate_incarceration_period(
+                person=db_person,
+                incarceration_period_id=_ID_2,
+                state_code=_STATE_CODE,
+                external_id=_EXTERNAL_ID + '|' + _EXTERNAL_ID_2,
+                facility=_FACILITY,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY.value,
+                admission_date=datetime.date(year=2018, month=1, day=1),
+                admission_reason=
+                StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION.value,
+                release_date=datetime.date(year=2018, month=1, day=2),
+                release_reason=
+                StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED.value)
+
+        db_incarceration_sentence = \
+            generate_incarceration_sentence(
+                person=db_person,
+                state_code=_STATE_CODE,
+                incarceration_sentence_id=_ID,
+                status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
+                external_id=_EXTERNAL_ID,
+                incarceration_periods=[db_complete_incarceration_period])
+        db_sentence_group = generate_sentence_group(
+            state_code=_STATE_CODE,
+            sentence_group_id=_ID,
+            status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
+            external_id=_EXTERNAL_ID,
+            incarceration_sentences=[db_incarceration_sentence])
+        db_external_id = generate_external_id(
+            person_external_id_id=_ID, state_code=_STATE_CODE,
+            id_type=_ID_TYPE, external_id=_EXTERNAL_ID)
+        db_person.sentence_groups = [db_sentence_group]
+        db_person.external_ids = [db_external_id]
+
+        self._commit_to_db(db_person)
+
+        incomplete_incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                state_code=_STATE_CODE,
+                external_id=_EXTERNAL_ID_2,
+                release_date=datetime.date(year=2018, month=1, day=2),
+                release_reason=
+                StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                county_code=_COUNTY_CODE)
+
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            external_id=_EXTERNAL_ID,
+            incarceration_periods=[incomplete_incarceration_period])
+        placeholder_sentence_group = StateSentenceGroup.new_with_defaults(
+            incarceration_sentences=[incarceration_sentence])
+        placeholder_person = StatePerson.new_with_defaults(
+            sentence_groups=[placeholder_sentence_group])
+
+        expected_complete_incarceration_period = attr.evolve(
+            self.to_entity(db_complete_incarceration_period),
+            county_code=_COUNTY_CODE)
+
+        expected_incarceration_sentence = \
+            StateIncarcerationSentence.new_with_defaults(
+                incarceration_sentence_id=_ID,
+                status=StateSentenceStatus.EXTERNAL_UNKNOWN,
+                state_code=_STATE_CODE,
+                external_id=_EXTERNAL_ID,
+                incarceration_periods=[
+                    expected_complete_incarceration_period])
+        expected_sentence_group = StateSentenceGroup.new_with_defaults(
+            sentence_group_id=_ID,
+            status=StateSentenceStatus.EXTERNAL_UNKNOWN,
+            state_code=_STATE_CODE,
+            external_id=_EXTERNAL_ID,
+            incarceration_sentences=[expected_incarceration_sentence])
+        expected_external_id = StatePersonExternalId.new_with_defaults(
+            person_external_id_id=_ID, state_code=_STATE_CODE,
+            id_type=_ID_TYPE, external_id=_EXTERNAL_ID)
+        expected_person = StatePerson.new_with_defaults(
+            person_id=_ID, full_name=_FULL_NAME,
+            external_ids=[expected_external_id],
+            sentence_groups=[expected_sentence_group])
+
+        # Act 1 - Match
+        act_session = self._session()
+        matched_entities = entity_matching.match(
+            act_session, _STATE_CODE, ingested_people=[placeholder_person])
+
+        # Assert 1 - Match
+        self.assert_people_match([expected_person], matched_entities.people)
+        self.assertEqual(0, matched_entities.error_count)
+        self.assertEqual(1, matched_entities.total_root_entities)
+
+        # Arrange 2 - Commit
+        # Do nothing - no DB ids should change with commit
+
+        # Act 2 - Commit
+        act_session.commit()
+        act_session.close()
+
+        # Assert 2 - Commit
+        assert_session = self._session()
+        result_db_people = dao.read_people(assert_session)
+
+        self.assert_people_match([expected_person], result_db_people)
+        assert_session.close()
+
+    def test_matchPersons_mergeCompleteIncarcerationPeriodOntoIncomplete(self):
+        """Tests correct matching behavior when a complete period is ingested
+        and a matching incomplete period is in the db.
+        """
+        # Arrange 1 - Match
+        db_person = generate_person(person_id=_ID, full_name=_FULL_NAME)
+        db_incomplete_incarceration_period = \
+            generate_incarceration_period(
+                person=db_person,
+                incarceration_period_id=_ID,
+                state_code=_STATE_CODE,
+                external_id=_EXTERNAL_ID,
+                facility=_FACILITY,
+                status=StateIncarcerationPeriodStatus.IN_CUSTODY.value,
+                admission_date=datetime.date(year=2019, month=1, day=1),
+                admission_reason=
+                StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION.value)
+
+        db_incarceration_sentence = \
+            generate_incarceration_sentence(
+                person=db_person,
+                state_code=_STATE_CODE,
+                incarceration_sentence_id=_ID,
+                status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
+                external_id=_EXTERNAL_ID,
+                incarceration_periods=[db_incomplete_incarceration_period])
+        db_sentence_group = generate_sentence_group(
+            state_code=_STATE_CODE,
+            sentence_group_id=_ID,
+            status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
+            external_id=_EXTERNAL_ID,
+            incarceration_sentences=[db_incarceration_sentence])
+        db_external_id = generate_external_id(
+            person_external_id_id=_ID, state_code=_STATE_CODE,
+            id_type=_ID_TYPE, external_id=_EXTERNAL_ID)
+        db_person.sentence_groups = [db_sentence_group]
+        db_person.external_ids = [db_external_id]
+
+        self._commit_to_db(db_person)
+
+        complete_incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                state_code=_STATE_CODE,
+                external_id=_EXTERNAL_ID + '|' + _EXTERNAL_ID_2,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                facility=_FACILITY,
+                admission_date=datetime.date(year=2019, month=1, day=1),
+                admission_reason=
+                StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+                release_date=datetime.date(year=2019, month=1, day=2),
+                release_reason=
+                StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED)
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            external_id=_EXTERNAL_ID,
+            incarceration_periods=[complete_incarceration_period])
+        placeholder_sentence_group = StateSentenceGroup.new_with_defaults(
+            incarceration_sentences=[incarceration_sentence])
+        placeholder_person = StatePerson.new_with_defaults(
+            sentence_groups=[placeholder_sentence_group])
+
+        expected_complete_incarceration_period = attr.evolve(
+            complete_incarceration_period, incarceration_period_id=_ID)
+
+        expected_incarceration_sentence = \
+            StateIncarcerationSentence.new_with_defaults(
+                incarceration_sentence_id=_ID,
+                status=StateSentenceStatus.EXTERNAL_UNKNOWN,
+                state_code=_STATE_CODE,
+                external_id=_EXTERNAL_ID,
+                incarceration_periods=[expected_complete_incarceration_period])
+        expected_sentence_group = StateSentenceGroup.new_with_defaults(
+            sentence_group_id=_ID,
+            status=StateSentenceStatus.EXTERNAL_UNKNOWN,
+            state_code=_STATE_CODE,
+            external_id=_EXTERNAL_ID,
+            incarceration_sentences=[expected_incarceration_sentence])
+        expected_external_id = StatePersonExternalId.new_with_defaults(
+            person_external_id_id=_ID, state_code=_STATE_CODE,
+            id_type=_ID_TYPE, external_id=_EXTERNAL_ID)
+        expected_person = StatePerson.new_with_defaults(
+            person_id=_ID, full_name=_FULL_NAME,
+            external_ids=[expected_external_id],
+            sentence_groups=[expected_sentence_group])
+
+        # Act 1 - Match
+        act_session = self._session()
+        matched_entities = entity_matching.match(
+            act_session, _STATE_CODE, ingested_people=[placeholder_person])
+
+        # Assert 1 - Match
+        self.assert_people_match([expected_person], matched_entities.people)
+        self.assertEqual(0, matched_entities.error_count)
+        self.assertEqual(1, matched_entities.total_root_entities)
+
+        # Arrange 2 - Commit
+        # Do nothing - no DB ids should change with commit
+
+        # Act 2 - Commit
+        act_session.commit()
+        act_session.close()
+
+        # Assert 2 - Commit
+        assert_session = self._session()
+        result_db_people = dao.read_people(assert_session)
+
+        self.assert_people_match([expected_person], result_db_people)
+        assert_session.close()
+
+    def test_matchPersons_mergeCompleteIncarcerationPeriods(self):
+        """Tests correct matching behavior when a complete period is ingested
+        and a matching complete period is in the db.
+        """
+        # Arrange 1 - Match
+        db_person = generate_person(person_id=_ID, full_name=_FULL_NAME)
+        db_complete_incarceration_period = \
+            generate_incarceration_period(
+                person=db_person,
+                incarceration_period_id=_ID,
+                state_code=_STATE_CODE,
+                external_id=_EXTERNAL_ID + '|' + _EXTERNAL_ID_2,
+                facility=_FACILITY,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY.value,
+                admission_date=datetime.date(year=2018, month=1, day=1),
+                admission_reason=
+                StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION.value,
+                release_date=datetime.date(year=2018, month=1, day=2),
+                release_reason=
+                StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED.value)
+
+        db_incarceration_sentence = \
+            generate_incarceration_sentence(
+                person=db_person,
+                state_code=_STATE_CODE,
+                incarceration_sentence_id=_ID,
+                status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
+                external_id=_EXTERNAL_ID,
+                incarceration_periods=[db_complete_incarceration_period])
+        db_sentence_group = generate_sentence_group(
+            state_code=_STATE_CODE,
+            sentence_group_id=_ID,
+            status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
+            external_id=_EXTERNAL_ID,
+            incarceration_sentences=[db_incarceration_sentence])
+        db_external_id = generate_external_id(
+            person_external_id_id=_ID, state_code=_STATE_CODE,
+            id_type=_ID_TYPE, external_id=_EXTERNAL_ID)
+        db_person.sentence_groups = [db_sentence_group]
+        db_person.external_ids = [db_external_id]
+
+        self._commit_to_db(db_person)
+
+        updated_incarceration_period = attr.evolve(
+            self.to_entity(db_complete_incarceration_period),
+            incarceration_period_id=None,
+            county_code=_COUNTY_CODE)
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            external_id=_EXTERNAL_ID,
+            incarceration_periods=[updated_incarceration_period])
+        placeholder_sentence_group = StateSentenceGroup.new_with_defaults(
+            incarceration_sentences=[incarceration_sentence])
+        placeholder_person = StatePerson.new_with_defaults(
+            sentence_groups=[placeholder_sentence_group])
+
+        expected_complete_incarceration_period = attr.evolve(
+            updated_incarceration_period, incarceration_period_id=_ID)
+
+        expected_incarceration_sentence = \
+            StateIncarcerationSentence.new_with_defaults(
+                incarceration_sentence_id=_ID,
+                status=StateSentenceStatus.EXTERNAL_UNKNOWN,
+                state_code=_STATE_CODE,
+                external_id=_EXTERNAL_ID,
+                incarceration_periods=[expected_complete_incarceration_period])
+        expected_sentence_group = StateSentenceGroup.new_with_defaults(
+            sentence_group_id=_ID,
+            status=StateSentenceStatus.EXTERNAL_UNKNOWN,
+            state_code=_STATE_CODE,
+            external_id=_EXTERNAL_ID,
+            incarceration_sentences=[expected_incarceration_sentence])
+        expected_external_id = StatePersonExternalId.new_with_defaults(
+            person_external_id_id=_ID, state_code=_STATE_CODE,
+            id_type=_ID_TYPE, external_id=_EXTERNAL_ID)
+        expected_person = StatePerson.new_with_defaults(
+            person_id=_ID, full_name=_FULL_NAME,
+            external_ids=[expected_external_id],
+            sentence_groups=[expected_sentence_group])
+
+        # Act 1 - Match
+        act_session = self._session()
+        matched_entities = entity_matching.match(
+            act_session, _STATE_CODE, ingested_people=[placeholder_person])
+
+        # Assert 1 - Match
+        self.assert_people_match([expected_person], matched_entities.people)
+        self.assertEqual(0, matched_entities.error_count)
+        self.assertEqual(1, matched_entities.total_root_entities)
+
+        # Arrange 2 - Commit
+        # Do nothing - no DB ids should change with commit
+
+        # Act 2 - Commit
+        act_session.commit()
+        act_session.close()
+
+        # Assert 2 - Commit
+        assert_session = self._session()
+        result_db_people = dao.read_people(assert_session)
+
+        self.assert_people_match([expected_person], result_db_people)
+        assert_session.close()
+
+    def test_matchPersons_mergeIncompleteIncarcerationPeriods(self):
+        """Tests correct matching behavior when an incomplete period is ingested
+        and a matching incomplete period is in the db.
+        """
+        # Arrange 1 - Match
+        db_person = generate_person(person_id=_ID, full_name=_FULL_NAME)
+        db_incomplete_incarceration_period = \
             generate_incarceration_period(
                 person=db_person,
                 incarceration_period_id=_ID,
@@ -2132,7 +2457,7 @@ class TestStateEntityMatching(TestCase):
                 admission_date=datetime.date(year=2019, month=1, day=1),
                 admission_reason=
                 StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION.value)
-        db_merged_incarceration_period = \
+        db_complete_incarceration_period = \
             generate_incarceration_period(
                 person=db_person,
                 incarceration_period_id=_ID_2,
@@ -2155,8 +2480,8 @@ class TestStateEntityMatching(TestCase):
                 status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
                 external_id=_EXTERNAL_ID,
                 incarceration_periods=[
-                    db_merged_incarceration_period,
-                    db_unmerged_incarceration_period])
+                    db_complete_incarceration_period,
+                    db_incomplete_incarceration_period])
         db_sentence_group = generate_sentence_group(
             state_code=_STATE_CODE,
             sentence_group_id=_ID,
@@ -2187,10 +2512,10 @@ class TestStateEntityMatching(TestCase):
         placeholder_person = StatePerson.new_with_defaults(
             sentence_groups=[placeholder_sentence_group])
 
-        expected_merged_incarceration_period = attr.evolve(
-            self.to_entity(db_merged_incarceration_period))
-        expected_new_merged_incarceration_period = attr.evolve(
-            self.to_entity(db_unmerged_incarceration_period),
+        expected_complete_incarceration_period = attr.evolve(
+            self.to_entity(db_complete_incarceration_period))
+        expected_new_complete_incarceration_period = attr.evolve(
+            self.to_entity(db_incomplete_incarceration_period),
             external_id=_EXTERNAL_ID_3 + '|' + _EXTERNAL_ID_4,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             release_date=datetime.date(year=2019, month=1, day=2),
@@ -2204,8 +2529,8 @@ class TestStateEntityMatching(TestCase):
                 state_code=_STATE_CODE,
                 external_id=_EXTERNAL_ID,
                 incarceration_periods=[
-                    expected_new_merged_incarceration_period,
-                    expected_merged_incarceration_period])
+                    expected_new_complete_incarceration_period,
+                    expected_complete_incarceration_period])
         expected_sentence_group = StateSentenceGroup.new_with_defaults(
             sentence_group_id=_ID,
             status=StateSentenceStatus.EXTERNAL_UNKNOWN,
@@ -2251,8 +2576,9 @@ class TestStateEntityMatching(TestCase):
         ingested before the admission period."""
         # Arrange 1 - Match
         db_person = generate_person(person_id=_ID, full_name=_FULL_NAME)
-        db_unmerged_incarceration_period = generate_incarceration_period(
+        db_incomplete_incarceration_period = generate_incarceration_period(
             person=db_person,
+            incarceration_period_id=_ID,
             state_code=_STATE_CODE,
             external_id=_EXTERNAL_ID_4,
             facility=_FACILITY,
@@ -2260,7 +2586,7 @@ class TestStateEntityMatching(TestCase):
             release_date=datetime.date(year=2019, month=1, day=2),
             release_reason=
             StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED.value)
-        db_merged_incarceration_period = \
+        db_complete_incarceration_period = \
             generate_incarceration_period(
                 person=db_person,
                 incarceration_period_id=_ID_2,
@@ -2283,8 +2609,8 @@ class TestStateEntityMatching(TestCase):
                 status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
                 external_id=_EXTERNAL_ID,
                 incarceration_periods=[
-                    db_merged_incarceration_period,
-                    db_unmerged_incarceration_period])
+                    db_complete_incarceration_period,
+                    db_incomplete_incarceration_period])
         db_sentence_group = generate_sentence_group(
             state_code=_STATE_CODE,
             sentence_group_id=_ID,
@@ -2318,10 +2644,10 @@ class TestStateEntityMatching(TestCase):
         placeholder_person = StatePerson.new_with_defaults(
             sentence_groups=[placeholder_sentence_group])
 
-        expected_merged_incarceration_period = attr.evolve(
-            self.to_entity(db_merged_incarceration_period))
-        expected_new_merged_incarceration_period = attr.evolve(
-            self.to_entity(db_unmerged_incarceration_period),
+        expected_complete_incarceration_period = attr.evolve(
+            self.to_entity(db_complete_incarceration_period))
+        expected_new_complete_incarceration_period = attr.evolve(
+            self.to_entity(db_incomplete_incarceration_period),
             external_id=_EXTERNAL_ID_3 + '|' + _EXTERNAL_ID_4,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=datetime.date(year=2019, month=1, day=1),
@@ -2335,8 +2661,8 @@ class TestStateEntityMatching(TestCase):
                 state_code=_STATE_CODE,
                 external_id=_EXTERNAL_ID,
                 incarceration_periods=[
-                    expected_new_merged_incarceration_period,
-                    expected_merged_incarceration_period])
+                    expected_new_complete_incarceration_period,
+                    expected_complete_incarceration_period])
         expected_sentence_group = StateSentenceGroup.new_with_defaults(
             sentence_group_id=_ID,
             status=StateSentenceStatus.EXTERNAL_UNKNOWN,
