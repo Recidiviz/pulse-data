@@ -21,6 +21,7 @@ from unittest import TestCase
 from mock import patch, Mock
 
 from recidiviz.common.ingest_metadata import SystemLevel
+from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     gcsfs_direct_ingest_storage_directory_path_for_region, \
     gcsfs_direct_ingest_directory_path_for_region, filename_parts_from_path
@@ -64,11 +65,14 @@ class GcsfsDirectIngestUtilsTest(TestCase):
 
     def test_filename_parts_from_path(self):
         with self.assertRaises(DirectIngestError):
-            filename_parts_from_path('bucket/us_ca_sf/elite_offenders.csv')
+            filename_parts_from_path(
+                GcsfsFilePath.from_absolute_path(
+                    'bucket/us_ca_sf/elite_offenders.csv'))
 
         parts = filename_parts_from_path(
-            'bucket-us-nd/unprocessed_2019-08-07T22:09:18:770655_'
-            'elite_offenders.csv')
+            GcsfsFilePath.from_absolute_path(
+                'bucket-us-nd/unprocessed_2019-08-07T22:09:18:770655_'
+                'elite_offenders.csv'))
 
         self.assertEqual(parts.extension, 'csv')
         self.assertEqual(parts.file_tag, 'elite_offenders')
@@ -79,7 +83,9 @@ class GcsfsDirectIngestUtilsTest(TestCase):
         self.assertEqual(parts.date_str, '2019-08-07')
 
         parts = filename_parts_from_path(
-            'processed_2019-09-07T00:09:18:770655_elite_offenders.csv')
+            GcsfsFilePath.from_absolute_path(
+                'bucket-us-nd/processed_2019-09-07T00:09:18:770655_'
+                'elite_offenders.csv'))
 
         self.assertEqual(parts.extension, 'csv')
         self.assertEqual(parts.file_tag, 'elite_offenders')
@@ -90,7 +96,9 @@ class GcsfsDirectIngestUtilsTest(TestCase):
         self.assertEqual(parts.date_str, '2019-09-07')
 
         parts = filename_parts_from_path(
-            'processed_2019-09-07T00:09:18:770655_elite_offenders_1split.csv')
+            GcsfsFilePath.from_absolute_path(
+                'bucket-us-nd/processed_2019-09-07T00:09:18:770655_'
+                'elite_offenders_1split.csv'))
 
         self.assertEqual(parts.extension, 'csv')
         self.assertEqual(parts.file_tag, 'elite_offenders')
