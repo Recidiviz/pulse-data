@@ -20,13 +20,14 @@ import os
 import threading
 import time
 import unittest
-from typing import Set, List
+from typing import Set, List, Union
 
-from gcsfs.core import GCSFile
-from mock import Mock, patch, create_autospec
+from mock import Mock, patch
 
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import \
     DirectIngestGCSFileSystem, to_normalized_unprocessed_file_path
+from recidiviz.ingest.direct.controllers.gcsfs_path import \
+    GcsfsFilePath, GcsfsBucketPath, GcsfsDirectoryPath, GcsfsPath
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
     GcsfsDirectIngestController
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
@@ -44,18 +45,20 @@ class FakeDirectIngestGCSFileSystem(DirectIngestGCSFileSystem):
     """Test-only implementation of the DirectIngestGCSFileSystem."""
     def __init__(self):
         self.mutex = threading.Lock()
-        self.all_paths: Set[str] = set()
+        self.all_paths: Set[GcsfsFilePath] = set()
 
-    def test_add_path(self, path: str):
+    def test_add_path(self, path: GcsfsFilePath):
+        if not isinstance(path, GcsfsFilePath):
+            raise ValueError(f'Path has unexpected type {type(path)}')
         with self.mutex:
             self.all_paths.add(path)
 
-    def exists(self, path: str) -> bool:
+    def exists(self, path: Union[GcsfsBucketPath, GcsfsFilePath]) -> bool:
         with self.mutex:
             return path in self.all_paths
 
-    def open(self, path: str) -> GCSFile:
-        directory_path, _ = os.path.split(path)
+    def download_as_string(self, path: GcsfsFilePath) -> bytes:
+        directory_path, _ = os.path.split(path.abs_path())
 
         parts = filename_parts_from_path(path)
         fixture_filename = f'{parts.file_tag}.{parts.extension}'
@@ -65,27 +68,36 @@ class FakeDirectIngestGCSFileSystem(DirectIngestGCSFileSystem):
 
         fixture_contents = fixtures.as_string_from_relative_path(
             actual_fixture_file_path)
+        return bytes(fixture_contents, 'utf-8')
 
-        mock_gcs_file = create_autospec(GCSFile)
-        mock_gcs_file.read.return_value = bytes(fixture_contents, 'utf-8')
-        mock_gcs_file.__enter__ = Mock(return_value=mock_gcs_file)
-        mock_gcs_file.__exit__ = Mock(return_value=False)
-        return mock_gcs_file
+    def copy(self,
+             src_path: GcsfsFilePath,
+             dst_path: GcsfsPath) -> None:
 
-    def mv(self, path1: str, path2: str) -> None:
+        if isinstance(dst_path, GcsfsFilePath):
+            path = dst_path
+        elif isinstance(dst_path, GcsfsDirectoryPath):
+            path = \
+                GcsfsFilePath.from_directory_and_file_name(dst_path,
+                                                           src_path.file_name)
+        else:
+            raise ValueError(f'Unexpected path type [{type(dst_path)}]')
+
         with self.mutex:
-            self.all_paths.remove(path1)
-            self.all_paths.add(path2)
+            self.all_paths.add(path)
 
-    def _ls_with_file_prefix(self,
-                             directory_path: str,
-                             file_prefix: str) -> List[str]:
+    def delete(self, path: GcsfsFilePath) -> None:
         with self.mutex:
-            path_file_name_tuples = \
-                [(path, os.path.split(path)[1])
-                 for path in self.all_paths if path.startswith(directory_path)]
-            return [path for path, filename in path_file_name_tuples
-                    if filename.startswith(file_prefix)]
+            self.all_paths.remove(path)
+
+    def _ls_with_blob_prefix(self,
+                             bucket_name: str,
+                             blob_prefix: str) -> List[GcsfsFilePath]:
+        with self.mutex:
+            return [path for path in self.all_paths
+                    if path.bucket_name == bucket_name
+                    and path.blob_name
+                    and path.blob_name.startswith(blob_prefix)]
 
 
 @patch('recidiviz.utils.metadata.project_id',
@@ -116,11 +128,12 @@ def build_controller_for_tests(
 
 def ingest_args_for_fixture_file(controller: GcsfsDirectIngestController,
                                  filename: str) -> GcsfsIngestArgs:
-    original_path = os.path.join(controller.ingest_directory_path, filename)
+    original_path = os.path.join(controller.ingest_directory_path.abs_path(),
+                                 filename)
     file_path = to_normalized_unprocessed_file_path(original_path)
     return GcsfsIngestArgs(
         ingest_time=datetime.datetime.now(),
-        file_path=file_path,
+        file_path=GcsfsFilePath.from_absolute_path(file_path),
     )
 
 
@@ -172,13 +185,13 @@ def add_paths_with_tags_and_process(test_case: unittest.TestCase,
         if file_tag not in unexpected_tags:
             # Test all expected files have been moved to storage
             test_case.assertTrue(
-                path.startswith(controller.storage_directory_path),
+                path.abs_path().startswith(
+                    controller.storage_directory_path.abs_path()),
                 f'{path} does not start with expected prefix')
 
             file_tags_processed.add(filename_parts_from_path(path).file_tag)
         else:
-            _, file_name = os.path.split(path)
-            test_case.assertTrue(file_name.startswith('unprocessed'))
+            test_case.assertTrue(path.file_name.startswith('unprocessed'))
 
     # Test that each expected file tag has been processed
     test_case.assertEqual(file_tags_processed,
