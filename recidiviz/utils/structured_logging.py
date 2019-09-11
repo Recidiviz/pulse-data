@@ -17,6 +17,7 @@
 """Configures logging setup."""
 
 import logging
+import sys
 import threading
 from functools import partial, wraps
 
@@ -109,6 +110,7 @@ class StructuredAppEngineHandler(handlers.AppEngineHandler):
 
 
 def setup():
+    """Initializes logging handlers for the app."""
     logger = logging.getLogger()
 
     # Set the region on log records.
@@ -121,8 +123,16 @@ def setup():
         client = Client()
         handler = StructuredAppEngineHandler(client)
         handlers.setup_logging(handler, log_level=logging.INFO)
+
+        # Streams unstructured logs to stdout - these logs will still show up
+        # under the appengine.googleapis.com/stdout Stackdriver logs bucket,
+        # even if other logs are stalled on the global interpreter lock or some
+        # other issue.
+        stdout_handler = logging.StreamHandler(sys.stdout)
+        handlers.setup_logging(stdout_handler, log_level=logging.INFO)
         for handler in logger.handlers:
-            if not isinstance(handler, StructuredAppEngineHandler):
+            if not isinstance(handler, (StructuredAppEngineHandler,
+                                        logging.StreamHandler)):
                 logger.removeHandler(handler)
     else:
         logging.basicConfig()
