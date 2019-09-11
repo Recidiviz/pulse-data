@@ -305,27 +305,48 @@ _INCARCERATION_PERIOD_ID_DELIMITER = '|'
 
 
 def _merge_incomplete_periods(
-        a: schema.StateIncarcerationPeriod, b: schema.StateIncarcerationPeriod
+        new: schema.StateIncarcerationPeriod,
+        old: schema.StateIncarcerationPeriod
 ) -> schema.StateIncarcerationPeriod:
-    if bool(a.admission_date) and bool(b.release_date):
-        admission_period, release_period = a, b
-    elif bool(a.release_date) and bool(b.admission_date):
-        admission_period, release_period = b, a
+    """Merges two incomplete incarceration periods with information about
+    admission and release, respectively, into one period. Assumes the status of
+    the release event is the most relevant, up-to-date status.
+
+    Args:
+        new: The out-of-session period (i.e. new to this ingest run).
+        old: The in-session period (i.e. pulled out of the DB), if there is one.
+    """
+    if bool(new.admission_date) and bool(old.release_date):
+        admission_period, release_period = new, old
+    elif bool(new.release_date) and bool(old.admission_date):
+        admission_period, release_period = old, new
     else:
         raise EntityMatchingError(
             f"Expected one admission period and one release period when "
-            f"merging, instead found periods: {a}, {b}", a.get_entity_name())
+            f"merging, instead found periods: {new}, {old}",
+            new.get_entity_name())
 
     admission_external_id = admission_period.external_id or ''
     release_external_id = release_period.external_id or ''
     new_external_id = admission_external_id \
                       + _INCARCERATION_PERIOD_ID_DELIMITER \
                       + release_external_id
-    _default_merge_flat_fields(new_entity=release_period,
-                               old_entity=admission_period)
+    old_fields = \
+        get_set_entity_field_names(old, EntityFieldType.FLAT_FIELD)
+    new_fields = \
+        get_set_entity_field_names(new, EntityFieldType.FLAT_FIELD)
 
-    admission_period.external_id = new_external_id
-    return admission_period
+    fields_empty_on_both = new_fields.difference(old_fields)
+    for child_field_name in fields_empty_on_both:
+        old.set_field(child_field_name, new.get_field(child_field_name))
+
+    old.external_id = new_external_id
+    if new == release_period:
+        # Always take the status of the release period
+        old.status = new.status
+        old.status_raw_text = new.status_raw_text
+
+    return old
 
 
 def is_incomplete_incarceration_period_match(
