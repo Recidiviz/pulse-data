@@ -2,6 +2,6 @@ agency_name: North Dakota Department of Corrections and Rehabilitation
 agency_type: prison
 base_url: unused
 timezone: America/North_Dakota/Center
-environment: staging
+environment: production
 shared_queue: direct-ingest-state-task-queue
 jurisdiction_id: unknown
