@@ -255,6 +255,8 @@ class DirectIngestGCSFileSystemImpl(DirectIngestGCSFileSystem):
 
         if isinstance(path, GcsfsFilePath):
             blob = bucket.get_blob(path.blob_name)
+            if not blob:
+                return False
             return blob.exists(self.storage_client)
 
         raise ValueError(f'Unexpected path type [{type(path)}]')
@@ -262,35 +264,44 @@ class DirectIngestGCSFileSystemImpl(DirectIngestGCSFileSystem):
     def download_as_string(self, path: GcsfsFilePath) -> bytes:
         bucket = self.storage_client.get_bucket(path.bucket_name)
         blob = bucket.get_blob(path.blob_name)
+        if not blob:
+            raise ValueError(f'Blob at path [{path.abs_path()}] does not exist')
         return blob.download_as_string()
 
     def copy(self,
              src_path: GcsfsFilePath,
              dst_path: GcsfsPath) -> None:
         src_bucket = self.storage_client.get_bucket(src_path.bucket_name)
-        src_blob = src_bucket.blob(src_path.blob_name)
-        src_bucket = \
-            self.storage_client.get_bucket(dst_path.bucket_name)
+        src_blob = src_bucket.get_blob(src_path.blob_name)
+        if not src_blob:
+            raise ValueError(
+                f'Blob at path [{src_path.abs_path()}] does not exist')
+        dst_bucket = self.storage_client.get_bucket(dst_path.bucket_name)
 
         if isinstance(dst_path, GcsfsFilePath):
             dst_blob_name = dst_path.blob_name
         elif isinstance(dst_path, GcsfsDirectoryPath):
             dst_blob_name = \
                 GcsfsFilePath.from_directory_and_file_name(
-                    dst_path, src_path.file_name)
+                    dst_path, src_path.file_name).blob_name
         else:
             raise ValueError(f'Unexpected path type [{type(dst_path)}]')
 
-        src_bucket.copy_blob(
-            src_blob, src_bucket, dst_blob_name)
+        src_bucket.copy_blob(src_blob, dst_bucket, dst_blob_name)
 
     def delete(self, path: GcsfsFilePath) -> None:
         if not isinstance(path, GcsfsFilePath):
             raise ValueError(f'Unexpected path type [{type(path)}]')
 
-        source_bucket = self.storage_client.get_bucket(path.bucket_name)
-        source_blob = source_bucket.blob(path.blob_name)
-        source_blob.delete(self.storage_client)
+        bucket = self.storage_client.get_bucket(path.bucket_name)
+        blob = bucket.get_blob(path.blob_name)
+
+        if not blob:
+            logging.warning("Path [%s] already does not exist, returning.",
+                            path.abs_path())
+            return
+
+        blob.delete(self.storage_client)
 
     def _ls_with_blob_prefix(
             self, bucket_name: str, blob_prefix: str) -> List[GcsfsFilePath]:
