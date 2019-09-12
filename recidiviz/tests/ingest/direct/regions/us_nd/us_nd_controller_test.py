@@ -131,6 +131,40 @@ class TestUsNdController(unittest.TestCase):
         # pylint:disable=protected-access
         self.controller._run_ingest_job(args)
 
+    def test_populate_data_elite_offenderidentifier(self):
+        expected = IngestInfo(
+            state_people=[
+                StatePerson(state_person_id='39768',
+                            state_person_external_ids=[
+                                StatePersonExternalId(
+                                    state_person_external_id_id='92237',
+                                    id_type=US_ND_SID),
+                                StatePersonExternalId(
+                                    state_person_external_id_id='39768',
+                                    id_type=US_ND_ELITE)
+                            ]),
+                StatePerson(state_person_id='52163',
+                            state_person_external_ids=[
+                                StatePersonExternalId(
+                                    state_person_external_id_id='241896',
+                                    id_type=US_ND_SID),
+                                StatePersonExternalId(
+                                    state_person_external_id_id='52163',
+                                    id_type=US_ND_ELITE)
+                            ]),
+                StatePerson(state_person_id='92237',
+                            state_person_external_ids=[
+                                StatePersonExternalId(
+                                    state_person_external_id_id='12345',
+                                    id_type=US_ND_SID),
+                                StatePersonExternalId(
+                                    state_person_external_id_id='92237',
+                                    id_type=US_ND_ELITE)
+                            ])
+            ])
+
+        self.run_parse_file_test(expected, 'elite_offenderidentifier')
+
     def test_populate_data_elite_offenders(self):
         expected = IngestInfo(
             state_people=[
@@ -169,40 +203,6 @@ class TestUsNdController(unittest.TestCase):
             ])
 
         self.run_parse_file_test(expected, 'elite_offenders')
-
-    def test_populate_data_elite_offenderidentifier(self):
-        expected = IngestInfo(
-            state_people=[
-                StatePerson(state_person_id='39768',
-                            state_person_external_ids=[
-                                StatePersonExternalId(
-                                    state_person_external_id_id='92237',
-                                    id_type=US_ND_SID),
-                                StatePersonExternalId(
-                                    state_person_external_id_id='39768',
-                                    id_type=US_ND_ELITE)
-                            ]),
-                StatePerson(state_person_id='52163',
-                            state_person_external_ids=[
-                                StatePersonExternalId(
-                                    state_person_external_id_id='241896',
-                                    id_type=US_ND_SID),
-                                StatePersonExternalId(
-                                    state_person_external_id_id='52163',
-                                    id_type=US_ND_ELITE)
-                            ]),
-                StatePerson(state_person_id='92237',
-                            state_person_external_ids=[
-                                StatePersonExternalId(
-                                    state_person_external_id_id='12345',
-                                    id_type=US_ND_SID),
-                                StatePersonExternalId(
-                                    state_person_external_id_id='92237',
-                                    id_type=US_ND_ELITE)
-                            ])
-            ])
-
-        self.run_parse_file_test(expected, 'elite_offenderidentifier')
 
     def test_populate_data_elite_alias(self):
         expected = IngestInfo(
@@ -1433,78 +1433,31 @@ class TestUsNdController(unittest.TestCase):
     # TODO(2157): Move into integration specific file
     @patch.dict('os.environ', {'PERSIST_LOCALLY': 'true'})
     def test_run_full_ingest_all_files_specific_order(self):
-
-        ######################################
-        # ELITE OFFENDERS
-        ######################################
-        # Arrange
-        person_1 = entities.StatePerson.new_with_defaults(
-            full_name='{"given_names": "JON", "surname": "HOPKINS"}',
-            birthdate=datetime.date(year=1979, month=8, day=15),
-            birthdate_inferred_from_age=False, gender=Gender.MALE,
-            gender_raw_text='M')
-        person_1_external_id = entities.StatePersonExternalId.new_with_defaults(
-            external_id='39768', id_type=US_ND_ELITE, state_code=_STATE_CODE,
-            person=person_1)
-        person_1_race = entities.StatePersonRace.new_with_defaults(
-            state_code=_STATE_CODE, race=Race.WHITE, race_raw_text='CAUCASIAN',
-            person=person_1)
-        person_1_alias_1 = entities.StatePersonAlias.new_with_defaults(
-            full_name='{"given_names": "JON", "surname": "HOPKINS"}',
-            alias_type=StatePersonAliasType.GIVEN_NAME,
-            alias_type_raw_text='GIVEN_NAME',
-            state_code=_STATE_CODE,
-            person=person_1)
-        person_1.external_ids = [person_1_external_id]
-        person_1.races = [person_1_race]
-        person_1.aliases = [person_1_alias_1]
-
-        person_2 = entities.StatePerson.new_with_defaults(
-            full_name='{"given_names": "SOLANGE", "surname": "KNOWLES"}',
-            birthdate=datetime.date(year=1986, month=6, day=24),
-            birthdate_inferred_from_age=False, gender=Gender.FEMALE,
-            gender_raw_text='F')
-        person_2_external_id = entities.StatePersonExternalId.new_with_defaults(
-            external_id='52163', id_type=US_ND_ELITE, state_code=_STATE_CODE,
-            person=person_2)
-        person_2_race = entities.StatePersonRace.new_with_defaults(
-            state_code=_STATE_CODE, race=Race.BLACK, race_raw_text='BLACK',
-            person=person_2)
-        person_2_alias_1 = entities.StatePersonAlias.new_with_defaults(
-            full_name='{"given_names": "SOLANGE", "surname": "KNOWLES"}',
-            alias_type=StatePersonAliasType.GIVEN_NAME,
-            alias_type_raw_text='GIVEN_NAME',
-            state_code=_STATE_CODE,
-            person=person_2)
-        person_2.external_ids = [person_2_external_id]
-        person_2.races = [person_2_race]
-        person_2.aliases = [person_2_alias_1]
-
-        expected_people = [person_2, person_1]
-
-        # Act
-        self._run_ingest_job_for_filename('elite_offenders.csv')
-
-        # Assert
-        session = SessionFactory.for_schema_base(StateBase)
-        found_people = dao.read_people(session)
-        found_people = self.convert_and_clear_db_ids(found_people)
-        self.assertCountEqual(found_people, expected_people)
-
         ######################################
         # ELITE OFFENDER IDENTIFIERS
         ######################################
         # Arrange
+        person_1 = entities.StatePerson.new_with_defaults()
+        person_1_external_id = entities.StatePersonExternalId.new_with_defaults(
+            external_id='39768', id_type=US_ND_ELITE, state_code=_STATE_CODE,
+            person=person_1)
         person_1_external_id_2 = \
             entities.StatePersonExternalId.new_with_defaults(
                 external_id='92237', id_type=US_ND_SID, state_code=_STATE_CODE,
                 person=person_1)
+        person_1.external_ids.append(person_1_external_id)
+        person_1.external_ids.append(person_1_external_id_2)
+
+        person_2 = entities.StatePerson.new_with_defaults()
+        person_2_external_id = entities.StatePersonExternalId.new_with_defaults(
+            external_id='52163', id_type=US_ND_ELITE, state_code=_STATE_CODE,
+            person=person_2)
         person_2_external_id_2 = \
             entities.StatePersonExternalId.new_with_defaults(
                 external_id='241896', id_type=US_ND_SID, state_code=_STATE_CODE,
                 person=person_2)
-        person_1.external_ids.append(person_1_external_id_2)
-        person_2.external_ids.insert(0, person_2_external_id_2)
+        person_2.external_ids.append(person_2_external_id)
+        person_2.external_ids.append(person_2_external_id_2)
 
         person_3 = entities.StatePerson.new_with_defaults()
         person_3_external_id_1 = \
@@ -1519,10 +1472,57 @@ class TestUsNdController(unittest.TestCase):
                 person=person_3)
         person_3.external_ids.append(person_3_external_id_1)
         person_3.external_ids.append(person_3_external_id_2)
-        expected_people.append(person_3)
+        expected_people = [person_3, person_2, person_1]
 
         # Act
         self._run_ingest_job_for_filename('elite_offenderidentifier.csv')
+
+        # Assert
+        session = SessionFactory.for_schema_base(StateBase)
+        found_people = dao.read_people(session)
+        found_people = self.convert_and_clear_db_ids(found_people)
+        self.assertCountEqual(found_people, expected_people)
+
+        ######################################
+        # ELITE OFFENDERS
+        ######################################
+        # Arrange
+        person_1.full_name = '{"given_names": "JON", "surname": "HOPKINS"}'
+        person_1.birthdate = datetime.date(year=1979, month=8, day=15)
+        person_1.birthdate_inferred_from_age = False
+        person_1.gender = Gender.MALE
+        person_1.gender_raw_text = 'M'
+        person_1_race = entities.StatePersonRace.new_with_defaults(
+            state_code=_STATE_CODE, race=Race.WHITE, race_raw_text='CAUCASIAN',
+            person=person_1)
+        person_1_alias_1 = entities.StatePersonAlias.new_with_defaults(
+            full_name='{"given_names": "JON", "surname": "HOPKINS"}',
+            alias_type=StatePersonAliasType.GIVEN_NAME,
+            alias_type_raw_text='GIVEN_NAME',
+            state_code=_STATE_CODE,
+            person=person_1)
+        person_1.races = [person_1_race]
+        person_1.aliases = [person_1_alias_1]
+
+        person_2.full_name = '{"given_names": "SOLANGE", "surname": "KNOWLES"}'
+        person_2.birthdate = datetime.date(year=1986, month=6, day=24)
+        person_2.birthdate_inferred_from_age = False
+        person_2.gender = Gender.FEMALE
+        person_2.gender_raw_text = 'F'
+        person_2_race = entities.StatePersonRace.new_with_defaults(
+            state_code=_STATE_CODE, race=Race.BLACK, race_raw_text='BLACK',
+            person=person_2)
+        person_2_alias_1 = entities.StatePersonAlias.new_with_defaults(
+            full_name='{"given_names": "SOLANGE", "surname": "KNOWLES"}',
+            alias_type=StatePersonAliasType.GIVEN_NAME,
+            alias_type_raw_text='GIVEN_NAME',
+            state_code=_STATE_CODE,
+            person=person_2)
+        person_2.races = [person_2_race]
+        person_2.aliases = [person_2_alias_1]
+
+        # Act
+        self._run_ingest_job_for_filename('elite_offenders.csv')
 
         # Assert
         session = SessionFactory.for_schema_base(StateBase)
