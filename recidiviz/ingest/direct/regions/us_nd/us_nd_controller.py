@@ -167,8 +167,8 @@ class UsNdController(CsvGcsfsDirectIngestController):
         # Do not change unless you know what you're doing!
         tags = [
             # Elite - incarceration-focused
-            'elite_offenders',
             'elite_offenderidentifier',
+            'elite_offenders',
             'elite_alias',
             'elite_offenderbookingstable',
             'elite_offendersentenceaggs',
