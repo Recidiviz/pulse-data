@@ -269,7 +269,16 @@ MAPPINGS.add(Mappings(
     probation_violators=None,
     technical_parole_violators=None,
     civil=None,
-    held_for_doc=None,
+    held_for_doc=(KyFacilityAggregate.alternative_sentence_female_population +
+                  KyFacilityAggregate.alternative_sentence_male_population +
+                  KyFacilityAggregate.class_d_female_population +
+                  KyFacilityAggregate.class_d_male_population +
+                  KyFacilityAggregate.community_custody_female_population +
+                  KyFacilityAggregate.community_custody_male_population +
+                  KyFacilityAggregate.controlled_intake_female_population +
+                  KyFacilityAggregate.controlled_intake_male_population +
+                  KyFacilityAggregate.parole_violators_female_population +
+                  KyFacilityAggregate.parole_violators_male_population),
     held_for_federal=KyFacilityAggregate.federal_male_population + KyFacilityAggregate.federal_female_population,
     total_held_for_other=None,
     held_elsewhere=None,
@@ -297,8 +306,16 @@ MAPPINGS.add(Mappings(
     misdemeanor_sentenced_female=None,
     parole_violators_male=KyFacilityAggregate.parole_violators_male_population,
     parole_violators_female=KyFacilityAggregate.parole_violators_female_population,
-    held_for_doc_male=None,
-    held_for_doc_female=None,
+    held_for_doc_male=(KyFacilityAggregate.alternative_sentence_male_population +
+                       KyFacilityAggregate.class_d_male_population +
+                       KyFacilityAggregate.community_custody_male_population +
+                       KyFacilityAggregate.controlled_intake_male_population +
+                       KyFacilityAggregate.parole_violators_male_population),
+    held_for_doc_female=(KyFacilityAggregate.alternative_sentence_female_population +
+                         KyFacilityAggregate.class_d_female_population +
+                         KyFacilityAggregate.community_custody_female_population +
+                         KyFacilityAggregate.controlled_intake_female_population +
+                         KyFacilityAggregate.parole_violators_female_population),
     held_for_federal_male=KyFacilityAggregate.federal_male_population,
     held_for_federal_female=KyFacilityAggregate.federal_female_population,
     total_held_for_other_male=None,
