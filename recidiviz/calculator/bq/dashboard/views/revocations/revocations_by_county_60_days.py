@@ -37,7 +37,7 @@ REVOCATIONS_BY_COUNTY_60_DAYS_QUERY = \
     """
     /*{description}*/
     
-    SELECT county_code, SUM(revocation_count) as revocation_count
+    SELECT state_code, county_code, SUM(revocation_count) as revocation_count
     FROM
     ((SELECT sip.state_code, IFNULL(ssp.county_code, 'UNKNOWN_COUNTY') as county_code,  count(*) as revocation_count
     FROM
