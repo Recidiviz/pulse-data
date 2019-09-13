@@ -37,20 +37,20 @@ SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_QUERY = \
     """
     /*{description}*/
 
-    SELECT term.state_code, IFNULL(rev.projected_year, term.projected_year) AS projected_year, IFNULL(rev.projected_month, term.projected_month) AS projected_month, term.count AS successful_termination, rev.count AS revocation_termination FROM
-    (SELECT state_code, projected_year, projected_month, decision, IFNULL(count, 0) AS count
+    SELECT IFNULL(rev.state_code, term.state_code), IFNULL(rev.projected_year, term.projected_year) AS projected_year, IFNULL(rev.projected_month, term.projected_month) AS projected_month, term.count AS successful_termination, rev.count AS revocation_termination FROM
+    (SELECT state_code, projected_year, projected_month, IFNULL(count, 0) AS count
     FROM
-    (SELECT state_code, projected_year, projected_month, decision, count(*) as count
+    (SELECT state_code, projected_year, projected_month, count(*) as count
     FROM `{project_id}.{views_dataset}.supervision_termination_by_person`
-    WHERE decision = 'REVOCATION'
-    GROUP BY state_code, projected_year, projected_month, decision HAVING projected_year > EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -3 YEAR)))) rev
+    WHERE termination_reason in ('ABSCONSION', 'REVOCATION', 'SUSPENSION')
+    GROUP BY state_code, projected_year, projected_month HAVING projected_year > EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -3 YEAR)))) rev
     FULL OUTER JOIN
-    (SELECT state_code, projected_year, projected_month, decision, IFNULL(count, 0) AS count
+    (SELECT state_code, projected_year, projected_month, IFNULL(count, 0) AS count
     FROM
-    (SELECT state_code, projected_year, projected_month, decision, count(*) as count
+    (SELECT state_code, projected_year, projected_month, count(*) as count
     FROM `{project_id}.{views_dataset}.supervision_termination_by_person`
-    WHERE decision is null
-    GROUP BY state_code, projected_year, projected_month, decision HAVING projected_year > EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -3 YEAR)))) term
+    WHERE termination_reason in ('DISCHARGE', 'EXPIRATION')
+    GROUP BY state_code, projected_year, projected_month HAVING projected_year > EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -3 YEAR)))) term
     ON rev.projected_year = term.projected_year and rev.projected_month = term.projected_month
     ORDER BY projected_year, projected_month ASC
     """.format(

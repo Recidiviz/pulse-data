@@ -26,23 +26,22 @@ SUPERVISION_TERMINATION_BY_PERSON = 'supervision_termination_by_person'
 
 SUPERVISION_TERMINATION_BY_PERSON_DESCRIPTION = \
     """ For people whose supervision was projected to end in a given month and
-    whose supervision have ended by now, broken down by whether or not a
-    revocation occurred. A "null" decision means that there was no documented
-    revocation.
+    whose supervision have ended by now, broken down by the reason the
+    supervision period was terminated.
     """
 
 SUPERVISION_TERMINATION_BY_PERSON_QUERY = \
     """
 /*{description}*/
 
-SELECT ss.state_code, EXTRACT(YEAR FROM TIMESTAMP(projected_completion_date)) as projected_year, EXTRACT(MONTH FROM TIMESTAMP(projected_completion_date)) as projected_month, ss.person_id, decision, count(*) as count
+SELECT ss.state_code, EXTRACT(YEAR FROM TIMESTAMP(projected_completion_date)) as projected_year, EXTRACT(MONTH FROM TIMESTAMP(projected_completion_date)) as projected_month, ss.person_id, termination_reason, count(*) as count
 FROM `{project_id}.{base_dataset}.state_supervision_sentence` ss 
 JOIN `{project_id}.{base_dataset}.state_supervision_sentence_supervision_period_association` assoc on ss.supervision_sentence_id = assoc.supervision_sentence_id
 JOIN `{project_id}.{base_dataset}.state_supervision_period` sp on sp.supervision_period_id = assoc.supervision_period_id 
 FULL OUTER JOIN `{project_id}.{base_dataset}.state_supervision_violation` sv on sp.supervision_period_id = sv.supervision_period_id 
 FULL OUTER JOIN `{project_id}.{base_dataset}.state_supervision_violation_response` svr on sv.supervision_violation_id = svr.supervision_violation_id 
 WHERE ss.projected_completion_date IS NOT NULL AND termination_date IS NOT NULL 
-GROUP BY state_code, projected_year, projected_month, person_id, decision
+GROUP BY state_code, projected_year, projected_month, person_id, termination_reason
 HAVING projected_year <= EXTRACT(YEAR FROM CURRENT_DATE())
 ORDER BY person_id desc
 """.format(
