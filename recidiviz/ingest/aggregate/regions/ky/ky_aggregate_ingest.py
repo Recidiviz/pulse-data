@@ -76,6 +76,13 @@ def _parse_table(location, filename: str) -> pd.DataFrame:
     whole_df.columns = whole_df.columns.str.replace('\n', ' ')
     whole_df.columns = whole_df.columns.str.replace('\r', ' ')
 
+    # Column names can change over time : (
+    column_name_map = {
+        'CC Eligible Inmates': 'Community Custody Inmates',
+    }
+    whole_df.columns = [column_name_map[c] if c in column_name_map else c
+                        for c in whole_df.columns]
+
     # Each block of county data starts with a filled in 'Total Jail Beds'
     start_of_county_indices = np.where(whole_df['Total Jail Beds'].notnull())[0]
     dfs_split_by_county = _split_df(whole_df, start_of_county_indices)
