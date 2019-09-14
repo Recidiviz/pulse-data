@@ -120,6 +120,8 @@ state_incarceration_period_admission_reason_return_from_erroneous_release = \
     'RETURN_FROM_ERRONEOUS_RELEASE'
 state_incarceration_period_admission_reason_return_from_escape = \
     'RETURN_FROM_ESCAPE'
+state_incarceration_period_admission_reason_temporary_custody = \
+    'TEMPORARY_CUSTODY'
 state_incarceration_period_admission_reason_transfer = 'TRANSFER'
 
 state_incarceration_period_release_reason_commuted = 'COMMUTED'
@@ -129,6 +131,8 @@ state_incarceration_period_release_reason_conditional_release = \
 state_incarceration_period_release_reason_court_order = 'COURT_ORDER'
 state_incarceration_period_release_reason_death = 'DEATH'
 state_incarceration_period_release_reason_escape = 'ESCAPE'
+state_incarceration_period_release_reason_released_from_temporary_custody = \
+    'RELEASED_FROM_TEMPORARY_CUSTODY'
 state_incarceration_period_release_reason_released_in_error = \
     'RELEASED_IN_ERROR'
 state_incarceration_period_release_reason_sentence_served = 'SENTENCE_SERVED'

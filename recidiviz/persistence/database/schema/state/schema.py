@@ -128,6 +128,7 @@ state_fine_status = Enum(
     name='state_fine_status')
 
 state_incarceration_type = Enum(
+    enum_strings.external_unknown,
     state_enum_strings.state_incarceration_type_county_jail,
     state_enum_strings.state_incarceration_type_state_prison,
     name='state_incarceration_type')
@@ -186,6 +187,8 @@ state_incarceration_period_admission_reason = Enum(
     state_incarceration_period_admission_reason_return_from_erroneous_release,
     state_enum_strings.
     state_incarceration_period_admission_reason_return_from_escape,
+    state_enum_strings.
+    state_incarceration_period_admission_reason_temporary_custody,
     state_enum_strings.state_incarceration_period_admission_reason_transfer,
     name='state_incarceration_period_admission_reason')
 
@@ -198,6 +201,8 @@ state_incarceration_period_release_reason = Enum(
     state_enum_strings.state_incarceration_period_release_reason_death,
     state_enum_strings.state_incarceration_period_release_reason_escape,
     enum_strings.external_unknown,
+    state_enum_strings.
+    state_incarceration_period_release_reason_released_from_temporary_custody,
     state_enum_strings.
     state_incarceration_period_release_reason_released_in_error,
     state_enum_strings.
