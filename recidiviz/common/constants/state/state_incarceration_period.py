@@ -70,6 +70,9 @@ class StateIncarcerationPeriodAdmissionReason(EntityEnum,
     RETURN_FROM_ESCAPE = \
         state_enum_strings.\
         state_incarceration_period_admission_reason_return_from_escape
+    TEMPORARY_CUSTODY = \
+        state_enum_strings.\
+        state_incarceration_period_admission_reason_temporary_custody
     TRANSFER = \
         state_enum_strings.state_incarceration_period_admission_reason_transfer
 
@@ -98,6 +101,10 @@ class StateIncarcerationPeriodReleaseReason(EntityEnum,
     DEATH = state_enum_strings.state_incarceration_period_release_reason_death
     ESCAPE = state_enum_strings.state_incarceration_period_release_reason_escape
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
+    # pylint:disable=line-too-long
+    RELEASED_FROM_TEMPORARY_CUSTODY = \
+        state_enum_strings.\
+        state_incarceration_period_release_reason_released_from_temporary_custody
     RELEASED_IN_ERROR = \
         state_enum_strings.\
         state_incarceration_period_release_reason_released_in_error

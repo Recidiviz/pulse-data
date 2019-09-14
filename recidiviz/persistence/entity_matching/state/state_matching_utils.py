@@ -457,6 +457,7 @@ def admitted_for_revocation(ip: schema.StateIncarcerationPeriod) -> bool:
         StateIncarcerationPeriodAdmissionReason.
         RETURN_FROM_ERRONEOUS_RELEASE.value,
         StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE.value,
+        StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY.value,
         StateIncarcerationPeriodAdmissionReason.TRANSFER.value]
     if ip.admission_reason in revocation_types:
         return True

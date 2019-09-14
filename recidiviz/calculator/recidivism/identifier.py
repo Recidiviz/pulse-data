@@ -158,6 +158,10 @@ def validate_sort_and_collapse_incarceration_periods(
         if is_placeholder(incarceration_period):
             # Drop any placeholder incarceration periods from the calculations
             continue
+        if incarceration_period.admission_reason == \
+                AdmissionReason.TEMPORARY_CUSTODY:
+            # Drop any temporary incarceration periods from the calculations
+            continue
         if not incarceration_period.status:
             logging.info("No status on incarceration period with id: %d",
                          incarceration_period.incarceration_period_id)
@@ -357,6 +361,13 @@ def for_last_incarceration_period(
                                          release_date,
                                          release_facility)
 
+    if release_reason == ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY:
+        # This should never happen. Should have been filtered by
+        # validate_sort_and_collapse_incarceration_periods function. Throw error
+        raise ValueError("validate_sort_and_collapse_incarceration_periods is "
+                         "not effectively filtering. Found unexpected "
+                         f"release_reason of: {release_reason}")
+
     raise ValueError("Enum case not handled for "
                      "StateIncarcerationPeriodReleaseReason of type:"
                      f" {release_reason}.")
@@ -440,6 +451,12 @@ def should_include_in_release_cohort(
         # If the person was released from this incarceration period because they
         # escaped, do not include them in the release cohort.
         return False
+    if release_reason == ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY:
+        # This should never happen. Should have been filtered by
+        # validate_sort_and_collapse_incarceration_periods function. Throw error
+        raise ValueError("validate_sort_and_collapse_incarceration_periods is "
+                         "not effectively filtering. Found unexpected "
+                         f"release_reason of: {release_reason}")
     if release_reason == ReleaseReason.RELEASED_IN_ERROR:
         if reincarceration_admission_reason != \
                 AdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE:
@@ -463,6 +480,15 @@ def should_include_in_release_cohort(
         # If the person was released from this incarceration period due to a
         # court order, do not include them in the release cohort.
         return False
+
+    if reincarceration_admission_reason == AdmissionReason.TEMPORARY_CUSTODY:
+        # This should never happen. Should have been filtered by
+        # validate_sort_and_collapse_incarceration_periods function. Throw error
+        raise ValueError("validate_sort_and_collapse_incarceration_periods is "
+                         "not effectively filtering. Found unexpected "
+                         "admission_reason of: "
+                         f"{reincarceration_admission_reason}")
+
     if release_reason in (ReleaseReason.COMMUTED,
                           ReleaseReason.COMPASSIONATE,
                           ReleaseReason.CONDITIONAL_RELEASE,
@@ -513,6 +539,13 @@ def get_return_type(
         raise ValueError("should_include_in_release_cohort is not effectively"
                          " filtering. Found unexpected admission_reason of:"
                          f" {reincarceration_admission_reason}")
+    if reincarceration_admission_reason == AdmissionReason.TEMPORARY_CUSTODY:
+        # This should never happen. Should have been filtered by
+        # validate_sort_and_collapse_incarceration_periods function. Throw error
+        raise ValueError("validate_sort_and_collapse_incarceration_periods is "
+                         "not effectively filtering. Found unexpected "
+                         "admission_reason of: "
+                         f"{reincarceration_admission_reason}")
 
     raise ValueError("Enum case not handled for "
                      "StateIncarcerationPeriodAdmissionReason of type:"
@@ -541,6 +574,13 @@ def get_from_supervision_type(
         raise ValueError("should_include_in_release_cohort is not effectively"
                          " filtering. Found unexpected admission_reason of:"
                          f" {reincarceration_admission_reason}")
+    if reincarceration_admission_reason == AdmissionReason.TEMPORARY_CUSTODY:
+        # This should never happen. Should have been filtered by
+        # validate_sort_and_collapse_incarceration_periods function. Throw error
+        raise ValueError("validate_sort_and_collapse_incarceration_periods is "
+                         "not effectively filtering. Found unexpected "
+                         "admission_reason of: "
+                         f"{reincarceration_admission_reason}")
 
     raise ValueError("Enum case not handled for "
                      "StateIncarcerationPeriodAdmissionReason of type:"

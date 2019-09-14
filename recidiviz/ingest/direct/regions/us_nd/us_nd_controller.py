@@ -36,6 +36,8 @@ from recidiviz.common.constants.state.state_charge import \
     StateChargeClassificationType
 from recidiviz.common.constants.state.state_court_case import \
     StateCourtCaseStatus
+from recidiviz.common.constants.state.state_incarceration import \
+    StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_incident import \
     StateIncarcerationIncidentOutcomeType, StateIncarcerationIncidentType
 from recidiviz.common.constants.state.state_incarceration_period import \
@@ -448,6 +450,19 @@ class UsNdController(CsvGcsfsDirectIngestController):
                     extracted_object.release_date = movement_date
                     extracted_object.release_reason = movement_reason
                     extracted_object.facility = from_facility
+
+                if extracted_object.facility:
+                    facility = extracted_object.facility.upper()
+                    if facility == 'NTAD':
+                        # Could be a county jail or another state's facility
+                        extracted_object.incarceration_type = \
+                            StateIncarcerationType.EXTERNAL_UNKNOWN.value
+                    elif facility == 'CJ':
+                        extracted_object.incarceration_type = \
+                            StateIncarcerationType.COUNTY_JAIL.value
+                    elif facility == 'DEFP':
+                        extracted_object.incarceration_type = \
+                            StateIncarcerationType.COUNTY_JAIL.value
 
     @staticmethod
     def _label_external_id_as_elite(_row: Dict[str, str],
