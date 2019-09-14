@@ -1475,7 +1475,9 @@ class TestUsNdController(unittest.TestCase):
 
     # TODO(2157): Move into integration specific file
     @patch.dict('os.environ', {'PERSIST_LOCALLY': 'true'})
-    def test_run_full_ingest_all_files_specific_order(self):
+    @patch("recidiviz.persistence.entity_matching.state"
+           ".state_matching_utils.get_region")
+    def test_run_full_ingest_all_files_specific_order(self, _):
         ######################################
         # ELITE OFFENDER IDENTIFIERS
         ######################################
@@ -3221,7 +3223,9 @@ class TestUsNdController(unittest.TestCase):
         return field
 
     @patch.dict('os.environ', {'PERSIST_LOCALLY': 'true'})
-    def test_run_full_ingest_all_files(self):
+    @patch("recidiviz.persistence.entity_matching.state"
+           ".state_matching_utils.get_region")
+    def test_run_full_ingest_all_files(self, _):
         # pylint:disable=protected-access
         file_tags = sorted(self.controller._get_file_tag_rank_list())
         add_paths_with_tags_and_process(self, self.controller, file_tags)
@@ -3230,7 +3234,9 @@ class TestUsNdController(unittest.TestCase):
         #  test more comprehensively for state.
 
     @patch.dict('os.environ', {'PERSIST_LOCALLY': 'true'})
-    def test_run_full_ingest_all_files_reverse(self):
+    @patch("recidiviz.persistence.entity_matching.state"
+           ".state_matching_utils.get_region")
+    def test_run_full_ingest_all_files_reverse(self, _):
         # pylint:disable=protected-access
         file_tags = list(
             reversed(sorted(self.controller._get_file_tag_rank_list())))

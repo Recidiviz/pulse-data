@@ -24,6 +24,8 @@ from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_court_case import \
     StateCourtCaseStatus
 from recidiviz.common.constants.state.state_fine import StateFineStatus
+from recidiviz.common.constants.state.state_incarceration import \
+    StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
@@ -97,6 +99,7 @@ def generate_incarceration_period(person, **kwargs) \
     args = {
         'status': StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO.value,
         'state_code': _STATE_CODE,
+        'incarceration_type': StateIncarcerationType.STATE_PRISON.value,
     }
     args.update(kwargs)
     return schema.StateIncarcerationPeriod(person=person, **args)
