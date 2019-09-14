@@ -43,7 +43,7 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import \
     get_root_entity_cls, get_total_entities_of_cls, \
     associate_revocation_svrs_with_ips, base_entity_match, \
     _read_persons, get_all_entity_trees_of_cls, get_external_ids_from_entity, \
-    nd_is_incarceration_period_match
+    nd_is_incarceration_period_match, nd_update_temporary_holds
 from recidiviz.persistence.entity.entity_utils import is_placeholder, \
     get_set_entity_field_names, get_all_core_entity_field_names, \
     get_all_db_objs_from_tree, get_all_db_objs_from_trees
@@ -249,10 +249,13 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         logging.info("[Entity matching] Move incidents into periods")
         move_incidents_onto_periods(matched_entities.people)
 
+        logging.info("[Entity matching] Transform incarceration periods into "
+                     "holds")
+        nd_update_temporary_holds(matched_entities.people)
+
         logging.info("[Entity matching] Associate revocation SVRS wtih IPs")
         associate_revocation_svrs_with_ips(matched_entities.people)
         return matched_entities
-
 
     # TODO(2037): Move state specific logic into its own file.
     def _perform_preprocessing(self,

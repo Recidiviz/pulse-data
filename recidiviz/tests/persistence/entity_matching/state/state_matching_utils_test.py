@@ -21,7 +21,9 @@ from unittest import TestCase
 
 import attr
 import pytest
+from mock import patch, create_autospec
 
+from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.state.state_incarceration import \
     StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import \
@@ -48,12 +50,14 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import \
     get_root_entity_cls, get_total_entities_of_cls, \
     associate_revocation_svrs_with_ips, admitted_for_revocation, \
     revoked_to_prison, base_entity_match, get_external_ids_of_cls, \
-    _read_persons, get_all_entity_trees_of_cls
+    _read_persons, get_all_entity_trees_of_cls, \
+    _nd_update_temporary_holds_helper
 from recidiviz.persistence.entity.entity_utils import is_placeholder
 from recidiviz.persistence.entity_matching.entity_matching_types import \
     EntityTree
 from recidiviz.persistence.errors import EntityMatchingError
 from recidiviz.tests.utils import fakes
+from recidiviz.utils.regions import Region
 
 _DATE_1 = datetime.date(year=2019, month=1, day=1)
 _DATE_2 = datetime.date(year=2019, month=2, day=1)
@@ -61,7 +65,8 @@ _DATE_3 = datetime.date(year=2019, month=3, day=1)
 _DATE_4 = datetime.date(year=2019, month=4, day=1)
 _DATE_5 = datetime.date(year=2019, month=5, day=1)
 _DATE_6 = datetime.date(year=2019, month=6, day=1)
-_DATE_7 = datetime.date(year=2019, month=5, day=1)
+_DATE_7 = datetime.date(year=2019, month=7, day=1)
+_DATE_8 = datetime.date(year=2019, month=8, day=1)
 _EXTERNAL_ID = 'EXTERNAL_ID-1'
 _EXTERNAL_ID_2 = 'EXTERNAL_ID-2'
 _EXTERNAL_ID_3 = 'EXTERNAL_ID-3'
@@ -89,6 +94,10 @@ class TestStateMatchingUtils(TestCase):
 
     def setUp(self) -> None:
         fakes.use_in_memory_sqlite_database(StateBase)
+
+    def to_entity(self, schema_obj):
+        return converter.convert_schema_object_to_entity(
+            schema_obj, populate_back_edges=False)
 
     def assert_schema_objects_equal(self,
                                     expected: StateBase,
@@ -455,6 +464,203 @@ class TestStateMatchingUtils(TestCase):
         for revocation_type in StateSupervisionViolationResponseRevocationType:
             svr.revocation_type = revocation_type.value
             revoked_to_prison(svr)
+
+    def _create_fake_nd_region(self):
+        fake_region = create_autospec(Region)
+        overrides_builder = EnumOverrides.Builder()
+        overrides_builder.add(
+            'PV', StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION)
+        overrides_builder.add(
+            'REC', StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE)
+        overrides_builder.add(
+            'ADM', StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION)
+        fake_region.get_enum_overrides.return_value = overrides_builder.build()
+        return fake_region
+
+    @patch("recidiviz.persistence.entity_matching.state"
+           ".state_matching_utils.get_region")
+    def test_transformToHolds(self, mock_region):
+        # Arrange
+        mock_region.return_value = self._create_fake_nd_region()
+        ip = schema.StateIncarcerationPeriod(
+            admission_date=_DATE_1,
+            admission_reason=
+            StateIncarcerationPeriodAdmissionReason.
+            PAROLE_REVOCATION.value,
+            admission_reason_raw_text='PV',
+            release_date=_DATE_2,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER.value,
+            incarceration_type=StateIncarcerationType.EXTERNAL_UNKNOWN.value
+        )
+        ip_2 = schema.StateIncarcerationPeriod(
+            admission_date=_DATE_2,
+            admission_reason=
+            StateIncarcerationPeriodAdmissionReason.TRANSFER.value,
+            admission_reason_raw_text='INT',
+            release_date=_DATE_3,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER.value,
+            incarceration_type=StateIncarcerationType.COUNTY_JAIL.value,
+        )
+        ip_3 = schema.StateIncarcerationPeriod(
+            admission_date=_DATE_3,
+            admission_reason=
+            StateIncarcerationPeriodAdmissionReason.TRANSFER.value,
+            admission_reason_raw_text='INT',
+            release_date=_DATE_4,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER.value,
+            incarceration_type=StateIncarcerationType.STATE_PRISON.value,
+        )
+        ip_4 = schema.StateIncarcerationPeriod(
+            admission_date=_DATE_4,
+            admission_reason=
+            StateIncarcerationPeriodAdmissionReason.TRANSFER.value,
+            admission_reason_raw_text='INT',
+            release_date=_DATE_5,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER.value,
+            incarceration_type=StateIncarcerationType.COUNTY_JAIL.value,
+        )
+
+        expected_ip = attr.evolve(
+            self.to_entity(ip),
+            admission_reason=
+            StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            release_reason=
+            StateIncarcerationPeriodReleaseReason.
+            RELEASED_FROM_TEMPORARY_CUSTODY)
+        expected_ip_2 = attr.evolve(
+            self.to_entity(ip_2),
+            admission_reason=
+            StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            release_reason=
+            StateIncarcerationPeriodReleaseReason.
+            RELEASED_FROM_TEMPORARY_CUSTODY)
+        expected_ip_3 = attr.evolve(
+            self.to_entity(ip_3),
+            admission_reason=
+            StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION)
+        expected_ip_4 = attr.evolve(self.to_entity(ip_4))
+
+        ips = [ip_2, ip_4, ip, ip_3]
+        expected_ips = [
+            expected_ip, expected_ip_2, expected_ip_3, expected_ip_4]
+
+        # Act
+        _nd_update_temporary_holds_helper(ips)
+
+        # Assert
+        entity_ips = [self.to_entity(ip) for ip in ips]
+        self.assertCountEqual(entity_ips, expected_ips)
+
+
+    @patch("recidiviz.persistence.entity_matching.state"
+           ".state_matching_utils.get_region")
+    def test_transformToHolds_takeAdmissionReasonFromConsecutive(
+            self, mock_region):
+        # Arrange
+        mock_region.return_value = self._create_fake_nd_region()
+        # Too long of a time gap between date_1 and date_2 to be
+        # considered consecutive
+        date_1 = _DATE_1
+        date_2 = date_1 + datetime.timedelta(days=3)
+        date_3 = date_2 + datetime.timedelta(days=2)
+        ip = schema.StateIncarcerationPeriod(
+            admission_date=date_1,
+            admission_reason=
+            StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION.value,
+            admission_reason_raw_text='PV',
+            release_date=date_1,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER.value,
+            incarceration_type=StateIncarcerationType.EXTERNAL_UNKNOWN.value
+        )
+        ip_2 = schema.StateIncarcerationPeriod(
+            admission_date=date_2,
+            admission_reason=
+            StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION.value,
+            release_date=date_2,
+            admission_reason_raw_text='ADM',
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER.value,
+            incarceration_type=StateIncarcerationType.COUNTY_JAIL.value,
+        )
+        ip_3 = schema.StateIncarcerationPeriod(
+            admission_date=date_3,
+            admission_reason=
+            StateIncarcerationPeriodAdmissionReason.TRANSFER.value,
+            admission_reason_raw_text='INT',
+            release_date=date_3,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER.value,
+            incarceration_type=StateIncarcerationType.STATE_PRISON.value,
+        )
+
+        expected_ip = attr.evolve(
+            self.to_entity(ip),
+            admission_reason=
+            StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            release_reason=
+            StateIncarcerationPeriodReleaseReason.
+            RELEASED_FROM_TEMPORARY_CUSTODY)
+        expected_ip_2 = attr.evolve(
+            self.to_entity(ip_2),
+            admission_reason=
+            StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            release_reason=
+            StateIncarcerationPeriodReleaseReason.
+            RELEASED_FROM_TEMPORARY_CUSTODY)
+        expected_ip_3 = attr.evolve(
+            self.to_entity(ip_3),
+            admission_reason=
+            StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION)
+
+        ips = [ip_2, ip, ip_3]
+        expected_ips = [expected_ip, expected_ip_2, expected_ip_3]
+
+        # Act
+        _nd_update_temporary_holds_helper(ips)
+
+        # Assert
+        entity_ips = [self.to_entity(ip) for ip in ips]
+        self.assertCountEqual(entity_ips, expected_ips)
+
+    @patch("recidiviz.persistence.entity_matching.state"
+           ".state_matching_utils.get_region")
+    def test_transformToHolds_nonTransferReason(self, mock_region):
+        # Arrange
+        mock_region.return_value = self._create_fake_nd_region()
+        ip = schema.StateIncarcerationPeriod(
+            admission_date=_DATE_1,
+            admission_reason=
+            StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION.value,
+            admission_reason_raw_text='PV',
+            release_date=_DATE_2,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER.value,
+            incarceration_type=StateIncarcerationType.COUNTY_JAIL.value,
+        )
+
+        ip_2 = schema.StateIncarcerationPeriod(
+            admission_date=_DATE_2,
+            admission_reason=
+            StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION.value,
+            release_date=_DATE_3,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER.value,
+            incarceration_type=StateIncarcerationType.STATE_PRISON.value,
+        )
+
+        expected_ip = attr.evolve(
+            self.to_entity(ip),
+            admission_reason=
+            StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            release_reason=
+            StateIncarcerationPeriodReleaseReason.
+            RELEASED_FROM_TEMPORARY_CUSTODY)
+        expected_ip_2 = attr.evolve(self.to_entity(ip_2))
+        ips = [ip, ip_2]
+        expected_ips = [expected_ip, expected_ip_2]
+
+        # Act
+        _nd_update_temporary_holds_helper(ips)
+
+        # Assert
+        entity_ips = [self.to_entity(ip) for ip in ips]
+        self.assertCountEqual(entity_ips, expected_ips)
 
     def test_associateSvrsWithIps(self):
         # Arrange
