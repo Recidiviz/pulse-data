@@ -24,7 +24,7 @@ import unittest
 from typing import List
 
 import attr
-from mock import patch, Mock
+from mock import patch, Mock, create_autospec
 
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.person_characteristics import Gender, Race, \
@@ -81,6 +81,7 @@ from recidiviz.tests.ingest.direct.direct_ingest_util import \
     build_controller_for_tests, ingest_args_for_fixture_file, \
     add_paths_with_tags_and_process
 from recidiviz.tests.utils import fakes
+from recidiviz.utils.regions import Region
 
 _INCIDENT_DETAILS_1 = \
     '230Inmate Jon Hopkins would not follow directives to stop and be pat ' \
@@ -1473,11 +1474,18 @@ class TestUsNdController(unittest.TestCase):
         print(expected)
         assert final_info == expected
 
+    def _fake_region(self):
+        fake_region = create_autospec(Region)
+        fake_region.get_enum_overrides.return_value = \
+            self.controller.get_enum_overrides()
+        return fake_region
+
     # TODO(2157): Move into integration specific file
     @patch.dict('os.environ', {'PERSIST_LOCALLY': 'true'})
     @patch("recidiviz.persistence.entity_matching.state"
            ".state_matching_utils.get_region")
-    def test_run_full_ingest_all_files_specific_order(self, _):
+    def test_run_full_ingest_all_files_specific_order(self, mock_get_region):
+        mock_get_region.return_value = self._fake_region()
         ######################################
         # ELITE OFFENDER IDENTIFIERS
         ######################################
@@ -2317,11 +2325,12 @@ class TestUsNdController(unittest.TestCase):
                 incarceration_type_raw_text='EXTERNAL_UNKNOWN',
                 facility='NTAD',
                 admission_reason=
-                StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+                StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
                 admission_reason_raw_text='PV',
                 admission_date=datetime.date(year=2018, month=2, day=28),
                 release_reason=
-                StateIncarcerationPeriodReleaseReason.TRANSFER,
+                StateIncarcerationPeriodReleaseReason.
+                RELEASED_FROM_TEMPORARY_CUSTODY,
                 release_reason_raw_text='INT',
                 release_date=datetime.date(year=2018, month=3, day=1),
                 state_code=_STATE_CODE,
@@ -2336,11 +2345,12 @@ class TestUsNdController(unittest.TestCase):
                 incarceration_type_raw_text='COUNTY_JAIL',
                 facility='CJ',
                 admission_reason=
-                StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+                StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
                 admission_reason_raw_text='PV',
                 admission_date=datetime.date(year=2018, month=3, day=1),
                 release_reason=
-                StateIncarcerationPeriodReleaseReason.TRANSFER,
+                StateIncarcerationPeriodReleaseReason.
+                RELEASED_FROM_TEMPORARY_CUSTODY,
                 release_reason_raw_text='INT',
                 release_date=datetime.date(year=2018, month=3, day=8),
                 state_code=_STATE_CODE,
@@ -2354,7 +2364,7 @@ class TestUsNdController(unittest.TestCase):
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 facility='NDSP',
                 admission_reason=
-                StateIncarcerationPeriodAdmissionReason.TRANSFER,
+                StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
                 admission_reason_raw_text='INT',
                 admission_date=datetime.date(year=2018, month=3, day=8),
                 state_code=_STATE_CODE,
@@ -3225,7 +3235,8 @@ class TestUsNdController(unittest.TestCase):
     @patch.dict('os.environ', {'PERSIST_LOCALLY': 'true'})
     @patch("recidiviz.persistence.entity_matching.state"
            ".state_matching_utils.get_region")
-    def test_run_full_ingest_all_files(self, _):
+    def test_run_full_ingest_all_files(self, mock_get_region):
+        mock_get_region.return_value = self._fake_region()
         # pylint:disable=protected-access
         file_tags = sorted(self.controller._get_file_tag_rank_list())
         add_paths_with_tags_and_process(self, self.controller, file_tags)
@@ -3236,7 +3247,8 @@ class TestUsNdController(unittest.TestCase):
     @patch.dict('os.environ', {'PERSIST_LOCALLY': 'true'})
     @patch("recidiviz.persistence.entity_matching.state"
            ".state_matching_utils.get_region")
-    def test_run_full_ingest_all_files_reverse(self, _):
+    def test_run_full_ingest_all_files_reverse(self, mock_get_region):
+        mock_get_region.return_value = self._fake_region()
         # pylint:disable=protected-access
         file_tags = list(
             reversed(sorted(self.controller._get_file_tag_rank_list())))
