@@ -771,6 +771,43 @@ class TestUsNdController(unittest.TestCase):
                 admission_reason='PV')
         ]
 
+        incarceration_periods_555555 = [
+            StateIncarcerationPeriod(
+                state_incarceration_period_id='555555-1',
+                status='IN',
+                incarceration_type='EXTERNAL_UNKNOWN',
+                admission_date='2/28/18  12:00:00 AM',
+                facility='NTAD',
+                admission_reason='PV'),
+            StateIncarcerationPeriod(
+                state_incarceration_period_id='555555-2',
+                status='OUT',
+                incarceration_type='EXTERNAL_UNKNOWN',
+                release_date='3/1/18  12:00:00 AM',
+                facility='NTAD',
+                release_reason='INT'),
+            StateIncarcerationPeriod(
+                state_incarceration_period_id='555555-3',
+                status='IN',
+                incarceration_type='COUNTY_JAIL',
+                admission_date='3/1/18  12:00:00 AM',
+                facility='CJ',
+                admission_reason='PV'),
+            StateIncarcerationPeriod(
+                state_incarceration_period_id='555555-4',
+                status='OUT',
+                incarceration_type='COUNTY_JAIL',
+                release_date='3/8/18  12:00:00 AM',
+                facility='CJ',
+                release_reason='INT'),
+            StateIncarcerationPeriod(
+                state_incarceration_period_id='555555-5',
+                status='IN',
+                admission_date='3/8/18  12:00:00 AM',
+                facility='NDSP',
+                admission_reason='INT'),
+        ]
+
         expected = IngestInfo(
             state_people=[
                 StatePerson(state_sentence_groups=[
@@ -791,6 +828,12 @@ class TestUsNdController(unittest.TestCase):
                                            StateIncarcerationSentence(
                                                state_incarceration_periods=
                                                incarceration_periods_114909)
+                                       ]),
+                    StateSentenceGroup(state_sentence_group_id='555555',
+                                       state_incarceration_sentences=[
+                                           StateIncarcerationSentence(
+                                               state_incarceration_periods=
+                                               incarceration_periods_555555)
                                        ]),
                 ]),
             ])
@@ -2246,6 +2289,77 @@ class TestUsNdController(unittest.TestCase):
                 incarceration_sentences=[incarceration_sentence_114909_ips],
                 person=incarceration_sentence_114909_ips.person)
 
+        person_555555 = entities.StatePerson.new_with_defaults()
+        sentence_group_555555 = \
+            entities.StateSentenceGroup.new_with_defaults(
+                external_id='555555',
+                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                state_code=_STATE_CODE,
+                person=person_555555,
+            )
+        person_555555.sentence_groups.append(sentence_group_555555)
+        incarceration_sentence_555555_ips = \
+            entities.StateIncarcerationSentence.new_with_defaults(
+                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                state_code=_STATE_CODE, sentence_group=sentence_group_555555,
+                person=sentence_group_555555.person)
+        sentence_group_555555.incarceration_sentences.append(
+            incarceration_sentence_555555_ips)
+        incarceration_period_555555_1 = \
+            entities.StateIncarcerationPeriod.new_with_defaults(
+                external_id='555555-1|555555-2',
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                status_raw_text='OUT',
+                incarceration_type=StateIncarcerationType.EXTERNAL_UNKNOWN,
+                incarceration_type_raw_text='EXTERNAL_UNKNOWN',
+                facility='NTAD',
+                admission_reason=
+                StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+                admission_reason_raw_text='PV',
+                admission_date=datetime.date(year=2018, month=2, day=28),
+                release_reason=
+                StateIncarcerationPeriodReleaseReason.TRANSFER,
+                release_reason_raw_text='INT',
+                release_date=datetime.date(year=2018, month=3, day=1),
+                state_code=_STATE_CODE,
+                incarceration_sentences=[incarceration_sentence_555555_ips],
+                person=incarceration_sentence_555555_ips.person)
+        incarceration_period_555555_2 = \
+            entities.StateIncarcerationPeriod.new_with_defaults(
+                external_id='555555-3|555555-4',
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                status_raw_text='OUT',
+                incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+                incarceration_type_raw_text='COUNTY_JAIL',
+                facility='CJ',
+                admission_reason=
+                StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+                admission_reason_raw_text='PV',
+                admission_date=datetime.date(year=2018, month=3, day=1),
+                release_reason=
+                StateIncarcerationPeriodReleaseReason.TRANSFER,
+                release_reason_raw_text='INT',
+                release_date=datetime.date(year=2018, month=3, day=8),
+                state_code=_STATE_CODE,
+                incarceration_sentences=[incarceration_sentence_555555_ips],
+                person=incarceration_sentence_555555_ips.person)
+        incarceration_period_555555_3 = \
+            entities.StateIncarcerationPeriod.new_with_defaults(
+                external_id='555555-5',
+                status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+                status_raw_text='IN',
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                facility='NDSP',
+                admission_reason=
+                StateIncarcerationPeriodAdmissionReason.TRANSFER,
+                admission_reason_raw_text='INT',
+                admission_date=datetime.date(year=2018, month=3, day=8),
+                state_code=_STATE_CODE,
+                incarceration_sentences=[incarceration_sentence_555555_ips],
+                person=incarceration_sentence_555555_ips.person)
+        expected_people.append(person_555555)
+
         incarceration_sentence_113377_ips.incarceration_periods.append(
             incarceration_period_113377_1)
         incarceration_sentence_105640_ips.incarceration_periods.append(
@@ -2256,6 +2370,12 @@ class TestUsNdController(unittest.TestCase):
             incarceration_period_105640_3)
         incarceration_sentence_114909_ips.incarceration_periods.append(
             incarceration_period_114909_1)
+        incarceration_sentence_555555_ips.incarceration_periods.append(
+            incarceration_period_555555_1)
+        incarceration_sentence_555555_ips.incarceration_periods.append(
+            incarceration_period_555555_2)
+        incarceration_sentence_555555_ips.incarceration_periods.append(
+            incarceration_period_555555_3)
 
         # Act
         self._run_ingest_job_for_filename('elite_externalmovements.csv')
