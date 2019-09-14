@@ -20,8 +20,12 @@ import datetime
 import logging
 from typing import List, cast, Optional, Tuple, Union, Set, Type
 
+from recidiviz.common.constants.enum_overrides import EnumOverrides
+from recidiviz.common.constants.state.state_incarceration import \
+    StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import \
-    StateIncarcerationPeriodAdmissionReason
+    StateIncarcerationPeriodAdmissionReason, \
+    StateIncarcerationPeriodReleaseReason
 from recidiviz.common.constants.state.state_supervision_violation_response \
     import StateSupervisionViolationResponseRevocationType
 from recidiviz.persistence.database.base_schema import StateBase
@@ -36,6 +40,7 @@ from recidiviz.common.common_utils import check_all_objs_have_type
 from recidiviz.persistence.entity_matching.entity_matching_types import \
     EntityTree
 from recidiviz.persistence.errors import EntityMatchingError
+from recidiviz.utils.regions import get_region
 
 
 def is_match(ingested_entity: EntityTree,
@@ -211,6 +216,138 @@ def add_child_to_entity(
                 f"{child_field}", entity.get_entity_name())
         child_field = child_to_add
         entity.set_field(child_field_name, child_field)
+
+
+def nd_update_temporary_holds(ingested_persons: List[schema.StatePerson]):
+    """ND specific logic to handle correct setting of admission and release
+    reasons for incarceration periods that are holds and that directly succeed
+    holds.
+    """
+    for person in ingested_persons:
+        for sentence_group in person.sentence_groups:
+            for incarceration_sentence in \
+                    sentence_group.incarceration_sentences:
+                _nd_update_temporary_holds_helper(
+                    incarceration_sentence.incarceration_periods)
+
+
+def _nd_update_temporary_holds_helper(
+        ips: List[schema.StateIncarcerationPeriod]) -> None:
+    ips_with_admission_dates = [ip for ip in ips if ip.admission_date]
+    sorted_ips = sorted(
+        ips_with_admission_dates, key=lambda x: x.admission_date)
+    _update_ips_to_holds(sorted_ips)
+    region = get_region('us_nd')
+    overrides = region.get_enum_overrides()
+    for idx, ip in enumerate(sorted_ips):
+        if not _is_hold(ip):
+            _set_preceding_admission_reason(idx, sorted_ips, overrides)
+
+
+def _update_ips_to_holds(
+        sorted_ips: List[schema.StateIncarcerationPeriod]) -> None:
+    after_non_hold = False
+    previous_ip = None
+    for ip in sorted_ips:
+        if not previous_ip:
+            if _is_hold(ip):
+                ip.admission_reason = StateIncarcerationPeriodAdmissionReason. \
+                    TEMPORARY_CUSTODY.value
+                ip.release_reason = StateIncarcerationPeriodReleaseReason. \
+                    RELEASED_FROM_TEMPORARY_CUSTODY.value
+            previous_ip = ip
+            continue
+
+        if _is_hold(ip):
+            # We don't consider holds as actual holds if they follow
+            # consecutively after a prison sentence. If a significant period
+            # of time has passed after a prison sentence, then it can
+            # be considered a hold.
+            if not _are_consecutive(previous_ip, ip) or not after_non_hold:
+                ip.admission_reason = StateIncarcerationPeriodAdmissionReason. \
+                    TEMPORARY_CUSTODY.value
+                ip.release_reason = StateIncarcerationPeriodReleaseReason. \
+                    RELEASED_FROM_TEMPORARY_CUSTODY.value
+                after_non_hold = False
+        else:
+            after_non_hold = True
+        previous_ip = ip
+
+
+def _set_preceding_admission_reason(
+        idx: int, sorted_ips: List[schema.StateIncarcerationPeriod],
+        overrides: EnumOverrides) -> None:
+    """
+    Given a list of |sorted_ips| and an index |idx| which corresponds to a
+    DOCR incarceration period, we select the admission reason of the most
+    closely preceding period of temporary custody that is consecutive with
+    the DOCR incarceration period.
+    """
+
+    beginning_ip = sorted_ips[idx]
+    if _is_hold(beginning_ip):
+        raise EntityMatchingError(
+            f'Expected beginning_ip to NOT be a hold, instead '
+            f'found {beginning_ip}', 'incarceration_period')
+
+    earliest_hold_admission_raw_text = None
+    subsequent_ip = None
+    while idx >= 0:
+        ip = sorted_ips[idx]
+        if not subsequent_ip:
+            subsequent_ip = ip
+            idx = idx - 1
+            continue
+
+        if not _is_hold(ip) or not _are_consecutive(ip, subsequent_ip):
+            break
+
+        earliest_hold_admission_raw_text = ip.admission_reason_raw_text
+        subsequent_ip = ip
+        idx = idx - 1
+
+    # Update the original incarceration period's admission reason if necessary.
+    if earliest_hold_admission_raw_text and \
+            beginning_ip.admission_reason \
+            == StateIncarcerationPeriodAdmissionReason.TRANSFER.value:
+        beginning_ip.admission_reason = \
+            StateIncarcerationPeriodAdmissionReason.parse(
+                earliest_hold_admission_raw_text, overrides).value
+
+
+def _is_hold(ip: schema.StateIncarcerationPeriod) -> bool:
+    """Determines if the provided |ip| represents a temporary hold and not a
+    stay in a DOCR overseen facility.
+    """
+
+    # Everything before July 1, 2017 was overseen by DOCR.
+    if ip.admission_date < datetime.date(year=2017, month=7, day=1):
+        return False
+
+    hold_types = [
+        StateIncarcerationType.COUNTY_JAIL.value,
+        StateIncarcerationType.EXTERNAL_UNKNOWN.value]
+    non_hold_types = [StateIncarcerationType.STATE_PRISON.value]
+    if ip.incarceration_type in hold_types:
+        return True
+    if ip.incarceration_type in non_hold_types:
+        return False
+    raise EntityMatchingError(
+        f"Unexpected StateIncarcerationType"
+        f"{ip.incarceration_type}.", ip.get_entity_name())
+
+
+def _are_consecutive(ip1: schema.StateIncarcerationPeriod,
+                     ip2: schema.StateIncarcerationPeriod) -> bool:
+    """Determines if the provided StateIncarcerationPeriods are consecutive.
+    Periods that start/end within 2 days of each other are still considered
+    consecutive, as we expect that data to still represent one, same-day
+    movement.
+
+    Note this is order sensitive, and assumes that ip1 is the first period.
+    """
+    return ip1.release_date and ip2.admission_date \
+        and (ip2.admission_date - ip1.release_date).days <= 2
 
 
 # TODO(2037): Move the following into North Dakota specific file.
