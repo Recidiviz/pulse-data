@@ -26,11 +26,15 @@ from typing import List, Optional, Union
 
 from google.cloud import storage
 
+from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
+    filename_parts_from_path
 from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsPath, \
     GcsfsFilePath, GcsfsDirectoryPath, GcsfsBucketPath
 
 DIRECT_INGEST_UNPROCESSED_PREFIX = 'unprocessed'
 DIRECT_INGEST_PROCESSED_PREFIX = 'processed'
+SPLIT_FILE_SUFFIX = 'file_split'
+SPLIT_FILE_STORAGE_SUBDIR = 'split_files'
 
 
 def _build_unprocessed_file_name(
@@ -77,7 +81,14 @@ class DirectIngestGCSFileSystem:
 
     @abc.abstractmethod
     def download_as_string(self, path: GcsfsFilePath) -> bytes:
-        pass
+        """Downloads file contents into string format."""
+
+    @abc.abstractmethod
+    def upload_from_string(self,
+                           path: GcsfsFilePath,
+                           contents: str,
+                           content_type: str):
+        """Uploads string contents to a file path."""
 
     def mv(self,
            src_path: GcsfsFilePath,
@@ -101,29 +112,21 @@ class DirectIngestGCSFileSystem:
         """Deletes object at |path|."""
 
     @staticmethod
+    def is_processed_file(path: GcsfsFilePath):
+        return path.file_name.startswith(DIRECT_INGEST_PROCESSED_PREFIX)
+
+    @staticmethod
+    def is_seen_unprocessed_file(path: GcsfsFilePath):
+        return path.file_name.startswith(DIRECT_INGEST_UNPROCESSED_PREFIX)
+
+    @staticmethod
+    def is_split_file(path: GcsfsFilePath):
+        return path.file_name.split('.')[0].endswith(SPLIT_FILE_SUFFIX)
+
+    @staticmethod
     def have_seen_file_path(path: GcsfsFilePath) -> bool:
-        return path.file_name.startswith(DIRECT_INGEST_UNPROCESSED_PREFIX) or \
-            path.file_name.startswith(DIRECT_INGEST_PROCESSED_PREFIX)
-
-    def normalize_file_path_if_necessary(self, path: GcsfsFilePath):
-        if self.have_seen_file_path(path):
-            logging.info(
-                "Not normalizing file path for already seen file %s",
-                path.abs_path())
-            return
-
-        updated_file_path = \
-            GcsfsFilePath.from_absolute_path(
-                to_normalized_unprocessed_file_path(path.abs_path()))
-
-        if self.exists(updated_file_path):
-            logging.error("Desired path [%s] already exists, returning",
-                          updated_file_path.abs_path())
-            return
-
-        logging.info("Moving file from %s to %s",
-                     path.abs_path(), updated_file_path.abs_path())
-        self.mv(path, updated_file_path)
+        return DirectIngestGCSFileSystem.is_seen_unprocessed_file(path) or \
+            DirectIngestGCSFileSystem.is_processed_file(path)
 
     def get_unprocessed_file_paths(
             self, directory_path: GcsfsDirectoryPath) -> List[GcsfsFilePath]:
@@ -164,8 +167,25 @@ class DirectIngestGCSFileSystem:
             directory_path,
             f"{DIRECT_INGEST_PROCESSED_PREFIX}_{date_str}")
 
+    def mv_path_to_normalized_path(self, path: GcsfsFilePath):
+        updated_file_path = \
+            GcsfsFilePath.from_absolute_path(
+                to_normalized_unprocessed_file_path(path.abs_path()))
+
+        if self.exists(updated_file_path):
+            raise ValueError(
+                f"Desired path [{updated_file_path.abs_path()}] "
+                f"already exists, returning")
+
+        logging.info("Moving [%s] to normalized path [%s].",
+                     path.abs_path(), updated_file_path.abs_path())
+        self.mv(path, updated_file_path)
+
     def mv_path_to_processed_path(self, path: GcsfsFilePath):
-        self.mv(path, self._to_processed_file_path(path))
+        processed_path = self._to_processed_file_path(path)
+        logging.info("Moving [%s] to processed path [%s].",
+                     path.abs_path(), processed_path.abs_path())
+        self.mv(path, processed_path)
 
     def mv_paths_from_date_to_storage(
             self,
@@ -176,12 +196,26 @@ class DirectIngestGCSFileSystem:
             directory_path, date_str)
 
         for file_path in file_paths:
-            stripped_path = self._strip_processed_file_name_prefix(file_path)
-            storage_path = self._storage_path(
-                storage_directory_path,
-                date_str,
-                stripped_path.file_name)
-            self.mv(file_path, storage_path)
+            self.mv_path_to_storage(file_path, storage_directory_path)
+
+    def mv_path_to_storage(self,
+                           path: GcsfsFilePath,
+                           storage_directory_path: GcsfsDirectoryPath):
+        stripped_path = self._strip_processed_file_name_prefix(path)
+        optional_storage_subdir = None
+        if self.is_split_file(stripped_path):
+            optional_storage_subdir = SPLIT_FILE_STORAGE_SUBDIR
+
+        parts = filename_parts_from_path(path)
+        storage_path = self._storage_path(
+            storage_directory_path,
+            optional_storage_subdir,
+            parts.date_str,
+            stripped_path.file_name)
+
+        logging.info("Moving [%s] to storage path [%s].",
+                     path.abs_path(), storage_path.abs_path())
+        self.mv(path, storage_path)
 
     def _ls_with_file_prefix(self,
                              directory_path: GcsfsDirectoryPath,
@@ -221,14 +255,19 @@ class DirectIngestGCSFileSystem:
 
     def _storage_path(self,
                       storage_directory_path: GcsfsDirectoryPath,
+                      opt_storage_subdir: Optional[str],
                       date_str: str,
                       file_name: str) -> GcsfsFilePath:
         """Returns the storage file path for the input |file_name|,
         |storage_bucket|, and |ingest_date_str|"""
 
+        if opt_storage_subdir is None:
+            opt_storage_subdir = ''
+
         storage_path = os.path.join(storage_directory_path.bucket_name,
                                     storage_directory_path.relative_path,
                                     date_str,
+                                    opt_storage_subdir,
                                     file_name)
         path = GcsfsFilePath.from_absolute_path(storage_path)
 
@@ -267,6 +306,13 @@ class DirectIngestGCSFileSystemImpl(DirectIngestGCSFileSystem):
         if not blob:
             raise ValueError(f'Blob at path [{path.abs_path()}] does not exist')
         return blob.download_as_string()
+
+    def upload_from_string(self, path: GcsfsFilePath,
+                           contents: str,
+                           content_type: str):
+        bucket = self.storage_client.get_bucket(path.bucket_name)
+        bucket.blob(path.blob_name).upload_from_string(
+            contents, content_type=content_type)
 
     def copy(self,
              src_path: GcsfsFilePath,

@@ -73,6 +73,37 @@ class GcsfsDirectIngestController(BaseDirectIngestController[GcsfsIngestArgs,
                 self.ingest_directory_path,
                 self._get_file_tag_rank_list())
 
+    # ================= #
+    # NEW FILE HANDLING #
+    # ================= #
+    def handle_file(self, path: GcsfsFilePath, start_ingest: bool):
+        if self.fs.is_processed_file(path):
+            logging.info("File [%s] is already processed, returning.",
+                         path.abs_path())
+            return
+
+        if not self.fs.have_seen_file_path(path):
+            logging.info("File [%s] is not yet seen, normalizing.",
+                         path.abs_path())
+            self.fs.mv_path_to_normalized_path(path)
+            return
+
+        logging.info(
+            "Not normalizing file path for already seen file [%s]",
+            path.abs_path())
+
+        did_split = self._split_file_if_necessary(path)
+
+        if did_split:
+            logging.info(
+                "Split path [%s] - returning, will handle split files "
+                "separately.",
+                path.abs_path())
+            return
+
+        if start_ingest:
+            self.kick_scheduler(just_finished_job=False)
+
     # ============== #
     # JOB SCHEDULING #
     # ============== #
@@ -123,33 +154,36 @@ class GcsfsDirectIngestController(BaseDirectIngestController[GcsfsIngestArgs,
                 msg=f"File path not set for job [{self._job_tag(args)}]",
                 error_type=DirectIngestErrorType.INPUT_ERROR)
 
-        if not self.fs.exists(args.file_path):
+        return self._read_file_contents(args.file_path)
+
+    def _read_file_contents(
+            self,
+            file_path: GcsfsFilePath) -> Optional[Iterable[str]]:
+        if not self.fs.exists(file_path):
             logging.info(
                 "File path [%s] no longer exists - might have already been "
-                "processed or deleted", args.file_path)
+                "processed or deleted", file_path)
             return None
 
         # TODO(1840): Turn this into a generator that only reads / yields lines
         #  one at a time so we don't hold entire large files in memory. NOTE:
-        #  calling fp.readLine() does a GET request every time, so this impl
-        #  would have to be smarter about calling read() in chunks.
+        #  this would require implementing a fs function to read a Cloud Storage
+        #  file to a temp file on disk.
 
         logging.info(
             'Getting storage_client with bucket [%s] and filepath [%s] '
             '(time: [%s])',
-            args.file_path.bucket_name,
-            args.file_path.blob_name,
+            file_path.bucket_name,
+            file_path.blob_name,
             datetime.datetime.now().isoformat())
-        now = datetime.datetime.now()
         logging.info(
             "Opening path [%s] and reading contents (time: [%s]).",
-            args.file_path, now.isoformat())
-        binary_contents = self.fs.download_as_string(args.file_path)
-        now = datetime.datetime.now()
+            file_path, datetime.datetime.now().isoformat())
+        binary_contents = self.fs.download_as_string(file_path)
         logging.info(
             "Finished reading binary contents for path [%s] (time: [%s]), "
             "now decoding.",
-            args.file_path, now.isoformat())
+            file_path, datetime.datetime.now().isoformat())
 
         return binary_contents.decode('utf-8').splitlines()
 
@@ -162,6 +196,10 @@ class GcsfsDirectIngestController(BaseDirectIngestController[GcsfsIngestArgs,
     def _parse(self,
                args: GcsfsIngestArgs,
                contents: Iterable[str]) -> IngestInfo:
+        pass
+
+    @abc.abstractmethod
+    def _split_file_if_necessary(self, path: GcsfsFilePath):
         pass
 
     def _do_cleanup(self, args: GcsfsIngestArgs):

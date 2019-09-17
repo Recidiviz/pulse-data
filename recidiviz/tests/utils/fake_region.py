@@ -15,11 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Helpers for creating fake regions for use in tests."""
+from typing import Optional, Union
 
 from mock import create_autospec
 
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import \
     BaseDirectIngestController
+from recidiviz.ingest.scrape.base_scraper import BaseScraper
 from recidiviz.utils.regions import Region
 
 
@@ -27,13 +29,16 @@ def fake_region(*,
                 region_code: str = 'us_ca',
                 agency_type: str = 'prison',
                 environment: str = 'local',
-                jurisdiction_id: str = 'unknown'):
+                jurisdiction_id: str = 'unknown',
+                ingestor: Optional[Union[BaseScraper,
+                                         BaseDirectIngestController]] = None):
     region = create_autospec(Region)
     region.region_code = region_code
     region.agency_type = agency_type
     region.environment = environment
     region.jurisdiction_id = jurisdiction_id
-    region.get_ingestor.return_value.__class__ = BaseDirectIngestController
+    region.get_ingestor.return_value = \
+        ingestor if ingestor else create_autospec(BaseDirectIngestController)
     return region
 
 

@@ -28,8 +28,11 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_job_prioritizer \
     import GcsfsDirectIngestJobPrioritizer
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     filename_parts_from_path
+from recidiviz.tests.ingest.direct.controllers.\
+    gcsfs_direct_ingest_controller_test import \
+    StateTestGcsfsDirectIngestController
 from recidiviz.tests.ingest.direct.direct_ingest_util import \
-    FakeDirectIngestGCSFileSystem
+    FakeDirectIngestGCSFileSystem, build_controller_for_tests
 
 
 class TestGcsfsDirectIngestJobPrioritizer(unittest.TestCase):
@@ -55,12 +58,26 @@ class TestGcsfsDirectIngestJobPrioritizer(unittest.TestCase):
     _DAY_2 = _DAY_2_TIME_1.date()
 
     _INGEST_BUCKET_PATH = \
-        GcsfsDirectoryPath.from_absolute_path('ingest-directory/path')
+        GcsfsDirectoryPath.from_absolute_path('direct/regions/us_nd/fixtures')
 
     def setUp(self) -> None:
         self.fs = FakeDirectIngestGCSFileSystem()
         self.prioritizer = GcsfsDirectIngestJobPrioritizer(
             self.fs, self._INGEST_BUCKET_PATH, ['tagA', 'tagB'])
+
+    FIXTURE_PATH_PREFIX = 'direct/regions/us_nd/fixtures'
+
+    def test_split_file(self):
+        path = self._normalized_path_for_filename(
+            'elite_offenders.csv', self._DAY_1_TIME_1)
+
+        controller = build_controller_for_tests(
+            StateTestGcsfsDirectIngestController,
+            self._INGEST_BUCKET_PATH.abs_path(),
+            run_async=False)
+
+        controller.fs.test_add_path(path)
+        controller.handle_file(path, start_ingest=False)
 
     def _normalized_path_for_filename(self,
                                       filename: str,

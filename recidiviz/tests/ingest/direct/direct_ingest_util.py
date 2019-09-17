@@ -20,7 +20,7 @@ import os
 import threading
 import time
 import unittest
-from typing import Set, List, Union
+from typing import Set, List, Union, Optional, Dict
 
 from mock import Mock, patch
 
@@ -46,22 +46,43 @@ class FakeDirectIngestGCSFileSystem(DirectIngestGCSFileSystem):
     def __init__(self):
         self.mutex = threading.Lock()
         self.all_paths: Set[GcsfsFilePath] = set()
+        self.uploaded_contents: Dict[str, str] = {}
+        self.controller: Optional[GcsfsDirectIngestController] = None
+
+    def test_set_controller(self, controller: GcsfsDirectIngestController):
+        self.controller = controller
 
     def test_add_path(self, path: GcsfsFilePath):
         if not isinstance(path, GcsfsFilePath):
             raise ValueError(f'Path has unexpected type {type(path)}')
+        self._add_path(path)
+
+    def _add_path(self, path: GcsfsFilePath):
         with self.mutex:
             self.all_paths.add(path)
 
+        if self.controller and \
+                path.abs_path().startswith(
+                        self.controller.ingest_directory_path.abs_path()):
+            self.controller.handle_file(path, start_ingest=True)
+
     def exists(self, path: Union[GcsfsBucketPath, GcsfsFilePath]) -> bool:
         with self.mutex:
-            return path in self.all_paths
+            return path.abs_path() in [p.abs_path() for p in self.all_paths]
 
     def download_as_string(self, path: GcsfsFilePath) -> bytes:
+        if not self.exists(path):
+            raise ValueError(f'Path [{path.abs_path()}] does not exist.')
+
+        if path.abs_path() in self.uploaded_contents:
+            return bytes(self.uploaded_contents[path.abs_path()], 'utf-8')
+
         directory_path, _ = os.path.split(path.abs_path())
 
         parts = filename_parts_from_path(path)
-        fixture_filename = f'{parts.file_tag}.{parts.extension}'
+        suffix = parts.filename_suffix if parts.filename_suffix else ''
+        fixture_filename = \
+            f'{parts.file_tag}{suffix}.{parts.extension}'
 
         actual_fixture_file_path = os.path.join(directory_path,
                                                 fixture_filename)
@@ -69,6 +90,13 @@ class FakeDirectIngestGCSFileSystem(DirectIngestGCSFileSystem):
         fixture_contents = fixtures.as_string_from_relative_path(
             actual_fixture_file_path)
         return bytes(fixture_contents, 'utf-8')
+
+    def upload_from_string(self,
+                           path: GcsfsFilePath,
+                           contents: str,
+                           content_type: str):
+        self.uploaded_contents[path.abs_path()] = contents
+        self._add_path(path)
 
     def copy(self,
              src_path: GcsfsFilePath,
@@ -83,12 +111,18 @@ class FakeDirectIngestGCSFileSystem(DirectIngestGCSFileSystem):
         else:
             raise ValueError(f'Unexpected path type [{type(dst_path)}]')
 
-        with self.mutex:
-            self.all_paths.add(path)
+        self._add_path(path)
 
     def delete(self, path: GcsfsFilePath) -> None:
         with self.mutex:
-            self.all_paths.remove(path)
+            path_to_remove = None
+            for p in self.all_paths:
+                if p == path:
+                    path_to_remove = p
+                    break
+
+            if path_to_remove is not None:
+                self.all_paths.remove(path_to_remove)
 
     def _ls_with_blob_prefix(self,
                              bucket_name: str,
@@ -108,8 +142,10 @@ def build_controller_for_tests(
         run_async: bool
 ) -> GcsfsDirectIngestController:
 
+    fake_fs = FakeDirectIngestGCSFileSystem()
+
     def mock_build_fs():
-        return FakeDirectIngestGCSFileSystem()
+        return fake_fs
 
     with patch(
             'recidiviz.ingest.direct.controllers.'
@@ -123,24 +159,36 @@ def build_controller_for_tests(
                 ingest_directory_path=f'{fixture_path_prefix}/fixtures',
                 storage_directory_path='storage/path')
             task_manager.set_controller(controller)
+            fake_fs.test_set_controller(controller)
             return controller
 
 
-def ingest_args_for_fixture_file(controller: GcsfsDirectIngestController,
-                                 filename: str) -> GcsfsIngestArgs:
-    original_path = os.path.join(controller.ingest_directory_path.abs_path(),
-                                 filename)
-    file_path = to_normalized_unprocessed_file_path(original_path)
+def ingest_args_for_fixture_file(
+        controller: GcsfsDirectIngestController,
+        filename: str,
+        should_normalize: bool = True) -> GcsfsIngestArgs:
+    file_path = path_for_fixture_file(controller, filename, should_normalize)
     return GcsfsIngestArgs(
         ingest_time=datetime.datetime.now(),
-        file_path=GcsfsFilePath.from_absolute_path(file_path),
+        file_path=file_path,
     )
+
+def path_for_fixture_file(controller: GcsfsDirectIngestController,
+                          filename: str,
+                          should_normalize: bool):
+    file_path_str = os.path.join(
+        controller.ingest_directory_path.abs_path(), filename)
+
+    if should_normalize:
+        file_path_str = to_normalized_unprocessed_file_path(file_path_str)
+    return GcsfsFilePath.from_absolute_path(file_path_str)
 
 
 def add_paths_with_tags_and_process(test_case: unittest.TestCase,
                                     controller: GcsfsDirectIngestController,
                                     file_tags: List[str],
-                                    unexpected_tags: List[str] = None):
+                                    unexpected_tags: List[str] = None,
+                                    pre_normalize_filename: bool = False):
     """Runs a test that queues files for all the provided file tags, waits
     for the controller to finish processing everything, then makes sure that
     all files not in |unexpected_tags| have been moved to storage.
@@ -148,35 +196,20 @@ def add_paths_with_tags_and_process(test_case: unittest.TestCase,
     if unexpected_tags is None:
         unexpected_tags = []
 
+    if not isinstance(controller.fs, FakeDirectIngestGCSFileSystem):
+        raise ValueError(f"Controller fs must have type "
+                         f"FakeDirectIngestGCSFileSystem. Found instead "
+                         f"type [{type(controller.fs)}]")
     for file_tag in file_tags:
-        args = ingest_args_for_fixture_file(controller,
-                                            f'{file_tag}.csv')
-        if not isinstance(controller.fs, FakeDirectIngestGCSFileSystem):
-            raise ValueError(f"Controller fs must have type "
-                             f"FakeDirectIngestGCSFileSystem. Found instead "
-                             f"type [{type(controller.fs)}]")
-        controller.fs.test_add_path(args.file_path)
 
-        controller.kick_scheduler(just_finished_job=False)
+        file_path = path_for_fixture_file(
+            controller,
+            f'{file_tag}.csv',
+            should_normalize=pre_normalize_filename)
+        controller.fs.test_add_path(file_path)
         time.sleep(.05)
 
-    if isinstance(controller.cloud_task_manager,
-                  FakeAsyncDirectIngestCloudTaskManager):
-        controller.cloud_task_manager.wait_for_all_tasks_to_run()
-    elif isinstance(controller.cloud_task_manager,
-                    FakeSynchronousDirectIngestCloudTaskManager):
-        tm = controller.cloud_task_manager
-        while tm.get_scheduler_queue_info(controller.region).size() \
-                or tm.get_process_job_queue_info(controller.region).size():
-            if tm.get_scheduler_queue_info(controller.region).size():
-                tm.test_run_next_scheduler_task()
-                tm.test_pop_finished_scheduler_task()
-            if tm.get_process_job_queue_info(controller.region).size():
-                tm.test_run_next_process_job_task()
-                tm.test_pop_finished_process_job_task()
-    else:
-        raise ValueError(f"Unexpected type for cloud task manager: "
-                         f"[{type(controller.cloud_task_manager)}]")
+    run_task_queues_to_empty(controller)
 
     file_tags_processed = set()
     for path in controller.fs.all_paths:
@@ -196,3 +229,23 @@ def add_paths_with_tags_and_process(test_case: unittest.TestCase,
     # Test that each expected file tag has been processed
     test_case.assertEqual(file_tags_processed,
                           set(file_tags).difference(set(unexpected_tags)))
+
+
+def run_task_queues_to_empty(controller: GcsfsDirectIngestController):
+    if isinstance(controller.cloud_task_manager,
+                  FakeAsyncDirectIngestCloudTaskManager):
+        controller.cloud_task_manager.wait_for_all_tasks_to_run()
+    elif isinstance(controller.cloud_task_manager,
+                    FakeSynchronousDirectIngestCloudTaskManager):
+        tm = controller.cloud_task_manager
+        while tm.get_scheduler_queue_info(controller.region).size() \
+                or tm.get_process_job_queue_info(controller.region).size():
+            if tm.get_scheduler_queue_info(controller.region).size():
+                tm.test_run_next_scheduler_task()
+                tm.test_pop_finished_scheduler_task()
+            if tm.get_process_job_queue_info(controller.region).size():
+                tm.test_run_next_process_job_task()
+                tm.test_pop_finished_process_job_task()
+    else:
+        raise ValueError(f"Unexpected type for cloud task manager: "
+                         f"[{type(controller.cloud_task_manager)}]")
