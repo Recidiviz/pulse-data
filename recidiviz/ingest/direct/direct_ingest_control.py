@@ -24,9 +24,10 @@ from typing import Optional
 
 from flask import Blueprint, request
 
+from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
+    GcsfsDirectIngestController
 from recidiviz.ingest.direct.controllers.gcsfs_path import \
     GcsfsFilePath
-from recidiviz.ingest.direct.controllers.gcsfs_factory import GcsfsFactory
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import \
     DirectIngestCloudTaskManager
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import \
@@ -55,16 +56,19 @@ def handle_direct_ingest_file():
     # The relative path to the file, not including the bucket name
     relative_file_path = get_str_param_value('relative_file_path',
                                              request.args, preserve_case=True)
-
     start_ingest = \
         get_bool_param_value('start_ingest', request.args, default=False)
 
-    GcsfsFactory.build().normalize_file_path_if_necessary(
-        GcsfsFilePath(bucket_name=bucket, blob_name=relative_file_path))
+    path = GcsfsFilePath(bucket_name=bucket, blob_name=relative_file_path)
 
-    if start_ingest:
-        controller = controller_for_region_code(region_name)
-        controller.kick_scheduler(just_finished_job=False)
+    controller = controller_for_region_code(region_name,
+                                            allow_unlaunched=True)
+    if not isinstance(controller, GcsfsDirectIngestController):
+        raise DirectIngestError(
+            msg=f"Unexpected controller type [{type(controller)}].",
+            error_type=DirectIngestErrorType.INPUT_ERROR)
+
+    controller.handle_file(path, start_ingest=start_ingest)
 
     return '', HTTPStatus.OK
 
@@ -77,11 +81,18 @@ def process_job():
     region_value = get_str_param_value('region', request.values)
     json_data = request.get_data(as_text=True)
     ingest_args = _get_ingest_args(json_data)
-    if not ingest_args:
-        raise DirectIngestError(
-            msg=f"process_job was called with no IngestArgs.",
-            error_type=DirectIngestErrorType.INPUT_ERROR)
-    controller = controller_for_region_code(region_value)
+    try:
+        if not ingest_args:
+            raise DirectIngestError(
+                msg=f"process_job was called with no IngestArgs.",
+                error_type=DirectIngestErrorType.INPUT_ERROR)
+
+        controller = controller_for_region_code(region_value)
+    except DirectIngestError as e:
+        if e.error_type == DirectIngestErrorType.INPUT_ERROR:
+            return str(e), 400
+        raise e
+
     controller.run_ingest_job_and_kick_scheduler_on_completion(ingest_args)
     return '', HTTPStatus.OK
 
@@ -94,12 +105,20 @@ def scheduler():
     region_value = get_str_param_value('region', request.values)
     just_finished_job = \
         get_bool_param_value('just_finished_job', request.values, default=False)
-    controller = controller_for_region_code(region_value)
+    try:
+        controller = controller_for_region_code(region_value)
+    except DirectIngestError as e:
+        if e.error_type == DirectIngestErrorType.INPUT_ERROR:
+            return str(e), 400
+        raise e
+
     controller.schedule_next_ingest_job_or_wait_if_necessary(just_finished_job)
     return '', HTTPStatus.OK
 
 
-def controller_for_region_code(region_code: str) -> BaseDirectIngestController:
+def controller_for_region_code(
+        region_code: str,
+        allow_unlaunched: bool = False) -> BaseDirectIngestController:
     """Returns an instance of the region's controller, if one exists."""
     if region_code not in get_supported_direct_ingest_region_codes():
         raise DirectIngestError(
@@ -116,10 +135,12 @@ def controller_for_region_code(region_code: str) -> BaseDirectIngestController:
         )
 
     gae_env = environment.get_gae_environment()
+
     # If we are in prod, the region config must be explicitly set to specify
     #  this region can be run in prod. All regions can be triggered to run in
     #  staging.
-    if in_gae_production() and region.environment != gae_env:
+    if not allow_unlaunched and in_gae_production() \
+            and region.environment != gae_env:
         raise DirectIngestError(
             msg=f"Bad environment {gae_env} for direct region {region_code}.",
             error_type=DirectIngestErrorType.INPUT_ERROR,

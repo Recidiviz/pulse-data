@@ -34,7 +34,8 @@ from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import \
     BaseDirectIngestController
-from recidiviz.ingest.direct.controllers.direct_ingest_types import IngestArgs
+from recidiviz.ingest.direct.controllers.direct_ingest_types import \
+    IngestArgs, ContentsType
 from recidiviz.ingest.direct.errors import DirectIngestError, \
     DirectIngestErrorType
 from recidiviz.ingest.direct.regions.us_ma_middlesex.us_ma_middlesex_parser \
@@ -102,6 +103,8 @@ class UsMaMiddlesexController(BaseDirectIngestController[IngestArgs,
     # =================== #
     # SINGLE JOB RUN CODE #
     # =================== #
+    def _can_proceed_with_ingest_for_contents(self, contents: ContentsType):
+        return True
 
     def _parse(self,
                args: IngestArgs,

@@ -168,6 +168,12 @@ class BaseDirectIngestController(Ingestor,
                 self._job_tag(args))
             return
 
+        if not self._can_proceed_with_ingest_for_contents(contents):
+            logging.warning(
+                "Cannot proceed with contents for ingest run [%s] - returning.",
+                self._job_tag(args))
+            return
+
         logging.info("Successfully read contents for ingest run [%s]",
                      self._job_tag(args))
 
@@ -258,4 +264,10 @@ class BaseDirectIngestController(Ingestor,
     def _do_cleanup(self, args: IngestArgsType):
         """Should be overridden by subclasses to do any necessary cleanup in the
         ingested source once contents have been successfully persisted.
+        """
+
+    @abc.abstractmethod
+    def _can_proceed_with_ingest_for_contents(self, contents: ContentsType):
+        """ Given the contents read from the file, can the controller continue
+        with ingest.
         """

@@ -19,11 +19,12 @@
 import pytest
 import pytz
 from flask import Flask
-from mock import call, patch
+from mock import call, patch, create_autospec
 
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.scrape import (constants, scrape_phase, scraper_control,
                                      sessions)
+from recidiviz.ingest.scrape.base_scraper import BaseScraper
 from recidiviz.persistence import batch_persistence
 from recidiviz.tests.utils.fake_region import fake_region
 
@@ -72,7 +73,9 @@ class TestScraperStart:
         mock_docket.return_value = None
         mock_tracker.return_value = None
         mock_get_sessions.return_value = iter([])
-        mock_region.return_value = fake_region(environment='production')
+        mock_scraper = create_autospec(BaseScraper)
+        mock_region.return_value = fake_region(environment='production',
+                                               ingestor=mock_scraper)
         mock_environment.return_value = 'production'
         mock_supported.side_effect = _MockSupported
 
@@ -93,6 +96,7 @@ class TestScraperStart:
         mock_update_phase.assert_called_with(mock_create_session.return_value,
                                              scrape_phase.ScrapePhase.SCRAPE)
         mock_region.assert_called_with('us_ut')
+        mock_scraper.start_scrape.assert_called()
         mock_supported.assert_called_with(timezone=None)
 
     @patch("recidiviz.utils.environment.get_gae_environment")
@@ -115,7 +119,9 @@ class TestScraperStart:
         mock_get_sessions.return_value = iter([])
         mock_purge.return_value = None
         mock_environment.return_value = 'production'
-        mock_region.return_value = fake_region(environment='production')
+        mock_scraper = create_autospec(BaseScraper)
+        mock_region.return_value = fake_region(environment='production',
+                                               ingestor=mock_scraper)
         mock_supported.side_effect = _MockSupported
 
         region = 'all'
@@ -136,6 +142,7 @@ class TestScraperStart:
         mock_update_phase.assert_called_with(mock_create_session.return_value,
                                              scrape_phase.ScrapePhase.SCRAPE)
         mock_region.assert_called_with('us_wy')
+        mock_scraper.start_scrape.assert_called()
         mock_supported.assert_called_with(
             timezone=pytz.timezone('America/Los_Angeles'))
 
@@ -153,7 +160,9 @@ class TestScraperStart:
             client):
         """Tests that the start operation chains together the correct calls."""
         mock_environment.return_value = 'staging'
-        mock_region.return_value = fake_region(environment='production')
+        mock_scraper = create_autospec(BaseScraper)
+        mock_region.return_value = fake_region(environment='production',
+                                               ingestor=mock_scraper)
         mock_supported.side_effect = _MockSupported
 
         region = 'all'
@@ -171,6 +180,7 @@ class TestScraperStart:
         assert not mock_create_session.called
         assert not mock_purge.called
         mock_region.assert_called_with('us_wy')
+        mock_scraper.start_scrape.assert_not_called()
         mock_supported.assert_called_with(timezone=None)
 
     @patch("recidiviz.utils.environment.get_gae_environment")
@@ -193,7 +203,9 @@ class TestScraperStart:
             scrape_type=constants.ScrapeType.BACKGROUND,
             phase=scrape_phase.ScrapePhase.SCRAPE
         )])
-        mock_region.return_value = fake_region(environment='production')
+        mock_scraper = create_autospec(BaseScraper)
+        mock_region.return_value = fake_region(environment='production',
+                                               ingestor=mock_scraper)
         mock_environment.return_value = 'production'
         mock_supported.side_effect = _MockSupported
 
@@ -209,6 +221,7 @@ class TestScraperStart:
         assert not mock_docket.called
         assert not mock_region.called
         mock_supported.assert_called_with(timezone=None)
+        mock_scraper.start_scrape.assert_not_called()
 
     @patch("recidiviz.utils.environment.get_gae_environment")
     @patch("recidiviz.utils.regions.get_supported_scrape_region_codes")
@@ -233,7 +246,9 @@ class TestScraperStart:
             scrape_type=constants.ScrapeType.BACKGROUND,
             phase=scrape_phase.ScrapePhase.RELEASE
         )])
-        mock_region.return_value = fake_region(environment='production')
+        mock_scraper = create_autospec(BaseScraper)
+        mock_region.return_value = fake_region(environment='production',
+                                               ingestor=mock_scraper)
         mock_environment.return_value = 'production'
         mock_supported.side_effect = _MockSupported
 
@@ -253,6 +268,7 @@ class TestScraperStart:
         mock_update_phase.assert_called_with(mock_create_session.return_value,
                                              scrape_phase.ScrapePhase.SCRAPE)
         mock_region.assert_called_with('us_ut')
+        mock_scraper.start_scrape.assert_called()
         mock_supported.assert_called_with(timezone=None)
 
     @patch("recidiviz.utils.regions.get_supported_scrape_region_codes")
@@ -290,7 +306,8 @@ class TestScraperStop:
         )
         mock_get_session.return_value = session
         mock_sessions.return_value = [session]
-        mock_region.return_value = fake_region()
+        mock_scraper = create_autospec(BaseScraper)
+        mock_region.return_value = fake_region(ingestor=mock_scraper)
         mock_supported.return_value = ['us_ca', 'us_ut']
 
         request_args = {'region': 'all', 'scrape_type': 'all',
@@ -309,17 +326,16 @@ class TestScraperStop:
             any_order=True)
         mock_phase.assert_has_calls(
             [call(session, scrape_phase.ScrapePhase.PERSIST)] * 4)
-        mock_region.return_value.get_ingestor().\
-            stop_scrape.assert_has_calls([
-                call(constants.ScrapeType.BACKGROUND, 'false'),
-                call().__bool__(),
-                call(constants.ScrapeType.SNAPSHOT, 'false'),
-                call().__bool__(),
-                call(constants.ScrapeType.BACKGROUND, 'false'),
-                call().__bool__(),
-                call(constants.ScrapeType.SNAPSHOT, 'false'),
-                call().__bool__(),
-            ])
+        assert mock_scraper.stop_scrape.mock_calls == [
+            call(constants.ScrapeType.BACKGROUND, 'false'),
+            call().__bool__(),
+            call(constants.ScrapeType.SNAPSHOT, 'false'),
+            call().__bool__(),
+            call(constants.ScrapeType.BACKGROUND, 'false'),
+            call().__bool__(),
+            call(constants.ScrapeType.SNAPSHOT, 'false'),
+            call().__bool__(),
+        ]
         mock_supported.assert_called_with(timezone=None)
         mock_enqueue.assert_has_calls([
             call(region_code='us_ca', url='/read_and_persist'),
@@ -334,7 +350,8 @@ class TestScraperStop:
             self, mock_sessions, mock_enqueue, mock_region, mock_supported,
             client):
         mock_sessions.return_value = None
-        mock_region.return_value = fake_region()
+        mock_scraper = create_autospec(BaseScraper)
+        mock_region.return_value = fake_region(ingestor=mock_scraper)
         mock_supported.return_value = ['us_ca', 'us_ut']
 
         request_args = {'region': 'all', 'scrape_type': 'all',
@@ -351,8 +368,7 @@ class TestScraperStop:
              call(ScrapeKey('us_ca', constants.ScrapeType.SNAPSHOT)),
              call(ScrapeKey('us_ut', constants.ScrapeType.BACKGROUND)),
              call(ScrapeKey('us_ut', constants.ScrapeType.SNAPSHOT))])
-        assert not mock_region.return_value.get_ingestor().\
-            stop_scrape.called
+        mock_scraper.stop_scrape.assert_not_called()
         mock_supported.assert_called_with(timezone=None)
         assert not mock_enqueue.called
 
@@ -372,7 +388,8 @@ class TestScraperStop:
         )
         mock_sessions.return_value = session
         mock_close.return_value = [session]
-        mock_region.return_value = fake_region()
+        mock_scraper = create_autospec(BaseScraper)
+        mock_region.return_value = fake_region(ingestor=mock_scraper)
         mock_supported.side_effect = _MockSupported
 
         request_args = {
@@ -393,7 +410,7 @@ class TestScraperStop:
         mock_phase.assert_has_calls(
             [call(session, scrape_phase.ScrapePhase.PERSIST)] * 2)
         mock_region.assert_has_calls([call('us_ut')])
-        mock_region.return_value.get_ingestor().stop_scrape.\
+        mock_scraper.stop_scrape.\
             assert_called_with(
                 constants.ScrapeType.SNAPSHOT, 'false')
         mock_supported.assert_called_with(
@@ -435,7 +452,8 @@ class TestScraperStop:
         )
         mock_sessions.return_value = session
         mock_close.return_value = [session]
-        mock_region.return_value = fake_region()
+        mock_scraper = create_autospec(BaseScraper)
+        mock_region.return_value = fake_region(ingestor=mock_scraper)
         mock_region.return_value.is_stoppable = False
         mock_supported.return_value = ['us_ca', 'us_ut']
 
@@ -453,17 +471,16 @@ class TestScraperStop:
              call(ScrapeKey('us_ut', constants.ScrapeType.SNAPSHOT))])
         mock_phase.assert_has_calls(
             [call(session, scrape_phase.ScrapePhase.PERSIST)] * 4)
-        mock_region.return_value.get_ingestor().stop_scrape.\
-            assert_has_calls([
-                call(constants.ScrapeType.BACKGROUND, None),
-                call().__bool__(),
-                call(constants.ScrapeType.SNAPSHOT, None),
-                call().__bool__(),
-                call(constants.ScrapeType.BACKGROUND, None),
-                call().__bool__(),
-                call(constants.ScrapeType.SNAPSHOT, None),
-                call().__bool__(),
-            ])
+        assert mock_scraper.stop_scrape.mock_calls == [
+            call(constants.ScrapeType.BACKGROUND, None),
+            call().__bool__(),
+            call(constants.ScrapeType.SNAPSHOT, None),
+            call().__bool__(),
+            call(constants.ScrapeType.BACKGROUND, None),
+            call().__bool__(),
+            call(constants.ScrapeType.SNAPSHOT, None),
+            call().__bool__(),
+        ]
 
         mock_supported.assert_called_with(timezone=None)
         mock_enqueue.assert_has_calls([
@@ -480,7 +497,8 @@ class TestScraperResume:
     @patch("recidiviz.ingest.scrape.sessions.create_session")
     def test_resume(self, mock_sessions, mock_region, mock_supported, client):
         mock_sessions.return_value = None
-        mock_region.return_value = fake_region()
+        mock_scraper = create_autospec(BaseScraper)
+        mock_region.return_value = fake_region(ingestor=mock_scraper)
         mock_supported.return_value = ['us_ca']
 
         region = 'us_ca'
@@ -495,6 +513,7 @@ class TestScraperResume:
             [call(ScrapeKey(region, constants.ScrapeType.BACKGROUND)),
              call(ScrapeKey(region, constants.ScrapeType.SNAPSHOT))])
         mock_region.assert_called_with(region)
+        mock_scraper.resume_scrape.assert_called()
         mock_supported.assert_called_with(timezone=None)
 
     @patch("recidiviz.utils.regions.get_supported_scrape_region_codes")

@@ -159,6 +159,8 @@ def get_region_manifest(region_code: str,
     """
     region_path = DIRECT_INGEST_BASE_REGION_PATH if is_direct_ingest else \
         SCRAPER_BASE_REGION_PATH
+    # TODO(2427): Update this function to look for a dir relative to this
+    #  file position so this can be used in tests.
     with open(os.path.join(region_path, region_code, MANIFEST_NAME)) \
             as region_manifest:
         return yaml.load(region_manifest)
