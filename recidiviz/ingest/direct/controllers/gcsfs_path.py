@@ -75,6 +75,11 @@ class GcsfsDirectoryPath(GcsfsPath):
             relative_path=unquote(split[1])
         )
 
+    @classmethod
+    def from_file_path(cls, path: 'GcsfsFilePath'):
+        return GcsfsDirectoryPath(bucket_name=path.bucket_name,
+                                  relative_path=path.relative_dir)
+
 
 @attr.s(frozen=True)
 class GcsfsBucketPath(GcsfsDirectoryPath):
@@ -96,6 +101,10 @@ class GcsfsFilePath(GcsfsPath):
 
     # Relative path to a blob (file) in Cloud Storage.
     blob_name: str = attr.ib()
+
+    @property
+    def relative_dir(self) -> str:
+        return os.path.split(self.blob_name)[0]
 
     @property
     def file_name(self) -> str:

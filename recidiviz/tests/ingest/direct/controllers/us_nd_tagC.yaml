@@ -1,0 +1,7 @@
+key_mappings:
+  COL1: state_person.state_person_id
+  COL2: state_person.surname
+  COL3: state_person.given_names
+
+primary_key:
+  COL1: state_person.state_person_id
