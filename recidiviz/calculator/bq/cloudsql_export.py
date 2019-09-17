@@ -30,6 +30,9 @@ from googleapiclient import discovery
 import sqlalchemy
 
 from recidiviz.calculator.bq import export_config
+from recidiviz.calculator.bq.bq_load import ModuleType
+from recidiviz.persistence.database.sqlalchemy_engine_manager import \
+    SQLAlchemyEngineManager as sql_manager
 from recidiviz.utils import metadata
 from recidiviz.utils import secrets
 
@@ -45,10 +48,14 @@ def client() -> discovery.Resource:
             'sqladmin', 'v1beta4', credentials=credentials)
     return _client
 
+
 # TODO(rasmi): If not in GAE, force user to prod or staging.
-def cloudsql_instance_id() -> str:
-    """Get the Cloud SQL instance ID."""
-    instance_id_full = secrets.get_secret('cloudsql_instance_id')
+def cloudsql_instance_id(module: ModuleType) -> str:
+    """Get the Cloud SQL instance ID for the given `module`."""
+    instance_id_key = sql_manager.get_jails_cloudql_instance_id_key() \
+        if (module == ModuleType.COUNTY) else \
+        sql_manager.get_state_cloudql_instance_id_key()
+    instance_id_full = secrets.get_secret(instance_id_key)
     # Remove Project ID and Zone information from Cloud SQL instance ID.
     # Expected format "project_id:zone:instance_id"
     instance_id = instance_id_full.split(':')[-1]
@@ -56,19 +63,26 @@ def cloudsql_instance_id() -> str:
     return instance_id
 
 
-def cloudsql_db_name() -> str:
-    """Get the Cloud SQL database name."""
-    db_name = secrets.get_secret('sqlalchemy_db_name')
+def cloudsql_db_name(module: ModuleType) -> str:
+    """Get the Cloud SQL database name for the given `module`."""
+    db_name_key = sql_manager.get_jails_db_name_key() \
+        if (module == ModuleType.COUNTY) else \
+        sql_manager.get_state_db_name_key()
+
+    db_name = secrets.get_secret(db_name_key)
     return db_name
 
 
-def create_export_context(export_uri: str, export_query: str) -> dict:
+def create_export_context(module: ModuleType, export_uri: str,
+                          export_query: str) -> dict:
     """Creates the exportContext configuration for the export operation.
 
     See here for details:
     https://cloud.google.com/sql/docs/postgres/admin-api/v1beta4/instances/export
 
     Args:
+        module: The module, either ModuleType.COUNTY or ModuleType.STATE of the
+            table being exported.
         export_uri: GCS URI to write the exported CSV data to.
         export_query: SQL query defining the data to be exported.
 
@@ -81,7 +95,7 @@ def create_export_context(export_uri: str, export_query: str) -> dict:
             'kind': 'sql#exportContext',
             'fileType': 'CSV',
             'uri': export_uri,
-            'databases': [cloudsql_db_name()],
+            'databases': [cloudsql_db_name(module)],
             'csvExportOptions': {
                 'selectQuery': export_query
             }
@@ -138,7 +152,8 @@ def wait_until_operation_finished(operation_id: str) -> bool:
     return operation_success
 
 
-def export_table(table_name: str, export_query: str) -> bool:
+def export_table(module: ModuleType, table_name: str, export_query: str) \
+        -> bool:
     """Export a Cloud SQL table to a CSV file on GCS.
 
     Given a table name and export_query, retrieve the export URI from
@@ -146,6 +161,8 @@ def export_table(table_name: str, export_query: str) -> bool:
     completes.
 
     Args:
+        module: The module, either ModuleType.COUNTY or ModuleType.STATE where
+            this table lives.
         table_name: Table to export.
         export_query: Corresponding query for the table.
     Returns:
@@ -154,10 +171,10 @@ def export_table(table_name: str, export_query: str) -> bool:
 
     export_uri = export_config.gcs_export_uri(table_name)
     export_context = create_export_context(
-        export_uri, export_query)
+        module, export_uri, export_query)
 
     project_id = metadata.project_id()
-    instance_id = cloudsql_instance_id()
+    instance_id = cloudsql_instance_id(module)
     export_request = client().instances().export(
         project=project_id,
         instance=instance_id,
@@ -181,7 +198,7 @@ def export_table(table_name: str, export_query: str) -> bool:
     return operation_success
 
 
-def export_all_tables(tables: Tuple[sqlalchemy.Table, ...],
+def export_all_tables(module: ModuleType, tables: Tuple[sqlalchemy.Table, ...],
                       export_queries: Dict[str, str]):
     for table in tables:
         try:
@@ -192,4 +209,4 @@ def export_all_tables(tables: Tuple[sqlalchemy.Table, ...],
                 "the TABLES_TO_EXPORT for this module?", table.name)
             return
 
-        export_table(table.name, export_query)
+        export_table(module, table.name, export_query)
