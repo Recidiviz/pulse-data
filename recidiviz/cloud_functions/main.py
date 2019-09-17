@@ -33,7 +33,6 @@ _DIRECT_INGEST_CLOUD_FUNCTION_URL = (
     '&bucket={}&relative_file_path={}&start_ingest={}')
 _DASHBOARD_EXPORT_CLOUD_FUNCTION_URL = (
     'http://{}.appspot.com/cloud_function/dashboard_export?bucket={}'
-    '&data_type={}'
 )
 _DATAFLOW_MONITOR_URL = (
     'http://{}.appspot.com/cloud_function/dataflow_monitor?job_id={}'
@@ -127,24 +126,10 @@ def _handle_state_direct_ingest_file(data,
     logging.info("The response status is %s", response.status_code)
 
 
-def export_dashboard_standard_data(_event, _context):
+def export_dashboard_data(_event, _context):
     """This function is triggered by a Pub/Sub event to begin the export of
     data needed for the dashboard.
     """
-
-    _call_dashboard_export(data_type='STANDARD')
-
-
-def export_dashboard_dataflow_data(_event, _context):
-    """This function is triggered by a Pub/Sub event to begin the export of
-    data needed for the dashboard that relies on the results of completed
-    Dataflow jobs.
-    """
-
-    _call_dashboard_export(data_type='DATAFLOW')
-
-
-def _call_dashboard_export(data_type: str):
     project_id = os.environ.get('GCP_PROJECT')
     if not project_id:
         logging.error('No project id set for call to export dashboard data, '
@@ -153,8 +138,7 @@ def _call_dashboard_export(data_type: str):
 
     bucket = get_dashboard_data_export_storage_bucket(project_id)
 
-    url = _DASHBOARD_EXPORT_CLOUD_FUNCTION_URL.format(project_id, bucket,
-                                                      data_type)
+    url = _DASHBOARD_EXPORT_CLOUD_FUNCTION_URL.format(project_id, bucket)
     logging.info("project_id: %s", project_id)
     logging.info("Calling URL: %s", url)
 

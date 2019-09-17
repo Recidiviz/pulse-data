@@ -25,38 +25,17 @@ from recidiviz.calculator.bq import bqview
 class DashboardExportConfigTest(unittest.TestCase):
     """Tests for dashboard_export_config.py."""
 
-    def test_STANDARD_VIEWS_TO_EXPORT_types(self):
-        """Make sure that all STANDARD_VIEWS_TO_EXPORT are of type
-         BigQueryView.
-         """
-        for view in dashboard_export_config.STANDARD_VIEWS_TO_EXPORT:
+    def test_VIEWS_TO_EXPORT_types(self):
+        """Make sure that all VIEWS_TO_EXPORT are of type BigQueryView."""
+        for view in dashboard_export_config.VIEWS_TO_EXPORT:
             self.assertIsInstance(view, bqview.BigQueryView)
-
-    def test_STANDARD_VIEWS_TO_EXPORT_excludes_DATAFLOW(self):
-        """Make sure that STANDARD_VIEWS_TO_EXPORT excludes the views in
-        DATAFLOW_VIEWS_TO_EXPORT.
-        """
-        for view in dashboard_export_config.DATAFLOW_VIEWS_TO_EXPORT:
-            self.assertNotIn(view,
-                             dashboard_export_config.STANDARD_VIEWS_TO_EXPORT)
-
-    def test_DATAFLOW_VIEWS_TO_EXPORT_types(self):
-        """Make sure that all DATAFLOW_VIEWS_TO_EXPORT are of type
-         BigQueryView.
-         """
-        for view in dashboard_export_config.DATAFLOW_VIEWS_TO_EXPORT:
-            self.assertIsInstance(view, bqview.BigQueryView)
-
 
     def test_VIEWS_TO_EXCLUDE_FROM_EXPORT_all_excluded(self):
-        """Make sure a view is excluded from both STANDARD_VIEWS_TO_EXPORT and
-        DATAFLOW_VIEWS_TO_EXPORT if listed in VIEWS_TO_EXCLUDE_FROM_EXPORT.
+        """Make sure a view is excluded from VIEWS_TO_EXPORT if listed in
+        VIEWS_TO_EXCLUDE_FROM_EXPORT.
         """
         to_export_views = \
-            [view for view in dashboard_export_config.STANDARD_VIEWS_TO_EXPORT]
-
-        to_export_views = to_export_views + \
-            [view for view in dashboard_export_config.DATAFLOW_VIEWS_TO_EXPORT]
+            [view for view in dashboard_export_config.VIEWS_TO_EXPORT]
 
         for view in dashboard_export_config.VIEWS_TO_EXCLUDE_FROM_EXPORT:
             self.assertNotIn(view, to_export_views)
