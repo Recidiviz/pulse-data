@@ -16,7 +16,6 @@
 # =============================================================================
 """Export data from BigQuery to JSON files in Cloud Storage."""
 import logging
-import enum
 from typing import List
 
 from google.cloud import bigquery
@@ -27,12 +26,7 @@ from recidiviz.calculator.bq.dashboard import dashboard_export_config
 from recidiviz.calculator.bq.dashboard.views import view_config
 
 
-class DataType(enum.Enum):
-    DATAFLOW = 'dataflow'
-    STANDARD = 'standard'
-
-
-def export_dashboard_data_to_cloud_storage(bucket: str, data_type: str):
+def export_dashboard_data_to_cloud_storage(bucket: str):
     """Exports data needed by the dashboard to the cloud storage bucket.
 
     This is a two-step process. First, for each view, the view query is executed
@@ -43,19 +37,9 @@ def export_dashboard_data_to_cloud_storage(bucket: str, data_type: str):
 
     Args:
         bucket: The cloud storage location where the exported data should go.
-        data_type: Which type of data to export. Options are DataType.DATAFLOW
-            for data that rely on Dataflow job output, and DataType.STANDARD for
-            data that rely only on entities in the database.
     """
-    if data_type == DataType.DATAFLOW.value:
-        views_to_export = dashboard_export_config.DATAFLOW_VIEWS_TO_EXPORT
-    elif data_type == DataType.STANDARD.value:
-        views_to_export = dashboard_export_config.STANDARD_VIEWS_TO_EXPORT
-    else:
-        logging.error("Unrecognized data_type requested: %s", data_type)
-        return
-
     dataset_ref = bq_utils.client().dataset(view_config.DASHBOARD_VIEWS_DATASET)
+    views_to_export = dashboard_export_config.VIEWS_TO_EXPORT
 
     _export_views_to_tables(dataset_ref, views_to_export)
 
@@ -80,5 +64,4 @@ def _export_view_tables_to_cloud_storage(
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.INFO)
 
-    export_dashboard_data_to_cloud_storage('ENTER BUCKET HERE',
-                                           DataType.DATAFLOW.value)
+    export_dashboard_data_to_cloud_storage('recidiviz-123-dashboard-data')

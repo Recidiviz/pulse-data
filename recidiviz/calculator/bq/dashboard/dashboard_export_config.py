@@ -26,16 +26,7 @@ STATES_TO_EXPORT = ['US_ND']
 VIEWS_TO_EXCLUDE_FROM_EXPORT: List[bqview.BigQueryView] = \
     view_manager.reference_views.REF_VIEWS
 
-# Views that rely only on database tables
-STANDARD_VIEWS_TO_EXPORT = [
+VIEWS_TO_EXPORT = [
     view for view in view_manager.VIEWS_TO_UPDATE
-    if view not in VIEWS_TO_EXCLUDE_FROM_EXPORT and
-    view not in view_manager.DATAFLOW_VIEWS
-]
-
-# Views that rely on metrics from Dataflow jobs
-DATAFLOW_VIEWS_TO_EXPORT = [
-    view for view in view_manager.VIEWS_TO_UPDATE
-    if view not in VIEWS_TO_EXCLUDE_FROM_EXPORT and
-    view in view_manager.DATAFLOW_VIEWS
+    if view not in VIEWS_TO_EXCLUDE_FROM_EXPORT
 ]
