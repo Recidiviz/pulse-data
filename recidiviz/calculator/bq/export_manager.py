@@ -69,7 +69,7 @@ def export_table_then_load_table(
             "the TABLES_TO_EXPORT for the %s module?", table, module)
         return False
 
-    export_success = cloudsql_export.export_table(table, export_query)
+    export_success = cloudsql_export.export_table(module, table, export_query)
     if export_success: # pylint: disable=no-else-return
         load_success = bq_load.start_table_load_and_wait(dataset_ref, table,
                                                          module)
@@ -143,7 +143,7 @@ def export_all_then_load_all(module: ModuleType):
         return
 
     logging.info("Beginning CloudSQL export")
-    cloudsql_export.export_all_tables(tables_to_export, export_queries)
+    cloudsql_export.export_all_tables(module, tables_to_export, export_queries)
 
     logging.info("Beginning BQ table load")
     bq_load.load_all_tables_concurrently(
