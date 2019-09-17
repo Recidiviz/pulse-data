@@ -79,7 +79,8 @@ from recidiviz.persistence.entity.entity_utils import \
 from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.ingest.direct.direct_ingest_util import \
     build_controller_for_tests, ingest_args_for_fixture_file, \
-    add_paths_with_tags_and_process
+    add_paths_with_tags_and_process, run_task_queues_to_empty, \
+    path_for_fixture_file
 from recidiviz.tests.utils import fakes
 from recidiviz.utils.regions import Region
 
@@ -126,11 +127,12 @@ class TestUsNdController(unittest.TestCase):
         self.maxDiff = 250000
 
     def _run_ingest_job_for_filename(self, filename: str) -> None:
-        args = ingest_args_for_fixture_file(self.controller, filename)
-        self.controller.fs.test_add_path(args.file_path)
+        file_path = path_for_fixture_file(self.controller,
+                                          filename,
+                                          should_normalize=False)
+        self.controller.fs.test_add_path(file_path)
 
-        # pylint:disable=protected-access
-        self.controller._run_ingest_job(args)
+        run_task_queues_to_empty(self.controller)
 
     def test_populate_data_elite_offenderidentifier(self):
         expected = IngestInfo(
