@@ -124,7 +124,8 @@ class ExportManagerTestCounty(unittest.TestCase):
             self.mock_bq_load.start_table_load_and_wait, 'load')
 
         export_then_load_calls = list(chain.from_iterable([
-            (mock.call.export(table.name,
+            (mock.call.export(self.module,
+                              table.name,
                               self.mock_export_config.
                               COUNTY_TABLE_EXPORT_QUERIES[table.name]),
              mock.call.load(default_dataset, table.name, self.module))
@@ -156,6 +157,7 @@ class ExportManagerTestCounty(unittest.TestCase):
 
         export_all_then_load_all_calls = [
             mock.call.export_all(
+                self.module,
                 self.mock_export_config.COUNTY_TABLES_TO_EXPORT,
                 self.mock_export_config.COUNTY_TABLE_EXPORT_QUERIES),
             mock.call.load_all(

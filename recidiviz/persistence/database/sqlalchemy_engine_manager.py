@@ -62,21 +62,37 @@ class SQLAlchemyEngineManager:
             cls, schema_base: DeclarativeMeta) -> Optional[Engine]:
         return cls._engine_for_schema.get(schema_base, None)
 
+    @staticmethod
+    def get_state_db_name_key() -> str:
+        return 'state_db_name'
+
+    @staticmethod
+    def get_jails_db_name_key() -> str:
+        return 'sqlalchemy_db_name'
+
+    @staticmethod
+    def get_state_cloudql_instance_id_key() -> str:
+        return 'state_cloudsql_instance_id'
+
+    @staticmethod
+    def get_jails_cloudql_instance_id_key() -> str:
+        return 'cloudsql_instance_id'
+
     @classmethod
     def _get_state_server_postgres_instance_url(cls) -> str:
         return cls._get_server_postgres_instance_url(
             db_user_key='state_db_user',
             db_password_key='state_db_password',
-            db_name_key='state_db_name',
-            cloudsql_instance_id_key='state_cloudsql_instance_id')
+            db_name_key=cls.get_state_db_name_key(),
+            cloudsql_instance_id_key=cls.get_state_cloudql_instance_id_key())
 
     @classmethod
     def _get_jails_server_postgres_instance_url(cls) -> str:
         return cls._get_server_postgres_instance_url(
             db_user_key='sqlalchemy_db_user',
             db_password_key='sqlalchemy_db_password',
-            db_name_key='sqlalchemy_db_name',
-            cloudsql_instance_id_key='cloudsql_instance_id')
+            db_name_key=cls.get_jails_db_name_key(),
+            cloudsql_instance_id_key=cls.get_jails_cloudql_instance_id_key())
 
     @classmethod
     def _get_server_postgres_instance_url(cls,
