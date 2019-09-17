@@ -150,14 +150,10 @@ def dashboard_export():
     # The cloud storage bucket to export to
     bucket = get_str_param_value('bucket', request.args)
 
-    # Get the type of data to export
-    data_type = get_str_param_value('data_type', request.args)
+    logging.info("Attempting to export dashboard data to cloud storage"
+                 " bucket: %s.", bucket)
 
-    logging.info("Attempting to export dashboard %s data to cloud storage"
-                 " bucket: %s.", data_type, bucket)
-
-    dashboard_export_manager.export_dashboard_data_to_cloud_storage(bucket,
-                                                                    data_type)
+    dashboard_export_manager.export_dashboard_data_to_cloud_storage(bucket)
 
     return '', HTTPStatus.OK
 
