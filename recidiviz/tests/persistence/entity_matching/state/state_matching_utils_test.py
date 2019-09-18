@@ -664,16 +664,27 @@ class TestStateMatchingUtils(TestCase):
 
     def test_associateSvrsWithIps(self):
         # Arrange
+        ip_1 = StateIncarcerationPeriod.new_with_defaults(
+            admission_date=_DATE_1,
+            admission_reason=
+            StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION)
+        ip_2 = StateIncarcerationPeriod.new_with_defaults(
+            admission_date=_DATE_2,
+            admission_reason=
+            StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION)
+        placeholder_is = StateIncarcerationSentence.new_with_defaults(
+            incarceration_periods=[ip_1, ip_2])
+
         svr_1 = StateSupervisionViolationResponse.new_with_defaults(
-            response_date=_DATE_1,
+            response_date=_DATE_1 - datetime.timedelta(days=1),
             revocation_type=StateSupervisionViolationResponseRevocationType.
             REINCARCERATION)
         svr_2 = StateSupervisionViolationResponse.new_with_defaults(
-            response_date=_DATE_3,
+            response_date=_DATE_2 + datetime.timedelta(days=1),
             revocation_type=StateSupervisionViolationResponseRevocationType.
             REINCARCERATION)
         svr_3 = StateSupervisionViolationResponse.new_with_defaults(
-            response_date=_DATE_5,
+            response_date=_DATE_2 + datetime.timedelta(days=30),
             revocation_type=StateSupervisionViolationResponseRevocationType.
             RETURN_TO_SUPERVISION)
         placeholder_sv = StateSupervisionViolation.new_with_defaults(
@@ -683,16 +694,6 @@ class TestStateMatchingUtils(TestCase):
         placeholder_ss = StateSupervisionSentence.new_with_defaults(
             supervision_periods=[placeholder_sp])
 
-        ip_1 = StateIncarcerationPeriod.new_with_defaults(
-            admission_date=_DATE_2,
-            admission_reason=
-            StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION)
-        ip_2 = StateIncarcerationPeriod.new_with_defaults(
-            admission_date=_DATE_4,
-            admission_reason=
-            StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION)
-        placeholder_is = StateIncarcerationSentence.new_with_defaults(
-            incarceration_periods=[ip_1, ip_2])
         placeholder_sg = StateSentenceGroup.new_with_defaults(
             incarceration_sentences=[placeholder_is],
             supervision_sentences=[placeholder_ss])
