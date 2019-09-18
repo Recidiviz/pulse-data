@@ -37,26 +37,18 @@ REVOCATIONS_BY_COUNTY_60_DAYS_QUERY = \
     """
     /*{description}*/
     
-    SELECT state_code, county_code, SUM(revocation_count) as revocation_count
-    FROM
-    ((SELECT sip.state_code, IFNULL(ssp.county_code, 'UNKNOWN_COUNTY') as county_code,  count(*) as revocation_count
+    SELECT state_code, county_code, count(*) as revocation_count FROM
+    (SELECT sip.state_code, IFNULL(ssp.county_code, 'UNKNOWN_COUNTY') as county_code
     FROM
     `{project_id}.{views_dataset}.incarceration_admissions_60_days` sip
-    JOIN `{project_id}.{base_dataset}.state_supervision_violation_response` resp
+    LEFT JOIN `{project_id}.{base_dataset}.state_supervision_violation_response` resp
     ON resp.supervision_violation_response_id = sip.source_supervision_violation_response_id 
-    JOIN `{project_id}.{base_dataset}.state_supervision_violation` viol
-    ON viol.supervision_violation_id = resp.supervision_violation_id 
-    JOIN `{project_id}.{base_dataset}.state_supervision_period` ssp
+    LEFT JOIN `{project_id}.{base_dataset}.state_supervision_violation` viol
+    ON viol.supervision_violation_id = resp.supervision_violation_id
+    LEFT JOIN `{project_id}.{base_dataset}.state_supervision_period` ssp
     ON viol.supervision_period_id = ssp.supervision_period_id
-    GROUP BY state_code, county_code)
-    UNION ALL
-    (SELECT state_code, 'UNKNOWN_COUNTY' as county_code, count(*) as revocation_count
-    FROM
-    `{project_id}.{views_dataset}.incarceration_admissions_60_days`
-    WHERE admission_reason in ('PROBATION_REVOCATION', 'PAROLE_REVOCATION') and source_supervision_violation_response_id is null
-    GROUP BY state_code))
+    WHERE sip.admission_reason IN ('PAROLE_REVOCATION', 'PROBATION_REVOCATION'))
     GROUP BY state_code, county_code
-    ORDER BY county_code
     """.format(
         description=REVOCATIONS_BY_COUNTY_60_DAYS_DESCRIPTION,
         project_id=PROJECT_ID,
