@@ -37,8 +37,6 @@ from recidiviz.ingest.aggregate.regions.ny import ny_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.pa import pa_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.tn import tn_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.tx import tx_aggregate_ingest
-from recidiviz.ingest.direct import direct_ingest_control
-from recidiviz.ingest.direct.errors import DirectIngestError
 from recidiviz.persistence.database.schema.aggregate import dao
 from recidiviz.utils import metadata
 from recidiviz.utils.auth import authenticate_request
@@ -113,27 +111,6 @@ def state_aggregate():
         return '', HTTPStatus.OK
     except Exception as e:
         return jsonify(e), 500
-
-# TODO(1628): Leave this until /direct/handle_direct_ingest_file has been fully
-#  deployed and all cloud functions are hitting it in stage/prod
-@cloud_functions_blueprint.route('/start_direct_ingest')
-@authenticate_request
-def start_direct_ingest():
-    """Schedules direct ingest jobs for the given region, if necessary."""
-
-    region_name = get_str_param_value('region', request.args)
-    try:
-        controller = \
-            direct_ingest_control.controller_for_region_code(region_name)
-        controller.kick_scheduler(just_finished_job=False)
-    except DirectIngestError as e:
-        project_id = metadata.project_id()
-        message = \
-            f"Error scheduling next ingest job for region [{region_name}] on " \
-            f"project [{project_id}]: [{str(e)}]"
-        return message, HTTPStatus.INTERNAL_SERVER_ERROR
-
-    return '', HTTPStatus.OK
 
 
 @cloud_functions_blueprint.route('/dashboard_export')

@@ -173,14 +173,16 @@ def ingest_args_for_fixture_file(
         file_path=file_path,
     )
 
+
 def path_for_fixture_file(controller: GcsfsDirectIngestController,
                           filename: str,
-                          should_normalize: bool):
+                          should_normalize: bool,
+                          dt: Optional[datetime.datetime] = None):
     file_path_str = os.path.join(
         controller.ingest_directory_path.abs_path(), filename)
 
     if should_normalize:
-        file_path_str = to_normalized_unprocessed_file_path(file_path_str)
+        file_path_str = to_normalized_unprocessed_file_path(file_path_str, dt)
     return GcsfsFilePath.from_absolute_path(file_path_str)
 
 

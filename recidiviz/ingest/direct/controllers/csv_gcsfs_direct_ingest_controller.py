@@ -48,7 +48,7 @@ class CsvGcsfsDirectIngestController(GcsfsDirectIngestController):
     """Direct ingest controller for regions that read CSV files from the
     GCSFileSystem.
     """
-    # TODO(1628): Once we have migrated to new Cloud Tasks infrastructure,
+    # TODO(2428): Once we have migrated to new Cloud Tasks infrastructure,
     #  we should be able to handle much larger files - change this threshold.
     CSV_LINE_LIMIT = 300
 
