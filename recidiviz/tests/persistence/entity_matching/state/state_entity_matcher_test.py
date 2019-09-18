@@ -1949,7 +1949,7 @@ class TestStateEntityMatching(TestCase):
 
         svr_1 = StateSupervisionViolationResponse.new_with_defaults(
             state_code=_STATE_CODE,
-            response_date=_DATE_1,
+            response_date=_DATE_2 + datetime.timedelta(days=1),
             revocation_type=
             StateSupervisionViolationResponseRevocationType.REINCARCERATION)
         svr_2 = StateSupervisionViolationResponse.new_with_defaults(

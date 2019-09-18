@@ -635,23 +635,13 @@ def revoked_to_prison(svr: schema.StateSupervisionViolationResponse) -> bool:
 
 def _get_closest_response(
         ip: schema.StateIncarcerationPeriod,
-        sorted_responses: List[schema.StateSupervisionViolationResponse]
+        responses: List[schema.StateSupervisionViolationResponse]
         ) -> Optional[schema.StateSupervisionViolationResponse]:
-    """Returns the most recent StateSupervisionViolationResponse when compared
-    to the beginning of the provided |incarceration_period|.
-
-    Assumes the provided |sorted_responses| are sorted chronologically by
-    response_date.
+    """Returns the StateSupervisionViolationResponse whose response_date is
+    closest to the beginning of the provided |ip|.
     """
-    closest_response = None
-    admission_date = cast(datetime.date, ip.admission_date)
-    for response in sorted_responses:
-        response_date = cast(datetime.date, response.response_date)
-        if response_date > admission_date:
-            break
-        closest_response = response
-
-    return closest_response
+    return min(responses,
+               key=lambda x: abs(x.response_date - ip.admission_date))
 
 
 def associate_revocation_svrs_with_ips(
@@ -681,14 +671,12 @@ def associate_revocation_svrs_with_ips(
         if not revocation_svrs or not revocation_ips:
             continue
 
-        sorted_revocation_svrs = sorted(
-            revocation_svrs, key=lambda x: x.response_date)
         sorted_revocation_ips = sorted(
             revocation_ips, key=lambda x: x.admission_date)
 
         seen: Set[int] = set()
         for ip in sorted_revocation_ips:
-            closest_svr = _get_closest_response(ip, sorted_revocation_svrs)
+            closest_svr = _get_closest_response(ip, revocation_svrs)
             svr_id = id(closest_svr)
 
             if closest_svr and svr_id not in seen:
