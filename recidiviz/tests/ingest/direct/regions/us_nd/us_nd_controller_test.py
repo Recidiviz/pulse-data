@@ -1112,7 +1112,6 @@ class TestUsNdController(unittest.TestCase):
                         birthdate='1-Jun-70',
                         gender='1',
                         current_address='111 3rd ST S #6, FARGO, ND, 58103',
-                        state_person_races=[StatePersonRace(race='5')],
                         state_person_ethnicities=[
                             StatePersonEthnicity(ethnicity='HISPANIC')
                         ],
@@ -2713,9 +2712,6 @@ class TestUsNdController(unittest.TestCase):
             id_type=US_ND_SID,
             state_code=_STATE_CODE,
             person=person_6)
-        person_6_race = entities.StatePersonRace.new_with_defaults(
-            state_code=_STATE_CODE, race=Race.OTHER, race_raw_text='5',
-            person=person_6)
         person_6_ethnicity = entities.StatePersonEthnicity.new_with_defaults(
             state_code=_STATE_CODE, ethnicity=Ethnicity.HISPANIC,
             ethnicity_raw_text='HISPANIC',
@@ -2728,7 +2724,6 @@ class TestUsNdController(unittest.TestCase):
             person=person_6)
         person_6.aliases = [person_6_alias]
         person_6.external_ids = [person_6_external_id]
-        person_6.races = [person_6_race]
         person_6.ethnicities = [person_6_ethnicity]
         expected_people.append(person_6)
 
