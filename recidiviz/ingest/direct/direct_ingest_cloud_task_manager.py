@@ -201,8 +201,6 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
                         region_code: str) -> CloudTaskQueueInfo:
         tasks_list = self._tasks_for_queue_and_region(queue_name,
                                                       region_code)
-        # TODO(1628): Consider looking more closely at the task to figure out if
-        #  it has a failure status, etc.
         task_names = [task.name for task in tasks_list] if tasks_list else []
         return CloudTaskQueueInfo(queue_name=queue_name,
                                   task_names=task_names)

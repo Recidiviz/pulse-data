@@ -3,7 +3,7 @@ env: flex
 service: default
 
 resources:
-  # TODO(1628): This was bumped from cpu: 1, memory_gb: 2 to temporarily mitigate issues we're seeing with cloud tasks
+  # TODO(2428): This was bumped from cpu: 1, memory_gb: 2 to temporarily mitigate issues we're seeing with cloud tasks
   # getting stuck if they are running when a new instance gets spun up.
   cpu: 2
   memory_gb: 8

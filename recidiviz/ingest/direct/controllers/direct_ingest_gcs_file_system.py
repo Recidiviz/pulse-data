@@ -74,6 +74,7 @@ class DirectIngestGCSFileSystem:
     """An abstraction built on top of the GCSFileSystem class with helpers for
     manipulating files and filenames expected by direct ingest.
     """
+    _RENAME_RETRIES = 5
 
     @abc.abstractmethod
     def exists(self, path: Union[GcsfsBucketPath, GcsfsFilePath]) -> bool:
@@ -167,10 +168,12 @@ class DirectIngestGCSFileSystem:
             directory_path,
             f"{DIRECT_INGEST_PROCESSED_PREFIX}_{date_str}")
 
-    def mv_path_to_normalized_path(self, path: GcsfsFilePath):
+    def mv_path_to_normalized_path(self,
+                                   path: GcsfsFilePath,
+                                   dt: Optional[datetime.datetime] = None):
         updated_file_path = \
             GcsfsFilePath.from_absolute_path(
-                to_normalized_unprocessed_file_path(path.abs_path()))
+                to_normalized_unprocessed_file_path(path.abs_path(), dt))
 
         if self.exists(updated_file_path):
             raise ValueError(
@@ -187,16 +190,24 @@ class DirectIngestGCSFileSystem:
                      path.abs_path(), processed_path.abs_path())
         self.mv(path, processed_path)
 
-    def mv_paths_from_date_to_storage(
+    def mv_processed_paths_before_date_to_storage(
             self,
             directory_path: GcsfsDirectoryPath,
-            date_str: str,
-            storage_directory_path: GcsfsDirectoryPath):
-        file_paths = self.get_processed_file_paths_for_day(
-            directory_path, date_str)
+            storage_directory_path: GcsfsDirectoryPath,
+            date_str_bound: str,
+            include_bound: bool):
 
-        for file_path in file_paths:
-            self.mv_path_to_storage(file_path, storage_directory_path)
+        processed_file_paths = self.get_processed_file_paths(directory_path)
+
+        for file_path in processed_file_paths:
+            date_str = filename_parts_from_path(file_path).date_str
+            if date_str < date_str_bound or \
+                    (include_bound and date_str == date_str_bound):
+                logging.info(
+                    "Found file [%s] from [%s] which abides by provided bound "
+                    "[%s]. Moving to storage.",
+                    file_path.abs_path(), date_str, date_str_bound)
+                self.mv_path_to_storage(file_path, storage_directory_path)
 
     def mv_path_to_storage(self,
                            path: GcsfsFilePath,
@@ -260,24 +271,31 @@ class DirectIngestGCSFileSystem:
                       file_name: str) -> GcsfsFilePath:
         """Returns the storage file path for the input |file_name|,
         |storage_bucket|, and |ingest_date_str|"""
-
         if opt_storage_subdir is None:
             opt_storage_subdir = ''
 
-        storage_path = os.path.join(storage_directory_path.bucket_name,
-                                    storage_directory_path.relative_path,
-                                    date_str,
-                                    opt_storage_subdir,
-                                    file_name)
-        path = GcsfsFilePath.from_absolute_path(storage_path)
+        for file_num in range(self._RENAME_RETRIES):
+            name, ext = file_name.split('.')
+            actual_file_name = \
+                file_name if file_num == 0 else f'{name}-({file_num}).{ext}'
 
-        # TODO(1628): We should not fail the whole task on a failure to move
-        #  to storage - let's just flexibly rename and fire an error.
-        if self.exists(path):
-            raise ValueError(f'Storage path [{storage_path}] already exists, '
-                             f'not moving file to storage.')
+            storage_path_str = os.path.join(
+                storage_directory_path.bucket_name,
+                storage_directory_path.relative_path,
+                date_str,
+                opt_storage_subdir,
+                actual_file_name)
+            storage_path = GcsfsFilePath.from_absolute_path(storage_path_str)
 
-        return path
+            if not self.exists(storage_path):
+                return storage_path
+
+            logging.error(
+                "Storage path [%s] already exists, attempting rename",
+                storage_path.abs_path())
+
+        raise ValueError(
+            f'Could not find valid storage path for file {file_name}.')
 
 
 class DirectIngestGCSFileSystemImpl(DirectIngestGCSFileSystem):
