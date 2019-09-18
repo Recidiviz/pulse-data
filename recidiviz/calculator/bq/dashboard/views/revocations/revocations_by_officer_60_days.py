@@ -38,22 +38,22 @@ REVOCATIONS_BY_OFFICER_60_DAYS_QUERY = \
     """
     /*{description}*/
     
-    SELECT sip.state_code, ag.external_id as officer_external_id, count(*) as revocation_count
+    SELECT state_code, officer_external_id, COUNTIF(violation_type = 'ABSCONDED') as absconsion_count, COUNTIF(violation_type = 'FELONY') as felony_count,
+    COUNTIF(violation_type = 'TECHNICAL') as technical_count, COUNTIF(violation_type = 'UNKNOWN') as unknown_count
+    FROM
+    (SELECT sip.state_code, IFNULL(ag.external_id, 'OFFICER_UNKNOWN') as officer_external_id, IFNULL(viol.violation_type, 'UNKNOWN') as violation_type
     FROM
     `{project_id}.{views_dataset}.incarceration_admissions_60_days` sip
-    JOIN `{project_id}.{base_dataset}.state_supervision_violation_response` resp
-    ON resp.supervision_violation_response_id = sip.source_supervision_violation_response_id
-    JOIN `{project_id}.{base_dataset}.state_supervision_violation_response_decision_agent_association` ref
+    LEFT JOIN `{project_id}.{base_dataset}.state_supervision_violation_response` resp on resp.supervision_violation_response_id = sip.source_supervision_violation_response_id 
+    LEFT JOIN `{project_id}.{base_dataset}.state_supervision_violation_response_decision_agent_association` ref
     ON resp.supervision_violation_response_id = ref.supervision_violation_response_id 
-    JOIN `{project_id}.{base_dataset}.state_agent` ag
+    LEFT JOIN `{project_id}.{base_dataset}.state_agent` ag
     ON ag.agent_id = ref.agent_id
-    GROUP BY state_code, officer_external_id
-    UNION ALL
-    SELECT state_code, 'OFFICER_UNKNOWN' as officer_external_id, count(*) as revocation_count
-    FROM
-    `{project_id}.{views_dataset}.incarceration_admissions_60_days`
-    WHERE admission_reason in ('PAROLE_REVOCATION', 'PROBATION_REVOCATION') AND source_supervision_violation_response_id is null
-    GROUP BY state_code, officer_external_id
+    LEFT JOIN `{project_id}.{base_dataset}.state_supervision_violation` viol
+    ON viol.supervision_violation_id = resp.supervision_violation_id
+    WHERE sip.admission_reason IN ('PAROLE_REVOCATION', 'PROBATION_REVOCATION')
+    ORDER BY officer_external_id)
+    GROUP BY state_code, officer_external_id 
     """.format(
         description=REVOCATIONS_BY_OFFICER_60_DAYS_DESCRIPTION,
         project_id=PROJECT_ID,
