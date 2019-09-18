@@ -24,38 +24,36 @@ PROJECT_ID = metadata.project_id()
 VIEWS_DATASET = view_config.DASHBOARD_VIEWS_DATASET
 BASE_DATASET = export_config.STATE_BASE_TABLES_BQ_DATASET
 
-# TODO(2437): Delete this view once dashboard has migrated to
-# revocations_by_race_and_ethnicity_60_days.
-REVOCATIONS_BY_RACE_60_DAYS_VIEW_NAME = \
-    'revocations_by_race_60_days'
+REVOCATIONS_BY_RACE_AND_ETHNICITY_60_DAYS_VIEW_NAME = \
+    'revocations_by_race_and_ethnicity_60_days'
 
-REVOCATIONS_BY_RACE_60_DAYS_DESCRIPTION = \
-    """Revocations by race and ethnicity in last 60 days """
+REVOCATIONS_BY_RACE_AND_ETHNICITY_60_DAYS_DESCRIPTION = \
+    """ Revocations by race and ethnicity in last 60 days """
 
-REVOCATIONS_BY_RACE_60_DAYS_QUERY = \
+REVOCATIONS_BY_RACE_AND_ETHNICITY_60_DAYS_QUERY = \
     """
     /*{description}*/
-    
-    SELECT state_code, race_or_ethnicity as race, count(*) as revocation_count
+
+    SELECT state_code, race_or_ethnicity, count(*) as revocation_count
     FROM
     (SELECT sip.state_code, spre.race_or_ethnicity, admission_date FROM `{project_id}.{views_dataset}.incarceration_admissions_60_days` sip
     join `{project_id}.{base_dataset}.state_person_race_and_ethnicity` spre ON spre.person_id = sip.person_id
     WHERE sip.admission_reason in ('PROBATION_REVOCATION', 'PAROLE_REVOCATION'))
     GROUP BY state_code, race
     ORDER BY race ASC
-    
+
     """.format(
-        description=REVOCATIONS_BY_RACE_60_DAYS_DESCRIPTION,
+        description=REVOCATIONS_BY_RACE_AND_ETHNICITY_60_DAYS_DESCRIPTION,
         project_id=PROJECT_ID,
         views_dataset=VIEWS_DATASET,
         base_dataset=BASE_DATASET
     )
 
-REVOCATIONS_BY_RACE_60_DAYS_VIEW = bqview.BigQueryView(
-    view_id=REVOCATIONS_BY_RACE_60_DAYS_VIEW_NAME,
-    view_query=REVOCATIONS_BY_RACE_60_DAYS_QUERY
+REVOCATIONS_BY_RACE_AND_ETHNICITY_60_DAYS_VIEW = bqview.BigQueryView(
+    view_id=REVOCATIONS_BY_RACE_AND_ETHNICITY_60_DAYS_VIEW_NAME,
+    view_query=REVOCATIONS_BY_RACE_AND_ETHNICITY_60_DAYS_QUERY
 )
 
 if __name__ == '__main__':
-    print(REVOCATIONS_BY_RACE_60_DAYS_VIEW.view_id)
-    print(REVOCATIONS_BY_RACE_60_DAYS_VIEW.view_query)
+    print(REVOCATIONS_BY_RACE_AND_ETHNICITY_60_DAYS_VIEW.view_id)
+    print(REVOCATIONS_BY_RACE_AND_ETHNICITY_60_DAYS_VIEW.view_query)

@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""View for the incarceration admissions in the last 60 days"""
+"""Squashes race and ethnicity for all people into a single table."""
 from recidiviz.calculator.bq import bqview, export_config
 
 from recidiviz.utils import metadata
@@ -22,34 +22,32 @@ from recidiviz.utils import metadata
 PROJECT_ID = metadata.project_id()
 BASE_DATASET = export_config.STATE_BASE_TABLES_BQ_DATASET
 
-INCARCERATION_ADMISSIONS_60_DAYS_VIEW_NAME = 'incarceration_admissions_60_days'
+STATE_PERSON_RACE_AND_ETHNICITY_VIEW_NAME = 'state_person_race_and_ethnicity'
 
-INCARCERATION_ADMISSIONS_60_DAYS_DESCRIPTION = \
-    """ Incarceration admissions in last 60 days.
-    This includes new admissions and admissions for supervision revocation.
-    Excludes all other reasons for admission.
-    """
+STATE_PERSON_RACE_AND_ETHNICITY_DESCRIPTION = \
+    """Race and Ethnicity information put into a single table."""
 
-INCARCERATION_ADMISSIONS_60_DAYS_QUERY = \
+STATE_PERSON_RACE_AND_ETHNICITY_QUERY = \
     """
 /*{description}*/
 
-SELECT * FROM `{project_id}.{base_dataset}.state_incarceration_period`
-WHERE admission_reason IN
-    ('NEW_ADMISSION', 'PAROLE_REVOCATION', 'PROBATION_REVOCATION')
-AND admission_date BETWEEN (DATE_ADD(CURRENT_DATE(), INTERVAL -60 DAY))
-    AND CURRENT_DATE()
+SELECT state_code, person_id, race_or_ethnicity
+FROM (SELECT state_code, person_id, race as race_or_ethnicity
+      FROM `{project_id}.{base_dataset}.state_person_race`
+      UNION ALL
+      SELECT state_code, person_id, ethnicity as race_or_ethnicity
+      FROM `{project_id}.{base_dataset}.state_person_ethnicity`)
 """.format(
-        description=INCARCERATION_ADMISSIONS_60_DAYS_DESCRIPTION,
+        description=STATE_PERSON_RACE_AND_ETHNICITY_DESCRIPTION,
         project_id=PROJECT_ID,
         base_dataset=BASE_DATASET,
     )
 
-INCARCERATION_ADMISSIONS_60_DAYS_VIEW = bqview.BigQueryView(
-    view_id=INCARCERATION_ADMISSIONS_60_DAYS_VIEW_NAME,
-    view_query=INCARCERATION_ADMISSIONS_60_DAYS_QUERY
+STATE_PERSON_RACE_AND_ETHNICITY_VIEW = bqview.BigQueryView(
+    view_id=STATE_PERSON_RACE_AND_ETHNICITY_VIEW_NAME,
+    view_query=STATE_PERSON_RACE_AND_ETHNICITY_QUERY
 )
 
 if __name__ == '__main__':
-    print(INCARCERATION_ADMISSIONS_60_DAYS_VIEW.view_id)
-    print(INCARCERATION_ADMISSIONS_60_DAYS_VIEW.view_query)
+    print(STATE_PERSON_RACE_AND_ETHNICITY_VIEW.view_id)
+    print(STATE_PERSON_RACE_AND_ETHNICITY_VIEW.view_query)

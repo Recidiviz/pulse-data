@@ -342,13 +342,18 @@ class UsNdController(CsvGcsfsDirectIngestController):
                                         extracted_objects: List[IngestObject],
                                         _cache: IngestObjectCache):
         """For a person whose provided race is HISPANIC, we set the ethnicity to
-        HISPANIC, and the race will be set to OTHER by enum overrides."""
+        HISPANIC, and the race will be cleared."""
         for extracted_object in extracted_objects:
             if isinstance(extracted_object, StatePerson):
+                updated_person_races = []
                 for person_race in extracted_object.state_person_races:
                     if person_race.race in {'5', 'HIS'}:
                         extracted_object.create_state_person_ethnicity(
                             ethnicity=Ethnicity.HISPANIC.value)
+                    else:
+                        updated_person_races.append(person_race)
+                extracted_object.state_person_races = updated_person_races
+
 
     @staticmethod
     def _rationalize_life_sentence(row: Dict[str, str],
@@ -806,7 +811,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
             Race.AMERICAN_INDIAN_ALASKAN_NATIVE: ['3', 'NAT'],
             Race.ASIAN: ['4'],
             Race.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: ['6', 'HAW'],
-            Race.OTHER: ['5', 'HIS', 'MUL'],
+            Race.OTHER: ['MUL'],
 
             StatePersonAliasType.AFFILIATION_NAME: ['GNG'],
             StatePersonAliasType.ALIAS: ['A'],
