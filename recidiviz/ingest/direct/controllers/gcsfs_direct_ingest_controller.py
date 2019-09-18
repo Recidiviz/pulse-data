@@ -206,22 +206,39 @@ class GcsfsDirectIngestController(BaseDirectIngestController[GcsfsIngestArgs,
         self.fs.mv_path_to_processed_path(args.file_path)
 
         parts = filename_parts_from_path(args.file_path)
+        self._move_processed_files_to_storage_as_necessary(
+            last_processed_date_str=parts.date_str)
 
-        next_args_for_day = \
-            self.file_prioritizer.get_next_job_args(date_str=parts.date_str)
+    def _move_processed_files_to_storage_as_necessary(
+            self, last_processed_date_str: str):
+        next_args = self.file_prioritizer.get_next_job_args()
 
-        # TODO(1628): Consider moving all files to storage after a whole day has
-        #  passed, even if there are still expected files?
-        day_complete = not next_args_for_day and not \
-            self.file_prioritizer.are_more_jobs_expected_for_day(parts.date_str)
+        should_move_last_processed_date = False
+        if not next_args:
+            are_more_jobs_expected =\
+                self.file_prioritizer.are_more_jobs_expected_for_day(
+                    last_processed_date_str)
+            if not are_more_jobs_expected:
+                should_move_last_processed_date = True
+        else:
+            next_date_str = \
+                filename_parts_from_path(next_args.file_path).date_str
+            if next_date_str < last_processed_date_str:
+                logging.info("Found a file [%s] from a date previous to our "
+                             "last processed date - not moving anything to "
+                             "storage.")
+                return
 
-        if day_complete:
-            logging.info(
-                "All expected files found for day [%s]. Moving to storage.",
-                parts.date_str)
-            self.fs.mv_paths_from_date_to_storage(self.ingest_directory_path,
-                                                  parts.date_str,
-                                                  self.storage_directory_path)
+            # If there are still more to process on this day, do not move files
+            # from this day.
+            should_move_last_processed_date = \
+                next_date_str != last_processed_date_str
+
+        self.fs.mv_processed_paths_before_date_to_storage(
+            self.ingest_directory_path,
+            self.storage_directory_path,
+            last_processed_date_str,
+            include_bound=should_move_last_processed_date)
 
     @staticmethod
     def file_tag(file_path: GcsfsFilePath) -> str:
