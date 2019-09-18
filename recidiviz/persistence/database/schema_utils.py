@@ -45,16 +45,14 @@ def get_all_table_classes() -> Iterator[Table]:
 
 
 def get_all_table_classes_in_module(
-        module: ModuleType) -> Iterator[Type[DatabaseEntity]]:
+        module: ModuleType) -> Iterator[Type[Table]]:
     all_members_in_current_module = \
         inspect.getmembers(sys.modules[module.__name__])
     for _, member in all_members_in_current_module:
-        if (inspect.isclass(member)
-                and issubclass(member, DatabaseEntity)
-                and member is not DatabaseEntity
-                and member is not JailsBase
-                and member is not StateBase):
+        if isinstance(member, Table):
             yield member
+        elif _is_database_entity_subclass(member):
+            yield member.__table__
 
 
 def get_aggregate_table_classes() -> Iterator[Table]:
@@ -69,9 +67,29 @@ def get_state_table_classes() -> Iterator[Table]:
     yield from get_all_table_classes_in_module(state_schema)
 
 
+def _get_all_database_entities_in_module(
+        module: ModuleType) -> Iterator[Type[DatabaseEntity]]:
+    """This should only be called in tests and by the
+    `get_state_database_entity_with_name` function."""
+    all_members_in_current_module = \
+        inspect.getmembers(sys.modules[module.__name__])
+    for _, member in all_members_in_current_module:
+        if _is_database_entity_subclass(member):
+            yield member
+
+
+def _is_database_entity_subclass(member) -> bool:
+    return (inspect.isclass(member)
+            and issubclass(member, DatabaseEntity)
+            and member is not DatabaseEntity
+            and member is not JailsBase
+            and member is not StateBase)
+
+
 @lru_cache(maxsize=None)
-def get_state_table_class_with_name(class_name: str) -> Table:
-    state_table_classes = get_state_table_classes()
+def get_state_database_entity_with_name(class_name: str) -> \
+        Type[DatabaseEntity]:
+    state_table_classes = _get_all_database_entities_in_module(state_schema)
 
     for member in state_table_classes:
         if member.__name__ == class_name:

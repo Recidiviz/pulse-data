@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
+#pylint: disable=protected-access
 """Base test class for testing subclasses of BaseHistoricalSnapshotUpdater"""
 import datetime
 from types import ModuleType
@@ -32,7 +33,7 @@ from recidiviz.persistence.database.schema.history_table_shared_columns_mixin \
 from recidiviz.persistence.database.schema.schema_person_type import \
     SchemaPersonType
 from recidiviz.persistence.database.schema_utils import \
-    historical_table_class_from_obj, get_all_table_classes_in_module, \
+    historical_table_class_from_obj, _get_all_database_entities_in_module, \
     HISTORICAL_TABLE_CLASS_SUFFIX, schema_base_for_system_level, \
     schema_base_for_schema_module, schema_base_for_object
 from recidiviz.persistence.entity.core_entity import \
@@ -67,7 +68,8 @@ class BaseHistoricalSnapshotUpdaterTest(TestCase):
             schema: ModuleType,
             schema_object_type_names_to_ignore: List[str]) -> None:
         expected_schema_object_types = \
-            self._get_all_non_history_schema_object_type_names_in_module(schema)
+            self._get_all_non_history_database_entity_type_names_in_module(
+                schema)
 
         expected_schema_object_types = \
             expected_schema_object_types.difference(
@@ -79,10 +81,9 @@ class BaseHistoricalSnapshotUpdaterTest(TestCase):
                          actual_schema_object_types)
 
     @staticmethod
-    def _get_all_non_history_schema_object_type_names_in_module(
+    def _get_all_non_history_database_entity_type_names_in_module(
             schema: ModuleType) -> Set[str]:
-
-        all_table_classes = get_all_table_classes_in_module(schema)
+        all_table_classes = _get_all_database_entities_in_module(schema)
         expected_schema_object_types: Set[str] = set()
         for table_class in all_table_classes:
             class_name = table_class.__name__
