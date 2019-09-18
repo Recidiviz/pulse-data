@@ -38,7 +38,8 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     GcsfsIngestArgs, filename_parts_from_path
 from recidiviz.tests.ingest.direct.direct_ingest_util import \
     build_controller_for_tests, add_paths_with_tags_and_process, \
-    FakeDirectIngestGCSFileSystem, path_for_fixture_file
+    FakeDirectIngestGCSFileSystem, path_for_fixture_file, \
+    run_task_queues_to_empty
 from recidiviz.tests.ingest.direct.\
     fake_synchronous_direct_ingest_cloud_task_manager import \
     FakeSynchronousDirectIngestCloudTaskManager
@@ -274,20 +275,24 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             run_async=True)
 
         # pylint:disable=protected-access
-        file_tags = list(
-            reversed(sorted(controller._get_file_tag_rank_list())))
+        file_tags = list(sorted(controller._get_file_tag_rank_list()))
 
         add_paths_with_tags_and_process(self,
                                         controller,
                                         file_tags,
                                         pre_normalize_filename=True)
+    def _path_in_storage_dir(
+            self,
+            path: GcsfsFilePath,
+            controller: GcsfsDirectIngestController):
+        return path.abs_path().startswith(
+            controller.storage_directory_path.abs_path())
 
     def _path_in_split_file_storage_subdir(
             self,
             path: GcsfsFilePath,
             controller: GcsfsDirectIngestController):
-        if path.abs_path().startswith(
-                controller.storage_directory_path.abs_path()):
+        if self._path_in_storage_dir(path, controller):
             directory, _ = os.path.split(path.abs_path())
             if SPLIT_FILE_STORAGE_SUBDIR in directory:
                 return True
@@ -303,8 +308,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         controller.line_limit = 1
 
         # pylint:disable=protected-access
-        file_tags = list(
-            reversed(sorted(controller._get_file_tag_rank_list())))
+        file_tags = list(sorted(controller._get_file_tag_rank_list()))
 
         add_paths_with_tags_and_process(self,
                                         controller,
@@ -323,6 +327,119 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         found_suffixes = {filename_parts_from_path(p).filename_suffix
                           for p in processed_split_file_paths['tagC']}
         self.assertEqual(found_suffixes, {'001_file_split', '002_file_split'})
+
+    def test_move_files_from_previous_days_to_storage(self):
+        controller = build_controller_for_tests(
+            StateTestGcsfsDirectIngestController,
+            self.FIXTURE_PATH_PREFIX,
+            run_async=False)
+
+        previous_date = '2019-09-15'
+        file_path_from_prev_day = path_for_fixture_file(
+            controller,
+            f'tagB.csv',
+            should_normalize=True,
+            dt=datetime.datetime.fromisoformat(previous_date))
+
+        # pylint:disable=protected-access
+        processed_file_from_prev_day = \
+            controller.fs._to_processed_file_path(file_path_from_prev_day)
+
+        unexpected_file_path_from_prev_day = path_for_fixture_file(
+            controller,
+            f'Unexpected_Tag.csv',
+            should_normalize=True,
+            dt=datetime.datetime.fromisoformat(previous_date))
+
+        controller.fs.test_add_path(processed_file_from_prev_day)
+        controller.fs.test_add_path(unexpected_file_path_from_prev_day)
+
+        # pylint:disable=protected-access
+        file_tags = list(sorted(controller._get_file_tag_rank_list()))
+
+        # This will test that all paths get moved to storage,
+        # except the unexpected tag.
+        add_paths_with_tags_and_process(self,
+                                        controller,
+                                        file_tags,
+                                        unexpected_tags=['Unexpected_Tag'])
+
+        paths_from_prev_date = []
+        for path in controller.fs.all_paths:
+            expected_storage_dir_str = os.path.join(
+                controller.storage_directory_path.abs_path(), previous_date)
+            if path.abs_path().startswith(expected_storage_dir_str):
+                paths_from_prev_date.append(path)
+
+        self.assertTrue(len(paths_from_prev_date), 1)
+        self.assertTrue('tagB' in paths_from_prev_date[0].abs_path())
+
+    def test_move_files_from_previous_days_to_storage_incomplete_current_day(
+            self):
+        controller = build_controller_for_tests(
+            StateTestGcsfsDirectIngestController,
+            self.FIXTURE_PATH_PREFIX,
+            run_async=False)
+        if not isinstance(controller.fs, FakeDirectIngestGCSFileSystem):
+            raise ValueError(f"Controller fs must have type "
+                             f"FakeDirectIngestGCSFileSystem. Found instead "
+                             f"type [{type(controller.fs)}]")
+
+        previous_date = '2019-09-15'
+        current_date = '2019-09-16'
+
+        file_path_from_prev_day = path_for_fixture_file(
+            controller,
+            f'tagB.csv',
+            should_normalize=True,
+            dt=datetime.datetime.fromisoformat(previous_date))
+
+        # pylint:disable=protected-access
+        processed_file_from_prev_day = \
+            controller.fs._to_processed_file_path(file_path_from_prev_day)
+
+        unexpected_file_path_from_prev_day = path_for_fixture_file(
+            controller,
+            f'Unexpected_Tag.csv',
+            should_normalize=True,
+            dt=datetime.datetime.fromisoformat(previous_date))
+
+        file_path_from_current_day = path_for_fixture_file(
+            controller,
+            f'tagA.csv',
+            should_normalize=True,
+            dt=datetime.datetime.fromisoformat(current_date))
+
+        controller.fs.test_add_path(processed_file_from_prev_day)
+        controller.fs.test_add_path(unexpected_file_path_from_prev_day)
+        controller.fs.test_add_path(file_path_from_current_day)
+
+        run_task_queues_to_empty(controller)
+
+        self.assertTrue(len(controller.fs.all_paths), 3)
+
+        storage_paths = []
+        processed_paths = []
+        for path in controller.fs.all_paths:
+            if self._path_in_storage_dir(path, controller):
+                if 'Unexpected_Tag' in path.abs_path():
+                    self.fail('Unexpected tag found in storage dir')
+                storage_paths.append(path)
+            if controller.fs.is_processed_file(path):
+                processed_paths.append(path)
+
+        self.assertEqual(len(storage_paths), 1)
+
+        expected_storage_dir_str = os.path.join(
+            controller.storage_directory_path.abs_path(), previous_date)
+        self.assertTrue(
+            storage_paths[0].abs_path().startswith(expected_storage_dir_str))
+
+        self.assertEqual(len(processed_paths), 1)
+        processed_path_str = processed_paths[0].abs_path()
+        self.assertTrue(processed_path_str.startswith(
+            controller.ingest_directory_path.abs_path()))
+        self.assertTrue('tagA' in processed_path_str)
 
     def test_serialize_gcsfs_ingest_args(self):
         now = datetime.datetime.now()
