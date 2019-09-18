@@ -42,6 +42,8 @@ from recidiviz.persistence.entity_matching.entity_matching_types import \
 from recidiviz.persistence.errors import EntityMatchingError
 from recidiviz.utils.regions import get_region
 
+# TODO(2037): Move North Dakota specific methods into ND specific file.
+
 
 def is_match(ingested_entity: EntityTree,
              db_entity: EntityTree) -> bool:
@@ -86,26 +88,27 @@ def _is_match(*,
                     return True
         return False
 
+    # Aside from people, all entities are state specific.
+    if ingested_entity.get_field('state_code') \
+            != db_entity.get_field('state_code'):
+        return False
+
     if isinstance(ingested_entity, schema.StatePersonExternalId):
         db_entity = cast(schema.StatePersonExternalId, db_entity)
-        return ingested_entity.state_code == db_entity.state_code \
-               and ingested_entity.external_id == db_entity.external_id \
+        return ingested_entity.external_id == db_entity.external_id \
                and ingested_entity.id_type == db_entity.id_type
 
     # As person has already been matched, assume that any of these 'person
     # attribute' entities are matches if their state_codes align.
     if isinstance(ingested_entity, schema.StatePersonAlias):
         db_entity = cast(schema.StatePersonAlias, db_entity)
-        return ingested_entity.state_code == db_entity.state_code \
-               and ingested_entity.full_name == db_entity.full_name
+        return ingested_entity.full_name == db_entity.full_name
     if isinstance(ingested_entity, schema.StatePersonRace):
         db_entity = cast(schema.StatePersonRace, db_entity)
-        return ingested_entity.state_code == db_entity.state_code \
-               and ingested_entity.race == db_entity.race
+        return ingested_entity.race == db_entity.race
     if isinstance(ingested_entity, schema.StatePersonEthnicity):
         db_entity = cast(schema.StatePersonEthnicity, db_entity)
-        return ingested_entity.state_code == db_entity.state_code \
-               and ingested_entity.ethnicity == db_entity.ethnicity
+        return ingested_entity.ethnicity == db_entity.ethnicity
 
     # Placeholders entities are considered equal
     if ingested_entity.get_external_id() is None \
@@ -114,7 +117,6 @@ def _is_match(*,
     return ingested_entity.get_external_id() == db_entity.get_external_id()
 
 
-# TODO(2037): Move the following into North Dakota specific file.
 def base_entity_match(
         ingested_entity: EntityTree,
         db_entity: EntityTree) -> bool:
@@ -350,7 +352,6 @@ def _are_consecutive(ip1: schema.StateIncarcerationPeriod,
         and (ip2.admission_date - ip1.release_date).days <= 2
 
 
-# TODO(2037): Move the following into North Dakota specific file.
 def merge_incarceration_periods(ingested_persons: List[schema.StatePerson]):
     """Merges any incomplete StateIncarcerationPeriods in the provided
     |ingested_persons|.
@@ -470,6 +471,11 @@ def nd_is_incarceration_period_match(
 
     ingested_entity = cast(schema.StateIncarcerationPeriod, ingested_entity)
     db_entity = cast(schema.StateIncarcerationPeriod, db_entity)
+
+    # Enforce that all objects being compared are for US_ND
+    if ingested_entity.state_code != 'US_ND' \
+            or db_entity.state_code != 'US_ND':
+        return False
 
     ingested_complete = is_incarceration_period_complete(ingested_entity)
     db_complete = is_incarceration_period_complete(db_entity)
