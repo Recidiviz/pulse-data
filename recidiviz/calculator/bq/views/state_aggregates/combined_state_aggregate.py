@@ -35,9 +35,9 @@ def _to_bq_table(query_str: str) -> str:
         bq_table_name = '`{project_id}.{base_dataset}.{table_name}`'.format(
             project_id=project_id,
             base_dataset=base_dataset,
-            table_name=table.__tablename__
+            table_name=table.name
         )
-        query_str = query_str.replace(table.__tablename__, bq_table_name)
+        query_str = query_str.replace(table.name, bq_table_name)
 
     return query_str
 

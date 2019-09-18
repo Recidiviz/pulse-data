@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
+#pylint: disable=protected-access
 """
 Tests for SQLAlchemy enums defined in recidiviz.persistence.database.schema
 """
@@ -36,7 +37,7 @@ from recidiviz.persistence.database.schema.aggregate import (
 from recidiviz.persistence.database.schema.county import schema as county_schema
 from recidiviz.persistence.database.schema.state import schema as state_schema
 from recidiviz.persistence.database.schema_utils import \
-    get_all_table_classes_in_module
+    _get_all_database_entities_in_module, get_all_table_classes_in_module
 
 ALL_SCHEMA_MODULES = [county_schema, state_schema, aggregate_schema]
 
@@ -145,8 +146,8 @@ class TestSchemaTableConsistency(TestCase):
         table_names_set = set()
         for schema_module in ALL_SCHEMA_MODULES:
             table_classes = get_all_table_classes_in_module(schema_module)
-            for cls in table_classes:
-                table_name = cls.__tablename__
+            for table in table_classes:
+                table_name = table.name
                 self.assertNotIn(
                     table_name,
                     table_names_set,
@@ -155,22 +156,22 @@ class TestSchemaTableConsistency(TestCase):
                 )
                 table_names_set.add(table_name)
 
-    def testNoRepeatTableClassNames(self):
+    def testNoRepeatDatabaseClassNames(self):
         table_class_names_set = set()
         for schema_module in ALL_SCHEMA_MODULES:
-            table_classes = get_all_table_classes_in_module(schema_module)
-            for cls in table_classes:
-                table_class_name = cls.__name__
+            db_classes = _get_all_database_entities_in_module(schema_module)
+            for cls in db_classes:
+                class_name = cls.__name__
                 self.assertNotIn(
-                    table_class_name,
+                    class_name,
                     table_class_names_set,
-                    f'Table name [{table_class_name}] defined in '
+                    f'Table name [{class_name}] defined in '
                     f'[{schema_module}]) already exists.'
                 )
 
     def testAllTableNamesMatchClassNames(self):
         for schema_module in ALL_SCHEMA_MODULES:
-            for cls in get_all_table_classes_in_module(schema_module):
+            for cls in _get_all_database_entities_in_module(schema_module):
                 table_name = cls.__tablename__
                 table_name_to_capital_case = table_name.title().replace("_", "")
                 self.assertEqual(
@@ -181,7 +182,7 @@ class TestSchemaTableConsistency(TestCase):
 
     def testDatabaseEntityFunctionality(self):
         for schema_module in ALL_SCHEMA_MODULES:
-            for cls in get_all_table_classes_in_module(schema_module):
+            for cls in _get_all_database_entities_in_module(schema_module):
                 primary_key_col_name = cls.get_primary_key_column_name()
                 self.assertIsNotNone(primary_key_col_name)
                 primary_key_prop_name = cls.get_column_property_names()

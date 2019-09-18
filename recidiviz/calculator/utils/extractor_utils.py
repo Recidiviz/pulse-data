@@ -237,7 +237,7 @@ class _ExtractRelationshipPropertyEntities(beam.PTransform):
             entity_class = entity_utils.get_entity_class_in_module_with_name(
                 state_entities, class_name)
             schema_class = \
-                schema_utils.get_state_table_class_with_name(class_name)
+                schema_utils.get_state_database_entity_with_name(class_name)
             table_name = schema_class.__tablename__
 
             if self._dataset or table_name in self._data_dict:
