@@ -25,7 +25,7 @@ from recidiviz.common.constants.state import state_assessment, state_charge, \
 from recidiviz.persistence.database.schema import shared_enums
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_utils import \
-    get_all_table_classes_in_module
+    get_all_table_classes_in_module, _get_all_database_entities_in_module
 from recidiviz.tests.persistence.database.schema.schema_test import (
     TestSchemaEnums,
     TestSchemaTableConsistency)
@@ -122,8 +122,8 @@ class TestStateSchemaTableConsistency(TestSchemaTableConsistency):
 
     def testAllTableNamesPrefixedWithState(self):
         for cls in get_all_table_classes_in_module(schema):
-            self.assertTrue(cls.__tablename__.startswith('state_'))
+            self.assertTrue(cls.name.startswith('state_'))
 
-    def testAllTableClassNamesPrefixedWithState(self):
-        for cls in get_all_table_classes_in_module(schema):
+    def testAllDatabaseEntityNamesPrefixedWithState(self):
+        for cls in _get_all_database_entities_in_module(schema):
             self.assertTrue(cls.__name__.startswith('State'))
