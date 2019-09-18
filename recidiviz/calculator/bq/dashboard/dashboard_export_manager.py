@@ -64,4 +64,4 @@ def _export_view_tables_to_cloud_storage(
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.INFO)
 
-    export_dashboard_data_to_cloud_storage('recidiviz-123-dashboard-data')
+    export_dashboard_data_to_cloud_storage('ENTER-BUCKET-HERE')
