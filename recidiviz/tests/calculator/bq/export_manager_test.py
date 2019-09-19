@@ -306,4 +306,4 @@ class ExportManagerTestCounty(unittest.TestCase):
         assert response.status_code == HTTPStatus.OK
         mock_queues.create_bq_monitor_task.assert_not_called()
         mock_pubsub_helper.publish_message_to_topic.assert_called_with(
-            topic, message)
+            message=message, topic=topic)

@@ -210,7 +210,7 @@ def handle_bq_monitor_task():
         return ('', HTTPStatus.OK)
 
     # Publish a message to the Pub/Sub topic once all BQ exports are complete
-    pubsub_helper.publish_message_to_topic(topic, message)
+    pubsub_helper.publish_message_to_topic(message=message, topic=topic)
 
     return ('', HTTPStatus.OK)
 
