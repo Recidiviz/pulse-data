@@ -103,8 +103,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
         self.row_post_processors_by_file: Dict[str, List[Callable]] = {
             'elite_alias': [self._clear_temporary_alias_primary_ids,
                             self._set_demographics_on_person],
-            'elite_offenders': [self._rationalize_race_and_ethnicity,
-                                self._copy_name_to_alias],
+            'elite_offenders': [self._copy_name_to_alias],
             'elite_offenderidentifier': [self._normalize_external_id],
             'elite_offendersentenceaggs': [self._rationalize_max_length],
             'elite_offendersentences': [self._rationalize_life_sentence],
@@ -125,8 +124,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
                 self._set_punishment_length_days,
                 self._set_location_within_facility,
                 self._set_incident_outcome_id],
-            'docstars_offenders': [self._rationalize_race_and_ethnicity,
-                                   self._label_external_id_as_elite,
+            'docstars_offenders': [self._label_external_id_as_elite,
                                    self._enrich_addresses,
                                    self._enrich_sorac_assessments,
                                    self._copy_name_to_alias],
@@ -242,15 +240,20 @@ class UsNdController(CsvGcsfsDirectIngestController):
     def _get_row_post_processors_for_file(self, file: str) -> List[Callable]:
         return self.row_post_processors_by_file.get(file, [])
 
-    def _get_file_post_processors_for_file(
-            self, file: str) -> List[Callable]:
+    def _get_external_id_post_processor_for_file(self, file: str) -> Callable:
         if file.startswith('elite'):
-            return [self._convert_elite_person_ids_to_external_id_objects]
+            return self._convert_elite_person_ids_to_external_id_objects
         if file.startswith('docstars'):
-            return [self._convert_docstars_person_ids_to_external_id_objects]
-
+            return self._convert_docstars_person_ids_to_external_id_objects
         raise ValueError(f"File [{file}] doesn't have a known external id "
                          f"post-processor")
+
+    def _get_file_post_processors_for_file(
+            self, file: str) -> List[Callable]:
+        post_processors: List[Callable] = [
+            self._rationalize_race_and_ethnicity,
+            self._get_external_id_post_processor_for_file(file)]
+        return post_processors
 
     def _get_ancestor_key_override_for_file(
             self, file: str) -> Optional[Callable]:
@@ -338,21 +341,21 @@ class UsNdController(CsvGcsfsDirectIngestController):
                 person.create_state_person_race(race=race)
 
     @staticmethod
-    def _rationalize_race_and_ethnicity(_row: Dict[str, str],
-                                        extracted_objects: List[IngestObject],
-                                        _cache: IngestObjectCache):
+    def _rationalize_race_and_ethnicity(_, cache: Optional[IngestObjectCache]):
         """For a person whose provided race is HISPANIC, we set the ethnicity to
         HISPANIC, and the race will be cleared."""
-        for extracted_object in extracted_objects:
-            if isinstance(extracted_object, StatePerson):
-                updated_person_races = []
-                for person_race in extracted_object.state_person_races:
-                    if person_race.race in {'5', 'HIS'}:
-                        extracted_object.create_state_person_ethnicity(
-                            ethnicity=Ethnicity.HISPANIC.value)
-                    else:
-                        updated_person_races.append(person_race)
-                extracted_object.state_person_races = updated_person_races
+        if cache is None:
+            raise ValueError("Ingest object cache is unexpectedly None")
+
+        for person in cache.get_objects_of_type('state_person'):
+            updated_person_races = []
+            for person_race in person.state_person_races:
+                if person_race.race in {'5', 'HIS'}:
+                    person.create_state_person_ethnicity(
+                        ethnicity=Ethnicity.HISPANIC.value)
+                else:
+                    updated_person_races.append(person_race)
+            person.state_person_races = updated_person_races
 
 
     @staticmethod
