@@ -112,6 +112,31 @@ class TestDao(TestCase):
 
         self.assertCountEqual(people, expected_people)
 
+    def test_readPlaceholderPeople(self):
+        placeholder_person = schema.StatePerson(person_id=1)
+        person = schema.StatePerson(person_id=2)
+        person_external_id = schema.StatePersonExternalId(
+            person_external_id_id=1,
+            external_id=_EXTERNAL_ID,
+            id_type=external_id_types.US_ND_SID,
+            state_code=_STATE_CODE,
+            person=person,
+        )
+        person.external_ids = [person_external_id]
+
+        session = SessionFactory.for_schema_base(StateBase)
+        session.add(placeholder_person)
+        session.add(person)
+        session.commit()
+
+        # Act
+        people = dao.read_placeholder_persons(session)
+
+        # Assert
+        expected_people = [placeholder_person]
+
+        self.assertCountEqual(people, expected_people)
+
     def test_readPeopleByRootExternalIds(self):
         # Arrange
         person_no_match = schema.StatePerson(person_id=1)
