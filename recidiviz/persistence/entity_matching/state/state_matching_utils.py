@@ -950,5 +950,19 @@ def _nd_read_people(
         ingested_people, root_entity_cls)
     logging.info("[Entity Matching] Reading [%s] external ids of class [%s]",
                  len(root_external_ids), root_entity_cls.__name__)
-    return dao.read_people_by_cls_external_ids(
+    persons_by_root_entity = dao.read_people_by_cls_external_ids(
         session, region, root_entity_cls, root_external_ids)
+    placeholder_persons = dao.read_placeholder_persons(session)
+
+    # When the |root_entity_cls| is not StatePerson, it is possible for both
+    # persons_by_root_entity and placeholder_persons to contain the same
+    # placeholder person(s). For this reason, we dedup people across both lists
+    # before returning.
+    deduped_people = []
+    seen_person_ids: Set[int] = set()
+    for person in persons_by_root_entity + placeholder_persons:
+        if person.person_id not in seen_person_ids:
+            deduped_people.append(person)
+            seen_person_ids.add(person.person_id)
+
+    return deduped_people
