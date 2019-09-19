@@ -1221,24 +1221,33 @@ class TestStateMatchingUtils(TestCase):
         self.assert_schema_object_lists_equal(expected_people, people)
 
     def test_readPersons_ndSpecific(self):
-        schema_person = schema.StatePerson(person_id=1)
+        schema_person_with_root_entity = schema.StatePerson(person_id=1)
         schema_sentence_group = schema.StateSentenceGroup(
-            sentence_group_id=1,
+            sentence_group_id=_ID,
             external_id=_EXTERNAL_ID,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
             state_code='US_ND')
         schema_sentence_group_2 = schema.StateSentenceGroup(
-            sentence_group_id=2,
+            sentence_group_id=_ID_2,
             external_id=_EXTERNAL_ID_2,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
             state_code='US_ND')
-        schema_person.sentence_groups = [schema_sentence_group,
-                                         schema_sentence_group_2]
-        schema_person_2 = schema.StatePerson(person_id=2)
+        schema_person_with_root_entity.sentence_groups = [
+            schema_sentence_group, schema_sentence_group_2]
+        placeholder_schema_person = schema.StatePerson(person_id=_ID_2)
+        schema_person_other_state = schema.StatePerson(person_id=_ID_3)
+        schema_external_id_other_state = schema.StatePersonExternalId(
+            person_external_id_id=_ID_2,
+            external_id=_ID,
+            id_type=_ID_TYPE,
+            state_code=_STATE_CODE)
+        schema_person_other_state.external_ids = [
+            schema_external_id_other_state]
 
         session = SessionFactory.for_schema_base(StateBase)
-        session.add(schema_person)
-        session.add(schema_person_2)
+        session.add(schema_person_with_root_entity)
+        session.add(placeholder_schema_person)
+        session.add(schema_person_other_state)
         session.commit()
 
         ingested_sentence_group = schema.StateSentenceGroup(
@@ -1246,7 +1255,8 @@ class TestStateMatchingUtils(TestCase):
         ingested_person = schema.StatePerson(
             sentence_groups=[ingested_sentence_group])
 
-        expected_people = [schema_person]
+        expected_people = [schema_person_with_root_entity,
+                           placeholder_schema_person]
 
         people = _read_persons(session, 'us_nd', [ingested_person])
         self.assert_schema_object_lists_equal(expected_people, people)

@@ -1875,6 +1875,58 @@ class TestStateEntityMatching(TestCase):
         self.assertEqual(1, matched_entities.total_root_entities)
 
     # TODO(2037): Move test to state specific file.
+    def test_runMatch_checkPlaceholdersWhenNoRootEntityMatch(self, _):
+        """Tests that ingested people are matched with DB placeholder people
+        when a root entity match doesn't exist. Specific to US_ND.
+        """
+        db_placeholder_person = generate_person(person_id=_ID)
+        db_sg = generate_sentence_group(
+            sentence_group_id=_ID, state_code=_US_ND, external_id=_EXTERNAL_ID)
+        db_placeholder_person.sentence_groups = [db_sg]
+        db_placeholder_person_other_state = generate_person(person_id=_ID_2)
+        db_sg_other_state = generate_sentence_group(
+            sentence_group_id=_ID_2, state_code=_STATE_CODE,
+            external_id=_EXTERNAL_ID)
+        db_placeholder_person_other_state.sentence_groups = [db_sg_other_state]
+
+        self._commit_to_db(
+            db_placeholder_person, db_placeholder_person_other_state)
+
+        sg = attr.evolve(
+            self.to_entity(db_sg), sentence_group_id=None)
+        external_id = StatePersonExternalId.new_with_defaults(
+            external_id=_EXTERNAL_ID,
+            state_code=_US_ND,
+            id_type=_ID_TYPE)
+        person = attr.evolve(
+            self.to_entity(db_placeholder_person), person_id=None,
+            full_name=_FULL_NAME,
+            external_ids=[external_id],
+            sentence_groups=[sg])
+
+        expected_sg = attr.evolve(self.to_entity(db_sg))
+        expected_external_id = attr.evolve(external_id)
+        expected_person = attr.evolve(
+            person,
+            external_ids=[expected_external_id],
+            sentence_groups=[expected_sg])
+        expected_placeholder_person = attr.evolve(
+            self.to_entity(db_placeholder_person), sentence_groups=[])
+        expected_placeholder_person_other_state = self.to_entity(
+            db_placeholder_person_other_state)
+
+        # Act 1 - Match
+        matched_entities = entity_matching.match(
+            self._session(), _US_ND, ingested_people=[person])
+
+        # Assert 1 - Match
+        self.assert_people_match(
+            [expected_person, expected_placeholder_person,
+             expected_placeholder_person_other_state],
+            matched_entities.people)
+        self.assertEqual(0, matched_entities.error_count)
+        self.assertEqual(1, matched_entities.total_root_entities)
+
     def test_runMatch_sameEntities_noDuplicates(self, _):
         db_placeholder_person = generate_person(person_id=_ID)
         db_is = generate_incarceration_sentence(
