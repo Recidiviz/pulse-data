@@ -62,3 +62,8 @@ class IngestObjectCache:
         if class_name in self.object_by_id_cache and \
                 obj_id in self.object_by_id_cache[class_name]:
             del self.object_by_id_cache[class_name][obj_id]
+
+    def get_objects_of_type(self, class_name: str):
+        if class_name not in self.object_by_id_cache:
+            return []
+        return self.object_by_id_cache[class_name].values()

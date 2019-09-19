@@ -217,6 +217,9 @@ class TestUsNdController(unittest.TestCase):
                                     state_person_external_id_id='39768',
                                     id_type=US_ND_ELITE)
                             ],
+                            state_person_ethnicities=[
+                                StatePersonEthnicity(ethnicity='HISPANIC')
+                            ],
                             state_aliases=[
                                 StateAlias(surname='HOPKINS',
                                            given_names='TODD',
@@ -1590,6 +1593,10 @@ class TestUsNdController(unittest.TestCase):
         # Arrange
         # TODO(2158): Why do we fill out full_name and keep the distinct
         # parts (in comparison to Person).
+        person_1_ethnicity = entities.StatePersonEthnicity.new_with_defaults(
+            state_code=_STATE_CODE, ethnicity=Ethnicity.HISPANIC,
+            ethnicity_raw_text='HISPANIC',
+            person=person_1)
         person_1_alias_2 = entities.StatePersonAlias.new_with_defaults(
             full_name='{"given_names": "TODD", "name_suffix": "III", '
                       '"surname": "HOPKINS"}',
@@ -1610,6 +1617,7 @@ class TestUsNdController(unittest.TestCase):
             alias_type_raw_text='A',
             state_code=_STATE_CODE,
             person=person_2)
+        person_1.ethnicities.append(person_1_ethnicity)
         person_1.aliases.append(person_1_alias_2)
         person_1.aliases.append(person_1_alias_3)
         person_2.aliases.append(person_2_alias_2)
