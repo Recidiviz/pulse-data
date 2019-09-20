@@ -16,6 +16,9 @@
 # =============================================================================
 
 """Entrypoint for the application."""
+import datetime
+import logging
+
 from flask import Flask
 from opencensus.common.transports.async_ import AsyncTransport
 from opencensus.ext.flask.flask_middleware import FlaskMiddleware
@@ -27,6 +30,7 @@ from recidiviz.calculator.bq.export_manager import export_manager_blueprint
 from recidiviz.calculator.utils.dataflow_monitor_manager import \
     dataflow_monitor_blueprint
 from recidiviz.cloud_functions.cloud_functions import cloud_functions_blueprint
+from recidiviz.common.google_cloud import google_cloud_task_queue_config
 from recidiviz.ingest.aggregate.scrape_aggregate_reports import \
     scrape_aggregate_reports_blueprint
 from recidiviz.ingest.aggregate.single_count import store_single_count_blueprint
@@ -42,7 +46,7 @@ from recidiviz.persistence.database.sqlalchemy_engine_manager import \
 from recidiviz.utils import environment, structured_logging, metadata
 
 structured_logging.setup()
-
+logging.info("[%s] Running server.py", datetime.datetime.now().isoformat())
 
 app = Flask(__name__)
 app.register_blueprint(scraper_control, url_prefix='/scraper')
@@ -64,6 +68,10 @@ app.register_blueprint(dataflow_monitor_blueprint,
 if environment.in_gae():
     SQLAlchemyEngineManager.init_engines_for_server_postgres_instances()
 
+    # TODO(2428): This file (server.py) gets run 5 times
+    #  (# of workers defined in gunicorn.conf.py) - investigate best way to
+    #  run code at app launch only once.
+    google_cloud_task_queue_config.initialize_queues()
 
 # Setup tracing of requests not traced by default
 if environment.in_gae():

@@ -24,6 +24,8 @@ from typing import Set, List, Union, Optional, Dict
 
 from mock import Mock, patch
 
+from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import \
+    BaseDirectIngestController
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import \
     DirectIngestGCSFileSystem, to_normalized_unprocessed_file_path
 from recidiviz.ingest.direct.controllers.gcsfs_path import \
@@ -134,9 +136,25 @@ class FakeDirectIngestGCSFileSystem(DirectIngestGCSFileSystem):
                     and path.blob_name.startswith(blob_prefix)]
 
 
+def build_controller_for_tests(controller_cls,
+                               run_async: bool) -> BaseDirectIngestController:
+    if issubclass(controller_cls, GcsfsDirectIngestController):
+        raise ValueError(f"Controller class {controller_cls} is instance of "
+                         f"GcsfsDirectIngestController - use "
+                         f"build_gcsfs_controller_for_tests instead.")
+
+    with patch(
+            'recidiviz.ingest.direct.controllers.'
+            'base_direct_ingest_controller.DirectIngestCloudTaskManagerImpl') \
+            as mock_task_factory_cls:
+        task_manager = FakeAsyncDirectIngestCloudTaskManager() \
+            if run_async else FakeSynchronousDirectIngestCloudTaskManager()
+        mock_task_factory_cls.return_value = task_manager
+        return controller_cls()
+
 @patch('recidiviz.utils.metadata.project_id',
        Mock(return_value='recidiviz-staging'))
-def build_controller_for_tests(
+def build_gcsfs_controller_for_tests(
         controller_cls,
         fixture_path_prefix: str,
         run_async: bool
