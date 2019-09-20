@@ -8,6 +8,7 @@ gcloud -q auth activate-service-account recidiviz-staging@appspot.gserviceaccoun
 gcloud -q app deploy cron.yaml --project=recidiviz-staging 2>&1 | ind
 
 # Generate and deploy queue.yaml
+# TODO(2428): Once we have fully migrated to modern task queues, remove this step
 docker exec -it recidiviz pipenv run python -m recidiviz.tools.build_queue_config --environment all 2>&1 | ind
 docker cp recidiviz:/app/queue.yaml . 2>&1 | ind
 gcloud -q app deploy queue.yaml --project=recidiviz-staging 2>&1 | ind

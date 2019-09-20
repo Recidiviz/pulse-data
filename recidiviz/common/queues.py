@@ -21,7 +21,7 @@ import datetime
 import json
 import logging
 import uuid
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 from google.api_core import datetime_helpers
 from google.cloud import exceptions, tasks
@@ -32,22 +32,24 @@ from recidiviz.utils import environment, metadata
 
 NUM_GRPC_RETRIES = 2
 
-_client = None
+_legacy_cloud_tasks_client: Optional[tasks.CloudTasksClient] = None
 
 
-def client():
-    global _client
-    if not _client:
-        _client = tasks.CloudTasksClient()
-    return _client
+def legacy_cloud_tasks_client() -> tasks.CloudTasksClient:
+    global _legacy_cloud_tasks_client
+    if not _legacy_cloud_tasks_client:
+        _legacy_cloud_tasks_client = tasks.CloudTasksClient()
+    return _legacy_cloud_tasks_client
 
 
 @environment.test_only
-def clear_client():
-    global _client
-    _client = None
+def clear_legacy_cloud_tasks_client():
+    global _legacy_cloud_tasks_client
+    _legacy_cloud_tasks_client = None
 
 
+# TODO(2428): Migrate all usages to call GoogleCloudTasksClientWrapper instance
+#  method
 def format_queue_path(queue_name):
     """Formats a queue name into its full Cloud Tasks queue path.
 
@@ -56,7 +58,7 @@ def format_queue_path(queue_name):
     Returns:
         A Cloud Tasks queue path string.
     """
-    full_queue_path = client().queue_path(
+    full_queue_path = legacy_cloud_tasks_client().queue_path(
         metadata.project_id(),
         metadata.region(),
         queue_name)
@@ -64,6 +66,8 @@ def format_queue_path(queue_name):
     return full_queue_path
 
 
+# TODO(2428): Migrate all usages to call GoogleCloudTasksClientWrapper instance
+#  method
 def format_task_path(queue_name: str, task_name: str):
     """Creates a task path out of the necessary parts.
 
@@ -71,18 +75,20 @@ def format_task_path(queue_name: str, task_name: str):
         '/projects/{project}/locations/{location}'
         '/queues/{queue}/tasks/{task_name}'
     """
-    return client().task_path(
+    return legacy_cloud_tasks_client().task_path(
         metadata.project_id(),
         metadata.region(),
         queue_name,
         task_name)
 
 
+# TODO(2428): Migrate all usages to call GoogleCloudTasksClientWrapper instance
+#  method
 def list_tasks_with_prefix(
         path_prefix: str, queue_name: str) -> List[tasks.types.Task]:
     """List tasks for the given queue with the given task path prefix."""
     return [task for task in retry_grpc(NUM_GRPC_RETRIES,
-                                        client().list_tasks,
+                                        legacy_cloud_tasks_client().list_tasks,
                                         format_queue_path(queue_name))
             if task.name.startswith(path_prefix)]
 
@@ -107,13 +113,16 @@ def purge_scrape_tasks(*, region_code: str, queue_name: str):
     for task in list_scrape_tasks(
             region_code=region_code, queue_name=queue_name):
         try:
-            retry_grpc(NUM_GRPC_RETRIES, client().delete_task, task.name)
+            # TODO(2428): Migrate to new client
+            retry_grpc(NUM_GRPC_RETRIES,
+                       legacy_cloud_tasks_client().delete_task,
+                       task.name)
         except exceptions.NotFound as e:
             logging.debug('Task not found: [%s]', e)
 
 
 def list_scrape_tasks(*, region_code: str, queue_name: str) \
-        -> List[tasks.types.Task]:
+        -> List[tasks.types.task_pb2.Task]:
     """List scrape tasks for the given region and queue"""
     region_task_prefix = format_scrape_task_path(queue_name, region_code, '')
     return list_tasks_with_prefix(region_task_prefix, queue_name)
@@ -128,7 +137,7 @@ def create_scrape_task(*, region_code, queue_name, url, body):
         url: `str` App Engine worker url.
         body: `dict` task body to be passed to worker.
     """
-    task = tasks.types.Task(
+    task = tasks.types.task_pb2.Task(
         name=format_scrape_task_path(queue_name, region_code, uuid.uuid4()),
         app_engine_http_request={
             'relative_uri': url,
@@ -136,8 +145,9 @@ def create_scrape_task(*, region_code, queue_name, url, body):
         }
     )
 
+    # TODO(2428): Migrate to new client
     retry_grpc(NUM_GRPC_RETRIES,
-               client().create_task,
+               legacy_cloud_tasks_client().create_task,
                format_queue_path(queue_name),
                task)
 
@@ -152,7 +162,7 @@ def enqueue_scraper_phase(*, region_code, url):
     the `region_code` as a url parameter. For example, this can trigger stopping
     a scraper or inferring release for a particular region.
     """
-    task = tasks.types.Task(
+    task = tasks.types.task_pb2.Task(
         app_engine_http_request={
             'http_method': 'GET',
             'relative_uri': '{url}?region={region_code}'.format(
@@ -160,9 +170,10 @@ def enqueue_scraper_phase(*, region_code, url):
             ),
         }
     )
+    # TODO(2428): Migrate to new client
     retry_grpc(
         NUM_GRPC_RETRIES,
-        client().create_task,
+        legacy_cloud_tasks_client().create_task,
         format_queue_path(SCRAPER_PHASE_QUEUE),
         task
     )
@@ -185,7 +196,7 @@ def create_bq_task(table_name: str, module: str, url: str):
     task_id = '{}-{}-{}-{}'.format(
         table_name, module, str(datetime.date.today()), uuid.uuid4())
     task_name = format_task_path(BIGQUERY_QUEUE, task_id)
-    task = tasks.types.Task(
+    task = tasks.types.task_pb2.Task(
         name=task_name,
         app_engine_http_request={
             'relative_uri': url,
@@ -194,7 +205,7 @@ def create_bq_task(table_name: str, module: str, url: str):
     )
     retry_grpc(
         NUM_GRPC_RETRIES,
-        client().create_task,
+        legacy_cloud_tasks_client().create_task,
         format_queue_path(BIGQUERY_QUEUE),
         task
     )
@@ -244,6 +255,8 @@ def create_dataflow_monitor_task(project_id: str, job_id: str, location: str,
     create_task(task_id, JOB_MONITOR_QUEUE, schedule_delay_seconds, url, body)
 
 
+# TODO(2428): Migrate all usages to call GoogleCloudTasksClientWrapper
+#  instance method
 def create_task(task_id: str, queue_name: str, schedule_delay_seconds: int,
                 url: str, body: Dict[str, str]):
     """Creates a task with the given details.
@@ -274,7 +287,7 @@ def create_task(task_id: str, queue_name: str, schedule_delay_seconds: int,
     )
     retry_grpc(
         NUM_GRPC_RETRIES,
-        client().create_task,
+        legacy_cloud_tasks_client().create_task,
         format_queue_path(queue_name),
         task
     )

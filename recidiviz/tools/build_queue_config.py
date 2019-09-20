@@ -20,7 +20,6 @@ from typing import Any, Dict, List, Set
 
 import yaml
 
-import recidiviz.ingest.direct.direct_ingest_cloud_task_manager
 from recidiviz.common import queues
 from recidiviz.utils import environment, regions, vendors
 
@@ -47,45 +46,6 @@ BIGQUERY_QUEUE_CONFIG = {
     }
 }
 
-DIRECT_INGEST_SCHEDULER_QUEUE_CONFIG = {
-    'name':
-        recidiviz.ingest.direct.direct_ingest_cloud_task_manager.
-        DIRECT_INGEST_SCHEDULER_QUEUE,
-    'mode': 'push',
-    'rate': '100/s',
-    'bucket_size': 1,
-    'max_concurrent_requests': 1,
-    'retry_parameters': {
-        'task_retry_limit': 5
-    }
-}
-
-DIRECT_INGEST_JAILS_TASK_QUEUE_CONFIG = {
-    'name':
-        recidiviz.ingest.direct.direct_ingest_cloud_task_manager.
-        DIRECT_INGEST_JAILS_TASK_QUEUE,
-    'mode': 'push',
-    'rate': '10/s',
-    'bucket_size': 1,
-    'max_concurrent_requests': 1,
-    'retry_parameters': {
-        'task_retry_limit': 5
-    }
-}
-
-DIRECT_INGEST_STATE_TASK_QUEUE_CONFIG = {
-    'name':
-        recidiviz.ingest.direct.direct_ingest_cloud_task_manager.
-        DIRECT_INGEST_STATE_TASK_QUEUE,
-    'mode': 'push',
-    'rate': '10/s',
-    'bucket_size': 1,
-    'max_concurrent_requests': 1,
-    'retry_parameters': {
-        'task_retry_limit': 5
-    }
-}
-
 JOB_MONITOR_QUEUE_CONFIG = {
     'name': queues.JOB_MONITOR_QUEUE,
     'mode': 'push',
@@ -101,7 +61,8 @@ class NoAliasDumper(yaml.Dumper):
     def ignore_aliases(self, data):
         return True
 
-
+# TODO(2428): Deprecate this whole script once we have fully migrated to v2
+#  queues.
 def build_queues(environments: Set[str]):
     qs: List[Dict[str, Any]] = []
     qs.append({'name': queues.SCRAPER_PHASE_QUEUE,
@@ -122,9 +83,6 @@ def build_queues(environments: Set[str]):
             **BASE_QUEUE_CONFIG, **(region.queue or {})
         })
 
-    qs.append(DIRECT_INGEST_JAILS_TASK_QUEUE_CONFIG)
-    qs.append(DIRECT_INGEST_STATE_TASK_QUEUE_CONFIG)
-    qs.append(DIRECT_INGEST_SCHEDULER_QUEUE_CONFIG)
     qs.append(BIGQUERY_QUEUE_CONFIG)
     qs.append(JOB_MONITOR_QUEUE_CONFIG)
     with open('queue.yaml', 'w') as queue_manifest:
