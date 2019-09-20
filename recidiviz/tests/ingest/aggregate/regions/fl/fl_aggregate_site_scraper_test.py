@@ -33,7 +33,7 @@ class TestFlAggregateSiteScraper(TestCase):
         mockresponse = Mock()
         mockget.return_value = mockresponse
         mockresponse.text = REPORTS_HTML
-        url1 = 'http://www.dc.state.fl.us/pub/jails/2018/jails-2018-01.pdf'
+        url1 = 'http://www.dc.state.fl.us/pub/jails/2019/2019_02 Feb FCDF.pdf'
         url2 = 'http://www.dc.state.fl.us/pub/jails/2016/jails-2016-03.pdf'
         expected_urls = {url1, url2}
 
