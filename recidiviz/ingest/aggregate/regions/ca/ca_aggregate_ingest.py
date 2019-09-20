@@ -51,6 +51,7 @@ def _parse_table(filename: str) -> pd.DataFrame:
     # Although the file is downloaded with the '.xls' extension, the contents of
     # the file are in the shape of an HTML file.
     df = pd.read_html(filename, header=0)[0]
+    df = df.fillna(0)
 
     df['report_date'] = df[['Year', 'Month']].apply(
         _last_date_of_month, axis='columns')
