@@ -19,17 +19,18 @@ import datetime
 import json
 from unittest import TestCase
 
-from google.cloud import tasks
+from google.cloud import tasks_v2
 from google.protobuf import timestamp_pb2
 from mock import patch
 
+from recidiviz.common.google_cloud.google_cloud_task_queue_config import \
+    DIRECT_INGEST_SCHEDULER_QUEUE_V2, DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import \
     to_normalized_unprocessed_file_path
 from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath
 from recidiviz.common import queues
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import \
-    DirectIngestCloudTaskManagerImpl, DIRECT_INGEST_STATE_TASK_QUEUE, \
-    DIRECT_INGEST_SCHEDULER_QUEUE, CloudTaskQueueInfo, _build_task_id
+    DirectIngestCloudTaskManagerImpl, CloudTaskQueueInfo, _build_task_id
 from recidiviz.ingest.direct.controllers.direct_ingest_types import IngestArgs
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     GcsfsIngestArgs
@@ -40,7 +41,7 @@ _REGION = regions.Region(
     agency_name='agency_name',
     agency_type='state',
     base_url='base_url',
-    shared_queue=DIRECT_INGEST_STATE_TASK_QUEUE,
+    shared_queue=DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2,
     timezone='America/New_York',
     jurisdiction_id='jid',
     environment='production')
@@ -101,16 +102,17 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
     """Tests for the DirectIngestCloudTaskManagerImpl."""
 
     def setup_method(self, _test_method):
-        queues.clear_client()
+        queues.clear_legacy_cloud_tasks_client()
 
     def teardown_method(self, _test_method):
-        queues.clear_client()
+        queues.clear_legacy_cloud_tasks_client()
 
-    @patch('recidiviz.ingest.direct.direct_ingest_cloud_task_manager.'
+    @patch('recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper.'
            'datetime_helpers')
-    @patch('recidiviz.common.queues.datetime')
-    @patch('recidiviz.common.queues.uuid')
-    @patch('google.cloud.tasks.CloudTasksClient')
+    @patch('recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper.'
+           'datetime')
+    @patch('recidiviz.ingest.direct.direct_ingest_cloud_task_manager.uuid')
+    @patch('google.cloud.tasks_v2.CloudTasksClient')
     def test_create_direct_ingest_scheduler_queue_task(
             self, mock_client, mock_uuid, mock_datetime, mock_datetime_helpers):
         # Arrange
@@ -130,9 +132,9 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         mock_datetime.date.today.return_value = date
         queue_path = _REGION.shared_queue + '-path'
 
-        task_name = DIRECT_INGEST_SCHEDULER_QUEUE + '/{}-{}-{}'.format(
-            _REGION.region_code, date, uuid)
-        task = tasks.types.Task(
+        task_name = DIRECT_INGEST_SCHEDULER_QUEUE_V2 + \
+            '/{}-{}-{}'.format(_REGION.region_code, date, uuid)
+        task = tasks_v2.types.task_pb2.Task(
             name=task_name,
             schedule_time=time_proto,
             app_engine_http_request={
@@ -153,14 +155,14 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         # Assert
         mock_client.return_value.queue_path.assert_called_with(
             metadata.project_id(), metadata.region(),
-            DIRECT_INGEST_SCHEDULER_QUEUE)
+            DIRECT_INGEST_SCHEDULER_QUEUE_V2)
         mock_client.return_value.create_task.assert_called_with(
             queue_path, task)
 
-
-    @patch('recidiviz.common.queues.datetime')
-    @patch('recidiviz.common.queues.uuid')
-    @patch('google.cloud.tasks.CloudTasksClient')
+    @patch('recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper.'
+           'datetime')
+    @patch('recidiviz.ingest.direct.direct_ingest_cloud_task_manager.uuid')
+    @patch('google.cloud.tasks_v2.CloudTasksClient')
     def test_create_direct_ingest_process_job_task(
             self, mock_client, mock_uuid, mock_datetime):
         # Arrange
@@ -176,7 +178,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
 
         task_name = _REGION.shared_queue + '/{}-{}-{}'.format(
             _REGION.region_code, date, uuid)
-        task = tasks.types.Task(
+        task = tasks_v2.types.task_pb2.Task(
             name=task_name,
             app_engine_http_request={
                 'relative_uri':
@@ -198,9 +200,10 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         mock_client.return_value.create_task.assert_called_with(
             queue_path, task)
 
-    @patch('recidiviz.common.queues.datetime')
-    @patch('recidiviz.common.queues.uuid')
-    @patch('google.cloud.tasks.CloudTasksClient')
+    @patch('recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper.'
+           'datetime')
+    @patch('recidiviz.ingest.direct.direct_ingest_cloud_task_manager.uuid')
+    @patch('google.cloud.tasks_v2.CloudTasksClient')
     def test_create_direct_ingest_process_job_task_gcsfs_args(
             self, mock_client, mock_uuid, mock_datetime):
         # Arrange
@@ -220,7 +223,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
 
         task_name = _REGION.shared_queue + '/{}-{}-{}'.format(
             _REGION.region_code, date, uuid)
-        task = tasks.types.Task(
+        task = tasks_v2.types.task_pb2.Task(
             name=task_name,
             app_engine_http_request={
                 'relative_uri':

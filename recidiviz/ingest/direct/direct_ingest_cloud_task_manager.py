@@ -16,31 +16,22 @@
 # =============================================================================
 """Class for interacting with the cloud task queues."""
 import abc
-import datetime
-import json
 import logging
 import os
 import uuid
 from typing import Optional, Dict, List
 
 import attr
-from google.api_core import datetime_helpers
-from google.cloud import tasks
-from google.protobuf import timestamp_pb2
 
-from recidiviz.common.common_utils import retry_grpc
-from recidiviz.common.queues import format_task_path, NUM_GRPC_RETRIES, \
-    client, format_queue_path, list_tasks_with_prefix
+from recidiviz.common.google_cloud.google_cloud_task_queue_config import \
+    DIRECT_INGEST_SCHEDULER_QUEUE_V2
+from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import \
+    GoogleCloudTasksClientWrapper
 from recidiviz.ingest.direct.controllers.direct_ingest_types import \
     IngestArgs
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     GcsfsIngestArgs
 from recidiviz.utils.regions import Region
-
-DIRECT_INGEST_SCHEDULER_QUEUE = 'direct-ingest-scheduler'
-DIRECT_INGEST_STATE_TASK_QUEUE = 'direct-ingest-state-task-queue'
-DIRECT_INGEST_JAILS_TASK_QUEUE = 'direct-ingest-jpp-task-queue'
-
 
 def _build_task_id(region_code: str,
                    task_id_tag: Optional[str],
@@ -169,80 +160,44 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
     """Real implementation of the DirectIngestCloudTaskManager that interacts
     with actual GCP Cloud Task queues."""
 
-    @staticmethod
-    def _build_task_name_for_queue_and_region(
-            queue_name: str,
-            region_code: str,
-            task_id_tag: Optional[str]) -> List[tasks.types.Task]:
-        # pylint: disable=line-too-long
-        """
-        Creates a name for a task. Names take the form:
-        projects/<project_id>/locations/<locale>/queues/<queue_name>/tasks/<task_id>
-
-        Args:
-            queue_name: (str) The name of the queue to dispatch to
-            region_code: (str) Region code for this queue
-            task_id_tag: (str) Optional string added to the task id to allow us
-                to identify duplicate tasks.
-        """
-        task_id = _build_task_id(
-            region_code, task_id_tag, prefix_only=False)
-
-        return format_task_path(queue_name, task_id)
-
-    @staticmethod
-    def _tasks_for_queue_and_region(queue_name: str,
-                                    region_code: str) -> List[tasks.types.Task]:
-        task_prefix = format_task_path(queue_name, region_code)
-        return list_tasks_with_prefix(task_prefix, queue_name)
+    def __init__(self):
+        self.cloud_task_client = GoogleCloudTasksClientWrapper()
 
     def _get_queue_info(self,
                         queue_name: str,
                         region_code: str) -> CloudTaskQueueInfo:
-        tasks_list = self._tasks_for_queue_and_region(queue_name,
-                                                      region_code)
+        tasks_list = \
+            self.cloud_task_client.list_tasks_with_prefix(
+                queue_name=queue_name,
+                task_id_prefix=region_code)
         task_names = [task.name for task in tasks_list] if tasks_list else []
         return CloudTaskQueueInfo(queue_name=queue_name,
                                   task_names=task_names)
-
-    @staticmethod
-    def _queue_task(queue_name: str, task: tasks.types.Task):
-        logging.info("Queueing task to queue [%s]: [%s]",
-                     queue_name, task.name)
-        retry_grpc(
-            NUM_GRPC_RETRIES,
-            client().create_task,
-            format_queue_path(queue_name),
-            task
-        )
 
     def get_process_job_queue_info(self, region: Region) -> CloudTaskQueueInfo:
         return self._get_queue_info(region.get_queue_name(),
                                     region.region_code)
 
     def get_scheduler_queue_info(self, region: Region) -> CloudTaskQueueInfo:
-        return self._get_queue_info(DIRECT_INGEST_SCHEDULER_QUEUE,
-                                    region.region_code)
+        return self._get_queue_info(
+            DIRECT_INGEST_SCHEDULER_QUEUE_V2,
+            region.region_code)
 
     def create_direct_ingest_process_job_task(self,
                                               region: Region,
                                               ingest_args: IngestArgs):
+        task_id = _build_task_id(region.region_code,
+                                 ingest_args.task_id_tag(),
+                                 prefix_only=False)
+        relative_uri = f'/direct/process_job?region={region.region_code}'
         body = self._get_body_from_args(ingest_args)
 
-        task_name = self._build_task_name_for_queue_and_region(
-            region.get_queue_name(),
-            region.region_code,
-            ingest_args.task_id_tag())
-
-        task = tasks.types.Task(
-            name=task_name,
-            app_engine_http_request={
-                'relative_uri':
-                    f'/direct/process_job?region={region.region_code}',
-                'body': json.dumps(body).encode()
-            }
+        self.cloud_task_client.create_task(
+            task_id=task_id,
+            queue_name=region.get_queue_name(),
+            relative_uri=relative_uri,
+            body=body,
         )
-        self._queue_task(region.get_queue_name(), task)
 
     def create_direct_ingest_scheduler_queue_task(
             self,
@@ -250,23 +205,16 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
             just_finished_job: bool,
             delay_sec: int,
     ):
-        schedule_time = datetime.datetime.now() + \
-                        datetime.timedelta(seconds=delay_sec)
+        task_id = _build_task_id(region.region_code,
+                                 task_id_tag=None,
+                                 prefix_only=False)
+        relative_uri = f'/direct/scheduler?region={region.region_code}&' \
+            f'just_finished_job={just_finished_job}'
 
-        schedule_time_sec = datetime_helpers.to_milliseconds(
-            schedule_time) // 1000
-        schedule_timestamp = timestamp_pb2.Timestamp(seconds=schedule_time_sec)
-
-        task_name = self._build_task_name_for_queue_and_region(
-            DIRECT_INGEST_SCHEDULER_QUEUE, region.region_code, None)
-        task = tasks.types.Task(
-            name=task_name,
-            schedule_time=schedule_timestamp,
-            app_engine_http_request={
-                'relative_uri':
-                    f'/direct/scheduler?region={region.region_code}&'
-                    f'just_finished_job={just_finished_job}',
-                'body': json.dumps({}).encode()
-            }
+        self.cloud_task_client.create_task(
+            task_id=task_id,
+            queue_name=DIRECT_INGEST_SCHEDULER_QUEUE_V2,
+            relative_uri=relative_uri,
+            body={},
+            schedule_delay_seconds=delay_sec
         )
-        self._queue_task(DIRECT_INGEST_SCHEDULER_QUEUE, task)

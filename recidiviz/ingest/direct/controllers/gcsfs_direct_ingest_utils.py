@@ -68,7 +68,9 @@ class GcsfsIngestArgs(IngestArgs):
 
     def task_id_tag(self) -> Optional[str]:
         parts = filename_parts_from_path(self.file_path)
-        return f'{parts.file_tag}_{parts.filename_suffix}_{parts.date_str}'
+        suffix_str = \
+            f'_{parts.filename_suffix}' if parts.filename_suffix else ''
+        return f'{parts.file_tag}{suffix_str}_{parts.date_str}'
 
 
 def gcsfs_direct_ingest_storage_directory_path_for_region(

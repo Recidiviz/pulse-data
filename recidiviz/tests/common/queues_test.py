@@ -32,10 +32,10 @@ class QueuesTest(unittest.TestCase):
     """Cloud Tasks queue helper function tests."""
 
     def setup_method(self, _test_method):
-        queues.clear_client()
+        queues.clear_legacy_cloud_tasks_client()
 
     def teardown_method(self, _test_method):
-        queues.clear_client()
+        queues.clear_legacy_cloud_tasks_client()
 
     @patch('google.cloud.tasks.CloudTasksClient')
     def test_create_scrape_task(self, mock_client):
