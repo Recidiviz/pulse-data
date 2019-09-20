@@ -78,7 +78,7 @@ from recidiviz.persistence.entity.entity_utils import \
     EntityFieldType, get_set_entity_field_names
 from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.ingest.direct.direct_ingest_util import \
-    build_controller_for_tests, ingest_args_for_fixture_file, \
+    build_gcsfs_controller_for_tests, ingest_args_for_fixture_file, \
     add_paths_with_tags_and_process, run_task_queues_to_empty, \
     path_for_fixture_file
 from recidiviz.tests.utils import fakes
@@ -118,7 +118,7 @@ class TestUsNdController(unittest.TestCase):
     FIXTURE_PATH_PREFIX = 'direct/regions/us_nd'
 
     def setUp(self) -> None:
-        self.controller = build_controller_for_tests(
+        self.controller = build_gcsfs_controller_for_tests(
             UsNdController,
             self.FIXTURE_PATH_PREFIX,
             run_async=False)

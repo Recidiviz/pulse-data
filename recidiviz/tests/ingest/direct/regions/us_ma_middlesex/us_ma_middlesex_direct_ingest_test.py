@@ -14,15 +14,20 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for the direct ingest parser.py."""
+"""Tests for the UsMaMiddlesexDirectIngestParser."""
 import datetime
 from unittest import TestCase
 
 from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.ingest.direct.regions.\
+    us_ma_middlesex.us_ma_middlesex_controller \
+    import UsMaMiddlesexController
 from recidiviz.ingest.direct.regions.us_ma_middlesex.us_ma_middlesex_parser \
     import UsMaMiddlesexParser
 from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.tests.ingest import fixtures
+from recidiviz.tests.ingest.direct.direct_ingest_util import \
+    build_controller_for_tests
 from recidiviz.tests.utils.individual_ingest_test import IndividualIngestTest
 from recidiviz.utils import regions
 
@@ -31,10 +36,15 @@ _ROSTER_JSON = fixtures.as_dict('direct/regions/us_ma_middlesex',
 _FAKE_START_TIME = datetime.datetime(year=2019, month=1, day=2)
 
 
-class UsMaMiddlesexDirectIngestParser(IndividualIngestTest, TestCase):
+class TestUsMaMiddlesexDirectIngestParser(IndividualIngestTest, TestCase):
+    """Tests for the UsMaMiddlesexDirectIngestParser."""
+
+    FIXTURE_PATH_PREFIX = 'direct/regions/us_ma_middlesex'
+
     def testParse(self):
         region = regions.get_region('us_ma_middlesex', is_direct_ingest=True)
-        controller = region.get_ingestor()
+        controller = build_controller_for_tests(UsMaMiddlesexController,
+                                                run_async=False)
 
         metadata = IngestMetadata(
             region.region_code,
@@ -67,7 +77,7 @@ class UsMaMiddlesexDirectIngestParser(IndividualIngestTest, TestCase):
             name='OUI while license suspended for OUI',
             case_number='222.0', court_type='Middlesex SC (81)',
             charge_notes='Drug or Alcohol', status='DISMISSED').create_bond(
-            bond_id='12345.0')
+                bond_id='12345.0')
         b1.create_hold(hold_id='00000.0', jurisdiction_name='Middlesex SC (81)')
 
         p2 = expected_info.create_person(

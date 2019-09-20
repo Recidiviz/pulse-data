@@ -32,7 +32,7 @@ from recidiviz.tests.ingest.direct.controllers.\
     gcsfs_direct_ingest_controller_test import \
     StateTestGcsfsDirectIngestController
 from recidiviz.tests.ingest.direct.direct_ingest_util import \
-    FakeDirectIngestGCSFileSystem, build_controller_for_tests
+    FakeDirectIngestGCSFileSystem, build_gcsfs_controller_for_tests
 
 
 class TestGcsfsDirectIngestJobPrioritizer(unittest.TestCase):
@@ -71,7 +71,7 @@ class TestGcsfsDirectIngestJobPrioritizer(unittest.TestCase):
         path = self._normalized_path_for_filename(
             'elite_offenders.csv', self._DAY_1_TIME_1)
 
-        controller = build_controller_for_tests(
+        controller = build_gcsfs_controller_for_tests(
             StateTestGcsfsDirectIngestController,
             self._INGEST_BUCKET_PATH.abs_path(),
             run_async=False)

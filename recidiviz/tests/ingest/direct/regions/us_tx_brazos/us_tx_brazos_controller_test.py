@@ -28,12 +28,13 @@ from recidiviz.ingest.models.ingest_info import Arrest, Bond, Booking, Charge, \
 from recidiviz.tests.ingest import fixtures
 from recidiviz.tests.utils.individual_ingest_test import IndividualIngestTest
 from recidiviz.tests.ingest.direct.direct_ingest_util import \
-    build_controller_for_tests, ingest_args_for_fixture_file
+    build_gcsfs_controller_for_tests, ingest_args_for_fixture_file
 from recidiviz.utils import regions
 
 
 FIXTURE_PATH_PREFIX = 'direct/regions/us_tx_brazos'
-_ROSTER_PATH_CONTENTS = fixtures.as_string(FIXTURE_PATH_PREFIX, 'daily_data.csv')
+_ROSTER_PATH_CONTENTS = fixtures.as_string(FIXTURE_PATH_PREFIX,
+                                           'daily_data.csv')
 _FAKE_START_TIME = datetime.datetime(year=2019, month=1, day=2)
 
 
@@ -44,9 +45,9 @@ class UsTxBrazosControllerTest(IndividualIngestTest, TestCase):
     """
 
     def testParse(self):
-        controller = build_controller_for_tests(UsTxBrazosController,
-                                                FIXTURE_PATH_PREFIX,
-                                                run_async=False)
+        controller = build_gcsfs_controller_for_tests(UsTxBrazosController,
+                                                      FIXTURE_PATH_PREFIX,
+                                                      run_async=False)
 
         args = ingest_args_for_fixture_file(controller, 'daily_data.csv')
 
