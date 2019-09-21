@@ -22,8 +22,6 @@ from recidiviz.calculator.bq.dashboard.views.revocations.revocations_by_month im
     REVOCATIONS_BY_MONTH_VIEW
 from recidiviz.calculator.bq.dashboard.views.revocations.revocations_by_officer_60_days import \
     REVOCATIONS_BY_OFFICER_60_DAYS_VIEW
-from recidiviz.calculator.bq.dashboard.views.revocations.revocations_by_race_60_days import \
-    REVOCATIONS_BY_RACE_60_DAYS_VIEW
 from recidiviz.calculator.bq.dashboard.views.revocations.revocations_by_race_and_ethnicity_60_days import \
     REVOCATIONS_BY_RACE_AND_ETHNICITY_60_DAYS_VIEW
 from recidiviz.calculator.bq.dashboard.views.revocations.revocations_by_supervision_type_by_month import \
@@ -36,7 +34,6 @@ REVOCATIONS_VIEWS = [
     REVOCATIONS_BY_MONTH_VIEW,
     REVOCATIONS_BY_COUNTY_60_DAYS_VIEW,
     REVOCATIONS_BY_OFFICER_60_DAYS_VIEW,
-    REVOCATIONS_BY_RACE_60_DAYS_VIEW,
     REVOCATIONS_BY_RACE_AND_ETHNICITY_60_DAYS_VIEW,
     REVOCATIONS_BY_SUPERVISION_TYPE_BY_MONTH_VIEW,
     REVOCATIONS_BY_VIOLATION_TYPE_BY_MONTH_VIEW
