@@ -1979,7 +1979,7 @@ class TestStateEntityMatching(TestCase):
             person=db_placeholder_person,
             state_code=_STATE_CODE,
             incarceration_period_id=_ID_2,
-            admission_date=_DATE_4,
+            admission_date=_DATE_3,
             admission_reason=
             StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION.value)
         db_placeholder_is = generate_incarceration_sentence(
@@ -2006,7 +2006,7 @@ class TestStateEntityMatching(TestCase):
             StateSupervisionViolationResponseRevocationType.REINCARCERATION)
         svr_2 = StateSupervisionViolationResponse.new_with_defaults(
             state_code=_STATE_CODE,
-            response_date=_DATE_3,
+            response_date=_DATE_3 - datetime.timedelta(days=1),
             revocation_type=
             StateSupervisionViolationResponseRevocationType.REINCARCERATION)
         placeholder_sv = StateSupervisionViolation.new_with_defaults(

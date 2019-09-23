@@ -1151,7 +1151,7 @@ class TestUsNdController(unittest.TestCase):
             state_supervision_violation_responses=[
                 StateSupervisionViolationResponse(
                     response_type='PERMANENT_DECISION',
-                    response_date='2/27/2018',
+                    response_date='10/27/2018',
                     decision='REVOCATION',
                     revocation_type='DOCR Inmate Sentence',
                     decision_agents=[StateAgent(
@@ -2912,7 +2912,7 @@ class TestUsNdController(unittest.TestCase):
                 response_type=
                 StateSupervisionViolationResponseType.PERMANENT_DECISION,
                 response_type_raw_text='PERMANENT_DECISION',
-                response_date=datetime.date(year=2018, month=2, day=27),
+                response_date=datetime.date(year=2018, month=10, day=27),
                 decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 decision_raw_text='REVOCATION',
                 revocation_type=
