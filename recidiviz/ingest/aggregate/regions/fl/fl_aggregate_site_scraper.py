@@ -30,7 +30,8 @@ def get_urls_to_download() -> Set[str]:
 
     aggregate_report_urls = set()
     for link in links:
-        if ('jails' in link or 'FCDF' in link) and 'pdf' in link:
+        low_link = link.lower()
+        if ('jails' in low_link or 'fcdf' in low_link) and 'pdf' in low_link:
             url = STATE_AGGREGATE_URL + link
             aggregate_report_urls.add(url)
     return aggregate_report_urls
