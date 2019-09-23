@@ -39,12 +39,17 @@ from recidiviz.tests.ingest import fixtures
 from recidiviz.tests.utils import fakes
 
 DATE_SCRAPED = datetime.date(year=2018, month=1, day=31)
+DATE_SCRAPED_2 = datetime.date(year=2019, month=2, day=28)
 
 # Cache the parsed pdf between tests since it's expensive to compute
 @pytest.fixture(scope="class")
 def parsed_pdf(request):
     request.cls.parsed_pdf = fl_aggregate_ingest.parse(
         '', fixtures.as_filepath('jails-2018-01.pdf'))
+    request.cls.parsed_pdf_2 = fl_aggregate_ingest.parse(
+        '', fixtures.as_filepath(
+            'florida__pub_jails_2019_2019_02 feb fcdf.pdf'))
+
 
 @pytest.mark.usefixtures("parsed_pdf")
 class TestFlAggregateIngest(TestCase):
@@ -54,6 +59,10 @@ class TestFlAggregateIngest(TestCase):
         fakes.use_in_memory_sqlite_database(JailsBase)
 
     # ==================== TABLE 1 TESTS ====================
+
+    def testParseAlternateDateFormat(self):
+        result = self.parsed_pdf_2[FlCountyAggregate]
+        self.assertEqual(result.iloc[0]['report_date'], DATE_SCRAPED_2)
 
     def testParseCountyAdp_parsesHeadAndTail(self):
         result = self.parsed_pdf[FlCountyAggregate]
