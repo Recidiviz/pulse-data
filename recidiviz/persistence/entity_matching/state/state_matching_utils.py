@@ -633,15 +633,21 @@ def revoked_to_prison(svr: schema.StateSupervisionViolationResponse) -> bool:
         f"{svr.revocation_type}.", svr.get_entity_name())
 
 
-def _get_closest_response(
-        ip: schema.StateIncarcerationPeriod,
-        responses: List[schema.StateSupervisionViolationResponse]
-        ) -> Optional[schema.StateSupervisionViolationResponse]:
-    """Returns the StateSupervisionViolationResponse whose response_date is
-    closest to the beginning of the provided |ip|.
+def _get_closest_matching_incarceration_period(
+        svr: schema.StateSupervisionViolationResponse,
+        ips: List[schema.StateIncarcerationPeriod]) \
+        -> Optional[schema.StateIncarcerationPeriod]:
+    """Returns the StateIncarcerationPeriod whose admission_date is
+    closest to, and within 90 days of, the response_date of the provided |svr|.
+    90 days is an arbitrary buffer for which we accept discrepancies between
+    the SupervisionViolationResponse response_date and the
+    StateIncarcerationPeriod's admission_date.
     """
-    return min(responses,
-               key=lambda x: abs(x.response_date - ip.admission_date))
+    closest_ip = min(
+        ips, key=lambda x: abs(x.admission_date - svr.response_date))
+    if abs((closest_ip.admission_date - svr.response_date).days) <= 90:
+        return closest_ip
+    return None
 
 
 def associate_revocation_svrs_with_ips(
@@ -671,17 +677,15 @@ def associate_revocation_svrs_with_ips(
         if not revocation_svrs or not revocation_ips:
             continue
 
-        sorted_revocation_ips = sorted(
-            revocation_ips, key=lambda x: x.admission_date)
+        sorted_svrs = sorted(revocation_svrs, key=lambda x: x.response_date)
 
         seen: Set[int] = set()
-        for ip in sorted_revocation_ips:
-            closest_svr = _get_closest_response(ip, revocation_svrs)
-            svr_id = id(closest_svr)
-
-            if closest_svr and svr_id not in seen:
-                seen.add(svr_id)
-                ip.source_supervision_violation_response = closest_svr
+        for svr in sorted_svrs:
+            closest_ip = _get_closest_matching_incarceration_period(
+                svr, revocation_ips)
+            if closest_ip and id(closest_ip) not in seen:
+                seen.add(id(closest_ip))
+                closest_ip.source_supervision_violation_response = svr
 
 
 def move_incidents_onto_periods(merged_persons: List[schema.StatePerson]):

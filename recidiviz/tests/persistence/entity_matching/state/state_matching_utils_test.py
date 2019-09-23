@@ -453,13 +453,13 @@ class TestStateMatchingUtils(TestCase):
         with pytest.raises(EntityMatchingError):
             get_external_ids_of_cls([person], schema.StatePerson)
 
-    def test_completeEnumSet_AdmittedForRevocation(self):
+    def test_completeEnumSet_admittedForRevocation(self):
         period = schema.StateIncarcerationPeriod()
         for admission_reason in StateIncarcerationPeriodAdmissionReason:
             period.admission_reason = admission_reason.value
             admitted_for_revocation(period)
 
-    def test_completeEnumSet_RevokedToPrison(self):
+    def test_completeEnumSet_revokedToPrison(self):
         svr = schema.StateSupervisionViolationResponse()
         for revocation_type in StateSupervisionViolationResponseRevocationType:
             svr.revocation_type = revocation_type.value
@@ -791,6 +791,74 @@ class TestStateMatchingUtils(TestCase):
         expected_ip_1 = attr.evolve(ip_1)
         expected_ip_2 = attr.evolve(
             ip_2, source_supervision_violation_response=expected_svr_1)
+
+        expected_placeholder_is = attr.evolve(
+            placeholder_is,
+            incarceration_periods=[expected_ip_1, expected_ip_2])
+        expected_placeholder_sg = attr.evolve(
+            placeholder_sg,
+            supervision_sentences=[expected_placeholder_ss],
+            incarceration_sentences=[expected_placeholder_is])
+        expected_placeholder_person = attr.evolve(
+            placeholder_person, sentence_groups=[expected_placeholder_sg])
+
+        # Act
+        input_people = \
+            converter.convert_entity_people_to_schema_people(
+                [placeholder_person])
+        associate_revocation_svrs_with_ips(input_people)
+
+        # Assert
+        self.assert_people_match(
+            [expected_placeholder_person],
+            input_people)
+
+    def test_associateSvrsWithIps_within90Days(self):
+        # Arrange
+        svr_1 = StateSupervisionViolationResponse.new_with_defaults(
+            response_date=_DATE_2 + datetime.timedelta(days=1),
+            revocation_type=StateSupervisionViolationResponseRevocationType.
+            REINCARCERATION)
+        svr_2 = StateSupervisionViolationResponse.new_with_defaults(
+            response_date=_DATE_4 + datetime.timedelta(days=100),
+            revocation_type=StateSupervisionViolationResponseRevocationType.
+            RETURN_TO_SUPERVISION)
+        placeholder_sv = StateSupervisionViolation.new_with_defaults(
+            supervision_violation_responses=[svr_1, svr_2])
+        placeholder_sp = StateSupervisionPeriod.new_with_defaults(
+            supervision_violations=[placeholder_sv])
+        placeholder_ss = StateSupervisionSentence.new_with_defaults(
+            supervision_periods=[placeholder_sp])
+
+        ip_1 = StateIncarcerationPeriod.new_with_defaults(
+            admission_date=_DATE_2,
+            admission_reason=
+            StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION)
+        ip_2 = StateIncarcerationPeriod.new_with_defaults(
+            admission_date=_DATE_4,
+            admission_reason=
+            StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION)
+        placeholder_is = StateIncarcerationSentence.new_with_defaults(
+            incarceration_periods=[ip_1, ip_2])
+        placeholder_sg = StateSentenceGroup.new_with_defaults(
+            incarceration_sentences=[placeholder_is],
+            supervision_sentences=[placeholder_ss])
+        placeholder_person = StatePerson.new_with_defaults(
+            sentence_groups=[placeholder_sg])
+
+        expected_svr_1 = attr.evolve(svr_1)
+        expected_svr_2 = attr.evolve(svr_2)
+        expected_placeholder_sv = attr.evolve(
+            placeholder_sv,
+            supervision_violation_responses=[expected_svr_1, expected_svr_2])
+        expected_placeholder_sp = attr.evolve(
+            placeholder_sp, supervision_violations=[expected_placeholder_sv])
+        expected_placeholder_ss = attr.evolve(
+            placeholder_ss, supervision_periods=[expected_placeholder_sp])
+
+        expected_ip_1 = attr.evolve(
+            ip_1, source_supervision_violation_response=expected_svr_1)
+        expected_ip_2 = attr.evolve(ip_2)
 
         expected_placeholder_is = attr.evolve(
             placeholder_is,
