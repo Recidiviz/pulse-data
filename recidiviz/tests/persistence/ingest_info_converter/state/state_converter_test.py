@@ -37,6 +37,9 @@ from recidiviz.common.constants.state.state_incarceration import \
     StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_incident import \
     StateIncarcerationIncidentType, StateIncarcerationIncidentOutcomeType
+from recidiviz.common.constants.state.state_program_assignment import \
+    StateProgramAssignmentParticipationStatus, \
+    StateProgramAssignmentDischargeReason
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus
@@ -56,7 +59,7 @@ from recidiviz.persistence.entity.state.entities import StatePerson, \
     StateIncarcerationSentence, StateIncarcerationPeriod, \
     StateIncarcerationIncident, StateParoleDecision, StateFine, \
     StateSupervisionViolation, StateSupervisionViolationResponse, StateAgent, \
-    StatePersonAlias, StateIncarcerationIncidentOutcome
+    StatePersonAlias, StateIncarcerationIncidentOutcome, StateProgramAssignment
 from recidiviz.persistence.ingest_info_converter import ingest_info_converter
 from recidiviz.persistence.ingest_info_converter.ingest_info_converter import \
     IngestInfoConversionResult
@@ -114,6 +117,10 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             full_name='AGENT SMITH'
         )
         ingest_info.state_agents.add(
+            state_agent_id='AGENT_ID4',
+            full_name='AGENT PO'
+        )
+        ingest_info.state_agents.add(
             state_agent_id='JUDGE_AGENT_ID_1',
             full_name='JUDGE JUDY'
         )
@@ -140,6 +147,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             state_person_external_ids_ids=[ii_person_external_id_1,
                                            ii_person_external_id_2],
             state_assessment_ids=['ASSESSMENT_ID'],
+            state_program_assignment_ids=['PROGRAM_ASSIGNMENT_ID'],
             state_sentence_group_ids=['GROUP_ID1', 'GROUP_ID2']
         )
         ingest_info.state_person_races.add(
@@ -174,6 +182,17 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             state_assessment_id='ASSESSMENT_ID',
             assessment_class='MENTAL_HEALTH',
             conducting_agent_id='AGENT_ID1'
+        )
+        ingest_info.state_program_assignments.add(
+            state_program_assignment_id='PROGRAM_ASSIGNMENT_ID',
+            participation_status='DISCHARGED',
+            referral_date='2019/02/10',
+            start_date='2019/02/11',
+            discharge_date='2019/02/12',
+            program_id='PROGRAM_ID',
+            program_location_id='PROGRAM_LOCATION_ID',
+            discharge_reason='COMPLETED',
+            referring_agent_id='AGENT_ID4'
         )
         ingest_info.state_sentence_groups.add(
             state_sentence_group_id='GROUP_ID1',
@@ -244,7 +263,8 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             state_supervision_period_id='S_PERIOD_ID1',
             state_supervision_violation_ids=['VIOLATION_ID'],
             supervision_type='PAROLE',
-            supervision_level='MED'
+            supervision_level='MED',
+            state_program_assignment_ids=['PROGRAM_ASSIGNMENT_ID']
         )
         ingest_info.state_supervision_periods.add(
             state_supervision_period_id='S_PERIOD_ID2',
@@ -261,6 +281,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             state_incarceration_incident_ids=['INCIDENT_ID'],
             state_parole_decision_ids=['DECISION_ID'],
             state_assessment_ids=['ASSESSMENT_ID'],
+            state_program_assignment_ids=['PROGRAM_ASSIGNMENT_ID']
         )
         ingest_info.state_supervision_violations.add(
             state_supervision_violation_id='VIOLATION_ID',
@@ -328,6 +349,25 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                 state_code='US_ND',
                 full_name='{"full_name": "AGENT WILLIAMS"}',
             )
+        )
+
+        program_assignment = StateProgramAssignment.new_with_defaults(
+            external_id='PROGRAM_ASSIGNMENT_ID',
+            state_code='US_ND',
+            participation_status=
+            StateProgramAssignmentParticipationStatus.DISCHARGED,
+            participation_status_raw_text='DISCHARGED',
+            referral_date=datetime.date(year=2019, month=2, day=10),
+            start_date=datetime.date(year=2019, month=2, day=11),
+            discharge_date=datetime.date(year=2019, month=2, day=12),
+            program_id='PROGRAM_ID',
+            program_location_id='PROGRAM_LOCATION_ID',
+            discharge_reason=StateProgramAssignmentDischargeReason.COMPLETED,
+            discharge_reason_raw_text='COMPLETED',
+            referring_agent=StateAgent.new_with_defaults(
+                external_id='AGENT_ID4',
+                state_code='US_ND',
+                full_name='{"full_name": "AGENT PO"}')
         )
 
         violation = StateSupervisionViolation.new_with_defaults(
@@ -441,6 +481,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                 ),
             ],
             assessments=[assessment],
+            program_assignments=[program_assignment],
             sentence_groups=[
                 StateSentenceGroup.new_with_defaults(
                     external_id='GROUP_ID1',
@@ -465,7 +506,8 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                                     supervision_type=
                                     StateSupervisionType.PAROLE,
                                     supervision_type_raw_text='PAROLE',
-                                    supervision_violations=[violation]
+                                    supervision_violations=[violation],
+                                    program_assignments=[program_assignment]
                                 )
                             ]
                         )
@@ -490,6 +532,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                                     incarceration_incidents=[
                                         incident
                                     ],
+                                    program_assignments=[program_assignment],
                                     parole_decisions=[
                                         StateParoleDecision.new_with_defaults(
                                             external_id='DECISION_ID',
@@ -581,9 +624,9 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             ]
         )]
 
-        print(expected_result, "\n\n\n", result)
+        print("\n", expected_result, "\n\n\n", result)
 
-        self.assertEqual(result, expected_result)
+        self.assertCountEqual(expected_result, result)
 
     def testConvert_CannotConvertField_RaisesValueError(self):
         # Arrange

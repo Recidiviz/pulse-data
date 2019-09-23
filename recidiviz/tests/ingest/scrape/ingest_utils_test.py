@@ -334,6 +334,14 @@ class TestIngestUtils:
         assessment_agent.state_agent_id = 'agent1'
         assessment_agent.full_name = 'Officer Jones'
 
+        program_assignment = person.create_state_program_assignment()
+        program_assignment.state_program_assignment_id = 'assignment1'
+        program_assignment.program_id = 'program_id1'
+
+        program_assignment_agent = program_assignment.create_state_agent()
+        program_assignment_agent.state_agent_id = 'program_agent1'
+        program_assignment_agent.full_name = 'Officer Program'
+
         group = person.create_state_sentence_group()
         group.state_sentence_group_id = 'group1'
 
@@ -349,6 +357,7 @@ class TestIngestUtils:
             create_state_incarceration_period()
         incarceration_period.state_incarceration_period_id = 'ip1'
         incarceration_period.status = 'IN_CUSTODY'
+        incarceration_period.state_program_assignments = [program_assignment]
         incident = incarceration_period.create_state_incarceration_incident()
         incident.state_incarceration_incident_id = 'incident1'
         incident.incident_type = 'FISTICUFFS'
@@ -380,6 +389,7 @@ class TestIngestUtils:
         supervision_period_agent = supervision_period.create_state_agent()
         supervision_period_agent.state_agent_id = 'agentPO'
         supervision_period_agent.full_name = 'Officer Paroley'
+        supervision_period.state_program_assignments = [program_assignment]
         violation = supervision_period.create_state_supervision_violation()
         violation.state_supervision_violation_id = 'violation1'
         violation.is_violent = 'false'
@@ -431,6 +441,15 @@ class TestIngestUtils:
         assessment_agent_pb.state_agent_id = 'agent1'
         assessment_agent_pb.full_name = 'Officer Jones'
 
+        person_pb.state_program_assignment_ids.append('assignment1')
+        program_assignment_pb = expected_proto.state_program_assignments.add()
+        program_assignment_pb.state_program_assignment_id = 'assignment1'
+        program_assignment_pb.program_id = 'program_id1'
+        program_assignment_pb.referring_agent_id = 'program_agent1'
+        program_assignment_agent_pb = expected_proto.state_agents.add()
+        program_assignment_agent_pb.state_agent_id = 'program_agent1'
+        program_assignment_agent_pb.full_name = 'Officer Program'
+
         person_pb.state_sentence_group_ids.append('group1')
         group_pb = expected_proto.state_sentence_groups.add()
         group_pb.state_sentence_group_id = 'group1'
@@ -451,6 +470,7 @@ class TestIngestUtils:
         supervision_period_pb = expected_proto.state_supervision_periods.add()
         supervision_period_pb.state_supervision_period_id = 'sp1'
         supervision_period_pb.status = 'TERMINATED'
+        supervision_period_pb.state_program_assignment_ids.append('assignment1')
 
         # An ordering requirement in the proto equality check at the end of this
         # test requires that this agent be added after agent1 and before agentPO
@@ -495,6 +515,8 @@ class TestIngestUtils:
         incident_pb = expected_proto.state_incarceration_incidents.add()
         incident_pb.state_incarceration_incident_id = 'incident1'
         incident_pb.incident_type = 'FISTICUFFS'
+        incarceration_period_pb.state_program_assignment_ids.append(
+            'assignment1')
 
         incident_pb.responding_officer_id = 'agent2'
         incident_agent_pb = expected_proto.state_agents.add()

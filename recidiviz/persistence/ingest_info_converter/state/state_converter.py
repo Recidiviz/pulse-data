@@ -22,7 +22,7 @@ from recidiviz.ingest.models.ingest_info_pb2 import StateSentenceGroup, \
     StateCharge, StateIncarcerationPeriod, StateSupervisionPeriod, \
     StateSupervisionViolation, StateFine, StateParoleDecision, \
     StateIncarcerationIncident, StateAssessment, StateCourtCase, \
-    StateSupervisionViolationResponse
+    StateSupervisionViolationResponse, StateProgramAssignment
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.ingest_info_converter.base_converter import \
     BaseConverter
@@ -34,7 +34,7 @@ from recidiviz.persistence.ingest_info_converter.state.entity_helpers import \
     state_supervision_period, state_parole_decision, \
     state_incarceration_incident, state_supervision_violation, \
     state_supervision_violation_response, state_fine, state_agent, \
-    state_incarceration_incident_outcome
+    state_incarceration_incident_outcome, state_program_assignment
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import fn
 
 
@@ -54,6 +54,8 @@ class StateConverter(BaseConverter[entities.StatePerson]):
                                     in ingest_info.state_person_external_ids}
         self.assessments = {a.state_assessment_id: a for a
                             in ingest_info.state_assessments}
+        self.program_assignments = {pa.state_program_assignment_id: pa for
+                                    pa in ingest_info.state_program_assignments}
         self.agents = {a.state_agent_id: a for a in ingest_info.state_agents}
         self.sentence_groups = {sg.state_sentence_group_id: sg for sg
                                 in ingest_info.state_sentence_groups}
@@ -143,6 +145,13 @@ class StateConverter(BaseConverter[entities.StatePerson]):
             for assessment_id in ingest_state_person.state_assessment_ids
         ]
         state_person_builder.assessments = converted_assessments
+        converted_program_assignments = [
+            self._convert_program_assignment(
+                self.program_assignments[assignment_id])
+            for assignment_id in
+            ingest_state_person.state_program_assignment_ids
+        ]
+        state_person_builder.program_assignments = converted_program_assignments
 
         converted_external_ids = [
             state_person_external_id.convert(
@@ -343,6 +352,15 @@ class StateConverter(BaseConverter[entities.StatePerson]):
         ]
         incarceration_period_builder.assessments = converted_assessments
 
+        converted_program_assignments = [
+            self._convert_program_assignment(
+                self.program_assignments[assignment_id])
+            for assignment_id in
+            ingest_incarceration_period.state_program_assignment_ids
+        ]
+        incarceration_period_builder.program_assignments = \
+            converted_program_assignments
+
         return incarceration_period_builder.build()
 
     def _convert_supervision_period(
@@ -377,6 +395,14 @@ class StateConverter(BaseConverter[entities.StatePerson]):
         ]
         supervision_period_builder.assessments = converted_assessments
 
+        converted_program_assignments = [
+            self._convert_program_assignment(
+                self.program_assignments[assignment_id])
+            for assignment_id in
+            ingest_supervision_period.state_program_assignment_ids
+        ]
+        supervision_period_builder.program_assignments = \
+            converted_program_assignments
         return supervision_period_builder.build()
 
     def _convert_supervision_violation(
@@ -443,6 +469,22 @@ class StateConverter(BaseConverter[entities.StatePerson]):
                ingest_assessment)
 
         return assessment_builder.build()
+
+    def _convert_program_assignment(
+            self, ingest_assignment: StateProgramAssignment):
+        """Converts an ingest_info proto StateProgramAssignment to a
+        persistence entity"""
+
+        program_assignment_builder = entities.StateProgramAssignment.builder()
+        state_program_assignment.copy_fields_to_builder(
+            program_assignment_builder, ingest_assignment, self.metadata)
+
+        program_assignment_builder.referring_agent = \
+            fn(lambda i: state_agent.convert(self.agents[i], self.metadata),
+               'referring_agent_id',
+               ingest_assignment)
+
+        return program_assignment_builder.build()
 
     def _convert_incarceration_incident(
             self, ingest_incident: StateIncarcerationIncident) \

@@ -220,3 +220,17 @@ state_supervision_violation_response_deciding_body_type_court = 'COURT'
 state_supervision_violation_response_deciding_body_parole_board = 'PAROLE_BOARD'
 state_supervision_violation_response_deciding_body_type_supervision_officer = \
     'SUPERVISION_OFFICER'
+
+# state_program_assignment.py
+state_program_assignment_participation_status_discharged = 'DISCHARGED'
+state_program_assignment_participation_status_in_progress = 'IN_PROGRESS'
+state_program_assignment_participation_status_pending = 'PENDING'
+
+state_program_assignment_discharge_reason_absconded = 'ABSCONDED'
+state_program_assignment_discharge_reason_adverse_termination = \
+    'ADVERSE_TERMINATION'
+state_program_assignment_discharge_reason_completed = 'COMPLETED'
+state_program_assignment_discharge_reason_moved = 'MOVED'
+state_program_assignment_discharge_reason_opted_out = 'OPTED_OUT'
+state_program_assignment_discharge_reason_program_transfer = 'PROGRAM_TRANSFER'
+state_program_assignment_discharge_reason_reincarcerated = 'REINCARCERATED'
