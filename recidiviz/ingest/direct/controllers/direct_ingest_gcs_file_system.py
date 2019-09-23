@@ -212,9 +212,8 @@ class DirectIngestGCSFileSystem:
     def mv_path_to_storage(self,
                            path: GcsfsFilePath,
                            storage_directory_path: GcsfsDirectoryPath):
-        stripped_path = self._strip_processed_file_name_prefix(path)
         optional_storage_subdir = None
-        if self.is_split_file(stripped_path):
+        if self.is_split_file(path):
             optional_storage_subdir = SPLIT_FILE_STORAGE_SUBDIR
 
         parts = filename_parts_from_path(path)
@@ -222,7 +221,7 @@ class DirectIngestGCSFileSystem:
             storage_directory_path,
             optional_storage_subdir,
             parts.date_str,
-            stripped_path.file_name)
+            path.file_name)
 
         logging.info("Moving [%s] to storage path [%s].",
                      path.abs_path(), storage_path.abs_path())
@@ -254,15 +253,6 @@ class DirectIngestGCSFileSystem:
 
         return GcsfsFilePath.with_new_file_name(unprocessed_file_path,
                                                 processed_file_name)
-
-    @staticmethod
-    def _strip_processed_file_name_prefix(
-            processed_file_path: GcsfsFilePath) -> GcsfsFilePath:
-        stripped_file_name = \
-            processed_file_path.file_name.replace(
-                f'{DIRECT_INGEST_PROCESSED_PREFIX}_', '')
-        return GcsfsFilePath.with_new_file_name(processed_file_path,
-                                                stripped_file_name)
 
     def _storage_path(self,
                       storage_directory_path: GcsfsDirectoryPath,

@@ -435,8 +435,17 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         self.assertTrue(
             storage_paths[0].abs_path().startswith(expected_storage_dir_str))
 
-        self.assertEqual(len(processed_paths), 1)
-        processed_path_str = processed_paths[0].abs_path()
+        # Path that is moved retains its 'processed_' prefix.
+        self.assertEqual(len(processed_paths), 2)
+
+        processed_paths_not_in_storage = \
+            [path
+             for path in processed_paths
+             if not self._path_in_storage_dir(path, controller)]
+
+        self.assertEqual(len(processed_paths_not_in_storage), 1)
+
+        processed_path_str = processed_paths_not_in_storage[0].abs_path()
         self.assertTrue(processed_path_str.startswith(
             controller.ingest_directory_path.abs_path()))
         self.assertTrue('tagA' in processed_path_str)
