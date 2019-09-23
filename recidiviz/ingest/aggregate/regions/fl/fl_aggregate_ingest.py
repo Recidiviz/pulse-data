@@ -147,10 +147,24 @@ def _parse_facility_table(location: str, filename: str) -> pd.DataFrame:
 def _parse_date(filename: str) -> datetime.date:
     end = filename.index('.pdf')
     start = end - 7
-    d = str_field_utils.parse_date(filename[start:end])
-    if d:
-        return aggregate_ingest_utils.on_last_day_of_month(d)
-    raise AggregateDateParsingError("Could not extract date")
+
+    try:
+        d = str_field_utils.parse_date(filename[start:end])
+        if d:
+            return aggregate_ingest_utils.on_last_day_of_month(d)
+    except Exception:
+        pass
+
+    # alternate filename format.
+    try:
+        d = str_field_utils.parse_date(filename.split()[0][-7:])
+        if d:
+            return aggregate_ingest_utils.on_last_day_of_month(d)
+    except Exception:
+        pass
+
+    raise AggregateDateParsingError(
+        f"Could not extract date from filename: {filename}")
 
 
 def _use_stale_adp(adp_str: str) -> str:
