@@ -39,7 +39,7 @@ from recidiviz.tests.ingest import fixtures
 from recidiviz.tests.utils import fakes
 
 DATE_SCRAPED = datetime.date(year=2018, month=1, day=31)
-DATE_SCRAPED_2 = datetime.date(year=2019, month=2, day=28)
+DATE_SCRAPED_2 = datetime.date(year=2019, month=6, day=30)
 
 # Cache the parsed pdf between tests since it's expensive to compute
 @pytest.fixture(scope="class")
@@ -48,7 +48,7 @@ def parsed_pdf(request):
         '', fixtures.as_filepath('jails-2018-01.pdf'))
     request.cls.parsed_pdf_2 = fl_aggregate_ingest.parse(
         '', fixtures.as_filepath(
-            'florida__pub_jails_2019_2019_02 feb fcdf.pdf'))
+            'florida__pub_jails_2019_2019_06 june fcdf.pdf'))
 
 
 @pytest.mark.usefixtures("parsed_pdf")

@@ -92,6 +92,10 @@ def _parse_county_table(location: str, filename: str) -> pd.DataFrame:
 
     for column_name in {'county_population', 'average_daily_population'}:
         result[column_name] = result[column_name].apply(locale.atoi)
+
+    # Sometimes extra notes are indicated in the date reported field.
+    result['date_reported'] = result['date_reported'].str.replace(r'^\*\*$', '')
+
     result['date_reported'] = pd.to_datetime(result['date_reported'])
 
     return result
