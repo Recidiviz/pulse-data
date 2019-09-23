@@ -327,6 +327,27 @@ state_parole_decision_outcome = Enum(
     state_enum_strings.state_parole_decision_parole_granted,
     name='state_parole_decision_outcome'
 )
+state_program_assignment_participation_status = Enum(
+    enum_strings.external_unknown,
+    enum_strings.present_without_info,
+    state_enum_strings.state_program_assignment_participation_status_discharged,
+    state_enum_strings.
+    state_program_assignment_participation_status_in_progress,
+    state_enum_strings.state_program_assignment_participation_status_pending,
+    name='state_program_assignment_participation_status')
+
+state_program_assignment_discharge_reason = Enum(
+    enum_strings.external_unknown,
+    state_enum_strings.state_program_assignment_discharge_reason_absconded,
+    state_enum_strings.
+    state_program_assignment_discharge_reason_adverse_termination,
+    state_enum_strings.state_program_assignment_discharge_reason_completed,
+    state_enum_strings.state_program_assignment_discharge_reason_moved,
+    state_enum_strings.state_program_assignment_discharge_reason_opted_out,
+    state_enum_strings.
+    state_program_assignment_discharge_reason_program_transfer,
+    state_enum_strings.state_program_assignment_discharge_reason_reincarcerated,
+    name='state_program_assignment_discharge_reason')
 
 # Join tables
 
@@ -377,6 +398,30 @@ state_incarceration_sentence_supervision_period_association_table = \
                  Integer,
                  ForeignKey(
                      'state_supervision_period.supervision_period_id')))
+
+state_supervision_period_program_assignment_association_table = \
+    Table('state_supervision_period_program_assignment_association',
+          StateBase.metadata,
+          Column('supervision_period_id',
+                 Integer,
+                 ForeignKey(
+                     'state_supervision_period.supervision_period_id')),
+          Column('program_assignment_id',
+                 Integer,
+                 ForeignKey(
+                     'state_program_assignment.program_assignment_id')))
+
+state_incarceration_period_program_assignment_association_table = \
+    Table('state_incarceration_period_program_assignment_association',
+          StateBase.metadata,
+          Column('incarceration_period_id',
+                 Integer,
+                 ForeignKey(
+                     'state_incarceration_period.incarceration_period_id')),
+          Column('program_assignment_id',
+                 Integer,
+                 ForeignKey(
+                     'state_program_assignment.program_assignment_id')))
 
 state_charge_incarceration_sentence_association_table = \
     Table('state_charge_incarceration_sentence_association',
@@ -682,6 +727,8 @@ class StatePerson(StateBase, _StatePersonSharedColumns):
         'StatePersonEthnicity', backref='person', lazy='joined')
     assessments = relationship(
         'StateAssessment', backref='person', lazy='joined')
+    program_assignments = relationship(
+        'StateProgramAssignment', backref='person', lazy='joined')
     sentence_groups = relationship(
         'StateSentenceGroup', backref='person', lazy='joined')
 
@@ -689,7 +736,6 @@ class StatePerson(StateBase, _StatePersonSharedColumns):
 class StatePersonHistory(StateBase,
                          _StatePersonSharedColumns,
                          HistoryTableSharedColumns):
-
     """Represents the historical state of a StatePerson"""
     __tablename__ = 'state_person_history'
 
@@ -1274,6 +1320,13 @@ class StateIncarcerationPeriod(StateBase,
         'StateParoleDecision', backref='incarceration_period', lazy='joined')
     assessments = relationship(
         'StateAssessment', backref='incarceration_period', lazy='joined')
+    # TODO(2451): Load in joined fashion when possible.
+    program_assignments = relationship(
+        'StateProgramAssignment',
+        secondary=
+        state_incarceration_period_program_assignment_association_table,
+        backref='incarceration_periods',
+        lazy='select')
 
     source_supervision_violation_response = relationship(
         'StateSupervisionViolationResponse', uselist=False, lazy='joined')
@@ -1352,6 +1405,12 @@ class StateSupervisionPeriod(StateBase,
         lazy='joined')
     assessments = relationship(
         'StateAssessment', backref='supervision_period', lazy='joined')
+    # TODO(2451): Load in joined fashion when possible.
+    program_assignments = relationship(
+        'StateProgramAssignment',
+        secondary=state_supervision_period_program_assignment_association_table,
+        backref='supervision_periods',
+        lazy='select')
 
 
 class StateSupervisionPeriodHistory(StateBase,
@@ -1740,4 +1799,64 @@ class StateAgentHistory(StateBase,
     agent_id = Column(
         Integer, ForeignKey(
             'state_agent.agent_id'),
+        nullable=False, index=True)
+
+
+# StateProgramAssignment
+
+class _StateProgramAssignmentSharedColumns(_ReferencesStatePersonSharedColumns):
+    """A mixin which defines all columns common to StateProgramAssignment and
+    StateProgramAssignmentHistory.
+    """
+
+    # Consider this class a mixin and only allow instantiating subclasses
+    def __new__(cls, *_, **__):
+        if cls is _StateProgramAssignmentSharedColumns:
+            raise Exception(f'[{cls}] cannot be instantiated')
+        return super().__new__(cls)
+
+    external_id = Column(String(255), index=True)
+    state_code = Column(String(255), nullable=False, index=True)
+    # TODO(2450): Switch program_id/location_id for a program foreign key once
+    # we've ingested program information into our schema.
+    program_id = Column(String(255))
+    program_location_id = Column(String(255))
+
+    participation_status = Column(state_program_assignment_participation_status)
+    participation_status_raw_text = Column(String(255))
+    discharge_reason = Column(state_program_assignment_discharge_reason)
+    discharge_reason_raw_text = Column(String(255))
+    referral_date = Column(Date)
+    start_date = Column(Date)
+    discharge_date = Column(Date)
+
+    @declared_attr
+    def referring_agent_id(self):
+        return Column(
+            Integer,
+            ForeignKey('state_agent.agent_id'),
+            nullable=True)
+
+
+class StateProgramAssignment(StateBase, _StateProgramAssignmentSharedColumns):
+    """Represents a StateProgramAssignment in the SQL schema."""
+    __tablename__ = 'state_program_assignment'
+
+    program_assignment_id = Column(Integer, primary_key=True)
+    referring_agent = relationship('StateAgent', uselist=False, lazy='joined')
+
+
+class StateProgramAssignmentHistory(StateBase,
+                                    _StateProgramAssignmentSharedColumns,
+                                    HistoryTableSharedColumns):
+    """Represents the historical state of a StateProgramAssignment"""
+    __tablename__ = 'state_program_assignment_history'
+
+    # This primary key should NOT be used. It only exists because SQLAlchemy
+    # requires every table to have a unique primary key.
+    program_assignment_history_id = Column(Integer, primary_key=True)
+
+    program_assignment_id = Column(
+        Integer, ForeignKey(
+            'state_program_assignment.program_assignment_id'),
         nullable=False, index=True)

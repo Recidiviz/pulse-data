@@ -28,7 +28,7 @@ from recidiviz.ingest.models.ingest_info_pb2 import Person, \
     StateBond, StateIncarcerationPeriod, StateSupervisionPeriod, \
     StateIncarcerationIncident, StateParoleDecision, \
     StateSupervisionViolation, StateSupervisionViolationResponse, \
-    StateIncarcerationIncidentOutcome
+    StateIncarcerationIncidentOutcome, StateProgramAssignment
 
 
 class FieldsDontMatchError(Exception):
@@ -72,6 +72,7 @@ class TestIngestInfo(unittest.TestCase):
             'state_alias_ids', 'state_aliases',
             'state_person_external_ids_ids', 'state_person_external_ids',
             'state_assessment_ids', 'state_assessments',
+            'state_program_assignment_ids', 'state_program_assignments',
             'state_sentence_group_ids', 'state_sentence_groups']
         assessment_fields_ignore = ['conducting_agent_id', 'conducting_agent']
         sentence_group_fields_ignore = \
@@ -95,7 +96,8 @@ class TestIngestInfo(unittest.TestCase):
             ['state_incarceration_incident_ids',
              'state_incarceration_incidents',
              'state_parole_decision_ids', 'state_parole_decisions',
-             'state_assessment_ids', 'state_assessments']
+             'state_assessment_ids', 'state_assessments',
+             'state_program_assignment_ids', 'state_program_assignments']
         incarceration_incident_fields_ignore = \
             ['responding_officer_id', 'responding_officer',
              'state_incarceration_incident_outcomes',
@@ -105,12 +107,15 @@ class TestIngestInfo(unittest.TestCase):
         supervision_period_fields_ignore = \
             ['supervising_officer_id', 'supervising_officer',
              'state_supervision_violation_ids', 'state_supervision_violations',
-             'state_assessment_ids', 'state_assessments']
+             'state_assessment_ids', 'state_assessments',
+             'state_program_assignment_ids', 'state_program_assignments']
         supervision_violation_fields_ignore = \
             ['state_supervision_violation_response_ids',
              'state_supervision_violation_responses']
         supervision_violation_response_fields_ignore = \
             ['decision_agent_ids', 'decision_agents']
+        program_assignment_fields_ignore = \
+            ['referring_agent', 'referring_agent_id']
 
         _verify_fields(Person, ingest_info.Person(), person_fields_ignore)
         _verify_fields(Booking, ingest_info.Booking(), booking_fields_ignore)
@@ -158,8 +163,9 @@ class TestIngestInfo(unittest.TestCase):
         _verify_fields(StateSupervisionViolationResponse,
                        ingest_info.StateSupervisionViolationResponse(),
                        supervision_violation_response_fields_ignore)
-
-        return True
+        _verify_fields(StateProgramAssignment,
+                       ingest_info.StateProgramAssignment(),
+                       program_assignment_fields_ignore)
 
     def test_bool_falsy(self):
         ii = IngestInfo()
