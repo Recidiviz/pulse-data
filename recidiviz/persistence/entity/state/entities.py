@@ -66,6 +66,9 @@ from recidiviz.common.constants.state.state_parole_decision import \
     StateParoleDecisionOutcome
 from recidiviz.common.constants.state.state_person_alias import \
     StatePersonAliasType
+from recidiviz.common.constants.state.state_program_assignment import \
+    StateProgramAssignmentParticipationStatus, \
+    StateProgramAssignmentDischargeReason
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import (
     StateSupervisionType,
@@ -209,6 +212,7 @@ class StatePerson(Entity, BuildableAttr, DefaultableAttr):
     races: List['StatePersonRace'] = attr.ib(factory=list)
     ethnicities: List['StatePersonEthnicity'] = attr.ib(factory=list)
     assessments: List['StateAssessment'] = attr.ib(factory=list)
+    program_assignments: List['StateProgramAssignment'] = attr.ib(factory=list)
     sentence_groups: List['StateSentenceGroup'] = attr.ib(factory=list)
 
     # NOTE: Eventually we might have a relationship to objects holding
@@ -649,6 +653,7 @@ class StateIncarcerationPeriod(ExternalIdEntity,
         attr.ib(factory=list)
     parole_decisions: List['StateParoleDecision'] = attr.ib(factory=list)
     assessments: List['StateAssessment'] = attr.ib(factory=list)
+    program_assignments: List['StateProgramAssignment'] = attr.ib(factory=list)
 
     # When the admission reason is PROBATION_REVOCATION or PAROLE_REVOCATION,
     # this is the object with info about the violation/hearing that resulted in
@@ -705,6 +710,7 @@ class StateSupervisionPeriod(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     # Cross-entity relationships
     person: Optional['StatePerson'] = attr.ib(default=None)
     supervising_officer: Optional['StateAgent'] = attr.ib(default=None)
+    program_assignments: List['StateProgramAssignment'] = attr.ib(factory=list)
 
     # NOTE: A supervision period might count towards multiple sentences
     incarceration_sentences: List['StateIncarcerationSentence'] = \
@@ -933,3 +939,42 @@ class StateAgent(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     # Primary key - Only optional when hydrated in the data converter, before
     # we have written this entity to the persistence layer
     agent_id: Optional[int] = attr.ib(default=None)
+
+
+@attr.s(cmp=False)
+class StateProgramAssignment(ExternalIdEntity, BuildableAttr, DefaultableAttr):
+    """Models an person's assignment to a particular program."""
+    # Status
+    participation_status: StateProgramAssignmentParticipationStatus = \
+        attr.ib()  # non-nullable
+    participation_status_raw_text: Optional[str] = attr.ib()
+
+    # Attributes
+    #   - When
+    referral_date: Optional[datetime.date] = attr.ib()
+    start_date: Optional[datetime.date] = attr.ib()
+    discharge_date: Optional[datetime.date] = attr.ib()
+
+    #   - Where
+    state_code: str = attr.ib()  # non-nullable
+
+    #   - What
+    program_id: Optional[str] = attr.ib()
+    program_location_id: Optional[str] = attr.ib()
+    discharge_reason: Optional[StateProgramAssignmentDischargeReason] = \
+        attr.ib()
+    discharge_reason_raw_text: Optional[str] = attr.ib()
+    #   - Who
+    # See |person| in entity relationships below.
+
+    # Primary key - Only optional when hydrated in the data converter, before
+    # we have written this entity to the persistence layer
+    program_assignment_id: Optional[int] = attr.ib(default=None)
+
+    # Cross-entity relationships
+    person: Optional['StatePerson'] = attr.ib(default=None)
+    referring_agent: Optional['StateAgent'] = attr.ib(default=None)
+    incarceration_periods: List['StateIncarcerationPeriod'] = \
+        attr.ib(factory=list)
+    supervision_periods: List['StateSupervisionPeriod'] = \
+        attr.ib(factory=list)

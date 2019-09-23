@@ -143,6 +143,8 @@ def convert_ingest_info_to_proto(ingest_info_py: ingest_info.IngestInfo) \
         Dict[str, ingest_info.StatePersonExternalId] = {}
     state_alias_map: Dict[str, ingest_info.StateAlias] = {}
     state_assessment_map: Dict[str, ingest_info.StateAssessment] = {}
+    state_program_assignment_map: Dict[
+        str, ingest_info.StateProgramAssignment] = {}
     state_sentence_group_map: Dict[str, ingest_info.StateSentenceGroup] = {}
     state_supervision_sentence_map: \
         Dict[str, ingest_info.StateSupervisionSentence] = {}
@@ -313,6 +315,22 @@ def convert_ingest_info_to_proto(ingest_info_py: ingest_info.IngestInfo) \
                     proto_period_assessment.conducting_agent_id = \
                         proto_conducting_agent.state_agent_id
 
+            for period_program_assignment in \
+                    incarceration_period.state_program_assignments:
+                proto_period_program_assignment = _populate_proto(
+                    'state_program_assignments', period_program_assignment,
+                    'state_program_assignment_id', state_program_assignment_map)
+                proto_period.state_program_assignment_ids.append(
+                    proto_period_program_assignment.state_program_assignment_id)
+
+                if period_program_assignment.referring_agent:
+                    proto_referring_agent = _populate_proto(
+                        'state_agents',
+                        period_program_assignment.referring_agent,
+                        'state_agent_id', state_agent_map)
+                    proto_period_program_assignment.referring_agent_id = \
+                        proto_referring_agent.state_agent_id
+
     def _populate_supervision_period_protos(parent_ingest_object,
                                             parent_proto):
         """Populates SupervisionPeriod proto fields for some parent object,
@@ -371,6 +389,22 @@ def convert_ingest_info_to_proto(ingest_info_py: ingest_info.IngestInfo) \
                         'state_agent_id', state_agent_map)
                     proto_period_assessment.conducting_agent_id = \
                         proto_conducting_agent.state_agent_id
+
+            for period_program_assignment in \
+                    supervision_period.state_program_assignments:
+                proto_period_program_assignment = _populate_proto(
+                    'state_program_assignments', period_program_assignment,
+                    'state_program_assignment_id', state_program_assignment_map)
+                proto_period.state_program_assignment_ids.append(
+                    proto_period_program_assignment.state_program_assignment_id)
+
+                if period_program_assignment.referring_agent:
+                    proto_referring_agent = _populate_proto(
+                        'state_agents',
+                        period_program_assignment.referring_agent,
+                        'state_agent_id', state_agent_map)
+                    proto_period_program_assignment.referring_agent_id = \
+                        proto_referring_agent.state_agent_id
 
     for person in ingest_info_py.people:
         proto_person = _populate_proto(
@@ -450,6 +484,20 @@ def convert_ingest_info_to_proto(ingest_info_py: ingest_info.IngestInfo) \
                     'state_agents', assessment.conducting_agent,
                     'state_agent_id', state_agent_map)
                 proto_assessment.conducting_agent_id = \
+                    proto_agent.state_agent_id
+
+        for program_assignment in state_person.state_program_assignments:
+            proto_program_assignment = _populate_proto(
+                'state_program_assignments', program_assignment,
+                'state_program_assignment_id', state_program_assignment_map)
+            proto_state_person.state_program_assignment_ids.append(
+                proto_program_assignment.state_program_assignment_id)
+
+            if program_assignment.referring_agent:
+                proto_agent = _populate_proto(
+                    'state_agents', program_assignment.referring_agent,
+                    'state_agent_id', state_agent_map)
+                proto_program_assignment.referring_agent_id = \
                     proto_agent.state_agent_id
 
         for sentence_group in state_person.state_sentence_groups:
@@ -558,6 +606,12 @@ def convert_proto_to_ingest_info(
                           ingest_info.StateAssessment,
                           'state_assessment_id')
              for assessment in proto.state_assessments)
+    state_program_assignment_map: Dict[
+        str, ingest_info.StateProgramAssignment] = \
+            dict(_proto_to_py(program_assignment,
+                              ingest_info.StateProgramAssignment,
+                              'state_program_assignment_id')
+                 for program_assignment in proto.state_program_assignments)
     state_sentence_group_map: Dict[str, ingest_info.StateSentenceGroup] = \
         dict(_proto_to_py(sentence_group, ingest_info.StateSentenceGroup,
                           'state_sentence_group_id')
@@ -717,6 +771,13 @@ def convert_proto_to_ingest_info(
             assessment.conducting_agent = \
                 state_agent_map[proto_assessment.conducting_agent_id]
 
+    for proto_program_assignment in proto.state_program_assignments:
+        program_assignment = state_program_assignment_map[
+            proto_program_assignment.state_program_assignment_id]
+        if proto_program_assignment.referring_agent_id:
+            program_assignment.referring_agent = \
+                state_agent_map[proto_program_assignment.referring_agent_id]
+
     # Wire child entities to respective violations
     for proto_response in proto.state_supervision_violation_responses:
         violation_response = state_supervision_violation_response_map[
@@ -746,6 +807,9 @@ def convert_proto_to_ingest_info(
         supervision_period.state_assessments = \
             [state_assessment_map[proto_id] for proto_id
              in proto_supervision_period.state_assessment_ids]
+        supervision_period.state_program_assignments = \
+            [state_program_assignment_map[proto_id] for proto_id
+             in proto_supervision_period.state_program_assignment_ids]
 
     # Wire child entities to respective incarceration periods
     for proto_incarceration_period in proto.state_incarceration_periods:
@@ -760,6 +824,9 @@ def convert_proto_to_ingest_info(
         incarceration_period.state_assessments = \
             [state_assessment_map[proto_id] for proto_id
              in proto_incarceration_period.state_assessment_ids]
+        incarceration_period.state_program_assignments = \
+            [state_program_assignment_map[proto_id] for proto_id
+             in proto_incarceration_period.state_program_assignment_ids]
 
     # Wire child entities to respective incarceration incidents
     for proto_incarceration_incident in proto.state_incarceration_incidents:
@@ -839,6 +906,10 @@ def convert_proto_to_ingest_info(
             [state_assessment_map[proto_id] for proto_id
              in proto_state_person.state_assessment_ids]
 
+        state_person.state_program_assignments = \
+            [state_program_assignment_map[proto_id] for proto_id
+             in proto_state_person.state_program_assignment_ids]
+
         state_person.state_sentence_groups = \
             [state_sentence_group_map[proto_id] for proto_id
              in proto_state_person.state_sentence_group_ids]
@@ -882,7 +953,8 @@ def _copy_fields(source, dest, descriptor):
     field_names = [i.name for i in descriptor.fields]
     for field in field_names:
         if (field.endswith('id') or field.endswith('ids')) \
-                and not _is_state_person_external_id(source, field):
+                and not _is_state_person_external_id(source, field)\
+                and not _is_program_id(source, field):
             continue
         val = getattr(source, field, None)
         if val is not None:
@@ -890,6 +962,15 @@ def _copy_fields(source, dest, descriptor):
                 getattr(dest, field).extend(val)
             else:
                 setattr(dest, field, val)
+
+
+def _is_program_id(source, field):
+    """StateProgramAssignment has normal fields 'program_id' and 'location_id'
+    which should be copied between types unlike other fields ending in 'id'.
+    """
+    return isinstance(source, (ingest_info.StateProgramAssignment,
+                               ingest_info_pb2.StateProgramAssignment)) \
+           and field in ('program_id', 'program_location_id')
 
 
 def _is_state_person_external_id(source, field):

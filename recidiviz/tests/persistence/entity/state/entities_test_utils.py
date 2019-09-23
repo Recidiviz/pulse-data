@@ -40,6 +40,9 @@ from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodReleaseReason
 from recidiviz.common.constants.state.state_parole_decision import \
     StateParoleDecisionOutcome
+from recidiviz.common.constants.state.state_program_assignment import \
+    StateProgramAssignmentParticipationStatus, \
+    StateProgramAssignmentDischargeReason
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import \
     StateSupervisionType
@@ -55,6 +58,8 @@ from recidiviz.common.constants.state.\
         StateSupervisionViolationResponseDecidingBodyType,
     )
 from recidiviz.persistence.entity.state import entities
+from recidiviz.persistence.entity.state.entities import StateAgent, \
+    StateProgramAssignment
 
 
 def generate_full_graph_state_person(
@@ -365,6 +370,25 @@ def generate_full_graph_state_person(
 
     incarceration_period.assessments = [assessment1]
 
+    program_assignment_agent = StateAgent.new_with_defaults(
+        agent_type=StateAgentType.SUPERVISION_OFFICER,
+        state_code='us_ca',
+        full_name='{"full_name": "AGENT PO"}')
+
+    program_assignment = StateProgramAssignment.new_with_defaults(
+        external_id='program_assignment_external_id_1',
+        state_code='us_ca',
+        participation_status=
+        StateProgramAssignmentParticipationStatus.IN_PROGRESS,
+        participation_status_raw_text='IN_PROGRESS',
+        referral_date=datetime.date(year=2019, month=2, day=10),
+        start_date=datetime.date(year=2019, month=2, day=11),
+        program_id='program_id',
+        program_location_id='program_location_id',
+        referring_agent=program_assignment_agent
+    )
+    incarceration_period.program_assignments = [program_assignment]
+
     supervising_officer = entities.StateAgent.new_with_defaults(
         agent_type=StateAgentType.SUPERVISION_OFFICER,
         state_code='us_ca',
@@ -409,6 +433,23 @@ def generate_full_graph_state_person(
     )
     supervision_period.assessments = [assessment2]
 
+    program_assignment2 = StateProgramAssignment.new_with_defaults(
+        external_id='program_assignment_external_id_2',
+        state_code='us_ca',
+        participation_status=
+        StateProgramAssignmentParticipationStatus.DISCHARGED,
+        participation_status_raw_text='DISCHARGED',
+        referral_date=datetime.date(year=2019, month=2, day=10),
+        start_date=datetime.date(year=2019, month=2, day=11),
+        discharge_date=datetime.date(year=2019, month=2, day=12),
+        program_id='program_id',
+        program_location_id='program_location_id',
+        discharge_reason=StateProgramAssignmentDischargeReason.COMPLETED,
+        discharge_reason_raw_text='COMPLETED',
+        referring_agent=program_assignment_agent
+    )
+    supervision_period.program_assignments = [program_assignment2]
+
     supervision_violation = \
         entities.StateSupervisionViolation.new_with_defaults(
             violation_type=StateSupervisionViolationType.TECHNICAL,
@@ -447,12 +488,15 @@ def generate_full_graph_state_person(
 
     person.assessments.extend(incarceration_period.assessments)
     person.assessments.extend(supervision_period.assessments)
+    person.program_assignments.extend(incarceration_period.program_assignments)
+    person.program_assignments.extend(supervision_period.program_assignments)
 
     if set_back_edges:
         person_children = \
             person.external_ids + person.races + \
             person.aliases + person.ethnicities + \
-            person.sentence_groups + person.assessments
+            person.sentence_groups + person.assessments + \
+            person.program_assignments
         for child in person_children:
             child.person = person
 
@@ -490,10 +534,14 @@ def generate_full_graph_state_person(
         incarceration_period_children = \
             incarceration_period.parole_decisions + \
             incarceration_period.assessments + \
-            incarceration_period.incarceration_incidents
+            incarceration_period.incarceration_incidents + \
+            incarceration_period.program_assignments
 
         for child in incarceration_period_children:
-            child.incarceration_period = incarceration_period
+            if hasattr(child, 'incarceration_periods'):
+                child.incarceration_periods = [incarceration_period]
+            else:
+                child.incarceration_period = incarceration_period
             child.person = person
 
         # pylint:disable=not-an-iterable
@@ -506,10 +554,14 @@ def generate_full_graph_state_person(
 
         supervision_period_children = \
             supervision_period.supervision_violations + \
-            supervision_period.assessments
+            supervision_period.assessments + \
+            supervision_period.program_assignments
 
         for child in supervision_period_children:
-            child.supervision_period = supervision_period
+            if hasattr(child, 'supervision_periods'):
+                child.supervision_periods = [supervision_period]
+            else:
+                child.supervision_period = supervision_period
             child.person = person
 
         supervision_violation_response.supervision_violation = \
