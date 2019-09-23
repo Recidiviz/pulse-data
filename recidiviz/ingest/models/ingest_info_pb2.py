@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='recidiviz.ingest.models',
   syntax='proto2',
   serialized_options=None,
-  serialized_pb=_b('\n)recidiviz/ingest/models/ingest_info.proto\x12\x17recidiviz.ingest.models\"\x91\x10\n\nIngestInfo\x12/\n\x06people\x18\x01 \x03(\x0b\x32\x1f.recidiviz.ingest.models.Person\x12\x32\n\x08\x62ookings\x18\x02 \x03(\x0b\x32 .recidiviz.ingest.models.Booking\x12\x30\n\x07\x61rrests\x18\x03 \x03(\x0b\x32\x1f.recidiviz.ingest.models.Arrest\x12\x30\n\x07\x63harges\x18\x04 \x03(\x0b\x32\x1f.recidiviz.ingest.models.Charge\x12,\n\x05holds\x18\x05 \x03(\x0b\x32\x1d.recidiviz.ingest.models.Hold\x12,\n\x05\x62onds\x18\x06 \x03(\x0b\x32\x1d.recidiviz.ingest.models.Bond\x12\x34\n\tsentences\x18\x07 \x03(\x0b\x32!.recidiviz.ingest.models.Sentence\x12M\n\x16sentence_relationships\x18\x08 \x03(\x0b\x32-.recidiviz.ingest.models.SentenceRelationship\x12:\n\x0cstate_people\x18\t \x03(\x0b\x32$.recidiviz.ingest.models.StatePerson\x12\x44\n\x12state_person_races\x18\n \x03(\x0b\x32(.recidiviz.ingest.models.StatePersonRace\x12O\n\x18state_person_ethnicities\x18\x0b \x03(\x0b\x32-.recidiviz.ingest.models.StatePersonEthnicity\x12:\n\rstate_aliases\x18\x0c \x03(\x0b\x32#.recidiviz.ingest.models.StateAlias\x12Q\n\x19state_person_external_ids\x18\r \x03(\x0b\x32..recidiviz.ingest.models.StatePersonExternalId\x12\x43\n\x11state_assessments\x18\x0e \x03(\x0b\x32(.recidiviz.ingest.models.StateAssessment\x12J\n\x15state_sentence_groups\x18\x0f \x03(\x0b\x32+.recidiviz.ingest.models.StateSentenceGroup\x12V\n\x1bstate_supervision_sentences\x18\x10 \x03(\x0b\x32\x31.recidiviz.ingest.models.StateSupervisionSentence\x12Z\n\x1dstate_incarceration_sentences\x18\x11 \x03(\x0b\x32\x33.recidiviz.ingest.models.StateIncarcerationSentence\x12\x37\n\x0bstate_fines\x18\x12 \x03(\x0b\x32\".recidiviz.ingest.models.StateFine\x12;\n\rstate_charges\x18\x13 \x03(\x0b\x32$.recidiviz.ingest.models.StateCharge\x12\x42\n\x11state_court_cases\x18\x14 \x03(\x0b\x32\'.recidiviz.ingest.models.StateCourtCase\x12\x37\n\x0bstate_bonds\x18\x15 \x03(\x0b\x32\".recidiviz.ingest.models.StateBond\x12V\n\x1bstate_incarceration_periods\x18\x16 \x03(\x0b\x32\x31.recidiviz.ingest.models.StateIncarcerationPeriod\x12R\n\x19state_supervision_periods\x18\x17 \x03(\x0b\x32/.recidiviz.ingest.models.StateSupervisionPeriod\x12Z\n\x1dstate_incarceration_incidents\x18\x18 \x03(\x0b\x32\x33.recidiviz.ingest.models.StateIncarcerationIncident\x12i\n%state_incarceration_incident_outcomes\x18\x19 \x03(\x0b\x32:.recidiviz.ingest.models.StateIncarcerationIncidentOutcome\x12L\n\x16state_parole_decisions\x18\x1a \x03(\x0b\x32,.recidiviz.ingest.models.StateParoleDecision\x12X\n\x1cstate_supervision_violations\x18\x1b \x03(\x0b\x32\x32.recidiviz.ingest.models.StateSupervisionViolation\x12i\n%state_supervision_violation_responses\x18\x1c \x03(\x0b\x32:.recidiviz.ingest.models.StateSupervisionViolationResponse\x12\x39\n\x0cstate_agents\x18\x1d \x03(\x0b\x32#.recidiviz.ingest.models.StateAgent\"\x9a\x02\n\x06Person\x12\x11\n\tperson_id\x18\x01 \x01(\t\x12\x0f\n\x07surname\x18\x02 \x01(\t\x12\x13\n\x0bgiven_names\x18\x03 \x01(\t\x12\x11\n\tbirthdate\x18\x04 \x01(\t\x12\x0e\n\x06gender\x18\x05 \x01(\t\x12\x0b\n\x03\x61ge\x18\x06 \x01(\t\x12\x0c\n\x04race\x18\x07 \x01(\t\x12\x11\n\tethnicity\x18\x08 \x01(\t\x12\x1a\n\x12place_of_residence\x18\t \x01(\t\x12\x11\n\tfull_name\x18\n \x01(\t\x12\x14\n\x0cmiddle_names\x18\x0b \x01(\t\x12\x13\n\x0bname_suffix\x18\r \x01(\t\x12\x17\n\x0fjurisdiction_id\x18\x0e \x01(\t\x12\x13\n\x0b\x62ooking_ids\x18\x0c \x03(\t\"\xb3\x02\n\x07\x42ooking\x12\x12\n\nbooking_id\x18\x01 \x01(\t\x12\x16\n\x0e\x61\x64mission_date\x18\x02 \x01(\t\x12\x18\n\x10\x61\x64mission_reason\x18\r \x01(\t\x12\x1e\n\x16projected_release_date\x18\x03 \x01(\t\x12\x14\n\x0crelease_date\x18\x04 \x01(\t\x12\x16\n\x0erelease_reason\x18\x05 \x01(\t\x12\x16\n\x0e\x63ustody_status\x18\x06 \x01(\t\x12\x10\n\x08\x66\x61\x63ility\x18\x07 \x01(\t\x12\x16\n\x0e\x63lassification\x18\x08 \x01(\t\x12\x19\n\x11total_bond_amount\x18\t \x01(\t\x12\x11\n\tarrest_id\x18\n \x01(\t\x12\x12\n\ncharge_ids\x18\x0b \x03(\t\x12\x10\n\x08hold_ids\x18\x0c \x03(\t\"|\n\x06\x41rrest\x12\x11\n\tarrest_id\x18\x01 \x01(\t\x12\x13\n\x0b\x61rrest_date\x18\x02 \x01(\t\x12\x10\n\x08location\x18\x03 \x01(\t\x12\x14\n\x0cofficer_name\x18\x04 \x01(\t\x12\x12\n\nofficer_id\x18\x05 \x01(\t\x12\x0e\n\x06\x61gency\x18\x06 \x01(\t\"\x82\x03\n\x06\x43harge\x12\x11\n\tcharge_id\x18\x01 \x01(\t\x12\x14\n\x0coffense_date\x18\x02 \x01(\t\x12\x0f\n\x07statute\x18\x03 \x01(\t\x12\x0c\n\x04name\x18\x04 \x01(\t\x12\x11\n\tattempted\x18\x05 \x01(\t\x12\x0e\n\x06\x64\x65gree\x18\x06 \x01(\t\x12\x14\n\x0c\x63harge_class\x18\x07 \x01(\t\x12\r\n\x05level\x18\x08 \x01(\t\x12\x13\n\x0b\x66\x65\x65_dollars\x18\t \x01(\t\x12\x17\n\x0f\x63harging_entity\x18\n \x01(\t\x12\x0e\n\x06status\x18\x0b \x01(\t\x12\x18\n\x10number_of_counts\x18\x0c \x01(\t\x12\x12\n\ncourt_type\x18\r \x01(\t\x12\x13\n\x0b\x63\x61se_number\x18\x0e \x01(\t\x12\x17\n\x0fnext_court_date\x18\x0f \x01(\t\x12\x12\n\njudge_name\x18\x10 \x01(\t\x12\x14\n\x0c\x63harge_notes\x18\x11 \x01(\t\x12\x0f\n\x07\x62ond_id\x18\x12 \x01(\t\x12\x13\n\x0bsentence_id\x18\x13 \x01(\t\"B\n\x04Hold\x12\x0f\n\x07hold_id\x18\x01 \x01(\t\x12\x19\n\x11jurisdiction_name\x18\x02 \x01(\t\x12\x0e\n\x06status\x18\x03 \x01(\t\"^\n\x04\x42ond\x12\x0f\n\x07\x62ond_id\x18\x01 \x01(\t\x12\x0e\n\x06\x61mount\x18\x02 \x01(\t\x12\x11\n\tbond_type\x18\x03 \x01(\t\x12\x0e\n\x06status\x18\x04 \x01(\t\x12\x12\n\nbond_agent\x18\x05 \x01(\t\"\xd9\x02\n\x08Sentence\x12\x13\n\x0bsentence_id\x18\x01 \x01(\t\x12\x12\n\nmin_length\x18\x02 \x01(\t\x12\x12\n\nmax_length\x18\x03 \x01(\t\x12\x0f\n\x07is_life\x18\x04 \x01(\t\x12\x14\n\x0cis_probation\x18\x05 \x01(\t\x12\x14\n\x0cis_suspended\x18\x06 \x01(\t\x12\x14\n\x0c\x66ine_dollars\x18\x07 \x01(\t\x12\x17\n\x0fparole_possible\x18\x08 \x01(\t\x12\'\n\x1fpost_release_supervision_length\x18\t \x01(\t\x12\x19\n\x11sentencing_region\x18\n \x01(\t\x12\x0e\n\x06status\x18\x0b \x01(\t\x12\x14\n\x0c\x64\x61te_imposed\x18\x0c \x01(\t\x12\x17\n\x0f\x63ompletion_date\x18\r \x01(\t\x12!\n\x19projected_completion_date\x18\x0e \x01(\t\"\x81\x01\n\x14SentenceRelationship\x12 \n\x18sentence_relationship_id\x18\x01 \x01(\t\x12\x15\n\rsentence_a_id\x18\x02 \x01(\t\x12\x15\n\rsentence_b_id\x18\x03 \x01(\t\x12\x19\n\x11relationship_type\x18\x04 \x01(\t\"\xb0\x03\n\x0bStatePerson\x12\x17\n\x0fstate_person_id\x18\x01 \x01(\t\x12\x11\n\tfull_name\x18\x02 \x01(\t\x12\x0f\n\x07surname\x18\x03 \x01(\t\x12\x13\n\x0bgiven_names\x18\x04 \x01(\t\x12\x14\n\x0cmiddle_names\x18\x05 \x01(\t\x12\x13\n\x0bname_suffix\x18\x06 \x01(\t\x12\x11\n\tbirthdate\x18\x07 \x01(\t\x12\x0e\n\x06gender\x18\x08 \x01(\t\x12\x0b\n\x03\x61ge\x18\t \x01(\t\x12\x17\n\x0f\x63urrent_address\x18\n \x01(\t\x12\x18\n\x10residency_status\x18\x0b \x01(\t\x12\x1d\n\x15state_person_race_ids\x18\x0c \x03(\t\x12\"\n\x1astate_person_ethnicity_ids\x18\r \x03(\t\x12\x17\n\x0fstate_alias_ids\x18\x0e \x03(\t\x12%\n\x1dstate_person_external_ids_ids\x18\x0f \x03(\t\x12\x1c\n\x14state_assessment_ids\x18\x10 \x03(\t\x12 \n\x18state_sentence_group_ids\x18\x11 \x03(\t\"Q\n\x0fStatePersonRace\x12\x1c\n\x14state_person_race_id\x18\x01 \x01(\t\x12\x0c\n\x04race\x18\x02 \x01(\t\x12\x12\n\nstate_code\x18\x03 \x01(\t\"`\n\x14StatePersonEthnicity\x12!\n\x19state_person_ethnicity_id\x18\x01 \x01(\t\x12\x11\n\tethnicity\x18\x02 \x01(\t\x12\x12\n\nstate_code\x18\x03 \x01(\t\"\xb0\x01\n\nStateAlias\x12\x16\n\x0estate_alias_id\x18\x01 \x01(\t\x12\x12\n\nstate_code\x18\x02 \x01(\t\x12\x11\n\tfull_name\x18\x03 \x01(\t\x12\x0f\n\x07surname\x18\x04 \x01(\t\x12\x13\n\x0bgiven_names\x18\x05 \x01(\t\x12\x14\n\x0cmiddle_names\x18\x06 \x01(\t\x12\x13\n\x0bname_suffix\x18\x07 \x01(\t\x12\x12\n\nalias_type\x18\x08 \x01(\t\"a\n\x15StatePersonExternalId\x12#\n\x1bstate_person_external_id_id\x18\x01 \x01(\t\x12\x0f\n\x07id_type\x18\x02 \x01(\t\x12\x12\n\nstate_code\x18\x03 \x01(\t\"\xfc\x01\n\x0fStateAssessment\x12\x1b\n\x13state_assessment_id\x18\x01 \x01(\t\x12\x18\n\x10\x61ssessment_class\x18\x02 \x01(\t\x12\x17\n\x0f\x61ssessment_type\x18\x03 \x01(\t\x12\x17\n\x0f\x61ssessment_date\x18\x04 \x01(\t\x12\x12\n\nstate_code\x18\x05 \x01(\t\x12\x18\n\x10\x61ssessment_score\x18\x06 \x01(\t\x12\x18\n\x10\x61ssessment_level\x18\x07 \x01(\t\x12\x1b\n\x13\x61ssessment_metadata\x18\x08 \x01(\t\x12\x1b\n\x13\x63onducting_agent_id\x18\t \x01(\t\"\xa7\x02\n\x12StateSentenceGroup\x12\x1f\n\x17state_sentence_group_id\x18\x01 \x01(\t\x12\x0e\n\x06status\x18\x02 \x01(\t\x12\x14\n\x0c\x64\x61te_imposed\x18\x03 \x01(\t\x12\x12\n\nstate_code\x18\x04 \x01(\t\x12\x13\n\x0b\x63ounty_code\x18\x05 \x01(\t\x12\x12\n\nmin_length\x18\x06 \x01(\t\x12\x12\n\nmax_length\x18\x07 \x01(\t\x12\x0f\n\x07is_life\x18\x08 \x01(\t\x12&\n\x1estate_supervision_sentence_ids\x18\t \x03(\t\x12(\n state_incarceration_sentence_ids\x18\n \x03(\t\x12\x16\n\x0estate_fine_ids\x18\x0b \x03(\t\"\xe0\x02\n\x18StateSupervisionSentence\x12%\n\x1dstate_supervision_sentence_id\x18\x01 \x01(\t\x12\x0e\n\x06status\x18\x02 \x01(\t\x12\x18\n\x10supervision_type\x18\x03 \x01(\t\x12!\n\x19projected_completion_date\x18\x04 \x01(\t\x12\x17\n\x0f\x63ompletion_date\x18\x05 \x01(\t\x12\x12\n\nstate_code\x18\x06 \x01(\t\x12\x13\n\x0b\x63ounty_code\x18\x07 \x01(\t\x12\x12\n\nmin_length\x18\x08 \x01(\t\x12\x12\n\nmax_length\x18\t \x01(\t\x12\x18\n\x10state_charge_ids\x18\n \x03(\t\x12&\n\x1estate_incarceration_period_ids\x18\x0b \x03(\t\x12$\n\x1cstate_supervision_period_ids\x18\x0c \x03(\t\"\x98\x04\n\x1aStateIncarcerationSentence\x12\'\n\x1fstate_incarceration_sentence_id\x18\x01 \x01(\t\x12\x0e\n\x06status\x18\x02 \x01(\t\x12\x1a\n\x12incarceration_type\x18\x03 \x01(\t\x12\x14\n\x0c\x64\x61te_imposed\x18\x04 \x01(\t\x12\"\n\x1aprojected_min_release_date\x18\x05 \x01(\t\x12\"\n\x1aprojected_max_release_date\x18\x06 \x01(\t\x12\x1f\n\x17parole_eligibility_date\x18\x07 \x01(\t\x12\x12\n\nstate_code\x18\x08 \x01(\t\x12\x13\n\x0b\x63ounty_code\x18\t \x01(\t\x12\x12\n\nmin_length\x18\n \x01(\t\x12\x12\n\nmax_length\x18\x0b \x01(\t\x12\x0f\n\x07is_life\x18\x0c \x01(\t\x12\x17\n\x0fparole_possible\x18\r \x01(\t\x12\x1b\n\x13initial_time_served\x18\x0e \x01(\t\x12\x11\n\tgood_time\x18\x0f \x01(\t\x12\x13\n\x0b\x65\x61rned_time\x18\x10 \x01(\t\x12\x18\n\x10state_charge_ids\x18\x11 \x03(\t\x12&\n\x1estate_incarceration_period_ids\x18\x12 \x03(\t\x12$\n\x1cstate_supervision_period_ids\x18\x13 \x03(\t\"\x9e\x01\n\tStateFine\x12\x15\n\rstate_fine_id\x18\x01 \x01(\t\x12\x0e\n\x06status\x18\x02 \x01(\t\x12\x11\n\tdate_paid\x18\x03 \x01(\t\x12\x12\n\nstate_code\x18\x04 \x01(\t\x12\x13\n\x0b\x63ounty_code\x18\x05 \x01(\t\x12\x14\n\x0c\x66ine_dollars\x18\x06 \x01(\t\x12\x18\n\x10state_charge_ids\x18\x07 \x03(\t\"\x9f\x03\n\x0bStateCharge\x12\x17\n\x0fstate_charge_id\x18\x01 \x01(\t\x12\x0e\n\x06status\x18\x02 \x01(\t\x12\x14\n\x0coffense_date\x18\x03 \x01(\t\x12\x14\n\x0c\x64\x61te_charged\x18\x04 \x01(\t\x12\x12\n\nstate_code\x18\x05 \x01(\t\x12\x13\n\x0b\x63ounty_code\x18\x06 \x01(\t\x12\x11\n\tncic_code\x18\x07 \x01(\t\x12\x0f\n\x07statute\x18\x08 \x01(\t\x12\x13\n\x0b\x64\x65scription\x18\t \x01(\t\x12\x11\n\tattempted\x18\n \x01(\t\x12\x1b\n\x13\x63lassification_type\x18\x0b \x01(\t\x12\x1e\n\x16\x63lassification_subtype\x18\x0c \x01(\t\x12\x0e\n\x06\x63ounts\x18\r \x01(\t\x12\x14\n\x0c\x63harge_notes\x18\x0e \x01(\t\x12\x16\n\x0eis_controlling\x18\x0f \x01(\t\x12\x17\n\x0f\x63harging_entity\x18\x10 \x01(\t\x12\x1b\n\x13state_court_case_id\x18\x11 \x01(\t\x12\x15\n\rstate_bond_id\x18\x12 \x01(\t\"\xd8\x01\n\x0eStateCourtCase\x12\x1b\n\x13state_court_case_id\x18\x01 \x01(\t\x12\x0e\n\x06status\x18\x02 \x01(\t\x12\x12\n\ncourt_type\x18\x03 \x01(\t\x12\x16\n\x0e\x64\x61te_convicted\x18\x04 \x01(\t\x12\x17\n\x0fnext_court_date\x18\x05 \x01(\t\x12\x12\n\nstate_code\x18\x06 \x01(\t\x12\x13\n\x0b\x63ounty_code\x18\x07 \x01(\t\x12\x19\n\x11\x63ourt_fee_dollars\x18\x08 \x01(\t\x12\x10\n\x08judge_id\x18\t \x01(\t\"\xa5\x01\n\tStateBond\x12\x15\n\rstate_bond_id\x18\x01 \x01(\t\x12\x0e\n\x06status\x18\x02 \x01(\t\x12\x11\n\tbond_type\x18\x03 \x01(\t\x12\x11\n\tdate_paid\x18\x04 \x01(\t\x12\x12\n\nstate_code\x18\x05 \x01(\t\x12\x13\n\x0b\x63ounty_code\x18\x06 \x01(\t\x12\x0e\n\x06\x61mount\x18\x07 \x01(\t\x12\x12\n\nbond_agent\x18\x08 \x01(\t\"\xcc\x03\n\x18StateIncarcerationPeriod\x12%\n\x1dstate_incarceration_period_id\x18\x01 \x01(\t\x12\x0e\n\x06status\x18\x02 \x01(\t\x12\x1a\n\x12incarceration_type\x18\x03 \x01(\t\x12\x16\n\x0e\x61\x64mission_date\x18\x04 \x01(\t\x12\x14\n\x0crelease_date\x18\x05 \x01(\t\x12\x12\n\nstate_code\x18\x06 \x01(\t\x12\x13\n\x0b\x63ounty_code\x18\x07 \x01(\t\x12\x10\n\x08\x66\x61\x63ility\x18\x08 \x01(\t\x12\x14\n\x0chousing_unit\x18\t \x01(\t\x12\x1f\n\x17\x66\x61\x63ility_security_level\x18\n \x01(\t\x12\x18\n\x10\x61\x64mission_reason\x18\x0b \x01(\t\x12 \n\x18projected_release_reason\x18\x0c \x01(\t\x12\x16\n\x0erelease_reason\x18\r \x01(\t\x12(\n state_incarceration_incident_ids\x18\x0e \x03(\t\x12!\n\x19state_parole_decision_ids\x18\x0f \x03(\t\x12\x1c\n\x14state_assessment_ids\x18\x10 \x03(\t\"\x8a\x03\n\x16StateSupervisionPeriod\x12#\n\x1bstate_supervision_period_id\x18\x01 \x01(\t\x12\x0e\n\x06status\x18\x02 \x01(\t\x12\x18\n\x10supervision_type\x18\x03 \x01(\t\x12\x12\n\nstart_date\x18\x04 \x01(\t\x12\x18\n\x10termination_date\x18\x05 \x01(\t\x12\x12\n\nstate_code\x18\x06 \x01(\t\x12\x13\n\x0b\x63ounty_code\x18\x07 \x01(\t\x12\x18\n\x10\x61\x64mission_reason\x18\x08 \x01(\t\x12\x1a\n\x12termination_reason\x18\t \x01(\t\x12\x19\n\x11supervision_level\x18\n \x01(\t\x12\x1e\n\x16supervising_officer_id\x18\x0b \x01(\t\x12\x12\n\nconditions\x18\x0c \x03(\t\x12\'\n\x1fstate_supervision_violation_ids\x18\r \x03(\t\x12\x1c\n\x14state_assessment_ids\x18\x0e \x03(\t\"\xa6\x02\n\x1aStateIncarcerationIncident\x12\'\n\x1fstate_incarceration_incident_id\x18\x01 \x01(\t\x12\x15\n\rincident_type\x18\x02 \x01(\t\x12\x15\n\rincident_date\x18\x03 \x01(\t\x12\x12\n\nstate_code\x18\x04 \x01(\t\x12\x10\n\x08\x66\x61\x63ility\x18\x05 \x01(\t\x12 \n\x18location_within_facility\x18\x06 \x01(\t\x12\x18\n\x10incident_details\x18\x07 \x01(\t\x12\x1d\n\x15responding_officer_id\x18\x08 \x01(\t\x12\x30\n(state_incarceration_incident_outcome_ids\x18\t \x03(\t\"\xd3\x01\n!StateIncarcerationIncidentOutcome\x12/\n\'state_incarceration_incident_outcome_id\x18\x01 \x01(\t\x12\x14\n\x0coutcome_type\x18\x02 \x01(\t\x12\x16\n\x0e\x64\x61te_effective\x18\x03 \x01(\t\x12\x12\n\nstate_code\x18\x04 \x01(\t\x12\x1b\n\x13outcome_description\x18\x05 \x01(\t\x12\x1e\n\x16punishment_length_days\x18\x06 \x01(\t\"\x88\x02\n\x13StateParoleDecision\x12 \n\x18state_parole_decision_id\x18\x01 \x01(\t\x12\x15\n\rdecision_date\x18\x02 \x01(\t\x12\"\n\x1a\x63orrective_action_deadline\x18\x03 \x01(\t\x12\x12\n\nstate_code\x18\x04 \x01(\t\x12\x13\n\x0b\x63ounty_code\x18\x05 \x01(\t\x12\x18\n\x10\x64\x65\x63ision_outcome\x18\x06 \x01(\t\x12\x1a\n\x12\x64\x65\x63ision_reasoning\x18\x07 \x01(\t\x12\x19\n\x11\x63orrective_action\x18\x08 \x01(\t\x12\x1a\n\x12\x64\x65\x63ision_agent_ids\x18\t \x03(\t\"\xea\x01\n\x19StateSupervisionViolation\x12&\n\x1estate_supervision_violation_id\x18\x01 \x01(\t\x12\x16\n\x0eviolation_type\x18\x02 \x01(\t\x12\x16\n\x0eviolation_date\x18\x03 \x01(\t\x12\x12\n\nstate_code\x18\x04 \x01(\t\x12\x12\n\nis_violent\x18\x05 \x01(\t\x12\x1b\n\x13violated_conditions\x18\x06 \x03(\t\x12\x30\n(state_supervision_violation_response_ids\x18\x07 \x03(\t\"\xf9\x01\n!StateSupervisionViolationResponse\x12/\n\'state_supervision_violation_response_id\x18\x01 \x01(\t\x12\x15\n\rresponse_type\x18\x02 \x01(\t\x12\x15\n\rresponse_date\x18\x03 \x01(\t\x12\x12\n\nstate_code\x18\x04 \x01(\t\x12\x10\n\x08\x64\x65\x63ision\x18\x05 \x01(\t\x12\x17\n\x0frevocation_type\x18\x06 \x01(\t\x12\x1a\n\x12\x64\x65\x63iding_body_type\x18\x07 \x01(\t\x12\x1a\n\x12\x64\x65\x63ision_agent_ids\x18\x08 \x03(\t\"\xb0\x01\n\nStateAgent\x12\x16\n\x0estate_agent_id\x18\x01 \x01(\t\x12\x12\n\nagent_type\x18\x02 \x01(\t\x12\x12\n\nstate_code\x18\x03 \x01(\t\x12\x11\n\tfull_name\x18\x04 \x01(\t\x12\x0f\n\x07surname\x18\x05 \x01(\t\x12\x13\n\x0bgiven_names\x18\x06 \x01(\t\x12\x14\n\x0cmiddle_names\x18\x07 \x01(\t\x12\x13\n\x0bname_suffix\x18\x08 \x01(\t')
+  serialized_pb=_b('\n)recidiviz/ingest/models/ingest_info.proto\x12\x17recidiviz.ingest.models\"\xe5\x10\n\nIngestInfo\x12/\n\x06people\x18\x01 \x03(\x0b\x32\x1f.recidiviz.ingest.models.Person\x12\x32\n\x08\x62ookings\x18\x02 \x03(\x0b\x32 .recidiviz.ingest.models.Booking\x12\x30\n\x07\x61rrests\x18\x03 \x03(\x0b\x32\x1f.recidiviz.ingest.models.Arrest\x12\x30\n\x07\x63harges\x18\x04 \x03(\x0b\x32\x1f.recidiviz.ingest.models.Charge\x12,\n\x05holds\x18\x05 \x03(\x0b\x32\x1d.recidiviz.ingest.models.Hold\x12,\n\x05\x62onds\x18\x06 \x03(\x0b\x32\x1d.recidiviz.ingest.models.Bond\x12\x34\n\tsentences\x18\x07 \x03(\x0b\x32!.recidiviz.ingest.models.Sentence\x12M\n\x16sentence_relationships\x18\x08 \x03(\x0b\x32-.recidiviz.ingest.models.SentenceRelationship\x12:\n\x0cstate_people\x18\t \x03(\x0b\x32$.recidiviz.ingest.models.StatePerson\x12\x44\n\x12state_person_races\x18\n \x03(\x0b\x32(.recidiviz.ingest.models.StatePersonRace\x12O\n\x18state_person_ethnicities\x18\x0b \x03(\x0b\x32-.recidiviz.ingest.models.StatePersonEthnicity\x12:\n\rstate_aliases\x18\x0c \x03(\x0b\x32#.recidiviz.ingest.models.StateAlias\x12Q\n\x19state_person_external_ids\x18\r \x03(\x0b\x32..recidiviz.ingest.models.StatePersonExternalId\x12\x43\n\x11state_assessments\x18\x0e \x03(\x0b\x32(.recidiviz.ingest.models.StateAssessment\x12J\n\x15state_sentence_groups\x18\x0f \x03(\x0b\x32+.recidiviz.ingest.models.StateSentenceGroup\x12V\n\x1bstate_supervision_sentences\x18\x10 \x03(\x0b\x32\x31.recidiviz.ingest.models.StateSupervisionSentence\x12Z\n\x1dstate_incarceration_sentences\x18\x11 \x03(\x0b\x32\x33.recidiviz.ingest.models.StateIncarcerationSentence\x12\x37\n\x0bstate_fines\x18\x12 \x03(\x0b\x32\".recidiviz.ingest.models.StateFine\x12;\n\rstate_charges\x18\x13 \x03(\x0b\x32$.recidiviz.ingest.models.StateCharge\x12\x42\n\x11state_court_cases\x18\x14 \x03(\x0b\x32\'.recidiviz.ingest.models.StateCourtCase\x12\x37\n\x0bstate_bonds\x18\x15 \x03(\x0b\x32\".recidiviz.ingest.models.StateBond\x12V\n\x1bstate_incarceration_periods\x18\x16 \x03(\x0b\x32\x31.recidiviz.ingest.models.StateIncarcerationPeriod\x12R\n\x19state_supervision_periods\x18\x17 \x03(\x0b\x32/.recidiviz.ingest.models.StateSupervisionPeriod\x12Z\n\x1dstate_incarceration_incidents\x18\x18 \x03(\x0b\x32\x33.recidiviz.ingest.models.StateIncarcerationIncident\x12i\n%state_incarceration_incident_outcomes\x18\x19 \x03(\x0b\x32:.recidiviz.ingest.models.StateIncarcerationIncidentOutcome\x12L\n\x16state_parole_decisions\x18\x1a \x03(\x0b\x32,.recidiviz.ingest.models.StateParoleDecision\x12X\n\x1cstate_supervision_violations\x18\x1b \x03(\x0b\x32\x32.recidiviz.ingest.models.StateSupervisionViolation\x12i\n%state_supervision_violation_responses\x18\x1c \x03(\x0b\x32:.recidiviz.ingest.models.StateSupervisionViolationResponse\x12\x39\n\x0cstate_agents\x18\x1d \x03(\x0b\x32#.recidiviz.ingest.models.StateAgent\x12R\n\x19state_program_assignments\x18\x1e \x03(\x0b\x32/.recidiviz.ingest.models.StateProgramAssignment\"\x9a\x02\n\x06Person\x12\x11\n\tperson_id\x18\x01 \x01(\t\x12\x0f\n\x07surname\x18\x02 \x01(\t\x12\x13\n\x0bgiven_names\x18\x03 \x01(\t\x12\x11\n\tbirthdate\x18\x04 \x01(\t\x12\x0e\n\x06gender\x18\x05 \x01(\t\x12\x0b\n\x03\x61ge\x18\x06 \x01(\t\x12\x0c\n\x04race\x18\x07 \x01(\t\x12\x11\n\tethnicity\x18\x08 \x01(\t\x12\x1a\n\x12place_of_residence\x18\t \x01(\t\x12\x11\n\tfull_name\x18\n \x01(\t\x12\x14\n\x0cmiddle_names\x18\x0b \x01(\t\x12\x13\n\x0bname_suffix\x18\r \x01(\t\x12\x17\n\x0fjurisdiction_id\x18\x0e \x01(\t\x12\x13\n\x0b\x62ooking_ids\x18\x0c \x03(\t\"\xb3\x02\n\x07\x42ooking\x12\x12\n\nbooking_id\x18\x01 \x01(\t\x12\x16\n\x0e\x61\x64mission_date\x18\x02 \x01(\t\x12\x18\n\x10\x61\x64mission_reason\x18\r \x01(\t\x12\x1e\n\x16projected_release_date\x18\x03 \x01(\t\x12\x14\n\x0crelease_date\x18\x04 \x01(\t\x12\x16\n\x0erelease_reason\x18\x05 \x01(\t\x12\x16\n\x0e\x63ustody_status\x18\x06 \x01(\t\x12\x10\n\x08\x66\x61\x63ility\x18\x07 \x01(\t\x12\x16\n\x0e\x63lassification\x18\x08 \x01(\t\x12\x19\n\x11total_bond_amount\x18\t \x01(\t\x12\x11\n\tarrest_id\x18\n \x01(\t\x12\x12\n\ncharge_ids\x18\x0b \x03(\t\x12\x10\n\x08hold_ids\x18\x0c \x03(\t\"|\n\x06\x41rrest\x12\x11\n\tarrest_id\x18\x01 \x01(\t\x12\x13\n\x0b\x61rrest_date\x18\x02 \x01(\t\x12\x10\n\x08location\x18\x03 \x01(\t\x12\x14\n\x0cofficer_name\x18\x04 \x01(\t\x12\x12\n\nofficer_id\x18\x05 \x01(\t\x12\x0e\n\x06\x61gency\x18\x06 \x01(\t\"\x82\x03\n\x06\x43harge\x12\x11\n\tcharge_id\x18\x01 \x01(\t\x12\x14\n\x0coffense_date\x18\x02 \x01(\t\x12\x0f\n\x07statute\x18\x03 \x01(\t\x12\x0c\n\x04name\x18\x04 \x01(\t\x12\x11\n\tattempted\x18\x05 \x01(\t\x12\x0e\n\x06\x64\x65gree\x18\x06 \x01(\t\x12\x14\n\x0c\x63harge_class\x18\x07 \x01(\t\x12\r\n\x05level\x18\x08 \x01(\t\x12\x13\n\x0b\x66\x65\x65_dollars\x18\t \x01(\t\x12\x17\n\x0f\x63harging_entity\x18\n \x01(\t\x12\x0e\n\x06status\x18\x0b \x01(\t\x12\x18\n\x10number_of_counts\x18\x0c \x01(\t\x12\x12\n\ncourt_type\x18\r \x01(\t\x12\x13\n\x0b\x63\x61se_number\x18\x0e \x01(\t\x12\x17\n\x0fnext_court_date\x18\x0f \x01(\t\x12\x12\n\njudge_name\x18\x10 \x01(\t\x12\x14\n\x0c\x63harge_notes\x18\x11 \x01(\t\x12\x0f\n\x07\x62ond_id\x18\x12 \x01(\t\x12\x13\n\x0bsentence_id\x18\x13 \x01(\t\"B\n\x04Hold\x12\x0f\n\x07hold_id\x18\x01 \x01(\t\x12\x19\n\x11jurisdiction_name\x18\x02 \x01(\t\x12\x0e\n\x06status\x18\x03 \x01(\t\"^\n\x04\x42ond\x12\x0f\n\x07\x62ond_id\x18\x01 \x01(\t\x12\x0e\n\x06\x61mount\x18\x02 \x01(\t\x12\x11\n\tbond_type\x18\x03 \x01(\t\x12\x0e\n\x06status\x18\x04 \x01(\t\x12\x12\n\nbond_agent\x18\x05 \x01(\t\"\xd9\x02\n\x08Sentence\x12\x13\n\x0bsentence_id\x18\x01 \x01(\t\x12\x12\n\nmin_length\x18\x02 \x01(\t\x12\x12\n\nmax_length\x18\x03 \x01(\t\x12\x0f\n\x07is_life\x18\x04 \x01(\t\x12\x14\n\x0cis_probation\x18\x05 \x01(\t\x12\x14\n\x0cis_suspended\x18\x06 \x01(\t\x12\x14\n\x0c\x66ine_dollars\x18\x07 \x01(\t\x12\x17\n\x0fparole_possible\x18\x08 \x01(\t\x12\'\n\x1fpost_release_supervision_length\x18\t \x01(\t\x12\x19\n\x11sentencing_region\x18\n \x01(\t\x12\x0e\n\x06status\x18\x0b \x01(\t\x12\x14\n\x0c\x64\x61te_imposed\x18\x0c \x01(\t\x12\x17\n\x0f\x63ompletion_date\x18\r \x01(\t\x12!\n\x19projected_completion_date\x18\x0e \x01(\t\"\x81\x01\n\x14SentenceRelationship\x12 \n\x18sentence_relationship_id\x18\x01 \x01(\t\x12\x15\n\rsentence_a_id\x18\x02 \x01(\t\x12\x15\n\rsentence_b_id\x18\x03 \x01(\t\x12\x19\n\x11relationship_type\x18\x04 \x01(\t\"\xd6\x03\n\x0bStatePerson\x12\x17\n\x0fstate_person_id\x18\x01 \x01(\t\x12\x11\n\tfull_name\x18\x02 \x01(\t\x12\x0f\n\x07surname\x18\x03 \x01(\t\x12\x13\n\x0bgiven_names\x18\x04 \x01(\t\x12\x14\n\x0cmiddle_names\x18\x05 \x01(\t\x12\x13\n\x0bname_suffix\x18\x06 \x01(\t\x12\x11\n\tbirthdate\x18\x07 \x01(\t\x12\x0e\n\x06gender\x18\x08 \x01(\t\x12\x0b\n\x03\x61ge\x18\t \x01(\t\x12\x17\n\x0f\x63urrent_address\x18\n \x01(\t\x12\x18\n\x10residency_status\x18\x0b \x01(\t\x12\x1d\n\x15state_person_race_ids\x18\x0c \x03(\t\x12\"\n\x1astate_person_ethnicity_ids\x18\r \x03(\t\x12\x17\n\x0fstate_alias_ids\x18\x0e \x03(\t\x12%\n\x1dstate_person_external_ids_ids\x18\x0f \x03(\t\x12\x1c\n\x14state_assessment_ids\x18\x10 \x03(\t\x12 \n\x18state_sentence_group_ids\x18\x11 \x03(\t\x12$\n\x1cstate_program_assignment_ids\x18\x12 \x03(\t\"Q\n\x0fStatePersonRace\x12\x1c\n\x14state_person_race_id\x18\x01 \x01(\t\x12\x0c\n\x04race\x18\x02 \x01(\t\x12\x12\n\nstate_code\x18\x03 \x01(\t\"`\n\x14StatePersonEthnicity\x12!\n\x19state_person_ethnicity_id\x18\x01 \x01(\t\x12\x11\n\tethnicity\x18\x02 \x01(\t\x12\x12\n\nstate_code\x18\x03 \x01(\t\"\xb0\x01\n\nStateAlias\x12\x16\n\x0estate_alias_id\x18\x01 \x01(\t\x12\x12\n\nstate_code\x18\x02 \x01(\t\x12\x11\n\tfull_name\x18\x03 \x01(\t\x12\x0f\n\x07surname\x18\x04 \x01(\t\x12\x13\n\x0bgiven_names\x18\x05 \x01(\t\x12\x14\n\x0cmiddle_names\x18\x06 \x01(\t\x12\x13\n\x0bname_suffix\x18\x07 \x01(\t\x12\x12\n\nalias_type\x18\x08 \x01(\t\"a\n\x15StatePersonExternalId\x12#\n\x1bstate_person_external_id_id\x18\x01 \x01(\t\x12\x0f\n\x07id_type\x18\x02 \x01(\t\x12\x12\n\nstate_code\x18\x03 \x01(\t\"\xfc\x01\n\x0fStateAssessment\x12\x1b\n\x13state_assessment_id\x18\x01 \x01(\t\x12\x18\n\x10\x61ssessment_class\x18\x02 \x01(\t\x12\x17\n\x0f\x61ssessment_type\x18\x03 \x01(\t\x12\x17\n\x0f\x61ssessment_date\x18\x04 \x01(\t\x12\x12\n\nstate_code\x18\x05 \x01(\t\x12\x18\n\x10\x61ssessment_score\x18\x06 \x01(\t\x12\x18\n\x10\x61ssessment_level\x18\x07 \x01(\t\x12\x1b\n\x13\x61ssessment_metadata\x18\x08 \x01(\t\x12\x1b\n\x13\x63onducting_agent_id\x18\t \x01(\t\"\xa7\x02\n\x12StateSentenceGroup\x12\x1f\n\x17state_sentence_group_id\x18\x01 \x01(\t\x12\x0e\n\x06status\x18\x02 \x01(\t\x12\x14\n\x0c\x64\x61te_imposed\x18\x03 \x01(\t\x12\x12\n\nstate_code\x18\x04 \x01(\t\x12\x13\n\x0b\x63ounty_code\x18\x05 \x01(\t\x12\x12\n\nmin_length\x18\x06 \x01(\t\x12\x12\n\nmax_length\x18\x07 \x01(\t\x12\x0f\n\x07is_life\x18\x08 \x01(\t\x12&\n\x1estate_supervision_sentence_ids\x18\t \x03(\t\x12(\n state_incarceration_sentence_ids\x18\n \x03(\t\x12\x16\n\x0estate_fine_ids\x18\x0b \x03(\t\"\xe0\x02\n\x18StateSupervisionSentence\x12%\n\x1dstate_supervision_sentence_id\x18\x01 \x01(\t\x12\x0e\n\x06status\x18\x02 \x01(\t\x12\x18\n\x10supervision_type\x18\x03 \x01(\t\x12!\n\x19projected_completion_date\x18\x04 \x01(\t\x12\x17\n\x0f\x63ompletion_date\x18\x05 \x01(\t\x12\x12\n\nstate_code\x18\x06 \x01(\t\x12\x13\n\x0b\x63ounty_code\x18\x07 \x01(\t\x12\x12\n\nmin_length\x18\x08 \x01(\t\x12\x12\n\nmax_length\x18\t \x01(\t\x12\x18\n\x10state_charge_ids\x18\n \x03(\t\x12&\n\x1estate_incarceration_period_ids\x18\x0b \x03(\t\x12$\n\x1cstate_supervision_period_ids\x18\x0c \x03(\t\"\x98\x04\n\x1aStateIncarcerationSentence\x12\'\n\x1fstate_incarceration_sentence_id\x18\x01 \x01(\t\x12\x0e\n\x06status\x18\x02 \x01(\t\x12\x1a\n\x12incarceration_type\x18\x03 \x01(\t\x12\x14\n\x0c\x64\x61te_imposed\x18\x04 \x01(\t\x12\"\n\x1aprojected_min_release_date\x18\x05 \x01(\t\x12\"\n\x1aprojected_max_release_date\x18\x06 \x01(\t\x12\x1f\n\x17parole_eligibility_date\x18\x07 \x01(\t\x12\x12\n\nstate_code\x18\x08 \x01(\t\x12\x13\n\x0b\x63ounty_code\x18\t \x01(\t\x12\x12\n\nmin_length\x18\n \x01(\t\x12\x12\n\nmax_length\x18\x0b \x01(\t\x12\x0f\n\x07is_life\x18\x0c \x01(\t\x12\x17\n\x0fparole_possible\x18\r \x01(\t\x12\x1b\n\x13initial_time_served\x18\x0e \x01(\t\x12\x11\n\tgood_time\x18\x0f \x01(\t\x12\x13\n\x0b\x65\x61rned_time\x18\x10 \x01(\t\x12\x18\n\x10state_charge_ids\x18\x11 \x03(\t\x12&\n\x1estate_incarceration_period_ids\x18\x12 \x03(\t\x12$\n\x1cstate_supervision_period_ids\x18\x13 \x03(\t\"\x9e\x01\n\tStateFine\x12\x15\n\rstate_fine_id\x18\x01 \x01(\t\x12\x0e\n\x06status\x18\x02 \x01(\t\x12\x11\n\tdate_paid\x18\x03 \x01(\t\x12\x12\n\nstate_code\x18\x04 \x01(\t\x12\x13\n\x0b\x63ounty_code\x18\x05 \x01(\t\x12\x14\n\x0c\x66ine_dollars\x18\x06 \x01(\t\x12\x18\n\x10state_charge_ids\x18\x07 \x03(\t\"\x9f\x03\n\x0bStateCharge\x12\x17\n\x0fstate_charge_id\x18\x01 \x01(\t\x12\x0e\n\x06status\x18\x02 \x01(\t\x12\x14\n\x0coffense_date\x18\x03 \x01(\t\x12\x14\n\x0c\x64\x61te_charged\x18\x04 \x01(\t\x12\x12\n\nstate_code\x18\x05 \x01(\t\x12\x13\n\x0b\x63ounty_code\x18\x06 \x01(\t\x12\x11\n\tncic_code\x18\x07 \x01(\t\x12\x0f\n\x07statute\x18\x08 \x01(\t\x12\x13\n\x0b\x64\x65scription\x18\t \x01(\t\x12\x11\n\tattempted\x18\n \x01(\t\x12\x1b\n\x13\x63lassification_type\x18\x0b \x01(\t\x12\x1e\n\x16\x63lassification_subtype\x18\x0c \x01(\t\x12\x0e\n\x06\x63ounts\x18\r \x01(\t\x12\x14\n\x0c\x63harge_notes\x18\x0e \x01(\t\x12\x16\n\x0eis_controlling\x18\x0f \x01(\t\x12\x17\n\x0f\x63harging_entity\x18\x10 \x01(\t\x12\x1b\n\x13state_court_case_id\x18\x11 \x01(\t\x12\x15\n\rstate_bond_id\x18\x12 \x01(\t\"\xd8\x01\n\x0eStateCourtCase\x12\x1b\n\x13state_court_case_id\x18\x01 \x01(\t\x12\x0e\n\x06status\x18\x02 \x01(\t\x12\x12\n\ncourt_type\x18\x03 \x01(\t\x12\x16\n\x0e\x64\x61te_convicted\x18\x04 \x01(\t\x12\x17\n\x0fnext_court_date\x18\x05 \x01(\t\x12\x12\n\nstate_code\x18\x06 \x01(\t\x12\x13\n\x0b\x63ounty_code\x18\x07 \x01(\t\x12\x19\n\x11\x63ourt_fee_dollars\x18\x08 \x01(\t\x12\x10\n\x08judge_id\x18\t \x01(\t\"\xa5\x01\n\tStateBond\x12\x15\n\rstate_bond_id\x18\x01 \x01(\t\x12\x0e\n\x06status\x18\x02 \x01(\t\x12\x11\n\tbond_type\x18\x03 \x01(\t\x12\x11\n\tdate_paid\x18\x04 \x01(\t\x12\x12\n\nstate_code\x18\x05 \x01(\t\x12\x13\n\x0b\x63ounty_code\x18\x06 \x01(\t\x12\x0e\n\x06\x61mount\x18\x07 \x01(\t\x12\x12\n\nbond_agent\x18\x08 \x01(\t\"\xf2\x03\n\x18StateIncarcerationPeriod\x12%\n\x1dstate_incarceration_period_id\x18\x01 \x01(\t\x12\x0e\n\x06status\x18\x02 \x01(\t\x12\x1a\n\x12incarceration_type\x18\x03 \x01(\t\x12\x16\n\x0e\x61\x64mission_date\x18\x04 \x01(\t\x12\x14\n\x0crelease_date\x18\x05 \x01(\t\x12\x12\n\nstate_code\x18\x06 \x01(\t\x12\x13\n\x0b\x63ounty_code\x18\x07 \x01(\t\x12\x10\n\x08\x66\x61\x63ility\x18\x08 \x01(\t\x12\x14\n\x0chousing_unit\x18\t \x01(\t\x12\x1f\n\x17\x66\x61\x63ility_security_level\x18\n \x01(\t\x12\x18\n\x10\x61\x64mission_reason\x18\x0b \x01(\t\x12 \n\x18projected_release_reason\x18\x0c \x01(\t\x12\x16\n\x0erelease_reason\x18\r \x01(\t\x12(\n state_incarceration_incident_ids\x18\x0e \x03(\t\x12!\n\x19state_parole_decision_ids\x18\x0f \x03(\t\x12\x1c\n\x14state_assessment_ids\x18\x10 \x03(\t\x12$\n\x1cstate_program_assignment_ids\x18\x11 \x03(\t\"\xb0\x03\n\x16StateSupervisionPeriod\x12#\n\x1bstate_supervision_period_id\x18\x01 \x01(\t\x12\x0e\n\x06status\x18\x02 \x01(\t\x12\x18\n\x10supervision_type\x18\x03 \x01(\t\x12\x12\n\nstart_date\x18\x04 \x01(\t\x12\x18\n\x10termination_date\x18\x05 \x01(\t\x12\x12\n\nstate_code\x18\x06 \x01(\t\x12\x13\n\x0b\x63ounty_code\x18\x07 \x01(\t\x12\x18\n\x10\x61\x64mission_reason\x18\x08 \x01(\t\x12\x1a\n\x12termination_reason\x18\t \x01(\t\x12\x19\n\x11supervision_level\x18\n \x01(\t\x12\x1e\n\x16supervising_officer_id\x18\x0b \x01(\t\x12\x12\n\nconditions\x18\x0c \x03(\t\x12\'\n\x1fstate_supervision_violation_ids\x18\r \x03(\t\x12\x1c\n\x14state_assessment_ids\x18\x0e \x03(\t\x12$\n\x1cstate_program_assignment_ids\x18\x0f \x03(\t\"\xa6\x02\n\x1aStateIncarcerationIncident\x12\'\n\x1fstate_incarceration_incident_id\x18\x01 \x01(\t\x12\x15\n\rincident_type\x18\x02 \x01(\t\x12\x15\n\rincident_date\x18\x03 \x01(\t\x12\x12\n\nstate_code\x18\x04 \x01(\t\x12\x10\n\x08\x66\x61\x63ility\x18\x05 \x01(\t\x12 \n\x18location_within_facility\x18\x06 \x01(\t\x12\x18\n\x10incident_details\x18\x07 \x01(\t\x12\x1d\n\x15responding_officer_id\x18\x08 \x01(\t\x12\x30\n(state_incarceration_incident_outcome_ids\x18\t \x03(\t\"\xd3\x01\n!StateIncarcerationIncidentOutcome\x12/\n\'state_incarceration_incident_outcome_id\x18\x01 \x01(\t\x12\x14\n\x0coutcome_type\x18\x02 \x01(\t\x12\x16\n\x0e\x64\x61te_effective\x18\x03 \x01(\t\x12\x12\n\nstate_code\x18\x04 \x01(\t\x12\x1b\n\x13outcome_description\x18\x05 \x01(\t\x12\x1e\n\x16punishment_length_days\x18\x06 \x01(\t\"\x88\x02\n\x13StateParoleDecision\x12 \n\x18state_parole_decision_id\x18\x01 \x01(\t\x12\x15\n\rdecision_date\x18\x02 \x01(\t\x12\"\n\x1a\x63orrective_action_deadline\x18\x03 \x01(\t\x12\x12\n\nstate_code\x18\x04 \x01(\t\x12\x13\n\x0b\x63ounty_code\x18\x05 \x01(\t\x12\x18\n\x10\x64\x65\x63ision_outcome\x18\x06 \x01(\t\x12\x1a\n\x12\x64\x65\x63ision_reasoning\x18\x07 \x01(\t\x12\x19\n\x11\x63orrective_action\x18\x08 \x01(\t\x12\x1a\n\x12\x64\x65\x63ision_agent_ids\x18\t \x03(\t\"\xea\x01\n\x19StateSupervisionViolation\x12&\n\x1estate_supervision_violation_id\x18\x01 \x01(\t\x12\x16\n\x0eviolation_type\x18\x02 \x01(\t\x12\x16\n\x0eviolation_date\x18\x03 \x01(\t\x12\x12\n\nstate_code\x18\x04 \x01(\t\x12\x12\n\nis_violent\x18\x05 \x01(\t\x12\x1b\n\x13violated_conditions\x18\x06 \x03(\t\x12\x30\n(state_supervision_violation_response_ids\x18\x07 \x03(\t\"\xf9\x01\n!StateSupervisionViolationResponse\x12/\n\'state_supervision_violation_response_id\x18\x01 \x01(\t\x12\x15\n\rresponse_type\x18\x02 \x01(\t\x12\x15\n\rresponse_date\x18\x03 \x01(\t\x12\x12\n\nstate_code\x18\x04 \x01(\t\x12\x10\n\x08\x64\x65\x63ision\x18\x05 \x01(\t\x12\x17\n\x0frevocation_type\x18\x06 \x01(\t\x12\x1a\n\x12\x64\x65\x63iding_body_type\x18\x07 \x01(\t\x12\x1a\n\x12\x64\x65\x63ision_agent_ids\x18\x08 \x03(\t\"\xb0\x01\n\nStateAgent\x12\x16\n\x0estate_agent_id\x18\x01 \x01(\t\x12\x12\n\nagent_type\x18\x02 \x01(\t\x12\x12\n\nstate_code\x18\x03 \x01(\t\x12\x11\n\tfull_name\x18\x04 \x01(\t\x12\x0f\n\x07surname\x18\x05 \x01(\t\x12\x13\n\x0bgiven_names\x18\x06 \x01(\t\x12\x14\n\x0cmiddle_names\x18\x07 \x01(\t\x12\x13\n\x0bname_suffix\x18\x08 \x01(\t\"\x99\x02\n\x16StateProgramAssignment\x12#\n\x1bstate_program_assignment_id\x18\x01 \x01(\t\x12\x1c\n\x14participation_status\x18\x02 \x01(\t\x12\x15\n\rreferral_date\x18\x03 \x01(\t\x12\x12\n\nstart_date\x18\x04 \x01(\t\x12\x16\n\x0e\x64ischarge_date\x18\x05 \x01(\t\x12\x12\n\nstate_code\x18\x06 \x01(\t\x12\x12\n\nprogram_id\x18\x07 \x01(\t\x12\x1b\n\x13program_location_id\x18\x08 \x01(\t\x12\x18\n\x10\x64ischarge_reason\x18\t \x01(\t\x12\x1a\n\x12referring_agent_id\x18\n \x01(\t')
 )
 
 
@@ -236,6 +236,13 @@ _INGESTINFO = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='state_program_assignments', full_name='recidiviz.ingest.models.IngestInfo.state_program_assignments', index=29,
+      number=30, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -249,7 +256,7 @@ _INGESTINFO = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=71,
-  serialized_end=2136,
+  serialized_end=2220,
 )
 
 
@@ -370,8 +377,8 @@ _PERSON = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2139,
-  serialized_end=2421,
+  serialized_start=2223,
+  serialized_end=2505,
 )
 
 
@@ -485,8 +492,8 @@ _BOOKING = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2424,
-  serialized_end=2731,
+  serialized_start=2508,
+  serialized_end=2815,
 )
 
 
@@ -551,8 +558,8 @@ _ARREST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2733,
-  serialized_end=2857,
+  serialized_start=2817,
+  serialized_end=2941,
 )
 
 
@@ -708,8 +715,8 @@ _CHARGE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2860,
-  serialized_end=3246,
+  serialized_start=2944,
+  serialized_end=3330,
 )
 
 
@@ -753,8 +760,8 @@ _HOLD = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3248,
-  serialized_end=3314,
+  serialized_start=3332,
+  serialized_end=3398,
 )
 
 
@@ -812,8 +819,8 @@ _BOND = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3316,
-  serialized_end=3410,
+  serialized_start=3400,
+  serialized_end=3494,
 )
 
 
@@ -934,8 +941,8 @@ _SENTENCE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3413,
-  serialized_end=3758,
+  serialized_start=3497,
+  serialized_end=3842,
 )
 
 
@@ -986,8 +993,8 @@ _SENTENCERELATIONSHIP = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3761,
-  serialized_end=3890,
+  serialized_start=3845,
+  serialized_end=3974,
 )
 
 
@@ -1117,6 +1124,13 @@ _STATEPERSON = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='state_program_assignment_ids', full_name='recidiviz.ingest.models.StatePerson.state_program_assignment_ids', index=17,
+      number=18, type=9, cpp_type=9, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -1129,8 +1143,8 @@ _STATEPERSON = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3893,
-  serialized_end=4325,
+  serialized_start=3977,
+  serialized_end=4447,
 )
 
 
@@ -1174,8 +1188,8 @@ _STATEPERSONRACE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=4327,
-  serialized_end=4408,
+  serialized_start=4449,
+  serialized_end=4530,
 )
 
 
@@ -1219,8 +1233,8 @@ _STATEPERSONETHNICITY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=4410,
-  serialized_end=4506,
+  serialized_start=4532,
+  serialized_end=4628,
 )
 
 
@@ -1299,8 +1313,8 @@ _STATEALIAS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=4509,
-  serialized_end=4685,
+  serialized_start=4631,
+  serialized_end=4807,
 )
 
 
@@ -1344,8 +1358,8 @@ _STATEPERSONEXTERNALID = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=4687,
-  serialized_end=4784,
+  serialized_start=4809,
+  serialized_end=4906,
 )
 
 
@@ -1431,8 +1445,8 @@ _STATEASSESSMENT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=4787,
-  serialized_end=5039,
+  serialized_start=4909,
+  serialized_end=5161,
 )
 
 
@@ -1532,8 +1546,8 @@ _STATESENTENCEGROUP = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=5042,
-  serialized_end=5337,
+  serialized_start=5164,
+  serialized_end=5459,
 )
 
 
@@ -1640,8 +1654,8 @@ _STATESUPERVISIONSENTENCE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=5340,
-  serialized_end=5692,
+  serialized_start=5462,
+  serialized_end=5814,
 )
 
 
@@ -1797,8 +1811,8 @@ _STATEINCARCERATIONSENTENCE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=5695,
-  serialized_end=6231,
+  serialized_start=5817,
+  serialized_end=6353,
 )
 
 
@@ -1870,8 +1884,8 @@ _STATEFINE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=6234,
-  serialized_end=6392,
+  serialized_start=6356,
+  serialized_end=6514,
 )
 
 
@@ -2020,8 +2034,8 @@ _STATECHARGE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=6395,
-  serialized_end=6810,
+  serialized_start=6517,
+  serialized_end=6932,
 )
 
 
@@ -2107,8 +2121,8 @@ _STATECOURTCASE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=6813,
-  serialized_end=7029,
+  serialized_start=6935,
+  serialized_end=7151,
 )
 
 
@@ -2187,8 +2201,8 @@ _STATEBOND = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=7032,
-  serialized_end=7197,
+  serialized_start=7154,
+  serialized_end=7319,
 )
 
 
@@ -2311,6 +2325,13 @@ _STATEINCARCERATIONPERIOD = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='state_program_assignment_ids', full_name='recidiviz.ingest.models.StateIncarcerationPeriod.state_program_assignment_ids', index=16,
+      number=17, type=9, cpp_type=9, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -2323,8 +2344,8 @@ _STATEINCARCERATIONPERIOD = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=7200,
-  serialized_end=7660,
+  serialized_start=7322,
+  serialized_end=7820,
 )
 
 
@@ -2433,6 +2454,13 @@ _STATESUPERVISIONPERIOD = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='state_program_assignment_ids', full_name='recidiviz.ingest.models.StateSupervisionPeriod.state_program_assignment_ids', index=14,
+      number=15, type=9, cpp_type=9, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -2445,8 +2473,8 @@ _STATESUPERVISIONPERIOD = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=7663,
-  serialized_end=8057,
+  serialized_start=7823,
+  serialized_end=8255,
 )
 
 
@@ -2532,8 +2560,8 @@ _STATEINCARCERATIONINCIDENT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=8060,
-  serialized_end=8354,
+  serialized_start=8258,
+  serialized_end=8552,
 )
 
 
@@ -2598,8 +2626,8 @@ _STATEINCARCERATIONINCIDENTOUTCOME = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=8357,
-  serialized_end=8568,
+  serialized_start=8555,
+  serialized_end=8766,
 )
 
 
@@ -2685,8 +2713,8 @@ _STATEPAROLEDECISION = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=8571,
-  serialized_end=8835,
+  serialized_start=8769,
+  serialized_end=9033,
 )
 
 
@@ -2758,8 +2786,8 @@ _STATESUPERVISIONVIOLATION = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=8838,
-  serialized_end=9072,
+  serialized_start=9036,
+  serialized_end=9270,
 )
 
 
@@ -2838,8 +2866,8 @@ _STATESUPERVISIONVIOLATIONRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=9075,
-  serialized_end=9324,
+  serialized_start=9273,
+  serialized_end=9522,
 )
 
 
@@ -2918,8 +2946,102 @@ _STATEAGENT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=9327,
-  serialized_end=9503,
+  serialized_start=9525,
+  serialized_end=9701,
+)
+
+
+_STATEPROGRAMASSIGNMENT = _descriptor.Descriptor(
+  name='StateProgramAssignment',
+  full_name='recidiviz.ingest.models.StateProgramAssignment',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='state_program_assignment_id', full_name='recidiviz.ingest.models.StateProgramAssignment.state_program_assignment_id', index=0,
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='participation_status', full_name='recidiviz.ingest.models.StateProgramAssignment.participation_status', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='referral_date', full_name='recidiviz.ingest.models.StateProgramAssignment.referral_date', index=2,
+      number=3, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='start_date', full_name='recidiviz.ingest.models.StateProgramAssignment.start_date', index=3,
+      number=4, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='discharge_date', full_name='recidiviz.ingest.models.StateProgramAssignment.discharge_date', index=4,
+      number=5, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='state_code', full_name='recidiviz.ingest.models.StateProgramAssignment.state_code', index=5,
+      number=6, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='program_id', full_name='recidiviz.ingest.models.StateProgramAssignment.program_id', index=6,
+      number=7, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='program_location_id', full_name='recidiviz.ingest.models.StateProgramAssignment.program_location_id', index=7,
+      number=8, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='discharge_reason', full_name='recidiviz.ingest.models.StateProgramAssignment.discharge_reason', index=8,
+      number=9, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='referring_agent_id', full_name='recidiviz.ingest.models.StateProgramAssignment.referring_agent_id', index=9,
+      number=10, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto2',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=9704,
+  serialized_end=9985,
 )
 
 _INGESTINFO.fields_by_name['people'].message_type = _PERSON
@@ -2951,6 +3073,7 @@ _INGESTINFO.fields_by_name['state_parole_decisions'].message_type = _STATEPAROLE
 _INGESTINFO.fields_by_name['state_supervision_violations'].message_type = _STATESUPERVISIONVIOLATION
 _INGESTINFO.fields_by_name['state_supervision_violation_responses'].message_type = _STATESUPERVISIONVIOLATIONRESPONSE
 _INGESTINFO.fields_by_name['state_agents'].message_type = _STATEAGENT
+_INGESTINFO.fields_by_name['state_program_assignments'].message_type = _STATEPROGRAMASSIGNMENT
 DESCRIPTOR.message_types_by_name['IngestInfo'] = _INGESTINFO
 DESCRIPTOR.message_types_by_name['Person'] = _PERSON
 DESCRIPTOR.message_types_by_name['Booking'] = _BOOKING
@@ -2981,217 +3104,225 @@ DESCRIPTOR.message_types_by_name['StateParoleDecision'] = _STATEPAROLEDECISION
 DESCRIPTOR.message_types_by_name['StateSupervisionViolation'] = _STATESUPERVISIONVIOLATION
 DESCRIPTOR.message_types_by_name['StateSupervisionViolationResponse'] = _STATESUPERVISIONVIOLATIONRESPONSE
 DESCRIPTOR.message_types_by_name['StateAgent'] = _STATEAGENT
+DESCRIPTOR.message_types_by_name['StateProgramAssignment'] = _STATEPROGRAMASSIGNMENT
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-IngestInfo = _reflection.GeneratedProtocolMessageType('IngestInfo', (_message.Message,), dict(
-  DESCRIPTOR = _INGESTINFO,
-  __module__ = 'recidiviz.ingest.models.ingest_info_pb2'
+IngestInfo = _reflection.GeneratedProtocolMessageType('IngestInfo', (_message.Message,), {
+  'DESCRIPTOR' : _INGESTINFO,
+  '__module__' : 'recidiviz.ingest.models.ingest_info_pb2'
   # @@protoc_insertion_point(class_scope:recidiviz.ingest.models.IngestInfo)
-  ))
+  })
 _sym_db.RegisterMessage(IngestInfo)
 
-Person = _reflection.GeneratedProtocolMessageType('Person', (_message.Message,), dict(
-  DESCRIPTOR = _PERSON,
-  __module__ = 'recidiviz.ingest.models.ingest_info_pb2'
+Person = _reflection.GeneratedProtocolMessageType('Person', (_message.Message,), {
+  'DESCRIPTOR' : _PERSON,
+  '__module__' : 'recidiviz.ingest.models.ingest_info_pb2'
   # @@protoc_insertion_point(class_scope:recidiviz.ingest.models.Person)
-  ))
+  })
 _sym_db.RegisterMessage(Person)
 
-Booking = _reflection.GeneratedProtocolMessageType('Booking', (_message.Message,), dict(
-  DESCRIPTOR = _BOOKING,
-  __module__ = 'recidiviz.ingest.models.ingest_info_pb2'
+Booking = _reflection.GeneratedProtocolMessageType('Booking', (_message.Message,), {
+  'DESCRIPTOR' : _BOOKING,
+  '__module__' : 'recidiviz.ingest.models.ingest_info_pb2'
   # @@protoc_insertion_point(class_scope:recidiviz.ingest.models.Booking)
-  ))
+  })
 _sym_db.RegisterMessage(Booking)
 
-Arrest = _reflection.GeneratedProtocolMessageType('Arrest', (_message.Message,), dict(
-  DESCRIPTOR = _ARREST,
-  __module__ = 'recidiviz.ingest.models.ingest_info_pb2'
+Arrest = _reflection.GeneratedProtocolMessageType('Arrest', (_message.Message,), {
+  'DESCRIPTOR' : _ARREST,
+  '__module__' : 'recidiviz.ingest.models.ingest_info_pb2'
   # @@protoc_insertion_point(class_scope:recidiviz.ingest.models.Arrest)
-  ))
+  })
 _sym_db.RegisterMessage(Arrest)
 
-Charge = _reflection.GeneratedProtocolMessageType('Charge', (_message.Message,), dict(
-  DESCRIPTOR = _CHARGE,
-  __module__ = 'recidiviz.ingest.models.ingest_info_pb2'
+Charge = _reflection.GeneratedProtocolMessageType('Charge', (_message.Message,), {
+  'DESCRIPTOR' : _CHARGE,
+  '__module__' : 'recidiviz.ingest.models.ingest_info_pb2'
   # @@protoc_insertion_point(class_scope:recidiviz.ingest.models.Charge)
-  ))
+  })
 _sym_db.RegisterMessage(Charge)
 
-Hold = _reflection.GeneratedProtocolMessageType('Hold', (_message.Message,), dict(
-  DESCRIPTOR = _HOLD,
-  __module__ = 'recidiviz.ingest.models.ingest_info_pb2'
+Hold = _reflection.GeneratedProtocolMessageType('Hold', (_message.Message,), {
+  'DESCRIPTOR' : _HOLD,
+  '__module__' : 'recidiviz.ingest.models.ingest_info_pb2'
   # @@protoc_insertion_point(class_scope:recidiviz.ingest.models.Hold)
-  ))
+  })
 _sym_db.RegisterMessage(Hold)
 
-Bond = _reflection.GeneratedProtocolMessageType('Bond', (_message.Message,), dict(
-  DESCRIPTOR = _BOND,
-  __module__ = 'recidiviz.ingest.models.ingest_info_pb2'
+Bond = _reflection.GeneratedProtocolMessageType('Bond', (_message.Message,), {
+  'DESCRIPTOR' : _BOND,
+  '__module__' : 'recidiviz.ingest.models.ingest_info_pb2'
   # @@protoc_insertion_point(class_scope:recidiviz.ingest.models.Bond)
-  ))
+  })
 _sym_db.RegisterMessage(Bond)
 
-Sentence = _reflection.GeneratedProtocolMessageType('Sentence', (_message.Message,), dict(
-  DESCRIPTOR = _SENTENCE,
-  __module__ = 'recidiviz.ingest.models.ingest_info_pb2'
+Sentence = _reflection.GeneratedProtocolMessageType('Sentence', (_message.Message,), {
+  'DESCRIPTOR' : _SENTENCE,
+  '__module__' : 'recidiviz.ingest.models.ingest_info_pb2'
   # @@protoc_insertion_point(class_scope:recidiviz.ingest.models.Sentence)
-  ))
+  })
 _sym_db.RegisterMessage(Sentence)
 
-SentenceRelationship = _reflection.GeneratedProtocolMessageType('SentenceRelationship', (_message.Message,), dict(
-  DESCRIPTOR = _SENTENCERELATIONSHIP,
-  __module__ = 'recidiviz.ingest.models.ingest_info_pb2'
+SentenceRelationship = _reflection.GeneratedProtocolMessageType('SentenceRelationship', (_message.Message,), {
+  'DESCRIPTOR' : _SENTENCERELATIONSHIP,
+  '__module__' : 'recidiviz.ingest.models.ingest_info_pb2'
   # @@protoc_insertion_point(class_scope:recidiviz.ingest.models.SentenceRelationship)
-  ))
+  })
 _sym_db.RegisterMessage(SentenceRelationship)
 
-StatePerson = _reflection.GeneratedProtocolMessageType('StatePerson', (_message.Message,), dict(
-  DESCRIPTOR = _STATEPERSON,
-  __module__ = 'recidiviz.ingest.models.ingest_info_pb2'
+StatePerson = _reflection.GeneratedProtocolMessageType('StatePerson', (_message.Message,), {
+  'DESCRIPTOR' : _STATEPERSON,
+  '__module__' : 'recidiviz.ingest.models.ingest_info_pb2'
   # @@protoc_insertion_point(class_scope:recidiviz.ingest.models.StatePerson)
-  ))
+  })
 _sym_db.RegisterMessage(StatePerson)
 
-StatePersonRace = _reflection.GeneratedProtocolMessageType('StatePersonRace', (_message.Message,), dict(
-  DESCRIPTOR = _STATEPERSONRACE,
-  __module__ = 'recidiviz.ingest.models.ingest_info_pb2'
+StatePersonRace = _reflection.GeneratedProtocolMessageType('StatePersonRace', (_message.Message,), {
+  'DESCRIPTOR' : _STATEPERSONRACE,
+  '__module__' : 'recidiviz.ingest.models.ingest_info_pb2'
   # @@protoc_insertion_point(class_scope:recidiviz.ingest.models.StatePersonRace)
-  ))
+  })
 _sym_db.RegisterMessage(StatePersonRace)
 
-StatePersonEthnicity = _reflection.GeneratedProtocolMessageType('StatePersonEthnicity', (_message.Message,), dict(
-  DESCRIPTOR = _STATEPERSONETHNICITY,
-  __module__ = 'recidiviz.ingest.models.ingest_info_pb2'
+StatePersonEthnicity = _reflection.GeneratedProtocolMessageType('StatePersonEthnicity', (_message.Message,), {
+  'DESCRIPTOR' : _STATEPERSONETHNICITY,
+  '__module__' : 'recidiviz.ingest.models.ingest_info_pb2'
   # @@protoc_insertion_point(class_scope:recidiviz.ingest.models.StatePersonEthnicity)
-  ))
+  })
 _sym_db.RegisterMessage(StatePersonEthnicity)
 
-StateAlias = _reflection.GeneratedProtocolMessageType('StateAlias', (_message.Message,), dict(
-  DESCRIPTOR = _STATEALIAS,
-  __module__ = 'recidiviz.ingest.models.ingest_info_pb2'
+StateAlias = _reflection.GeneratedProtocolMessageType('StateAlias', (_message.Message,), {
+  'DESCRIPTOR' : _STATEALIAS,
+  '__module__' : 'recidiviz.ingest.models.ingest_info_pb2'
   # @@protoc_insertion_point(class_scope:recidiviz.ingest.models.StateAlias)
-  ))
+  })
 _sym_db.RegisterMessage(StateAlias)
 
-StatePersonExternalId = _reflection.GeneratedProtocolMessageType('StatePersonExternalId', (_message.Message,), dict(
-  DESCRIPTOR = _STATEPERSONEXTERNALID,
-  __module__ = 'recidiviz.ingest.models.ingest_info_pb2'
+StatePersonExternalId = _reflection.GeneratedProtocolMessageType('StatePersonExternalId', (_message.Message,), {
+  'DESCRIPTOR' : _STATEPERSONEXTERNALID,
+  '__module__' : 'recidiviz.ingest.models.ingest_info_pb2'
   # @@protoc_insertion_point(class_scope:recidiviz.ingest.models.StatePersonExternalId)
-  ))
+  })
 _sym_db.RegisterMessage(StatePersonExternalId)
 
-StateAssessment = _reflection.GeneratedProtocolMessageType('StateAssessment', (_message.Message,), dict(
-  DESCRIPTOR = _STATEASSESSMENT,
-  __module__ = 'recidiviz.ingest.models.ingest_info_pb2'
+StateAssessment = _reflection.GeneratedProtocolMessageType('StateAssessment', (_message.Message,), {
+  'DESCRIPTOR' : _STATEASSESSMENT,
+  '__module__' : 'recidiviz.ingest.models.ingest_info_pb2'
   # @@protoc_insertion_point(class_scope:recidiviz.ingest.models.StateAssessment)
-  ))
+  })
 _sym_db.RegisterMessage(StateAssessment)
 
-StateSentenceGroup = _reflection.GeneratedProtocolMessageType('StateSentenceGroup', (_message.Message,), dict(
-  DESCRIPTOR = _STATESENTENCEGROUP,
-  __module__ = 'recidiviz.ingest.models.ingest_info_pb2'
+StateSentenceGroup = _reflection.GeneratedProtocolMessageType('StateSentenceGroup', (_message.Message,), {
+  'DESCRIPTOR' : _STATESENTENCEGROUP,
+  '__module__' : 'recidiviz.ingest.models.ingest_info_pb2'
   # @@protoc_insertion_point(class_scope:recidiviz.ingest.models.StateSentenceGroup)
-  ))
+  })
 _sym_db.RegisterMessage(StateSentenceGroup)
 
-StateSupervisionSentence = _reflection.GeneratedProtocolMessageType('StateSupervisionSentence', (_message.Message,), dict(
-  DESCRIPTOR = _STATESUPERVISIONSENTENCE,
-  __module__ = 'recidiviz.ingest.models.ingest_info_pb2'
+StateSupervisionSentence = _reflection.GeneratedProtocolMessageType('StateSupervisionSentence', (_message.Message,), {
+  'DESCRIPTOR' : _STATESUPERVISIONSENTENCE,
+  '__module__' : 'recidiviz.ingest.models.ingest_info_pb2'
   # @@protoc_insertion_point(class_scope:recidiviz.ingest.models.StateSupervisionSentence)
-  ))
+  })
 _sym_db.RegisterMessage(StateSupervisionSentence)
 
-StateIncarcerationSentence = _reflection.GeneratedProtocolMessageType('StateIncarcerationSentence', (_message.Message,), dict(
-  DESCRIPTOR = _STATEINCARCERATIONSENTENCE,
-  __module__ = 'recidiviz.ingest.models.ingest_info_pb2'
+StateIncarcerationSentence = _reflection.GeneratedProtocolMessageType('StateIncarcerationSentence', (_message.Message,), {
+  'DESCRIPTOR' : _STATEINCARCERATIONSENTENCE,
+  '__module__' : 'recidiviz.ingest.models.ingest_info_pb2'
   # @@protoc_insertion_point(class_scope:recidiviz.ingest.models.StateIncarcerationSentence)
-  ))
+  })
 _sym_db.RegisterMessage(StateIncarcerationSentence)
 
-StateFine = _reflection.GeneratedProtocolMessageType('StateFine', (_message.Message,), dict(
-  DESCRIPTOR = _STATEFINE,
-  __module__ = 'recidiviz.ingest.models.ingest_info_pb2'
+StateFine = _reflection.GeneratedProtocolMessageType('StateFine', (_message.Message,), {
+  'DESCRIPTOR' : _STATEFINE,
+  '__module__' : 'recidiviz.ingest.models.ingest_info_pb2'
   # @@protoc_insertion_point(class_scope:recidiviz.ingest.models.StateFine)
-  ))
+  })
 _sym_db.RegisterMessage(StateFine)
 
-StateCharge = _reflection.GeneratedProtocolMessageType('StateCharge', (_message.Message,), dict(
-  DESCRIPTOR = _STATECHARGE,
-  __module__ = 'recidiviz.ingest.models.ingest_info_pb2'
+StateCharge = _reflection.GeneratedProtocolMessageType('StateCharge', (_message.Message,), {
+  'DESCRIPTOR' : _STATECHARGE,
+  '__module__' : 'recidiviz.ingest.models.ingest_info_pb2'
   # @@protoc_insertion_point(class_scope:recidiviz.ingest.models.StateCharge)
-  ))
+  })
 _sym_db.RegisterMessage(StateCharge)
 
-StateCourtCase = _reflection.GeneratedProtocolMessageType('StateCourtCase', (_message.Message,), dict(
-  DESCRIPTOR = _STATECOURTCASE,
-  __module__ = 'recidiviz.ingest.models.ingest_info_pb2'
+StateCourtCase = _reflection.GeneratedProtocolMessageType('StateCourtCase', (_message.Message,), {
+  'DESCRIPTOR' : _STATECOURTCASE,
+  '__module__' : 'recidiviz.ingest.models.ingest_info_pb2'
   # @@protoc_insertion_point(class_scope:recidiviz.ingest.models.StateCourtCase)
-  ))
+  })
 _sym_db.RegisterMessage(StateCourtCase)
 
-StateBond = _reflection.GeneratedProtocolMessageType('StateBond', (_message.Message,), dict(
-  DESCRIPTOR = _STATEBOND,
-  __module__ = 'recidiviz.ingest.models.ingest_info_pb2'
+StateBond = _reflection.GeneratedProtocolMessageType('StateBond', (_message.Message,), {
+  'DESCRIPTOR' : _STATEBOND,
+  '__module__' : 'recidiviz.ingest.models.ingest_info_pb2'
   # @@protoc_insertion_point(class_scope:recidiviz.ingest.models.StateBond)
-  ))
+  })
 _sym_db.RegisterMessage(StateBond)
 
-StateIncarcerationPeriod = _reflection.GeneratedProtocolMessageType('StateIncarcerationPeriod', (_message.Message,), dict(
-  DESCRIPTOR = _STATEINCARCERATIONPERIOD,
-  __module__ = 'recidiviz.ingest.models.ingest_info_pb2'
+StateIncarcerationPeriod = _reflection.GeneratedProtocolMessageType('StateIncarcerationPeriod', (_message.Message,), {
+  'DESCRIPTOR' : _STATEINCARCERATIONPERIOD,
+  '__module__' : 'recidiviz.ingest.models.ingest_info_pb2'
   # @@protoc_insertion_point(class_scope:recidiviz.ingest.models.StateIncarcerationPeriod)
-  ))
+  })
 _sym_db.RegisterMessage(StateIncarcerationPeriod)
 
-StateSupervisionPeriod = _reflection.GeneratedProtocolMessageType('StateSupervisionPeriod', (_message.Message,), dict(
-  DESCRIPTOR = _STATESUPERVISIONPERIOD,
-  __module__ = 'recidiviz.ingest.models.ingest_info_pb2'
+StateSupervisionPeriod = _reflection.GeneratedProtocolMessageType('StateSupervisionPeriod', (_message.Message,), {
+  'DESCRIPTOR' : _STATESUPERVISIONPERIOD,
+  '__module__' : 'recidiviz.ingest.models.ingest_info_pb2'
   # @@protoc_insertion_point(class_scope:recidiviz.ingest.models.StateSupervisionPeriod)
-  ))
+  })
 _sym_db.RegisterMessage(StateSupervisionPeriod)
 
-StateIncarcerationIncident = _reflection.GeneratedProtocolMessageType('StateIncarcerationIncident', (_message.Message,), dict(
-  DESCRIPTOR = _STATEINCARCERATIONINCIDENT,
-  __module__ = 'recidiviz.ingest.models.ingest_info_pb2'
+StateIncarcerationIncident = _reflection.GeneratedProtocolMessageType('StateIncarcerationIncident', (_message.Message,), {
+  'DESCRIPTOR' : _STATEINCARCERATIONINCIDENT,
+  '__module__' : 'recidiviz.ingest.models.ingest_info_pb2'
   # @@protoc_insertion_point(class_scope:recidiviz.ingest.models.StateIncarcerationIncident)
-  ))
+  })
 _sym_db.RegisterMessage(StateIncarcerationIncident)
 
-StateIncarcerationIncidentOutcome = _reflection.GeneratedProtocolMessageType('StateIncarcerationIncidentOutcome', (_message.Message,), dict(
-  DESCRIPTOR = _STATEINCARCERATIONINCIDENTOUTCOME,
-  __module__ = 'recidiviz.ingest.models.ingest_info_pb2'
+StateIncarcerationIncidentOutcome = _reflection.GeneratedProtocolMessageType('StateIncarcerationIncidentOutcome', (_message.Message,), {
+  'DESCRIPTOR' : _STATEINCARCERATIONINCIDENTOUTCOME,
+  '__module__' : 'recidiviz.ingest.models.ingest_info_pb2'
   # @@protoc_insertion_point(class_scope:recidiviz.ingest.models.StateIncarcerationIncidentOutcome)
-  ))
+  })
 _sym_db.RegisterMessage(StateIncarcerationIncidentOutcome)
 
-StateParoleDecision = _reflection.GeneratedProtocolMessageType('StateParoleDecision', (_message.Message,), dict(
-  DESCRIPTOR = _STATEPAROLEDECISION,
-  __module__ = 'recidiviz.ingest.models.ingest_info_pb2'
+StateParoleDecision = _reflection.GeneratedProtocolMessageType('StateParoleDecision', (_message.Message,), {
+  'DESCRIPTOR' : _STATEPAROLEDECISION,
+  '__module__' : 'recidiviz.ingest.models.ingest_info_pb2'
   # @@protoc_insertion_point(class_scope:recidiviz.ingest.models.StateParoleDecision)
-  ))
+  })
 _sym_db.RegisterMessage(StateParoleDecision)
 
-StateSupervisionViolation = _reflection.GeneratedProtocolMessageType('StateSupervisionViolation', (_message.Message,), dict(
-  DESCRIPTOR = _STATESUPERVISIONVIOLATION,
-  __module__ = 'recidiviz.ingest.models.ingest_info_pb2'
+StateSupervisionViolation = _reflection.GeneratedProtocolMessageType('StateSupervisionViolation', (_message.Message,), {
+  'DESCRIPTOR' : _STATESUPERVISIONVIOLATION,
+  '__module__' : 'recidiviz.ingest.models.ingest_info_pb2'
   # @@protoc_insertion_point(class_scope:recidiviz.ingest.models.StateSupervisionViolation)
-  ))
+  })
 _sym_db.RegisterMessage(StateSupervisionViolation)
 
-StateSupervisionViolationResponse = _reflection.GeneratedProtocolMessageType('StateSupervisionViolationResponse', (_message.Message,), dict(
-  DESCRIPTOR = _STATESUPERVISIONVIOLATIONRESPONSE,
-  __module__ = 'recidiviz.ingest.models.ingest_info_pb2'
+StateSupervisionViolationResponse = _reflection.GeneratedProtocolMessageType('StateSupervisionViolationResponse', (_message.Message,), {
+  'DESCRIPTOR' : _STATESUPERVISIONVIOLATIONRESPONSE,
+  '__module__' : 'recidiviz.ingest.models.ingest_info_pb2'
   # @@protoc_insertion_point(class_scope:recidiviz.ingest.models.StateSupervisionViolationResponse)
-  ))
+  })
 _sym_db.RegisterMessage(StateSupervisionViolationResponse)
 
-StateAgent = _reflection.GeneratedProtocolMessageType('StateAgent', (_message.Message,), dict(
-  DESCRIPTOR = _STATEAGENT,
-  __module__ = 'recidiviz.ingest.models.ingest_info_pb2'
+StateAgent = _reflection.GeneratedProtocolMessageType('StateAgent', (_message.Message,), {
+  'DESCRIPTOR' : _STATEAGENT,
+  '__module__' : 'recidiviz.ingest.models.ingest_info_pb2'
   # @@protoc_insertion_point(class_scope:recidiviz.ingest.models.StateAgent)
-  ))
+  })
 _sym_db.RegisterMessage(StateAgent)
+
+StateProgramAssignment = _reflection.GeneratedProtocolMessageType('StateProgramAssignment', (_message.Message,), {
+  'DESCRIPTOR' : _STATEPROGRAMASSIGNMENT,
+  '__module__' : 'recidiviz.ingest.models.ingest_info_pb2'
+  # @@protoc_insertion_point(class_scope:recidiviz.ingest.models.StateProgramAssignment)
+  })
+_sym_db.RegisterMessage(StateProgramAssignment)
 
 
 # @@protoc_insertion_point(module_scope)

@@ -27,6 +27,7 @@ PLURALS = {'person': 'people', 'booking': 'bookings', 'charge': 'charges',
            'state_person_ethnicity': 'state_person_ethnicities',
            'state_alias': 'state_aliases',
            'state_assessment': 'state_assessments',
+           'state_program_assignment': 'state_program_assignments',
            'state_person_external_id': 'state_person_external_ids',
            'state_sentence_group': 'state_sentence_groups',
            'state_supervision_sentence': 'state_supervision_sentences',
@@ -493,7 +494,7 @@ class StatePerson(IngestObject):
             residency_status=None, state_person_races=None,
             state_person_ethnicities=None, state_aliases=None,
             state_person_external_ids=None, state_assessments=None,
-            state_sentence_groups=None):
+            state_sentence_groups=None, state_program_assignments=None):
         self.state_person_id: Optional[str] = state_person_id
         self.full_name: Optional[str] = full_name
         self.surname: Optional[str] = surname
@@ -516,9 +517,11 @@ class StatePerson(IngestObject):
         self.state_assessments: List[StateAssessment] = state_assessments or []
         self.state_sentence_groups: List[StateSentenceGroup] = \
             state_sentence_groups or []
+        self.state_program_assignments: List[StateProgramAssignment] = \
+            state_program_assignments or []
 
     def __setattr__(self, name, value):
-        restricted_setattr(self, 'state_sentence_groups', name, value)
+        restricted_setattr(self, 'state_program_assignments', name, value)
 
     def create_state_person_race(self, **kwargs) -> 'StatePersonRace':
         race = StatePersonRace(**kwargs)
@@ -550,6 +553,12 @@ class StatePerson(IngestObject):
         sentence_group = StateSentenceGroup(**kwargs)
         self.state_sentence_groups.append(sentence_group)
         return sentence_group
+
+    def create_state_program_assignment(
+            self, **kwargs) -> 'StateProgramAssignment':
+        program_assignment = StateProgramAssignment(**kwargs)
+        self.state_program_assignments.append(program_assignment)
+        return program_assignment
 
     def get_state_person_race_by_id(self, state_person_race_id) \
             -> Optional['StatePersonRace']:
@@ -588,6 +597,7 @@ class StatePerson(IngestObject):
         self.state_aliases.sort()
         self.state_person_external_ids.sort()
         self.state_assessments.sort()
+        self.state_program_assignments.sort()
 
         for sentence_group in self.state_sentence_groups:
             sentence_group.sort()
@@ -1028,7 +1038,8 @@ class StateCharge(IngestObject):
         return self.state_court_case
 
     def create_state_bond(self, **kwargs) -> 'StateBond':
-        self.state_bond = StateBond(**kwargs)
+        bond = StateBond(**kwargs)
+        self.state_bond = bond
         return self.state_bond
 
     def get_state_court_case_by_id(self, court_case_id) \
@@ -1110,7 +1121,8 @@ class StateIncarcerationPeriod(IngestObject):
                  facility=None, housing_unit=None, facility_security_level=None,
                  admission_reason=None, projected_release_reason=None,
                  release_reason=None, state_incarceration_incidents=None,
-                 state_parole_decisions=None, state_assessments=None):
+                 state_parole_decisions=None, state_assessments=None,
+                 state_program_assignments=None):
         self.state_incarceration_period_id: Optional[str] = \
             state_incarceration_period_id
         self.status: Optional[str] = status
@@ -1131,9 +1143,11 @@ class StateIncarcerationPeriod(IngestObject):
         self.state_parole_decisions: List[StateParoleDecision] = \
             state_parole_decisions or []
         self.state_assessments: List[StateAssessment] = state_assessments or []
+        self.state_program_assignments: List[StateProgramAssignment] = \
+            state_program_assignments or []
 
     def __setattr__(self, name, value):
-        restricted_setattr(self, 'state_assessments', name, value)
+        restricted_setattr(self, 'state_program_assignments', name, value)
 
     def create_state_incarceration_incident(self, **kwargs) \
             -> 'StateIncarcerationIncident':
@@ -1151,6 +1165,12 @@ class StateIncarcerationPeriod(IngestObject):
         self.state_assessments.append(assessment)
         return assessment
 
+    def create_state_program_assignment(
+            self, **kwargs) -> 'StateProgramAssignment':
+        program_assignment = StateProgramAssignment(**kwargs)
+        self.state_program_assignments.append(program_assignment)
+        return program_assignment
+
     def get_state_incarceration_incident_by_id(
             self, state_incarceration_incident_id) \
             -> Optional['StateIncarcerationIncident']:
@@ -1166,6 +1186,8 @@ class StateIncarcerationPeriod(IngestObject):
             [pd for pd in self.state_parole_decisions if pd]
 
         self.state_assessments = [a for a in self.state_assessments if a]
+        self.state_program_assignments = [
+            p.prune() for p in self.state_program_assignments if p]
 
         return self
 
@@ -1173,6 +1195,7 @@ class StateIncarcerationPeriod(IngestObject):
         self.state_incarceration_incidents.sort()
         self.state_parole_decisions.sort()
         self.state_assessments.sort()
+        self.state_program_assignments.sort()
 
 
 class StateSupervisionPeriod(IngestObject):
@@ -1186,7 +1209,7 @@ class StateSupervisionPeriod(IngestObject):
                  admission_reason=None, termination_reason=None,
                  supervision_level=None, conditions=None,
                  supervising_officer=None, state_supervision_violations=None,
-                 state_assessments=None):
+                 state_assessments=None, state_program_assignments=None):
         self.state_supervision_period_id: Optional[str] = \
             state_supervision_period_id
         self.status: Optional[str] = status
@@ -1204,9 +1227,11 @@ class StateSupervisionPeriod(IngestObject):
         self.state_supervision_violations: List[StateSupervisionViolation] = \
             state_supervision_violations or []
         self.state_assessments: List[StateAssessment] = state_assessments or []
+        self.state_program_assignments: List[StateProgramAssignment] = \
+            state_program_assignments or []
 
     def __setattr__(self, name, value):
-        restricted_setattr(self, 'state_assessments', name, value)
+        restricted_setattr(self, 'state_program_assignments', name, value)
 
     def create_state_agent(self, **kwargs) -> 'StateAgent':
         self.supervising_officer = StateAgent(**kwargs)
@@ -1223,6 +1248,12 @@ class StateSupervisionPeriod(IngestObject):
         self.state_assessments.append(assessment)
         return assessment
 
+    def create_state_program_assignment(
+            self, **kwargs) -> 'StateProgramAssignment':
+        program_assignment = StateProgramAssignment(**kwargs)
+        self.state_program_assignments.append(program_assignment)
+        return program_assignment
+
     def get_state_supervision_violation_by_id(
             self, state_supervision_violation_id
     ) -> Optional['StateSupervisionViolation']:
@@ -1237,12 +1268,15 @@ class StateSupervisionPeriod(IngestObject):
         self.state_supervision_violations = \
             [sv for sv in self.state_supervision_violations if sv]
         self.state_assessments = [a for a in self.state_assessments if a]
+        self.state_program_assignments = [
+            p.prune() for p in self.state_program_assignments if p]
 
         return self
 
     def sort(self):
         self.state_supervision_violations.sort()
         self.state_assessments.sort()
+        self.state_program_assignments.sort()
 
 
 class StateIncarcerationIncident(IngestObject):
@@ -1460,6 +1494,49 @@ class StateAgent(IngestObject):
 
     def __setattr__(self, name, value):
         restricted_setattr(self, 'name_suffix', name, value)
+
+
+class StateProgramAssignment(IngestObject):
+    """Class for information about a program assignment.
+    Referenced from StatePerson, StateIncarcerationPeriod,
+    and StateSupervisionPeriod.
+    """
+
+    def __init__(self,
+                 state_program_assignment_id=None,
+                 participation_status=None,
+                 referral_date=None,
+                 start_date=None,
+                 discharge_date=None,
+                 state_code=None,
+                 program_id=None,
+                 program_location_id=None,
+                 discharge_reason=None,
+                 referring_agent=None):
+        self.state_program_assignment_id: Optional[str] = \
+            state_program_assignment_id
+        self.participation_status: Optional[str] = participation_status
+        self.referral_date: Optional[str] = referral_date
+        self.start_date: Optional[str] = start_date
+        self.discharge_date: Optional[str] = discharge_date
+        self.state_code: Optional[str] = state_code
+        self.program_id: Optional[str] = program_id
+        self.program_location_id: Optional[str] = program_location_id
+        self.discharge_reason: Optional[str] = discharge_reason
+
+        self.referring_agent: Optional[StateAgent] = referring_agent
+
+    def __setattr__(self, name, value):
+        restricted_setattr(self, 'referring_agent', name, value)
+
+    def create_state_agent(self, **kwargs) -> 'StateAgent':
+        self.referring_agent = StateAgent(**kwargs)
+        return self.referring_agent
+
+    def prune(self) -> 'StateProgramAssignment':
+        if not self.referring_agent:
+            self.referring_agent = None
+        return self
 
 
 def eq(self, other, exclude=None):

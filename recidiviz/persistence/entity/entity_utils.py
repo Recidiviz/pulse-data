@@ -58,6 +58,7 @@ _STATE_CLASS_HIERARCHY = [
     state_entities.StateSupervisionViolation.__name__,
     state_entities.StateSupervisionViolationResponse.__name__,
     state_entities.StateAssessment.__name__,
+    state_entities.StateProgramAssignment.__name__,
     state_entities.StateAgent.__name__,
 ]
 

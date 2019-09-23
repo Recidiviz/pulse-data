@@ -12,6 +12,8 @@ from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus
 from recidiviz.common.constants.state.state_parole_decision import \
     StateParoleDecisionOutcome
+from recidiviz.common.constants.state.state_program_assignment import \
+    StateProgramAssignmentParticipationStatus
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_period import \
     StateSupervisionPeriodStatus
@@ -283,6 +285,16 @@ def generate_test_person(person_id, sentence_groups, incarceration_period,
                 conducting_agent=agent,
             )
         ],
+        program_assignments=[
+            state_schema.StateProgramAssignment(
+                program_assignment_id=567,
+                participation_status=
+                StateProgramAssignmentParticipationStatus.
+                PRESENT_WITHOUT_INFO.value,
+                state_code='us_ca',
+                referring_agent=agent,
+            )
+        ]
     )
     return instance
 
