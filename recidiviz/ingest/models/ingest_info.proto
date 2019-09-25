@@ -461,6 +461,7 @@ message StateProgramAssignment{
     optional string program_id = 7;
     optional string program_location_id = 8;
     optional string discharge_reason = 9;
+    optional string referral_metadata = 11;
 
     optional string referring_agent_id = 10;
 }
