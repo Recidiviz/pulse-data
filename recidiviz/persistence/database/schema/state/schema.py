@@ -1829,6 +1829,7 @@ class _StateProgramAssignmentSharedColumns(_ReferencesStatePersonSharedColumns):
     referral_date = Column(Date)
     start_date = Column(Date)
     discharge_date = Column(Date)
+    referral_metadata = Column(Text)
 
     @declared_attr
     def referring_agent_id(self):

@@ -581,6 +581,13 @@ class StatePerson(IngestObject):
         return next((sa for sa in self.state_assessments
                      if sa.state_assessment_id == state_assessment_id), None)
 
+    def get_state_program_assignment_by_id(self, state_program_assignment_id) \
+            -> Optional['StateProgramAssignment']:
+        return next((pa for pa in self.state_program_assignments
+                     if pa.state_program_assignment_id ==
+                     state_program_assignment_id),
+                    None)
+
     def get_state_sentence_group_by_id(self, sentence_group_id) \
             -> Optional['StateSentenceGroup']:
         return next((sg for sg in self.state_sentence_groups
@@ -1512,6 +1519,7 @@ class StateProgramAssignment(IngestObject):
                  program_id=None,
                  program_location_id=None,
                  discharge_reason=None,
+                 referral_metadata=None,
                  referring_agent=None):
         self.state_program_assignment_id: Optional[str] = \
             state_program_assignment_id
@@ -1523,6 +1531,7 @@ class StateProgramAssignment(IngestObject):
         self.program_id: Optional[str] = program_id
         self.program_location_id: Optional[str] = program_location_id
         self.discharge_reason: Optional[str] = discharge_reason
+        self.referral_metadata: Optional[str] = referral_metadata
 
         self.referring_agent: Optional[StateAgent] = referring_agent
 
