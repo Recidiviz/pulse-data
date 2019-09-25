@@ -45,6 +45,8 @@ from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodReleaseReason
 from recidiviz.common.constants.state.state_person_alias import \
     StatePersonAliasType
+from recidiviz.common.constants.state.state_program_assignment import \
+    StateProgramAssignmentParticipationStatus
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import \
     StateSupervisionType
@@ -69,7 +71,8 @@ from recidiviz.ingest.models.ingest_info import IngestInfo, IngestObject, \
     StateIncarcerationPeriod, StatePersonExternalId, StateAssessment, \
     StateCharge, StateSupervisionViolation, StateSupervisionViolationResponse, \
     StateAgent, StateIncarcerationIncidentOutcome, StateIncarcerationIncident, \
-    StateAlias, StateSupervisionSentence, StateCourtCase, StateSupervisionPeriod
+    StateAlias, StateSupervisionSentence, StateCourtCase, \
+    StateSupervisionPeriod, StateProgramAssignment
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 from recidiviz.utils import environment
 
@@ -139,6 +142,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
                 self._normalize_county_code_docstars_offenses
             ],
             'docstars_lsichronology': [self._process_lsir_assessments],
+            'docstars_ftr_episode': [self._process_ftr_episode],
         }
 
         self.primary_key_override_by_file: Dict[str, Callable] = {
@@ -190,6 +194,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
             'docstars_offenders',
             'docstars_offendercasestable',
             'docstars_offensestable',
+            'docstars_ftr_episode'
             # TODO(1918): Integrate bed assignment / location history
         ]
 
@@ -201,7 +206,6 @@ class UsNdController(CsvGcsfsDirectIngestController):
         if not environment.in_gae_production() and \
                 not environment.in_gae_staging():
             tags.append('docstars_lsichronology')
-
 
         return tags
 
@@ -539,6 +543,33 @@ class UsNdController(CsvGcsfsDirectIngestController):
 
                 lsi_metadata = {**domain_scores, **question_scores}
                 assessment.assessment_metadata = json.dumps(lsi_metadata)
+
+    @staticmethod
+    def _process_ftr_episode(row: Dict[str, str],
+                             extracted_objects: List[IngestObject],
+                             _cache: IngestObjectCache):
+        """Manually add referral_metadata and discharge_date to
+        ProgramAssignment entities, if applicable."""
+
+        referral_field_labels: List[str] = [
+            'PREFERRED_PROVIDER_ID', 'PREFERRED_LOCATION_ID', 'STRENGTHS',
+            'NEEDS', 'IS_CLINICAL_ASSESSMENT', 'FUNCTIONAL_IMPAIRMENTS',
+            'ASSESSMENT_LOCATION', 'REFERRAL_REASON', 'SPECIALIST_FIRST_NAME',
+            'SPECIALIST_LAST_NAME', 'SPECIALIST_INITIAL', 'SUBMITTED_BY',
+            'SUBMITTED_BY_NAME'
+        ]
+        referral_metadata = get_program_referral_fields(
+            row, referral_field_labels)
+        status_date = row.get('STATUS_DATE', None)
+
+        for extracted_object in extracted_objects:
+            if isinstance(extracted_object, StateProgramAssignment):
+                extracted_object.referral_metadata = json.dumps(
+                    referral_metadata)
+                status = extracted_object.participation_status
+                # All other statuses have their dates automatically set
+                if status == 'Discharged':
+                    extracted_object.discharge_date = status_date
 
     @staticmethod
     def _concatenate_docstars_length_periods(
@@ -909,6 +940,8 @@ class UsNdController(CsvGcsfsDirectIngestController):
             StateSupervisionPeriodTerminationReason.EXTERNAL_UNKNOWN: ['14'],
             StateSupervisionPeriodTerminationReason.REVOCATION: ['9', '10'],
             StateSupervisionPeriodTerminationReason.SUSPENSION: ['3', '6'],
+
+            StateProgramAssignmentParticipationStatus.PENDING: ['Submitted']
         }
 
         ignores: Dict[EntityEnumMeta, List[str]] = {
@@ -1182,6 +1215,17 @@ def _get_lsir_question_scores(row: Dict[str, str], questions: List[str]) \
         question_scores[question_label] = question_score
 
     return question_scores
+
+
+def get_program_referral_fields(
+        row: Dict[str, str], referral_field_labels: List[str]) \
+        -> Dict[str, Optional[str]]:
+    referral_fields = {}
+    for str_field in referral_field_labels:
+        label = str_field.lower()
+        value = row.get(str_field, None)
+        referral_fields[label] = value
+    return referral_fields
 
 
 def _normalize_county_code(

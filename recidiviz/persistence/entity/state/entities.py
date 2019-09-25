@@ -964,6 +964,8 @@ class StateProgramAssignment(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     discharge_reason: Optional[StateProgramAssignmentDischargeReason] = \
         attr.ib()
     discharge_reason_raw_text: Optional[str] = attr.ib()
+    referral_metadata: Optional[str] = attr.ib()
+
     #   - Who
     # See |person| in entity relationships below.
 

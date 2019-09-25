@@ -47,6 +47,8 @@ from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodAdmissionReason
 from recidiviz.common.constants.state.state_person_alias import \
     StatePersonAliasType
+from recidiviz.common.constants.state.state_program_assignment import \
+    StateProgramAssignmentParticipationStatus
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import \
     StateSupervisionType
@@ -67,7 +69,7 @@ from recidiviz.ingest.models.ingest_info import IngestInfo, \
     StatePersonExternalId, StateAssessment, StatePersonEthnicity, \
     StateSupervisionPeriod, StateSupervisionViolation, \
     StateSupervisionViolationResponse, StateAgent, StateIncarcerationIncident, \
-    StateIncarcerationIncidentOutcome
+    StateIncarcerationIncidentOutcome, StateProgramAssignment
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema.state import dao
 from recidiviz.persistence.database.schema_entity_converter.state.\
@@ -1464,6 +1466,97 @@ class TestUsNdController(unittest.TestCase):
         ])
 
         self.run_parse_file_test(expected, 'docstars_lsichronology')
+
+    def test_populate_data_ftr_episode(self):
+        metadata_1231 = json.dumps({
+            "preferred_provider_id": '49',
+            "preferred_location_id": '126',
+            "strengths": 'Wants lifestyle change',
+            "needs": 'Substance abuse treatment',
+            "is_clinical_assessment": 'Yes',
+            "functional_impairments": 'ADR,REC',
+            "assessment_location": 'NDSP',
+            "referral_reason": 'Support for drug usage',
+            "specialist_first_name": '',
+            "specialist_last_name": '',
+            "specialist_initial": '',
+            "submitted_by": 'usrname_1',
+            "submitted_by_name": 'User 1',
+        })
+        metadata_2342 = json.dumps({
+            "preferred_provider_id": '51',
+            "preferred_location_id": '128',
+            "strengths": '',
+            "needs": '',
+            "is_clinical_assessment": 'Yes',
+            "functional_impairments": 'ATO',
+            "assessment_location": 'Lake Region Human Service Center',
+            "referral_reason": 'Needs support finding employment and housing',
+            "specialist_first_name": '',
+            "specialist_last_name": '',
+            "specialist_initial": '',
+            "submitted_by": 'username_2',
+            "submitted_by_name": 'User 2',
+        })
+        metadata_3453 = json.dumps({
+            "preferred_provider_id": '49',
+            "preferred_location_id": '126',
+            "strengths": 'Wants to take action',
+            "needs": 'Community support',
+            "is_clinical_assessment": 'Yes',
+            "functional_impairments": 'EDE',
+            "assessment_location": 'DWCRC',
+            "referral_reason": 'ongoing community support',
+            "specialist_first_name": '',
+            "specialist_last_name": '',
+            "specialist_initial": '',
+            "submitted_by": 'username_3',
+            "submitted_by_name": 'User 3',
+        })
+        expected = IngestInfo(state_people=[
+            StatePerson(state_person_id='92237',
+                        state_person_external_ids=[
+                            StatePersonExternalId(
+                                state_person_external_id_id='92237',
+                                id_type=US_ND_SID)
+                        ],
+                        state_program_assignments=[
+                            StateProgramAssignment(
+                                state_program_assignment_id='1231',
+                                program_id='24',
+                                program_location_id='83',
+                                participation_status='Discharged',
+                                referral_date='1/2/2018 12:00:00AM',
+                                start_date='1/3/2018',
+                                discharge_date='1/28/2018 2:12:48PM',
+                                referral_metadata=metadata_1231,
+                            ),
+                            StateProgramAssignment(
+                                state_program_assignment_id='2342',
+                                participation_status='Submitted',
+                                referral_date='7/20/2019 2:09:18PM',
+                                referral_metadata=metadata_2342,
+                            )
+                        ]),
+            StatePerson(state_person_id='241896',
+                        state_person_external_ids=[
+                            StatePersonExternalId(
+                                state_person_external_id_id='241896',
+                                id_type=US_ND_SID)
+                        ],
+                        state_program_assignments=[
+                            StateProgramAssignment(
+                                state_program_assignment_id='3453',
+                                program_id='27',
+                                program_location_id='87',
+                                participation_status='In Progress',
+                                referral_date='8/12/2019 12:00:00AM',
+                                start_date='08/13/2019',
+                                referral_metadata=metadata_3453,
+                            )
+                        ]),
+        ])
+        self.run_parse_file_test(expected, 'docstars_ftr_episode')
 
     def run_parse_file_test(self, expected: IngestInfo, file_tag: str):
         args = ingest_args_for_fixture_file(self.controller, f'{file_tag}.csv')
@@ -3108,6 +3201,105 @@ class TestUsNdController(unittest.TestCase):
 
         # Act
         self._run_ingest_job_for_filename('docstars_offensestable.csv')
+
+        # Assert
+        session = SessionFactory.for_schema_base(StateBase)
+        found_people = dao.read_people(session)
+        found_people = self.convert_and_clear_db_ids(found_people)
+        self.assertCountEqual(found_people, expected_people)
+
+        ######################################
+        # FTR EPISODES
+        ######################################
+        # Arrange
+        metadata_1231 = json.dumps({
+            'PREFERRED_PROVIDER_ID': '49',
+            'PREFERRED_LOCATION_ID': '126',
+            'STRENGTHS': 'WANTS LIFESTYLE CHANGE',
+            'NEEDS': 'SUBSTANCE ABUSE TREATMENT',
+            'IS_CLINICAL_ASSESSMENT': 'YES',
+            'FUNCTIONAL_IMPAIRMENTS': 'ADR,REC',
+            'ASSESSMENT_LOCATION': 'NDSP',
+            'REFERRAL_REASON': 'SUPPORT FOR DRUG USAGE',
+            'SPECIALIST_FIRST_NAME': '',
+            'SPECIALIST_LAST_NAME': '',
+            'SPECIALIST_INITIAL': '',
+            'SUBMITTED_BY': 'USRNAME_1',
+            'SUBMITTED_BY_NAME': 'USER 1',
+        })
+        metadata_2342 = json.dumps({
+            'PREFERRED_PROVIDER_ID': '51',
+            'PREFERRED_LOCATION_ID': '128',
+            'STRENGTHS': '',
+            'NEEDS': '',
+            'IS_CLINICAL_ASSESSMENT': 'YES',
+            'FUNCTIONAL_IMPAIRMENTS': 'ATO',
+            'ASSESSMENT_LOCATION': 'LAKE REGION HUMAN SERVICE CENTER',
+            'REFERRAL_REASON': 'NEEDS SUPPORT FINDING EMPLOYMENT AND HOUSING',
+            'SPECIALIST_FIRST_NAME': '',
+            'SPECIALIST_LAST_NAME': '',
+            'SPECIALIST_INITIAL': '',
+            'SUBMITTED_BY': 'USERNAME_2',
+            'SUBMITTED_BY_NAME': 'USER 2',
+        })
+        metadata_3453 = json.dumps({
+            'PREFERRED_PROVIDER_ID': '49',
+            'PREFERRED_LOCATION_ID': '126',
+            'STRENGTHS': 'WANTS TO TAKE ACTION',
+            'NEEDS': 'COMMUNITY SUPPORT',
+            'IS_CLINICAL_ASSESSMENT': 'YES',
+            'FUNCTIONAL_IMPAIRMENTS': 'EDE',
+            'ASSESSMENT_LOCATION': 'DWCRC',
+            'REFERRAL_REASON': 'ONGOING COMMUNITY SUPPORT',
+            'SPECIALIST_FIRST_NAME': '',
+            'SPECIALIST_LAST_NAME': '',
+            'SPECIALIST_INITIAL': '',
+            'SUBMITTED_BY': 'USERNAME_3',
+            'SUBMITTED_BY_NAME': 'USER 3',
+        })
+        program_assignment_1231 = \
+            entities.StateProgramAssignment.new_with_defaults(
+                person=person_1,
+                state_code='US_ND',
+                external_id='1231',
+                program_id='24',
+                program_location_id='83',
+                participation_status=
+                StateProgramAssignmentParticipationStatus.DISCHARGED,
+                participation_status_raw_text='DISCHARGED',
+                referral_date=datetime.date(year=2018, month=1, day=2),
+                start_date=datetime.date(year=2018, month=1, day=3),
+                discharge_date=datetime.date(year=2018, month=1, day=28),
+                referral_metadata=metadata_1231)
+        program_assignment_2342 = \
+            entities.StateProgramAssignment.new_with_defaults(
+                person=person_1,
+                state_code='US_ND',
+                external_id='2342',
+                participation_status=
+                StateProgramAssignmentParticipationStatus.PENDING,
+                participation_status_raw_text='SUBMITTED',
+                referral_date=datetime.date(year=2019, month=7, day=20),
+                referral_metadata=metadata_2342)
+        person_1.program_assignments = [
+            program_assignment_1231, program_assignment_2342]
+        program_assignment_3453 = \
+            entities.StateProgramAssignment.new_with_defaults(
+                person=person_2,
+                state_code='US_ND',
+                external_id='3453',
+                program_id='27',
+                program_location_id='87',
+                participation_status=
+                StateProgramAssignmentParticipationStatus.IN_PROGRESS,
+                participation_status_raw_text='IN PROGRESS',
+                referral_date=datetime.date(year=2019, month=8, day=12),
+                start_date=datetime.date(year=2019, month=8, day=13),
+                referral_metadata=metadata_3453)
+        person_2.program_assignments = [program_assignment_3453]
+
+        # Act
+        self._run_ingest_job_for_filename('docstars_ftr_episode.csv')
 
         # Assert
         session = SessionFactory.for_schema_base(StateBase)

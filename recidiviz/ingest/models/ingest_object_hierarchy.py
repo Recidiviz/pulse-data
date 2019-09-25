@@ -52,6 +52,7 @@ _HIERARCHY_MAP: Dict[
             'state_person_external_id': ('state_person',),
             'state_assessment': ('state_person',),
             'state_sentence_group': ('state_person',),
+            'state_program_assignment': ('state_person',),
             'state_supervision_sentence': ('state_person',
                                            'state_sentence_group',),
             'state_incarceration_sentence': ('state_person',

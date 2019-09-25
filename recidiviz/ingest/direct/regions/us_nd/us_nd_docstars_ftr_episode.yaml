@@ -1,0 +1,35 @@
+key_mappings:
+  EPISODE_ID: state_program_assignment.state_program_assignment_id
+  ASSIGNED_PROVIDER_ID: state_program_assignment.program_id
+  LOCATION_ID: state_program_assignment.program_location_id
+  STATUS: state_program_assignment.participation_status
+  SUBMITTED: state_program_assignment.referral_date
+  ADMITTED_DATE: state_program_assignment.start_date
+
+ancestor_keys:
+  SID: state_person.state_person_id
+
+primary_key:
+  EPISODE_ID: state_program_assignment.state_program_assignment_id
+
+keys_to_ignore:
+  - STATUS_DATE             # Handled manually in controller.
+  - PENDING_CODE            # Always null.
+  - ALLOW_VIEWING           # Checking with ND. No apparent use for now.
+  - PEER_SUPPORT_OFFERED    # Checking with ND. No apparent use for now.
+  - PEER_SUPPORT_ACCEPTED   # Checking with ND. No apparent use for now.
+  - SN_LAST_UPDATED_DATE    # Checking with ND. No apparent use for now.
+  - COORDINATOR_GUID        # Checking with ND. No apparent use for now.
+  - PREFERRED_PROVIDER_ID   # Everything below processed manually
+  - PREFERRED_LOCATION_ID
+  - STRENGTHS
+  - NEEDS
+  - FUNCTIONAL_IMPAIRMENTS
+  - IS_CLINICAL_ASSESSMENT
+  - ASSESSMENT_LOCATION
+  - REFERRAL_REASON
+  - SPECIALIST_LAST_NAME
+  - SPECIALIST_FIRST_NAME
+  - SPECIALIST_INITIAL
+  - SUBMITTED_BY            # TODO(1883): Add agent information when multiple ancestor paths supported
+  - SUBMITTED_BY_NAME
