@@ -73,3 +73,4 @@ def copy_fields_to_builder(
     new.program_location_id = fn(normalize, 'program_location_id', proto)
     new.state_code = parse_region_code_with_override(
         proto, 'state_code', metadata)
+    new.referral_metadata = fn(normalize, 'referral_metadata', proto)
