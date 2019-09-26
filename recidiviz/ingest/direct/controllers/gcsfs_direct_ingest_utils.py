@@ -81,10 +81,14 @@ class GcsfsIngestArgs(IngestArgs):
 
 
 def gcsfs_direct_ingest_storage_directory_path_for_region(
-        region_code: str, system_level: SystemLevel) -> str:
-    project_id = metadata.project_id()
-    if not project_id:
-        raise ValueError("Project id not set")
+        region_code: str,
+        system_level: SystemLevel,
+        project_id: Optional[str] = None) -> str:
+
+    if project_id is None:
+        project_id = metadata.project_id()
+        if not project_id:
+            raise ValueError("Project id not set")
 
     storage_bucket = \
         f'{project_id}-direct-ingest-{system_level.value.lower()}-storage'
@@ -92,10 +96,14 @@ def gcsfs_direct_ingest_storage_directory_path_for_region(
 
 
 def gcsfs_direct_ingest_directory_path_for_region(
-        region_code: str, system_level: SystemLevel) -> str:
-    project_id = metadata.project_id()
-    if not project_id:
-        raise ValueError("Project id not set")
+        region_code: str,
+        system_level: SystemLevel,
+        project_id: Optional[str] = None) -> str:
+
+    if project_id is None:
+        project_id = metadata.project_id()
+        if not project_id:
+            raise ValueError("Project id not set")
 
     if system_level == SystemLevel.COUNTY:
         bucket = f'{project_id}-direct-ingest-county'

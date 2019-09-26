@@ -67,6 +67,7 @@ aenum = "*"
 yq = "*"
 oauth2client = "==3.0.0"
 google-cloud-storage = "*"
+progress="*"
 
 [requires]
 python_version = "3.7"
