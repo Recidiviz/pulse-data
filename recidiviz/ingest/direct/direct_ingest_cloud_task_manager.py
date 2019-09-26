@@ -135,6 +135,12 @@ class DirectIngestCloudTaskManager:
             delay_sec: `int` the number of seconds to wait before the next task.
         """
 
+    @abc.abstractmethod
+    def create_direct_ingest_handle_new_files_task(self,
+                                                   region: Region,
+                                                   can_start_ingest: bool):
+        pass
+
     @staticmethod
     def json_to_ingest_args(json_data):
         if 'ingest_args' in json_data and 'args_type' in json_data:
@@ -206,7 +212,7 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
             delay_sec: int,
     ):
         task_id = _build_task_id(region.region_code,
-                                 task_id_tag=None,
+                                 task_id_tag='scheduler',
                                  prefix_only=False)
         relative_uri = f'/direct/scheduler?region={region.region_code}&' \
             f'just_finished_job={just_finished_job}'
@@ -217,4 +223,21 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
             relative_uri=relative_uri,
             body={},
             schedule_delay_seconds=delay_sec
+        )
+
+    def create_direct_ingest_handle_new_files_task(self,
+                                                   region: Region,
+                                                   can_start_ingest: bool):
+        task_id = _build_task_id(region.region_code,
+                                 task_id_tag='handle_new_files',
+                                 prefix_only=False)
+        relative_uri = \
+            f'/direct/handle_new_files?region={region.region_code}&' \
+            f'can_start_ingest={can_start_ingest}'
+
+        self.cloud_task_client.create_task(
+            task_id=task_id,
+            queue_name=DIRECT_INGEST_SCHEDULER_QUEUE_V2,
+            relative_uri=relative_uri,
+            body={},
         )

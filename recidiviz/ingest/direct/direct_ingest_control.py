@@ -39,7 +39,8 @@ from recidiviz.utils import environment, regions
 from recidiviz.utils.auth import authenticate_request
 from recidiviz.utils.environment import in_gae_production
 from recidiviz.utils.params import get_str_param_value, get_bool_param_value
-from recidiviz.utils.regions import get_supported_direct_ingest_region_codes
+from recidiviz.utils.regions import get_supported_direct_ingest_region_codes, \
+    Region
 
 direct_ingest_control = Blueprint('direct_ingest_control', __name__)
 
@@ -47,9 +48,10 @@ direct_ingest_control = Blueprint('direct_ingest_control', __name__)
 @direct_ingest_control.route('/handle_direct_ingest_file')
 @authenticate_request
 def handle_direct_ingest_file():
-    """Handles renames of new direct ingest file uploads for the given region
-    and optionally kicks the ingest job scheduler."""
-
+    """Called from a Cloud Function when a new file is added to a direct ingest
+    bucket. Will trigger a job that deals with normalizing and splitting the
+    file as is appropriate, then start the scheduler if allowed.
+    """
     region_name = get_str_param_value('region', request.args)
     # The bucket name for the file to ingest
     bucket = get_str_param_value('bucket', request.args)
@@ -70,6 +72,62 @@ def handle_direct_ingest_file():
 
     controller.handle_file(path, start_ingest=start_ingest)
 
+    return '', HTTPStatus.OK
+
+
+@direct_ingest_control.route('/handle_new_files', methods=['GET', 'POST'])
+@authenticate_request
+def handle_new_files():
+    """Normalizes and splits files in the ingest bucket for a given region as
+    is appropriate. Will schedule the next process_job task if no renaming /
+    splitting work has been done that will trigger subsequent calls to this
+    endpoint.
+    """
+    logging.info('Received request for direct ingest handle_new_files: %s',
+                 request.values)
+    region_value = get_str_param_value('region', request.values)
+    can_start_ingest = \
+        get_bool_param_value('can_start_ingest', request.values, default=False)
+    try:
+        controller = controller_for_region_code(region_value)
+    except DirectIngestError as e:
+        if e.error_type == DirectIngestErrorType.INPUT_ERROR:
+            return str(e), 400
+        raise e
+
+    if not isinstance(controller, GcsfsDirectIngestController):
+        raise DirectIngestError(
+            msg=f"Unexpected controller type [{type(controller)}].",
+            error_type=DirectIngestErrorType.INPUT_ERROR)
+
+    controller.handle_new_files(can_start_ingest=can_start_ingest)
+    return '', HTTPStatus.OK
+
+
+@direct_ingest_control.route('/ensure_all_file_paths_normalized',
+                             methods=['GET', 'POST'])
+@authenticate_request
+def ensure_all_file_paths_normalized():
+    logging.info(
+        'Received request for direct ingest ensure_all_file_paths_normalized: '
+        '%s', request.values)
+
+    supported_regions = get_supported_direct_ingest_region_codes()
+    for region_code in supported_regions:
+        try:
+            controller = controller_for_region_code(region_code,
+                                                    allow_unlaunched=True)
+        except DirectIngestError as e:
+            raise e
+        if not isinstance(controller, GcsfsDirectIngestController):
+            raise DirectIngestError(
+                msg=f"Unexpected controller type [{type(controller)}].",
+                error_type=DirectIngestErrorType.INPUT_ERROR)
+
+        can_start_ingest = not is_region_unlaunched(controller.region)
+        controller.cloud_task_manager.\
+            create_direct_ingest_handle_new_files_task(
+                controller.region, can_start_ingest=can_start_ingest)
     return '', HTTPStatus.OK
 
 
@@ -122,7 +180,7 @@ def controller_for_region_code(
     """Returns an instance of the region's controller, if one exists."""
     if region_code not in get_supported_direct_ingest_region_codes():
         raise DirectIngestError(
-            msg=f"Unsupported direct ingest region {region_code}",
+            msg=f"Unsupported direct ingest region [{region_code}]",
             error_type=DirectIngestErrorType.INPUT_ERROR,
         )
 
@@ -130,19 +188,15 @@ def controller_for_region_code(
         region = regions.get_region(region_code, is_direct_ingest=True)
     except FileNotFoundError:
         raise DirectIngestError(
-            msg=f"Unsupported direct ingest region {region_code}",
+            msg=f"Unsupported direct ingest region [{region_code}]",
             error_type=DirectIngestErrorType.INPUT_ERROR,
         )
 
-    gae_env = environment.get_gae_environment()
-
-    # If we are in prod, the region config must be explicitly set to specify
-    #  this region can be run in prod. All regions can be triggered to run in
-    #  staging.
-    if not allow_unlaunched and in_gae_production() \
-            and region.environment != gae_env:
+    if not allow_unlaunched and is_region_unlaunched(region):
+        gae_env = environment.get_gae_environment()
         raise DirectIngestError(
-            msg=f"Bad environment {gae_env} for direct region {region_code}.",
+            msg=f"Bad environment [{gae_env}] for direct region "
+            f"[{region_code}].",
             error_type=DirectIngestErrorType.INPUT_ERROR,
         )
 
@@ -150,12 +204,20 @@ def controller_for_region_code(
 
     if not isinstance(controller, BaseDirectIngestController):
         raise DirectIngestError(
-            msg=f"Unsupported direct ingest region {region_code}",
+            msg=f"Unsupported direct ingest region [{region_code}]",
             error_type=DirectIngestErrorType.INPUT_ERROR,
         )
 
     return controller
 
+
+def is_region_unlaunched(region: Region):
+    # If we are in prod, the region config must be explicitly set to specify
+    #  this region can be run in prod. All regions can be triggered to run in
+    #  staging.
+
+    gae_env = environment.get_gae_environment()
+    return in_gae_production() and region.environment != gae_env
 
 def _get_ingest_args(
         json_data_str: str,

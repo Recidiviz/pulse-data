@@ -54,3 +54,9 @@ class FakeDirectIngestCloudTaskManager(DirectIngestCloudTaskManager):
                                                   just_finished_job: bool,
                                                   delay_sec: int):
         pass
+
+    @abc.abstractmethod
+    def create_direct_ingest_handle_new_files_task(self,
+                                                   region: Region,
+                                                   can_start_ingest: bool):
+        pass
