@@ -222,6 +222,7 @@ state_supervision_violation_response_deciding_body_type_supervision_officer = \
     'SUPERVISION_OFFICER'
 
 # state_program_assignment.py
+state_program_assignment_participation_status_denied = 'DENIED'
 state_program_assignment_participation_status_discharged = 'DISCHARGED'
 state_program_assignment_participation_status_in_progress = 'IN_PROGRESS'
 state_program_assignment_participation_status_pending = 'PENDING'

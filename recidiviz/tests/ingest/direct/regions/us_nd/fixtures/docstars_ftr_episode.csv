@@ -2,3 +2,4 @@ EPISODE_ID,SID,PREFERRED_PROVIDER_ID,PREFERRED_LOCATION_ID,COORDINATOR_GUID,ASSI
 1231,92237,49,126,Guid-1,24,,83,"ADR,REC",Yes,NDSP,Support for drug usage,Discharged,1/28/2018 2:12:48PM,Wants lifestyle change,Substance abuse treatment,1/28/2018 2:12:48PM,1/2/2018 12:00:00AM,usrname_1,User 1,1/3/2018,Yes,,,,,
 2342,92237,51,128,Guid-2,,,,ATO,Yes,Lake Region Human Service Center,Needs support finding employment and housing,Submitted,7/20/2019 2:09:18PM,,,,7/20/2019 2:09:18PM,username_2,User 2,,Yes,,,,,
 3453,241896,49,126,,27,,87,EDE,Yes,DWCRC,ongoing community support,In Progress,8/20/2019 1:18:40PM,Wants to take action,Community support,8/19/2019 6:34:14PM,8/12/2019 12:00:00AM,username_3,User 3,08/13/2019,Yes,Yes,No,,,
+4564,241896,20,,,20,,22,,No,,Mental health concerns,Denied,7/20/2019 1:18:40PM,,,7/19/2019 6:34:14PM,7/12/2019 12:00:00AM,username_4,User 4,,,,,,,
