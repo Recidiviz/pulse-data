@@ -1513,6 +1513,21 @@ class TestUsNdController(unittest.TestCase):
             "submitted_by": 'username_3',
             "submitted_by_name": 'User 3',
         })
+        metadata_4564 = json.dumps({
+            'preferred_provider_id': '20',
+            'preferred_location_id': '',
+            'strengths': '',
+            'needs': '',
+            'is_clinical_assessment': 'No',
+            'functional_impairments': '',
+            'assessment_location': '',
+            'referral_reason': 'Mental health concerns',
+            'specialist_first_name': '',
+            'specialist_last_name': '',
+            'specialist_initial': '',
+            'submitted_by': 'username_4',
+            'submitted_by_name': 'User 4',
+        })
         expected = IngestInfo(state_people=[
             StatePerson(state_person_id='92237',
                         state_person_external_ids=[
@@ -1553,8 +1568,16 @@ class TestUsNdController(unittest.TestCase):
                                 referral_date='8/12/2019 12:00:00AM',
                                 start_date='08/13/2019',
                                 referral_metadata=metadata_3453,
-                            )
-                        ]),
+                            ),
+                            StateProgramAssignment(
+                                state_program_assignment_id='4564',
+                                program_id='20',
+                                program_location_id='22',
+                                participation_status='Denied',
+                                referral_date='7/12/2019 12:00:00AM',
+                                referral_metadata=metadata_4564
+                            )],
+                        ),
         ])
         self.run_parse_file_test(expected, 'docstars_ftr_episode')
 
@@ -3257,6 +3280,21 @@ class TestUsNdController(unittest.TestCase):
             'SUBMITTED_BY': 'USERNAME_3',
             'SUBMITTED_BY_NAME': 'USER 3',
         })
+        metadata_4564 = json.dumps({
+            'PREFERRED_PROVIDER_ID': '20',
+            'PREFERRED_LOCATION_ID': '',
+            'STRENGTHS': '',
+            'NEEDS': '',
+            'IS_CLINICAL_ASSESSMENT': 'NO',
+            'FUNCTIONAL_IMPAIRMENTS': '',
+            'ASSESSMENT_LOCATION': '',
+            'REFERRAL_REASON': 'MENTAL HEALTH CONCERNS',
+            'SPECIALIST_FIRST_NAME': '',
+            'SPECIALIST_LAST_NAME': '',
+            'SPECIALIST_INITIAL': '',
+            'SUBMITTED_BY': 'USERNAME_4',
+            'SUBMITTED_BY_NAME': 'USER 4',
+        })
         program_assignment_1231 = \
             entities.StateProgramAssignment.new_with_defaults(
                 person=person_1,
@@ -3296,7 +3334,20 @@ class TestUsNdController(unittest.TestCase):
                 referral_date=datetime.date(year=2019, month=8, day=12),
                 start_date=datetime.date(year=2019, month=8, day=13),
                 referral_metadata=metadata_3453)
-        person_2.program_assignments = [program_assignment_3453]
+        program_assignment_4564 = \
+            entities.StateProgramAssignment.new_with_defaults(
+                person=person_2,
+                state_code='US_ND',
+                external_id='4564',
+                program_id='20',
+                program_location_id='22',
+                participation_status=
+                StateProgramAssignmentParticipationStatus.DENIED,
+                participation_status_raw_text='DENIED',
+                referral_date=datetime.date(year=2019, month=7, day=12),
+                referral_metadata=metadata_4564)
+        person_2.program_assignments = [
+            program_assignment_3453, program_assignment_4564]
 
         # Act
         self._run_ingest_job_for_filename('docstars_ftr_episode.csv')
