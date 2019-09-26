@@ -25,6 +25,8 @@ from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 class StateProgramAssignmentParticipationStatus(
         EntityEnum, metaclass=EntityEnumMeta):
+    DENIED = state_enum_strings.\
+        state_program_assignment_participation_status_denied
     DISCHARGED = state_enum_strings.\
         state_program_assignment_participation_status_discharged
     EXTERNAL_UNKNOWN = enum_canonical_strings.external_unknown
@@ -40,6 +42,7 @@ class StateProgramAssignmentParticipationStatus(
 
 
 _STATE_PROGRAM_ASSIGNMENT_PARTICIPATION_STATUS_MAP = {
+    'DENIED': StateProgramAssignmentParticipationStatus.DENIED,
     'DISCHARGED': StateProgramAssignmentParticipationStatus.DISCHARGED,
     'IN PROGRESS': StateProgramAssignmentParticipationStatus.IN_PROGRESS,
     'PENDING': StateProgramAssignmentParticipationStatus.PENDING,

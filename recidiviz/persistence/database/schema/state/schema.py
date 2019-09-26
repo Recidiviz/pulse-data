@@ -330,6 +330,7 @@ state_parole_decision_outcome = Enum(
 state_program_assignment_participation_status = Enum(
     enum_strings.external_unknown,
     enum_strings.present_without_info,
+    state_enum_strings.state_program_assignment_participation_status_denied,
     state_enum_strings.state_program_assignment_participation_status_discharged,
     state_enum_strings.
     state_program_assignment_participation_status_in_progress,
