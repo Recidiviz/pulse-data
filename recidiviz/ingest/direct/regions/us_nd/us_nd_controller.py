@@ -194,9 +194,13 @@ class UsNdController(CsvGcsfsDirectIngestController):
             'docstars_offenders',
             'docstars_offendercasestable',
             'docstars_offensestable',
-            'docstars_ftr_episode'
             # TODO(1918): Integrate bed assignment / location history
         ]
+
+        # TODO(2437): After a full run has been validated in staging, remove
+        # this check.
+        if not environment.in_gae_production():
+            tags.append('docstars_ftr_episode')
 
         # TODO(2404): Enable once we're ready to do historical ingest of
         #  docstars_lsichronology and we have better support for files that we
@@ -941,7 +945,8 @@ class UsNdController(CsvGcsfsDirectIngestController):
             StateSupervisionPeriodTerminationReason.REVOCATION: ['9', '10'],
             StateSupervisionPeriodTerminationReason.SUSPENSION: ['3', '6'],
 
-            StateProgramAssignmentParticipationStatus.PENDING: ['Submitted']
+            StateProgramAssignmentParticipationStatus.PENDING: [
+                'Submitted', 'Pending Coordinator']
         }
 
         ignores: Dict[EntityEnumMeta, List[str]] = {
