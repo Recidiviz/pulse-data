@@ -141,7 +141,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
                 self._parse_docstars_charge_classification,
                 self._normalize_county_code_docstars_offenses
             ],
-            'docstars_lsichronology': [self._process_lsir_assessments],
+            'docstars_lsi_chronology': [self._process_lsir_assessments],
             'docstars_ftr_episode': [self._process_ftr_episode],
         }
 
@@ -198,14 +198,10 @@ class UsNdController(CsvGcsfsDirectIngestController):
             # TODO(1918): Integrate bed assignment / location history
         ]
 
-        # TODO(2404): Enable once we're ready to do historical ingest of
-        #  docstars_lsichronology and we have better support for files that we
-        #  do not get on a nightly basis. Right now, if we don't get one of our
-        #  files in a nightly ingest, we will never move all of the files from
-        #  that night to storage.
-        if not environment.in_gae_production() and \
-                not environment.in_gae_staging():
-            tags.append('docstars_lsichronology')
+        # TODO(2404): Enable in prod once we've tested full ingest of
+        #  docstars_lsi_chronology in staging.
+        if not environment.in_gae_production():
+            tags.append('docstars_lsi_chronology')
 
         return tags
 
