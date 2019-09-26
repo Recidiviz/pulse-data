@@ -54,16 +54,16 @@ class FakeDirectIngestGCSFileSystem(DirectIngestGCSFileSystem):
     def test_set_controller(self, controller: GcsfsDirectIngestController):
         self.controller = controller
 
-    def test_add_path(self, path: GcsfsFilePath):
+    def test_add_path(self, path: GcsfsFilePath, fail_handle_file_call=False):
         if not isinstance(path, GcsfsFilePath):
             raise ValueError(f'Path has unexpected type {type(path)}')
-        self._add_path(path)
+        self._add_path(path, fail_handle_file_call)
 
-    def _add_path(self, path: GcsfsFilePath):
+    def _add_path(self, path: GcsfsFilePath, fail_handle_file_call=False):
         with self.mutex:
             self.all_paths.add(path)
 
-        if self.controller and \
+        if not fail_handle_file_call and self.controller and \
                 path.abs_path().startswith(
                         self.controller.ingest_directory_path.abs_path()):
             self.controller.handle_file(path, start_ingest=True)
@@ -230,6 +230,19 @@ def add_paths_with_tags_and_process(test_case: unittest.TestCase,
         time.sleep(.05)
 
     run_task_queues_to_empty(controller)
+    check_all_paths_processed(test_case, controller, file_tags, unexpected_tags)
+
+
+def check_all_paths_processed(
+        test_case: unittest.TestCase,
+        controller: GcsfsDirectIngestController,
+        file_tags: List[str],
+        unexpected_tags: List[str]):
+
+    if not isinstance(controller.fs, FakeDirectIngestGCSFileSystem):
+        raise ValueError(f"Controller fs must have type "
+                         f"FakeDirectIngestGCSFileSystem. Found instead "
+                         f"type [{type(controller.fs)}]")
 
     file_tags_processed = set()
     for path in controller.fs.all_paths:
