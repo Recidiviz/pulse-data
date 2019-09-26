@@ -26,6 +26,7 @@ import pkgutil
 from datetime import datetime, tzinfo
 from enum import Enum
 from itertools import chain
+from types import ModuleType
 from typing import Any, Dict, Optional, Set, Union
 from typing import List
 
@@ -35,6 +36,8 @@ import yaml
 
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.utils import environment
+from recidiviz.ingest.scrape import regions as scraper_regions_module
+from recidiviz.ingest.direct import regions as direct_ingest_regions_module
 
 
 class RemovedFromWebsite(Enum):
@@ -138,10 +141,6 @@ def get_region(region_code: str, is_direct_ingest: bool = False) -> Region:
     return REGIONS[region_code]
 
 
-SCRAPER_BASE_REGION_PATH = os.path.join(
-    'recidiviz', 'ingest', 'scrape', 'regions')
-DIRECT_INGEST_BASE_REGION_PATH = os.path.join(
-    'recidiviz', 'ingest', 'direct', 'regions')
 MANIFEST_NAME = 'manifest.yaml'
 
 
@@ -157,12 +156,12 @@ def get_region_manifest(region_code: str,
     Returns:
         Region manifest as dictionary
     """
-    region_path = DIRECT_INGEST_BASE_REGION_PATH if is_direct_ingest else \
-        SCRAPER_BASE_REGION_PATH
-    # TODO(2427): Update this function to look for a dir relative to this
-    #  file position so this can be used in tests.
-    with open(os.path.join(region_path, region_code, MANIFEST_NAME)) \
-            as region_manifest:
+    region_module = \
+        direct_ingest_regions_module \
+        if is_direct_ingest else scraper_regions_module
+    with open(os.path.join(os.path.dirname(region_module.__file__),
+                           region_code,
+                           MANIFEST_NAME)) as region_manifest:
         return yaml.load(region_manifest)
 
 
@@ -175,23 +174,24 @@ def get_supported_scrape_region_codes(timezone: tzinfo = None) -> Set[str]:
     Returns:
         Set of region codes (strings)
     """
-    return _get_supported_region_codes_for_base_region_path(
-        SCRAPER_BASE_REGION_PATH,
+    return _get_supported_region_codes_for_base_region_module(
+        scraper_regions_module,
         is_direct_ingest=False,
         timezone=timezone)
 
 
 def get_supported_direct_ingest_region_codes() -> Set[str]:
-    return _get_supported_region_codes_for_base_region_path(
-        DIRECT_INGEST_BASE_REGION_PATH,
+    return _get_supported_region_codes_for_base_region_module(
+        direct_ingest_regions_module,
         is_direct_ingest=True)
 
 
-def _get_supported_region_codes_for_base_region_path(
-        base_region_path: str,
+def _get_supported_region_codes_for_base_region_module(
+        base_region_module: ModuleType,
         is_direct_ingest: bool,
         timezone: tzinfo = None):
 
+    base_region_path = os.path.dirname(base_region_module.__file__)
     all_region_codes = {region_module.name for region_module
                         in pkgutil.iter_modules([base_region_path])}
     if timezone:

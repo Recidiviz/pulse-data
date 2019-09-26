@@ -39,8 +39,8 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
 from recidiviz.tests.ingest.direct.direct_ingest_util import \
     build_gcsfs_controller_for_tests, add_paths_with_tags_and_process, \
     FakeDirectIngestGCSFileSystem, path_for_fixture_file, \
-    run_task_queues_to_empty
-from recidiviz.tests.ingest.direct.\
+    run_task_queues_to_empty, check_all_paths_processed
+from recidiviz.tests.ingest.direct. \
     fake_synchronous_direct_ingest_cloud_task_manager import \
     FakeSynchronousDirectIngestCloudTaskManager
 from recidiviz.tests.utils.fake_region import TEST_STATE_REGION, \
@@ -149,15 +149,21 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
         controller.fs.test_add_path(file_path)
 
-        task_manager.test_run_next_scheduler_task()
-        task_manager.test_pop_finished_scheduler_task()
+        while task_manager.scheduler_tasks:
+            task_manager.test_run_next_scheduler_task()
+            task_manager.test_pop_finished_scheduler_task()
 
         controller.fs.test_add_path(file_path2)
+
+        # Task for handling unnormalized file_path2
+        task_manager.test_run_next_scheduler_task()
+        task_manager.test_pop_finished_scheduler_task()
 
         task_manager.test_run_next_process_job_task()
         task_manager.test_pop_finished_process_job_task()
 
-        # This is the task that got queued by kick_schedule()
+        # This is the task that got queued by after we normalized the path,
+        # which will schedule the next process_job.
         task_manager.test_run_next_scheduler_task()
         task_manager.test_pop_finished_scheduler_task()
 
@@ -197,13 +203,12 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         controller.fs.test_add_path(file_path)
         controller.fs.test_add_path(file_path2)
 
-        # At this point we have two scheduler tasks - one from each new file.
-        # They both run in quick succession.
-        task_manager.test_run_next_scheduler_task()
-        task_manager.test_pop_finished_scheduler_task()
-
-        task_manager.test_run_next_scheduler_task()
-        task_manager.test_pop_finished_scheduler_task()
+        # At this point we have a series of tasks handling / renaming /
+        # splitting the new files, then scheduling the next job. They run in
+        # quick succession.
+        while task_manager.scheduler_tasks:
+            task_manager.test_run_next_scheduler_task()
+            task_manager.test_pop_finished_scheduler_task()
 
         # Process job tasks starts as a result of the first schedule.
         task_manager.test_run_next_process_job_task()
@@ -281,6 +286,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
                                         controller,
                                         file_tags,
                                         pre_normalize_filename=True)
+
     def _path_in_storage_dir(
             self,
             path: GcsfsFilePath,
@@ -305,7 +311,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             run_async=True)
 
         # Set line limit to 1
-        controller.line_limit = 1
+        controller.file_split_line_limit = 1
 
         # pylint:disable=protected-access
         file_tags = list(sorted(controller._get_file_tag_rank_list()))
@@ -326,7 +332,8 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
         found_suffixes = {filename_parts_from_path(p).filename_suffix
                           for p in processed_split_file_paths['tagC']}
-        self.assertEqual(found_suffixes, {'001_file_split', '002_file_split'})
+        self.assertEqual(found_suffixes, {'001_file_split_size1',
+                                          '002_file_split_size1'})
 
     def test_move_files_from_previous_days_to_storage(self):
         controller = build_gcsfs_controller_for_tests(
@@ -449,6 +456,104 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         self.assertTrue(processed_path_str.startswith(
             controller.ingest_directory_path.abs_path()))
         self.assertTrue('tagA' in processed_path_str)
+
+    def test_cloud_function_fails_on_new_file(self):
+        controller = build_gcsfs_controller_for_tests(
+            StateTestGcsfsDirectIngestController,
+            self.FIXTURE_PATH_PREFIX,
+            run_async=False)
+        self.assertIsInstance(
+            controller.cloud_task_manager,
+            FakeSynchronousDirectIngestCloudTaskManager,
+            "Expected FakeSynchronousDirectIngestCloudTaskManager")
+        task_manager = controller.cloud_task_manager
+
+        file_path = \
+            path_for_fixture_file(controller, f'tagA.csv',
+                                  should_normalize=False)
+        file_path2 = \
+            path_for_fixture_file(controller, f'tagB.csv',
+                                  should_normalize=False)
+        file_path3 = \
+            path_for_fixture_file(controller, f'tagC.csv',
+                                  should_normalize=False)
+
+        if not isinstance(controller.fs, FakeDirectIngestGCSFileSystem):
+            raise ValueError(f"Controller fs must have type "
+                             f"FakeDirectIngestGCSFileSystem. Found instead "
+                             f"type [{type(controller.fs)}]")
+
+        # Upload two new files without triggering the controller
+        controller.fs.test_add_path(file_path, fail_handle_file_call=True)
+        controller.fs.test_add_path(file_path2, fail_handle_file_call=True)
+
+        self.assertEqual(
+            0,
+            task_manager.get_scheduler_queue_info(controller.region).size())
+        self.assertEqual(
+            0,
+            task_manager.get_process_job_queue_info(controller.region).size())
+
+        # Later file that succeeds will trigger proper upload of all files
+        controller.fs.test_add_path(file_path3)
+
+        run_task_queues_to_empty(controller)
+        check_all_paths_processed(self,
+                                  controller,
+                                  ['tagA', 'tagB', 'tagC'],
+                                  unexpected_tags=[])
+
+    def test_cloud_function_fails_on_new_file_rename_later_with_cron(self):
+        controller = build_gcsfs_controller_for_tests(
+            StateTestGcsfsDirectIngestController,
+            self.FIXTURE_PATH_PREFIX,
+            run_async=False)
+        self.assertIsInstance(
+            controller.cloud_task_manager,
+            FakeSynchronousDirectIngestCloudTaskManager,
+            "Expected FakeSynchronousDirectIngestCloudTaskManager")
+        task_manager = controller.cloud_task_manager
+
+        file_path = \
+            path_for_fixture_file(controller, f'tagA.csv',
+                                  should_normalize=False)
+        file_path2 = \
+            path_for_fixture_file(controller, f'tagB.csv',
+                                  should_normalize=False)
+        file_path3 = \
+            path_for_fixture_file(controller, f'tagC.csv',
+                                  should_normalize=False)
+
+        if not isinstance(controller.fs, FakeDirectIngestGCSFileSystem):
+            raise ValueError(f"Controller fs must have type "
+                             f"FakeDirectIngestGCSFileSystem. Found instead "
+                             f"type [{type(controller.fs)}]")
+
+        # Upload new files without triggering the controller
+        controller.fs.test_add_path(file_path, fail_handle_file_call=True)
+        controller.fs.test_add_path(file_path2, fail_handle_file_call=True)
+        controller.fs.test_add_path(file_path3, fail_handle_file_call=True)
+
+        self.assertEqual(
+            0,
+            task_manager.get_scheduler_queue_info(controller.region).size())
+        self.assertEqual(
+            0,
+            task_manager.get_process_job_queue_info(controller.region).size())
+
+        for path in controller.fs.all_paths:
+            self.assertFalse(controller.fs.is_normalized_file_path(path))
+
+        # Cron job to handle unseen files triggers later
+        controller.cloud_task_manager. \
+            create_direct_ingest_handle_new_files_task(
+                controller.region, can_start_ingest=False)
+
+        run_task_queues_to_empty(controller)
+
+        for path in controller.fs.all_paths:
+            self.assertTrue(controller.fs.is_normalized_file_path(path))
+
 
     def test_serialize_gcsfs_ingest_args(self):
         now = datetime.datetime.now()

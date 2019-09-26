@@ -185,3 +185,12 @@ cron:
       min_backoff_seconds: 2.5
       max_doublings: 5
       job_age_limit: 9h
+
+  - description: [Direct ingest] Check for unnormalized files in all regions
+    url: /direct/ensure_all_file_paths_normalized
+    schedule: every day 4:00
+    timezone: America/Los_Angeles
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h

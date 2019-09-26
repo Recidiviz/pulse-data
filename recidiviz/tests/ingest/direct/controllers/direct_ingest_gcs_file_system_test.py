@@ -110,7 +110,7 @@ class TestDirectIngestGcsFileSystem(TestCase):
         self.fully_process_file(test_fs,
                                 datetime.datetime.now(),
                                 GcsfsFilePath(bucket_name='my_bucket',
-                                              blob_name='test_file2.csv'))
+                                              blob_name='test_file_2.csv'))
 
     def test_move_to_storage_with_conflict(self):
         test_fs = FakeDirectIngestGCSFileSystem()

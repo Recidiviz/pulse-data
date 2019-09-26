@@ -32,9 +32,13 @@ from recidiviz.utils import metadata
 
 _FILEPATH_REGEX = \
     re.compile(
-        r'.*(\d{4}-\d{2}-\d{2}T\d{2}[:_]\d{2}[:_]\d{2}[:_]\d{6})_'
-        r'([A-Za-z]+[A-Za-z_]*)(_(.+))?\.(.*)')
+        r'(unprocessed|processed)_'  # processed_state
+        r'(\d{4}-\d{2}-\d{2}T\d{2}[:_]\d{2}[:_]\d{2}[:_]\d{6})_'  # timestamp
+        r'([A-Za-z]+[A-Za-z_]*)'  # file_tag
+        r'(_(\d+(.*)))?'  # Optional filename_suffix
+        r'\.([A-Za-z]+)')  # Extension
 
+_FILENAME_SUFFIX_REGEX = re.compile(r'.*(_file_split(_size(\d+))?)')
 
 @attr.s(frozen=True)
 class GcsfsFilenameParts:
@@ -53,6 +57,7 @@ class GcsfsFilenameParts:
     extension="csv"
     """
 
+    processed_state: str = attr.ib()
     utc_upload_datetime: datetime.datetime = attr.ib()
     date_str: str = attr.ib()
     # Must only contain letters or the '_' char
@@ -60,6 +65,8 @@ class GcsfsFilenameParts:
     # Must start a number and be separated from the file_tag by a '_' char.
     filename_suffix: Optional[str] = attr.ib()
     extension: str = attr.ib()
+    is_file_split: bool = attr.ib()
+    file_split_size: Optional[int] = attr.ib()
 
 
 @attr.s(frozen=True)
@@ -112,14 +119,29 @@ def filename_parts_from_path(file_path: GcsfsFilePath) -> GcsfsFilenameParts:
             f"from path [{file_path.abs_path()}]",
             error_type=DirectIngestErrorType.INPUT_ERROR)
 
-    full_upload_timestamp_str = match.group(1)
+    full_upload_timestamp_str = match.group(2)
     utc_upload_datetime = \
         datetime.datetime.fromisoformat(full_upload_timestamp_str)
 
+    filename_suffix = match.group(5)
+    is_file_split = False
+    file_split_size = None
+    if filename_suffix:
+        filename_suffix_file_split_match = \
+            re.match(_FILENAME_SUFFIX_REGEX, filename_suffix)
+        if filename_suffix_file_split_match is not None:
+            is_file_split = True
+            file_split_size_str = filename_suffix_file_split_match.group(3)
+            file_split_size = \
+                int(file_split_size_str) if file_split_size_str else None
+
     return GcsfsFilenameParts(
+        processed_state=match.group(1),
         utc_upload_datetime=utc_upload_datetime,
         date_str=utc_upload_datetime.date().isoformat(),
-        file_tag=match.group(2),
-        filename_suffix=match.group(4),
-        extension=match.group(5),
+        file_tag=match.group(3),
+        filename_suffix=filename_suffix,
+        extension=match.group(7),
+        is_file_split=is_file_split,
+        file_split_size=file_split_size,
     )

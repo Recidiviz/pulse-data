@@ -24,6 +24,8 @@ from recidiviz import IngestInfo
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import \
     BaseDirectIngestController
+from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import \
+    to_normalized_unprocessed_file_path, SPLIT_FILE_SUFFIX
 from recidiviz.ingest.direct.controllers.gcsfs_path import \
     GcsfsFilePath, GcsfsDirectoryPath
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_job_prioritizer \
@@ -43,6 +45,9 @@ class GcsfsDirectIngestController(BaseDirectIngestController[GcsfsIngestArgs,
 
     _MAX_STORAGE_FILE_RENAME_TRIES = 10
     _MAX_PROCESS_JOB_WAIT_TIME_SEC = 300
+    # TODO(2428): Once we have migrated to new Cloud Tasks infrastructure,
+    #  we should be able to handle much larger files - change this threshold.
+    _FILE_SPLIT_LINE_LIMIT = 300
 
     def __init__(self,
                  region_name: str,
@@ -73,36 +78,81 @@ class GcsfsDirectIngestController(BaseDirectIngestController[GcsfsIngestArgs,
                 self.ingest_directory_path,
                 self._get_file_tag_rank_list())
 
+        self.file_split_line_limit = self._FILE_SPLIT_LINE_LIMIT
+
     # ================= #
     # NEW FILE HANDLING #
     # ================= #
     def handle_file(self, path: GcsfsFilePath, start_ingest: bool):
+        """Called when a single new file is added to an ingest bucket (may also
+        be called as a result of a rename).
+
+        May be called from any worker/queue.
+        """
         if self.fs.is_processed_file(path):
             logging.info("File [%s] is already processed, returning.",
                          path.abs_path())
             return
 
-        if not self.fs.have_seen_file_path(path):
+        if self.fs.is_normalized_file_path(path):
+            parts = filename_parts_from_path(path)
+            if parts.is_file_split and \
+                    parts.file_split_size and \
+                    parts.file_split_size <= self.file_split_line_limit:
+                self.kick_scheduler(just_finished_job=False)
+                logging.info("File [%s] is already normalized and split split "
+                             "with correct size, kicking scheduler.",
+                             path.abs_path())
+                return
+
+        logging.info("Creating cloud task to schedule next job.")
+        self.cloud_task_manager.create_direct_ingest_handle_new_files_task(
+            region=self.region,
+            can_start_ingest=start_ingest)
+
+    def handle_new_files(self, can_start_ingest: bool):
+        """Searches the ingest directory for new/unprocessed files. Normalizes
+        file names and splits files as necessary, schedules the next ingest job
+        if allowed.
+
+
+        Should only be called from the scheduler queue.
+        """
+        unnormalized_paths = self.fs.get_unnormalized_file_paths(
+            self.ingest_directory_path)
+
+        for path in unnormalized_paths:
             logging.info("File [%s] is not yet seen, normalizing.",
                          path.abs_path())
             self.fs.mv_path_to_normalized_path(path)
+
+        if unnormalized_paths:
+            logging.info(
+                "Normalized at least one path - returning, will handle "
+                "normalized files separately.")
+            # Normalizing file paths will cause the cloud function that calls
+            # this function to be re-triggered.
             return
 
-        logging.info(
-            "Not normalizing file path for already seen file [%s]",
-            path.abs_path())
+        unprocessed_paths = self.fs.get_unprocessed_file_paths(
+            self.ingest_directory_path)
 
-        did_split = self._split_file_if_necessary(path)
+        did_split = False
+        for path in unprocessed_paths:
+            if self._split_file_if_necessary(path):
+                did_split = True
 
         if did_split:
             logging.info(
-                "Split path [%s] - returning, will handle split files "
-                "separately.",
-                path.abs_path())
+                "Split at least one path - returning, will handle split "
+                "files separately.")
+            # Writing new split files to storage will cause the cloud function
+            # that calls this function to be re-triggered.
             return
 
-        if start_ingest:
-            self.kick_scheduler(just_finished_job=False)
+        if can_start_ingest and unprocessed_paths:
+            self.schedule_next_ingest_job_or_wait_if_necessary(
+                just_finished_job=False)
 
     # ============== #
     # JOB SCHEDULING #
@@ -198,9 +248,69 @@ class GcsfsDirectIngestController(BaseDirectIngestController[GcsfsIngestArgs,
                contents: Iterable[str]) -> IngestInfo:
         pass
 
-    @abc.abstractmethod
     def _split_file_if_necessary(self, path: GcsfsFilePath):
-        pass
+        """Checks if the given file needs to be split according to this
+        controller's |file_split_line_limit|.
+        """
+        parts = filename_parts_from_path(path)
+
+        if parts.file_tag not in self._get_file_tag_rank_list():
+            logging.info("File tag [%s] for path [%s] not in rank list - "
+                         "not splitting.",
+                         parts.file_tag,
+                         path.abs_path())
+            return False
+
+        if parts.is_file_split and \
+                parts.file_split_size and \
+                parts.file_split_size <= self.file_split_line_limit:
+
+            logging.info("File [%s] already split with size [%s].",
+                         path.abs_path(), parts.file_split_size)
+            return False
+
+        file_contents = self._read_file_contents(path)
+
+        if not file_contents:
+            logging.info("File [%s] has no rows - not splitting.",
+                         path.abs_path())
+            return False
+
+        if self._can_proceed_with_ingest_for_contents(file_contents):
+            logging.info("No need to split file path [%s].", path.abs_path())
+            return False
+
+        logging.info("Proceeding to file splitting for path [%s].",
+                     path.abs_path())
+
+        self._split_file(path, file_contents)
+        return True
+
+    def _create_split_file_path(self,
+                                original_file_path: GcsfsFilePath,
+                                output_dir: GcsfsDirectoryPath,
+                                split_num: int) -> GcsfsFilePath:
+        parts = filename_parts_from_path(original_file_path)
+
+        rank_str = str(split_num + 1).zfill(3)
+        existing_suffix = \
+            f'_{parts.filename_suffix}' if parts.filename_suffix else ''
+        updated_file_name = \
+            f'{parts.file_tag}{existing_suffix}_{rank_str}' \
+            f'_{SPLIT_FILE_SUFFIX}_size{self.file_split_line_limit}' \
+            f'.{parts.extension}'
+        return GcsfsFilePath.from_directory_and_file_name(
+            output_dir,
+            to_normalized_unprocessed_file_path(updated_file_name,
+                                                dt=parts.utc_upload_datetime))
+
+    @abc.abstractmethod
+    def _split_file(self,
+                    path: GcsfsFilePath,
+                    file_contents: Iterable[str]) -> None:
+        """Should be implemented by subclasses to split files that are too large
+        and write the new split files to Google Cloud Storage.
+        """
 
     def _do_cleanup(self, args: GcsfsIngestArgs):
         self.fs.mv_path_to_processed_path(args.file_path)

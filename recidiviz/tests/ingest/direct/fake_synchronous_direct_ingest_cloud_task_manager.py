@@ -20,6 +20,8 @@ synchronously, when prompted."""
 from typing import List, Tuple
 
 from recidiviz.ingest.direct.controllers.direct_ingest_types import IngestArgs
+from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
+    GcsfsDirectIngestController
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import \
     CloudTaskQueueInfo, _build_task_id
 from recidiviz.tests.ingest.direct.fake_direct_ingest_cloud_task_manager \
@@ -76,7 +78,17 @@ class FakeSynchronousDirectIngestCloudTaskManager(
 
         task_id = _build_task_id(self.controller.region.region_code, None)
         self.scheduler_tasks.append(
-            (f'projects/path/to/{task_id}', just_finished_job))
+            (f'projects/path/to/{task_id}-schedule', just_finished_job))
+
+    def create_direct_ingest_handle_new_files_task(self,
+                                                   region: Region,
+                                                   can_start_ingest: bool):
+        if not self.controller:
+            raise ValueError(
+                "Controller is null - did you call set_controller()?")
+        task_id = _build_task_id(self.controller.region.region_code, None)
+        self.scheduler_tasks.append(
+            (f'projects/path/to/{task_id}-handle_new_files', can_start_ingest))
 
     def test_run_next_process_job_task(self) -> None:
         """Synchronously executes the next queued process job task, but *does
@@ -112,9 +124,19 @@ class FakeSynchronousDirectIngestCloudTaskManager(
                 "Controller is null - did you call set_controller()?")
 
         task = self.scheduler_tasks[0]
+        task_id = task[0]
 
-        self.controller.schedule_next_ingest_job_or_wait_if_necessary(
-            just_finished_job=task[1])
+        if task_id.endswith('schedule'):
+
+            self.controller.schedule_next_ingest_job_or_wait_if_necessary(
+                just_finished_job=task[1])
+        elif task_id.endswith('handle_new_files'):
+            if not isinstance(self.controller, GcsfsDirectIngestController):
+                raise ValueError(
+                    f'Unexpected controller type {type(self.controller)}')
+            self.controller.handle_new_files(can_start_ingest=task[1])
+        else:
+            raise ValueError(f'Unexpected task id [{task_id}]')
         self.num_finished_scheduler_tasks += 1
 
     def test_pop_finished_process_job_task(self) -> None:
