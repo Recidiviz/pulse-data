@@ -1388,7 +1388,7 @@ class TestUsNdController(unittest.TestCase):
 
         self.run_parse_file_test(expected, 'docstars_offensestable')
 
-    def test_populate_data_docstars_lsichronology(self):
+    def test_populate_data_docstars_lsi_chronology(self):
         metadata_12345 = json.dumps({
             "domain_criminal_history": 7, "domain_education_employment": 7,
             "domain_financial": 1, "domain_family_marital": 2,
@@ -1465,7 +1465,7 @@ class TestUsNdController(unittest.TestCase):
                         ])
         ])
 
-        self.run_parse_file_test(expected, 'docstars_lsichronology')
+        self.run_parse_file_test(expected, 'docstars_lsi_chronology')
 
     def test_populate_data_ftr_episode(self):
         metadata_1231 = json.dumps({
@@ -3443,7 +3443,7 @@ class TestUsNdController(unittest.TestCase):
         person_2.assessments.append(assessment_55555)
 
         # Act
-        self._run_ingest_job_for_filename('docstars_lsichronology.csv')
+        self._run_ingest_job_for_filename('docstars_lsi_chronology.csv')
 
         # Assert
         session = SessionFactory.for_schema_base(StateBase)
