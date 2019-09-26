@@ -22,6 +22,8 @@ from threading import Thread
 
 from recidiviz.ingest.direct.controllers.direct_ingest_types import \
     IngestArgsType
+from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
+    GcsfsDirectIngestController
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import \
     CloudTaskQueueInfo
 from recidiviz.tests.ingest.direct.fake_direct_ingest_cloud_task_manager \
@@ -99,6 +101,21 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
         self.scheduler_queue.add_task(
             self.controller.schedule_next_ingest_job_or_wait_if_necessary,
             just_finished_job)
+
+    def create_direct_ingest_handle_new_files_task(self,
+                                                   region: Region,
+                                                   can_start_ingest: bool):
+        if not self.controller:
+            raise ValueError(
+                "Controller is null - did you call set_controller()?")
+
+        if not isinstance(self.controller, GcsfsDirectIngestController):
+            raise ValueError(
+                f'Unexpected controller type {type(self.controller)}')
+
+        self.scheduler_queue.add_task(
+            self.controller.handle_new_files,
+            can_start_ingest)
 
     def get_process_job_queue_info(self, region: Region) -> CloudTaskQueueInfo:
         with self.process_job_queue.mutex:

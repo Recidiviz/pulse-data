@@ -122,12 +122,21 @@ class DirectIngestGCSFileSystem:
 
     @staticmethod
     def is_split_file(path: GcsfsFilePath):
-        return path.file_name.split('.')[0].endswith(SPLIT_FILE_SUFFIX)
+        return filename_parts_from_path(path).is_file_split
 
     @staticmethod
-    def have_seen_file_path(path: GcsfsFilePath) -> bool:
+    def is_normalized_file_path(path: GcsfsFilePath) -> bool:
         return DirectIngestGCSFileSystem.is_seen_unprocessed_file(path) or \
             DirectIngestGCSFileSystem.is_processed_file(path)
+
+    def get_unnormalized_file_paths(
+            self, directory_path: GcsfsDirectoryPath) -> List[GcsfsFilePath]:
+        """Returns all paths in the given directory without normalized paths.
+        """
+        paths = self._ls_with_file_prefix(directory_path, '')
+
+        return [path
+                for path in paths if not self.is_normalized_file_path(path)]
 
     def get_unprocessed_file_paths(
             self, directory_path: GcsfsDirectoryPath) -> List[GcsfsFilePath]:
