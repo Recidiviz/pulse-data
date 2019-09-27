@@ -336,6 +336,47 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         self.assertEqual(found_suffixes, {'001_file_split_size1',
                                           '002_file_split_size1'})
 
+    def test_failing_to_process_a_file_that_needs_splitting_no_loop(self):
+        controller = build_gcsfs_controller_for_tests(
+            StateTestGcsfsDirectIngestController,
+            self.FIXTURE_PATH_PREFIX,
+            run_async=False)
+        self.assertIsInstance(
+            controller.cloud_task_manager,
+            FakeSynchronousDirectIngestCloudTaskManager,
+            "Expected FakeSynchronousDirectIngestCloudTaskManager")
+        task_manager = controller.cloud_task_manager
+
+        # Set line limit to 1
+        controller.file_split_line_limit = 1
+
+        # This file exceeds the split limit, but since we add it with
+        # fail_handle_file_call=True, it won't get picked up and split.
+        file_path = path_for_fixture_file(
+            controller,
+            f'tagC.csv',
+            should_normalize=True,
+            dt=datetime.datetime.fromisoformat('2019-09-19'))
+        controller.fs.test_add_path(file_path, fail_handle_file_call=True)
+
+        controller.kick_scheduler(just_finished_job=False)
+
+        task_manager.test_run_next_scheduler_task()
+        task_manager.test_pop_finished_scheduler_task()
+
+        task_manager.test_run_next_process_job_task()
+        task_manager.test_pop_finished_process_job_task()
+
+        # The process job task, which will try to process a file that is too
+        # big, will not schedule another job for the same file (which would
+        # just get us in a loop).
+        self.assertEqual(
+            0,
+            task_manager.get_scheduler_queue_info(controller.region).size())
+        self.assertEqual(
+            0,
+            task_manager.get_process_job_queue_info(controller.region).size())
+
     def test_move_files_from_previous_days_to_storage(self):
         controller = build_gcsfs_controller_for_tests(
             StateTestGcsfsDirectIngestController,

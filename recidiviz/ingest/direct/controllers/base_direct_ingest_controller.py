@@ -147,15 +147,20 @@ class BaseDirectIngestController(Ingestor,
     # =================== #
     def run_ingest_job_and_kick_scheduler_on_completion(self,
                                                         args: IngestArgsType):
-        self._run_ingest_job(args)
-        self.kick_scheduler(just_finished_job=True)
-        logging.info("Done running task. Returning.")
+        should_schedule = self._run_ingest_job(args)
+        if should_schedule:
+            self.kick_scheduler(just_finished_job=True)
+            logging.info("Done running task. Returning.")
 
-    def _run_ingest_job(self, args: IngestArgsType):
+    def _run_ingest_job(self, args: IngestArgsType) -> bool:
         """
         Runs the full ingest process for this controller - reading and parsing
         raw input data, transforming it to our schema, then writing to the
         database.
+
+        Returns:
+            True if we should try to schedule the next job on completion. False,
+             otherwise.
         """
         start_time = datetime.datetime.now()
         logging.info("Starting ingest for ingest run [%s]", self._job_tag(args))
@@ -166,13 +171,21 @@ class BaseDirectIngestController(Ingestor,
             logging.warning(
                 "Failed to read contents for ingest run [%s] - returning.",
                 self._job_tag(args))
-            return
+            # If the file no-longer exists, we do want to kick the scheduler
+            # again to pick up the next file to run. We expect this to happen
+            # occasionally as a race when the scheduler picks up a file before
+            # it has been properly moved.
+            return True
 
         if not self._can_proceed_with_ingest_for_contents(contents):
             logging.warning(
                 "Cannot proceed with contents for ingest run [%s] - returning.",
                 self._job_tag(args))
-            return
+            # If we get here, we've failed to properly split a file picked up
+            # by the scheduler. We don't want to scheduler a new job after
+            # returning here, otherwise we'll get ourselves in a loop where we
+            # continually try to schedule this file.
+            return False
 
         logging.info("Successfully read contents for ingest run [%s]",
                      self._job_tag(args))
@@ -189,6 +202,8 @@ class BaseDirectIngestController(Ingestor,
         duration_sec = (datetime.datetime.now() - start_time).total_seconds()
         logging.info("Finished ingest in [%s] sec for ingest run [%s].",
                      str(duration_sec), self._job_tag(args))
+
+        return True
 
     def _parse_and_persist_contents(self,
                                     args: IngestArgsType,
