@@ -20,6 +20,7 @@ Google Cloud Storage.
 """
 import abc
 import os
+from typing import Union
 from urllib.parse import unquote
 
 import attr
@@ -40,6 +41,43 @@ class GcsfsPath:
     def abs_path(self) -> str:
         """Builds full path as a string."""
 
+    @classmethod
+    def from_blob(
+            cls,
+            blob: storage.Blob
+    ) -> Union['GcsfsFilePath', 'GcsfsDirectoryPath']:
+        # storage.Blob and storage.Bucket names are url-escaped, we want to
+        # convert back to unescaped strings.
+        return GcsfsPath.from_bucket_and_blob_name(
+            bucket_name=unquote(blob.bucket.name),
+            blob_name=unquote(blob.name))
+
+    @classmethod
+    def from_bucket_and_blob_name(
+            cls,
+            bucket_name: str,
+            blob_name: str
+    ) -> Union['GcsfsFilePath', 'GcsfsDirectoryPath']:
+        if blob_name.endswith('/'):
+            return GcsfsDirectoryPath(
+                bucket_name=bucket_name,
+                relative_path=blob_name
+            )
+
+        return GcsfsFilePath(
+            bucket_name=bucket_name,
+            blob_name=blob_name)
+
+
+def strip_forward_slash(string: str):
+    if string.startswith('/'):
+        return string[1:]
+    return string
+
+
+def normalize_relative_path(relative_path: str) -> str:
+    return f'{relative_path}/' if relative_path else ''
+
 
 @attr.s(frozen=True)
 class GcsfsDirectoryPath(GcsfsPath):
@@ -48,7 +86,7 @@ class GcsfsDirectoryPath(GcsfsPath):
     relative "directory" path, which is really just a filter on all file objects
     (blobs) in the bucket with names with that prefix.
     """
-    relative_path: str = attr.ib(default='')
+    relative_path: str = attr.ib(default='', converter=strip_forward_slash)
 
     def abs_path(self) -> str:
         return os.path.join(self.bucket_name, self.relative_path)
@@ -72,7 +110,7 @@ class GcsfsDirectoryPath(GcsfsPath):
 
         return GcsfsDirectoryPath(
             bucket_name=unquote(split[0]),
-            relative_path=unquote(split[1])
+            relative_path=normalize_relative_path(unquote(split[1])),
         )
 
     @classmethod
@@ -84,6 +122,7 @@ class GcsfsDirectoryPath(GcsfsPath):
 @attr.s(frozen=True)
 class GcsfsBucketPath(GcsfsDirectoryPath):
     """Represents a path to a bucket in Google Cloud Storage."""
+
     def abs_path(self) -> str:
         return self.bucket_name
 
@@ -100,24 +139,18 @@ class GcsfsFilePath(GcsfsPath):
     """
 
     # Relative path to a blob (file) in Cloud Storage.
-    blob_name: str = attr.ib()
+    blob_name: str = attr.ib(converter=strip_forward_slash)
 
     @property
     def relative_dir(self) -> str:
-        return os.path.split(self.blob_name)[0]
+        return normalize_relative_path(os.path.dirname(self.blob_name))
 
     @property
     def file_name(self) -> str:
-        return os.path.split(self.blob_name)[1]
+        return os.path.basename(self.blob_name)
 
     def abs_path(self) -> str:
         return os.path.join(self.bucket_name, self.blob_name)
-
-    @classmethod
-    def from_blob(cls, blob: storage.Blob) -> 'GcsfsFilePath':
-        return GcsfsFilePath(
-            bucket_name=unquote(blob.bucket.name),
-            blob_name=unquote(blob.name))
 
     @classmethod
     def with_new_file_name(cls,

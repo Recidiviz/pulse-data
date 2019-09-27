@@ -33,7 +33,8 @@ from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import \
     SPLIT_FILE_STORAGE_SUBDIR
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
     GcsfsDirectIngestController
-from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath
+from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath, \
+    GcsfsDirectoryPath
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     GcsfsIngestArgs, filename_parts_from_path
 from recidiviz.tests.ingest.direct.direct_ingest_util import \
@@ -554,6 +555,78 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         for path in controller.fs.all_paths:
             self.assertTrue(controller.fs.is_normalized_file_path(path))
 
+    def test_processing_continues_if_there_are_subfolders_in_ingest_dir(self):
+        controller = build_gcsfs_controller_for_tests(
+            StateTestGcsfsDirectIngestController,
+            self.FIXTURE_PATH_PREFIX,
+            run_async=False)
+
+        if not isinstance(controller.fs, FakeDirectIngestGCSFileSystem):
+            raise ValueError(f"Controller fs must have type "
+                             f"FakeDirectIngestGCSFileSystem. Found instead "
+                             f"type [{type(controller.fs)}]")
+
+        subdir_path = \
+            path_for_fixture_file(controller, f'subdir/',
+                                  should_normalize=False)
+        paths = [
+            subdir_path,
+            path_for_fixture_file(controller, f'subdir/Unexpected_Tag.csv',
+                                  should_normalize=False),
+            path_for_fixture_file(controller, f'tagA.csv',
+                                  should_normalize=False),
+            path_for_fixture_file(controller, f'tagB.csv',
+                                  should_normalize=False),
+            path_for_fixture_file(controller, f'tagC.csv',
+                                  should_normalize=False),
+            path_for_fixture_file(controller, f'subdir/tagC_2.csv',
+                                  should_normalize=False),
+        ]
+
+        for path in paths:
+            controller.fs.test_add_path(path)
+
+        run_task_queues_to_empty(controller)
+
+        dir_paths_found = []
+        storage_file_paths = []
+        ingest_file_paths = []
+
+        for path in controller.fs.all_paths:
+            if isinstance(path, GcsfsDirectoryPath):
+                dir_paths_found.append(path)
+                continue
+
+            if path.abs_path().startswith(
+                    controller.storage_directory_path.abs_path()):
+                storage_file_paths.append(path)
+            else:
+                self.assertTrue(path.abs_path().startswith(
+                    controller.ingest_directory_path.abs_path()))
+                ingest_file_paths.append(path)
+
+        self.assertEqual(1, len(dir_paths_found))
+        self.assertEqual(subdir_path, dir_paths_found[0])
+
+        self.assertEqual(3, len(storage_file_paths))
+        storage_tags = {filename_parts_from_path(path).file_tag
+                        for path in storage_file_paths}
+        self.assertEqual({'tagA', 'tagB', 'tagC'}, storage_tags)
+
+        for path in storage_file_paths:
+            self.assertTrue(controller.fs.is_normalized_file_path(path))
+            self.assertTrue(controller.fs.is_processed_file(path))
+
+        self.assertEqual(2, len(ingest_file_paths))
+        ingest_tags = {filename_parts_from_path(path).file_tag
+                       for path in ingest_file_paths}
+        self.assertEqual({'tagC', 'Unexpected_Tag'}, ingest_tags)
+
+        for path in ingest_file_paths:
+            self.assertTrue(controller.fs.is_normalized_file_path(path))
+            self.assertTrue(controller.fs.is_seen_unprocessed_file(path))
+            self.assertEqual(subdir_path,
+                             GcsfsDirectoryPath.from_file_path(path))
 
     def test_serialize_gcsfs_ingest_args(self):
         now = datetime.datetime.now()
