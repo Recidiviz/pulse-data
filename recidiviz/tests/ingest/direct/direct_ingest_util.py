@@ -47,26 +47,32 @@ class FakeDirectIngestGCSFileSystem(DirectIngestGCSFileSystem):
     """Test-only implementation of the DirectIngestGCSFileSystem."""
     def __init__(self):
         self.mutex = threading.Lock()
-        self.all_paths: Set[GcsfsFilePath] = set()
+        self.all_paths: Set[Union[GcsfsFilePath, GcsfsDirectoryPath]] = set()
         self.uploaded_contents: Dict[str, str] = {}
         self.controller: Optional[GcsfsDirectIngestController] = None
 
-    def test_set_controller(self, controller: GcsfsDirectIngestController):
+    def test_set_controller(self,
+                            controller: GcsfsDirectIngestController) -> None:
         self.controller = controller
 
-    def test_add_path(self, path: GcsfsFilePath, fail_handle_file_call=False):
-        if not isinstance(path, GcsfsFilePath):
+    def test_add_path(self,
+                      path: Union[GcsfsFilePath, GcsfsDirectoryPath],
+                      fail_handle_file_call=False) -> None:
+        if not isinstance(path, (GcsfsFilePath, GcsfsDirectoryPath)):
             raise ValueError(f'Path has unexpected type {type(path)}')
         self._add_path(path, fail_handle_file_call)
 
-    def _add_path(self, path: GcsfsFilePath, fail_handle_file_call=False):
+    def _add_path(self,
+                  path: Union[GcsfsFilePath, GcsfsDirectoryPath],
+                  fail_handle_file_call=False) -> None:
         with self.mutex:
             self.all_paths.add(path)
 
         if not fail_handle_file_call and self.controller and \
                 path.abs_path().startswith(
                         self.controller.ingest_directory_path.abs_path()):
-            self.controller.handle_file(path, start_ingest=True)
+            if isinstance(path, GcsfsFilePath):
+                self.controller.handle_file(path, start_ingest=True)
 
     def exists(self, path: Union[GcsfsBucketPath, GcsfsFilePath]) -> bool:
         with self.mutex:
@@ -132,6 +138,7 @@ class FakeDirectIngestGCSFileSystem(DirectIngestGCSFileSystem):
         with self.mutex:
             return [path for path in self.all_paths
                     if path.bucket_name == bucket_name
+                    and isinstance(path, GcsfsFilePath)
                     and path.blob_name
                     and path.blob_name.startswith(blob_prefix)]
 
@@ -186,23 +193,29 @@ def ingest_args_for_fixture_file(
         filename: str,
         should_normalize: bool = True) -> GcsfsIngestArgs:
     file_path = path_for_fixture_file(controller, filename, should_normalize)
+    if not isinstance(file_path, GcsfsFilePath):
+        raise ValueError(f'Unexpected type [{file_path}]')
     return GcsfsIngestArgs(
         ingest_time=datetime.datetime.now(),
         file_path=file_path,
     )
 
 
-def path_for_fixture_file(controller: GcsfsDirectIngestController,
-                          filename: str,
-                          should_normalize: bool,
-                          dt: Optional[datetime.datetime] = None):
-    file_path_str = os.path.join(
-        controller.ingest_directory_path.abs_path(), filename)
+def path_for_fixture_file(
+        controller: GcsfsDirectIngestController,
+        filename: str,
+        should_normalize: bool,
+        dt: Optional[datetime.datetime] = None
+) -> Union[GcsfsFilePath, GcsfsDirectoryPath]:
+    file_path_str = filename
 
     if should_normalize:
         file_path_str = to_normalized_unprocessed_file_path(file_path_str, dt)
-    return GcsfsFilePath.from_absolute_path(file_path_str)
 
+    return GcsfsPath.from_bucket_and_blob_name(
+        bucket_name=controller.ingest_directory_path.bucket_name,
+        blob_name=os.path.join(controller.ingest_directory_path.relative_path,
+                               file_path_str))
 
 def add_paths_with_tags_and_process(test_case: unittest.TestCase,
                                     controller: GcsfsDirectIngestController,
@@ -238,6 +251,9 @@ def check_all_paths_processed(
         controller: GcsfsDirectIngestController,
         file_tags: List[str],
         unexpected_tags: List[str]):
+    """Checks that all non-directory paths with expected tags have been
+    processed and moved to storage.
+    """
 
     if not isinstance(controller.fs, FakeDirectIngestGCSFileSystem):
         raise ValueError(f"Controller fs must have type "
@@ -246,6 +262,9 @@ def check_all_paths_processed(
 
     file_tags_processed = set()
     for path in controller.fs.all_paths:
+        if isinstance(path, GcsfsDirectoryPath):
+            continue
+
         file_tag = filename_parts_from_path(path).file_tag
 
         if file_tag not in unexpected_tags:
