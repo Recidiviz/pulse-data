@@ -368,6 +368,7 @@ class DirectIngestGCSFileSystemImpl(DirectIngestGCSFileSystem):
 
     def _ls_with_blob_prefix(
             self, bucket_name: str, blob_prefix: str) -> List[GcsfsFilePath]:
-        return [GcsfsFilePath.from_blob(blob)
-                for blob in self.storage_client.list_blobs(
-                    bucket_name, prefix=blob_prefix)]
+        blobs = self.storage_client.list_blobs(bucket_name, prefix=blob_prefix)
+        return [path
+                for path in [GcsfsPath.from_blob(blob) for blob in blobs]
+                if isinstance(path, GcsfsFilePath)]
