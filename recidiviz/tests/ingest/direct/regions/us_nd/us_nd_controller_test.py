@@ -1814,7 +1814,7 @@ class TestUsNdController(unittest.TestCase):
         sentence_group_115077 = entities.StateSentenceGroup.new_with_defaults(
             external_id='115077',
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            state_code=_STATE_CODE, max_length_days=1316,
+            state_code=_STATE_CODE, max_length_days=1317,
             date_imposed=datetime.date(year=2018, month=10, day=29),
             person=person_4)
         person_4.sentence_groups.append(sentence_group_115077)
