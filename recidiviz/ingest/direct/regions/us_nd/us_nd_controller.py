@@ -195,13 +195,9 @@ class UsNdController(CsvGcsfsDirectIngestController):
             'docstars_offendercasestable',
             'docstars_offensestable',
             'docstars_ftr_episode',
+            'docstars_lsi_chronology',
             # TODO(1918): Integrate bed assignment / location history
         ]
-
-        # TODO(2404): Enable in prod once we've tested full ingest of
-        #  docstars_lsi_chronology in staging.
-        if not environment.in_gae_production():
-            tags.append('docstars_lsi_chronology')
 
         return tags
 
