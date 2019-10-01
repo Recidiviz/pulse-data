@@ -721,17 +721,18 @@ class StatePerson(StateBase, _StatePersonSharedColumns):
     person_id = Column(Integer, primary_key=True)
 
     external_ids = \
-        relationship('StatePersonExternalId', backref='person', lazy='joined')
-    aliases = relationship('StatePersonAlias', backref='person', lazy='joined')
-    races = relationship('StatePersonRace', backref='person', lazy='joined')
+        relationship('StatePersonExternalId', backref='person', lazy='selectin')
+    aliases = relationship(
+        'StatePersonAlias', backref='person', lazy='selectin')
+    races = relationship('StatePersonRace', backref='person', lazy='selectin')
     ethnicities = relationship(
-        'StatePersonEthnicity', backref='person', lazy='joined')
+        'StatePersonEthnicity', backref='person', lazy='selectin')
     assessments = relationship(
-        'StateAssessment', backref='person', lazy='joined')
+        'StateAssessment', backref='person', lazy='selectin')
     program_assignments = relationship(
-        'StateProgramAssignment', backref='person', lazy='joined')
+        'StateProgramAssignment', backref='person', lazy='selectin')
     sentence_groups = relationship(
-        'StateSentenceGroup', backref='person', lazy='joined')
+        'StateSentenceGroup', backref='person', lazy='selectin')
 
 
 class StatePersonHistory(StateBase,
@@ -838,7 +839,7 @@ class StateCourtCase(StateBase,
 
     court_case_id = Column(Integer, primary_key=True)
     person = relationship('StatePerson', uselist=False)
-    judge = relationship('StateAgent', uselist=False, lazy='joined')
+    judge = relationship('StateAgent', uselist=False, lazy='selectin')
 
 
 class StateCourtCaseHistory(StateBase,
@@ -907,9 +908,9 @@ class StateCharge(StateBase,
     # Cross-entity relationships
     person = relationship('StatePerson', uselist=False)
     court_case = relationship(
-        'StateCourtCase', uselist=False, backref='charges', lazy='joined')
+        'StateCourtCase', uselist=False, backref='charges', lazy='selectin')
     bond = relationship(
-        'StateBond', uselist=False, backref='charges', lazy='joined')
+        'StateBond', uselist=False, backref='charges', lazy='selectin')
 
 
 class StateChargeHistory(StateBase,
@@ -981,7 +982,8 @@ class StateAssessment(StateBase,
 
     assessment_id = Column(Integer, primary_key=True)
 
-    conducting_agent = relationship('StateAgent', uselist=False, lazy='joined')
+    conducting_agent = relationship(
+        'StateAgent', uselist=False, lazy='selectin')
 
 
 class StateAssessmentHistory(StateBase,
@@ -1031,10 +1033,10 @@ class StateSentenceGroup(StateBase,
     sentence_group_id = Column(Integer, primary_key=True)
 
     supervision_sentences = relationship(
-        'StateSupervisionSentence', backref='sentence_group', lazy='joined')
+        'StateSupervisionSentence', backref='sentence_group', lazy='selectin')
     incarceration_sentences = relationship(
-        'StateIncarcerationSentence', backref='sentence_group', lazy='joined')
-    fines = relationship('StateFine', backref='sentence_group', lazy='joined')
+        'StateIncarcerationSentence', backref='sentence_group', lazy='selectin')
+    fines = relationship('StateFine', backref='sentence_group', lazy='selectin')
 
 
 class StateSentenceGroupHistory(StateBase,
@@ -1092,19 +1094,19 @@ class StateSupervisionSentence(StateBase,
         'StateCharge',
         secondary=state_charge_supervision_sentence_association_table,
         backref='supervision_sentences',
-        lazy='joined')
+        lazy='selectin')
     incarceration_periods = relationship(
         'StateIncarcerationPeriod',
         secondary=
         state_supervision_sentence_incarceration_period_association_table,
         backref='supervision_sentences',
-        lazy='joined')
+        lazy='selectin')
     supervision_periods = relationship(
         'StateSupervisionPeriod',
         secondary=
         state_supervision_sentence_supervision_period_association_table,
         backref='supervision_sentences',
-        lazy='joined')
+        lazy='selectin')
 
 
 class StateSupervisionSentenceHistory(StateBase,
@@ -1170,20 +1172,20 @@ class StateIncarcerationSentence(StateBase,
         'StateCharge',
         secondary=state_charge_incarceration_sentence_association_table,
         backref='incarceration_sentences',
-        lazy='joined')
+        lazy='selectin')
     incarceration_periods = relationship(
         'StateIncarcerationPeriod',
         secondary=
         state_incarceration_sentence_incarceration_period_association_table,
         backref='incarceration_sentences',
-        lazy='joined')
+        lazy='selectin')
 
     supervision_periods = relationship(
         'StateSupervisionPeriod',
         secondary=
         state_incarceration_sentence_supervision_period_association_table,
         backref='incarceration_sentences',
-        lazy='joined')
+        lazy='selectin')
 
 
 class StateIncarcerationSentenceHistory(
@@ -1239,7 +1241,7 @@ class StateFine(StateBase,
         'StateCharge',
         secondary=state_charge_fine_association_table,
         backref='fines',
-        lazy='joined')
+        lazy='selectin')
 
 
 class StateFineHistory(StateBase,
@@ -1316,21 +1318,20 @@ class StateIncarcerationPeriod(StateBase,
     incarceration_incidents = relationship(
         'StateIncarcerationIncident',
         backref='incarceration_period',
-        lazy='joined')
+        lazy='selectin')
     parole_decisions = relationship(
-        'StateParoleDecision', backref='incarceration_period', lazy='joined')
+        'StateParoleDecision', backref='incarceration_period', lazy='selectin')
     assessments = relationship(
-        'StateAssessment', backref='incarceration_period', lazy='joined')
-    # TODO(2451): Load in joined fashion when possible.
+        'StateAssessment', backref='incarceration_period', lazy='selectin')
     program_assignments = relationship(
         'StateProgramAssignment',
         secondary=
         state_incarceration_period_program_assignment_association_table,
         backref='incarceration_periods',
-        lazy='select')
+        lazy='selectin')
 
     source_supervision_violation_response = relationship(
-        'StateSupervisionViolationResponse', uselist=False, lazy='joined')
+        'StateSupervisionViolationResponse', uselist=False, lazy='selectin')
 
 
 class StateIncarcerationPeriodHistory(StateBase,
@@ -1399,19 +1400,18 @@ class StateSupervisionPeriod(StateBase,
 
     person = relationship('StatePerson', uselist=False)
     supervising_officer = relationship(
-        'StateAgent', uselist=False, lazy='joined')
+        'StateAgent', uselist=False, lazy='selectin')
     supervision_violations = relationship(
         'StateSupervisionViolation',
         backref='supervision_period',
-        lazy='joined')
+        lazy='selectin')
     assessments = relationship(
-        'StateAssessment', backref='supervision_period', lazy='joined')
-    # TODO(2451): Load in joined fashion when possible.
+        'StateAssessment', backref='supervision_period', lazy='selectin')
     program_assignments = relationship(
         'StateProgramAssignment',
         secondary=state_supervision_period_program_assignment_association_table,
         backref='supervision_periods',
-        lazy='select')
+        lazy='selectin')
 
 
 class StateSupervisionPeriodHistory(StateBase,
@@ -1477,12 +1477,12 @@ class StateIncarcerationIncident(StateBase,
 
     person = relationship('StatePerson', uselist=False)
     responding_officer = relationship(
-        'StateAgent', uselist=False, lazy='joined')
+        'StateAgent', uselist=False, lazy='selectin')
 
     incarceration_incident_outcomes = relationship(
         'StateIncarcerationIncidentOutcome',
         backref='incarceration_incident',
-        lazy='joined')
+        lazy='selectin')
 
 
 class StateIncarcerationIncidentHistory(
@@ -1608,7 +1608,7 @@ class StateParoleDecision(StateBase,
     decision_agents = relationship(
         'StateAgent',
         secondary=state_parole_decision_decision_agent_association_table,
-        lazy='joined')
+        lazy='selectin')
 
 
 class StateParoleDecisionHistory(StateBase,
@@ -1668,7 +1668,7 @@ class StateSupervisionViolation(StateBase,
     supervision_violation_responses = relationship(
         'StateSupervisionViolationResponse',
         backref='supervision_violation',
-        lazy='joined')
+        lazy='selectin')
 
 
 class StateSupervisionViolationHistory(StateBase,
@@ -1737,7 +1737,7 @@ class StateSupervisionViolationResponse(
         'StateAgent',
         secondary=
         state_supervision_violation_response_decision_agent_association_table,
-        lazy='joined')
+        lazy='selectin')
 
 
 class StateSupervisionViolationResponseHistory(
@@ -1845,7 +1845,7 @@ class StateProgramAssignment(StateBase, _StateProgramAssignmentSharedColumns):
     __tablename__ = 'state_program_assignment'
 
     program_assignment_id = Column(Integer, primary_key=True)
-    referring_agent = relationship('StateAgent', uselist=False, lazy='joined')
+    referring_agent = relationship('StateAgent', uselist=False, lazy='selectin')
 
 
 class StateProgramAssignmentHistory(StateBase,
