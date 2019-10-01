@@ -45,9 +45,7 @@ class GcsfsDirectIngestController(BaseDirectIngestController[GcsfsIngestArgs,
 
     _MAX_STORAGE_FILE_RENAME_TRIES = 10
     _MAX_PROCESS_JOB_WAIT_TIME_SEC = 300
-    # TODO(2428): Once we have migrated to new Cloud Tasks infrastructure,
-    #  we should be able to handle much larger files - change this threshold.
-    _FILE_SPLIT_LINE_LIMIT = 300
+    _FILE_SPLIT_LINE_LIMIT = 5000
 
     def __init__(self,
                  region_name: str,
