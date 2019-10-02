@@ -162,7 +162,7 @@ def get_region_manifest(region_code: str,
     with open(os.path.join(os.path.dirname(region_module.__file__),
                            region_code,
                            MANIFEST_NAME)) as region_manifest:
-        return yaml.load(region_manifest)
+        return yaml.full_load(region_manifest)
 
 
 def get_supported_scrape_region_codes(timezone: tzinfo = None) -> Set[str]:
