@@ -24,6 +24,7 @@ import unittest
 from typing import List
 
 import attr
+from freezegun import freeze_time
 from mock import patch, Mock, create_autospec
 
 from recidiviz.common.constants.charge import ChargeStatus
@@ -1604,6 +1605,7 @@ class TestUsNdController(unittest.TestCase):
     @patch.dict('os.environ', {'PERSIST_LOCALLY': 'true'})
     @patch("recidiviz.persistence.entity_matching.state"
            ".state_matching_utils.get_region")
+    @freeze_time('2019-09-27')
     def test_run_full_ingest_all_files_specific_order(self, mock_get_region):
         mock_get_region.return_value = self._fake_region()
         ######################################
@@ -1804,7 +1806,7 @@ class TestUsNdController(unittest.TestCase):
             incarceration_sentence_2)
         sentence_group_113377.date_imposed = datetime.date(
             year=2018, month=3, day=27)
-        sentence_group_113377.max_length_days = 283
+        sentence_group_113377.max_length_days = 284
 
         sentence_group_114909.date_imposed = datetime.date(
             year=2018, month=2, day=27)
@@ -1814,7 +1816,7 @@ class TestUsNdController(unittest.TestCase):
         sentence_group_115077 = entities.StateSentenceGroup.new_with_defaults(
             external_id='115077',
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            state_code=_STATE_CODE, max_length_days=1317,
+            state_code=_STATE_CODE, max_length_days=1316,
             date_imposed=datetime.date(year=2018, month=10, day=29),
             person=person_4)
         person_4.sentence_groups.append(sentence_group_115077)
