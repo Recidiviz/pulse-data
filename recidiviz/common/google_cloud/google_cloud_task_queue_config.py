@@ -21,15 +21,13 @@ from typing import List
 
 from google.cloud.tasks_v2.proto import queue_pb2
 
+from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import \
+    DIRECT_INGEST_SCHEDULER_QUEUE_V2, \
+    DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2, \
+    DIRECT_INGEST_JAILS_PROCESS_JOB_QUEUE_V2
 from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import \
     GoogleCloudTasksClientWrapper
 from recidiviz.common.google_cloud.protobuf_builder import ProtobufBuilder
-
-DIRECT_INGEST_SCHEDULER_QUEUE_V2 = 'direct-ingest-scheduler-v2'
-DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2 = \
-    'direct-ingest-state-process-job-queue-v2'
-DIRECT_INGEST_JAILS_PROCESS_JOB_QUEUE_V2 = \
-    'direct-ingest-jpp-process-job-queue-v2'
 
 DIRECT_INGEST_QUEUE_BASE_CONFIG = queue_pb2.Queue(
     rate_limits=queue_pb2.RateLimits(

@@ -18,14 +18,14 @@
 tasks_v2.CloudTasksClient.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime
 import json
 import logging
-from typing import List, Dict
+from enum import Enum
+from typing import List, Dict, Optional
 
-from google.api_core import datetime_helpers
 from google.api_core.exceptions import AlreadyExists
-from google.cloud import tasks_v2
+from google.cloud import tasks_v2, exceptions
 from google.cloud.tasks_v2.types import queue_pb2, task_pb2
 from google.protobuf import timestamp_pb2
 
@@ -33,6 +33,12 @@ from recidiviz.common.common_utils import retry_grpc
 from recidiviz.common.google_cloud.protobuf_builder import ProtobufBuilder
 from recidiviz.utils import metadata
 
+class HttpMethod(Enum):
+    GET = 'GET'
+    POST = 'POST'
+
+
+QUEUES_REGION = 'us-east1'
 
 class GoogleCloudTasksClientWrapper:
     """Wrapper with convenience functions on top of the
@@ -40,10 +46,14 @@ class GoogleCloudTasksClientWrapper:
     """
     NUM_GRPC_RETRIES = 2
 
-    def __init__(self):
-        self.client = tasks_v2.CloudTasksClient()
-        self.project_id = metadata.project_id()
-        self.instance_region = metadata.region()
+    def __init__(
+            self,
+            cloud_tasks_client: Optional[tasks_v2.CloudTasksClient] = None,
+            project_id: Optional[str] = None):
+        self.client = cloud_tasks_client \
+            if cloud_tasks_client else tasks_v2.CloudTasksClient()
+        self.project_id = project_id if project_id else metadata.project_id()
+        self.queues_region = QUEUES_REGION
 
     def format_queue_path(self, queue_name: str) -> str:
         """Formats a queue name into its full Cloud Tasks queue path.
@@ -55,7 +65,7 @@ class GoogleCloudTasksClientWrapper:
         """
         return self.client.queue_path(
             self.project_id,
-            self.instance_region,
+            self.queues_region,
             queue_name)
 
     def initialize_cloud_task_queues(self,
@@ -106,7 +116,7 @@ class GoogleCloudTasksClientWrapper:
         """
         return self.client.task_path(
             self.project_id,
-            self.instance_region,
+            self.queues_region,
             queue_name,
             task_name)
 
@@ -128,7 +138,8 @@ class GoogleCloudTasksClientWrapper:
                     queue_name: str,
                     relative_uri: str,
                     body: Dict[str, str],
-                    schedule_delay_seconds: int = 0):
+                    schedule_delay_seconds: int = 0,
+                    http_method: Optional[HttpMethod] = None):
         """Creates a task with the given details.
 
         Args:
@@ -139,15 +150,14 @@ class GoogleCloudTasksClientWrapper:
             relative_uri: The relative uri to hit.
             body: Dictionary of values that will be converted to JSON and
             included in the request.
+            http_method: The method for this request (i.e. GET or POST)
         """
         task_name = self.format_task_path(queue_name, task_id)
 
         schedule_timestamp = None
         if schedule_delay_seconds > 0:
-            schedule_time = datetime.now() + timedelta(
-                seconds=schedule_delay_seconds)
-            schedule_time_sec = datetime_helpers.to_milliseconds(
-                schedule_time) // 1000
+            schedule_time_sec = \
+                int(datetime.utcnow().timestamp()) + schedule_delay_seconds
             schedule_timestamp = \
                 timestamp_pb2.Timestamp(seconds=schedule_time_sec)
 
@@ -164,6 +174,13 @@ class GoogleCloudTasksClientWrapper:
                 schedule_time=schedule_timestamp,
             )
 
+        if http_method is not None:
+            task_builder.update_args(
+                app_engine_http_request={
+                    'http_method': http_method.value,
+                },
+            )
+
         task = task_builder.build()
 
         logging.info("Queueing task to queue [%s]: [%s]",
@@ -175,3 +192,11 @@ class GoogleCloudTasksClientWrapper:
             self.format_queue_path(queue_name),
             task
         )
+
+    def delete_task(self, task: task_pb2.Task):
+        try:
+            retry_grpc(self.NUM_GRPC_RETRIES,
+                       self.client.delete_task,
+                       task.name)
+        except exceptions.NotFound as e:
+            logging.debug('Task not found: [%s]', e)
