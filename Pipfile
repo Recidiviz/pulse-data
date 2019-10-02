@@ -13,6 +13,7 @@ pytest-cov = "*"
 mypy = "*"
 coveralls = "*"
 apache-beam = {extras = ["gcp", "test"], version = "==2.13.0"}
+freezegun = "*"
 
 [packages]
 callee = "*"
