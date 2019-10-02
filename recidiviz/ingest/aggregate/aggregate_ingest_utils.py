@@ -108,7 +108,7 @@ def cast_columns_to_int(
     for column_name in df.columns:
         if column_name in ignore_columns:
             continue
-        elif column_name in nullable_int_columns:
+        if column_name in nullable_int_columns:
             # Since NaN is a float, we must cast the whole column to floats
             df[column_name] = df[column_name].astype(float)
         else:

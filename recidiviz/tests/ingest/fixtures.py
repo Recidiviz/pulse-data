@@ -96,6 +96,10 @@ def as_filepath(filename: str, subdir: str = 'fixtures') -> str:
     """
     frame = inspect.stack()[1]
     module = inspect.getmodule(frame[0])
+
+    if module is None:
+        raise ValueError('Module is unexpectedly None')
+
     caller_filepath = module.__file__
 
     return os.path.abspath(

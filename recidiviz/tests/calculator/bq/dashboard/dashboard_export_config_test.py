@@ -34,8 +34,6 @@ class DashboardExportConfigTest(unittest.TestCase):
         """Make sure a view is excluded from VIEWS_TO_EXPORT if listed in
         VIEWS_TO_EXCLUDE_FROM_EXPORT.
         """
-        to_export_views = \
-            [view for view in dashboard_export_config.VIEWS_TO_EXPORT]
 
         for view in dashboard_export_config.VIEWS_TO_EXCLUDE_FROM_EXPORT:
-            self.assertNotIn(view, to_export_views)
+            self.assertNotIn(view, dashboard_export_config.VIEWS_TO_EXPORT)
