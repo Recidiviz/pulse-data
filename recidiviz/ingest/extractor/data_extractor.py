@@ -59,7 +59,7 @@ class DataExtractor(metaclass=abc.ABCMeta):
                 data extractor uses to find relevant keys.
         """
         with open(key_mapping_file, 'r') as ymlfile:
-            self.manifest = yaml.load(ymlfile)
+            self.manifest = yaml.full_load(ymlfile)
         self.keys = self.manifest['key_mappings']
         self.multi_keys = self.manifest.get('multi_key_mapping', {})
 
