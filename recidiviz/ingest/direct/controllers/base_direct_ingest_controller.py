@@ -213,7 +213,6 @@ class BaseDirectIngestController(Ingestor,
         non-empty contents.
         """
         ingest_info = self._parse(args, contents)
-        # TODO(1738): implement retry on fail.
         if not ingest_info:
             raise DirectIngestError(
                 error_type=DirectIngestErrorType.PARSE_ERROR,
