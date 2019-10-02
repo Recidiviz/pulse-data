@@ -49,7 +49,7 @@ class CommonScraperTest(IndividualIngestTest):
     def test_yaml_is_correct(self):
         if self.yaml:
             with open(self.yaml, 'r') as ymlfile:
-                manifest = yaml.load(ymlfile)
+                manifest = yaml.full_load(ymlfile)
 
             person = ingest_info.IngestInfo().create_person()
             booking = person.create_booking()

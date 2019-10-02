@@ -112,7 +112,7 @@ def _write_emulator_environs():
             os.environ.get('HOME'),
             '.config/gcloud/emulators/{}/env.yaml'.format(emulator_name))
         env_file = open(filename, 'r')
-        env_dict.update(yaml.load(env_file))
+        env_dict.update(yaml.full_load(env_file))
         env_file.close()
 
     old_environs = {key: os.environ.get(key) for key in env_dict}

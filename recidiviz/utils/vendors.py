@@ -37,4 +37,4 @@ def get_vendor_queue_params(vendor: str) -> Optional[Dict[str, Any]]:
     if not os.path.exists(queue_param_path):
         return None
     with open(queue_param_path) as queue_params:
-        return yaml.load(queue_params) or {}
+        return yaml.full_load(queue_params) or {}
