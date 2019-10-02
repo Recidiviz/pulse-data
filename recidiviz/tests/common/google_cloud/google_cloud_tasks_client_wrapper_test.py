@@ -20,7 +20,8 @@ import os
 import unittest
 from typing import List, Set
 
-from google.cloud import tasks_v2
+from freezegun import freeze_time
+from google.cloud import tasks_v2, exceptions
 from google.cloud.tasks_v2.proto import queue_pb2
 from google.protobuf import timestamp_pb2
 from mock import create_autospec, patch
@@ -204,11 +205,9 @@ class TestGoogleCloudTasksClientWrapper(unittest.TestCase):
             )
         )
 
-    @patch('recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper.'
-           'datetime')
-    def test_create_task_schedule_delay(self, mock_datetime):
-        mock_datetime.now.return_value = \
-            datetime.datetime.utcfromtimestamp(1500000000)
+    @freeze_time('2019-04-14')
+    def test_create_task_schedule_delay(self):
+        now_timestamp_sec = int(datetime.datetime.utcnow().timestamp())
 
         self.client_wrapper.create_task(
             task_id='us_mo-file_name_1-123456',
@@ -228,7 +227,24 @@ class TestGoogleCloudTasksClientWrapper(unittest.TestCase):
                     'body': b"{}"
                 },
                 schedule_time=timestamp_pb2.Timestamp(
-                    seconds=1500000003
+                    seconds=(now_timestamp_sec + 3)
                 ),
             )
         )
+
+    def test_delete_task(self):
+        self.client_wrapper.delete_task(
+            tasks_v2.types.task_pb2.Task(name='task_name'))
+
+        self.mock_client.delete_task.assert_called_with('task_name')
+
+    def test_delete_task_not_found(self):
+        self.mock_client.delete_task.side_effect = exceptions.NotFound(
+            message='message')
+
+        self.client_wrapper.delete_task(
+            tasks_v2.types.task_pb2.Task(name='task_name'))
+
+        self.mock_client.delete_task.assert_called_with('task_name')
+
+        # Note: does not crash

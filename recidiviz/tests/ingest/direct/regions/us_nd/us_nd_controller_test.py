@@ -113,6 +113,7 @@ _STATE_CODE = 'US_ND'
 
 @patch('recidiviz.utils.metadata.project_id',
        Mock(return_value='recidiviz-staging'))
+@freeze_time('2019-09-27')
 class TestUsNdController(unittest.TestCase):
     """Unit tests for each North Dakota file to be ingested by the
     UsNdController.

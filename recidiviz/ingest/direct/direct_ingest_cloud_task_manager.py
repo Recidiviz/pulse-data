@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Class for interacting with the cloud task queues."""
+"""Class for interacting with the direct ingest cloud task queues."""
 import abc
 import logging
 import os
@@ -23,7 +23,7 @@ from typing import Optional, Dict, List
 
 import attr
 
-from recidiviz.common.google_cloud.google_cloud_task_queue_config import \
+from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import \
     DIRECT_INGEST_SCHEDULER_QUEUE_V2
 from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import \
     GoogleCloudTasksClientWrapper
@@ -166,8 +166,9 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
     """Real implementation of the DirectIngestCloudTaskManager that interacts
     with actual GCP Cloud Task queues."""
 
-    def __init__(self):
-        self.cloud_task_client = GoogleCloudTasksClientWrapper()
+    def __init__(self, project_id: Optional[str] = None):
+        self.cloud_task_client = \
+            GoogleCloudTasksClientWrapper(project_id=project_id)
 
     def _get_queue_info(self,
                         queue_name: str,

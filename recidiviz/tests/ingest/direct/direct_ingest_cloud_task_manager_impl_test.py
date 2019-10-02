@@ -19,22 +19,24 @@ import datetime
 import json
 from unittest import TestCase
 
+from freezegun import freeze_time
 from google.cloud import tasks_v2
 from google.protobuf import timestamp_pb2
 from mock import patch
 
-from recidiviz.common.google_cloud.google_cloud_task_queue_config import \
+from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import \
     DIRECT_INGEST_SCHEDULER_QUEUE_V2, DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2
+from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import \
+    QUEUES_REGION
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import \
     to_normalized_unprocessed_file_path
 from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath
-from recidiviz.common import queues
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import \
     DirectIngestCloudTaskManagerImpl, CloudTaskQueueInfo, _build_task_id
 from recidiviz.ingest.direct.controllers.direct_ingest_types import IngestArgs
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     GcsfsIngestArgs
-from recidiviz.utils import metadata, regions
+from recidiviz.utils import regions
 
 _REGION = regions.Region(
     region_code='us_nc',
@@ -101,39 +103,27 @@ class TestCloudTaskQueueInfo(TestCase):
 class TestDirectIngestCloudTaskManagerImpl(TestCase):
     """Tests for the DirectIngestCloudTaskManagerImpl."""
 
-    def setup_method(self, _test_method):
-        queues.clear_legacy_cloud_tasks_client()
-
-    def teardown_method(self, _test_method):
-        queues.clear_legacy_cloud_tasks_client()
-
-    @patch('recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper.'
-           'datetime_helpers')
-    @patch('recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper.'
-           'datetime')
     @patch('recidiviz.ingest.direct.direct_ingest_cloud_task_manager.uuid')
     @patch('google.cloud.tasks_v2.CloudTasksClient')
+    @freeze_time('2019-07-20')
     def test_create_direct_ingest_scheduler_queue_task(
-            self, mock_client, mock_uuid, mock_datetime, mock_datetime_helpers):
+            self, mock_client, mock_uuid):
         # Arrange
         delay_sec = 5
-        time = datetime.datetime(year=2019, month=7, day=20)
-        mock_datetime.datetime.now.return_value = time
+        now_utc_timestamp = int(datetime.datetime.now().timestamp())
 
-        mock_datetime_helpers.to_milliseconds.return_value = 100000
-        time_in_seconds = 100
-        time_proto = timestamp_pb2.Timestamp(seconds=time_in_seconds)
+        time_proto = \
+            timestamp_pb2.Timestamp(seconds=(now_utc_timestamp + delay_sec))
 
+        project_id = 'recidiviz-456'
         body = {}
         body_encoded = json.dumps(body).encode()
         uuid = 'random-uuid'
         mock_uuid.uuid4.return_value = uuid
-        date = '2019-07-20'
-        mock_datetime.date.today.return_value = date
         queue_path = _REGION.shared_queue + '-path'
 
         task_name = DIRECT_INGEST_SCHEDULER_QUEUE_V2 + \
-            '/{}-{}-{}'.format(_REGION.region_code, date, uuid)
+            '/{}-{}-{}'.format(_REGION.region_code, '2019-07-20', uuid)
         task = tasks_v2.types.task_pb2.Task(
             name=task_name,
             schedule_time=time_proto,
@@ -149,23 +139,23 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         mock_client.return_value.queue_path.return_value = queue_path
 
         # Act
-        DirectIngestCloudTaskManagerImpl().\
+        DirectIngestCloudTaskManagerImpl(project_id=project_id).\
             create_direct_ingest_scheduler_queue_task(_REGION, False, delay_sec)
 
         # Assert
         mock_client.return_value.queue_path.assert_called_with(
-            metadata.project_id(), metadata.region(),
+            project_id, QUEUES_REGION,
             DIRECT_INGEST_SCHEDULER_QUEUE_V2)
         mock_client.return_value.create_task.assert_called_with(
             queue_path, task)
 
-    @patch('recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper.'
-           'datetime')
     @patch('recidiviz.ingest.direct.direct_ingest_cloud_task_manager.uuid')
     @patch('google.cloud.tasks_v2.CloudTasksClient')
+    @freeze_time('2019-07-20')
     def test_create_direct_ingest_process_job_task(
-            self, mock_client, mock_uuid, mock_datetime):
+            self, mock_client, mock_uuid):
         # Arrange
+        project_id = 'recidiviz-456'
         ingest_args = IngestArgs(datetime.datetime(year=2019, month=7, day=20))
         body = {'ingest_args': ingest_args.to_serializable(),
                 'args_type': 'IngestArgs'}
@@ -173,7 +163,6 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         uuid = 'random-uuid'
         mock_uuid.uuid4.return_value = uuid
         date = '2019-07-20'
-        mock_datetime.date.today.return_value = date
         queue_path = _REGION.shared_queue + '-path'
 
         task_name = _REGION.shared_queue + '/{}-{}-{}'.format(
@@ -191,12 +180,12 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         mock_client.return_value.queue_path.return_value = queue_path
 
         # Act
-        DirectIngestCloudTaskManagerImpl().\
+        DirectIngestCloudTaskManagerImpl(project_id=project_id).\
             create_direct_ingest_process_job_task(_REGION, ingest_args)
 
         # Assert
         mock_client.return_value.queue_path.assert_called_with(
-            metadata.project_id(), metadata.region(), _REGION.shared_queue)
+            project_id, QUEUES_REGION, _REGION.shared_queue)
         mock_client.return_value.create_task.assert_called_with(
             queue_path, task)
 
@@ -207,6 +196,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
     def test_create_direct_ingest_process_job_task_gcsfs_args(
             self, mock_client, mock_uuid, mock_datetime):
         # Arrange
+        project_id = 'recidiviz-456'
         file_path = to_normalized_unprocessed_file_path('bucket/file_path.csv')
         ingest_args = \
             GcsfsIngestArgs(
@@ -236,11 +226,11 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         mock_client.return_value.queue_path.return_value = queue_path
 
         # Act
-        DirectIngestCloudTaskManagerImpl().\
+        DirectIngestCloudTaskManagerImpl(project_id=project_id).\
             create_direct_ingest_process_job_task(_REGION, ingest_args)
 
         # Assert
         mock_client.return_value.queue_path.assert_called_with(
-            metadata.project_id(), metadata.region(), _REGION.shared_queue)
+            project_id, QUEUES_REGION, _REGION.shared_queue)
         mock_client.return_value.create_task.assert_called_with(
             queue_path, task)
