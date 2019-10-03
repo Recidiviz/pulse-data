@@ -56,7 +56,7 @@ class TestDirectIngestControl(unittest.TestCase):
 
         region = 'us_nd'
         request_args = {'region': region}
-        headers = {'X-Appengine-Cron': "test-cron"}
+        headers = {'X-Appengine-Cron': 'test-cron'}
         response = self.client.get('/scheduler',
                                    query_string=request_args,
                                    headers=headers)
@@ -79,7 +79,7 @@ class TestDirectIngestControl(unittest.TestCase):
 
         region = 'us_nd'
         request_args = {'region': region}
-        headers = {'X-Appengine-Cron': "test-cron"}
+        headers = {'X-Appengine-Cron': 'test-cron'}
         response = self.client.get('/scheduler',
                                    query_string=request_args,
                                    headers=headers)
@@ -105,7 +105,7 @@ class TestDirectIngestControl(unittest.TestCase):
 
         region = 'us_nd'
         request_args = {'region': region, 'just_finished_job': 'True'}
-        headers = {'X-Appengine-Cron': "test-cron"}
+        headers = {'X-Appengine-Cron': 'test-cron'}
         response = self.client.get('/scheduler',
                                    query_string=request_args,
                                    headers=headers)
@@ -120,7 +120,7 @@ class TestDirectIngestControl(unittest.TestCase):
         mock_supported.return_value = ['us_ny', 'us_pa']
 
         request_args = {'region': 'us_ca', 'just_finished_job': 'False'}
-        headers = {'X-Appengine-Cron': "test-cron"}
+        headers = {'X-Appengine-Cron': 'test-cron'}
         response = self.client.get('/scheduler',
                                    query_string=request_args,
                                    headers=headers)
@@ -146,7 +146,7 @@ class TestDirectIngestControl(unittest.TestCase):
             ingestor=mock_controller)
 
         request_args = {'region': 'us_nd', 'just_finished_job': 'False'}
-        headers = {'X-Appengine-Cron': "test-cron"}
+        headers = {'X-Appengine-Cron': 'test-cron'}
 
         response = self.client.get('/scheduler',
                                    query_string=request_args,
@@ -182,7 +182,7 @@ class TestDirectIngestControl(unittest.TestCase):
         }
         body_encoded = json.dumps(body).encode()
 
-        headers = {'X-Appengine-Cron': "test-cron"}
+        headers = {'X-Appengine-Cron': 'test-cron'}
 
         response = self.client.post('/process_job',
                                     query_string=request_args,
@@ -219,7 +219,7 @@ class TestDirectIngestControl(unittest.TestCase):
         }
         body_encoded = json.dumps(body).encode()
 
-        headers = {'X-Appengine-Cron': "test-cron"}
+        headers = {'X-Appengine-Cron': 'test-cron'}
 
         response = self.client.post('/process_job',
                                     query_string=request_args,
@@ -252,7 +252,7 @@ class TestDirectIngestControl(unittest.TestCase):
             'relative_file_path': path.blob_name,
             'start_ingest': 'false',
         }
-        headers = {'X-Appengine-Cron': "test-cron"}
+        headers = {'X-Appengine-Cron': 'test-cron'}
         response = self.client.get('/handle_direct_ingest_file',
                                    query_string=request_args,
                                    headers=headers)
@@ -282,7 +282,7 @@ class TestDirectIngestControl(unittest.TestCase):
             'relative_file_path': path.blob_name,
             'start_ingest': 'True',
         }
-        headers = {'X-Appengine-Cron': "test-cron"}
+        headers = {'X-Appengine-Cron': 'test-cron'}
         response = self.client.get('/handle_direct_ingest_file',
                                    query_string=request_args,
                                    headers=headers)
@@ -313,7 +313,7 @@ class TestDirectIngestControl(unittest.TestCase):
             'relative_file_path': path.blob_name,
             'start_ingest': 'False',
         }
-        headers = {'X-Appengine-Cron': "test-cron"}
+        headers = {'X-Appengine-Cron': 'test-cron'}
 
         response = self.client.get('/handle_direct_ingest_file',
                                    query_string=request_args,
@@ -343,7 +343,7 @@ class TestDirectIngestControl(unittest.TestCase):
             'region': region_code,
             'can_start_ingest': 'True',
         }
-        headers = {'X-Appengine-Cron': "test-cron"}
+        headers = {'X-Appengine-Cron': 'test-cron'}
         response = self.client.get('/handle_new_files',
                                    query_string=request_args,
                                    headers=headers)
@@ -367,7 +367,7 @@ class TestDirectIngestControl(unittest.TestCase):
             'region': region_code,
             'can_start_ingest': 'False',
         }
-        headers = {'X-Appengine-Cron': "test-cron"}
+        headers = {'X-Appengine-Cron': 'test-cron'}
         response = self.client.get('/handle_new_files',
                                    query_string=request_args,
                                    headers=headers)
@@ -414,7 +414,7 @@ class TestDirectIngestControl(unittest.TestCase):
 
         mock_environment.return_value = 'staging'
 
-        headers = {'X-Appengine-Cron': "test-cron"}
+        headers = {'X-Appengine-Cron': 'test-cron'}
         response = self.client.get('/ensure_all_file_paths_normalized',
                                    query_string={},
                                    headers=headers)

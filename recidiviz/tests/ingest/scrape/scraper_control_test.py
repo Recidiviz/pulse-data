@@ -16,7 +16,8 @@
 # =============================================================================
 
 """Tests for ingest/scraper_control.py."""
-import pytest
+import unittest
+
 import pytz
 from flask import Flask
 from mock import call, patch, create_autospec
@@ -29,16 +30,14 @@ from recidiviz.persistence import batch_persistence
 from recidiviz.tests.utils.fake_region import fake_region
 
 
-# pylint: disable=redefined-outer-name
-@pytest.fixture
-def client():
+def create_test_client():
     app = Flask(__name__)
     app.register_blueprint(scraper_control.scraper_control)
     # Include so that flask can get the url of `infer_release`.
     app.register_blueprint(batch_persistence.batch_blueprint)
     app.config['TESTING'] = True
 
-    yield app.test_client()
+    return app.test_client()
 
 
 def _MockSupported(timezone=None):
@@ -51,8 +50,11 @@ def _MockSupported(timezone=None):
     return regions
 
 
-class TestScraperStart:
+class TestScraperStart(unittest.TestCase):
     """Tests for requests to the Scraper Start API."""
+
+    def setUp(self) -> None:
+        self.client = create_test_client()
 
     @patch("recidiviz.utils.environment.get_gae_environment")
     @patch("recidiviz.utils.regions.get_supported_scrape_region_codes")
@@ -67,7 +69,7 @@ class TestScraperStart:
             self, mock_purge, mock_get_sessions, mock_docket, mock_tracker,
             mock_create_session, mock_update_phase, mock_region,
             mock_supported,
-            mock_environment, client):
+            mock_environment):
         """Tests that the start operation chains together the correct calls."""
         mock_purge.return_value = None
         mock_docket.return_value = None
@@ -83,10 +85,10 @@ class TestScraperStart:
         scrape_type = constants.ScrapeType.BACKGROUND
         scrape_key = ScrapeKey(region, scrape_type)
         request_args = {'region': region, 'scrape_type': scrape_type.value}
-        headers = {'X-Appengine-Cron': "test-cron"}
-        response = client.get('/start',
-                              query_string=request_args,
-                              headers=headers)
+        headers = {'X-Appengine-Cron': 'test-cron'}
+        response = self.client.get('/start',
+                                   query_string=request_args,
+                                   headers=headers)
         assert response.status_code == 200
 
         mock_purge.assert_called_with(scrape_key, 'scraper_batch')
@@ -112,7 +114,7 @@ class TestScraperStart:
             self, mock_purge, mock_get_sessions, mock_docket, mock_tracker,
             mock_create_session, mock_update_phase, mock_region,
             mock_supported,
-            mock_environment, client):
+            mock_environment):
         """Tests that the start operation chains together the correct calls."""
         mock_docket.return_value = None
         mock_tracker.return_value = None
@@ -129,10 +131,10 @@ class TestScraperStart:
         scrape_key = ScrapeKey('us_wy', scrape_type)
         request_args = {'region': region, 'scrape_type': scrape_type.value,
                         'timezone': 'America/Los_Angeles'}
-        headers = {'X-Appengine-Cron': "test-cron"}
-        response = client.get('/start',
-                              query_string=request_args,
-                              headers=headers)
+        headers = {'X-Appengine-Cron': 'test-cron'}
+        response = self.client.get('/start',
+                                   query_string=request_args,
+                                   headers=headers)
         assert response.status_code == 200
 
         mock_purge.assert_called_with(scrape_key, 'scraper_batch')
@@ -156,8 +158,7 @@ class TestScraperStart:
     @patch("recidiviz.utils.pubsub_helper.purge")
     def test_start_all_diff_environment(
             self, mock_purge, mock_get_sessions, mock_docket, mock_tracker,
-            mock_create_session, mock_region, mock_supported, mock_environment,
-            client):
+            mock_create_session, mock_region, mock_supported, mock_environment):
         """Tests that the start operation chains together the correct calls."""
         mock_environment.return_value = 'staging'
         mock_scraper = create_autospec(BaseScraper)
@@ -168,10 +169,10 @@ class TestScraperStart:
         region = 'all'
         scrape_type = constants.ScrapeType.BACKGROUND
         request_args = {'region': region, 'scrape_type': scrape_type.value}
-        headers = {'X-Appengine-Cron': "test-cron"}
-        response = client.get('/start',
-                              query_string=request_args,
-                              headers=headers)
+        headers = {'X-Appengine-Cron': 'test-cron'}
+        response = self.client.get('/start',
+                                   query_string=request_args,
+                                   headers=headers)
         assert response.status_code == 400
 
         assert not mock_get_sessions.called
@@ -194,7 +195,7 @@ class TestScraperStart:
     def test_start_existing_session(
             self, mock_purge, mock_get_sessions, mock_docket,
             mock_tracker, mock_create_session, mock_region, mock_supported,
-            mock_environment, client):
+            mock_environment):
         """Tests that the start operation halts if an open session exists."""
         region = 'us_ut'
 
@@ -211,9 +212,9 @@ class TestScraperStart:
 
         scrape_type = constants.ScrapeType.BACKGROUND
         request_args = {'region': region, 'scrape_type': scrape_type.value}
-        headers = {'X-Appengine-Cron': "test-cron"}
-        response = client.get('/start', query_string=request_args,
-                              headers=headers)
+        headers = {'X-Appengine-Cron': 'test-cron'}
+        response = self.client.get('/start', query_string=request_args,
+                                   headers=headers)
         assert response.status_code == 500
         assert not mock_purge.called
         assert not mock_create_session.called
@@ -236,7 +237,7 @@ class TestScraperStart:
             self, mock_purge, mock_get_sessions, mock_docket, mock_tracker,
             mock_create_session, mock_update_phase, mock_region,
             mock_supported,
-            mock_environment, client):
+            mock_environment):
         """Tests that the start operation runs when there is a session running
         infer release."""
         region = 'us_ut'
@@ -255,10 +256,10 @@ class TestScraperStart:
         scrape_type = constants.ScrapeType.BACKGROUND
         scrape_key = ScrapeKey(region, scrape_type)
         request_args = {'region': region, 'scrape_type': scrape_type.value}
-        headers = {'X-Appengine-Cron': "test-cron"}
-        response = client.get('/start',
-                              query_string=request_args,
-                              headers=headers)
+        headers = {'X-Appengine-Cron': 'test-cron'}
+        response = self.client.get('/start',
+                                   query_string=request_args,
+                                   headers=headers)
         assert response.status_code == 200
 
         mock_purge.assert_called_with(scrape_key, 'scraper_batch')
@@ -272,33 +273,36 @@ class TestScraperStart:
         mock_supported.assert_called_with(timezone=None)
 
     @patch("recidiviz.utils.regions.get_supported_scrape_region_codes")
-    def test_start_unsupported_region(self, mock_supported, client):
+    def test_start_unsupported_region(self, mock_supported):
         mock_supported.return_value = ['us_ny', 'us_pa']
 
         request_args = {'region': 'us_ca', 'scrape_type': 'all'}
-        headers = {'X-Appengine-Cron': "test-cron"}
-        response = client.get('/start',
-                              query_string=request_args,
-                              headers=headers)
+        headers = {'X-Appengine-Cron': 'test-cron'}
+        response = self.client.get('/start',
+                                   query_string=request_args,
+                                   headers=headers)
         assert response.status_code == 400
         assert response.get_data().decode() == \
-            "Missing or invalid parameters, or no regions found, see logs."
+               "Missing or invalid parameters, or no regions found, see logs."
 
         mock_supported.assert_called_with(timezone=None)
 
 
-class TestScraperStop:
+class TestScraperStop(unittest.TestCase):
     """Tests for requests to the Scraper Stop API."""
+
+    def setUp(self) -> None:
+        self.client = create_test_client()
 
     @patch("recidiviz.utils.regions.get_supported_scrape_region_codes")
     @patch("recidiviz.utils.regions.get_region")
-    @patch("recidiviz.common.queues.enqueue_scraper_phase")
+    @patch("recidiviz.ingest.scrape.scraper_control.ScraperCloudTaskManager")
     @patch("recidiviz.ingest.scrape.sessions.update_phase")
     @patch("recidiviz.ingest.scrape.sessions.close_session")
     @patch("recidiviz.ingest.scrape.sessions.get_current_session")
     def test_stop(
-            self, mock_get_session, mock_sessions, mock_phase, mock_enqueue,
-            mock_region, mock_supported, client):
+            self, mock_get_session, mock_sessions, mock_phase,
+            mock_task_manager, mock_region, mock_supported):
         session = sessions.ScrapeSession.new(
             key=None, region='us_xx',
             scrape_type=constants.ScrapeType.BACKGROUND,
@@ -312,10 +316,10 @@ class TestScraperStop:
 
         request_args = {'region': 'all', 'scrape_type': 'all',
                         'respect_is_stoppable': 'false'}
-        headers = {'X-Appengine-Cron': "test-cron"}
-        response = client.get('/stop',
-                              query_string=request_args,
-                              headers=headers)
+        headers = {'X-Appengine-Cron': 'test-cron'}
+        response = self.client.get('/stop',
+                                   query_string=request_args,
+                                   headers=headers)
         assert response.status_code == 200
 
         mock_sessions.assert_has_calls(
@@ -326,7 +330,7 @@ class TestScraperStop:
             any_order=True)
         mock_phase.assert_has_calls(
             [call(session, scrape_phase.ScrapePhase.PERSIST)] * 4)
-        assert mock_scraper.stop_scrape.mock_calls == [
+        self.assertEqual(mock_scraper.stop_scrape.mock_calls, [
             call(constants.ScrapeType.BACKGROUND, 'false'),
             call().__bool__(),
             call(constants.ScrapeType.SNAPSHOT, 'false'),
@@ -335,20 +339,24 @@ class TestScraperStop:
             call().__bool__(),
             call(constants.ScrapeType.SNAPSHOT, 'false'),
             call().__bool__(),
-        ]
+        ])
         mock_supported.assert_called_with(timezone=None)
-        mock_enqueue.assert_has_calls([
-            call(region_code='us_ca', url='/read_and_persist'),
-            call(region_code='us_ut', url='/read_and_persist'),
-        ], any_order=True)
+        mock_task_manager.return_value.create_scraper_phase_task.\
+            assert_has_calls([
+                call(region_code='us_ca', url='/read_and_persist'),
+                call(region_code='us_ut', url='/read_and_persist'),
+            ], any_order=True)
 
     @patch("recidiviz.utils.regions.get_supported_scrape_region_codes")
     @patch("recidiviz.utils.regions.get_region")
-    @patch("recidiviz.common.queues.enqueue_scraper_phase")
+    @patch("recidiviz.ingest.scrape.scraper_control.ScraperCloudTaskManager")
     @patch("recidiviz.ingest.scrape.sessions.get_current_session")
     def test_stop_no_session(
-            self, mock_sessions, mock_enqueue, mock_region, mock_supported,
-            client):
+            self,
+            mock_sessions,
+            mock_task_manager,
+            mock_region,
+            mock_supported):
         mock_sessions.return_value = None
         mock_scraper = create_autospec(BaseScraper)
         mock_region.return_value = fake_region(ingestor=mock_scraper)
@@ -357,10 +365,10 @@ class TestScraperStop:
         request_args = {'region': 'all', 'scrape_type': 'all',
                         'respect_is_stoppable': 'false'}
 
-        headers = {'X-Appengine-Cron': "test-cron"}
-        response = client.get('/stop',
-                              query_string=request_args,
-                              headers=headers)
+        headers = {'X-Appengine-Cron': 'test-cron'}
+        response = self.client.get('/stop',
+                                   query_string=request_args,
+                                   headers=headers)
         assert response.status_code == 200
 
         mock_sessions.assert_has_calls(
@@ -370,17 +378,18 @@ class TestScraperStop:
              call(ScrapeKey('us_ut', constants.ScrapeType.SNAPSHOT))])
         mock_scraper.stop_scrape.assert_not_called()
         mock_supported.assert_called_with(timezone=None)
-        assert not mock_enqueue.called
+        mock_task_manager.return_value.create_scraper_phase_task.\
+            assert_not_called()
 
     @patch("recidiviz.utils.regions.get_supported_scrape_region_codes")
     @patch("recidiviz.utils.regions.get_region")
-    @patch("recidiviz.common.queues.enqueue_scraper_phase")
+    @patch("recidiviz.ingest.scrape.scraper_control.ScraperCloudTaskManager")
     @patch("recidiviz.ingest.scrape.sessions.update_phase")
     @patch("recidiviz.ingest.scrape.sessions.close_session")
     @patch("recidiviz.ingest.scrape.sessions.get_current_session")
     def test_stop_timezone(
-            self, mock_sessions, mock_close, mock_phase, mock_enqueue,
-            mock_region, mock_supported, client):
+            self, mock_sessions, mock_close, mock_phase, mock_task_manager,
+            mock_region, mock_supported):
         session = sessions.ScrapeSession.new(
             key=None, region='us_ut',
             scrape_type=constants.ScrapeType.BACKGROUND,
@@ -398,10 +407,10 @@ class TestScraperStop:
             'timezone': 'America/New_York',
             'respect_is_stoppable': 'false',
         }
-        headers = {'X-Appengine-Cron': "test-cron"}
-        response = client.get('/stop',
-                              query_string=request_args,
-                              headers=headers)
+        headers = {'X-Appengine-Cron': 'test-cron'}
+        response = self.client.get('/stop',
+                                   query_string=request_args,
+                                   headers=headers)
         assert response.status_code == 200
 
         mock_sessions.assert_has_calls([
@@ -410,41 +419,42 @@ class TestScraperStop:
         mock_phase.assert_has_calls(
             [call(session, scrape_phase.ScrapePhase.PERSIST)] * 2)
         mock_region.assert_has_calls([call('us_ut')])
-        mock_scraper.stop_scrape.\
+        mock_scraper.stop_scrape. \
             assert_called_with(
                 constants.ScrapeType.SNAPSHOT, 'false')
         mock_supported.assert_called_with(
             timezone=pytz.timezone('America/New_York'))
-        mock_enqueue.assert_called_with(
-            region_code='us_ut', url='/read_and_persist')
+        mock_task_manager.return_value.create_scraper_phase_task.\
+            assert_called_with(region_code='us_ut', url='/read_and_persist')
 
-    @patch("recidiviz.common.queues.enqueue_scraper_phase")
+    @patch("recidiviz.ingest.scrape.scraper_control.ScraperCloudTaskManager")
     @patch("recidiviz.utils.regions.get_supported_scrape_region_codes")
     def test_stop_unsupported_region(
-            self, mock_supported, mock_enqueue, client):
+            self, mock_supported, mock_task_manager):
         mock_supported.return_value = ['us_ny', 'us_pa']
 
         request_args = {'region': 'us_ca', 'scrape_type': 'all'}
-        headers = {'X-Appengine-Cron': "test-cron"}
-        response = client.get('/stop',
-                              query_string=request_args,
-                              headers=headers)
+        headers = {'X-Appengine-Cron': 'test-cron'}
+        response = self.client.get('/stop',
+                                   query_string=request_args,
+                                   headers=headers)
         assert response.status_code == 400
         assert response.get_data().decode() == \
-            "Missing or invalid parameters, see service logs."
+               "Missing or invalid parameters, see service logs."
 
         mock_supported.assert_called_with(timezone=None)
-        assert not mock_enqueue.called
+        mock_task_manager.return_value.create_scraper_phase_task.\
+            assert_not_called()
 
     @patch("recidiviz.utils.regions.get_supported_scrape_region_codes")
     @patch("recidiviz.utils.regions.get_region")
-    @patch("recidiviz.common.queues.enqueue_scraper_phase")
+    @patch("recidiviz.ingest.scrape.scraper_control.ScraperCloudTaskManager")
     @patch("recidiviz.ingest.scrape.sessions.update_phase")
     @patch("recidiviz.ingest.scrape.sessions.close_session")
     @patch("recidiviz.ingest.scrape.sessions.get_current_session")
     def test_stop_respects_region_is_not_stoppable(
-            self, mock_sessions, mock_close, mock_phase, mock_enqueue,
-            mock_region, mock_supported, client):
+            self, mock_sessions, mock_close, mock_phase, mock_task_manager,
+            mock_region, mock_supported):
         session = sessions.ScrapeSession.new(
             key=None, region='us_xx',
             scrape_type=constants.ScrapeType.BACKGROUND,
@@ -458,10 +468,10 @@ class TestScraperStop:
         mock_supported.return_value = ['us_ca', 'us_ut']
 
         request_args = {'region': 'all', 'scrape_type': 'all'}
-        headers = {'X-Appengine-Cron': "test-cron"}
-        response = client.get('/stop',
-                              query_string=request_args,
-                              headers=headers)
+        headers = {'X-Appengine-Cron': 'test-cron'}
+        response = self.client.get('/stop',
+                                   query_string=request_args,
+                                   headers=headers)
         assert response.status_code == 200
 
         mock_sessions.assert_has_calls(
@@ -483,19 +493,23 @@ class TestScraperStop:
         ]
 
         mock_supported.assert_called_with(timezone=None)
-        mock_enqueue.assert_has_calls([
-            call(region_code='us_ca', url='/read_and_persist'),
-            call(region_code='us_ut', url='/read_and_persist'),
-        ], any_order=True)
+        mock_task_manager.return_value.create_scraper_phase_task.\
+            assert_has_calls([
+                call(region_code='us_ca', url='/read_and_persist'),
+                call(region_code='us_ut', url='/read_and_persist'),
+            ], any_order=True)
 
 
-class TestScraperResume:
+class TestScraperResume(unittest.TestCase):
     """Tests for requests to the Scraper Resume API."""
+
+    def setUp(self) -> None:
+        self.client = create_test_client()
 
     @patch("recidiviz.utils.regions.get_supported_scrape_region_codes")
     @patch("recidiviz.utils.regions.get_region")
     @patch("recidiviz.ingest.scrape.sessions.create_session")
-    def test_resume(self, mock_sessions, mock_region, mock_supported, client):
+    def test_resume(self, mock_sessions, mock_region, mock_supported):
         mock_sessions.return_value = None
         mock_scraper = create_autospec(BaseScraper)
         mock_region.return_value = fake_region(ingestor=mock_scraper)
@@ -503,10 +517,10 @@ class TestScraperResume:
 
         region = 'us_ca'
         request_args = {'region': region, 'scrape_type': 'all'}
-        headers = {'X-Appengine-Cron': "test-cron"}
-        response = client.get('/resume',
-                              query_string=request_args,
-                              headers=headers)
+        headers = {'X-Appengine-Cron': 'test-cron'}
+        response = self.client.get('/resume',
+                                   query_string=request_args,
+                                   headers=headers)
         assert response.status_code == 200
 
         mock_sessions.assert_has_calls(
@@ -517,16 +531,16 @@ class TestScraperResume:
         mock_supported.assert_called_with(timezone=None)
 
     @patch("recidiviz.utils.regions.get_supported_scrape_region_codes")
-    def test_resume_unsupported_region(self, mock_supported, client):
+    def test_resume_unsupported_region(self, mock_supported):
         mock_supported.return_value = ['us_ny', 'us_pa']
 
         request_args = {'region': 'us_ca', 'scrape_type': 'all'}
-        headers = {'X-Appengine-Cron': "test-cron"}
-        response = client.get('/resume',
-                              query_string=request_args,
-                              headers=headers)
+        headers = {'X-Appengine-Cron': 'test-cron'}
+        response = self.client.get('/resume',
+                                   query_string=request_args,
+                                   headers=headers)
         assert response.status_code == 400
         assert response.get_data().decode() == \
-            "Missing or invalid parameters, see service logs."
+               "Missing or invalid parameters, see service logs."
 
         mock_supported.assert_called_with(timezone=None)

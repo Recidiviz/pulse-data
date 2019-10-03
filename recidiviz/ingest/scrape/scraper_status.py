@@ -22,15 +22,17 @@ from http import HTTPStatus
 
 from flask import Blueprint, request, url_for
 
-from recidiviz.common import queues
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.scrape import (constants, ingest_utils,
                                      scrape_phase, sessions)
+from recidiviz.ingest.scrape.scraper_cloud_task_manager import \
+    ScraperCloudTaskManager
 from recidiviz.utils import monitoring, regions, structured_logging
 from recidiviz.utils.auth import authenticate_request
 from recidiviz.utils.params import get_str_param_values
 
 scraper_status = Blueprint('scraper_status', __name__)
+
 
 @scraper_status.route('/check_finished')
 @authenticate_request
@@ -55,7 +57,7 @@ def check_for_finished_scrapers():
             if next_phase:
                 logging.info("Enqueueing [%s] for region [%s].",
                              next_phase, region_code)
-                queues.enqueue_scraper_phase(
+                ScraperCloudTaskManager().create_scraper_phase_task(
                     region_code=region_code, url=next_phase_url)
 
     region_codes = ingest_utils.validate_regions(
@@ -82,9 +84,11 @@ def check_for_finished_scrapers():
                 HTTPStatus.INTERNAL_SERVER_ERROR)
     return ('', HTTPStatus.OK)
 
+
 def is_scraper_finished(region_code: str):
+    cloud_task_manager = ScraperCloudTaskManager()
+
     region = regions.get_region(region_code)
-    # Note: if listing the tasks repeatedly is too heavy weight, we could mark
-    # the most recently enqueued task time on the session and check that first.
-    return not queues.list_scrape_tasks(region_code=region_code,
-                                        queue_name=region.get_queue_name())
+    return not cloud_task_manager.list_scrape_tasks(
+        region_code=region_code,
+        queue_name=region.get_queue_name())

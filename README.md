@@ -260,8 +260,6 @@ Note: make sure the installer did not add `google-cloud-sdk/platform/google_appe
 
 The release engineer oncall should go through the following steps:
 
-Note: The `queue.yaml` file is now generated using `python -m recidiviz.tools.build_queue_config`.
-
 #### Push to staging
 Typically on Monday morning the release engineer should:
 

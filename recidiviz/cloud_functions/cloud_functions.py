@@ -25,7 +25,8 @@ from flask import Blueprint, request, jsonify
 import gcsfs
 
 from recidiviz.calculator.bq.dashboard import dashboard_export_manager
-from recidiviz.calculator.utils import dataflow_monitor_manager
+from recidiviz.calculator.utils.calculate_cloud_task_manager import \
+    CalculateCloudTaskManager
 from recidiviz.cloud_functions.cloud_function_utils import GCSFS_NO_CACHING
 
 from recidiviz.ingest.aggregate.regions.ca import ca_aggregate_ingest
@@ -153,7 +154,8 @@ def dataflow_monitor():
     logging.info("Attempting to monitor the job with id: %s. Will "
                  "publish to %s on success.", job_id, topic)
 
-    dataflow_monitor_manager.create_dataflow_monitor_task(job_id, location,
-                                                          topic)
+    CalculateCloudTaskManager().create_dataflow_monitor_task(job_id,
+                                                             location,
+                                                             topic)
 
     return '', HTTPStatus.OK

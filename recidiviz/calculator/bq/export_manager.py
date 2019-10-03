@@ -29,8 +29,9 @@ from recidiviz.calculator.bq import bq_load
 from recidiviz.calculator.bq import bq_utils
 from recidiviz.calculator.bq import cloudsql_export
 from recidiviz.calculator.bq import export_config
+from recidiviz.calculator.bq.bq_export_cloud_task_manager import \
+    BQExportCloudTaskManager
 from recidiviz.calculator.bq.bq_load import ModuleType
-from recidiviz.common import queues
 from recidiviz.utils.auth import authenticate_request
 from recidiviz.utils import pubsub_helper
 
@@ -198,15 +199,15 @@ def handle_bq_monitor_task():
     topic = data['topic']
     message = data['message']
 
-    bq_tasks_in_queue = queues.list_tasks_with_prefix(
-        '', queues.BIGQUERY_QUEUE)
+    task_manager = BQExportCloudTaskManager()
+
+    bq_tasks_in_queue = task_manager.get_bq_queue_info().size() > 0
 
     # If there are BQ tasks in the queue, then re-queue this task in a minute
     if bq_tasks_in_queue:
         logging.info("Tasks still in bigquery queue. Re-queuing bq monitor"
                      " task.")
-        queues.create_bq_monitor_task(
-            topic, message, '/export_manager/bq_monitor')
+        task_manager.create_bq_monitor_task(topic, message)
         return ('', HTTPStatus.OK)
 
     # Publish a message to the Pub/Sub topic once all BQ exports are complete
@@ -229,8 +230,9 @@ def create_all_bq_export_tasks():
 
     logging.info("Beginning BQ export for county module.")
 
+    task_manager = BQExportCloudTaskManager()
     for table in export_config.COUNTY_TABLES_TO_EXPORT:
-        queues.create_bq_task(table.name, module, '/export_manager/export')
+        task_manager.create_bq_task(table.name, module)
     return ('', HTTPStatus.OK)
 
 
@@ -248,13 +250,13 @@ def create_all_state_bq_export_tasks():
 
     logging.info("Beginning BQ export for state module.")
 
+    task_manager = BQExportCloudTaskManager()
     for table in export_config.STATE_TABLES_TO_EXPORT:
-        queues.create_bq_task(table.name, module, '/export_manager/export')
+        task_manager.create_bq_task(table.name, module)
 
     pub_sub_topic = 'v1.calculator.recidivism'
     pub_sub_message = 'State export to BQ complete'
-    queues.create_bq_monitor_task(
-        pub_sub_topic, pub_sub_message, '/export_manager/bq_monitor')
+    task_manager.create_bq_monitor_task(pub_sub_topic, pub_sub_message)
     return ('', HTTPStatus.OK)
 
 
