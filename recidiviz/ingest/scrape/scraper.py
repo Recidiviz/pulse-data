@@ -27,12 +27,13 @@ from datetime import datetime
 import requests
 import urllib3
 
-from recidiviz.common import queues
 from recidiviz.ingest.ingestor import Ingestor
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.scrape import (constants, scraper_utils, sessions,
                                      tracker)
 from recidiviz.ingest.scrape.constants import BATCH_PUBSUB_TYPE
+from recidiviz.ingest.scrape.scraper_cloud_task_manager import \
+    ScraperCloudTaskManager
 from recidiviz.ingest.scrape.task_params import QueueRequest, Task
 from recidiviz.utils import regions, pubsub_helper
 
@@ -83,6 +84,7 @@ class Scraper(Ingestor, metaclass=abc.ABCMeta):
 
         self.region = regions.get_region(region_name)
         self.scraper_work_url = '/scraper/work/{}'.format(region_name)
+        self.cloud_task_manager = ScraperCloudTaskManager()
 
     @abc.abstractmethod
     def get_initial_task_method(self):
@@ -168,8 +170,9 @@ class Scraper(Ingestor, metaclass=abc.ABCMeta):
         logging.info("Stopping scrape for the region: %s", region.region_code)
 
         try:
-            queues.purge_scrape_tasks(region_code=region.region_code,
-                                      queue_name=region.get_queue_name())
+            self.cloud_task_manager.purge_scrape_tasks(
+                region_code=region.region_code,
+                queue_name=region.get_queue_name())
         except Exception as e:
             logging.error("Caught an exception while trying to purge scrape "
                           "tasks. The message was:\n%s", str(e))
@@ -311,7 +314,7 @@ class Scraper(Ingestor, metaclass=abc.ABCMeta):
                        be invoked
             request: (dict) parameters to be passed to the function
         """
-        queues.create_scrape_task(
+        self.cloud_task_manager.create_scrape_task(
             region_code=self.get_region().region_code,
             queue_name=self.get_region().get_queue_name(),
             url=self.scraper_work_url,

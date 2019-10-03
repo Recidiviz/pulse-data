@@ -20,14 +20,17 @@ App Engine.
 from typing import List
 
 from google.cloud.tasks_v2.proto import queue_pb2
+from google.protobuf import duration_pb2
 
 from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import \
     DIRECT_INGEST_SCHEDULER_QUEUE_V2, \
     DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2, \
-    DIRECT_INGEST_JAILS_PROCESS_JOB_QUEUE_V2
+    DIRECT_INGEST_JAILS_PROCESS_JOB_QUEUE_V2, BIGQUERY_QUEUE_V2, \
+    JOB_MONITOR_QUEUE_V2, SCRAPER_PHASE_QUEUE_V2
 from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import \
     GoogleCloudTasksClientWrapper
 from recidiviz.common.google_cloud.protobuf_builder import ProtobufBuilder
+from recidiviz.utils import vendors, regions
 
 DIRECT_INGEST_QUEUE_BASE_CONFIG = queue_pb2.Queue(
     rate_limits=queue_pb2.RateLimits(
@@ -39,29 +42,121 @@ DIRECT_INGEST_QUEUE_BASE_CONFIG = queue_pb2.Queue(
     )
 )
 
+BIGQUERY_QUEUE_CONFIG = queue_pb2.Queue(
+    name=BIGQUERY_QUEUE_V2,
+    rate_limits=queue_pb2.RateLimits(
+        max_dispatches_per_second=1,
+        max_concurrent_dispatches=1,
+    ),
+    retry_config=queue_pb2.RetryConfig(
+        max_attempts=1,
+    )
+)
+
+JOB_MONITOR_QUEUE_CONFIG = queue_pb2.Queue(
+    name=JOB_MONITOR_QUEUE_V2,
+    rate_limits=queue_pb2.RateLimits(
+        max_dispatches_per_second=1,
+        max_concurrent_dispatches=1,
+    ),
+    retry_config=queue_pb2.RetryConfig(
+        max_attempts=1,
+    )
+)
+
+BASE_SCRAPER_QUEUE_CONFIG = queue_pb2.Queue(
+    rate_limits=queue_pb2.RateLimits(
+        max_dispatches_per_second=0.08333333333,  # 5/min
+        max_concurrent_dispatches=3,
+    ),
+    retry_config=queue_pb2.RetryConfig(
+        min_backoff=duration_pb2.Duration(seconds=5),
+        max_backoff=duration_pb2.Duration(seconds=300),
+        max_attempts=5,
+    )
+)
+
+
+def _queue_config_with_name(
+        client_wrapper: GoogleCloudTasksClientWrapper,
+        base_config: queue_pb2.Queue,
+        queue_name: str) -> queue_pb2.Queue:
+    return ProtobufBuilder(queue_pb2.Queue).compose(
+        base_config
+    ).update_args(
+        name=client_wrapper.format_queue_path(queue_name),
+    ).build()
+
 
 def _build_cloud_task_queue_configs(
-        queue_manager: GoogleCloudTasksClientWrapper) -> List[queue_pb2.Queue]:
+        client_wrapper: GoogleCloudTasksClientWrapper) -> List[queue_pb2.Queue]:
+    """Builds a list of configurations for all Google Cloud Tasks queues that
+    should be deployed in this environment.
+    """
+
     queues = []
 
     # Direct ingest queues for handling /process_job requests
     for queue_name in [DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2,
                        DIRECT_INGEST_JAILS_PROCESS_JOB_QUEUE_V2,
                        DIRECT_INGEST_SCHEDULER_QUEUE_V2]:
-        queue = \
-            ProtobufBuilder(queue_pb2.Queue).compose(
-                DIRECT_INGEST_QUEUE_BASE_CONFIG
-            ).update_args(
-                name=queue_manager.format_queue_path(queue_name),
+        queues.append(
+            _queue_config_with_name(client_wrapper,
+                                    DIRECT_INGEST_QUEUE_BASE_CONFIG,
+                                    queue_name))
+
+    queues.append(
+        ProtobufBuilder(queue_pb2.Queue).compose(
+            _queue_config_with_name(client_wrapper,
+                                    BASE_SCRAPER_QUEUE_CONFIG,
+                                    SCRAPER_PHASE_QUEUE_V2)
+        ).update_args(
+            rate_limits=queue_pb2.RateLimits(
+                max_dispatches_per_second=1,
+            ),
+        ).build())
+
+    queues.append(
+        _queue_config_with_name(client_wrapper,
+                                BIGQUERY_QUEUE_CONFIG,
+                                BIGQUERY_QUEUE_V2))
+    queues.append(
+        _queue_config_with_name(client_wrapper,
+                                JOB_MONITOR_QUEUE_CONFIG,
+                                JOB_MONITOR_QUEUE_V2))
+
+    for vendor in vendors.get_vendors():
+        queue_params = vendors.get_vendor_queue_params(vendor)
+        if queue_params is None:
+            continue
+        vendor_queue_name = \
+            'vendor-{}-scraper-v2'.format(vendor.replace('_', '-'))
+        queue = ProtobufBuilder(queue_pb2.Queue).compose(
+            _queue_config_with_name(client_wrapper,
+                                    BASE_SCRAPER_QUEUE_CONFIG,
+                                    vendor_queue_name)
+        ).compose(
+            queue_pb2.Queue(**queue_params)
+        ).build()
+        queues.append(queue)
+
+    for region in regions.get_supported_regions():
+        if region.shared_queue or not region.is_ingest_launched_in_env():
+            continue
+
+        queue = _queue_config_with_name(client_wrapper,
+                                        BASE_SCRAPER_QUEUE_CONFIG,
+                                        region.get_queue_name())
+        if region.queue:
+            queue = ProtobufBuilder(queue_pb2.Queue).compose(queue).compose(
+                queue_pb2.Queue(**region.queue)
             ).build()
         queues.append(queue)
 
-    # TODO(2428): Migrate all queues created in build_queue_config.py to be
-    #  created here instead.
     return queues
 
 
 def initialize_queues():
-    queue_manager = GoogleCloudTasksClientWrapper()
-    queue_manager.initialize_cloud_task_queues(
-        _build_cloud_task_queue_configs(queue_manager))
+    client_wrapper = GoogleCloudTasksClientWrapper()
+    client_wrapper.initialize_cloud_task_queues(
+        _build_cloud_task_queue_configs(client_wrapper))

@@ -25,6 +25,8 @@ from jsonpickle import json
 
 from recidiviz.calculator.utils import dataflow_monitor_manager
 
+MONITOR_MANAGER_PACKAGE_NAME = dataflow_monitor_manager.__name__
+
 
 class DataflowMonitorManagerTest(unittest.TestCase):
     """Tests for dataflow_monitor_manager.py."""
@@ -37,11 +39,11 @@ class DataflowMonitorManagerTest(unittest.TestCase):
         self.mock_flask_client = self.mock_app.test_client()
 
     @mock.patch('recidiviz.utils.metadata.project_id')
-    @mock.patch('recidiviz.calculator.utils.dataflow_monitor_manager.pubsub_helper')
-    @mock.patch('recidiviz.calculator.utils.dataflow_monitor_manager.queues')
-    @mock.patch('recidiviz.calculator.utils.dataflow_monitor_manager.get_job_with_id')
+    @mock.patch(f'{MONITOR_MANAGER_PACKAGE_NAME}.pubsub_helper')
+    @mock.patch(f'{MONITOR_MANAGER_PACKAGE_NAME}.CalculateCloudTaskManager')
+    @mock.patch(f'{MONITOR_MANAGER_PACKAGE_NAME}.get_job_with_id')
     def test_handle_dataflow_monitor_task_success(self, mock_get_job,
-                                                  mock_queues,
+                                                  mock_cloud_task_manager,
                                                   mock_pubsub_helper,
                                                   mock_project_id):
         """Tests that a message is published to a Pub/Sub topic when a Dataflow
@@ -66,16 +68,17 @@ class DataflowMonitorManagerTest(unittest.TestCase):
             headers={'X-Appengine-Inbound-Appid': 'test-project'})
         assert response.status_code == HTTPStatus.OK
 
-        mock_queues.create_dataflow_monitor_task.assert_not_called()
+        mock_cloud_task_manager.return_value.create_dataflow_monitor_task. \
+            assert_not_called()
         mock_pubsub_helper.publish_message_to_topic.assert_called_with(message,
                                                                        topic)
 
     @mock.patch('recidiviz.utils.metadata.project_id')
-    @mock.patch('recidiviz.calculator.utils.dataflow_monitor_manager.pubsub_helper')
-    @mock.patch('recidiviz.calculator.utils.dataflow_monitor_manager.queues')
-    @mock.patch('recidiviz.calculator.utils.dataflow_monitor_manager.get_job_with_id')
+    @mock.patch(f'{MONITOR_MANAGER_PACKAGE_NAME}.pubsub_helper')
+    @mock.patch(f'{MONITOR_MANAGER_PACKAGE_NAME}.CalculateCloudTaskManager')
+    @mock.patch(f'{MONITOR_MANAGER_PACKAGE_NAME}.get_job_with_id')
     def test_handle_dataflow_monitor_task_running(self, mock_get_job,
-                                                  mock_queues,
+                                                  mock_cloud_task_manager,
                                                   mock_pubsub_helper,
                                                   mock_project_id):
         """Tests that a new Dataflow monitor task is created when the Dataflow
@@ -90,7 +93,6 @@ class DataflowMonitorManagerTest(unittest.TestCase):
         location = "fake_location"
         topic = 'fake_topic'
         route = '/monitor'
-        url = '/' + dataflow_monitor_manager.dataflow_monitor_blueprint.name + route
         data = {"job_id": job_id, "location": location, "topic": topic}
 
         response = self.mock_flask_client.post(
@@ -100,19 +102,18 @@ class DataflowMonitorManagerTest(unittest.TestCase):
             headers={'X-Appengine-Inbound-Appid': 'test-project'})
         assert response.status_code == HTTPStatus.OK
 
-        mock_queues.create_dataflow_monitor_task.assert_called_with(project_id,
-                                                                    job_id,
-                                                                    location,
-                                                                    topic,
-                                                                    url)
+        mock_cloud_task_manager.return_value. \
+            create_dataflow_monitor_task.assert_called_with(job_id,
+                                                            location,
+                                                            topic)
         mock_pubsub_helper.publish_message_to_topic.assert_not_called()
 
     @mock.patch('recidiviz.utils.metadata.project_id')
-    @mock.patch('recidiviz.calculator.utils.dataflow_monitor_manager.pubsub_helper')
-    @mock.patch('recidiviz.calculator.utils.dataflow_monitor_manager.queues')
-    @mock.patch('recidiviz.calculator.utils.dataflow_monitor_manager.get_job_with_id')
+    @mock.patch(f'{MONITOR_MANAGER_PACKAGE_NAME}.pubsub_helper')
+    @mock.patch(f'{MONITOR_MANAGER_PACKAGE_NAME}.CalculateCloudTaskManager')
+    @mock.patch(f'{MONITOR_MANAGER_PACKAGE_NAME}.get_job_with_id')
     def test_handle_dataflow_monitor_task_stopped(self, mock_get_job,
-                                                  mock_queues,
+                                                  mock_cloud_task_manager,
                                                   mock_pubsub_helper,
                                                   mock_project_id):
         """Tests that a new Dataflow monitor task is created when the Dataflow
@@ -127,7 +128,6 @@ class DataflowMonitorManagerTest(unittest.TestCase):
         location = "fake_location"
         topic = 'fake_topic'
         route = '/monitor'
-        url = '/' + dataflow_monitor_manager.dataflow_monitor_blueprint.name + route
         data = {"job_id": job_id, "location": location, "topic": topic}
 
         response = self.mock_flask_client.post(
@@ -137,19 +137,18 @@ class DataflowMonitorManagerTest(unittest.TestCase):
             headers={'X-Appengine-Inbound-Appid': 'test-project'})
         assert response.status_code == HTTPStatus.OK
 
-        mock_queues.create_dataflow_monitor_task.assert_called_with(project_id,
-                                                                    job_id,
-                                                                    location,
-                                                                    topic,
-                                                                    url)
+        mock_cloud_task_manager.return_value.create_dataflow_monitor_task. \
+            assert_called_with(job_id,
+                               location,
+                               topic)
         mock_pubsub_helper.publish_message_to_topic.assert_not_called()
 
     @mock.patch('recidiviz.utils.metadata.project_id')
-    @mock.patch('recidiviz.calculator.utils.dataflow_monitor_manager.pubsub_helper')
-    @mock.patch('recidiviz.calculator.utils.dataflow_monitor_manager.queues')
-    @mock.patch('recidiviz.calculator.utils.dataflow_monitor_manager.get_job_with_id')
+    @mock.patch(f'{MONITOR_MANAGER_PACKAGE_NAME}.pubsub_helper')
+    @mock.patch(f'{MONITOR_MANAGER_PACKAGE_NAME}.CalculateCloudTaskManager')
+    @mock.patch(f'{MONITOR_MANAGER_PACKAGE_NAME}.get_job_with_id')
     def test_handle_dataflow_monitor_task_pending(self, mock_get_job,
-                                                  mock_queues,
+                                                  mock_cloud_task_manager,
                                                   mock_pubsub_helper,
                                                   mock_project_id):
         """Tests that a new Dataflow monitor task is created when the Dataflow
@@ -164,7 +163,6 @@ class DataflowMonitorManagerTest(unittest.TestCase):
         location = "fake_location"
         topic = 'fake_topic'
         route = '/monitor'
-        url = '/' + dataflow_monitor_manager.dataflow_monitor_blueprint.name + route
         data = {"job_id": job_id, "location": location, "topic": topic}
 
         response = self.mock_flask_client.post(
@@ -174,19 +172,18 @@ class DataflowMonitorManagerTest(unittest.TestCase):
             headers={'X-Appengine-Inbound-Appid': 'test-project'})
         assert response.status_code == HTTPStatus.OK
 
-        mock_queues.create_dataflow_monitor_task.assert_called_with(project_id,
-                                                                    job_id,
-                                                                    location,
-                                                                    topic,
-                                                                    url)
+        mock_cloud_task_manager.return_value.create_dataflow_monitor_task. \
+            assert_called_with(job_id,
+                               location,
+                               topic)
         mock_pubsub_helper.publish_message_to_topic.assert_not_called()
 
     @mock.patch('recidiviz.utils.metadata.project_id')
-    @mock.patch('recidiviz.calculator.utils.dataflow_monitor_manager.pubsub_helper')
-    @mock.patch('recidiviz.calculator.utils.dataflow_monitor_manager.queues')
-    @mock.patch('recidiviz.calculator.utils.dataflow_monitor_manager.get_job_with_id')
+    @mock.patch(f'{MONITOR_MANAGER_PACKAGE_NAME}.pubsub_helper')
+    @mock.patch(f'{MONITOR_MANAGER_PACKAGE_NAME}.CalculateCloudTaskManager')
+    @mock.patch(f'{MONITOR_MANAGER_PACKAGE_NAME}.get_job_with_id')
     def test_handle_dataflow_monitor_task_queued(self, mock_get_job,
-                                                 mock_queues,
+                                                 mock_cloud_task_manager,
                                                  mock_pubsub_helper,
                                                  mock_project_id):
         """Tests that a new Dataflow monitor task is created when the Dataflow
@@ -201,7 +198,6 @@ class DataflowMonitorManagerTest(unittest.TestCase):
         location = "fake_location"
         topic = 'fake_topic'
         route = '/monitor'
-        url = '/' + dataflow_monitor_manager.dataflow_monitor_blueprint.name + route
         data = {"job_id": job_id, "location": location, "topic": topic}
 
         response = self.mock_flask_client.post(
@@ -211,20 +207,18 @@ class DataflowMonitorManagerTest(unittest.TestCase):
             headers={'X-Appengine-Inbound-Appid': 'test-project'})
         assert response.status_code == HTTPStatus.OK
 
-        mock_queues.create_dataflow_monitor_task.assert_called_with(project_id,
-                                                                    job_id,
-                                                                    location,
-                                                                    topic,
-                                                                    url)
+        mock_cloud_task_manager.return_value.create_dataflow_monitor_task. \
+            assert_called_with(job_id,
+                               location,
+                               topic)
         mock_pubsub_helper.publish_message_to_topic.assert_not_called()
 
-
     @mock.patch('recidiviz.utils.metadata.project_id')
-    @mock.patch('recidiviz.calculator.utils.dataflow_monitor_manager.pubsub_helper')
-    @mock.patch('recidiviz.calculator.utils.dataflow_monitor_manager.queues')
-    @mock.patch('recidiviz.calculator.utils.dataflow_monitor_manager.get_job_with_id')
+    @mock.patch(f'{MONITOR_MANAGER_PACKAGE_NAME}.pubsub_helper')
+    @mock.patch(f'{MONITOR_MANAGER_PACKAGE_NAME}.CalculateCloudTaskManager')
+    @mock.patch(f'{MONITOR_MANAGER_PACKAGE_NAME}.get_job_with_id')
     def test_handle_dataflow_monitor_task_failed(self, mock_get_job,
-                                                 mock_queues,
+                                                 mock_cloud_task_manager,
                                                  mock_pubsub_helper,
                                                  mock_project_id):
         """Tests that no message is published and no new monitor tasks are
@@ -248,5 +242,6 @@ class DataflowMonitorManagerTest(unittest.TestCase):
             headers={'X-Appengine-Inbound-Appid': 'test-project'})
         assert response.status_code == HTTPStatus.OK
 
-        mock_queues.create_dataflow_monitor_task.assert_not_called()
+        mock_cloud_task_manager.return_value.create_dataflow_monitor_task.\
+            assert_not_called()
         mock_pubsub_helper.publish_message_to_topic.assert_not_called()
