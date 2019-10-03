@@ -23,11 +23,13 @@ import unittest
 from unittest import mock
 
 import flask
-from google.cloud import bigquery, tasks
+from google.cloud import bigquery
 from jsonpickle import json
 
 from recidiviz.calculator.bq import export_manager
 from recidiviz.calculator.bq.export_manager import ModuleType
+from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import \
+    CloudTaskQueueInfo
 
 
 class ExportManagerTestCounty(unittest.TestCase):
@@ -250,25 +252,28 @@ class ExportManagerTestCounty(unittest.TestCase):
 
     @mock.patch('recidiviz.utils.metadata.project_id')
     @mock.patch('recidiviz.calculator.bq.export_manager.pubsub_helper')
-    @mock.patch('recidiviz.calculator.bq.export_manager.queues')
-    def test_handle_bq_monitor_task_requeue(self, mock_queues,
+    @mock.patch(
+        'recidiviz.calculator.bq.export_manager.BQExportCloudTaskManager')
+    def test_handle_bq_monitor_task_requeue(self,
+                                            mock_task_manager,
                                             mock_pubsub_helper,
                                             mock_project_id):
         """Test that a new bq monitor task is added to the queue when there are
         still unfinished tasks on the bq queue."""
         queue_path = 'test-queue-path'
 
-        mock_queues.list_tasks_with_prefix.return_value = [
-            tasks.types.Task(name=queue_path + '/table_name-123'),
-            tasks.types.Task(name=queue_path + '/table_name-456'),
-            tasks.types.Task(name=queue_path + '/table_name-789')
-        ]
+        mock_task_manager.return_value.get_bq_queue_info.return_value = \
+            CloudTaskQueueInfo(queue_name='queue_name',
+                               task_names=[
+                                   f'{queue_path}/table_name-123',
+                                   f'{queue_path}/table_name-456',
+                                   f'{queue_path}/table_name-789',
+                               ])
 
         mock_project_id.return_value = 'test-project'
         topic = 'fake_topic'
         message = 'fake_message'
         route = '/bq_monitor'
-        url = '/' + export_manager.export_manager_blueprint.name + route
         data = {"topic": topic, "message": message}
 
         response = self.mock_flask_client.post(
@@ -277,19 +282,21 @@ class ExportManagerTestCounty(unittest.TestCase):
             content_type='application/json',
             headers={'X-Appengine-Inbound-Appid': 'test-project'})
         assert response.status_code == HTTPStatus.OK
-        mock_queues.create_bq_monitor_task.assert_called_with(topic, message,
-                                                              url)
+        mock_task_manager.return_value.\
+            create_bq_monitor_task.assert_called_with(topic, message)
         mock_pubsub_helper.publish_message_to_topic.assert_not_called()
 
     @mock.patch('recidiviz.utils.metadata.project_id')
     @mock.patch('recidiviz.calculator.bq.export_manager.pubsub_helper')
-    @mock.patch('recidiviz.calculator.bq.export_manager.queues')
-    def test_handle_bq_monitor_task_publish(self, mock_queues,
+    @mock.patch(
+        'recidiviz.calculator.bq.export_manager.BQExportCloudTaskManager')
+    def test_handle_bq_monitor_task_publish(self, mock_task_manager,
                                             mock_pubsub_helper,
                                             mock_project_id):
         """Tests that a message is published to the Pub/Sub topic when there
         are no tasks on the bq queue."""
-        mock_queues.list_tasks_with_prefix.return_value = []
+        mock_task_manager.return_value.get_bq_queue_info.return_value = \
+            CloudTaskQueueInfo(queue_name='queue_name', task_names=[])
 
         mock_project_id.return_value = 'test-project'
         topic = 'fake_topic'
@@ -304,6 +311,7 @@ class ExportManagerTestCounty(unittest.TestCase):
             headers={
                 'X-Appengine-Inbound-Appid': 'test-project'})
         assert response.status_code == HTTPStatus.OK
-        mock_queues.create_bq_monitor_task.assert_not_called()
+        mock_task_manager.return_value.create_bq_monitor_task.\
+            assert_not_called()
         mock_pubsub_helper.publish_message_to_topic.assert_called_with(
             message=message, topic=topic)

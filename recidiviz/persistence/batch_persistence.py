@@ -24,13 +24,14 @@ from typing import List, Optional, Set, Dict, Tuple
 from flask import Blueprint, request, url_for
 from opencensus.stats import aggregation, measure, view
 
-from recidiviz.common import queues
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.ingest.models.ingest_info import IngestInfo, Person
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.scrape import ingest_utils, scrape_phase, sessions
 from recidiviz.ingest.scrape.constants import ScrapeType
+from recidiviz.ingest.scrape.scraper_cloud_task_manager import \
+    ScraperCloudTaskManager
 from recidiviz.ingest.scrape.task_params import Task
 from recidiviz.persistence import persistence
 from recidiviz.persistence import datastore_ingest_info
@@ -263,7 +264,7 @@ def read_and_persist():
             if next_phase:
                 logging.info("Enqueueing %s for region %s.", next_phase,
                              region)
-                queues.enqueue_scraper_phase(
+                ScraperCloudTaskManager().create_scraper_phase_task(
                     region_code=region, url=url_for(next_phase))
             return '', HTTPStatus.OK
 

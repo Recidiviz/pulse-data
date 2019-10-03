@@ -30,11 +30,12 @@ from http import HTTPStatus
 
 from flask import Blueprint, request, url_for
 
-from recidiviz.common import queues
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.scrape import (docket, ingest_utils, scrape_phase,
                                      sessions, tracker)
 from recidiviz.ingest.scrape.constants import BATCH_PUBSUB_TYPE
+from recidiviz.ingest.scrape.scraper_cloud_task_manager import \
+    ScraperCloudTaskManager
 from recidiviz.utils import (monitoring, pubsub_helper, regions,
                              structured_logging)
 from recidiviz.utils.auth import authenticate_request
@@ -241,8 +242,9 @@ def scraper_stop():
                 if next_phase:
                     logging.info("Enqueueing %s for region [%s].",
                                  next_phase, region)
-                    queues.enqueue_scraper_phase(region_code=region,
-                                                 url=next_phase_url)
+                    ScraperCloudTaskManager().create_scraper_phase_task(
+                        region_code=region,
+                        url=next_phase_url)
 
     if not scrape_regions or not scrape_types:
         return ('Missing or invalid parameters, see service logs.',

@@ -208,7 +208,7 @@ class TestRegions(TestCase):
 
     def test_create_queue_name(self):
         region = with_manifest(regions.get_region, 'us_ny')
-        assert region.get_queue_name() == 'us-ny-scraper'
+        assert region.get_queue_name() == 'us-ny-scraper-v2'
 
     def test_shared_queue_name(self):
         region = with_manifest(regions.get_region, 'us_in')

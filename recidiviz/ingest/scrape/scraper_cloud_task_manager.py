@@ -80,7 +80,7 @@ class ScraperCloudTaskManager:
             body=body
         )
 
-    def enqueue_scraper_phase(self, *, region_code: str, url: str):
+    def create_scraper_phase_task(self, *, region_code: str, url: str):
         """Add a task to trigger the next phase of a scrape.
 
         This triggers the phase at the given url for an individual region,

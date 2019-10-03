@@ -39,6 +39,8 @@ def fake_region(*,
     region.jurisdiction_id = jurisdiction_id
     region.get_ingestor.return_value = \
         ingestor if ingestor else create_autospec(BaseDirectIngestController)
+    region.is_ingest_launched_in_env.return_value = \
+        Region.is_ingest_launched_in_env(region)
     return region
 
 

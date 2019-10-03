@@ -21,7 +21,10 @@ from typing import Any, Dict, Optional, Set
 
 import yaml
 
-BASE_VENDOR_PATH = 'recidiviz/ingest/scrape/vendors'
+from recidiviz.ingest.scrape import vendors
+
+BASE_VENDOR_PATH = os.path.dirname(vendors.__file__)
+
 def get_vendors() -> Set[str]:
     return {vendor_module.name for vendor_module
             in pkgutil.iter_modules([BASE_VENDOR_PATH])}

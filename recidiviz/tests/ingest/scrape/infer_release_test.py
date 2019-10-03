@@ -81,7 +81,7 @@ class TestInferRelease(TestCase):
             mock_update_phase,
             mock_get_most_recent_session,
             mock_infer_release):
-        headers = {'X-Appengine-Cron': "test-cron"}
+        headers = {'X-Appengine-Cron': 'test-cron'}
         mock_validate_regions.return_value = [r.region_code for r in _REGIONS]
         mock_get_region.side_effect = _REGIONS
 

@@ -37,10 +37,8 @@ from recidiviz.ingest.direct.errors import DirectIngestError, \
     DirectIngestErrorType
 from recidiviz.utils import environment, regions
 from recidiviz.utils.auth import authenticate_request
-from recidiviz.utils.environment import in_gae_production
 from recidiviz.utils.params import get_str_param_value, get_bool_param_value
-from recidiviz.utils.regions import get_supported_direct_ingest_region_codes, \
-    Region
+from recidiviz.utils.regions import get_supported_direct_ingest_region_codes
 
 direct_ingest_control = Blueprint('direct_ingest_control', __name__)
 
@@ -137,7 +135,7 @@ def ensure_all_file_paths_normalized() -> Tuple[str, HTTPStatus]:
         if not isinstance(controller, GcsfsDirectIngestController):
             continue
 
-        can_start_ingest = not is_region_unlaunched(controller.region)
+        can_start_ingest = controller.region.is_ingest_launched_in_env()
         controller.cloud_task_manager.\
             create_direct_ingest_handle_new_files_task(
                 controller.region, can_start_ingest=can_start_ingest)
@@ -217,7 +215,7 @@ def controller_for_region_code(
             error_type=DirectIngestErrorType.INPUT_ERROR,
         )
 
-    if not allow_unlaunched and is_region_unlaunched(region):
+    if not allow_unlaunched and not region.is_ingest_launched_in_env():
         gae_env = environment.get_gae_environment()
         raise DirectIngestError(
             msg=f"Bad environment [{gae_env}] for direct region "
@@ -235,14 +233,6 @@ def controller_for_region_code(
 
     return controller
 
-
-def is_region_unlaunched(region: Region) -> bool:
-    # If we are in prod, the region config must be explicitly set to specify
-    #  this region can be run in prod. All regions can be triggered to run in
-    #  staging.
-
-    gae_env = environment.get_gae_environment()
-    return in_gae_production() and region.environment != gae_env
 
 def _get_ingest_args(
         json_data_str: str,
