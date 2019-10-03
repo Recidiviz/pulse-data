@@ -14,6 +14,7 @@ mypy = "*"
 coveralls = "*"
 apache-beam = {extras = ["gcp", "test"], version = "==2.13.0"}
 freezegun = "*"
+ipdb = "*"
 
 [packages]
 callee = "*"
