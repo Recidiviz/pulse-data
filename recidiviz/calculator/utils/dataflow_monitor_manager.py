@@ -23,8 +23,9 @@ import logging
 import flask
 from flask import request
 
+from recidiviz.calculator.utils.calculate_cloud_task_manager import \
+    CalculateCloudTaskManager
 from recidiviz.calculator.utils.execution_utils import get_job_with_id
-from recidiviz.common import queues
 from recidiviz.utils.auth import authenticate_request
 from recidiviz.utils import pubsub_helper, metadata
 
@@ -66,10 +67,10 @@ def handle_dataflow_monitor_task():
             logging.info("Job %s has state: %s. Continuing "
                          "to monitor progress.", job_id, state)
             # Job has not completed yet. Re-queue monitor task.
-            queues.create_dataflow_monitor_task(project_id, job_id,
-                                                location,
-                                                topic_dashed,
-                                                '/dataflow_monitor/monitor')
+            CalculateCloudTaskManager().create_dataflow_monitor_task(
+                job_id,
+                location,
+                topic_dashed)
         else:
             logging.warning("Dataflow job %s has state: %s. Killing the"
                             "monitor tasks.", job_id, state)
@@ -77,16 +78,3 @@ def handle_dataflow_monitor_task():
         logging.warning("Dataflow job %s not found.", job_id)
 
     return '', HTTPStatus.OK
-
-
-def create_dataflow_monitor_task(job_id: str, location: str, topic: str):
-    """Creates a task to monitor the status of a Dataflow job.
-
-    One task is created that checks on the status of the Dataflow job with the
-    given `job_id`.
-    """
-    project_id = metadata.project_id()
-
-    # Add monitor task to queue
-    queues.create_dataflow_monitor_task(project_id, job_id, location, topic,
-                                        '/dataflow_monitor/monitor')

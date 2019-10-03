@@ -10,11 +10,6 @@ git checkout tags/$1 -b $1
 echo "Starting deploy of cron.yaml"
 gcloud app deploy cron.yaml --project=recidiviz-123
 
-# TODO(2428): Once we have fully migrated to modern task queues, remove this step
-echo "Starting deploy of queue.yaml"
-python -m recidiviz.tools.build_queue_config --environment production
-gcloud app deploy queue.yaml --project=recidiviz-123
-
 echo "Deploying calculation pipelines to templates"
 deploy_pipelines ./deploy_pipeline_to_template.sh recidiviz-123 recidiviz-123-dataflow-templates ./calculation_pipeline_templates.yaml
 

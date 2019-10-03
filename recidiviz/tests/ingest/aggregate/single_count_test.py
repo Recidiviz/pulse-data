@@ -55,7 +55,7 @@ class TestSingleCountIngest(TestCase):
             'count': 311,
         }
 
-        headers = {'X-Appengine-Cron': "test-cron"}
+        headers = {'X-Appengine-Cron': 'test-cron'}
         response = self.client.get(f'/single_count?{urlencode(params)}',
                                    headers=headers)
         self.assertEqual(response.status_code, 200)
@@ -75,7 +75,7 @@ class TestSingleCountIngest(TestCase):
             'gender': Gender.MALE.value,
         }
 
-        headers = {'X-Appengine-Cron': "test-cron"}
+        headers = {'X-Appengine-Cron': 'test-cron'}
         response = self.client.get(f'/single_count?{urlencode(params)}',
                                    headers=headers)
         self.assertEqual(response.status_code, 200)
@@ -96,7 +96,7 @@ class TestSingleCountIngest(TestCase):
             'ethnicity': Ethnicity.HISPANIC.value,
         }
 
-        headers = {'X-Appengine-Cron': "test-cron"}
+        headers = {'X-Appengine-Cron': 'test-cron'}
         response = self.client.get(f'/single_count?{urlencode(params)}',
                                    headers=headers)
         self.assertEqual(response.status_code, 200)
@@ -117,7 +117,7 @@ class TestSingleCountIngest(TestCase):
             'race': Race.ASIAN.value,
         }
 
-        headers = {'X-Appengine-Cron': "test-cron"}
+        headers = {'X-Appengine-Cron': 'test-cron'}
         response = self.client.get(f'/single_count?{urlencode(params)}',
                                    headers=headers)
         self.assertEqual(response.status_code, 200)
@@ -138,7 +138,7 @@ class TestSingleCountIngest(TestCase):
             'date': '2019-01-01',
         }
 
-        headers = {'X-Appengine-Cron': "test-cron"}
+        headers = {'X-Appengine-Cron': 'test-cron'}
         response = self.client.get(f'/single_count?{urlencode(params)}',
                                    headers=headers)
         self.assertEqual(response.status_code, 200)
@@ -162,7 +162,7 @@ class TestSingleCountIngest(TestCase):
             'date': '2019-01-01',
         }
 
-        headers = {'X-Appengine-Cron': "test-cron"}
+        headers = {'X-Appengine-Cron': 'test-cron'}
         response = self.client.get(f'/single_count?{urlencode(params)}',
                                    headers=headers)
         self.assertEqual(response.status_code, 200)

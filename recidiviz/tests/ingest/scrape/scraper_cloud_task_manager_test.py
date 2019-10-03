@@ -191,7 +191,7 @@ class TestScraperCloudTaskManager(unittest.TestCase):
 
     @patch(f'{CLOUD_TASK_MANAGER_PACKAGE_NAME}.uuid')
     @patch(f'google.cloud.tasks_v2.CloudTasksClient')
-    def test_enqueue_scraper_phase(self, mock_client, mock_uuid):
+    def test_create_scraper_phase_task(self, mock_client, mock_uuid):
         # Arrange
         uuid = 'random-uuid'
         mock_uuid.uuid4.return_value = uuid
@@ -218,8 +218,7 @@ class TestScraperCloudTaskManager(unittest.TestCase):
 
         # Act
         ScraperCloudTaskManager(project_id=project_id). \
-            enqueue_scraper_phase(region_code=region_code,
-                                  url=url)
+            create_scraper_phase_task(region_code=region_code, url=url)
 
         # Assert
         mock_client.return_value.queue_path.assert_called_with(

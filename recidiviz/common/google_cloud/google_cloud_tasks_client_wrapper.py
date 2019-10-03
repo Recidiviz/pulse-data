@@ -93,16 +93,6 @@ class GoogleCloudTasksClientWrapper:
                 #  investigation.
                 logging.warning(e)
 
-            # TODO(2428): This only is necessary while we're still ever
-            #  deploying a queue.yaml. Deploying a queue.yaml will deactivate
-            #  any queue not in the queue.yaml. This step is required to make
-            #  sure the queue is reactivated.
-            retry_grpc(
-                self.NUM_GRPC_RETRIES,
-                self.client.resume_queue,
-                queue.name
-            )
-
         logging.info("Finished creating/updating Cloud Task queues.")
 
     def format_task_path(self,

@@ -94,7 +94,7 @@ class TestScraperAggregateReports(TestCase):
         mock_get_all_tx.return_value = {EXISTING_TEST_URL}
         mock_get.side_effect = _MockGet
 
-        headers = {'X-Appengine-Cron': "test-cron"}
+        headers = {'X-Appengine-Cron': 'test-cron'}
         response = self.client.get(
             '/scrape_state?state=texas', headers=headers)
         self.assertEqual(response.status_code, 200)
@@ -124,7 +124,7 @@ class TestScraperAggregateReports(TestCase):
         mock_get_all_tx.return_value = {EXISTING_TEST_URL}
         mock_get.side_effect = _MockGet
 
-        headers = {'X-Appengine-Cron': "test-cron"}
+        headers = {'X-Appengine-Cron': 'test-cron'}
         response = self.client.get(
             '/scrape_state?state=new_york', headers=headers)
         self.assertEqual(response.status_code, 200)
@@ -154,7 +154,7 @@ class TestScraperAggregateReports(TestCase):
         mock_get_all_tx.return_value = {EXISTING_TEST_URL}
         mock_get.side_effect = _MockGet
 
-        headers = {'X-Appengine-Cron': "test-cron"}
+        headers = {'X-Appengine-Cron': 'test-cron'}
         response = self.client.get(
             '/scrape_state?state=texas', headers=headers)
         self.assertEqual(response.status_code, 200)
@@ -188,7 +188,7 @@ class TestScraperAggregateReports(TestCase):
         mock_get_all_ca.return_value = [(EXISTING_TEST_URL_CA, CA_POST_DATA)]
         mock_post.side_effect = _MockGet
 
-        headers = {'X-Appengine-Cron': "test-cron"}
+        headers = {'X-Appengine-Cron': 'test-cron'}
         response = self.client.get(
             '/scrape_state?state=california', headers=headers)
         self.assertEqual(response.status_code, 200)
@@ -223,7 +223,7 @@ class TestScraperAggregateReports(TestCase):
         mock_get_all_tx.return_value = {EXISTING_TEST_URL, EXISTING_TEST_URL2}
         mock_get.side_effect = _MockGet
 
-        headers = {'X-Appengine-Cron': "test-cron"}
+        headers = {'X-Appengine-Cron': 'test-cron'}
         response = self.client.get(
             '/scrape_state?state=texas', headers=headers)
         self.assertEqual(response.status_code, 200)
@@ -277,7 +277,7 @@ class TestScraperAggregateReports(TestCase):
         mock_get_all_tx.return_value = {EXISTING_TEST_URL, EXISTING_TEST_URL2}
         mock_get.side_effect = _MockGet
 
-        headers = {'X-Appengine-Cron': "test-cron"}
+        headers = {'X-Appengine-Cron': 'test-cron'}
         response = self.client.get(
             '/scrape_state?state=texas', headers=headers)
         self.assertEqual(response.status_code, 200)

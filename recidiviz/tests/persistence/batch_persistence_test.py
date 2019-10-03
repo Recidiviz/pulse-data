@@ -448,14 +448,14 @@ class TestBatchPersistence(TestCase):
 class TestReadAndPersist(TestCase):
     """Tests read and persist"""
 
-    @patch("recidiviz.common.queues.enqueue_scraper_phase")
+    @patch("recidiviz.persistence.batch_persistence.ScraperCloudTaskManager")
     @patch(
         "recidiviz.ingest.scrape.sessions.get_most_recent_completed_session")
     @patch("recidiviz.ingest.scrape.sessions.update_phase")
     @patch("recidiviz.persistence.batch_persistence.persist_to_database")
     def test_read_and_persist(
             self, mock_persist, mock_session_update, mock_session_return,
-            mock_enqueue):
+            mock_task_manager):
         mock_session = Mock()
         mock_session.region = 'test'
         mock_session.scrape_type = constants.ScrapeType.BACKGROUND
@@ -464,14 +464,15 @@ class TestReadAndPersist(TestCase):
         mock_session_return.return_value = mock_session
 
         request_args = {'region': 'test'}
-        headers = {'X-Appengine-Cron': "test-cron"}
+        headers = {'X-Appengine-Cron': 'test-cron'}
         response = self.client.get('/read_and_persist',
                                    query_string=request_args,
                                    headers=headers)
         self.assertEqual(response.status_code, 200)
 
         mock_persist.assert_called_once_with('test', session_start)
-        mock_enqueue.assert_called_once_with(region_code='test',
-                                             url='/release')
+        mock_task_manager.return_value.create_scraper_phase_task.\
+            assert_called_once_with(region_code='test',
+                                    url='/release')
         mock_session_update.assert_called_once_with(
             mock_session, scrape_phase.ScrapePhase.RELEASE)

@@ -19,6 +19,7 @@
 from datetime import datetime
 
 import yaml
+from mock import patch
 
 from recidiviz.common.constants.person_characteristics import (
     ETHNICITY_MAP,
@@ -33,14 +34,20 @@ from recidiviz.tests.utils.individual_ingest_test import IndividualIngestTest
 
 _FAKE_SCRAPER_START_TIME = datetime(year=2019, month=1, day=2)
 
-
 class CommonScraperTest(IndividualIngestTest):
     """A base class for scraper tests which does extra validations."""
 
     def setUp(self):
         self.scraper = None
         self.yaml = None
+        self.task_client_patcher = patch(
+            'google.cloud.tasks_v2.CloudTasksClient')
+        self.task_client_patcher.start()
+
         self._init_scraper_and_yaml()
+
+    def tearDown(self):
+        self.task_client_patcher.stop()
 
     def test_scraper_not_none(self):
         if not self.scraper:

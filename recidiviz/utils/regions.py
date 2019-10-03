@@ -128,8 +128,18 @@ class Region:
     def get_queue_name(self):
         """Returns the name of the queue to be used for the region"""
         return self.shared_queue if self.shared_queue \
-            else '{}-scraper'.format(self.region_code.replace('_', '-'))
+            else '{}-scraper-v2'.format(self.region_code.replace('_', '-'))
 
+    def is_ingest_launched_in_env(self):
+        """Returns true if ingest can be launched for this region in the current
+        environment.
+
+        If we are in prod, the region config must be explicitly set to specify
+        this region can be run in prod. All regions can be triggered to run in
+        staging.
+        """
+        return not environment.in_gae_production() \
+            or self.environment == environment.get_gae_environment()
 
 def get_region(region_code: str, is_direct_ingest: bool = False) -> Region:
     global REGIONS

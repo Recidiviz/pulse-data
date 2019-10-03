@@ -88,8 +88,8 @@ class TestGoogleCloudTasksQueueConfig(unittest.TestCase):
             self.assertEqual(queue.rate_limits.max_concurrent_dispatches, 1)
 
         for region in regions.get_supported_regions():
-            if region.is_direct_ingest:
-                self.assertTrue(region.get_queue_name() in queues_updated_by_id)
+            self.assertTrue(region.get_queue_name() in queues_updated_by_id)
 
-        # TODO(2428): Add tests for other scraper / BQ queues once we migrate
-        #  them.
+        self.assertTrue('bigquery-v2' in queues_updated_by_id)
+        self.assertTrue('job-monitor-v2' in queues_updated_by_id)
+        self.assertTrue('scraper-phase-v2' in queues_updated_by_id)
