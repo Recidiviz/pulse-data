@@ -63,6 +63,7 @@ class TestBQExportCloudTaskManager(unittest.TestCase):
         task = tasks_v2.types.task_pb2.Task(
             name=task_path,
             app_engine_http_request={
+                'http_method': 'POST',
                 'relative_uri': '/export_manager/export',
                 'body': json.dumps(body).encode()
             }
@@ -117,6 +118,7 @@ class TestBQExportCloudTaskManager(unittest.TestCase):
             schedule_time=timestamp_pb2.Timestamp(
                 seconds=(now_utc_timestamp + delay_sec)),
             app_engine_http_request={
+                'http_method': 'POST',
                 'relative_uri': '/export_manager/bq_monitor',
                 'body': json.dumps(body).encode()
             }

@@ -36,6 +36,9 @@ from recidiviz.utils import metadata
 class HttpMethod(Enum):
     GET = 'GET'
     POST = 'POST'
+    PUT = 'PUT'
+    PATCH = 'PATCH'
+
 
 
 QUEUES_REGION = 'us-east1'
@@ -124,12 +127,13 @@ class GoogleCloudTasksClientWrapper:
                 if task.name.startswith(task_name_prefix)]
 
     def create_task(self,
+                    *,
                     task_id: str,
                     queue_name: str,
                     relative_uri: str,
-                    body: Dict[str, str],
+                    body: Optional[Dict[str, str]] = None,
                     schedule_delay_seconds: int = 0,
-                    http_method: Optional[HttpMethod] = None):
+                    http_method: HttpMethod = HttpMethod.POST):
         """Creates a task with the given details.
 
         Args:
@@ -155,7 +159,6 @@ class GoogleCloudTasksClientWrapper:
             name=task_name,
             app_engine_http_request={
                 'relative_uri': relative_uri,
-                'body': json.dumps(body).encode()
             },
         )
 
@@ -168,6 +171,15 @@ class GoogleCloudTasksClientWrapper:
             task_builder.update_args(
                 app_engine_http_request={
                     'http_method': http_method.value,
+                },
+            )
+
+        if http_method in (HttpMethod.POST, HttpMethod.PUT, HttpMethod.PATCH):
+            if body is None:
+                body = {}
+            task_builder.update_args(
+                app_engine_http_request={
+                    'body': json.dumps(body).encode()
                 },
             )
 
