@@ -24,6 +24,7 @@ from recidiviz.calculator.bq import bq_utils, bqview
 
 from recidiviz.calculator.bq.dashboard import dashboard_export_config
 from recidiviz.calculator.bq.dashboard.views import view_config
+from recidiviz.calculator.bq.dashboard.views import view_manager
 
 
 def export_dashboard_data_to_cloud_storage(bucket: str):
@@ -38,6 +39,9 @@ def export_dashboard_data_to_cloud_storage(bucket: str):
     Args:
         bucket: The cloud storage location where the exported data should go.
     """
+    view_manager.create_dataset_and_update_views(
+        view_config.DASHBOARD_VIEWS_DATASET, view_manager.VIEWS_TO_UPDATE)
+
     dataset_ref = bq_utils.client().dataset(view_config.DASHBOARD_VIEWS_DATASET)
     views_to_export = dashboard_export_config.VIEWS_TO_EXPORT
 

@@ -34,11 +34,14 @@ REVOCATIONS_BY_OFFICER_60_DAYS_DESCRIPTION = """
  source_supervision_violation_response.
  """
 
+# TODO(2231): Join against state_agent instead of temp_officers once state_agent
+#  is properly ingested and entity-matched
 REVOCATIONS_BY_OFFICER_60_DAYS_QUERY = \
     """
     /*{description}*/
-    
-    SELECT state_code, officer_external_id, COUNTIF(violation_type = 'ABSCONDED') as absconsion_count, COUNTIF(violation_type = 'FELONY') as felony_count,
+    SELECT state_code, officer_external_id, IFNULL(CAST(off.SITEID AS STRING), 'SITE_UNKNOWN') as site_id, rev.absconsion_count, rev.felony_count, rev.technical_count, rev.unknown_count
+    FROM
+    (SELECT state_code, officer_external_id, COUNTIF(violation_type = 'ABSCONDED') as absconsion_count, COUNTIF(violation_type = 'FELONY') as felony_count,
     COUNTIF(violation_type = 'TECHNICAL') as technical_count, COUNTIF(violation_type = 'UNKNOWN') as unknown_count
     FROM
     (SELECT sip.state_code, IFNULL(ag.external_id, 'OFFICER_UNKNOWN') as officer_external_id, IFNULL(viol.violation_type, 'UNKNOWN') as violation_type
@@ -53,7 +56,10 @@ REVOCATIONS_BY_OFFICER_60_DAYS_QUERY = \
     ON viol.supervision_violation_id = resp.supervision_violation_id
     WHERE sip.admission_reason IN ('PAROLE_REVOCATION', 'PROBATION_REVOCATION')
     ORDER BY officer_external_id)
-    GROUP BY state_code, officer_external_id 
+    GROUP BY state_code, officer_external_id) rev
+    LEFT JOIN `{project_id}.{base_dataset}.temp_officers` off
+    ON rev.officer_external_id = CAST(off.OFFICER AS STRING)
+    ORDER BY site_id asc
     """.format(
         description=REVOCATIONS_BY_OFFICER_60_DAYS_DESCRIPTION,
         project_id=PROJECT_ID,

@@ -121,8 +121,6 @@ def dashboard_export():
 
     Endpoint path parameters:
         bucket: A string indicating the GCP cloud storage bucket to export to
-        data_type: A string, either DATAFLOW or STANDARD for the type of data
-             that should be exported
     """
 
     # The cloud storage bucket to export to

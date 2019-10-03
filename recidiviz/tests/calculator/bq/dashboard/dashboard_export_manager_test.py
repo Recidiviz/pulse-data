@@ -55,17 +55,36 @@ class DashboardExportManagerTest(unittest.TestCase):
             **dashboard_export_config_values)
         self.mock_export_config = self.dashboard_export_config_patcher.start()
 
+
+        view_manager_config_values = {
+            'VIEWS_TO_UPDATE': views_to_export
+        }
+        self.view_manager_config_patcher = mock.patch(
+            'recidiviz.calculator.bq.dashboard.dashboard_export_manager.view_manager',
+            **view_manager_config_values
+        )
+        self.mock_view_manager = self.view_manager_config_patcher.start()
+
     def tearDown(self):
         self.client_patcher.stop()
         self.dashboard_export_config_patcher.stop()
+        self.view_manager_config_patcher.stop()
 
-    def test_export_dashboard_data_to_cloud_storage(self):
+    @mock.patch(
+        'recidiviz.calculator.bq.dashboard.dashboard_export_manager.view_config')
+    def test_export_dashboard_data_to_cloud_storage(self, mock_view_config):
         """Tests that both _export_views_to_table and
         _export_view_tables_to_cloud_storage are executed.
         """
         dashboard_export_manager.export_dashboard_data_to_cloud_storage(
             bucket='bucket'
         )
+
+        mock_view_config.DASHBOARD_VIEWS_DATASET.return_value = 'dataset'
+
+        self.mock_view_manager.create_dataset_and_update_views. \
+            assert_called_with(mock_view_config.DASHBOARD_VIEWS_DATASET,
+                               self.mock_view_manager.VIEWS_TO_UPDATE)
         self.mock_client.query.assert_called()
         self.mock_client.extract_table.assert_called()
 
