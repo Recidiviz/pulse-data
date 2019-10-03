@@ -128,6 +128,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
             name=task_name,
             schedule_time=time_proto,
             app_engine_http_request={
+                'http_method': 'POST',
                 'relative_uri':
                     f'/direct/scheduler?region={_REGION.region_code}&'
                     f'just_finished_job=False',
@@ -170,6 +171,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         task = tasks_v2.types.task_pb2.Task(
             name=task_name,
             app_engine_http_request={
+                'http_method': 'POST',
                 'relative_uri':
                     f'/direct/process_job?region={_REGION.region_code}',
                 'body': body_encoded
@@ -216,6 +218,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         task = tasks_v2.types.task_pb2.Task(
             name=task_name,
             app_engine_http_request={
+                'http_method': 'POST',
                 'relative_uri':
                     f'/direct/process_job?region={_REGION.region_code}',
                 'body': body_encoded

@@ -199,6 +199,7 @@ class TestGoogleCloudTasksClientWrapper(unittest.TestCase):
                 name="projects/my-project-id/locations/us-east1/queues/"
                      "queue-name/tasks/us_mo-file_name_1-123456",
                 app_engine_http_request={
+                    'http_method': 'POST',
                     'relative_uri': "/process_job?region=us_mo",
                     'body': b"{\"arg1\": \"arg1-val\", \"arg2\": 123}"
                 }
@@ -223,6 +224,7 @@ class TestGoogleCloudTasksClientWrapper(unittest.TestCase):
                 name="projects/my-project-id/locations/us-east1/queues/"
                      "queue-name/tasks/us_mo-file_name_1-123456",
                 app_engine_http_request={
+                    'http_method': 'POST',
                     'relative_uri': "/process_job?region=us_mo",
                     'body': b"{}"
                 },
