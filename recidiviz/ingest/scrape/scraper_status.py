@@ -41,6 +41,7 @@ def check_for_finished_scrapers():
 
     next_phase = scrape_phase.next_phase(request.endpoint)
     next_phase_url = url_for(next_phase) if next_phase else None
+    cloud_task_manager = ScraperCloudTaskManager()
 
     @structured_logging.copy_trace_id_to_thread
     @monitoring.with_region_tag
@@ -51,7 +52,7 @@ def check_for_finished_scrapers():
         if not session or not session.phase.is_actively_scraping():
             return
 
-        if is_scraper_finished(region_code):
+        if is_scraper_finished(region_code, cloud_task_manager):
             logging.info("Region [%s] has finished scraping.", region_code)
 
             if next_phase:
@@ -85,9 +86,8 @@ def check_for_finished_scrapers():
     return ('', HTTPStatus.OK)
 
 
-def is_scraper_finished(region_code: str):
-    cloud_task_manager = ScraperCloudTaskManager()
-
+def is_scraper_finished(region_code: str,
+                        cloud_task_manager: ScraperCloudTaskManager):
     region = regions.get_region(region_code)
     return not cloud_task_manager.list_scrape_tasks(
         region_code=region_code,
