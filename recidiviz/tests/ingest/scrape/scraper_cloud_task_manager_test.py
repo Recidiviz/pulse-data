@@ -161,6 +161,7 @@ class TestScraperCloudTaskManager(unittest.TestCase):
         task = tasks_v2.types.task_pb2.Task(
             name=task_path,
             app_engine_http_request={
+                'http_method': 'POST',
                 'relative_uri': url,
                 'body': json.dumps(body).encode()
             }
@@ -209,7 +210,6 @@ class TestScraperCloudTaskManager(unittest.TestCase):
             app_engine_http_request={
                 'http_method': 'GET',
                 'relative_uri': f'{url}?region={region_code}',
-                'body': json.dumps({}).encode()
             }
         )
 

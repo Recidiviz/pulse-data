@@ -91,6 +91,5 @@ class ScraperCloudTaskManager:
             task_id=self._format_scrape_task_id(region_code, str(uuid.uuid4())),
             queue_name=SCRAPER_PHASE_QUEUE_V2,
             relative_uri=f'{url}?region={region_code}',
-            body={},
             http_method=HttpMethod.GET
         )

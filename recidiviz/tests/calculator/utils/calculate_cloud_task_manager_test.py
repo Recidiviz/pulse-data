@@ -71,6 +71,7 @@ class TestCalculateCloudTaskManager(unittest.TestCase):
             schedule_time=timestamp_pb2.Timestamp(
                 seconds=(now_utc_timestamp + delay_sec)),
             app_engine_http_request={
+                'http_method': 'POST',
                 'relative_uri': '/dataflow_monitor/monitor',
                 'body': json.dumps(body).encode()
             }
