@@ -2,10 +2,8 @@ runtime: custom
 env: flex
 
 resources:
-  # TODO(2428): This was bumped from cpu: 1, memory_gb: .5 to temporarily mitigate issues we're seeing with cloud tasks
-  # getting stuck if they are running when a new instance gets spun up.
   cpu: 2
-  memory_gb: 8
+  memory_gb: 4
   disk_size_gb: 10
 automatic_scaling:
   min_num_instances: 1

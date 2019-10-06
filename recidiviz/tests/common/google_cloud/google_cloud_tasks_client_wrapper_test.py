@@ -92,28 +92,16 @@ class TestGoogleCloudTasksClientWrapper(unittest.TestCase):
             'projects/my-project-id/locations/us-east1/queues/queue-name-2/'
             'tasks/task-name-3456')
 
-    def test_initialize_cloud_task_queues(self):
-        queues = [
-            queue_pb2.Queue(
-                name=self.client_wrapper.format_queue_path('queue1')
-            ),
-            queue_pb2.Queue(
-                name=self.client_wrapper.format_queue_path('queue2')
-            ),
-        ]
+    def test_initialize_cloud_task_queue(self):
+        # Arrange
+        queue = queue_pb2.Queue(
+            name=self.client_wrapper.format_queue_path('queue1'))
 
-        self.client_wrapper.initialize_cloud_task_queues(queues)
+        # Act
+        self.client_wrapper.initialize_cloud_task_queue(queue)
 
-        self.assertTrue(len(self.mock_client.mock_calls), 3)
-        queue_names = set()
-        for method_name, args, _kwargs in self.mock_client.mock_calls:
-            if method_name == 'update_queue':
-                queue = args[0]
-                if not isinstance(queue, queue_pb2.Queue):
-                    self.fail(f"Unexpected type [{type(queue)}]")
-                queue_names.add(queue.name)
-
-        self.assertEqual(queue_names, {queue.name for queue in queues})
+        # Assert
+        self.mock_client.update_queue.assert_called_with(queue)
 
     @staticmethod
     def _tasks_to_ids(tasks: List[tasks_v2.types.task_pb2.Task]) -> Set[str]:

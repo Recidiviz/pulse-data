@@ -7,6 +7,9 @@ gcloud -q auth activate-service-account recidiviz-staging@appspot.gserviceaccoun
 # Deploy cron.yaml
 gcloud -q app deploy cron.yaml --project=recidiviz-staging 2>&1 | ind
 
+# Initialize taks queues
+docker exec -it recidiviz pipenv run python -m recidiviz.tools.initialize_google_cloud_task_queues --project_id recidiviz-staging 2>&1 | ind
+
 # App engine doesn't allow '.' in the version name
 VERSION=$(echo $TRAVIS_TAG | tr '.' '-')
 echo $VERSION 2>&1 | ind
