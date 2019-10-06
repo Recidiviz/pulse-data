@@ -50,15 +50,10 @@ class TestGoogleCloudTasksQueueConfig(unittest.TestCase):
     def tearDown(self):
         self.mock_client_patcher.stop()
 
-    @patch('recidiviz.utils.metadata.region')
-    @patch('recidiviz.utils.metadata.project_id')
-    def test_initialize_queues(self, mock_project_id, mock_instance_region):
-        # Arrange
-        mock_project_id.return_value = 'my-project-id'
-        mock_instance_region.return_value = 'us-east1'
-
+    def test_initialize_queues(self):
         # Act
-        google_cloud_task_queue_config.initialize_queues()
+        google_cloud_task_queue_config.initialize_queues(
+            google_auth_token='fake-auth-token', project_id='my-project-id')
 
         # Assert
         queues_updated_by_id: Dict[str, queue_pb2.Queue] = {}
