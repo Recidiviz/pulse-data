@@ -17,9 +17,13 @@
 """Configuration for the task queues that need to be initialized in Google
 App Engine.
 """
+import logging
+from multiprocessing.pool import ThreadPool
 from typing import List
 
+from google.cloud import tasks_v2
 from google.cloud.tasks_v2.proto import queue_pb2
+from google.oauth2 import credentials
 from google.protobuf import duration_pb2
 
 from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import \
@@ -156,7 +160,18 @@ def _build_cloud_task_queue_configs(
     return queues
 
 
-def initialize_queues():
-    client_wrapper = GoogleCloudTasksClientWrapper()
-    client_wrapper.initialize_cloud_task_queues(
-        _build_cloud_task_queue_configs(client_wrapper))
+def initialize_queues(google_auth_token: str,
+                      project_id: str):
+    cloud_tasks_client = tasks_v2.CloudTasksClient(
+        credentials=credentials.Credentials(google_auth_token))
+    client_wrapper = GoogleCloudTasksClientWrapper(
+        cloud_tasks_client=cloud_tasks_client,
+        project_id=project_id,
+    )
+
+    logging.info("Building queue configurations...")
+    configs = _build_cloud_task_queue_configs(client_wrapper)
+    logging.info("Start creating/updating Cloud Task queues...")
+    thread_pool = ThreadPool(processes=12)
+    thread_pool.map(client_wrapper.initialize_cloud_task_queue, configs)
+    logging.info("Finished creating/updating Cloud Task queues.")

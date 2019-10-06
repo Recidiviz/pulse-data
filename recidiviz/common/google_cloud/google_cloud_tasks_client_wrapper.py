@@ -24,7 +24,6 @@ import logging
 from enum import Enum
 from typing import List, Dict, Optional
 
-from google.api_core.exceptions import AlreadyExists
 from google.cloud import tasks_v2, exceptions
 from google.cloud.tasks_v2.types import queue_pb2, task_pb2
 from google.protobuf import timestamp_pb2
@@ -71,32 +70,19 @@ class GoogleCloudTasksClientWrapper:
             self.queues_region,
             queue_name)
 
-    def initialize_cloud_task_queues(self,
-                                     queue_configs: List[queue_pb2.Queue]):
+    def initialize_cloud_task_queue(self, queue_config: queue_pb2.Queue):
         """
-        Initializes a provided list of task queues. If a queue with a given name
-        already exists, it is updated to have the given config. If it does not
-        exist, it will be created by this function.
+        Initializes a task queue with the given config. If a queue with a given
+        name already exists, it is updated to have the given config. If it does
+        not exist, it will be created by this function.
         """
-        logging.info("Start creating/updating Cloud Task queues.")
-        for queue in queue_configs:
-            logging.info("Updating queue [%s].", queue.name)
-            try:
-                # Creates queue if it does not exist, or updates it to have the
-                #  given config.
-                retry_grpc(
-                    self.NUM_GRPC_RETRIES,
-                    self.client.update_queue,
-                    queue
-                )
-            except AlreadyExists as e:
-                # TODO(2428): This error shows up intermittently on launch -
-                #  this could be some weird interaction that is happening
-                #  because we have some queues defined in queue.yaml - needs
-                #  investigation.
-                logging.warning(e)
-
-        logging.info("Finished creating/updating Cloud Task queues.")
+        # Creates queue if it does not exist, or updates it to have the
+        #  given config.
+        retry_grpc(
+            self.NUM_GRPC_RETRIES,
+            self.client.update_queue,
+            queue_config
+        )
 
     def format_task_path(self,
                          queue_name: str,
