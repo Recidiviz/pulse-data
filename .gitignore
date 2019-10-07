@@ -132,6 +132,3 @@ secrets.yaml # keep in case any developers still have them
 
 # Mac
 .DS_Store
-
-# Dataflow deployment
-calculation_pipeline_templates.yaml
