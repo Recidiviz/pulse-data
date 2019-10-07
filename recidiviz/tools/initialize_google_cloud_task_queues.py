@@ -19,24 +19,8 @@ configurations."""
 
 import argparse
 import logging
-import subprocess
 
 from recidiviz.common.google_cloud import google_cloud_task_queue_config
-
-
-def get_google_auth_token() -> str:
-    """Returns an auth token for the currently active Google user.
-    """
-    res = subprocess.Popen(f'gcloud auth print-access-token',
-                           shell=True,
-                           stdout=subprocess.PIPE,
-                           stderr=subprocess.PIPE)
-    stdout, stderr = res.communicate()
-
-    if stderr:
-        raise ValueError(stderr.decode('utf-8'))
-
-    return stdout.decode('utf-8').rstrip()
 
 
 def main():
@@ -44,13 +28,16 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--project_id', required=True,
                         help='Project to initialize queues for')
+    parser.add_argument('--google_auth_token', required=True,
+                        help='Auth token (obtained via '
+                             '`gcloud auth print-access-token`).')
 
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, format='%(message)s')
 
     google_cloud_task_queue_config.initialize_queues(
-        google_auth_token=get_google_auth_token(),
+        google_auth_token=args.google_auth_token,
         project_id=args.project_id
     )
 
