@@ -195,12 +195,6 @@ Using this Docker container, you can edit your local repository files and use `g
 Recidiviz depends on sensitive information to run. This data is stored in Cloud Datastore, which should be added
 manually to your production environment (see `utils/secrets` for more information on the Datastore kind used).
 
-The deploy scripts depend on a file called `calculation_pipeline_templates.yaml` that contains information about pipeline jobs that are deployed as templates to Cloud Storage.
-Copy the provided example file into a local version before running any deploy scripts:
-
- `cp calculation_pipeline_templates.yaml.example calculation_pipeline_templates.yaml`
-
-If you will be doing any deploys of the pipelines, talk to your team about getting the most up-to-date version of this file.
 
 #### Data model updates
 The two main data models used in the system are the [`IngestInfo`](recidiviz/ingest/models/ingest_info.proto) object and the database [`schema`](recidiviz/persistence/database/schema), defined in various `schema.py` files.
