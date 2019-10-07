@@ -5,7 +5,7 @@ pipeline_count: 1
 
 # List of pipelines with their necessary details
 pipelines:
-  - pipeline: pipeline_type 
-    job_name: job_name
-    input: input_dataset
-    output: output_dataset
+  - pipeline: recidivism
+    job_name: full-recidivism-calculations
+    input: recidiviz_state_scratch_space_2
+    output: dataflow_metrics
