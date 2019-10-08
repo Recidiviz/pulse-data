@@ -40,12 +40,12 @@ from recidiviz.tests.persistence.entity.state.entities_test_utils import \
 class TestStateEntities(TestCase):
     """Tests for state/entities.py"""
 
-    def test_classes_have_cmp_equal_false(self):
+    def test_classes_have_eq_equal_false(self):
         for entity_class in get_all_entity_classes_in_module(entities):
             self.assertEqual(entity_class.__eq__, Entity.__eq__,
                              f"Class [{entity_class}] has an __eq__ function "
                              f"unequal to the base Entity class - did you "
-                             f"remember to set cmp=False in the @attr.s "
+                             f"remember to set eq=False in the @attr.s "
                              f"declaration?")
 
     def test_all_entity_class_names_prefixed_with_state(self):

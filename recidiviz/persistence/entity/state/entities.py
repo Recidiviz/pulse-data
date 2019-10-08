@@ -111,7 +111,7 @@ from recidiviz.persistence.entity.base_entity import Entity, ExternalIdEntity
 
 # Cross-entity relationships
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class StatePersonExternalId(Entity, BuildableAttr, DefaultableAttr):
     """Models an external id associated with a particular StatePerson."""
     external_id: str = attr.ib()
@@ -132,7 +132,7 @@ class StatePersonExternalId(Entity, BuildableAttr, DefaultableAttr):
     person: Optional['StatePerson'] = attr.ib(default=None)
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class StatePersonAlias(Entity, BuildableAttr, DefaultableAttr):
     """Models an alias associated with a particular StatePerson."""
     # Attributes
@@ -150,7 +150,7 @@ class StatePersonAlias(Entity, BuildableAttr, DefaultableAttr):
     person: Optional['StatePerson'] = attr.ib(default=None)
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class StatePersonRace(Entity, BuildableAttr, DefaultableAttr):
     """Models a race associated with a particular StatePerson."""
     # Attributes
@@ -166,7 +166,7 @@ class StatePersonRace(Entity, BuildableAttr, DefaultableAttr):
     person: Optional['StatePerson'] = attr.ib(default=None)
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class StatePersonEthnicity(Entity, BuildableAttr, DefaultableAttr):
     """Models an ethnicity associated with a particular StatePerson."""
     # Attributes
@@ -182,7 +182,7 @@ class StatePersonEthnicity(Entity, BuildableAttr, DefaultableAttr):
     person: Optional['StatePerson'] = attr.ib(default=None)
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class StatePerson(Entity, BuildableAttr, DefaultableAttr):
     """Models a StatePerson moving through the criminal justice system."""
     # Attributes
@@ -220,7 +220,7 @@ class StatePerson(Entity, BuildableAttr, DefaultableAttr):
     # system that don't result in sentences.
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class StateBond(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     """Models a StateBond associated with a particular StateCharge."""
     # Status
@@ -254,7 +254,7 @@ class StateBond(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     charges: List['StateCharge'] = attr.ib(factory=list)
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class StateCourtCase(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     """Models a StateCourtCase associated with some set of StateCharges"""
     # Status
@@ -292,7 +292,7 @@ class StateCourtCase(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     judge: Optional['StateAgent'] = attr.ib(default=None)
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class StateCharge(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     """Models a StateCharge against a particular StatePerson."""
     # Status
@@ -344,7 +344,7 @@ class StateCharge(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     fines: List['StateFine'] = attr.ib(factory=list)
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class StateAssessment(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     """Models a StateAssessment conducted about a particular StatePerson."""
     # Status
@@ -388,7 +388,7 @@ class StateAssessment(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     conducting_agent: Optional['StateAgent'] = attr.ib(default=None)
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class StateSentenceGroup(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     """
     Models a group of related sentences, which may be served consecutively or
@@ -442,7 +442,7 @@ class StateSentenceGroup(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     #  sentences (i.e. consecutive vs concurrent).
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class StateSupervisionSentence(ExternalIdEntity,
                                BuildableAttr,
                                DefaultableAttr):
@@ -491,7 +491,7 @@ class StateSupervisionSentence(ExternalIdEntity,
     supervision_periods: List['StateSupervisionPeriod'] = attr.ib(factory=list)
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class StateIncarcerationSentence(ExternalIdEntity,
                                  BuildableAttr,
                                  DefaultableAttr):
@@ -548,7 +548,7 @@ class StateIncarcerationSentence(ExternalIdEntity,
     supervision_periods: List['StateSupervisionPeriod'] = attr.ib(factory=list)
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class StateFine(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     """
     Models a fine that a StatePerson is sentenced to pay in association with a
@@ -586,7 +586,7 @@ class StateFine(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     charges: List['StateCharge'] = attr.ib(factory=list)
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class StateIncarcerationPeriod(ExternalIdEntity,
                                BuildableAttr,
                                DefaultableAttr):
@@ -662,7 +662,7 @@ class StateIncarcerationPeriod(ExternalIdEntity,
         Optional['StateSupervisionViolationResponse'] = attr.ib(default=None)
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class StateSupervisionPeriod(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     """
     Models a distinct period of time that a StatePerson is under supervision as
@@ -723,7 +723,7 @@ class StateSupervisionPeriod(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     assessments: List['StateAssessment'] = attr.ib(factory=list)
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class StateIncarcerationIncident(ExternalIdEntity,
                                  BuildableAttr,
                                  DefaultableAttr):
@@ -764,7 +764,7 @@ class StateIncarcerationIncident(ExternalIdEntity,
         = attr.ib(factory=list)
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class StateIncarcerationIncidentOutcome(ExternalIdEntity,
                                         BuildableAttr,
                                         DefaultableAttr):
@@ -796,7 +796,7 @@ class StateIncarcerationIncidentOutcome(ExternalIdEntity,
         attr.ib(default=None)
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class StateParoleDecision(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     """Models a Parole Decision for a StatePerson while under Incarceration."""
 
@@ -831,7 +831,7 @@ class StateParoleDecision(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     decision_agents: List['StateAgent'] = attr.ib(factory=list)
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class StateSupervisionViolation(ExternalIdEntity,
                                 BuildableAttr,
                                 DefaultableAttr):
@@ -876,7 +876,7 @@ class StateSupervisionViolation(ExternalIdEntity,
         List['StateSupervisionViolationResponse'] = attr.ib(factory=list)
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class StateSupervisionViolationResponse(ExternalIdEntity,
                                         BuildableAttr,
                                         DefaultableAttr):
@@ -922,7 +922,7 @@ class StateSupervisionViolationResponse(ExternalIdEntity,
     decision_agents: List['StateAgent'] = attr.ib(factory=list)
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class StateAgent(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     """Models an agent working within a justice system."""
     # Type
@@ -941,7 +941,7 @@ class StateAgent(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     agent_id: Optional[int] = attr.ib(default=None)
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class StateProgramAssignment(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     """Models an person's assignment to a particular program."""
     # Status
