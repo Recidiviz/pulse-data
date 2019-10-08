@@ -181,12 +181,14 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
             f'{entity.get_entity_name()}({id(entity)}) ' \
             f'external_id={external_id} placeholder={is_placeholder(entity)}'
 
-    def run_match(self, session: Session, region: str,
+    def run_match(self,
+                  session: Session,
+                  region_code: str,
                   ingested_people: List[entities.StatePerson]) \
             -> MatchedEntities:
         """Attempts to match all persons from |ingested_persons| with
-        corresponding persons in our database for the given |region|. Returns a
-        MatchedEntities object that contains the results of matching.
+        corresponding persons in our database for the given |region_code|.
+        Returns a MatchedEntities object that contains the results of matching.
         """
 
         # In testing
@@ -206,13 +208,15 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
 
             db_persons = _read_persons(
                 session=session,
-                region=region,
+                region=region_code,
                 ingested_people=ingested_db_people)
             self.set_root_entity_cache(db_persons)
 
             logging.info("[Entity matching] Completed DB read at time [%s].",
                          datetime.datetime.now().isoformat())
-            matched_entities = self._run_match(ingested_db_people, db_persons)
+            matched_entities = self._run_match(ingested_db_people,
+                                               db_persons,
+                                               region_code)
 
             # In order to maintain the invariant that all objects are properly
             # added to the Session when we return from entity_matching we
@@ -225,7 +229,8 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
 
     def _run_match(self,
                    ingested_persons: List[schema.StatePerson],
-                   db_persons: List[schema.StatePerson]) -> MatchedEntities:
+                   db_persons: List[schema.StatePerson],
+                   region_code: str) -> MatchedEntities:
         """Attempts to match |ingested_persons| with people in |db_persons|.
         Assumes no backedges are present in either |ingested_persons| or
         |db_persons|.
@@ -251,7 +256,8 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
 
         logging.info("[Entity matching] Transform incarceration periods into "
                      "holds")
-        nd_update_temporary_holds(matched_entities.people)
+        if region_code.lower() == 'us_nd':
+            nd_update_temporary_holds(matched_entities.people, region_code)
 
         logging.info("[Entity matching] Associate revocation SVRS wtih IPs")
         associate_revocation_svrs_with_ips(matched_entities.people)

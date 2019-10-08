@@ -220,30 +220,36 @@ def add_child_to_entity(
         entity.set_field(child_field_name, child_field)
 
 
-def nd_update_temporary_holds(ingested_persons: List[schema.StatePerson]):
+def nd_update_temporary_holds(ingested_persons: List[schema.StatePerson],
+                              region_code: str):
     """ND specific logic to handle correct setting of admission and release
     reasons for incarceration periods that are holds and that directly succeed
     holds.
     """
+    if region_code.lower() != 'us_nd':
+        raise ValueError(f'Unexpected region code [{region_code}]')
+
+    region = get_region(region_code)
+    enum_overrides = region.get_enum_overrides()
     for person in ingested_persons:
         for sentence_group in person.sentence_groups:
             for incarceration_sentence in \
                     sentence_group.incarceration_sentences:
                 _nd_update_temporary_holds_helper(
-                    incarceration_sentence.incarceration_periods)
+                    incarceration_sentence.incarceration_periods,
+                    enum_overrides)
 
 
 def _nd_update_temporary_holds_helper(
-        ips: List[schema.StateIncarcerationPeriod]) -> None:
+        ips: List[schema.StateIncarcerationPeriod],
+        enum_overrides: EnumOverrides) -> None:
     ips_with_admission_dates = [ip for ip in ips if ip.admission_date]
     sorted_ips = sorted(
         ips_with_admission_dates, key=lambda x: x.admission_date)
     _update_ips_to_holds(sorted_ips)
-    region = get_region('us_nd')
-    overrides = region.get_enum_overrides()
     for idx, ip in enumerate(sorted_ips):
         if not _is_hold(ip):
-            _set_preceding_admission_reason(idx, sorted_ips, overrides)
+            _set_preceding_admission_reason(idx, sorted_ips, enum_overrides)
 
 
 def _update_ips_to_holds(
