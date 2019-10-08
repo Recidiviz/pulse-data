@@ -21,7 +21,7 @@ from unittest import TestCase
 
 import attr
 import pytest
-from mock import patch, create_autospec
+from mock import create_autospec
 
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.state.state_incarceration import \
@@ -477,11 +477,8 @@ class TestStateMatchingUtils(TestCase):
         fake_region.get_enum_overrides.return_value = overrides_builder.build()
         return fake_region
 
-    @patch("recidiviz.persistence.entity_matching.state"
-           ".state_matching_utils.get_region")
-    def test_transformToHolds(self, mock_region):
+    def test_transformToHolds(self):
         # Arrange
-        mock_region.return_value = self._create_fake_nd_region()
         ip = schema.StateIncarcerationPeriod(
             admission_date=_DATE_1,
             admission_reason=
@@ -544,20 +541,17 @@ class TestStateMatchingUtils(TestCase):
         expected_ips = [
             expected_ip, expected_ip_2, expected_ip_3, expected_ip_4]
 
+        overrides = self._create_fake_nd_region().get_enum_overrides()
+
         # Act
-        _nd_update_temporary_holds_helper(ips)
+        _nd_update_temporary_holds_helper(ips, overrides)
 
         # Assert
         entity_ips = [self.to_entity(ip) for ip in ips]
         self.assertCountEqual(entity_ips, expected_ips)
 
-
-    @patch("recidiviz.persistence.entity_matching.state"
-           ".state_matching_utils.get_region")
-    def test_transformToHolds_takeAdmissionReasonFromConsecutive(
-            self, mock_region):
+    def test_transformToHolds_takeAdmissionReasonFromConsecutive(self):
         # Arrange
-        mock_region.return_value = self._create_fake_nd_region()
         # Too long of a time gap between date_1 and date_2 to be
         # considered consecutive
         date_1 = _DATE_1
@@ -613,18 +607,17 @@ class TestStateMatchingUtils(TestCase):
         ips = [ip_2, ip, ip_3]
         expected_ips = [expected_ip, expected_ip_2, expected_ip_3]
 
+        overrides = self._create_fake_nd_region().get_enum_overrides()
+
         # Act
-        _nd_update_temporary_holds_helper(ips)
+        _nd_update_temporary_holds_helper(ips, overrides)
 
         # Assert
         entity_ips = [self.to_entity(ip) for ip in ips]
         self.assertCountEqual(entity_ips, expected_ips)
 
-    @patch("recidiviz.persistence.entity_matching.state"
-           ".state_matching_utils.get_region")
-    def test_transformToHolds_nonTransferReason(self, mock_region):
+    def test_transformToHolds_nonTransferReason(self):
         # Arrange
-        mock_region.return_value = self._create_fake_nd_region()
         ip = schema.StateIncarcerationPeriod(
             admission_date=_DATE_1,
             admission_reason=
@@ -655,8 +648,10 @@ class TestStateMatchingUtils(TestCase):
         ips = [ip, ip_2]
         expected_ips = [expected_ip, expected_ip_2]
 
+        overrides = self._create_fake_nd_region().get_enum_overrides()
+
         # Act
-        _nd_update_temporary_holds_helper(ips)
+        _nd_update_temporary_holds_helper(ips, overrides)
 
         # Assert
         entity_ips = [self.to_entity(ip) for ip in ips]
