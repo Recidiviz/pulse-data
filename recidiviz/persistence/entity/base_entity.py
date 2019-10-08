@@ -23,7 +23,7 @@ import attr
 from recidiviz.persistence.entity.core_entity import CoreEntity
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class Entity(CoreEntity):
     """Base class for all entity types."""
     # Consider Entity abstract and only allow instantiating subclasses
@@ -36,7 +36,7 @@ class Entity(CoreEntity):
         return entity_graph_eq(self, other)
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class ExternalIdEntity(Entity):
     external_id: Optional[str] = attr.ib()
 
