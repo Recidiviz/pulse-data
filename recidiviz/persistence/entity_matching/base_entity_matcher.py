@@ -46,7 +46,7 @@ class BaseEntityMatcher(Generic[EntityPersonType]):
     """Base class for all entity matchers."""
 
     @abstractmethod
-    def run_match(self, session: Session, region: str,
+    def run_match(self, session: Session, region_code: str,
                   ingested_people: List[EntityPersonType]) \
             -> MatchedEntities:
         """

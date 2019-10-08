@@ -51,12 +51,12 @@ from recidiviz.persistence.errors import MatchedMultipleIngestedEntitiesError, \
 class CountyEntityMatcher(BaseEntityMatcher[entities.Person]):
     """Base class for all entity matchers."""
 
-    def run_match(self, session: Session, region: str,
+    def run_match(self, session: Session, region_code: str,
                   ingested_people: List[entities.Person]) \
             -> MatchedEntities:
         """
         Attempts to match all people from |ingested_people| with corresponding
-        people in our database for the given |region|. Returns an
+        people in our database for the given |region_code|. Returns an
         MatchedEntities object that contains the results of matching.
         """
         with_external_ids = []
@@ -68,13 +68,13 @@ class CountyEntityMatcher(BaseEntityMatcher[entities.Person]):
                 without_external_ids.append(ingested_person)
 
         db_people_with_external_ids = dao.read_people_by_external_ids(
-            session, region, with_external_ids)
+            session, region_code, with_external_ids)
         matches_with_external_id = match_people_and_return_error_count(
             db_people=db_people_with_external_ids,
             ingested_people=with_external_ids)
 
         db_people_without_external_ids = dao.read_people_with_open_bookings(
-            session, region, without_external_ids)
+            session, region_code, without_external_ids)
         matches_without_external_ids = \
             match_people_and_return_error_count(
                 db_people=db_people_without_external_ids,
