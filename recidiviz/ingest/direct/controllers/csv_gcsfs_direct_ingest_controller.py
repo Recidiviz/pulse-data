@@ -55,11 +55,13 @@ class CsvGcsfsDirectIngestController(GcsfsDirectIngestController):
                  # TODO(2104): Remove this once UsTxBrazosDataExtractor is no
                  #  longer used.
                  csv_data_extractor_cls:
-                 Type[CsvDataExtractor] = CsvDataExtractor):
+                 Type[CsvDataExtractor] = CsvDataExtractor,
+                 max_delay_sec_between_files: Optional[int] = None):
         super().__init__(region_name,
                          system_level,
                          ingest_directory_path,
-                         storage_directory_path)
+                         storage_directory_path,
+                         max_delay_sec_between_files)
         self.csv_data_extractor_cls = csv_data_extractor_cls
 
     @abc.abstractmethod

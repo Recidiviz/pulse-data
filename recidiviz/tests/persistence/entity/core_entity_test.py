@@ -126,6 +126,8 @@ class TestCoreEntity(unittest.TestCase):
                               entity.get_field_as_list('state_code'))
         self.assertCountEqual([fine, fine_2],
                               entity.get_field_as_list('fines'))
+        self.assertCountEqual([],
+                              entity.get_field_as_list('supervision_sentences'))
 
         self.assertCountEqual(['us_nc'],
                               db_entity.get_field_as_list('state_code'))
@@ -133,6 +135,25 @@ class TestCoreEntity(unittest.TestCase):
                               converter.convert_schema_objects_to_entity(
                                   db_entity.get_field_as_list('fines'),
                                   populate_back_edges=False))
+        self.assertCountEqual([], db_entity.get_field_as_list(
+            'supervision_sentences'))
+
+    def test_clearField(self):
+        fine = entities.StateFine.new_with_defaults(external_id='ex1')
+        fine_2 = entities.StateFine.new_with_defaults(external_id='ex2')
+        entity = entities.StateSentenceGroup.new_with_defaults(
+            state_code='us_nc', fines=[fine, fine_2])
+        db_entity = converter.convert_entity_to_schema_object(entity)
+
+        entity.clear_field('state_code')
+        entity.clear_field('fines')
+        self.assertIsNone(entity.state_code)
+        self.assertCountEqual([], entity.fines)
+
+        db_entity.clear_field('state_code')
+        db_entity.clear_field('fines')
+        self.assertIsNone(db_entity.state_code)
+        self.assertCountEqual([], db_entity.fines)
 
     def test_setField(self):
         entity = entities.StateSentenceGroup.new_with_defaults()
