@@ -14,9 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Test utils for generating state Entity classes."""
+"""Test utils for generating state CoreEntity/Entity classes."""
 
 import datetime
+from typing import Sequence
 
 from recidiviz.common.constants.bond import BondStatus, BondType
 from recidiviz.common.constants.charge import ChargeStatus
@@ -57,9 +58,23 @@ from recidiviz.common.constants.state.\
         StateSupervisionViolationResponseDecision,
         StateSupervisionViolationResponseDecidingBodyType,
     )
+from recidiviz.persistence.entity.core_entity import CoreEntity
+from recidiviz.persistence.entity.entity_utils import \
+    get_set_entity_field_names, EntityFieldType
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.entities import StateAgent, \
     StateProgramAssignment
+
+
+def clear_db_ids(db_entities: Sequence[CoreEntity]):
+    """Clears primary key fields off of all entities in all of the provided
+    |db_entities| graphs.
+    """
+    for entity in db_entities:
+        entity.clear_id()
+        for field_name in get_set_entity_field_names(
+                entity, EntityFieldType.FORWARD_EDGE):
+            clear_db_ids(entity.get_field_as_list(field_name))
 
 
 def generate_full_graph_state_person(
