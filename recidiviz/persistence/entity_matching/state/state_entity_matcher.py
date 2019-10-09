@@ -196,41 +196,39 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         Returns a MatchedEntities object that contains the results of matching.
         """
 
-        # In testing
-        with session.no_autoflush:
-            logging.info(
-                "[Entity matching] Converting ingested entities to DB entities "
-                "at time [%s].", datetime.datetime.now().isoformat())
-            ingested_db_people = \
-                convert_entity_people_to_schema_people(
-                    ingested_people, populate_back_edges=False)
-            self.set_ingest_objs_for_people(ingested_db_people)
-            self.root_entity_cls = get_root_entity_cls(ingested_db_people)
+        logging.info(
+            "[Entity matching] Converting ingested entities to DB entities "
+            "at time [%s].", datetime.datetime.now().isoformat())
+        ingested_db_people = \
+            convert_entity_people_to_schema_people(
+                ingested_people, populate_back_edges=False)
+        self.set_ingest_objs_for_people(ingested_db_people)
+        self.root_entity_cls = get_root_entity_cls(ingested_db_people)
 
-            logging.info(
-                "[Entity matching] Starting reading and converting people "
-                "at time [%s].", datetime.datetime.now().isoformat())
+        logging.info(
+            "[Entity matching] Starting reading and converting people "
+            "at time [%s].", datetime.datetime.now().isoformat())
 
-            db_persons = _read_persons(
-                session=session,
-                region=region_code,
-                ingested_people=ingested_db_people)
-            self.set_root_entity_cache(db_persons)
+        db_persons = _read_persons(
+            session=session,
+            region=region_code,
+            ingested_people=ingested_db_people)
+        self.set_root_entity_cache(db_persons)
 
-            logging.info("[Entity matching] Completed DB read at time [%s].",
-                         datetime.datetime.now().isoformat())
-            matched_entities = self._run_match(ingested_db_people,
-                                               db_persons,
-                                               region_code)
+        logging.info("[Entity matching] Completed DB read at time [%s].",
+                     datetime.datetime.now().isoformat())
+        matched_entities = self._run_match(ingested_db_people,
+                                           db_persons,
+                                           region_code)
 
-            # In order to maintain the invariant that all objects are properly
-            # added to the Session when we return from entity_matching we
-            # add new people to the session here. Adding a person to the session
-            # that is already in-session (i.e. not new) has no effect.
-            # pylint:disable=not-an-iterable
-            for match_person in matched_entities.people:
-                session.add(match_person)
-            return matched_entities
+        # In order to maintain the invariant that all objects are properly
+        # added to the Session when we return from entity_matching we
+        # add new people to the session here. Adding a person to the session
+        # that is already in-session (i.e. not new) has no effect.
+        # pylint:disable=not-an-iterable
+        for match_person in matched_entities.people:
+            session.add(match_person)
+        return matched_entities
 
     def _run_match(self,
                    ingested_persons: List[schema.StatePerson],
