@@ -76,14 +76,13 @@ from recidiviz.persistence.database.schema.state import dao
 from recidiviz.persistence.database.schema_entity_converter.state.\
     schema_entity_converter import StateSchemaToEntityConverter
 from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.entity_utils import \
-    EntityFieldType, get_set_entity_field_names
 from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.ingest.direct.direct_ingest_util import \
     build_gcsfs_controller_for_tests, ingest_args_for_fixture_file, \
     add_paths_with_tags_and_process, run_task_queues_to_empty, \
     path_for_fixture_file
+from recidiviz.tests.persistence.entity.state.entities_test_utils import \
+    clear_db_ids
 from recidiviz.tests.utils import fakes
 from recidiviz.utils.regions import Region
 
@@ -3468,21 +3467,8 @@ class TestUsNdController(unittest.TestCase):
     def convert_and_clear_db_ids(self, db_entities: List[StateBase]):
         converted = StateSchemaToEntityConverter().convert_all(
             db_entities, populate_back_edges=True)
-        self._clear_db_ids(converted)
+        clear_db_ids(converted)
         return converted
-
-    def _clear_db_ids(self, db_entities: List[Entity]):
-        for entity in db_entities:
-            entity.clear_id()
-            for field_name in get_set_entity_field_names(
-                    entity, EntityFieldType.FORWARD_EDGE):
-                self._clear_db_ids(self.get_field_as_list(entity, field_name))
-
-    def get_field_as_list(self, entity, field_name):
-        field = getattr(entity, field_name)
-        if not isinstance(field, list):
-            return [field]
-        return field
 
     @patch.dict('os.environ', {'PERSIST_LOCALLY': 'true'})
     @patch("recidiviz.persistence.entity_matching.state"
