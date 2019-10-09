@@ -35,7 +35,8 @@ class TestEntityUtils(TestCase):
     def test_getEntityRelationshipFieldNames_children(self):
         entity = StateSentenceGroup.new_with_defaults(
             fines=[StateFine.new_with_defaults()],
-            person=StatePerson.new_with_defaults(), sentence_group_id=_ID)
+            person=[StatePerson.new_with_defaults()],
+            sentence_group_id=_ID)
         self.assertEqual(
             {'fines'},
             get_set_entity_field_names(entity, EntityFieldType.FORWARD_EDGE))
@@ -43,23 +44,49 @@ class TestEntityUtils(TestCase):
     def test_getDbEntityRelationshipFieldNames_children(self):
         entity = schema.StateSentenceGroup(
             fines=[schema.StateFine()],
-            person=schema.StatePerson(), sentence_group_id=_ID)
+            person=schema.StatePerson(),
+            person_id=_ID,
+            sentence_group_id=_ID)
         self.assertEqual(
             {'fines'},
             get_set_entity_field_names(entity, EntityFieldType.FORWARD_EDGE))
 
     def test_getEntityRelationshipFieldNames_backedges(self):
-        entity = StateSentenceGroup.new_with_defaults(
-            fines=[StateFine.new_with_defaults()],
-            person=[StatePerson.new_with_defaults()], sentence_group_id=_ID)
+        entity = schema.StateSentenceGroup(
+            fines=[schema.StateFine()],
+            person=schema.StatePerson(),
+            person_id=_ID,
+            sentence_group_id=_ID)
         self.assertEqual(
             {'person'},
             get_set_entity_field_names(entity, EntityFieldType.BACK_EDGE))
 
     def test_getEntityRelationshipFieldNames_flatFields(self):
-        entity = StateSentenceGroup.new_with_defaults(
-            fines=[StateFine.new_with_defaults()],
-            person=[StatePerson.new_with_defaults()], sentence_group_id=_ID)
+        entity = schema.StateSentenceGroup(
+            fines=[schema.StateFine()],
+            person=schema.StatePerson(),
+            person_id=_ID,
+            sentence_group_id=_ID)
         self.assertEqual(
             {'sentence_group_id'},
             get_set_entity_field_names(entity, EntityFieldType.FLAT_FIELD))
+
+    def test_getEntityRelationshipFieldNames_foreignKeys(self):
+        entity = schema.StateSentenceGroup(
+            fines=[schema.StateFine()],
+            person=schema.StatePerson(),
+            person_id=_ID,
+            sentence_group_id=_ID)
+        self.assertEqual(
+            {'person_id'},
+            get_set_entity_field_names(entity, EntityFieldType.FOREIGN_KEYS))
+
+    def test_getEntityRelationshipFieldNames_all(self):
+        entity = schema.StateSentenceGroup(
+            fines=[schema.StateFine()],
+            person=schema.StatePerson(),
+            person_id=_ID,
+            sentence_group_id=_ID)
+        self.assertEqual(
+            {'fines', 'person', 'person_id', 'sentence_group_id'},
+            get_set_entity_field_names(entity, EntityFieldType.ALL))

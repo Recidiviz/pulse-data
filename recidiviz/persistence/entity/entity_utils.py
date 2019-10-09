@@ -17,7 +17,7 @@
 """Utils for working with Entity classes or various |entities| modules."""
 
 import inspect
-from enum import Enum
+from enum import Enum, auto
 from types import ModuleType
 from typing import Dict, List, Set, Type, Sequence
 from functools import lru_cache
@@ -210,9 +210,11 @@ def get_all_entity_class_names_in_module(
 
 
 class EntityFieldType(Enum):
-    FLAT_FIELD = 1
-    FORWARD_EDGE = 2
-    BACK_EDGE = 3
+    FLAT_FIELD = auto()
+    FOREIGN_KEYS = auto()
+    FORWARD_EDGE = auto()
+    BACK_EDGE = auto()
+    ALL = auto()
 
 
 # TODO(2383): Move all functions that take in a CoreEntity onto the CoreEntity
@@ -267,6 +269,7 @@ def _get_all_database_entity_field_names(entity: DatabaseEntity,
     back_edges = set()
     forward_edges = set()
     flat_fields = set()
+    foreign_keys = set()
 
     for relationship_field_name in entity.get_relationship_property_names():
         if direction_checker.is_back_edge(entity, relationship_field_name):
@@ -274,15 +277,23 @@ def _get_all_database_entity_field_names(entity: DatabaseEntity,
         else:
             forward_edges.add(relationship_field_name)
 
+    for foreign_key_name in entity.get_foreign_key_names():
+        foreign_keys.add(foreign_key_name)
+
     for column_field_name in entity.get_column_property_names():
-        flat_fields.add(column_field_name)
+        if column_field_name not in foreign_keys:
+            flat_fields.add(column_field_name)
 
     if entity_field_type is EntityFieldType.FLAT_FIELD:
         return flat_fields
+    if entity_field_type is EntityFieldType.FOREIGN_KEYS:
+        return foreign_keys
     if entity_field_type is EntityFieldType.FORWARD_EDGE:
         return forward_edges
     if entity_field_type is EntityFieldType.BACK_EDGE:
         return back_edges
+    if entity_field_type is EntityFieldType.ALL:
+        return flat_fields | foreign_keys | forward_edges | back_edges
     raise EntityMatchingError(
         f"Unrecognized EntityFieldType {entity_field_type}",
         'entity_field_type')
@@ -325,10 +336,14 @@ def _get_all_entity_field_names(entity: Entity,
 
     if entity_field_type is EntityFieldType.FLAT_FIELD:
         return flat_fields
+    if entity_field_type is EntityFieldType.FOREIGN_KEYS:
+        return set()  # Entity objects never have foreign keys
     if entity_field_type is EntityFieldType.FORWARD_EDGE:
         return forward_edges
     if entity_field_type is EntityFieldType.BACK_EDGE:
         return back_edges
+    if entity_field_type is EntityFieldType.ALL:
+        return flat_fields | forward_edges | back_edges
     raise EntityMatchingError(
         f"Unrecognized EntityFieldType {entity_field_type}",
         'entity_field_type')
@@ -375,14 +390,6 @@ def is_placeholder(entity: CoreEntity) -> bool:
         if entity.has_default_enum('court_type',
                                    StateCourtType.PRESENT_WITHOUT_INFO):
             set_flat_fields.remove('court_type')
-
-    to_remove = []
-    for field in set_flat_fields:
-        if field.endswith('_id') and field != 'external_id':
-            to_remove.append(field)
-
-    for field in to_remove:
-        set_flat_fields.remove(field)
 
     return not bool(set_flat_fields)
 
