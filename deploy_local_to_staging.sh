@@ -11,7 +11,7 @@ if [ x"$deploy_name" == x -o x"$version_tag" == x ]; then
 fi
 
 echo "Deploying calculation pipelines to templates"
-deploy_pipelines ./deploy_pipeline_to_template.sh recidiviz-staging recidiviz-staging-dataflow-templates ./calculation_pipeline_templates.yaml
+deploy_pipelines "pipenv run ./deploy_pipeline_to_template.sh" recidiviz-staging recidiviz-staging-dataflow-templates ./calculation_pipeline_templates.yaml
 
 echo "Initializing task queues"
 run_cmd "pipenv run python -m recidiviz.tools.initialize_google_cloud_task_queues --project_id recidiviz-staging --google_auth_token $(gcloud auth print-access-token)"
