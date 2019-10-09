@@ -43,7 +43,8 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import \
     get_root_entity_cls, get_total_entities_of_cls, \
     associate_revocation_svrs_with_ips, base_entity_match, \
     _read_persons, get_all_entity_trees_of_cls, get_external_ids_from_entity, \
-    nd_is_incarceration_period_match, nd_update_temporary_holds
+    nd_is_incarceration_period_match, nd_update_temporary_holds, \
+    convert_to_placeholder
 from recidiviz.persistence.entity.entity_utils import is_placeholder, \
     get_set_entity_field_names, get_all_core_entity_field_names, \
     get_all_db_objs_from_tree, get_all_db_objs_from_trees
@@ -76,6 +77,8 @@ class _EntityWithParentInfo:
         self.linked_parents = linked_parents
 
 
+# TODO(2504): Rename `ingested` and `db` entities to something more generic that
+# still accurately describes that one is being merged onto the other.
 class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
     """Base class for all entity matchers."""
 
@@ -98,6 +101,8 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
 
         # Set this to True if you want to run with consistency checking
         self.do_ingest_obj_consistency_check = False
+
+        self.entities_to_convert_to_placeholder = []
 
     def set_root_entity_cache(self, db_people: List[schema.StatePerson]):
         if not db_people:
@@ -318,6 +323,9 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
                 if merged_person_tree.entity not in updated_persons:
                     updated_persons.append(merged_person_tree.entity)
 
+        for entity in self.entities_to_convert_to_placeholder:
+            convert_to_placeholder(entity)
+
         # The only database persons that are unmatched that we potentially want
         # to update are placeholder persons. These may have had children removed
         # as a part of the matching process and therefore would need updating.
@@ -475,7 +483,6 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
                     f"{child_match_result} respectively.",
                     ingested_placeholder_tree.entity.get_entity_name())
 
-            # If the child wasn't matched, leave it on the placeholder object.
             if not child_match_result.merged_entity_trees:
                 raise EntityMatchingError(
                     f"Expected child_match_result.merged_entity_trees to not "
@@ -511,7 +518,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
                         matched_entities_by_db_ids=matched_entities_by_db_ids)
                     updated_entity_trees.append(merged_parent_tree)
 
-        db_placeholder = self.shallow_db_copy(
+        db_placeholder = self.get_or_create_db_entity_to_persist(
             ingested_placeholder_tree.entity)
         db_placeholder_tree = EntityTree(
             entity=db_placeholder,
@@ -543,12 +550,22 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
             merged_entity_trees=updated_entity_trees,
             error_count=error_count)
 
-    def shallow_db_copy(self, old_entity: DatabaseEntity) -> DatabaseEntity:
-        ent_cls = old_entity.__class__
+    def get_or_create_db_entity_to_persist(
+            self, entity: DatabaseEntity) -> DatabaseEntity:
+        """If the provided |entity| has already been persisted to our DB,
+        returns the entity itself with all relationships preserved.
+        Otherwise returns a shallow copy of the entity with no relationship
+        fields set.
+        """
+        if entity.get_id() is not None:
+            return entity
+
+        # Perform shallow copy
+        ent_cls = entity.__class__
         new_entity = ent_cls()
         for field in get_all_core_entity_field_names(
-                old_entity, EntityFieldType.FLAT_FIELD):
-            new_entity.set_field(field, old_entity.get_field(field))
+                entity, EntityFieldType.FLAT_FIELD):
+            new_entity.set_field(field, entity.get_field(field))
 
         return new_entity
 
@@ -613,6 +630,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
                     child_field_name=child_field_name,
                     child_to_remove=merged_child_tree.entity)
 
+                # TODO(2505): Avoid changing ancestor chains if possible.
                 # For now we only handle the case where all placeholders with
                 # matched children have the same parent chain. If they do not,
                 # we throw an error.
@@ -633,7 +651,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
 
         ingested_entity = ingested_unmatched_entity_tree.entity
 
-        new_db_entity = self.shallow_db_copy(
+        new_db_entity = self.get_or_create_db_entity_to_persist(
             ingested_unmatched_entity_tree.entity)
         for child_field_name, match_results in match_results_by_child:
             error_count += match_results.error_count
@@ -693,6 +711,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
 
         # Initialize so pylint doesn't yell
         child_match_result = None
+        child_field_name = None
 
         def resolve_child_match_result():
             """Keeps track of all matched and unmatched children."""
@@ -708,13 +727,16 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
                     f"be empty.",
                     ingested_entity_tree.entity.get_entity_name())
 
-            updated_child_trees.extend(
-                child_match_result.merged_entity_trees)
+            for merged_child_tree in child_match_result.merged_entity_trees:
+                updated_child_trees.append(merged_child_tree)
+                remove_child_from_entity(
+                    child_to_remove=merged_child_tree.entity,
+                    child_field_name=child_field_name,
+                    entity=ingested_entity)
 
         for child_field_name, match_results in match_results_by_child:
             error_count += match_results.error_count
-            ingested_child_field = getattr(ingested_entity,
-                                           child_field_name)
+            ingested_child_field = getattr(ingested_entity, child_field_name)
             updated_child_trees: List[EntityTree] = []
             for child_match_result in match_results.individual_match_results:
                 resolve_child_match_result()
@@ -738,10 +760,15 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
                 db_entity.set_field(child_field_name, one(updated_children))
 
         merged_entity = merge_flat_fields(
-            new_entity=ingested_entity, old_entity=db_entity)
+            from_entity=ingested_entity, to_entity=db_entity)
         merged_entity_tree = EntityTree(
             entity=merged_entity,
             ancestor_chain=db_match_tree.ancestor_chain)
+        # Clear flat fields off of the ingested entity after entity matching
+        # is complete. This ensures that if this `ingested_entity` has multiple
+        # parents, each time we reach this entity, we'll correctly match it to
+        # the correct `db_entity`.
+        self.entities_to_convert_to_placeholder.append(ingested_entity)
 
         return IndividualMatchResult(
             merged_entity_trees=[merged_entity_tree],
@@ -814,8 +841,14 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
     def get_cached_matches(self, entity: DatabaseEntity) -> List[EntityTree]:
         external_ids = get_external_ids_from_entity(entity)
         cached_matches = []
+        cached_match_ids: Set[int] = set()
+
         for external_id in external_ids:
-            cached_matches.extend(self.root_entity_cache[external_id])
+            cached_trees = self.root_entity_cache[external_id]
+            for cached_tree in cached_trees:
+                if cached_tree.entity.get_id() not in cached_match_ids:
+                    cached_match_ids.add(cached_tree.entity.get_id())
+                    cached_matches.append(cached_tree)
         return cached_matches
 
     def _get_match(
@@ -827,14 +860,21 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         match among the provided |db_entity_trees|. If a match is found, it is
         returned.
         """
+        db_match_candidates = db_entity_trees
         if isinstance(ingested_entity_tree.entity, self.root_entity_cls):
-            cached_matches = \
-                self.get_cached_matches(ingested_entity_tree.entity)
-            exact_match = entity_matching_utils.get_only_match(
-                ingested_entity_tree, cached_matches, is_match)
+            db_match_candidates = self.get_cached_matches(
+                ingested_entity_tree.entity)
+
+        # Entities that can have multiple external IDs need special casing to
+        # handle the fact that multiple DB entities could match the provided
+        # ingested entity. Currently this is limited to StatePerson.
+        if isinstance(ingested_entity_tree.entity, schema.StatePerson):
+            exact_match = self._get_only_match_for_multiple_id_entity(
+                ingested_entity_tree=ingested_entity_tree,
+                db_entity_trees=db_match_candidates)
         else:
             exact_match = entity_matching_utils.get_only_match(
-                ingested_entity_tree, db_entity_trees, is_match)
+                ingested_entity_tree, db_match_candidates, is_match)
 
         if not exact_match:
             if isinstance(ingested_entity_tree.entity,
@@ -864,6 +904,37 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
                 ingested_entity_tree.entity.get_entity_name())
 
         return exact_match
+
+    def _get_only_match_for_multiple_id_entity(
+            self,
+            ingested_entity_tree: EntityTree,
+            db_entity_trees: List[EntityTree]) -> Optional[EntityTree]:
+        """Returns the DB EntityTree from |db_entity_trees| that matches
+        the provided |ingested_entity_tree|, if one exists.
+
+        - If no match exists, returns None.
+        - If one match exists, returns the singular match
+        - If multiple DB entities match, this method squashes all information
+          from the matches onto one of the DB matches and returns that DB match.
+          The other, non-returned matches are transformed into placeholders
+          (all fields removed save primary keys).
+        """
+
+        db_matches = entity_matching_utils.get_all_matches(
+            ingested_entity_tree, db_entity_trees, is_match)
+
+        if not db_matches:
+            return None
+
+        # Merge all duplicate people into the one db match
+        match_tree = db_matches[0]
+        for duplicate_match_tree in db_matches[1:]:
+            self._match_matched_tree(
+                ingested_entity_tree=duplicate_match_tree,
+                db_match_tree=match_tree,
+                matched_entities_by_db_ids={},
+                root_entity_cls=ingested_entity_tree.entity.__class__)
+        return match_tree
 
     # TODO(2037): Move this into a post processing file.
     def merge_multiparent_entities(self, persons: List[schema.StatePerson]):

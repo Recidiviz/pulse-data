@@ -125,7 +125,8 @@ class TestUsNdController(unittest.TestCase):
         self.controller = build_gcsfs_controller_for_tests(
             UsNdController,
             self.FIXTURE_PATH_PREFIX,
-            run_async=False)
+            run_async=False,
+            max_delay_sec_between_files=0)
         fakes.use_in_memory_sqlite_database(StateBase)
 
         self.maxDiff = 250000
@@ -3482,6 +3483,240 @@ class TestUsNdController(unittest.TestCase):
         if not isinstance(field, list):
             return [field]
         return field
+
+    @patch.dict('os.environ', {'PERSIST_LOCALLY': 'true'})
+    @patch("recidiviz.persistence.entity_matching.state"
+           ".state_matching_utils.get_region")
+    def test_runOutOfOrder_mergeTwoDatabasePeople(self, mock_get_region):
+        """Tests that our system correctly handles the situation where we commit
+        2 separate people into our DB, but after ingesting a later file, we
+        realize that those 2 people should actually be merged into one person.
+        This could happen in production either because we process files out of
+        our desired order, or if all files aren't always in sync/fully up to
+        date at the time we receive them.
+        """
+        mock_get_region.return_value = self._fake_region()
+
+        ######################################
+        # ELITE OFFENDERS
+        ######################################
+        # Arrange
+        person_1 = entities.StatePerson.new_with_defaults()
+        person_1.full_name = '{"given_names": "JON", "surname": "HOPKINS"}'
+        person_1.birthdate = datetime.date(year=1979, month=8, day=15)
+        person_1.birthdate_inferred_from_age = False
+        person_1.gender = Gender.MALE
+        person_1.gender_raw_text = 'M'
+        person_1_race = entities.StatePersonRace.new_with_defaults(
+            state_code=_STATE_CODE, race=Race.WHITE, race_raw_text='CAUCASIAN',
+            person=person_1)
+        person_1_alias_1 = entities.StatePersonAlias.new_with_defaults(
+            full_name='{"given_names": "JON", "surname": "HOPKINS"}',
+            alias_type=StatePersonAliasType.GIVEN_NAME,
+            alias_type_raw_text='GIVEN_NAME',
+            state_code=_STATE_CODE,
+            person=person_1)
+        person_1_external_id = entities.StatePersonExternalId.new_with_defaults(
+            external_id='39768', id_type=US_ND_ELITE, state_code=_STATE_CODE,
+            person=person_1)
+        person_1.races = [person_1_race]
+        person_1.aliases = [person_1_alias_1]
+        person_1.external_ids.append(person_1_external_id)
+
+        person_2 = entities.StatePerson.new_with_defaults()
+        person_2_external_id = entities.StatePersonExternalId.new_with_defaults(
+            external_id='52163', id_type=US_ND_ELITE, state_code=_STATE_CODE,
+            person=person_2)
+        person_2.full_name = '{"given_names": "SOLANGE", "surname": "KNOWLES"}'
+        person_2.birthdate = datetime.date(year=1986, month=6, day=24)
+        person_2.birthdate_inferred_from_age = False
+        person_2.gender = Gender.FEMALE
+        person_2.gender_raw_text = 'F'
+        person_2_race = entities.StatePersonRace.new_with_defaults(
+            state_code=_STATE_CODE, race=Race.BLACK, race_raw_text='BLACK',
+            person=person_2)
+        person_2_alias_1 = entities.StatePersonAlias.new_with_defaults(
+            full_name='{"given_names": "SOLANGE", "surname": "KNOWLES"}',
+            alias_type=StatePersonAliasType.GIVEN_NAME,
+            alias_type_raw_text='GIVEN_NAME',
+            state_code=_STATE_CODE,
+            person=person_2)
+        person_2.races = [person_2_race]
+        person_2.aliases = [person_2_alias_1]
+        person_2.external_ids.append(person_2_external_id)
+        expected_people = [person_1, person_2]
+
+        # Act
+        self._run_ingest_job_for_filename('elite_offenders.csv')
+
+        # Assert
+        session = SessionFactory.for_schema_base(StateBase)
+        found_people = dao.read_people(session)
+        found_people = self.convert_and_clear_db_ids(found_people)
+        self.assertCountEqual(found_people, expected_people)
+
+        ######################################
+        # DOCSTARS LSI CHRONOLOGY
+        ######################################
+
+        # Arrange
+        person_1_dup = entities.StatePerson.new_with_defaults()
+        person_1_dup_external_id = \
+            entities.StatePersonExternalId.new_with_defaults(
+                external_id='92237', id_type=US_ND_SID, state_code=_STATE_CODE,
+                person=person_1_dup)
+        person_1_dup.external_ids.append(person_1_dup_external_id)
+        metadata_12345 = json.dumps({
+            "DOMAIN_CRIMINAL_HISTORY": 7, "DOMAIN_EDUCATION_EMPLOYMENT": 7,
+            "DOMAIN_FINANCIAL": 1, "DOMAIN_FAMILY_MARITAL": 2,
+            "DOMAIN_ACCOMMODATION": 0, "DOMAIN_LEISURE_RECREATION": 2,
+            "DOMAIN_COMPANIONS": 3, "DOMAIN_ALCOHOL_DRUG_PROBLEMS": 0,
+            "DOMAIN_EMOTIONAL_PERSONAL": 2, "DOMAIN_ATTITUDES_ORIENTATION": 1,
+            "QUESTION_18": 0, "QUESTION_19": 0, "QUESTION_20": 0,
+            "QUESTION_21": 1, "QUESTION_23": 3, "QUESTION_24": 1,
+            "QUESTION_25": 1, "QUESTION_27": 3, "QUESTION_31": 1,
+            "QUESTION_39": 2, "QUESTION_40": 1, "QUESTION_51": 2,
+            "QUESTION_52": 3
+        })
+
+        metadata_12346 = json.dumps({
+            "DOMAIN_CRIMINAL_HISTORY": 6, "DOMAIN_EDUCATION_EMPLOYMENT": 8,
+            "DOMAIN_FINANCIAL": 1, "DOMAIN_FAMILY_MARITAL": 2,
+            "DOMAIN_ACCOMMODATION": 0, "DOMAIN_LEISURE_RECREATION": 2,
+            "DOMAIN_COMPANIONS": 2, "DOMAIN_ALCOHOL_DRUG_PROBLEMS": 0,
+            "DOMAIN_EMOTIONAL_PERSONAL": 0, "DOMAIN_ATTITUDES_ORIENTATION": 2,
+            "QUESTION_18": 0, "QUESTION_19": 0, "QUESTION_20": 0,
+            "QUESTION_21": 0, "QUESTION_23": 2, "QUESTION_24": 2,
+            "QUESTION_25": 0, "QUESTION_27": 2, "QUESTION_31": 0,
+            "QUESTION_39": 2, "QUESTION_40": 3, "QUESTION_51": 2,
+            "QUESTION_52": 2
+        })
+
+        metadata_55555 = json.dumps({
+            "DOMAIN_CRIMINAL_HISTORY": 6, "DOMAIN_EDUCATION_EMPLOYMENT": 10,
+            "DOMAIN_FINANCIAL": 2, "DOMAIN_FAMILY_MARITAL": 3,
+            "DOMAIN_ACCOMMODATION": 0, "DOMAIN_LEISURE_RECREATION": 2,
+            "DOMAIN_COMPANIONS": 2, "DOMAIN_ALCOHOL_DRUG_PROBLEMS": 0,
+            "DOMAIN_EMOTIONAL_PERSONAL": 0, "DOMAIN_ATTITUDES_ORIENTATION": 0,
+            "QUESTION_18": 0, "QUESTION_19": 0, "QUESTION_20": 0,
+            "QUESTION_21": 0, "QUESTION_23": 2, "QUESTION_24": 0,
+            "QUESTION_25": 0, "QUESTION_27": 2, "QUESTION_31": 1,
+            "QUESTION_39": 1, "QUESTION_40": 0, "QUESTION_51": 3,
+            "QUESTION_52": 3
+        })
+
+        assessment_12345 = entities.StateAssessment.new_with_defaults(
+            external_id='12345',
+            state_code='US_ND',
+            assessment_class=StateAssessmentClass.RISK,
+            assessment_class_raw_text='RISK',
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_type_raw_text='LSIR',
+            assessment_date=datetime.date(year=2016, month=7, day=14),
+            assessment_score=25,
+            assessment_metadata=metadata_12345,
+            person=person_1_dup
+        )
+        assessment_12346 = entities.StateAssessment.new_with_defaults(
+            external_id='12346',
+            state_code='US_ND',
+            assessment_class=StateAssessmentClass.RISK,
+            assessment_class_raw_text='RISK',
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_type_raw_text='LSIR',
+            assessment_date=datetime.date(year=2017, month=1, day=13),
+            assessment_score=23,
+            assessment_metadata=metadata_12346,
+            person=person_1_dup
+        )
+        person_1_dup.assessments.append(assessment_12345)
+        person_1_dup.assessments.append(assessment_12346)
+        expected_people.append(person_1_dup)
+
+        person_2_dup = entities.StatePerson.new_with_defaults()
+        person_2_dup_external_id_2 = \
+            entities.StatePersonExternalId.new_with_defaults(
+                external_id='241896', id_type=US_ND_SID, state_code=_STATE_CODE,
+                person=person_2_dup)
+        person_2_dup.external_ids.append(person_2_dup_external_id_2)
+        assessment_55555 = entities.StateAssessment.new_with_defaults(
+            external_id='55555',
+            state_code='US_ND',
+            assessment_class=StateAssessmentClass.RISK,
+            assessment_class_raw_text='RISK',
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_type_raw_text='LSIR',
+            assessment_date=datetime.date(year=2018, month=12, day=10),
+            assessment_score=25,
+            assessment_metadata=metadata_55555,
+            person=person_2_dup
+        )
+        person_2_dup.assessments.append(assessment_55555)
+        expected_people.append(person_2_dup)
+
+        # Act
+        self._run_ingest_job_for_filename('docstars_lsi_chronology.csv')
+
+        # Assert
+        session = SessionFactory.for_schema_base(StateBase)
+        found_people = dao.read_people(session)
+        found_people = self.convert_and_clear_db_ids(found_people)
+        self.assertCountEqual(found_people, expected_people)
+
+        ######################################
+        # ELITE OFFENDER IDENTIFIERS
+        ######################################
+        # Arrange
+        person_1_dup_external_id.person = person_1
+        assessment_12345.person = person_1
+        assessment_12346.person = person_1
+        person_1.external_ids.append(person_1_dup_external_id)
+        person_1.assessments.append(assessment_12345)
+        person_1.assessments.append(assessment_12346)
+        person_1_dup.assessments = []
+        person_1_dup.external_ids = []
+
+        person_2_dup_external_id_2.person = person_2
+        assessment_55555.person = person_2
+        person_2.external_ids.append(person_2_dup_external_id_2)
+        person_2.assessments.append(assessment_55555)
+        person_2_dup.external_ids = []
+        person_2_dup.assessments = []
+
+        person_3 = entities.StatePerson.new_with_defaults()
+        person_3_external_id_1 = \
+            entities.StatePersonExternalId.new_with_defaults(
+                external_id='12345', id_type=US_ND_SID,
+                state_code=_STATE_CODE,
+                person=person_3)
+        person_3_external_id_2 = \
+            entities.StatePersonExternalId.new_with_defaults(
+                external_id='92237', id_type=US_ND_ELITE,
+                state_code=_STATE_CODE,
+                person=person_3)
+        person_3.external_ids.append(person_3_external_id_1)
+        person_3.external_ids.append(person_3_external_id_2)
+        expected_people.append(person_3)
+
+        # Act
+        self._run_ingest_job_for_filename('elite_offenderidentifier.csv')
+
+        # Assert
+        session = SessionFactory.for_schema_base(StateBase)
+        found_people = dao.read_people(session)
+        found_people = self.convert_and_clear_db_ids(found_people)
+        self.assertCountEqual(found_people, expected_people)
+
+        # Rerun for sanity
+        file_tags = ['elite_offenders', 'docstars_lsi_chronology',
+                     'elite_offenderidentifier']
+        for file_tag in file_tags:
+            self._run_ingest_job_for_filename(f'{file_tag}.csv')
+
+        session = SessionFactory.for_schema_base(StateBase)
+        found_people = dao.read_people(session)
+        found_people = self.convert_and_clear_db_ids(found_people)
+        self.assertCountEqual(found_people, expected_people)
 
     @patch.dict('os.environ', {'PERSIST_LOCALLY': 'true'})
     @patch("recidiviz.persistence.entity_matching.state"

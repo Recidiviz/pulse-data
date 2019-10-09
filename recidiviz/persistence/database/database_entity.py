@@ -55,6 +55,13 @@ class DatabaseEntity(CoreEntity):
             cls._COLUMN_PROPERTY_TYPE_NAME)
 
     @classmethod
+    def get_foreign_key_names(cls):
+        """Returns set of string names of all properties of the entity that
+        correspond to foreign keys of other database entities.
+        """
+        return [col.name for col in inspect(cls).columns if col.foreign_keys]
+
+    @classmethod
     def get_relationship_property_names(cls):
         """Returns set of string names of all properties of the entity that
         correspond to relationships to other database entities.

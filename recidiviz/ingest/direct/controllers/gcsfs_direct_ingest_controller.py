@@ -44,16 +44,18 @@ class GcsfsDirectIngestController(BaseDirectIngestController[GcsfsIngestArgs,
     """Controller for parsing and persisting a file in the GCS filesystem."""
 
     _MAX_STORAGE_FILE_RENAME_TRIES = 10
-    _MAX_PROCESS_JOB_WAIT_TIME_SEC = 300
+    _DEFAULT_MAX_PROCESS_JOB_WAIT_TIME_SEC = 300
     _FILE_SPLIT_LINE_LIMIT = 5000
 
     def __init__(self,
                  region_name: str,
                  system_level: SystemLevel,
                  ingest_directory_path: Optional[str] = None,
-                 storage_directory_path: Optional[str] = None):
+                 storage_directory_path: Optional[str] = None,
+                 max_delay_sec_between_files: Optional[int] = None):
         super().__init__(region_name, system_level)
         self.fs = GcsfsFactory.build()
+        self.max_delay_sec_between_files = max_delay_sec_between_files
 
         if not ingest_directory_path:
             ingest_directory_path = \
@@ -172,9 +174,11 @@ class GcsfsDirectIngestController(BaseDirectIngestController[GcsfsIngestArgs,
         file_upload_time: datetime.datetime = \
             filename_parts_from_path(args.file_path).utc_upload_datetime
 
+        max_delay_sec = self.max_delay_sec_between_files \
+            if self.max_delay_sec_between_files is not None \
+            else self._DEFAULT_MAX_PROCESS_JOB_WAIT_TIME_SEC
         max_wait_from_file_upload_time = \
-            file_upload_time + datetime.timedelta(
-                seconds=self._MAX_PROCESS_JOB_WAIT_TIME_SEC)
+            file_upload_time + datetime.timedelta(seconds=max_delay_sec)
 
         if max_wait_from_file_upload_time <= now:
             wait_time = 0

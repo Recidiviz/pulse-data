@@ -69,7 +69,9 @@ class CoreEntity:
     # TODO(2163): Use get/set_field_from_list when possible to clean up code.
     def get_field_as_list(self, child_field_name: str) -> List[Any]:
         field = self.get_field(child_field_name)
-        if isinstance(field, List):
+        if field is None:
+            return []
+        if isinstance(field, list):
             return field
         return [field]
 
@@ -86,6 +88,14 @@ class CoreEntity:
                 f"Expected entity {type(self)} to have field {field_name}, "
                 f"but it did not.")
         return setattr(self, field_name, value)
+
+    def clear_field(self, field_name: str):
+        """Clears the provided |field_name| off of the CoreEntity."""
+        field = self.get_field(field_name)
+        if isinstance(field, list):
+            self.set_field(field_name, [])
+        else:
+            self.set_field(field_name, None)
 
     def set_field_from_list(self, field_name: str, value: List):
         """Given the provided |value|, sets the value onto the provided |entity|

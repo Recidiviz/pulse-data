@@ -53,6 +53,7 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import \
     _read_persons, get_all_entity_trees_of_cls, \
     _nd_update_temporary_holds_helper
 from recidiviz.persistence.entity.entity_utils import is_placeholder
+
 from recidiviz.persistence.entity_matching.entity_matching_types import \
     EntityTree
 from recidiviz.persistence.errors import EntityMatchingError
@@ -219,6 +220,25 @@ class TestStateMatchingUtils(TestCase):
         self.assertFalse(
             _is_match(ingested_entity=charge, db_entity=charge_another))
 
+    def test_mergeFlatFields_twoDbEntities(self):
+        to_entity = schema.StateSentenceGroup(
+            sentence_group_id=_ID, county_code='county_code',
+            status=StateSentenceStatus.SERVING)
+        from_entity = schema.StateSentenceGroup(
+            sentence_group_id=_ID_2,
+            county_code='county_code-updated', max_length_days=10,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value)
+
+        expected_entity = schema.StateSentenceGroup(
+            sentence_group_id=_ID,
+            county_code='county_code-updated',
+            max_length_days=10,
+            status=StateSentenceStatus.SERVING.value)
+
+        merged_entity = merge_flat_fields(from_entity=from_entity,
+                                          to_entity=to_entity)
+        self.assert_schema_objects_equal(expected_entity, merged_entity)
+
     def test_mergeFlatFields(self):
         ing_entity = schema.StateSentenceGroup(
             county_code='county_code-updated', max_length_days=10,
@@ -232,8 +252,8 @@ class TestStateMatchingUtils(TestCase):
             max_length_days=10,
             status=StateSentenceStatus.SERVING.value)
 
-        merged_entity = merge_flat_fields(new_entity=ing_entity,
-                                          old_entity=db_entity)
+        merged_entity = merge_flat_fields(from_entity=ing_entity,
+                                          to_entity=db_entity)
         self.assert_schema_objects_equal(expected_entity, merged_entity)
 
     def test_mergeFlatFields_incompleteIncarcerationPeriods(self):
@@ -261,7 +281,7 @@ class TestStateMatchingUtils(TestCase):
                 release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER)
         self.assert_schema_objects_equal(
             expected_incarceration_period,
-            merge_flat_fields(new_entity=ingested_entity, old_entity=db_entity))
+            merge_flat_fields(from_entity=ingested_entity, to_entity=db_entity))
 
     def test_generateChildEntitiesWithAncestorChain(self):
         fine = StateFine.new_with_defaults(fine_id=_ID)

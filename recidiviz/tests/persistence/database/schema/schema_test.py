@@ -189,5 +189,6 @@ class TestSchemaTableConsistency(TestCase):
                 self.assertTrue(len(primary_key_prop_name) > 0)
                 self.assertTrue(primary_key_col_name in primary_key_prop_name)
                 # Just should not crash
+                cls.get_foreign_key_names()
                 cls.get_relationship_property_names()
                 cls.get_relationship_property_names_and_properties()

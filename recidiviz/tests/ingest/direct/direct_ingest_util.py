@@ -164,7 +164,8 @@ def build_controller_for_tests(controller_cls,
 def build_gcsfs_controller_for_tests(
         controller_cls,
         fixture_path_prefix: str,
-        run_async: bool
+        run_async: bool,
+        **kwargs,
 ) -> GcsfsDirectIngestController:
 
     fake_fs = FakeDirectIngestGCSFileSystem()
@@ -182,7 +183,8 @@ def build_gcsfs_controller_for_tests(
         with patch.object(GcsfsFactory, 'build', new=mock_build_fs):
             controller = controller_cls(
                 ingest_directory_path=f'{fixture_path_prefix}/fixtures',
-                storage_directory_path='storage/path')
+                storage_directory_path='storage/path',
+                **kwargs)
             task_manager.set_controller(controller)
             fake_fs.test_set_controller(controller)
             return controller
