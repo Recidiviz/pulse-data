@@ -20,7 +20,9 @@ import datetime
 import logging
 from typing import List, cast, Optional, Tuple, Union, Set, Type
 
+from recidiviz.common.constants import enum_canonical_strings
 from recidiviz.common.constants.enum_overrides import EnumOverrides
+from recidiviz.common.constants.state.state_court_case import StateCourtType
 from recidiviz.common.constants.state.state_incarceration import \
     StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import \
@@ -144,8 +146,6 @@ def base_entity_match(
     for field_name in all_set_flat_field_names:
         # Skip primary key
         if field_name == a.get_class_id_name():
-            continue
-        if field_name.endswith('_id'):
             continue
         a_field = a.get_field(field_name)
         b_field = b.get_field(field_name)
@@ -561,19 +561,43 @@ def is_incarceration_period_complete(
     return all([period.admission_date, period.release_date])
 
 
-def merge_flat_fields(new_entity: DatabaseEntity, old_entity: DatabaseEntity):
+# TODO(2244): Create general approach for required fields/default values
+def convert_to_placeholder(entity: DatabaseEntity):
+    for field_name in get_set_entity_field_names(
+            entity, EntityFieldType.FLAT_FIELD):
+        if field_name == entity.get_class_id_name():
+            continue
+        if field_name == 'state_code':
+            continue
+        if field_name == 'status':
+            entity.set_field(
+                field_name, enum_canonical_strings.present_without_info)
+            continue
+        if field_name == 'incarceration_type':
+            entity.set_field(field_name,
+                             StateIncarcerationType.STATE_PRISON.value)
+            continue
+        if field_name == 'court_type':
+            entity.set_field(field_name,
+                             StateCourtType.PRESENT_WITHOUT_INFO.value)
+
+        entity.clear_field(field_name)
+
+
+def merge_flat_fields(from_entity: DatabaseEntity, to_entity: DatabaseEntity):
     """Merges appropriate non-relationship fields on the |new_entity| onto the
     |old_entity|. Returns the newly merged entity."""
 
     # Special merge logic if we are merging 2 different incarceration periods.
-    if isinstance(new_entity, schema.StateIncarcerationPeriod):
-        old_entity = cast(schema.StateIncarcerationPeriod, old_entity)
-        return _merge_incomplete_periods(new_entity, old_entity)
+    if isinstance(from_entity, schema.StateIncarcerationPeriod):
+        to_entity = cast(schema.StateIncarcerationPeriod, to_entity)
+        return _merge_incomplete_periods(from_entity, to_entity)
 
     return _default_merge_flat_fields(
-        new_entity=new_entity, old_entity=old_entity)
+        new_entity=from_entity, old_entity=to_entity)
 
 
+# TODO(2244): Create general approach for required fields/default values
 def _default_merge_flat_fields(
         *, new_entity: DatabaseEntity, old_entity: DatabaseEntity
 ) -> DatabaseEntity:
@@ -582,6 +606,8 @@ def _default_merge_flat_fields(
     """
     for child_field_name in get_set_entity_field_names(
             new_entity, EntityFieldType.FLAT_FIELD):
+        if child_field_name == old_entity.get_class_id_name():
+            continue
         # Do not overwrite with default status
         if child_field_name == 'status' and new_entity.has_default_status():
             continue

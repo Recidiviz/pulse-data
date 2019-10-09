@@ -86,12 +86,14 @@ class UsNdController(CsvGcsfsDirectIngestController):
 
     def __init__(self,
                  ingest_directory_path: Optional[str] = None,
-                 storage_directory_path: Optional[str] = None):
+                 storage_directory_path: Optional[str] = None,
+                 max_delay_sec_between_files: Optional[int] = None):
         super(UsNdController, self).__init__(
             'us_nd',
             SystemLevel.STATE,
             ingest_directory_path,
-            storage_directory_path)
+            storage_directory_path,
+            max_delay_sec_between_files=max_delay_sec_between_files)
 
         self.row_pre_processors_by_file: Dict[str, List[Callable]] = {
             'elite_offenderidentifier': [self._normalize_id_fields],

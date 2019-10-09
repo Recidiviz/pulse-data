@@ -557,6 +557,187 @@ class TestStateEntityMatching(TestCase):
         self.assertEqual(3, matched_entities.total_root_entities)
         self.assertEqual(1, matched_entities.error_count)
 
+    def test_matchPersons_matchesTwoDbPeople_mergeDbPeopleMoveChildren(self, _):
+        """Tests that our system correctly handles the situation where we have
+        2 distinct people in our DB, but we learn the two DB people should be
+        merged into 1 person based on a new ingested person. Here the two DB
+        people to merge have distinct DB children.
+        """
+        # Arrange 1 - Match
+        db_sentence_group = generate_sentence_group(
+            sentence_group_id=_ID, external_id=_EXTERNAL_ID)
+        db_external_id = generate_external_id(
+            person_external_id_id=_ID, state_code=_STATE_CODE,
+            external_id=_EXTERNAL_ID, id_type=_ID_TYPE)
+        db_external_id_2 = generate_external_id(
+            person_external_id_id=_ID_2, state_code=_STATE_CODE,
+            external_id=_EXTERNAL_ID_2, id_type=_ID_TYPE_ANOTHER)
+        db_person = generate_person(
+            person_id=_ID, full_name=_FULL_NAME,
+            external_ids=[db_external_id])
+        db_person_2 = generate_person(
+            person_id=_ID_2, full_name=_FULL_NAME,
+            external_ids=[db_external_id_2],
+            sentence_groups=[db_sentence_group])
+        self._commit_to_db(db_person, db_person_2)
+
+        race = StatePersonRace.new_with_defaults(
+            state_code=_STATE_CODE, race=Race.BLACK)
+        alias = StatePersonAlias.new_with_defaults(
+            state_code=_STATE_CODE, full_name=_FULL_NAME_ANOTHER)
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code=_STATE_CODE, ethnicity=Ethnicity.NOT_HISPANIC)
+        external_id = attr.evolve(
+            self.to_entity(db_external_id), person_external_id_id=None)
+        external_id_2 = attr.evolve(
+            self.to_entity(db_external_id_2), person_external_id_id=None)
+        person = attr.evolve(
+            self.to_entity(db_person), person_id=None,
+            external_ids=[external_id, external_id_2],
+            races=[race], aliases=[alias], ethnicities=[ethnicity])
+
+        expected_race = attr.evolve(race)
+        expected_ethnicity = attr.evolve(ethnicity)
+        expected_alias = attr.evolve(alias)
+        expected_person = attr.evolve(
+            self.to_entity(db_person),
+            external_ids=[self.to_entity(db_external_id),
+                          self.to_entity(db_external_id_2)],
+            races=[expected_race], ethnicities=[expected_ethnicity],
+            aliases=[expected_alias],
+            sentence_groups=[self.to_entity(db_sentence_group)])
+        expected_placeholder_person = attr.evolve(
+            self.to_entity(db_person_2), full_name=None, sentence_groups=[],
+            external_ids=[])
+
+        # Act 1 - Match
+        act_session = self._session()
+        matched_entities = entity_matching.match(
+            act_session, _STATE_CODE, ingested_people=[person])
+
+        # Assert 1 - Match
+        self.assertEqual(0, matched_entities.error_count)
+        self.assertEqual(1, matched_entities.total_root_entities)
+        self.assert_people_match([expected_person, expected_placeholder_person],
+                                 matched_entities.people)
+
+        # Arrange 2 - Commit
+        expected_race.person_race_id = 1
+        expected_alias.person_alias_id = 1
+        expected_ethnicity.person_ethnicity_id = 1
+
+        # Act 2 - Commit
+        act_session.commit()
+        act_session.close()
+
+        # Assert 2 - Commit
+        assert_session = self._session()
+        result_db_people = dao.read_people(assert_session)
+
+        self.assert_people_match([expected_person, expected_placeholder_person],
+                                 result_db_people)
+        assert_session.close()
+
+    def test_matchPersons_matchesTwoDbPeople_mergeAndMoveChildren(self, _):
+        """Tests that our system correctly handles the situation where we have
+        2 distinct people in our DB, but we learn the two DB people should be
+        merged into 1 person based on a new ingested person. Here the two DB
+        people to merge have children which match with each other, and therefore
+        need to be merged properly themselves.
+        """
+        # Arrange 1 - Match
+        db_person = generate_person(person_id=_ID, full_name=_FULL_NAME)
+        db_supervision_sentence = generate_supervision_sentence(
+            person=db_person, supervision_sentence_id=_ID,
+            external_id=_EXTERNAL_ID)
+        db_sentence_group = generate_sentence_group(
+            sentence_group_id=_ID, external_id=_EXTERNAL_ID, is_life=True,
+            supervision_sentences=[db_supervision_sentence])
+        db_external_id = generate_external_id(
+            person_external_id_id=_ID, state_code=_STATE_CODE,
+            external_id=_EXTERNAL_ID, id_type=_ID_TYPE)
+        db_person.external_ids = [db_external_id]
+        db_person.sentence_groups = [db_sentence_group]
+
+        db_person_dup = generate_person(person_id=_ID_2, full_name=_FULL_NAME)
+        db_supervision_period = generate_supervision_period(
+            person=db_person_dup, supervision_period_id=_ID_2,
+            external_id=_EXTERNAL_ID, start_date=_DATE_1)
+        db_supervision_sentence_dup = generate_supervision_sentence(
+            person=db_person_dup, supervision_sentence_id=_ID_2,
+            external_id=_EXTERNAL_ID, max_length_days=10,
+            supervision_periods=[db_supervision_period])
+        db_sentence_group_dup = generate_sentence_group(
+            sentence_group_id=_ID_2,
+            external_id=_EXTERNAL_ID, status=StateSentenceStatus.SERVING.value,
+            supervision_sentences=[db_supervision_sentence_dup])
+        db_external_id_2 = generate_external_id(
+            person_external_id_id=_ID_2, state_code=_STATE_CODE,
+            external_id=_EXTERNAL_ID_2, id_type=_ID_TYPE_ANOTHER)
+        db_person_dup.external_ids = [db_external_id_2]
+        db_person_dup.sentence_groups = [db_sentence_group_dup]
+        self._commit_to_db(db_person, db_person_dup)
+
+        external_id = attr.evolve(
+            self.to_entity(db_external_id), person_external_id_id=None)
+        external_id_2 = attr.evolve(
+            self.to_entity(db_external_id_2), person_external_id_id=None)
+        person = attr.evolve(
+            self.to_entity(db_person), person_id=None,
+            external_ids=[external_id, external_id_2])
+
+        expected_supervision_period = attr.evolve(
+            self.to_entity(db_supervision_period))
+        expected_supervision_sentence = attr.evolve(
+            self.to_entity(db_supervision_sentence),
+            max_length_days=10,
+            supervision_periods=[expected_supervision_period])
+        expected_sentence_group = attr.evolve(
+            self.to_entity(db_sentence_group),
+            status=StateSentenceStatus.SERVING, is_life=True,
+            supervision_sentences=[expected_supervision_sentence])
+        expected_person = attr.evolve(
+            self.to_entity(db_person),
+            external_ids=[self.to_entity(db_external_id),
+                          self.to_entity(db_external_id_2)],
+            sentence_groups=[expected_sentence_group])
+        expected_placeholder_supervision_sentence = attr.evolve(
+            self.to_entity(db_supervision_sentence_dup), external_id=None,
+            max_length_days=None, supervision_periods=[])
+        expected_placeholder_sentence_group = attr.evolve(
+            self.to_entity(db_sentence_group_dup), external_id=None,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO, is_life=None,
+            supervision_sentences=[expected_placeholder_supervision_sentence])
+        expected_placeholder_person = attr.evolve(
+            self.to_entity(db_person_dup), full_name=None,
+            sentence_groups=[expected_placeholder_sentence_group],
+            external_ids=[])
+
+        # Act 1 - Match
+        act_session = self._session()
+        matched_entities = entity_matching.match(
+            act_session, _STATE_CODE, ingested_people=[person])
+
+        # Assert 1 - Match
+        self.assertEqual(0, matched_entities.error_count)
+        self.assertEqual(1, matched_entities.total_root_entities)
+        self.assert_people_match([expected_person, expected_placeholder_person],
+                                 matched_entities.people)
+
+        # Act 2 - Arrange, nothing needs to be done, DB ids shouldn't change.
+
+        # Act 2 - Commit
+        act_session.commit()
+        act_session.close()
+
+        # Assert 2 - Commit
+        assert_session = self._session()
+        result_db_people = dao.read_people(assert_session)
+
+        self.assert_people_match([expected_person, expected_placeholder_person],
+                                 result_db_people)
+        assert_session.close()
+
     def test_matchPersons_sentenceGroupRootEntity_DbMatchesMultipleIng(self, _):
         # Arrange 1 - Match
         db_sentence_group = generate_sentence_group(
@@ -795,8 +976,8 @@ class TestStateEntityMatching(TestCase):
             self._session(), _STATE_CODE, ingested_people=[person])
 
         # Assert 1 - Match
-        self.assert_people_match([expected_person], matched_entities.people)
         self.assertEqual(0, matched_entities.error_count)
+        self.assert_people_match([expected_person], matched_entities.people)
         self.assertEqual(1, matched_entities.total_root_entities)
 
     def test_matchPersons_noPlaceholders_completeTreeUpdate(self, _):
@@ -1087,8 +1268,8 @@ class TestStateEntityMatching(TestCase):
             self._session(), _STATE_CODE, ingested_people=[person])
 
         # Assert 1 - Match
-        self.assertEqual(0, matched_entities.error_count)
         self.assert_people_match([expected_person], matched_entities.people)
+        self.assertEqual(0, matched_entities.error_count)
         self.assertEqual(1, matched_entities.total_root_entities)
 
     def test_matchPersons_ingestedPersonWithNewExternalId(self, _):
@@ -1875,6 +2056,41 @@ class TestStateEntityMatching(TestCase):
         self.assertEqual(1, matched_entities.total_root_entities)
 
     # TODO(2037): Move test to state specific file.
+    def test_runMatch_multipleExternalIdsOnRootEntity(self, _):
+        db_external_id = generate_external_id(
+            person_external_id_id=_ID, external_id=_EXTERNAL_ID,
+            state_code=_US_ND,
+            id_type=_ID_TYPE)
+        db_external_id_2 = generate_external_id(
+            person_external_id_id=_ID_2, external_id=_EXTERNAL_ID_2,
+            state_code=_US_ND,
+            id_type=_ID_TYPE_ANOTHER)
+        db_person = generate_person(
+            person_id=_ID, external_ids=[db_external_id, db_external_id_2])
+        self._commit_to_db(db_person)
+
+        external_id = attr.evolve(
+            self.to_entity(db_external_id),
+            person_external_id_id=None)
+        external_id_2 = attr.evolve(
+            self.to_entity(db_external_id_2),
+            person_external_id_id=None)
+        race = StatePersonRace.new_with_defaults(race=Race.WHITE)
+        person = StatePerson.new_with_defaults(
+            external_ids=[external_id, external_id_2], races=[race])
+
+        expected_race = attr.evolve(race)
+        expected_person = attr.evolve(self.to_entity(db_person),
+                                      races=[expected_race])
+
+        # Act 1 - Match
+        matched_entities = entity_matching.match(
+            self._session(), _US_ND, ingested_people=[person])
+
+        self.assert_people_match([expected_person], matched_entities.people)
+        self.assertEqual(0, matched_entities.error_count)
+        self.assertEqual(1, matched_entities.total_root_entities)
+
     def test_runMatch_checkPlaceholdersWhenNoRootEntityMatch(self, _):
         """Tests that ingested people are matched with DB placeholder people
         when a root entity match doesn't exist. Specific to US_ND.
