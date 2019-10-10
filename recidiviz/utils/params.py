@@ -54,15 +54,17 @@ def get_bool_param_value(
     if str_value is None:
         return default
 
-    str_value_lower = str_value.lower()
-    if str_value_lower == 'true':
+    return str_to_bool(str_value)
+
+def str_to_bool(bool_str: str, arg_key=None):
+    bool_str_lower = bool_str.lower()
+    if bool_str_lower == 'true':
         return True
-    if str_value_lower == 'false':
+    if bool_str_lower == 'false':
         return False
 
     raise ValueError(
-        f'Unexpected value {str_value} for bool param {arg_key}')
-
+        f'Unexpected value {bool_str} for bool param {arg_key}')
 
 def get_str_param_values(arg_key: str, args) -> List[str]:
     """Same as above, but returns all values for a given key"""
