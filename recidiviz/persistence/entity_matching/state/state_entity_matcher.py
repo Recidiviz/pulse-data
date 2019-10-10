@@ -828,8 +828,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
                            matched_entities_by_db_ids[matched_db_id]]
                 # It's ok for a DB object to match multiple ingested
                 # placeholders.
-                if is_placeholder(matches[0]) and is_placeholder(
-                        matches[1]):
+                if is_placeholder(matches[0]) and is_placeholder(matches[1]):
                     return
                 raise MatchedMultipleIngestedEntitiesError(db_entity_match,
                                                            matches)

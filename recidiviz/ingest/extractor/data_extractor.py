@@ -217,19 +217,19 @@ class DataExtractor(metaclass=abc.ABCMeta):
         """Finds or creates the object we are going to set, which may already
         exist in the multi-key case."""
 
-        object_to_set = None
         if create_args and self.ingest_object_cache:
             # First, check the cache for an object with a matching ID
             obj_to_set_id_name = f'{class_to_set}_id'
             if obj_to_set_id_name in create_args:
                 obj_to_set_id = create_args[obj_to_set_id_name]
-                object_to_set = \
+                cached_object_to_set = \
                     self.ingest_object_cache.get_object_by_id(
                         class_to_set, obj_to_set_id)
 
-        if object_to_set is not None and \
-                ingest_key not in seen_map[id(object_to_set)]:
-            return object_to_set
+                if cached_object_to_set is not None:
+                    return cached_object_to_set
+
+        object_to_set = None
 
         # If we don't find a cached object with a matching id, look on the
         # parent object for a potential match.
