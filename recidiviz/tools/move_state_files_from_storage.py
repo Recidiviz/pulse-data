@@ -28,10 +28,11 @@ Steps:
 6. Prints instructions for next steps, including how to unpause queues, if
     necessary.
 
-Example usage:
+Example usage (run from `pipenv shell`):
 
-python -m recidiviz.tools.move_state_files_from_storage --environment staging \
-    --region us_nd --date-bound 2019-07-12 --dry-run True
+python -m recidiviz.tools.move_state_files_from_storage \
+    --project-id recidiviz-staging --region us_nd \
+    --date-bound 2019-07-12 --dry-run True
 """
 
 import argparse
@@ -53,6 +54,8 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     gcsfs_direct_ingest_directory_path_for_region
 from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import \
     DIRECT_INGEST_SCHEDULER_QUEUE_V2, DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2
+from recidiviz.tools.gsutil_shell_helpers import gsutil_ls, gsutil_mv
+from recidiviz.utils.params import str_to_bool
 
 
 class MoveFilesFromStorageController:
@@ -63,11 +66,6 @@ class MoveFilesFromStorageController:
 
     FILE_TO_MOVE_RE = \
         re.compile(r'^(processed_|unprocessed_|un)?(\d{4}-\d{2}-\d{2}T.*)')
-
-    ENV_NAME_TO_PROJECT_ID = {
-        'production': 'recidiviz-123',
-        'staging': 'recidiviz-staging',
-    }
 
     QUEUES_TO_PAUSE = {DIRECT_INGEST_SCHEDULER_QUEUE_V2,
                        DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2}
@@ -85,20 +83,15 @@ class MoveFilesFromStorageController:
         '"Authorization: Bearer $(gcloud auth print-access-token)" {}'
 
     def __init__(self,
-                 environment: str,
+                 project_id: str,
                  region: str,
                  date_bound: Optional[str],
                  dry_run: bool):
 
-        self.environment = environment
+        self.project_id = project_id
         self.region = region
         self.date_bound = date_bound
         self.dry_run = dry_run
-
-        if environment not in self.ENV_NAME_TO_PROJECT_ID:
-            raise ValueError(f"Unexpected environment [{environment}]")
-
-        self.project_id = self.ENV_NAME_TO_PROJECT_ID[environment]
 
         self.storage_bucket = \
             gcsfs_direct_ingest_storage_directory_path_for_region(
@@ -128,12 +121,12 @@ class MoveFilesFromStorageController:
             logging.info("Running in DRY RUN mode for region [%s]",
                          self.region)
         else:
-            env_str = self.environment.upper()
-            i = input(f"This will move [{self.region}] files in [{env_str}] "
-                      f"that were uploaded on or after {self.date_bound}. Type "
-                      f"{env_str} to continue: ")
+            i = input(f"This will move [{self.region}] files in "
+                      f"[{self.project_id}] that were uploaded on or after "
+                      f"[{self.date_bound}]. Type {self.project_id} to "
+                      f"continue: ")
 
-            if i.upper() != env_str:
+            if i != self.project_id:
                 return
 
         if self.dry_run:
@@ -179,17 +172,16 @@ class MoveFilesFromStorageController:
             logging.info(
                 "Move complete! See results in [%s].\n"
                 "\nNext steps:"
-                "\n1. Wait for all file splits to complete for large files"
-                "\n2. (If doing a full re-ingest) Drop Google Cloud database "
+                "\n1. (If doing a full re-ingest) Drop Google Cloud database "
                 "for [%s]"
-                "\n3. Resume queues here:",
+                "\n2. Resume queues here:",
                 self.log_output_path, self.project_id)
 
             for queue_name in self.QUEUES_TO_PAUSE:
                 logging.info("\t%s", self.queue_console_url(queue_name))
 
     def get_date_subdir_paths(self) -> List[str]:
-        possible_paths = self.ls(f'gs://{self.storage_bucket}')
+        possible_paths = gsutil_ls(f'gs://{self.storage_bucket}')
 
         result = []
         for path in possible_paths:
@@ -287,25 +279,6 @@ class MoveFilesFromStorageController:
             self.purge_queue(queue_name)
 
     @staticmethod
-    def ls(gs_path: str) -> List[str]:
-        """Returns list of paths returned by 'gsutil ls <gs_path>.
-        E.g.
-        self.ls('gs://recidiviz-123-state-storage') ->
-            ['gs://recidiviz-123-state-storage/us_nd']
-
-        """
-        res = subprocess.Popen(f'gsutil ls {gs_path}',
-                               shell=True,
-                               stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE)
-        stdout, stderr = res.communicate()
-
-        if stderr:
-            raise ValueError(stderr.decode('utf-8'))
-
-        return stdout.decode('utf-8').splitlines()
-
-    @staticmethod
     def is_date_str(potential_date_str: str) -> bool:
         """Returns True if the string is an ISO-formatted date,
         (e.g. '2019-09-25'), False otherwise.
@@ -320,7 +293,7 @@ class MoveFilesFromStorageController:
         """Returns files directly in the given directory that should be moved
         back into the ingest directory.
         """
-        file_paths = self.ls(gs_dir_path)
+        file_paths = gsutil_ls(gs_dir_path)
 
         result = []
         for file_path in file_paths:
@@ -343,15 +316,7 @@ class MoveFilesFromStorageController:
             self.build_moved_file_path(original_file_path)
 
         if not self.dry_run:
-            res = subprocess.Popen(
-                f'gsutil -q mv {original_file_path} {new_file_path}',
-                shell=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE)
-            _stdout, stderr = res.communicate()
-
-            if stderr:
-                raise ValueError(stderr.decode('utf-8'))
+            gsutil_mv(original_file_path, new_file_path)
 
         with self.mutex:
             self.moves_list.append((original_file_path, new_file_path))
@@ -373,6 +338,7 @@ class MoveFilesFromStorageController:
                             f'unprocessed_{match_result.group(2)}')
 
     def write_moves_to_log_file(self):
+        self.moves_list.sort()
         with open(self.log_output_path, 'w') as f:
             if self.dry_run:
                 template = "DRY RUN: Would move {} -> {}\n"
@@ -384,13 +350,11 @@ class MoveFilesFromStorageController:
 
 
 def main():
-    from recidiviz.utils import environment
-
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--environment', required=True,
-                        choices=[*environment.GAE_ENVIRONMENTS],
-                        help='Which project\'s files should be moved.')
+    parser.add_argument('--project-id', required=True,
+                        help='Which project\'s files should be moved '
+                             '(e.g. recidiviz-123).')
 
     parser.add_argument('--region', required=True,
                         help='E.g. \'us_nd\'')
@@ -400,7 +364,7 @@ def main():
                              'For partial replays of ingested files. '
                              'E.g. 2019-09-23.')
 
-    parser.add_argument('--dry-run', default=True,
+    parser.add_argument('--dry-run', default=True, type=str_to_bool,
                         help='Runs move in dry-run mode, only prints the file '
                              'moves it would do.')
     args = parser.parse_args()
@@ -408,7 +372,7 @@ def main():
     logging.basicConfig(level=logging.INFO, format='%(message)s')
 
     MoveFilesFromStorageController(
-        environment=args.environment,
+        project_id=args.project_id,
         region=args.region,
         date_bound=args.date_bound,
         dry_run=args.dry_run
