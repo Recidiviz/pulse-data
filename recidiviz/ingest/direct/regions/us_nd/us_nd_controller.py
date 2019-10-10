@@ -188,7 +188,8 @@ class UsNdController(CsvGcsfsDirectIngestController):
         # TODO(2399): Once we are capable of handling historical and nightly
         #  ingest of 'elite_offense_in_custody_and_pos_report_data', remove
         #  this check.
-        if not environment.in_gae_production():
+        if not environment.in_gae_production() and \
+                not environment.in_gae_staging():
             tags.append('elite_offense_in_custody_and_pos_report_data')
 
         tags += [
