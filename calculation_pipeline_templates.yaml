@@ -7,5 +7,5 @@ pipeline_count: 1
 pipelines:
   - pipeline: recidivism
     job_name: full-recidivism-calculations
-    input: recidiviz_state_scratch_space_2
+    input: state
     output: dataflow_metrics
