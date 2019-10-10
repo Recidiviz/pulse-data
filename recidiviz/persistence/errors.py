@@ -44,9 +44,10 @@ class MatchedMultipleDatabaseEntitiesError(EntityMatchingError):
         msg_template = (
             "Matched one ingested entity to multiple database entities."
             "\nIngested entity: {}"
-            "\nDatabase entities: {}")
+            "\nDatabase entity db ids: {}")
         msg = msg_template.format(ingested_entity,
-                                  '\n'.join(str(e) for e in database_entities))
+                                  '\n'.join(str(e.get_id())
+                                            for e in database_entities))
         super(MatchedMultipleDatabaseEntitiesError, self).__init__(
             msg, ingested_entity.get_entity_name())
 
@@ -61,9 +62,9 @@ class MatchedMultipleIngestedEntitiesError(EntityMatchingError):
             ingested_entities: Sequence[CoreEntity]):
         msg_template = (
             "Matched one database entity to multiple ingested entities."
-            "\nDatabase entity: {}"
+            "\nDatabase entity db id: {}"
             "\nIngested entities: {}")
-        msg = msg_template.format(database_entity,
+        msg = msg_template.format(database_entity.get_id(),
                                   '\n'.join(str(e) for e in ingested_entities))
         super(MatchedMultipleIngestedEntitiesError, self).__init__(
             msg, database_entity.get_entity_name())

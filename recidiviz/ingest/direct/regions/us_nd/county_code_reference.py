@@ -54,7 +54,7 @@ _COUNTY_CODES: Dict[str, str] = {
     '15': 'US_ND_EMMONS',
     'EM': 'US_ND_EMMONS',
     '16': 'US_ND_FOSTER',
-    'FD': 'US_ND_FOSTER',
+    'FO': 'US_ND_FOSTER',
     '17': 'US_ND_GOLDEN_VALLEY',
     'GV': 'US_ND_GOLDEN_VALLEY',
     '18': 'US_ND_GRAND_FORKS',
