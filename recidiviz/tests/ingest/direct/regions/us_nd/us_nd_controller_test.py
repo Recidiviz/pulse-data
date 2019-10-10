@@ -17,7 +17,6 @@
 
 """Unit and integration tests for North Dakota direct ingest."""
 
-import copy
 import datetime
 import json
 import unittest
@@ -933,14 +932,6 @@ class TestUsNdController(unittest.TestCase):
             incident_details=_INCIDENT_DETAILS_6,
         )
 
-        state_incarceration_incident_381647_2 = \
-            copy.copy(state_incarceration_incident_381647)
-
-        incident_list_381647 = [
-            state_incarceration_incident_381647,
-            state_incarceration_incident_381647_2
-        ]
-
         state_incarceration_incident_381647. \
             state_incarceration_incident_outcomes = [
                 StateIncarcerationIncidentOutcome(
@@ -948,11 +939,7 @@ class TestUsNdController(unittest.TestCase):
                     outcome_type='PAY',
                     date_effective='4/20/2018',
                     outcome_description='LOSS OF PAY',
-                    punishment_length_days=None)
-            ]
-
-        state_incarceration_incident_381647_2. \
-            state_incarceration_incident_outcomes = [
+                    punishment_length_days=None),
                 StateIncarcerationIncidentOutcome(
                     state_incarceration_incident_outcome_id='372645-381647-37',
                     outcome_type='EXD',
@@ -1044,7 +1031,7 @@ class TestUsNdController(unittest.TestCase):
                                 state_incarceration_periods=[
                                     StateIncarcerationPeriod(
                                         state_incarceration_incidents=
-                                        incident_list_381647
+                                        [state_incarceration_incident_381647]
                                     )
                                 ]
                             )

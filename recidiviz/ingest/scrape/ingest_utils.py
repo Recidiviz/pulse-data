@@ -264,10 +264,8 @@ def convert_ingest_info_to_proto(ingest_info_py: ingest_info.IngestInfo) \
                     'state_incarceration_incidents', incident,
                     'state_incarceration_incident_id',
                     state_incarceration_incident_map)
-                if proto_incident.state_incarceration_incident_id not in \
-                        proto_period.state_incarceration_incident_ids:
-                    proto_period.state_incarceration_incident_ids.append(
-                        proto_incident.state_incarceration_incident_id)
+                proto_period.state_incarceration_incident_ids.append(
+                    proto_incident.state_incarceration_incident_id)
 
                 if incident.responding_officer:
                     proto_responding_officer = _populate_proto(
