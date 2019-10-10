@@ -45,7 +45,7 @@ class GcsfsDirectIngestController(BaseDirectIngestController[GcsfsIngestArgs,
 
     _MAX_STORAGE_FILE_RENAME_TRIES = 10
     _DEFAULT_MAX_PROCESS_JOB_WAIT_TIME_SEC = 300
-    _FILE_SPLIT_LINE_LIMIT = 5000
+    _FILE_SPLIT_LINE_LIMIT = 2500
 
     def __init__(self,
                  region_name: str,
