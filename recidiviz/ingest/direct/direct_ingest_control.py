@@ -35,7 +35,7 @@ from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import \
 from recidiviz.ingest.direct.controllers.direct_ingest_types import IngestArgs
 from recidiviz.ingest.direct.errors import DirectIngestError, \
     DirectIngestErrorType
-from recidiviz.utils import environment, regions
+from recidiviz.utils import environment, regions, monitoring
 from recidiviz.utils.auth import authenticate_request
 from recidiviz.utils.params import get_str_param_value, get_bool_param_value
 from recidiviz.utils.regions import get_supported_direct_ingest_region_codes
@@ -50,7 +50,7 @@ def handle_direct_ingest_file() -> Tuple[str, HTTPStatus]:
     bucket. Will trigger a job that deals with normalizing and splitting the
     file as is appropriate, then start the scheduler if allowed.
     """
-    region_name = get_str_param_value('region', request.args)
+    region_code = get_str_param_value('region', request.args)
     # The bucket name for the file to ingest
     bucket = get_str_param_value('bucket', request.args)
     # The relative path to the file, not including the bucket name
@@ -59,22 +59,23 @@ def handle_direct_ingest_file() -> Tuple[str, HTTPStatus]:
     start_ingest = \
         get_bool_param_value('start_ingest', request.args, default=False)
 
-    if not region_name or not bucket \
+    if not region_code or not bucket \
             or not relative_file_path or start_ingest is None:
         return f'Bad parameters [{request.args}]', HTTPStatus.BAD_REQUEST
 
-    controller = controller_for_region_code(region_name,
-                                            allow_unlaunched=True)
-    if not isinstance(controller, GcsfsDirectIngestController):
-        raise DirectIngestError(
-            msg=f"Unexpected controller type [{type(controller)}].",
-            error_type=DirectIngestErrorType.INPUT_ERROR)
+    with monitoring.push_region_tag(region_code):
+        controller = controller_for_region_code(region_code,
+                                                allow_unlaunched=True)
+        if not isinstance(controller, GcsfsDirectIngestController):
+            raise DirectIngestError(
+                msg=f"Unexpected controller type [{type(controller)}].",
+                error_type=DirectIngestErrorType.INPUT_ERROR)
 
-    path = GcsfsPath.from_bucket_and_blob_name(bucket_name=bucket,
-                                               blob_name=relative_file_path)
+        path = GcsfsPath.from_bucket_and_blob_name(bucket_name=bucket,
+                                                   blob_name=relative_file_path)
 
-    if isinstance(path, GcsfsFilePath):
-        controller.handle_file(path, start_ingest=start_ingest)
+        if isinstance(path, GcsfsFilePath):
+            controller.handle_file(path, start_ingest=start_ingest)
 
     return '', HTTPStatus.OK
 
@@ -89,26 +90,27 @@ def handle_new_files() -> Tuple[str, HTTPStatus]:
     """
     logging.info('Received request for direct ingest handle_new_files: %s',
                  request.values)
-    region_value = get_str_param_value('region', request.values)
+    region_code = get_str_param_value('region', request.values)
     can_start_ingest = \
         get_bool_param_value('can_start_ingest', request.values, default=False)
 
-    if not region_value or can_start_ingest is None:
+    if not region_code or can_start_ingest is None:
         return f'Bad parameters [{request.values}]', HTTPStatus.BAD_REQUEST
 
-    try:
-        controller = controller_for_region_code(region_value)
-    except DirectIngestError as e:
-        if e.error_type == DirectIngestErrorType.INPUT_ERROR:
-            return str(e), HTTPStatus.BAD_REQUEST
-        raise e
+    with monitoring.push_region_tag(region_code):
+        try:
+            controller = controller_for_region_code(region_code)
+        except DirectIngestError as e:
+            if e.error_type == DirectIngestErrorType.INPUT_ERROR:
+                return str(e), HTTPStatus.BAD_REQUEST
+            raise e
 
-    if not isinstance(controller, GcsfsDirectIngestController):
-        raise DirectIngestError(
-            msg=f"Unexpected controller type [{type(controller)}].",
-            error_type=DirectIngestErrorType.INPUT_ERROR)
+        if not isinstance(controller, GcsfsDirectIngestController):
+            raise DirectIngestError(
+                msg=f"Unexpected controller type [{type(controller)}].",
+                error_type=DirectIngestErrorType.INPUT_ERROR)
 
-    controller.handle_new_files(can_start_ingest=can_start_ingest)
+        controller.handle_new_files(can_start_ingest=can_start_ingest)
     return '', HTTPStatus.OK
 
 
@@ -122,55 +124,60 @@ def ensure_all_file_paths_normalized() -> Tuple[str, HTTPStatus]:
 
     supported_regions = get_supported_direct_ingest_region_codes()
     for region_code in supported_regions:
-        try:
-            controller = controller_for_region_code(region_code,
-                                                    allow_unlaunched=True)
-        except DirectIngestError as e:
-            raise e
-        if not isinstance(controller, BaseDirectIngestController):
-            raise DirectIngestError(
-                msg=f"Unexpected controller type [{type(controller)}].",
-                error_type=DirectIngestErrorType.INPUT_ERROR)
+        with monitoring.push_region_tag(region_code):
+            try:
+                controller = controller_for_region_code(region_code,
+                                                        allow_unlaunched=True)
+            except DirectIngestError as e:
+                raise e
+            if not isinstance(controller, BaseDirectIngestController):
+                raise DirectIngestError(
+                    msg=f"Unexpected controller type [{type(controller)}].",
+                    error_type=DirectIngestErrorType.INPUT_ERROR)
 
-        if not isinstance(controller, GcsfsDirectIngestController):
-            continue
+            if not isinstance(controller, GcsfsDirectIngestController):
+                continue
 
-        can_start_ingest = controller.region.is_ingest_launched_in_env()
-        controller.cloud_task_manager.\
-            create_direct_ingest_handle_new_files_task(
-                controller.region, can_start_ingest=can_start_ingest)
+            can_start_ingest = controller.region.is_ingest_launched_in_env()
+            controller.cloud_task_manager.\
+                create_direct_ingest_handle_new_files_task(
+                    controller.region, can_start_ingest=can_start_ingest)
     return '', HTTPStatus.OK
 
 
 @direct_ingest_control.route('/process_job', methods=['POST'])
 @authenticate_request
 def process_job() -> Tuple[str, HTTPStatus]:
+    """Processes a single direct ingest file, specified in the provided ingest
+    arguments.
+    """
     logging.info('Received request to process direct ingest job: [%s]',
                  request.values)
-    region_value = get_str_param_value('region', request.values)
+    region_code = get_str_param_value('region', request.values)
 
-    if not region_value:
+    if not region_code:
         return f'Bad parameters [{request.values}]', HTTPStatus.BAD_REQUEST
 
-    json_data = request.get_data(as_text=True)
-    ingest_args = _get_ingest_args(json_data)
+    with monitoring.push_region_tag(region_code):
+        json_data = request.get_data(as_text=True)
+        ingest_args = _get_ingest_args(json_data)
 
-    if not ingest_args:
-        return f'Could not parse ingest args', HTTPStatus.BAD_REQUEST
-
-    try:
         if not ingest_args:
-            raise DirectIngestError(
-                msg=f"process_job was called with no IngestArgs.",
-                error_type=DirectIngestErrorType.INPUT_ERROR)
+            return f'Could not parse ingest args', HTTPStatus.BAD_REQUEST
 
-        controller = controller_for_region_code(region_value)
-    except DirectIngestError as e:
-        if e.error_type == DirectIngestErrorType.INPUT_ERROR:
-            return str(e), HTTPStatus.BAD_REQUEST
-        raise e
+        try:
+            if not ingest_args:
+                raise DirectIngestError(
+                    msg=f"process_job was called with no IngestArgs.",
+                    error_type=DirectIngestErrorType.INPUT_ERROR)
 
-    controller.run_ingest_job_and_kick_scheduler_on_completion(ingest_args)
+            controller = controller_for_region_code(region_code)
+        except DirectIngestError as e:
+            if e.error_type == DirectIngestErrorType.INPUT_ERROR:
+                return str(e), HTTPStatus.BAD_REQUEST
+            raise e
+
+        controller.run_ingest_job_and_kick_scheduler_on_completion(ingest_args)
     return '', HTTPStatus.OK
 
 
@@ -179,21 +186,23 @@ def process_job() -> Tuple[str, HTTPStatus]:
 def scheduler() -> Tuple[str, HTTPStatus]:
     logging.info('Received request for direct ingest scheduler: %s',
                  request.values)
-    region_value = get_str_param_value('region', request.values)
+    region_code = get_str_param_value('region', request.values)
     just_finished_job = \
         get_bool_param_value('just_finished_job', request.values, default=False)
 
-    if not region_value or just_finished_job is None:
+    if not region_code or just_finished_job is None:
         return f'Bad parameters [{request.values}]', HTTPStatus.BAD_REQUEST
 
-    try:
-        controller = controller_for_region_code(region_value)
-    except DirectIngestError as e:
-        if e.error_type == DirectIngestErrorType.INPUT_ERROR:
-            return str(e), HTTPStatus.BAD_REQUEST
-        raise e
+    with monitoring.push_region_tag(region_code):
+        try:
+            controller = controller_for_region_code(region_code)
+        except DirectIngestError as e:
+            if e.error_type == DirectIngestErrorType.INPUT_ERROR:
+                return str(e), HTTPStatus.BAD_REQUEST
+            raise e
 
-    controller.schedule_next_ingest_job_or_wait_if_necessary(just_finished_job)
+        controller.schedule_next_ingest_job_or_wait_if_necessary(
+            just_finished_job)
     return '', HTTPStatus.OK
 
 
