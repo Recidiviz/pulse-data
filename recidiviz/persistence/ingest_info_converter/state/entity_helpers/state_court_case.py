@@ -66,4 +66,5 @@ def copy_fields_to_builder(
     new.state_code = parse_region_code_with_override(
         proto, 'state_code', metadata)
     new.county_code = fn(normalize, 'county_code', proto)
+    new.judicial_district_code = fn(normalize, 'judicial_district_code', proto)
     new.court_fee_dollars = fn(parse_dollars, 'court_fee_dollars', proto)

@@ -275,6 +275,10 @@ class StateCourtCase(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     state_code: str = attr.ib()  # non-nullable
     # County where the court case took place
     county_code: Optional[str] = attr.ib()
+    # Area of jurisdictional coverage of the court which tried the case, may be
+    # the same as the county, the entire state, or some jurisdiction out of
+    # the state.
+    judicial_district_code: Optional[str] = attr.ib()
 
     #   - What
     court_fee_dollars: Optional[int] = attr.ib()
