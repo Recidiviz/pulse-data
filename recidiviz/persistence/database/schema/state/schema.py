@@ -822,6 +822,7 @@ class _StateCourtCaseSharedColumns(_ReferencesStatePersonSharedColumns):
     next_court_date = Column(Date)
     state_code = Column(String(255), nullable=False, index=True)
     county_code = Column(String(255), index=True)
+    judicial_district_code = Column(String(255))
     court_fee_dollars = Column(Integer)
 
     @declared_attr

@@ -4,6 +4,7 @@ key_mappings:
   CONVICTION_DATE: state_court_case.date_convicted
   COURT_DATE: state_court_case.next_court_date
   COUNTY_CODE: state_court_case.county_code
+  ISSUING_AGY_LOC_ID: state_court_case.judicial_district_code
 
 ancestor_keys:
   OFFENDER_BOOK_ID: state_sentence_group.state_sentence_group_id
@@ -19,7 +20,6 @@ primary_key:
 
 keys_to_ignore:
   - COURT_INFO_ID         # TODO(2311) Use this to do better entity matching between incarceration and supervision
-  - ISSUING_AGY_LOC_ID    # TODO(2222) Add a district/region field to StateCourtCase
   - EFFECTIVE_DATE        # No longer in use by source
   - SENTENCE_START_DATE   # No longer in use by source
   - CREATE_DATETIME       # No apparent use for these at the moment

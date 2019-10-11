@@ -62,8 +62,11 @@ from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.common.str_field_utils import parse_days_from_duration_pieces
 from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller \
     import CsvGcsfsDirectIngestController
-from recidiviz.ingest.direct.regions.us_nd.county_code_reference import \
+from recidiviz.ingest.direct.regions.us_nd.us_nd_county_code_reference import \
     normalized_county_code
+from recidiviz.ingest.direct.regions.us_nd.\
+    us_nd_judicial_district_code_reference import \
+    normalized_judicial_district_code
 from recidiviz.ingest.extractor.csv_data_extractor import \
     IngestFieldCoordinates
 from recidiviz.ingest.models.ingest_info import IngestInfo, IngestObject, \
@@ -121,7 +124,8 @@ class UsNdController(CsvGcsfsDirectIngestController):
                 self._rationalize_controlling_charge
             ],
             'elite_orderstable': [self._set_judge_agent_type,
-                                  self._normalize_county_code_elite_orders],
+                                  self._normalize_county_code_elite_orders,
+                                  self._normalize_judicial_district_code],
             'elite_externalmovements': [self._process_external_movement],
             'elite_offense_in_custody_and_pos_report_data': [
                 self._rationalize_incident_type,
@@ -239,19 +243,20 @@ class UsNdController(CsvGcsfsDirectIngestController):
     def _get_row_post_processors_for_file(self, file: str) -> List[Callable]:
         return self.row_post_processors_by_file.get(file, [])
 
-    def _get_external_id_post_processor_for_file(self, file: str) -> Callable:
-        if file.startswith('elite'):
+    def _get_external_id_post_processor_for_file(self,
+                                                 file_tag: str) -> Callable:
+        if file_tag.startswith('elite'):
             return self._convert_elite_person_ids_to_external_id_objects
-        if file.startswith('docstars'):
+        if file_tag.startswith('docstars'):
             return self._convert_docstars_person_ids_to_external_id_objects
-        raise ValueError(f"File [{file}] doesn't have a known external id "
+        raise ValueError(f"File [{file_tag}] doesn't have a known external id "
                          f"post-processor")
 
     def _get_file_post_processors_for_file(
-            self, file: str) -> List[Callable]:
+            self, file_tag: str) -> List[Callable]:
         post_processors: List[Callable] = [
             self._rationalize_race_and_ethnicity,
-            self._get_external_id_post_processor_for_file(file)]
+            self._get_external_id_post_processor_for_file(file_tag)]
         return post_processors
 
     def _get_ancestor_key_override_for_file(
@@ -805,7 +810,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
             row: Dict[str, str],
             extracted_objects: List[IngestObject],
             _cache: IngestObjectCache):
-        _normalize_county_code(row, 'COUNTY_CODE', StateCourtCase,
+        _normalize_county_code(row['COUNTY_CODE'], StateCourtCase,
                                extracted_objects)
 
     @staticmethod
@@ -813,7 +818,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
             row: Dict[str, str],
             extracted_objects: List[IngestObject],
             _cache: IngestObjectCache):
-        _normalize_county_code(row, 'TB_CTY', StateSupervisionPeriod,
+        _normalize_county_code(row['TB_CTY'], StateSupervisionPeriod,
                                extracted_objects)
 
     @staticmethod
@@ -821,7 +826,19 @@ class UsNdController(CsvGcsfsDirectIngestController):
             row: Dict[str, str],
             extracted_objects: List[IngestObject],
             _cache: IngestObjectCache):
-        _normalize_county_code(row, 'COUNTY', StateCharge, extracted_objects)
+        _normalize_county_code(row['COUNTY'], StateCharge, extracted_objects)
+
+    @staticmethod
+    def _normalize_judicial_district_code(
+            _row: Dict[str, str],
+            extracted_objects: List[IngestObject],
+            _cache: IngestObjectCache):
+        for extracted_object in extracted_objects:
+            if isinstance(extracted_object, StateCourtCase):
+                normalized_code = normalized_judicial_district_code(
+                    extracted_object.judicial_district_code)
+                extracted_object.__setattr__('judicial_district_code',
+                                             normalized_code)
 
     def get_enum_overrides(self) -> EnumOverrides:
         """Provides North Dakota-specific overrides for enum mappings.
@@ -1225,14 +1242,11 @@ def get_program_referral_fields(
 
 
 def _normalize_county_code(
-        row: Dict[str, str],
-        column_name: str,
+        county_code: str,
         ingest_type: Type[IngestObject],
         extracted_objects: List[IngestObject]):
-    county_code = row[column_name]
     normalized_code = normalized_county_code(county_code)
 
     for extracted_object in extracted_objects:
         if isinstance(extracted_object, ingest_type):
-            if normalized_code:
-                extracted_object.__setattr__('county_code', normalized_code)
+            extracted_object.__setattr__('county_code', normalized_code)
