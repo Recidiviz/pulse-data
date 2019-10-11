@@ -653,6 +653,7 @@ class TestUsNdController(unittest.TestCase):
                                          date_convicted='6/19/89  12:00:00 AM',
                                          next_court_date='6/19/89  12:00:00 AM',
                                          county_code='US_ND_CASS',
+                                         judicial_district_code='EAST_CENTRAL',
                                          judge=StateAgent(
                                              agent_type='JUDGE',
                                              full_name='Sheindlin, Judy',
@@ -664,6 +665,7 @@ class TestUsNdController(unittest.TestCase):
                                          date_convicted='6/19/89  12:00:00 AM',
                                          next_court_date='6/19/89  12:00:00 AM',
                                          county_code='US_ND_CASS',
+                                         judicial_district_code='EAST_CENTRAL',
                                          judge=StateAgent(
                                              agent_type='JUDGE',
                                              full_name='Sheindlin, Judy',
@@ -675,6 +677,7 @@ class TestUsNdController(unittest.TestCase):
                                          date_convicted='4/29/91  12:00:00 AM',
                                          next_court_date='4/29/91  12:00:00 AM',
                                          county_code='US_ND_BURLEIGH',
+                                         judicial_district_code='SOUTH_CENTRAL',
                                          judge=StateAgent(
                                              agent_type='JUDGE',
                                              full_name='BIRDMAN, HARVEY',
@@ -685,7 +688,8 @@ class TestUsNdController(unittest.TestCase):
             status='A',
             date_convicted='8/10/10  12:00:00 AM',
             next_court_date='8/10/10  12:00:00 AM',
-            county_code='US_ND_BURLEIGH',
+            county_code='FEDERAL',
+            judicial_district_code='FEDERAL',
             judge=StateAgent(
                 agent_type='JUDGE',
                 full_name='Hollywood, Paul',
@@ -2265,6 +2269,7 @@ class TestUsNdController(unittest.TestCase):
         court_case_5190.next_court_date = datetime.date(
             year=1989, month=6, day=19)
         court_case_5190.county_code = 'US_ND_CASS'
+        court_case_5190.judicial_district_code = 'EAST_CENTRAL'
         court_case_5190.status_raw_text = 'A'
         court_case_5190.judge = agent_judy
 
@@ -2273,6 +2278,7 @@ class TestUsNdController(unittest.TestCase):
         court_case_5192.next_court_date = datetime.date(
             year=1989, month=6, day=19)
         court_case_5192.county_code = 'US_ND_CASS'
+        court_case_5192.judicial_district_code = 'EAST_CENTRAL'
         court_case_5192.status_raw_text = 'A'
         court_case_5192.judge = agent_judy_dup
 
@@ -2281,6 +2287,7 @@ class TestUsNdController(unittest.TestCase):
         court_case_5193.next_court_date = datetime.date(
             year=1991, month=4, day=29)
         court_case_5193.county_code = 'US_ND_BURLEIGH'
+        court_case_5193.judicial_district_code = 'SOUTH_CENTRAL'
         court_case_5193.status_raw_text = 'A'
         court_case_5193.judge = agent_harvey
 
@@ -2288,7 +2295,8 @@ class TestUsNdController(unittest.TestCase):
             year=2010, month=8, day=10)
         court_case_154576.next_court_date = datetime.date(
             year=2010, month=8, day=10)
-        court_case_154576.county_code = 'US_ND_BURLEIGH'
+        court_case_154576.county_code = 'FEDERAL'
+        court_case_154576.judicial_district_code = 'FEDERAL'
         court_case_154576.status_raw_text = 'A'
         court_case_154576.judge = agent_paul
 
