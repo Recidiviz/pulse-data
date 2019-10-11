@@ -81,11 +81,15 @@ def push_tags(tags: Dict[str, Any]):
         set_thread_local_tags({key: None for key in tags})
 
 
+def push_region_tag(region_code: str):
+    return push_tags({TagKey.REGION: region_code})
+
+
 def with_region_tag(func):
 
     @wraps(func)
     def set_region_tag(region_code, *args, **kwargs):
-        with push_tags({TagKey.REGION: region_code}):
+        with push_region_tag(region_code):
             return func(region_code, *args, **kwargs)
 
     return set_region_tag

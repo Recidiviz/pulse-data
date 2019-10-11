@@ -26,6 +26,7 @@ from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import \
     CloudTaskQueueInfo, _build_task_id
 from recidiviz.tests.ingest.direct.fake_direct_ingest_cloud_task_manager \
     import FakeDirectIngestCloudTaskManager
+from recidiviz.utils import monitoring
 from recidiviz.utils.regions import Region
 
 
@@ -105,8 +106,9 @@ class FakeSynchronousDirectIngestCloudTaskManager(
 
         task = self.process_job_tasks[0]
 
-        self.controller.run_ingest_job_and_kick_scheduler_on_completion(
-            task[1])
+        with monitoring.push_region_tag(self.controller.region.region_code):
+            self.controller.run_ingest_job_and_kick_scheduler_on_completion(
+                task[1])
         self.num_finished_process_job_tasks += 1
 
     def test_run_next_scheduler_task(self) -> None:
@@ -126,17 +128,17 @@ class FakeSynchronousDirectIngestCloudTaskManager(
         task = self.scheduler_tasks[0]
         task_id = task[0]
 
-        if task_id.endswith('schedule'):
-
-            self.controller.schedule_next_ingest_job_or_wait_if_necessary(
-                just_finished_job=task[1])
-        elif task_id.endswith('handle_new_files'):
-            if not isinstance(self.controller, GcsfsDirectIngestController):
-                raise ValueError(
-                    f'Unexpected controller type {type(self.controller)}')
-            self.controller.handle_new_files(can_start_ingest=task[1])
-        else:
-            raise ValueError(f'Unexpected task id [{task_id}]')
+        with monitoring.push_region_tag(self.controller.region.region_code):
+            if task_id.endswith('schedule'):
+                self.controller.schedule_next_ingest_job_or_wait_if_necessary(
+                    just_finished_job=task[1])
+            elif task_id.endswith('handle_new_files'):
+                if not isinstance(self.controller, GcsfsDirectIngestController):
+                    raise ValueError(
+                        f'Unexpected controller type {type(self.controller)}')
+                self.controller.handle_new_files(can_start_ingest=task[1])
+            else:
+                raise ValueError(f'Unexpected task id [{task_id}]')
         self.num_finished_scheduler_tasks += 1
 
     def test_pop_finished_process_job_task(self) -> None:
