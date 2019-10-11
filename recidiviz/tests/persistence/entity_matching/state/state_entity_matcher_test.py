@@ -170,23 +170,14 @@ class TestStateEntityMatching(TestCase):
         person_2 = StatePerson.new_with_defaults(
             full_name=_FULL_NAME, external_ids=[external_id_2])
 
+        expected_db_person = self.to_entity(db_person)
+        expected_person_2 = attr.evolve(person_2)
+
         # Act 1 - Match
         session = self._session()
         matched_entities = entity_matching.match(
             session, _STATE_CODE,
             [person_2])
-
-        # Assert 1 - Match
-        expected_db_external_id = StatePersonExternalId.new_with_defaults(
-            person_external_id_id=1,
-            state_code=_STATE_CODE,
-            external_id=_EXTERNAL_ID, id_type=_ID_TYPE)
-        expected_db_person = StatePerson.new_with_defaults(
-            person_id=1,
-            full_name=_FULL_NAME,
-            external_ids=[expected_db_external_id])
-
-        expected_person_2 = attr.evolve(person_2)
 
         self.assertEqual(matched_entities.error_count, 0)
         self.assertEqual(1, matched_entities.total_root_entities)
@@ -322,41 +313,61 @@ class TestStateEntityMatching(TestCase):
             [expected_person, expected_person_another],
             matched_entities.people, session)
 
-    def test_match_noPlaceholder_oneMatchOneError(self, _):
+    def test_match_oneMatchOneError(self, _):
         # Arrange 1 - Match
-        db_external_id = schema.StatePersonExternalId(
+        db_external_id = generate_external_id(
             person_external_id_id=_ID, state_code=_STATE_CODE,
             external_id=_EXTERNAL_ID, id_type=_ID_TYPE)
-        db_person = schema.StatePerson(
-            person_id=_ID, full_name=_FULL_NAME, external_ids=[db_external_id])
-        self._commit_to_db(db_person)
+        db_person = generate_person(
+            person_id=_ID, external_ids=[db_external_id])
 
-        external_id = StatePersonExternalId.new_with_defaults(
-            state_code=_STATE_CODE, external_id=_EXTERNAL_ID, id_type=_ID_TYPE)
-        person = StatePerson.new_with_defaults(
-            full_name=_FULL_NAME, external_ids=[external_id])
+        db_external_id_2 = generate_external_id(
+            person_external_id_id=_ID_2, state_code=_STATE_CODE,
+            external_id=_EXTERNAL_ID_2, id_type=_ID_TYPE)
+        db_sentence_group = generate_sentence_group(
+            sentence_group_id=_ID, external_id=_EXTERNAL_ID)
+        db_person_2 = generate_person(
+            person_id=_ID_2,
+            sentence_groups=[db_sentence_group],
+            external_ids=[db_external_id_2])
 
-        external_id_dup = attr.evolve(external_id)
-        person_dup = attr.evolve(person, external_ids=[external_id_dup],
-                                 full_name=_FULL_NAME_ANOTHER)
+        self._commit_to_db(db_person, db_person_2)
+
+        external_id = attr.evolve(
+            self.to_entity(db_external_id), person_external_id_id=None)
+        person = attr.evolve(
+            self.to_entity(db_person),
+            person_id=None, external_ids=[external_id])
+
+        sentence_group = attr.evolve(
+            self.to_entity(db_sentence_group), sentence_group_id=None)
+        sentence_group_dup = attr.evolve(sentence_group)
+        external_id_2 = attr.evolve(
+            self.to_entity(db_external_id_2), person_external_id_id=None)
+        person_2 = attr.evolve(
+            self.to_entity(db_person_2),
+            person_id=None, external_ids=[external_id_2],
+            sentence_groups=[sentence_group, sentence_group_dup])
 
         expected_person = attr.evolve(person, person_id=_ID)
         expected_external_id = attr.evolve(
             external_id, person_external_id_id=_ID)
         expected_person.external_ids = [expected_external_id]
+        expected_unmatched_db_person = self.to_entity(db_person_2)
 
         # Act 1 - Match
         session = self._session()
         matched_entities = entity_matching.match(
-            session, _STATE_CODE, [person, person_dup])
+            session, _STATE_CODE, [person, person_2])
 
         # Assert 1 - Match
         self.assertEqual(matched_entities.error_count, 1)
         self.assertEqual(2, matched_entities.total_root_entities)
         self.assert_people_match_pre_and_post_commit(
-            [expected_person], matched_entities.people, session)
+            [expected_person], matched_entities.people, session,
+            expected_unmatched_db_people=[expected_unmatched_db_person])
 
-    def test_matchPersons_multipleMatchesToDb_oneSuccessOneError(self, _):
+    def test_matchPersons_multipleIngestedPeopleMatchOneDbPerson(self, _):
         db_external_id = generate_external_id(
             person_external_id_id=_ID, external_id=_EXTERNAL_ID)
         db_person = generate_person(
@@ -364,17 +375,25 @@ class TestStateEntityMatching(TestCase):
         self._commit_to_db(db_person)
         external_id = attr.evolve(self.to_entity(db_external_id),
                                   person_external_id_id=None)
+        race_1 = StatePersonRace.new_with_defaults(
+            state_code=_STATE_CODE, race=Race.WHITE)
         person = attr.evolve(
             self.to_entity(db_person),
             person_id=None,
+            races=[race_1],
             external_ids=[external_id])
+        race_2 = StatePersonRace.new_with_defaults(
+            state_code=_STATE_CODE, race=Race.OTHER)
         person_dup = attr.evolve(person,
-                                 full_name='another',
+                                 races=[race_2],
                                  external_ids=[attr.evolve(external_id)])
 
         expected_external_id = attr.evolve(external_id,
                                            person_external_id_id=_ID)
+        expected_race_1 = attr.evolve(race_1)
+        expected_race_2 = attr.evolve(race_2)
         expected_person = attr.evolve(person, person_id=_ID,
+                                      races=[expected_race_1, expected_race_2],
                                       external_ids=[expected_external_id])
 
         # Act 1 - Match
@@ -386,7 +405,7 @@ class TestStateEntityMatching(TestCase):
         self.assert_people_match_pre_and_post_commit(
             [expected_person], matched_entities.people, session)
         self.assertEqual(2, matched_entities.total_root_entities)
-        self.assertEqual(1, matched_entities.error_count)
+        self.assertEqual(0, matched_entities.error_count)
 
     def test_matchPersons_conflictingExternalIds_error(self, _):
         # Arrange 1 - Match
