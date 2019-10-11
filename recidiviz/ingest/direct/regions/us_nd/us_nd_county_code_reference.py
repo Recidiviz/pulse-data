@@ -192,6 +192,7 @@ _COUNTY_CODES: Dict[str, str] = {
     '155': 'ERROR',
     '156': 'PAROLE',
     'OS': 'OUT_OF_STATE',
+    'FD': 'FEDERAL',
 }
 
 
@@ -204,6 +205,7 @@ def normalized_county_code(county_code: Optional[str]) -> Optional[str]:
     if not normalized_code:
         logging.warning("Found new county code not in reference cache: [%s]",
                         county_code)
+        return pre_normalized_code
 
     return normalized_code
 
