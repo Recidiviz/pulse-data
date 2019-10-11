@@ -44,7 +44,7 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import \
     associate_revocation_svrs_with_ips, base_entity_match, \
     _read_persons, get_all_entity_trees_of_cls, get_external_ids_from_entity, \
     nd_is_incarceration_period_match, nd_update_temporary_holds, \
-    convert_to_placeholder
+    convert_to_placeholder, is_multiple_id_entity
 from recidiviz.persistence.entity.entity_utils import is_placeholder, \
     get_set_entity_field_names, get_all_core_entity_field_names, \
     get_all_db_objs_from_tree, get_all_db_objs_from_trees
@@ -369,7 +369,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         errors encountered while matching these trees.
         """
         individual_match_results: List[IndividualMatchResult] = []
-        matched_entities_by_db_id: Dict[int, DatabaseEntity] = {}
+        matched_entities_by_db_id: Dict[int, List[DatabaseEntity]] = {}
         error_count = 0
 
         for ingested_entity_tree in ingested_entity_trees:
@@ -412,7 +412,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
             self,
             *, ingested_entity_tree: EntityTree,
             db_entity_trees: List[EntityTree],
-            matched_entities_by_db_ids: Dict[int, DatabaseEntity],
+            matched_entities_by_db_ids: Dict[int, List[DatabaseEntity]],
             root_entity_cls: Type) -> IndividualMatchResult:
         """Attempts to match the provided |ingested_entity_tree| to one of the
         provided |db_entity_trees|. If a successful match is found, merges the
@@ -447,7 +447,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
             self,
             *, ingested_placeholder_tree: EntityTree,
             db_entity_trees: List[EntityTree],
-            matched_entities_by_db_ids: Dict[int, DatabaseEntity],
+            matched_entities_by_db_ids: Dict[int, List[DatabaseEntity]],
             root_entity_cls) \
             -> IndividualMatchResult:
         """Attempts to match the provided |ingested_placeholder_tree| to
@@ -686,7 +686,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
             *,
             ingested_entity_tree: EntityTree,
             db_match_tree: EntityTree,
-            matched_entities_by_db_ids: Dict[int, DatabaseEntity],
+            matched_entities_by_db_ids: Dict[int, List[DatabaseEntity]],
             root_entity_cls) \
             -> IndividualMatchResult:
         """Given an |ingested_entity_tree| and it's matched |db_match_tree|,
@@ -816,24 +816,32 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
             *,
             db_entity_match: DatabaseEntity,
             ingested_entity: DatabaseEntity,
-            matched_entities_by_db_ids: Dict[int, DatabaseEntity]):
-        """Records a new ingested_entity/db_entity match. If the DB entity has
-        already been matched to a different ingested_entity, it raises an error.
+            matched_entities_by_db_ids: Dict[int, List[DatabaseEntity]]):
+        """If the provided |db_entity_match| and |ingested_entity| represent a
+        new match, records the match in |matched_entities_by_db_ids|. Throws an
+        error if this new match is disallowed.
         """
         matched_db_id = db_entity_match.get_id()
+        if matched_db_id not in matched_entities_by_db_ids:
+            matched_entities_by_db_ids[matched_db_id] = [ingested_entity]
+            return
 
-        if matched_db_id in matched_entities_by_db_ids:
-            if ingested_entity != matched_entities_by_db_ids[matched_db_id]:
-                matches = [ingested_entity,
-                           matched_entities_by_db_ids[matched_db_id]]
-                # It's ok for a DB object to match multiple ingested
-                # placeholders.
-                if is_placeholder(matches[0]) and is_placeholder(matches[1]):
-                    return
-                raise MatchedMultipleIngestedEntitiesError(db_entity_match,
-                                                           matches)
-        else:
-            matched_entities_by_db_ids[matched_db_id] = ingested_entity
+        # Don't add the same entity twice.
+        ingested_matches = matched_entities_by_db_ids[matched_db_id]
+        if ingested_entity in ingested_matches:
+            return
+
+        ingested_matches.append(ingested_entity)
+        # It's ok for a DB object to match multiple ingested placeholders.
+        if all(is_placeholder(im) for im in ingested_matches):
+            return
+
+        # Entities with multiple external ids can be matched multiple times.
+        if is_multiple_id_entity(db_entity_match):
+            return
+
+        raise MatchedMultipleIngestedEntitiesError(
+            db_entity_match, ingested_matches)
 
     def get_cached_matches(self, entity: DatabaseEntity) -> List[EntityTree]:
         external_ids = get_external_ids_from_entity(entity)
@@ -864,8 +872,8 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
 
         # Entities that can have multiple external IDs need special casing to
         # handle the fact that multiple DB entities could match the provided
-        # ingested entity. Currently this is limited to StatePerson.
-        if isinstance(ingested_entity_tree.entity, schema.StatePerson):
+        # ingested entity.
+        if is_multiple_id_entity(ingested_entity_tree.entity):
             exact_match = self._get_only_match_for_multiple_id_entity(
                 ingested_entity_tree=ingested_entity_tree,
                 db_entity_trees=db_match_candidates)
