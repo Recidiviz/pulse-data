@@ -19,6 +19,7 @@ asynchronously on background threads."""
 
 from queue import Queue
 from threading import Thread
+from typing import Callable
 
 from recidiviz.ingest.direct.controllers.direct_ingest_types import \
     IngestArgsType
@@ -28,6 +29,7 @@ from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import \
     CloudTaskQueueInfo
 from recidiviz.tests.ingest.direct.fake_direct_ingest_cloud_task_manager \
     import FakeDirectIngestCloudTaskManager
+from recidiviz.utils import monitoring
 from recidiviz.utils.regions import Region
 
 
@@ -68,6 +70,13 @@ class SingleThreadTaskQueue(Queue):
         return self.unfinished_tasks > 0  # type: ignore
 
 
+def with_monitoring(region_code: str, fn: Callable) -> Callable:
+    def wrapped_fn(*args, **kwargs):
+        with monitoring.push_region_tag(region_code):
+            fn(*args, **kwargs)
+    return wrapped_fn
+
+
 class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
     """Test implementation of the DirectIngestCloudTaskManager that runs tasks
     asynchronously on background threads."""
@@ -85,7 +94,9 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
                 "Controller is null - did you call set_controller()?")
 
         self.process_job_queue.add_task(
-            self.controller.run_ingest_job_and_kick_scheduler_on_completion,
+            with_monitoring(region.region_code,
+                            self.controller.
+                            run_ingest_job_and_kick_scheduler_on_completion),
             ingest_args,
         )
 
@@ -99,7 +110,9 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
                 "Controller is null - did you call set_controller()?")
 
         self.scheduler_queue.add_task(
-            self.controller.schedule_next_ingest_job_or_wait_if_necessary,
+            with_monitoring(region.region_code,
+                            self.controller.
+                            schedule_next_ingest_job_or_wait_if_necessary),
             just_finished_job)
 
     def create_direct_ingest_handle_new_files_task(self,
@@ -114,7 +127,8 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
                 f'Unexpected controller type {type(self.controller)}')
 
         self.scheduler_queue.add_task(
-            self.controller.handle_new_files,
+            with_monitoring(region.region_code,
+                            self.controller.handle_new_files),
             can_start_ingest)
 
     def get_process_job_queue_info(self, region: Region) -> CloudTaskQueueInfo:
