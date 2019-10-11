@@ -176,6 +176,11 @@ def generate_child_entity_trees(
     return child_trees
 
 
+def is_multiple_id_entity(entity: DatabaseEntity):
+    """Returns True if the given entity can have multiple external ids."""
+    return hasattr(entity, 'external_ids')
+
+
 def remove_child_from_entity(
         *,
         entity: DatabaseEntity,
