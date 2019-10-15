@@ -149,6 +149,15 @@ class TestUsNdController(unittest.TestCase):
                                     state_person_external_id_id='39768',
                                     id_type=US_ND_ELITE)
                             ]),
+                StatePerson(state_person_id='92237',
+                            state_person_external_ids=[
+                                StatePersonExternalId(
+                                    state_person_external_id_id='12345',
+                                    id_type=US_ND_SID),
+                                StatePersonExternalId(
+                                    state_person_external_id_id='92237',
+                                    id_type=US_ND_ELITE)
+                            ]),
                 StatePerson(state_person_id='52163',
                             state_person_external_ids=[
                                 StatePersonExternalId(
@@ -158,15 +167,15 @@ class TestUsNdController(unittest.TestCase):
                                     state_person_external_id_id='52163',
                                     id_type=US_ND_ELITE)
                             ]),
-                StatePerson(state_person_id='92237',
+                StatePerson(state_person_id='11111',
                             state_person_external_ids=[
                                 StatePersonExternalId(
-                                    state_person_external_id_id='12345',
+                                    state_person_external_id_id='241896',
                                     id_type=US_ND_SID),
                                 StatePersonExternalId(
-                                    state_person_external_id_id='92237',
+                                    state_person_external_id_id='11111',
                                     id_type=US_ND_ELITE)
-                            ])
+                            ]),
             ])
 
         self.run_parse_file_test(expected, 'elite_offenderidentifier')
@@ -1623,8 +1632,13 @@ class TestUsNdController(unittest.TestCase):
             entities.StatePersonExternalId.new_with_defaults(
                 external_id='241896', id_type=US_ND_SID, state_code=_STATE_CODE,
                 person=person_2)
+        person_2_external_id_3 = \
+            entities.StatePersonExternalId.new_with_defaults(
+                external_id='11111', id_type=US_ND_ELITE,
+                state_code=_STATE_CODE, person=person_2)
         person_2.external_ids.append(person_2_external_id)
         person_2.external_ids.append(person_2_external_id_2)
+        person_2.external_ids.append(person_2_external_id_3)
 
         person_3 = entities.StatePerson.new_with_defaults()
         person_3_external_id_1 = \
@@ -3648,6 +3662,12 @@ class TestUsNdController(unittest.TestCase):
         # ELITE OFFENDER IDENTIFIERS
         ######################################
         # Arrange
+        person_2_external_id_3 = \
+            entities.StatePersonExternalId.new_with_defaults(
+                external_id='11111', id_type=US_ND_ELITE,
+                state_code=_STATE_CODE, person=person_2)
+        person_2.external_ids.append(person_2_external_id_3)
+
         person_1_dup_external_id.person = person_1
         assessment_12345.person = person_1
         assessment_12346.person = person_1
