@@ -78,8 +78,7 @@ from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.ingest.direct.direct_ingest_util import \
     build_gcsfs_controller_for_tests, ingest_args_for_fixture_file, \
-    add_paths_with_tags_and_process, run_task_queues_to_empty, \
-    path_for_fixture_file
+    run_task_queues_to_empty, path_for_fixture_file
 from recidiviz.tests.persistence.entity.state.entities_test_utils import \
     clear_db_ids
 from recidiviz.tests.utils import fakes
@@ -3718,28 +3717,3 @@ class TestUsNdController(unittest.TestCase):
         found_people = dao.read_people(session)
         found_people = self.convert_and_clear_db_ids(found_people)
         self.assertCountEqual(found_people, expected_people)
-
-    @patch.dict('os.environ', {'PERSIST_LOCALLY': 'true'})
-    @patch("recidiviz.persistence.entity_matching.state"
-           ".state_matching_utils.get_region")
-    def test_run_full_ingest_all_files(self, mock_get_region):
-        mock_get_region.return_value = self._fake_region()
-        # pylint:disable=protected-access
-        file_tags = sorted(self.controller._get_file_tag_rank_list())
-        add_paths_with_tags_and_process(self, self.controller, file_tags)
-
-        # TODO(2057): For now we just check that we don't crash, but we should
-        #  test more comprehensively for state.
-
-    @patch.dict('os.environ', {'PERSIST_LOCALLY': 'true'})
-    @patch("recidiviz.persistence.entity_matching.state"
-           ".state_matching_utils.get_region")
-    def test_run_full_ingest_all_files_reverse(self, mock_get_region):
-        mock_get_region.return_value = self._fake_region()
-        # pylint:disable=protected-access
-        file_tags = list(
-            reversed(sorted(self.controller._get_file_tag_rank_list())))
-        add_paths_with_tags_and_process(self, self.controller, file_tags)
-
-        # TODO(2057): For now we just check that we don't crash, but we should
-        #  test more comprehensively for state.
