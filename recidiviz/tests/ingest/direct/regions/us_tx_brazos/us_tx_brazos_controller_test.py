@@ -69,7 +69,7 @@ class UsTxBrazosControllerTest(IndividualIngestTest, TestCase):
                             'L. Pretrial State Jail Felons (SJF)',
                             facility='BCDC',
                             arrest=Arrest(
-                                agency="Brazos County Sheriff's Office"),
+                                agency="College Station Police Department"),
                             charges=[
                                 Charge(
                                     charge_id='1',
@@ -152,7 +152,7 @@ class UsTxBrazosControllerTest(IndividualIngestTest, TestCase):
                             'L. Pretrial State Jail Felons (SJF)',
                             facility='BCDC',
                             arrest=Arrest(
-                                agency="Brazos County Sheriff's Office"),
+                                agency="Unlisted"),
                             charges=[
                                 Charge(
                                     charge_id='8',

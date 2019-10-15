@@ -57,6 +57,11 @@ class DataExtractor(metaclass=abc.ABCMeta):
         Args:
             key_mapping_file: a yaml file defining the mappings that the
                 data extractor uses to find relevant keys.
+            should_cache: a flag that specifies whether we should proactively
+                cache each created object by its primary key id. Defaults to
+                False because it's typically not necessary unless you're
+                stitching together IngestInfo object graphs where id mappings
+                don't suffice.
         """
         with open(key_mapping_file, 'r') as ymlfile:
             self.manifest = yaml.full_load(ymlfile)

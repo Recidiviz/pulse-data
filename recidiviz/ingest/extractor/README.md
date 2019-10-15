@@ -262,7 +262,8 @@ parent type.
 entity. This is used to ensure the primary id is set on the entity when it is
 first created, regardless of which field it is first created with, to help in
 locating this object later. This may be omitted if a `primary_id_coordinates_override_callback`
-(see below) is defined for this file.
+(see below) is defined for this file. The data extractor will assert if you 
+do not define either a `primary_key` or `primary_id_coordinates_override_callback`.
 
 #### child_key_mappings
 

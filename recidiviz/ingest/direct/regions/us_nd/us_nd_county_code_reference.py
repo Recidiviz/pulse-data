@@ -150,6 +150,7 @@ _COUNTY_CODES: Dict[str, str] = {
     '118': 'US_KY',
     '119': 'US_LA',
     '120': 'US_ME',
+    'MD': 'US_MD',
     '121': 'US_MD',
     '122': 'US_MA',
     '123': 'US_MI',
