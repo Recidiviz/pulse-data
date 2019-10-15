@@ -29,12 +29,12 @@ Forking
 ------
 
 The Recidiviz data system is provided as open source software - for transparency and collaborative development, to
-help jump-start similar projects in other spaces, and to ensure continuation if Recidiviz itself ever becomes inactive.
+help jump-start similar projects in other spaces, and to ensure continuity if Recidiviz itself ever becomes inactive.
 
 If you plan to fork the project for work in the criminal justice space (to ingest from the same systems we are, or similar),
 we ask that you first [contact us](mailto:team@recidiviz.com) for a quick consultation. We work carefully to ensure
-that our scraping activities don't disrupt other users' experiences with the public data services we scrape, but if
-multiple scrapers are running against the same systems, without knowing about one another, it may place excessive
+that our ingest activities don't disrupt other users' experiences with the public data services we read, but if
+multiple ingest processes are running against the same systems, without knowing about one another, it may place excessive
 strain on them and impact the services those systems provide.
 
 If you have ideas or new work for the same data we're collecting, let us know and we'll work with you to find the
