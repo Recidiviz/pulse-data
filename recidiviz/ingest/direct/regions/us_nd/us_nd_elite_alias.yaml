@@ -1,12 +1,16 @@
 key_mappings:
+  SEX_CODE: state_person.gender
+
+primary_key:
+  ROOT_OFFENDER_ID: state_person.state_person_id
+
+child_key_mappings:
   LAST_NAME: state_alias.surname
   FIRST_NAME: state_alias.given_names
   MIDDLE_NAME: state_alias.middle_names
   SUFFIX: state_alias.name_suffix
   ALIAS_NAME_TYPE: state_alias.alias_type
-
-ancestor_keys:
-  ROOT_OFFENDER_ID: state_person.state_person_id
+  RACE_CODE: state_person_race.race
 
 keys_to_ignore:
   - OFFENDER_ID           # This particular id appears unused elsewhere

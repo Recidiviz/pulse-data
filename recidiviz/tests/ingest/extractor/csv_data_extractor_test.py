@@ -62,7 +62,7 @@ class CsvDataExtractorTest(unittest.TestCase):
         rows = _get_content_as_csv('standard_child_file.csv')
         first_row = next(iter(rows))
 
-        args = extractor._get_creation_args(first_row, 'IN_OUT_STATUS')
+        args = extractor._get_creation_args(first_row, 'IN_OUT_STATUS', {})
         expected_args = {'sentence_group_id': '113377'}
         self.assertEqual(expected_args, args)
 
@@ -77,7 +77,7 @@ class CsvDataExtractorTest(unittest.TestCase):
         rows = _get_content_as_csv('standard_child_file.csv')
         first_row = next(iter(rows))
 
-        args = extractor._get_creation_args(first_row, 'IN_OUT_STATUS')
+        args = extractor._get_creation_args(first_row, 'IN_OUT_STATUS', {})
         expected_args = {'sentence_group_id': 'abcdef'}
         self.assertEqual(expected_args, args)
 
@@ -87,8 +87,10 @@ class CsvDataExtractorTest(unittest.TestCase):
         rows = _get_content_as_csv('multiple_entity_types_in_row.csv')
         first_row = next(iter(rows))
 
-        args = extractor._get_creation_args(first_row, 'PAROLE_DATE')
-        self.assertFalse(args)
+        args = extractor._get_creation_args(first_row, 'PAROLE_DATE', {})
+        self.assertEqual(args,
+                         {'incarceration_sentence_id':
+                          'CSV_EXTRACTOR_DUMMY_KEY'})
 
     def test_get_creation_args_override_but_not_for_current_field(self):
         def _override(_row):
@@ -102,23 +104,25 @@ class CsvDataExtractorTest(unittest.TestCase):
         rows = _get_content_as_csv('multiple_entity_types_in_row.csv')
         first_row = next(iter(rows))
 
-        args = extractor._get_creation_args(first_row, 'PAROLE_DATE')
-        self.assertFalse(args)
+        args = extractor._get_creation_args(first_row, 'PAROLE_DATE', {})
+        self.assertEqual(args,
+                         {'incarceration_sentence_id':
+                          'CSV_EXTRACTOR_DUMMY_KEY'})
 
     def test_get_creation_args_no_override_or_mapping(self):
         extractor = _instantiate_extractor('no_primary_keys_csv.yaml')
         rows = _get_content_as_csv('no_primary_keys.csv')
         first_row = next(iter(rows))
 
-        args = extractor._get_creation_args(first_row, 'LAST_NAME')
-        self.assertFalse(args)
+        with self.assertRaises(ValueError):
+            extractor._get_creation_args(first_row, 'LAST_NAME', {})
 
     def test_get_creation_args_not_a_valid_lookup_key(self):
         extractor = _instantiate_extractor('standard_child_file_csv.yaml')
         rows = _get_content_as_csv('standard_child_file.csv')
         first_row = next(iter(rows))
 
-        args = extractor._get_creation_args(first_row, 'AGY_LOC_ID')
+        args = extractor._get_creation_args(first_row, 'AGY_LOC_ID', {})
         self.assertFalse(args)
 
     def test_primary_coordinates(self):
@@ -154,8 +158,8 @@ class CsvDataExtractorTest(unittest.TestCase):
         rows = _get_content_as_csv('no_primary_keys.csv')
         first_row = next(iter(rows))
 
-        key = extractor._primary_coordinates(first_row)
-        self.assertIsNone(key)
+        with self.assertRaises(ValueError):
+            extractor._primary_coordinates(first_row)
 
     def test_parse_file_headers_only(self):
         """Tests that we don't crash on a CSV with only a header row and return

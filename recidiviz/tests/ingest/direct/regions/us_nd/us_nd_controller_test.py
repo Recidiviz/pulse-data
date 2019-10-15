@@ -1590,8 +1590,10 @@ class TestUsNdController(unittest.TestCase):
         fixture_contents = self.controller._read_contents(args)
         final_info = self.controller._parse(args, fixture_contents)
 
+        print("FINAL")
         print(final_info)
         print("\n\n\n")
+        print("EXPECTED")
         print(expected)
         assert final_info == expected
 
