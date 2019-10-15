@@ -33,6 +33,8 @@ from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.aggregate import \
     schema as aggregate_schema
 from recidiviz.persistence.database.schema.county import schema as county_schema
+from recidiviz.persistence.database.schema.history_table_shared_columns_mixin \
+    import HistoryTableSharedColumns
 from recidiviz.persistence.database.schema.state import schema as state_schema
 
 _SCHEMA_MODULES: List[ModuleType] = \
@@ -65,6 +67,14 @@ def get_county_table_classes() -> Iterator[Table]:
 
 def get_state_table_classes() -> Iterator[Table]:
     yield from get_all_table_classes_in_module(state_schema)
+
+
+def get_non_history_state_database_entities():
+    to_return = []
+    for cls in _get_all_database_entities_in_module(state_schema):
+        if not issubclass(cls, HistoryTableSharedColumns):
+            to_return.append(cls)
+    return to_return
 
 
 def _get_all_database_entities_in_module(
