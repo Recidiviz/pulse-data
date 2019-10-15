@@ -34,6 +34,8 @@ from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.state import dao
 from recidiviz.persistence.database.schema.state import schema
+from recidiviz.persistence.database.schema_utils import \
+    get_non_history_state_database_entities
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.entity.entity_utils import \
     EntityFieldType, is_placeholder, \
@@ -178,7 +180,35 @@ def generate_child_entity_trees(
 
 def is_multiple_id_entity(entity: DatabaseEntity):
     """Returns True if the given entity can have multiple external ids."""
-    return hasattr(entity, 'external_ids')
+    return entity.__class__ in get_multiple_id_classes()
+
+
+def get_multiple_id_classes() -> List[Type[DatabaseEntity]]:
+    """Returns a list of all classes that have multiple external ids."""
+    to_return: List[Type[DatabaseEntity]] = []
+    for cls in get_non_history_state_database_entities():
+        if 'external_ids' in cls.get_relationship_property_names():
+            if cls != schema.StatePerson:
+                raise ValueError(
+                    f"Untested multiple id class. To remove this, please add "
+                    f"test coverage to ensure entities of class {cls} are "
+                    f"merged properly when there are 2 ingested entities and "
+                    f"when there are 2 database entities. See tests for state"
+                    f"person for examples.")
+            to_return.append(cls)
+    return to_return
+
+
+def get_external_id_keys_from_multiple_id_entity(
+        entity: DatabaseEntity) -> List[str]:
+    """Returns a list of strings that uniquely represent all external ids
+    on the given entity.
+    """
+    external_str_ids = []
+    for external_id in entity.get_field_as_list('external_ids'):
+        str_id = external_id.id_type + '|' + external_id.external_id
+        external_str_ids.append(str_id)
+    return external_str_ids
 
 
 def remove_child_from_entity(
@@ -1007,3 +1037,10 @@ def _nd_read_people(
             seen_person_ids.add(person.person_id)
 
     return deduped_people
+
+
+def db_id_or_object_id(entity: DatabaseEntity) -> int:
+    """If present, returns the primary key field from the provided |entity|,
+    otherwise provides the object id.
+    """
+    return entity.get_id() if entity.get_id() else id(entity)

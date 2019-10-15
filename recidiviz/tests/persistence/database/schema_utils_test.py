@@ -19,7 +19,8 @@ from typing import List
 import pytest
 
 from recidiviz.persistence.database.schema_utils import get_all_table_classes, \
-    get_state_database_entity_with_name, _get_all_database_entities_in_module
+    get_state_database_entity_with_name, _get_all_database_entities_in_module, \
+    get_non_history_state_database_entities
 
 from recidiviz.persistence.database.schema.aggregate import (
     schema as aggregate_schema
@@ -247,6 +248,40 @@ def test_get_state_table_class_with_name_invalid_name():
 
     with pytest.raises(LookupError):
         get_state_database_entity_with_name(class_name)
+
+
+def test_get_non_history_state_database_entities():
+    state_database_entity_names = [
+        'StateAgent',
+        'StateAssessment',
+        'StateBond',
+        'StateCharge',
+        'StateCourtCase',
+        'StateFine',
+        'StateIncarcerationIncident',
+        'StateIncarcerationIncidentOutcome',
+        'StateIncarcerationPeriod',
+        'StateIncarcerationSentence',
+        'StateParoleDecision',
+        'StatePerson',
+        'StatePersonAlias',
+        'StatePersonEthnicity',
+        'StatePersonExternalId',
+        'StatePersonRace',
+        'StateProgramAssignment',
+        'StateSentenceGroup',
+        'StateSupervisionPeriod',
+        'StateSupervisionSentence',
+        'StateSupervisionViolation',
+        'StateSupervisionViolationResponse',
+    ]
+
+    expected_database_entity_names = _prefix_module_name(
+        state_schema.__name__, state_database_entity_names)
+    found_database_entity_names = _database_entities_to_qualified_names(
+        get_non_history_state_database_entities())
+    assert sorted(found_database_entity_names) == sorted(
+        expected_database_entity_names)
 
 
 def _prefix_module_name(module_name: str,

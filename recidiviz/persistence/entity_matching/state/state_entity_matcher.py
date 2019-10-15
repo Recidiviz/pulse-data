@@ -22,7 +22,7 @@ import datetime
 import logging
 from collections import defaultdict
 
-from typing import List, Dict, Tuple, Optional, Type, Set
+from typing import List, Dict, Tuple, Optional, Type, Set, cast, Sequence
 
 from more_itertools import one
 
@@ -44,7 +44,9 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import \
     associate_revocation_svrs_with_ips, base_entity_match, \
     _read_persons, get_all_entity_trees_of_cls, get_external_ids_from_entity, \
     nd_is_incarceration_period_match, nd_update_temporary_holds, \
-    convert_to_placeholder, is_multiple_id_entity
+    convert_to_placeholder, is_multiple_id_entity, \
+    get_external_id_keys_from_multiple_id_entity, db_id_or_object_id, \
+    get_multiple_id_classes
 from recidiviz.persistence.entity.entity_utils import is_placeholder, \
     get_set_entity_field_names, get_all_core_entity_field_names, \
     get_all_db_objs_from_tree, get_all_db_objs_from_trees
@@ -239,7 +241,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         |db_persons|.
         """
         logging.info("[Entity matching] Pre-processing")
-        self._perform_preprocessing(ingested_persons)
+        ingested_persons = self._perform_preprocessing(ingested_persons)
 
         logging.info("[Entity matching] Matching persons")
         matched_entities = self._match_persons(
@@ -268,11 +270,114 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
 
     # TODO(2037): Move state specific logic into its own file.
     def _perform_preprocessing(self,
-                               ingested_persons: List[schema.StatePerson]):
+                               ingested_persons: List[schema.StatePerson]) \
+            -> List[schema.StatePerson]:
         """Performs state specific preprocessing on the provided
         |ingested_persons|.
         """
-        merge_incarceration_periods(ingested_persons)
+        logging.info("[Entity matching] Pre-processing: Merge multi-id "
+                     "entities")
+        preprocessed_persons = self.merge_multiple_id_entities(ingested_persons)
+        logging.info("[Entity matching] Pre-processing: Merge incarceration "
+                     "periods")
+        merge_incarceration_periods(preprocessed_persons)
+        return preprocessed_persons
+
+    def merge_multiple_id_entities(
+            self,
+            ingested_persons: List[schema.StatePerson]) \
+            -> List[schema.StatePerson]:
+        """Merges all entities in the list of |ingested_persons| that can have
+        multiple external ids (Currently just StatePerson).
+
+        Returns the list of unique StatePeople after this merging.
+        """
+        persons: List[schema.StatePerson] = []
+        for cls in get_multiple_id_classes():
+            merged_entities = self._merge_multiple_id_entities_helper(
+                ingested_person_trees=ingested_persons,
+                multiple_id_cls=cls)
+            if cls == schema.StatePerson:
+                persons = cast(List[schema.StatePerson], merged_entities)
+
+        return persons
+
+    def _merge_multiple_id_entities_helper(
+            self,
+            ingested_person_trees: List[schema.StatePerson],
+            multiple_id_cls: Type[DatabaseEntity]) -> Sequence[DatabaseEntity]:
+        """Helper method to merge all entities of type |multiple_id_cls| with
+        colliding ids. Returns a list of unique entities after this merging
+        is complete.
+        """
+        to_return = []
+        processed_entities_by_external_id_key: Dict[str, EntityTree] = {}
+        ingested_entity_trees = get_all_entity_trees_of_cls(
+            ingested_person_trees, multiple_id_cls)
+
+        for ingested_entity_tree in ingested_entity_trees:
+            ingested_entity = ingested_entity_tree.entity
+            external_id_keys = get_external_id_keys_from_multiple_id_entity(
+                ingested_entity)
+
+            # If no external_ids, don't worry about merging them with other
+            # ingested entities
+            if not external_id_keys:
+                to_return.append(ingested_entity)
+                continue
+
+            # Merge entities when external_ids collide
+            self._merge_ingested_entity_with_duplicates(
+                ingested_entity_tree, external_id_keys,
+                processed_entities_by_external_id_key)
+
+            updated_external_id_keys = \
+                get_external_id_keys_from_multiple_id_entity(ingested_entity)
+            for external_id_key in updated_external_id_keys:
+                processed_entities_by_external_id_key[external_id_key] = \
+                    ingested_entity_tree
+
+        # Only return unique entities
+        to_return.extend(
+            self._get_unique_entities(processed_entities_by_external_id_key))
+
+        return to_return
+
+    def _merge_ingested_entity_with_duplicates(
+            self,
+            entity_tree: EntityTree,
+            external_id_keys: List[str],
+            processed_entities_by_external_id_key: Dict[str, EntityTree]):
+        """Helper function that merges the provided |entity_tree| with all of
+        the colliding entities in |processed_entities_by_external_id_key|.
+        The provided |entity_tree| is modified in place as colliding entities
+        are merged onto the |entity_tree|.
+        """
+        trees_to_merge_into = []
+
+        for external_id_key in external_id_keys:
+            if external_id_key in processed_entities_by_external_id_key:
+                trees_to_merge_into.append(
+                    processed_entities_by_external_id_key[external_id_key])
+
+        for tree_to_merge in trees_to_merge_into:
+            self._match_matched_tree(
+                ingested_entity_tree=tree_to_merge,
+                db_match_tree=entity_tree,
+                matched_entities_by_db_ids={},
+                root_entity_cls=schema.StatePerson)
+
+    def _get_unique_entities(self, d: Dict[str, EntityTree]):
+        """Returns all unique entities found in the provided dict |d|."""
+        seen_map: Set[int] = set()
+        to_return: List[DatabaseEntity] = []
+
+        for entity_tree in d.values():
+            entity_id = id(entity_tree.entity)
+            if entity_id not in seen_map:
+                seen_map.add(entity_id)
+                to_return.append(entity_tree.entity)
+        return to_return
 
     def _match_persons(
             self,
@@ -402,7 +507,8 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         unmatched_db_entities: List[DatabaseEntity] = []
         for db_entity_tree in db_entity_trees:
             db_entity = db_entity_tree.entity
-            if db_entity.get_id() not in matched_entities_by_db_id.keys():
+            db_id = db_id_or_object_id(db_entity)
+            if db_id not in matched_entities_by_db_id.keys():
                 unmatched_db_entities.append(db_entity)
 
         return MatchResults(
@@ -821,7 +927,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         new match, records the match in |matched_entities_by_db_ids|. Throws an
         error if this new match is disallowed.
         """
-        matched_db_id = db_entity_match.get_id()
+        matched_db_id = db_id_or_object_id(db_entity_match)
         if matched_db_id not in matched_entities_by_db_ids:
             matched_entities_by_db_ids[matched_db_id] = [ingested_entity]
             return

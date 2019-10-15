@@ -1,11 +1,12 @@
 key_mappings:
-  IDENTIFIER_TYPE: state_person_external_id.id_type
-
-ancestor_keys:
   ROOT_OFFENDER_ID: state_person.state_person_id
 
-primary_key:
+child_key_mappings:
   IDENTIFIER: state_person_external_id.state_person_external_id_id
+  IDENTIFIER_TYPE: state_person_external_id.id_type
+
+primary_key:
+  ROOT_OFFENDER_ID: state_person.state_person_id
 
 keys_to_ignore:
   - CREATE_DATETIME       # No apparent use for these at the moment
