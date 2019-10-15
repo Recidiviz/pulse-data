@@ -74,13 +74,13 @@ from recidiviz.ingest.models.ingest_info import IngestInfo, IngestObject, \
     StateIncarcerationPeriod, StatePersonExternalId, StateAssessment, \
     StateCharge, StateSupervisionViolation, StateSupervisionViolationResponse, \
     StateAgent, StateIncarcerationIncidentOutcome, StateIncarcerationIncident, \
-    StateAlias, StateSupervisionSentence, StateCourtCase, \
-    StateSupervisionPeriod, StateProgramAssignment
+    StateSupervisionSentence, StateCourtCase, \
+    StateSupervisionPeriod, StateProgramAssignment, StateAlias, \
+    StatePersonEthnicity
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 from recidiviz.utils import environment
 
 _SUPERVISION_SENTENCE_ID_SUFFIX = '_SUPERVISION'
-_TEMPORARY_PRIMARY_ID = '_TEMPORARY_PRIMARY_ID'
 _DOCSTARS_NEGATIVE_PATTERN: Pattern = re.compile(r'^\((?P<value>-?\d+)\)$')
 
 
@@ -109,8 +109,6 @@ class UsNdController(CsvGcsfsDirectIngestController):
         }
 
         self.row_post_processors_by_file: Dict[str, List[Callable]] = {
-            'elite_alias': [self._clear_temporary_alias_primary_ids,
-                            self._set_demographics_on_person],
             'elite_offenders': [self._copy_name_to_alias],
             'elite_offenderidentifier': [self._normalize_external_id],
             'elite_offendersentenceaggs': [self._rationalize_max_length],
@@ -156,7 +154,6 @@ class UsNdController(CsvGcsfsDirectIngestController):
             'elite_offendersentenceterms': _generate_sentence_primary_key,
             'elite_externalmovements': _generate_period_primary_key,
             'elite_offenderchargestable': _generate_charge_primary_key,
-            'elite_alias': _generate_alias_temporary_primary_key,
             'elite_offense_in_custody_and_pos_report_data':
                 _generate_incident_primary_key,
         }
@@ -289,34 +286,12 @@ class UsNdController(CsvGcsfsDirectIngestController):
                                                    US_ND_SID)
 
     @staticmethod
-    def _clear_temporary_alias_primary_ids(
-            _row: Dict[str, str],
-            extracted_objects: List[IngestObject],
-            cache: IngestObjectCache):
-        for extracted_object in extracted_objects:
-            if isinstance(extracted_object, StateAlias):
-                if extracted_object.state_alias_id == _TEMPORARY_PRIMARY_ID:
-                    obj = \
-                        cache.get_object_by_id('state_alias',
-                                               _TEMPORARY_PRIMARY_ID)
-
-                    if extracted_object != obj:
-                        raise ValueError(
-                            'Cached object with temp id differs from extracted '
-                            'object')
-
-                    extracted_object.state_alias_id = None
-                    cache.clear_object_by_id(
-                        'state_alias',
-                        _TEMPORARY_PRIMARY_ID)
-
-    @staticmethod
     def _copy_name_to_alias(_row: Dict[str, str],
                             extracted_objects: List[IngestObject],
                             _cache: IngestObjectCache):
         for extracted_object in extracted_objects:
             if isinstance(extracted_object, StatePerson):
-                extracted_object.create_state_alias(
+                alias_to_create = StateAlias(
                     full_name=extracted_object.full_name,
                     surname=extracted_object.surname,
                     given_names=extracted_object.given_names,
@@ -325,24 +300,9 @@ class UsNdController(CsvGcsfsDirectIngestController):
                     alias_type=StatePersonAliasType.GIVEN_NAME.value
                 )
 
-    @staticmethod
-    def _set_demographics_on_person(row: Dict[str, str],
-                                    _extracted_objects: List[IngestObject],
-                                    cache: IngestObjectCache):
-        """The Elite Alias file contains race and sex fields which we need to
-        set on the parent StatePerson object. TODO(1883): We need to enhance the
-        CSV data extractor to make it possible to set this directly through YAML
-        mappings. Until then, we use this post-row hook."""
-        race = row.get('RACE_CODE', None)
-        sex = row.get('SEX_CODE', None)
-        person_id = row['ROOT_OFFENDER_ID']
-
-        person = cache.get_object_by_id('state_person', person_id)
-        if person:
-            if sex:
-                person.gender = sex
-            if race:
-                person.create_state_person_race(race=race)
+                _create_if_not_exists(alias_to_create,
+                                      extracted_object,
+                                      'state_aliases')
 
     @staticmethod
     def _rationalize_race_and_ethnicity(_, cache: Optional[IngestObjectCache]):
@@ -355,8 +315,11 @@ class UsNdController(CsvGcsfsDirectIngestController):
             updated_person_races = []
             for person_race in person.state_person_races:
                 if person_race.race in {'5', 'HIS'}:
-                    person.create_state_person_ethnicity(
-                        ethnicity=Ethnicity.HISPANIC.value)
+                    ethnicity_to_create = \
+                        StatePersonEthnicity(ethnicity=Ethnicity.HISPANIC.value)
+                    _create_if_not_exists(ethnicity_to_create,
+                                          person,
+                                          'state_person_ethnicities')
                 else:
                     updated_person_races.append(person_race)
             person.state_person_races = updated_person_races
@@ -669,10 +632,13 @@ class UsNdController(CsvGcsfsDirectIngestController):
                         StateSupervisionViolationResponseDecision\
                         .REVOCATION.value
                     if terminating_officer_id:
-                        extracted_object.create_state_agent(
+                        agent_to_create = StateAgent(
                             state_agent_id=terminating_officer_id,
                             agent_type=StateAgentType.SUPERVISION_OFFICER.value
                         )
+                        _create_if_not_exists(agent_to_create,
+                                              extracted_object,
+                                              'decision_agents')
 
     @staticmethod
     def _rationalize_incident_type(_row: Dict[str, str],
@@ -1073,13 +1039,6 @@ def _generate_charge_primary_key(row: Dict[str, str]) -> IngestFieldCoordinates:
                                   _generate_charge_id(row))
 
 
-def _generate_alias_temporary_primary_key(
-        _row: Dict[str, str]) -> IngestFieldCoordinates:
-    return IngestFieldCoordinates('state_alias',
-                                  'state_alias_id',
-                                  _TEMPORARY_PRIMARY_ID)
-
-
 def _generate_charge_id(row: Dict[str, str]) -> str:
     sentence_group_id = row['OFFENDER_BOOK_ID']
     charge_seq = row['CHARGE_SEQ']
@@ -1250,3 +1209,21 @@ def _normalize_county_code(
     for extracted_object in extracted_objects:
         if isinstance(extracted_object, ingest_type):
             extracted_object.__setattr__('county_code', normalized_code)
+
+
+def _create_if_not_exists(obj: IngestObject,
+                          parent_obj: IngestObject,
+                          objs_field_name: str):
+    """Create an object on |parent_obj| if an identical object does not
+    already exist.
+    """
+
+    existing_objects = getattr(parent_obj, objs_field_name, obj)
+    if isinstance(existing_objects, IngestObject):
+        existing_objects = [existing_objects]
+
+    for existing_obj in existing_objects:
+        if obj == existing_obj:
+            return
+    create_func = getattr(parent_obj, f'create_{obj.class_name()}')
+    create_func(**obj.__dict__)

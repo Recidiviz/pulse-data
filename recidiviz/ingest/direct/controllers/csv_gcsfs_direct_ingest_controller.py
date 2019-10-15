@@ -23,7 +23,7 @@ import inspect
 import io
 import logging
 import os
-from typing import List, Iterable, Optional, Callable, Type
+from typing import List, Iterable, Optional, Callable
 
 import pandas as pd
 from more_itertools import spy
@@ -52,17 +52,12 @@ class CsvGcsfsDirectIngestController(GcsfsDirectIngestController):
                  system_level: SystemLevel,
                  ingest_directory_path: Optional[str],
                  storage_directory_path: Optional[str],
-                 # TODO(2104): Remove this once UsTxBrazosDataExtractor is no
-                 #  longer used.
-                 csv_data_extractor_cls:
-                 Type[CsvDataExtractor] = CsvDataExtractor,
                  max_delay_sec_between_files: Optional[int] = None):
         super().__init__(region_name,
                          system_level,
                          ingest_directory_path,
                          storage_directory_path,
                          max_delay_sec_between_files)
-        self.csv_data_extractor_cls = csv_data_extractor_cls
 
     @abc.abstractmethod
     def _get_file_tag_rank_list(self) -> List[str]:
@@ -130,9 +125,8 @@ class CsvGcsfsDirectIngestController(GcsfsDirectIngestController):
             self._get_ancestor_key_override_for_file(file_tag)
         should_set_with_empty_values = \
             file_tag in self._get_files_to_set_with_empty_values()
-        should_cache = self._get_should_cache()
 
-        data_extractor = self.csv_data_extractor_cls(
+        data_extractor = CsvDataExtractor(
             file_mapping,
             row_pre_processors,
             row_post_processors,
@@ -140,8 +134,7 @@ class CsvGcsfsDirectIngestController(GcsfsDirectIngestController):
             ancestor_key_override,
             primary_key_override,
             self.system_level,
-            should_set_with_empty_values,
-            should_cache=should_cache)
+            should_set_with_empty_values)
 
         return data_extractor.extract_and_populate_data(contents)
 
@@ -194,9 +187,3 @@ class CsvGcsfsDirectIngestController(GcsfsDirectIngestController):
         values (see CsvDataExtractor).
         """
         return []
-
-    def _get_should_cache(self) -> bool:
-        """Subclasses should override to return whether should_cache should be
-        True for CsvDataExtractor construction.
-        """
-        return True

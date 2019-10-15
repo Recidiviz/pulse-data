@@ -19,6 +19,7 @@
 from abc import abstractmethod
 from typing import List, Optional
 
+from recidiviz.common.str_field_utils import to_snake_case
 
 PLURALS = {'person': 'people', 'booking': 'bookings', 'charge': 'charges',
            'hold': 'holds',
@@ -65,6 +66,9 @@ class IngestObject:
     @abstractmethod
     def __setattr__(self, key, value):
         """Implement using restricted_setattr"""
+
+    def class_name(self) -> str:
+        return to_snake_case(self.__class__.__name__)
 
 
 class IngestInfo(IngestObject):

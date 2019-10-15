@@ -157,6 +157,11 @@ class CommonScraperTest(IndividualIngestTest):
 
         scrape_data = self.scraper.populate_data(content, task, info)
 
+        print('FINAL')
+        print(scrape_data.ingest_info)
+        print('EXPECTED')
+        print(expected_ingest_info)
+
         assert scrape_data.ingest_info == expected_ingest_info
         self.assertCountEqual(scrape_data.single_counts,
                               expected_single_counts or [])

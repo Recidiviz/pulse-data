@@ -16,112 +16,13 @@
 # =============================================================================
 
 """Direct ingest controller implementation for us_tx_brazos."""
-from collections import defaultdict
-import csv
-from typing import List, Optional, Union, Iterable
+from typing import List, Optional
 
 from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.common.constants.county.charge import ChargeDegree
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller \
     import CsvGcsfsDirectIngestController
-from recidiviz.ingest.direct.errors import DirectIngestError, \
-    DirectIngestErrorType
-from recidiviz.ingest.extractor.csv_data_extractor import CsvDataExtractor
-from recidiviz.ingest.models.ingest_info import IngestInfo
-from recidiviz.ingest.scrape import scraper_utils
-
-
-class UsTxBrazosDataExtractor(CsvDataExtractor):
-    """Data extractor for us_tx_brazos.
-
-    This is a child of CsvDataExtractor only for
-    _set_value_if_key_exists.
-
-    TODO(2104): Generalize CsvDataExtractor to handle rows containing redundant
-        info so we don't need to subclass.
-    """
-
-    def __init__(self,
-                 key_mapping_file,
-                 row_pre_hooks,
-                 row_post_hooks,
-                 file_post_hooks,
-                 ancestor_key_override_callback,
-                 primary_key_override_callback,
-                 system_level,
-                 set_with_empty_value,
-                 should_cache):
-        super().__init__(key_mapping_file,
-                         row_pre_hooks=row_pre_hooks,
-                         row_post_hooks=row_post_hooks,
-                         file_post_hooks=file_post_hooks,
-                         ancestor_key_override_callback=
-                         ancestor_key_override_callback,
-                         primary_key_override_callback=
-                         primary_key_override_callback,
-                         system_level=system_level,
-                         set_with_empty_value=set_with_empty_value,
-                         should_cache=should_cache)
-
-    def extract_and_populate_data(
-            self,
-            content: Union[str, Iterable[str]],
-            ingest_info: IngestInfo = None) -> IngestInfo:
-        if not isinstance(content, str):
-            raise DirectIngestError(msg=f"{content} is not a string",
-                                    error_type=DirectIngestErrorType.READ_ERROR)
-
-        if not ingest_info:
-            ingest_info = IngestInfo()
-
-        rows = csv.DictReader(content.splitlines())
-        for row_index, row in enumerate(rows):
-            row_ii = IngestInfo()
-            for k, v in row.items():
-                if k not in self.all_keys:
-                    raise ValueError("Unmapped key: [%s]" % k)
-
-                if not v:
-                    continue
-
-                self._set_value_if_key_exists(
-                    k, v, row_ii, defaultdict(set), {})
-
-            try:
-                self._merge_row_into_ingest_info(ingest_info, row_ii)
-            except DirectIngestError as e:
-                raise DirectIngestError(
-                    msg=f"While parsing CSV row {row_index + 1}: " + str(e),
-                    error_type=DirectIngestErrorType.READ_ERROR)
-
-        return ingest_info
-
-    def _merge_row_into_ingest_info(self, ingest_info, row_ii):
-        row_person = scraper_utils.one('person', row_ii)
-        existing_person = ingest_info.get_person_by_id(row_person.person_id)
-        if not existing_person:
-            ingest_info.people.append(row_person)
-            return
-
-        if len(row_person.bookings) != 1:
-            raise DirectIngestError(
-                error_type=DirectIngestErrorType.PARSE_ERROR,
-                msg="Exactly one booking must be on each row.")
-        row_booking = row_person.bookings[0]
-
-        existing_booking = existing_person.get_booking_by_id(
-            row_booking.booking_id)
-        if not existing_booking:
-            existing_person.bookings.append(row_booking)
-            return
-
-        if len(row_booking.charges) != 1:
-            raise DirectIngestError(
-                error_type=DirectIngestErrorType.PARSE_ERROR,
-                msg="Exactly one charge must be on each row.")
-        row_charge = row_booking.charges[0]
-        existing_booking.charges.append(row_charge)
 
 
 class UsTxBrazosController(CsvGcsfsDirectIngestController):
@@ -134,14 +35,10 @@ class UsTxBrazosController(CsvGcsfsDirectIngestController):
             'us_tx_brazos',
             SystemLevel.COUNTY,
             ingest_directory_path,
-            storage_directory_path,
-            UsTxBrazosDataExtractor)
+            storage_directory_path)
 
     def _get_file_tag_rank_list(self) -> List[str]:
         return ['daily_data']
-
-    def _get_should_cache(self) -> bool:
-        return False
 
     def get_enum_overrides(self):
         overrides_builder = super(UsTxBrazosController,

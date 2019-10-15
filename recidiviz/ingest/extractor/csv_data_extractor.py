@@ -30,6 +30,8 @@ from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.extractor.data_extractor import DataExtractor
 from recidiviz.ingest.models.ingest_info import IngestInfo, IngestObject
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
+from recidiviz.ingest.models.ingest_object_hierarchy import \
+    get_ancestor_class_sequence
 
 
 class IngestFieldCoordinates:
@@ -54,6 +56,9 @@ class IngestFieldCoordinates:
                f'field_value: {self.field_value}]'
 
 
+_DUMMY_KEY_PREFIX = 'CSV_EXTRACTOR_DUMMY_KEY'
+
+
 class CsvDataExtractor(DataExtractor):
     """Data extractor for CSV text."""
 
@@ -65,8 +70,7 @@ class CsvDataExtractor(DataExtractor):
                  ancestor_key_override_callback=None,
                  primary_key_override_callback=None,
                  system_level=SystemLevel.COUNTY,
-                 set_with_empty_value=False,
-                 should_cache=False):
+                 set_with_empty_value=False):
         """
         Args:
             key_mapping_file: the path to the yaml file with key mappings
@@ -84,13 +88,8 @@ class CsvDataExtractor(DataExtractor):
                 object. Defaults to False. Typically should only be True if
                 there is a file that predominantly relies on hooks or callbacks
                 and may conceivably have rows with mostly empty columns.
-            should_cache: a flag that specifies whether we should proactively
-                cache each created object by its primary key id. Defaults to
-                False because it's typically not necessary unless you're
-                stitching together IngestInfo object graphs where id mappings
-                don't suffice.
         """
-        super().__init__(key_mapping_file, should_cache=should_cache)
+        super().__init__(key_mapping_file, should_cache=True)
 
         self.keys_to_ignore: List[str] = self.manifest.get('keys_to_ignore', [])
         self.ancestor_keys: Dict[str, str] = \
@@ -171,22 +170,16 @@ class CsvDataExtractor(DataExtractor):
                       rows: Iterable[OrderedDict],
                       ingest_info: IngestInfo):
         """Converts entries in |rows| and adds data to |ingest_info|."""
+
+        if self.ingest_object_cache is None:
+            raise ValueError('Ingest object cache unexpectedly None')
+
         seen_map: Dict[int, Set[str]] = defaultdict(set)
         for row in rows:
             self._pre_process_row(row)
             primary_coordinates = self._primary_coordinates(row)
             ancestor_chain: Dict[str, str] = self._ancestor_chain(
                 row, primary_coordinates)
-
-            if self.ingest_object_cache is None:
-                # TODO(1839): Generalize instantiation so we don't special-case
-                #  this in the non-object-cache case
-                if not ancestor_chain \
-                        or not ancestor_chain.get('person') \
-                        or not ancestor_chain.get('state_person'):
-                    # If there's no person at the top of this tree, create one
-                    # now
-                    self._instantiate_person(ingest_info)
 
             extracted_objects_for_row = []
             for k, v in row.items():
@@ -196,14 +189,18 @@ class CsvDataExtractor(DataExtractor):
                 if not v and not self.set_with_empty_value:
                     continue
 
-                create_args = self._get_creation_args(row, k)
-
                 column_ancestor_chain = ancestor_chain.copy()
-                if k in self.child_keys and primary_coordinates:
-                    # If we have a key for a child object in this row, include
-                    # the primary key of the ancestor from the row
-                    column_ancestor_chain[primary_coordinates.class_name] = \
-                        primary_coordinates.field_value
+                if k in self.child_keys:
+                    child_class_to_set, _ = self.child_keys[k].split('.')
+                    self._update_column_ancestor_chain_for_child_object(
+                        row,
+                        primary_coordinates,
+                        child_class_to_set,
+                        column_ancestor_chain)
+
+                create_args = self._get_creation_args(row,
+                                                      k,
+                                                      column_ancestor_chain)
 
                 extracted_objects_for_column = \
                     self._set_value_if_key_exists(k, v,
@@ -215,6 +212,55 @@ class CsvDataExtractor(DataExtractor):
 
             self._post_process_row(row, extracted_objects_for_row)
 
+        for obj_dict in self.ingest_object_cache.object_by_id_cache.values():
+            for obj in obj_dict.values():
+                self._clear_dummy_id(obj)
+
+    def _update_column_ancestor_chain_for_child_object(
+            self,
+            row: Dict[str, str],
+            primary_coordinates: IngestFieldCoordinates,
+            child_class_to_set: str,
+            column_ancestor_chain: Dict[str, str]):
+        """
+        The ancestor chain for a column starts with just id values for
+        ancestors of the primary object in this row. This function adds id
+        values for all classes in the ancestor chain of the object
+        represented by this column.
+
+        For example, for a file with primary object state_sentence_group, the
+        ancestor chain would start as: {'state_person': 'my_person_id'}
+
+        For a column corresponding to child of class
+        'state_incarceration_period', the ancestor chain might be updated to be:
+        {'state_person': 'my_person_id',
+         'state_sentence_group': 'my_booking_id',
+         'state_incarceration_sentence': 'DUMMY_GENERATED_ID'}
+        """
+        # Add primary object id to the ancestor chain for this child object
+        column_ancestor_chain[primary_coordinates.class_name] = \
+            primary_coordinates.field_value
+
+        ancestor_class_sequence = get_ancestor_class_sequence(
+            child_class_to_set, column_ancestor_chain,
+            self.enforced_ancestor_types)
+        i = ancestor_class_sequence.index(primary_coordinates.class_name)
+        ancestor_class_sequence_below_primary = ancestor_class_sequence[i + 1:]
+
+        # For all children below the primary object and above this child object,
+        # add to the column ancestor chain.
+        for child_ancestor_class in ancestor_class_sequence_below_primary:
+            child_coordinates = \
+                self._child_primary_coordinates(
+                    row, child_ancestor_class, column_ancestor_chain)
+            column_ancestor_chain[child_coordinates.class_name] = \
+                child_coordinates.field_value
+
+    def _clear_dummy_id(self, obj: IngestObject):
+        id_field_name = f'{obj.class_name()}_id'
+        id_value = getattr(obj, id_field_name)
+        if id_value and id_value.startswith(_DUMMY_KEY_PREFIX):
+            obj.__setattr__(id_field_name, None)
 
     def _run_file_post_hooks(self, ingest_info: IngestInfo):
         for post_hook in self.file_post_hooks:
@@ -261,7 +307,44 @@ class CsvDataExtractor(DataExtractor):
             hook(row, unique_extracted_objects.values(),
                  self.ingest_object_cache)
 
-    def _get_creation_args(self, row: Dict[str, str], lookup_key: str) \
+    def _build_dummy_child_primary_key(
+            self,
+            row: Dict[str, str],
+            child_class_name: str,
+            column_ancestor_chain: Dict[str, str]) -> str:
+
+        child_primary_key_parts = [_DUMMY_KEY_PREFIX]
+
+        # Append all ids of parent objects, ordered by CSV column name
+        for _field_name, field_value in sorted(column_ancestor_chain.items()):
+            child_primary_key_parts.append(field_value)
+
+        # Append all values in this row that are relevant to this child object,
+        # ordered by CSV column name
+        cols_for_id = []
+        for col, field in self.child_keys.items():
+            this_col_class_name, _ = field.split('.')
+            if child_class_name == this_col_class_name:
+                cols_for_id.append(col)
+        child_primary_key_parts += [row[col] for col in sorted(cols_for_id)]
+
+        return '|'.join(child_primary_key_parts)
+
+    def _child_primary_coordinates(self,
+                                   row: Dict[str, str],
+                                   child_class_name: str,
+                                   column_ancestor_chain: Dict[str, str]):
+        child_primary_key_name = f'{child_class_name}_id'
+        child_primary_key_value = self._build_dummy_child_primary_key(
+            row, child_class_name, column_ancestor_chain)
+        return IngestFieldCoordinates(child_class_name,
+                                      child_primary_key_name,
+                                      child_primary_key_value)
+
+    def _get_creation_args(self,
+                           row: Dict[str, str],
+                           lookup_key: str,
+                           column_ancestor_chain: Dict[str, str]) \
             -> Dict[str, str]:
         """Gets arguments needed to create a new entity, if necessary.
 
@@ -270,28 +353,30 @@ class CsvDataExtractor(DataExtractor):
         row contains data for multiple entities.
         """
 
-        def _current_field_is_from_class(current_field_key: str,
-                                         class_name: str) -> bool:
-            current_class_name, _current_field_name = \
-                current_field_key.split('.')
-            return current_class_name == class_name
-
         current_field = self.keys.get(lookup_key, None)
         if not current_field:
             return {}
 
         primary_coordinates = self._primary_coordinates(row)
 
-        if primary_coordinates and _current_field_is_from_class(
-                current_field, primary_coordinates.class_name):
+        current_class_name, _current_field_name = current_field.split('.')
+        if current_class_name == primary_coordinates.class_name:
             return {
                 primary_coordinates.field_name: primary_coordinates.field_value
             }
 
-        return {}
+        child_primary_key_coords = \
+            self._child_primary_coordinates(row,
+                                            current_class_name,
+                                            column_ancestor_chain)
+
+        return {
+            child_primary_key_coords.field_name:
+                child_primary_key_coords.field_value
+        }
 
     def _ancestor_chain(self, row: Dict[str, str],
-                        primary_coordinates: Optional[IngestFieldCoordinates]) \
+                        primary_coordinates: IngestFieldCoordinates) \
             -> Dict[str, str]:
         """Returns the ancestor chain for this row, i.e. a mapping from ancestor
         class to the id of the ancestor corresponding to this row.
@@ -308,15 +393,15 @@ class CsvDataExtractor(DataExtractor):
             for coordinate in ancestor_coordinates:
                 ancestor_chain[coordinate.class_name] = coordinate.field_value
 
-        if self.ancestor_key_override_callback and primary_coordinates:
+        if self.ancestor_key_override_callback:
             ancestor_addition = self.ancestor_key_override_callback(
                 primary_coordinates)
             ancestor_chain.update(ancestor_addition)
 
         return ancestor_chain
 
-    def _primary_coordinates(self, row: Dict[str, str]) \
-            -> Optional[IngestFieldCoordinates]:
+    def _primary_coordinates(self,
+                             row: Dict[str, str])-> IngestFieldCoordinates:
         """Returns the coordinates of the primary key for the main entity being
         extracted for this row.
 
@@ -333,7 +418,9 @@ class CsvDataExtractor(DataExtractor):
                                                              row)
             return more_itertools.one(coordinates)
 
-        return None
+        raise ValueError(
+            'Must either define a primary_key or primary_key_override_callback,'
+            'but neither found.')
 
     @staticmethod
     def _get_coordinates_from_mapping(key_mapping: Dict[str, str],
