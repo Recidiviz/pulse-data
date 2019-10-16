@@ -17,9 +17,12 @@
 
 """Utils for the persistence layer."""
 import datetime
+from distutils.util import strtobool  # pylint: disable=no-name-in-module
+import os
 
 from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.persistence.entity.county import entities as county_entities
+from recidiviz.utils import environment
 
 
 def remove_pii_for_person(person: county_entities.Person) -> None:
@@ -47,3 +50,11 @@ def is_booking_active(booking: county_entities.Booking) -> bool:
 def has_active_booking(person: county_entities.Person) -> bool:
     """Determines if a person has an active booking"""
     return any(is_booking_active(booking) for booking in person.bookings)
+
+
+def should_persist():
+    """
+    Determines whether objects should be writed to the database in this context.
+    """
+    return environment.in_gae() or \
+        strtobool((os.environ.get('PERSIST_LOCALLY', 'false')))
