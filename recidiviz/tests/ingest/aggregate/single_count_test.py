@@ -20,6 +20,7 @@ from unittest import TestCase
 from urllib.parse import urlencode
 
 from flask import Flask
+from mock import patch
 from more_itertools import one
 
 from recidiviz.common import str_field_utils
@@ -42,6 +43,7 @@ app.config['TESTING'] = True
 TEST_ENV = 'recidiviz-test'
 
 
+@patch.dict('os.environ', {'PERSIST_LOCALLY': 'true'})
 class TestSingleCountIngest(TestCase):
     """Test that store_single_count correctly stores a count."""
 

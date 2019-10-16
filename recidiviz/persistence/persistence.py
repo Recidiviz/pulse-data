@@ -17,8 +17,6 @@
 """Contains logic for communicating with the persistence layer."""
 import datetime
 import logging
-import os
-from distutils.util import strtobool  # pylint: disable=no-name-in-module
 from typing import List
 
 from opencensus.stats import aggregation, measure, view
@@ -47,7 +45,8 @@ from recidiviz.persistence.database import database
 from recidiviz.persistence.ingest_info_converter import ingest_info_converter
 from recidiviz.persistence.ingest_info_converter.base_converter import \
     IngestInfoConversionResult
-from recidiviz.utils import environment, monitoring
+from recidiviz.persistence.persistence_utils import should_persist
+from recidiviz.utils import monitoring
 
 m_people = measure.MeasureInt("persistence/num_people",
                               "The number of people persisted", "1")
@@ -156,11 +155,6 @@ def _mark_children_removed_from_source(booking: county_entities.Booking):
             charge.bond.status_raw_text = None
 
 
-def _should_persist():
-    return bool(environment.in_gae() or
-                strtobool((os.environ.get('PERSIST_LOCALLY', 'false'))))
-
-
 def _should_abort(
         total_root_entities,
         conversion_result: IngestInfoConversionResult,
@@ -213,7 +207,7 @@ def write(ingest_info, metadata):
     """
     ingest_info_validator.validate(ingest_info)
 
-    mtags = {monitoring.TagKey.SHOULD_PERSIST: _should_persist(),
+    mtags = {monitoring.TagKey.SHOULD_PERSIST: should_persist(),
              monitoring.TagKey.PERSISTED: False}
     total_people = _get_total_people(ingest_info, metadata)
     with monitoring.measurements(mtags) as measurements:
@@ -244,7 +238,7 @@ def write(ingest_info, metadata):
             logging.info("_should_abort_ was true after converting people")
             return False
 
-        if not _should_persist():
+        if not should_persist():
             return True
 
         persisted = False
