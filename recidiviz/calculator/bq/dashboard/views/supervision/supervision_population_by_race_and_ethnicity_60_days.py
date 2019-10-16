@@ -49,11 +49,7 @@ SUPERVISION_POPULATION_BY_RACE_AND_ETHNICITY_60_DAYS_QUERY = \
     AND start_date <= CURRENT_DATE()) as x where x.rownum = 1) sup
     JOIN
     (SELECT person_id, race_or_ethnicity
-    FROM
-    (SELECT person_id, race_or_ethnicity, row_number() OVER (PARTITION BY person_ID) as rownum
-    FROM
-    `{project_id}.{views_dataset}.state_person_race_and_ethnicity`)
-    AS y WHERE y.rownum = 1) race
+    FROM `{project_id}.{views_dataset}.state_person_race_and_ethnicity`) race
     ON sup.person_id = race.person_id)
     GROUP BY state_code, race_or_ethnicity 
     """.format(
