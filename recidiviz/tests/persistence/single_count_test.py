@@ -44,6 +44,7 @@ class MockDate(datetime.date):
         return cls(2000, 1, 1)
 
 
+@patch.dict('os.environ', {'PERSIST_LOCALLY': 'true'})
 class TestSingleCountPersist(TestCase):
     """Test that store_single_count correctly persists a count."""
 

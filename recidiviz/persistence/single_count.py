@@ -17,14 +17,18 @@
 """Store single count.
 """
 
+import logging
+
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.common.jid import validate_jid
+from recidiviz.ingest.models.ingest_info import to_string
 from recidiviz.ingest.models.single_count import SingleCount
 from recidiviz.persistence.database.schema.aggregate.schema import \
     SingleCountAggregate
 from recidiviz.persistence.database.schema_utils import \
     schema_base_for_system_level
 from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.persistence_utils import should_persist
 
 
 def store_single_count(sc: SingleCount, jurisdiction_id: str):
@@ -40,6 +44,10 @@ def store_single_count(sc: SingleCount, jurisdiction_id: str):
         count=sc.count,
         date=sc.date,
     )
+
+    logging.info("Writing single count to the database: %s", to_string(sc))
+    if not should_persist():
+        return True
 
     session = SessionFactory.for_schema_base(
         schema_base_for_system_level(SystemLevel.COUNTY))
