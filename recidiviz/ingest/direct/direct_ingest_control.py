@@ -37,6 +37,7 @@ from recidiviz.ingest.direct.errors import DirectIngestError, \
     DirectIngestErrorType
 from recidiviz.utils import environment, regions, monitoring
 from recidiviz.utils.auth import authenticate_request
+from recidiviz.utils.monitoring import TagKey
 from recidiviz.utils.params import get_str_param_value, get_bool_param_value
 from recidiviz.utils.regions import get_supported_direct_ingest_region_codes
 
@@ -164,20 +165,22 @@ def process_job() -> Tuple[str, HTTPStatus]:
 
         if not ingest_args:
             return f'Could not parse ingest args', HTTPStatus.BAD_REQUEST
+        with monitoring.push_tags(
+                {TagKey.INGEST_TASK_TAG: ingest_args.task_id_tag()}):
+            try:
+                if not ingest_args:
+                    raise DirectIngestError(
+                        msg=f"process_job was called with no IngestArgs.",
+                        error_type=DirectIngestErrorType.INPUT_ERROR)
 
-        try:
-            if not ingest_args:
-                raise DirectIngestError(
-                    msg=f"process_job was called with no IngestArgs.",
-                    error_type=DirectIngestErrorType.INPUT_ERROR)
+                controller = controller_for_region_code(region_code)
+            except DirectIngestError as e:
+                if e.error_type == DirectIngestErrorType.INPUT_ERROR:
+                    return str(e), HTTPStatus.BAD_REQUEST
+                raise e
 
-            controller = controller_for_region_code(region_code)
-        except DirectIngestError as e:
-            if e.error_type == DirectIngestErrorType.INPUT_ERROR:
-                return str(e), HTTPStatus.BAD_REQUEST
-            raise e
-
-        controller.run_ingest_job_and_kick_scheduler_on_completion(ingest_args)
+            controller.run_ingest_job_and_kick_scheduler_on_completion(
+                ingest_args)
     return '', HTTPStatus.OK
 
 

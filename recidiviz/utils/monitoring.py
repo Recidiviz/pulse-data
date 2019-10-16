@@ -119,3 +119,4 @@ class TagKey:
     ENTITY_TYPE = 'entity_type'
     STATUS = 'status'
     REASON = 'reason'
+    INGEST_TASK_TAG = 'ingest_task_tag'
