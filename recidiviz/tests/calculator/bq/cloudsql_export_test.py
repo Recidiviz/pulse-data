@@ -24,14 +24,14 @@ from unittest import mock
 import googleapiclient.errors
 
 from recidiviz.calculator.bq import cloudsql_export
-from recidiviz.calculator.bq.bq_load import ModuleType
+from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType
 
 
 class CloudSqlExportTest(unittest.TestCase):
     """Tests for bq_load.py."""
 
     def setUp(self):
-        self.module = ModuleType.COUNTY
+        self.schema_type = SchemaType.JAILS
         self.mock_project_id = 'fake-recidiviz-project'
         self.mock_instance_id = 'test_instance_id'
         self.mock_database = 'test_database'
@@ -42,7 +42,7 @@ class CloudSqlExportTest(unittest.TestCase):
             {'name': 'my_column', 'type': 'STRING', 'mode': 'NULLABLE'}]
 
         self.client_patcher = mock.patch(
-            'recidiviz.calculator.bq.cloudsql_export.client')
+            'recidiviz.calculator.bq.cloudsql_export.sqladmin_client')
         self.mock_client = self.client_patcher.start().return_value
 
         metadata_values = {
@@ -62,7 +62,7 @@ class CloudSqlExportTest(unittest.TestCase):
             'get_secret.side_effect': secrets_values.get
         }
         self.secrets_patcher = mock.patch(
-            'recidiviz.calculator.bq.cloudsql_export.secrets',
+            'recidiviz.persistence.database.sqlalchemy_engine_manager.secrets',
             **secrets_config_values)
         self.secrets_patcher.start()
 
@@ -84,22 +84,9 @@ class CloudSqlExportTest(unittest.TestCase):
 
     def tearDown(self):
         self.client_patcher.stop()
-
-
-    def test_cloudsql_instance_id(self):
-        """Make sure cloudsql_instance_id is re-formatted correctly.
-
-        Goes from project_id:zone:instance_id format in secrets to instance_id.
-        """
-        self.assertEqual(
-            cloudsql_export.cloudsql_instance_id(self.module),
-            self.mock_instance_id)
-
-
-    def test_cloudsql_db_name(self):
-        """Check that the database name is retrieved from secrets."""
-        self.assertEqual(cloudsql_export.cloudsql_db_name(self.module),
-                         self.mock_database)
+        self.metadata_patcher.stop()
+        self.secrets_patcher.stop()
+        self.export_config_patcher.stop()
 
 
     def test_create_export_context(self):
@@ -121,7 +108,7 @@ class CloudSqlExportTest(unittest.TestCase):
         }
 
         result = cloudsql_export.create_export_context(
-            self.module, self.mock_export_uri, self.mock_table_query)
+            self.schema_type, self.mock_export_uri, self.mock_table_query)
         self.assertEqual(result, sample_export_context)
 
 
@@ -179,7 +166,7 @@ class CloudSqlExportTest(unittest.TestCase):
         """Test that client().instances().export() is called and
             wait_until_operation_finished is called.
         """
-        cloudsql_export.export_table(self.module, self.mock_table_id,
+        cloudsql_export.export_table(self.schema_type, self.mock_table_id,
                                      self.mock_table_query)
 
         mock_export = self.mock_client.instances.return_value.export
@@ -201,7 +188,7 @@ class CloudSqlExportTest(unittest.TestCase):
             googleapiclient.errors.HttpError('', content=b'')
 
         with self.assertLogs(level='ERROR'):
-            success = cloudsql_export.export_table(self.module,
+            success = cloudsql_export.export_table(self.schema_type,
                                                    self.mock_table_id,
                                                    self.mock_table_query)
 
@@ -213,12 +200,12 @@ class CloudSqlExportTest(unittest.TestCase):
     def test_export_all_tables(self, mock_export):
         """Test that export_table is called for all tables specified."""
         cloudsql_export.export_all_tables(
-            self.module,
+            self.schema_type,
             self.mock_export_config.COUNTY_TABLES_TO_EXPORT,
             self.mock_export_config.COUNTY_TABLE_EXPORT_QUERIES)
 
         mock_export.assert_has_calls(
-            [mock.call(self.module,
+            [mock.call(self.schema_type,
                        table.name,
                        self.mock_export_config.COUNTY_TABLE_EXPORT_QUERIES[
                            table.name])
@@ -234,7 +221,7 @@ class CloudSqlExportTest(unittest.TestCase):
 
         with self.assertLogs(level='ERROR'):
             cloudsql_export.export_all_tables(
-                self.module,
+                self.schema_type,
                 (Table('fake_table'), Table('second_table')),
                 self.mock_export_config.COUNTY_TABLE_EXPORT_QUERIES)
 

@@ -31,7 +31,7 @@ from recidiviz.calculator.bq import cloudsql_export
 from recidiviz.calculator.bq import export_config
 from recidiviz.calculator.bq.bq_export_cloud_task_manager import \
     BQExportCloudTaskManager
-from recidiviz.calculator.bq.bq_load import ModuleType
+from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType
 from recidiviz.utils.auth import authenticate_request
 from recidiviz.utils import pubsub_helper
 
@@ -39,27 +39,27 @@ from recidiviz.utils import pubsub_helper
 def export_table_then_load_table(
         table: str,
         dataset_ref: bigquery.dataset.DatasetReference,
-        module: ModuleType) -> bool:
+        schema_type: SchemaType) -> bool:
     """Exports a Cloud SQL table to CSV, then loads it into BigQuery.
 
     Waits until the BigQuery load is completed.
 
     Args:
         table: Table to export then import. Table must be defined
-            in the TABLES_TO_EXPORT for its corresponding module.
+            in the TABLES_TO_EXPORT for its corresponding schema.
         dataset_ref: The BigQuery dataset to load the table into.
             Gets created if it does not already exist.
-        module: The module, either ModuleType.COUNTY or ModuleType.STATE where
-            this table lives.
+        schema_type: The schema, either SchemaType.COUNTY or SchemaType.STATE
+            where this table lives.
     Returns:
         True if load succeeds, else False.
     """
-    if module == ModuleType.COUNTY:
+    if schema_type == SchemaType.JAILS:
         export_queries = export_config.COUNTY_TABLE_EXPORT_QUERIES
-    elif module == ModuleType.STATE:
+    elif schema_type == SchemaType.STATE:
         export_queries = export_config.STATE_TABLE_EXPORT_QUERIES
     else:
-        logging.error("Unknown module: %s", module)
+        logging.error("Unknown schema_type: %s", schema_type)
         return False
 
     try:
@@ -67,13 +67,15 @@ def export_table_then_load_table(
     except KeyError:
         logging.exception(
             "Unknown table name [%s]. Is it listed in "
-            "the TABLES_TO_EXPORT for the %s module?", table, module)
+            "the TABLES_TO_EXPORT for the %s schema_type?", table, schema_type)
         return False
 
-    export_success = cloudsql_export.export_table(module, table, export_query)
+    export_success = cloudsql_export.export_table(schema_type,
+                                                  table,
+                                                  export_query)
     if export_success: # pylint: disable=no-else-return
         load_success = bq_load.start_table_load_and_wait(dataset_ref, table,
-                                                         module)
+                                                         schema_type)
         return load_success
     else:
         logging.error("Skipping BigQuery load of table [%s], "
@@ -81,7 +83,7 @@ def export_table_then_load_table(
         return False
 
 
-def export_then_load_all_sequentially(module: ModuleType):
+def export_then_load_all_sequentially(schema_type: SchemaType):
     """Exports then loads each table sequentially.
 
     No operations for a new table happen until all operations for
@@ -98,25 +100,25 @@ def export_then_load_all_sequentially(module: ModuleType):
     There is no reason to load sequentially, but we must export sequentially
     because Cloud SQL can only support one export operation at a time.
     """
-    if module == ModuleType.COUNTY:
+    if schema_type == SchemaType.JAILS:
         tables_to_export = export_config.COUNTY_TABLES_TO_EXPORT
         dataset_ref = bq_utils.client().dataset(
             export_config.COUNTY_BASE_TABLES_BQ_DATASET)
-    elif module == ModuleType.STATE:
+    elif schema_type == SchemaType.STATE:
         tables_to_export = export_config.STATE_TABLES_TO_EXPORT
         dataset_ref = bq_utils.client().dataset(
             export_config.STATE_BASE_TABLES_BQ_DATASET)
     else:
-        logging.error("Invalid module requested. Must be either"
-                      " ModuleType.COUNTY or ModuleType.STATE.")
+        logging.error("Invalid schema_type requested. Must be either"
+                      " SchemaType.JAILS or SchemaType.STATE.")
         return
 
     for table in tables_to_export:
-        export_table_then_load_table(table.name, dataset_ref, module)
+        export_table_then_load_table(table.name, dataset_ref, schema_type)
 
 
-def export_all_then_load_all(module: ModuleType):
-    """Export all tables from Cloud SQL in the given module, then load all
+def export_all_then_load_all(schema_type: SchemaType):
+    """Export all tables from Cloud SQL in the given schema, then load all
     tables to BigQuery.
 
     Exports happen in sequence (one at a time),
@@ -128,27 +130,29 @@ def export_all_then_load_all(module: ModuleType):
     3. Export Table C
     4. Load Tables A, B, C in parallel.
     """
-    if module == ModuleType.COUNTY:
+    if schema_type == SchemaType.JAILS:
         tables_to_export = export_config.COUNTY_TABLES_TO_EXPORT
         base_tables_dataset_ref = bq_utils.client().dataset(
             export_config.COUNTY_BASE_TABLES_BQ_DATASET)
         export_queries = export_config.COUNTY_TABLE_EXPORT_QUERIES
-    elif module == ModuleType.STATE:
+    elif schema_type == SchemaType.STATE:
         tables_to_export = export_config.STATE_TABLES_TO_EXPORT
         base_tables_dataset_ref = bq_utils.client().dataset(
             export_config.STATE_BASE_TABLES_BQ_DATASET)
         export_queries = export_config.STATE_TABLE_EXPORT_QUERIES
     else:
-        logging.error("Invalid module requested. Must be either"
-                      " ModuleType.COUNTY or ModuleType.STATE.")
+        logging.error("Invalid schema_type requested. Must be either"
+                      " SchemaType.JAILS or SchemaType.STATE.")
         return
 
     logging.info("Beginning CloudSQL export")
-    cloudsql_export.export_all_tables(module, tables_to_export, export_queries)
+    cloudsql_export.export_all_tables(schema_type,
+                                      tables_to_export,
+                                      export_queries)
 
     logging.info("Beginning BQ table load")
     bq_load.load_all_tables_concurrently(
-        base_tables_dataset_ref, tables_to_export, module)
+        base_tables_dataset_ref, tables_to_export, schema_type)
 
 
 export_manager_blueprint = flask.Blueprint('export_manager', __name__)
@@ -168,14 +172,14 @@ def handle_bq_export_task():
     json_data = request.get_data(as_text=True)
     data = json.loads(json_data)
     table_name = data['table_name']
-    module = data['module']
+    schema_type_str = data['schema_type']
 
-    if module == ModuleType.COUNTY.value:
-        module_type = ModuleType.COUNTY
+    if schema_type_str == SchemaType.JAILS.value:
+        schema_type = SchemaType.JAILS
         dataset_ref = bq_utils.client().dataset(
             export_config.COUNTY_BASE_TABLES_BQ_DATASET)
-    elif module == ModuleType.STATE.value:
-        module_type = ModuleType.STATE
+    elif schema_type_str == SchemaType.STATE.value:
+        schema_type = SchemaType.STATE
         dataset_ref = bq_utils.client().dataset(
             export_config.STATE_BASE_TABLES_BQ_DATASET)
     else:
@@ -183,7 +187,7 @@ def handle_bq_export_task():
 
     logging.info("Starting BQ export task for table: %s", table_name)
 
-    success = export_table_then_load_table(table_name, dataset_ref, module_type)
+    success = export_table_then_load_table(table_name, dataset_ref, schema_type)
 
     return ('', HTTPStatus.OK if success else HTTPStatus.INTERNAL_SERVER_ERROR)
 
@@ -226,13 +230,13 @@ def create_all_bq_export_tasks():
 
     Re-creates all tasks if any task fails to be created.
     """
-    module = ModuleType.COUNTY.value
+    schema_type_str = SchemaType.JAILS.value
 
-    logging.info("Beginning BQ export for county module.")
+    logging.info("Beginning BQ export for jails schema tables.")
 
     task_manager = BQExportCloudTaskManager()
     for table in export_config.COUNTY_TABLES_TO_EXPORT:
-        task_manager.create_bq_task(table.name, module)
+        task_manager.create_bq_task(table.name, schema_type_str)
     return ('', HTTPStatus.OK)
 
 
@@ -246,13 +250,13 @@ def create_all_state_bq_export_tasks():
 
     Re-creates all tasks if any task fails to be created.
     """
-    module = ModuleType.STATE.value
+    schema_type_str = SchemaType.STATE.value
 
-    logging.info("Beginning BQ export for state module.")
+    logging.info("Beginning BQ export for state schema tables.")
 
     task_manager = BQExportCloudTaskManager()
     for table in export_config.STATE_TABLES_TO_EXPORT:
-        task_manager.create_bq_task(table.name, module)
+        task_manager.create_bq_task(table.name, schema_type_str)
 
     pub_sub_topic = 'v1.calculator.recidivism'
     pub_sub_message = 'State export to BQ complete'
@@ -263,6 +267,6 @@ def create_all_state_bq_export_tasks():
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.INFO)
 
-    local_export_module_type = ModuleType.STATE
+    local_export_schema_type = SchemaType.STATE
 
-    export_all_then_load_all(local_export_module_type)
+    export_all_then_load_all(local_export_schema_type)
