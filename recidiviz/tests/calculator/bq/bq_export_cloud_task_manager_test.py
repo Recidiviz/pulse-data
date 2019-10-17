@@ -50,14 +50,14 @@ class TestBQExportCloudTaskManager(unittest.TestCase):
 
         project_id = 'recidiviz-456'
         table_name = 'test_table'
-        module = 'test_module'
+        schema_type = 'test_schema_type'
         queue_path = f'queue_path/{project_id}/{QUEUES_REGION}'
-        task_id = 'test_table-test_module-2019-04-12-random-uuid'
+        task_id = 'test_table-test_schema_type-2019-04-12-random-uuid'
         task_path = f'{queue_path}/{task_id}'
 
         body = {
             'table_name': table_name,
-            'module': module
+            'schema_type': schema_type
         }
 
         task = tasks_v2.types.task_pb2.Task(
@@ -74,7 +74,7 @@ class TestBQExportCloudTaskManager(unittest.TestCase):
 
         # Act
         BQExportCloudTaskManager(project_id=project_id). \
-            create_bq_task(table_name=table_name, module=module)
+            create_bq_task(table_name=table_name, schema_type=schema_type)
 
         # Assert
         mock_client.return_value.queue_path.assert_called_with(

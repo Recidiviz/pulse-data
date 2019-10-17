@@ -27,7 +27,7 @@ from google.cloud import bigquery
 from jsonpickle import json
 
 from recidiviz.calculator.bq import export_manager
-from recidiviz.calculator.bq.export_manager import ModuleType
+from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import \
     CloudTaskQueueInfo
 
@@ -36,7 +36,7 @@ class ExportManagerTestCounty(unittest.TestCase):
     """Tests for export_manager.py."""
 
     def setUp(self):
-        self.module = ModuleType.COUNTY
+        self.schema_type = SchemaType.JAILS
 
         self.mock_project_id = 'fake-recidiviz-project'
         self.mock_dataset_name = 'base_dataset'
@@ -91,10 +91,12 @@ class ExportManagerTestCounty(unittest.TestCase):
         table = 'first_table'
         dataset = self.mock_client.dataset('random_dataset')
 
-        export_manager.export_table_then_load_table(table, dataset, self.module)
+        export_manager.export_table_then_load_table(table,
+                                                    dataset,
+                                                    self.schema_type)
 
         self.mock_bq_load.start_table_load_and_wait.assert_called_with(
-            dataset, table, self.module)
+            dataset, table, self.schema_type)
 
 
     def test_export_table_then_load_table_doesnt_load(self):
@@ -105,7 +107,7 @@ class ExportManagerTestCounty(unittest.TestCase):
         with self.assertLogs(level='ERROR'):
             export_manager.export_table_then_load_table('random-table',
                                                         self.mock_dataset,
-                                                        self.module)
+                                                        self.schema_type)
 
         self.mock_bq_load.assert_not_called()
 
@@ -126,15 +128,15 @@ class ExportManagerTestCounty(unittest.TestCase):
             self.mock_bq_load.start_table_load_and_wait, 'load')
 
         export_then_load_calls = list(chain.from_iterable([
-            (mock.call.export(self.module,
+            (mock.call.export(self.schema_type,
                               table.name,
                               self.mock_export_config.
                               COUNTY_TABLE_EXPORT_QUERIES[table.name]),
-             mock.call.load(default_dataset, table.name, self.module))
+             mock.call.load(default_dataset, table.name, self.schema_type))
             for table in self.mock_export_config.COUNTY_TABLES_TO_EXPORT
         ]))
 
-        export_manager.export_then_load_all_sequentially(self.module)
+        export_manager.export_then_load_all_sequentially(self.schema_type)
 
         mock_parent.assert_has_calls(export_then_load_calls)
 
@@ -159,15 +161,16 @@ class ExportManagerTestCounty(unittest.TestCase):
 
         export_all_then_load_all_calls = [
             mock.call.export_all(
-                self.module,
+                self.schema_type,
                 self.mock_export_config.COUNTY_TABLES_TO_EXPORT,
                 self.mock_export_config.COUNTY_TABLE_EXPORT_QUERIES),
             mock.call.load_all(
                 default_dataset,
-                self.mock_export_config.COUNTY_TABLES_TO_EXPORT, self.module)
+                self.mock_export_config.COUNTY_TABLES_TO_EXPORT,
+                self.schema_type)
         ]
 
-        export_manager.export_all_then_load_all(self.module)
+        export_manager.export_all_then_load_all(self.schema_type)
 
         mock_parent.assert_has_calls(export_all_then_load_all_calls)
 
@@ -188,10 +191,10 @@ class ExportManagerTestCounty(unittest.TestCase):
 
         mock_project_id.return_value = 'test-project'
         table = 'fake_table'
-        module = 'COUNTY'
+        module = 'JAILS'
         dataset_ref = 'dataset'
         route = '/export'
-        data = {"table_name": table, "module": module}
+        data = {"table_name": table, "schema_type": module}
 
         response = self.mock_flask_client.post(
             route,
@@ -199,7 +202,7 @@ class ExportManagerTestCounty(unittest.TestCase):
             content_type='application/json',
             headers={'X-Appengine-Inbound-Appid': 'test-project'})
         assert response.status_code == HTTPStatus.OK
-        mock_export.assert_called_with(table, dataset_ref, ModuleType.COUNTY)
+        mock_export.assert_called_with(table, dataset_ref, SchemaType.JAILS)
 
     # pylint: disable=line-too-long
     @mock.patch('recidiviz.utils.metadata.project_id')
@@ -216,7 +219,7 @@ class ExportManagerTestCounty(unittest.TestCase):
         module = 'STATE'
         dataset_ref = 'dataset'
         route = '/export'
-        data = {"table_name": table, "module": module}
+        data = {"table_name": table, "schema_type": module}
 
         response = self.mock_flask_client.post(
             route,
@@ -224,7 +227,7 @@ class ExportManagerTestCounty(unittest.TestCase):
             content_type='application/json',
             headers={'X-Appengine-Inbound-Appid': 'test-project'})
         assert response.status_code == HTTPStatus.OK
-        mock_export.assert_called_with(table, dataset_ref, ModuleType.STATE)
+        mock_export.assert_called_with(table, dataset_ref, SchemaType.STATE)
 
     # pylint: disable=line-too-long
     @mock.patch('recidiviz.utils.metadata.project_id')
@@ -240,7 +243,7 @@ class ExportManagerTestCounty(unittest.TestCase):
         table = 'fake_table'
         module = 'INVALID'
         route = '/export'
-        data = {"table_name": table, "module": module}
+        data = {"table_name": table, "schema_type": module}
 
         response = self.mock_flask_client.post(
             route,

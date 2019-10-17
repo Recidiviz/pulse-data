@@ -52,20 +52,20 @@ class BQExportCloudTaskManager:
     def get_bq_queue_info(self) -> CloudTaskQueueInfo:
         return self._get_queue_info(BIGQUERY_QUEUE_V2)
 
-    def create_bq_task(self, table_name: str, module: str):
+    def create_bq_task(self, table_name: str, schema_type: str):
         """Create a BigQuery table export path.
 
         Args:
             table_name: Cloud SQL table to export to BQ. Must be defined in
                 the *_TABLES_TO_EXPORT for the given schema.
-            module: The module of the table being exported, either 'county' or
-                'state'.
+            schema_type: The schema of the table being exported, either 'jails'
+                or 'state'.
             url: App Engine worker URL.
         """
-        body = {'table_name': table_name, 'module': module}
+        body = {'table_name': table_name, 'schema_type': schema_type}
         task_id = '{}-{}-{}-{}'.format(
             table_name,
-            module,
+            schema_type,
             str(datetime.datetime.utcnow().date()),
             uuid.uuid4())
 

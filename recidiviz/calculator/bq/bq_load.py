@@ -18,7 +18,6 @@
 """Helper functions to create and update BigQuery Views."""
 
 import concurrent
-import enum
 import logging
 from typing import Optional, Tuple
 
@@ -31,20 +30,14 @@ import sqlalchemy
 
 from recidiviz.calculator.bq import bq_utils
 from recidiviz.calculator.bq import export_config
-
+from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType
 
 _BQ_LOAD_WAIT_TIMEOUT_SECONDS = 300
 
 
-@enum.unique
-class ModuleType(enum.Enum):
-    COUNTY = 'COUNTY'
-    STATE = 'STATE'
-
-
 def start_table_load(
         dataset_ref: bigquery.dataset.DatasetReference,
-        table_name: str, module: ModuleType) -> \
+        table_name: str, schema_type: SchemaType) -> \
         Optional[Tuple[bigquery.job.LoadJob, bigquery.table.TableReference]]:
     """Loads a table from CSV data in GCS to BigQuery.
 
@@ -63,19 +56,19 @@ def start_table_load(
             if it does not already exist.
         table_name: Table to import. Table must be defined
             in the export_config.*_TABLES_TO_EXPORT for the given module
-        module: The module of the table being loaded, either ModuleType.COUNTY
-            or ModuleType.STATE.
+        schema_type: The schema of the table being loaded, either
+            SchemaType.JAILS or SchemaType.STATE.
     Returns:
         (load_job, table_ref) where load_job is the LoadJob object containing
             job details, and table_ref is the destination TableReference object.
             If the job fails to start, returns None.
     """
-    if module == ModuleType.COUNTY:
+    if schema_type == SchemaType.JAILS:
         export_schema = export_config.COUNTY_TABLE_EXPORT_SCHEMA
-    elif module == ModuleType.STATE:
+    elif schema_type == SchemaType.STATE:
         export_schema = export_config.STATE_TABLE_EXPORT_SCHEMA
     else:
-        logging.exception("Unknown module name: %s", module)
+        logging.exception("Unknown schema type: %s", schema_type)
         return None
 
     bq_utils.create_dataset_if_necessary(dataset_ref)
@@ -92,7 +85,7 @@ def start_table_load(
     except KeyError:
         logging.exception(
             "Unknown table name '%s'. Is it listed in "
-            "the TABLES_TO_EXPORT for the %s module?", module, table_name)
+            "the TABLES_TO_EXPORT for the %s module?", schema_type, table_name)
         return None
 
     job_config = bigquery.LoadJobConfig()
@@ -152,7 +145,7 @@ def wait_for_table_load(
 
 def start_table_load_and_wait(
         dataset_ref: bigquery.dataset.DatasetReference,
-        table_name: str, module: ModuleType) -> bool:
+        table_name: str, schema_type: SchemaType) -> bool:
     """Loads a table from CSV data in GCS to BigQuery, waits until completion.
 
     See start_table_load and wait_for_table_load for details.
@@ -161,7 +154,7 @@ def start_table_load_and_wait(
         True if no errors were raised, else False.
     """
 
-    load_job_started = start_table_load(dataset_ref, table_name, module)
+    load_job_started = start_table_load(dataset_ref, table_name, schema_type)
     if load_job_started:
         load_job, table_ref = load_job_started
         table_load_success = wait_for_table_load(load_job, table_ref)
@@ -174,14 +167,15 @@ def start_table_load_and_wait(
 def load_all_tables_concurrently(
         dataset_ref: bigquery.dataset.DatasetReference,
         tables: Tuple[sqlalchemy.Table, ...],
-        module: ModuleType):
+        schema_type: SchemaType):
     """Start all table LoadJobs concurrently.
 
     Wait until completion to log results."""
 
     # Kick off all table LoadJobs at the same time.
     load_jobs = [
-        start_table_load(dataset_ref, table.name, module) for table in tables
+        start_table_load(dataset_ref, table.name, schema_type)
+        for table in tables
     ]
 
     # Wait for all jobs to finish, log results.
