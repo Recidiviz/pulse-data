@@ -16,12 +16,21 @@
 # =============================================================================
 """Views related to supervision."""
 # pylint: disable=line-too-long
+from recidiviz.calculator.bq.dashboard.views.supervision.supervision_population_by_age_60_days import \
+    SUPERVISION_POPULATION_BY_AGE_60_DAYS_VIEW
+from recidiviz.calculator.bq.dashboard.views.supervision.supervision_population_by_gender_60_days import \
+    SUPERVISION_POPULATION_BY_GENDER_60_DAYS_VIEW
+from recidiviz.calculator.bq.dashboard.views.supervision.supervision_population_by_lsir_60_days import \
+    SUPERVISION_POPULATION_BY_LSIR_60_DAYS_VIEW
 from recidiviz.calculator.bq.dashboard.views.supervision.supervision_population_by_race_and_ethnicity_60_days import \
     SUPERVISION_POPULATION_BY_RACE_AND_ETHNICITY_60_DAYS_VIEW
 from recidiviz.calculator.bq.dashboard.views.supervision.supervision_termination_by_type_by_month import \
     SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_VIEW
 
 SUPERVISION_VIEWS = [
+    SUPERVISION_POPULATION_BY_AGE_60_DAYS_VIEW,
+    SUPERVISION_POPULATION_BY_GENDER_60_DAYS_VIEW,
+    SUPERVISION_POPULATION_BY_LSIR_60_DAYS_VIEW,
     SUPERVISION_POPULATION_BY_RACE_AND_ETHNICITY_60_DAYS_VIEW,
     SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_VIEW
 ]
