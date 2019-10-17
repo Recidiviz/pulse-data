@@ -25,15 +25,14 @@ from google.cloud import bigquery
 from google.cloud import exceptions
 
 from recidiviz.calculator.bq import bq_load
-from recidiviz.calculator.bq.export_manager import ModuleType
+from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType
 
 
 class BqLoadTest(unittest.TestCase):
     """Tests for bq_load.py."""
 
-
     def setUp(self):
-        self.module = ModuleType.COUNTY
+        self.schema_type = SchemaType.JAILS
 
         self.mock_project_id = 'fake-recidiviz-project'
         self.mock_dataset_id = 'fake-dataset'
@@ -76,7 +75,7 @@ class BqLoadTest(unittest.TestCase):
     def test_start_table_load_creates_dataset(self):
         """Test that start_table_load tries to create a parent dataset."""
         bq_load.start_table_load(self.mock_dataset, self.mock_table_id,
-                                 self.module)
+                                 self.schema_type)
         self.mock_bq_utils.create_dataset_if_necessary.assert_called_with(
             self.mock_dataset)
 
@@ -85,20 +84,20 @@ class BqLoadTest(unittest.TestCase):
         """Test that start_table_load fails if its table is not defined."""
         with self.assertLogs(level='ERROR'):
             bq_load.start_table_load(self.mock_dataset, 'nonsense_table',
-                                     self.module)
+                                     self.schema_type)
 
 
     def test_start_table_load_fails_if_invalid_module(self):
         """Test that start_table_load fails if its table is not defined."""
         with self.assertLogs(level='ERROR'):
             bq_load.start_table_load(self.mock_dataset, self.mock_table_id,
-                                     module='nonsense_module')
+                                     schema_type='nonsense_schema')
 
 
     def test_start_table_load_table_load_called(self):
         """Test that start_table_load calls load_table_from_uri."""
         bq_load.start_table_load(self.mock_dataset, self.mock_table_id,
-                                 self.module)
+                                 self.schema_type)
 
         mock_client = self.mock_bq_utils.client.return_value
         mock_client.load_table_from_uri.assert_called_with(
@@ -131,7 +130,7 @@ class BqLoadTest(unittest.TestCase):
         mock_wait.return_value = True
 
         success = bq_load.start_table_load_and_wait(
-            self.mock_dataset, self.mock_table_id, self.module)
+            self.mock_dataset, self.mock_table_id, self.schema_type)
 
         mock_start.assert_called()
         mock_wait.assert_called()
@@ -146,7 +145,7 @@ class BqLoadTest(unittest.TestCase):
         mock_start.return_value = None
 
         success = bq_load.start_table_load_and_wait(
-            self.mock_dataset, self.mock_table_id, self.module)
+            self.mock_dataset, self.mock_table_id, self.schema_type)
 
         mock_start.assert_called()
         mock_wait.assert_not_called()
@@ -169,10 +168,10 @@ class BqLoadTest(unittest.TestCase):
 
         bq_load.load_all_tables_concurrently(
             self.mock_dataset, self.mock_export_config.COUNTY_TABLES_TO_EXPORT,
-            self.module)
+            self.schema_type)
 
         start_calls = [
-            mock.call.start(self.mock_dataset, table.name, self.module)
+            mock.call.start(self.mock_dataset, table.name, self.schema_type)
             for table in self.mock_export_config.COUNTY_TABLES_TO_EXPORT
         ]
         wait_calls = [

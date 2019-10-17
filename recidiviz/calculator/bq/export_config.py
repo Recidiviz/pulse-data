@@ -41,13 +41,13 @@ from recidiviz.utils import metadata
 COUNTY_TABLES_TO_EXCLUDE_FROM_EXPORT = tuple( # type: ignore
     # List tables to be excluded from export here. For example:
     # schema.FakePersonHistoryTable
-    table for table in schema_utils.get_state_table_classes()
 )
 
-# By default, all tables in the various schema.py modules are exported
+# By default, all tables in the county/aggregate schema.py modules are exported
 # unless listed in COUNTY_TABLES_TO_EXCLUDE_FROM_EXPORT above.
 COUNTY_TABLES_TO_EXPORT = tuple(
-    table for table in schema_utils.get_all_table_classes()
+    table for table in [*schema_utils.get_aggregate_table_classes(),
+                        *schema_utils.get_county_table_classes()]
     if table not in COUNTY_TABLES_TO_EXCLUDE_FROM_EXPORT
 )
 
