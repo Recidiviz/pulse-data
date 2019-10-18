@@ -29,7 +29,7 @@ class ${class_name}(BaseScraper):
         super(${class_name}, self).__init__('$region')
 
     def populate_data(self, content, task: Task,
-                      ingest_info: IngestInfo) -> Optional[ScrapedData]:
+                      ingest_info: IngestInfo) -> ScrapedData:
         pass
 
     def get_more_tasks(self, content, task: Task) -> List[Task]:
