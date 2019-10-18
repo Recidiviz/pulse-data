@@ -28,6 +28,8 @@ from recidiviz.calculator.bq.dashboard.views.reference.us_nd.ftr_referrals_60_da
     FTR_REFERRAL_VIEW
 from recidiviz.calculator.bq.dashboard.views.reference.state_person_race_and_ethnicity import \
     STATE_PERSON_RACE_AND_ETHNICITY_VIEW
+from recidiviz.calculator.bq.dashboard.views.reference.supervision_success_by_person import \
+    SUPERVISION_SUCCESS_BY_PERSON_VIEW
 from recidiviz.calculator.bq.dashboard.views.reference.supervision_termination_by_person import \
     SUPERVISION_TERMINATION_BY_PERSON_VIEW
 from recidiviz.calculator.bq.dashboard.views.reference.persons_with_most_recent_lsir import \
@@ -38,6 +40,7 @@ REF_VIEWS = [
     INCARCERATION_ADMISSIONS_60_DAYS_VIEW,
     STATE_PERSON_RACE_AND_ETHNICITY_VIEW,
     SUPERVISION_TERMINATION_BY_PERSON_VIEW,
+    SUPERVISION_SUCCESS_BY_PERSON_VIEW,
     PERSONS_ON_SUPERVISION_60_DAYS_VIEW,
     PERSONS_WITH_MOST_RECENT_LSIR_VIEW,
     FTR_REFERRAL_VIEW,
