@@ -713,6 +713,13 @@ class _StatePersonSharedColumns:
 
     residency_status = Column(residency_status)
 
+    @declared_attr
+    def supervising_officer_id(self):
+        return Column(
+            Integer,
+            ForeignKey('state_agent.agent_id'),
+            nullable=True)
+
 
 class StatePerson(StateBase, _StatePersonSharedColumns):
     """Represents a StatePerson in the state SQL schema"""
@@ -733,6 +740,8 @@ class StatePerson(StateBase, _StatePersonSharedColumns):
         'StateProgramAssignment', backref='person', lazy='selectin')
     sentence_groups = relationship(
         'StateSentenceGroup', backref='person', lazy='selectin')
+    supervising_officer = relationship(
+        'StateAgent', uselist=False, lazy='selectin')
 
 
 class StatePersonHistory(StateBase,

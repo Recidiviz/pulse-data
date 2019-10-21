@@ -134,7 +134,8 @@ class UsNdController(CsvGcsfsDirectIngestController):
             'docstars_offenders': [self._label_external_id_as_elite,
                                    self._enrich_addresses,
                                    self._enrich_sorac_assessments,
-                                   self._copy_name_to_alias],
+                                   self._copy_name_to_alias,
+                                   self._add_supervising_officer],
             'docstars_offendercasestable': [
                 self._concatenate_docstars_length_periods,
                 self._record_revocation,
@@ -305,6 +306,22 @@ class UsNdController(CsvGcsfsDirectIngestController):
                                       'state_aliases')
 
     @staticmethod
+    def _add_supervising_officer(row: Dict[str, str],
+                                 extracted_objects: List[IngestObject],
+                                 _cache: IngestObjectCache):
+        """Adds the current supervising officer onto the extracted person."""
+        supervising_officer_id = row.get('AGENT')
+        if not supervising_officer_id:
+            return
+        for extracted_object in extracted_objects:
+            if isinstance(extracted_object, StatePerson):
+                agent_to_create = StateAgent(
+                    state_agent_id=supervising_officer_id,
+                    agent_type=StateAgentType.SUPERVISION_OFFICER.value)
+                _create_if_not_exists(
+                    agent_to_create, extracted_object, 'supervising_officer')
+
+    @staticmethod
     def _rationalize_race_and_ethnicity(_, cache: Optional[IngestObjectCache]):
         """For a person whose provided race is HISPANIC, we set the ethnicity to
         HISPANIC, and the race will be cleared."""
@@ -323,7 +340,6 @@ class UsNdController(CsvGcsfsDirectIngestController):
                 else:
                     updated_person_races.append(person_race)
             person.state_person_races = updated_person_races
-
 
     @staticmethod
     def _rationalize_life_sentence(row: Dict[str, str],
@@ -1218,7 +1234,7 @@ def _create_if_not_exists(obj: IngestObject,
     already exist.
     """
 
-    existing_objects = getattr(parent_obj, objs_field_name, obj)
+    existing_objects = getattr(parent_obj, objs_field_name) or []
     if isinstance(existing_objects, IngestObject):
         existing_objects = [existing_objects]
 

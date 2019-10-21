@@ -145,6 +145,12 @@ def generate_full_graph_state_person(
 
     person.sentence_groups = [sentence_group]
 
+    person_supervising_officer = entities.StateAgent.new_with_defaults(
+        external_id='SUPERVISING_OFFICER_ID',
+        full_name='SUPERVISING OFFICER',
+    )
+    person.supervising_officer = person_supervising_officer
+
     incarceration_sentence = \
         entities.StateIncarcerationSentence.new_with_defaults(
             external_id='BOOK_ID1234-1',

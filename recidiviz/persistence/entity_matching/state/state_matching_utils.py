@@ -717,6 +717,23 @@ def _get_closest_matching_incarceration_period(
     return None
 
 
+def add_supervising_officer_to_open_supervision_periods(
+        persons: List[schema.StatePerson]):
+    """For each person in the provided |persons|, adds the supervising_officer
+    from the person entity onto all open StateSupervisionPeriods.
+    """
+    for person in persons:
+        if not person.supervising_officer:
+            continue
+
+        supervision_periods = _get_all_entities_of_cls(
+            [person], schema.StateSupervisionPeriod)
+        for supervision_period in supervision_periods:
+            if not supervision_period.termination_date:
+                supervision_period.supervising_officer = \
+                    person.supervising_officer
+
+
 def associate_revocation_svrs_with_ips(
         merged_persons: List[schema.StatePerson]):
     """
