@@ -329,6 +329,9 @@ class TestIngestUtils:
         assessment = person.create_state_assessment()
         assessment.state_assessment_id = 'assessment1'
         assessment.assessment_score = '42'
+        supervising_officer = person.create_state_agent()
+        supervising_officer.state_agent_id = 'supervising_officer1'
+        supervising_officer.full_name = 'Officer Supervising'
 
         assessment_agent = assessment.create_state_agent()
         assessment_agent.state_agent_id = 'agent1'
@@ -435,6 +438,10 @@ class TestIngestUtils:
         assessment_pb = expected_proto.state_assessments.add()
         assessment_pb.state_assessment_id = 'assessment1'
         assessment_pb.assessment_score = '42'
+        person_pb.supervising_officer_id = 'supervising_officer1'
+        supervising_officer_pb = expected_proto.state_agents.add()
+        supervising_officer_pb.state_agent_id = 'supervising_officer1'
+        supervising_officer_pb.full_name = 'Officer Supervising'
 
         assessment_pb.conducting_agent_id = 'agent1'
         assessment_agent_pb = expected_proto.state_agents.add()

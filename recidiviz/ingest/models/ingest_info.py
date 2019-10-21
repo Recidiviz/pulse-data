@@ -498,7 +498,8 @@ class StatePerson(IngestObject):
             residency_status=None, state_person_races=None,
             state_person_ethnicities=None, state_aliases=None,
             state_person_external_ids=None, state_assessments=None,
-            state_sentence_groups=None, state_program_assignments=None):
+            state_sentence_groups=None, state_program_assignments=None,
+            supervising_officer=None):
         self.state_person_id: Optional[str] = state_person_id
         self.full_name: Optional[str] = full_name
         self.surname: Optional[str] = surname
@@ -523,9 +524,10 @@ class StatePerson(IngestObject):
             state_sentence_groups or []
         self.state_program_assignments: List[StateProgramAssignment] = \
             state_program_assignments or []
+        self.supervising_officer: Optional[StateAgent] = supervising_officer
 
     def __setattr__(self, name, value):
-        restricted_setattr(self, 'state_program_assignments', name, value)
+        restricted_setattr(self, 'supervising_officer', name, value)
 
     def create_state_person_race(self, **kwargs) -> 'StatePersonRace':
         race = StatePersonRace(**kwargs)
@@ -564,6 +566,10 @@ class StatePerson(IngestObject):
         self.state_program_assignments.append(program_assignment)
         return program_assignment
 
+    def create_state_agent(self, **kwargs) -> 'StateAgent':
+        self.supervising_officer = StateAgent(**kwargs)
+        return self.supervising_officer
+
     def get_state_person_race_by_id(self, state_person_race_id) \
             -> Optional['StatePersonRace']:
         return next((spr for spr in self.state_person_races
@@ -600,6 +606,8 @@ class StatePerson(IngestObject):
     def prune(self) -> 'StatePerson':
         self.state_sentence_groups = [sg.prune() for sg
                                       in self.state_sentence_groups if sg]
+        if not self.supervising_officer:
+            self.supervising_officer = None
         return self
 
     def sort(self):

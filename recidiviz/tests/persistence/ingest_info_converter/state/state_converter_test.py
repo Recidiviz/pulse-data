@@ -133,6 +133,10 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             full_name='AGENT TERMY',
             agent_type='SUPERVISION_OFFICER'
         )
+        ingest_info.state_agents.add(
+            state_agent_id='AGENT_ID_SUPERVISING',
+            full_name='SUPERVISING AGENT',
+        )
 
         # We expect the external_ids coming in to have the format
         # [type]:[external_id]
@@ -148,7 +152,8 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                                            ii_person_external_id_2],
             state_assessment_ids=['ASSESSMENT_ID'],
             state_program_assignment_ids=['PROGRAM_ASSIGNMENT_ID'],
-            state_sentence_group_ids=['GROUP_ID1', 'GROUP_ID2']
+            state_sentence_group_ids=['GROUP_ID1', 'GROUP_ID2'],
+            supervising_officer_id='AGENT_ID_SUPERVISING',
         )
         ingest_info.state_person_races.add(
             state_person_race_id='RACE_ID1',
@@ -480,6 +485,10 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                     state_code='US_ND'
                 ),
             ],
+            supervising_officer=StateAgent.new_with_defaults(
+                external_id='AGENT_ID_SUPERVISING',
+                state_code='US_ND',
+                full_name='{"full_name": "SUPERVISING AGENT"}'),
             assessments=[assessment],
             program_assignments=[program_assignment],
             sentence_groups=[

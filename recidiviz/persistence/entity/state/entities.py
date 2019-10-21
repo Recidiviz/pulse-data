@@ -214,6 +214,7 @@ class StatePerson(Entity, BuildableAttr, DefaultableAttr):
     assessments: List['StateAssessment'] = attr.ib(factory=list)
     program_assignments: List['StateProgramAssignment'] = attr.ib(factory=list)
     sentence_groups: List['StateSentenceGroup'] = attr.ib(factory=list)
+    supervising_officer: Optional['StateAgent'] = attr.ib(default=None)
 
     # NOTE: Eventually we might have a relationship to objects holding
     # pre-sentence information so we can track encounters with the justice

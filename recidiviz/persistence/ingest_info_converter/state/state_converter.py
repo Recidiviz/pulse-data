@@ -168,6 +168,13 @@ class StateConverter(BaseConverter[entities.StatePerson]):
         ]
         state_person_builder.sentence_groups = converted_sentence_groups
 
+        if ingest_state_person.supervising_officer_id:
+            converted_supervising_officer = state_agent.convert(
+                self.agents[ingest_state_person.supervising_officer_id],
+                self.metadata)
+            state_person_builder.supervising_officer = \
+                converted_supervising_officer
+
         return state_person_builder.build()
 
     def _convert_sentence_group(self,
