@@ -46,7 +46,7 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import \
     nd_is_incarceration_period_match, nd_update_temporary_holds, \
     convert_to_placeholder, is_multiple_id_entity, \
     get_external_id_keys_from_multiple_id_entity, db_id_or_object_id, \
-    get_multiple_id_classes
+    get_multiple_id_classes, add_supervising_officer_to_open_supervision_periods
 from recidiviz.persistence.entity.entity_utils import is_placeholder, \
     get_set_entity_field_names, get_all_core_entity_field_names, \
     get_all_db_objs_from_tree, get_all_db_objs_from_trees
@@ -266,6 +266,11 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
 
         logging.info("[Entity matching] Associate revocation SVRS wtih IPs")
         associate_revocation_svrs_with_ips(matched_entities.people)
+
+        logging.info('[Entity matching] Moving superivsing officer onto open '
+                     'supervision periods')
+        add_supervising_officer_to_open_supervision_periods(
+            matched_entities.people)
         return matched_entities
 
     # TODO(2037): Move state specific logic into its own file.

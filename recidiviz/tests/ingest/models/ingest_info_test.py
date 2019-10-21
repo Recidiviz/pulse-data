@@ -73,6 +73,7 @@ class TestIngestInfo(unittest.TestCase):
             'state_person_external_ids_ids', 'state_person_external_ids',
             'state_assessment_ids', 'state_assessments',
             'state_program_assignment_ids', 'state_program_assignments',
+            'supervising_officer_id', 'supervising_officer',
             'state_sentence_group_ids', 'state_sentence_groups']
         assessment_fields_ignore = ['conducting_agent_id', 'conducting_agent']
         sentence_group_fields_ignore = \

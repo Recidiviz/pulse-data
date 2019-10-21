@@ -1085,7 +1085,10 @@ class TestUsNdController(unittest.TestCase):
                                        given_names='Solange',
                                        middle_names='P',
                                        alias_type='GIVEN_NAME')
-                        ]),
+                        ],
+                        supervising_officer=StateAgent(
+                            state_agent_id='74',
+                            agent_type='SUPERVISION_OFFICER')),
             StatePerson(state_person_id='92237',
                         surname='Hopkins',
                         given_names='Jon',
@@ -1111,7 +1114,10 @@ class TestUsNdController(unittest.TestCase):
                             StateAlias(surname='Hopkins',
                                        given_names='Jon',
                                        alias_type='GIVEN_NAME')
-                        ]),
+                        ],
+                        supervising_officer=StateAgent(
+                            state_agent_id='40',
+                            agent_type='SUPERVISION_OFFICER')),
             StatePerson(state_person_id='92307',
                         surname='Sandison',
                         given_names='Mike',
@@ -1130,7 +1136,10 @@ class TestUsNdController(unittest.TestCase):
                             StateAlias(surname='Sandison',
                                        given_names='Mike',
                                        alias_type='GIVEN_NAME')
-                        ])
+                        ],
+                        supervising_officer=StateAgent(
+                            state_agent_id='70',
+                            agent_type='SUPERVISION_OFFICER')),
         ])
 
         self.run_parse_file_test(expected, 'docstars_offenders')
@@ -1196,8 +1205,6 @@ class TestUsNdController(unittest.TestCase):
                                         state_supervision_periods=[
                                             StateSupervisionPeriod(
                                                 start_date='7/17/2014',
-                                                termination_date='10/6/2014',
-                                                termination_reason='7',
                                                 county_code='US_ND_CASS')
                                         ],
                                         state_charges=[
@@ -2786,6 +2793,10 @@ class TestUsNdController(unittest.TestCase):
         ######################################
         # Arrange
         # TODO(2156): custom matching logic for assessments?
+        person_1_supervising_officer = entities.StateAgent.new_with_defaults(
+            agent_type=StateAgentType.SUPERVISION_OFFICER,
+            agent_type_raw_text='SUPERVISION_OFFICER',
+            external_id='40', state_code=_STATE_CODE)
         person_1_assessment_1 = entities.StateAssessment.new_with_defaults(
             assessment_level=StateAssessmentLevel.HIGH,
             assessment_level_raw_text='HIGH',
@@ -2807,7 +2818,12 @@ class TestUsNdController(unittest.TestCase):
         person_1.assessments = [person_1_assessment_1]
         person_1.current_address = '123 2ND ST N, FARGO, ND, 58102'
         person_1.residency_status = ResidencyStatus.PERMANENT
+        person_1.supervising_officer = person_1_supervising_officer
 
+        person_2_supervising_officer = entities.StateAgent.new_with_defaults(
+            agent_type=StateAgentType.SUPERVISION_OFFICER,
+            agent_type_raw_text='SUPERVISION_OFFICER',
+            external_id='74', state_code=_STATE_CODE)
         person_2_assessment_1 = entities.StateAssessment.new_with_defaults(
             assessment_level=StateAssessmentLevel.MODERATE,
             assessment_level_raw_text='MODERATE',
@@ -2835,6 +2851,7 @@ class TestUsNdController(unittest.TestCase):
         person_2.current_address = '000 1ST AVE APT 1, WEST FARGO, ND, 58078'
         person_2.gender_raw_text = '2'
         person_2.residency_status = ResidencyStatus.PERMANENT
+        person_2.supervising_officer = person_2_supervising_officer
 
         person_6 = entities.StatePerson.new_with_defaults(
             full_name='{"given_names": "MIKE", "surname": "SANDISON"}',
@@ -2859,9 +2876,14 @@ class TestUsNdController(unittest.TestCase):
             alias_type_raw_text='GIVEN_NAME',
             state_code=_STATE_CODE,
             person=person_6)
+        person_6_supervising_officer = entities.StateAgent.new_with_defaults(
+            agent_type=StateAgentType.SUPERVISION_OFFICER,
+            agent_type_raw_text='SUPERVISION_OFFICER',
+            external_id='70', state_code=_STATE_CODE)
         person_6.aliases = [person_6_alias]
         person_6.external_ids = [person_6_external_id]
         person_6.ethnicities = [person_6_ethnicity]
+        person_6.supervising_officer = person_6_supervising_officer
         expected_people.append(person_6)
 
         # Act
@@ -2897,10 +2919,7 @@ class TestUsNdController(unittest.TestCase):
         supervision_period_117110 = \
             entities.StateSupervisionPeriod.new_with_defaults(
                 start_date=datetime.date(year=2014, month=7, day=17),
-                termination_date=datetime.date(year=2014, month=10, day=6),
-                termination_reason=
-                StateSupervisionPeriodTerminationReason.EXPIRATION,
-                termination_reason_raw_text='7',
+                supervising_officer=person_1_supervising_officer,
                 status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
                 state_code=_STATE_CODE,
                 county_code='US_ND_CASS',
