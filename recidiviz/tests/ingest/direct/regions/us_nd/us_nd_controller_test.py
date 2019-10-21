@@ -1204,6 +1204,8 @@ class TestUsNdController(unittest.TestCase):
                                         max_length='92d',
                                         state_supervision_periods=[
                                             StateSupervisionPeriod(
+                                                state_supervision_period_id=
+                                                '117110',
                                                 start_date='7/17/2014',
                                                 county_code='US_ND_CASS')
                                         ],
@@ -1226,6 +1228,8 @@ class TestUsNdController(unittest.TestCase):
                                         max_length='580d',
                                         state_supervision_periods=[
                                             StateSupervisionPeriod(
+                                                state_supervision_period_id=
+                                                '117111',
                                                 start_date='7/17/2014',
                                                 termination_date='12/8/2014',
                                                 termination_reason='9',
@@ -1266,6 +1270,8 @@ class TestUsNdController(unittest.TestCase):
                                         projected_completion_date='3/23/2019',
                                         state_supervision_periods=[
                                             StateSupervisionPeriod(
+                                                state_supervision_period_id=
+                                                '140408',
                                                 start_date='3/24/2017',
                                                 termination_date='2/27/2018',
                                                 termination_reason='9',
@@ -1294,6 +1300,8 @@ class TestUsNdController(unittest.TestCase):
                                         projected_completion_date='3/23/2015',
                                         state_supervision_periods=[
                                             StateSupervisionPeriod(
+                                                state_supervision_period_id=
+                                                '147777',
                                                 start_date='3/24/2013',
                                                 termination_date='2/27/2016',
                                                 termination_reason='9',
@@ -2918,6 +2926,7 @@ class TestUsNdController(unittest.TestCase):
         # TODO(2155): no external id for these StateSupervisionPeriods
         supervision_period_117110 = \
             entities.StateSupervisionPeriod.new_with_defaults(
+                external_id='117110',
                 start_date=datetime.date(year=2014, month=7, day=17),
                 supervising_officer=person_1_supervising_officer,
                 status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
@@ -2972,6 +2981,7 @@ class TestUsNdController(unittest.TestCase):
 
         supervision_period_117111 = \
             entities.StateSupervisionPeriod.new_with_defaults(
+                external_id='117111',
                 start_date=datetime.date(year=2014, month=7, day=17),
                 termination_date=datetime.date(year=2014, month=12, day=8),
                 termination_reason=
@@ -3038,6 +3048,7 @@ class TestUsNdController(unittest.TestCase):
                 sentence_group=sentence_group_person_2_placeholder_ss)
         supervision_period_140408 = \
             entities.StateSupervisionPeriod.new_with_defaults(
+                external_id='140408',
                 start_date=datetime.date(year=2017, month=3, day=24),
                 termination_date=datetime.date(year=2018, month=2, day=27),
                 termination_reason=
@@ -3104,6 +3115,7 @@ class TestUsNdController(unittest.TestCase):
                 sentence_group=sentence_group_person_2_placeholder_ss)
         supervision_period_147777 = \
             entities.StateSupervisionPeriod.new_with_defaults(
+                external_id='147777',
                 start_date=datetime.date(year=2013, month=3, day=24),
                 termination_date=datetime.date(year=2016, month=2, day=27),
                 termination_reason=
