@@ -26,15 +26,15 @@ from recidiviz.ingest.direct.regions.us_tx_brazos.us_tx_brazos_controller \
 from recidiviz.ingest.models.ingest_info import Arrest, Bond, Booking, Charge, \
     Hold, Person, IngestInfo
 from recidiviz.tests.ingest import fixtures
-from recidiviz.tests.utils.individual_ingest_test import IndividualIngestTest
 from recidiviz.tests.ingest.direct.direct_ingest_util import \
-    build_gcsfs_controller_for_tests, ingest_args_for_fixture_file
+    add_paths_with_tags_and_process, build_gcsfs_controller_for_tests, \
+    ingest_args_for_fixture_file
+from recidiviz.tests.utils.individual_ingest_test import IndividualIngestTest
 from recidiviz.utils import regions
-
 
 FIXTURE_PATH_PREFIX = 'direct/regions/us_tx_brazos'
 _ROSTER_PATH_CONTENTS = fixtures.as_string(FIXTURE_PATH_PREFIX,
-                                           'daily_data.csv')
+                                           'VERABrazosJailData.csv').split('\n')
 _FAKE_START_TIME = datetime.datetime(year=2019, month=1, day=2)
 
 
@@ -49,7 +49,8 @@ class UsTxBrazosControllerTest(IndividualIngestTest, TestCase):
                                                       FIXTURE_PATH_PREFIX,
                                                       run_async=False)
 
-        args = ingest_args_for_fixture_file(controller, 'daily_data.csv')
+        args = ingest_args_for_fixture_file(controller,
+                                            'VERABrazosJailData.csv')
 
         # pylint:disable=protected-access
         ingest_info = controller._parse(args, _ROSTER_PATH_CONTENTS)
@@ -63,7 +64,7 @@ class UsTxBrazosControllerTest(IndividualIngestTest, TestCase):
                     place_of_residence='Brazos',
                     bookings=[
                         Booking(
-                            booking_id='321',
+                            booking_id='321 (Individual ID: 12345)',
                             admission_date='3/31/2019 12:00:00 AM',
                             custody_status=
                             'L. Pretrial State Jail Felons (SJF)',
@@ -76,7 +77,7 @@ class UsTxBrazosControllerTest(IndividualIngestTest, TestCase):
                                     offense_date='3/25/2019 12:00:00 AM',
                                     statute='481.121(B)(1) HSC',
                                     name='17.16 DET PEND ORD/POSS MARIJ <2OZ',
-                                    degree='Class B Misdemeanor',
+                                    level='B',
                                     charge_class='MIS',
                                     status='Intake',
                                     bond=Bond(
@@ -90,7 +91,7 @@ class UsTxBrazosControllerTest(IndividualIngestTest, TestCase):
                                     statute='483.041 HSC',
                                     name=
                                     '17.16 DET PEND ORD/POSS DANGEROUS DRUG',
-                                    degree='Class A Misdemeanor',
+                                    level='A',
                                     charge_class='MIS',
                                     status='Intake',
                                     bond=Bond(
@@ -103,7 +104,7 @@ class UsTxBrazosControllerTest(IndividualIngestTest, TestCase):
                                     offense_date='1/20/2019 12:00:00 AM',
                                     statute='31.03(e)(2)(A)',
                                     name='THEFT PROP >=$100<$750',
-                                    degree='Class B Misdemeanor',
+                                    level='B',
                                     charge_class='MIS',
                                     status='Accepted'),
                                 Charge(
@@ -111,7 +112,7 @@ class UsTxBrazosControllerTest(IndividualIngestTest, TestCase):
                                     offense_date='3/30/2019 12:00:00 AM',
                                     statute='30.02(C)(1) PC',
                                     name='BURGLARY OF BUILDING',
-                                    degree='State Jail Felony',
+                                    level='State Jail Felony',
                                     charge_class='FEL',
                                     status='Warrant Issued'),
                                 Charge(
@@ -119,7 +120,7 @@ class UsTxBrazosControllerTest(IndividualIngestTest, TestCase):
                                     offense_date='3/25/2019 12:00:00 AM',
                                     statute='481.116(B) HSC',
                                     name='POSS CS PG 2 LESS THAN ONE GRAM',
-                                    degree='State Jail Felony',
+                                    level='State Jail Felony',
                                     charge_class='FEL',
                                     status='Warrant Issued'),
                                 Charge(
@@ -127,7 +128,7 @@ class UsTxBrazosControllerTest(IndividualIngestTest, TestCase):
                                     offense_date='3/23/2019 12:00:00 AM',
                                     statute='30.02(C)(1) PC',
                                     name='BURGLARY OF BUILDING',
-                                    degree='State Jail Felony',
+                                    level='State Jail Felony',
                                     charge_class='FEL',
                                     status='Warrant Issued'),
                                 Charge(
@@ -135,7 +136,7 @@ class UsTxBrazosControllerTest(IndividualIngestTest, TestCase):
                                     offense_date='3/24/2019 12:00:00 AM',
                                     statute='30.02(C)(1) PC',
                                     name='BURGLARY OF BUILDING',
-                                    degree='State Jail Felony',
+                                    level='State Jail Felony',
                                     charge_class='FEL',
                                     status='Warrant Issued')])]),
                 Person(
@@ -146,7 +147,7 @@ class UsTxBrazosControllerTest(IndividualIngestTest, TestCase):
                     place_of_residence='Brazos',
                     bookings=[
                         Booking(
-                            booking_id='432',
+                            booking_id='432 (Individual ID: 23456)',
                             admission_date='5/14/2018 12:00:00 AM',
                             custody_status=
                             'L. Pretrial State Jail Felons (SJF)',
@@ -156,7 +157,6 @@ class UsTxBrazosControllerTest(IndividualIngestTest, TestCase):
                             charges=[
                                 Charge(
                                     charge_id='8',
-                                    statute='NA',
                                     name='Parole Violation/Bl/Wrnt/tty',
                                     degree='Felony Unassigned',
                                     charge_class='FEL'),
@@ -165,15 +165,16 @@ class UsTxBrazosControllerTest(IndividualIngestTest, TestCase):
                                     offense_date='5/14/2018 12:00:00 AM',
                                     statute='38.04(B)(1) PC',
                                     name='EVADING ARREST DET W/PREV CONVICTION',
-                                    degree='State Jail Felony',
+                                    level='State Jail Felony',
                                     charge_class='FEL',
                                     status='Defendant Indicted'),
                                 Charge(
                                     charge_id='10',
                                     statute='NON REPORTABLE',
                                     name='Awaiting Trans To Dept State '
-                                    'Health Services',
-                                    degree='Not Applicable')],
+                                         'Health Services',
+                                    degree='Not Applicable',
+                                    bond=Bond(bond_id='2', amount='20'))],
                             holds=[
                                 Hold(
                                     jurisdiction_name='TDC Hold')])])])
@@ -187,3 +188,12 @@ class UsTxBrazosControllerTest(IndividualIngestTest, TestCase):
         )
 
         self.validate_ingest(ingest_info, expected_info, metadata)
+
+    def test_run_full_ingest_all_files(self):
+        controller = build_gcsfs_controller_for_tests(UsTxBrazosController,
+                                                      FIXTURE_PATH_PREFIX,
+                                                      run_async=False)
+
+        # pylint:disable=protected-access
+        file_tags = sorted(controller._get_file_tag_rank_list())
+        add_paths_with_tags_and_process(self, controller, file_tags)
