@@ -28,6 +28,7 @@ MAPPINGS = set()
 
 MAPPINGS.add(Mappings(
     fips=CaFacilityAggregate.fips,
+    facility_name=CaFacilityAggregate.facility_name,
     report_date=CaFacilityAggregate.report_date,
     aggregation_window=CaFacilityAggregate.aggregation_window,
     resident_population=None,
@@ -83,6 +84,7 @@ MAPPINGS.add(Mappings(
 
 MAPPINGS.add(Mappings(
     fips=FlFacilityAggregate.fips,
+    facility_name=FlFacilityAggregate.facility_name,
     report_date=FlFacilityAggregate.report_date,
     aggregation_window=FlFacilityAggregate.aggregation_window,
     resident_population=None,
@@ -138,6 +140,7 @@ MAPPINGS.add(Mappings(
 
 MAPPINGS.add(Mappings(
     fips=GaCountyAggregate.fips,
+    facility_name=GaCountyAggregate.county_name,
     report_date=GaCountyAggregate.report_date,
     aggregation_window=GaCountyAggregate.aggregation_window,
     resident_population=None,
@@ -195,6 +198,7 @@ MAPPINGS.add(Mappings(
 
 MAPPINGS.add(Mappings(
     fips=HiFacilityAggregate.fips,
+    facility_name=HiFacilityAggregate.facility_name,
     report_date=HiFacilityAggregate.report_date,
     aggregation_window=HiFacilityAggregate.aggregation_window,
     resident_population=None,
@@ -252,6 +256,7 @@ MAPPINGS.add(Mappings(
 
 MAPPINGS.add(Mappings(
     fips=KyFacilityAggregate.fips,
+    facility_name=KyFacilityAggregate.facility_name,
     report_date=KyFacilityAggregate.report_date,
     aggregation_window=KyFacilityAggregate.aggregation_window,
     resident_population=None,
@@ -324,6 +329,7 @@ MAPPINGS.add(Mappings(
 
 MAPPINGS.add(Mappings(
     fips=NyFacilityAggregate.fips,
+    facility_name=NyFacilityAggregate.facility_name,
     report_date=NyFacilityAggregate.report_date,
     aggregation_window=NyFacilityAggregate.aggregation_window,
     resident_population=None,
@@ -379,6 +385,7 @@ MAPPINGS.add(Mappings(
 
 MAPPINGS.add(Mappings(
     fips=TxCountyAggregate.fips,
+    facility_name=TxCountyAggregate.facility_name,
     report_date=TxCountyAggregate.report_date,
     aggregation_window=TxCountyAggregate.aggregation_window,
     resident_population=None,
@@ -434,6 +441,7 @@ MAPPINGS.add(Mappings(
 
 MAPPINGS.add(Mappings(
     fips=PaFacilityPopAggregate.fips,
+    facility_name=PaFacilityPopAggregate.facility_name,
     report_date=PaFacilityPopAggregate.report_date,
     aggregation_window=PaFacilityPopAggregate.aggregation_window,
     resident_population=None,
@@ -489,6 +497,7 @@ MAPPINGS.add(Mappings(
 
 MAPPINGS.add(Mappings(
     fips=PaCountyPreSentencedAggregate.fips,
+    facility_name=PaCountyPreSentencedAggregate.county_name,
     report_date=PaCountyPreSentencedAggregate.report_date,
     aggregation_window=PaCountyPreSentencedAggregate.aggregation_window,
     resident_population=None,
@@ -544,6 +553,7 @@ MAPPINGS.add(Mappings(
 
 MAPPINGS.add(Mappings(
     fips=TnFacilityAggregate.fips,
+    facility_name=TnFacilityAggregate.facility_name,
     report_date=TnFacilityAggregate.report_date,
     aggregation_window=TnFacilityAggregate.aggregation_window,
     resident_population=None,

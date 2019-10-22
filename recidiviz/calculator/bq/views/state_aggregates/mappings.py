@@ -44,6 +44,7 @@ class Mappings:
     """
     # Required Primary Key
     fips: Column
+    facility_name: Column
     report_date: Column
     aggregation_window: Column
 
