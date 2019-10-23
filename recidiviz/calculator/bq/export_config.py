@@ -60,12 +60,18 @@ COUNTY_BASE_TABLES_BQ_DATASET = 'census'
 
 ######### STATE EXPORT VALUES #########
 
+# History tables that should be included in the export
+STATE_HISTORY_TABLES_TO_INCLUDE_IN_EXPORT = [
+    'state_person_history'
+]
+
 # Excluding history tables
 STATE_TABLES_TO_EXCLUDE_FROM_EXPORT = tuple( # type: ignore
     # List tables to be excluded from export here. For example:
     # schema.FakePersonHistoryTable
     table for table in schema_utils.get_state_table_classes()
-    if 'history' in table.name
+    if 'history' in table.name and
+    table.name not in STATE_HISTORY_TABLES_TO_INCLUDE_IN_EXPORT
 )
 
 # By default, all tables in the state schema.py module are exported
