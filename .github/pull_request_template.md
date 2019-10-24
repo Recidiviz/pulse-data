@@ -3,6 +3,9 @@
 > Description here
 
 ## Type of change
+
+> Check the types that apply, and delete any that are not applicable to your changes
+
 - [ ] Bug fix (non-breaking change that fixes an issue)
 - [ ] New feature (non-breaking change that adds functionality)
 - [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
