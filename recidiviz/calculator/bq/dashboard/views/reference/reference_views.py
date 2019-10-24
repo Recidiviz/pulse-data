@@ -22,8 +22,12 @@ from recidiviz.calculator.bq.dashboard.views.reference.incarceration_admissions_
     INCARCERATION_ADMISSIONS_60_DAYS_VIEW
 from recidiviz.calculator.bq.dashboard.views.reference.persons_on_supervision_60_days import \
     PERSONS_ON_SUPERVISION_60_DAYS_VIEW
+from recidiviz.calculator.bq.dashboard.views.reference.persons_on_supervision_60_days_with_county_and_revocation import \
+    PERSONS_ON_SUPERVISION_60_DAYS_WITH_COUNTY_AND_REVOCATION_VIEW
 from recidiviz.calculator.bq.dashboard.views.reference.persons_with_age import \
     PERSONS_WITH_AGE_VIEW
+from recidiviz.calculator.bq.dashboard.views.reference.persons_with_last_known_address import \
+    PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW
 from recidiviz.calculator.bq.dashboard.views.reference.us_nd.ftr_referrals_60_days import \
     FTR_REFERRAL_VIEW
 from recidiviz.calculator.bq.dashboard.views.reference.state_person_race_and_ethnicity import \
@@ -42,6 +46,8 @@ REF_VIEWS = [
     SUPERVISION_TERMINATION_BY_PERSON_VIEW,
     SUPERVISION_SUCCESS_BY_PERSON_VIEW,
     PERSONS_ON_SUPERVISION_60_DAYS_VIEW,
+    PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW,
+    PERSONS_ON_SUPERVISION_60_DAYS_WITH_COUNTY_AND_REVOCATION_VIEW,
     PERSONS_WITH_MOST_RECENT_LSIR_VIEW,
     FTR_REFERRAL_VIEW,
     PERSONS_WITH_AGE_VIEW,

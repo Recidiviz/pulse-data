@@ -16,6 +16,8 @@
 # =============================================================================
 """Views related to revocations of supervision."""
 # pylint: disable=line-too-long
+from recidiviz.calculator.bq.dashboard.views.revocations.revocation_rate_by_county_60_days import \
+    REVOCATION_RATE_BY_COUNTY_60_DAYS_VIEW
 from recidiviz.calculator.bq.dashboard.views.revocations.revocations_by_county_60_days import \
     REVOCATIONS_BY_COUNTY_60_DAYS_VIEW
 from recidiviz.calculator.bq.dashboard.views.revocations.revocations_by_month import \
@@ -33,6 +35,7 @@ from recidiviz.calculator.bq.dashboard.views.revocations.revocations_by_violatio
 
 
 REVOCATIONS_VIEWS = [
+    REVOCATION_RATE_BY_COUNTY_60_DAYS_VIEW,
     REVOCATIONS_BY_MONTH_VIEW,
     REVOCATIONS_BY_COUNTY_60_DAYS_VIEW,
     REVOCATIONS_BY_OFFICER_60_DAYS_VIEW,
