@@ -77,6 +77,9 @@ def _save_record_trees(session: Session,
     record trees. Returns the list of persisted (SchemaPersonType) objects.
     """
 
+    # TODO(2382): Once County entity matching is updated to use
+    #  DatabaseEntity objects directly, we shouldn't need to add dummy ids / do
+    #  a session merge/flush for the county code.
     if metadata.system_level == SystemLevel.COUNTY:
         check_all_objs_have_type(root_people, county_schema.Person)
         _set_dummy_booking_ids(root_people)
@@ -91,8 +94,6 @@ def _save_record_trees(session: Session,
         logging.info("Starting Session merge of [%s] persons.",
                      str(len(root_people)))
 
-        # TODO(2382): Once County entity matching is updated to use
-        #  DatabaseEntity objects directly, we shouldn't need to do this merge.
         merged_root_people = []
         for root_person in root_people:
             merged_root_people.append(session.merge(root_person))
@@ -111,6 +112,13 @@ def _save_record_trees(session: Session,
                              str(len(merged_orphaned_entities)),
                              str(len(orphaned_entities)))
 
+        logging.info("Session flush start.")
+        session.flush()
+        logging.info("Session flush complete.")
+
+        check_all_objs_have_type(merged_root_people, county_schema.Person)
+        _overwrite_dummy_booking_ids(merged_root_people)
+
     elif metadata.system_level == SystemLevel.STATE:
         merged_root_people = root_people
         if orphaned_entities:
@@ -119,14 +127,6 @@ def _save_record_trees(session: Session,
     else:
         raise PersistenceError(
             f"Unexpected system level [{metadata.system_level}]")
-
-    logging.info("Session flush start.")
-    session.flush()
-    logging.info("Session flush complete.")
-
-    if metadata.system_level == SystemLevel.COUNTY:
-        check_all_objs_have_type(merged_root_people, county_schema.Person)
-        _overwrite_dummy_booking_ids(merged_root_people)
 
     update_snapshots.update_historical_snapshots(
         session, merged_root_people, merged_orphaned_entities, metadata)

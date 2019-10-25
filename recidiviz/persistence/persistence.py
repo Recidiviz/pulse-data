@@ -268,6 +268,7 @@ def write(ingest_info, metadata):
                 #  TODO(#1665): remove once dangling PERSIST session
                 #   investigation is complete.
                 logging.info("_should_abort_ was true after entity matching")
+                session.rollback()
                 return False
 
             database.write_people(

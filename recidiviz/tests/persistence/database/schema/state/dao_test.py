@@ -471,3 +471,48 @@ class TestDao(TestCase):
         expected_people = [person]
 
         self.assertCountEqual(people, expected_people)
+
+    def test_readObjsWithExternalIdMatch(self):
+        person_1 = schema.StatePerson(person_id=1)
+        sentence_group_1 = schema.StateSentenceGroup(
+            sentence_group_id=1,
+            external_id=_EXTERNAL_ID,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
+            state_code=_STATE_CODE,
+            person=person_1)
+        person_1.sentence_groups = [sentence_group_1]
+
+        person_2 = schema.StatePerson(person_id=2)
+        sentence_group_1_dup = schema.StateSentenceGroup(
+            sentence_group_id=2,
+            external_id=_EXTERNAL_ID,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
+            state_code=_STATE_CODE,
+            person=person_2)
+        sentence_group_2 = schema.StateSentenceGroup(
+            sentence_group_id=3,
+            external_id=_EXTERNAL_ID2,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
+            state_code=_STATE_CODE,
+            person=person_2)
+        placeholder_sentence_group = schema.StateSentenceGroup(
+            sentence_group_id=4,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
+            state_code=_STATE_CODE,
+            person=person_2)
+
+        person_2.sentence_groups = [sentence_group_1_dup,
+                                    sentence_group_2,
+                                    placeholder_sentence_group]
+
+        session = SessionFactory.for_schema_base(StateBase)
+        session.add(person_1)
+        session.add(person_2)
+        session.commit()
+
+        # Act
+        external_ids = dao.read_external_ids_of_cls_with_external_id_match(
+            session, _STATE_CODE, schema.StateSentenceGroup)
+
+        # Assert
+        self.assertEqual(external_ids, [_EXTERNAL_ID])

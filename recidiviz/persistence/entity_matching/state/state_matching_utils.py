@@ -18,7 +18,8 @@
 entities."""
 import datetime
 import logging
-from typing import List, cast, Optional, Tuple, Union, Set, Type
+from collections import defaultdict
+from typing import List, cast, Optional, Tuple, Union, Set, Type, Dict
 
 from recidiviz.common.constants import enum_canonical_strings
 from recidiviz.common.constants.enum_overrides import EnumOverrides
@@ -45,6 +46,7 @@ from recidiviz.persistence.entity_matching.entity_matching_types import \
     EntityTree
 from recidiviz.persistence.errors import EntityMatchingError
 from recidiviz.utils.regions import get_region
+
 
 # TODO(2037): Move North Dakota specific methods into ND specific file.
 
@@ -390,7 +392,7 @@ def _are_consecutive(ip1: schema.StateIncarcerationPeriod,
     Note this is order sensitive, and assumes that ip1 is the first period.
     """
     return ip1.release_date and ip2.admission_date \
-        and (ip2.admission_date - ip1.release_date).days <= 2
+           and (ip2.admission_date - ip1.release_date).days <= 2
 
 
 def merge_incarceration_periods(ingested_persons: List[schema.StatePerson]):
@@ -477,8 +479,8 @@ def _merge_incomplete_periods(
         admission_period, release_period = \
             (new, old) if new.admission_date else (old, new)
         updated_external_id = admission_period.external_id \
-                      + _INCARCERATION_PERIOD_ID_DELIMITER \
-                      + release_period.external_id
+                              + _INCARCERATION_PERIOD_ID_DELIMITER \
+                              + release_period.external_id
 
     # Keep the new status if the new period is a release period
     updated_status = new.status if new.release_date else old.status
@@ -905,6 +907,18 @@ def get_external_ids_from_entity(entity: DatabaseEntity):
     return external_ids
 
 
+def get_multiparent_classes() -> List[Type[DatabaseEntity]]:
+    return [schema.StateCharge,
+            schema.StateCourtCase,
+            schema.StateAgent,
+            schema.StateIncarcerationPeriod,
+            schema.StateSupervisionPeriod,
+            schema.StateProgramAssignment,
+            schema.StateCharge,
+            schema.StateParoleDecision,
+            schema.StateSupervisionViolationResponse]
+
+
 def _get_all_entities_of_cls(
         persons: List[schema.StatePerson],
         cls: Type[DatabaseEntity]):
@@ -993,7 +1007,36 @@ def _get_root_entity_helper(
     return None
 
 
-def _read_persons(
+def read_db_entity_trees_of_cls_to_merge(
+        session: Session,
+        state_code: str,
+        schema_cls: Type[StateBase]
+) -> List[List[EntityTree]]:
+    """
+    Returns a list of lists of EntityTree where each inner list is a group
+    of EntityTrees with entities of class |schema_cls| that need to be merged
+    because their entities have the same external_id.
+
+    Will assert if schema_cls does not have a person_id or external_id field.
+    """
+    external_ids = dao.read_external_ids_of_cls_with_external_id_match(
+        session, state_code, schema_cls)
+    people = dao.read_people_by_cls_external_ids(
+        session, state_code, schema_cls, external_ids)
+    all_cls_trees = get_all_entity_trees_of_cls(people, schema_cls)
+
+    external_ids_map: Dict[str, List[EntityTree]] = defaultdict(list)
+    for tree in all_cls_trees:
+        if not isinstance(tree.entity, schema_cls):
+            raise ValueError(f'Unexpected entity type [{type(tree.entity)}]')
+
+        if tree.entity.external_id in external_ids:
+            external_ids_map[tree.entity.external_id].append(tree)
+
+    return [tree_list for _, tree_list in external_ids_map.items()]
+
+
+def read_persons(
         session: Session,
         region: str,
         ingested_people: List[schema.StatePerson]

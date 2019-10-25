@@ -115,8 +115,7 @@ class TestStateEntityMatching(TestCase):
     def assert_people_match_pre_and_post_commit(
             self, expected_people, matched_people, match_session,
             expected_unmatched_db_people=None):
-        self._assert_people_match(
-            expected_people, matched_people, match_session)
+        self._assert_people_match(expected_people, matched_people)
 
         # Sanity check that committing and reading the people from the DB
         # doesn't break/update any fields (except for DB ids).
@@ -128,28 +127,21 @@ class TestStateEntityMatching(TestCase):
         if expected_unmatched_db_people:
             expected_people.extend(expected_unmatched_db_people)
         self._assert_people_match(
-            expected_people, result_db_people, session, remove_db_ids=True)
+            expected_people, result_db_people)
 
-    def _assert_people_match(
-            self,
-            expected_people,
-            matched_people,
-            session,
-            remove_db_ids=False):
-        with session.no_autoflush:
-            converted_matched = \
-                converter.convert_schema_objects_to_entity(matched_people)
-            db_expected_with_backedges = \
-                converter.convert_entity_people_to_schema_people(
-                    expected_people)
-            expected_with_backedges = \
-                converter.convert_schema_objects_to_entity(
-                    db_expected_with_backedges)
+    def _assert_people_match(self, expected_people, matched_people):
+        converted_matched = \
+            converter.convert_schema_objects_to_entity(matched_people)
+        db_expected_with_backedges = \
+            converter.convert_entity_people_to_schema_people(expected_people)
+        expected_with_backedges = \
+            converter.convert_schema_objects_to_entity(
+                db_expected_with_backedges)
 
-            if remove_db_ids:
-                clear_db_ids(converted_matched)
-                clear_db_ids(expected_with_backedges)
-            self.assertCountEqual(expected_with_backedges, converted_matched)
+        clear_db_ids(converted_matched)
+        clear_db_ids(expected_with_backedges)
+
+        self.assertCountEqual(expected_with_backedges, converted_matched)
 
     def _session(self):
         return SessionFactory.for_schema_base(StateBase)
@@ -3608,3 +3600,125 @@ class TestStateEntityMatching(TestCase):
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
             [expected_person], matched_entities.people, session)
+
+    def test_parentChildLinkAtRootDiscoveredAfterBothWritten(self, _):
+        # Arrange 1 - Match
+        self.maxDiff = None
+        db_sentence_group = generate_sentence_group(
+            sentence_group_id=_ID,
+            status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
+            external_id=_EXTERNAL_ID,
+            state_code=_US_ND,
+            min_length_days=5,
+        )
+        db_placeholder_person = generate_person(
+            person_id=_ID, sentence_groups=[db_sentence_group])
+
+        db_external_id = generate_external_id(
+            person_external_id_id=_ID,
+            state_code=_US_ND,
+            external_id=_EXTERNAL_ID, id_type=_ID_TYPE)
+        db_person = generate_person(person_id=_ID_2,
+                                    external_ids=[db_external_id])
+
+        self._commit_to_db(db_placeholder_person, db_person)
+
+        external_id = attr.evolve(
+            self.to_entity(db_external_id), person_external_id_id=None)
+        sentence_group = attr.evolve(
+            self.to_entity(db_sentence_group),
+            sentence_group_id=None,
+            is_life=True)
+        person = attr.evolve(self.to_entity(db_person),
+                             person_id=None,
+                             full_name=_FULL_NAME,
+                             external_ids=[external_id],
+                             sentence_groups=[sentence_group])
+
+        expected_person = attr.evolve(person, person_id=db_person.person_id)
+        expected_placeholder_person = \
+            self.to_entity(generate_person(
+                person_id=db_placeholder_person.person_id))
+        expected_placeholder_sentence_group = \
+            self.to_entity(generate_sentence_group(
+                sentence_group_id=db_sentence_group.sentence_group_id,
+                person_id=db_placeholder_person.person_id,
+                state_code=_US_ND))
+        expected_placeholder_person.sentence_groups = \
+            [expected_placeholder_sentence_group]
+
+        # Act 1 - Match
+        session = self._session()
+        matched_entities = entity_matching.match(
+            session, _US_ND, [person])
+
+        # Assert 1 - Match
+        self.assert_people_match_pre_and_post_commit(
+            [expected_person, expected_placeholder_person],
+            matched_entities.people, session)
+
+    def test_parentChildLinkInSubtreeDiscoveredAfterBothWritten(self, _):
+        # Arrange 1 - Match
+        db_person = generate_person(person_id=_ID_2)
+        db_external_id = generate_external_id(
+            person_external_id_id=_ID,
+            state_code=_US_ND,
+            external_id=_EXTERNAL_ID, id_type=_ID_TYPE)
+        db_sentence_group = generate_sentence_group(
+            person=db_person,
+            sentence_group_id=_ID,
+            status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
+            external_id=_EXTERNAL_ID,
+            state_code=_US_ND,
+        )
+        db_incarceration_sentence = \
+            generate_incarceration_sentence(
+                person=db_person,
+                incarceration_sentence_id=_ID,
+                status=StateSentenceStatus.SERVING.value,
+                external_id=_EXTERNAL_ID,
+                state_code=_US_ND)
+        db_placeholder_sentence_group = generate_sentence_group(
+            person=db_person,
+            sentence_group_id=_ID_2,
+            incarceration_sentences=[db_incarceration_sentence])
+        db_person.external_ids = [db_external_id]
+        db_person.sentence_groups = [
+            db_sentence_group, db_placeholder_sentence_group]
+
+        self._commit_to_db(db_person)
+
+        placeholder_person = StatePerson.new_with_defaults()
+        sentence_group = attr.evolve(self.to_entity(db_sentence_group),
+                                     sentence_group_id=None,
+                                     is_life=True)
+        placeholder_person.sentence_groups.append(sentence_group)
+        incarceration_sentence = attr.evolve(
+            self.to_entity(db_incarceration_sentence),
+            incarceration_sentence_id=None,
+            incarceration_type=StateIncarcerationType.STATE_PRISON)
+        sentence_group.incarceration_sentences.append(incarceration_sentence)
+
+        expected_person = \
+            attr.evolve(self.to_entity(db_person),
+                        person_id=db_person.person_id)
+
+        sentence_group.sentence_group_id = db_sentence_group.sentence_group_id
+        sentence_group.person = expected_person
+        sentence_group.incarceration_sentences[0].person = expected_person
+
+        expected_person.sentence_groups[0] = sentence_group
+
+        expected_person.sentence_groups[1].incarceration_sentences[0] = \
+            self.to_entity(generate_incarceration_sentence(
+                expected_person, state_code=_US_ND))
+
+        # Act 1 - Match
+        session = self._session()
+        matched_entities = entity_matching.match(
+            session, _US_ND, [placeholder_person])
+
+        # Assert 1 - Match
+        self.assert_people_match_pre_and_post_commit(
+            [expected_person],
+            matched_entities.people, session)

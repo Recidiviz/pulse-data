@@ -92,6 +92,15 @@ class EntityTree:
                 ancestor_chain=self.ancestor_chain + [self.entity]))
         return result
 
+    def get_earliest_ancestor(self) -> DatabaseEntity:
+        """Returns the root entity of this entity tree. This is either the
+        first entity in self.ancestor_chain, or, if no entities exist in the
+        ancestor chain, self.entity itself.
+        """
+        if self.ancestor_chain:
+            return self.ancestor_chain[0]
+        return self.entity
+
     def __eq__(self, other):
         return self.entity == other.entity \
                and self.ancestor_chain == other.ancestor_chain
