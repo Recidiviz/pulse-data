@@ -22,6 +22,7 @@ from unittest import TestCase
 import attr
 import pytest
 from mock import create_autospec
+from more_itertools import one
 
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.state.state_incarceration import \
@@ -50,8 +51,9 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import \
     get_root_entity_cls, get_total_entities_of_cls, \
     associate_revocation_svrs_with_ips, admitted_for_revocation, \
     revoked_to_prison, base_entity_match, get_external_ids_of_cls, \
-    _read_persons, get_all_entity_trees_of_cls, \
-    _nd_update_temporary_holds_helper
+    read_persons, get_all_entity_trees_of_cls, \
+    _nd_update_temporary_holds_helper, \
+    read_db_entity_trees_of_cls_to_merge
 from recidiviz.persistence.entity.entity_utils import is_placeholder
 
 from recidiviz.persistence.entity_matching.entity_matching_types import \
@@ -99,6 +101,10 @@ class TestStateMatchingUtils(TestCase):
     def to_entity(self, schema_obj):
         return converter.convert_schema_object_to_entity(
             schema_obj, populate_back_edges=False)
+
+    def to_entities(self, schema_objects):
+        return converter.convert_schema_objects_to_entity(
+            schema_objects, populate_back_edges=False)
 
     def assert_schema_objects_equal(self,
                                     expected: StateBase,
@@ -1300,7 +1306,7 @@ class TestStateMatchingUtils(TestCase):
         session.commit()
 
         expected_people = [schema_person, schema_person_2]
-        people = _read_persons(session, _STATE_CODE, [])
+        people = read_persons(session, _STATE_CODE, [])
         self.assert_schema_object_lists_equal(expected_people, people)
 
     def test_readPersons_ndSpecific(self):
@@ -1341,7 +1347,7 @@ class TestStateMatchingUtils(TestCase):
         expected_people = [schema_person_with_root_entity,
                            placeholder_schema_person]
 
-        people = _read_persons(session, 'us_nd', [ingested_person])
+        people = read_persons(session, 'us_nd', [ingested_person])
         self.assert_schema_object_lists_equal(expected_people, people)
 
     def test_readPersons_ndSpecific_unexpectedRoot_raises(self):
@@ -1355,7 +1361,7 @@ class TestStateMatchingUtils(TestCase):
 
         with pytest.raises(EntityMatchingError):
             session = SessionFactory.for_schema_base(StateBase)
-            _read_persons(session, 'us_nd', [ingested_person])
+            read_persons(session, 'us_nd', [ingested_person])
 
     def test_isPlaceholder(self):
         entity = schema.StateSentenceGroup(
@@ -1385,3 +1391,57 @@ class TestStateMatchingUtils(TestCase):
 
         entity.incarceration_type_raw_text = 'PRISON'
         self.assertFalse(is_placeholder(entity))
+
+    def test_readDbEntitiesOfClsToMerge(self):
+        person_1 = schema.StatePerson(person_id=1)
+        sentence_group_1 = schema.StateSentenceGroup(
+            sentence_group_id=1,
+            external_id=_EXTERNAL_ID,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
+            state_code=_STATE_CODE,
+            person=person_1)
+        person_1.sentence_groups = [sentence_group_1]
+
+        person_2 = schema.StatePerson(person_id=2)
+        sentence_group_1_dup = schema.StateSentenceGroup(
+            sentence_group_id=2,
+            external_id=_EXTERNAL_ID,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
+            state_code=_STATE_CODE,
+            person=person_2)
+        sentence_group_2 = schema.StateSentenceGroup(
+            sentence_group_id=3,
+            external_id=_EXTERNAL_ID_2,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
+            state_code=_STATE_CODE,
+            person=person_2)
+        placeholder_sentence_group = schema.StateSentenceGroup(
+            sentence_group_id=4,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
+            state_code=_STATE_CODE,
+            person=person_2)
+
+        person_2.sentence_groups = [sentence_group_1_dup,
+                                    sentence_group_2,
+                                    placeholder_sentence_group]
+
+        session = SessionFactory.for_schema_base(StateBase)
+        session.add(person_1)
+        session.add(person_2)
+        session.commit()
+
+        # Act
+        trees_to_merge = read_db_entity_trees_of_cls_to_merge(
+            session, _STATE_CODE, schema.StateSentenceGroup)
+
+        sentence_group_trees_to_merge = one(trees_to_merge)
+        self.assertEqual(len(sentence_group_trees_to_merge), 2)
+
+        for entity_tree in sentence_group_trees_to_merge:
+            self.assertIsInstance(entity_tree, EntityTree)
+            self.assertIsInstance(entity_tree.entity, schema.StateSentenceGroup)
+            self.assertEqual(entity_tree.entity.external_id, _EXTERNAL_ID)
+
+        self.assertEqual({entity_tree.entity.sentence_group_id
+                          for entity_tree in sentence_group_trees_to_merge},
+                         {1, 2})
