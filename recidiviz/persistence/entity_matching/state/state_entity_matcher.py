@@ -244,7 +244,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         logging.info("[Entity matching] Completed DB read at time [%s].",
                      datetime.datetime.now().isoformat())
         matched_entities = self._run_match(
-            ingested_db_people, db_persons, region_code)
+            ingested_db_people, db_persons, region_code, session)
 
         # In order to maintain the invariant that all objects are properly
         # added to the Session when we return from entity_matching we
@@ -270,23 +270,31 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
     def _run_match(self,
                    ingested_persons: List[schema.StatePerson],
                    db_persons: List[schema.StatePerson],
-                   region_code: str) -> MatchedEntities:
+                   region_code: str,
+                   session: Session) -> MatchedEntities:
         """Attempts to match |ingested_persons| with people in |db_persons|.
         Assumes no backedges are present in either |ingested_persons| or
         |db_persons|.
         """
-        logging.info("[Entity matching] Pre-processing")
-        ingested_persons = self._perform_match_preprocessing(ingested_persons)
+        # Prevent automatic flushing of any entities associated with this
+        # session until we have explicitly finished matching. This ensures
+        # errors aren't thrown due to unexpected flushing of incomplete entity
+        # relationships.
+        with session.no_autoflush:
+            logging.info("[Entity matching] Pre-processing")
+            ingested_persons = self._perform_match_preprocessing(
+                ingested_persons)
 
-        logging.info("[Entity matching] Matching persons")
-        matched_entities = self._match_persons(
-            ingested_persons=ingested_persons, db_persons=db_persons)
-        logging.info(
-            "[Entity matching] Matching persons returned [%s] matched people",
-            len(matched_entities.people))
+            logging.info("[Entity matching] Matching persons")
+            matched_entities = self._match_persons(
+                ingested_persons=ingested_persons, db_persons=db_persons)
+            logging.info(
+                "[Entity matching] Matching persons returned [%s] "
+                "matched people", len(matched_entities.people))
 
-        logging.info("[Entity matching] Matching post-processing")
-        self._perform_match_postprocessing(region_code, matched_entities.people)
+            logging.info("[Entity matching] Matching post-processing")
+            self._perform_match_postprocessing(
+                region_code, matched_entities.people)
         return matched_entities
 
     # TODO(2037): Move state specific logic into its own file.
@@ -1265,9 +1273,6 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
             for cls in get_multiparent_classes():
                 if cls not in self.non_placeholder_ingest_types:
                     continue
-                logging.info(
-                    '[Entity Matching] Merging multiparent class: [%s]',
-                    cls.__name__)
                 entity_map: Dict[str, List[_EntityWithParentInfo]] = {}
                 self._populate_multiparent_map(person, cls, entity_map)
                 self._merge_multiparent_entities_from_map(entity_map)
