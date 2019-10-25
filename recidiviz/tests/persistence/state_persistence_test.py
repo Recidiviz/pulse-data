@@ -36,6 +36,7 @@ from recidiviz.persistence.entity.state.entities import StatePerson, \
 from recidiviz.tests.utils import fakes
 
 EXTERNAL_ID = 'EXTERNAL_ID'
+EXTERNAL_ID_2 = 'EXTERNAL_ID_2'
 FULL_NAME_1 = 'TEST_FULL_NAME_1'
 REGION_CODE = 'REGION_CODE'
 COUNTY_CODE = 'COUNTY'
@@ -63,6 +64,10 @@ class TestStatePersistence(TestCase):
     def setUp(self) -> None:
         fakes.use_in_memory_sqlite_database(StateBase)
 
+    def to_entity(self, schema_obj):
+        return converter.convert_schema_object_to_entity(
+            schema_obj, populate_back_edges=True)
+
     def test_state_threeSentenceGroups_dontPersistAboveThreshold(self):
         # Arrange
         ingest_info = IngestInfo()
@@ -89,47 +94,32 @@ class TestStatePersistence(TestCase):
             status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
             external_id=SENTENCE_GROUP_ID_2,
             state_code=REGION_CODE)
+        db_external_id = schema.StatePersonExternalId(
+            person_external_id_id=ID, state_code=REGION_CODE,
+            external_id=EXTERNAL_ID, id_type=ID_TYPE)
+        db_person.sentence_groups = [
+            db_sentence_group, db_sentence_group_2]
+        db_person.external_ids = [db_external_id]
+
+        db_person_2 = schema.StatePerson(person_id=ID_2, full_name=FULL_NAME_1)
         db_sentence_group_2_dup = schema.StateSentenceGroup(
             sentence_group_id=ID_3,
             status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
             external_id=SENTENCE_GROUP_ID_2,
             state_code=REGION_CODE)
-        db_external_id = schema.StatePersonExternalId(
-            person_external_id_id=ID, state_code=REGION_CODE,
-            external_id=EXTERNAL_ID, id_type=ID_TYPE)
-
-        db_person.sentence_groups = [
-            db_sentence_group, db_sentence_group_2, db_sentence_group_2_dup]
-        db_person.external_ids = [db_external_id]
-
-        expected_person = StatePerson.new_with_defaults(
-            person_id=ID, full_name=FULL_NAME_1, external_ids=[],
-            sentence_groups=[])
-        expected_external_id = StatePersonExternalId.new_with_defaults(
-            person_external_id_id=ID, state_code=REGION_CODE,
-            external_id=EXTERNAL_ID,
-            id_type=ID_TYPE, person=expected_person)
-        expected_person.external_ids = [expected_external_id]
+        db_external_id_2 = schema.StatePersonExternalId(
+            person_external_id_id=ID_2, state_code=REGION_CODE,
+            external_id=EXTERNAL_ID_2, id_type=ID_TYPE)
+        db_person_2.sentence_groups = [db_sentence_group_2_dup]
+        db_person_2.external_ids = [db_external_id_2]
 
         # No updates
-        expected_sentence_group = StateSentenceGroup.new_with_defaults(
-            sentence_group_id=ID, status=StateSentenceStatus.EXTERNAL_UNKNOWN,
-            external_id=SENTENCE_GROUP_ID, state_code=REGION_CODE,
-            person=expected_person)
-        expected_sentence_group_2 = StateSentenceGroup.new_with_defaults(
-            sentence_group_id=ID_2, status=StateSentenceStatus.EXTERNAL_UNKNOWN,
-            external_id=SENTENCE_GROUP_ID_2, state_code=REGION_CODE,
-            person=expected_person)
-        expected_sentence_group_2_dup = StateSentenceGroup.new_with_defaults(
-            sentence_group_id=ID_3, status=StateSentenceStatus.EXTERNAL_UNKNOWN,
-            external_id=SENTENCE_GROUP_ID_2, state_code=REGION_CODE,
-            person=expected_person)
-        expected_person.sentence_groups = [expected_sentence_group,
-                                           expected_sentence_group_2,
-                                           expected_sentence_group_2_dup]
+        expected_person = self.to_entity(db_person)
+        expected_person_2 = self.to_entity(db_person_2)
 
         session = SessionFactory.for_schema_base(StateBase)
         session.add(db_person)
+        session.add(db_person_2)
         session.commit()
 
         # Act
@@ -138,7 +128,7 @@ class TestStatePersistence(TestCase):
         persons = dao.read_people(session)
 
         # Assert
-        self.assertEqual([expected_person],
+        self.assertEqual([expected_person, expected_person_2],
                          converter.convert_schema_objects_to_entity(persons))
 
     def test_state_threeSentenceGroups_persistsTwoBelowThreshold(self):
@@ -175,19 +165,24 @@ class TestStatePersistence(TestCase):
             status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
             external_id=SENTENCE_GROUP_ID_3,
             state_code=REGION_CODE)
+        db_external_id = schema.StatePersonExternalId(
+            person_external_id_id=ID, state_code=REGION_CODE,
+            external_id=EXTERNAL_ID, id_type=ID_TYPE)
+        db_person.sentence_groups = [
+            db_sentence_group, db_sentence_group_2, db_sentence_group_3]
+        db_person.external_ids = [db_external_id]
+
+        db_person_2 = schema.StatePerson(person_id=ID_2, full_name=FULL_NAME_1)
         db_sentence_group_3_dup = schema.StateSentenceGroup(
             sentence_group_id=ID_4,
             status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
             external_id=SENTENCE_GROUP_ID_3,
             state_code=REGION_CODE)
-        db_external_id = schema.StatePersonExternalId(
-            person_external_id_id=ID, state_code=REGION_CODE,
-            external_id=EXTERNAL_ID, id_type=ID_TYPE)
-
-        db_person.sentence_groups = [
-            db_sentence_group, db_sentence_group_2, db_sentence_group_3,
-            db_sentence_group_3_dup]
-        db_person.external_ids = [db_external_id]
+        db_external_id_2 = schema.StatePersonExternalId(
+            person_external_id_id=ID_2, state_code=REGION_CODE,
+            external_id=EXTERNAL_ID_2, id_type=ID_TYPE)
+        db_person_2.sentence_groups = [db_sentence_group_3_dup]
+        db_person_2.external_ids = [db_external_id_2]
 
         expected_person = StatePerson.new_with_defaults(
             person_id=ID, full_name=FULL_NAME_1, external_ids=[],
@@ -196,8 +191,6 @@ class TestStatePersistence(TestCase):
             person_external_id_id=ID, state_code=REGION_CODE,
             external_id=EXTERNAL_ID,
             id_type=ID_TYPE, person=expected_person)
-        expected_person.external_ids = [expected_external_id]
-
         expected_sentence_group = StateSentenceGroup.new_with_defaults(
             sentence_group_id=ID, status=StateSentenceStatus.EXTERNAL_UNKNOWN,
             external_id=SENTENCE_GROUP_ID, state_code=REGION_CODE,
@@ -208,23 +201,33 @@ class TestStatePersistence(TestCase):
             external_id=SENTENCE_GROUP_ID_2, state_code=REGION_CODE,
             county_code=COUNTY_CODE,
             person=expected_person)
-
-        # No county code because unmatched
+        # No county code because errors during match
         expected_sentence_group_3 = StateSentenceGroup.new_with_defaults(
             sentence_group_id=ID_3, status=StateSentenceStatus.EXTERNAL_UNKNOWN,
             external_id=SENTENCE_GROUP_ID_3, state_code=REGION_CODE,
             person=expected_person)
+        expected_person.external_ids = [expected_external_id]
+        expected_person.sentence_groups = [expected_sentence_group,
+                                           expected_sentence_group_2,
+                                           expected_sentence_group_3]
+
+        expected_person_2 = StatePerson.new_with_defaults(
+            person_id=ID_2, full_name=FULL_NAME_1)
+        expected_external_id_2 = StatePersonExternalId.new_with_defaults(
+            person_external_id_id=ID_2, state_code=REGION_CODE,
+            external_id=EXTERNAL_ID_2,
+            id_type=ID_TYPE, person=expected_person_2)
+        # No county code because unmatched
         expected_sentence_group_3_dup = StateSentenceGroup.new_with_defaults(
             sentence_group_id=ID_4, status=StateSentenceStatus.EXTERNAL_UNKNOWN,
             external_id=SENTENCE_GROUP_ID_3, state_code=REGION_CODE,
-            person=expected_person)
-        expected_person.sentence_groups = [expected_sentence_group,
-                                           expected_sentence_group_2,
-                                           expected_sentence_group_3,
-                                           expected_sentence_group_3_dup]
+            person=expected_person_2)
+        expected_person_2.sentence_groups = [expected_sentence_group_3_dup]
+        expected_person_2.external_ids = [expected_external_id_2]
 
         session = SessionFactory.for_schema_base(StateBase)
         session.add(db_person)
+        session.add(db_person_2)
         session.commit()
 
         # Act
@@ -233,5 +236,5 @@ class TestStatePersistence(TestCase):
         persons = dao.read_people(session)
 
         # Assert
-        self.assertEqual([expected_person],
+        self.assertEqual([expected_person, expected_person_2],
                          converter.convert_schema_objects_to_entity(persons))
