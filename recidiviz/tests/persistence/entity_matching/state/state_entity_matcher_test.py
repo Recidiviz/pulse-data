@@ -112,6 +112,10 @@ class TestStateEntityMatching(TestCase):
         return converter.convert_schema_object_to_entity(
             schema_obj, populate_back_edges=False)
 
+    def assert_no_errors(self, matched_entities):
+        self.assertEqual(0, matched_entities.error_count)
+        self.assertEqual(0, matched_entities.database_cleanup_error_count)
+
     def assert_people_match_pre_and_post_commit(
             self, expected_people, matched_people, match_session,
             expected_unmatched_db_people=None):
@@ -177,7 +181,7 @@ class TestStateEntityMatching(TestCase):
             session, _STATE_CODE,
             [person_2])
 
-        self.assertEqual(matched_entities.error_count, 0)
+        self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
         self.assert_people_match_pre_and_post_commit(
             [expected_person_2],
@@ -220,7 +224,7 @@ class TestStateEntityMatching(TestCase):
         # Assert
         self.assert_people_match_pre_and_post_commit(
             [expected_person], matched_entities.people, session)
-        self.assertEqual(matched_entities.error_count, 0)
+        self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
 
     def test_match_noPlaceholders_simple(self, _):
@@ -255,7 +259,7 @@ class TestStateEntityMatching(TestCase):
             [person])
 
         # Assert 1 - Match
-        self.assertEqual(matched_entities.error_count, 0)
+        self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
         self.assert_people_match_pre_and_post_commit(
             [expected_person], matched_entities.people, session)
@@ -343,7 +347,7 @@ class TestStateEntityMatching(TestCase):
             [person, person_another])
 
         # Assert 1 - Match
-        self.assertEqual(matched_entities.error_count, 0)
+        self.assert_no_errors(matched_entities)
         self.assertEqual(2, matched_entities.total_root_entities)
         self.assert_people_match_pre_and_post_commit(
             [expected_person, expected_person_another],
@@ -398,6 +402,7 @@ class TestStateEntityMatching(TestCase):
 
         # Assert 1 - Match
         self.assertEqual(matched_entities.error_count, 1)
+        self.assertEqual(matched_entities.database_cleanup_error_count, 0)
         self.assertEqual(2, matched_entities.total_root_entities)
         self.assert_people_match_pre_and_post_commit(
             [expected_person], matched_entities.people, session,
@@ -452,7 +457,7 @@ class TestStateEntityMatching(TestCase):
         self.assert_people_match_pre_and_post_commit(
             [expected_person], matched_entities.people, session)
         self.assertEqual(2, matched_entities.total_root_entities)
-        self.assertEqual(0, matched_entities.error_count)
+        self.assert_no_errors(matched_entities)
 
     def test_matchPersons_conflictingExternalIds_error(self, _):
         # Arrange 1 - Match
@@ -524,6 +529,7 @@ class TestStateEntityMatching(TestCase):
         self.assertEqual([], matched_entities.people)
         self.assertEqual(1, matched_entities.total_root_entities)
         self.assertEqual(1, matched_entities.error_count)
+        self.assertEqual(0, matched_entities.database_cleanup_error_count)
 
     def test_matchPersons_sentenceGroupRootEntity_IngMatchesMultipleDb(self, _):
         # Arrange 1 - Match
@@ -580,6 +586,7 @@ class TestStateEntityMatching(TestCase):
             [expected_person], matched_entities.people, session)
         self.assertEqual(3, matched_entities.total_root_entities)
         self.assertEqual(1, matched_entities.error_count)
+        self.assertEqual(1, matched_entities.database_cleanup_error_count)
 
     def test_matchPersons_matchesTwoDbPeople_mergeDbPeopleMoveChildren(self, _):
         """Tests that our system correctly handles the situation where we have
@@ -640,7 +647,7 @@ class TestStateEntityMatching(TestCase):
             session, _STATE_CODE, ingested_people=[person])
 
         # Assert 1 - Match
-        self.assertEqual(0, matched_entities.error_count)
+        self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
         self.assert_people_match_pre_and_post_commit(
             [expected_person, expected_placeholder_person],
@@ -728,7 +735,7 @@ class TestStateEntityMatching(TestCase):
             session, _STATE_CODE, ingested_people=[person])
 
         # Assert 1 - Match
-        self.assertEqual(0, matched_entities.error_count)
+        self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
         self.assert_people_match_pre_and_post_commit(
             [expected_person, expected_placeholder_person],
@@ -790,6 +797,7 @@ class TestStateEntityMatching(TestCase):
             [expected_person], matched_entities.people, session)
         self.assertEqual(4, matched_entities.total_root_entities)
         self.assertEqual(1, matched_entities.error_count)
+        self.assertEqual(0, matched_entities.database_cleanup_error_count)
 
     def test_matchPersons_noPlaceholders_newPerson(self, _):
         # Arrange 1 - Match
@@ -815,7 +823,7 @@ class TestStateEntityMatching(TestCase):
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
             [expected_person], matched_entities.people, session)
-        self.assertEqual(0, matched_entities.error_count)
+        self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
 
     def test_matchPersons_noPlaceholders_updatePersonAttributes(self, _):
@@ -864,7 +872,7 @@ class TestStateEntityMatching(TestCase):
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
             [expected_person], matched_entities.people, session)
-        self.assertEqual(0, matched_entities.error_count)
+        self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
 
     def test_matchPersons_noPlaceholders_partialTreeIngested(self, _):
@@ -981,7 +989,7 @@ class TestStateEntityMatching(TestCase):
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
             [expected_person], matched_entities.people, session)
-        self.assertEqual(0, matched_entities.error_count)
+        self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
 
     def test_matchPersons_noPlaceholders_completeTreeUpdate(self, _):
@@ -1272,7 +1280,7 @@ class TestStateEntityMatching(TestCase):
             session, _STATE_CODE, ingested_people=[person])
 
         # Assert 1 - Match
-        self.assertEqual(0, matched_entities.error_count)
+        self.assert_no_errors(matched_entities)
         self.assert_people_match_pre_and_post_commit(
             [expected_person], matched_entities.people, session)
         self.assertEqual(1, matched_entities.total_root_entities)
@@ -1307,7 +1315,7 @@ class TestStateEntityMatching(TestCase):
             session, _STATE_CODE, ingested_people=[person])
 
         # Assert 1 - Match
-        self.assertEqual(0, matched_entities.error_count)
+        self.assert_no_errors(matched_entities)
         self.assert_people_match_pre_and_post_commit(
             [expected_person], matched_entities.people, session)
         self.assertEqual(1, matched_entities.total_root_entities)
@@ -1383,7 +1391,7 @@ class TestStateEntityMatching(TestCase):
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
             [expected_person], matched_entities.people, session)
-        self.assertEqual(0, matched_entities.error_count)
+        self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
 
     def test_matchPersons_holeInIngestedGraph(self, _):
@@ -1449,7 +1457,7 @@ class TestStateEntityMatching(TestCase):
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
             [expected_person], matched_entities.people, session)
-        self.assertEqual(0, matched_entities.error_count)
+        self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
 
     def test_matchPersons_dbPlaceholderSplits(self, _):
@@ -1533,7 +1541,7 @@ class TestStateEntityMatching(TestCase):
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
             [expected_person], matched_entities.people, session)
-        self.assertEqual(0, matched_entities.error_count)
+        self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
 
     def test_matchPersons_dbMatchesMultipleIngestedPlaceholders_success(
@@ -1621,7 +1629,7 @@ class TestStateEntityMatching(TestCase):
         self.assert_people_match_pre_and_post_commit(
             [expected_person, expected_placeholder_person],
             matched_entities.people, session)
-        self.assertEqual(0, matched_entities.error_count)
+        self.assert_no_errors(matched_entities)
         self.assertEqual(2, matched_entities.total_root_entities)
 
     def test_matchPersons_multipleIngestedPersonsMatchToPlaceholderDb(self, _):
@@ -1699,7 +1707,7 @@ class TestStateEntityMatching(TestCase):
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
             [expected_person], matched_entities.people, session)
-        self.assertEqual(0, matched_entities.error_count)
+        self.assert_no_errors(matched_entities)
         self.assertEqual(2, matched_entities.total_root_entities)
 
     def test_matchPersons_ingestedPlaceholderSplits(self, _):
@@ -1777,7 +1785,7 @@ class TestStateEntityMatching(TestCase):
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
             [expected_person], matched_entities.people, session)
-        self.assertEqual(0, matched_entities.error_count)
+        self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
 
     def test_matchPersons_multipleHolesInIngestedGraph(self, _):
@@ -1828,7 +1836,7 @@ class TestStateEntityMatching(TestCase):
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
             [expected_person], matched_entities.people, session)
-        self.assertEqual(0, matched_entities.error_count)
+        self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
 
     def test_matchPersons_multipleHolesInDbGraph(self, _):
@@ -1888,7 +1896,7 @@ class TestStateEntityMatching(TestCase):
         self.assert_people_match_pre_and_post_commit(
             [expected_person, expected_placeholder_person],
             matched_entities.people, session)
-        self.assertEqual(0, matched_entities.error_count)
+        self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
 
     def test_matchPersons_holesInBothGraphs_ingestedPersonPlaceholder(self, _):
@@ -1968,7 +1976,7 @@ class TestStateEntityMatching(TestCase):
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
             [expected_person], matched_entities.people, session)
-        self.assertEqual(0, matched_entities.error_count)
+        self.assert_no_errors(matched_entities)
         self.assertEqual(2, matched_entities.total_root_entities)
 
     def test_matchPersons_holesInBothGraphs_dbPersonPlaceholder(self, _):
@@ -2048,7 +2056,7 @@ class TestStateEntityMatching(TestCase):
         self.assert_people_match_pre_and_post_commit(
             [expected_person, expected_placeholder_person],
             matched_entities.people, session)
-        self.assertEqual(0, matched_entities.error_count)
+        self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
 
     def test_matchPersons_matchAfterManyIngestedPlaceholders(self, _):
@@ -2109,7 +2117,7 @@ class TestStateEntityMatching(TestCase):
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
             [expected_person], matched_entities.people, session)
-        self.assertEqual(0, matched_entities.error_count)
+        self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
 
     def test_runMatch_moveSupervisingOfficerOntoOpenSupervisionPeriods(self, _):
@@ -2194,7 +2202,7 @@ class TestStateEntityMatching(TestCase):
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
             [expected_person], matched_entities.people, session)
-        self.assertEqual(0, matched_entities.error_count)
+        self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
 
     # TODO(2037): Move test to state specific file.
@@ -2233,7 +2241,7 @@ class TestStateEntityMatching(TestCase):
 
         self.assert_people_match_pre_and_post_commit(
             [expected_person], matched_entities.people, session)
-        self.assertEqual(0, matched_entities.error_count)
+        self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
 
     def test_runMatch_checkPlaceholdersWhenNoRootEntityMatch(self, _):
@@ -2286,7 +2294,7 @@ class TestStateEntityMatching(TestCase):
             [expected_person, expected_placeholder_person,
              expected_placeholder_person_other_state],
             matched_entities.people, session)
-        self.assertEqual(0, matched_entities.error_count)
+        self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
 
     def test_runMatch_sameEntities_noDuplicates(self, _):
@@ -2325,7 +2333,7 @@ class TestStateEntityMatching(TestCase):
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
             [expected_placeholder_person], matched_entities.people, session)
-        self.assertEqual(0, matched_entities.error_count)
+        self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
 
     def test_runMatch_associateSvrsToIps(self, _):
@@ -2425,7 +2433,7 @@ class TestStateEntityMatching(TestCase):
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
             [expected_placeholder_person], matched_entities.people, session)
-        self.assertEqual(0, matched_entities.error_count)
+        self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
 
     def test_match_mergeIncomingIncarcerationSentences(self, _):
@@ -2535,7 +2543,7 @@ class TestStateEntityMatching(TestCase):
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
             [expected_person], matched_entities.people, session)
-        self.assertEqual(0, matched_entities.error_count)
+        self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
 
     def test_matchPersons_mergeIncompleteIncarcerationPeriodOntoComplete(
@@ -2636,7 +2644,7 @@ class TestStateEntityMatching(TestCase):
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
             [expected_person], matched_entities.people, session)
-        self.assertEqual(0, matched_entities.error_count)
+        self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
 
     def test_matchPersons_mergeCompleteIncarcerationPeriodOntoIncomplete(
@@ -2737,7 +2745,7 @@ class TestStateEntityMatching(TestCase):
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
             [expected_person], matched_entities.people, session)
-        self.assertEqual(0, matched_entities.error_count)
+        self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
 
     def test_matchPersons_mergeCompleteIncarcerationPeriods(self, _):
@@ -2829,7 +2837,7 @@ class TestStateEntityMatching(TestCase):
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
             [expected_person], matched_entities.people, session)
-        self.assertEqual(0, matched_entities.error_count)
+        self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
 
     def test_matchPersons_mergeIncompleteIncarcerationPeriods(self, _):
@@ -2947,7 +2955,7 @@ class TestStateEntityMatching(TestCase):
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
             [expected_person], matched_entities.people, session)
-        self.assertEqual(0, matched_entities.error_count)
+        self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
 
     def test_matchPersons_dontMergePeriodsFromDifferentStates(self, _):
@@ -3045,7 +3053,7 @@ class TestStateEntityMatching(TestCase):
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
             [expected_person], matched_entities.people, session)
-        self.assertEqual(0, matched_entities.error_count)
+        self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
 
     def test_matchPersons_temporaryCustodyPeriods(self, mock_get_region):
@@ -3176,7 +3184,7 @@ class TestStateEntityMatching(TestCase):
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
             [expected_person], matched_entities.people, session)
-        self.assertEqual(0, matched_entities.error_count)
+        self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
 
     def test_matchPersons_mergeIngestedAndDbIncarcerationPeriods_reverse(
@@ -3296,7 +3304,7 @@ class TestStateEntityMatching(TestCase):
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
             [expected_person], matched_entities.people, session)
-        self.assertEqual(0, matched_entities.error_count)
+        self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
 
     def test_mergeMultiParentEntities(self, _):
@@ -3722,3 +3730,80 @@ class TestStateEntityMatching(TestCase):
         self.assert_people_match_pre_and_post_commit(
             [expected_person],
             matched_entities.people, session)
+
+    def test_databaseCleanup_dontMergeMultiParentEntities(self, _):
+        db_person = generate_person(person_id=_ID, full_name=_FULL_NAME)
+        db_court_case = generate_court_case(
+            person=db_person, court_case_id=_ID, external_id=_EXTERNAL_ID)
+        db_placeholder_charge = generate_charge(
+            person=db_person, charge_id=_ID,
+            court_case=db_court_case)
+        db_placeholder_fine = generate_fine(
+            person=db_person, fine_id=_ID, charges=[db_placeholder_charge])
+        db_placeholder_sentence_group = generate_sentence_group(
+            person=db_person,
+            sentence_group_id=_ID,
+            fines=[db_placeholder_fine])
+        db_external_id = generate_external_id(
+            person=db_person,
+            person_external_id_id=_ID, state_code=_STATE_CODE,
+            external_id=_EXTERNAL_ID, id_type=_ID_TYPE)
+        db_person.external_ids = [db_external_id]
+        db_person.sentence_groups = [db_placeholder_sentence_group]
+
+        db_person_2 = generate_person(person_id=_ID_2, full_name=_FULL_NAME)
+        db_court_case_2 = generate_court_case(
+            person=db_person_2, court_case_id=_ID_2, external_id=_EXTERNAL_ID)
+        db_placeholder_charge_2 = generate_charge(
+            person=db_person_2, charge_id=_ID_2,
+            court_case=db_court_case_2)
+        db_placeholder_fine_2 = generate_fine(
+            person=db_person_2, fine_id=_ID_2,
+            charges=[db_placeholder_charge_2])
+        db_placeholder_sentence_group_2 = generate_sentence_group(
+            person=db_person_2,
+            sentence_group_id=_ID_2,
+            fines=[db_placeholder_fine_2])
+        db_external_id_2 = generate_external_id(
+            person=db_person_2,
+            person_external_id_id=_ID_2, state_code=_STATE_CODE,
+            external_id=_EXTERNAL_ID_2, id_type=_ID_TYPE)
+        db_person_2.external_ids = [db_external_id_2]
+        db_person_2.sentence_groups = [db_placeholder_sentence_group_2]
+
+        self._commit_to_db(db_person, db_person_2)
+
+        court_case = attr.evolve(
+            self.to_entity(db_court_case), court_case_id=None)
+        placeholder_charge = attr.evolve(
+            self.to_entity(db_placeholder_charge),
+            charge_id=None, court_case=court_case)
+        placeholder_fine = attr.evolve(
+            self.to_entity(db_placeholder_fine),
+            fine_id=None, charges=[placeholder_charge])
+        placeholder_sentence_group = attr.evolve(
+            self.to_entity(db_placeholder_sentence_group),
+            sentence_group_id=None, fines=[placeholder_fine])
+        external_id = attr.evolve(
+            self.to_entity(db_external_id), person_external_id_id=None)
+        person = attr.evolve(
+            self.to_entity(db_person), person_id=None,
+            external_ids=[external_id],
+            sentence_groups=[placeholder_sentence_group],
+            current_address='address')
+
+        expected_person = attr.evolve(self.to_entity(db_person),
+                                      current_address='address')
+        expected_person_2 = attr.evolve(self.to_entity(db_person_2))
+
+        # Act 1 - Match
+        session = self._session()
+        matched_entities = entity_matching.match(
+            session, _STATE_CODE, ingested_people=[person])
+
+        # Assert 1 - Match
+        self.assert_people_match_pre_and_post_commit(
+            [expected_person], matched_entities.people, session,
+            expected_unmatched_db_people=[expected_person_2])
+        self.assert_no_errors(matched_entities)
+        self.assertEqual(1, matched_entities.total_root_entities)
