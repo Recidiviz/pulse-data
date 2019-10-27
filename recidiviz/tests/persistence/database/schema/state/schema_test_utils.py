@@ -168,7 +168,7 @@ def generate_charge(person, **kwargs) -> schema.StateCharge:
         'state_code': _STATE_CODE,
     }
     args.update(kwargs)
-    return schema.StateCharge(person=person, **kwargs)
+    return schema.StateCharge(person=person, **args)
 
 
 def generate_court_case(person, **kwargs) -> schema.StateCourtCase:

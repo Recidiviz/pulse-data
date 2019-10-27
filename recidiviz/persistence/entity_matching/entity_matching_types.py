@@ -19,6 +19,7 @@ from typing import List, Generic
 
 import attr
 
+from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.schema_person_type import \
     SchemaPersonType
@@ -27,7 +28,7 @@ from recidiviz.persistence.errors import EntityMatchingError
 
 # TODO(1907): Rename people -> persons
 @attr.s(frozen=True, kw_only=True)
-class MatchedEntities(Generic[SchemaPersonType]):
+class MatchedEntities(BuildableAttr, Generic[SchemaPersonType]):
     """
     Object that contains output for entity matching
     - people: List of all successfully matched and unmatched people.
@@ -43,6 +44,7 @@ class MatchedEntities(Generic[SchemaPersonType]):
     people: List[SchemaPersonType] = attr.ib(factory=list)
     orphaned_entities: List[DatabaseEntity] = attr.ib(factory=list)
     error_count: int = attr.ib(default=0)
+    database_cleanup_error_count: int = attr.ib(default=0)
     total_root_entities: int = attr.ib(default=0)
 
     def __add__(self, other):
@@ -50,6 +52,8 @@ class MatchedEntities(Generic[SchemaPersonType]):
             people=self.people + other.people,
             orphaned_entities=self.orphaned_entities + other.orphaned_entities,
             error_count=self.error_count + other.error_count,
+            database_cleanup_error_count=self.database_cleanup_error_count \
+                                         + other.database_cleanup_error_count,
             total_root_entities=self.total_root_entities
             + other.total_root_entities)
 

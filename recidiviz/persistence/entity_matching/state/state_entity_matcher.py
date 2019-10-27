@@ -243,7 +243,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
 
         logging.info("[Entity matching] Completed DB read at time [%s].",
                      datetime.datetime.now().isoformat())
-        matched_entities = self._run_match(
+        matched_entities_builder = self._run_match(
             ingested_db_people, db_persons, region_code, session)
 
         # In order to maintain the invariant that all objects are properly
@@ -251,27 +251,30 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         # add new people to the session here. Adding a person to the session
         # that is already in-session (i.e. not new) has no effect.
         # pylint:disable=not-an-iterable
-        for match_person in matched_entities.people:
+        for match_person in matched_entities_builder.people:
             session.add(match_person)
 
         logging.info("[Entity matching] Session flush")
         session.flush()
 
         logging.info("[Entity matching] Database clean up")
-        self._perform_database_clean_up(
-            session, region_code, matched_entities.people)
+        # TODO(2578): Database cleanup errors should be surfaced properly in
+        # their own error count.
+        matched_entities_builder.database_cleanup_error_count = \
+            self._perform_database_cleanup(session, region_code,
+                                           matched_entities_builder.people)
 
         # Assert that all entities have been flushed before returning from
         # entity matching
         check_not_dirty(session)
 
-        return matched_entities
+        return matched_entities_builder.build()
 
     def _run_match(self,
                    ingested_persons: List[schema.StatePerson],
                    db_persons: List[schema.StatePerson],
                    region_code: str,
-                   session: Session) -> MatchedEntities:
+                   session: Session) -> MatchedEntities.Builder:
         """Attempts to match |ingested_persons| with people in |db_persons|.
         Assumes no backedges are present in either |ingested_persons| or
         |db_persons|.
@@ -286,16 +289,16 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
                 ingested_persons)
 
             logging.info("[Entity matching] Matching persons")
-            matched_entities = self._match_persons(
+            matched_entities_builder = self._match_persons(
                 ingested_persons=ingested_persons, db_persons=db_persons)
             logging.info(
                 "[Entity matching] Matching persons returned [%s] "
-                "matched people", len(matched_entities.people))
+                "matched people", len(matched_entities_builder.people))
 
             logging.info("[Entity matching] Matching post-processing")
             self._perform_match_postprocessing(
-                region_code, matched_entities.people)
-        return matched_entities
+                region_code, matched_entities_builder.people)
+        return matched_entities_builder
 
     # TODO(2037): Move state specific logic into its own file.
     def _perform_match_preprocessing(
@@ -337,22 +340,24 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         add_supervising_officer_to_open_supervision_periods(
             matched_people)
 
-    # TODO(2578): Database cleanup errors should be surfaced properly in their
-    # own error count.
-    def _perform_database_clean_up(
+    def _perform_database_cleanup(
             self, session: Session, region_code: str,
-            matched_people: List[schema.StatePerson]) -> None:
+            matched_people: List[schema.StatePerson]) -> int:
         """Home to all cleanup functions that require that database ids exist
-        on all entities, including newly created ones.
+        on all entities, including newly created ones. Returns the number of
+        errors encountered while performing clean up.
 
         NOTE: This method expects that all updated entities have been flushed
         in the session.
         """
         check_not_dirty(session)
+        error_count = 0
 
         logging.info("[Entity matching] Merge new parent-child links")
-        self._merge_new_parent_child_links(
+        error_count += self._merge_new_parent_child_links(
             session, region_code, matched_people)
+
+        return error_count
 
     def _merge_new_parent_child_links(
             self, session: Session, region_code: str,
@@ -411,11 +416,6 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
 
                     if not self._check_parent_chains_match(
                             merge_onto_tree, merge_from_tree):
-                        logging.warning(
-                            'Parent chains do not match for provided entity '
-                            'trees of type [%s] and with primary keys of [%s] '
-                            'and [%s].', cls, merge_onto_tree.entity.get_id(),
-                            merge_from_tree.entity.get_id())
                         error_count += 1
                     else:
                         logging.info(
@@ -445,7 +445,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         # classes in this case.
         if cls == schema.StatePersonExternalId:
             return False
-        if isinstance(cls, tuple(get_multiparent_classes())):
+        if cls in get_multiparent_classes():
             return False
         return True
 
@@ -467,34 +467,33 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         """Returns True if the parent chains of the provided entity trees |a|
         and |b| match. Otherwise returns false.
         """
+        entity_cls_name = a.entity.get_entity_name()
         # TODO(2578): Support merging when entities have multiple ancestor
         # ancestor chains.
         if len(a.ancestor_chain) != len(b.ancestor_chain):
             logging.error(
                 'Ancestor chains are different lengths for entities of type '
                 '[%s].\nEntity a id: [%s]\nEntity b id: [%s]',
-                a.entity.get_entity_name(), a.entity.get_id(),
+                entity_cls_name, a.entity.get_id(),
                 b.entity.get_id())
             return False
 
-        a_ancestor_tree = a.generate_parent_tree()
-        b_ancestor_tree = b.generate_parent_tree()
-        while a_ancestor_tree.ancestor_chain:
+        if not a.ancestor_chain:
+            return True
+
+        while a.ancestor_chain:
+            a = a.generate_parent_tree()
+            b = b.generate_parent_tree()
             # ignore placeholders in the chain.
-            if is_placeholder(b_ancestor_tree.entity) or \
-                    is_placeholder(a_ancestor_tree.entity):
+            if is_placeholder(b.entity) or \
+                    is_placeholder(a.entity):
                 pass
-            elif not is_match(a_ancestor_tree, b_ancestor_tree):
+            elif not is_match(a, b):
                 logging.error(
                     'Ancestor chains do not match for entities to merge of type'
                     ' [%s] with ids [%s] and [%s].',
-                    a.entity.get_entity_name(),
-                    a.entity.get_id(), b.entity.get_id())
+                    entity_cls_name, a.entity.get_id(), b.entity.get_id())
                 return False
-            a_ancestor_tree = \
-                a_ancestor_tree.generate_parent_tree()
-            b_ancestor_tree = \
-                b_ancestor_tree.generate_parent_tree()
         return True
 
     def merge_multiple_id_entities(
@@ -598,7 +597,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
             *,
             ingested_persons: List[schema.StatePerson],
             db_persons: List[schema.StatePerson]
-    ) -> MatchedEntities:
+    ) -> MatchedEntities.Builder:
         """Attempts to match all persons from |ingested_persons| with the
         provided |db_persons|. Results are returned in the MatchedEntities
         object which contains all successfully matched and merged persons as
@@ -654,10 +653,11 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
 
         self._populate_person_backedges(updated_persons)
 
-        return MatchedEntities(
-            people=updated_persons,
-            error_count=persons_match_results.error_count,
-            total_root_entities=total_root_entities)
+        matched_entities_builder = MatchedEntities.builder()
+        matched_entities_builder.people = updated_persons
+        matched_entities_builder.error_count = persons_match_results.error_count
+        matched_entities_builder.total_root_entities = total_root_entities
+        return matched_entities_builder
 
     def _populate_person_backedges(
             self, updated_persons: List[schema.StatePerson]):
