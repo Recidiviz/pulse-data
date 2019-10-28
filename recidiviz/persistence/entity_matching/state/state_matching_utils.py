@@ -23,6 +23,7 @@ from typing import List, cast, Optional, Tuple, Union, Set, Type, Dict
 
 from recidiviz.common.constants import enum_canonical_strings
 from recidiviz.common.constants.enum_overrides import EnumOverrides
+from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_court_case import StateCourtType
 from recidiviz.common.constants.state.state_incarceration import \
     StateIncarcerationType
@@ -617,7 +618,11 @@ def convert_to_placeholder(entity: DatabaseEntity):
         if field_name == 'court_type':
             entity.set_field(field_name,
                              StateCourtType.PRESENT_WITHOUT_INFO.value)
-
+            continue
+        if field_name == 'agent_type':
+            entity.set_field(field_name,
+                             StateAgentType.PRESENT_WITHOUT_INFO.value)
+            continue
         entity.clear_field(field_name)
 
 
