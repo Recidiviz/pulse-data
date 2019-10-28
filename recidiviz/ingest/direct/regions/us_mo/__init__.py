@@ -14,23 +14,3 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-
-"""Strings representing different types of external ids ingested by our system.
-
-NOTE: Changing ANY STRING VALUE in this file will require a database migration.
-The Python values pointing to the strings can be renamed without issue.
-
-At present, these are specifically for cataloging the kinds of ids ingested into
-the StatePersonExternalId entity. In this context, the id types represent the
-source that actually creates the id in the real world.
-"""
-
-# StatePersonExternalId.id_type
-
-US_MO_DOC = 'US_MO_DOC'
-US_MO_SID = 'US_MO_SID'
-US_MO_FBI = 'US_MO_FBI'
-US_MO_OLN = 'US_MO_OLN'
-
-US_ND_ELITE = 'US_ND_ELITE'
-US_ND_SID = 'US_ND_SID'

@@ -34,7 +34,7 @@ _FILEPATH_REGEX = \
     re.compile(
         r'(unprocessed|processed)_'  # processed_state
         r'(\d{4}-\d{2}-\d{2}T\d{2}[:_]\d{2}[:_]\d{2}[:_]\d{6})_'  # timestamp
-        r'([A-Za-z]+[A-Za-z_]*)'  # file_tag
+        r'([A-Za-z][A-Za-z\d]*(_[A-Za-z][A-Za-z\d]*)*)'  # file_tag
         r'(_(\d+(.*)))?'  # Optional filename_suffix
         r'\.([A-Za-z]+)')  # Extension
 
@@ -131,7 +131,7 @@ def filename_parts_from_path(file_path: GcsfsFilePath) -> GcsfsFilenameParts:
     utc_upload_datetime = \
         datetime.datetime.fromisoformat(full_upload_timestamp_str)
 
-    filename_suffix = match.group(5)
+    filename_suffix = match.group(6)
     is_file_split = False
     file_split_size = None
     if filename_suffix:
@@ -149,7 +149,7 @@ def filename_parts_from_path(file_path: GcsfsFilePath) -> GcsfsFilenameParts:
         date_str=utc_upload_datetime.date().isoformat(),
         file_tag=match.group(3),
         filename_suffix=filename_suffix,
-        extension=match.group(7),
+        extension=match.group(8),
         is_file_split=is_file_split,
         file_split_size=file_split_size,
     )
