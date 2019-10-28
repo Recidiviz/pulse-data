@@ -1,0 +1,70 @@
+key_mappings:
+  EK$ALN: state_person.surname
+  EK$AFN: state_person.given_names
+  EK$AMI: state_person.middle_names
+  EK$AGS: state_person.name_suffix
+  EK$SEX: state_person.gender
+
+child_key_mappings:
+  EK$CYC: state_sentence_group.state_sentence_group_id
+  EK$RAC: state_person_race.race
+  EK$ETH: state_person_ethnicity.ethnicity
+  EK$DOC: state_person_external_id.state_person_external_id_id
+
+primary_key:
+  EK$DOC: state_person.state_person_id
+
+keys_to_ignore:
+- EK$NRN
+- EK$SID  # Offender SID Number - Handled manually in the controller
+- EK$FBI  # Offender FBI Number - Handled manually in the controller
+- EK$OLN  # Offender Operator License Number - Handled manually in the controller
+- EK$OLC
+- EK$FOI
+- EK$PLC
+- EK$FLC
+- EK$OLA
+- EK$PLA
+- EK$FLA
+- EK$AV
+- EK$LE
+- EK$LTR
+- EK$TPF
+- EK$NM
+- EK$TAT
+- EK$WRF
+- EK$DTF
+- EK$WTF
+- EK$SOQ
+- EK$HTF
+- EK$HTI
+- EK$WGT
+- EK$BIL
+- EK$HAI
+- EK$EYE
+- EK$SKI
+- EK$MAS
+- EK$DEP
+- EK$SIB
+- EK$REL
+- EK$COF
+- EK$SCO
+- EK$XDM
+- EK$XDO
+- EK$XEM
+- EK$XEO
+- EK$XPM
+- EK$XPO
+- EK$XCM
+- EK$XCO
+- EK$XBM
+- EK$XBO
+- EK$PU
+- EK$PUL
+- EK$PRF
+- EK$DCR
+- EK$TCR
+- EK$DLU
+- EK$TLU
+- EK$REA
+- EK$UID

@@ -575,6 +575,13 @@ class StatePerson(IngestObject):
         return next((spr for spr in self.state_person_races
                      if spr.state_person_race_id == state_person_race_id), None)
 
+    def get_state_person_ethnicity_by_id(self, state_person_ethnicity_id) \
+            -> Optional['StatePersonEthnicity']:
+        return next(
+            (spe for spe in self.state_person_ethnicities
+             if spe.state_person_ethnicity_id == state_person_ethnicity_id),
+            None)
+
     def get_state_alias_by_id(self, state_alias_id) \
             -> Optional['StateAlias']:
         return next((sa for sa in self.state_aliases

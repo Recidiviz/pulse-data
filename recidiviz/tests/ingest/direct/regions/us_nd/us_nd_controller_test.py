@@ -19,12 +19,9 @@
 
 import datetime
 import json
-import unittest
-from typing import List
+from typing import Type
 
 import attr
-from freezegun import freeze_time
-from mock import patch, Mock, create_autospec
 
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.person_characteristics import Gender, Race, \
@@ -60,8 +57,10 @@ from recidiviz.common.constants.state.state_supervision_violation_response \
     import StateSupervisionViolationResponseType, \
     StateSupervisionViolationResponseRevocationType, \
     StateSupervisionViolationResponseDecision
-from recidiviz.ingest.direct.regions.us_nd. \
-    us_nd_controller import UsNdController
+from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
+    GcsfsDirectIngestController
+from recidiviz.ingest.direct.regions.us_nd.us_nd_controller import \
+    UsNdController
 from recidiviz.ingest.models.ingest_info import IngestInfo, \
     StateSentenceGroup, StatePerson, StateIncarcerationSentence, StateAlias, \
     StateSupervisionSentence, \
@@ -70,19 +69,10 @@ from recidiviz.ingest.models.ingest_info import IngestInfo, \
     StateSupervisionPeriod, StateSupervisionViolation, \
     StateSupervisionViolationResponse, StateAgent, StateIncarcerationIncident, \
     StateIncarcerationIncidentOutcome, StateProgramAssignment
-from recidiviz.persistence.database.base_schema import StateBase
-from recidiviz.persistence.database.schema.state import dao
-from recidiviz.persistence.database.schema_entity_converter.state.\
-    schema_entity_converter import StateSchemaToEntityConverter
-from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.entity.state import entities
-from recidiviz.tests.ingest.direct.direct_ingest_util import \
-    build_gcsfs_controller_for_tests, ingest_args_for_fixture_file, \
-    run_task_queues_to_empty, path_for_fixture_file
-from recidiviz.tests.persistence.entity.state.entities_test_utils import \
-    clear_db_ids
-from recidiviz.tests.utils import fakes
-from recidiviz.utils.regions import Region
+from recidiviz.tests.ingest.direct.regions.\
+    base_state_direct_ingest_controller_tests import \
+    BaseStateDirectIngestControllerTests
 
 _INCIDENT_DETAILS_1 = \
     '230Inmate Jon Hopkins would not follow directives to stop and be pat ' \
@@ -108,33 +98,18 @@ _INCIDENT_DETAILS_6 = \
 _STATE_CODE = 'US_ND'
 
 
-@patch('recidiviz.utils.metadata.project_id',
-       Mock(return_value='recidiviz-staging'))
-@freeze_time('2019-09-27')
-class TestUsNdController(unittest.TestCase):
+class TestUsNdController(BaseStateDirectIngestControllerTests):
     """Unit tests for each North Dakota file to be ingested by the
     UsNdController.
     """
 
-    FIXTURE_PATH_PREFIX = 'direct/regions/us_nd'
+    @classmethod
+    def state_code(cls) -> str:
+        return _STATE_CODE.lower()
 
-    def setUp(self) -> None:
-        self.controller = build_gcsfs_controller_for_tests(
-            UsNdController,
-            self.FIXTURE_PATH_PREFIX,
-            run_async=False,
-            max_delay_sec_between_files=0)
-        fakes.use_in_memory_sqlite_database(StateBase)
-
-        self.maxDiff = 250000
-
-    def _run_ingest_job_for_filename(self, filename: str) -> None:
-        file_path = path_for_fixture_file(self.controller,
-                                          filename,
-                                          should_normalize=False)
-        self.controller.fs.test_add_path(file_path)
-
-        run_task_queues_to_empty(self.controller)
+    @classmethod
+    def controller_cls(cls) -> Type[GcsfsDirectIngestController]:
+        return UsNdController
 
     def test_populate_data_elite_offenderidentifier(self):
         expected = IngestInfo(
@@ -1597,34 +1572,8 @@ class TestUsNdController(unittest.TestCase):
         ])
         self.run_parse_file_test(expected, 'docstars_ftr_episode')
 
-    def run_parse_file_test(self, expected: IngestInfo, file_tag: str):
-        args = ingest_args_for_fixture_file(self.controller, f'{file_tag}.csv')
-        self.controller.fs.test_add_path(args.file_path)
-
-        # pylint:disable=protected-access
-        fixture_contents = self.controller._read_contents(args)
-        final_info = self.controller._parse(args, fixture_contents)
-
-        print("FINAL")
-        print(final_info)
-        print("\n\n\n")
-        print("EXPECTED")
-        print(expected)
-        assert final_info == expected
-
-    def _fake_region(self):
-        fake_region = create_autospec(Region)
-        fake_region.get_enum_overrides.return_value = \
-            self.controller.get_enum_overrides()
-        return fake_region
-
     # TODO(2157): Move into integration specific file
-    @patch.dict('os.environ', {'PERSIST_LOCALLY': 'true'})
-    @patch("recidiviz.persistence.entity_matching.state"
-           ".state_matching_utils.get_region")
-    @freeze_time('2019-09-27')
-    def test_run_full_ingest_all_files_specific_order(self, mock_get_region):
-        mock_get_region.return_value = self._fake_region()
+    def test_run_full_ingest_all_files_specific_order(self):
         ######################################
         # ELITE OFFENDER IDENTIFIERS
         ######################################
@@ -1675,10 +1624,7 @@ class TestUsNdController(unittest.TestCase):
         self._run_ingest_job_for_filename('elite_offenderidentifier.csv')
 
         # Assert
-        session = SessionFactory.for_schema_base(StateBase)
-        found_people = dao.read_people(session)
-        found_people = self.convert_and_clear_db_ids(found_people)
-        self.assertCountEqual(found_people, expected_people)
+        self.assert_expected_db_people(expected_people)
 
         ######################################
         # ELITE OFFENDERS
@@ -1722,10 +1668,7 @@ class TestUsNdController(unittest.TestCase):
         self._run_ingest_job_for_filename('elite_offenders.csv')
 
         # Assert
-        session = SessionFactory.for_schema_base(StateBase)
-        found_people = dao.read_people(session)
-        found_people = self.convert_and_clear_db_ids(found_people)
-        self.assertCountEqual(found_people, expected_people)
+        self.assert_expected_db_people(expected_people)
 
         ######################################
         # ELITE ALIASES
@@ -1766,10 +1709,7 @@ class TestUsNdController(unittest.TestCase):
         self._run_ingest_job_for_filename('elite_alias.csv')
 
         # Assert
-        session = SessionFactory.for_schema_base(StateBase)
-        found_people = dao.read_people(session)
-        found_people = self.convert_and_clear_db_ids(found_people)
-        self.assertCountEqual(found_people, expected_people)
+        self.assert_expected_db_people(expected_people)
 
         ######################################
         # ELITE BOOKINGS
@@ -1792,10 +1732,7 @@ class TestUsNdController(unittest.TestCase):
         self._run_ingest_job_for_filename('elite_offenderbookingstable.csv')
 
         # Assert
-        session = SessionFactory.for_schema_base(StateBase)
-        found_people = dao.read_people(session)
-        found_people = self.convert_and_clear_db_ids(found_people)
-        self.assertCountEqual(found_people, expected_people)
+        self.assert_expected_db_people(expected_people)
 
         ######################################
         # ELITE SENTENCE AGGS
@@ -1858,10 +1795,7 @@ class TestUsNdController(unittest.TestCase):
         self._run_ingest_job_for_filename('elite_offendersentenceaggs.csv')
 
         # Assert
-        session = SessionFactory.for_schema_base(StateBase)
-        found_people = dao.read_people(session)
-        found_people = self.convert_and_clear_db_ids(found_people)
-        self.assertCountEqual(found_people, expected_people)
+        self.assert_expected_db_people(expected_people)
 
         ######################################
         # ELITE SENTENCES
@@ -1992,10 +1926,7 @@ class TestUsNdController(unittest.TestCase):
         self._run_ingest_job_for_filename('elite_offendersentences.csv')
 
         # Assert
-        session = SessionFactory.for_schema_base(StateBase)
-        found_people = dao.read_people(session)
-        found_people = self.convert_and_clear_db_ids(found_people)
-        self.assertCountEqual(found_people, expected_people)
+        self.assert_expected_db_people(expected_people)
 
         ######################################
         # ELITE SENTENCE TERMS
@@ -2056,10 +1987,7 @@ class TestUsNdController(unittest.TestCase):
         self._run_ingest_job_for_filename('elite_offendersentenceterms.csv')
 
         # Assert
-        session = SessionFactory.for_schema_base(StateBase)
-        found_people = dao.read_people(session)
-        found_people = self.convert_and_clear_db_ids(found_people)
-        self.assertCountEqual(found_people, expected_people)
+        self.assert_expected_db_people(expected_people)
 
         ######################################
         # ELITE CHARGES
@@ -2266,10 +2194,7 @@ class TestUsNdController(unittest.TestCase):
         self._run_ingest_job_for_filename('elite_offenderchargestable.csv')
 
         # Assert
-        session = SessionFactory.for_schema_base(StateBase)
-        found_people = dao.read_people(session)
-        found_people = self.convert_and_clear_db_ids(found_people)
-        self.assertCountEqual(found_people, expected_people)
+        self.assert_expected_db_people(expected_people)
 
         ######################################
         # ELITE ORDERS
@@ -2334,10 +2259,7 @@ class TestUsNdController(unittest.TestCase):
         self._run_ingest_job_for_filename('elite_orderstable.csv')
 
         # Assert
-        session = SessionFactory.for_schema_base(StateBase)
-        found_people = dao.read_people(session)
-        found_people = self.convert_and_clear_db_ids(found_people)
-        self.assertCountEqual(found_people, expected_people)
+        self.assert_expected_db_people(expected_people)
 
         ######################################
         # ELITE EXTERNAL MOVEMENTS
@@ -2546,10 +2468,7 @@ class TestUsNdController(unittest.TestCase):
         self._run_ingest_job_for_filename('elite_externalmovements.csv')
 
         # Assert
-        session = SessionFactory.for_schema_base(StateBase)
-        found_people = dao.read_people(session)
-        found_people = self.convert_and_clear_db_ids(found_people)
-        self.assertCountEqual(found_people, expected_people)
+        self.assert_expected_db_people(expected_people)
 
         ##############################################
         # ELITE OFFENSE AND IN CUSTODY POS REPORT DATA
@@ -2791,10 +2710,7 @@ class TestUsNdController(unittest.TestCase):
             'elite_offense_in_custody_and_pos_report_data.csv')
 
         # Assert
-        session = SessionFactory.for_schema_base(StateBase)
-        found_people = dao.read_people(session)
-        found_people = self.convert_and_clear_db_ids(found_people)
-        self.assertCountEqual(found_people, expected_people)
+        self.assert_expected_db_people(expected_people)
 
         ######################################
         # DOCSTARS OFFENDERS
@@ -2898,10 +2814,7 @@ class TestUsNdController(unittest.TestCase):
         self._run_ingest_job_for_filename('docstars_offenders.csv')
 
         # Assert
-        session = SessionFactory.for_schema_base(StateBase)
-        found_people = dao.read_people(session)
-        found_people = self.convert_and_clear_db_ids(found_people)
-        self.assertCountEqual(found_people, expected_people)
+        self.assert_expected_db_people(expected_people)
 
         ######################################
         # DOCSTARS CASES
@@ -3200,10 +3113,7 @@ class TestUsNdController(unittest.TestCase):
         self._run_ingest_job_for_filename('docstars_offendercasestable.csv')
 
         # Assert
-        session = SessionFactory.for_schema_base(StateBase)
-        found_people = dao.read_people(session)
-        found_people = self.convert_and_clear_db_ids(found_people)
-        self.assertCountEqual(found_people, expected_people)
+        self.assert_expected_db_people(expected_people)
 
         ######################################
         # DOCSTARS OFFENSES
@@ -3270,10 +3180,7 @@ class TestUsNdController(unittest.TestCase):
         self._run_ingest_job_for_filename('docstars_offensestable.csv')
 
         # Assert
-        session = SessionFactory.for_schema_base(StateBase)
-        found_people = dao.read_people(session)
-        found_people = self.convert_and_clear_db_ids(found_people)
-        self.assertCountEqual(found_people, expected_people)
+        self.assert_expected_db_people(expected_people)
 
         ######################################
         # FTR EPISODES
@@ -3397,10 +3304,7 @@ class TestUsNdController(unittest.TestCase):
         self._run_ingest_job_for_filename('docstars_ftr_episode.csv')
 
         # Assert
-        session = SessionFactory.for_schema_base(StateBase)
-        found_people = dao.read_people(session)
-        found_people = self.convert_and_clear_db_ids(found_people)
-        self.assertCountEqual(found_people, expected_people)
+        self.assert_expected_db_people(expected_people)
 
         ######################################
         # DOCSTARS LSI CHRONOLOGY
@@ -3490,31 +3394,16 @@ class TestUsNdController(unittest.TestCase):
         self._run_ingest_job_for_filename('docstars_lsi_chronology.csv')
 
         # Assert
-        session = SessionFactory.for_schema_base(StateBase)
-        found_people = dao.read_people(session)
-        found_people = self.convert_and_clear_db_ids(found_people)
-        self.assertCountEqual(found_people, expected_people)
+        self.assert_expected_db_people(expected_people)
 
         # pylint:disable=protected-access
         file_tags = self.controller._get_file_tag_rank_list()
         for file_tag in file_tags:
             self._run_ingest_job_for_filename(f'{file_tag}.csv')
 
-        session = SessionFactory.for_schema_base(StateBase)
-        found_people = dao.read_people(session)
-        found_people = self.convert_and_clear_db_ids(found_people)
-        self.assertCountEqual(found_people, expected_people)
+        self.assert_expected_db_people(expected_people)
 
-    def convert_and_clear_db_ids(self, db_entities: List[StateBase]):
-        converted = StateSchemaToEntityConverter().convert_all(
-            db_entities, populate_back_edges=True)
-        clear_db_ids(converted)
-        return converted
-
-    @patch.dict('os.environ', {'PERSIST_LOCALLY': 'true'})
-    @patch("recidiviz.persistence.entity_matching.state"
-           ".state_matching_utils.get_region")
-    def test_runOutOfOrder_mergeTwoDatabasePeople(self, mock_get_region):
+    def test_runOutOfOrder_mergeTwoDatabasePeople(self):
         """Tests that our system correctly handles the situation where we commit
         2 separate people into our DB, but after ingesting a later file, we
         realize that those 2 people should actually be merged into one person.
@@ -3522,7 +3411,6 @@ class TestUsNdController(unittest.TestCase):
         our desired order, or if all files aren't always in sync/fully up to
         date at the time we receive them.
         """
-        mock_get_region.return_value = self._fake_region()
 
         ######################################
         # ELITE OFFENDERS
@@ -3577,10 +3465,7 @@ class TestUsNdController(unittest.TestCase):
         self._run_ingest_job_for_filename('elite_offenders.csv')
 
         # Assert
-        session = SessionFactory.for_schema_base(StateBase)
-        found_people = dao.read_people(session)
-        found_people = self.convert_and_clear_db_ids(found_people)
-        self.assertCountEqual(found_people, expected_people)
+        self.assert_expected_db_people(expected_people)
 
         ######################################
         # DOCSTARS LSI CHRONOLOGY
@@ -3685,10 +3570,7 @@ class TestUsNdController(unittest.TestCase):
         self._run_ingest_job_for_filename('docstars_lsi_chronology.csv')
 
         # Assert
-        session = SessionFactory.for_schema_base(StateBase)
-        found_people = dao.read_people(session)
-        found_people = self.convert_and_clear_db_ids(found_people)
-        self.assertCountEqual(found_people, expected_people)
+        self.assert_expected_db_people(expected_people)
 
         ######################################
         # ELITE OFFENDER IDENTIFIERS
@@ -3735,10 +3617,7 @@ class TestUsNdController(unittest.TestCase):
         self._run_ingest_job_for_filename('elite_offenderidentifier.csv')
 
         # Assert
-        session = SessionFactory.for_schema_base(StateBase)
-        found_people = dao.read_people(session)
-        found_people = self.convert_and_clear_db_ids(found_people)
-        self.assertCountEqual(found_people, expected_people)
+        self.assert_expected_db_people(expected_people)
 
         # Rerun for sanity
         file_tags = ['elite_offenders', 'docstars_lsi_chronology',
@@ -3746,7 +3625,4 @@ class TestUsNdController(unittest.TestCase):
         for file_tag in file_tags:
             self._run_ingest_job_for_filename(f'{file_tag}.csv')
 
-        session = SessionFactory.for_schema_base(StateBase)
-        found_people = dao.read_people(session)
-        found_people = self.convert_and_clear_db_ids(found_people)
-        self.assertCountEqual(found_people, expected_people)
+        self.assert_expected_db_people(expected_people)

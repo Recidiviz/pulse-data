@@ -19,7 +19,7 @@
 import inspect
 from enum import Enum, auto
 from types import ModuleType
-from typing import Dict, List, Set, Type, Sequence
+from typing import Dict, List, Set, Type, Sequence, Optional
 from functools import lru_cache
 
 import attr
@@ -486,5 +486,42 @@ def get_all_db_objs_from_tree(db_obj: DatabaseEntity,
             get_all_db_objs_from_trees(child, result)
         else:
             get_all_db_objs_from_tree(child, result)
+
+    return result
+
+
+def get_all_entities_from_tree(
+        entity: Entity,
+        result: Optional[List[Entity]] = None,
+        seen_ids: Optional[Set[int]] = None) -> List[Entity]:
+    """Returns a list of all entities in the tree below the entity,
+    including the entity itself. Entities are deduplicated by Python object id.
+    """
+
+    if result is None:
+        result = []
+    if seen_ids is None:
+        seen_ids = set()
+
+    if id(entity) in seen_ids:
+        return result
+
+    result.append(entity)
+    seen_ids.add(id(entity))
+
+    fields = get_all_core_entity_field_names(entity,
+                                             EntityFieldType.FORWARD_EDGE)
+
+    for field in fields:
+        child = entity.get_field(field)
+
+        if child is None:
+            continue
+
+        if isinstance(child, list):
+            for c in child:
+                get_all_entities_from_tree(c, result, seen_ids)
+        else:
+            get_all_entities_from_tree(child, result, seen_ids)
 
     return result

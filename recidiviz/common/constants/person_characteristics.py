@@ -174,6 +174,7 @@ ETHNICITY_MAP = {
     'L': Ethnicity.HISPANIC,
     'NOT HISPANIC': Ethnicity.NOT_HISPANIC,
     'N': Ethnicity.NOT_HISPANIC,
+    'U': Ethnicity.EXTERNAL_UNKNOWN,
     'UNKNOWN': Ethnicity.EXTERNAL_UNKNOWN,
 }
 
