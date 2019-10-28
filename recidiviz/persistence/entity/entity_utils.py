@@ -25,6 +25,7 @@ from functools import lru_cache
 import attr
 
 from recidiviz.common.attr_utils import get_non_flat_property_class_name
+from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_court_case import StateCourtType
 from recidiviz.common.constants.state.state_incarceration import \
     StateIncarcerationType
@@ -390,6 +391,11 @@ def is_placeholder(entity: CoreEntity) -> bool:
         if entity.has_default_enum('court_type',
                                    StateCourtType.PRESENT_WITHOUT_INFO):
             set_flat_fields.remove('court_type')
+
+    if 'agent_type' in set_flat_fields:
+        if entity.has_default_enum('agent_type',
+                                   StateAgentType.PRESENT_WITHOUT_INFO):
+            set_flat_fields.remove('agent_type')
 
     return not bool(set_flat_fields)
 
