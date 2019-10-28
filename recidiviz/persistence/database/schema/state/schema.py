@@ -145,6 +145,7 @@ state_court_type = Enum(
     name='state_court_type')
 
 state_agent_type = Enum(
+    enum_strings.present_without_info,
     state_enum_strings.state_agent_correctional_officer,
     state_enum_strings.state_agent_judge,
     state_enum_strings.state_agent_parole_board_member,
