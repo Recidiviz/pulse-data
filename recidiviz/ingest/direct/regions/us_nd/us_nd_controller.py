@@ -62,6 +62,10 @@ from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.common.str_field_utils import parse_days_from_duration_pieces
 from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller \
     import CsvGcsfsDirectIngestController
+from recidiviz.ingest.direct.direct_ingest_controller_utils import \
+    create_if_not_exists
+from recidiviz.ingest.direct.state_shared_row_posthooks import \
+    copy_name_to_alias, gen_label_single_external_id_hook
 from recidiviz.ingest.direct.regions.us_nd.us_nd_county_code_reference import \
     normalized_county_code
 from recidiviz.ingest.direct.regions.us_nd.\
@@ -75,8 +79,7 @@ from recidiviz.ingest.models.ingest_info import IngestInfo, IngestObject, \
     StateCharge, StateSupervisionViolation, StateSupervisionViolationResponse, \
     StateAgent, StateIncarcerationIncidentOutcome, StateIncarcerationIncident, \
     StateSupervisionSentence, StateCourtCase, \
-    StateSupervisionPeriod, StateProgramAssignment, StateAlias, \
-    StatePersonEthnicity
+    StateSupervisionPeriod, StateProgramAssignment, StatePersonEthnicity
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 from recidiviz.utils import environment
 
@@ -107,10 +110,9 @@ class UsNdController(CsvGcsfsDirectIngestController):
             'elite_orderstable': [self._normalize_id_fields],
             'elite_externalmovements': [self._normalize_id_fields],
         }
-
         self.row_post_processors_by_file: Dict[str, List[Callable]] = {
-            'elite_offenders': [self._copy_name_to_alias],
-            'elite_offenderidentifier': [self._normalize_external_id],
+            'elite_offenders': [copy_name_to_alias],
+            'elite_offenderidentifier': [self._normalize_external_id_type],
             'elite_offendersentenceaggs': [self._rationalize_max_length],
             'elite_offendersentences': [self._rationalize_life_sentence],
             'elite_offendersentenceterms': [
@@ -131,11 +133,15 @@ class UsNdController(CsvGcsfsDirectIngestController):
                 self._set_punishment_length_days,
                 self._set_location_within_facility,
                 self._set_incident_outcome_id],
-            'docstars_offenders': [self._label_external_id_as_elite,
-                                   self._enrich_addresses,
-                                   self._enrich_sorac_assessments,
-                                   self._copy_name_to_alias,
-                                   self._add_supervising_officer],
+            'docstars_offenders': [
+                # For a person we are seeing in Docstars with an ITAGROOT_ID
+                # referencing a corresponding record in Elite, mark that
+                # external id as having type ELITE.
+                gen_label_single_external_id_hook(US_ND_ELITE),
+                self._enrich_addresses,
+                self._enrich_sorac_assessments,
+                copy_name_to_alias,
+                self._add_supervising_officer],
             'docstars_offendercasestable': [
                 self._concatenate_docstars_length_periods,
                 self._record_revocation,
@@ -287,25 +293,6 @@ class UsNdController(CsvGcsfsDirectIngestController):
                                                    US_ND_SID)
 
     @staticmethod
-    def _copy_name_to_alias(_row: Dict[str, str],
-                            extracted_objects: List[IngestObject],
-                            _cache: IngestObjectCache):
-        for extracted_object in extracted_objects:
-            if isinstance(extracted_object, StatePerson):
-                alias_to_create = StateAlias(
-                    full_name=extracted_object.full_name,
-                    surname=extracted_object.surname,
-                    given_names=extracted_object.given_names,
-                    middle_names=extracted_object.middle_names,
-                    name_suffix=extracted_object.name_suffix,
-                    alias_type=StatePersonAliasType.GIVEN_NAME.value
-                )
-
-                _create_if_not_exists(alias_to_create,
-                                      extracted_object,
-                                      'state_aliases')
-
-    @staticmethod
     def _add_supervising_officer(row: Dict[str, str],
                                  extracted_objects: List[IngestObject],
                                  _cache: IngestObjectCache):
@@ -318,7 +305,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
                 agent_to_create = StateAgent(
                     state_agent_id=supervising_officer_id,
                     agent_type=StateAgentType.SUPERVISION_OFFICER.value)
-                _create_if_not_exists(
+                create_if_not_exists(
                     agent_to_create, extracted_object, 'supervising_officer')
 
     @staticmethod
@@ -334,9 +321,9 @@ class UsNdController(CsvGcsfsDirectIngestController):
                 if person_race.race in {'5', 'HIS'}:
                     ethnicity_to_create = \
                         StatePersonEthnicity(ethnicity=Ethnicity.HISPANIC.value)
-                    _create_if_not_exists(ethnicity_to_create,
-                                          person,
-                                          'state_person_ethnicities')
+                    create_if_not_exists(ethnicity_to_create,
+                                         person,
+                                         'state_person_ethnicities')
                 else:
                     updated_person_races.append(person_race)
             person.state_person_races = updated_person_races
@@ -369,9 +356,9 @@ class UsNdController(CsvGcsfsDirectIngestController):
                 extracted_object.__setattr__('is_life', str(is_life_sentence))
 
     @staticmethod
-    def _normalize_external_id(_row: Dict[str, str],
-                               extracted_objects: List[IngestObject],
-                               _cache: IngestObjectCache):
+    def _normalize_external_id_type(_row: Dict[str, str],
+                                    extracted_objects: List[IngestObject],
+                                    _cache: IngestObjectCache):
         for extracted_object in extracted_objects:
             if isinstance(extracted_object, StatePersonExternalId):
                 id_type = f"US_ND_{extracted_object.id_type}"
@@ -454,17 +441,6 @@ class UsNdController(CsvGcsfsDirectIngestController):
                     elif facility == 'DEFP':
                         extracted_object.incarceration_type = \
                             StateIncarcerationType.COUNTY_JAIL.value
-
-    @staticmethod
-    def _label_external_id_as_elite(_row: Dict[str, str],
-                                    extracted_objects: List[IngestObject],
-                                    _cache: IngestObjectCache):
-        """For a person we are seeing in Docstars with an ITAGROOT_ID
-        referencing a corresponding record in Elite, mark that external id as
-        having type ELITE."""
-        for extracted_object in extracted_objects:
-            if isinstance(extracted_object, StatePersonExternalId):
-                extracted_object.__setattr__('id_type', US_ND_ELITE)
 
     @staticmethod
     def _enrich_addresses(row: Dict[str, str],
@@ -652,9 +628,9 @@ class UsNdController(CsvGcsfsDirectIngestController):
                             state_agent_id=terminating_officer_id,
                             agent_type=StateAgentType.SUPERVISION_OFFICER.value
                         )
-                        _create_if_not_exists(agent_to_create,
-                                              extracted_object,
-                                              'decision_agents')
+                        create_if_not_exists(agent_to_create,
+                                             extracted_object,
+                                             'decision_agents')
 
     @staticmethod
     def _rationalize_incident_type(_row: Dict[str, str],
@@ -1225,21 +1201,3 @@ def _normalize_county_code(
     for extracted_object in extracted_objects:
         if isinstance(extracted_object, ingest_type):
             extracted_object.__setattr__('county_code', normalized_code)
-
-
-def _create_if_not_exists(obj: IngestObject,
-                          parent_obj: IngestObject,
-                          objs_field_name: str):
-    """Create an object on |parent_obj| if an identical object does not
-    already exist.
-    """
-
-    existing_objects = getattr(parent_obj, objs_field_name) or []
-    if isinstance(existing_objects, IngestObject):
-        existing_objects = [existing_objects]
-
-    for existing_obj in existing_objects:
-        if obj == existing_obj:
-            return
-    create_func = getattr(parent_obj, f'create_{obj.class_name()}')
-    create_func(**obj.__dict__)

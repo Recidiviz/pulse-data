@@ -14,23 +14,24 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
+"""Util functions shared across multiple types of hooks in the direct
+ingest controllers."""
+from recidiviz.ingest.models.ingest_info import IngestObject
 
-"""Strings representing different types of external ids ingested by our system.
 
-NOTE: Changing ANY STRING VALUE in this file will require a database migration.
-The Python values pointing to the strings can be renamed without issue.
+def create_if_not_exists(obj: IngestObject,
+                         parent_obj: IngestObject,
+                         objs_field_name: str):
+    """Create an object on |parent_obj| if an identical object does not
+    already exist.
+    """
 
-At present, these are specifically for cataloging the kinds of ids ingested into
-the StatePersonExternalId entity. In this context, the id types represent the
-source that actually creates the id in the real world.
-"""
+    existing_objects = getattr(parent_obj, objs_field_name) or []
+    if isinstance(existing_objects, IngestObject):
+        existing_objects = [existing_objects]
 
-# StatePersonExternalId.id_type
-
-US_MO_DOC = 'US_MO_DOC'
-US_MO_SID = 'US_MO_SID'
-US_MO_FBI = 'US_MO_FBI'
-US_MO_OLN = 'US_MO_OLN'
-
-US_ND_ELITE = 'US_ND_ELITE'
-US_ND_SID = 'US_ND_SID'
+    for existing_obj in existing_objects:
+        if obj == existing_obj:
+            return
+    create_func = getattr(parent_obj, f'create_{obj.class_name()}')
+    create_func(**obj.__dict__)
