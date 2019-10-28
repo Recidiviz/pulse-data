@@ -482,14 +482,16 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         if not a.ancestor_chain:
             return True
 
-        while a.ancestor_chain:
-            a = a.generate_parent_tree()
-            b = b.generate_parent_tree()
+        a_ancestor_tree = a
+        b_ancestor_tree = b
+        while a_ancestor_tree.ancestor_chain:
+            a_ancestor_tree = a_ancestor_tree.generate_parent_tree()
+            b_ancestor_tree = b_ancestor_tree.generate_parent_tree()
             # ignore placeholders in the chain.
-            if is_placeholder(b.entity) or \
-                    is_placeholder(a.entity):
+            if is_placeholder(a_ancestor_tree.entity) or \
+                    is_placeholder(b_ancestor_tree.entity):
                 pass
-            elif not is_match(a, b):
+            elif not is_match(a_ancestor_tree, b_ancestor_tree):
                 logging.error(
                     'Ancestor chains do not match for entities to merge of type'
                     ' [%s] with ids [%s] and [%s].',
