@@ -1109,3 +1109,17 @@ def db_id_or_object_id(entity: DatabaseEntity) -> int:
     otherwise provides the object id.
     """
     return entity.get_id() if entity.get_id() else id(entity)
+
+
+def is_standalone_class(cls: Type[DatabaseEntity]) -> bool:
+    """Returns True if the provided cls is a class that can exist separate
+    from a StatePerson tree.
+    """
+    return 'person_id' not in cls.get_column_property_names()
+
+
+def is_standalone_entity(entity: DatabaseEntity) -> bool:
+    """Returns True if the provided entity is an instance of a class that
+    can exist separate from a StatePerson tree.
+    """
+    return is_standalone_class(entity.__class__)

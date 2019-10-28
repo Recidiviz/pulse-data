@@ -189,6 +189,53 @@ class TestStateEntityMatching(TestCase):
             session,
             expected_unmatched_db_people=[expected_db_person])
 
+    def test_match_overwriteAgent(self, _):
+        # Arrange 1 - Match
+        db_agent = generate_agent(
+            agent_id=_ID,
+            state_code=_STATE_CODE,
+            external_id=_EXTERNAL_ID,
+            agent_type=StateAgentType.SUPERVISION_OFFICER.value)
+        db_external_id = generate_external_id(
+            person_external_id_id=_ID, state_code=_STATE_CODE,
+            external_id=_EXTERNAL_ID, id_type=_ID_TYPE)
+        db_person = generate_person(person_id=_ID, full_name=_FULL_NAME,
+                                    external_ids=[db_external_id],
+                                    supervising_officer=db_agent)
+
+        self._commit_to_db(db_person)
+
+        external_id = attr.evolve(
+            self.to_entity(db_external_id), person_external_id_id=None)
+        agent = StateAgent.new_with_defaults(
+            external_id=_EXTERNAL_ID_2,
+            state_code=_STATE_CODE,
+            agent_type=StateAgentType.SUPERVISION_OFFICER)
+        person = attr.evolve(
+            self.to_entity(db_person),
+            person_id=None,
+            external_ids=[external_id],
+            supervising_officer=agent)
+
+        expected_external_id = attr.evolve(
+            external_id, person_external_id_id=_ID)
+        expected_agent = attr.evolve(agent)
+        expected_person = attr.evolve(
+            person, person_id=_ID, external_ids=[expected_external_id],
+            supervising_officer=expected_agent)
+
+        # Act 1 - Match
+        session = self._session()
+        matched_entities = entity_matching.match(
+            session, _STATE_CODE, [person])
+
+        self.assertEqual(0, matched_entities.error_count)
+        self.assertEqual(1, matched_entities.total_root_entities)
+        self.assert_people_match_pre_and_post_commit(
+            [expected_person],
+            matched_entities.people,
+            session)
+
     def test_match_twoMatchingIngestedPersons(self, _):
         # Arrange
         external_id = StatePersonExternalId.new_with_defaults(
@@ -2138,6 +2185,8 @@ class TestStateEntityMatching(TestCase):
         self.assertEqual(1, matched_entities.total_root_entities)
 
     def test_runMatch_moveSupervisingOfficerOntoOpenSupervisionPeriods(self, _):
+        db_supervising_officer = generate_agent(
+            agent_id=_ID, external_id=_EXTERNAL_ID, state_code=_US_ND)
         db_person = generate_person(person_id=_ID)
         db_external_id = generate_external_id(
             person_external_id_id=_ID, external_id=_EXTERNAL_ID,
@@ -2149,14 +2198,16 @@ class TestStateEntityMatching(TestCase):
             external_id=_EXTERNAL_ID,
             start_date=_DATE_1,
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO.value,
-            state_code=_STATE_CODE)
+            state_code=_STATE_CODE,
+            supervising_officer=db_supervising_officer)
         db_supervision_period_another = generate_supervision_period(
             person=db_person,
             supervision_period_id=_ID_2,
             external_id=_EXTERNAL_ID_2,
             start_date=_DATE_2,
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO.value,
-            state_code=_STATE_CODE)
+            state_code=_STATE_CODE,
+            supervising_officer=db_supervising_officer)
         db_closed_supervision_period = generate_supervision_period(
             person=db_person,
             supervision_period_id=_ID_3,
@@ -2164,7 +2215,8 @@ class TestStateEntityMatching(TestCase):
             start_date=_DATE_3,
             termination_date=_DATE_4,
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO.value,
-            state_code=_STATE_CODE)
+            state_code=_STATE_CODE,
+            supervising_officer=db_supervising_officer)
         db_supervision_sentence = generate_supervision_sentence(
             person=db_person,
             external_id=_EXTERNAL_ID, supervision_sentence_id=_ID,
@@ -2180,22 +2232,28 @@ class TestStateEntityMatching(TestCase):
 
         external_id = attr.evolve(self.to_entity(db_external_id),
                                   person_external_id_id=None)
-        supervising_officer = StateAgent.new_with_defaults(
-            external_id=_EXTERNAL_ID,
+        new_supervising_officer = StateAgent.new_with_defaults(
+            external_id=_EXTERNAL_ID_2,
             state_code=_STATE_CODE,
             agent_type=StateAgentType.SUPERVISION_OFFICER)
         person = StatePerson.new_with_defaults(
-            external_ids=[external_id], supervising_officer=supervising_officer)
+            external_ids=[external_id],
+            supervising_officer=new_supervising_officer)
 
-        expected_supervising_officer = attr.evolve(supervising_officer)
+        expected_supervising_officer = attr.evolve(
+            self.to_entity(db_supervising_officer),
+            agent_id=None)
+
+        expected_new_supervising_officer = attr.evolve(new_supervising_officer)
         expected_supervision_period = attr.evolve(
             self.to_entity(db_supervision_period),
-            supervising_officer=expected_supervising_officer)
+            supervising_officer=expected_new_supervising_officer)
         expected_supervision_period_another = attr.evolve(
             self.to_entity(db_supervision_period_another),
+            supervising_officer=expected_new_supervising_officer)
+        expected_closed_supervision_period = attr.evolve(
+            self.to_entity(db_closed_supervision_period),
             supervising_officer=expected_supervising_officer)
-        expected_closed_supervision_period = self.to_entity(
-            db_closed_supervision_period)
         expected_supervision_sentence = attr.evolve(
             self.to_entity(db_supervision_sentence),
             supervision_periods=[expected_supervision_period,
@@ -2209,7 +2267,7 @@ class TestStateEntityMatching(TestCase):
             self.to_entity(db_person),
             external_ids=[expected_external_id],
             sentence_groups=[expected_sentence_group],
-            supervising_officer=expected_supervising_officer)
+            supervising_officer=expected_new_supervising_officer)
 
         # Act 1 - Match
         session = self._session()
