@@ -200,6 +200,7 @@ def generate_assessment(person, **kwargs) -> schema.StateAssessment:
 
 def generate_agent(**kwargs) -> schema.StateAgent:
     args = {
+        'state_code': _STATE_CODE,
         'agent_type': StateAgentType.JUDGE.value,
     }
     args.update(kwargs)

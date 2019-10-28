@@ -49,7 +49,8 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import \
     get_external_id_keys_from_multiple_id_entity, db_id_or_object_id, \
     get_multiple_id_classes, \
     read_db_entity_trees_of_cls_to_merge, \
-    add_supervising_officer_to_open_supervision_periods, get_multiparent_classes
+    add_supervising_officer_to_open_supervision_periods, \
+    get_multiparent_classes, is_standalone_entity, is_standalone_class
 from recidiviz.persistence.entity.entity_utils import is_placeholder, \
     get_set_entity_field_names, get_all_core_entity_field_names, \
     get_all_db_objs_from_tree, get_all_db_objs_from_trees
@@ -438,7 +439,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
     def _can_merge_child_cls(self, cls):
         if not hasattr(cls, 'external_id'):
             return False
-        if not hasattr(cls, 'person_id'):
+        if is_standalone_class(cls):
             return False
 
         # TODO(2578): Add functionality to merge multi_id and multi_parent
@@ -665,7 +666,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
             children = get_all_db_objs_from_tree(person)
             self.check_no_ingest_objs(list(children))
             for child in children:
-                if child is not person and hasattr(child, 'person'):
+                if child is not person and not is_standalone_entity(child):
                     child.set_field('person', person)
 
     def _match_entity_trees(
@@ -1066,7 +1067,8 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
                 self.check_no_ingest_objs(updated_children)
                 db_entity.set_field(child_field_name, updated_children)
             else:
-                if match_results.unmatched_db_entities:
+                if match_results.unmatched_db_entities and \
+                        not is_standalone_entity(ingested_child_field):
                     raise EntityMatchingError(
                         f"Singular ingested entity field {child_field_name} "
                         f"with value: {ingested_child_field} should "
