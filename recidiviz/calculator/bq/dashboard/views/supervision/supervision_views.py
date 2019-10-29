@@ -16,6 +16,8 @@
 # =============================================================================
 """Views related to supervision."""
 # pylint: disable=line-too-long
+from recidiviz.calculator.bq.dashboard.views.supervision.us_nd.average_change_lsir_score_by_month import \
+    AVERAGE_CHANGE_LSIR_SCORE_MONTH_VIEW
 from recidiviz.calculator.bq.dashboard.views.supervision.supervision_population_by_age_60_days import \
     SUPERVISION_POPULATION_BY_AGE_60_DAYS_VIEW
 from recidiviz.calculator.bq.dashboard.views.supervision.supervision_population_by_gender_60_days import \
@@ -28,6 +30,7 @@ from recidiviz.calculator.bq.dashboard.views.supervision.supervision_termination
     SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_VIEW
 
 SUPERVISION_VIEWS = [
+    AVERAGE_CHANGE_LSIR_SCORE_MONTH_VIEW,
     SUPERVISION_POPULATION_BY_AGE_60_DAYS_VIEW,
     SUPERVISION_POPULATION_BY_GENDER_60_DAYS_VIEW,
     SUPERVISION_POPULATION_BY_LSIR_60_DAYS_VIEW,
