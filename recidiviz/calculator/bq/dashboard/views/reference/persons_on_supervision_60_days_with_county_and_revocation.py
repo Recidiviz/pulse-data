@@ -59,7 +59,7 @@ PERSONS_ON_SUPERVISION_60_DAYS_WITH_COUNTY_AND_REVOCATION_QUERY = \
     CONCAT('US_ND_', UPPER(substr(zipcode_county_map.county, 0, LENGTH(zipcode_county_map.county) - 7))) as county
     FROM `{project_id}.{views_dataset}.persons_with_last_known_address` as state_person
     LEFT JOIN 
-    `recidiviz-123.dashboard_views.us_nd_zipcode_county_map` as zipcode_county_map
+    `{project_id}.{views_dataset}.us_nd_zipcode_county_map` as zipcode_county_map
     ON substr(state_person.last_known_address, -5) = zipcode_county_map.zip_code
     WHERE state_person.last_known_address IS NOT NULL) count
     ON pop.person_id = count.person_id
