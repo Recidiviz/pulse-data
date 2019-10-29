@@ -25,10 +25,12 @@ from recidiviz.ingest.direct.regions.us_tx_brazos.us_tx_brazos_controller \
     import UsTxBrazosController
 from recidiviz.ingest.models.ingest_info import Arrest, Bond, Booking, Charge, \
     Hold, Person, IngestInfo
+from recidiviz.persistence.database.base_schema import JailsBase
 from recidiviz.tests.ingest import fixtures
 from recidiviz.tests.ingest.direct.direct_ingest_util import \
     add_paths_with_tags_and_process, build_gcsfs_controller_for_tests, \
     ingest_args_for_fixture_file
+from recidiviz.tests.utils import fakes
 from recidiviz.tests.utils.individual_ingest_test import IndividualIngestTest
 from recidiviz.utils import regions
 
@@ -43,6 +45,9 @@ _FAKE_START_TIME = datetime.datetime(year=2019, month=1, day=2)
 class UsTxBrazosControllerTest(IndividualIngestTest, TestCase):
     """Test Brazos direct ingest.
     """
+
+    def setup_method(self, _test_method):
+        fakes.use_in_memory_sqlite_database(JailsBase)
 
     def testParse(self):
         controller = build_gcsfs_controller_for_tests(UsTxBrazosController,

@@ -26,8 +26,6 @@ from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import \
     BaseDirectIngestController
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import \
     to_normalized_unprocessed_file_path, SPLIT_FILE_SUFFIX
-from recidiviz.ingest.direct.controllers.gcsfs_path import \
-    GcsfsFilePath, GcsfsDirectoryPath
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_job_prioritizer \
     import GcsfsDirectIngestJobPrioritizer
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
@@ -35,6 +33,8 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     gcsfs_direct_ingest_storage_directory_path_for_region, \
     gcsfs_direct_ingest_directory_path_for_region
 from recidiviz.ingest.direct.controllers.gcsfs_factory import GcsfsFactory
+from recidiviz.ingest.direct.controllers.gcsfs_path import \
+    GcsfsFilePath, GcsfsDirectoryPath
 from recidiviz.ingest.direct.errors import DirectIngestError, \
     DirectIngestErrorType
 
@@ -266,7 +266,6 @@ class GcsfsDirectIngestController(BaseDirectIngestController[GcsfsIngestArgs,
         if parts.is_file_split and \
                 parts.file_split_size and \
                 parts.file_split_size <= self.file_split_line_limit:
-
             logging.info("File [%s] already split with size [%s].",
                          path.abs_path(), parts.file_split_size)
             return False
@@ -297,10 +296,10 @@ class GcsfsDirectIngestController(BaseDirectIngestController[GcsfsIngestArgs,
         rank_str = str(split_num + 1).zfill(3)
         existing_suffix = \
             f'_{parts.filename_suffix}' if parts.filename_suffix else ''
-        updated_file_name = \
-            f'{parts.file_tag}{existing_suffix}_{rank_str}' \
-            f'_{SPLIT_FILE_SUFFIX}_size{self.file_split_line_limit}' \
-            f'.{parts.extension}'
+        updated_file_name = (
+            f'{parts.file_tag}{existing_suffix}_{rank_str}'
+            f'_{SPLIT_FILE_SUFFIX}_size{self.file_split_line_limit}'
+            f'.{parts.extension}')
         return GcsfsFilePath.from_directory_and_file_name(
             output_dir,
             to_normalized_unprocessed_file_path(updated_file_name,
@@ -321,13 +320,29 @@ class GcsfsDirectIngestController(BaseDirectIngestController[GcsfsIngestArgs,
         self._move_processed_files_to_storage_as_necessary(
             last_processed_date_str=parts.date_str)
 
+    def _is_last_job_for_day(self, args: GcsfsIngestArgs) -> bool:
+        """Returns True if the file handled in |args| is the last file for that
+        upload date."""
+        parts = filename_parts_from_path(args.file_path)
+        upload_date, date_str = parts.utc_upload_datetime, parts.date_str
+        more_jobs_expected = \
+            self.file_prioritizer.are_more_jobs_expected_for_day(date_str)
+        if more_jobs_expected:
+            return False
+        next_job_args = self.file_prioritizer.get_next_job_args(date_str)
+        if next_job_args:
+            next_job_date = filename_parts_from_path(
+                next_job_args.file_path).utc_upload_datetime
+            return next_job_date > upload_date
+        return True
+
     def _move_processed_files_to_storage_as_necessary(
             self, last_processed_date_str: str):
         next_args = self.file_prioritizer.get_next_job_args()
 
         should_move_last_processed_date = False
         if not next_args:
-            are_more_jobs_expected =\
+            are_more_jobs_expected = \
                 self.file_prioritizer.are_more_jobs_expected_for_day(
                     last_processed_date_str)
             if not are_more_jobs_expected:
