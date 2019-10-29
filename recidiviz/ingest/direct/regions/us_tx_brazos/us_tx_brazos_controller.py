@@ -32,7 +32,8 @@ from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller \
     import CsvGcsfsDirectIngestController
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
-    GcsfsIngestArgs
+    GcsfsIngestArgs, filename_parts_from_path
+from recidiviz.persistence import persistence
 
 
 class UsTxBrazosController(CsvGcsfsDirectIngestController):
@@ -77,6 +78,21 @@ class UsTxBrazosController(CsvGcsfsDirectIngestController):
                     charge.level = charge.degree
                     charge.degree = None
         return ingest_info
+
+    def _file_meets_file_line_limit(self, contents: Iterable[str]):
+        """The CSV files must be processed all at once, so do not split."""
+        return True
+
+    def _do_cleanup(self, args: GcsfsIngestArgs):
+        """If this job is the last for the day, call infer_release before
+        continuing to further jobs."""
+        if self._is_last_job_for_day(args):
+            persistence.infer_release_on_open_bookings(
+                self.region.region_code,
+                filename_parts_from_path(args.file_path).utc_upload_datetime,
+                CustodyStatus.INFERRED_RELEASE)
+
+        super()._do_cleanup(args)
 
     def get_enum_overrides(self):
         overrides_builder = super().get_enum_overrides().to_builder()
