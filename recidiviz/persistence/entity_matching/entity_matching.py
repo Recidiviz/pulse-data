@@ -32,6 +32,8 @@ from recidiviz.persistence.entity_matching.county.county_entity_matcher import \
     CountyEntityMatcher
 from recidiviz.persistence.entity_matching.state.state_entity_matcher import \
     StateEntityMatcher
+from recidiviz.persistence.entity_matching.state.\
+    state_matching_delegate_factory import StateMatchingDelegateFactory
 from recidiviz.utils import monitoring
 
 m_matching_errors = measure.MeasureInt(
@@ -56,14 +58,15 @@ _EMPTY_MATCH_OUTPUT = MatchedEntities(people=[],
 def match(session: Session,
           region: str,
           ingested_people: List[EntityPersonType]) -> MatchedEntities:
-    matcher = _get_matcher(ingested_people)
+    matcher = _get_matcher(ingested_people, region)
     if not matcher:
         return _EMPTY_MATCH_OUTPUT
 
     return matcher.run_match(session, region, ingested_people)
 
 
-def _get_matcher(ingested_people: List[EntityPersonType]) \
+def _get_matcher(ingested_people: List[EntityPersonType],
+                 region_code: str) \
         -> Optional[BaseEntityMatcher]:
     sample = next(iter(ingested_people), None)
     if not sample:
@@ -73,7 +76,9 @@ def _get_matcher(ingested_people: List[EntityPersonType]) \
         return CountyEntityMatcher()
 
     if isinstance(sample, state_entities.StatePerson):
-        return StateEntityMatcher()
+        state_matching_delegate = \
+            StateMatchingDelegateFactory.build(region_code=region_code)
+        return StateEntityMatcher(state_matching_delegate)
 
     raise ValueError('Invalid person type of [{}]'
                      .format(sample.__class__.__name__))
