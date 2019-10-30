@@ -86,13 +86,17 @@ class UsTxBrazosController(CsvGcsfsDirectIngestController):
     def _do_cleanup(self, args: GcsfsIngestArgs):
         """If this job is the last for the day, call infer_release before
         continuing to further jobs."""
+        self.fs.mv_path_to_processed_path(args.file_path)
+
         if self._is_last_job_for_day(args):
             persistence.infer_release_on_open_bookings(
                 self.region.region_code,
                 filename_parts_from_path(args.file_path).utc_upload_datetime,
                 CustodyStatus.INFERRED_RELEASE)
 
-        super()._do_cleanup(args)
+        parts = filename_parts_from_path(args.file_path)
+        self._move_processed_files_to_storage_as_necessary(
+            last_processed_date_str=parts.date_str)
 
     def get_enum_overrides(self):
         overrides_builder = super().get_enum_overrides().to_builder()
