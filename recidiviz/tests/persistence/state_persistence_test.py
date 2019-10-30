@@ -38,10 +38,10 @@ from recidiviz.tests.utils import fakes
 EXTERNAL_ID = 'EXTERNAL_ID'
 EXTERNAL_ID_2 = 'EXTERNAL_ID_2'
 FULL_NAME_1 = 'TEST_FULL_NAME_1'
-REGION_CODE = 'REGION_CODE'
+REGION_CODE = 'US_ND'
 COUNTY_CODE = 'COUNTY'
 DEFAULT_METADATA = IngestMetadata.new_with_defaults(
-    region='REGION_CODE',
+    region='US_ND',
     jurisdiction_id='12345678',
     system_level=SystemLevel.STATE,
     ingest_time=datetime(year=1000, month=1, day=1))
