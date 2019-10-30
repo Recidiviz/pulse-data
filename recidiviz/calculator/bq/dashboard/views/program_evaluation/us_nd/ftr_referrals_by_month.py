@@ -14,7 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Month over month count for all new referrals to Free Through Recovery."""
+"""Month over month count for the unique number of people who were referred
+to Free Through Recovery."""
 # pylint: disable=line-too-long, trailing-whitespace
 
 from recidiviz.calculator.bq import bqview, export_config
@@ -27,19 +28,22 @@ FTR_REFERRALS_BY_MONTH_VIEW_NAME = \
     'ftr_referrals_by_month'
 
 FTR_REFERRALS_BY_MONTH_DESCRIPTION = """
- Month over month count for all new referrals to Free Through Recovery.
+ Month over month count for the unique number of people who were referred
+ to Free Through Recovery.
 """
 
 FTR_REFERRALS_BY_MONTH_QUERY = \
     """
     /*{description}*/
 
-    SELECT state_code,
-           EXTRACT(YEAR FROM referral_date) as year,
-           EXTRACT(MONTH FROM referral_date) as month,
-           count(*) as count
-    FROM `{project_id}.{base_dataset}.state_program_assignment`
+    SELECT state_code, year, month, count(*) as count
+    FROM
+    (SELECT state_code, person_id, EXTRACT(YEAR FROM referral_date) as year, EXTRACT(MONTH FROM referral_date) as month
+    FROM
+    `{project_id}.{base_dataset}.state_program_assignment`
+    GROUP BY state_code, person_id, year, month)
     GROUP BY state_code, year, month
+    ORDER BY year, month
     """.format(
         description=
         FTR_REFERRALS_BY_MONTH_DESCRIPTION,

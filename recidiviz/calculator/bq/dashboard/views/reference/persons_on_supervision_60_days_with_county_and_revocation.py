@@ -50,7 +50,7 @@ PERSONS_ON_SUPERVISION_60_DAYS_WITH_COUNTY_AND_REVOCATION_QUERY = \
     `{project_id}.{views_dataset}.persons_on_supervision_60_days`) sup
     FULL OUTER JOIN
     (SELECT state_code, person_id, TRUE as revoked
-    FROM `{project_id}.{views_dataset}.incarceration_admissions_60_days` 
+    FROM `{project_id}.{views_dataset}.incarceration_admissions_by_person_60_days` 
     WHERE admission_reason in ('PROBATION_REVOCATION', 'PAROLE_REVOCATION')
     GROUP BY state_code, person_id) inc
     ON sup.state_code = inc.state_code AND sup.person_id = inc.person_id) pop
