@@ -36,7 +36,7 @@ SELECT state_code, admission_type, count(*) as admission_count
 FROM
 -- Technical Revocations
 (SELECT inc.state_code, violation_type as admission_type
-FROM `{project_id}.{views_dataset}.incarceration_admissions_60_days` inc
+FROM `{project_id}.{views_dataset}.incarceration_admissions_by_person_60_days` inc
 JOIN `{project_id}.{base_dataset}.state_supervision_violation_response` resp
 ON inc.source_supervision_violation_response_id = resp.supervision_violation_response_id
 JOIN `{project_id}.{base_dataset}.state_supervision_violation` viol 
@@ -46,19 +46,19 @@ GROUP BY state_code, admission_type
 UNION ALL
 -- New Admissions
 (SELECT state_code, admission_reason as admission_type, count(*) as revocation_count
-FROM `{project_id}.{views_dataset}.incarceration_admissions_60_days`
+FROM `{project_id}.{views_dataset}.incarceration_admissions_by_person_60_days`
 WHERE admission_reason = 'NEW_ADMISSION'
 GROUP BY state_code, admission_type)
 UNION ALL
 -- Unknown Revocations
 (SELECT state_code, 'UNKNOWN_REVOCATION' as admission_type, count(*) as revocation_count
-FROM `{project_id}.{views_dataset}.incarceration_admissions_60_days`
+FROM `{project_id}.{views_dataset}.incarceration_admissions_by_person_60_days`
 WHERE admission_reason in ('PAROLE_REVOCATION', 'PROBATION_REVOCATION') and source_supervision_violation_response_id is null
 GROUP BY state_code, admission_type)
 UNION ALL
 -- Non-Technical Revocations
 (SELECT inc.state_code, 'NON_TECHNICAL' as admission_type, count(*) as revocation_count
-FROM `{project_id}.{views_dataset}.incarceration_admissions_60_days` inc
+FROM `{project_id}.{views_dataset}.incarceration_admissions_by_person_60_days` inc
 JOIN `{project_id}.{base_dataset}.state_supervision_violation_response` resp
 ON inc.source_supervision_violation_response_id = resp.supervision_violation_response_id
 JOIN `{project_id}.{base_dataset}.state_supervision_violation` viol 
