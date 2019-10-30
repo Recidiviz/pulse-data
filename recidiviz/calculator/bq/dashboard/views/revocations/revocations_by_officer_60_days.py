@@ -46,7 +46,7 @@ REVOCATIONS_BY_OFFICER_60_DAYS_QUERY = \
     FROM
     (SELECT sip.state_code, IFNULL(ag.external_id, 'OFFICER_UNKNOWN') as officer_external_id, IFNULL(viol.violation_type, 'UNKNOWN') as violation_type
     FROM
-    `{project_id}.{views_dataset}.incarceration_admissions_60_days` sip
+    `{project_id}.{views_dataset}.incarceration_admissions_by_person_60_days` sip
     LEFT JOIN `{project_id}.{base_dataset}.state_supervision_violation_response` resp on resp.supervision_violation_response_id = sip.source_supervision_violation_response_id 
     LEFT JOIN `{project_id}.{base_dataset}.state_supervision_violation_response_decision_agent_association` ref
     ON resp.supervision_violation_response_id = ref.supervision_violation_response_id 
@@ -55,6 +55,7 @@ REVOCATIONS_BY_OFFICER_60_DAYS_QUERY = \
     LEFT JOIN `{project_id}.{base_dataset}.state_supervision_violation` viol
     ON viol.supervision_violation_id = resp.supervision_violation_id
     WHERE sip.admission_reason IN ('PAROLE_REVOCATION', 'PROBATION_REVOCATION')
+    GROUP BY sip.state_code, sip.person_id, officer_external_id, violation_type
     ORDER BY officer_external_id)
     GROUP BY state_code, officer_external_id) rev
     LEFT JOIN `{project_id}.{base_dataset}.temp_officers` off

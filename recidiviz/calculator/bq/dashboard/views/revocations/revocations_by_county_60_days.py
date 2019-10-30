@@ -40,14 +40,15 @@ REVOCATIONS_BY_COUNTY_60_DAYS_QUERY = \
     SELECT state_code, county_code, count(*) as revocation_count FROM
     (SELECT sip.state_code, IFNULL(ssp.county_code, 'UNKNOWN_COUNTY') as county_code
     FROM
-    `{project_id}.{views_dataset}.incarceration_admissions_60_days` sip
+    `{project_id}.{views_dataset}.incarceration_admissions_by_person_60_days` sip
     LEFT JOIN `{project_id}.{base_dataset}.state_supervision_violation_response` resp
     ON resp.supervision_violation_response_id = sip.source_supervision_violation_response_id 
     LEFT JOIN `{project_id}.{base_dataset}.state_supervision_violation` viol
     ON viol.supervision_violation_id = resp.supervision_violation_id
     LEFT JOIN `{project_id}.{base_dataset}.state_supervision_period` ssp
     ON viol.supervision_period_id = ssp.supervision_period_id
-    WHERE sip.admission_reason IN ('PAROLE_REVOCATION', 'PROBATION_REVOCATION'))
+    WHERE sip.admission_reason IN ('PAROLE_REVOCATION', 'PROBATION_REVOCATION')
+    GROUP BY state_code, sip.person_id, county_code)
     GROUP BY state_code, county_code
     """.format(
         description=REVOCATIONS_BY_COUNTY_60_DAYS_DESCRIPTION,
