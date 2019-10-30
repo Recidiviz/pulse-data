@@ -100,7 +100,7 @@ class BaseStateDirectIngestControllerTests(unittest.TestCase):
     def _run_ingest_job_for_filename(self, filename: str) -> None:
         get_region_patcher = patch(
             "recidiviz.persistence.entity_matching.state."
-            "state_matching_utils.get_region")
+            "base_state_matching_delegate.get_region")
         mock_get_region = get_region_patcher.start()
         mock_get_region.return_value = self._fake_region()
 
