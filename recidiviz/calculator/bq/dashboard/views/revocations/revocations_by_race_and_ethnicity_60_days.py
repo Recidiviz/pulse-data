@@ -36,9 +36,14 @@ REVOCATIONS_BY_RACE_AND_ETHNICITY_60_DAYS_QUERY = \
 
     SELECT state_code, race_or_ethnicity, count(*) as revocation_count
     FROM
-    (SELECT sip.state_code, spre.race_or_ethnicity, admission_date FROM `{project_id}.{views_dataset}.incarceration_admissions_60_days` sip
-    join `{project_id}.{views_dataset}.state_person_race_and_ethnicity` spre ON spre.person_id = sip.person_id
-    WHERE sip.admission_reason in ('PROBATION_REVOCATION', 'PAROLE_REVOCATION'))
+    (SELECT sip.state_code, spre.race_or_ethnicity
+    FROM
+    (SELECT state_code, person_id FROM 
+    `{project_id}.{views_dataset}.incarceration_admissions_by_person_60_days` 
+    WHERE admission_reason in ('PROBATION_REVOCATION', 'PAROLE_REVOCATION')
+    GROUP BY state_code, person_id) sip
+    JOIN `{project_id}.{views_dataset}.state_person_race_and_ethnicity` spre
+    ON spre.person_id = sip.person_id)
     GROUP BY state_code, race_or_ethnicity
     ORDER BY race_or_ethnicity ASC
 

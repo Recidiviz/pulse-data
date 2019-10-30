@@ -16,12 +16,20 @@
 # =============================================================================
 """Reference views used by other views."""
 # pylint: disable=line-too-long
+from recidiviz.calculator.bq.dashboard.views.reference.incarceration_admissions_deduped import \
+    INCARCERATION_ADMISSIONS_DEDUPED_VIEW
+from recidiviz.calculator.bq.dashboard.views.reference.incarceration_admissions_by_person_and_month import \
+    INCARCERATION_ADMISSIONS_BY_PERSON_AND_MONTH_VIEW
+from recidiviz.calculator.bq.dashboard.views.reference.incarceration_releases_by_person_and_month import \
+    INCARCERATION_RELEASES_BY_PERSON_AND_MONTH_VIEW
+from recidiviz.calculator.bq.dashboard.views.reference.incarceration_releases_deduped import \
+    INCARCERATION_RELEASES_DEDUPED_VIEW
 from recidiviz.calculator.bq.dashboard.views.reference.lsir_scores_by_person_period_and_date_month import \
     LSIR_SCORES_BY_PERSON_PERIOD_AND_DATE_MONTH_VIEW
 from recidiviz.calculator.bq.dashboard.views.reference.most_recent_calculate_job import \
     MOST_RECENT_CALCULATE_JOB_VIEW
-from recidiviz.calculator.bq.dashboard.views.reference.incarceration_admissions_60_days import \
-    INCARCERATION_ADMISSIONS_60_DAYS_VIEW
+from recidiviz.calculator.bq.dashboard.views.reference.incarceration_admissions_by_person_60_days import \
+    INCARCERATION_ADMISSIONS_BY_PERSON_60_DAYS_VIEW
 from recidiviz.calculator.bq.dashboard.views.reference.persons_on_supervision_60_days import \
     PERSONS_ON_SUPERVISION_60_DAYS_VIEW
 from recidiviz.calculator.bq.dashboard.views.reference.persons_on_supervision_60_days_with_county_and_revocation import \
@@ -49,7 +57,11 @@ from recidiviz.calculator.bq.dashboard.views.reference.persons_with_most_recent_
 
 REF_VIEWS = [
     MOST_RECENT_CALCULATE_JOB_VIEW,
-    INCARCERATION_ADMISSIONS_60_DAYS_VIEW,
+    INCARCERATION_ADMISSIONS_DEDUPED_VIEW,
+    INCARCERATION_ADMISSIONS_BY_PERSON_AND_MONTH_VIEW,
+    INCARCERATION_ADMISSIONS_BY_PERSON_60_DAYS_VIEW,
+    INCARCERATION_RELEASES_DEDUPED_VIEW,
+    INCARCERATION_RELEASES_BY_PERSON_AND_MONTH_VIEW,
     STATE_PERSON_RACE_AND_ETHNICITY_VIEW,
     SUPERVISION_TERMINATIONS_10_YEARS_VIEW,
     SUPERVISION_TERMINATION_BY_PERSON_AND_PROJECTED_COMPLETION_VIEW,

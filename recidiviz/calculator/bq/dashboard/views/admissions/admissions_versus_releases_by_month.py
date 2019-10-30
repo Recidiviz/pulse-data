@@ -16,12 +16,13 @@
 # =============================================================================
 """Admissions minus releases (net change in incarcerated population)"""
 # pylint: disable=line-too-long, trailing-whitespace
-from recidiviz.calculator.bq import bqview, export_config
+from recidiviz.calculator.bq import bqview
+from recidiviz.calculator.bq.dashboard.views import view_config
 
 from recidiviz.utils import metadata
 
 PROJECT_ID = metadata.project_id()
-BASE_DATASET = export_config.STATE_BASE_TABLES_BQ_DATASET
+VIEWS_DATASET = view_config.DASHBOARD_VIEWS_DATASET
 
 ADMISSIONS_VERSUS_RELEASES_BY_MONTH_VIEW_NAME = 'admissions_versus_releases_by_month'
 
@@ -36,16 +37,14 @@ FROM
 (SELECT state_code, EXTRACT(YEAR from start_date) as year, EXTRACT(MONTH from start_date) as month, IFNULL(admission_count, 0) as admissions
 FROM
 (SELECT state_code, DATE_TRUNC(admission_date, month) as start_date, DATE_ADD(DATE_ADD(DATE_TRUNC(admission_date, month), INTERVAL 1 MONTH), INTERVAL -1 DAY) as end_date, count(*) as admission_count
-FROM `{project_id}.{base_dataset}.state_incarceration_period`
-WHERE admission_reason in ('NEW_ADMISSION', 'PAROLE_REVOCATION', 'PROBATION_REVOCATION')
+FROM `{project_id}.{views_dataset}.incarceration_admissions_by_person_and_month`
 GROUP BY state_code, start_date, end_date
 ORDER BY end_date desc)) adm
 FULL OUTER JOIN
 (SELECT state_code, EXTRACT(YEAR from start_date) as year, EXTRACT(MONTH from start_date) as month, IFNULL(release_count, 0) as releases
 FROM
 (SELECT state_code, DATE_TRUNC(release_date, month) as start_date, DATE_ADD(DATE_ADD(DATE_TRUNC(release_date, month), INTERVAL 1 MONTH), INTERVAL -1 DAY) as end_date, count(*) as release_count
-FROM `{project_id}.{base_dataset}.state_incarceration_period`
-WHERE release_reason in ('COMMUTED', 'CONDITIONAL_RELEASE', 'SENTENCE_SERVED')
+FROM `{project_id}.{views_dataset}.incarceration_releases_by_person_and_month`
 GROUP BY state_code, start_date, end_date
 ORDER BY end_date desc)) rel 
 ON adm.year = rel.year AND adm.month = rel.month
@@ -54,7 +53,7 @@ ORDER BY year, month ASC
 """.format(
         description=ADMISSIONS_VERSUS_RELEASES_BY_MONTH_DESCRIPTION,
         project_id=PROJECT_ID,
-        base_dataset=BASE_DATASET,
+        views_dataset=VIEWS_DATASET,
     )
 
 ADMISSIONS_VERSUS_RELEASES_BY_MONTH_VIEW = bqview.BigQueryView(
