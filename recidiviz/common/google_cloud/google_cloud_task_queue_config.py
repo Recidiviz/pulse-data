@@ -80,6 +80,18 @@ BASE_SCRAPER_QUEUE_CONFIG = queue_pb2.Queue(
     )
 )
 
+SCRAPER_PHASE_QUEUE_CONFIG = queue_pb2.Queue(
+    rate_limits=queue_pb2.RateLimits(
+        max_dispatches_per_second=100,
+        max_concurrent_dispatches=10,
+    ),
+    retry_config=queue_pb2.RetryConfig(
+        min_backoff=duration_pb2.Duration(seconds=5),
+        max_backoff=duration_pb2.Duration(seconds=300),
+        max_attempts=5,
+    )
+)
+
 
 def _queue_config_with_name(
         client_wrapper: GoogleCloudTasksClientWrapper,
@@ -112,7 +124,7 @@ def _build_cloud_task_queue_configs(
     queues.append(
         ProtobufBuilder(queue_pb2.Queue).compose(
             _queue_config_with_name(client_wrapper,
-                                    BASE_SCRAPER_QUEUE_CONFIG,
+                                    SCRAPER_PHASE_QUEUE_CONFIG,
                                     SCRAPER_PHASE_QUEUE_V2)
         ).update_args(
             rate_limits=queue_pb2.RateLimits(
