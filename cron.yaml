@@ -161,7 +161,7 @@ cron:
 
   - description: Start Cloud SQL to BigQuery export tasks for state tables
     url: /export_manager/create_state_export_tasks
-    schedule: 31 of dec 12:30  # TODO(2559): Reschedule to every day 5:00 once rerun in prod has completed.
+    schedule: every day 5:00
     timezone: America/Los_Angeles
     retry_parameters:
       min_backoff_seconds: 2.5
