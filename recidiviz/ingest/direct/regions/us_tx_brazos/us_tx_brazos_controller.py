@@ -56,6 +56,7 @@ class UsTxBrazosController(CsvGcsfsDirectIngestController):
                contents: Iterable[str]) -> IngestInfo:
         # Preprocess raw data.
         df = pd.read_csv(StringIO('\n'.join(contents)), dtype=str).fillna('')
+        df = df[df['Custody Status'] != 'Released']
         # People who are rearrested can have multiple bonds for the same charge;
         # the bond with the greatest ID is the most current one.
         df = df[
