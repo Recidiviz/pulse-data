@@ -28,23 +28,24 @@ from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import \
     BaseDirectIngestController
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import \
     DirectIngestGCSFileSystem, to_normalized_unprocessed_file_path
-from recidiviz.ingest.direct.controllers.gcsfs_path import \
-    GcsfsFilePath, GcsfsBucketPath, GcsfsDirectoryPath, GcsfsPath
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
     GcsfsDirectIngestController
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     filename_parts_from_path, GcsfsIngestArgs
 from recidiviz.ingest.direct.controllers.gcsfs_factory import GcsfsFactory
+from recidiviz.ingest.direct.controllers.gcsfs_path import \
+    GcsfsFilePath, GcsfsBucketPath, GcsfsDirectoryPath, GcsfsPath
+from recidiviz.tests.ingest import fixtures
 from recidiviz.tests.ingest.direct.fake_async_direct_ingest_cloud_task_manager \
     import FakeAsyncDirectIngestCloudTaskManager
-from recidiviz.tests.ingest import fixtures
-from recidiviz.tests.ingest.direct.\
+from recidiviz.tests.ingest.direct. \
     fake_synchronous_direct_ingest_cloud_task_manager import \
     FakeSynchronousDirectIngestCloudTaskManager
 
 
 class FakeDirectIngestGCSFileSystem(DirectIngestGCSFileSystem):
     """Test-only implementation of the DirectIngestGCSFileSystem."""
+
     def __init__(self):
         self.mutex = threading.Lock()
         self.all_paths: Set[Union[GcsfsFilePath, GcsfsDirectoryPath]] = set()
@@ -88,9 +89,8 @@ class FakeDirectIngestGCSFileSystem(DirectIngestGCSFileSystem):
         directory_path, _ = os.path.split(path.abs_path())
 
         parts = filename_parts_from_path(path)
-        suffix = parts.filename_suffix if parts.filename_suffix else ''
-        fixture_filename = \
-            f'{parts.file_tag}{suffix}.{parts.extension}'
+        suffix = f'_{parts.filename_suffix}' if parts.filename_suffix else ''
+        fixture_filename = f'{parts.file_tag}{suffix}.{parts.extension}'
 
         actual_fixture_file_path = os.path.join(directory_path,
                                                 fixture_filename)
@@ -159,6 +159,7 @@ def build_controller_for_tests(controller_cls,
         mock_task_factory_cls.return_value = task_manager
         return controller_cls()
 
+
 @patch('recidiviz.utils.metadata.project_id',
        Mock(return_value='recidiviz-staging'))
 def build_gcsfs_controller_for_tests(
@@ -167,7 +168,6 @@ def build_gcsfs_controller_for_tests(
         run_async: bool,
         **kwargs,
 ) -> GcsfsDirectIngestController:
-
     fake_fs = FakeDirectIngestGCSFileSystem()
 
     def mock_build_fs():
@@ -219,6 +219,7 @@ def path_for_fixture_file(
         blob_name=os.path.join(controller.ingest_directory_path.relative_path,
                                file_path_str))
 
+
 def add_paths_with_tags_and_process(test_case: unittest.TestCase,
                                     controller: GcsfsDirectIngestController,
                                     file_tags: List[str],
@@ -228,21 +229,32 @@ def add_paths_with_tags_and_process(test_case: unittest.TestCase,
     for the controller to finish processing everything, then makes sure that
     all files not in |unexpected_tags| have been moved to storage.
     """
-    if unexpected_tags is None:
-        unexpected_tags = []
+    add_paths_with_tags(controller, file_tags, pre_normalize_filename)
+    process_task_queues(test_case, controller, file_tags, unexpected_tags)
 
+
+def add_paths_with_tags(controller: GcsfsDirectIngestController,
+                        file_tags: List[str],
+                        pre_normalize_filename: bool = False):
     if not isinstance(controller.fs, FakeDirectIngestGCSFileSystem):
         raise ValueError(f"Controller fs must have type "
                          f"FakeDirectIngestGCSFileSystem. Found instead "
                          f"type [{type(controller.fs)}]")
     for file_tag in file_tags:
-
         file_path = path_for_fixture_file(
             controller,
             f'{file_tag}.csv',
             should_normalize=pre_normalize_filename)
         controller.fs.test_add_path(file_path)
         time.sleep(.05)
+
+
+def process_task_queues(test_case: unittest.TestCase,
+                        controller: GcsfsDirectIngestController,
+                        file_tags: List[str],
+                        unexpected_tags: List[str] = None):
+    if unexpected_tags is None:
+        unexpected_tags = []
 
     run_task_queues_to_empty(controller)
     check_all_paths_processed(test_case, controller, file_tags, unexpected_tags)
