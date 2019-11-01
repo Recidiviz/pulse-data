@@ -17,9 +17,11 @@
 
 """Direct ingest controller implementation for us_tx_brazos."""
 import re
+from datetime import datetime
 from io import StringIO
-from typing import List, Optional, Iterable
+from typing import List, Optional, Iterable, cast
 
+import attr
 import pandas as pd
 
 from recidiviz import IngestInfo
@@ -28,7 +30,7 @@ from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.common.constants.county.charge import ChargeDegree, ChargeClass
 from recidiviz.common.constants.person_characteristics import Race
-from recidiviz.common.ingest_metadata import SystemLevel
+from recidiviz.common.ingest_metadata import SystemLevel, IngestMetadata
 from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller \
     import CsvGcsfsDirectIngestController
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
@@ -84,6 +86,14 @@ class UsTxBrazosController(CsvGcsfsDirectIngestController):
         """The CSV files must be processed all at once, so do not split."""
         return True
 
+    def _get_ingest_metadata(self, args: GcsfsIngestArgs) -> IngestMetadata:
+        parts = filename_parts_from_path(args.file_path)
+        ingest_time = datetime.strptime(cast(str, parts.filename_suffix),
+                                        '%m%d%Y_%H%M%S')
+
+        return attr.evolve(super()._get_ingest_metadata(args),
+                           ingest_time=ingest_time)
+
     def _do_cleanup(self, args: GcsfsIngestArgs):
         """If this job is the last for the day, call infer_release before
         continuing to further jobs."""
@@ -92,7 +102,7 @@ class UsTxBrazosController(CsvGcsfsDirectIngestController):
         if self._is_last_job_for_day(args):
             persistence.infer_release_on_open_bookings(
                 self.region.region_code,
-                filename_parts_from_path(args.file_path).utc_upload_datetime,
+                self._get_ingest_metadata(args).ingest_time,
                 CustodyStatus.INFERRED_RELEASE)
 
         parts = filename_parts_from_path(args.file_path)
