@@ -102,7 +102,7 @@ class BaseDirectIngestController(Ingestor,
                 logging.info(
                     "Creating cloud task to fire timer in [%s] seconds",
                     wait_time_sec)
-                self.cloud_task_manager.\
+                self.cloud_task_manager. \
                     create_direct_ingest_scheduler_queue_task(
                         region=self.region,
                         just_finished_job=False,
@@ -228,11 +228,7 @@ class BaseDirectIngestController(Ingestor,
         logging.info("Successfully converted ingest_info to proto for ingest "
                      "run [%s]", self._job_tag(args))
 
-        ingest_metadata = IngestMetadata(self.region.region_code,
-                                         self.region.jurisdiction_id,
-                                         args.ingest_time,
-                                         self.get_enum_overrides(),
-                                         self.system_level)
+        ingest_metadata = self._get_ingest_metadata(args)
         persist_success = persistence.write(ingest_info_proto, ingest_metadata)
 
         if not persist_success:
@@ -242,6 +238,13 @@ class BaseDirectIngestController(Ingestor,
 
         logging.info("Successfully persisted for ingest run [%s]",
                      self._job_tag(args))
+
+    def _get_ingest_metadata(self, args: IngestArgsType) -> IngestMetadata:
+        return IngestMetadata(self.region.region_code,
+                              self.region.jurisdiction_id,
+                              args.ingest_time,
+                              self.get_enum_overrides(),
+                              self.system_level)
 
     @abc.abstractmethod
     def _job_tag(self, args: IngestArgsType) -> str:

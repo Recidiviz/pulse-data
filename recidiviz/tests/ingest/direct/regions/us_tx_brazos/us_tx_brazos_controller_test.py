@@ -28,15 +28,15 @@ from recidiviz.ingest.models.ingest_info import Arrest, Bond, Booking, Charge, \
 from recidiviz.persistence.database.base_schema import JailsBase
 from recidiviz.tests.ingest import fixtures
 from recidiviz.tests.ingest.direct.direct_ingest_util import \
-    add_paths_with_tags_and_process, build_gcsfs_controller_for_tests, \
-    ingest_args_for_fixture_file
+    build_gcsfs_controller_for_tests, \
+    ingest_args_for_fixture_file, path_for_fixture_file, process_task_queues
 from recidiviz.tests.utils import fakes
 from recidiviz.tests.utils.individual_ingest_test import IndividualIngestTest
 from recidiviz.utils import regions
 
 FIXTURE_PATH_PREFIX = 'direct/regions/us_tx_brazos'
-_ROSTER_PATH_CONTENTS = fixtures.as_string(FIXTURE_PATH_PREFIX,
-                                           'VERABrazosJailData.csv').split('\n')
+_ROSTER_PATH_CONTENTS = fixtures.as_string(
+    FIXTURE_PATH_PREFIX, 'VERABrazosJailData_01012019_115703.csv').split('\n')
 _FAKE_START_TIME = datetime.datetime(year=2019, month=1, day=2)
 
 
@@ -201,4 +201,7 @@ class UsTxBrazosControllerTest(IndividualIngestTest, TestCase):
 
         # pylint:disable=protected-access
         file_tags = sorted(controller._get_file_tag_rank_list())
-        add_paths_with_tags_and_process(self, controller, file_tags)
+        file_path = path_for_fixture_file(
+            controller, 'VERABrazosJailData_01012019_115703.csv', False)
+        controller.fs.test_add_path(file_path)
+        process_task_queues(self, controller, file_tags)
