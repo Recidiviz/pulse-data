@@ -32,7 +32,8 @@ from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 
 # TODO(1882): This should no-longer be necessary once you can map a column
 #  value to multiple fields on the ingested object.
-def copy_name_to_alias(_row: Dict[str, str],
+def copy_name_to_alias(_file_tag: str,
+                       _row: Dict[str, str],
                        extracted_objects: List[IngestObject],
                        _cache: IngestObjectCache):
     """Copy all name fields stored on a StatePerson object to a new StateAlias
@@ -62,7 +63,8 @@ def gen_label_single_external_id_hook(external_id_type: str) -> Callable:
     there is more than one external id to label.
     """
 
-    def _label_external_id(_row: Dict[str, str],
+    def _label_external_id(_file_tag: str,
+                           _row: Dict[str, str],
                            extracted_objects: List[IngestObject],
                            _cache: IngestObjectCache):
         found = False

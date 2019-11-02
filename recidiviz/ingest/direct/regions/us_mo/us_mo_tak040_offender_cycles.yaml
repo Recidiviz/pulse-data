@@ -1,0 +1,43 @@
+key_mappings:
+  # Only here so this section isn't empty
+  DQ$DOC: state_person.state_person_id
+
+child_key_mappings:
+  DQ$DOC: state_person_external_id.state_person_external_id_id
+  DQ$CYC: state_sentence_group.state_sentence_group_id
+
+primary_key:
+  DQ$DOC: state_person.state_person_id
+
+keys_to_ignore:
+- DQ$SSR
+- DQ$NRN
+- DQ$PND
+- DQ$CD
+- DQ$FD
+- DQ$OAB
+- DQ$OA
+- DQ$OFB
+- DQ$OF
+- DQ$TSE
+- DQ$MSO
+- DQ$NDM
+- DQ$NDO
+- DQ$NEM
+- DQ$NEO
+- DQ$NPM
+- DQ$NPO
+- DQ$NCM
+- DQ$NCO
+- DQ$NBM
+- DQ$NBO
+- DQ$OCA
+- DQ$OCL
+- DQ$OC1
+- DQ$OC2
+- DQ$OC3
+- DQ$SOP
+- DQ$DCR
+- DQ$TCR
+- DQ$DLU
+- DQ$TLU

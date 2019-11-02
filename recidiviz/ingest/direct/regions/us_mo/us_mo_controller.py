@@ -28,12 +28,22 @@ from recidiviz.ingest.direct.direct_ingest_controller_utils import \
 from recidiviz.ingest.direct.state_shared_row_posthooks import \
     copy_name_to_alias, gen_label_single_external_id_hook
 from recidiviz.ingest.models.ingest_info import IngestObject, StatePerson, \
-    StatePersonExternalId
+    StatePersonExternalId, StateSentenceGroup
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 
 
 class UsMoController(CsvGcsfsDirectIngestController):
     """Direct ingest controller implementation for us_mo."""
+
+    FILE_TAGS = [
+        'tak001_offender_identification',
+        'tak040_offender_cycles',
+    ]
+
+    PRIMARY_COL_PREFIXES_BY_FILE_TAG = {
+        'tak001_offender_identification': 'EK',
+        'tak040_offender_cycles': 'DQ',
+    }
 
     def __init__(self,
                  ingest_directory_path: Optional[str] = None,
@@ -54,24 +64,35 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 # external id - the DOC id.
                 gen_label_single_external_id_hook(US_MO_DOC),
                 self.tak001_offender_identification_hydrate_alternate_ids,
+                self.normalize_sentence_group_ids,
             ],
+            'tak040_offender_cycles': [
+                gen_label_single_external_id_hook(US_MO_DOC),
+                self.normalize_sentence_group_ids,
+            ]
         }
+        self.primary_key_override_by_file: Dict[str, Callable] = {}
 
     def _get_file_tag_rank_list(self) -> List[str]:
-        return [
-            'tak001_offender_identification'
-        ]
+        return self.FILE_TAGS
 
-    def _get_row_pre_processors_for_file(self, file: str) -> List[Callable]:
-        return self.row_pre_processors_by_file.get(file, [])
+    def _get_row_pre_processors_for_file(self,
+                                         file_tag: str) -> List[Callable]:
+        return self.row_pre_processors_by_file.get(file_tag, [])
 
-    def _get_row_post_processors_for_file(self, file: str) -> List[Callable]:
-        return self.row_post_processors_by_file.get(file, [])
+    def _get_row_post_processors_for_file(self,
+                                          file_tag: str) -> List[Callable]:
+        return self.row_post_processors_by_file.get(file_tag, [])
+
+    def _get_primary_key_override_for_file(
+            self, file_tag: str) -> Optional[Callable]:
+        return self.primary_key_override_by_file.get(file_tag, None)
 
     # TODO(1882): If yaml format supported raw values and multiple children of
     #  the same type, then this would be no-longer necessary.
     @staticmethod
     def tak001_offender_identification_hydrate_alternate_ids(
+            _file_tag: str,
             _row: Dict[str, str],
             extracted_objects: List[IngestObject],
             _cache: IngestObjectCache):
@@ -94,3 +115,30 @@ class UsMoController(CsvGcsfsDirectIngestController):
                         id_to_create,
                         extracted_object,
                         'state_person_external_ids')
+
+    @classmethod
+    def normalize_sentence_group_ids(
+            cls,
+            file_tag: str,
+            row: Dict[str, str],
+            extracted_objects: List[IngestObject],
+            _cache: IngestObjectCache):
+        col_prefix = cls.primary_col_prefix_for_file_tag(file_tag)
+        for obj in extracted_objects:
+            if isinstance(obj, StateSentenceGroup):
+                obj.__setattr__(
+                    'state_sentence_group_id',
+                    cls._generate_sentence_group_id(col_prefix, row))
+
+
+    @classmethod
+    def _generate_sentence_group_id(cls,
+                                    col_prefix: str,
+                                    row: Dict[str, str]) -> str:
+        doc_id = row[f'{col_prefix}$DOC']
+        cyc_id = row[f'{col_prefix}$CYC']
+        return f'{doc_id}-{cyc_id}'
+
+    @classmethod
+    def primary_col_prefix_for_file_tag(cls, file_tag: str) -> str:
+        return cls.PRIMARY_COL_PREFIXES_BY_FILE_TAG[file_tag]

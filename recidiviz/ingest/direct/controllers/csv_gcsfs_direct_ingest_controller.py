@@ -103,6 +103,21 @@ class CsvGcsfsDirectIngestController(GcsfsDirectIngestController):
         return os.path.join(os.path.dirname(inspect.getfile(self.__class__)),
                             f'{self.region.region_code}_{file_tag}.yaml')
 
+    @staticmethod
+    def _wrap_with_tag(file_tag: str, callback: Optional[Callable]):
+        if callback is None:
+            return None
+
+        def wrapped_cb(*args):
+            return callback(file_tag, *args)
+
+        return wrapped_cb
+
+    @classmethod
+    def _wrap_list_with_tag(cls, file_tag: str, callbacks: List[Callable]):
+        return [cls._wrap_with_tag(file_tag, callback)
+                for callback in callbacks]
+
     def _parse(self,
                args: GcsfsIngestArgs,
                contents: Iterable[str]) -> IngestInfo:
@@ -115,14 +130,20 @@ class CsvGcsfsDirectIngestController(GcsfsDirectIngestController):
 
         file_mapping = self._yaml_filepath(file_tag)
 
-        row_pre_processors = self._get_row_pre_processors_for_file(file_tag)
-        row_post_processors = self._get_row_post_processors_for_file(file_tag)
-        file_post_processors = self._get_file_post_processors_for_file(file_tag)
+        row_pre_processors = self._wrap_list_with_tag(
+            file_tag, self._get_row_pre_processors_for_file(file_tag))
+        row_post_processors = self._wrap_list_with_tag(
+            file_tag, self._get_row_post_processors_for_file(file_tag))
+        file_post_processors = self._wrap_list_with_tag(
+            file_tag, self._get_file_post_processors_for_file(file_tag))
         # pylint: disable=assignment-from-none
-        primary_key_override = self._get_primary_key_override_for_file(file_tag)
+        primary_key_override = self._wrap_with_tag(
+            file_tag, self._get_primary_key_override_for_file(file_tag))
         # pylint: disable=assignment-from-none
         ancestor_key_override = \
-            self._get_ancestor_key_override_for_file(file_tag)
+            self._wrap_with_tag(
+                file_tag,
+                self._get_ancestor_key_override_for_file(file_tag))
         should_set_with_empty_values = \
             file_tag in self._get_files_to_set_with_empty_values()
 
