@@ -368,7 +368,7 @@ The callbacks are as follows:
 content of the row itself. It should make any necessary modifications in-place 
 to the row itself and should not return anything. The interface is:
 ```python
-def my_row_pre_hook(row: Dict[str, str]):
+def my_row_pre_hook(file_tag: str, row: Dict[str, str]):
     # Do my stuff
 ```
 
@@ -379,7 +379,8 @@ the row itself, the list of `IngestObjects` that were created or updated during
 processing of the row, and the current state of the `IngestInfo`. It should not
 return anything. The interface is:
 ```python
-def my_row_post_hook(row: Dict[str, str],
+def my_row_post_hook(file_tag: str, 
+                     row: Dict[str, str],
                      updated_objects: List[IngestObject],
                      ingest_info: IngestInfo):
     # Do my stuff
@@ -391,7 +392,8 @@ the row. This overrides any `primary_key` mapping in the yaml file. It will be
 invoked with the content of the row itself, and must return an
 `IngestFieldCoordinates` object. The interface is:
 ```python
-def my_primary_key_override_callback(row: Dict[str, str]) -> IngestFieldCoordinates:
+def my_primary_key_override_callback(file_tag: str, 
+                                     row: Dict[str, str]) -> IngestFieldCoordinates:
     return IngestFieldCoordinates(primary_class, primary_field, primary_id)
 ```
 
@@ -403,7 +405,8 @@ map with the same class key. It will be invoked with the `IngestFieldCoordinates
 represent the primary key for the row, and must return a mapping from parent 
 type to the primary key of an instance of that type. The interface is:
 ```python
-def my_parent_id_override_callback(primary_coordinates: IngestFieldCoordinates) -> Dict[str, str]:
+def my_parent_id_override_callback(file_tag: str, 
+                                   primary_coordinates: IngestFieldCoordinates) -> Dict[str, str]:
     return {parent_type: parent_id}
 ```
 

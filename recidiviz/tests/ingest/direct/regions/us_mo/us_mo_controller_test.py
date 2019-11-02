@@ -90,7 +90,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                             ],
                             state_sentence_groups=[
                                 StateSentenceGroup(
-                                    state_sentence_group_id='19890901'
+                                    state_sentence_group_id='110035-19890901'
                                 )
                             ]),
                 StatePerson(state_person_id='310261',
@@ -127,7 +127,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                             ],
                             state_sentence_groups=[
                                 StateSentenceGroup(
-                                    state_sentence_group_id='19890821'
+                                    state_sentence_group_id='310261-19890821'
                                 )
                             ]),
                 StatePerson(state_person_id='710448',
@@ -158,7 +158,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                             ],
                             state_sentence_groups=[
                                 StateSentenceGroup(
-                                    state_sentence_group_id='19890901'
+                                    state_sentence_group_id='710448-19890901'
                                 )
                             ]),
                 StatePerson(state_person_id='910324',
@@ -191,13 +191,68 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                             ],
                             state_sentence_groups=[
                                 StateSentenceGroup(
-                                    state_sentence_group_id='19890825'
+                                    state_sentence_group_id='910324-19890825'
                                 )
                             ]),
             ])
 
         self.run_parse_file_test(expected, 'tak001_offender_identification')
 
+    def test_populate_data_tak040_offender_identification(self):
+        expected = IngestInfo(state_people=[
+            StatePerson(state_person_id='110035',
+                        state_person_external_ids=[
+                            StatePersonExternalId(
+                                state_person_external_id_id='110035',
+                                id_type=US_MO_DOC),
+                        ],
+                        state_sentence_groups=[
+                            StateSentenceGroup(
+                                state_sentence_group_id='110035-19890901'
+                            ),
+                            StateSentenceGroup(
+                                state_sentence_group_id='110035-20010414'
+                            )
+                        ]),
+            StatePerson(state_person_id='310261',
+                        state_person_external_ids=[
+                            StatePersonExternalId(
+                                state_person_external_id_id='310261',
+                                id_type=US_MO_DOC),
+                        ],
+                        state_sentence_groups=[
+                            StateSentenceGroup(
+                                state_sentence_group_id='310261-19890821'
+                            )
+                        ]),
+            StatePerson(state_person_id='710448',
+                        state_person_external_ids=[
+                            StatePersonExternalId(
+                                state_person_external_id_id='710448',
+                                id_type=US_MO_DOC),
+                        ],
+                        state_sentence_groups=[
+                            StateSentenceGroup(
+                                state_sentence_group_id='710448-19890901'
+                            ),
+                            StateSentenceGroup(
+                                state_sentence_group_id='710448-20010414'
+                            )
+                        ]),
+            StatePerson(state_person_id='910324',
+                        state_person_external_ids=[
+                            StatePersonExternalId(
+                                state_person_external_id_id='910324',
+                                id_type=US_MO_DOC),
+                        ],
+                        state_sentence_groups=[
+                            StateSentenceGroup(
+                                state_sentence_group_id='910324-19890825'
+                            )
+                        ]),
+        ])
+
+        self.run_parse_file_test(expected, 'tak040_offender_cycles')
 
     def _populate_person_backedges(
             self, persons: List[entities.StatePerson]) -> None:
@@ -262,7 +317,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             sentence_groups=[
                 entities.StateSentenceGroup.new_with_defaults(
                     state_code=_STATE_CODE_UPPER,
-                    external_id='19890901',
+                    external_id='110035-19890901',
                     status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                 )
             ]
@@ -317,7 +372,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             sentence_groups=[
                 entities.StateSentenceGroup.new_with_defaults(
                     state_code=_STATE_CODE_UPPER,
-                    external_id='19890821',
+                    external_id='310261-19890821',
                     status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                 )
             ]
@@ -361,7 +416,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             sentence_groups=[
                 entities.StateSentenceGroup.new_with_defaults(
                     state_code=_STATE_CODE_UPPER,
-                    external_id='19890901',
+                    external_id='710448-19890901',
                     status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                 )
             ]
@@ -413,7 +468,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             sentence_groups=[
                 entities.StateSentenceGroup.new_with_defaults(
                     state_code=_STATE_CODE_UPPER,
-                    external_id='19890825',
+                    external_id='910324-19890825',
                     status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                 )
             ]
@@ -428,6 +483,34 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
 
         # Act
         self._run_ingest_job_for_filename('tak001_offender_identification.csv')
+
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
+        ######################################
+        # TAK040 OFFENDER CYCLES
+        ######################################
+        # Arrange
+        person_110035.sentence_groups.append(
+            entities.StateSentenceGroup.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                external_id='110035-20010414',
+                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                person=person_110035,
+            )
+        )
+
+        person_710448.sentence_groups.append(
+            entities.StateSentenceGroup.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                external_id='710448-20010414',
+                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                person=person_710448,
+            )
+        )
+
+        # Act
+        self._run_ingest_job_for_filename('tak040_offender_cycles.csv')
 
         # Assert
         self.assert_expected_db_people(expected_people)
