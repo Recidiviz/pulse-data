@@ -66,6 +66,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                             given_names='FRANK',
                             name_suffix='JR',
                             gender='M',
+                            birthdate='19711120',
                             state_person_external_ids=[
                                 StatePersonExternalId(
                                     state_person_external_id_id='110035',
@@ -103,6 +104,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                             given_names='MARTHA',
                             middle_names='HELEN',
                             gender='F',
+                            birthdate='19690617',
                             state_person_external_ids=[
                                 StatePersonExternalId(
                                     state_person_external_id_id='310261',
@@ -138,6 +140,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 StatePerson(state_person_id='710448',
                             surname='WINNIFIELD',
                             given_names='JULES',
+                            birthdate='19640831',
                             state_person_external_ids=[
                                 StatePersonExternalId(
                                     state_person_external_id_id='710448',
@@ -169,6 +172,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 StatePerson(state_person_id='910324',
                             given_names='KAONASHI',
                             gender='U',
+                            birthdate='19580213',
                             state_person_external_ids=[
                                 StatePersonExternalId(
                                     state_person_external_id_id='910324',
@@ -473,6 +477,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                       '"surname": "ABAGNALE"}',
             gender=Gender.MALE,
             gender_raw_text='M',
+            birthdate=datetime.date(year=1971, month=11, day=20),
+            birthdate_inferred_from_age=False,
             external_ids=[
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER,
@@ -529,6 +535,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                       '"surname": "STEWART"}',
             gender=Gender.FEMALE,
             gender_raw_text='F',
+            birthdate=datetime.date(year=1969, month=6, day=17),
+            birthdate_inferred_from_age=False,
             external_ids=[
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER,
@@ -576,6 +584,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         )
         person_710448 = entities.StatePerson.new_with_defaults(
             full_name='{"given_names": "JULES", "surname": "WINNIFIELD"}',
+            birthdate=datetime.date(year=1964, month=8, day=31),
+            birthdate_inferred_from_age=False,
             external_ids=[
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER,
@@ -628,6 +638,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             full_name='{"given_names": "KAONASHI"}',
             gender=Gender.EXTERNAL_UNKNOWN,
             gender_raw_text='U',
+            birthdate=datetime.date(year=1958, month=2, day=13),
+            birthdate_inferred_from_age=False,
             external_ids=[
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER,
