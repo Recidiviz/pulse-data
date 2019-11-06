@@ -397,16 +397,16 @@ def my_primary_key_override_callback(file_tag: str,
     return IngestFieldCoordinates(primary_class, primary_field, primary_id)
 ```
 
-* `parent_id_override_callback` - a callback which is called before a row is 
-processed, dynamically setting the parent id with which to locate the entity to
-be updated by the row. This is inserted into the mapping of parent ids derived
+* `ancestor_chain_overrides_callback` - a callback which is called before a row is 
+processed, which returns any subset of the `ancestor_keys` used locate the entity to
+be updated by the row. These are inserted into the `ancestor_keys` map derived
 from the `ancestor_keys` mapping in the yaml file, overriding any entry in the 
-map with the same class key. It will be invoked with the `IngestFieldCoordinates` that
-represent the primary key for the row, and must return a mapping from parent 
-type to the primary key of an instance of that type. The interface is:
+map with the same class key. It will be invoked with the row, and must return a 
+dictionary with mappings from ancestor types type (strings) to the primary key of 
+an instance of that type. The interface is:
 ```python
-def my_parent_id_override_callback(file_tag: str, 
-                                   primary_coordinates: IngestFieldCoordinates) -> Dict[str, str]:
+def my_ancestor_chain_overrides_callback(file_tag: str, 
+                                         row: Dict[str, str]) -> Dict[str, str]:
     return {parent_type: parent_id}
 ```
 

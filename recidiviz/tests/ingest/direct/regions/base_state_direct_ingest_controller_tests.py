@@ -31,6 +31,7 @@ from recidiviz.persistence.database.schema.state import dao
 from recidiviz.persistence.database.schema_entity_converter.state.\
     schema_entity_converter import StateSchemaToEntityConverter
 from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.entity.entity_utils import print_entity_tree
 from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.tests.ingest.direct.direct_ingest_util import \
     build_gcsfs_controller_for_tests, ingest_args_for_fixture_file, \
@@ -134,9 +135,18 @@ class BaseStateDirectIngestControllerTests(unittest.TestCase):
 
     def assert_expected_db_people(
             self, expected_db_people: List[StatePerson]) -> None:
+        print('\n\n************** ASSERTING *************')
         session = SessionFactory.for_schema_base(StateBase)
-        found_people = dao.read_people(session)
-        found_people = self.convert_and_clear_db_ids(found_people)
+        found_people_from_db = dao.read_people(session)
+        found_people = self.convert_and_clear_db_ids(found_people_from_db)
+
+        print("\n\nFINAL")
+        for p in found_people:
+            print_entity_tree(p)
+        print("\n\nEXPECTED")
+        for p in expected_db_people:
+            print_entity_tree(p)
+
         self.assertCountEqual(found_people, expected_db_people)
 
     def _fake_region(self):

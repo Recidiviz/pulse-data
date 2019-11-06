@@ -35,7 +35,7 @@ class CsvDataExtractorTest(unittest.TestCase):
         rows = _get_content_as_csv('standard_child_file.csv')
         first_row = next(iter(rows))
 
-        ancestor_chain = extractor._ancestor_chain(first_row, None)
+        ancestor_chain = extractor._ancestor_chain(first_row)
         expected_chain = {'state_person': '52163'}
         self.assertEqual(expected_chain, ancestor_chain)
 
@@ -44,7 +44,7 @@ class CsvDataExtractorTest(unittest.TestCase):
         rows = _get_content_as_csv('multiple_ancestors.csv')
         first_row = next(iter(rows))
 
-        ancestor_chain = extractor._ancestor_chain(first_row, None)
+        ancestor_chain = extractor._ancestor_chain(first_row)
         expected_chain = {'state_person': '52163',
                           'state_sentence_group': '12345'}
         self.assertEqual(expected_chain, ancestor_chain)
@@ -54,7 +54,7 @@ class CsvDataExtractorTest(unittest.TestCase):
         rows = _get_content_as_csv('standard_child_file.csv')
         first_row = next(iter(rows))
 
-        coordinates = extractor._ancestor_chain(first_row, None)
+        coordinates = extractor._ancestor_chain(first_row)
         self.assertFalse(coordinates)
 
     def test_get_creation_args_no_override(self):

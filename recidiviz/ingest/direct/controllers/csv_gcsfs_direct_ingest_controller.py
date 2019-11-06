@@ -137,13 +137,13 @@ class CsvGcsfsDirectIngestController(GcsfsDirectIngestController):
         file_post_processors = self._wrap_list_with_tag(
             file_tag, self._get_file_post_processors_for_file(file_tag))
         # pylint: disable=assignment-from-none
-        primary_key_override = self._wrap_with_tag(
+        primary_key_override_callback = self._wrap_with_tag(
             file_tag, self._get_primary_key_override_for_file(file_tag))
         # pylint: disable=assignment-from-none
-        ancestor_key_override = \
+        ancestor_chain_overrides_callback = \
             self._wrap_with_tag(
                 file_tag,
-                self._get_ancestor_key_override_for_file(file_tag))
+                self._get_ancestor_chain_overrides_callback_for_file(file_tag))
         should_set_with_empty_values = \
             file_tag in self._get_files_to_set_with_empty_values()
 
@@ -152,8 +152,8 @@ class CsvGcsfsDirectIngestController(GcsfsDirectIngestController):
             row_pre_processors,
             row_post_processors,
             file_post_processors,
-            ancestor_key_override,
-            primary_key_override,
+            ancestor_chain_overrides_callback,
+            primary_key_override_callback,
             self.system_level,
             should_set_with_empty_values)
 
@@ -189,10 +189,10 @@ class CsvGcsfsDirectIngestController(GcsfsDirectIngestController):
         """
         return []
 
-    def _get_ancestor_key_override_for_file(
+    def _get_ancestor_chain_overrides_callback_for_file(
             self, _file_tag: str) -> Optional[Callable]:
-        """Subclasses should override to return an ancestor_key_override for a
-        given file tag.
+        """Subclasses should override to return an
+        ancestor_chain_overrides_callback for a given file tag.
         """
         return None
 
