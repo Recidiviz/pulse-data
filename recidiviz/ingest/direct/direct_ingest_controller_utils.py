@@ -16,7 +16,28 @@
 # =============================================================================
 """Util functions shared across multiple types of hooks in the direct
 ingest controllers."""
+from typing import Dict, List
+
+from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
+from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.ingest.models.ingest_info import IngestObject
+
+
+def update_overrides_from_maps(
+        base_enum_overrides: EnumOverrides,
+        overrides: Dict[EntityEnum, List[str]],
+        ignores: Dict[EntityEnumMeta, List[str]]) -> EnumOverrides:
+    overrides_builder = base_enum_overrides.to_builder()
+
+    for mapped_enum, text_tokens in overrides.items():
+        for text_token in text_tokens:
+            overrides_builder.add(text_token, mapped_enum)
+
+    for ignored_enum, text_tokens in ignores.items():
+        for text_token in text_tokens:
+            overrides_builder.ignore(text_token, ignored_enum)
+
+    return overrides_builder.build()
 
 
 def create_if_not_exists(obj: IngestObject,

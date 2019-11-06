@@ -22,7 +22,7 @@ import logging
 from typing import Dict, Optional
 
 
-_COUNTY_CODES: Dict[str, str] = {
+COUNTY_CODES: Dict[str, str] = {
     '1': 'US_ND_ADAMS',
     'AD': 'US_ND_ADAMS',
     '2': 'US_ND_BARNES',
@@ -197,12 +197,13 @@ _COUNTY_CODES: Dict[str, str] = {
 }
 
 
-def normalized_county_code(county_code: Optional[str]) -> Optional[str]:
+def normalized_county_code(county_code: Optional[str],
+                           county_codes_map: Dict[str, str]) -> Optional[str]:
     if not county_code:
         return None
 
     pre_normalized_code = _normalize_int_code(county_code.upper())
-    normalized_code = _COUNTY_CODES.get(pre_normalized_code)
+    normalized_code = county_codes_map.get(pre_normalized_code)
     if not normalized_code:
         logging.warning("Found new county code not in reference cache: [%s]",
                         county_code)
