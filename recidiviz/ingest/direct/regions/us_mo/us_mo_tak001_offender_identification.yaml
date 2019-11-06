@@ -4,6 +4,7 @@ key_mappings:
   EK$AMI: state_person.middle_names
   EK$AGS: state_person.name_suffix
   EK$SEX: state_person.gender
+  DOB: state_person.birthdate
 
 child_key_mappings:
   EK$CYC: state_sentence_group.state_sentence_group_id
@@ -20,6 +21,12 @@ keys_to_ignore:
 - EK$SID  # Offender SID Number - Handled manually in the controller
 - EK$FBI  # Offender FBI Number - Handled manually in the controller
 - EK$OLN  # Offender Operator License Number - Handled manually in the controller
+- DOC_ID_DOB  # Unused - Duplicate of EK$DOC
+- DOB_VERIFIED_IND  # Unused - implied by its existence in VAK003
+- CREATE_DT  # Unused - Date Created (VAK003 cols)
+- CREATE_TM  # Unused - Time Created (VAK003 cols)
+- UPDATE_DT  # Unused - Date Last Updated (VAK003 cols)
+- UPDATE_TM  # Unused - Time Last Updated (VAK003 cols)
 - EK$OLC
 - EK$FOI
 - EK$PLC
