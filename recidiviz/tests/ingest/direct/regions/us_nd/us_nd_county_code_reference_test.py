@@ -19,34 +19,34 @@
 import unittest
 
 from recidiviz.ingest.direct.regions.us_nd.us_nd_county_code_reference import \
-    normalized_county_code
+    COUNTY_CODES, normalized_county_code
 
 
 class TestUsNdCountyCodeReferenceTable(unittest.TestCase):
     """Unit tests for the North Dakota county code reference cache."""
 
     def test_normalized_county_code(self):
-        assert normalized_county_code('009') == 'US_ND_CASS'
-        assert normalized_county_code('9') == 'US_ND_CASS'
-        assert normalized_county_code('CA') == 'US_ND_CASS'
+        assert normalized_county_code('009', COUNTY_CODES) == 'US_ND_CASS'
+        assert normalized_county_code('9', COUNTY_CODES) == 'US_ND_CASS'
+        assert normalized_county_code('CA', COUNTY_CODES) == 'US_ND_CASS'
 
     def test_normalized_county_code_states(self):
-        assert normalized_county_code('OS') == 'OUT_OF_STATE'
+        assert normalized_county_code('OS', COUNTY_CODES) == 'OUT_OF_STATE'
 
-        assert normalized_county_code('MINN') == 'US_MN'
-        assert normalized_county_code('124') == 'US_MN'
+        assert normalized_county_code('MINN', COUNTY_CODES) == 'US_MN'
+        assert normalized_county_code('124', COUNTY_CODES) == 'US_MN'
 
-        assert normalized_county_code('WY') == 'US_WY'
-        assert normalized_county_code('153') == 'US_WY'
+        assert normalized_county_code('WY', COUNTY_CODES) == 'US_WY'
+        assert normalized_county_code('153', COUNTY_CODES) == 'US_WY'
 
     def test_normalized_county_code_rare_codes(self):
-        assert normalized_county_code('154') == 'INTERNATIONAL'
-        assert normalized_county_code('155') == 'ERROR'
-        assert normalized_county_code('156') == 'PAROLE'
+        assert normalized_county_code('154', COUNTY_CODES) == 'INTERNATIONAL'
+        assert normalized_county_code('155', COUNTY_CODES) == 'ERROR'
+        assert normalized_county_code('156', COUNTY_CODES) == 'PAROLE'
 
     def test_normalized_county_code_no_input(self):
-        assert normalized_county_code('') is None
-        assert normalized_county_code(None) is None
+        assert normalized_county_code('', COUNTY_CODES) is None
+        assert normalized_county_code(None, COUNTY_CODES) is None
 
     def test_normalized_county_code_input_not_found(self):
-        assert normalized_county_code('199') == '199'
+        assert normalized_county_code('199', COUNTY_CODES) == '199'

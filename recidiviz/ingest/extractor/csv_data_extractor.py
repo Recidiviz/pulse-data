@@ -67,7 +67,7 @@ class CsvDataExtractor(DataExtractor):
                  row_pre_hooks=None,
                  row_post_hooks=None,
                  file_post_hooks=None,
-                 ancestor_key_override_callback=None,
+                 ancestor_chain_overrides_callback=None,
                  primary_key_override_callback=None,
                  system_level=SystemLevel.COUNTY,
                  set_with_empty_value=False):
@@ -78,8 +78,8 @@ class CsvDataExtractor(DataExtractor):
                 ingested row in the CSV file
             row_post_hooks: an ordered list of hooks for post-processing on each
                 ingested row in the CSV file
-            ancestor_key_override_callback: a callable that returns the key for
-                an ancestor of the object being constructed by a row in the file
+            ancestor_chain_overrides_callback: a callable that returns the key
+            for an ancestor of the object being constructed by a row in the file
             primary_key_override_callback: a callable that returns the key for
                 the primary object being constructed by a row in the file
             system_level: whether this is a COUNTY- or STATE-level ingest
@@ -115,8 +115,8 @@ class CsvDataExtractor(DataExtractor):
             List[Callable[[IngestInfo, Optional[IngestObjectCache]], None]] \
             = file_post_hooks
 
-        self.ancestor_key_override_callback: Callable = \
-            ancestor_key_override_callback
+        self.ancestor_chain_overrides_callback: Callable = \
+            ancestor_chain_overrides_callback
         self.primary_key_override_callback: Callable = \
             primary_key_override_callback
         self.system_level: SystemLevel = system_level
@@ -178,8 +178,7 @@ class CsvDataExtractor(DataExtractor):
         for row in rows:
             self._pre_process_row(row)
             primary_coordinates = self._primary_coordinates(row)
-            ancestor_chain: Dict[str, str] = self._ancestor_chain(
-                row, primary_coordinates)
+            ancestor_chain: Dict[str, str] = self._ancestor_chain(row)
 
             extracted_objects_for_row = []
             for k, v in row.items():
@@ -375,8 +374,7 @@ class CsvDataExtractor(DataExtractor):
                 child_primary_key_coords.field_value
         }
 
-    def _ancestor_chain(self, row: Dict[str, str],
-                        primary_coordinates: IngestFieldCoordinates) \
+    def _ancestor_chain(self, row: Dict[str, str]) \
             -> Dict[str, str]:
         """Returns the ancestor chain for this row, i.e. a mapping from ancestor
         class to the id of the ancestor corresponding to this row.
@@ -393,9 +391,8 @@ class CsvDataExtractor(DataExtractor):
             for coordinate in ancestor_coordinates:
                 ancestor_chain[coordinate.class_name] = coordinate.field_value
 
-        if self.ancestor_key_override_callback:
-            ancestor_addition = self.ancestor_key_override_callback(
-                primary_coordinates)
+        if self.ancestor_chain_overrides_callback:
+            ancestor_addition = self.ancestor_chain_overrides_callback(row)
             ancestor_chain.update(ancestor_addition)
 
         return ancestor_chain

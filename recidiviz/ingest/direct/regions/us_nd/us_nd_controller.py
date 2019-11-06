@@ -19,7 +19,7 @@
 import json
 import os
 import re
-from typing import List, Optional, Dict, Callable, cast, Pattern, Tuple, Type
+from typing import List, Optional, Dict, Callable, cast, Pattern, Tuple
 
 from recidiviz.common import ncic
 from recidiviz.common.constants.charge import ChargeStatus
@@ -63,9 +63,12 @@ from recidiviz.common.str_field_utils import parse_days_from_duration_pieces
 from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller \
     import CsvGcsfsDirectIngestController
 from recidiviz.ingest.direct.direct_ingest_controller_utils import \
-    create_if_not_exists
+    create_if_not_exists, update_overrides_from_maps
 from recidiviz.ingest.direct.state_shared_row_posthooks import \
-    copy_name_to_alias, gen_label_single_external_id_hook
+    copy_name_to_alias, gen_label_single_external_id_hook, \
+    gen_normalize_county_codes_posthook, \
+    gen_map_ymd_counts_to_max_length_field_posthook, \
+    gen_set_is_life_sentence_hook
 from recidiviz.ingest.direct.regions.us_nd.us_nd_county_code_reference import \
     normalized_county_code
 from recidiviz.ingest.direct.regions.us_nd.\
@@ -113,19 +116,37 @@ class UsNdController(CsvGcsfsDirectIngestController):
         self.row_post_processors_by_file: Dict[str, List[Callable]] = {
             'elite_offenders': [copy_name_to_alias],
             'elite_offenderidentifier': [self._normalize_external_id_type],
-            'elite_offendersentenceaggs': [self._rationalize_max_length],
-            'elite_offendersentences': [self._rationalize_life_sentence],
+            'elite_offendersentenceaggs': [
+                gen_set_is_life_sentence_hook('MAX_TERM',
+                                              'LIFE',
+                                              StateSentenceGroup),
+                self._rationalize_max_length
+            ],
+            'elite_offendersentences': [
+                gen_set_is_life_sentence_hook('SENTENCE_CALC_TYPE',
+                                              'LIFE',
+                                              StateIncarcerationSentence)
+            ],
             'elite_offendersentenceterms': [
-                self._concatenate_elite_length_periods,
+                gen_map_ymd_counts_to_max_length_field_posthook(
+                    'YEARS',
+                    'MONTHS',
+                    'DAYS',
+                    StateIncarcerationSentence
+                ),
                 self._convert_to_supervision_sentence],
             'elite_offenderchargestable': [
                 self._parse_elite_charge_classification,
                 self._set_elite_charge_status,
                 self._rationalize_controlling_charge
             ],
-            'elite_orderstable': [self._set_judge_agent_type,
-                                  self._normalize_county_code_elite_orders,
-                                  self._normalize_judicial_district_code],
+            'elite_orderstable': [
+                self._set_judge_agent_type,
+                gen_normalize_county_codes_posthook(self.region.region_code,
+                                                    'COUNTY_CODE',
+                                                    StateCourtCase,
+                                                    normalized_county_code),
+                self._normalize_judicial_district_code],
             'elite_externalmovements': [self._process_external_movement],
             'elite_offense_in_custody_and_pos_report_data': [
                 self._rationalize_incident_type,
@@ -146,17 +167,23 @@ class UsNdController(CsvGcsfsDirectIngestController):
                 self._concatenate_docstars_length_periods,
                 self._record_revocation,
                 self._set_judge_agent_type,
-                self._normalize_county_code_docstars_offender_cases
+                gen_normalize_county_codes_posthook(self.region.region_code,
+                                                    'TB_CTY',
+                                                    StateSupervisionPeriod,
+                                                    normalized_county_code),
             ],
             'docstars_offensestable': [
                 self._parse_docstars_charge_classification,
-                self._normalize_county_code_docstars_offenses
+                gen_normalize_county_codes_posthook(self.region.region_code,
+                                                    'COUNTY',
+                                                    StateCharge,
+                                                    normalized_county_code),
             ],
             'docstars_lsi_chronology': [self._process_lsir_assessments],
             'docstars_ftr_episode': [self._process_ftr_episode],
         }
 
-        self.primary_key_override_by_file: Dict[str, Callable] = {
+        self.primary_key_override_hook_by_file: Dict[str, Callable] = {
             'elite_offendersentences': _generate_sentence_primary_key,
             'elite_offendersentenceterms': _generate_sentence_primary_key,
             'elite_externalmovements': _generate_period_primary_key,
@@ -165,11 +192,9 @@ class UsNdController(CsvGcsfsDirectIngestController):
                 _generate_incident_primary_key,
         }
 
-        self.ancestor_key_override_by_file: Dict[str, Callable] = {
-            'elite_offendersentenceterms':
-                _fill_in_incarceration_sentence_parent_id,
+        self.ancestor_chain_overrides_callback_by_file: Dict[str, Callable] = {
             'elite_offenderchargestable':
-                _fill_in_incarceration_sentence_parent_id
+                _state_charge_ancestor_chain_overrides
         }
 
         self.files_to_set_with_empty_values = [
@@ -254,13 +279,13 @@ class UsNdController(CsvGcsfsDirectIngestController):
             self._convert_person_ids_to_external_id_objects]
         return post_processors
 
-    def _get_ancestor_key_override_for_file(
+    def _get_ancestor_chain_overrides_callback_for_file(
             self, file: str) -> Optional[Callable]:
-        return self.ancestor_key_override_by_file.get(file, None)
+        return self.ancestor_chain_overrides_callback_by_file.get(file, None)
 
     def _get_primary_key_override_for_file(
             self, file: str) -> Optional[Callable]:
-        return self.primary_key_override_by_file.get(file, None)
+        return self.primary_key_override_hook_by_file.get(file, None)
 
     def _get_files_to_set_with_empty_values(self) -> List[str]:
         return self.files_to_set_with_empty_values
@@ -294,7 +319,6 @@ class UsNdController(CsvGcsfsDirectIngestController):
                 state_person.create_state_person_external_id(
                     state_person_external_id_id=state_person_id,
                     id_type=id_type)
-
 
     @staticmethod
     def _add_supervising_officer(_file_tag: str,
@@ -336,33 +360,28 @@ class UsNdController(CsvGcsfsDirectIngestController):
             person.state_person_races = updated_person_races
 
     @staticmethod
-    def _rationalize_life_sentence(_file_tag: str,
-                                   row: Dict[str, str],
-                                   extracted_objects: List[IngestObject],
-                                   _cache: IngestObjectCache):
-        is_life_sentence = row['SENTENCE_CALC_TYPE'] == 'LIFE'
-
-        for extracted_object in extracted_objects:
-            if isinstance(extracted_object, StateIncarcerationSentence):
-                extracted_object.__setattr__('is_life', str(is_life_sentence))
-
-    @staticmethod
     def _rationalize_max_length(_file_tag: str,
                                 row: Dict[str, str],
                                 extracted_objects: List[IngestObject],
                                 _cache: IngestObjectCache):
-        """PRI means Prison sentence, which is redundant. It is only ever
-        used in a small number of erroneous cases long ago that had no data on
-        max sentence length available."""
-        is_life_sentence = row['MAX_TERM'] == 'LIFE'
+        """
+        There are several values that sometimes appear in the MAX_TERM field
+        which we need to clear out since they don't actually give us valid
+        length information.
+
+        A value of 'PRI' means Prison sentence, which is redundant. It is only
+        ever used in a small number of erroneous cases long ago that had no data
+        on max sentence length available.
+
+        LIFE indicates a life sentence.
+        """
         is_redundant_pri = row['MAX_TERM'] == 'PRI'
+        is_life_sentence = row['MAX_TERM'] == 'LIFE'
 
         for extracted_object in extracted_objects:
             if (is_life_sentence or is_redundant_pri) \
                     and isinstance(extracted_object, StateSentenceGroup):
                 extracted_object.__setattr__('max_length', None)
-            if is_life_sentence:
-                extracted_object.__setattr__('is_life', str(is_life_sentence))
 
     @staticmethod
     def _normalize_external_id_type(_file_tag: str,
@@ -373,22 +392,6 @@ class UsNdController(CsvGcsfsDirectIngestController):
             if isinstance(extracted_object, StatePersonExternalId):
                 id_type = f"US_ND_{extracted_object.id_type}"
                 extracted_object.__setattr__('id_type', id_type)
-
-    @staticmethod
-    def _concatenate_elite_length_periods(_file_tag: str,
-                                          row: Dict[str, str],
-                                          extracted_objects: List[IngestObject],
-                                          _cache: IngestObjectCache):
-        """For a sentence row in Elite that contains distinct YEARS, MONTHS,
-        and DAYS fields, compose these into a single string and set it on the
-        appropriate length field."""
-        units = ['Y', 'M', 'D']
-        days = row.get('DAYS', None)
-        if days is not None:
-            days = days.replace(',', '')
-        components = [row.get('YEARS', None), row.get('MONTHS', None), days]
-
-        _concatenate_length_periods(units, components, extracted_objects)
 
     @staticmethod
     def _convert_to_supervision_sentence(_file_tag: str,
@@ -794,32 +797,6 @@ class UsNdController(CsvGcsfsDirectIngestController):
                                      extracted_objects)
 
     @staticmethod
-    def _normalize_county_code_elite_orders(
-            _file_tag: str,
-            row: Dict[str, str],
-            extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
-        _normalize_county_code(row['COUNTY_CODE'], StateCourtCase,
-                               extracted_objects)
-
-    @staticmethod
-    def _normalize_county_code_docstars_offender_cases(
-            _file_tag: str,
-            row: Dict[str, str],
-            extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
-        _normalize_county_code(row['TB_CTY'], StateSupervisionPeriod,
-                               extracted_objects)
-
-    @staticmethod
-    def _normalize_county_code_docstars_offenses(
-            _file_tag: str,
-            row: Dict[str, str],
-            extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
-        _normalize_county_code(row['COUNTY'], StateCharge, extracted_objects)
-
-    @staticmethod
     def _normalize_judicial_district_code(
             _file_tag: str,
             _row: Dict[str, str],
@@ -957,25 +934,8 @@ class UsNdController(CsvGcsfsDirectIngestController):
             StateIncarcerationPeriodReleaseReason:
                 ['ADMN', 'CONT', 'CONV', 'REC', '4139'],
         }
-
-        return self._create_overrides(overrides, ignores)
-
-    def _create_overrides(self,
-                          overrides: Dict[EntityEnum, List[str]],
-                          ignores: Dict[EntityEnumMeta, List[str]]) \
-            -> EnumOverrides:
-        overrides_builder = super(UsNdController, self) \
-            .get_enum_overrides().to_builder()
-
-        for mapped_enum, text_tokens in overrides.items():
-            for text_token in text_tokens:
-                overrides_builder.add(text_token, mapped_enum)
-
-        for ignored_enum, text_tokens in ignores.items():
-            for text_token in text_tokens:
-                overrides_builder.ignore(text_token, ignored_enum)
-
-        return overrides_builder.build()
+        base_overrides = super(UsNdController, self).get_enum_overrides()
+        return update_overrides_from_maps(base_overrides, overrides, ignores)
 
 
 def _yaml_filepath(filename):
@@ -1074,27 +1034,13 @@ def _generate_charge_id(row: Dict[str, str]) -> str:
     return '-'.join([sentence_group_id, charge_seq])
 
 
-def _fill_in_incarceration_sentence_parent_id(
+def _state_charge_ancestor_chain_overrides(
         _file_tag: str,
-        primary_coordinates: IngestFieldCoordinates) -> Dict[str, str]:
-    return {'state_incarceration_sentence': primary_coordinates.field_value}
-
-
-def _concatenate_length_periods(units: List[str],
-                                components: List[Optional[str]],
-                                extracted_objects: List[IngestObject]):
-    for i, component in enumerate(components):
-        if component:
-            component += units[i]
-
-    items = ['{}{}'.format(component, units[i])
-             for i, component in enumerate(components)
-             if component]
-    length = ' '.join(filter(None, items))
-
-    for extracted_object in extracted_objects:
-        if length and hasattr(extracted_object, 'max_length'):
-            extracted_object.__setattr__('max_length', length)
+        row: Dict[str, str]) -> Dict[str, str]:
+    # The charge id can be used interchangeably in ND with the sentence id
+    # because there is a 1:1 mapping between charges and sentences, so the
+    # CHARGE_SEQ and SENTENCE_SEQ numbers can be used interchangeably.
+    return {'state_incarceration_sentence': _generate_charge_id(row)}
 
 
 def _parse_charge_classification(classification_str: Optional[str],
@@ -1206,14 +1152,3 @@ def get_program_referral_fields(
         value = row.get(str_field, None)
         referral_fields[label] = value
     return referral_fields
-
-
-def _normalize_county_code(
-        county_code: str,
-        ingest_type: Type[IngestObject],
-        extracted_objects: List[IngestObject]):
-    normalized_code = normalized_county_code(county_code)
-
-    for extracted_object in extracted_objects:
-        if isinstance(extracted_object, ingest_type):
-            extracted_object.__setattr__('county_code', normalized_code)

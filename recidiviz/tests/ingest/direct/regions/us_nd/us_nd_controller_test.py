@@ -380,42 +380,43 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         supervision_sentence_105640_2 = StateSupervisionSentence(
             state_supervision_sentence_id='105640-2',
             supervision_type='PROBATION',
-            max_length='10Y')
+            max_length='10Y 0M 0D')
 
         supervision_sentence_105640_6 = StateSupervisionSentence(
             state_supervision_sentence_id='105640-6',
             supervision_type='PROBATION',
-            max_length='5Y')
+            max_length='5Y 0M 0D')
 
         incarceration_sentence_105640_1 = StateIncarcerationSentence(
-            state_incarceration_sentence_id='105640-1', max_length='10Y')
+            state_incarceration_sentence_id='105640-1', max_length='10Y 0M 0D')
 
         incarceration_sentence_105640_2 = StateIncarcerationSentence(
-            state_incarceration_sentence_id='105640-2', max_length='10Y')
+            state_incarceration_sentence_id='105640-2', max_length='10Y 0M 0D')
 
         incarceration_sentence_105640_5 = StateIncarcerationSentence(
-            state_incarceration_sentence_id='105640-5', max_length='20Y')
+            state_incarceration_sentence_id='105640-5', max_length='20Y 0M 0D')
 
         incarceration_sentence_105640_6 = StateIncarcerationSentence(
-            state_incarceration_sentence_id='105640-6', max_length='5Y')
+            state_incarceration_sentence_id='105640-6', max_length='5Y 0M 0D')
 
         incarceration_sentence_105640_7 = StateIncarcerationSentence(
-            state_incarceration_sentence_id='105640-7', max_length='2Y')
+            state_incarceration_sentence_id='105640-7', max_length='2Y 0M 0D')
 
         incarceration_sentence_114909_1 = StateIncarcerationSentence(
-            state_incarceration_sentence_id='114909-1', max_length='1Y 1D')
+            state_incarceration_sentence_id='114909-1', max_length='1Y 0M 1D')
 
         incarceration_sentence_114909_2 = StateIncarcerationSentence(
-            state_incarceration_sentence_id='114909-2', max_length='360D')
+            state_incarceration_sentence_id='114909-2', max_length='0Y 0M 360D')
 
         incarceration_sentence_113377_1 = StateIncarcerationSentence(
-            state_incarceration_sentence_id='113377-1', max_length='1Y 1D')
+            state_incarceration_sentence_id='113377-1', max_length='1Y 0M 1D')
 
         incarceration_sentence_113377_4 = StateIncarcerationSentence(
-            state_incarceration_sentence_id='113377-4', max_length='360D')
+            state_incarceration_sentence_id='113377-4', max_length='0Y 0M 360D')
 
         incarceration_sentence_113377_5 = StateIncarcerationSentence(
-            state_incarceration_sentence_id='113377-5', max_length='1000D')
+            state_incarceration_sentence_id='113377-5',
+            max_length='0Y 0M 1000D')
 
         expected = IngestInfo(
             state_people=[
