@@ -2,10 +2,14 @@
 
 ### tak001_offender_identification
 TODO(XXXX): Add time filtering for non-historical dumps
-TODO(XXXX): Join on LBAKRDTA.VAK003 to get birthday information.
 ```
 SELECT * 
-FROM LBAKRDTA.TAK001;
+FROM 
+	LBAKRDTA.TAK001 offender_identification_ek
+LEFT OUTER JOIN 
+	LBAKRDTA.VAK003 dob_view
+ON EK$DOC = dob_view.DOC_ID_DOB
+ORDER BY EK$DOC DESC;
 ```
 
 ### tak040_offender_cycles
