@@ -33,7 +33,10 @@ ADMISSIONS_BY_TYPE_BY_MONTH_QUERY = \
     """
 /*{description}*/
 
-SELECT newadm.state_code, newadm.year, newadm.month, IFNULL(new_admissions, 0) as new_admissions, IFNULL(technicals, 0) as technicals, IFNULL(non_technicals, 0) as non_technicals, IFNULL(unknown_revocations, 0) as unknown_revocations FROM
+SELECT IFNULL(tech.state_code, IFNULL(newadm.state_code, IFNULL(unk_rev.state_code, non_tech.state_code))) as state_code,
+IFNULL(tech.year, IFNULL(newadm.year, IFNULL(unk_rev.year, non_tech.year))) as year,
+IFNULL(tech.month, IFNULL(newadm.month, IFNULL(unk_rev.month, non_tech.month))) as month,
+IFNULL(new_admissions, 0) as new_admissions, IFNULL(technicals, 0) as technicals, IFNULL(non_technicals, 0) as non_technicals, IFNULL(unknown_revocations, 0) as unknown_revocations FROM
 -- Technical Revocations
 (SELECT state_code, EXTRACT(YEAR FROM admission_date) as year, EXTRACT(MONTH FROM admission_date) as month, IFNULL(count(*), 0) as technicals
 FROM
