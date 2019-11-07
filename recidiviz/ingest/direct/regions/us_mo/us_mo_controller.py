@@ -25,6 +25,8 @@ from recidiviz.common.constants.state.external_id_types import US_MO_DOC, \
 from recidiviz.common.constants.state.state_charge import \
     StateChargeClassificationType
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.constants.state.state_supervision import \
+    StateSupervisionType
 from recidiviz.common.date import munge_date_string
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.common.str_field_utils import parse_days_from_duration_pieces, \
@@ -39,12 +41,14 @@ from recidiviz.ingest.direct.regions.us_mo.us_mo_column_constants import \
     INCARCERATION_SENTENCE_LENGTH_DAYS, CHARGE_COUNTY_CODE, \
     SENTENCE_COUNTY_CODE, INCARCERATION_SENTENCE_PAROLE_INELIGIBLE_YEARS, \
     INCARCERATION_SENTENCE_START_DATE, SENTENCE_OFFENSE_DATE, \
-    SENTENCE_COMPLETED_FLAG, SENTENCE_STATUS_CODE, STATE_ID, FBI_ID, LICENSE_ID
+    SENTENCE_COMPLETED_FLAG, SENTENCE_STATUS_CODE, STATE_ID, FBI_ID, \
+    LICENSE_ID, SUPERVISION_SENTENCE_LENGTH_YEARS, \
+    SUPERVISION_SENTENCE_LENGTH_MONTHS, SUPERVISION_SENTENCE_LENGTH_DAYS
 from recidiviz.ingest.direct.state_shared_row_posthooks import \
     copy_name_to_alias, gen_label_single_external_id_hook, \
     gen_normalize_county_codes_posthook, \
     gen_map_ymd_counts_to_max_length_field_posthook, \
-    gen_set_is_life_sentence_hook
+    gen_set_is_life_sentence_hook, gen_convert_person_ids_to_external_id_objects
 from recidiviz.ingest.extractor.csv_data_extractor import IngestFieldCoordinates
 from recidiviz.ingest.models.ingest_info import IngestObject, StatePerson, \
     StatePersonExternalId, StateSentenceGroup, StateCharge, \
@@ -59,12 +63,14 @@ class UsMoController(CsvGcsfsDirectIngestController):
         'tak001_offender_identification',
         'tak040_offender_cycles',
         'tak022_tak023_tak025_tak026_offender_sentence_institution',
+        'tak022_tak024_tak025_tak026_offender_sentence_probation',
     ]
 
     PRIMARY_COL_PREFIXES_BY_FILE_TAG = {
         'tak001_offender_identification': 'EK',
         'tak040_offender_cycles': 'DQ',
         'tak022_tak023_tak025_tak026_offender_sentence_institution': 'BS',
+        'tak022_tak024_tak025_tak026_offender_sentence_probation': 'BS',
     }
 
     SUSPENDED_SENTENCE_STATUS_CODES = {
@@ -86,9 +92,21 @@ class UsMoController(CsvGcsfsDirectIngestController):
 
     ENUM_OVERRIDES: Dict[EntityEnum, List[str]] = {
         StateChargeClassificationType.INFRACTION: ['L'],  # Local/ordinance
+
+        StateSupervisionType.PROBATION: [
+            'BND',  # Bond Supervision (no longer used)
+            'CPR',  # Court Parole (a form of probation)
+            'DFP',  # Deferred Prosecution
+            'IPB',  # Interstate Compact Probation
+            'IPR',  # Interstate Compact Probation
+            'SES',  # Suspended Execution of Sentence (Probation)
+            'SIS',  # Suspended Imposition of Sentence (Probation)
+        ],
     }
 
-    ENUM_IGNORES: Dict[EntityEnumMeta, List[str]] = {}
+    ENUM_IGNORES: Dict[EntityEnumMeta, List[str]] = {
+        StateSupervisionType: ['INT'],  # Unknown meaning, rare
+    }
 
     def __init__(self,
                  ingest_directory_path: Optional[str] = None,
@@ -137,15 +155,38 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 self.set_sentence_status,
                 self._clear_zero_date_string,
                 self.tak022_tak023_set_parole_eligibility_date
+            ],
+            'tak022_tak024_tak025_tak026_offender_sentence_probation': [
+                gen_normalize_county_codes_posthook(self.region.region_code,
+                                                    CHARGE_COUNTY_CODE,
+                                                    StateCharge),
+                gen_normalize_county_codes_posthook(self.region.region_code,
+                                                    SENTENCE_COUNTY_CODE,
+                                                    StateSupervisionSentence),
+                gen_map_ymd_counts_to_max_length_field_posthook(
+                    SUPERVISION_SENTENCE_LENGTH_YEARS,
+                    SUPERVISION_SENTENCE_LENGTH_MONTHS,
+                    SUPERVISION_SENTENCE_LENGTH_DAYS,
+                    StateSupervisionSentence,
+                    test_for_fallback=self._test_length_string,
+                    fallback_parser=self._parse_days_with_long_range
+                ),
+                self.set_sentence_status,
+                self._clear_zero_date_string
             ]
         }
+
         self.primary_key_override_by_file: Dict[str, Callable] = {
             'tak022_tak023_tak025_tak026_offender_sentence_institution':
-                self._generate_incarceration_sentence_id_coords
+                self._generate_incarceration_sentence_id_coords,
+            'tak022_tak024_tak025_tak026_offender_sentence_probation':
+                self._generate_supervision_sentence_id_coords
         }
 
         self.ancestor_chain_override_by_file: Dict[str, Callable] = {
             'tak022_tak023_tak025_tak026_offender_sentence_institution':
+                self._sentence_group_ancestor_chain_override,
+            'tak022_tak024_tak025_tak026_offender_sentence_probation':
                 self._sentence_group_ancestor_chain_override
         }
 
@@ -159,6 +200,13 @@ class UsMoController(CsvGcsfsDirectIngestController):
     def _get_row_post_processors_for_file(self,
                                           file_tag: str) -> List[Callable]:
         return self.row_post_processors_by_file.get(file_tag, [])
+
+    def _get_file_post_processors_for_file(
+            self, _file_tag: str) -> List[Callable]:
+        post_processors: List[Callable] = [
+            gen_convert_person_ids_to_external_id_objects(self._get_id_type),
+        ]
+        return post_processors
 
     def _get_primary_key_override_for_file(
             self, file_tag: str) -> Optional[Callable]:
@@ -174,6 +222,16 @@ class UsMoController(CsvGcsfsDirectIngestController):
         return update_overrides_from_maps(base_overrides,
                                           self.ENUM_OVERRIDES,
                                           self.ENUM_IGNORES)
+
+    @staticmethod
+    def _get_id_type(file_tag: str) -> Optional[str]:
+        if file_tag in [
+                'tak022_tak023_tak025_tak026_offender_sentence_institution',
+                'tak022_tak024_tak025_tak026_offender_sentence_probation'
+        ]:
+            return US_MO_DOC
+
+        return None
 
     # TODO(1882): If yaml format supported raw values and multiple children of
     #  the same type, then this would be no-longer necessary.
@@ -307,6 +365,17 @@ class UsMoController(CsvGcsfsDirectIngestController):
             cls._generate_sentence_group_id(col_prefix, row))
 
     @classmethod
+    def _generate_supervision_sentence_id_coords(
+            cls,
+            file_tag: str,
+            row: Dict[str, str]) -> IngestFieldCoordinates:
+        col_prefix = cls.primary_col_prefix_for_file_tag(file_tag)
+        return IngestFieldCoordinates(
+            'state_supervision_sentence',
+            'state_supervision_sentence_id',
+            cls._generate_sentence_id(col_prefix, row))
+
+    @classmethod
     def _generate_incarceration_sentence_id_coords(
             cls,
             file_tag: str,
@@ -315,7 +384,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
         return IngestFieldCoordinates(
             'state_incarceration_sentence',
             'state_incarceration_sentence_id',
-            cls._generate_incarceration_sentence_id(col_prefix, row))
+            cls._generate_sentence_id(col_prefix, row))
 
     @classmethod
     def _generate_sentence_group_id(cls,
@@ -326,10 +395,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
         return f'{doc_id}-{cyc_id}'
 
     @classmethod
-    def _generate_incarceration_sentence_id(cls,
-                                            col_prefix: str,
-                                            row: Dict[str, str]) -> str:
-
+    def _generate_sentence_id(cls, col_prefix: str, row: Dict[str, str]) -> str:
         sentence_group_id = cls._generate_sentence_group_id(col_prefix, row)
         sen_seq_num = row[f'{col_prefix}$SEO']
         return f'{sentence_group_id}-{sen_seq_num}'
