@@ -32,7 +32,7 @@ ADMISSIONS_VERSUS_RELEASES_BY_MONTH_QUERY = \
     """
 /*{description}*/
 
-SELECT adm.state_code, IFNULL(adm.year, rel.year) as year, IFNULL(adm.month, rel.month) as month, IFNULL(admissions, 0) - IFNULL(releases, 0) as population_change
+SELECT IFNULL(adm.state_code, rel.state_code) as state_code, IFNULL(adm.year, rel.year) as year, IFNULL(adm.month, rel.month) as month, IFNULL(admissions, 0) - IFNULL(releases, 0) as population_change
 FROM
 (SELECT state_code, EXTRACT(YEAR from start_date) as year, EXTRACT(MONTH from start_date) as month, IFNULL(admission_count, 0) as admissions
 FROM
