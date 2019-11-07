@@ -34,7 +34,10 @@ REVOCATIONS_BY_VIOLATION_TYPE_BY_MONTH_QUERY = \
     """
     /*{description}*/
     
-    SELECT unk.state_code, unk.year, unk.month, IFNULL(absconsion_count, 0) as absconsion_count, IFNULL(felony_count, 0) as felony_count, IFNULL(technical_count, 0) as technical_count, IFNULL(unknown_count, 0) as unknown_count
+    SELECT IFNULL(absc.state_code, IFNULL(fel.state_code, IFNULL(tech.state_code, unk.state_code))) as state_code,
+    IFNULL(absc.year, IFNULL(fel.year, IFNULL(tech.year, unk.year))) as year,
+    IFNULL(absc.month, IFNULL(fel.month, IFNULL(tech.month, unk.month))) as month,
+    IFNULL(absconsion_count, 0) as absconsion_count, IFNULL(felony_count, 0) as felony_count, IFNULL(technical_count, 0) as technical_count, IFNULL(unknown_count, 0) as unknown_count
     FROM
     -- Absconsions
     ((SELECT sip.state_code, EXTRACT(YEAR FROM admission_date) as year, EXTRACT(MONTH FROM admission_date) as month, count(*) as absconsion_count FROM `{project_id}.{views_dataset}.incarceration_admissions_by_person_and_month` sip
