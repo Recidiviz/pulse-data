@@ -23,6 +23,7 @@ from typing import List, Optional, Iterable, cast
 
 import attr
 import pandas as pd
+from more_itertools import partition
 
 from recidiviz import IngestInfo
 from recidiviz.common.constants.bond import BondStatus, BondType
@@ -71,6 +72,12 @@ class UsTxBrazosController(CsvGcsfsDirectIngestController):
 
         # Postprocess IngestInfo
         for charge in ingest_info.get_all_charges():
+            if charge.name:
+                charge_parts = charge.name.lstrip('*').split('/')
+                name, notes = partition(self._is_charge_note, charge_parts)
+                charge.name = '/'.join(name)
+                charge.charge_notes = '/'.join(notes)
+
             if charge.degree:
                 match = re.match(r'CLASS (.+) MISDEMEANOR', charge.degree,
                                  re.IGNORECASE)
@@ -81,6 +88,12 @@ class UsTxBrazosController(CsvGcsfsDirectIngestController):
                     charge.level = charge.degree
                     charge.degree = None
         return ingest_info
+
+    def _is_charge_note(self, charge_name: str) -> bool:
+        CHARGE_NOTES = ('17.16', 'DET ORD', 'DET PEN', 'JUD NISI', 'MTP',
+                        'SURETY SURRENDER', 'BENCH WARRANT')
+        return any(charge_name.startswith(charge_note)
+                   for charge_note in CHARGE_NOTES)
 
     def _file_meets_file_line_limit(self, contents: Iterable[str]):
         """The CSV files must be processed all at once, so do not split."""
