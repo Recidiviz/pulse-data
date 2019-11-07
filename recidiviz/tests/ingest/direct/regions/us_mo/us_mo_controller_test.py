@@ -31,13 +31,16 @@ from recidiviz.common.constants.state.state_incarceration import \
 from recidiviz.common.constants.state.state_person_alias import \
     StatePersonAliasType
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.constants.state.state_supervision import \
+    StateSupervisionType
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
     GcsfsDirectIngestController
 from recidiviz.ingest.direct.regions.us_mo.us_mo_controller import \
     UsMoController
 from recidiviz.ingest.models.ingest_info import StatePerson, \
     StatePersonExternalId, StatePersonRace, StateAlias, StatePersonEthnicity, \
-    StateSentenceGroup, StateIncarcerationSentence, StateCharge
+    StateSentenceGroup, StateIncarcerationSentence, StateCharge, \
+    StateSupervisionSentence
 from recidiviz.persistence.entity.entity_utils import get_all_entities_from_tree
 from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.ingest.direct.regions.\
@@ -266,6 +269,11 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
     def test_populate_data_tak022_tak023_offender_sentence_institutional(self):
         expected = IngestInfo(state_people=[
             StatePerson(state_person_id='110035',
+                        state_person_external_ids=[
+                            StatePersonExternalId(
+                                state_person_external_id_id='110035',
+                                id_type=US_MO_DOC),
+                        ],
                         state_sentence_groups=[
                             StateSentenceGroup(
                                 state_sentence_group_id='110035-19890901',
@@ -322,6 +330,11 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                 ])
                         ]),
             StatePerson(state_person_id='310261',
+                        state_person_external_ids=[
+                            StatePersonExternalId(
+                                state_person_external_id_id='310261',
+                                id_type=US_MO_DOC),
+                        ],
                         state_sentence_groups=[
                             StateSentenceGroup(
                                 state_sentence_group_id='310261-19890821',
@@ -352,6 +365,11 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                 ])
                         ]),
             StatePerson(state_person_id='710448',
+                        state_person_external_ids=[
+                            StatePersonExternalId(
+                                state_person_external_id_id='710448',
+                                id_type=US_MO_DOC),
+                        ],
                         state_sentence_groups=[
                             StateSentenceGroup(
                                 state_sentence_group_id='710448-20010414',
@@ -418,6 +436,11 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                 ])
                         ]),
             StatePerson(state_person_id='910324',
+                        state_person_external_ids=[
+                            StatePersonExternalId(
+                                state_person_external_id_id='910324',
+                                id_type=US_MO_DOC),
+                        ],
                         state_sentence_groups=[
                             StateSentenceGroup(
                                 state_sentence_group_id='910324-19890825',
@@ -450,6 +473,111 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         self.run_parse_file_test(
             expected,
             'tak022_tak023_tak025_tak026_offender_sentence_institution')
+
+    def test_populate_data_tak022_tak023_offender_sentence_probation(self):
+        expected = IngestInfo(state_people=[
+            StatePerson(state_person_id='910324',
+                        state_person_external_ids=[
+                            StatePersonExternalId(
+                                state_person_external_id_id='910324',
+                                id_type=US_MO_DOC),
+                        ],
+                        state_sentence_groups=[
+                            StateSentenceGroup(
+                                state_sentence_group_id='910324-19890825',
+                                state_supervision_sentences=[
+                                    StateSupervisionSentence(
+                                        state_supervision_sentence_id=
+                                        '910324-19890825-1',
+                                        status='COMPLETED',
+                                        supervision_type='SES',
+                                        projected_completion_date='19920125',
+                                        county_code='US_MO_*',
+                                        max_length='5Y 0M 0D',
+                                        state_charges=[
+                                            StateCharge(
+                                                ncic_code='5404',
+                                                statute='47410040',
+                                                description=
+                                                'DRIVING WHILE INTOXICATED - '
+                                                'THIRD OFFENSE',
+                                                classification_type='F',
+                                                classification_subtype='D')]
+                                    ),
+                                    StateSupervisionSentence(
+                                        state_supervision_sentence_id=
+                                        '910324-19890825-2',
+                                        status='COMPLETED',
+                                        supervision_type='CPR',
+                                        projected_completion_date='19880206',
+                                        county_code='US_MO_*',
+                                        max_length='1Y 0M 0D',
+                                        state_charges=[
+                                            StateCharge(
+                                                ncic_code='5404',
+                                                description='DWI',
+                                                classification_type='F')]
+                                    )
+                                ])
+                        ]),
+            StatePerson(state_person_id='310261',
+                        state_person_external_ids=[
+                            StatePersonExternalId(
+                                state_person_external_id_id='310261',
+                                id_type=US_MO_DOC),
+                        ],
+                        state_sentence_groups=[
+                            StateSentenceGroup(
+                                state_sentence_group_id='310261-19890821',
+                                state_supervision_sentences=[
+                                    StateSupervisionSentence(
+                                        state_supervision_sentence_id=
+                                        '310261-19890821-1',
+                                        status='COMPLETED',
+                                        supervision_type='IPB',
+                                        projected_completion_date='19801006',
+                                        county_code='US_MO_*',
+                                        max_length='0Y 0M 0D',
+                                        state_charges=[
+                                            StateCharge(
+                                                ncic_code='5707',
+                                                description='BRK & END')]
+                                    )
+                                ]
+                            )
+                        ]),
+            StatePerson(state_person_id='110035',
+                        state_person_external_ids=[
+                            StatePersonExternalId(
+                                state_person_external_id_id='110035',
+                                id_type=US_MO_DOC),
+                        ],
+                        state_sentence_groups=[
+                            StateSentenceGroup(
+                                state_sentence_group_id='110035-20040712',
+                                state_supervision_sentences=[
+                                    StateSupervisionSentence(
+                                        state_supervision_sentence_id=
+                                        '110035-20040712-1',
+                                        status='COMPLETED',
+                                        supervision_type='SES',
+                                        projected_completion_date='19770712',
+                                        county_code='US_MO_*',
+                                        max_length='3Y 0M 0D',
+                                        state_charges=[
+                                            StateCharge(
+                                                ncic_code='2399',
+                                                description='BURG&STEAL',
+                                                classification_type='F')]
+                                    )
+                                ]
+                            )
+                        ]),
+        ])
+
+        self.run_parse_file_test(
+            expected,
+            'tak022_tak024_tak025_tak026_offender_sentence_probation')
 
     @staticmethod
     def _populate_person_backedges(
@@ -999,10 +1127,147 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         )
         sis_910324_19890825_1.charges = [charge_910324]
 
-
         # Act
         self._run_ingest_job_for_filename(
             'tak022_tak023_tak025_tak026_offender_sentence_institution.csv')
+
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
+        ##############################################################
+        # TAK020_TAK024_TAK025_TAK026 OFFENDER SENTENCE PROBATION
+        ##############################################################
+        # Arrange
+        sss_910324_19890825_1 = \
+            entities.StateSupervisionSentence.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                external_id='910324-19890825-1',
+                status=StateSentenceStatus.COMPLETED,
+                status_raw_text='COMPLETED',
+                supervision_type=StateSupervisionType.PROBATION,
+                supervision_type_raw_text='SES',
+                projected_completion_date=
+                datetime.date(year=1992, month=1, day=25),
+                county_code='US_MO_*',
+                max_length_days=1826,
+                person=person_910324,
+                sentence_group=sg_910324_19890825,
+            )
+        sg_910324_19890825.supervision_sentences.append(sss_910324_19890825_1)
+
+        charge_910324_ss_1 = entities.StateCharge.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            ncic_code='5404',
+            statute='47410040',
+            description='DRIVING WHILE INTOXICATED - THIRD OFFENSE',
+            classification_type=
+            StateChargeClassificationType.FELONY,
+            classification_type_raw_text='F',
+            classification_subtype='D',
+            supervision_sentences=[sss_910324_19890825_1],
+            person=person_910324,
+        )
+        sss_910324_19890825_1.charges = [charge_910324_ss_1]
+
+        sss_910324_19890825_2 = \
+            entities.StateSupervisionSentence.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                external_id='910324-19890825-2',
+                status=StateSentenceStatus.COMPLETED,
+                status_raw_text='COMPLETED',
+                supervision_type=StateSupervisionType.PROBATION,
+                supervision_type_raw_text='CPR',
+                projected_completion_date=
+                datetime.date(year=1988, month=2, day=6),
+                county_code='US_MO_*',
+                max_length_days=365,
+                person=person_910324,
+                sentence_group=sg_910324_19890825,
+            )
+        sg_910324_19890825.supervision_sentences.append(sss_910324_19890825_2)
+
+        charge_910324_ss_2 = entities.StateCharge.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            ncic_code='5404',
+            description='DWI',
+            classification_type=
+            StateChargeClassificationType.FELONY,
+            classification_type_raw_text='F',
+            supervision_sentences=[sss_910324_19890825_2],
+            person=person_910324,
+        )
+        sss_910324_19890825_2.charges = [charge_910324_ss_2]
+
+        sss_310261_19890821_1 = \
+            entities.StateSupervisionSentence.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                external_id='310261-19890821-1',
+                status=StateSentenceStatus.COMPLETED,
+                status_raw_text='COMPLETED',
+                supervision_type=StateSupervisionType.PROBATION,
+                supervision_type_raw_text='IPB',
+                projected_completion_date=
+                datetime.date(year=1980, month=10, day=6),
+                county_code='US_MO_*',
+                max_length_days=0,
+                person=person_310261,
+                sentence_group=sg_310261_19890821,
+            )
+        sg_310261_19890821.supervision_sentences.append(sss_310261_19890821_1)
+
+        charge_310261_ss_1 = entities.StateCharge.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            ncic_code='5707',
+            description='BRK & END',
+            supervision_sentences=[sss_310261_19890821_1],
+            person=person_310261,
+        )
+        sss_310261_19890821_1.charges = [charge_310261_ss_1]
+
+        sg_110035_20040712 = entities.StateSentenceGroup.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            external_id='110035-20040712',
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            person=person_110035
+        )
+        person_110035.sentence_groups.append(sg_110035_20040712)
+
+        sss_110035_20040712_1 = \
+            entities.StateSupervisionSentence.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                external_id='110035-20040712-1',
+                status=StateSentenceStatus.COMPLETED,
+                status_raw_text='COMPLETED',
+                supervision_type=StateSupervisionType.PROBATION,
+                supervision_type_raw_text='SES',
+                projected_completion_date=
+                datetime.date(year=1977, month=7, day=12),
+                county_code='US_MO_*',
+                max_length_days=1095,
+                person=person_110035,
+                sentence_group=sg_110035_20040712,
+            )
+        sg_110035_20040712.supervision_sentences.append(sss_110035_20040712_1)
+
+        charge_110035_ss_1 = entities.StateCharge.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            ncic_code='2399',
+            description='BURG&STEAL',
+            classification_type=
+            StateChargeClassificationType.FELONY,
+            classification_type_raw_text='F',
+            supervision_sentences=[sss_110035_20040712_1],
+            person=person_110035,
+        )
+        sss_110035_20040712_1.charges = [charge_110035_ss_1]
+
+        # Act
+        self._run_ingest_job_for_filename(
+            'tak022_tak024_tak025_tak026_offender_sentence_probation.csv')
 
         # Assert
         self.assert_expected_db_people(expected_people)
