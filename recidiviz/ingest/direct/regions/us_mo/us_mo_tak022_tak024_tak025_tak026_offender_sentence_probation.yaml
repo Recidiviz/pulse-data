@@ -1,0 +1,89 @@
+key_mappings:
+  BS$CNS: state_supervision_sentence.county_code
+  BU$PBT: state_supervision_sentence.supervision_type
+  # BU$SF: state_supervision_sentence.date_imposed  TODO(XXXX): Add date_imposed to state_supervision_sentence
+  BS$PD: state_supervision_sentence.projected_completion_date
+
+
+child_key_mappings:
+  BS$NCI: state_charge.ncic_code
+  # Sentence Missouri Charge Code (https://www.mshp.dps.missouri.gov/CJ08Client/Home/ChargeCode)
+  # TODO(XXXX): Many/all of these codes all changed in 2016? How do we convert between the two schemes?
+  BS$ASO: state_charge.statute
+  BS$CLT: state_charge.classification_type
+  BS$CLA: state_charge.classification_subtype
+  BS$DO: state_charge.offense_date
+  BS$COD: state_charge.description
+
+# Primary key overridden in controller
+
+ancestor_keys:
+  BS$DOC: state_person.state_person_id
+
+enforced_ancestor_types:
+  state_sentence: state_supervision_sentence
+
+keys_to_ignore:
+- BS$DOC  # Offender DOC Number - Handled manually in the controller
+- BS$CYC  # Offender Cycle Number - Handled manually in the controller
+- BS$SEO  # Sentence Key Sequence Number - Handled manually in the controller
+- BS$OCN  # Sentence Offense Cycle Number - tracks activity between law enforcement, courts, etc: TODO(XXXX): This does not appear to be unique and thus not suitable as an id, but check if it is usable for bespoke entity matching purposes
+- BS$LEO  # Unused - Sentence Sequence Number
+- BS$SCF  # Sentence Completed Flag - Handled manually in the controller
+- BS$CRT  # TODO(2604) - Sentence Cause Number (court docket # a la docstars COURT_NUMBER)
+- BS$NRN  # Unused - Offender Name Reference Number
+- BS$CNT  # Sentence Offense County - Handled manually in the controller
+- BS$POF  # TODO(2604) - What is this? - not in TAK table index
+- BS$ACL  # TODO(2604) - What is this? - not in TAK table index
+- BS$CCI  # TODO(1698) - Sentence Concurrent/Consecutive Ind - Add info about sentence relationships to schema
+- BS$CRQ  # TODO(1698) - Sentence Concurrent/Consecutive Xref - Add info about sentence relationships to schema
+- BS$CRC  # TODO(2305) - Court Circuit
+- BS$CRD  # TODO(2305) - Court Division
+- BS$PLE  # TODO(2607) - Sentence Plea - Add a plea_type enum on the state_charge
+- BS$AR   # TODO(2331) - Sentence Arrest Date
+- BS$UID  # Unused - User ID
+- BS$DCR  # Unused - Date Created (BS$* cols)
+- BS$TCR  # Unused - Time Created (BS$* cols)
+- BS$UIU  # Unused - Unknown field
+- BS$DLU  # Unused - Date Last Updated (BS$* cols)
+- BS$TLU  # Unused - Time Last Updated (BS$* cols)
+- BU$DOC  # Unused - Duplicate of BS$DOC
+- BU$CYC  # Unused - Duplicate of BS$CYC
+- BU$SEO  # Unused - Duplicate of BS$SEO
+- BU$FSO  # TODO(XXXX) - Field Sentence Key Sequence Number
+- BU$SF   # TODO(XXXX) - Sentence - F Probation Date
+- BU$SBY  # Years - Handled manually in the controller
+- BU$SBM  # Months - Handled manually in the controller
+- BU$SBD  # Days - Handled manually in the controller
+- BU$SLY  # Unused - Refers to incarceration sentence length
+- BU$SLM  # Unused - Refers to incarceration sentence length
+- BU$SLD  # Unused - Refers to incarceration sentence length
+- BU$SAI  # Unused - Substance Abuse Indicator
+- BU$EMP  # Unused - Sentence Employed Flag
+- BU$FRC  # Unused - Sentence Physical Force Flag
+- BU$WEA  # Unused - Sentence Weapon Flag
+- BU$DEF  # Unused - Sentence Co-defendants Flag
+- BU$DCR  # Unused - Date Created (BU$* cols)
+- BU$TCR  # Unused - Time Created (BU$* cols)
+- BU$DLU  # Unused - Date Last Updated (BU$* cols)
+- BU$TLU  # Unused - Time Last Updated (BU$* cols)
+- BV$DOC  # Unused - Duplicate of BS$DOC
+- BV$CYC  # Unused - Duplicate of BS$CYC
+- BV$SSO  # Unused - Status Sequence Number (used only for join)
+- BV$SEO  # Unused - Duplicate of BS$SEO
+- BV$FSO  # Unused - Field Sentence Key Sequence Number
+- BV$DCR  # Unused - Date Created (BV$* cols)
+- BV$TCR  # Unused - Time Created (BV$* cols)
+- BV$DLU  # Unused - Date Last Updated (BV$* cols)
+- BV$TLU  # Unused - Time Last Updated (BV$* cols)
+- BW$DOC  # Unused - Duplicate of BS$DOC
+- BW$CYC  # Unused - Duplicate of BS$CYC
+- BW$SSO  # Unused - Duplicate of MAX_BV$SSO
+- BW$SCD  # Status Code (Most recent) - Handled manually in the controller
+- BW$SY   # Unused - Status Code Change Date
+- BW$SM   # TODO(2604) - What is this? - not in TAK table index
+- BW$CSC  # TODO(2604) - Status Code Interstate Compact State Code
+- BW$DCR  # Unused - Date Created (BW$* cols)
+- BW$TCR  # Unused - Time Created (BW$* cols)
+- BW$DLU  # Unused - Date Last Updated (BW$* cols)
+- BW$TLU  # Unused - Time Last Updated (BW$* cols)

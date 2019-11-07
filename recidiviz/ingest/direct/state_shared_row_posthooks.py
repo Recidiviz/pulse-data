@@ -29,7 +29,7 @@ from recidiviz.ingest.direct.direct_ingest_controller_utils import \
     create_if_not_exists
 from recidiviz.ingest.models.ingest_info import IngestObject, StateAlias, \
     StatePerson, StatePersonExternalId, StateSentenceGroup, \
-    StateSupervisionSentence, StateIncarcerationSentence
+    StateSupervisionSentence, StateIncarcerationSentence, IngestInfo
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 
 
@@ -212,3 +212,33 @@ def gen_set_is_life_sentence_hook(
                 extracted_object.__setattr__('is_life', str(is_life_sentence))
 
     return _set_is_life_sentence
+
+
+def gen_convert_person_ids_to_external_id_objects(
+        get_id_type: Callable[[str], Optional[str]]):
+
+    def _convert_person_ids_to_external_id_objects(
+            file_tag: str,
+            ingest_info: IngestInfo,
+            cache: Optional[IngestObjectCache]):
+        id_type = get_id_type(file_tag)
+        if not id_type:
+            return
+
+        if cache is None:
+            raise ValueError("Ingest object cache is unexpectedly None")
+
+        for state_person in ingest_info.state_people:
+            state_person_id = state_person.state_person_id
+            if state_person_id is None:
+                continue
+
+            existing_external_id = \
+                state_person.get_state_person_external_id_by_id(state_person_id)
+
+            if existing_external_id is None:
+                state_person.create_state_person_external_id(
+                    state_person_external_id_id=state_person_id,
+                    id_type=id_type)
+
+    return _convert_person_ids_to_external_id_objects

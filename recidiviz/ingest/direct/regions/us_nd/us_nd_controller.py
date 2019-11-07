@@ -68,7 +68,7 @@ from recidiviz.ingest.direct.state_shared_row_posthooks import \
     copy_name_to_alias, gen_label_single_external_id_hook, \
     gen_normalize_county_codes_posthook, \
     gen_map_ymd_counts_to_max_length_field_posthook, \
-    gen_set_is_life_sentence_hook
+    gen_set_is_life_sentence_hook, gen_convert_person_ids_to_external_id_objects
 from recidiviz.ingest.direct.regions.us_nd.us_nd_county_code_reference import \
     normalized_county_code
 from recidiviz.ingest.direct.regions.us_nd.\
@@ -76,7 +76,7 @@ from recidiviz.ingest.direct.regions.us_nd.\
     normalized_judicial_district_code
 from recidiviz.ingest.extractor.csv_data_extractor import \
     IngestFieldCoordinates
-from recidiviz.ingest.models.ingest_info import IngestInfo, IngestObject, \
+from recidiviz.ingest.models.ingest_info import IngestObject, \
     StatePerson, StateIncarcerationSentence, StateSentenceGroup, \
     StateIncarcerationPeriod, StatePersonExternalId, StateAssessment, \
     StateCharge, StateSupervisionViolation, StateSupervisionViolationResponse, \
@@ -276,7 +276,8 @@ class UsNdController(CsvGcsfsDirectIngestController):
             self, _file_tag: str) -> List[Callable]:
         post_processors: List[Callable] = [
             self._rationalize_race_and_ethnicity,
-            self._convert_person_ids_to_external_id_objects]
+            gen_convert_person_ids_to_external_id_objects(self._get_id_type),
+        ]
         return post_processors
 
     def _get_ancestor_chain_overrides_callback_for_file(
@@ -291,34 +292,14 @@ class UsNdController(CsvGcsfsDirectIngestController):
         return self.files_to_set_with_empty_values
 
     @staticmethod
-    def _convert_person_ids_to_external_id_objects(
-            file_tag: str,
-            ingest_info: IngestInfo,
-            cache: Optional[IngestObjectCache]):
-
+    def _get_id_type(file_tag: str) -> Optional[str]:
         if file_tag.startswith('elite'):
-            id_type = US_ND_ELITE
-        elif file_tag.startswith('docstars'):
-            id_type = US_ND_SID
-        else:
-            raise ValueError(f"File [{file_tag}] doesn't have a known external "
-                             f"id type")
+            return US_ND_ELITE
+        if file_tag.startswith('docstars'):
+            return US_ND_SID
 
-        if cache is None:
-            raise ValueError("Ingest object cache is unexpectedly None")
-
-        for state_person in ingest_info.state_people:
-            state_person_id = state_person.state_person_id
-            if state_person_id is None:
-                continue
-
-            existing_external_id = \
-                state_person.get_state_person_external_id_by_id(state_person_id)
-
-            if existing_external_id is None:
-                state_person.create_state_person_external_id(
-                    state_person_external_id_id=state_person_id,
-                    id_type=id_type)
+        raise ValueError(f"File [{file_tag}] doesn't have a known external "
+                         f"id type")
 
     @staticmethod
     def _add_supervising_officer(_file_tag: str,
