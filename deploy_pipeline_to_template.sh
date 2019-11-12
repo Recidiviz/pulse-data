@@ -36,5 +36,5 @@ run_cmd "python -m run_calculation_pipelines
     --template_location gs://$bucket/templates/$job_name
     --input $input
     --output $output
-    --methodology=BOTH --include-race=True --include_age=True --include_stay_length=True --include_ethnicity=True --include_gender=True --include_release_facility=True"
+    --methodology=BOTH --include_race=True --include_age=True --include_stay_length=True --include_ethnicity=True --include_gender=True --include_release_facility=True"
 
