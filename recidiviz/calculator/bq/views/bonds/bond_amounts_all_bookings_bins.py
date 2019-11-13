@@ -19,7 +19,8 @@
 
 from recidiviz.calculator.bq import bqview
 from recidiviz.calculator.bq.views import view_config
-from recidiviz.calculator.bq.views.bonds.bond_amounts_all_bookings import BOND_AMOUNTS_ALL_BOOKINGS_VIEW
+from recidiviz.calculator.bq.views.bonds.bond_amounts_all_bookings \
+    import BOND_AMOUNTS_ALL_BOOKINGS_VIEW
 from recidiviz.calculator.bq.views.vera.county_names import COUNTY_NAMES_VIEW
 
 from recidiviz.common.constants.enum_canonical_strings import bond_type_denied
@@ -53,6 +54,7 @@ day-fips-category grouping.
 BOND_AMOUNTS_ALL_BOOKINGS_BINS_QUERY = \
 """
 /*{description}*/
+
 WITH
 
 Days AS (
@@ -72,6 +74,22 @@ BondAmountBins AS (
       WHEN BondAmounts.total_bond_dollars > 25000 AND BondAmounts.total_bond_dollars <= 100000 THEN 'AMT_025000_100000'
       WHEN BondAmounts.total_bond_dollars > 100000 THEN 'AMT_100000_999999'
       ELSE 'UNKNOWN' END AS bond_amount_category
+  FROM `{project_id}.{views_dataset}.{bond_amounts_all_bookings_view}` BondAmounts
+),
+
+BondAmountBinsNoZero AS (
+  SELECT
+    BondAmounts.*,
+    CASE
+      WHEN BondAmounts.denied THEN 'DENIED'
+      WHEN BondAmounts.unknown THEN 'UNKNOWN'
+      WHEN BondAmounts.total_bond_dollars > 0 AND BondAmounts.total_bond_dollars <= 500 THEN 'AMT_000000_000500'
+      WHEN BondAmounts.total_bond_dollars > 500 AND BondAmounts.total_bond_dollars <= 1000 THEN 'AMT_000500_001000'
+      WHEN BondAmounts.total_bond_dollars > 1000 AND BondAmounts.total_bond_dollars <= 10000 THEN 'AMT_001000_010000'
+      WHEN BondAmounts.total_bond_dollars > 10000 AND BondAmounts.total_bond_dollars <= 25000 THEN 'AMT_010000_025000'
+      WHEN BondAmounts.total_bond_dollars > 25000 AND BondAmounts.total_bond_dollars <= 100000 THEN 'AMT_025000_100000'
+      WHEN BondAmounts.total_bond_dollars > 100000 THEN 'AMT_100000_999999'
+      ELSE 'UNKNOWN' END AS bond_amount_category_no_zero
   FROM `{project_id}.{views_dataset}.{bond_amounts_all_bookings_view}` BondAmounts
 ),
 
@@ -97,9 +115,17 @@ PersonCountTable AS (
   JOIN Days
   ON day BETWEEN BondAmountBins.admission_date AND COALESCE(BondAmountBins.release_date, CURRENT_DATE('America/New_York'))
   GROUP BY day, fips, bond_amount_category
+),
+
+PersonCountTableNoZero AS (
+  SELECT day, fips, bond_amount_category_no_zero, COUNT(DISTINCT(booking_id)) AS person_count_no_zero
+  FROM BondAmountBinsNoZero
+  JOIN Days
+  ON day BETWEEN BondAmountBinsNoZero.admission_date AND COALESCE(BondAmountBinsNoZero.release_date, CURRENT_DATE('America/New_York'))
+  GROUP BY day, fips, bond_amount_category_no_zero
 )
 
-SELECT PersonCountTable.day, PersonCountTable.fips, PersonCountTable.bond_amount_category, person_count, admitted, released, CountyNames.county_name, CountyNames.state
+SELECT PersonCountTable.day, PersonCountTable.fips, PersonCountTable.bond_amount_category, person_count, admitted, released, person_count_no_zero, CountyNames.county_name, CountyNames.state
 FROM PersonCountTable
 FULL JOIN AdmittedTable
 ON PersonCountTable.day = AdmittedTable.day
@@ -107,6 +133,10 @@ ON PersonCountTable.day = AdmittedTable.day
 FULL JOIN ReleasedTable
 ON PersonCountTable.day = ReleasedTable.day
   AND PersonCountTable.fips = ReleasedTable.fips
+LEFT JOIN PersonCountTableNoZero
+ON PersonCountTable.day = PersonCountTableNoZero.day
+  AND PersonCountTable.bond_amount_category = PersonCountTableNoZero.bond_amount_category_no_zero
+  AND PersonCountTable.fips = PersonCountTableNoZero.fips
 JOIN
   `{project_id}.{views_dataset}.{county_names_view}` CountyNames
 ON
