@@ -83,7 +83,7 @@ BASE_SCRAPER_QUEUE_CONFIG = queue_pb2.Queue(
 SCRAPER_PHASE_QUEUE_CONFIG = queue_pb2.Queue(
     rate_limits=queue_pb2.RateLimits(
         max_dispatches_per_second=100,
-        max_concurrent_dispatches=10,
+        max_concurrent_dispatches=100,
     ),
     retry_config=queue_pb2.RetryConfig(
         min_backoff=duration_pb2.Duration(seconds=5),
