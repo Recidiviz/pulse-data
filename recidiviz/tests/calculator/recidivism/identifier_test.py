@@ -842,6 +842,35 @@ class TestValidateSortAndCollapseIncarcerationPeriods(unittest.TestCase):
 
         assert validated_incarceration_periods == []
 
+    def test_validate_incarceration_periods_released_in_future(self):
+        not_actually_released = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='TX',
+            admission_date=date(2008, 11, 20),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=date(9999, 9, 9),
+            release_reason=ReleaseReason.SENTENCE_SERVED
+        )
+
+        valid_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=111,
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            state_code='TX',
+            admission_date=date(2008, 11, 20),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=None,
+            release_reason=None
+        )
+
+        incarceration_periods = [not_actually_released]
+
+        validated_incarceration_periods = \
+            identifier.validate_sort_and_collapse_incarceration_periods(
+                incarceration_periods)
+
+        assert validated_incarceration_periods == [valid_incarceration_period]
+
     def test_validate_incarceration_periods_multiple_temporary(self):
         temporary_custody_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
@@ -886,9 +915,9 @@ class TestValidateSortAndCollapseIncarcerationPeriods(unittest.TestCase):
             incarceration_period_id=1111,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code='TX',
-            admission_date=date(2018, 11, 20),
+            admission_date=date(2016, 11, 20),
             admission_reason=AdmissionReason.NEW_ADMISSION,
-            release_date=date(2019, 12, 4),
+            release_date=date(2017, 12, 4),
             release_reason=ReleaseReason.SENTENCE_SERVED)
 
         incarceration_periods = [temporary_custody, valid_incarceration_period]
@@ -924,9 +953,9 @@ class TestValidateSortAndCollapseIncarcerationPeriods(unittest.TestCase):
             incarceration_period_id=1111,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code='TX',
-            admission_date=date(2018, 11, 20),
+            admission_date=date(2016, 11, 20),
             admission_reason=AdmissionReason.NEW_ADMISSION,
-            release_date=date(2019, 12, 4),
+            release_date=date(2017, 12, 4),
             release_reason=ReleaseReason.SENTENCE_SERVED)
 
         incarceration_periods = [temporary_custody_1,
@@ -966,9 +995,9 @@ class TestValidateSortAndCollapseIncarcerationPeriods(unittest.TestCase):
                 incarceration_period_id=1111,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 state_code='TX',
-                admission_date=date(2018, 11, 20),
+                admission_date=date(2011, 11, 20),
                 admission_reason=AdmissionReason.NEW_ADMISSION,
-                release_date=date(2019, 12, 4),
+                release_date=date(2012, 12, 4),
                 release_reason=ReleaseReason.TRANSFER)
 
         valid_incarceration_period_2 = \
@@ -976,9 +1005,9 @@ class TestValidateSortAndCollapseIncarcerationPeriods(unittest.TestCase):
                 incarceration_period_id=1112,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 state_code='TX',
-                admission_date=date(2019, 12, 4),
+                admission_date=date(2012, 12, 4),
                 admission_reason=AdmissionReason.TRANSFER,
-                release_date=date(2019, 12, 24),
+                release_date=date(2012, 12, 24),
                 release_reason=ReleaseReason.TRANSFER)
 
         valid_incarceration_period_3 = \
@@ -986,9 +1015,9 @@ class TestValidateSortAndCollapseIncarcerationPeriods(unittest.TestCase):
                 incarceration_period_id=1113,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 state_code='TX',
-                admission_date=date(2019, 12, 24),
+                admission_date=date(2012, 12, 24),
                 admission_reason=AdmissionReason.TRANSFER,
-                release_date=date(2019, 12, 30),
+                release_date=date(2012, 12, 30),
                 release_reason=ReleaseReason.SENTENCE_SERVED)
 
         incarceration_periods = [temporary_custody_1,

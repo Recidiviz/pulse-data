@@ -191,6 +191,15 @@ def validate_sort_and_collapse_incarceration_periods(
                          incarceration_period.incarceration_period_id)
             return []
 
+        if incarceration_period.release_date is not None and \
+                incarceration_period.release_date > date.today():
+            # If the person has not been released yet, remove the release
+            # date and release reason, and set the status to be in custody
+            incarceration_period.release_date = None
+            incarceration_period.release_reason = None
+            incarceration_period.status = \
+                StateIncarcerationPeriodStatus.IN_CUSTODY
+
         validated_incarceration_periods.append(incarceration_period)
 
     validated_incarceration_periods.sort(key=lambda b: b.admission_date)
