@@ -129,8 +129,8 @@ def trigger_dataflow_job_from_template(project_id: str, bucket: str,
         }
     }
 
-    request = service.projects().templates().create(
-        projectId=project_id, body=body)
+    request = service.projects().locations().templates().create(
+        projectId=project_id, body=body, location="us-west1")
     response = request.execute()
     return response
 
