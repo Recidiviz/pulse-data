@@ -34,6 +34,8 @@ run_cmd "python -m run_calculation_pipelines
     --staging_location gs://$bucket/staging
     --temp_location gs://$bucket/temp
     --template_location gs://$bucket/templates/$job_name
+    --experiments=shuffle_mode=service
+    --region=us-west1
     --input $input
     --output $output
     --methodology=BOTH --include_race=True --include_age=True --include_stay_length=True --include_ethnicity=True --include_gender=True --include_release_facility=True"
