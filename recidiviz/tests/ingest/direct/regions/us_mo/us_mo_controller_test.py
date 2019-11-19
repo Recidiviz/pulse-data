@@ -286,7 +286,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         projected_min_release_date='99999999',
                                         projected_max_release_date='99999999',
                                         parole_eligibility_date='1956-04-25',
-                                        county_code='US_MO_ST_LOUIS_COUNTY',
+                                        county_code='US_MO_ST_LOUIS_CITY',
                                         max_length='3655253',
                                         is_life='True',
                                         state_charges=[
@@ -312,14 +312,14 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         projected_min_release_date='20070102',
                                         projected_max_release_date='20070102',
                                         parole_eligibility_date='2003-01-03',
-                                        county_code='US_MO_ST_LOUIS_COUNTY',
+                                        county_code='US_MO_ST_LOUIS_CITY',
                                         max_length='4Y 0M 0D',
                                         is_life='False',
                                         state_charges=[
                                             StateCharge(
                                                 offense_date='20000604',
                                                 county_code=
-                                                'US_MO_ST_LOUIS_COUNTY',
+                                                'US_MO_ST_LOUIS_CITY',
                                                 ncic_code='5299',
                                                 statute='31020990',
                                                 description=
@@ -347,14 +347,14 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         projected_min_release_date='20211205',
                                         projected_max_release_date='20211205',
                                         parole_eligibility_date='2016-12-06',
-                                        county_code='US_MO_ST_LOUIS_CITY',
+                                        county_code='US_MO_ST_LOUIS_COUNTY',
                                         max_length='5Y 0M 0D',
                                         is_life='False',
                                         state_charges=[
                                             StateCharge(
                                                 offense_date='20141004',
                                                 county_code=
-                                                'US_MO_ST_LOUIS_CITY',
+                                                'US_MO_ST_LOUIS_COUNTY',
                                                 ncic_code='3599',
                                                 statute='91335990',
                                                 description=
@@ -382,14 +382,14 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         projected_min_release_date='20091022',
                                         projected_max_release_date='20091022',
                                         parole_eligibility_date='2005-10-23',
-                                        county_code='US_MO_ST_LOUIS_COUNTY',
+                                        county_code='US_MO_ST_LOUIS_CITY',
                                         max_length='4Y 0M 0D',
                                         is_life='False',
                                         state_charges=[
                                             StateCharge(
                                                 offense_date='20000731',
                                                 county_code=
-                                                'US_MO_ST_LOUIS_COUNTY',
+                                                'US_MO_ST_LOUIS_CITY',
                                                 ncic_code='3599',
                                                 statute='32450990',
                                                 description='POSSESSION OF C/S',
@@ -404,7 +404,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         projected_min_release_date='20111206',
                                         projected_max_release_date='20111206',
                                         parole_eligibility_date='2006-12-07',
-                                        county_code='US_MO_ST_LOUIS_CITY',
+                                        county_code='US_MO_ST_LOUIS_COUNTY',
                                         max_length='5Y 0M 0D',
                                         is_life='False',
                                         state_charges=[StateCharge(
@@ -423,7 +423,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         projected_min_release_date='20101206',
                                         projected_max_release_date='20101206',
                                         parole_eligibility_date='2006-12-07',
-                                        county_code='US_MO_ST_LOUIS_CITY',
+                                        county_code='US_MO_ST_LOUIS_COUNTY',
                                         max_length='4Y 0M 0D',
                                         is_life='False',
                                         state_charges=[StateCharge(
@@ -453,7 +453,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         projected_min_release_date='19911229',
                                         projected_max_release_date='19930429',
                                         parole_eligibility_date='1989-04-30',
-                                        county_code='US_MO_*',
+                                        county_code='US_MO_LIVINGSTON',
                                         max_length='4Y 0M 0D',
                                         is_life='False',
                                         state_charges=[
@@ -492,7 +492,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         status='COMPLETED',
                                         supervision_type='SES',
                                         projected_completion_date='19920125',
-                                        county_code='US_MO_*',
+                                        county_code='US_MO_DEKALB',
                                         max_length='5Y 0M 0D',
                                         state_charges=[
                                             StateCharge(
@@ -510,7 +510,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         status='COMPLETED',
                                         supervision_type='CPR',
                                         projected_completion_date='19880206',
-                                        county_code='US_MO_*',
+                                        county_code='US_MO_PLATTE',
                                         max_length='1Y 0M 0D',
                                         state_charges=[
                                             StateCharge(
@@ -536,7 +536,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         status='COMPLETED',
                                         supervision_type='IPB',
                                         projected_completion_date='19801006',
-                                        county_code='US_MO_*',
+                                        county_code='OUT_OF_STATE',
                                         max_length='0Y 0M 0D',
                                         state_charges=[
                                             StateCharge(
@@ -562,7 +562,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         status='COMPLETED',
                                         supervision_type='SES',
                                         projected_completion_date='19770712',
-                                        county_code='US_MO_*',
+                                        county_code='US_MO_GREENE',
                                         max_length='3Y 0M 0D',
                                         state_charges=[
                                             StateCharge(
@@ -872,7 +872,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 datetime.date(year=9999, month=9, day=9),
                 parole_eligibility_date=
                 datetime.date(year=1956, month=4, day=25),
-                county_code='US_MO_ST_LOUIS_COUNTY',
+                county_code='US_MO_ST_LOUIS_CITY',
                 max_length_days=3655253,
                 is_life=True,
                 person=person_110035,
@@ -910,7 +910,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 datetime.date(year=2007, month=1, day=2),
                 parole_eligibility_date=
                 datetime.date(year=2003, month=1, day=3),
-                county_code='US_MO_ST_LOUIS_COUNTY',
+                county_code='US_MO_ST_LOUIS_CITY',
                 max_length_days=1461,
                 is_life=False,
                 person=person_110035,
@@ -922,7 +922,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             state_code=_STATE_CODE_UPPER,
             status=ChargeStatus.PRESENT_WITHOUT_INFO,
             offense_date=datetime.date(year=2000, month=6, day=4),
-            county_code='US_MO_ST_LOUIS_COUNTY',
+            county_code='US_MO_ST_LOUIS_CITY',
             ncic_code='5299',
             statute='31020990',
             description='UNLAWFUL USE OF WEAPON',
@@ -951,7 +951,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 datetime.date(year=2021, month=12, day=5),
                 parole_eligibility_date=
                 datetime.date(year=2016, month=12, day=6),
-                county_code='US_MO_ST_LOUIS_CITY',
+                county_code='US_MO_ST_LOUIS_COUNTY',
                 max_length_days=1826,
                 is_life=False,
                 person=person_310261,
@@ -963,7 +963,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             state_code=_STATE_CODE_UPPER,
             status=ChargeStatus.PRESENT_WITHOUT_INFO,
             offense_date=datetime.date(year=2014, month=10, day=4),
-            county_code='US_MO_ST_LOUIS_CITY',
+            county_code='US_MO_ST_LOUIS_COUNTY',
             ncic_code='3599',
             statute='91335990',
             description='POSSESSION OF CONTROLLED SUBSTANCE',
@@ -989,7 +989,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 datetime.date(year=2009, month=10, day=22),
                 parole_eligibility_date=
                 datetime.date(year=2005, month=10, day=23),
-                county_code='US_MO_ST_LOUIS_COUNTY',
+                county_code='US_MO_ST_LOUIS_CITY',
                 max_length_days=1461,
                 is_life=False,
                 person=person_710448,
@@ -999,7 +999,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             state_code=_STATE_CODE_UPPER,
             status=ChargeStatus.PRESENT_WITHOUT_INFO,
             offense_date=datetime.date(year=2000, month=7, day=31),
-            county_code='US_MO_ST_LOUIS_COUNTY',
+            county_code='US_MO_ST_LOUIS_CITY',
             ncic_code='3599',
             statute='32450990',
             description='POSSESSION OF C/S',
@@ -1026,7 +1026,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 datetime.date(year=2011, month=12, day=6),
                 parole_eligibility_date=
                 datetime.date(year=2006, month=12, day=7),
-                county_code='US_MO_ST_LOUIS_CITY',
+                county_code='US_MO_ST_LOUIS_COUNTY',
                 max_length_days=1826,
                 is_life=False,
                 person=person_710448,
@@ -1062,7 +1062,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 datetime.date(year=2010, month=12, day=6),
                 parole_eligibility_date=
                 datetime.date(year=2006, month=12, day=7),
-                county_code='US_MO_ST_LOUIS_CITY',
+                county_code='US_MO_ST_LOUIS_COUNTY',
                 max_length_days=1461,
                 is_life=False,
                 person=person_710448,
@@ -1104,7 +1104,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 datetime.date(year=1993, month=4, day=29),
                 parole_eligibility_date=
                 datetime.date(year=1989, month=4, day=30),
-                county_code='US_MO_*',
+                county_code='US_MO_LIVINGSTON',
                 max_length_days=1461,
                 is_life=False,
                 person=person_910324,
@@ -1148,7 +1148,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 supervision_type_raw_text='SES',
                 projected_completion_date=
                 datetime.date(year=1992, month=1, day=25),
-                county_code='US_MO_*',
+                county_code='US_MO_DEKALB',
                 max_length_days=1826,
                 person=person_910324,
                 sentence_group=sg_910324_19890825,
@@ -1180,7 +1180,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 supervision_type_raw_text='CPR',
                 projected_completion_date=
                 datetime.date(year=1988, month=2, day=6),
-                county_code='US_MO_*',
+                county_code='US_MO_PLATTE',
                 max_length_days=365,
                 person=person_910324,
                 sentence_group=sg_910324_19890825,
@@ -1210,7 +1210,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 supervision_type_raw_text='IPB',
                 projected_completion_date=
                 datetime.date(year=1980, month=10, day=6),
-                county_code='US_MO_*',
+                county_code='OUT_OF_STATE',
                 max_length_days=0,
                 person=person_310261,
                 sentence_group=sg_310261_19890821,
@@ -1245,7 +1245,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 supervision_type_raw_text='SES',
                 projected_completion_date=
                 datetime.date(year=1977, month=7, day=12),
-                county_code='US_MO_*',
+                county_code='US_MO_GREENE',
                 max_length_days=1095,
                 person=person_110035,
                 sentence_group=sg_110035_20040712,
