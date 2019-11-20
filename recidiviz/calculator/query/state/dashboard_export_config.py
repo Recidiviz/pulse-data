@@ -22,7 +22,7 @@ from recidiviz.calculator.query import bqview
 from recidiviz.calculator.query.state import view_manager
 from recidiviz.calculator.query.state.views.reference import reference_views
 
-STATES_TO_EXPORT = ['US_ND']
+STATES_TO_EXPORT = ['US_MO', 'US_ND']
 
 VIEWS_TO_EXCLUDE_FROM_EXPORT: List[bqview.BigQueryView] = \
     reference_views.REF_VIEWS
