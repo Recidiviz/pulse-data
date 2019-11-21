@@ -368,6 +368,16 @@ class StateConverter(BaseConverter[entities.StatePerson]):
         incarceration_period_builder.program_assignments = \
             converted_program_assignments
 
+        if ingest_incarceration_period.source_supervision_violation_response_id:
+            converted_source_violation_response = \
+                self._convert_supervision_violation_response(
+                    self.violation_responses[
+                        ingest_incarceration_period.
+                        source_supervision_violation_response_id])
+            incarceration_period_builder.\
+                source_supervision_violation_response = \
+                converted_source_violation_response
+
         return incarceration_period_builder.build()
 
     def _convert_supervision_period(

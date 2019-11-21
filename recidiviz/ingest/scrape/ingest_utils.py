@@ -259,6 +259,16 @@ def convert_ingest_info_to_proto(ingest_info_py: ingest_info.IngestInfo) \
             parent_proto.state_incarceration_period_ids.append(
                 proto_period.state_incarceration_period_id)
 
+            if incarceration_period.source_supervision_violation_response:
+                proto_violation_response = _populate_proto(
+                    'state_supervision_violation_responses',
+                    incarceration_period.source_supervision_violation_response,
+                    'state_supervision_violation_response_id',
+                    state_supervision_violation_response_map)
+                proto_period.source_supervision_violation_response_id = \
+                    proto_violation_response.\
+                    state_supervision_violation_response_id
+
             for incident in incarceration_period.state_incarceration_incidents:
                 proto_incident = _populate_proto(
                     'state_incarceration_incidents', incident,
@@ -820,6 +830,13 @@ def convert_proto_to_ingest_info(
     for proto_incarceration_period in proto.state_incarceration_periods:
         incarceration_period = state_incarceration_period_map[
             proto_incarceration_period.state_incarceration_period_id]
+
+        if proto_incarceration_period.source_supervision_violation_response_id:
+            incarceration_period.source_supervision_violation_response = \
+                state_supervision_violation_response_map[
+                    proto_incarceration_period.
+                    source_supervision_violation_response_id]
+
         incarceration_period.state_incarceration_incidents = \
             [state_incarceration_incident_map[proto_id] for proto_id
              in proto_incarceration_period.state_incarceration_incident_ids]

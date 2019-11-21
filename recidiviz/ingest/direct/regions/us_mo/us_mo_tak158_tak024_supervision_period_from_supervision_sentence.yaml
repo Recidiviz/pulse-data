@@ -1,0 +1,34 @@
+key_mappings:
+  F1$CD: state_supervision_period.start_date
+  F1$ORC: state_supervision_period.admission_reason
+  F1$WW: state_supervision_period.termination_date
+  F1$CTP: state_supervision_period.termination_reason
+
+
+# Primary key overridden in controller, with the format: DOC-CYC-SQN
+
+ancestor_keys:
+  BU$DOC: state_person.state_person_id
+
+enforced_ancestor_types:
+  state_sentence: state_supervision_sentence
+
+keys_to_ignore:
+  - BU$DOC  # Offender DOC Number - Handled manually in the controller
+  - BU$CYC  # Offender Cycle Number - Handled manually in the controller
+  - BU$SEO  # Sentence Key Sequence Number - Handled manually in the controller
+  - F1$SQN  # Subcycle Sequence Number - Handled manually in the controller
+  - F1$DOC  # Unused - Duplicate of BU$DOC
+  - F1$CYC  # Unused - Duplicate of BU$CYC
+  - F1$SEO  # Unused - Duplicate of BU$SEO
+  - F1$SST  # Unused - Subcycle Status (Field, Institution, or Out of State) - Guaranteed to be 'F' by the source query
+  - F1$OPT  # Open Reason Type - Handled manually in the controller
+  - F1$ARC  # TODO(2636): Use this to map EX to StateIncarcerationPeriodReleaseReason.EXECUTION
+  - F1$CTO  # Case Type (Opening) - Handled manually in the controller
+  - F1$CTC  # Case Type (Current) - Handled manually in the controller
+  - F1$SY   # Unused - Status code change date
+  - F1$PFI  # Purpose for incarceration - Handled manually in the controller
+  - F1$OR0  # Unused - Ordinal Date Field 0
+  - F1$MSO  # Most Serious Offense - TODO(2604): Should this be tied to a controlling sentence or controlling charge?
+  - F1$DCR  # Unused - Date Created
+  - F1$TCR  # Unused - Time Created

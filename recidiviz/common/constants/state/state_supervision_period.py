@@ -34,6 +34,7 @@ class StateSupervisionPeriodAdmissionReason(EntityEnum,
     COURT_SENTENCE = \
         state_enum_strings.\
         state_supervision_period_admission_reason_court_sentence
+    EXTERNAL_UNKNOWN = enum_strings.external_unknown
     RETURN_FROM_ABSCONSION = \
         state_enum_strings.\
         state_supervision_period_admission_reason_return_from_absconsion
@@ -106,6 +107,7 @@ _STATE_SUPERVISION_ADMISSION_TYPE_MAP = {
         StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
     'COURT SENTENCE': StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
     'SENTENCE': StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+    'EXTERNAL UNKNOWN': StateSupervisionPeriodAdmissionReason.EXTERNAL_UNKNOWN,
     'RETURN FROM ABSCOND':
         StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION,
     'RETURN FROM ABSCONSION':

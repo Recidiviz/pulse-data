@@ -45,7 +45,7 @@ class BaseStateMatchingDelegate:
         """Returns the region for this object."""
         return self.region
 
-    def read_persons(
+    def read_potential_match_db_persons(
             self,
             session: Session,
             ingested_persons: List[schema.StatePerson]

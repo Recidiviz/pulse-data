@@ -8,9 +8,9 @@ key_mappings:
 child_key_mappings:
   BS$NCI: state_charge.ncic_code
   # Sentence Missouri Charge Code (https://www.mshp.dps.missouri.gov/CJ08Client/Home/ChargeCode)
-  # TODO(XXXX): Many/all of these codes all changed in 2016? How do we convert between the two schemes?
+  # TODO(2648): Many/all of these codes all changed in 2016? How do we convert between the two schemes?
   BS$ASO: state_charge.statute
-  BS$CLT: state_charge.classification_type  # TODO(XXXX): Mappings for L
+  BS$CLT: state_charge.classification_type  # TODO(2604): Mappings for L
   BS$CLA: state_charge.classification_subtype
   BS$DO: state_charge.offense_date
   BS$COD: state_charge.description
@@ -27,7 +27,7 @@ keys_to_ignore:
 - BS$DOC  # Offender DOC Number - Handled manually in the controller
 - BS$CYC  # Offender Cycle Number - Handled manually in the controller
 - BS$SEO  # Sentence Key Sequence Number - Handled manually in the controller
-- BS$OCN  # Sentence Offense Cycle Number - tracks activity between law enforcement, courts, etc: TODO(XXXX): This does not appear to be unique and thus not suitable as an id, but check if it is usable for bespoke entity matching purposes
+- BS$OCN  # Sentence Offense Cycle Number - tracks activity between law enforcement, courts, etc: TODO(2604): This does not appear to be unique and thus not suitable as an id, but check if it is usable for bespoke entity matching purposes
 - BS$LEO  # Unused - Sentence Sequence Number
 - BS$SCF  # Sentence Completed Flag - Handled manually in the controller
 - BS$CRT  # TODO(2604) - Sentence Cause Number (court docket # a la docstars COURT_NUMBER)
@@ -73,7 +73,7 @@ keys_to_ignore:
 - BT$TLU  # Unused - Time Last Updated (BT$* cols)
 - BV$DOC  # Unused - Duplicate of BS$DOC
 - BV$CYC  # Unused - Duplicate of BS$CYC
-- MAX_BV$SSO  # Unused - Status Sequence Number (used only for join)
+- BV$SSO  # Unused - Status Sequence Number (used only for join)
 - BV$SEO  # Unused - Duplicate of BS$SEO
 - BV$FSO  # Unused - Field Sentence Key Sequence Number
 - BV$DCR  # Unused - Date Created (BV$* cols)

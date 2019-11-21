@@ -70,5 +70,6 @@ _STATE_CHARGE_CLASSIFICATION_TYPE_MAP = {
     'OTH': StateChargeClassificationType.OTHER,
     'OTHER': StateChargeClassificationType.OTHER,
     'SUMMONS': StateChargeClassificationType.INFRACTION,
+    'U': StateChargeClassificationType.EXTERNAL_UNKNOWN,
     'UNKNOWN': StateChargeClassificationType.EXTERNAL_UNKNOWN,
 }

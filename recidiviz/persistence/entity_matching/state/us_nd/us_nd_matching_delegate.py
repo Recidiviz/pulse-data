@@ -43,7 +43,7 @@ class UsNdMatchingDelegate(BaseStateMatchingDelegate):
     def __init__(self):
         super().__init__('us_nd')
 
-    def read_persons(
+    def read_potential_match_db_persons(
             self,
             session: Session,
             ingested_persons: List[schema.StatePerson]
