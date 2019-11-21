@@ -237,9 +237,10 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
             "at time [%s].", datetime.datetime.now().isoformat())
 
         check_all_objs_have_type(ingested_db_persons, schema.StatePerson)
-        db_persons = self.state_matching_delegate.read_persons(
-            session=session,
-            ingested_persons=ingested_db_persons)
+        db_persons = \
+            self.state_matching_delegate.read_potential_match_db_persons(
+                session=session,
+                ingested_persons=ingested_db_persons)
         logging.info("Read [%d] persons from DB in region [%s]",
                      len(db_persons),
                      self.state_matching_delegate.get_region_code())

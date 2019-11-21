@@ -28,11 +28,22 @@ from recidiviz.common.constants.state.state_charge import \
     StateChargeClassificationType
 from recidiviz.common.constants.state.state_incarceration import \
     StateIncarcerationType
+from recidiviz.common.constants.state.state_incarceration_period import \
+    StateIncarcerationPeriodStatus, StateIncarcerationPeriodAdmissionReason, \
+    StateIncarcerationPeriodReleaseReason
 from recidiviz.common.constants.state.state_person_alias import \
     StatePersonAliasType
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import \
     StateSupervisionType
+from recidiviz.common.constants.state.state_supervision_period import \
+    StateSupervisionPeriodStatus, StateSupervisionPeriodAdmissionReason, \
+    StateSupervisionPeriodTerminationReason
+from recidiviz.common.constants.state.state_supervision_violation_response \
+    import StateSupervisionViolationResponseType, \
+    StateSupervisionViolationResponseDecision, \
+    StateSupervisionViolationResponseRevocationType, \
+    StateSupervisionViolationResponseDecidingBodyType
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
     GcsfsDirectIngestController
 from recidiviz.ingest.direct.regions.us_mo.us_mo_controller import \
@@ -40,7 +51,8 @@ from recidiviz.ingest.direct.regions.us_mo.us_mo_controller import \
 from recidiviz.ingest.models.ingest_info import StatePerson, \
     StatePersonExternalId, StatePersonRace, StateAlias, StatePersonEthnicity, \
     StateSentenceGroup, StateIncarcerationSentence, StateCharge, \
-    StateSupervisionSentence
+    StateSupervisionSentence, StateIncarcerationPeriod, \
+    StateSupervisionPeriod, StateSupervisionViolationResponse
 from recidiviz.persistence.entity.entity_utils import get_all_entities_from_tree
 from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.ingest.direct.regions.\
@@ -283,8 +295,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         '110035-19890901-1',
                                         status='COMPLETED',
                                         date_imposed='19560316',
-                                        projected_min_release_date='99999999',
-                                        projected_max_release_date='99999999',
+                                        projected_min_release_date=None,
+                                        projected_max_release_date=None,
                                         parole_eligibility_date='1956-04-25',
                                         county_code='US_MO_ST_LOUIS_CITY',
                                         max_length='3655253',
@@ -579,6 +591,540 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             expected,
             'tak022_tak024_tak025_tak026_offender_sentence_probation')
 
+    # pylint: disable=line-too-long
+    def test_populate_data_tak158_tak023_incarceration_period_from_incarceration_sentence(self):
+        vr_110035_19890901_3 = StateSupervisionViolationResponse(
+            response_type='PERMANENT_DECISION',
+            response_date='19930701',
+            decision='REVOCATION',
+            revocation_type='I',
+            deciding_body_type='PAROLE_BOARD'
+        )
+
+        vr_110035_19890901_5 = StateSupervisionViolationResponse(
+            response_type='PERMANENT_DECISION',
+            response_date='19940609',
+            decision='REVOCATION',
+            revocation_type='S',
+            deciding_body_type='PAROLE_BOARD'
+        )
+
+        vr_110035_20010414_2 = StateSupervisionViolationResponse(
+            response_type='PERMANENT_DECISION',
+            decision='REVOCATION',
+            revocation_type='S'
+        )
+
+        vr_710448_20010414_3 = StateSupervisionViolationResponse(
+            response_type='PERMANENT_DECISION',
+            response_date='20020912',
+            decision='REVOCATION',
+            revocation_type='S',
+            deciding_body_type='PAROLE_BOARD'
+        )
+
+        ip_110035_19890901_1 = StateIncarcerationPeriod(
+            state_incarceration_period_id='110035-19890901-1',
+            status='NOT_IN_CUSTODY',
+            admission_date='19890901',
+            admission_reason='NA',
+            release_date='19921006',
+            release_reason='IT'
+        )
+        ip_110035_19890901_3 = StateIncarcerationPeriod(
+            state_incarceration_period_id='110035-19890901-3',
+            status='NOT_IN_CUSTODY',
+            admission_date='19930701',
+            admission_reason='PAROLE_REVOCATION',
+            release_date='19931102',
+            release_reason='IT',
+            source_supervision_violation_response=vr_110035_19890901_3
+        )
+        ip_110035_19890901_5 = StateIncarcerationPeriod(
+            state_incarceration_period_id='110035-19890901-5',
+            status='NOT_IN_CUSTODY',
+            admission_date='19940609',
+            admission_reason='PAROLE_REVOCATION',
+            release_date='19950206',
+            release_reason='IT',
+            source_supervision_violation_response=vr_110035_19890901_5
+        )
+
+        ip_110035_20010414_2 = StateIncarcerationPeriod(
+            state_incarceration_period_id='110035-20010414-2',
+            status='NOT_IN_CUSTODY',
+            admission_date='20010420',
+            admission_reason='PROBATION_REVOCATION',
+            release_date='20121102',
+            release_reason='IT',
+            source_supervision_violation_response=vr_110035_20010414_2
+        )
+        ip_110035_20010414_4 = StateIncarcerationPeriod(
+            state_incarceration_period_id='110035-20010414-4',
+            status='NOT_IN_CUSTODY',
+            admission_date='20130521',
+            admission_reason='IB',
+            release_date='20131127',
+            release_reason='IT'
+        )
+        ip_110035_20010414_7 = StateIncarcerationPeriod(
+            state_incarceration_period_id='110035-20010414-7',
+            status='NOT_IN_CUSTODY',
+            admission_date='20160328',
+            admission_reason='IB',
+            release_date='20161011',
+            release_reason='ID'
+        )
+
+        expected = IngestInfo(state_people=[
+            StatePerson(state_person_id='110035',
+                        state_person_external_ids=[
+                            StatePersonExternalId(
+                                state_person_external_id_id='110035',
+                                id_type=US_MO_DOC),
+                        ],
+                        state_sentence_groups=[
+                            StateSentenceGroup(
+                                state_sentence_group_id='110035-19890901',
+                                state_incarceration_sentences=[
+                                    StateIncarcerationSentence(
+                                        state_incarceration_sentence_id=
+                                        '110035-19890901-1',
+                                        state_incarceration_periods=[
+                                            ip_110035_19890901_1,
+                                            ip_110035_19890901_3,
+                                            ip_110035_19890901_5,
+                                        ]
+                                    )
+                                ]),
+                            StateSentenceGroup(
+                                state_sentence_group_id='110035-20010414',
+                                state_incarceration_sentences=[
+                                    StateIncarcerationSentence(
+                                        state_incarceration_sentence_id=
+                                        '110035-20010414-1',
+                                        state_incarceration_periods=[
+                                            ip_110035_20010414_2,
+                                            ip_110035_20010414_4,
+                                            ip_110035_20010414_7,
+                                        ]
+                                    )
+                                ])
+                        ]),
+            StatePerson(state_person_id='310261',
+                        state_person_external_ids=[
+                            StatePersonExternalId(
+                                state_person_external_id_id='310261',
+                                id_type=US_MO_DOC),
+                        ],
+                        state_sentence_groups=[
+                            StateSentenceGroup(
+                                state_sentence_group_id='310261-19890821',
+                                state_incarceration_sentences=[
+                                    StateIncarcerationSentence(
+                                        state_incarceration_sentence_id=
+                                        '310261-19890821-3',
+                                        state_incarceration_periods=[
+                                            StateIncarcerationPeriod(
+                                                state_incarceration_period_id=
+                                                '310261-19890821-1',
+                                                status='IN_CUSTODY',
+                                                admission_date='19900329',
+                                                admission_reason='NA'
+                                            )
+                                        ]
+                                    )
+                                ]
+                            )
+                        ]),
+            StatePerson(state_person_id='710448',
+                        state_person_external_ids=[
+                            StatePersonExternalId(
+                                state_person_external_id_id='710448',
+                                id_type=US_MO_DOC),
+                        ],
+                        state_sentence_groups=[
+                            StateSentenceGroup(
+                                state_sentence_group_id='710448-20010414',
+                                state_incarceration_sentences=[
+                                    StateIncarcerationSentence(
+                                        state_incarceration_sentence_id=
+                                        '710448-20010414-1',
+                                        state_incarceration_periods=[
+                                            StateIncarcerationPeriod(
+                                                state_incarceration_period_id=
+                                                '710448-20010414-1',
+                                                status='NOT_IN_CUSTODY',
+                                                admission_date='20010705',
+                                                admission_reason='NA',
+                                                release_date='20020117',
+                                                release_reason='IT'
+                                            )
+                                        ]
+                                    ),
+                                    StateIncarcerationSentence(
+                                        state_incarceration_sentence_id=
+                                        '710448-20010414-3',
+                                        state_incarceration_periods=[
+                                            StateIncarcerationPeriod(
+                                                state_incarceration_period_id=
+                                                '710448-20010414-3',
+                                                status='NOT_IN_CUSTODY',
+                                                admission_date='20020912',
+                                                admission_reason='PAROLE_REVOCATION',
+                                                release_date='20040928',
+                                                release_reason='IT',
+                                                source_supervision_violation_response=vr_710448_20010414_3,
+                                            )
+                                        ]
+                                    ),
+                                ]
+                            )
+                        ]),
+            StatePerson(state_person_id='910324',
+                        state_person_external_ids=[
+                            StatePersonExternalId(
+                                state_person_external_id_id='910324',
+                                id_type=US_MO_DOC),
+                        ],
+                        state_sentence_groups=[
+                            StateSentenceGroup(
+                                state_sentence_group_id='910324-19890825',
+                                state_incarceration_sentences=[
+                                    StateIncarcerationSentence(
+                                        state_incarceration_sentence_id=
+                                        '910324-19890825-1',
+                                        state_incarceration_periods=[
+                                            StateIncarcerationPeriod(
+                                                state_incarceration_period_id=
+                                                '910324-19890825-1',
+                                                status='NOT_IN_CUSTODY',
+                                                admission_date='19891023',
+                                                admission_reason='NA',
+                                                release_date='20081115',
+                                                release_reason='IE'
+                                            )
+                                        ]
+                                    )
+                                ]
+                            )
+                        ]),
+            StatePerson(state_person_id='523523',
+                        state_person_external_ids=[
+                            StatePersonExternalId(
+                                state_person_external_id_id='523523',
+                                id_type=US_MO_DOC),
+                        ],
+                        state_sentence_groups=[
+                            StateSentenceGroup(
+                                state_sentence_group_id='523523-19890617',
+                                state_incarceration_sentences=[
+                                    StateIncarcerationSentence(
+                                        state_incarceration_sentence_id=
+                                        '523523-19890617-1',
+                                        state_incarceration_periods=[
+                                            StateIncarcerationPeriod(
+                                                state_incarceration_period_id=
+                                                '523523-19890617-1',
+                                                status='IN_CUSTODY',
+                                                admission_date='19890617',
+                                                admission_reason='NA',
+                                            )
+                                        ]
+                                    )
+                                ]
+                            )
+                        ]),
+        ])
+
+        self.run_parse_file_test(
+            expected,
+            'tak158_tak023_incarceration_period_from_incarceration_sentence')
+
+    # pylint: disable=line-too-long
+    def test_populate_data_tak158_tak023_supervision_period_from_incarceration_sentence(
+            self):
+        sp_110035_19890901_2 = StateSupervisionPeriod(
+            state_supervision_period_id='110035-19890901-2',
+            supervision_type='PAROLE',
+            status='TERMINATED',
+            start_date='19921006',
+            admission_reason='IT',
+            termination_date='19930701',
+            termination_reason='BP'
+        )
+        sp_110035_19890901_4 = StateSupervisionPeriod(
+            state_supervision_period_id='110035-19890901-4',
+            supervision_type='PAROLE',
+            status='TERMINATED',
+            start_date='19931102',
+            admission_reason='IT',
+            termination_date='19940609',
+            termination_reason='BP'
+        )
+        sp_110035_19890901_6 = StateSupervisionPeriod(
+            state_supervision_period_id='110035-19890901-6',
+            supervision_type='PAROLE',
+            status='TERMINATED',
+            start_date='19950206',
+            admission_reason='IT',
+            termination_date='19950323',
+            termination_reason='DC'
+        )
+
+        sp_110035_20010414_1 = StateSupervisionPeriod(
+            state_supervision_period_id='110035-20010414-1',
+            supervision_type='PROBATION',
+            status='TERMINATED',
+            start_date='20010414',
+            admission_reason='NA',
+            termination_date='20010420',
+            termination_reason='RV'
+        )
+        sp_110035_20010414_3 = StateSupervisionPeriod(
+            state_supervision_period_id='110035-20010414-3',
+            supervision_type='PAROLE',
+            status='TERMINATED',
+            start_date='20121102',
+            admission_reason='IT',
+            termination_date='20130521',
+            termination_reason='RT'
+        )
+        sp_110035_20010414_5 = StateSupervisionPeriod(
+            state_supervision_period_id='110035-20010414-5',
+            supervision_type='PAROLE',
+            status='TERMINATED',
+            start_date='20131127',
+            admission_reason='IT',
+            termination_date='20150706',
+            termination_reason='FA'
+        )
+        sp_110035_20010414_6 = StateSupervisionPeriod(
+            state_supervision_period_id='110035-20010414-6',
+            supervision_type='PAROLE',
+            status='TERMINATED',
+            start_date='20160328',
+            admission_reason='CI',
+            termination_date='20160328',
+            termination_reason='RT'
+        )
+
+        expected = IngestInfo(state_people=[
+            StatePerson(state_person_id='110035',
+                        state_person_external_ids=[
+                            StatePersonExternalId(
+                                state_person_external_id_id='110035',
+                                id_type=US_MO_DOC),
+                        ],
+                        state_sentence_groups=[
+                            StateSentenceGroup(
+                                state_sentence_group_id='110035-19890901',
+                                state_incarceration_sentences=[
+                                    StateIncarcerationSentence(
+                                        state_incarceration_sentence_id=
+                                        '110035-19890901-1',
+                                        state_supervision_periods=[
+                                            sp_110035_19890901_2,
+                                            sp_110035_19890901_4,
+                                            sp_110035_19890901_6,
+                                        ]
+                                    )
+                                ]),
+                            StateSentenceGroup(
+                                state_sentence_group_id='110035-20010414',
+                                state_incarceration_sentences=[
+                                    StateIncarcerationSentence(
+                                        state_incarceration_sentence_id=
+                                        '110035-20010414-1',
+                                        state_supervision_periods=[
+                                            sp_110035_20010414_1,
+                                            sp_110035_20010414_3,
+                                            sp_110035_20010414_5,
+                                            sp_110035_20010414_6,
+                                        ]
+                                    )
+                                ])
+                        ]),
+            StatePerson(state_person_id='710448',
+                        state_person_external_ids=[
+                            StatePersonExternalId(
+                                state_person_external_id_id='710448',
+                                id_type=US_MO_DOC),
+                        ],
+                        state_sentence_groups=[
+                            StateSentenceGroup(
+                                state_sentence_group_id='710448-20010414',
+                                state_incarceration_sentences=[
+                                    StateIncarcerationSentence(
+                                        state_incarceration_sentence_id=
+                                        '710448-20010414-1',
+                                        state_supervision_periods=[
+                                            StateSupervisionPeriod(
+                                                state_supervision_period_id=
+                                                '710448-20010414-2',
+                                                status='TERMINATED',
+                                                supervision_type='PAROLE',
+                                                start_date='20020117',
+                                                admission_reason='IT',
+                                                termination_date='20020912',
+                                                termination_reason='BP'
+                                            )
+                                        ]
+                                    ),
+                                    StateIncarcerationSentence(
+                                        state_incarceration_sentence_id=
+                                        '710448-20010414-3',
+                                        state_supervision_periods=[
+                                            StateSupervisionPeriod(
+                                                state_supervision_period_id=
+                                                '710448-20010414-4',
+                                                status='TERMINATED',
+                                                supervision_type='PAROLE',
+                                                start_date='20040928',
+                                                admission_reason='IT',
+                                                termination_date='20060911',
+                                                termination_reason='DC'
+                                            )
+                                        ]
+                                    ),
+                                ]
+                            )
+                        ]),
+            StatePerson(state_person_id='910324',
+                        state_person_external_ids=[
+                            StatePersonExternalId(
+                                state_person_external_id_id='910324',
+                                id_type=US_MO_DOC),
+                        ],
+                        state_sentence_groups=[
+                            StateSentenceGroup(
+                                state_sentence_group_id='910324-19890825',
+                                state_incarceration_sentences=[
+                                    StateIncarcerationSentence(
+                                        state_incarceration_sentence_id=
+                                        '910324-19890825-1',
+                                        state_supervision_periods=[
+                                            StateSupervisionPeriod(
+                                                state_supervision_period_id=
+                                                '910324-19890825-2',
+                                                status='UNDER_SUPERVISION',
+                                                supervision_type='PAROLE',
+                                                start_date='20081115',
+                                                admission_reason='IT',
+                                            )
+                                        ]
+                                    )
+                                ]
+                            )
+                        ]),
+            StatePerson(state_person_id='624624',
+                        state_person_external_ids=[
+                            StatePersonExternalId(
+                                state_person_external_id_id='624624',
+                                id_type=US_MO_DOC),
+                        ],
+                        state_sentence_groups=[
+                            StateSentenceGroup(
+                                state_sentence_group_id='624624-19890617',
+                                state_incarceration_sentences=[
+                                    StateIncarcerationSentence(
+                                        state_incarceration_sentence_id=
+                                        '624624-19890617-1',
+                                        state_supervision_periods=[
+                                            StateSupervisionPeriod(
+                                                state_supervision_period_id=
+                                                '624624-19890617-1',
+                                                status='UNDER_SUPERVISION',
+                                                supervision_type='PAROLE',
+                                                start_date='19890617',
+                                                admission_reason='NA',
+                                            )
+                                        ]
+                                    )
+                                ]
+                            )
+                        ]),
+        ])
+
+        self.run_parse_file_test(
+            expected,
+            'tak158_tak023_supervision_period_from_incarceration_sentence')
+
+    # pylint: disable=line-too-long
+    def test_populate_data_tak158_tak024_incarceration_period_from_supervision_sentence(self):
+        expected = IngestInfo(state_people=[
+            StatePerson(state_person_id='910324',
+                        state_person_external_ids=[
+                            StatePersonExternalId(
+                                state_person_external_id_id='910324',
+                                id_type=US_MO_DOC),
+                        ],
+                        state_sentence_groups=[
+                            StateSentenceGroup(
+                                state_sentence_group_id='910324-19890825',
+                                state_supervision_sentences=[
+                                    StateSupervisionSentence(
+                                        state_supervision_sentence_id=
+                                        '910324-19890825-1',
+                                        state_incarceration_periods=[
+                                            StateIncarcerationPeriod(
+                                                state_incarceration_period_id=
+                                                '910324-19890825-1',
+                                                status='NOT_IN_CUSTODY',
+                                                admission_date='19891023',
+                                                admission_reason='NA',
+                                                release_date='20081115',
+                                                release_reason='IE'
+                                            )
+                                        ]
+                                    )
+                                ]
+                            )
+                        ]),
+        ])
+
+        self.run_parse_file_test(
+            expected,
+            'tak158_tak024_incarceration_period_from_supervision_sentence')
+
+    # pylint: disable=line-too-long
+    def test_populate_data_tak158_tak024_supervision_period_from_supervision_sentence(
+            self):
+        expected = IngestInfo(state_people=[
+            StatePerson(state_person_id='110035',
+                        state_person_external_ids=[
+                            StatePersonExternalId(
+                                state_person_external_id_id='110035',
+                                id_type=US_MO_DOC),
+                        ],
+                        state_sentence_groups=[
+                            StateSentenceGroup(
+                                state_sentence_group_id='110035-20040712',
+                                state_supervision_sentences=[
+                                    StateSupervisionSentence(
+                                        state_supervision_sentence_id=
+                                        '110035-20040712-1',
+                                        state_supervision_periods=[
+                                            StateSupervisionPeriod(
+                                                state_supervision_period_id=
+                                                '110035-20040712-1',
+                                                status='TERMINATED',
+                                                supervision_type='PAROLE',
+                                                start_date='20040712',
+                                                admission_reason='IT',
+                                                termination_date='20080119',
+                                                termination_reason='DC'
+                                            )
+                                        ]
+                                    )
+                                ])
+                        ]),
+        ])
+
+        self.run_parse_file_test(
+            expected,
+            'tak158_tak024_supervision_period_from_supervision_sentence')
+
     @staticmethod
     def _populate_person_backedges(
             persons: List[entities.StatePerson]) -> None:
@@ -866,10 +1412,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 status_raw_text='COMPLETED',
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 date_imposed=datetime.date(year=1956, month=3, day=16),
-                projected_min_release_date=
-                datetime.date(year=9999, month=9, day=9),
-                projected_max_release_date=
-                datetime.date(year=9999, month=9, day=9),
+                projected_min_release_date=None,
+                projected_max_release_date=None,
                 parole_eligibility_date=
                 datetime.date(year=1956, month=4, day=25),
                 county_code='US_MO_ST_LOUIS_CITY',
@@ -1268,6 +1812,646 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         # Act
         self._run_ingest_job_for_filename(
             'tak022_tak024_tak025_tak026_offender_sentence_probation.csv')
+
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
+        ################################################################
+        # TAK158_TAK023 INCARCERATION PERIOD FROM INCARCERATION SENTENCE
+        ################################################################
+        # Arrange
+        ip_110035_19890901_1 = \
+            entities.StateIncarcerationPeriod.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                external_id='110035-19890901-1',
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                status_raw_text='NOT_IN_CUSTODY',
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                admission_date=datetime.date(year=1989, month=9, day=1),
+                admission_reason=
+                StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+                admission_reason_raw_text='NA',
+                release_date=datetime.date(year=1992, month=10, day=6),
+                release_reason=
+                StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+                release_reason_raw_text='IT',
+                person=person_110035,
+                incarceration_sentences=[sis_110035_19890901_1]
+            )
+
+        ip_110035_19890901_3 = \
+            entities.StateIncarcerationPeriod.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                external_id='110035-19890901-3',
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                status_raw_text='NOT_IN_CUSTODY',
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                admission_date=datetime.date(year=1993, month=7, day=1),
+                admission_reason=
+                StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+                admission_reason_raw_text='PAROLE_REVOCATION',
+                release_date=datetime.date(year=1993, month=11, day=2),
+                release_reason=
+                StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+                release_reason_raw_text='IT',
+                person=person_110035,
+                incarceration_sentences=[sis_110035_19890901_1]
+            )
+        vr_110035_19890901_3 = \
+            entities.StateSupervisionViolationResponse.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                response_type=
+                StateSupervisionViolationResponseType.PERMANENT_DECISION,
+                response_type_raw_text='PERMANENT_DECISION',
+                response_date=datetime.date(year=1993, month=7, day=1),
+                decision=StateSupervisionViolationResponseDecision.REVOCATION,
+                decision_raw_text='REVOCATION',
+                revocation_type=
+                StateSupervisionViolationResponseRevocationType.TREATMENT_IN_PRISON,
+                revocation_type_raw_text='I',
+                deciding_body_type=
+                StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
+                deciding_body_type_raw_text='PAROLE_BOARD',
+                person=person_110035,
+            )
+        ip_110035_19890901_3.source_supervision_violation_response = \
+            vr_110035_19890901_3
+
+        ip_110035_19890901_5 = \
+            entities.StateIncarcerationPeriod.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                external_id='110035-19890901-5',
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                status_raw_text='NOT_IN_CUSTODY',
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                admission_date=datetime.date(year=1994, month=6, day=9),
+                admission_reason=
+                StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+                admission_reason_raw_text='PAROLE_REVOCATION',
+                release_date=datetime.date(year=1995, month=2, day=6),
+                release_reason=
+                StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+                release_reason_raw_text='IT',
+                person=person_110035,
+                incarceration_sentences=[sis_110035_19890901_1]
+            )
+        vr_110035_19890901_5 = \
+            entities.StateSupervisionViolationResponse.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                response_type=
+                StateSupervisionViolationResponseType.PERMANENT_DECISION,
+                response_type_raw_text='PERMANENT_DECISION',
+                response_date=datetime.date(year=1994, month=6, day=9),
+                decision=StateSupervisionViolationResponseDecision.REVOCATION,
+                decision_raw_text='REVOCATION',
+                revocation_type=
+                StateSupervisionViolationResponseRevocationType.REINCARCERATION,
+                revocation_type_raw_text='S',
+                deciding_body_type=
+                StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
+                deciding_body_type_raw_text='PAROLE_BOARD',
+                person=person_110035,
+            )
+        ip_110035_19890901_5.source_supervision_violation_response = \
+            vr_110035_19890901_5
+
+        sis_110035_19890901_1.incarceration_periods = [
+            ip_110035_19890901_1,
+            ip_110035_19890901_3,
+            ip_110035_19890901_5
+        ]
+
+        ip_110035_20010414_2 = \
+            entities.StateIncarcerationPeriod.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                external_id='110035-20010414-2',
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                status_raw_text='NOT_IN_CUSTODY',
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                admission_date=datetime.date(year=2001, month=4, day=20),
+                admission_reason=
+                StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+                admission_reason_raw_text='PROBATION_REVOCATION',
+                release_date=datetime.date(year=2012, month=11, day=2),
+                release_reason=
+                StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+                release_reason_raw_text='IT',
+                person=person_110035,
+                incarceration_sentences=[sis_110035_20010414_1]
+            )
+        vr_110035_20010414_2 = \
+            entities.StateSupervisionViolationResponse.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                response_type=
+                StateSupervisionViolationResponseType.PERMANENT_DECISION,
+                response_type_raw_text='PERMANENT_DECISION',
+                decision=StateSupervisionViolationResponseDecision.REVOCATION,
+                decision_raw_text='REVOCATION',
+                revocation_type=
+                StateSupervisionViolationResponseRevocationType.REINCARCERATION,
+                revocation_type_raw_text='S',
+                person=person_110035,
+            )
+        ip_110035_20010414_2.source_supervision_violation_response = \
+            vr_110035_20010414_2
+
+        ip_110035_20010414_4 = \
+            entities.StateIncarcerationPeriod.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                external_id='110035-20010414-4',
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                status_raw_text='NOT_IN_CUSTODY',
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                admission_date=datetime.date(year=2013, month=5, day=21),
+                admission_reason=
+                StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+                admission_reason_raw_text='IB',
+                release_date=datetime.date(year=2013, month=11, day=27),
+                release_reason=
+                StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+                release_reason_raw_text='IT',
+                person=person_110035,
+                incarceration_sentences=[sis_110035_20010414_1]
+            )
+        ip_110035_20010414_7 = \
+            entities.StateIncarcerationPeriod.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                external_id='110035-20010414-7',
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                status_raw_text='NOT_IN_CUSTODY',
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                admission_date=datetime.date(year=2016, month=3, day=28),
+                admission_reason=
+                StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+                admission_reason_raw_text='IB',
+                release_date=datetime.date(year=2016, month=10, day=11),
+                release_reason=
+                StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+                release_reason_raw_text='ID',
+                person=person_110035,
+                incarceration_sentences=[sis_110035_20010414_1]
+            )
+        sis_110035_20010414_1.incarceration_periods = [
+            ip_110035_20010414_2,
+            ip_110035_20010414_4,
+            ip_110035_20010414_7
+        ]
+
+        ip_310261_19890821_1 = \
+            entities.StateIncarcerationPeriod.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                external_id='310261-19890821-1',
+                status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+                status_raw_text='IN_CUSTODY',
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                admission_date=datetime.date(year=1990, month=3, day=29),
+                admission_reason=
+                StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+                admission_reason_raw_text='NA',
+                person=person_310261,
+                incarceration_sentences=[sis_310261_19890821_3]
+            )
+        sis_310261_19890821_3.incarceration_periods = [ip_310261_19890821_1]
+
+        ip_710448_20010414_1 = \
+            entities.StateIncarcerationPeriod.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                external_id='710448-20010414-1',
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                status_raw_text='NOT_IN_CUSTODY',
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                admission_date=datetime.date(year=2001, month=7, day=5),
+                admission_reason=
+                StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+                admission_reason_raw_text='NA',
+                release_date=datetime.date(year=2002, month=1, day=17),
+                release_reason=
+                StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+                release_reason_raw_text='IT',
+                person=person_710448,
+                incarceration_sentences=[sis_710448_20010414_1]
+            )
+        sis_710448_20010414_1.incarceration_periods = [ip_710448_20010414_1]
+
+        ip_710448_20010414_3 = \
+            entities.StateIncarcerationPeriod.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                external_id='710448-20010414-3',
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                status_raw_text='NOT_IN_CUSTODY',
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                admission_date=datetime.date(year=2002, month=9, day=12),
+                admission_reason=
+                StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+                admission_reason_raw_text='PAROLE_REVOCATION',
+                release_date=datetime.date(year=2004, month=9, day=28),
+                release_reason=
+                StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+                release_reason_raw_text='IT',
+                person=person_710448,
+                incarceration_sentences=[sis_710448_20010414_3]
+            )
+        vr_710448_20010414_3 = \
+            entities.StateSupervisionViolationResponse.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                response_type=
+                StateSupervisionViolationResponseType.PERMANENT_DECISION,
+                response_type_raw_text='PERMANENT_DECISION',
+                response_date=datetime.date(year=2002, month=9, day=12),
+                decision=StateSupervisionViolationResponseDecision.REVOCATION,
+                decision_raw_text='REVOCATION',
+                revocation_type=
+                StateSupervisionViolationResponseRevocationType.REINCARCERATION,
+                revocation_type_raw_text='S',
+                deciding_body_type=
+                StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
+                deciding_body_type_raw_text='PAROLE_BOARD',
+                person=person_710448,
+            )
+        ip_710448_20010414_3.source_supervision_violation_response = \
+            vr_710448_20010414_3
+
+        sis_710448_20010414_3.incarceration_periods = [ip_710448_20010414_3]
+
+        ip_910324_19890825_1 = \
+            entities.StateIncarcerationPeriod.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                external_id='910324-19890825-1',
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                status_raw_text='NOT_IN_CUSTODY',
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                admission_date=datetime.date(year=1989, month=10, day=23),
+                admission_reason=
+                StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+                admission_reason_raw_text='NA',
+                release_date=datetime.date(year=2008, month=11, day=15),
+                release_reason=
+                StateIncarcerationPeriodReleaseReason.ESCAPE,
+                release_reason_raw_text='IE',
+                person=person_910324,
+                incarceration_sentences=[sis_910324_19890825_1]
+            )
+        sis_910324_19890825_1.incarceration_periods = [ip_910324_19890825_1]
+
+        person_523523 = entities.StatePerson.new_with_defaults()
+        spei_523523 = entities.StatePersonExternalId.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            external_id='523523',
+            id_type=US_MO_DOC,
+            person=person_523523,
+        )
+        person_523523.external_ids.append(spei_523523)
+
+        sg_523523_19890617 = entities.StateSentenceGroup.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            external_id='523523-19890617',
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            person=person_523523,
+        )
+        person_523523.sentence_groups.append(sg_523523_19890617)
+
+        sis_523523_19890617_1 = \
+            entities.StateIncarcerationSentence.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                external_id='523523-19890617-1',
+                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                person=person_523523,
+                sentence_group=sg_523523_19890617,
+            )
+        sg_523523_19890617.incarceration_sentences.append(sis_523523_19890617_1)
+
+        ip_523523_19890617_1 = \
+            entities.StateIncarcerationPeriod.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                external_id='523523-19890617-1',
+                status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+                status_raw_text='IN_CUSTODY',
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                admission_date=datetime.date(year=1989, month=6, day=17),
+                admission_reason=
+                StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+                admission_reason_raw_text='NA',
+                person=person_523523,
+                incarceration_sentences=[sis_523523_19890617_1],
+            )
+        sis_523523_19890617_1.incarceration_periods.append(ip_523523_19890617_1)
+
+        expected_people.append(person_523523)
+
+        # Act
+        # pylint: disable=line-too-long
+        self._run_ingest_job_for_filename(
+            'tak158_tak023_incarceration_period_from_incarceration_sentence.csv')
+
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
+        ################################################################
+        # TAK158_TAK023 SUPERVISION PERIOD FROM INCARCERATION SENTENCE
+        ################################################################
+        # Arrange
+        sp_110035_19890901_2 = \
+            entities.StateSupervisionPeriod.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                external_id='110035-19890901-2',
+                status=StateSupervisionPeriodStatus.TERMINATED,
+                status_raw_text='TERMINATED',
+                supervision_type=StateSupervisionType.PAROLE,
+                supervision_type_raw_text='PAROLE',
+                start_date=datetime.date(year=1992, month=10, day=6),
+                admission_reason=
+                StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+                admission_reason_raw_text='IT',
+                termination_date=datetime.date(year=1993, month=7, day=1),
+                termination_reason=
+                StateSupervisionPeriodTerminationReason.REVOCATION,
+                termination_reason_raw_text='BP',
+                person=person_110035,
+                incarceration_sentences=[sis_110035_19890901_1]
+            )
+        sp_110035_19890901_4 = \
+            entities.StateSupervisionPeriod.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                external_id='110035-19890901-4',
+                status=StateSupervisionPeriodStatus.TERMINATED,
+                status_raw_text='TERMINATED',
+                supervision_type=StateSupervisionType.PAROLE,
+                supervision_type_raw_text='PAROLE',
+                start_date=datetime.date(year=1993, month=11, day=2),
+                admission_reason=
+                StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+                admission_reason_raw_text='IT',
+                termination_date=datetime.date(year=1994, month=6, day=9),
+                termination_reason=
+                StateSupervisionPeriodTerminationReason.REVOCATION,
+                termination_reason_raw_text='BP',
+                person=person_110035,
+                incarceration_sentences=[sis_110035_19890901_1]
+            )
+        sp_110035_19890901_6 = \
+            entities.StateSupervisionPeriod.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                external_id='110035-19890901-6',
+                status=StateSupervisionPeriodStatus.TERMINATED,
+                status_raw_text='TERMINATED',
+                supervision_type=StateSupervisionType.PAROLE,
+                supervision_type_raw_text='PAROLE',
+                start_date=datetime.date(year=1995, month=2, day=6),
+                admission_reason=
+                StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+                admission_reason_raw_text='IT',
+                termination_date=datetime.date(year=1995, month=3, day=23),
+                termination_reason=
+                StateSupervisionPeriodTerminationReason.DISCHARGE,
+                termination_reason_raw_text='DC',
+                person=person_110035,
+                incarceration_sentences=[sis_110035_19890901_1]
+            )
+        sis_110035_19890901_1.supervision_periods = [
+            sp_110035_19890901_2,
+            sp_110035_19890901_4,
+            sp_110035_19890901_6
+        ]
+
+        sp_110035_20010414_1 = \
+            entities.StateSupervisionPeriod.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                external_id='110035-20010414-1',
+                status=StateSupervisionPeriodStatus.TERMINATED,
+                status_raw_text='TERMINATED',
+                supervision_type=StateSupervisionType.PROBATION,
+                supervision_type_raw_text='PROBATION',
+                start_date=datetime.date(year=2001, month=4, day=14),
+                admission_reason=
+                StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+                admission_reason_raw_text='NA',
+                termination_date=datetime.date(year=2001, month=4, day=20),
+                termination_reason=
+                StateSupervisionPeriodTerminationReason.REVOCATION,
+                termination_reason_raw_text='RV',
+                person=person_110035,
+                incarceration_sentences=[sis_110035_20010414_1]
+            )
+        sp_110035_20010414_3 = \
+            entities.StateSupervisionPeriod.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                external_id='110035-20010414-3',
+                status=StateSupervisionPeriodStatus.TERMINATED,
+                status_raw_text='TERMINATED',
+                supervision_type=StateSupervisionType.PAROLE,
+                supervision_type_raw_text='PAROLE',
+                start_date=datetime.date(year=2012, month=11, day=2),
+                admission_reason=
+                StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+                admission_reason_raw_text='IT',
+                termination_date=datetime.date(year=2013, month=5, day=21),
+                termination_reason=
+                StateSupervisionPeriodTerminationReason.REVOCATION,
+                termination_reason_raw_text='RT',
+                person=person_110035,
+                incarceration_sentences=[sis_110035_20010414_1]
+            )
+        sp_110035_20010414_5 = \
+            entities.StateSupervisionPeriod.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                external_id='110035-20010414-5',
+                status=StateSupervisionPeriodStatus.TERMINATED,
+                status_raw_text='TERMINATED',
+                supervision_type=StateSupervisionType.PAROLE,
+                supervision_type_raw_text='PAROLE',
+                start_date=datetime.date(year=2013, month=11, day=27),
+                admission_reason=
+                StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+                admission_reason_raw_text='IT',
+                termination_date=datetime.date(year=2015, month=7, day=6),
+                termination_reason=
+                StateSupervisionPeriodTerminationReason.ABSCONSION,
+                termination_reason_raw_text='FA',
+                person=person_110035,
+                incarceration_sentences=[sis_110035_20010414_1]
+            )
+        sp_110035_20010414_6 = \
+            entities.StateSupervisionPeriod.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                external_id='110035-20010414-6',
+                status=StateSupervisionPeriodStatus.TERMINATED,
+                status_raw_text='TERMINATED',
+                supervision_type=StateSupervisionType.PAROLE,
+                supervision_type_raw_text='PAROLE',
+                start_date=datetime.date(year=2016, month=3, day=28),
+                admission_reason=
+                StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION,
+                admission_reason_raw_text='CI',
+                termination_date=datetime.date(year=2016, month=3, day=28),
+                termination_reason=
+                StateSupervisionPeriodTerminationReason.REVOCATION,
+                termination_reason_raw_text='RT',
+                person=person_110035,
+                incarceration_sentences=[sis_110035_20010414_1]
+            )
+        sis_110035_20010414_1.supervision_periods = [
+            sp_110035_20010414_1,
+            sp_110035_20010414_3,
+            sp_110035_20010414_5,
+            sp_110035_20010414_6
+        ]
+
+        sp_710448_20010414_2 = \
+            entities.StateSupervisionPeriod.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                external_id='710448-20010414-2',
+                status=StateSupervisionPeriodStatus.TERMINATED,
+                status_raw_text='TERMINATED',
+                supervision_type=StateSupervisionType.PAROLE,
+                supervision_type_raw_text='PAROLE',
+                start_date=datetime.date(year=2002, month=1, day=17),
+                admission_reason=
+                StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+                admission_reason_raw_text='IT',
+                termination_date=datetime.date(year=2002, month=9, day=12),
+                termination_reason=
+                StateSupervisionPeriodTerminationReason.REVOCATION,
+                termination_reason_raw_text='BP',
+                person=person_710448,
+                incarceration_sentences=[sis_710448_20010414_1]
+            )
+        sis_710448_20010414_1.supervision_periods = [sp_710448_20010414_2]
+
+        sp_710448_20010414_4 = \
+            entities.StateSupervisionPeriod.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                external_id='710448-20010414-4',
+                status=StateSupervisionPeriodStatus.TERMINATED,
+                status_raw_text='TERMINATED',
+                supervision_type=StateSupervisionType.PAROLE,
+                supervision_type_raw_text='PAROLE',
+                start_date=datetime.date(year=2004, month=9, day=28),
+                admission_reason=
+                StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+                admission_reason_raw_text='IT',
+                termination_date=datetime.date(year=2006, month=9, day=11),
+                termination_reason=
+                StateSupervisionPeriodTerminationReason.DISCHARGE,
+                termination_reason_raw_text='DC',
+                person=person_710448,
+                incarceration_sentences=[sis_710448_20010414_3]
+            )
+        sis_710448_20010414_3.supervision_periods = [sp_710448_20010414_4]
+
+        sp_910324_19890825_2 = \
+            entities.StateSupervisionPeriod.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                external_id='910324-19890825-2',
+                status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
+                status_raw_text='UNDER_SUPERVISION',
+                supervision_type=StateSupervisionType.PAROLE,
+                supervision_type_raw_text='PAROLE',
+                start_date=datetime.date(year=2008, month=11, day=15),
+                admission_reason=
+                StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+                admission_reason_raw_text='IT',
+                person=person_910324,
+                incarceration_sentences=[sis_910324_19890825_1]
+            )
+        sis_910324_19890825_1.supervision_periods = [sp_910324_19890825_2]
+
+        person_624624 = entities.StatePerson.new_with_defaults()
+        spei_624624 = entities.StatePersonExternalId.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            external_id='624624',
+            id_type=US_MO_DOC,
+            person=person_624624,
+        )
+        person_624624.external_ids.append(spei_624624)
+
+        sg_624624_19890617 = entities.StateSentenceGroup.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            external_id='624624-19890617',
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            person=person_624624,
+        )
+        person_624624.sentence_groups.append(sg_624624_19890617)
+
+        sis_624624_19890617_1 = \
+            entities.StateIncarcerationSentence.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                external_id='624624-19890617-1',
+                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                person=person_624624,
+                sentence_group=sg_624624_19890617,
+            )
+        sg_624624_19890617.incarceration_sentences.append(sis_624624_19890617_1)
+
+        sp_624624_19890617_1 = \
+            entities.StateSupervisionPeriod.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                external_id='624624-19890617-1',
+                status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
+                status_raw_text='UNDER_SUPERVISION',
+                supervision_type=StateSupervisionType.PAROLE,
+                supervision_type_raw_text='PAROLE',
+                start_date=datetime.date(year=1989, month=6, day=17),
+                admission_reason=
+                StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+                admission_reason_raw_text='NA',
+                person=person_624624,
+                incarceration_sentences=[sis_624624_19890617_1],
+            )
+        sis_624624_19890617_1.supervision_periods.append(sp_624624_19890617_1)
+
+        expected_people.append(person_624624)
+
+        # Act
+        self._run_ingest_job_for_filename(
+            'tak158_tak023_supervision_period_from_incarceration_sentence.csv')
+
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
+        ################################################################
+        # TAK158_TAK024 INCARCERATION PERIOD FROM SUPERVISION SENTENCE
+        ################################################################
+        # Arrange
+        ip_910324_19890825_1.supervision_sentences = [sss_910324_19890825_1]
+        sss_910324_19890825_1.incarceration_periods = [ip_910324_19890825_1]
+
+        # Act
+        self._run_ingest_job_for_filename(
+            'tak158_tak024_incarceration_period_from_supervision_sentence.csv')
+
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
+        ################################################################
+        # TAK158_TAK024 SUPERVISION PERIOD FROM SUPERVISION SENTENCE
+        ################################################################
+        # Arrange
+        sp_110035_20040712_1 = \
+            entities.StateSupervisionPeriod.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                external_id='110035-20040712-1',
+                status=StateSupervisionPeriodStatus.TERMINATED,
+                status_raw_text='TERMINATED',
+                supervision_type=StateSupervisionType.PAROLE,
+                supervision_type_raw_text='PAROLE',
+                start_date=datetime.date(year=2004, month=7, day=12),
+                admission_reason=
+                StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+                admission_reason_raw_text='IT',
+                termination_date=datetime.date(year=2008, month=1, day=19),
+                termination_reason=
+                StateSupervisionPeriodTerminationReason.DISCHARGE,
+                termination_reason_raw_text='DC',
+                person=person_110035,
+                supervision_sentences=[sss_110035_20040712_1]
+            )
+        sss_110035_20040712_1.supervision_periods = [sp_110035_20040712_1]
+
+        # Act
+        self._run_ingest_job_for_filename(
+            'tak158_tak024_supervision_period_from_supervision_sentence.csv')
 
         # Assert
         self.assert_expected_db_people(expected_people)

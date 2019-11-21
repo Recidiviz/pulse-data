@@ -224,6 +224,7 @@ state_supervision_period_admission_reason = Enum(
     state_supervision_period_admission_reason_conditional_release,
     state_enum_strings.
     state_supervision_period_admission_reason_court_sentence,
+    enum_strings.external_unknown,
     state_enum_strings.
     state_supervision_period_admission_reason_return_from_absconsion,
     state_enum_strings.

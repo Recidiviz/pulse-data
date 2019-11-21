@@ -98,7 +98,9 @@ class TestIngestInfo(unittest.TestCase):
              'state_incarceration_incidents',
              'state_parole_decision_ids', 'state_parole_decisions',
              'state_assessment_ids', 'state_assessments',
-             'state_program_assignment_ids', 'state_program_assignments']
+             'state_program_assignment_ids', 'state_program_assignments',
+             'source_supervision_violation_response_id',
+             'source_supervision_violation_response']
         incarceration_incident_fields_ignore = \
             ['responding_officer_id', 'responding_officer',
              'state_incarceration_incident_outcomes',
