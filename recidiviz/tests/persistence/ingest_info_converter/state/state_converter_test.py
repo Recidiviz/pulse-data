@@ -286,7 +286,8 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             state_incarceration_incident_ids=['INCIDENT_ID'],
             state_parole_decision_ids=['DECISION_ID'],
             state_assessment_ids=['ASSESSMENT_ID'],
-            state_program_assignment_ids=['PROGRAM_ASSIGNMENT_ID']
+            state_program_assignment_ids=['PROGRAM_ASSIGNMENT_ID'],
+            source_supervision_violation_response_id='RESPONSE_ID'
         )
         ingest_info.state_supervision_violations.add(
             state_supervision_violation_id='VIOLATION_ID',
@@ -375,25 +376,25 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                 full_name='{"full_name": "AGENT PO"}')
         )
 
+        response = StateSupervisionViolationResponse.new_with_defaults(
+            external_id='RESPONSE_ID',
+            state_code='US_ND',
+            response_type=
+            StateSupervisionViolationResponseType.CITATION,
+            response_type_raw_text='CITATION',
+            decision_agents=[StateAgent.new_with_defaults(
+                external_id='AGENT_ID_TERM',
+                state_code='US_ND',
+                full_name='{"full_name": "AGENT TERMY"}',
+                agent_type=StateAgentType.SUPERVISION_OFFICER,
+                agent_type_raw_text='SUPERVISION_OFFICER',
+            )]
+        )
+
         violation = StateSupervisionViolation.new_with_defaults(
             external_id='VIOLATION_ID',
             state_code='US_ND',
-            supervision_violation_responses=[
-                StateSupervisionViolationResponse.new_with_defaults(
-                    external_id='RESPONSE_ID',
-                    state_code='US_ND',
-                    response_type=
-                    StateSupervisionViolationResponseType.CITATION,
-                    response_type_raw_text='CITATION',
-                    decision_agents=[StateAgent.new_with_defaults(
-                        external_id='AGENT_ID_TERM',
-                        state_code='US_ND',
-                        full_name='{"full_name": "AGENT TERMY"}',
-                        agent_type=StateAgentType.SUPERVISION_OFFICER,
-                        agent_type_raw_text='SUPERVISION_OFFICER',
-                    )]
-                )
-            ]
+            supervision_violation_responses=[response]
         )
 
         court_case = StateCourtCase.new_with_defaults(
@@ -565,6 +566,8 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                                         )
                                     ],
                                     assessments=[assessment],
+                                    source_supervision_violation_response=
+                                    response,
                                 )
                             ]
                         ),
