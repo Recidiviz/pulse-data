@@ -866,6 +866,12 @@ class StateSupervisionSentence(IngestObject):
         return next((sc for sc in self.state_charges
                      if sc.state_charge_id == state_charge_id), None)
 
+    def get_state_incarceration_period_by_id(self, incarceration_period_id) \
+            -> Optional['StateIncarcerationPeriod']:
+        return next((ip for ip in self.state_incarceration_periods
+                     if ip.state_incarceration_period_id
+                     == incarceration_period_id), None)
+
     def get_state_supervision_period_by_id(self, state_supervision_period_id) \
             -> Optional['StateSupervisionPeriod']:
         return next((sc for sc in self.state_supervision_periods
@@ -960,12 +966,17 @@ class StateIncarcerationSentence(IngestObject):
         return next((sc for sc in self.state_charges
                      if sc.state_charge_id == state_charge_id), None)
 
-    def get_state_incarceration_period_by_id(self,
-                                             incarceration_period_id) \
+    def get_state_incarceration_period_by_id(self, incarceration_period_id) \
             -> Optional['StateIncarcerationPeriod']:
         return next((ip for ip in self.state_incarceration_periods
                      if ip.state_incarceration_period_id
                      == incarceration_period_id), None)
+
+    def get_state_supervision_period_by_id(self, supervision_period_id) \
+            -> Optional['StateSupervisionPeriod']:
+        return next((sp for sp in self.state_supervision_periods
+                     if sp.state_supervision_period_id
+                     == supervision_period_id), None)
 
     def prune(self) -> 'StateIncarcerationSentence':
         self.state_charges = [sc.prune() for sc in self.state_charges if sc]
@@ -1150,7 +1161,8 @@ class StateIncarcerationPeriod(IngestObject):
                  admission_reason=None, projected_release_reason=None,
                  release_reason=None, state_incarceration_incidents=None,
                  state_parole_decisions=None, state_assessments=None,
-                 state_program_assignments=None):
+                 state_program_assignments=None,
+                 source_supervision_violation_response=None):
         self.state_incarceration_period_id: Optional[str] = \
             state_incarceration_period_id
         self.status: Optional[str] = status
@@ -1174,8 +1186,13 @@ class StateIncarcerationPeriod(IngestObject):
         self.state_program_assignments: List[StateProgramAssignment] = \
             state_program_assignments or []
 
+        self.source_supervision_violation_response: \
+            Optional[StateSupervisionViolationResponse] = \
+            source_supervision_violation_response or None
+
     def __setattr__(self, name, value):
-        restricted_setattr(self, 'state_program_assignments', name, value)
+        restricted_setattr(self, 'source_supervision_violation_response',
+                           name, value)
 
     def create_state_incarceration_incident(self, **kwargs) \
             -> 'StateIncarcerationIncident':
@@ -1198,6 +1215,12 @@ class StateIncarcerationPeriod(IngestObject):
         program_assignment = StateProgramAssignment(**kwargs)
         self.state_program_assignments.append(program_assignment)
         return program_assignment
+
+    def create_state_supervision_violation_response(self, **kwargs) \
+            -> 'StateSupervisionViolationResponse':
+        self.source_supervision_violation_response = \
+            StateSupervisionViolationResponse(**kwargs)
+        return self.source_supervision_violation_response
 
     def get_state_incarceration_incident_by_id(
             self, state_incarceration_incident_id) \
