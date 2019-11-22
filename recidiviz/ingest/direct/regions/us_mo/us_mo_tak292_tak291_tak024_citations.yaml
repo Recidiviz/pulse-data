@@ -1,0 +1,18 @@
+key_mappings:
+  VIOLATED_CONDITIONS: state_supervision_violation.violated_conditions
+
+child_key_mappings:
+  JT$VG: state_supervision_violation_response.response_date # TODO(xxxx): is this right?
+
+ancestor_keys:
+  JT$DOC: state_person.state_person_id
+
+keys_to_ignore:
+  # TODO(2604): Take another pass through these columns to document and ensure they should be ignored
+  - JT$CYC  # Offender Cycle Number - Handled manually in the controller
+  - JT$CSQ  # Citation Sequence Number - Handled manually in the controller
+  - JS$DOC  # Unused - Duplicate of JT$DOC
+  - JS$CYC  # Unused - Duplicate of JT$CYC
+  - JS$CSQ  # Unused - Duplicate of JT$CSQ
+  - JS$SEO  # Sentence Key Sequence Number - Handled manually in controller
+  - JS$FSO  # Field Sentence Sequence Number - Handled manually in controller

@@ -51,8 +51,9 @@ from recidiviz.ingest.direct.regions.us_mo.us_mo_controller import \
 from recidiviz.ingest.models.ingest_info import StatePerson, \
     StatePersonExternalId, StatePersonRace, StateAlias, StatePersonEthnicity, \
     StateSentenceGroup, StateIncarcerationSentence, StateCharge, \
-    StateSupervisionSentence, StateIncarcerationPeriod, \
-    StateSupervisionPeriod, StateSupervisionViolationResponse
+    StateSupervisionViolation, StateSupervisionSentence, \
+    StateIncarcerationPeriod, StateSupervisionPeriod, \
+    StateSupervisionViolationResponse
 from recidiviz.persistence.entity.entity_utils import get_all_entities_from_tree
 from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.ingest.direct.regions.\
@@ -1124,6 +1125,193 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         self.run_parse_file_test(
             expected,
             'tak158_tak024_supervision_period_from_supervision_sentence')
+
+    def test_populate_data_tak028_tak042_tak076_tak024_violation_reports(self):
+        sss_110035_20040712_1 = StateSupervisionSentence(
+            state_supervision_sentence_id='110035-20040712-1',
+            state_supervision_periods=[
+                StateSupervisionPeriod(
+                    state_supervision_violations=[
+                        StateSupervisionViolation(
+                            state_supervision_violation_id=
+                            '110035-20040712-R1-1',
+                            violation_date='20050101',
+                            violated_conditions='DIR,EMP,RES',
+                            state_supervision_violation_responses=[
+                                StateSupervisionViolationResponse(
+                                    response_type='VIOLATION_REPORT',
+                                    response_date='20050102',
+                                    deciding_body_type='SUPERVISION_OFFICER',
+                                )
+                            ]
+                        ),
+                        StateSupervisionViolation(
+                            state_supervision_violation_id=
+                            '110035-20040712-R2-1',
+                            violation_date='20060101',
+                            violated_conditions='SPC',
+                            state_supervision_violation_responses=[
+                                StateSupervisionViolationResponse(
+                                    response_type='VIOLATION_REPORT',
+                                    response_date='20060102',
+                                    deciding_body_type='SUPERVISION_OFFICER',
+                                )
+                            ]
+                        ),
+                    ]
+                )
+            ]
+        )
+        sss_110035_20040712_2 = StateSupervisionSentence(
+            state_supervision_sentence_id='110035-20040712-2',
+            state_supervision_periods=[
+                StateSupervisionPeriod(
+                    state_supervision_violations=[
+                        StateSupervisionViolation(
+                            state_supervision_violation_id=
+                            '110035-20040712-R2-2',
+                            violation_date='20060101',
+                            violated_conditions='SPC',
+                            state_supervision_violation_responses=[
+                                StateSupervisionViolationResponse(
+                                    response_type='VIOLATION_REPORT',
+                                    response_date='20060102',
+                                    deciding_body_type='SUPERVISION_OFFICER',
+                                )
+                            ]
+                        )
+                    ]
+
+                )
+            ],
+        )
+        sis_910324_19890825_1 = StateIncarcerationSentence(
+            state_incarceration_sentence_id='910324-19890825-1',
+            state_supervision_periods=[
+                StateSupervisionPeriod(
+                    state_supervision_violations=[
+                        StateSupervisionViolation(
+                            state_supervision_violation_id=
+                            '910324-19890825-R1-1',
+                            violation_date='20090417',
+                            violated_conditions='EMP',
+                            state_supervision_violation_responses=[
+                                StateSupervisionViolationResponse(
+                                    response_type='VIOLATION_REPORT',
+                                    response_date='20090416',
+                                    deciding_body_type='SUPERVISION_OFFICER',
+                                )])])])
+
+        expected = IngestInfo(state_people=[
+            StatePerson(state_person_id='110035',
+                        state_person_external_ids=[
+                            StatePersonExternalId(
+                                state_person_external_id_id='110035',
+                                id_type=US_MO_DOC),
+                        ],
+                        state_sentence_groups=[
+                            StateSentenceGroup(
+                                state_sentence_group_id='110035-20040712',
+                                state_supervision_sentences=[
+                                    sss_110035_20040712_1,
+                                    sss_110035_20040712_2
+                                ])]),
+            StatePerson(state_person_id='910324',
+                        state_person_external_ids=[
+                            StatePersonExternalId(
+                                state_person_external_id_id='910324',
+                                id_type=US_MO_DOC),
+                        ],
+                        state_sentence_groups=[
+                            StateSentenceGroup(
+                                state_sentence_group_id='910324-19890825',
+                                state_incarceration_sentences=[
+                                    sis_910324_19890825_1
+                                ])])])
+
+        self.run_parse_file_test(
+            expected, 'tak028_tak042_tak076_tak024_violation_reports')
+
+    def test_populate_data_tak292_tak291_tak024_citations(self):
+        sss_110035_20040712_1 = StateSupervisionSentence(
+            state_supervision_sentence_id='110035-20040712-1',
+            state_supervision_periods=[
+                StateSupervisionPeriod(
+                    state_supervision_violations=[
+                        StateSupervisionViolation(
+                            state_supervision_violation_id=
+                            '110035-20040712-C1-1',
+                            violated_conditions='DRG,LAW',
+                            state_supervision_violation_responses=[
+                                StateSupervisionViolationResponse(
+                                    response_type='CITATION',
+                                    response_date='20130210',
+                                    deciding_body_type='SUPERVISION_OFFICER',
+                                )])])])
+        sss_110035_20040712_2 = StateSupervisionSentence(
+            state_supervision_sentence_id='110035-20040712-2',
+            state_supervision_periods=[
+                StateSupervisionPeriod(
+                    state_supervision_violations=[
+                        StateSupervisionViolation(
+                            state_supervision_violation_id=
+                            '110035-20040712-C1-2',
+                            violated_conditions='DRG,LAW',
+                            state_supervision_violation_responses=[
+                                StateSupervisionViolationResponse(
+                                    response_type='CITATION',
+                                    response_date='20130210',
+                                    deciding_body_type='SUPERVISION_OFFICER',
+                                )])])])
+        sis_910324_19890825_1 = StateIncarcerationSentence(
+            state_incarceration_sentence_id='910324-19890825-1',
+            state_supervision_periods=[
+                StateSupervisionPeriod(
+                    state_supervision_violations=[
+                        StateSupervisionViolation(
+                            state_supervision_violation_id=
+                            '910324-19890825-C1-1',
+                            violated_conditions='DRG',
+                            state_supervision_violation_responses=[
+                                StateSupervisionViolationResponse(
+                                    response_type='CITATION',
+                                    response_date='20001010',
+                                    deciding_body_type='SUPERVISION_OFFICER',
+                                )
+                            ]
+                        ),
+                    ]
+                )
+            ]
+        )
+        expected = IngestInfo(state_people=[
+            StatePerson(state_person_id='110035',
+                        state_person_external_ids=[
+                            StatePersonExternalId(
+                                state_person_external_id_id='110035',
+                                id_type=US_MO_DOC),
+                        ],
+                        state_sentence_groups=[
+                            StateSentenceGroup(
+                                state_sentence_group_id='110035-20040712',
+                                state_supervision_sentences=[
+                                    sss_110035_20040712_1,
+                                    sss_110035_20040712_2]
+                            )]),
+            StatePerson(state_person_id='910324',
+                        state_person_external_ids=[
+                            StatePersonExternalId(
+                                state_person_external_id_id='910324',
+                                id_type=US_MO_DOC),
+                        ],
+                        state_sentence_groups=[
+                            StateSentenceGroup(
+                                state_sentence_group_id='910324-19890825',
+                                state_incarceration_sentences=[
+                                    sis_910324_19890825_1]
+                            )])])
+
+        self.run_parse_file_test(expected, 'tak292_tak291_tak024_citations')
 
     @staticmethod
     def _populate_person_backedges(
@@ -2452,6 +2640,279 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         # Act
         self._run_ingest_job_for_filename(
             'tak158_tak024_supervision_period_from_supervision_sentence.csv')
+
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
+        ##############################################################
+        # TAK028_TAK076_TAK042_TAK024 VIOLATION REPORTS
+        ##############################################################
+        # Arrange
+        placeholder_ssp_110035_20040712_1 = \
+            entities.StateSupervisionPeriod.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+                supervision_sentences=[sss_110035_20040712_1],
+                person=person_110035,
+            )
+        ssv_110035_20040712_r1_1 = \
+            entities.StateSupervisionViolation.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                external_id='110035-20040712-R1',
+                violated_conditions='DIR,EMP,RES',
+                violation_date=datetime.date(year=2005, month=1, day=1),
+                supervision_period=placeholder_ssp_110035_20040712_1,
+                person=person_110035,
+            )
+        ssvr_110035_20040712_r1_1 = \
+            entities.StateSupervisionViolationResponse.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                response_date=datetime.date(year=2005, month=1, day=2),
+                supervision_violation=ssv_110035_20040712_r1_1,
+                response_type=
+                StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_type_raw_text='VIOLATION_REPORT',
+                deciding_body_type=
+                StateSupervisionViolationResponseDecidingBodyType.
+                SUPERVISION_OFFICER,
+                deciding_body_type_raw_text='SUPERVISION_OFFICER',
+                person=person_110035,
+            )
+        ssv_110035_20040712_r2_1 = \
+            entities.StateSupervisionViolation.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                external_id='110035-20040712-R2',
+                violation_date=datetime.date(year=2006, month=1, day=1),
+                violated_conditions='SPC',
+                supervision_period=placeholder_ssp_110035_20040712_1,
+                person=person_110035,
+            )
+        ssvr_110035_20040712_r2_1 = \
+            entities.StateSupervisionViolationResponse.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                response_date=datetime.date(year=2006, month=1, day=2),
+                response_type=
+                StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_type_raw_text='VIOLATION_REPORT',
+                supervision_violation=ssv_110035_20040712_r2_1,
+                deciding_body_type=
+                StateSupervisionViolationResponseDecidingBodyType.
+                SUPERVISION_OFFICER,
+                deciding_body_type_raw_text='SUPERVISION_OFFICER',
+                person=person_110035,
+            )
+        sss_110035_20040712_1.supervision_periods.append(
+            placeholder_ssp_110035_20040712_1)
+        ssv_110035_20040712_r1_1.supervision_violation_responses.append(
+            ssvr_110035_20040712_r1_1)
+        ssv_110035_20040712_r2_1.supervision_violation_responses.append(
+            ssvr_110035_20040712_r2_1)
+        placeholder_ssp_110035_20040712_1.supervision_violations.extend(
+            [ssv_110035_20040712_r1_1, ssv_110035_20040712_r2_1])
+
+        sss_110035_20040712_2 = \
+            entities.StateSupervisionSentence.new_with_defaults(
+                external_id='110035-20040712-2',
+                state_code=_STATE_CODE_UPPER,
+                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                sentence_group=sg_110035_20040712,
+                person=person_110035,
+            )
+        placeholder_ssp_110035_20040712_2 = \
+            entities.StateSupervisionPeriod.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+                supervision_sentences=[sss_110035_20040712_2],
+                person=person_110035,
+            )
+        # TODO(2658): Re-use ssv above once violations are a many to many
+        # association as opposed to 1 to many.
+        ssv_110035_20040712_r2_1_dup = \
+            entities.StateSupervisionViolation.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                external_id='110035-20040712-R2',
+                violation_date=datetime.date(year=2006, month=1, day=1),
+                violated_conditions='SPC',
+                supervision_period=placeholder_ssp_110035_20040712_2,
+                person=person_110035,
+            )
+        ssvr_110035_20040712_r2_1_dup = \
+            entities.StateSupervisionViolationResponse.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                response_date=datetime.date(year=2006, month=1, day=2),
+                response_type=
+                StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_type_raw_text='VIOLATION_REPORT',
+                supervision_violation=ssv_110035_20040712_r2_1_dup,
+                deciding_body_type=
+                StateSupervisionViolationResponseDecidingBodyType.
+                SUPERVISION_OFFICER,
+                deciding_body_type_raw_text='SUPERVISION_OFFICER',
+                person=person_110035,
+            )
+        ssv_110035_20040712_r2_1_dup.supervision_violation_responses.append(
+            ssvr_110035_20040712_r2_1_dup)
+        placeholder_ssp_110035_20040712_2.supervision_violations.append(
+            ssv_110035_20040712_r2_1_dup)
+        sss_110035_20040712_2.supervision_periods.append(
+            placeholder_ssp_110035_20040712_2)
+        sg_110035_20040712.supervision_sentences.append(sss_110035_20040712_2)
+
+        placeholder_ssp_910324_19890825 = \
+            entities.StateSupervisionPeriod.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+                incarceration_sentences=[sis_910324_19890825_1],
+                person=person_910324,
+            )
+        ssv_910324_19890825_r1_1 = \
+            entities.StateSupervisionViolation.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                external_id='910324-19890825-R1',
+                violated_conditions='EMP',
+                violation_date=datetime.date(year=2009, month=4, day=17),
+                supervision_period=placeholder_ssp_910324_19890825,
+                person=person_910324,
+            )
+        ssvr_910324_19890825_r1_1 = \
+            entities.StateSupervisionViolationResponse.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                response_date=datetime.date(year=2009, month=4, day=16),
+                supervision_violation=ssv_910324_19890825_r1_1,
+                response_type=
+                StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_type_raw_text='VIOLATION_REPORT',
+                deciding_body_type=
+                StateSupervisionViolationResponseDecidingBodyType.
+                SUPERVISION_OFFICER,
+                deciding_body_type_raw_text='SUPERVISION_OFFICER',
+                person=person_910324,
+            )
+        ssv_910324_19890825_r1_1.supervision_violation_responses.append(
+            ssvr_910324_19890825_r1_1)
+        placeholder_ssp_910324_19890825.supervision_violations.append(
+            ssv_910324_19890825_r1_1)
+        sis_910324_19890825_1.supervision_periods.append(
+            placeholder_ssp_910324_19890825)
+
+        # Act
+        self._run_ingest_job_for_filename(
+            'tak028_tak042_tak076_tak024_violation_reports.csv')
+
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
+        ##############################################################
+        # TAK292_TAK291_TAK024 CITATIONS
+        ##############################################################
+        # Arrange
+        placeholder_ssp2_110035_20040712_1 = \
+            entities.StateSupervisionPeriod.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+                supervision_sentences=[sss_110035_20040712_1],
+                person=person_110035,
+            )
+        ssv_110035_20040712_c1_1 = \
+            entities.StateSupervisionViolation.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                external_id='110035-20040712-C1',
+                violated_conditions='DRG,LAW',
+                supervision_period=placeholder_ssp2_110035_20040712_1,
+                person=person_110035,
+            )
+        ssvr_110035_20040712_c1_1 = \
+            entities.StateSupervisionViolationResponse.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                response_date=datetime.date(year=2013, month=2, day=10),
+                supervision_violation=ssv_110035_20040712_c1_1,
+                response_type=StateSupervisionViolationResponseType.CITATION,
+                response_type_raw_text='CITATION',
+                deciding_body_type=
+                StateSupervisionViolationResponseDecidingBodyType.
+                SUPERVISION_OFFICER,
+                deciding_body_type_raw_text='SUPERVISION_OFFICER',
+                person=person_110035,
+            )
+        ssv_110035_20040712_c1_1.supervision_violation_responses.append(
+            ssvr_110035_20040712_c1_1)
+        placeholder_ssp2_110035_20040712_1.supervision_violations.append(
+            ssv_110035_20040712_c1_1)
+        sss_110035_20040712_1.supervision_periods.append(
+            placeholder_ssp2_110035_20040712_1)
+
+        placeholder_ssp2_110035_20040712_2 = \
+            entities.StateSupervisionPeriod.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+                supervision_sentences=[sss_110035_20040712_2],
+                person=person_110035,
+            )
+        ssv_110035_20040712_c1_2 = \
+            entities.StateSupervisionViolation.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                external_id='110035-20040712-C1',
+                violated_conditions='DRG,LAW',
+                supervision_period=placeholder_ssp2_110035_20040712_2,
+                person=person_110035,
+            )
+        ssvr_110035_20040712_c1_2 = \
+            entities.StateSupervisionViolationResponse.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                response_date=datetime.date(year=2013, month=2, day=10),
+                supervision_violation=ssv_110035_20040712_c1_2,
+                response_type=StateSupervisionViolationResponseType.CITATION,
+                response_type_raw_text='CITATION',
+                deciding_body_type=
+                StateSupervisionViolationResponseDecidingBodyType.
+                SUPERVISION_OFFICER,
+                deciding_body_type_raw_text='SUPERVISION_OFFICER',
+                person=person_110035,
+            )
+        ssv_110035_20040712_c1_2.supervision_violation_responses.append(
+            ssvr_110035_20040712_c1_2)
+        placeholder_ssp2_110035_20040712_2.supervision_violations.append(
+            ssv_110035_20040712_c1_2)
+        sss_110035_20040712_2.supervision_periods.append(
+            placeholder_ssp2_110035_20040712_2)
+
+        placeholder_ssp2_910324_19890825_1 = \
+            entities.StateSupervisionPeriod.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+                incarceration_sentences=[sis_910324_19890825_1],
+                person=person_910324,
+            )
+        ssv_910324_19890825_c1_1 = \
+            entities.StateSupervisionViolation.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                external_id='910324-19890825-C1',
+                violated_conditions='DRG',
+                supervision_period=placeholder_ssp2_910324_19890825_1,
+                person=person_910324,
+            )
+        ssvr_910324_19890825_c1_1 = \
+            entities.StateSupervisionViolationResponse.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                response_date=datetime.date(year=2000, month=10, day=10),
+                supervision_violation=ssv_910324_19890825_c1_1,
+                response_type=StateSupervisionViolationResponseType.CITATION,
+                response_type_raw_text='CITATION',
+                deciding_body_type=
+                StateSupervisionViolationResponseDecidingBodyType.
+                SUPERVISION_OFFICER,
+                deciding_body_type_raw_text='SUPERVISION_OFFICER',
+                person=person_910324,
+            )
+        ssv_910324_19890825_c1_1.supervision_violation_responses.append(
+            ssvr_910324_19890825_c1_1)
+        placeholder_ssp2_910324_19890825_1.supervision_violations.append(
+            ssv_910324_19890825_c1_1)
+        sis_910324_19890825_1.supervision_periods.append(
+            placeholder_ssp2_910324_19890825_1)
+
+        # Act
+        self._run_ingest_job_for_filename('tak292_tak291_tak024_citations.csv')
 
         # Assert
         self.assert_expected_db_people(expected_people)

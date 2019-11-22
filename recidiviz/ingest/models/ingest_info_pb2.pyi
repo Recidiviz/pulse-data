@@ -1144,7 +1144,7 @@ class StateSupervisionViolation(google___protobuf___message___Message):
     violation_date = ... # type: typing___Text
     state_code = ... # type: typing___Text
     is_violent = ... # type: typing___Text
-    violated_conditions = ... # type: google___protobuf___internal___containers___RepeatedScalarFieldContainer[typing___Text]
+    violated_conditions = ... # type: typing___Text
     state_supervision_violation_response_ids = ... # type: google___protobuf___internal___containers___RepeatedScalarFieldContainer[typing___Text]
 
     def __init__(self,
@@ -1154,7 +1154,7 @@ class StateSupervisionViolation(google___protobuf___message___Message):
         violation_date : typing___Optional[typing___Text] = None,
         state_code : typing___Optional[typing___Text] = None,
         is_violent : typing___Optional[typing___Text] = None,
-        violated_conditions : typing___Optional[typing___Iterable[typing___Text]] = None,
+        violated_conditions : typing___Optional[typing___Text] = None,
         state_supervision_violation_response_ids : typing___Optional[typing___Iterable[typing___Text]] = None,
         ) -> None: ...
     @classmethod
@@ -1162,10 +1162,10 @@ class StateSupervisionViolation(google___protobuf___message___Message):
     def MergeFrom(self, other_msg: google___protobuf___message___Message) -> None: ...
     def CopyFrom(self, other_msg: google___protobuf___message___Message) -> None: ...
     if sys.version_info >= (3,):
-        def HasField(self, field_name: typing_extensions___Literal[u"is_violent",u"state_code",u"state_supervision_violation_id",u"violation_date",u"violation_type"]) -> builtin___bool: ...
+        def HasField(self, field_name: typing_extensions___Literal[u"is_violent",u"state_code",u"state_supervision_violation_id",u"violated_conditions",u"violation_date",u"violation_type"]) -> builtin___bool: ...
         def ClearField(self, field_name: typing_extensions___Literal[u"is_violent",u"state_code",u"state_supervision_violation_id",u"state_supervision_violation_response_ids",u"violated_conditions",u"violation_date",u"violation_type"]) -> None: ...
     else:
-        def HasField(self, field_name: typing_extensions___Literal[u"is_violent",b"is_violent",u"state_code",b"state_code",u"state_supervision_violation_id",b"state_supervision_violation_id",u"violation_date",b"violation_date",u"violation_type",b"violation_type"]) -> builtin___bool: ...
+        def HasField(self, field_name: typing_extensions___Literal[u"is_violent",b"is_violent",u"state_code",b"state_code",u"state_supervision_violation_id",b"state_supervision_violation_id",u"violated_conditions",b"violated_conditions",u"violation_date",b"violation_date",u"violation_type",b"violation_type"]) -> builtin___bool: ...
         def ClearField(self, field_name: typing_extensions___Literal[u"is_violent",b"is_violent",u"state_code",b"state_code",u"state_supervision_violation_id",b"state_supervision_violation_id",u"state_supervision_violation_response_ids",b"state_supervision_violation_response_ids",u"violated_conditions",b"violated_conditions",u"violation_date",b"violation_date",u"violation_type",b"violation_type"]) -> None: ...
 
 class StateSupervisionViolationResponse(google___protobuf___message___Message):

@@ -33,7 +33,7 @@ from recidiviz.persistence.entity_matching.entity_matching_types import \
     EntityTree
 from recidiviz.persistence.entity_matching.state.state_matching_utils import \
     default_merge_flat_fields, add_child_to_entity, remove_child_from_entity, \
-    _get_all_entities_of_cls, revoked_to_prison, admitted_for_revocation
+    get_all_entities_of_cls, revoked_to_prison, admitted_for_revocation
 from recidiviz.persistence.errors import EntityMatchingError
 
 
@@ -46,7 +46,7 @@ def add_supervising_officer_to_open_supervision_periods(
         if not person.supervising_officer:
             continue
 
-        supervision_periods = _get_all_entities_of_cls(
+        supervision_periods = get_all_entities_of_cls(
             [person], schema.StateSupervisionPeriod)
         for supervision_period in supervision_periods:
             if not supervision_period.termination_date:
@@ -62,9 +62,9 @@ def associate_revocation_svrs_with_ips(
     corresponding StateIncarcerationPeriod.
     """
     for person in merged_persons:
-        svrs = _get_all_entities_of_cls(
+        svrs = get_all_entities_of_cls(
             [person], schema.StateSupervisionViolationResponse)
-        ips = _get_all_entities_of_cls(
+        ips = get_all_entities_of_cls(
             [person], schema.StateIncarcerationPeriod)
 
         revocation_svrs: List[schema.StateSupervisionViolationResponse] = []
