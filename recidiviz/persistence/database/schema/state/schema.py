@@ -201,6 +201,7 @@ state_incarceration_period_release_reason = Enum(
     state_enum_strings.state_incarceration_period_release_reason_court_order,
     state_enum_strings.state_incarceration_period_release_reason_death,
     state_enum_strings.state_incarceration_period_release_reason_escape,
+    state_enum_strings.state_incarceration_period_release_reason_execution,
     enum_strings.external_unknown,
     state_enum_strings.
     state_incarceration_period_release_reason_released_from_temporary_custody,
@@ -280,6 +281,7 @@ state_incarceration_incident_outcome_type = Enum(
 
 state_supervision_violation_type = Enum(
     state_enum_strings.state_supervision_violation_type_absconded,
+    state_enum_strings.state_supervision_violation_type_escaped,
     state_enum_strings.state_supervision_violation_type_felony,
     state_enum_strings.state_supervision_violation_type_misdemeanor,
     state_enum_strings.state_supervision_violation_type_municipal,
