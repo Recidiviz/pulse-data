@@ -649,7 +649,9 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION
         if open_type in ['PB', 'PR']:
             return StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION
-        return None
+        # TODO(2663): Set this accurately and don't assume PROBATION
+        # for these minority cases (around 1% of all cases, it appears)
+        return StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION
 
     @classmethod
     def _create_source_violation_response(cls,
