@@ -34,19 +34,14 @@ REVOCATION_RATE_BY_COUNTY_60_DAYS_QUERY = \
     """
     /*{description}*/
         
-    SELECT IFNULL(rev.state_code, pop.state_code) as state_code, IFNULL(rev.county_code, pop.county_code) as county_code,
-    IFNULL(revocation_count, 0) as revocation_count, pop.population_count, IEEE_DIVIDE(IFNULL(revocation_count, 0), population_count) as revocation_rate
+    SELECT state_code, county_code, revocation_count, population_count, IEEE_DIVIDE(IFNULL(revocation_count, 0), population_count) as revocation_rate
     FROM
-    (SELECT state_code, county_code, count(*) as revocation_count FROM
-    `{project_id}.{views_dataset}.persons_on_supervision_60_days_with_county_and_revocation` 
-    WHERE revoked = TRUE
-    GROUP BY state_code, county_code) rev
-    FULL OUTER JOIN
-    (SELECT state_code, county_code, count(*) as population_count FROM
-    `{project_id}.{views_dataset}.persons_on_supervision_60_days_with_county_and_revocation` 
-    GROUP BY state_code, county_code) pop
-    ON rev.state_code = pop.state_code AND rev.county_code = pop.county_code 
-    ORDER BY county_code
+    (SELECT state_code, county_code, COUNTIF(revoked = TRUE) as revocation_count, COUNT(*) as population_count
+    FROM
+    (SELECT state_code, county_code, revoked FROM
+    `{project_id}.{views_dataset}.persons_on_supervision_60_days_with_county_and_revocation`) pop
+    GROUP BY state_code, county_code)
+    ORDER BY state_code, county_code
     """.format(
         description=REVOCATION_RATE_BY_COUNTY_60_DAYS_DESCRIPTION,
         project_id=PROJECT_ID,
