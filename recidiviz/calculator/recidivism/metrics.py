@@ -32,7 +32,6 @@ from recidiviz.common.constants.person_characteristics import Gender, Race, \
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
 
-
 class RecidivismMethodologyType(Enum):
     """Methods for counting recidivism.
 

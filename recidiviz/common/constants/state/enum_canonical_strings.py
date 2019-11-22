@@ -131,6 +131,7 @@ state_incarceration_period_release_reason_conditional_release = \
 state_incarceration_period_release_reason_court_order = 'COURT_ORDER'
 state_incarceration_period_release_reason_death = 'DEATH'
 state_incarceration_period_release_reason_escape = 'ESCAPE'
+state_incarceration_period_release_reason_execution = 'EXECUTION'
 state_incarceration_period_release_reason_released_from_temporary_custody = \
     'RELEASED_FROM_TEMPORARY_CUSTODY'
 state_incarceration_period_release_reason_released_in_error = \
@@ -191,6 +192,7 @@ state_supervision_period_termination_reason_suspension = 'SUSPENSION'
 
 # state_supervision_violation.py
 state_supervision_violation_type_absconded = 'ABSCONDED'
+state_supervision_violation_type_escaped = 'ESCAPED'
 state_supervision_violation_type_felony = 'FELONY'
 state_supervision_violation_type_misdemeanor = 'MISDEMEANOR'
 state_supervision_violation_type_municipal = 'MUNICIPAL'

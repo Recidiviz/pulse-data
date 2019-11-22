@@ -101,6 +101,8 @@ class StateIncarcerationPeriodReleaseReason(EntityEnum,
     DEATH = state_enum_strings.state_incarceration_period_release_reason_death
     ESCAPE = state_enum_strings.state_incarceration_period_release_reason_escape
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
+    EXECUTION = \
+        state_enum_strings.state_incarceration_period_release_reason_execution
     # pylint:disable=line-too-long
     RELEASED_FROM_TEMPORARY_CUSTODY = \
         state_enum_strings.\
@@ -180,6 +182,7 @@ _STATE_INCARCERATION_PERIOD_RELEASE_REASON_MAP = {
     'ESCP': StateIncarcerationPeriodReleaseReason.ESCAPE,
     'ESCAPED': StateIncarcerationPeriodReleaseReason.ESCAPE,
     'ESCAPE': StateIncarcerationPeriodReleaseReason.ESCAPE,
+    'EXECUTION': StateIncarcerationPeriodReleaseReason.EXECUTION,
     'EXPIRED': StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
     'GOOD TIME': StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
     'PAROLE': StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,

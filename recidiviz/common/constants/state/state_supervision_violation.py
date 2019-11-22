@@ -24,6 +24,7 @@ from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 class StateSupervisionViolationType(EntityEnum, metaclass=EntityEnumMeta):
     ABSCONDED = state_enum_strings.state_supervision_violation_type_absconded
+    ESCAPED = state_enum_strings.state_supervision_violation_type_escaped
     FELONY = state_enum_strings.state_supervision_violation_type_felony
     MISDEMEANOR = \
         state_enum_strings.state_supervision_violation_type_misdemeanor
@@ -39,6 +40,7 @@ _STATE_SUPERVISION_VIOLATION_TYPE_MAP = {
     'ABSCOND': StateSupervisionViolationType.ABSCONDED,
     'ABSCONDED': StateSupervisionViolationType.ABSCONDED,
     'ABSCONDER': StateSupervisionViolationType.ABSCONDED,
+    'ESCAPED': StateSupervisionViolationType.ESCAPED,
     'FELONY': StateSupervisionViolationType.FELONY,
     'F': StateSupervisionViolationType.FELONY,
     'MISDEMEANOR': StateSupervisionViolationType.MISDEMEANOR,
