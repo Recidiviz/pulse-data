@@ -67,9 +67,18 @@ class CsvGcsfsDirectIngestController(GcsfsDirectIngestController):
         return '\n'.join(contents)
 
     def _file_meets_file_line_limit(self, contents: Iterable[str]):
-        df = pd.read_csv(io.StringIO(self._contents_to_str(contents)),
-                         dtype=str)
-        return len(df) <= self.file_split_line_limit
+        # Read a chunk up to one line bigger than the acceptable size
+        df_list = list(pd.read_csv(io.StringIO(self._contents_to_str(contents)),
+                                   dtype=str,
+                                   chunksize=(self.file_split_line_limit+1)))
+
+        if len(df_list) == 0:
+            # If the file is empty, it's fine.
+            return True
+
+        # If length of the only chunk is less than or equal to the acceptable
+        # size, file meets line limit.
+        return len(df_list[0]) <= self.file_split_line_limit
 
     def _split_file(self,
                     path: GcsfsFilePath,

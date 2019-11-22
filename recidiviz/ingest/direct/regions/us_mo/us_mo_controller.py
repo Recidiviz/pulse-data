@@ -16,7 +16,7 @@
 # =============================================================================
 """Direct ingest controller implementation for US_MO."""
 import datetime
-from typing import Optional, List, Callable, Dict, Type, Iterable
+from typing import Optional, List, Callable, Dict, Type
 
 from recidiviz.common.constants.entity_enum import EntityEnumMeta, EntityEnum
 from recidiviz.common.constants.enum_overrides import EnumOverrides
@@ -464,12 +464,6 @@ class UsMoController(CsvGcsfsDirectIngestController):
             'tak292_tak291_tak024_citations':
                 self._supervision_violation_citation_ancestor_chain_override,
         }
-
-    def _file_meets_file_line_limit(self, contents: Iterable[str]):
-        """TODO(2634): Remove this MO-specific workaround in favor of a general
-        solution."""
-        file_size = sum(1 for _ in contents)
-        return file_size <= self.file_split_line_limit + 1
 
     def _get_file_tag_rank_list(self) -> List[str]:
         return self.FILE_TAGS
