@@ -944,15 +944,15 @@ class TestCalculateRecidivismMetricCombinations(unittest.TestCase):
         periods_with_double = periods - periods_with_single
 
         expected_combinations_count_2010 = \
-            ((num_combinations * 40 * periods_with_single) +
-             (num_combinations * 60 * periods_with_double))
+            ((num_combinations * 46 * periods_with_single) +
+             (num_combinations * 69 * periods_with_double))
 
         periods = relativedelta(date.today(), date(2014, 4, 14)).years + 1
 
-        expected_combinations_count_2014 = (num_combinations * 40 * periods)
+        expected_combinations_count_2014 = (num_combinations * 46 * periods)
 
-        expected_count_metric_combinations = (num_combinations * 2 * 40 +
-                                              num_combinations * 2 * 40)
+        expected_count_metric_combinations = (num_combinations * 2 * 46 +
+                                              num_combinations * 2 * 46)
 
         expected_combination_counts_rates = \
             {2010: expected_combinations_count_2010,

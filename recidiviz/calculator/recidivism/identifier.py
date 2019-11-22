@@ -343,9 +343,9 @@ def for_last_incarceration_period(
         # This should not happen after validation. Throw error.
         raise ValueError("release_date is not set where it should be.")
 
-    if release_reason == ReleaseReason.DEATH:
+    if release_reason in [ReleaseReason.DEATH, ReleaseReason.EXECUTION]:
         # If the person was released from this incarceration period because they
-        # died, do not include them in the release cohort.
+        # died or were executed, do not include them in the release cohort.
         return None
     if release_reason in (ReleaseReason.ESCAPE,
                           ReleaseReason.RELEASED_IN_ERROR):
@@ -444,9 +444,9 @@ def should_include_in_release_cohort(
     """Identifies whether a pair of release reason and admission reason should
     be included in the release cohort."""
 
-    if release_reason == ReleaseReason.DEATH:
+    if release_reason in [ReleaseReason.DEATH, ReleaseReason.EXECUTION]:
         # If there is an intermediate incarceration period with a release reason
-        # of death, log this unexpected situation.
+        # of death/execution, log this unexpected situation.
         logging.info("StateIncarcerationPeriod following a release for death.")
         return False
     if release_reason == ReleaseReason.ESCAPE:

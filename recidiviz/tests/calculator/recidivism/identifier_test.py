@@ -1782,6 +1782,7 @@ SHOULD_INCLUDE_WITH_RETURN_TYPE: \
      ReleaseReason.COURT_ORDER: {},
      ReleaseReason.DEATH: {},
      ReleaseReason.ESCAPE: {},
+     ReleaseReason.EXECUTION: {},
      ReleaseReason.EXTERNAL_UNKNOWN: _RETURN_TYPES_BY_STANDARD_ADMISSION,
      ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY: {},
      ReleaseReason.RELEASED_IN_ERROR: {},
