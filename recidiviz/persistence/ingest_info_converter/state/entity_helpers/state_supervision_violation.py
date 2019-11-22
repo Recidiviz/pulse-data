@@ -25,8 +25,7 @@ from recidiviz.common.str_field_utils import parse_bool, parse_date, normalize
 from recidiviz.ingest.models.ingest_info_pb2 import StateSupervisionViolation
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import \
-    parse_region_code_with_override, parse_external_id, fn, \
-    create_comma_separated_list
+    parse_region_code_with_override, parse_external_id, fn
 from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import \
     EnumMappings
 
@@ -57,6 +56,4 @@ def copy_fields_to_builder(
     new.state_code = parse_region_code_with_override(
         proto, 'state_code', metadata)
     new.is_violent = fn(parse_bool, 'is_violent', proto)
-    if proto.violated_conditions:
-        new.violated_conditions = create_comma_separated_list(
-            proto, 'violated_conditions')
+    new.violated_conditions = fn(normalize, 'violated_conditions', proto)

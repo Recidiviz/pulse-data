@@ -18,7 +18,19 @@
 """Constants that correspond to the largely opaque column names from the
 MODOC data warehouse."""
 
+# Table prefixes
+TAK076_PREFIX = 'CZ'
+TAK291_PREFIX = 'JS'
 
+# Field names
+DOC_ID = 'DOC'
+CYCLE_ID = 'CYC'
+SENTENCE_KEY_SEQ = 'SEO'
+FIELD_KEY_SEQ = 'FSO'
+VIOLATION_KEY_SEQ = 'VSN'
+CITATION_KEY_SEQ = 'CSQ'
+
+# Columns (Table prefixes + field names)
 STATE_ID = 'EK$SID'
 FBI_ID = 'EK$FBI'
 LICENSE_ID = 'EK$OLN'
@@ -51,3 +63,7 @@ PERIOD_CASE_TYPE_OPENING = 'F1$CTO'
 PERIOD_RELEASE_DATE = 'F1$WW'
 PERIOD_PURPOSE_FOR_INCARCERATION = 'F1$PFI'
 PERIOD_START_DATE = 'F1$CD'
+
+# Recidiviz internal constants
+VIOLATION_REPORT_ID_PREFIX = 'R'
+CITATION_ID_PREFIX = 'C'

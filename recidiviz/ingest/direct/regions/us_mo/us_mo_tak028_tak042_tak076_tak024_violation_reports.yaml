@@ -1,0 +1,51 @@
+key_mappings:
+  BY$DV: state_supervision_violation.violation_date
+  VIOLATED_CONDITIONS: state_supervision_violation.violated_conditions
+
+child_key_mappings:
+  BY$VE: state_supervision_violation_response.response_date
+
+ancestor_keys:
+  BY$DOC: state_person.state_person_id
+
+keys_to_ignore:
+  # TODO(2604): Take another pass through these columns to document and ensure they should be ignored
+  - BY$CYC  # Offender Cycle Number - Handled manually in the controller
+  - BY$VSN  # Violation Sequence Number - Handled manually in the controller
+  - BY$VTY  # TODO(1763): Support multiple StateSupervisionViolation.violation_type values
+  - BY$VOR  # TODO(2653): Support multiple StateSupervisionViolationResponse.decision values
+  - BY$VWI  # Unused - Violation warrant flag
+  - BY$VRT  # Unused - Violation Report Type
+  - BY$VSI  # Unused - Advised of Statements
+  - BY$VPH  # Unused - Preliminary hearing
+  - BY$VBG  # Unused - Given booklet
+  - BY$VA   # Unused - Absconsion warrant date
+  - BY$VIC  # Unused - Custody flag
+  - BY$DAX  # Unused - Detainer cross reference
+  - BY$VC   # Unused - Custody date
+  - BY$VD   # Unused - Interview date
+  - BY$VIH  # Unused - Interview hour
+  - BY$VIM  # Unused - Interview minute
+  - BY$VIL  # Unused - Interview location
+  - BY$PIN  # Unused - Designated DOC location
+  - BY$PLN  # Unused - DOC location acronym
+  - BY$PON  # TODO(2656): Should we try to derive probation officer from this Employee ID
+  - BY$RCA  # Unused - Requires court action
+  - BY$DCR
+  - BY$TCR
+  - BY$UID
+  - BY$DLU
+  - BY$TLU
+  - BY$UIU
+  - CF$DOC  # Unused - Duplicate of BY$DOC
+  - CF$CYC  # Unused - Duplicate of BY$CYC
+  - CF$VSN  # Unused - Duplicate of BY$VSN
+  - CZ$DOC  # Unused - Duplicate of BY$DOC
+  - CZ$CYC  # Unused - Duplicate of BY$CYC
+  - CZ$VSN  # Unused - Duplicate of BY$VSN
+  - CZ$SEO  # Sentence Key Sequence Number - Handled manually in controller
+  - CZ$FSO  # Field Sentence Sequence Number - Handled manually in controller
+  - CZ$DCR
+  - CZ$TCR
+  - CZ$DLU
+  - CZ$TLU

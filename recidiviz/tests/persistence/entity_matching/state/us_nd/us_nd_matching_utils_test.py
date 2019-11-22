@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for state_matching_utils.py"""
+"""Tests for us_nd_state_matching_utils.py"""
 import datetime
 from typing import List
 from unittest import TestCase
