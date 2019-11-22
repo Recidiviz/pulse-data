@@ -257,7 +257,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
             'R',  # Regimented Disc Program
         ],
         StateSupervisionViolationResponseRevocationType.TREATMENT_IN_PRISON: [
-            'A',  # Assessment  # TODO check on this
+            'A',  # Assessment
             'I',  # Inst Treatment Center
             'L',  # Long Term Drug Treatment
         ],
