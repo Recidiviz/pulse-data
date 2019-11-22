@@ -34,49 +34,20 @@ REVOCATIONS_BY_VIOLATION_TYPE_BY_MONTH_QUERY = \
     """
     /*{description}*/
     
-    SELECT IFNULL(absc.state_code, IFNULL(fel.state_code, IFNULL(tech.state_code, unk.state_code))) as state_code,
-    IFNULL(absc.year, IFNULL(fel.year, IFNULL(tech.year, unk.year))) as year,
-    IFNULL(absc.month, IFNULL(fel.month, IFNULL(tech.month, unk.month))) as month,
-    IFNULL(absconsion_count, 0) as absconsion_count, IFNULL(felony_count, 0) as felony_count, IFNULL(technical_count, 0) as technical_count, IFNULL(unknown_count, 0) as unknown_count
+    SELECT state_code, year, month, COUNTIF(admission_reason in ('PAROLE_REVOCATION', 'PROBATION_REVOCATION') AND violation_type = 'ABSCONDED') as absconsion_count,
+    COUNTIF(admission_reason in ('PAROLE_REVOCATION', 'PROBATION_REVOCATION') AND violation_type = 'ESCAPE') as escape_count,
+    COUNTIF(admission_reason in ('PAROLE_REVOCATION', 'PROBATION_REVOCATION') AND violation_type in ('FELONY', 'MISDEMEANOR', 'MUNICIPAL')) as felony_count,
+    COUNTIF(admission_reason in ('PAROLE_REVOCATION', 'PROBATION_REVOCATION') AND violation_type = 'TECHNICAL') as technical_count,
+    COUNTIF(admission_reason in ('PAROLE_REVOCATION', 'PROBATION_REVOCATION') AND violation_type is null) as unknown_count
     FROM
-    -- Absconsions
-    ((SELECT sip.state_code, EXTRACT(YEAR FROM admission_date) as year, EXTRACT(MONTH FROM admission_date) as month, count(*) as absconsion_count FROM `{project_id}.{views_dataset}.incarceration_admissions_by_person_and_month` sip
-    join `{project_id}.{base_dataset}.state_supervision_violation_response` resp on resp.supervision_violation_response_id = sip.source_supervision_violation_response_id 
-    join `{project_id}.{base_dataset}.state_supervision_violation` viol on viol.supervision_violation_id = resp.supervision_violation_id 
-    WHERE viol.violation_type = 'ABSCONDED' AND source_supervision_violation_response_id is not null
-    GROUP BY state_code, year, month, violation_type having year > EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -3 YEAR))) absc
-    FULL OUTER JOIN
-    -- Felonies (New offenses)
-    (SELECT sip.state_code, EXTRACT(YEAR FROM admission_date) as year, EXTRACT(MONTH FROM admission_date) as month, count(*) as felony_count FROM `{project_id}.{views_dataset}.incarceration_admissions_by_person_and_month` sip
-    join `{project_id}.{base_dataset}.state_supervision_violation_response` resp on resp.supervision_violation_response_id = sip.source_supervision_violation_response_id 
-    join `{project_id}.{base_dataset}.state_supervision_violation` viol on viol.supervision_violation_id = resp.supervision_violation_id 
-    WHERE viol.violation_type = 'FELONY' AND source_supervision_violation_response_id is not null
-    GROUP BY state_code, year, month, violation_type having year > EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -3 YEAR))) fel
-    ON absc.state_code = fel.state_code AND absc.year = fel.year AND absc.month = fel.month
-    FULL OUTER JOIN
-    -- Technicals
-    (SELECT sip.state_code, EXTRACT(YEAR FROM admission_date) as year, EXTRACT(MONTH FROM admission_date) as month, count(*) as technical_count FROM `{project_id}.{views_dataset}.incarceration_admissions_by_person_and_month` sip
-    join `{project_id}.{base_dataset}.state_supervision_violation_response` resp on resp.supervision_violation_response_id = sip.source_supervision_violation_response_id 
-    join `{project_id}.{base_dataset}.state_supervision_violation` viol on viol.supervision_violation_id = resp.supervision_violation_id 
-    WHERE viol.violation_type = 'TECHNICAL' AND source_supervision_violation_response_id is not null
-    GROUP BY state_code, year, month, violation_type having year > EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -3 YEAR))) tech
-    ON absc.state_code = tech.state_code AND absc.year = tech.year AND absc.month = tech.month
-    FULL OUTER JOIN
-    -- Unknown violation types
-    (SELECT state_code, year, month, count(*) as unknown_count
-    FROM
-    ((SELECT state_code, EXTRACT(YEAR FROM admission_date) as year, EXTRACT(MONTH FROM admission_date) as month FROM
-    `{project_id}.{views_dataset}.incarceration_admissions_by_person_and_month`
-    WHERE admission_reason in ('PROBATION_REVOCATION', 'PAROLE_REVOCATION') and source_supervision_violation_response_id is null) 
-    UNION ALL
-    (SELECT sip.state_code, EXTRACT(YEAR FROM admission_date) as year, EXTRACT(MONTH FROM admission_date) as month
-    FROM `{project_id}.{views_dataset}.incarceration_admissions_by_person_and_month` sip
-    join `{project_id}.{base_dataset}.state_supervision_violation_response` resp on resp.supervision_violation_response_id = sip.source_supervision_violation_response_id 
-    join `{project_id}.{base_dataset}.state_supervision_violation` viol on viol.supervision_violation_id = resp.supervision_violation_id 
-    WHERE viol.violation_type IS NULL)) 
-    GROUP BY state_code, year, month having year > EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -3 YEAR))) unk
-    ON absc.state_code = unk.state_code AND absc.year = unk.year AND absc.month = unk.month)
-    ORDER BY year, month ASC
+    (SELECT inc.state_code, EXTRACT(YEAR FROM admission_date) as year, EXTRACT(MONTH FROM admission_date) as month, inc.admission_reason, viol.violation_type
+    FROM `{project_id}.{views_dataset}.incarceration_admissions_by_person_and_month` inc
+    LEFT JOIN `{project_id}.{base_dataset}.state_supervision_violation_response` resp
+    ON inc.source_supervision_violation_response_id = resp.supervision_violation_response_id
+    LEFT JOIN `{project_id}.{base_dataset}.state_supervision_violation` viol 
+    ON resp.supervision_violation_id = viol.supervision_violation_id)
+    GROUP BY state_code, year, month having year > EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -3 YEAR))
+    ORDER BY year, month
     """.format(
         description=REVOCATIONS_BY_VIOLATION_TYPE_BY_MONTH_DESCRIPTION,
         project_id=PROJECT_ID,
