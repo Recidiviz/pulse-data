@@ -293,7 +293,7 @@ class GcsfsDirectIngestController(BaseDirectIngestController[GcsfsIngestArgs,
                                 split_num: int) -> GcsfsFilePath:
         parts = filename_parts_from_path(original_file_path)
 
-        rank_str = str(split_num + 1).zfill(3)
+        rank_str = str(split_num + 1).zfill(5)
         existing_suffix = \
             f'_{parts.filename_suffix}' if parts.filename_suffix else ''
         updated_file_name = (

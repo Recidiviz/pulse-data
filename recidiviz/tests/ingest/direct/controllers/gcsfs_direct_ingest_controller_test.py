@@ -333,8 +333,8 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
         found_suffixes = {filename_parts_from_path(p).filename_suffix
                           for p in processed_split_file_paths['tagC']}
-        self.assertEqual(found_suffixes, {'001_file_split_size1',
-                                          '002_file_split_size1'})
+        self.assertEqual(found_suffixes, {'00001_file_split_size1',
+                                          '00002_file_split_size1'})
 
     def test_failing_to_process_a_file_that_needs_splitting_no_loop(self):
         controller = build_gcsfs_controller_for_tests(
