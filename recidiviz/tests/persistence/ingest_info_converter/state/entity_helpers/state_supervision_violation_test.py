@@ -41,7 +41,7 @@ class StateSupervisionViolationConverterTest(unittest.TestCase):
             violation_date='1/2/2111',
             state_code='us_nd',
             is_violent='false',
-            violated_conditions=['CURFEW', 'TOX-SCREEN'],
+            violated_conditions='CURFEW, TOX-SCREEN',
         )
 
         # Act

@@ -426,7 +426,7 @@ message StateSupervisionViolation {
     optional string violation_date = 3;
     optional string state_code = 4;
     optional string is_violent = 5;
-    repeated string violated_conditions = 6;
+    optional string violated_conditions = 6;
 
     repeated string state_supervision_violation_response_ids = 7;
 }

@@ -351,7 +351,7 @@ def get_total_entities_of_cls(
     graphs passed in by |persons|.
     """
     check_all_objs_have_type(persons, schema.StatePerson)
-    return len(_get_all_entities_of_cls(persons, cls))
+    return len(get_all_entities_of_cls(persons, cls))
 
 
 def get_external_ids_of_cls(persons: List[schema.StatePerson],
@@ -362,7 +362,7 @@ def get_external_ids_of_cls(persons: List[schema.StatePerson],
     check_all_objs_have_type(persons, schema.StatePerson)
 
     ids: Set[str] = set()
-    entities = _get_all_entities_of_cls(persons, cls)
+    entities = get_all_entities_of_cls(persons, cls)
     for entity in entities:
         external_ids = get_external_ids_from_entity(entity)
         if not external_ids:
@@ -397,7 +397,7 @@ def get_multiparent_classes() -> List[Type[DatabaseEntity]]:
             schema.StateSupervisionViolationResponse]
 
 
-def _get_all_entities_of_cls(
+def get_all_entities_of_cls(
         persons: List[schema.StatePerson],
         cls: Type[DatabaseEntity]):
     """Returns all entities found in the provided |persons| trees of type |cls|.

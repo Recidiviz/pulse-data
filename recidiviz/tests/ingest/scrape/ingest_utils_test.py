@@ -395,6 +395,7 @@ class TestIngestUtils:
         supervision_period.state_program_assignments = [program_assignment]
         violation = supervision_period.create_state_supervision_violation()
         violation.state_supervision_violation_id = 'violation1'
+        violation.violated_conditions = 'cond'
         violation.is_violent = 'false'
         response = violation.create_state_supervision_violation_response()
         response.state_supervision_violation_response_id = 'response1'
@@ -495,6 +496,7 @@ class TestIngestUtils:
         violation_pb = expected_proto.state_supervision_violations.add()
         violation_pb.state_supervision_violation_id = 'violation1'
         violation_pb.is_violent = 'false'
+        violation_pb.violated_conditions = 'cond'
         violation_pb.state_supervision_violation_response_ids.append(
             'response1')
         response_pb = expected_proto.state_supervision_violation_responses.add()

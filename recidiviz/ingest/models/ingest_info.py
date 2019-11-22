@@ -1458,7 +1458,7 @@ class StateSupervisionViolation(IngestObject):
         self.violation_date: Optional[str] = violation_date
         self.state_code: Optional[str] = state_code
         self.is_violent: Optional[str] = is_violent
-        self.violated_conditions: List[str] = violated_conditions or []
+        self.violated_conditions: Optional[str] = violated_conditions
 
         self.state_supervision_violation_responses: \
             List[StateSupervisionViolationResponse] = \
