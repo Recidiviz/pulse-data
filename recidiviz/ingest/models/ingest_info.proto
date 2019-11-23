@@ -57,9 +57,12 @@ message IngestInfo {
     repeated StateIncarcerationIncidentOutcome state_incarceration_incident_outcomes = 25;
     repeated StateParoleDecision state_parole_decisions = 26;
     repeated StateSupervisionViolation state_supervision_violations = 27;
-    repeated StateSupervisionViolationResponse state_supervision_violation_responses = 28;
-    repeated StateAgent state_agents = 29;
-    repeated StateProgramAssignment state_program_assignments = 30;
+    repeated StateSupervisionViolationTypeEntry state_supervision_violation_type_entries = 28;
+    repeated StateSupervisionViolatedConditionEntry state_supervision_violated_condition_entries = 29;
+    repeated StateSupervisionViolationResponse state_supervision_violation_responses = 30;
+    repeated StateSupervisionViolationResponseDecisionTypeEntry state_supervision_violation_response_decision_type_entries = 31;
+    repeated StateAgent state_agents = 32;
+    repeated StateProgramAssignment state_program_assignments = 33;
 }
 
 message Person {
@@ -276,14 +279,15 @@ message StateIncarcerationSentence {
     optional string min_length = 10;
     optional string max_length = 11;
     optional string is_life = 12;
-    optional string parole_possible = 13;
-    optional string initial_time_served = 14;
-    optional string good_time = 15;
-    optional string earned_time = 16;
+    optional string is_capital_punishment = 13;
+    optional string parole_possible = 14;
+    optional string initial_time_served = 15;
+    optional string good_time = 16;
+    optional string earned_time = 17;
 
-    repeated string state_charge_ids = 17;
-    repeated string state_incarceration_period_ids = 18;
-    repeated string state_supervision_period_ids = 19;
+    repeated string state_charge_ids = 18;
+    repeated string state_incarceration_period_ids = 19;
+    repeated string state_supervision_period_ids = 20;
 }
 
 message StateFine {
@@ -420,6 +424,18 @@ message StateParoleDecision {
     repeated string decision_agent_ids = 9;
 }
 
+message StateSupervisionViolatedConditionEntry {
+    optional string state_supervision_violated_condition_entry_id = 1;
+    optional string condition = 2;
+    optional string state_code = 3;
+}
+
+message StateSupervisionViolationTypeEntry {
+    optional string state_supervision_violation_type_entry_id = 1;
+    optional string violation_type = 2;
+    optional string state_code = 3;
+}
+
 message StateSupervisionViolation {
     optional string state_supervision_violation_id = 1;
     optional string violation_type = 2;
@@ -429,6 +445,15 @@ message StateSupervisionViolation {
     optional string violated_conditions = 6;
 
     repeated string state_supervision_violation_response_ids = 7;
+    repeated string state_supervision_violated_condition_entry_ids = 8;
+    repeated string state_supervision_violation_type_entry_ids = 9;
+}
+
+message StateSupervisionViolationResponseDecisionTypeEntry {
+    optional string state_supervision_violation_response_decision_type_entry_id = 1;
+    optional string decision = 2;
+    optional string revocation_type = 3;
+    optional string state_code = 4;
 }
 
 message StateSupervisionViolationResponse {
@@ -441,6 +466,7 @@ message StateSupervisionViolationResponse {
     optional string deciding_body_type = 7;
 
     repeated string decision_agent_ids = 8;
+    repeated string state_supervision_violation_response_decision_type_entry_ids = 9;
 }
 
 message StateAgent {

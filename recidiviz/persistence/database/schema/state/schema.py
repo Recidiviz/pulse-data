@@ -1168,6 +1168,7 @@ class _StateIncarcerationSentenceSharedColumns(
     min_length_days = Column(Integer)
     max_length_days = Column(Integer)
     is_life = Column(Boolean)
+    is_capital_punishment = Column(Boolean)
     parole_possible = Column(Boolean)
     initial_time_served_days = Column(Integer)
     good_time_days = Column(Integer)
@@ -1641,6 +1642,129 @@ class StateParoleDecisionHistory(StateBase,
         nullable=False, index=True)
 
 
+# StateSupervisionViolationTypeEntry
+
+class _StateSupervisionViolationTypeEntrySharedColumns(
+        _ReferencesStatePersonSharedColumns):
+    """A mixin which defines all columns common to
+    StateSupervisionViolationTypeEntry and
+    StateSupervisionViolationTypeEntryHistory
+    """
+
+    # Consider this class a mixin and only allow instantiating subclasses
+    def __new__(cls, *_, **__):
+        if cls is _StateSupervisionViolationTypeEntrySharedColumns:
+            raise Exception(f'[{cls}] cannot be instantiated')
+        return super().__new__(cls)
+
+    state_code = Column(String(255), nullable=False, index=True)
+    violation_type = Column(state_supervision_violation_type)
+    violation_type_raw_text = Column(String(255))
+
+    @declared_attr
+    def supervision_violation_id(self):
+        return Column(
+            Integer,
+            ForeignKey('state_supervision_violation.'
+                       'supervision_violation_id'),
+            nullable=True)
+
+
+class StateSupervisionViolationTypeEntry(
+        StateBase,
+        _StateSupervisionViolationTypeEntrySharedColumns):
+    """Represents a StateSupervisionViolationTypeEntry in the SQL schema.
+    """
+    __tablename__ = 'state_supervision_violation_type_entry'
+
+    supervision_violation_type_entry_id = Column(Integer,
+                                                 primary_key=True)
+
+    person = relationship('StatePerson', uselist=False)
+
+
+class StateSupervisionViolationTypeEntryHistory(
+        StateBase,
+        _StateSupervisionViolationTypeEntrySharedColumns,
+        HistoryTableSharedColumns):
+    """Represents the historical state of a
+    StateSupervisionViolationTypeEntry.
+    """
+    __tablename__ = 'state_supervision_violation_type_entry_history'
+
+    # This primary key should NOT be used. It only exists because SQLAlchemy
+    # requires every table to have a unique primary key.
+    supervision_violation_type_history_id = Column(Integer,
+                                                   primary_key=True)
+
+    supervision_violation_type_entry_id = Column(
+        Integer, ForeignKey(
+            'state_supervision_violation_type_entry.'
+            'supervision_violation_type_entry_id'),
+        nullable=False, index=True)
+
+
+# StateSupervisionViolatedConditionEntry
+
+class _StateSupervisionViolatedConditionEntrySharedColumns(
+        _ReferencesStatePersonSharedColumns):
+    """A mixin which defines all columns common to
+    StateSupervisionViolatedConditionEntry and
+    StateSupervisionViolatedConditionEntryHistory
+    """
+
+    # Consider this class a mixin and only allow instantiating subclasses
+    def __new__(cls, *_, **__):
+        if cls is _StateSupervisionViolatedConditionEntrySharedColumns:
+            raise Exception(f'[{cls}] cannot be instantiated')
+        return super().__new__(cls)
+
+    state_code = Column(String(255), nullable=False, index=True)
+    condition = Column(String(255), nullable=False)
+
+    @declared_attr
+    def supervision_violation_id(self):
+        return Column(
+            Integer,
+            ForeignKey('state_supervision_violation.'
+                       'supervision_violation_id'),
+            nullable=True)
+
+
+class StateSupervisionViolatedConditionEntry(
+        StateBase,
+        _StateSupervisionViolatedConditionEntrySharedColumns):
+    """Represents a StateSupervisionViolatedConditionEntry in the SQL schema.
+    """
+    __tablename__ = 'state_supervision_violated_condition_entry'
+
+    supervision_violated_condition_entry_id = Column(Integer,
+                                                     primary_key=True)
+
+    person = relationship('StatePerson', uselist=False)
+
+
+class StateSupervisionViolatedConditionEntryHistory(
+        StateBase,
+        _StateSupervisionViolatedConditionEntrySharedColumns,
+        HistoryTableSharedColumns):
+    """Represents the historical state of a
+    StateSupervisionViolatedConditionEntry
+    """
+    __tablename__ = 'state_supervision_violated_condition_entry_history'
+
+    # This primary key should NOT be used. It only exists because SQLAlchemy
+    # requires every table to have a unique primary key.
+    supervision_violated_condition_entry_history_id = Column(Integer,
+                                                             primary_key=True)
+
+    supervision_violated_condition_entry_id = Column(
+        Integer, ForeignKey(
+            'state_supervision_violated_condition_entry.'
+            'supervision_violated_condition_entry_id'),
+        nullable=False, index=True)
+
+
 # StateSupervisionViolation
 
 class _StateSupervisionViolationSharedColumns(
@@ -1679,6 +1803,15 @@ class StateSupervisionViolation(StateBase,
     supervision_violation_id = Column(Integer, primary_key=True)
 
     person = relationship('StatePerson', uselist=False)
+
+    supervision_violation_types = relationship(
+        'StateSupervisionViolationTypeEntry',
+        backref='supervision_violation',
+        lazy='selectin')
+    supervision_violated_conditions = relationship(
+        'StateSupervisionViolatedConditionEntry',
+        backref='supervision_violation',
+        lazy='selectin')
     supervision_violation_responses = relationship(
         'StateSupervisionViolationResponse',
         backref='supervision_violation',
@@ -1698,6 +1831,74 @@ class StateSupervisionViolationHistory(StateBase,
     supervision_violation_id = Column(
         Integer, ForeignKey(
             'state_supervision_violation.supervision_violation_id'),
+        nullable=False, index=True)
+
+
+# StateSupervisionViolationResponseDecisionTypeEntry
+
+class _StateSupervisionViolationResponseDecisionTypeEntrySharedColumns(
+        _ReferencesStatePersonSharedColumns):
+    """A mixin which defines all columns common to
+    StateSupervisionViolationResponseDecisionTypeEntry and
+    StateSupervisionViolationResponseDecisionTypeEntryHistory
+    """
+
+    # Consider this class a mixin and only allow instantiating subclasses
+    def __new__(cls, *_, **__):
+        # pylint:disable=line-too-long
+        if cls is _StateSupervisionViolationResponseDecisionTypeEntrySharedColumns:
+            raise Exception(f'[{cls}] cannot be instantiated')
+        return super().__new__(cls)
+
+    state_code = Column(String(255), nullable=False, index=True)
+    decision = Column(state_supervision_violation_response_decision)
+    decision_raw_text = Column(String(255))
+    revocation_type = \
+        Column(state_supervision_violation_response_revocation_type)
+    revocation_type_raw_text = Column(String(255))
+
+    @declared_attr
+    def supervision_violation_response_id(self):
+        return Column(
+            Integer,
+            ForeignKey('state_supervision_violation_response.'
+                       'supervision_violation_response_id'),
+            nullable=True)
+
+
+class StateSupervisionViolationResponseDecisionTypeEntry(
+        StateBase,
+        _StateSupervisionViolationResponseDecisionTypeEntrySharedColumns):
+    """Represents a StateSupervisionViolationResponseDecisionTypeEntry in the
+    SQL schema.
+    """
+    __tablename__ = 'state_supervision_violation_response_decision_type_entry'
+
+    supervision_violation_response_decision_type_entry_id = \
+        Column(Integer, primary_key=True)
+
+    person = relationship('StatePerson', uselist=False)
+
+
+class StateSupervisionViolationResponseDecisionTypeEntryHistory(
+        StateBase,
+        _StateSupervisionViolationResponseDecisionTypeEntrySharedColumns,
+        HistoryTableSharedColumns):
+    """Represents the historical state of a
+    StateSupervisionViolationResponseDecisionTypeEntry.
+    """
+    __tablename__ = \
+        'state_supervision_violation_response_decision_type_entry_history'
+
+    # This primary key should NOT be used. It only exists because SQLAlchemy
+    # requires every table to have a unique primary key.
+    supervision_violation_response_decision_type_entry_history_id = Column(
+        Integer, primary_key=True)
+
+    supervision_violation_response_decision_type_entry_id = Column(
+        Integer, ForeignKey(
+            'state_supervision_violation_response_decision_type_entry.'
+            'supervision_violation_response_decision_type_entry_id'),
         nullable=False, index=True)
 
 
@@ -1747,6 +1948,10 @@ class StateSupervisionViolationResponse(
     supervision_violation_response_id = Column(Integer, primary_key=True)
 
     person = relationship('StatePerson', uselist=False)
+    supervision_violation_response_decisions = relationship(
+        'StateSupervisionViolationResponseDecisionTypeEntry',
+        backref='supervision_violation_response',
+        lazy='selectin')
     decision_agents = relationship(
         'StateAgent',
         secondary=

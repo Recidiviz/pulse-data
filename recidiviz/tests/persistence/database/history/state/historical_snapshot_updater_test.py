@@ -36,7 +36,7 @@ from recidiviz.tests.utils import fakes
 class TestStateHistoricalSnapshotUpdater(BaseHistoricalSnapshotUpdaterTest):
     """Tests for StateHistoricalSnapshotUpdater"""
 
-    def setup_method(self, _test_method):
+    def setUp(self) -> None:
         fakes.use_in_memory_sqlite_database(StateBase)
 
     def testStateRecordTreeSnapshotUpdate(self):

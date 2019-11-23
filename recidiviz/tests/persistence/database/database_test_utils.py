@@ -21,16 +21,33 @@ from recidiviz.common.constants.state.state_incarceration_incident import \
     StateIncarcerationIncidentOutcomeType
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
+from recidiviz.common.constants.state.state_supervision_violation_response \
+    import StateSupervisionViolationResponseDecision, \
+    StateSupervisionViolationResponseRevocationType
 from recidiviz.persistence.database.schema.state import schema as state_schema
 
 
 def generate_test_supervision_violation_response(person_id) -> \
         state_schema.StateSupervisionViolationResponse:
-
     instance = state_schema.StateSupervisionViolationResponse(
         supervision_violation_response_id=456,
         state_code='us_ca',
         person_id=person_id,
+        supervision_violation_response_decisions=[
+            state_schema.StateSupervisionViolationResponseDecisionTypeEntry(
+                supervision_violation_response_decision_type_entry_id=123,
+                state_code='us_ca',
+                decision=
+                StateSupervisionViolationResponseDecision.
+                REVOCATION.value,
+                decision_raw_text='REV',
+                revocation_type=
+                StateSupervisionViolationResponseRevocationType.
+                REINCARCERATION.value,
+                revocation_type_raw_text='REINC',
+                person_id=person_id,
+            )
+        ]
     )
 
     return instance
@@ -45,6 +62,23 @@ def generate_test_supervision_violation(person_id,
         violation_type=StateSupervisionViolationType.TECHNICAL.value,
         state_code='us_ca',
         person_id=person_id,
+        supervision_violated_conditions=[
+            state_schema.StateSupervisionViolatedConditionEntry(
+                supervision_violated_condition_entry_id=765,
+                state_code='us_ca',
+                condition='CURFEW',
+                person_id=person_id,
+            )
+        ],
+        supervision_violation_types=[
+            state_schema.StateSupervisionViolationTypeEntry(
+                supervision_violation_type_entry_id=987,
+                state_code='us_ca',
+                violation_type=StateSupervisionViolationType.TECHNICAL.value,
+                violation_type_raw_text='T',
+                person_id=person_id,
+            )
+        ],
         supervision_violation_responses=supervision_violation_responses
     )
 
@@ -181,6 +215,7 @@ def generate_test_incarceration_sentence(
         status=StateSentenceStatus.SUSPENDED.value,
         state_code='us_ca',
         person_id=person_id,
+        is_capital_punishment=False,
         charges=charges,
         incarceration_periods=incarceration_periods,
     )

@@ -165,8 +165,16 @@ def convert_ingest_info_to_proto(ingest_info_py: ingest_info.IngestInfo) \
     state_parole_decision_map: Dict[str, ingest_info.StateParoleDecision] = {}
     state_supervision_violation_map: \
         Dict[str, ingest_info.StateSupervisionViolation] = {}
+    state_supervision_violation_type_entry_map: \
+        Dict[str, ingest_info.StateSupervisionViolationTypeEntry] = {}
+    state_supervision_violated_condition_entry_map: \
+        Dict[str, ingest_info.StateSupervisionViolatedConditionEntry] = {}
     state_supervision_violation_response_map: \
         Dict[str, ingest_info.StateSupervisionViolationResponse] = {}
+    state_supervision_violation_response_decision_type_entry_map: \
+        Dict[
+            str,
+            ingest_info.StateSupervisionViolationResponseDecisionTypeEntry] = {}
     state_agent_map: Dict[str, ingest_info.StateAgent] = {}
 
     id_to_generated: Dict[int, str] = {}
@@ -368,6 +376,29 @@ def convert_ingest_info_to_proto(ingest_info_py: ingest_info.IngestInfo) \
                 proto_period.state_supervision_violation_ids.append(
                     proto_violation.state_supervision_violation_id)
 
+                for violation_type in \
+                        violation.state_supervision_violation_types:
+                    proto_violation_type = _populate_proto(
+                        'state_supervision_violation_type_entries',
+                        violation_type,
+                        'state_supervision_violation_type_entry_id',
+                        state_supervision_violation_type_entry_map)
+                    proto_violation.state_supervision_violation_type_entry_ids \
+                        .append(proto_violation_type.
+                                state_supervision_violation_type_entry_id)
+
+                for violated_condition in \
+                        violation.state_supervision_violated_conditions:
+                    proto_violated_condition = _populate_proto(
+                        'state_supervision_violated_condition_entries',
+                        violated_condition,
+                        'state_supervision_violated_condition_entry_id',
+                        state_supervision_violated_condition_entry_map)
+                    proto_violation.\
+                        state_supervision_violated_condition_entry_ids \
+                        .append(proto_violated_condition.
+                                state_supervision_violated_condition_entry_id)
+
                 for response in violation.state_supervision_violation_responses:
                     proto_response = _populate_proto(
                         'state_supervision_violation_responses', response,
@@ -376,6 +407,18 @@ def convert_ingest_info_to_proto(ingest_info_py: ingest_info.IngestInfo) \
                     proto_violation.state_supervision_violation_response_ids \
                         .append(proto_response.
                                 state_supervision_violation_response_id)
+
+                    # pylint: disable=line-too-long
+                    for decision_type in \
+                            response.state_supervision_violation_response_decisions:
+                        proto_decision_type = _populate_proto(
+                            'state_supervision_violation_response_decision_type_entries',
+                            decision_type,
+                            'state_supervision_violation_response_decision_type_entry_id',
+                            state_supervision_violation_response_decision_type_entry_map)
+                        proto_response.state_supervision_violation_response_decision_type_entry_ids \
+                            .append(proto_decision_type.
+                                    state_supervision_violation_response_decision_type_entry_id)
 
                     for agent in response.decision_agents:
                         proto_decision_agent = _populate_proto(
@@ -696,6 +739,23 @@ def convert_proto_to_ingest_info(
                           ingest_info.StateSupervisionViolation,
                           'state_supervision_violation_id')
              for supervision_violation in proto.state_supervision_violations)
+
+    state_supervision_violation_type_entry_map: \
+        Dict[str, ingest_info.StateSupervisionViolationTypeEntry] = \
+        dict(_proto_to_py(violation_type,
+                          ingest_info.StateSupervisionViolationTypeEntry,
+                          'state_supervision_violation_type_entry_id')
+             for violation_type
+             in proto.state_supervision_violation_type_entries)
+
+    state_supervision_violated_condition_entry_map: \
+        Dict[str, ingest_info.StateSupervisionViolatedConditionEntry] = \
+        dict(_proto_to_py(violated_condition,
+                          ingest_info.StateSupervisionViolatedConditionEntry,
+                          'state_supervision_violated_condition_entry_id')
+             for violated_condition
+             in proto.state_supervision_violated_condition_entries)
+
     state_supervision_violation_response_map: \
         Dict[str, ingest_info.StateSupervisionViolationResponse] = \
         dict(_proto_to_py(violation_response,
@@ -703,6 +763,18 @@ def convert_proto_to_ingest_info(
                           'state_supervision_violation_response_id')
              for violation_response
              in proto.state_supervision_violation_responses)
+
+    # pylint: disable=line-too-long
+    state_supervision_violation_response_decision_type_entry_map: \
+        Dict[str,
+             ingest_info.StateSupervisionViolationResponseDecisionTypeEntry] = \
+        dict(_proto_to_py(
+            decision_type,
+            ingest_info.StateSupervisionViolationResponseDecisionTypeEntry,
+            'state_supervision_violation_response_decision_type_entry_id')
+             for decision_type
+             in proto.state_supervision_violation_response_decision_type_entries)
+
     state_agent_map: Dict[str, ingest_info.StateAgent] = \
         dict(_proto_to_py(agent, ingest_info.StateAgent, 'state_agent_id')
              for agent in proto.state_agents)
@@ -795,8 +867,13 @@ def convert_proto_to_ingest_info(
 
     # Wire child entities to respective violations
     for proto_response in proto.state_supervision_violation_responses:
+        # pylint: disable=line-too-long
         violation_response = state_supervision_violation_response_map[
             proto_response.state_supervision_violation_response_id]
+        violation_response.state_supervision_violation_response_decisions = \
+            [state_supervision_violation_response_decision_type_entry_map[proto_id]
+             for proto_id
+             in proto_response.state_supervision_violation_response_decision_type_entry_ids]
         violation_response.decision_agents = \
             [state_agent_map[proto_id] for proto_id
              in proto_response.decision_agent_ids]
@@ -804,6 +881,15 @@ def convert_proto_to_ingest_info(
     for proto_supervision_violation in proto.state_supervision_violations:
         supervision_violation = state_supervision_violation_map[
             proto_supervision_violation.state_supervision_violation_id]
+        supervision_violation.state_supervision_violation_types = \
+            [state_supervision_violation_type_entry_map[proto_id] for proto_id
+             in proto_supervision_violation.
+             state_supervision_violation_type_entry_ids]
+        supervision_violation.state_supervision_violated_conditions = \
+            [state_supervision_violated_condition_entry_map[proto_id]
+             for proto_id
+             in proto_supervision_violation.
+             state_supervision_violated_condition_entry_ids]
         supervision_violation.state_supervision_violation_responses = \
             [state_supervision_violation_response_map[proto_id] for proto_id
              in proto_supervision_violation.
