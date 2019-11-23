@@ -47,8 +47,12 @@ from recidiviz.common.constants.state.state_supervision import \
     StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import \
     StateSupervisionPeriodStatus, StateSupervisionLevel
+from recidiviz.common.constants.state.state_supervision_violation import \
+    StateSupervisionViolationType
 from recidiviz.common.constants.state.state_supervision_violation_response \
-    import StateSupervisionViolationResponseType
+    import StateSupervisionViolationResponseType, \
+    StateSupervisionViolationResponseDecision, \
+    StateSupervisionViolationResponseRevocationType
 from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
 from recidiviz.persistence.entity.state import entities as state_entities
@@ -59,7 +63,9 @@ from recidiviz.persistence.entity.state.entities import StatePerson, \
     StateIncarcerationSentence, StateIncarcerationPeriod, \
     StateIncarcerationIncident, StateParoleDecision, StateFine, \
     StateSupervisionViolation, StateSupervisionViolationResponse, StateAgent, \
-    StatePersonAlias, StateIncarcerationIncidentOutcome, StateProgramAssignment
+    StatePersonAlias, StateIncarcerationIncidentOutcome,\
+    StateProgramAssignment, StateSupervisionViolationResponseDecisionTypeEntry,\
+    StateSupervisionViolationTypeEntry, StateSupervisionViolatedConditionEntry
 from recidiviz.persistence.ingest_info_converter import ingest_info_converter
 from recidiviz.persistence.ingest_info_converter.ingest_info_converter import \
     IngestInfoConversionResult
@@ -289,13 +295,53 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             state_program_assignment_ids=['PROGRAM_ASSIGNMENT_ID'],
             source_supervision_violation_response_id='RESPONSE_ID'
         )
+
+        ingest_info.state_supervision_violation_type_entries.add(
+            state_supervision_violation_type_entry_id='VIOLATION_TYPE_ENTRY_ID',
+            violation_type='FELONY',
+            state_code='US_ND'
+        )
+
+        ingest_info.state_supervision_violated_condition_entries.add(
+            state_supervision_violated_condition_entry_id=
+            'VIOLATED_CONDITION_ENTRY_ID',
+            condition='CURFEW',
+            state_code='US_ND'
+        )
+
         ingest_info.state_supervision_violations.add(
             state_supervision_violation_id='VIOLATION_ID',
-            state_supervision_violation_response_ids=['RESPONSE_ID']
+            state_supervision_violation_response_ids=['RESPONSE_ID'],
+            state_supervision_violated_condition_entry_ids=[
+                'VIOLATED_CONDITION_ENTRY_ID'
+            ],
+            state_supervision_violation_type_entry_ids=[
+                'VIOLATION_TYPE_ENTRY_ID'
+            ],
         )
+
+        ingest_info.state_supervision_violated_condition_entries.add(
+            state_supervision_violated_condition_entry_id=
+            'VIOLATED_CONDITION_ENTRY_ID',
+            condition='CURFEW',
+            state_code='US_ND'
+        )
+
+        ingest_info.state_supervision_violation_response_decision_type_entries.\
+            add(
+                state_supervision_violation_response_decision_type_entry_id=
+                'VIOLATION_RESPONSE_DECISION_TYPE_ENTRY_ID',
+                decision='REVOCATION',
+                revocation_type='REINCARCERATION',
+                state_code='US_ND'
+            )
+
         ingest_info.state_supervision_violation_responses.add(
             state_supervision_violation_response_id='RESPONSE_ID',
             decision_agent_ids=['AGENT_ID_TERM'],
+            state_supervision_violation_response_decision_type_entry_ids=[
+                'VIOLATION_RESPONSE_DECISION_TYPE_ENTRY_ID'
+            ],
             response_type='CITATION'
         )
         ingest_info.state_incarceration_incidents.add(
@@ -388,13 +434,39 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                 full_name='{"full_name": "AGENT TERMY"}',
                 agent_type=StateAgentType.SUPERVISION_OFFICER,
                 agent_type_raw_text='SUPERVISION_OFFICER',
-            )]
+            )],
+            supervision_violation_response_decisions=[
+                StateSupervisionViolationResponseDecisionTypeEntry.
+                new_with_defaults(
+                    state_code='US_ND',
+                    decision=
+                    StateSupervisionViolationResponseDecision.REVOCATION,
+                    decision_raw_text='REVOCATION',
+                    revocation_type=
+                    StateSupervisionViolationResponseRevocationType.
+                    REINCARCERATION,
+                    revocation_type_raw_text='REINCARCERATION'
+                )
+            ]
         )
 
         violation = StateSupervisionViolation.new_with_defaults(
             external_id='VIOLATION_ID',
             state_code='US_ND',
-            supervision_violation_responses=[response]
+            supervision_violation_responses=[response],
+            supervision_violation_types=[
+                StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code='US_ND',
+                    violation_type=StateSupervisionViolationType.FELONY,
+                    violation_type_raw_text='FELONY',
+                )
+            ],
+            supervision_violated_conditions=[
+                StateSupervisionViolatedConditionEntry.new_with_defaults(
+                    state_code='US_ND',
+                    condition='CURFEW',
+                )
+            ]
         )
 
         court_case = StateCourtCase.new_with_defaults(

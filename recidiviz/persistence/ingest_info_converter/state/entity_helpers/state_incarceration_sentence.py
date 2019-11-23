@@ -79,6 +79,7 @@ def copy_fields_to_builder(
     new.min_length_days = fn(parse_days, 'min_length', proto)
     new.max_length_days = fn(parse_days, 'max_length', proto)
     new.is_life = fn(parse_bool, 'is_life', proto)
+    new.is_capital_punishment = fn(parse_bool, 'is_capital_punishment', proto)
     new.parole_possible = fn(parse_bool, 'parole_possible', proto)
     new.initial_time_served_days = fn(parse_days, 'initial_time_served', proto)
     new.good_time_days = fn(parse_days, 'good_time', proto)

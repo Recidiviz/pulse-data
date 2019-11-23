@@ -79,17 +79,14 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodTerminationReason,
     StateSupervisionLevel,
 )
-
-
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
 from recidiviz.common.constants.state.state_supervision_violation_response \
-    import (
-        StateSupervisionViolationResponseType,
-        StateSupervisionViolationResponseDecision,
-        StateSupervisionViolationResponseRevocationType,
-        StateSupervisionViolationResponseDecidingBodyType,
-    )
+    import \
+    StateSupervisionViolationResponseDecision, \
+    StateSupervisionViolationResponseRevocationType, \
+    StateSupervisionViolationResponseDecidingBodyType, \
+    StateSupervisionViolationResponseType
 
 from recidiviz.persistence.entity.base_entity import Entity, ExternalIdEntity
 
@@ -427,6 +424,8 @@ class StateSentenceGroup(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     min_length_days: Optional[int] = attr.ib()
     max_length_days: Optional[int] = attr.ib()
 
+    # TODO(2668): Remove this column - can be derived from incarceration
+    #  sentences.
     is_life: Optional[bool] = attr.ib()
 
     #   - Who
@@ -530,6 +529,7 @@ class StateIncarcerationSentence(ExternalIdEntity,
     max_length_days: Optional[int] = attr.ib()
 
     is_life: Optional[bool] = attr.ib()
+    is_capital_punishment: Optional[bool] = attr.ib()
 
     parole_possible: Optional[bool] = attr.ib()
     initial_time_served_days: Optional[int] = attr.ib()
@@ -703,6 +703,8 @@ class StateSupervisionPeriod(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     supervision_level: Optional[StateSupervisionLevel] = attr.ib()
     supervision_level_raw_text: Optional[str] = attr.ib()
 
+    # TODO(2668): This is currently unused - delete this since we won't likely
+    #  ever get this info independently from violations.
     conditions: Optional[str] = attr.ib(default=None)
 
     #   - Who
@@ -722,7 +724,6 @@ class StateSupervisionPeriod(ExternalIdEntity, BuildableAttr, DefaultableAttr):
         attr.ib(factory=list)
     supervision_sentences: List['StateSupervisionSentence'] = \
         attr.ib(factory=list)
-
     supervision_violations: List['StateSupervisionViolation'] = attr.ib(
         factory=list)
     assessments: List['StateAssessment'] = attr.ib(factory=list)
@@ -837,6 +838,53 @@ class StateParoleDecision(ExternalIdEntity, BuildableAttr, DefaultableAttr):
 
 
 @attr.s(eq=False)
+class StateSupervisionViolationTypeEntry(Entity,
+                                         BuildableAttr,
+                                         DefaultableAttr):
+    """Models a violation type associated with a particular
+    StateSupervisionViolation.
+    """
+    # Attributes
+    state_code: str = attr.ib()  # non-nullable
+    violation_type: Optional[StateSupervisionViolationType] = attr.ib()
+    violation_type_raw_text: Optional[str] = attr.ib()
+
+    # Primary key - Only optional when hydrated in the data converter, before
+    # we have written this entity to the persistence layer
+    supervision_violation_type_entry_id: Optional[int] = attr.ib(default=None)
+
+    # Cross-entity relationships
+    person: Optional['StatePerson'] = attr.ib(default=None)
+    supervision_violation: Optional['StateSupervisionViolation'] = \
+        attr.ib(default=None)
+
+
+@attr.s(eq=False)
+class StateSupervisionViolatedConditionEntry(Entity,
+                                             BuildableAttr,
+                                             DefaultableAttr):
+    """Models a condition applied to a supervision sentence, whose violation
+    may be recorded in a StateSupervisionViolation.
+    """
+    # Attributes
+    state_code: str = attr.ib()  # non-nullable
+
+    # A string code corresponding to the condition - region specific.
+    condition: str = attr.ib()  # non-nullable
+
+    # Primary key - Only optional when hydrated in the data converter, before
+    # we have written this entity to the persistence layer
+    supervision_violated_condition_entry_id: Optional[int] = \
+        attr.ib(default=None)
+
+    # Cross-entity relationships
+    person: Optional['StatePerson'] = attr.ib(default=None)
+
+    supervision_violation: Optional['StateSupervisionViolation'] = \
+        attr.ib(default=None)
+
+
+@attr.s(eq=False)
 class StateSupervisionViolation(ExternalIdEntity,
                                 BuildableAttr,
                                 DefaultableAttr):
@@ -848,6 +896,7 @@ class StateSupervisionViolation(ExternalIdEntity,
     # N/A
 
     # Type
+    # TODO(2668): DEPRECATED - DELETE IN FOLLOW-UP PR
     violation_type: Optional[StateSupervisionViolationType] = attr.ib()
     violation_type_raw_text: Optional[str] = attr.ib()
 
@@ -864,6 +913,7 @@ class StateSupervisionViolation(ExternalIdEntity,
     # These should correspond to |conditions| in StateSupervisionPeriod
     is_violent: Optional[bool] = attr.ib()
 
+    # TODO(2668): DEPRECATED - DELETE IN FOLLOW-UP PR
     violated_conditions: Optional[str] = attr.ib(default=None)
 
     #   - Who
@@ -877,8 +927,43 @@ class StateSupervisionViolation(ExternalIdEntity,
     person: Optional['StatePerson'] = attr.ib(default=None)
     supervision_period: Optional['StateSupervisionPeriod'] = \
         attr.ib(default=None)
+    supervision_violation_types: List['StateSupervisionViolationTypeEntry'] = \
+        attr.ib(factory=list)
+    supervision_violated_conditions: \
+        List['StateSupervisionViolatedConditionEntry'] = attr.ib(factory=list)
     supervision_violation_responses: \
         List['StateSupervisionViolationResponse'] = attr.ib(factory=list)
+
+
+@attr.s(eq=False)
+class StateSupervisionViolationResponseDecisionTypeEntry(Entity,
+                                                         BuildableAttr,
+                                                         DefaultableAttr):
+    """Models the type of decision resulting from a response to a
+    StateSupervisionViolation.
+    """
+    # Attributes
+    state_code: str = attr.ib()  # non-nullable
+
+    decision: Optional[StateSupervisionViolationResponseDecision] = \
+        attr.ib()
+    decision_raw_text: Optional[str] = attr.ib()
+
+    # Only nonnull if one of the decisions is REVOCATION
+    revocation_type: \
+        Optional[StateSupervisionViolationResponseRevocationType] = \
+        attr.ib()
+    revocation_type_raw_text: Optional[str] = attr.ib()
+
+    # Primary key - Only optional when hydrated in the data converter, before
+    # we have written this entity to the persistence layer
+    supervision_violation_response_decision_type_entry_id: Optional[int] = \
+        attr.ib(default=None)
+
+    # Cross-entity relationships
+    person: Optional['StatePerson'] = attr.ib(default=None)
+    supervision_violation_response: \
+        Optional['StateSupervisionViolationResponse'] = attr.ib(default=None)
 
 
 @attr.s(eq=False)
@@ -890,7 +975,8 @@ class StateSupervisionViolationResponse(ExternalIdEntity,
     # N/A
 
     # Type
-    response_type: Optional[StateSupervisionViolationResponseType] = attr.ib()
+    response_type: Optional[StateSupervisionViolationResponseType] = \
+        attr.ib()
     response_type_raw_text: Optional[str] = attr.ib()
 
     # Attributes
@@ -901,18 +987,23 @@ class StateSupervisionViolationResponse(ExternalIdEntity,
     state_code: str = attr.ib()  # non-nullable
 
     #   - What
-    decision: Optional[StateSupervisionViolationResponseDecision] = attr.ib()
+    # TODO(2668): DEPRECATED - DELETE IN FOLLOW-UP PR
+    decision: Optional[StateSupervisionViolationResponseDecision] = \
+        attr.ib()
     decision_raw_text: Optional[str] = attr.ib()
 
-    # Only nonnull if decision is REVOCATION
+    # Only nonnull if one of the decisions is REVOCATION
+    # TODO(2668): DEPRECATED - DELETE IN FOLLOW-UP PR
     revocation_type: \
-        Optional[StateSupervisionViolationResponseRevocationType] = attr.ib()
+        Optional[StateSupervisionViolationResponseRevocationType] = \
+        attr.ib()
     revocation_type_raw_text: Optional[str] = attr.ib()
 
     #   - Who
     # See SupervisionViolationResponders below
     deciding_body_type: \
-        Optional[StateSupervisionViolationResponseDecidingBodyType] = attr.ib()
+        Optional[StateSupervisionViolationResponseDecidingBodyType] \
+        = attr.ib()
     deciding_body_type_raw_text: Optional[str] = attr.ib()
     # See also |decision_agents| below
 
@@ -924,6 +1015,9 @@ class StateSupervisionViolationResponse(ExternalIdEntity,
     person: Optional['StatePerson'] = attr.ib(default=None)
     supervision_violation: Optional['StateSupervisionViolation'] = \
         attr.ib(default=None)
+    supervision_violation_response_decisions: \
+        List['StateSupervisionViolationResponseDecisionTypeEntry'] = \
+        attr.ib(factory=list)
     decision_agents: List['StateAgent'] = attr.ib(factory=list)
 
 

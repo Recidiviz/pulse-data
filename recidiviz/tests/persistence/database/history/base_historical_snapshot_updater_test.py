@@ -183,7 +183,10 @@ class BaseHistoricalSnapshotUpdaterTest(TestCase):
                 == schema_obj_primary_key_value
             ).all()
 
-        self.assertEqual(len(history_snapshots), len(ingest_times))
+        self.assertEqual(len(history_snapshots), len(ingest_times),
+                         f'History snapshots do not correspond to ingest times '
+                         f'for object of type '
+                         f'[{expected_schema_object.__class__}]')
 
         self.assertTrue(
             all(isinstance(s, HistoryTableSharedColumns)
