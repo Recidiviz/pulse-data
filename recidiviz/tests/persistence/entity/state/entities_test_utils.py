@@ -172,6 +172,7 @@ def generate_full_graph_state_person(
             min_length_days=90,
             max_length_days=900,
             is_life=False,
+            is_capital_punishment=False,
             parole_possible=True,
             initial_time_served_days=None,
             good_time_days=10,

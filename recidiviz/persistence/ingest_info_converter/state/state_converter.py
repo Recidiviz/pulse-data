@@ -34,7 +34,10 @@ from recidiviz.persistence.ingest_info_converter.state.entity_helpers import \
     state_supervision_period, state_parole_decision, \
     state_incarceration_incident, state_supervision_violation, \
     state_supervision_violation_response, state_fine, state_agent, \
-    state_incarceration_incident_outcome, state_program_assignment
+    state_incarceration_incident_outcome, state_program_assignment, \
+    state_supervision_violation_type_entry, \
+    state_supervision_violated_condition_entry, \
+    state_supervision_violation_response_decision_type_entry
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import fn
 
 
@@ -99,9 +102,25 @@ class StateConverter(BaseConverter[entities.StatePerson]):
             sv.state_supervision_violation_id: sv for sv
             in ingest_info.state_supervision_violations
         }
+        self.violated_condition_entries = {
+            svce.state_supervision_violated_condition_entry_id: svce for svce
+            in ingest_info.state_supervision_violated_condition_entries
+        }
+        self.violation_type_entries = {
+            svte.state_supervision_violation_type_entry_id: svte for svte
+            in ingest_info.state_supervision_violation_type_entries
+        }
+
         self.violation_responses = {
             vr.state_supervision_violation_response_id: vr for vr
             in ingest_info.state_supervision_violation_responses
+        }
+
+        self.violation_response_decision_type_entries = {
+            svrdte.state_supervision_violation_response_decision_type_entry_id:
+            svrdte for svrdte
+            # pylint: disable=line-too-long
+            in ingest_info.state_supervision_violation_response_decision_type_entries
         }
 
     def _is_complete(self) -> bool:
@@ -445,12 +464,36 @@ class StateConverter(BaseConverter[entities.StatePerson]):
         supervision_violation_builder.supervision_violation_responses = \
             converted_violation_responses
 
+        converted_violation_type_entries = [
+            state_supervision_violation_type_entry.convert(
+                self.violation_type_entries[type_entry_id], self.metadata)
+            for type_entry_id in
+            # pylint: disable=line-too-long
+            ingest_supervision_violation.state_supervision_violation_type_entry_ids
+        ]
+        supervision_violation_builder.supervision_violation_types \
+            = converted_violation_type_entries
+
+        converted_violated_condition_entries = [
+            state_supervision_violated_condition_entry.convert(
+                self.violated_condition_entries[condition_entry_id],
+                self.metadata)
+            for condition_entry_id in
+            # pylint: disable=line-too-long
+            ingest_supervision_violation.state_supervision_violated_condition_entry_ids
+        ]
+        supervision_violation_builder.supervision_violated_conditions \
+            = converted_violated_condition_entries
+
         return supervision_violation_builder.build()
 
     def _convert_supervision_violation_response(
-            self, ingest_supervision_violation_response:
-            StateSupervisionViolationResponse) \
-            -> entities.StateSupervisionViolationResponse:
+            self,
+            ingest_supervision_violation_response:
+            StateSupervisionViolationResponse
+    ) -> entities.StateSupervisionViolationResponse:
+        """Converts an ingest_info proto StateSupervisionViolationResponse to a
+        persistence entity."""
 
         supervision_violation_response_builder = \
             entities.StateSupervisionViolationResponse.builder()
@@ -467,6 +510,18 @@ class StateConverter(BaseConverter[entities.StatePerson]):
         ]
         supervision_violation_response_builder.decision_agents = \
             converted_agents
+
+        converted_decisions = [
+            state_supervision_violation_response_decision_type_entry.convert(
+                self.violation_response_decision_type_entries[
+                    condition_entry_id],
+                self.metadata)
+            for condition_entry_id in
+            ingest_supervision_violation_response.
+            state_supervision_violation_response_decision_type_entry_ids
+        ]
+        supervision_violation_response_builder.\
+            supervision_violation_response_decisions = converted_decisions
 
         return supervision_violation_response_builder.build()
 

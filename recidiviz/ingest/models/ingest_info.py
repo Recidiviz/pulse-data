@@ -747,6 +747,7 @@ class StateSentenceGroup(IngestObject):
         self.county_code: Optional[str] = county_code
         self.min_length: Optional[str] = min_length
         self.max_length: Optional[str] = max_length
+        # TODO(2668): Delete this from SentenceGroup
         self.is_life: Optional[str] = is_life
 
         self.state_supervision_sentences: List[StateSupervisionSentence] = \
@@ -911,9 +912,10 @@ class StateIncarcerationSentence(IngestObject):
                  projected_min_release_date=None,
                  projected_max_release_date=None, parole_eligibility_date=None,
                  state_code=None, county_code=None, min_length=None,
-                 max_length=None, is_life=None, parole_possible=None,
-                 initial_time_served=None, good_time=None, earned_time=None,
-                 state_charges=None, state_incarceration_periods=None,
+                 max_length=None, is_life=None, is_capital_punishment=None,
+                 parole_possible=None, initial_time_served=None, good_time=None,
+                 earned_time=None, state_charges=None,
+                 state_incarceration_periods=None,
                  state_supervision_periods=None):
         self.state_incarceration_sentence_id: Optional[str] = \
             state_incarceration_sentence_id
@@ -930,6 +932,7 @@ class StateIncarcerationSentence(IngestObject):
         self.min_length: Optional[str] = min_length
         self.max_length: Optional[str] = max_length
         self.is_life: Optional[str] = is_life
+        self.is_capital_punishment = is_capital_punishment
         self.parole_possible: Optional[str] = parole_possible
         self.initial_time_served: Optional[str] = initial_time_served
         self.good_time: Optional[str] = good_time
@@ -1443,6 +1446,34 @@ class StateParoleDecision(IngestObject):
         self.decision_agents.sort()
 
 
+class StateSupervisionViolationTypeEntry(IngestObject):
+    """Class for type information about a violation during supervision."""
+
+    def __init__(self, state_supervision_violation_type_entry_id=None,
+                 violation_type=None, state_code=None):
+        self.state_supervision_violation_type_entry_id: Optional[str] = \
+            state_supervision_violation_type_entry_id
+        self.violation_type: Optional[str] = violation_type
+        self.state_code: Optional[str] = state_code
+
+    def __setattr__(self, name, value):
+        restricted_setattr(self, 'state_code', name, value)
+
+
+class StateSupervisionViolatedConditionEntry(IngestObject):
+    """Class for information about a condition on a person's supervision."""
+
+    def __init__(self, state_supervision_violated_condition_entry_id=None,
+                 condition=None, state_code=None):
+        self.state_supervision_violated_condition_entry_id: Optional[str] = \
+            state_supervision_violated_condition_entry_id
+        self.condition: Optional[str] = condition
+        self.state_code: Optional[str] = state_code
+
+    def __setattr__(self, name, value):
+        restricted_setattr(self, 'state_code', name, value)
+
+
 class StateSupervisionViolation(IngestObject):
     """Class for information about a supervision violation.
     Referenced from SupervisionViolation.
@@ -1451,15 +1482,26 @@ class StateSupervisionViolation(IngestObject):
     def __init__(self, state_supervision_violation_id=None, violation_type=None,
                  violation_date=None, state_code=None, is_violent=None,
                  violated_conditions=None,
+                 state_supervision_violation_types=None,
+                 state_supervision_violated_conditions=None,
                  state_supervision_violation_responses=None):
         self.state_supervision_violation_id: Optional[str] = \
             state_supervision_violation_id
+
+        # TODO(2668): DEPRECATED - Delete this when we delete the column
         self.violation_type: Optional[str] = violation_type
         self.violation_date: Optional[str] = violation_date
         self.state_code: Optional[str] = state_code
         self.is_violent: Optional[str] = is_violent
-        self.violated_conditions: Optional[str] = violated_conditions
 
+        # TODO(2668): DEPRECATED - Delete this when we delete the column
+        self.violated_conditions: Optional[str] = violated_conditions
+        self.state_supervision_violation_types: \
+            List[StateSupervisionViolationTypeEntry] = \
+            state_supervision_violation_types or []
+        self.state_supervision_violated_conditions: \
+            List[StateSupervisionViolatedConditionEntry] = \
+            state_supervision_violated_conditions or []
         self.state_supervision_violation_responses: \
             List[StateSupervisionViolationResponse] = \
             state_supervision_violation_responses or []
@@ -1467,6 +1509,32 @@ class StateSupervisionViolation(IngestObject):
     def __setattr__(self, name, value):
         restricted_setattr(self, 'state_supervision_violation_responses',
                            name, value)
+
+    def create_state_supervision_violation_type(self, **kwargs) \
+            -> 'StateSupervisionViolationTypeEntry':
+        violation_type = StateSupervisionViolationTypeEntry(**kwargs)
+        self.state_supervision_violation_types.append(violation_type)
+        return violation_type
+
+    def get_state_supervision_violation_type_entry_by_id(
+            self, state_supervision_violation_type_entry_id
+    ) -> Optional['StateSupervisionViolationTypeEntry']:
+        return next((svt for svt in self.state_supervision_violation_types
+                     if svt.state_supervision_violation_type_entry_id ==
+                     state_supervision_violation_type_entry_id), None)
+
+    def create_state_supervision_violated_condition(self, **kwargs) \
+            -> 'StateSupervisionViolatedConditionEntry':
+        condition = StateSupervisionViolatedConditionEntry(**kwargs)
+        self.state_supervision_violated_conditions.append(condition)
+        return condition
+
+    def get_state_supervision_violated_condition_entry_by_id(
+            self, state_supervision_violated_condition_entry_id
+    ) -> Optional['StateSupervisionViolatedConditionEntry']:
+        return next((svc for svc in self.state_supervision_violated_conditions
+                     if svc.state_supervision_violated_condition_entry_id ==
+                     state_supervision_violated_condition_entry_id), None)
 
     def create_state_supervision_violation_response(self, **kwargs) \
             -> 'StateSupervisionViolationResponse':
@@ -1491,6 +1559,21 @@ class StateSupervisionViolation(IngestObject):
         self.state_supervision_violation_responses.sort()
 
 
+class StateSupervisionViolationResponseDecisionTypeEntry(IngestObject):
+    """Class for information about a condition on a person's supervision."""
+
+    def __init__(self, state_supervision_violated_condition_entry_id=None,
+                 decision=None, revocation_type=None, state_code=None):
+        self.state_supervision_violation_response_decision_type_entry_id: \
+            Optional[str] = state_supervision_violated_condition_entry_id
+        self.decision: Optional[str] = decision
+        self.revocation_type: Optional[str] = revocation_type
+        self.state_code: Optional[str] = state_code
+
+    def __setattr__(self, name, value):
+        restricted_setattr(self, 'state_code', name, value)
+
+
 class StateSupervisionViolationResponse(IngestObject):
     """Class for information about a supervision violation response.
     Referenced from StateSupervisionViolationResponse.
@@ -1499,6 +1582,7 @@ class StateSupervisionViolationResponse(IngestObject):
     def __init__(self, state_supervision_violation_response_id=None,
                  response_type=None, response_date=None, state_code=None,
                  decision=None, revocation_type=None, deciding_body_type=None,
+                 supervision_violation_response_decisions=None,
                  decision_agents=None):
         self.state_supervision_violation_response_id: Optional[str] = \
             state_supervision_violation_response_id
@@ -1508,10 +1592,32 @@ class StateSupervisionViolationResponse(IngestObject):
         self.decision: Optional[str] = decision
         self.revocation_type: Optional[str] = revocation_type
         self.deciding_body_type: Optional[str] = deciding_body_type
+        self.state_supervision_violation_response_decisions: \
+            List[StateSupervisionViolationResponseDecisionTypeEntry] = \
+            supervision_violation_response_decisions or []
         self.decision_agents: List[StateAgent] = decision_agents or []
 
     def __setattr__(self, name, value):
         restricted_setattr(self, 'decision_agents', name, value)
+
+    def create_state_supervision_violation_response_decision(
+            self,
+            **kwargs
+    ) -> 'StateSupervisionViolationResponseDecisionTypeEntry':
+        decision = StateSupervisionViolationResponseDecisionTypeEntry(**kwargs)
+        self.state_supervision_violation_response_decisions.append(decision)
+        return decision
+
+    def get_state_supervision_violation_response_decision_type_entry_by_id(
+            self, state_supervision_violation_response_decision_type_entry_id
+    ) -> Optional['StateSupervisionViolationResponseDecisionTypeEntry']:
+        matching_svrdts = (
+            svrdt
+            for svrdt in self.state_supervision_violation_response_decisions
+            if svrdt.state_supervision_violation_response_decision_type_entry_id
+            == state_supervision_violation_response_decision_type_entry_id)
+
+        return next(matching_svrdts, None)
 
     def create_state_agent(self, **kwargs) -> 'StateAgent':
         decision_agent = StateAgent(**kwargs)
