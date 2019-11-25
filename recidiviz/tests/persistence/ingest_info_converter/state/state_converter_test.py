@@ -64,7 +64,7 @@ from recidiviz.persistence.entity.state.entities import StatePerson, \
     StateIncarcerationIncident, StateParoleDecision, StateFine, \
     StateSupervisionViolation, StateSupervisionViolationResponse, StateAgent, \
     StatePersonAlias, StateIncarcerationIncidentOutcome,\
-    StateProgramAssignment, StateSupervisionViolationResponseDecisionTypeEntry,\
+    StateProgramAssignment, StateSupervisionViolationResponseDecisionEntry,\
     StateSupervisionViolationTypeEntry, StateSupervisionViolatedConditionEntry
 from recidiviz.persistence.ingest_info_converter import ingest_info_converter
 from recidiviz.persistence.ingest_info_converter.ingest_info_converter import \
@@ -327,10 +327,10 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             state_code='US_ND'
         )
 
-        ingest_info.state_supervision_violation_response_decision_type_entries.\
+        ingest_info.state_supervision_violation_response_decision_entries.\
             add(
-                state_supervision_violation_response_decision_type_entry_id=
-                'VIOLATION_RESPONSE_DECISION_TYPE_ENTRY_ID',
+                state_supervision_violation_response_decision_entry_id=
+                'VIOLATION_RESPONSE_DECISION_ENTRY_ID',
                 decision='REVOCATION',
                 revocation_type='REINCARCERATION',
                 state_code='US_ND'
@@ -339,8 +339,8 @@ class TestIngestInfoStateConverter(unittest.TestCase):
         ingest_info.state_supervision_violation_responses.add(
             state_supervision_violation_response_id='RESPONSE_ID',
             decision_agent_ids=['AGENT_ID_TERM'],
-            state_supervision_violation_response_decision_type_entry_ids=[
-                'VIOLATION_RESPONSE_DECISION_TYPE_ENTRY_ID'
+            state_supervision_violation_response_decision_entry_ids=[
+                'VIOLATION_RESPONSE_DECISION_ENTRY_ID'
             ],
             response_type='CITATION'
         )
@@ -436,7 +436,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                 agent_type_raw_text='SUPERVISION_OFFICER',
             )],
             supervision_violation_response_decisions=[
-                StateSupervisionViolationResponseDecisionTypeEntry.
+                StateSupervisionViolationResponseDecisionEntry.
                 new_with_defaults(
                     state_code='US_ND',
                     decision=

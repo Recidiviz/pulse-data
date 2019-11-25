@@ -64,6 +64,8 @@ class CoreEntity:
         return setattr(self, self.get_class_id_name(), entity_id)
 
     def get_external_id(self) -> Optional[str]:
+        if not hasattr(self, 'external_id'):
+            return None
         return self.get_field('external_id')
 
     # TODO(2163): Use get/set_field_from_list when possible to clean up code.

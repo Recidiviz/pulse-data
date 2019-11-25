@@ -60,7 +60,7 @@ _STATE_CLASS_HIERARCHY = [
     state_entities.StateSupervisionViolatedConditionEntry.__name__,
     state_entities.StateSupervisionViolationTypeEntry.__name__,
     state_entities.StateSupervisionViolationResponse.__name__,
-    state_entities.StateSupervisionViolationResponseDecisionTypeEntry.__name__,
+    state_entities.StateSupervisionViolationResponseDecisionEntry.__name__,
     state_entities.StateAssessment.__name__,
     state_entities.StateProgramAssignment.__name__,
     state_entities.StateAgent.__name__,

@@ -124,6 +124,17 @@ def generate_supervision_violation_response(person, **kwargs) \
     return schema.StateSupervisionViolationResponse(person=person, **args)
 
 
+def generate_supervision_violation_response_decision_entry(
+        person, **kwargs) \
+        -> schema.StateSupervisionViolationResponseDecisionEntry:
+    args = {
+        'state_code': _STATE_CODE,
+    }
+    args.update(kwargs)
+    return schema.StateSupervisionViolationResponseDecisionEntry(
+        person=person, **args)
+
+
 def generate_supervision_violation(person, **kwargs) \
         -> schema.StateSupervisionViolation:
     args = {
@@ -131,6 +142,24 @@ def generate_supervision_violation(person, **kwargs) \
     }
     args.update(kwargs)
     return schema.StateSupervisionViolation(person=person, **args)
+
+
+def generate_supervision_violation_type_entry(person, **kwargs) \
+        -> schema.StateSupervisionViolationTypeEntry:
+    args = {
+        'state_code': _STATE_CODE,
+    }
+    args.update(kwargs)
+    return schema.StateSupervisionViolationTypeEntry(person=person, **args)
+
+
+def generate_supervision_violated_condition_entry(person, **kwargs) \
+        -> schema.StateSupervisionViolatedConditionEntry:
+    args = {
+        'state_code': _STATE_CODE,
+    }
+    args.update(kwargs)
+    return schema.StateSupervisionViolatedConditionEntry(person=person, **args)
 
 
 def generate_supervision_period(person, **kwargs) \

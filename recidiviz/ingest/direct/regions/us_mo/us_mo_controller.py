@@ -33,6 +33,8 @@ from recidiviz.common.constants.state.state_supervision import \
 from recidiviz.common.constants.state.state_supervision_period import \
     StateSupervisionPeriodAdmissionReason, \
     StateSupervisionPeriodTerminationReason, StateSupervisionPeriodStatus
+from recidiviz.common.constants.state.state_supervision_violation import \
+    StateSupervisionViolationType
 from recidiviz.common.constants.state.state_supervision_violation_response \
     import StateSupervisionViolationResponseRevocationType, \
     StateSupervisionViolationResponseDecidingBodyType, \
@@ -63,7 +65,9 @@ from recidiviz.ingest.direct.regions.us_mo.us_mo_constants import \
     INCARCERATION_SENTENCE_PROJECTED_MIN_DATE, \
     INCARCERATION_SENTENCE_PROJECTED_MAX_DATE, \
     SUPERVISION_SENTENCE_PROJECTED_COMPLETION_DATE, PERIOD_RELEASE_DATE, \
-    PERIOD_PURPOSE_FOR_INCARCERATION, PERIOD_OPEN_TYPE, PERIOD_START_DATE
+    PERIOD_PURPOSE_FOR_INCARCERATION, PERIOD_OPEN_TYPE, PERIOD_START_DATE, \
+    SUPERVISION_VIOLATION_VIOLATED_CONDITIONS, SUPERVISION_VIOLATION_TYPES, \
+    SUPERVISION_VIOLATION_RECOMMENDATIONS
 from recidiviz.ingest.direct.state_shared_row_posthooks import \
     copy_name_to_alias, gen_label_single_external_id_hook, \
     gen_normalize_county_codes_posthook, \
@@ -73,7 +77,11 @@ from recidiviz.ingest.extractor.csv_data_extractor import IngestFieldCoordinates
 from recidiviz.ingest.models.ingest_info import IngestObject, StatePerson, \
     StatePersonExternalId, StateSentenceGroup, StateCharge, \
     StateIncarcerationSentence, StateSupervisionSentence, \
-    StateIncarcerationPeriod, StateSupervisionPeriod, StateSupervisionViolation
+    StateIncarcerationPeriod, StateSupervisionPeriod, \
+    StateSupervisionViolation, \
+    StateSupervisionViolatedConditionEntry, \
+    StateSupervisionViolationTypeEntry, \
+    StateSupervisionViolationResponseDecisionEntry
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 
 
@@ -277,6 +285,24 @@ class UsMoController(CsvGcsfsDirectIngestController):
             'BH',  # Board Holdover
             'BP',  # Board Parole
         ],
+        StateSupervisionViolationType.ABSCONDED: ['A'],
+        StateSupervisionViolationType.ESCAPED: ['E'],
+        StateSupervisionViolationType.FELONY: ['F'],
+        StateSupervisionViolationType.MISDEMEANOR: ['M'],
+        StateSupervisionViolationType.MUNICIPAL: ['O'],
+        StateSupervisionViolationType.TECHNICAL: ['T'],
+
+        StateSupervisionViolationResponseDecision.REVOCATION: [
+            'A',  # Capias
+            'I',  # Inmate Return
+            'R',  # Revocation
+            'CO',  # Court Ordered Detention Sanction
+        ],
+        StateSupervisionViolationResponseDecision.CONTINUANCE: ['C'],
+        StateSupervisionViolationResponseDecision.DELAYED_ACTION: ['D'],
+        StateSupervisionViolationResponseDecision.EXTENSION: ['E'],
+        StateSupervisionViolationResponseDecision.SUSPENSION: ['S'],
+        StateSupervisionViolationResponseDecision.SERVICE_TERMINATION: ['T'],
     }
 
     ENUM_IGNORES: Dict[EntityEnumMeta, List[str]] = {
@@ -293,6 +319,10 @@ class UsMoController(CsvGcsfsDirectIngestController):
         StateSupervisionPeriodTerminationReason: [
             'IB',  # Institutional Administrative: seems erroneous
             'IT',  # Institutional Release to Supervision: seems erroneous
+        ],
+        StateSupervisionViolationResponseDecision: [
+            'RN',     # SIS revoke to SES
+            'NOREC',  # No Recommendation
         ]
     }
 
@@ -419,11 +449,15 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 self._gen_violation_response_type_posthook(
                     StateSupervisionViolationResponseType.VIOLATION_REPORT),
                 self._set_deciding_body_as_supervising_officer,
+                self._set_violated_conditions_on_violation,
+                self._set_violation_type_on_violation,
+                self._set_recommendations_on_violation_response,
             ],
             'tak292_tak291_tak024_citations': [
                 self._gen_violation_response_type_posthook(
                     StateSupervisionViolationResponseType.CITATION),
                 self._set_deciding_body_as_supervising_officer,
+                self._set_violated_conditions_on_violation,
             ],
         }
 
@@ -607,6 +641,100 @@ class UsMoController(CsvGcsfsDirectIngestController):
                     response.deciding_body_type = \
                         StateSupervisionViolationResponseDecidingBodyType.\
                         SUPERVISION_OFFICER.value
+
+    @classmethod
+    def _set_violated_conditions_on_violation(
+            cls,
+            _file_tag: str,
+            row: Dict[str, str],
+            extracted_objects: List[IngestObject],
+            _cache: IngestObjectCache):
+        """Manually adds StateSupervisionViolatedConditionEntries to
+        StateSupervisionViolations.
+        """
+        conditions_txt = row.get(SUPERVISION_VIOLATION_VIOLATED_CONDITIONS, '')
+        if conditions_txt == '':
+            return
+        conditions = conditions_txt.split(',')
+
+        for obj in extracted_objects:
+            if isinstance(obj, StateSupervisionViolation):
+                for condition in conditions:
+                    obj.violated_conditions = None
+                    vc = StateSupervisionViolatedConditionEntry(
+                        condition=condition)
+                    create_if_not_exists(
+                        vc, obj, 'state_supervision_violated_conditions')
+
+    @classmethod
+    def _set_violation_type_on_violation(
+            cls,
+            _file_tag: str,
+            row: Dict[str, str],
+            extracted_objects: List[IngestObject],
+            _cache: IngestObjectCache):
+        """Manually adds StateSupervisionViolationTypeEntries to
+        StateSupervisionViolations.
+        """
+        violation_types_txt = row.get(SUPERVISION_VIOLATION_TYPES, '')
+        if violation_types_txt == '':
+            return
+        violation_types = list(violation_types_txt)
+
+        for obj in extracted_objects:
+            if isinstance(obj, StateSupervisionViolation):
+                for violation_type in violation_types:
+                    vt = StateSupervisionViolationTypeEntry(
+                        violation_type=violation_type)
+                    create_if_not_exists(
+                        vt, obj, 'state_supervision_violation_types')
+
+    @classmethod
+    def _set_recommendations_on_violation_response(
+            cls,
+            _file_tag: str,
+            row: Dict[str, str],
+            extracted_objects: List[IngestObject],
+            _cache: IngestObjectCache):
+        """Manually adds StateSupervisionViolationResponses to
+        StateSupervisionViolations.
+        """
+        recommendation_txt = row.get(SUPERVISION_VIOLATION_RECOMMENDATIONS, '')
+        # Return if there is no recommendation, or if the text explicitly refers
+        # to either "No Recommendation" or "SIS revoke to SES".
+        if recommendation_txt == '' or recommendation_txt in ('RN', 'NOREC'):
+            return
+
+        if recommendation_txt == 'CO':
+            # CO is the only recommendation we process that is more than one
+            # letter, and it does not occur with any other recommendations.
+            recommendations = [recommendation_txt]
+        else:
+            # If not one of the above recommendations, any number of single
+            # character recommendations can be provided.
+            recommendations = list(recommendation_txt)
+
+        for obj in extracted_objects:
+            if isinstance(obj, StateSupervisionViolation):
+                for response in obj.state_supervision_violation_responses:
+                    for recommendation in recommendations:
+                        revocation_type = None
+                        if recommendation in ('A', 'I', 'R'):
+                            revocation_type = \
+                                StateSupervisionViolationResponseRevocationType\
+                                .REINCARCERATION.value
+                        if recommendation == 'CO':
+                            revocation_type = \
+                                StateSupervisionViolationResponseRevocationType\
+                                .TREATMENT_IN_PRISON.value
+                        rec = \
+                            StateSupervisionViolationResponseDecisionEntry(
+                                decision=recommendation,
+                                revocation_type=revocation_type)
+                        create_if_not_exists(
+                            rec,
+                            response,
+                            'state_supervision_violation_response_decisions')
 
     @classmethod
     def set_sentence_status(cls,

@@ -398,13 +398,14 @@ class TestIngestUtils:
         violation.violated_conditions = 'cond'
         violation.is_violent = 'false'
 
-        violation_type = violation.create_state_supervision_violation_type()
+        violation_type = violation.\
+            create_state_supervision_violation_type_entry()
         violation_type.state_supervision_violation_type_entry_id =\
             'violation_type_id'
         violation_type.violation_type = 'FELONY'
 
         violated_condition = \
-            violation.create_state_supervision_violated_condition()
+            violation.create_state_supervision_violated_condition_entry()
         violated_condition.state_supervision_violated_condition_entry_id =\
             'condition_id'
         violated_condition.condition = 'CURFEW'
@@ -415,10 +416,10 @@ class TestIngestUtils:
         response_decision_agent.state_agent_id = 'agentTERM'
         response_decision_agent.full_name = 'Officer Termy'
 
-        response_decision = \
-            response.create_state_supervision_violation_response_decision()
+        response_decision = response.\
+            create_state_supervision_violation_response_decision_entry()
         response_decision.\
-            state_supervision_violation_response_decision_type_entry_id =\
+            state_supervision_violation_response_decision_entry_id =\
             'response_decision_id'
         response_decision.decision = 'REVOCATION'
         response_decision.revocation_type = 'REINCARCERATION'
@@ -545,14 +546,14 @@ class TestIngestUtils:
         response_decision_agent_pb.full_name = 'Officer Termy'
         response_decision_pb = \
             expected_proto.\
-            state_supervision_violation_response_decision_type_entries.add()
+            state_supervision_violation_response_decision_entries.add()
         response_decision_pb.\
-            state_supervision_violation_response_decision_type_entry_id = \
+            state_supervision_violation_response_decision_entry_id = \
             'response_decision_id'
         response_decision_pb.decision = 'REVOCATION'
         response_decision_pb.revocation_type = 'REINCARCERATION'
         response_pb.\
-            state_supervision_violation_response_decision_type_entry_ids.append(
+            state_supervision_violation_response_decision_entry_ids.append(
                 'response_decision_id'
             )
 

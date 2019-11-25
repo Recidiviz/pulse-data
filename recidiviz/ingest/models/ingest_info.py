@@ -1510,7 +1510,7 @@ class StateSupervisionViolation(IngestObject):
         restricted_setattr(self, 'state_supervision_violation_responses',
                            name, value)
 
-    def create_state_supervision_violation_type(self, **kwargs) \
+    def create_state_supervision_violation_type_entry(self, **kwargs) \
             -> 'StateSupervisionViolationTypeEntry':
         violation_type = StateSupervisionViolationTypeEntry(**kwargs)
         self.state_supervision_violation_types.append(violation_type)
@@ -1523,7 +1523,7 @@ class StateSupervisionViolation(IngestObject):
                      if svt.state_supervision_violation_type_entry_id ==
                      state_supervision_violation_type_entry_id), None)
 
-    def create_state_supervision_violated_condition(self, **kwargs) \
+    def create_state_supervision_violated_condition_entry(self, **kwargs) \
             -> 'StateSupervisionViolatedConditionEntry':
         condition = StateSupervisionViolatedConditionEntry(**kwargs)
         self.state_supervision_violated_conditions.append(condition)
@@ -1559,13 +1559,16 @@ class StateSupervisionViolation(IngestObject):
         self.state_supervision_violation_responses.sort()
 
 
-class StateSupervisionViolationResponseDecisionTypeEntry(IngestObject):
+class StateSupervisionViolationResponseDecisionEntry(IngestObject):
     """Class for information about a condition on a person's supervision."""
 
-    def __init__(self, state_supervision_violated_condition_entry_id=None,
-                 decision=None, revocation_type=None, state_code=None):
-        self.state_supervision_violation_response_decision_type_entry_id: \
-            Optional[str] = state_supervision_violated_condition_entry_id
+    def __init__(
+            self,
+            state_supervision_violation_response_decision_entry_id=None,
+            decision=None, revocation_type=None, state_code=None):
+        self.state_supervision_violation_response_decision_entry_id: \
+            Optional[str] = \
+            state_supervision_violation_response_decision_entry_id
         self.decision: Optional[str] = decision
         self.revocation_type: Optional[str] = revocation_type
         self.state_code: Optional[str] = state_code
@@ -1593,29 +1596,29 @@ class StateSupervisionViolationResponse(IngestObject):
         self.revocation_type: Optional[str] = revocation_type
         self.deciding_body_type: Optional[str] = deciding_body_type
         self.state_supervision_violation_response_decisions: \
-            List[StateSupervisionViolationResponseDecisionTypeEntry] = \
+            List[StateSupervisionViolationResponseDecisionEntry] = \
             supervision_violation_response_decisions or []
         self.decision_agents: List[StateAgent] = decision_agents or []
 
     def __setattr__(self, name, value):
         restricted_setattr(self, 'decision_agents', name, value)
 
-    def create_state_supervision_violation_response_decision(
+    def create_state_supervision_violation_response_decision_entry(
             self,
             **kwargs
-    ) -> 'StateSupervisionViolationResponseDecisionTypeEntry':
-        decision = StateSupervisionViolationResponseDecisionTypeEntry(**kwargs)
+    ) -> 'StateSupervisionViolationResponseDecisionEntry':
+        decision = StateSupervisionViolationResponseDecisionEntry(**kwargs)
         self.state_supervision_violation_response_decisions.append(decision)
         return decision
 
-    def get_state_supervision_violation_response_decision_type_entry_by_id(
-            self, state_supervision_violation_response_decision_type_entry_id
-    ) -> Optional['StateSupervisionViolationResponseDecisionTypeEntry']:
+    def get_state_supervision_violation_response_decision_entry_by_id(
+            self, state_supervision_violation_response_decision_entry_id
+    ) -> Optional['StateSupervisionViolationResponseDecisionEntry']:
         matching_svrdts = (
             svrdt
             for svrdt in self.state_supervision_violation_response_decisions
-            if svrdt.state_supervision_violation_response_decision_type_entry_id
-            == state_supervision_violation_response_decision_type_entry_id)
+            if svrdt.state_supervision_violation_response_decision_entry_id
+            == state_supervision_violation_response_decision_entry_id)
 
         return next(matching_svrdts, None)
 

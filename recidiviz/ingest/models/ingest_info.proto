@@ -60,7 +60,7 @@ message IngestInfo {
     repeated StateSupervisionViolationTypeEntry state_supervision_violation_type_entries = 28;
     repeated StateSupervisionViolatedConditionEntry state_supervision_violated_condition_entries = 29;
     repeated StateSupervisionViolationResponse state_supervision_violation_responses = 30;
-    repeated StateSupervisionViolationResponseDecisionTypeEntry state_supervision_violation_response_decision_type_entries = 31;
+    repeated StateSupervisionViolationResponseDecisionEntry state_supervision_violation_response_decision_entries = 31;
     repeated StateAgent state_agents = 32;
     repeated StateProgramAssignment state_program_assignments = 33;
 }
@@ -449,8 +449,8 @@ message StateSupervisionViolation {
     repeated string state_supervision_violation_type_entry_ids = 9;
 }
 
-message StateSupervisionViolationResponseDecisionTypeEntry {
-    optional string state_supervision_violation_response_decision_type_entry_id = 1;
+message StateSupervisionViolationResponseDecisionEntry {
+    optional string state_supervision_violation_response_decision_entry_id = 1;
     optional string decision = 2;
     optional string revocation_type = 3;
     optional string state_code = 4;
@@ -466,7 +466,7 @@ message StateSupervisionViolationResponse {
     optional string deciding_body_type = 7;
 
     repeated string decision_agent_ids = 8;
-    repeated string state_supervision_violation_response_decision_type_entry_ids = 9;
+    repeated string state_supervision_violation_response_decision_entry_ids = 9;
 }
 
 message StateAgent {

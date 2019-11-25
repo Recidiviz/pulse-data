@@ -92,13 +92,15 @@ def _is_match(*,
             != db_entity.get_field('state_code'):
         return False
 
+    # TODO(2671): Update all person attributes below to use complete entity
+    # equality instead of just comparing individual fields.
     if isinstance(ingested_entity, schema.StatePersonExternalId):
         db_entity = cast(schema.StatePersonExternalId, db_entity)
         return ingested_entity.external_id == db_entity.external_id \
-               and ingested_entity.id_type == db_entity.id_type
+            and ingested_entity.id_type == db_entity.id_type
 
     # As person has already been matched, assume that any of these 'person
-    # attribute' entities are matches if their state_codes align.
+    # attribute' entities are matches if specific attributes match.
     if isinstance(ingested_entity, schema.StatePersonAlias):
         db_entity = cast(schema.StatePersonAlias, db_entity)
         return ingested_entity.full_name == db_entity.full_name
@@ -108,6 +110,12 @@ def _is_match(*,
     if isinstance(ingested_entity, schema.StatePersonEthnicity):
         db_entity = cast(schema.StatePersonEthnicity, db_entity)
         return ingested_entity.ethnicity == db_entity.ethnicity
+
+    if isinstance(ingested_entity,
+                  (schema.StateSupervisionViolationResponseDecisionEntry,
+                   schema.StateSupervisionViolatedConditionEntry,
+                   schema.StateSupervisionViolationTypeEntry)):
+        return _base_entity_match(ingested_entity, db_entity)
 
     # Placeholders entities are considered equal
     if ingested_entity.get_external_id() is None \
@@ -127,7 +135,10 @@ def base_entity_match(
     """
     a = ingested_entity.entity
     b = db_entity.entity
+    return _base_entity_match(a, b)
 
+
+def _base_entity_match(a: DatabaseEntity, b: DatabaseEntity) -> bool:
     # Placeholders never match
     if is_placeholder(a) or is_placeholder(b):
         return False

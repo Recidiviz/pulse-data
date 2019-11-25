@@ -1,6 +1,5 @@
 key_mappings:
   BY$DV: state_supervision_violation.violation_date
-  VIOLATED_CONDITIONS: state_supervision_violation.violated_conditions
 
 child_key_mappings:
   BY$VE: state_supervision_violation_response.response_date
@@ -10,6 +9,7 @@ ancestor_keys:
 
 keys_to_ignore:
   # TODO(2604): Take another pass through these columns to document and ensure they should be ignored
+  - VIOLATED_CONDITIONS  #  List of conditions violated - Handled manually in controller
   - BY$CYC  # Offender Cycle Number - Handled manually in the controller
   - BY$VSN  # Violation Sequence Number - Handled manually in the controller
   - BY$VTY  # TODO(1763): Support multiple StateSupervisionViolation.violation_type values

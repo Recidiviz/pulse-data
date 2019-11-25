@@ -171,10 +171,10 @@ def convert_ingest_info_to_proto(ingest_info_py: ingest_info.IngestInfo) \
         Dict[str, ingest_info.StateSupervisionViolatedConditionEntry] = {}
     state_supervision_violation_response_map: \
         Dict[str, ingest_info.StateSupervisionViolationResponse] = {}
-    state_supervision_violation_response_decision_type_entry_map: \
+    state_supervision_violation_response_decision_entry_map: \
         Dict[
             str,
-            ingest_info.StateSupervisionViolationResponseDecisionTypeEntry] = {}
+            ingest_info.StateSupervisionViolationResponseDecisionEntry] = {}
     state_agent_map: Dict[str, ingest_info.StateAgent] = {}
 
     id_to_generated: Dict[int, str] = {}
@@ -412,13 +412,13 @@ def convert_ingest_info_to_proto(ingest_info_py: ingest_info.IngestInfo) \
                     for decision_type in \
                             response.state_supervision_violation_response_decisions:
                         proto_decision_type = _populate_proto(
-                            'state_supervision_violation_response_decision_type_entries',
+                            'state_supervision_violation_response_decision_entries',
                             decision_type,
-                            'state_supervision_violation_response_decision_type_entry_id',
-                            state_supervision_violation_response_decision_type_entry_map)
-                        proto_response.state_supervision_violation_response_decision_type_entry_ids \
+                            'state_supervision_violation_response_decision_entry_id',
+                            state_supervision_violation_response_decision_entry_map)
+                        proto_response.state_supervision_violation_response_decision_entry_ids \
                             .append(proto_decision_type.
-                                    state_supervision_violation_response_decision_type_entry_id)
+                                    state_supervision_violation_response_decision_entry_id)
 
                     for agent in response.decision_agents:
                         proto_decision_agent = _populate_proto(
@@ -765,15 +765,15 @@ def convert_proto_to_ingest_info(
              in proto.state_supervision_violation_responses)
 
     # pylint: disable=line-too-long
-    state_supervision_violation_response_decision_type_entry_map: \
+    state_supervision_violation_response_decision_entry_map: \
         Dict[str,
-             ingest_info.StateSupervisionViolationResponseDecisionTypeEntry] = \
+             ingest_info.StateSupervisionViolationResponseDecisionEntry] = \
         dict(_proto_to_py(
             decision_type,
-            ingest_info.StateSupervisionViolationResponseDecisionTypeEntry,
-            'state_supervision_violation_response_decision_type_entry_id')
+            ingest_info.StateSupervisionViolationResponseDecisionEntry,
+            'state_supervision_violation_response_decision_entry_id')
              for decision_type
-             in proto.state_supervision_violation_response_decision_type_entries)
+             in proto.state_supervision_violation_response_decision_entries)
 
     state_agent_map: Dict[str, ingest_info.StateAgent] = \
         dict(_proto_to_py(agent, ingest_info.StateAgent, 'state_agent_id')
@@ -871,9 +871,9 @@ def convert_proto_to_ingest_info(
         violation_response = state_supervision_violation_response_map[
             proto_response.state_supervision_violation_response_id]
         violation_response.state_supervision_violation_response_decisions = \
-            [state_supervision_violation_response_decision_type_entry_map[proto_id]
+            [state_supervision_violation_response_decision_entry_map[proto_id]
              for proto_id
-             in proto_response.state_supervision_violation_response_decision_type_entry_ids]
+             in proto_response.state_supervision_violation_response_decision_entry_ids]
         violation_response.decision_agents = \
             [state_agent_map[proto_id] for proto_id
              in proto_response.decision_agent_ids]

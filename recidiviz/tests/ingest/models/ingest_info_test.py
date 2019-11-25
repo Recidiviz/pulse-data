@@ -122,7 +122,7 @@ class TestIngestInfo(unittest.TestCase):
         supervision_violation_response_fields_ignore = \
             ['decision_agent_ids',
              'decision_agents',
-             'state_supervision_violation_response_decision_type_entry_ids',
+             'state_supervision_violation_response_decision_entry_ids',
              'state_supervision_violation_response_decisions']
         program_assignment_fields_ignore = \
             ['referring_agent', 'referring_agent_id']
