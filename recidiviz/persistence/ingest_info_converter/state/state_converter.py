@@ -37,7 +37,7 @@ from recidiviz.persistence.ingest_info_converter.state.entity_helpers import \
     state_incarceration_incident_outcome, state_program_assignment, \
     state_supervision_violation_type_entry, \
     state_supervision_violated_condition_entry, \
-    state_supervision_violation_response_decision_type_entry
+    state_supervision_violation_response_decision_entry
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import fn
 
 
@@ -116,11 +116,11 @@ class StateConverter(BaseConverter[entities.StatePerson]):
             in ingest_info.state_supervision_violation_responses
         }
 
-        self.violation_response_decision_type_entries = {
-            svrdte.state_supervision_violation_response_decision_type_entry_id:
+        self.violation_response_decision_entries = {
+            svrdte.state_supervision_violation_response_decision_entry_id:
             svrdte for svrdte
             # pylint: disable=line-too-long
-            in ingest_info.state_supervision_violation_response_decision_type_entries
+            in ingest_info.state_supervision_violation_response_decision_entries
         }
 
     def _is_complete(self) -> bool:
@@ -512,13 +512,13 @@ class StateConverter(BaseConverter[entities.StatePerson]):
             converted_agents
 
         converted_decisions = [
-            state_supervision_violation_response_decision_type_entry.convert(
-                self.violation_response_decision_type_entries[
+            state_supervision_violation_response_decision_entry.convert(
+                self.violation_response_decision_entries[
                     condition_entry_id],
                 self.metadata)
             for condition_entry_id in
             ingest_supervision_violation_response.
-            state_supervision_violation_response_decision_type_entry_ids
+            state_supervision_violation_response_decision_entry_ids
         ]
         supervision_violation_response_builder.\
             supervision_violation_response_decisions = converted_decisions

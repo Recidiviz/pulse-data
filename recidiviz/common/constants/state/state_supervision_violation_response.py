@@ -43,12 +43,18 @@ class StateSupervisionViolationResponseDecision(EntityEnum,
     CONTINUANCE = \
         state_enum_strings.\
         state_supervision_violation_response_decision_continuance
+    DELAYED_ACTION = \
+        state_enum_strings.\
+        state_supervision_violation_response_decision_delayed_action
     EXTENSION = \
         state_enum_strings.\
         state_supervision_violation_response_decision_extension
     REVOCATION = \
         state_enum_strings.\
         state_supervision_violation_response_decision_revocation
+    SERVICE_TERMINATION = \
+        state_enum_strings.\
+        state_supervision_violation_response_decision_service_termination
     SUSPENSION = \
         state_enum_strings.\
         state_supervision_violation_response_decision_suspension

@@ -116,8 +116,8 @@ def test_get_all_database_entity_classes():
         'StateSupervisionViolationTypeEntryHistory',
         'StateSupervisionViolationResponse',
         'StateSupervisionViolationResponseHistory',
-        'StateSupervisionViolationResponseDecisionTypeEntry',
-        'StateSupervisionViolationResponseDecisionTypeEntryHistory',
+        'StateSupervisionViolationResponseDecisionEntry',
+        'StateSupervisionViolationResponseDecisionEntryHistory',
     ]
 
     expected_qualified_names = \
@@ -224,8 +224,8 @@ def test_get_all_table_classes():
         'state_supervision_violation_type_entry_history',
         'state_supervision_violation_response',
         'state_supervision_violation_response_history',
-        'state_supervision_violation_response_decision_type_entry',
-        'state_supervision_violation_response_decision_type_entry_history',
+        'state_supervision_violation_response_decision_entry',
+        'state_supervision_violation_response_decision_entry_history',
         'state_charge_fine_association',
         'state_charge_incarceration_sentence_association',
         'state_charge_supervision_sentence_association',
@@ -288,7 +288,7 @@ def test_get_non_history_state_database_entities():
         'StateSupervisionViolation',
         'StateSupervisionViolationTypeEntry',
         'StateSupervisionViolationResponse',
-        'StateSupervisionViolationResponseDecisionTypeEntry',
+        'StateSupervisionViolationResponseDecisionEntry',
     ]
 
     expected_database_entity_names = _prefix_module_name(

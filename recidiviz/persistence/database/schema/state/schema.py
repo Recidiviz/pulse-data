@@ -297,11 +297,14 @@ state_supervision_violation_response_type = Enum(
     state_supervision_violation_response_type_permanent_decision,
     name='state_supervision_violation_response_type')
 
+# pylint: disable=line-too-long
 state_supervision_violation_response_decision = Enum(
     state_enum_strings.
     state_supervision_violation_response_decision_continuance,
+    state_enum_strings.state_supervision_violation_response_decision_delayed_action,
     state_enum_strings.state_supervision_violation_response_decision_extension,
     state_enum_strings.state_supervision_violation_response_decision_revocation,
+    state_enum_strings.state_supervision_violation_response_decision_service_termination,
     state_enum_strings.state_supervision_violation_response_decision_suspension,
     name='state_supervision_violation_response_decision')
 
@@ -1834,19 +1837,19 @@ class StateSupervisionViolationHistory(StateBase,
         nullable=False, index=True)
 
 
-# StateSupervisionViolationResponseDecisionTypeEntry
+# StateSupervisionViolationResponseDecisionEntry
 
-class _StateSupervisionViolationResponseDecisionTypeEntrySharedColumns(
+class _StateSupervisionViolationResponseDecisionEntrySharedColumns(
         _ReferencesStatePersonSharedColumns):
     """A mixin which defines all columns common to
-    StateSupervisionViolationResponseDecisionTypeEntry and
-    StateSupervisionViolationResponseDecisionTypeEntryHistory
+    StateSupervisionViolationResponseDecisionEntry and
+    StateSupervisionViolationResponseDecisionEntryHistory
     """
 
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         # pylint:disable=line-too-long
-        if cls is _StateSupervisionViolationResponseDecisionTypeEntrySharedColumns:
+        if cls is _StateSupervisionViolationResponseDecisionEntrySharedColumns:
             raise Exception(f'[{cls}] cannot be instantiated')
         return super().__new__(cls)
 
@@ -1866,39 +1869,39 @@ class _StateSupervisionViolationResponseDecisionTypeEntrySharedColumns(
             nullable=True)
 
 
-class StateSupervisionViolationResponseDecisionTypeEntry(
+class StateSupervisionViolationResponseDecisionEntry(
         StateBase,
-        _StateSupervisionViolationResponseDecisionTypeEntrySharedColumns):
-    """Represents a StateSupervisionViolationResponseDecisionTypeEntry in the
+        _StateSupervisionViolationResponseDecisionEntrySharedColumns):
+    """Represents a StateSupervisionViolationResponseDecisionEntry in the
     SQL schema.
     """
-    __tablename__ = 'state_supervision_violation_response_decision_type_entry'
+    __tablename__ = 'state_supervision_violation_response_decision_entry'
 
-    supervision_violation_response_decision_type_entry_id = \
+    supervision_violation_response_decision_entry_id = \
         Column(Integer, primary_key=True)
 
     person = relationship('StatePerson', uselist=False)
 
 
-class StateSupervisionViolationResponseDecisionTypeEntryHistory(
+class StateSupervisionViolationResponseDecisionEntryHistory(
         StateBase,
-        _StateSupervisionViolationResponseDecisionTypeEntrySharedColumns,
+        _StateSupervisionViolationResponseDecisionEntrySharedColumns,
         HistoryTableSharedColumns):
     """Represents the historical state of a
-    StateSupervisionViolationResponseDecisionTypeEntry.
+    StateSupervisionViolationResponseDecisionEntry.
     """
     __tablename__ = \
-        'state_supervision_violation_response_decision_type_entry_history'
+        'state_supervision_violation_response_decision_entry_history'
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.
-    supervision_violation_response_decision_type_entry_history_id = Column(
+    supervision_violation_response_decision_entry_history_id = Column(
         Integer, primary_key=True)
 
-    supervision_violation_response_decision_type_entry_id = Column(
+    supervision_violation_response_decision_entry_id = Column(
         Integer, ForeignKey(
-            'state_supervision_violation_response_decision_type_entry.'
-            'supervision_violation_response_decision_type_entry_id'),
+            'state_supervision_violation_response_decision_entry.'
+            'supervision_violation_response_decision_entry_id'),
         nullable=False, index=True)
 
 
@@ -1949,7 +1952,7 @@ class StateSupervisionViolationResponse(
 
     person = relationship('StatePerson', uselist=False)
     supervision_violation_response_decisions = relationship(
-        'StateSupervisionViolationResponseDecisionTypeEntry',
+        'StateSupervisionViolationResponseDecisionEntry',
         backref='supervision_violation_response',
         lazy='selectin')
     decision_agents = relationship(
