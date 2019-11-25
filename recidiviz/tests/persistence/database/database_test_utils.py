@@ -34,8 +34,8 @@ def generate_test_supervision_violation_response(person_id) -> \
         state_code='us_ca',
         person_id=person_id,
         supervision_violation_response_decisions=[
-            state_schema.StateSupervisionViolationResponseDecisionTypeEntry(
-                supervision_violation_response_decision_type_entry_id=123,
+            state_schema.StateSupervisionViolationResponseDecisionEntry(
+                supervision_violation_response_decision_entry_id=123,
                 state_code='us_ca',
                 decision=
                 StateSupervisionViolationResponseDecision.

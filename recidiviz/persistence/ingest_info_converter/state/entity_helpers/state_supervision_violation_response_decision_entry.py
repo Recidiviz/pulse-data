@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Converts an ingest_info proto
-StateSupervisionViolationResponseDecisionTypeEntry to a persistence entity.
+StateSupervisionViolationResponseDecisionEntry to a persistence entity.
 """
 
 from recidiviz.common.constants.state.state_supervision_violation_response \
@@ -24,7 +24,7 @@ from recidiviz.common.constants.state.state_supervision_violation_response \
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.common.str_field_utils import normalize
 from recidiviz.ingest.models.ingest_info_pb2 import \
-    StateSupervisionViolationResponseDecisionTypeEntry
+    StateSupervisionViolationResponseDecisionEntry
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import \
     fn, parse_region_code_with_override
@@ -33,13 +33,13 @@ from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import \
 
 
 def convert(
-        proto: StateSupervisionViolationResponseDecisionTypeEntry,
+        proto: StateSupervisionViolationResponseDecisionEntry,
         metadata: IngestMetadata
-) -> entities.StateSupervisionViolationResponseDecisionTypeEntry:
+) -> entities.StateSupervisionViolationResponseDecisionEntry:
     """Converts an ingest_info proto
-    StateSupervisionViolationResponseDecisionTypeEntry to a persistence entity.
+    StateSupervisionViolationResponseDecisionEntry to a persistence entity.
     """
-    new = entities.StateSupervisionViolationResponseDecisionTypeEntry.builder()
+    new = entities.StateSupervisionViolationResponseDecisionEntry.builder()
 
     enum_fields = {
         'decision': StateSupervisionViolationResponseDecision,

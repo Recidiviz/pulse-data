@@ -36,8 +36,11 @@ from recidiviz.common.constants.state.state_parole_decision import \
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_period import \
     StateSupervisionPeriodStatus, StateSupervisionPeriodAdmissionReason
+from recidiviz.common.constants.state.state_supervision_violation import \
+    StateSupervisionViolationType
 from recidiviz.common.constants.state.state_supervision_violation_response \
-    import StateSupervisionViolationResponseDecision
+    import StateSupervisionViolationResponseDecision, \
+    StateSupervisionViolationResponseRevocationType
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state.entities import StatePersonAlias, \
     StatePersonExternalId, StatePersonRace, StatePersonEthnicity, StatePerson, \
@@ -55,7 +58,10 @@ from recidiviz.tests.persistence.database.schema.state.schema_test_utils \
     generate_incarceration_incident, generate_parole_decision, \
     generate_incarceration_period, generate_supervision_violation_response, \
     generate_supervision_violation, generate_supervision_period, \
-    generate_supervision_sentence
+    generate_supervision_sentence, \
+    generate_supervision_violation_response_decision_entry, \
+    generate_supervision_violation_type_entry, \
+    generate_supervision_violated_condition_entry
 from recidiviz.tests.persistence.entity_matching.state.\
     base_state_entity_matcher_test import BaseStateEntityMatcherTest
 
@@ -1082,6 +1088,16 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
                 external_id=_EXTERNAL_ID, state_code=_STATE_CODE,
                 county_code='county_code', charges=[db_charge_2, db_charge_3],
                 incarceration_periods=[db_incarceration_period])
+        db_supervision_violation_response_decision = \
+            generate_supervision_violation_response_decision_entry(
+                person=db_person,
+                supervision_violation_response_decision_entry_id=_ID,
+                decision=StateSupervisionViolationResponseDecision.
+                REVOCATION.value,
+                revocation_type=
+                StateSupervisionViolationResponseRevocationType.
+                TREATMENT_IN_PRISON.value
+            )
         db_supervision_violation_response = \
             generate_supervision_violation_response(
                 person=db_person,
@@ -1089,11 +1105,28 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
                 external_id=_EXTERNAL_ID,
                 decision=
                 StateSupervisionViolationResponseDecision.CONTINUANCE.value,
+                supervision_violation_response_decisions=[
+                    db_supervision_violation_response_decision],
                 decision_agents=[db_agent_term])
+        db_supervision_violation_type = \
+            generate_supervision_violation_type_entry(
+                person=db_person,
+                supervision_violation_type_entry_id=_ID,
+                violation_type=StateSupervisionViolationType.ABSCONDED.value,
+            )
+        db_supervision_violated_condition = \
+            generate_supervision_violated_condition_entry(
+                person=db_person,
+                supervision_violated_condition_entry_id=_ID,
+                condition='COND'
+            )
         db_supervision_violation = generate_supervision_violation(
             person=db_person,
             supervision_violation_id=_ID, state_code=_STATE_CODE,
             external_id=_EXTERNAL_ID, is_violent=True,
+            supervision_violation_types=[db_supervision_violation_type],
+            supervision_violated_conditions=[
+                db_supervision_violated_condition],
             supervision_violation_responses=[db_supervision_violation_response])
         db_supervision_period = generate_supervision_period(
             person=db_person,
@@ -1182,15 +1215,28 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             incarceration_sentence_id=None,
             county_code='county_code-updated', charges=[charge_2, charge_3],
             incarceration_periods=[incarceration_period])
+        supervision_violation_response_decision = attr.evolve(
+            self.to_entity(db_supervision_violation_response_decision),
+            supervision_violation_response_decision_entry_id=None)
         supervision_violation_response = attr.evolve(
             self.to_entity(db_supervision_violation_response),
             supervision_violation_response_id=None,
             decision=StateSupervisionViolationResponseDecision.EXTENSION,
-            decision_agents=[agent_term])
+            decision_agents=[agent_term],
+            supervision_violation_response_decisions=[
+                supervision_violation_response_decision])
+        supervision_violation_type = attr.evolve(
+            self.to_entity(db_supervision_violation_type),
+            supervision_violation_type_entry_id=None)
+        supervision_violated_condition = attr.evolve(
+            self.to_entity(db_supervision_violated_condition),
+            supervision_violated_condition_entry_id=None)
         supervision_violation = attr.evolve(
             self.to_entity(db_supervision_violation),
             supervision_violation_id=None, is_violent=False,
-            supervision_violation_responses=[supervision_violation_response])
+            supervision_violation_responses=[supervision_violation_response],
+            supervision_violated_conditions=[supervision_violated_condition],
+            supervision_violation_types=[supervision_violation_type])
         supervision_period = attr.evolve(
             self.to_entity(db_supervision_period),
             supervision_period_id=None,
@@ -1250,14 +1296,30 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             incarceration_sentence, incarceration_sentence_id=_ID,
             charges=[expected_charge_2, expected_charge_3],
             incarceration_periods=[expected_incarceration_period])
+        expected_supervision_violation_response_decision = attr.evolve(
+            supervision_violation_response_decision,
+            supervision_violation_response_decision_entry_id=_ID)
         expected_supervision_violation_response = attr.evolve(
             supervision_violation_response,
             supervision_violation_response_id=_ID,
-            decision_agents=[expected_agent_term])
+            decision_agents=[expected_agent_term],
+            supervision_violation_response_decisions=[
+                expected_supervision_violation_response_decision])
+        expected_supervision_violation_type = attr.evolve(
+            supervision_violation_type,
+            supervision_violation_type_entry_id=_ID)
+        expected_supervision_violated_condition = attr.evolve(
+            supervision_violated_condition,
+            supervision_violated_condition_entry_id=_ID)
         expected_supervision_violation = attr.evolve(
             supervision_violation, supervision_violation_id=_ID,
             supervision_violation_responses=[
-                expected_supervision_violation_response])
+                expected_supervision_violation_response],
+            supervision_violated_conditions=[
+                expected_supervision_violated_condition],
+            supervision_violation_types=[
+                expected_supervision_violation_type
+            ])
         expected_supervision_period = attr.evolve(
             supervision_period, supervision_period_id=_ID,
             assessments=[expected_assessment_2],
