@@ -936,9 +936,9 @@ class StateSupervisionViolation(ExternalIdEntity,
 
 
 @attr.s(eq=False)
-class StateSupervisionViolationResponseDecisionTypeEntry(Entity,
-                                                         BuildableAttr,
-                                                         DefaultableAttr):
+class StateSupervisionViolationResponseDecisionEntry(Entity,
+                                                     BuildableAttr,
+                                                     DefaultableAttr):
     """Models the type of decision resulting from a response to a
     StateSupervisionViolation.
     """
@@ -957,7 +957,7 @@ class StateSupervisionViolationResponseDecisionTypeEntry(Entity,
 
     # Primary key - Only optional when hydrated in the data converter, before
     # we have written this entity to the persistence layer
-    supervision_violation_response_decision_type_entry_id: Optional[int] = \
+    supervision_violation_response_decision_entry_id: Optional[int] = \
         attr.ib(default=None)
 
     # Cross-entity relationships
@@ -1016,7 +1016,7 @@ class StateSupervisionViolationResponse(ExternalIdEntity,
     supervision_violation: Optional['StateSupervisionViolation'] = \
         attr.ib(default=None)
     supervision_violation_response_decisions: \
-        List['StateSupervisionViolationResponseDecisionTypeEntry'] = \
+        List['StateSupervisionViolationResponseDecisionEntry'] = \
         attr.ib(factory=list)
     decision_agents: List['StateAgent'] = attr.ib(factory=list)
 
