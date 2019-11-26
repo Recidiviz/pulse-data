@@ -33,7 +33,7 @@ from recidiviz.tests.persistence.entity_matching.state. \
     base_state_entity_matcher_test import BaseStateEntityMatcherTest
 
 _EXTERNAL_ID = 'EXTERNAL_ID'
-_EXTERNAL_ID_WITH_SEO = 'EXTERNAL_ID-SEO'
+_EXTERNAL_ID_WITH_SUFFIX = 'EXTERNAL_ID-SEO-FSO'
 _FULL_NAME = 'FULL_NAME'
 _ID = 1
 _ID_TYPE = 'ID_TYPE'
@@ -82,7 +82,7 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
         supervision_violation = attr.evolve(
             self.to_entity(db_supervision_violation),
             supervision_violation_id=None,
-            external_id=_EXTERNAL_ID_WITH_SEO)
+            external_id=_EXTERNAL_ID_WITH_SUFFIX)
         placeholder_supervision_period = attr.evolve(
             self.to_entity(db_placeholder_supervision_period),
             supervision_period_id=None,
@@ -144,7 +144,7 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
     def test_removeSeosFromSupervisionViolation(self):
         supervision_violation = StateSupervisionViolation.new_with_defaults(
             state_code=_US_MO,
-            external_id=_EXTERNAL_ID_WITH_SEO)
+            external_id=_EXTERNAL_ID_WITH_SUFFIX)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code=_US_MO,
             external_id=_EXTERNAL_ID,
@@ -157,7 +157,7 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
             supervision_periods=[supervision_period])
         sentence_group = StateSentenceGroup.new_with_defaults(
             state_code=_US_MO,
-            external_id=_EXTERNAL_ID_WITH_SEO,
+            external_id=_EXTERNAL_ID_WITH_SUFFIX,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             incarceration_sentences=[],
             supervision_sentences=[supervision_sentence])
