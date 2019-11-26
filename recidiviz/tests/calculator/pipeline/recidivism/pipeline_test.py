@@ -31,14 +31,18 @@ from datetime import date
 from dateutil.relativedelta import relativedelta
 from enum import Enum
 
-from recidiviz.calculator.recidivism import pipeline
-from recidiviz.calculator.recidivism import calculator
-from recidiviz.calculator.recidivism.metrics import \
+from recidiviz.calculator.pipeline.recidivism import calculator, pipeline
+from recidiviz.calculator.pipeline.recidivism.metrics import \
     ReincarcerationRecidivismMetric,\
-    ReincarcerationRecidivismRateMetric, RecidivismMethodologyType
-from recidiviz.calculator.recidivism.pipeline import \
+    ReincarcerationRecidivismRateMetric
+from recidiviz.calculator.pipeline.recidivism.metrics import \
+    ReincarcerationRecidivismMetricType as MetricType
+from recidiviz.calculator.pipeline.utils.metric_utils import \
+    MetricMethodologyType
+from recidiviz.calculator.pipeline.utils import extractor_utils
+from recidiviz.calculator.pipeline.recidivism.pipeline import \
     json_serializable_metric_key
-from recidiviz.calculator.recidivism.release_event import \
+from recidiviz.calculator.pipeline.recidivism.release_event import \
     ReincarcerationReturnType, RecidivismReleaseEvent, \
     NonRecidivismReleaseEvent
 from recidiviz.common.constants.state.state_incarceration_period import \
@@ -46,13 +50,12 @@ from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodReleaseReason, \
     StateIncarcerationFacilitySecurityLevel
 from recidiviz.persistence.database.schema.state import schema
-from recidiviz.persistence.entity.state.entities import StatePerson, \
+from recidiviz.persistence.entity.state.entities import \
     StateIncarcerationPeriod, Gender, Race, ResidencyStatus, Ethnicity, \
     StateSupervisionViolationResponse
 from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.tests.calculator.calculator_test_utils import \
     normalized_database_base_dict, normalized_database_base_dict_list
-from recidiviz.calculator.utils import extractor_utils
 from recidiviz.tests.persistence.database import database_test_utils
 
 
@@ -171,8 +174,8 @@ class TestRecidivismPipeline(unittest.TestCase):
             'stay_length_bucket': False
         }
 
-        methodologies = [RecidivismMethodologyType.EVENT,
-                         RecidivismMethodologyType.PERSON]
+        methodologies = [MetricMethodologyType.EVENT,
+                         MetricMethodologyType.PERSON]
 
         data_dict = {schema.StatePerson.__tablename__: persons_data,
                      schema.StatePersonRace.__tablename__: races_data,
@@ -446,8 +449,8 @@ class TestRecidivismPipeline(unittest.TestCase):
             'stay_length_bucket': False
         }
 
-        methodologies = [RecidivismMethodologyType.EVENT,
-                         RecidivismMethodologyType.PERSON]
+        methodologies = [MetricMethodologyType.EVENT,
+                         MetricMethodologyType.PERSON]
 
         data_dict = {schema.StatePerson.__tablename__: persons_data,
                      schema.StateIncarcerationPeriod.__tablename__:
@@ -1033,9 +1036,9 @@ class TestProduceReincarcerationRecidivismRateMetric(unittest.TestCase):
          pipeline."""
         metric_key_dict = {'stay_length_bucket': '36-48', 'gender': Gender.MALE,
                            'release_cohort': 2014,
-                           'methodology': RecidivismMethodologyType.PERSON,
+                           'methodology': MetricMethodologyType.PERSON,
                            'follow_up_period': 1,
-                           'metric_type': 'rate', 'state_code': 'CA'}
+                           'metric_type': MetricType.RATE, 'state_code': 'CA'}
 
         metric_key = json.dumps(json_serializable_metric_key(metric_key_dict),
                                 sort_keys=True)
@@ -1073,9 +1076,9 @@ class TestProduceReincarcerationRecidivismRateMetric(unittest.TestCase):
 
         metric_key_dict = {'stay_length_bucket': '36-48', 'gender': Gender.MALE,
                            'release_cohort': 2014,
-                           'methodology': RecidivismMethodologyType.PERSON,
+                           'methodology': MetricMethodologyType.PERSON,
                            'follow_up_period': 1,
-                           'metric_type': 'rate', 'state_code': 'CA'}
+                           'metric_type': MetricType.RATE, 'state_code': 'CA'}
 
         metric_key = json.dumps(json_serializable_metric_key(metric_key_dict),
                                 sort_keys=True)
@@ -1110,8 +1113,9 @@ class TestProduceReincarcerationRecidivismRateMetric(unittest.TestCase):
         metric_key_dict = {'stay_length_bucket': '36-48', 'gender': Gender.MALE,
                            'start_date': date(2010, 1, 1),
                            'end_date': date(2010, 12, 31),
-                           'methodology': RecidivismMethodologyType.PERSON,
-                           'metric_type': 'liberty', 'state_code': 'CA'}
+                           'methodology': MetricMethodologyType.PERSON,
+                           'metric_type': MetricType.LIBERTY,
+                           'state_code': 'CA'}
 
         metric_key = json.dumps(json_serializable_metric_key(metric_key_dict),
                                 sort_keys=True)
@@ -1147,8 +1151,9 @@ class TestProduceReincarcerationRecidivismRateMetric(unittest.TestCase):
         metric_key_dict = {'stay_length_bucket': '36-48', 'gender': Gender.MALE,
                            'start_date': date(2010, 1, 1),
                            'end_date': date(2010, 12, 31),
-                           'methodology': RecidivismMethodologyType.PERSON,
-                           'metric_type': 'liberty', 'state_code': 'CA'}
+                           'methodology': MetricMethodologyType.PERSON,
+                           'metric_type': MetricType.LIBERTY,
+                           'state_code': 'CA'}
 
         metric_key = json.dumps(json_serializable_metric_key(metric_key_dict),
                                 sort_keys=True)
@@ -1218,10 +1223,10 @@ class TestProduceReincarcerationRecidivismCountMetric(unittest.TestCase):
         pipeline."""
 
         metric_key_dict = {'stay_length_bucket': '36-48', 'gender': Gender.MALE,
-                           'methodology': RecidivismMethodologyType.PERSON,
+                           'methodology': MetricMethodologyType.PERSON,
                            'start_date': date(2010, 1, 1),
                            'end_date': date(2010, 12, 31),
-                           'metric_type': 'count', 'state_code': 'CA'}
+                           'metric_type': MetricType.COUNT, 'state_code': 'CA'}
 
         metric_key = json.dumps(json_serializable_metric_key(metric_key_dict),
                                 sort_keys=True)
@@ -1253,10 +1258,10 @@ class TestProduceReincarcerationRecidivismCountMetric(unittest.TestCase):
         pipeline when the number of returns is 0."""
 
         metric_key_dict = {'stay_length_bucket': '36-48', 'gender': Gender.MALE,
-                           'methodology': RecidivismMethodologyType.PERSON,
+                           'methodology': MetricMethodologyType.PERSON,
                            'start_date': date(2010, 1, 1),
                            'end_date': date(2010, 12, 31),
-                           'metric_type': 'count', 'state_code': 'CA'}
+                           'metric_type': MetricType.COUNT, 'state_code': 'CA'}
 
         metric_key = json.dumps(json_serializable_metric_key(metric_key_dict),
                                 sort_keys=True)
@@ -1320,7 +1325,7 @@ class TestFilterMetrics(unittest.TestCase):
     def testFilterMetrics_ExcludePerson(self):
         """Tests the FilterMetrics DoFn when the Person-based metrics should
          be excluded from the output."""
-        methodologies = [RecidivismMethodologyType.EVENT]
+        methodologies = [MetricMethodologyType.EVENT]
 
         filter_metrics_kwargs = {'methodologies': methodologies}
 
@@ -1342,7 +1347,7 @@ class TestFilterMetrics(unittest.TestCase):
         """Tests the FilterMetrics DoFn when the Event-based metrics should
          be excluded from the output."""
 
-        methodologies = [RecidivismMethodologyType.PERSON]
+        methodologies = [MetricMethodologyType.PERSON]
 
         filter_metrics_kwargs = {'methodologies': methodologies}
 
@@ -1426,49 +1431,49 @@ class MetricGroup:
     dimension filtering."""
     recidivism_metric_with_age = ReincarcerationRecidivismRateMetric(
         job_id='12345', state_code='CA', release_cohort=2015,
-        follow_up_period=1, methodology=RecidivismMethodologyType.PERSON,
+        follow_up_period=1, methodology=MetricMethodologyType.PERSON,
         age_bucket='25-29', total_releases=1000, recidivated_releases=900,
         recidivism_rate=0.9)
 
     recidivism_metric_with_gender = ReincarcerationRecidivismRateMetric(
         job_id='12345', state_code='CA', release_cohort=2015,
-        follow_up_period=1, methodology=RecidivismMethodologyType.PERSON,
+        follow_up_period=1, methodology=MetricMethodologyType.PERSON,
         gender=Gender.MALE, total_releases=1000, recidivated_releases=875,
         recidivism_rate=0.875)
 
     recidivism_metric_with_race = ReincarcerationRecidivismRateMetric(
         job_id='12345', state_code='CA', release_cohort=2015,
-        follow_up_period=1, methodology=RecidivismMethodologyType.PERSON,
+        follow_up_period=1, methodology=MetricMethodologyType.PERSON,
         race=Race.BLACK, total_releases=1000, recidivated_releases=875,
         recidivism_rate=0.875)
 
     recidivism_metric_with_ethnicity = ReincarcerationRecidivismRateMetric(
         job_id='12345', state_code='CA', release_cohort=2015,
-        follow_up_period=1, methodology=RecidivismMethodologyType.PERSON,
+        follow_up_period=1, methodology=MetricMethodologyType.PERSON,
         ethnicity=Ethnicity.HISPANIC, total_releases=1000,
         recidivated_releases=875, recidivism_rate=0.875)
 
     recidivism_metric_with_release_facility = \
         ReincarcerationRecidivismRateMetric(
             job_id='12345', state_code='CA', release_cohort=2015,
-            follow_up_period=1, methodology=RecidivismMethodologyType.PERSON,
+            follow_up_period=1, methodology=MetricMethodologyType.PERSON,
             release_facility='Red',
             total_releases=1000, recidivated_releases=300, recidivism_rate=0.30)
 
     recidivism_metric_with_stay_length = ReincarcerationRecidivismRateMetric(
         job_id='12345', state_code='CA', release_cohort=2015,
-        follow_up_period=1, methodology=RecidivismMethodologyType.PERSON,
+        follow_up_period=1, methodology=MetricMethodologyType.PERSON,
         stay_length_bucket='12-24', total_releases=1000,
         recidivated_releases=300, recidivism_rate=0.30)
 
     recidivism_metric_without_dimensions = ReincarcerationRecidivismRateMetric(
         job_id='12345', state_code='CA', release_cohort=2015,
-        follow_up_period=1, methodology=RecidivismMethodologyType.PERSON,
+        follow_up_period=1, methodology=MetricMethodologyType.PERSON,
         total_releases=1500, recidivated_releases=1200, recidivism_rate=0.80)
 
     recidivism_metric_event_based = ReincarcerationRecidivismRateMetric(
         job_id='12345', state_code='CA', release_cohort=2015,
-        follow_up_period=1, methodology=RecidivismMethodologyType.EVENT,
+        follow_up_period=1, methodology=MetricMethodologyType.EVENT,
         total_releases=1500, recidivated_releases=1200, recidivism_rate=0.80)
 
     @staticmethod
@@ -1516,11 +1521,12 @@ class AssertMatchers:
 
                 combination_dict = json.loads(combination)
 
-                if combination_dict.get('metric_type') == 'rate':
+                if combination_dict.get('metric_type') == MetricType.RATE.value:
                     release_cohort_year = combination_dict['release_cohort']
                     actual_combination_counts[release_cohort_year] = \
                         actual_combination_counts[release_cohort_year] + 1
-                elif combination_dict.get('metric_type') == 'count':
+                elif combination_dict.get('metric_type') == \
+                        MetricType.COUNT.value:
                     actual_combination_counts['counts'] = \
                         actual_combination_counts['counts'] + 1
 

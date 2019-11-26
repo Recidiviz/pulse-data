@@ -19,24 +19,27 @@
 
 """Tests for recidivism/calculator.py."""
 import unittest
-import datetime
 from datetime import date
-from typing import Dict, Optional, List
+from typing import Dict, List
 
 from dateutil.relativedelta import relativedelta
 from more_itertools import one
 
-from recidiviz.calculator.recidivism import calculator
-from recidiviz.calculator.recidivism.calculator import FOLLOW_UP_PERIODS
-from recidiviz.calculator.recidivism.release_event import ReleaseEvent, \
-    RecidivismReleaseEvent, NonRecidivismReleaseEvent
-from recidiviz.calculator.recidivism.metrics import RecidivismMethodologyType
-from recidiviz.calculator.recidivism.release_event import \
+from recidiviz.calculator.pipeline.recidivism import calculator
+from recidiviz.calculator.pipeline.recidivism.calculator \
+    import FOLLOW_UP_PERIODS
+from recidiviz.calculator.pipeline.recidivism.release_event import \
+    ReleaseEvent, RecidivismReleaseEvent, NonRecidivismReleaseEvent
+from recidiviz.calculator.pipeline.utils.metric_utils import \
+    MetricMethodologyType
+from recidiviz.calculator.pipeline.recidivism.release_event import \
     ReincarcerationReturnType, ReincarcerationReturnFromSupervisionType
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
 from recidiviz.persistence.entity.state.entities import StatePerson, Gender,\
     StatePersonRace, Race, StatePersonEthnicity, Ethnicity
+from recidiviz.calculator.pipeline.recidivism.metrics import \
+    ReincarcerationRecidivismMetricType as MetricType
 
 
 def test_reincarcerations():
@@ -274,59 +277,6 @@ def test_relevant_follow_up_periods():
         date(2018, 2, 5), today, calculator.FOLLOW_UP_PERIODS) == []
 
 
-def test_age_at_date_earlier_month():
-    birthdate = date(1989, 6, 17)
-    check_date = date(2014, 4, 15)
-    person = StatePerson.new_with_defaults(birthdate=birthdate)
-
-    assert calculator.age_at_date(person, check_date) == 24
-
-
-def test_age_at_date_same_month_earlier_date():
-    birthdate = date(1989, 6, 17)
-    check_date = date(2014, 6, 16)
-    person = StatePerson.new_with_defaults(birthdate=birthdate)
-
-    assert calculator.age_at_date(person, check_date) == 24
-
-
-def test_age_at_date_same_month_same_date():
-    birthdate = date(1989, 6, 17)
-    check_date = date(2014, 6, 17)
-    person = StatePerson.new_with_defaults(birthdate=birthdate)
-
-    assert calculator.age_at_date(person, check_date) == 25
-
-
-def test_age_at_date_same_month_later_date():
-    birthdate = date(1989, 6, 17)
-    check_date = date(2014, 6, 18)
-    person = StatePerson.new_with_defaults(birthdate=birthdate)
-
-    assert calculator.age_at_date(person, check_date) == 25
-
-
-def test_age_at_date_later_month():
-    birthdate = date(1989, 6, 17)
-    check_date = date(2014, 7, 11)
-    person = StatePerson.new_with_defaults(birthdate=birthdate)
-
-    assert calculator.age_at_date(person, check_date) == 25
-
-
-def test_age_at_date_birthdate_unknown():
-    assert calculator.age_at_date(
-        StatePerson.new_with_defaults(), datetime.datetime.today()) is None
-
-
-def test_age_bucket():
-    assert calculator.age_bucket(24) == '<25'
-    assert calculator.age_bucket(27) == '25-29'
-    assert calculator.age_bucket(30) == '30-34'
-    assert calculator.age_bucket(39) == '35-39'
-    assert calculator.age_bucket(40) == '40<'
-
-
 def test_stay_length_from_event_earlier_month_and_date():
     original_admission_date = date(2013, 6, 17)
     release_date = date(2014, 4, 15)
@@ -413,318 +363,21 @@ def test_stay_length_bucket():
     assert calculator.stay_length_bucket(130) == '120<'
 
 
-def test_for_characteristics_races_ethnicities_one_race():
-    race_white = StatePersonRace.new_with_defaults(state_code='CA',
-                                                   race=Race.WHITE)
-
-    characteristics = {'gender': 'female', 'age': '<25'}
-
-    combinations = calculator.for_characteristics_races_ethnicities(
-        [race_white], [], characteristics)
-
-    assert combinations == [{},
-                            {'gender': 'female'},
-                            {'age': '<25'},
-                            {'gender': 'female', 'age': '<25'},
-                            {'race': Race.WHITE},
-                            {'race': Race.WHITE, 'gender': 'female'},
-                            {'age': '<25', 'race': Race.WHITE},
-                            {'age': '<25', 'race': Race.WHITE,
-                             'gender': 'female'}]
-
-
-def test_for_characteristics_races_ethnicities_two_races():
-    race_white = StatePersonRace.new_with_defaults(state_code='CA',
-                                                   race=Race.WHITE)
-
-    race_black = StatePersonRace.new_with_defaults(state_code='MT',
-                                                   race=Race.BLACK)
-
-    characteristics = {'gender': 'female', 'age': '<25'}
-
-    combinations = calculator.for_characteristics_races_ethnicities(
-        [race_white, race_black], [], characteristics)
-
-    assert combinations == [{},
-                            {'gender': 'female'},
-                            {'age': '<25'},
-                            {'gender': 'female', 'age': '<25'},
-                            {'race': Race.WHITE},
-                            {'race': Race.WHITE, 'gender': 'female'},
-                            {'age': '<25', 'race': Race.WHITE},
-                            {'age': '<25', 'race': Race.WHITE,
-                             'gender': 'female'},
-                            {'race': Race.BLACK},
-                            {'race': Race.BLACK, 'gender': 'female'},
-                            {'age': '<25', 'race': Race.BLACK},
-                            {'age': '<25', 'race': Race.BLACK,
-                             'gender': 'female'}]
-
-
-def test_for_characteristics_races_ethnicities_one_ethnicity():
-    ethnicity_hispanic = StatePersonEthnicity.new_with_defaults(
-        state_code='CA',
-        ethnicity=Ethnicity.HISPANIC)
-
-    characteristics = {'gender': 'female', 'age': '<25'}
-
-    combinations = calculator.for_characteristics_races_ethnicities(
-        [], [ethnicity_hispanic], characteristics)
-
-    assert combinations == [{},
-                            {'gender': 'female'},
-                            {'age': '<25'},
-                            {'gender': 'female', 'age': '<25'},
-                            {'ethnicity': Ethnicity.HISPANIC},
-                            {'ethnicity': Ethnicity.HISPANIC,
-                             'gender': 'female'},
-                            {'age': '<25', 'ethnicity': Ethnicity.HISPANIC},
-                            {'age': '<25', 'ethnicity': Ethnicity.HISPANIC,
-                             'gender': 'female'}]
-
-
-def test_for_characteristics_races_ethnicities_multiple_ethnicities():
-    ethnicity_hispanic = StatePersonEthnicity.new_with_defaults(
-        state_code='CA',
-        ethnicity=Ethnicity.HISPANIC)
-
-    ethnicity_not_hispanic = StatePersonEthnicity.new_with_defaults(
-        state_code='FL',
-        ethnicity=Ethnicity.NOT_HISPANIC)
-
-    characteristics = {'gender': 'female', 'age': '<25'}
-
-    combinations = calculator.for_characteristics_races_ethnicities(
-        [], [ethnicity_hispanic, ethnicity_not_hispanic], characteristics)
-
-    assert combinations == [{},
-                            {'gender': 'female'},
-                            {'age': '<25'},
-                            {'gender': 'female', 'age': '<25'},
-                            {'ethnicity': Ethnicity.HISPANIC},
-                            {'ethnicity': Ethnicity.HISPANIC,
-                             'gender': 'female'},
-                            {'age': '<25', 'ethnicity': Ethnicity.HISPANIC},
-                            {'age': '<25', 'ethnicity': Ethnicity.HISPANIC,
-                             'gender': 'female'},
-                            {'ethnicity': Ethnicity.NOT_HISPANIC},
-                            {'ethnicity': Ethnicity.NOT_HISPANIC,
-                             'gender': 'female'},
-                            {'age': '<25', 'ethnicity': Ethnicity.NOT_HISPANIC},
-                            {'age': '<25', 'ethnicity': Ethnicity.NOT_HISPANIC,
-                             'gender': 'female'}
-                            ]
-
-
-def test_for_characteristics_races_ethnicities_one_race_one_ethnicity():
-    race_white = StatePersonRace.new_with_defaults(state_code='CA',
-                                                   race=Race.WHITE)
-
-    ethnicity_hispanic = StatePersonEthnicity.new_with_defaults(
-        state_code='CA',
-        ethnicity=Ethnicity.HISPANIC)
-
-    characteristics = {'gender': 'female', 'age': '<25'}
-
-    combinations = calculator.for_characteristics_races_ethnicities(
-        [race_white], [ethnicity_hispanic], characteristics)
-
-    assert combinations == [{},
-                            {'gender': 'female'},
-                            {'age': '<25'},
-                            {'gender': 'female', 'age': '<25'},
-                            {'race': Race.WHITE},
-                            {'race': Race.WHITE, 'gender': 'female'},
-                            {'age': '<25', 'race': Race.WHITE},
-                            {'age': '<25', 'race': Race.WHITE,
-                             'gender': 'female'},
-                            {'ethnicity': Ethnicity.HISPANIC},
-                            {'ethnicity': Ethnicity.HISPANIC,
-                             'gender': 'female'},
-                            {'age': '<25', 'ethnicity': Ethnicity.HISPANIC},
-                            {'age': '<25', 'ethnicity': Ethnicity.HISPANIC,
-                             'gender': 'female'},
-                            {'race': Race.WHITE,
-                             'ethnicity': Ethnicity.HISPANIC},
-                            {'race': Race.WHITE,
-                             'ethnicity': Ethnicity.HISPANIC,
-                             'gender': 'female'},
-                            {'age': '<25', 'race': Race.WHITE,
-                             'ethnicity': Ethnicity.HISPANIC},
-                            {'race': Race.WHITE,
-                             'ethnicity': Ethnicity.HISPANIC,
-                             'age': '<25',
-                             'gender': 'female'},
-                            ]
-
-
-def test_for_characteristics_races_ethnicities_multiple_races_one_ethnicity():
-    race_white = StatePersonRace.new_with_defaults(state_code='CA',
-                                                   race=Race.WHITE)
-
-    race_black = StatePersonRace.new_with_defaults(state_code='CA',
-                                                   race=Race.BLACK)
-
-    ethnicity_hispanic = StatePersonEthnicity.new_with_defaults(
-        state_code='CA',
-        ethnicity=Ethnicity.HISPANIC)
-
-    characteristics = {'age': '<25'}
-
-    combinations = calculator.for_characteristics_races_ethnicities(
-        [race_white, race_black], [ethnicity_hispanic], characteristics)
-
-    assert combinations == [{},
-                            {'age': '<25'},
-                            {'race': Race.WHITE},
-                            {'age': '<25', 'race': Race.WHITE},
-                            {'race': Race.BLACK},
-                            {'age': '<25', 'race': Race.BLACK},
-                            {'ethnicity': Ethnicity.HISPANIC},
-                            {'age': '<25', 'ethnicity': Ethnicity.HISPANIC},
-                            {'race': Race.WHITE,
-                             'ethnicity': Ethnicity.HISPANIC},
-                            {'age': '<25', 'race': Race.WHITE,
-                             'ethnicity': Ethnicity.HISPANIC},
-                            {'race': Race.BLACK,
-                             'ethnicity': Ethnicity.HISPANIC},
-                            {'age': '<25', 'race': Race.BLACK,
-                             'ethnicity': Ethnicity.HISPANIC}
-                            ]
-
-
-def test_for_characteristics_races_ethnicities_one_race_multiple_ethnicities():
-    race_white = StatePersonRace.new_with_defaults(state_code='CA',
-                                                   race=Race.WHITE)
-
-    ethnicity_hispanic = StatePersonEthnicity.new_with_defaults(
-        state_code='CA',
-        ethnicity=Ethnicity.HISPANIC)
-
-    ethnicity_not_hispanic = StatePersonEthnicity.new_with_defaults(
-        state_code='CA',
-        ethnicity=Ethnicity.NOT_HISPANIC)
-
-    characteristics = {'age': '<25'}
-
-    combinations = calculator.for_characteristics_races_ethnicities(
-        [race_white], [ethnicity_hispanic, ethnicity_not_hispanic],
-        characteristics)
-
-    assert combinations == [{},
-                            {'age': '<25'},
-                            {'race': Race.WHITE},
-                            {'age': '<25', 'race': Race.WHITE},
-                            {'ethnicity': Ethnicity.HISPANIC},
-                            {'age': '<25', 'ethnicity': Ethnicity.HISPANIC},
-                            {'ethnicity': Ethnicity.NOT_HISPANIC},
-                            {'age': '<25', 'ethnicity': Ethnicity.NOT_HISPANIC},
-                            {'race': Race.WHITE,
-                             'ethnicity': Ethnicity.HISPANIC},
-                            {'age': '<25', 'race': Race.WHITE,
-                             'ethnicity': Ethnicity.HISPANIC},
-                            {'race': Race.WHITE,
-                             'ethnicity': Ethnicity.NOT_HISPANIC},
-                            {'age': '<25', 'race': Race.WHITE,
-                             'ethnicity': Ethnicity.NOT_HISPANIC}
-                            ]
-
-
-def test_for_characteristics_races_ethnicities_no_races_or_ethnicities():
-    characteristics = {'age': '<25'}
-
-    combinations = calculator.for_characteristics_races_ethnicities(
-        [], [], characteristics)
-
-    assert combinations == [{}, {'age': '<25'}]
-
-
-def test_for_characteristics_races_ethnicities_multiple_races_and_ethnicities():
-    race_white = StatePersonRace.new_with_defaults(state_code='CA',
-                                                   race=Race.WHITE)
-
-    race_black = StatePersonRace.new_with_defaults(state_code='CA',
-                                                   race=Race.BLACK)
-
-    ethnicity_hispanic = StatePersonEthnicity.new_with_defaults(
-        state_code='CA',
-        ethnicity=Ethnicity.HISPANIC)
-
-    ethnicity_not_hispanic = StatePersonEthnicity.new_with_defaults(
-        state_code='CA',
-        ethnicity=Ethnicity.NOT_HISPANIC)
-
-    characteristics = {'age': '<25'}
-
-    combinations = calculator.for_characteristics_races_ethnicities(
-        [race_white, race_black], [ethnicity_hispanic, ethnicity_not_hispanic],
-        characteristics)
-
-    assert combinations == [{},
-                            {'age': '<25'},
-                            {'race': Race.WHITE},
-                            {'age': '<25', 'race': Race.WHITE},
-                            {'race': Race.BLACK},
-                            {'age': '<25', 'race': Race.BLACK},
-                            {'ethnicity': Ethnicity.HISPANIC},
-                            {'age': '<25', 'ethnicity': Ethnicity.HISPANIC},
-                            {'ethnicity': Ethnicity.NOT_HISPANIC},
-                            {'age': '<25', 'ethnicity': Ethnicity.NOT_HISPANIC},
-                            {'race': Race.WHITE,
-                             'ethnicity': Ethnicity.HISPANIC},
-                            {'age': '<25', 'race': Race.WHITE,
-                             'ethnicity': Ethnicity.HISPANIC},
-                            {'race': Race.WHITE,
-                             'ethnicity': Ethnicity.NOT_HISPANIC},
-                            {'age': '<25', 'race': Race.WHITE,
-                             'ethnicity': Ethnicity.NOT_HISPANIC},
-                            {'race': Race.BLACK,
-                             'ethnicity': Ethnicity.HISPANIC},
-                            {'age': '<25', 'race': Race.BLACK,
-                             'ethnicity': Ethnicity.HISPANIC},
-                            {'race': Race.BLACK,
-                             'ethnicity': Ethnicity.NOT_HISPANIC},
-                            {'age': '<25', 'race': Race.BLACK,
-                             'ethnicity': Ethnicity.NOT_HISPANIC}
-                            ]
-
-
-def test_for_characteristics():
-    characteristics = {'race': 'black', 'gender': 'female', 'age': '<25'}
-    combinations = calculator.for_characteristics(characteristics)
-
-    assert combinations == [{},
-                            {'race': 'black'},
-                            {'gender': 'female'},
-                            {'age': '<25'},
-                            {'race': 'black', 'gender': 'female'},
-                            {'age': '<25', 'race': 'black'},
-                            {'age': '<25', 'gender': 'female'},
-                            {'age': '<25', 'race': 'black', 'gender': 'female'}]
-
-
-def test_for_characteristics_one_characteristic():
-    characteristics = {'gender': 'male'}
-    combinations = calculator.for_characteristics(characteristics)
-
-    assert combinations == [{}, {'gender': 'male'}]
-
-
 def test_augmented_combo_list_methodologies():
     base_combo = {'age': '<25', 'race': 'black', 'gender': 'female'}
 
     person_combo_list = calculator.augmented_combo_list(
-        base_combo, 'CA', RecidivismMethodologyType.PERSON, 8)
+        base_combo, 'CA', MetricMethodologyType.PERSON, 8)
 
     for combo in person_combo_list:
-        assert combo['methodology'] == RecidivismMethodologyType.PERSON
+        assert combo['methodology'] == MetricMethodologyType.PERSON
         assert combo['follow_up_period'] == 8
 
     event_combo_list = calculator.augmented_combo_list(
-        base_combo, 'CA', RecidivismMethodologyType.EVENT, 8)
+        base_combo, 'CA', MetricMethodologyType.EVENT, 8)
 
     for combo in event_combo_list:
-        assert combo['methodology'] == RecidivismMethodologyType.EVENT
+        assert combo['methodology'] == MetricMethodologyType.EVENT
         assert combo['follow_up_period'] == 8
 
 
@@ -734,7 +387,7 @@ def test_augmented_combo_list_return_info():
     base_combo = {'age': '<25', 'race': 'black', 'gender': 'female'}
 
     combo_list = calculator.augmented_combo_list(
-        base_combo, 'CA', RecidivismMethodologyType.PERSON, 8)
+        base_combo, 'CA', MetricMethodologyType.PERSON, 8)
 
     parameter_list = {}
 
@@ -745,7 +398,7 @@ def test_augmented_combo_list_return_info():
         parameter_list[from_supervision_type] = False
 
     for combo in combo_list:
-        assert combo['methodology'] == RecidivismMethodologyType.PERSON
+        assert combo['methodology'] == MetricMethodologyType.PERSON
         assert combo['follow_up_period'] == 8
 
         return_type = combo.get('return_type')
@@ -887,19 +540,6 @@ def test_recidivism_value_for_metric_not_source_violation_type():
     assert value == 0
 
 
-def test_augment_combination():
-    combo = {'age': '<25', 'race': 'black', 'gender': 'female'}
-
-    parameters = {'A': 'a', 'B': 9}
-
-    augmented = calculator.augment_combination(combo, parameters)
-
-    assert augmented == {'age': '<25',
-                         'A': 'a', 'B': 9,
-                         'race': 'black',
-                         'gender': 'female'}
-    assert augmented != combo
-
 ALL_INCLUSIONS_DICT = {
         'age_bucket': True,
         'gender': True,
@@ -912,7 +552,7 @@ ALL_INCLUSIONS_DICT = {
 class TestMapRecidivismCombinations(unittest.TestCase):
     """Tests the map_recidivism_combinations function."""
 
-    RECIDIVISM_METHODOLOGIES = len(RecidivismMethodologyType)
+    RECIDIVISM_METHODOLOGIES = len(MetricMethodologyType)
 
     RETURN_TYPE_COMBOS_INCLUDING_NEW_ADMISSION = (
         0 +  # NEW_ADMISSSION - sub-explosions
@@ -1120,12 +760,12 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         self.assertEqual(expected_combos_count, len(recidivism_combinations))
 
         for combination, value in recidivism_combinations:
-            if combination.get('metric_type') == 'rate' and \
+            if combination.get('metric_type') == MetricType.RATE and \
                     combination.get('follow_up_period') <= 5 or \
                     combination.get('return_type') == \
                     ReincarcerationReturnType.REVOCATION:
                 assert value == 0
-            elif combination.get('metric_type') == 'liberty':
+            elif combination.get('metric_type') == MetricType.LIBERTY:
                 assert value == days_at_liberty
             else:
                 assert value == 1
@@ -1185,12 +825,12 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         assert len(recidivism_combinations) == (21120 + 22080 + 35840)
 
         for combination, value in recidivism_combinations:
-            if combination.get('metric_type') == 'rate' and \
+            if combination.get('metric_type') == MetricType.RATE and \
                     combination.get('follow_up_period') < 2 or \
                     combination.get('return_type') == \
                     ReincarcerationReturnType.REVOCATION:
                 assert value == 0
-            elif combination.get('metric_type') == 'liberty':
+            elif combination.get('metric_type') == MetricType.LIBERTY:
                 if combination.get('start_date') < date(1909, 1, 1):
                     assert value == days_at_liberty_1
                 else:
@@ -1266,13 +906,13 @@ class TestMapRecidivismCombinations(unittest.TestCase):
 
         assert all(value == 0 for _combination, value
                    in recidivism_combinations if
-                   _combination['metric_type'] == 'rate')
+                   _combination['metric_type'] == MetricType.RATE)
         assert all(value == days_at_liberty for _combination, value
                    in recidivism_combinations if
-                   _combination['metric_type'] == 'liberty')
+                   _combination['metric_type'] == MetricType.LIBERTY)
         assert all(value == 1 for _combination, value
                    in recidivism_combinations if
-                   _combination['metric_type'] == 'count' and
+                   _combination['metric_type'] == MetricType.COUNT and
                    _combination.get('return_type') !=
                    ReincarcerationReturnType.REVOCATION)
 
@@ -1315,12 +955,12 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         self.assertEqual(expected_combos_count, len(recidivism_combinations))
 
         for combination, value in recidivism_combinations:
-            if combination.get('metric_type') == 'rate' and \
+            if combination.get('metric_type') == MetricType.RATE and \
                     combination.get('follow_up_period') <= 5 or \
                     combination.get('return_type') == \
                     ReincarcerationReturnType.REVOCATION:
                 assert value == 0
-            elif combination.get('metric_type') == 'liberty':
+            elif combination.get('metric_type') == MetricType.LIBERTY:
                 assert value == days_at_liberty
             else:
                 assert value == 1
@@ -1364,12 +1004,12 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         self.assertEqual(expected_combos_count, len(recidivism_combinations))
 
         for combination, value in recidivism_combinations:
-            if combination.get('metric_type') == 'rate' and \
+            if combination.get('metric_type') == MetricType.RATE and \
                     combination.get('follow_up_period') <= 5 or \
                     combination.get('return_type') == \
                     ReincarcerationReturnType.REVOCATION:
                 assert value == 0
-            elif combination.get('metric_type') == 'liberty':
+            elif combination.get('metric_type') == MetricType.LIBERTY:
                 assert value == days_at_liberty
             else:
                 assert value == 1
@@ -1418,12 +1058,12 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         self.assertEqual(expected_combos_count, len(recidivism_combinations))
 
         for combination, value in recidivism_combinations:
-            if combination.get('metric_type') == 'rate' and \
+            if combination.get('metric_type') == MetricType.RATE and \
                     combination.get('follow_up_period') <= 5 or \
                     combination.get('return_type') == \
                     ReincarcerationReturnType.REVOCATION:
                 assert value == 0
-            elif combination.get('metric_type') == 'liberty':
+            elif combination.get('metric_type') == MetricType.LIBERTY:
                 assert value == days_at_liberty
             else:
                 assert value == 1
@@ -1465,7 +1105,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         self.assertEqual(expected_combos_count, len(recidivism_combinations))
 
         for combination, value in recidivism_combinations:
-            if combination.get('metric_type') == 'rate' and \
+            if combination.get('metric_type') == MetricType.RATE and \
                     combination.get('follow_up_period') <= 5 or \
                     combination.get('return_type') == \
                     ReincarcerationReturnType.NEW_ADMISSION or \
@@ -1473,7 +1113,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                     ReincarcerationReturnFromSupervisionType.PROBATION or \
                     combination.get('source_violation_type') is not None:
                 assert value == 0
-            elif combination.get('metric_type') == 'liberty':
+            elif combination.get('metric_type') == MetricType.LIBERTY:
                 assert value == days_at_liberty
             else:
                 assert value == 1
@@ -1516,7 +1156,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         self.assertEqual(expected_combos_count, len(recidivism_combinations))
 
         for combination, value in recidivism_combinations:
-            if combination.get('metric_type') == 'rate' and \
+            if combination.get('metric_type') == MetricType.RATE and \
                     combination.get('follow_up_period') <= 5 or \
                     combination.get('return_type') == \
                     ReincarcerationReturnType.NEW_ADMISSION or \
@@ -1524,7 +1164,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                     ReincarcerationReturnFromSupervisionType.PAROLE or \
                     combination.get('source_violation_type') is not None:
                 assert value == 0
-            elif combination.get('metric_type') == 'liberty':
+            elif combination.get('metric_type') == MetricType.LIBERTY:
                 assert value == days_at_liberty
             else:
                 assert value == 1
@@ -1569,10 +1209,10 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         self.assertEqual(expected_combos_count, len(recidivism_combinations))
 
         for combination, value in recidivism_combinations:
-            if combination.get('metric_type') == 'rate' and \
+            if combination.get('metric_type') == MetricType.RATE and \
                     combination.get('follow_up_period') <= 5:
                 assert value == 0
-            elif combination.get('metric_type') == 'liberty':
+            elif combination.get('metric_type') == MetricType.LIBERTY:
                 assert value == days_at_liberty
             elif combination.get('return_type') == \
                     ReincarcerationReturnType.NEW_ADMISSION or \
@@ -1626,7 +1266,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         num_month_metrics = 0
 
         for combo, value in recidivism_combinations:
-            if combo['metric_type'] == 'count':
+            if combo['metric_type'] == MetricType.COUNT:
                 num_count_metrics += 1
 
                 assert combo['start_date'].year == 2014
@@ -1682,7 +1322,8 @@ class TestMapRecidivismCombinations(unittest.TestCase):
 
         assert all(value == 0 for _combination, value
                    in recidivism_combinations)
-        assert all(_combination['metric_type'] == 'rate' for _combination, value
+        assert all(_combination['metric_type'] ==
+                   MetricType.RATE for _combination, value
                    in recidivism_combinations)
 
     def test_map_recidivism_combinations_count_twice_in_year(self):
@@ -1753,7 +1394,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         num_sept_month_liberty_metrics = 0
 
         for combo, value in recidivism_combinations:
-            if combo['metric_type'] == 'count':
+            if combo['metric_type'] == MetricType.COUNT:
                 num_count_metrics += 1
 
                 assert combo['start_date'].year == 1914
@@ -1768,7 +1409,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                     assert combo['start_date'] == date(1914, 9, 1)
                     assert combo['end_date'] == date(1914, 9, 30)
                 else:
-                    if combo['methodology'] == RecidivismMethodologyType.EVENT:
+                    if combo['methodology'] == MetricMethodologyType.EVENT:
                         num_event_year_count_metrics += 1
                     else:
                         num_person_year_count_metrics += 1
@@ -1781,7 +1422,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                     assert value == 1
                 else:
                     assert value == 0
-            elif combo['metric_type'] == 'liberty':
+            elif combo['metric_type'] == MetricType.LIBERTY:
                 num_liberty_metrics += 1
 
                 assert combo['start_date'].year == 1914
@@ -1798,7 +1439,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                     assert combo['start_date'] == date(1914, 9, 1)
                     assert combo['end_date'] == date(1914, 9, 30)
                 else:
-                    if combo['methodology'] == RecidivismMethodologyType.EVENT:
+                    if combo['methodology'] == MetricMethodologyType.EVENT:
                         assert value in (days_at_liberty_1, days_at_liberty_2)
                         num_event_year_liberty_metrics += 1
                     else:
@@ -1891,7 +1532,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         num_march_month_liberty_metrics = 0
 
         for combo, value in recidivism_combinations:
-            if combo['metric_type'] == 'count':
+            if combo['metric_type'] == MetricType.COUNT:
                 num_count_metrics += 1
 
                 assert combo['start_date'].year == 1914
@@ -1901,13 +1542,13 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                     assert combo['start_date'] == date(1914, 3, 1)
                     assert combo['end_date'] == date(1914, 3, 31)
 
-                    if combo['methodology'] == RecidivismMethodologyType.EVENT:
+                    if combo['methodology'] == MetricMethodologyType.EVENT:
                         num_event_month_count_metrics += 1
                     else:
                         num_person_month_count_metrics += 1
 
                 else:
-                    if combo['methodology'] == RecidivismMethodologyType.EVENT:
+                    if combo['methodology'] == MetricMethodologyType.EVENT:
                         num_event_year_count_metrics += 1
                     else:
                         num_person_year_count_metrics += 1
@@ -1920,7 +1561,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                     assert value == 1
                 else:
                     assert value == 0
-            elif combo['metric_type'] == 'liberty':
+            elif combo['metric_type'] == MetricType.LIBERTY:
                 num_liberty_metrics += 1
 
                 assert combo['start_date'].year == 1914
@@ -1930,14 +1571,14 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                     assert combo['start_date'] == date(1914, 3, 1)
                     assert combo['end_date'] == date(1914, 3, 31)
 
-                    if combo['methodology'] == RecidivismMethodologyType.EVENT:
+                    if combo['methodology'] == MetricMethodologyType.EVENT:
                         assert value in (days_at_liberty_1, days_at_liberty_2)
                         num_event_month_liberty_metrics += 1
                     else:
                         assert value == days_at_liberty_1
                         num_person_month_liberty_metrics += 1
                 else:
-                    if combo['methodology'] == RecidivismMethodologyType.EVENT:
+                    if combo['methodology'] == MetricMethodologyType.EVENT:
                         assert value in (days_at_liberty_1, days_at_liberty_2)
                         num_event_year_liberty_metrics += 1
                     else:

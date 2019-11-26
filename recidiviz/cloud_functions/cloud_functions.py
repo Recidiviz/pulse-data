@@ -25,7 +25,7 @@ from flask import Blueprint, request, jsonify
 import gcsfs
 
 from recidiviz.calculator.query.state import dashboard_export_manager
-from recidiviz.calculator.utils.calculate_cloud_task_manager import \
+from recidiviz.calculator.pipeline.utils.calculate_cloud_task_manager import \
     CalculateCloudTaskManager
 from recidiviz.cloud_functions.cloud_function_utils import GCSFS_NO_CACHING
 

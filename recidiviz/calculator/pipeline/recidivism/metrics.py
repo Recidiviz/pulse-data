@@ -24,36 +24,24 @@ from typing import Any, Dict, Optional, cast
 
 import attr
 
-from recidiviz.calculator.recidivism.release_event import \
+from recidiviz.calculator.pipeline.recidivism.release_event import \
     ReincarcerationReturnType, ReincarcerationReturnFromSupervisionType
-from recidiviz.common.attr_mixins import BuildableAttr
-from recidiviz.common.constants.person_characteristics import Gender, Race, \
-    Ethnicity
+from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
 
-class RecidivismMethodologyType(Enum):
-    """Methods for counting recidivism.
 
-     Event-Based: a method for measuring recidivism wherein the event, such as
-        release from a facility, is the unit of analysis. That is, if Allison
-        is released from and returned to a facility twice in a given window,
-        then that counts as two separate instances of recidivism for
-        measurement, even though it includes only a single individual.
-     Person-based: a method for measuring recidivism wherein the person is the
-        unit of analysis. That is, if Allison is released from and returned to
-        a facility twice in a given window, then that counts as only one
-        instance of recidivism for measurement.
-     """
+class ReincarcerationRecidivismMetricType(Enum):
+    """The type of reincarceration recidivism metrics."""
 
-    EVENT = 'EVENT'
-    PERSON = 'PERSON'
-
+    COUNT = 'COUNT'
+    LIBERTY = 'LIBERTY'
+    RATE = 'RATE'
 
 # TODO: Implement rearrest and reconviction recidivism metrics
 #  (Issues #1841 and #1842)
 @attr.s
-class ReincarcerationRecidivismMetric(BuildableAttr):
+class ReincarcerationRecidivismMetric(RecidivizMetric):
     """Models a single recidivism metric.
 
     Contains all of the identifying characteristics of the metric, including
@@ -61,36 +49,11 @@ class ReincarcerationRecidivismMetric(BuildableAttr):
     characteristics for slicing the data.
     """
 
-    # Required characteristics
-
-    # The string id of the calculation pipeline job that produced this metric.
-    job_id: str = attr.ib()  # non-nullable
-
-    # The state code of the metric this describes
-    state_code: str = attr.ib()
-
-    # RecidivismMethodologyType enum for the calculation of the metric
-    methodology: RecidivismMethodologyType = \
-        attr.ib(default=None)  # non-nullable
-
     # Optional characteristics
-
-    # The age bucket string of the persons the metric describes, e.g. '<25' or
-    # '35-39'
-    age_bucket: Optional[str] = attr.ib(default=None)
 
     # The bucket string of the persons' incarceration stay length (in months),
     # e.g., '<12' or '36-48'
     stay_length_bucket: Optional[str] = attr.ib(default=None)
-
-    # The race of the persons the metric describes
-    race: Optional[Race] = attr.ib(default=None)
-
-    # The ethnicity of the persons the metric describes
-    ethnicity: Optional[Ethnicity] = attr.ib(default=None)
-
-    # The gender of the persons the metric describes
-    gender: Optional[Gender] = attr.ib(default=None)
 
     # The facility the persons were released from prior to recidivating
     release_facility: Optional[str] = attr.ib(default=None)

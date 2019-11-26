@@ -32,7 +32,7 @@ from datetime import date
 import pytest
 from mock import patch
 
-from recidiviz.calculator.utils import extractor_utils
+from recidiviz.calculator.pipeline.utils import extractor_utils
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
     StateAssessmentType

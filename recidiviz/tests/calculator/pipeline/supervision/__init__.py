@@ -14,12 +14,3 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-
-
-"""The calculation portion of the Recidiviz data platform.
-
-This includes infrastructure, logic, and models for calculating various criminal
-justice metrics from ingested records and persisting those metrics.
-"""
-
-from recidiviz.calculator.pipeline import recidivism
