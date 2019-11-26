@@ -841,6 +841,34 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                 ]
                             )
                         ]),
+            StatePerson(state_person_id='867530',
+                        state_person_external_ids=[
+                            StatePersonExternalId(
+                                state_person_external_id_id='867530',
+                                id_type=US_MO_DOC),
+                        ],
+                        state_sentence_groups=[
+                            StateSentenceGroup(
+                                state_sentence_group_id='867530-19970224',
+                                state_incarceration_sentences=[
+                                    StateIncarcerationSentence(
+                                        state_incarceration_sentence_id=
+                                        '867530-19970224-1',
+                                        state_incarceration_periods=[
+                                            StateIncarcerationPeriod(
+                                                state_incarceration_period_id=
+                                                '867530-19970224-1',
+                                                status='NOT_IN_CUSTODY',
+                                                admission_date='19970224',
+                                                admission_reason='NA',
+                                                release_date='20161031',
+                                                release_reason='EXECUTION',
+                                            )
+                                        ]
+                                    )
+                                ]
+                            )
+                        ]),
         ])
 
         self.run_parse_file_test(
@@ -2373,6 +2401,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             )
         sis_910324_19890825_1.incarceration_periods = [ip_910324_19890825_1]
 
+        # New person and entity tree introduced at this point
         person_523523 = entities.StatePerson.new_with_defaults()
         spei_523523 = entities.StatePersonExternalId.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -2418,6 +2447,56 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         sis_523523_19890617_1.incarceration_periods.append(ip_523523_19890617_1)
 
         expected_people.append(person_523523)
+
+        # New person and entity tree introduced at this point
+        person_867530 = entities.StatePerson.new_with_defaults()
+        spei_867530 = entities.StatePersonExternalId.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            external_id='867530',
+            id_type=US_MO_DOC,
+            person=person_867530,
+        )
+        person_867530.external_ids.append(spei_867530)
+
+        sg_867530_19970224 = entities.StateSentenceGroup.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            external_id='867530-19970224',
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            person=person_867530,
+        )
+        person_867530.sentence_groups.append(sg_867530_19970224)
+
+        sis_867530_19970224_1 = \
+            entities.StateIncarcerationSentence.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                external_id='867530-19970224-1',
+                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                person=person_867530,
+                sentence_group=sg_867530_19970224,
+            )
+        sg_867530_19970224.incarceration_sentences.append(sis_867530_19970224_1)
+
+        ip_867530_19970224_1 = \
+            entities.StateIncarcerationPeriod.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                external_id='867530-19970224-1',
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                status_raw_text='NOT_IN_CUSTODY',
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                admission_date=datetime.date(year=1997, month=2, day=24),
+                admission_reason=
+                StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+                admission_reason_raw_text='NA',
+                release_date=datetime.date(year=2016, month=10, day=31),
+                release_reason=StateIncarcerationPeriodReleaseReason.EXECUTION,
+                release_reason_raw_text='EXECUTION',
+                person=person_867530,
+                incarceration_sentences=[sis_867530_19970224_1],
+            )
+        sis_867530_19970224_1.incarceration_periods.append(ip_867530_19970224_1)
+
+        expected_people.append(person_867530)
 
         # Act
         # pylint: disable=line-too-long

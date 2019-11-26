@@ -67,7 +67,7 @@ from recidiviz.ingest.direct.regions.us_mo.us_mo_constants import \
     SUPERVISION_SENTENCE_PROJECTED_COMPLETION_DATE, PERIOD_RELEASE_DATE, \
     PERIOD_PURPOSE_FOR_INCARCERATION, PERIOD_OPEN_TYPE, PERIOD_START_DATE, \
     SUPERVISION_VIOLATION_VIOLATED_CONDITIONS, SUPERVISION_VIOLATION_TYPES, \
-    SUPERVISION_VIOLATION_RECOMMENDATIONS
+    SUPERVISION_VIOLATION_RECOMMENDATIONS, PERIOD_CLOSE_ACTION_REASON
 from recidiviz.ingest.direct.state_shared_row_posthooks import \
     copy_name_to_alias, gen_label_single_external_id_hook, \
     gen_normalize_county_codes_posthook, \
@@ -416,6 +416,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 self._set_incarceration_period_status,
                 self._set_revocation_admission_reason,
                 self._create_source_violation_response,
+                self._process_execution,
             ],
             'tak158_tak024_incarceration_period_from_supervision_sentence': [
                 self._gen_clear_magical_date_value(
@@ -426,6 +427,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 self._set_incarceration_period_status,
                 self._set_revocation_admission_reason,
                 self._create_source_violation_response,
+                self._process_execution,
             ],
             'tak158_tak023_supervision_period_from_incarceration_sentence': [
                 self._gen_clear_magical_date_value(
@@ -883,6 +885,20 @@ class UsMoController(CsvGcsfsDirectIngestController):
         if open_type in ['CT', 'IS']:
             return StateSupervisionViolationResponseDecidingBodyType.COURT
         return None
+
+    @classmethod
+    def _process_execution(cls,
+                           _file_tag: str,
+                           row: Dict[str, str],
+                           extracted_objects: List[IngestObject],
+                           _cache: IngestObjectCache):
+        close_action_reason = row.get(PERIOD_CLOSE_ACTION_REASON, None)
+
+        if close_action_reason == 'EX':
+            for obj in extracted_objects:
+                if isinstance(obj, StateIncarcerationPeriod):
+                    obj.release_reason = \
+                        StateIncarcerationPeriodReleaseReason.EXECUTION.value
 
     @classmethod
     def _set_incarceration_period_status(cls,
