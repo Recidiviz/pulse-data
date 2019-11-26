@@ -31,7 +31,7 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import \
     read_persons_by_root_entity_cls
 from recidiviz.persistence.entity_matching.state.us_mo.us_mo_matching_utils \
     import is_supervision_violation_response_match, \
-    remove_seos_from_violation_ids
+    remove_suffix_from_violation_ids
 
 
 class UsMoMatchingDelegate(BaseStateMatchingDelegate):
@@ -58,7 +58,7 @@ class UsMoMatchingDelegate(BaseStateMatchingDelegate):
             self, ingested_persons: List[schema.StatePerson]):
         logging.info("[Entity matching] Pre-processing: Remove SEOs from "
                      "violation ids")
-        remove_seos_from_violation_ids(ingested_persons)
+        remove_suffix_from_violation_ids(ingested_persons)
 
     def get_non_external_id_match(
             self,

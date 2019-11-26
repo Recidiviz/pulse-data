@@ -34,7 +34,7 @@ from recidiviz.persistence.entity_matching.entity_matching_types import \
     EntityTree
 from recidiviz.persistence.entity_matching.state.us_mo.us_mo_matching_utils \
     import is_supervision_violation_response_match, \
-    remove_seos_from_violation_ids
+    remove_suffix_from_violation_ids
 from recidiviz.persistence.errors import EntityMatchingError
 
 _ID = 1
@@ -66,9 +66,9 @@ class TestUsMoMatchingUtils(TestCase):
 
     def test_removeSeosFromViolationIds(self):
         sv = schema.StateSupervisionViolation(
-            external_id='DOC-CYC-VSN1-SEO')
+            external_id='DOC-CYC-VSN1-SEO-FSO')
         sv_2 = schema.StateSupervisionViolation(
-            external_id='DOC-CYC-VSN1-SEO')
+            external_id='DOC-CYC-VSN1-SEO-FSO')
         sp = schema.StateSupervisionPeriod(supervision_violations=[sv, sv_2])
         ss = schema.StateSupervisionSentence(supervision_periods=[sp])
         sg = schema.StateSentenceGroup(supervision_sentences=[ss])
@@ -86,7 +86,7 @@ class TestUsMoMatchingUtils(TestCase):
         expected_p = StatePerson.new_with_defaults(
             sentence_groups=[expected_sg])
 
-        remove_seos_from_violation_ids([p])
+        remove_suffix_from_violation_ids([p])
         self.assertEqual(expected_p, self.to_entity(p))
 
     def test_removeSeosFromViolationIds_unexpectedFormat(self):
@@ -96,4 +96,4 @@ class TestUsMoMatchingUtils(TestCase):
             ss = schema.StateSupervisionSentence(supervision_periods=[sp])
             sg = schema.StateSentenceGroup(supervision_sentences=[ss])
             p = schema.StatePerson(sentence_groups=[sg])
-            remove_seos_from_violation_ids([p])
+            remove_suffix_from_violation_ids([p])
