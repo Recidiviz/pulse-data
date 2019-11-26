@@ -23,7 +23,7 @@ keys_to_ignore:
   - F1$SEO  # Unused - Duplicate of BU$SEO
   - F1$SST  # Unused - Subcycle Status (Field, Institution, or Out of State) - Guaranteed to be 'I' by the source query
   - F1$OPT  # Open Reason Type - Handled manually in the controller
-  - F1$ARC  # TODO(2636): Use this to map EX to StateIncarcerationPeriodReleaseReason.EXECUTION
+  - F1$ARC  # Action Reason Code - Handled manually in the controller
   - F1$CTO  # Case Type (Opening) - Handled manually in the controller
   - F1$CTC  # Case Type (Current) - Handled manually in the controller
   - F1$SY   # Unused - Status code change date
