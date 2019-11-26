@@ -27,7 +27,7 @@ from opencensus.trace.exporters import file_exporter, stackdriver_exporter
 
 from recidiviz.backup.backup_manager import backup_manager_blueprint
 from recidiviz.calculator.query.export_manager import export_manager_blueprint
-from recidiviz.calculator.utils.dataflow_monitor_manager import \
+from recidiviz.calculator.pipeline.utils.dataflow_monitor_manager import \
     dataflow_monitor_blueprint
 from recidiviz.cloud_functions.cloud_functions import cloud_functions_blueprint
 from recidiviz.ingest.aggregate.scrape_aggregate_reports import \

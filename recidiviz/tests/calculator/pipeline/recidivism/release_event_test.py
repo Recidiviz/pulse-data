@@ -19,7 +19,7 @@
 
 
 from datetime import datetime
-from recidiviz.calculator.recidivism.release_event import \
+from recidiviz.calculator.pipeline.recidivism.release_event import \
     RecidivismReleaseEvent, NonRecidivismReleaseEvent, ReincarcerationReturnType
 
 

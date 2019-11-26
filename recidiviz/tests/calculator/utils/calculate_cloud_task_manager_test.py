@@ -25,8 +25,8 @@ from google.cloud import tasks_v2
 from google.protobuf import timestamp_pb2
 from mock import patch
 
-from recidiviz.calculator.utils import calculate_cloud_task_manager
-from recidiviz.calculator.utils.calculate_cloud_task_manager import \
+from recidiviz.calculator.pipeline.utils import calculate_cloud_task_manager
+from recidiviz.calculator.pipeline.utils.calculate_cloud_task_manager import \
     CalculateCloudTaskManager
 from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import (
     QUEUES_REGION

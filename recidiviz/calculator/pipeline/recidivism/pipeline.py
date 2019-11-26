@@ -54,7 +54,6 @@ import logging
 
 from typing import Any, Dict, List, Tuple
 import datetime
-from enum import Enum
 from more_itertools import one
 
 import apache_beam as beam
@@ -62,20 +61,28 @@ from apache_beam.options.pipeline_options import PipelineOptions
 from apache_beam.options.pipeline_options import SetupOptions
 from apache_beam.typehints import with_input_types, with_output_types
 
-from recidiviz.calculator.recidivism import identifier, calculator
-from recidiviz.calculator.recidivism.release_event import ReleaseEvent
-from recidiviz.calculator.recidivism.metrics import \
+from recidiviz.calculator.pipeline.recidivism import identifier
+from recidiviz.calculator.pipeline.recidivism import calculator
+from recidiviz.calculator.pipeline.recidivism.release_event import ReleaseEvent
+from recidiviz.calculator.pipeline.recidivism.metrics import \
     ReincarcerationRecidivismRateMetric, ReincarcerationRecidivismCountMetric, \
     ReincarcerationRecidivismLibertyMetric, \
-    RecidivismMethodologyType, ReincarcerationRecidivismMetric
-from recidiviz.calculator.utils.beam_utils import SumFn, RecidivismRateFn, \
-    RecidivismLibertyFn
-from recidiviz.calculator.utils.execution_utils import get_job_id
-from recidiviz.calculator.utils.extractor_utils import BuildRootEntity
+    ReincarcerationRecidivismMetric
+from recidiviz.calculator.pipeline.recidivism.metrics import \
+    ReincarcerationRecidivismMetricType as MetricType
+from recidiviz.calculator.pipeline.utils.beam_utils import SumFn, \
+    RecidivismRateFn, RecidivismLibertyFn
+from recidiviz.calculator.pipeline.utils.entity_hydration_utils import \
+    SetViolationResponseOnIncarcerationPeriod
+from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id
+from recidiviz.calculator.pipeline.utils.extractor_utils import BuildRootEntity
+from recidiviz.calculator.pipeline.utils.metric_utils import \
+    json_serializable_metric_key
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.utils import environment
-
+from recidiviz.calculator.pipeline.utils.metric_utils import \
+    MetricMethodologyType
 
 # Cached job_id value
 _job_id = None
@@ -92,64 +99,6 @@ def job_id(pipeline_options: Dict[str, str]) -> str:
 def clear_job_id():
     global _job_id
     _job_id = None
-
-
-@with_input_types(beam.typehints.Tuple[int, Dict[str, Any]])
-@with_output_types(beam.typehints.Tuple[int, entities.StateIncarcerationPeriod])
-class SetViolationResponseOnIncarcerationPeriod(beam.DoFn):
-    """Sets a hydrated StateSupervisionviolationResponse onto the corresponding
-    StateIncarcerationPeriod."""
-
-    def process(self, element, *args, **kwargs):
-        """For the incarceration periods and supervision violation responses of
-        a given person, finds the matching hydrated supervision violation
-        response for a resulting incarceration period, and sets the hydrated
-        version onto the incarceration_period entity.
-
-        Args:
-            element: a tuple containing person_id and a dictionary of the
-                person's StateIncarcerationPeriods and
-                StateSupervisionviolationResponses
-
-        Yields:
-            For each incarceration period, a tuple containing the person_id and
-            the incarceration_period.
-        """
-        person_id, incarceration_periods_violation_responses = element
-
-        # Get the StateIncarcerationPeriods as a list
-        incarceration_periods = \
-            list(incarceration_periods_violation_responses[
-                'incarceration_periods'])
-
-        # Get the StateSupervisionViolationResponses as a list
-        violation_responses = \
-            list(incarceration_periods_violation_responses[
-                'violation_responses'])
-
-        if incarceration_periods:
-            for incarceration_period in incarceration_periods:
-                if incarceration_period.source_supervision_violation_response \
-                        and violation_responses:
-
-                    corresponding_response = [
-                        response for response in violation_responses
-                        if response.supervision_violation_response_id ==
-                        incarceration_period.
-                        source_supervision_violation_response.
-                        supervision_violation_response_id]
-
-                    # If there's a corresponding response, there should only
-                    # be 1 (this is enforced at a DB level)
-                    response = one(corresponding_response)
-
-                    incarceration_period. \
-                        source_supervision_violation_response = response
-
-                yield (person_id, incarceration_period)
-
-    def to_runner_api_parameter(self, _):
-        pass  # Passing unused abstract method.
 
 
 @with_input_types(beam.typehints.Tuple[int, Dict[str, Any]])
@@ -320,13 +269,13 @@ class CalculateRecidivismMetricCombinations(beam.DoFn):
             serializable_dict = json_serializable_metric_key(metric_key)
             json_key = json.dumps(serializable_dict, sort_keys=True)
 
-            if metric_key.get('metric_type') == 'rate':
+            if metric_key.get('metric_type') == MetricType.RATE:
                 yield beam.pvalue.TaggedOutput('rates',
                                                (json_key, value))
-            elif metric_key.get('metric_type') == 'count':
+            elif metric_key.get('metric_type') == MetricType.COUNT:
                 yield beam.pvalue.TaggedOutput('counts',
                                                (json_key, value))
-            elif metric_key.get('metric_type') == 'liberty':
+            elif metric_key.get('metric_type') == MetricType.LIBERTY:
                 yield beam.pvalue.TaggedOutput('liberties',
                                                (json_key, value))
 
@@ -381,7 +330,7 @@ class ProduceReincarcerationRecidivismCountMetric(beam.DoFn):
         # Convert JSON string to dictionary
         dict_metric_key = json.loads(metric_key)
 
-        if dict_metric_key.get('metric_type') == 'count':
+        if dict_metric_key.get('metric_type') == MetricType.COUNT.value:
             # For count metrics, the value is the number of returns
             dict_metric_key['returns'] = value
 
@@ -399,7 +348,6 @@ class ProduceReincarcerationRecidivismCountMetric(beam.DoFn):
 
     def to_runner_api_parameter(self, _):
         pass  # Passing unused abstract method.
-
 
 
 @with_input_types(beam.typehints.Tuple[str, Dict[str, int]],
@@ -458,7 +406,7 @@ class ProduceReincarcerationRecidivismMetric(beam.DoFn):
         # Convert JSON string to dictionary
         dict_metric_key = json.loads(metric_key)
 
-        if dict_metric_key.get('metric_type') == 'rate':
+        if dict_metric_key.get('metric_type') == MetricType.RATE.value:
             # For rate metrics, the value is a dictionary storing the data
             # necessary for recidivism rate metrics
 
@@ -471,7 +419,7 @@ class ProduceReincarcerationRecidivismMetric(beam.DoFn):
                 ReincarcerationRecidivismRateMetric. \
                 build_from_metric_key_group(
                     dict_metric_key, pipeline_job_id)
-        elif dict_metric_key.get('metric_type') == 'liberty':
+        elif dict_metric_key.get('metric_type') == MetricType.LIBERTY.value:
             dict_metric_key['returns'] = value.get('returns')
             dict_metric_key['avg_liberty'] = value.get('avg_liberty')
 
@@ -490,7 +438,7 @@ class ProduceReincarcerationRecidivismMetric(beam.DoFn):
 
 
 @with_input_types(ReincarcerationRecidivismMetric,
-                  **{'methodologies': List[RecidivismMethodologyType]})
+                  **{'methodologies': List[MetricMethodologyType]})
 @with_output_types(ReincarcerationRecidivismMetric)
 class FilterMetrics(beam.DoFn):
     """Filters out metrics that should not be included in the output."""
@@ -503,7 +451,7 @@ class FilterMetrics(beam.DoFn):
                 element: A ReincarcerationRecidivismMetric object
                 **kwargs: This should be a dictionary with values for the
                     following keys:
-                        - methodologies: The RecidivismMethodologyTypes to
+                        - methodologies: The MetricMethodologyTypes to
                             report.
 
             Yields:
@@ -557,25 +505,6 @@ class RecidivismMetricWritableDict(beam.DoFn):
 
     def to_runner_api_parameter(self, _):
         pass  # Passing unused abstract method.
-
-
-def json_serializable_metric_key(metric_key: Dict[str, Any]) -> Dict[str, Any]:
-    """Converts a metric key into a format that is JSON serializable.
-
-    For values that are of type Enum, converts to their raw values. For values
-    that are dates, converts to a string representation.
-    """
-    serializable_dict = {}
-
-    for key, v in metric_key.items():
-        if isinstance(v, Enum) and v is not None:
-            serializable_dict[key] = v.value
-        elif isinstance(v, datetime.date) and v is not None:
-            serializable_dict[key] = v.strftime('%Y-%m-%d')
-        else:
-            serializable_dict[key] = v
-
-    return serializable_dict
 
 
 def parse_arguments(argv):
@@ -642,7 +571,7 @@ def parse_arguments(argv):
 
 
 def dimensions_and_methodologies(known_args) -> \
-        Tuple[Dict[str, bool], List[RecidivismMethodologyType]]:
+        Tuple[Dict[str, bool], List[MetricMethodologyType]]:
     """Identifies dimensions to include in the output, and the methodologies of
     counting recidivism to use.
 
@@ -676,10 +605,10 @@ def dimensions_and_methodologies(known_args) -> \
     methodologies = []
 
     if known_args.methodology == 'BOTH':
-        methodologies.append(RecidivismMethodologyType.EVENT)
-        methodologies.append(RecidivismMethodologyType.PERSON)
+        methodologies.append(MetricMethodologyType.EVENT)
+        methodologies.append(MetricMethodologyType.PERSON)
     else:
-        methodologies.append(RecidivismMethodologyType[known_args.methodology])
+        methodologies.append(MetricMethodologyType[known_args.methodology])
 
     return dimensions, methodologies
 
