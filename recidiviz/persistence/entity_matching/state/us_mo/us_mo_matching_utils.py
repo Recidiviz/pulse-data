@@ -40,18 +40,18 @@ def is_supervision_violation_response_match(
 
 # TODO(1883): Remove this once our proto converter and data extractor can handle
 # the presence of multiple paths to entities with the same id
-def remove_seos_from_violation_ids(
+def remove_suffix_from_violation_ids(
         ingested_persons: List[schema.StatePerson]):
-    """Removes SEO (sentence sequence numbers) from the end of
-    StateSupervisionViolation external_ids. This allows violations across
-    sentences to be merged correctly by entity matching.
+    """Removes SEO (sentence sequence numbers) and FSO (field sequence numbers)
+    from the end of StateSupervisionViolation external_ids. This allows
+    violations across sentences to be merged correctly by entity matching.
     """
     ssvs = get_all_entities_of_cls(
         ingested_persons, schema.StateSupervisionViolation)
     for ssv in ssvs:
-        splits = ssv.external_id.rsplit('-', 1)
-        if len(splits) != 2:
+        splits = ssv.external_id.rsplit('-', 2)
+        if len(splits) != 3:
             raise EntityMatchingError(
                 f'Unexpected id format for StateSupervisionViolation '
                 f'{ssv.external_id}', ssv.get_entity_name())
-        ssv.external_id = ssv.external_id.rsplit('-', 1)[0]
+        ssv.external_id = splits[0]
