@@ -1,12 +1,8 @@
 key_mappings:
-  # Time fields are handled manually, only present to ensure we update the
-  # entity to make sure it gets processed by the manual post-hook for this file
-  YEARS: state_incarceration_sentence.max_length
-
-ancestor_keys:
   OFFENDER_BOOK_ID: state_sentence_group.state_sentence_group_id
 
-# There is a primary key override in us_nd_controller for this file
+primary_key:
+  OFFENDER_BOOK_ID: state_sentence_group.state_sentence_group_id
 
 keys_to_ignore:
   - START_DATE            # TODO(1759) Should this live on a Sentence?
@@ -14,6 +10,7 @@ keys_to_ignore:
   - SENTENCE_SEQ          # Handled manually within us_nd_scraper
   - TERM_SEQ              # Handled manually within us_nd_scraper
   - SENTENCE_TERM_CODE    # Handled manually within us_nd_scraper
+  - YEARS                 # Handled manually within us_nd_scraper
   - MONTHS                # Handled manually within us_nd_scraper
   - DAYS                  # Handled manually within us_nd_scraper
   - CREATE_DATETIME       # No apparent use for these at the moment
