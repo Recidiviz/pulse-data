@@ -18,6 +18,8 @@
 import datetime
 from typing import Type, List
 
+import attr
+
 from recidiviz import IngestInfo
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.person_characteristics import Gender, Race, \
@@ -1159,6 +1161,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             expected,
             'tak158_tak024_supervision_period_from_supervision_sentence')
 
+    # TODO(2682): Create test for situation where incarceration and supervision
+    # sentence are the exact same external id wise!
     def test_populate_data_tak028_tak042_tak076_tak024_violation_reports(self):
         sss_110035_20040712_1 = StateSupervisionSentence(
             state_supervision_sentence_id='110035-20040712-1',
@@ -1302,6 +1306,38 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                     ]
                                 )])])])
 
+        sss_910324_19890825_2 = StateSupervisionSentence(
+            state_supervision_sentence_id='910324-19890825-2',
+            state_supervision_periods=[
+                StateSupervisionPeriod(
+                    state_supervision_violations=[
+                        StateSupervisionViolation(
+                            state_supervision_violation_id=
+                            '910324-19890825-R1-2',
+                            violation_date='20090417',
+                            state_supervision_violation_types=[
+                                StateSupervisionViolationTypeEntry(
+                                    violation_type='M'
+                                ),
+                            ],
+                            state_supervision_violated_conditions=[
+                                StateSupervisionViolatedConditionEntry(
+                                    condition='EMP'
+                                ),
+                            ],
+                            state_supervision_violation_responses=[
+                                StateSupervisionViolationResponse(
+                                    response_type='VIOLATION_REPORT',
+                                    response_date='20090416',
+                                    deciding_body_type='SUPERVISION_OFFICER',
+                                    supervision_violation_response_decisions=[
+                                        StateSupervisionViolationResponseDecisionEntry(
+                                            decision='CO',
+                                            revocation_type='TREATMENT_IN_PRISON',
+                                        ),
+                                    ]
+                                )])])])
+
         expected = IngestInfo(state_people=[
             StatePerson(state_person_id='110035',
                         state_person_external_ids=[
@@ -1325,6 +1361,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                         state_sentence_groups=[
                             StateSentenceGroup(
                                 state_sentence_group_id='910324-19890825',
+                                state_supervision_sentences=[
+                                    sss_910324_19890825_2],
                                 state_incarceration_sentences=[
                                     sis_910324_19890825_1
                                 ])])])
@@ -3113,6 +3151,53 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             ssv_910324_19890825_r1_1)
         sis_910324_19890825_1.supervision_periods.append(
             placeholder_ssp_910324_19890825)
+
+        # TODO(2658): Re-use entities above once violations are a many to many
+        # association as opposed to 1 to many.
+        placeholder_ssp_910324_19890825_2 = \
+            entities.StateSupervisionPeriod.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+                supervision_sentences=[sss_910324_19890825_2],
+                person=person_910324,
+            )
+        ssv_910324_19890825_r1_1_dup = attr.evolve(
+            ssv_910324_19890825_r1_1,
+            supervision_violation_responses=[],
+            supervision_violated_conditions=[],
+            supervision_violation_types=[],
+            supervision_period=placeholder_ssp_910324_19890825_2,
+            person=person_910324)
+        ssvc_910324_19890825_r1_1_emp_dup = attr.evolve(
+            ssvc_910324_19890825_r1_1_emp,
+            supervision_violation=ssv_910324_19890825_r1_1_dup,
+            person=person_910324)
+        ssvt_910324_19890825_r1_1_m_dup = attr.evolve(
+            ssvt_910324_19890825_r1_1_m,
+            supervision_violation=ssv_910324_19890825_r1_1_dup,
+            person=person_910324)
+        ssvr_910324_19890825_r1_1_dup = attr.evolve(
+            ssvr_910324_19890825_r1_1,
+            supervision_violation_response_decisions=[],
+            supervision_violation=ssv_910324_19890825_r1_1_dup,
+            person=person_910324)
+        ssvrd_910324_19890825_r1_1_co_dup = attr.evolve(
+            ssvrd_910324_19890825_r1_1_co,
+            supervision_violation_response=ssvr_910324_19890825_r1_1_dup,
+            person=person_910324)
+
+        ssv_910324_19890825_r1_1_dup.supervision_violation_responses.append(
+            ssvr_910324_19890825_r1_1_dup)
+        ssv_910324_19890825_r1_1_dup.supervision_violated_conditions.append(
+            ssvc_910324_19890825_r1_1_emp_dup)
+        ssv_910324_19890825_r1_1_dup.supervision_violation_types.append(
+            ssvt_910324_19890825_r1_1_m_dup)
+        ssvr_910324_19890825_r1_1_dup.supervision_violation_response_decisions \
+            .append(ssvrd_910324_19890825_r1_1_co_dup)
+        placeholder_ssp_910324_19890825_2.supervision_violations.append(
+            ssv_910324_19890825_r1_1_dup)
+        sss_910324_19890825_2.supervision_periods.append(
+            placeholder_ssp_910324_19890825_2)
 
         # Act
         self._run_ingest_job_for_filename(
