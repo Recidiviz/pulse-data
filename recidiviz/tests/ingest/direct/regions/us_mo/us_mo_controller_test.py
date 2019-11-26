@@ -312,6 +312,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         county_code='US_MO_ST_LOUIS_CITY',
                                         max_length='3655253',
                                         is_life='True',
+                                        is_capital_punishment='Y',
                                         state_charges=[
                                             StateCharge(
                                                 offense_date=None,
@@ -338,6 +339,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         county_code='US_MO_ST_LOUIS_CITY',
                                         max_length='4Y 0M 0D',
                                         is_life='False',
+                                        is_capital_punishment='N',
                                         state_charges=[
                                             StateCharge(
                                                 offense_date='20000604',
@@ -373,6 +375,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         county_code='US_MO_ST_LOUIS_COUNTY',
                                         max_length='5Y 0M 0D',
                                         is_life='False',
+                                        is_capital_punishment=None,
                                         state_charges=[
                                             StateCharge(
                                                 offense_date='20141004',
@@ -408,6 +411,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         county_code='US_MO_ST_LOUIS_CITY',
                                         max_length='4Y 0M 0D',
                                         is_life='False',
+                                        is_capital_punishment='N',
                                         state_charges=[
                                             StateCharge(
                                                 offense_date='20000731',
@@ -430,6 +434,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         county_code='US_MO_ST_LOUIS_COUNTY',
                                         max_length='5Y 0M 0D',
                                         is_life='False',
+                                        is_capital_punishment='N',
                                         state_charges=[StateCharge(
                                             offense_date='20050301',
                                             ncic_code='3599',
@@ -449,6 +454,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         county_code='US_MO_ST_LOUIS_COUNTY',
                                         max_length='4Y 0M 0D',
                                         is_life='False',
+                                        is_capital_punishment='N',
                                         state_charges=[StateCharge(
                                             offense_date='20050301',
                                             ncic_code='4899',
@@ -479,6 +485,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         county_code='US_MO_LIVINGSTON',
                                         max_length='4Y 0M 0D',
                                         is_life='False',
+                                        is_capital_punishment='N',
                                         state_charges=[
                                             StateCharge(
                                                 offense_date=None,
@@ -1768,6 +1775,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 county_code='US_MO_ST_LOUIS_CITY',
                 max_length_days=3655253,
                 is_life=True,
+                is_capital_punishment=True,
                 person=person_110035,
                 sentence_group=sg_110035_19890901,
             )
@@ -1806,6 +1814,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 county_code='US_MO_ST_LOUIS_CITY',
                 max_length_days=1461,
                 is_life=False,
+                is_capital_punishment=False,
                 person=person_110035,
                 sentence_group=sg_110035_20010414,
             )
@@ -1847,6 +1856,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 county_code='US_MO_ST_LOUIS_COUNTY',
                 max_length_days=1826,
                 is_life=False,
+                is_capital_punishment=None,
                 person=person_310261,
                 sentence_group=sg_310261_19890821,
             )
@@ -1885,6 +1895,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 county_code='US_MO_ST_LOUIS_CITY',
                 max_length_days=1461,
                 is_life=False,
+                is_capital_punishment=False,
                 person=person_710448,
                 sentence_group=sg_710448_20010414,
             )
@@ -1922,6 +1933,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 county_code='US_MO_ST_LOUIS_COUNTY',
                 max_length_days=1826,
                 is_life=False,
+                is_capital_punishment=False,
                 person=person_710448,
                 sentence_group=sg_710448_20010414,
             )
@@ -1958,6 +1970,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 county_code='US_MO_ST_LOUIS_COUNTY',
                 max_length_days=1461,
                 is_life=False,
+                is_capital_punishment=False,
                 person=person_710448,
                 sentence_group=sg_710448_20010414,
             )
@@ -2000,6 +2013,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 county_code='US_MO_LIVINGSTON',
                 max_length_days=1461,
                 is_life=False,
+                is_capital_punishment=False,
                 person=person_910324,
                 sentence_group=sg_910324_19890825,
             )

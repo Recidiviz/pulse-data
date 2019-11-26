@@ -932,7 +932,7 @@ class StateIncarcerationSentence(IngestObject):
         self.min_length: Optional[str] = min_length
         self.max_length: Optional[str] = max_length
         self.is_life: Optional[str] = is_life
-        self.is_capital_punishment = is_capital_punishment
+        self.is_capital_punishment: Optional[str] = is_capital_punishment
         self.parole_possible: Optional[str] = parole_possible
         self.initial_time_served: Optional[str] = initial_time_served
         self.good_time: Optional[str] = good_time

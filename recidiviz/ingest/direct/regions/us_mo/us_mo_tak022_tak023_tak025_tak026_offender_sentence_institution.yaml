@@ -3,6 +3,7 @@ key_mappings:
   BS$PD: state_incarceration_sentence.projected_max_release_date
   BT$PC: state_incarceration_sentence.projected_min_release_date
   BT$SD: state_incarceration_sentence.date_imposed
+  BT$SDI: state_incarceration_sentence.is_capital_punishment
 
 
 child_key_mappings:
@@ -66,7 +67,6 @@ keys_to_ignore:
 - BT$OH   # TODO(2604) - Sentence 120 Day Date
 - BT$SCT  # TODO(2604) - Sentence Credit Time
 - BT$RE   # TODO(2604) - P&P Court Report Due Date
-- BT$SDI  # TODO(2606) - Sentence - I Death Indicator - Add is_death_sentence to schema.
 - BT$DCR  # Unused - Date Created (BT$* cols)
 - BT$TCR  # Unused - Time Created (BT$* cols)
 - BT$DLU  # Unused - Date Last Updated (BT$* cols)
