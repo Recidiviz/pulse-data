@@ -74,7 +74,7 @@ max_status_seq_with_max_update_date AS (
 	    MAX_UPDATE_DATE
 ),
 incarceration_sentence_status_explosion AS (
-        - Explosion of all incarceration sentences with one row per status update
+        -- Explosion of all incarceration sentences with one row per status update
 		SELECT *
 		FROM 
 			LBAKRDTA.TAK022 sentence_bs
