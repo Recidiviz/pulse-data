@@ -55,8 +55,8 @@ class BaseStateEntityMatcherTest(TestCase):
 
     def assert_people_match_pre_and_post_commit(
             self, expected_people, matched_people, match_session,
-            expected_unmatched_db_people=None):
-        self._assert_people_match(expected_people, matched_people)
+            expected_unmatched_db_people=None, debug=False):
+        self._assert_people_match(expected_people, matched_people, debug)
 
         # Sanity check that committing and reading the people from the DB
         # doesn't break/update any fields (except for DB ids).
@@ -70,7 +70,8 @@ class BaseStateEntityMatcherTest(TestCase):
         self._assert_people_match(
             expected_people, result_db_people)
 
-    def _assert_people_match(self, expected_people, matched_people):
+    def _assert_people_match(
+            self, expected_people, matched_people, debug=False):
         converted_matched = \
             converter.convert_schema_objects_to_entity(matched_people)
         db_expected_with_backedges = \
@@ -82,6 +83,13 @@ class BaseStateEntityMatcherTest(TestCase):
         clear_db_ids(converted_matched)
         clear_db_ids(expected_with_backedges)
 
+        if debug:
+            print('============== EXPECTED WITH BACKEDGES ==============')
+            for p in expected_with_backedges:
+                print(p)
+            print('============== CONVERTED MATCHED ==============')
+            for p in converted_matched:
+                print(p)
         self.assertCountEqual(expected_with_backedges, converted_matched)
 
     def _session(self):

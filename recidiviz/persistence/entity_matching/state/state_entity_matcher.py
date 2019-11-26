@@ -327,8 +327,6 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
 
         self.state_matching_delegate.perform_match_postprocessing(
             matched_persons)
-        logging.info('[Entity matching] Moving superivsing officer onto open '
-                     'supervision periods')
 
     def _perform_database_cleanup(
             self, session: Session,
@@ -441,7 +439,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
             return False
         # TODO(2658): Remove this check and add StateSupervisionViolation to the
         # multiparent_classes group above.
-        if self.state_matching_delegate.get_region_code() == 'US_MO' \
+        if self.state_matching_delegate.get_region_code().upper() == 'US_MO' \
             and cls == schema.StateSupervisionViolation:
             return False
         return True
@@ -764,7 +762,8 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
 
     def _match_placeholder_tree(
             self,
-            *, ingested_placeholder_tree: EntityTree,
+            *,
+            ingested_placeholder_tree: EntityTree,
             db_entity_trees: List[EntityTree],
             matched_entities_by_db_ids: Dict[int, List[DatabaseEntity]],
             root_entity_cls) \

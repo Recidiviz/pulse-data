@@ -62,7 +62,7 @@ _ID_TYPE = 'ID_TYPE'
 _FULL_NAME = 'FULL_NAME'
 _COUNTY_CODE = 'Iredell'
 _US_ND = 'US_ND'
-_OTHER_US_ND = 'NC'
+_OTHER_STATE_CODE = 'NC'
 _FACILITY = 'FACILITY'
 _FACILITY_2 = 'FACILITY_2'
 _DATE_1 = datetime.date(year=2019, month=1, day=1)
@@ -94,7 +94,7 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
         db_placeholder_person.sentence_groups = [db_sg]
         db_placeholder_person_other_state = generate_person(person_id=_ID_2)
         db_sg_other_state = generate_sentence_group(
-            sentence_group_id=_ID_2, state_code=_OTHER_US_ND,
+            sentence_group_id=_ID_2, state_code=_OTHER_STATE_CODE,
             external_id=_EXTERNAL_ID)
         db_placeholder_person_other_state.sentence_groups = [db_sg_other_state]
 
@@ -847,7 +847,7 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
 
         incarceration_period_different_state = \
             StateIncarcerationPeriod.new_with_defaults(
-                state_code=_OTHER_US_ND,
+                state_code=_OTHER_STATE_CODE,
                 external_id=_EXTERNAL_ID_4,
                 facility=_FACILITY,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
