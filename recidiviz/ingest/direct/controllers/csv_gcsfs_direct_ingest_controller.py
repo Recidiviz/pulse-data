@@ -91,7 +91,8 @@ class CsvGcsfsDirectIngestController(GcsfsDirectIngestController):
         for i, df in enumerate(pd.read_csv(
                 io.StringIO(str_contents),
                 dtype=str,
-                chunksize=self.file_split_line_limit)):
+                chunksize=self.file_split_line_limit,
+                keep_default_na=False)):
             upload_path = self._create_split_file_path(
                 path, output_dir, split_num=i)
             upload_paths_and_df.append((upload_path, df))
