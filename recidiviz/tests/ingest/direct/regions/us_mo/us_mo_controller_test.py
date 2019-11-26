@@ -60,6 +60,9 @@ from recidiviz.ingest.models.ingest_info import StatePerson, \
     StateSupervisionViolationResponse, StateSupervisionViolatedConditionEntry, \
     StateSupervisionViolationTypeEntry, \
     StateSupervisionViolationResponseDecisionEntry
+from recidiviz.persistence.database.base_schema import StateBase
+from recidiviz.persistence.database.schema.state import dao
+from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.entity.entity_utils import get_all_entities_from_tree
 from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.ingest.direct.regions.\
@@ -2537,9 +2540,9 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         expected_people.append(person_867530)
 
         # Act
-        # pylint: disable=line-too-long
         self._run_ingest_job_for_filename(
-            'tak158_tak023_incarceration_period_from_incarceration_sentence.csv')
+            'tak158_tak023_incarceration_period_from_incarceration_sentence.csv'
+        )
 
         # Assert
         self.assert_expected_db_people(expected_people)
@@ -3359,3 +3362,35 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
 
         # Assert
         self.assert_expected_db_people(expected_people)
+
+    def test_run_incarceration_period_na_not_converted_to_NaN(self) -> None:
+        """Tests that values of 'NA' are not automatically converted to NaN
+        (Not A Number) by our CSV reader, Pandas, thus essentially converting
+        them into empty values that are lost.
+
+        The test works by turning the file line limit down to 1, because the
+        issue is triggered particularly when a file is split: the process of
+        writing the parsed chunk of CSV back out to a new file persists the
+        conversion from 'NA' to NaN that Pandas produced when it read the raw
+        file in to be split.
+        """
+        self.controller.file_split_line_limit = 1
+
+        self._run_ingest_job_for_filename(
+            'tak158_tak023_incarceration_period_from_incarceration_sentence.csv'
+        )
+
+        session = SessionFactory.for_schema_base(StateBase)
+        found_people_from_db = dao.read_people(session)
+        found_people = self.convert_and_clear_db_ids(found_people_from_db)
+
+        compliant_periods = 0
+        for person in found_people:
+            for sg in person.sentence_groups:
+                for sentence in sg.incarceration_sentences:
+                    for period in sentence.incarceration_periods:
+                        self.assertIsNotNone(period.admission_reason)
+                        self.assertIsNotNone(period.admission_reason_raw_text)
+                        compliant_periods += 1
+
+        self.assertEqual(compliant_periods, 11)
