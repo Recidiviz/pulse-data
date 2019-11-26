@@ -3407,4 +3407,5 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                         self.assertIsNotNone(period.admission_reason_raw_text)
                         compliant_periods += 1
 
-        self.assertEqual(compliant_periods, 11)
+        # Asserting that we processed every row in the file successfully
+        self.assertEqual(compliant_periods, 12)
