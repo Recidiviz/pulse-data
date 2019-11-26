@@ -167,19 +167,8 @@ def gen_map_ymd_counts_to_max_length_field_posthook(
             extracted_objects: List[IngestObject],
             _cache: IngestObjectCache):
 
-        def normalize_numerical_str(numerical_str: str) -> str:
-            no_commas_str = numerical_str.replace(',', '')
-
-            if not no_commas_str:
-                return '0'
-
-            return no_commas_str
-
-        years = normalize_numerical_str(row[years_col_name])
-        months = normalize_numerical_str(row[months_col_name])
-        days = normalize_numerical_str(row[days_col_name])
-
-        length_str = f'{years}Y {months}M {days}D'
+        length_str = get_normalized_ymd_str(
+            years_col_name, months_col_name, days_col_name, row)
         if test_for_fallback and not test_for_fallback(length_str):
             if fallback_parser:
                 length_str = fallback_parser(length_str)
@@ -189,6 +178,32 @@ def gen_map_ymd_counts_to_max_length_field_posthook(
                 extracted_object.__setattr__('max_length', length_str)
 
     return _normalize_ymd_codes
+
+
+def get_normalized_ymd_str(
+        years_col_name: str,
+        months_col_name: str,
+        days_col_name: str,
+        row: Dict[str, str]):
+    """Given a |row| and column names that correspond to fields with year,
+    month, and day information, returns a single normalized string representing
+    this information.
+
+    Example output: '10Y 5M 0D'
+    """
+    def normalize_numerical_str(numerical_str: str) -> str:
+        no_commas_str = numerical_str.replace(',', '')
+
+        if not no_commas_str:
+            return '0'
+
+        return no_commas_str
+
+    years = normalize_numerical_str(row[years_col_name])
+    months = normalize_numerical_str(row[months_col_name])
+    days = normalize_numerical_str(row[days_col_name])
+
+    return f'{years}Y {months}M {days}D'
 
 
 def gen_set_is_life_sentence_hook(

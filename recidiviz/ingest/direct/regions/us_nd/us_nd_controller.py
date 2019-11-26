@@ -67,8 +67,8 @@ from recidiviz.ingest.direct.direct_ingest_controller_utils import \
 from recidiviz.ingest.direct.state_shared_row_posthooks import \
     copy_name_to_alias, gen_label_single_external_id_hook, \
     gen_normalize_county_codes_posthook, \
-    gen_map_ymd_counts_to_max_length_field_posthook, \
-    gen_set_is_life_sentence_hook, gen_convert_person_ids_to_external_id_objects
+    gen_set_is_life_sentence_hook, \
+    gen_convert_person_ids_to_external_id_objects, get_normalized_ymd_str
 from recidiviz.ingest.direct.regions.us_nd.us_nd_county_code_reference import \
     normalized_county_code
 from recidiviz.ingest.direct.regions.us_nd.\
@@ -86,7 +86,6 @@ from recidiviz.ingest.models.ingest_info import IngestObject, \
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 from recidiviz.utils import environment
 
-_SUPERVISION_SENTENCE_ID_SUFFIX = '_SUPERVISION'
 _DOCSTARS_NEGATIVE_PATTERN: Pattern = re.compile(r'^\((?P<value>-?\d+)\)$')
 
 
@@ -128,13 +127,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
                                               StateIncarcerationSentence)
             ],
             'elite_offendersentenceterms': [
-                gen_map_ymd_counts_to_max_length_field_posthook(
-                    'YEARS',
-                    'MONTHS',
-                    'DAYS',
-                    StateIncarcerationSentence
-                ),
-                self._convert_to_supervision_sentence],
+                self._add_sentence_children],
             'elite_offenderchargestable': [
                 self._parse_elite_charge_classification,
                 self._set_elite_charge_status,
@@ -185,7 +178,6 @@ class UsNdController(CsvGcsfsDirectIngestController):
 
         self.primary_key_override_hook_by_file: Dict[str, Callable] = {
             'elite_offendersentences': _generate_sentence_primary_key,
-            'elite_offendersentenceterms': _generate_sentence_primary_key,
             'elite_externalmovements': _generate_period_primary_key,
             'elite_offenderchargestable': _generate_charge_primary_key,
             'elite_offense_in_custody_and_pos_report_data':
@@ -373,30 +365,6 @@ class UsNdController(CsvGcsfsDirectIngestController):
             if isinstance(extracted_object, StatePersonExternalId):
                 id_type = f"US_ND_{extracted_object.id_type}"
                 extracted_object.__setattr__('id_type', id_type)
-
-    @staticmethod
-    def _convert_to_supervision_sentence(_file_tag: str,
-                                         row: Dict[str, str],
-                                         extracted_objects: List[IngestObject],
-                                         cache: IngestObjectCache):
-        """Finds any incarceration sentence objects created by a row in the
-        sentence terms file of Elite that are actually probation sentences,
-        and converts them to supervision sentence objects."""
-        is_supervision = row['SENTENCE_TERM_CODE'] == 'SUSP'
-        if not is_supervision:
-            return
-
-        sentence_group_id = row['OFFENDER_BOOK_ID']
-        sentence_group = cache.get_object_by_id('state_sentence_group',
-                                                sentence_group_id)
-
-        for extracted_object in extracted_objects:
-            if isinstance(extracted_object, StateIncarcerationSentence) \
-                    and extracted_object in \
-                    sentence_group.state_incarceration_sentences:
-                _convert_to_supervision_sentence(extracted_object,
-                                                 sentence_group,
-                                                 cache)
 
     @staticmethod
     def _process_external_movement(_file_tag: str,
@@ -735,6 +703,33 @@ class UsNdController(CsvGcsfsDirectIngestController):
                 extracted_object.agent_type = StateAgentType.JUDGE.value
 
     @staticmethod
+    def _add_sentence_children(_file_tag: str,
+                               row: Dict[str, str],
+                               extracted_objects: List[IngestObject],
+                               _cache: IngestObjectCache):
+        term_code = row.get('SENTENCE_TERM_CODE', None)
+        for extracted_object in extracted_objects:
+            if isinstance(extracted_object, StateSentenceGroup):
+                sentence_id = _generate_sentence_id(row)
+                max_length = get_normalized_ymd_str(
+                    'YEARS', 'MONTHS', 'DAYS', row)
+                if term_code == 'SUSP':
+                    supervision_sentence = StateSupervisionSentence(
+                        state_supervision_sentence_id=sentence_id,
+                        supervision_type=StateSupervisionType.PROBATION.value,
+                        max_length=max_length)
+                    create_if_not_exists(
+                        supervision_sentence, extracted_object,
+                        'state_supervision_sentences')
+                else:
+                    incarceration_sentence = StateIncarcerationSentence(
+                        state_incarceration_sentence_id=sentence_id,
+                        max_length=max_length)
+                    create_if_not_exists(
+                        incarceration_sentence, extracted_object,
+                        'state_incarceration_sentences')
+
+    @staticmethod
     def _set_elite_charge_status(_file_tag: str,
                                  _row: Dict[str, str],
                                  extracted_objects: List[IngestObject],
@@ -933,13 +928,7 @@ def _generate_sentence_primary_key(_file_tag: str, row: Dict[str, str]) \
 def _generate_sentence_id(row: Dict[str, str]) -> str:
     sentence_group_id = row['OFFENDER_BOOK_ID']
     sentence_seq = row['SENTENCE_SEQ']
-
-    term_code = row.get('SENTENCE_TERM_CODE', None)
-
     sentence_id = '-'.join([sentence_group_id, sentence_seq])
-    if term_code == 'SUSP':
-        sentence_id = sentence_id + _SUPERVISION_SENTENCE_ID_SUFFIX
-
     return sentence_id
 
 
@@ -955,28 +944,6 @@ def _generate_incident_id(row: Dict[str, str]) -> str:
     person_incident_id = row['OIC_INCIDENT_ID']
 
     return '-'.join([overall_incident_id, person_incident_id])
-
-
-def _convert_to_supervision_sentence(just_updated: StateIncarcerationSentence,
-                                     sentence_group: StateSentenceGroup,
-                                     cache: IngestObjectCache):
-    obj_id = just_updated.state_incarceration_sentence_id
-
-    if obj_id is None or len(obj_id) < len(_SUPERVISION_SENTENCE_ID_SUFFIX):
-        raise ValueError(f"Unexpected obj_id [{obj_id}]")
-
-    cache.clear_object_by_id('state_incarceration_sentence', obj_id)
-
-    corrected_obj_id = obj_id[:-len(_SUPERVISION_SENTENCE_ID_SUFFIX)]
-    supervision_sentence = sentence_group.create_state_supervision_sentence(
-        state_supervision_sentence_id=corrected_obj_id,
-        supervision_type=StateSupervisionType.PROBATION.value,
-        max_length=just_updated.max_length
-    )
-    sentence_group.state_incarceration_sentences.remove(just_updated)
-
-    cache.cache_object_by_id('state_supervision_sentence',
-                             corrected_obj_id, supervision_sentence)
 
 
 def _generate_period_primary_key(_file_tag: str,
