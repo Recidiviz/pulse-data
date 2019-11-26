@@ -22,7 +22,7 @@ import apache_beam as beam
 from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.testing.util import assert_that, equal_to
 
-from recidiviz.calculator.utils import beam_utils
+from recidiviz.calculator.pipeline.utils import beam_utils
 
 
 class TestBeamUtils(unittest.TestCase):

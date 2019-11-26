@@ -31,7 +31,7 @@ import string
 from apache_beam.options.pipeline_options import PipelineOptions
 
 
-from recidiviz.calculator.utils import execution_utils
+from recidiviz.calculator.pipeline.utils import execution_utils
 
 
 class TestGetJobID(unittest.TestCase):

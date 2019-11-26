@@ -23,9 +23,9 @@ import logging
 import flask
 from flask import request
 
-from recidiviz.calculator.utils.calculate_cloud_task_manager import \
+from recidiviz.calculator.pipeline.utils.calculate_cloud_task_manager import \
     CalculateCloudTaskManager
-from recidiviz.calculator.utils.execution_utils import get_job_with_id
+from recidiviz.calculator.pipeline.utils.execution_utils import get_job_with_id
 from recidiviz.utils.auth import authenticate_request
 from recidiviz.utils import pubsub_helper, metadata
 

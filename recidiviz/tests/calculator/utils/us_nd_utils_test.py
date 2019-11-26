@@ -18,7 +18,8 @@
 import unittest
 from datetime import date
 
-from recidiviz.calculator.utils.us_nd_utils import set_missing_admission_data
+from recidiviz.calculator.pipeline.utils.us_nd_utils import \
+    set_missing_admission_data
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus
 from recidiviz.common.constants.state.state_incarceration_period import \

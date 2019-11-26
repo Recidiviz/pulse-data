@@ -23,7 +23,7 @@ from unittest import mock
 import flask
 from jsonpickle import json
 
-from recidiviz.calculator.utils import dataflow_monitor_manager
+from recidiviz.calculator.pipeline.utils import dataflow_monitor_manager
 
 MONITOR_MANAGER_PACKAGE_NAME = dataflow_monitor_manager.__name__
 

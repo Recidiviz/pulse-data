@@ -28,8 +28,6 @@ Attributes:
         recidivism over, from 1 to 10.
 """
 import logging
-from itertools import combinations
-
 from typing import Any, Dict, List, Optional, Tuple
 
 from copy import deepcopy
@@ -37,15 +35,19 @@ import datetime
 from datetime import date
 from dateutil.relativedelta import relativedelta
 
-from recidiviz.calculator.recidivism.release_event import ReleaseEvent, \
-    RecidivismReleaseEvent, NonRecidivismReleaseEvent, \
+from recidiviz.calculator.pipeline.recidivism.metrics import \
+    ReincarcerationRecidivismMetricType
+from recidiviz.calculator.pipeline.recidivism.release_event import \
+    ReleaseEvent, RecidivismReleaseEvent, NonRecidivismReleaseEvent, \
     ReincarcerationReturnType, ReincarcerationReturnFromSupervisionType
-from recidiviz.calculator.recidivism.metrics import RecidivismMethodologyType
+from recidiviz.calculator.pipeline.utils.metric_utils import \
+    MetricMethodologyType
+from recidiviz.calculator.pipeline.utils.calculator_utils import age_at_date, \
+    age_bucket, for_characteristics_races_ethnicities, for_characteristics, \
+    augment_combination
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
-from recidiviz.persistence.entity.state.entities import StatePerson, \
-    StatePersonRace, StatePersonEthnicity
-
+from recidiviz.persistence.entity.state.entities import StatePerson
 
 # We measure in 1-year follow up periods up to 10 years after date of release.
 FOLLOW_UP_PERIODS = range(1, 11)
@@ -170,7 +172,7 @@ def map_recidivism_rate_combinations(
         event.release_date, date.today(), FOLLOW_UP_PERIODS)
 
     for combo in characteristic_combos:
-        combo['metric_type'] = 'rate'
+        combo['metric_type'] = ReincarcerationRecidivismMetricType.RATE
         combo['release_cohort'] = release_cohort
 
         metrics.extend(combination_rate_metrics(
@@ -218,7 +220,7 @@ def map_recidivism_count_combinations(
                              last_day_of_month(reincarceration_date).day)
 
         for combo in characteristic_combos:
-            combo['metric_type'] = 'count'
+            combo['metric_type'] = ReincarcerationRecidivismMetricType.COUNT
 
             # Year bucket
             combo['start_date'] = year_start_day
@@ -258,7 +260,7 @@ def map_recidivism_liberty_combinations(
                              last_day_of_month(reincarceration_date).day)
 
         for combo in characteristic_combos:
-            combo['metric_type'] = 'liberty'
+            combo['metric_type'] = ReincarcerationRecidivismMetricType.LIBERTY
 
             # Year bucket
             combo['start_date'] = year_start_day
@@ -454,48 +456,6 @@ def relevant_follow_up_periods(release_date: date, current_date: date,
             if release_date + relativedelta(years=period - 1) <= current_date]
 
 
-def age_at_date(person: StatePerson, check_date: date) -> Optional[int]:
-    """Calculates the age of the StatePerson at the given date.
-
-    Args:
-        person: the StatePerson
-        check_date: the date to check
-
-    Returns:
-        The age of the StatePerson at the given date. None if no birthdate is
-         known.
-    """
-    birthdate = person.birthdate
-    return None if birthdate is None else \
-        check_date.year - birthdate.year - \
-        ((check_date.month, check_date.day) < (birthdate.month, birthdate.day))
-
-
-def age_bucket(age: Optional[int]) -> Optional[str]:
-    """Calculates the age bucket that applies to measurement.
-
-    Age buckets for measurement: <25, 25-29, 30-34, 35-39, 40<
-
-    Args:
-        age: the person's age
-
-    Returns:
-        A string representation of the age bucket for the person. None if the
-            age is not known.
-    """
-    if age is None:
-        return None
-    if age < 25:
-        return '<25'
-    if age <= 29:
-        return '25-29'
-    if age <= 34:
-        return '30-34'
-    if age <= 39:
-        return '35-39'
-    return '40<'
-
-
 def stay_length_from_event(event: ReleaseEvent) -> Optional[int]:
     """Calculates the length of facility stay of a given event in months.
 
@@ -570,7 +530,7 @@ def characteristic_combinations(person: StatePerson,
 
     For each event, we need to calculate metrics across combinations of:
     Release Cohort; Follow-up Period (up to 10 years);
-    RecidivismMethodologyType (Event-based, Person-based);
+    MetricMethodologyType (Event-based, Person-based);
     Demographics (age, race, ethnicity, gender); Location (facility, region);
     Facility Stay Breakdown (stay length);
     Return Descriptors (return type, from supervision type)
@@ -655,90 +615,6 @@ def characteristic_combinations(person: StatePerson,
     return for_characteristics(characteristics)
 
 
-def for_characteristics_races_ethnicities(
-        races: List[StatePersonRace], ethnicities: List[StatePersonEthnicity],
-        characteristics: Dict[str, Any]) -> List[Dict[str, Any]]:
-    """Produces the list of all combinations of the given metric
-    characteristics, given the fact that there can be multiple races and
-    ethnicities present.
-
-    For example, this function call:
-        for_characteristics_races_ethnicities(races: [Race.BLACK, Race.WHITE],
-        ethnicities: [Ethnicity.HISPANIC, Ethnicity.NOT_HISPANIC],
-        characteristics: {'gender': Gender.FEMALE, 'age': '<25'})
-
-    First computes all combinations for the given characteristics. Then, for
-    each race present, adds a copy of each combination augmented with the race.
-    For each ethnicity present, adds a copy of each combination augmented with
-    the ethnicity. Finally, for every combination of race and ethnicity, adds a
-    copy of each combination augmented with both the race and the ethnicity.
-    """
-    # Initial combinations
-    combos: List[Dict[str, Any]] = for_characteristics(characteristics)
-
-    # Race additions
-    race_combos: List[Dict[Any, Any]] = []
-    for race_object in races:
-        for combo in combos:
-            augmented_combo = combo.copy()
-            augmented_combo['race'] = race_object.race
-            race_combos.append(augmented_combo)
-
-    # Ethnicity additions
-    ethnicity_combos: List[Dict[Any, Any]] = []
-    for ethnicity_object in ethnicities:
-        for combo in combos:
-            augmented_combo = combo.copy()
-            augmented_combo['ethnicity'] = ethnicity_object.ethnicity
-            ethnicity_combos.append(augmented_combo)
-
-    # Multi-race and ethnicity additions
-    race_ethnicity_combos: List[Dict[Any, Any]] = []
-    for race_object in races:
-        for ethnicity_object in ethnicities:
-            for combo in combos:
-                augmented_combo = combo.copy()
-                augmented_combo['race'] = race_object.race
-                augmented_combo['ethnicity'] = ethnicity_object.ethnicity
-                race_ethnicity_combos.append(augmented_combo)
-
-    combos = combos + race_combos + ethnicity_combos + race_ethnicity_combos
-
-    return combos
-
-
-def for_characteristics(characteristics) -> List[Dict[str, Any]]:
-    """Produces the list of all combinations of the given metric
-     characteristics.
-
-    Example:
-        for_characteristics(
-        {'race': Race.BLACK, 'gender': Gender.FEMALE, 'age': '<25'}) =
-            [{},
-            {'age': '<25'}, {'race': Race.BLACK}, {'gender': Gender.FEMALE},
-            {'age': '<25', 'race': Race.BLACK}, {'age': '<25',
-                'gender': Gender.FEMALE},
-            {'race': Race.BLACK, 'gender': Gender.FEMALE},
-            {'age': '<25', 'race': Race.BLACK, 'gender': Gender.FEMALE}]
-
-
-    Args:
-        characteristics: a dictionary of metric characteristics to derive
-            combinations from
-
-    Returns:
-        A list of dictionaries containing all unique combinations of
-        characteristics.
-    """
-    combos: List[Dict[Any, Any]] = [{}]
-    for i in range(len(characteristics)):
-        i_combinations = map(dict,
-                             combinations(characteristics.items(), i + 1))
-        for combo in i_combinations:
-            combos.append(combo)
-    return combos
-
-
 def combination_rate_metrics(combo: Dict[str, Any], event: ReleaseEvent,
                              all_reincarcerations: Dict[date, Dict[str, Any]],
                              earliest_recidivism_period: Optional[int],
@@ -771,10 +647,10 @@ def combination_rate_metrics(combo: Dict[str, Any], event: ReleaseEvent,
 
     for period in relevant_periods:
         person_based_combos = augmented_combo_list(
-            combo, event.state_code, RecidivismMethodologyType.PERSON, period)
+            combo, event.state_code, MetricMethodologyType.PERSON, period)
 
         event_based_combos = augmented_combo_list(
-            combo, event.state_code, RecidivismMethodologyType.EVENT, period)
+            combo, event.state_code, MetricMethodologyType.EVENT, period)
 
         # If they didn't recidivate at all or not yet for this period
         # (or they didn't recidivate until 10 years had passed),
@@ -852,10 +728,10 @@ def combination_count_metrics(combo: Dict[str, Any], event:
     # However, for person-based measurement, only one instance may be counted
     # in a given window.
     person_based_combos = augmented_combo_list(
-        combo, event.state_code, RecidivismMethodologyType.PERSON, None)
+        combo, event.state_code, MetricMethodologyType.PERSON, None)
 
     event_based_combos = augmented_combo_list(
-        combo, event.state_code, RecidivismMethodologyType.EVENT, None)
+        combo, event.state_code, MetricMethodologyType.EVENT, None)
 
     # Adds one day because the reincarcerations_in_window function is
     # exclusive of the end date, and we want the count to include
@@ -927,10 +803,10 @@ def combination_liberty_metrics(combo: Dict[str, Any], event:
         return metrics
 
     person_based_combos = augmented_combo_list(
-        combo, event.state_code, RecidivismMethodologyType.PERSON, None)
+        combo, event.state_code, MetricMethodologyType.PERSON, None)
 
     event_based_combos = augmented_combo_list(
-        combo, event.state_code, RecidivismMethodologyType.EVENT, None)
+        combo, event.state_code, MetricMethodologyType.EVENT, None)
 
     # Adds one day because the reincarcerations_in_window function is
     # exclusive of the end date, and we want the count to include
@@ -979,7 +855,7 @@ def combination_liberty_metrics(combo: Dict[str, Any], event:
 
 def augmented_combo_list(combo: Dict[str, Any],
                          state_code: str,
-                         methodology: RecidivismMethodologyType,
+                         methodology: MetricMethodologyType,
                          period: Optional[int]) -> List[Dict[str, Any]]:
     """Returns a list of combo dictionaries that have been augmented with
     necessary parameters.
@@ -991,7 +867,7 @@ def augmented_combo_list(combo: Dict[str, Any],
     Args:
         combo: the base combo to be augmented with methodology and period
         state_code: the state code of the metric combo
-        methodology: the RecidivismMethodologyType to add to each combo
+        methodology: the MetricMethodologyType to add to each combo
         period: the follow_up_period value to add to each combo
 
     Returns: a list of combos augmented with various parameters
@@ -1105,26 +981,3 @@ def recidivism_value_for_metric(
             return 0
 
     return 1
-
-
-def augment_combination(characteristic_combo: Dict[str, Any],
-                        parameters: Dict[str, Any]) -> Dict[str, Any]:
-    """Returns a copy of the combo with the additional parameters added.
-
-    Creates a shallow copy of the given characteristic combination and sets the
-    given attributes on the copy. This avoids updating the
-    existing characteristic combo.
-
-    Args:
-        characteristic_combo: the combination to copy and augment
-        parameters: dictionary of additional attributes to add to the combo
-
-    Returns:
-        The augmented characteristic combination, ready for tracking.
-    """
-    augmented_combo = characteristic_combo.copy()
-
-    for key, value in parameters.items():
-        augmented_combo[key] = value
-
-    return augmented_combo
