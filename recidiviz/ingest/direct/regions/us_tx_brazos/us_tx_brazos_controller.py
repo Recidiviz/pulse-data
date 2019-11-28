@@ -18,8 +18,7 @@
 """Direct ingest controller implementation for us_tx_brazos."""
 import re
 from datetime import datetime
-from io import StringIO
-from typing import List, Optional, Iterable, cast
+from typing import List, Optional, cast, Iterator
 
 import attr
 import pandas as pd
@@ -34,6 +33,8 @@ from recidiviz.common.constants.person_characteristics import Race
 from recidiviz.common.ingest_metadata import SystemLevel, IngestMetadata
 from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller \
     import CsvGcsfsDirectIngestController
+from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
+    GcsfsFileContentsHandle
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     GcsfsIngestArgs, filename_parts_from_path
 from recidiviz.persistence import persistence
@@ -44,21 +45,31 @@ class UsTxBrazosController(CsvGcsfsDirectIngestController):
 
     def __init__(self,
                  ingest_directory_path: Optional[str] = 'us-tx-brazos',
-                 storage_directory_path: Optional[str] = None):
+                 storage_directory_path: Optional[str] = None,
+                 max_delay_sec_between_files: Optional[int] = None):
         super(UsTxBrazosController, self).__init__(
             'us_tx_brazos',
             SystemLevel.COUNTY,
             ingest_directory_path,
-            storage_directory_path)
+            storage_directory_path,
+            max_delay_sec_between_files)
 
     def _get_file_tag_rank_list(self) -> List[str]:
         return ['VERABrazosJailData']
 
+    class DataFrameContentsHandle(GcsfsFileContentsHandle):
+        def __init__(self, local_path, df):
+            super().__init__(local_path)
+            self.df = df
+
+        def get_contents_iterator(self) -> Iterator[str]:
+            return self.df.to_csv(index=False)
+
     def _parse(self,
                args: GcsfsIngestArgs,
-               contents: Iterable[str]) -> IngestInfo:
+               contents_handle: GcsfsFileContentsHandle) -> IngestInfo:
         # Preprocess raw data.
-        df = pd.read_csv(StringIO('\n'.join(contents)), dtype=str).fillna('')
+        df = pd.read_csv(contents_handle.local_file_path, dtype=str).fillna('')
         df = df[df['Custody Status'] != 'Released']
         # People who are rearrested can have multiple bonds for the same charge;
         # the bond with the greatest ID is the most current one.
@@ -68,7 +79,9 @@ class UsTxBrazosController(CsvGcsfsDirectIngestController):
         # per person.
         df['Booking Number'] += ' (Individual ID: ' + df['Individual ID'] + ')'
 
-        ingest_info = super()._parse(args, df.to_csv(index=False))
+        ingest_info = super()._parse(args,
+                                     self.DataFrameContentsHandle(
+                                         contents_handle.local_file_path, df))
 
         # Postprocess IngestInfo
         for charge in ingest_info.get_all_charges():
@@ -95,7 +108,8 @@ class UsTxBrazosController(CsvGcsfsDirectIngestController):
         return any(charge_name.startswith(charge_note)
                    for charge_note in CHARGE_NOTES)
 
-    def _file_meets_file_line_limit(self, contents: Iterable[str]):
+    def _file_meets_file_line_limit(
+            self, _contents_handle: GcsfsFileContentsHandle) -> bool:
         """The CSV files must be processed all at once, so do not split."""
         return True
 

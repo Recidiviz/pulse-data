@@ -57,6 +57,7 @@ from recidiviz.common.constants.state.state_supervision_violation_response \
     import StateSupervisionViolationResponseType, \
     StateSupervisionViolationResponseRevocationType, \
     StateSupervisionViolationResponseDecision
+from recidiviz.common.str_field_utils import normalize
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
     GcsfsDirectIngestController
 from recidiviz.ingest.direct.regions.us_nd.us_nd_controller import \
@@ -75,25 +76,25 @@ from recidiviz.tests.ingest.direct.regions.\
     BaseStateDirectIngestControllerTests
 
 _INCIDENT_DETAILS_1 = \
-    '230Inmate Jon Hopkins would not follow directives to stop and be pat ' \
+    '230\nInmate Jon Hopkins would not follow directives to stop and be pat ' \
     'searched when coming from the IDR past traffic.'
 _INCIDENT_DETAILS_2 = \
-    '210R 221RInmate Hopkins was walking through the lunch line in the IDR ' \
+    '210R 221R\nInmate Hopkins was walking through the lunch line in the IDR ' \
     'when he cut through one of the last rows of tables and when confronted ' \
     'he threatened Geer.'
 _INCIDENT_DETAILS_3 = \
-    '230EInmate Hopkins was observed putting peanut butter and jelly in his ' \
-    'pockets in the IDR.  He ignored staff multiple times when they called ' \
-    'his name to get his attention.  He looked at staff, but continued to ' \
-    'ignore him and then walked out of the IDR.This report was reheard and ' \
-    'resolved informally on 3/27/18.'
+    '230E\nInmate Hopkins was observed putting peanut butter and jelly in ' \
+    'his pockets in the IDR.  He ignored staff multiple times when they ' \
+    'called his name to get his attention.  He looked at staff, but ' \
+    'continued to ignore him and then walked out of the IDR.\n\nThis report ' \
+    'was reheard and resolved informally on 3/27/18.'
 _INCIDENT_DETAILS_4 = \
-    '101Inmate Knowles and another inmate were involved in a possible fight.'
+    '101\nInmate Knowles and another inmate were involved in a possible fight.'
 _INCIDENT_DETAILS_5 = \
-    '305 215EInmate Knowles was involved in a gang related assault on ' \
+    '305 215E\nInmate Knowles was involved in a gang related assault on ' \
     'another inmate.'
 _INCIDENT_DETAILS_6 = \
-    '227Staff saw Martha Stewart with a cigarette to her mouth in the ' \
+    '227\nStaff saw Martha Stewart with a cigarette to her mouth in the ' \
     'bathroom. Stewart admitted to smoking the cigarette.'
 _STATE_CODE = 'US_ND'
 
@@ -104,7 +105,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
     """
 
     @classmethod
-    def state_code(cls) -> str:
+    def region_code(cls) -> str:
         return _STATE_CODE.lower()
 
     @classmethod
@@ -2498,7 +2499,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
             incident_date=datetime.date(year=2019, month=1, day=27),
             facility='NDSP', location_within_facility='TRAF',
             state_code=_STATE_CODE,
-            incident_details=_INCIDENT_DETAILS_1.upper(),
+            incident_details=normalize(_INCIDENT_DETAILS_1),
             incarceration_period=incarceration_period_105640_1,
             person=incarceration_sentence_105640_1.person)
         outcome_353844_41 = \
@@ -2523,7 +2524,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
             incident_type=StateIncarcerationIncidentType.MINOR_OFFENSE,
             incident_type_raw_text='MINOR', facility='JRCC',
             state_code=_STATE_CODE, location_within_facility='IDR',
-            incident_details=_INCIDENT_DETAILS_2.upper(),
+            incident_details=normalize(_INCIDENT_DETAILS_2),
             incarceration_period=incarceration_period_105640_3,
             person=incarceration_period_105640_3.person)
         incarceration_period_105640_3.incarceration_incidents.append(
@@ -2536,7 +2537,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
             incident_date=datetime.date(year=2019, month=1, day=17),
             facility='NDSP', state_code=_STATE_CODE,
             location_within_facility='IDR',
-            incident_details=_INCIDENT_DETAILS_3.upper().replace('  ', ' '),
+            incident_details=normalize(_INCIDENT_DETAILS_3.upper()),
             incarceration_period=incarceration_period_105640_1,
             person=incarceration_sentence_105640_1.person)
         outcome_378515_57 = \
@@ -2584,7 +2585,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
             incident_date=datetime.date(year=2018, month=3, day=22),
             facility='NDSP', state_code=_STATE_CODE,
             location_within_facility='SU1',
-            incident_details=_INCIDENT_DETAILS_4.upper(),
+            incident_details=normalize(_INCIDENT_DETAILS_4),
             incarceration_period=incarceration_period_113377_1,
             person=incarceration_period_113377_1.person)
         incarceration_period_113377_1.incarceration_incidents.append(
@@ -2616,7 +2617,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
             incident_date=datetime.date(year=2019, month=1, day=27),
             facility='NDSP', state_code=_STATE_CODE,
             location_within_facility='TRAF',
-            incident_details=_INCIDENT_DETAILS_5.upper(),
+            incident_details=normalize(_INCIDENT_DETAILS_5),
             incarceration_period=incarceration_period_110651_placeholder,
             person=incarceration_period_110651_placeholder.person)
         outcome_366571_29 = \
@@ -2674,7 +2675,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
             incident_date=datetime.date(year=2018, month=4, day=17),
             facility='MRCC',
             location_within_facility='HRT1',
-            incident_details=_INCIDENT_DETAILS_6.upper(),
+            incident_details=normalize(_INCIDENT_DETAILS_6),
             state_code=_STATE_CODE,
             incarceration_period=incarceration_period_5129_placeholder,
             person=incarceration_sentence_5129_placeholder.person)

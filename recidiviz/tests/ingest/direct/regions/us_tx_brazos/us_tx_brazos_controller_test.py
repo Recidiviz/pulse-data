@@ -16,49 +16,49 @@
 # =============================================================================
 """Tests for the direct ingest parser.py."""
 import datetime
-from unittest import TestCase
+from typing import Type
 
 from mock import patch, Mock
+from sqlalchemy.ext.declarative import DeclarativeMeta
 
 from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
+    GcsfsDirectIngestController
 from recidiviz.ingest.direct.regions.us_tx_brazos.us_tx_brazos_controller \
     import UsTxBrazosController
 from recidiviz.ingest.models.ingest_info import Arrest, Bond, Booking, Charge, \
     Hold, Person, IngestInfo
 from recidiviz.persistence.database.base_schema import JailsBase
-from recidiviz.tests.ingest import fixtures
 from recidiviz.tests.ingest.direct.direct_ingest_util import \
-    build_gcsfs_controller_for_tests, \
-    ingest_args_for_fixture_file, path_for_fixture_file, process_task_queues
-from recidiviz.tests.utils import fakes
+    path_for_fixture_file, process_task_queues
+from recidiviz.tests.ingest.direct.regions.base_direct_ingest_controller_tests \
+    import BaseDirectIngestControllerTests
 from recidiviz.tests.utils.individual_ingest_test import IndividualIngestTest
 from recidiviz.utils import regions
 
-FIXTURE_PATH_PREFIX = 'direct/regions/us_tx_brazos'
-_ROSTER_PATH_CONTENTS = fixtures.as_string(
-    FIXTURE_PATH_PREFIX, 'VERABrazosJailData_01012019_115703.csv').split('\n')
 _FAKE_START_TIME = datetime.datetime(year=2019, month=1, day=2)
 
 
 @patch('recidiviz.utils.metadata.project_id',
        Mock(return_value='recidiviz-staging'))
-class UsTxBrazosControllerTest(IndividualIngestTest, TestCase):
+class UsTxBrazosControllerTest(IndividualIngestTest,
+                               BaseDirectIngestControllerTests):
     """Test Brazos direct ingest.
     """
 
-    def setup_method(self, _test_method):
-        fakes.use_in_memory_sqlite_database(JailsBase)
+    @classmethod
+    def region_code(cls) -> str:
+        return 'us_tx_brazos'
+
+    @classmethod
+    def controller_cls(cls) -> Type[GcsfsDirectIngestController]:
+        return UsTxBrazosController
+
+    @classmethod
+    def schema_base(cls) -> DeclarativeMeta:
+        return JailsBase
 
     def testParse(self):
-        controller = build_gcsfs_controller_for_tests(UsTxBrazosController,
-                                                      FIXTURE_PATH_PREFIX,
-                                                      run_async=False)
-
-        args = ingest_args_for_fixture_file(controller,
-                                            'VERABrazosJailData.csv')
-
-        # pylint:disable=protected-access
-        ingest_info = controller._parse(args, _ROSTER_PATH_CONTENTS)
         expected_info = IngestInfo(
             people=[
                 Person(
@@ -185,24 +185,23 @@ class UsTxBrazosControllerTest(IndividualIngestTest, TestCase):
                                 Hold(
                                     jurisdiction_name='TDC Hold')])])])
 
-        region = regions.get_region('us_tx_brazos', is_direct_ingest=True)
+        ingest_info = self.run_parse_file_test(
+            expected_info, 'VERABrazosJailData_01012019_115703')
+
+        region = regions.get_region(self.region_code(), is_direct_ingest=True)
         metadata = IngestMetadata(
             region.region_code,
             region.jurisdiction_id,
             _FAKE_START_TIME,
-            controller.get_enum_overrides(),
+            self.controller.get_enum_overrides(),
         )
 
         self.validate_ingest(ingest_info, expected_info, metadata)
 
     def test_run_full_ingest_all_files(self):
-        controller = build_gcsfs_controller_for_tests(UsTxBrazosController,
-                                                      FIXTURE_PATH_PREFIX,
-                                                      run_async=False)
-
         # pylint:disable=protected-access
-        file_tags = sorted(controller._get_file_tag_rank_list())
+        file_tags = sorted(self.controller._get_file_tag_rank_list())
         file_path = path_for_fixture_file(
-            controller, 'VERABrazosJailData_01012019_115703.csv', False)
-        controller.fs.test_add_path(file_path)
-        process_task_queues(self, controller, file_tags)
+            self.controller, 'VERABrazosJailData_01012019_115703.csv', False)
+        self.controller.fs.test_add_path(file_path)
+        process_task_queues(self, self.controller, file_tags)
