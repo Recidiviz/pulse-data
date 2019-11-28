@@ -18,7 +18,8 @@
 import abc
 import datetime
 import logging
-from typing import Optional, List, Iterable
+import os
+from typing import Optional, List, Iterator
 
 from recidiviz import IngestInfo
 from recidiviz.common.ingest_metadata import SystemLevel
@@ -26,6 +27,8 @@ from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import \
     BaseDirectIngestController
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import \
     to_normalized_unprocessed_file_path, SPLIT_FILE_SUFFIX
+from recidiviz.ingest.direct.controllers.direct_ingest_types import \
+    IngestContentsHandle
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_job_prioritizer \
     import GcsfsDirectIngestJobPrioritizer
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
@@ -35,12 +38,31 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
 from recidiviz.ingest.direct.controllers.gcsfs_factory import GcsfsFactory
 from recidiviz.ingest.direct.controllers.gcsfs_path import \
     GcsfsFilePath, GcsfsDirectoryPath
-from recidiviz.ingest.direct.errors import DirectIngestError, \
-    DirectIngestErrorType
 
 
-class GcsfsDirectIngestController(BaseDirectIngestController[GcsfsIngestArgs,
-                                                             Iterable[str]]):
+class GcsfsFileContentsHandle(IngestContentsHandle[str]):
+    def __init__(self, local_file_path: str):
+        self.local_file_path = local_file_path
+
+    def get_contents_iterator(self) -> Iterator[str]:
+        """Lazy function (generator) to read a file line by line."""
+        with open(self.local_file_path, encoding='utf-8') as f:
+            while True:
+                line = f.readline()
+                if not line:
+                    break
+                yield line
+
+    def __del__(self):
+        """This ensures that the file contents on local disk are deleted when
+        this handle is garbage collected.
+        """
+        if os.path.exists(self.local_file_path):
+            os.remove(self.local_file_path)
+
+
+class GcsfsDirectIngestController(
+        BaseDirectIngestController[GcsfsIngestArgs, GcsfsFileContentsHandle]):
     """Controller for parsing and persisting a file in the GCS filesystem."""
 
     _MAX_STORAGE_FILE_RENAME_TRIES = 10
@@ -200,54 +222,55 @@ class GcsfsDirectIngestController(BaseDirectIngestController[GcsfsIngestArgs,
         return f'{self.region.region_code}/{args.file_path.file_name}:' \
             f'{args.ingest_time}'
 
-    def _read_contents(self, args: GcsfsIngestArgs) -> Optional[Iterable[str]]:
-        if not args.file_path:
-            raise DirectIngestError(
-                msg=f"File path not set for job [{self._job_tag(args)}]",
-                error_type=DirectIngestErrorType.INPUT_ERROR)
+    def _get_contents_handle(
+            self, args: GcsfsIngestArgs) -> Optional[GcsfsFileContentsHandle]:
+        return self._get_contents_handle_from_path(args.file_path)
 
-        return self._read_file_contents(args.file_path)
-
-    def _read_file_contents(
-            self,
-            file_path: GcsfsFilePath) -> Optional[Iterable[str]]:
-        if not self.fs.exists(file_path):
-            logging.info(
+    def _get_contents_handle_from_path(
+            self, path: GcsfsFilePath) -> Optional[GcsfsFileContentsHandle]:
+        if not self.fs.exists(path):
+            logging.warning(
                 "File path [%s] no longer exists - might have already been "
-                "processed or deleted", file_path)
+                "processed or deleted", path)
             return None
 
-        # TODO(1840): Turn this into a generator that only reads / yields lines
-        #  one at a time so we don't hold entire large files in memory. NOTE:
-        #  this would require implementing a fs function to read a Cloud Storage
-        #  file to a temp file on disk.
+        logging.info("Starting download of file [{%s}].",
+                     path.abs_path())
+        temp_file_path = self.fs.download_to_temp_file(path)
+
+        if not temp_file_path:
+            logging.warning(
+                "Download of file [{%s}] to local file failed.",
+                path.abs_path())
+            return None
 
         logging.info(
-            'Getting storage_client with bucket [%s] and filepath [%s] '
-            '(time: [%s])',
-            file_path.bucket_name,
-            file_path.blob_name,
-            datetime.datetime.now().isoformat())
-        logging.info(
-            "Opening path [%s] and reading contents (time: [%s]).",
-            file_path, datetime.datetime.now().isoformat())
-        binary_contents = self.fs.download_as_string(file_path)
-        logging.info(
-            "Finished reading binary contents for path [%s] (time: [%s]), "
-            "now decoding.",
-            file_path, datetime.datetime.now().isoformat())
+            "Completed download of file [{%s}] to local file [%s].",
+            path.abs_path(), temp_file_path)
 
-        return binary_contents.decode('utf-8').splitlines()
+        return GcsfsFileContentsHandle(temp_file_path)
 
     @abc.abstractmethod
     def _are_contents_empty(self,
-                            contents: Iterable[str]) -> bool:
+                            contents_handle: GcsfsFileContentsHandle) -> bool:
         pass
+
+    def _can_proceed_with_ingest_for_contents(
+            self,
+            contents_handle: GcsfsFileContentsHandle):
+        return self._are_contents_empty(contents_handle) or \
+               self._file_meets_file_line_limit(contents_handle)
+
+    @abc.abstractmethod
+    def _file_meets_file_line_limit(
+            self, contents_handle: GcsfsFileContentsHandle) -> bool:
+        """Subclasses should implement to determine whether the file meets the
+        expected line limit"""
 
     @abc.abstractmethod
     def _parse(self,
                args: GcsfsIngestArgs,
-               contents: Iterable[str]) -> IngestInfo:
+               contents_handle: GcsfsFileContentsHandle) -> IngestInfo:
         pass
 
     def _split_file_if_necessary(self, path: GcsfsFilePath):
@@ -270,21 +293,21 @@ class GcsfsDirectIngestController(BaseDirectIngestController[GcsfsIngestArgs,
                          path.abs_path(), parts.file_split_size)
             return False
 
-        file_contents = self._read_file_contents(path)
+        file_contents_handle = self._get_contents_handle_from_path(path)
 
-        if not file_contents:
+        if not file_contents_handle:
             logging.info("File [%s] has no rows - not splitting.",
                          path.abs_path())
             return False
 
-        if self._can_proceed_with_ingest_for_contents(file_contents):
+        if self._can_proceed_with_ingest_for_contents(file_contents_handle):
             logging.info("No need to split file path [%s].", path.abs_path())
             return False
 
         logging.info("Proceeding to file splitting for path [%s].",
                      path.abs_path())
 
-        self._split_file(path, file_contents)
+        self._split_file(path, file_contents_handle)
         return True
 
     def _create_split_file_path(self,
@@ -308,7 +331,7 @@ class GcsfsDirectIngestController(BaseDirectIngestController[GcsfsIngestArgs,
     @abc.abstractmethod
     def _split_file(self,
                     path: GcsfsFilePath,
-                    file_contents: Iterable[str]) -> None:
+                    file_contents_handle: GcsfsFileContentsHandle) -> None:
         """Should be implemented by subclasses to split files that are too large
         and write the new split files to Google Cloud Storage.
         """

@@ -19,7 +19,7 @@
 """
 import datetime
 import logging
-from typing import Iterable, Dict, Optional, Set
+from typing import Dict, Optional, Set, Iterator
 
 import pandas as pd
 import sqlalchemy
@@ -35,7 +35,7 @@ from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import \
     BaseDirectIngestController
 from recidiviz.ingest.direct.controllers.direct_ingest_types import \
-    IngestArgs, ContentsType
+    IngestArgs, IngestContentsHandle
 from recidiviz.ingest.direct.errors import DirectIngestError, \
     DirectIngestErrorType
 from recidiviz.ingest.direct.regions.us_ma_middlesex.us_ma_middlesex_parser \
@@ -45,88 +45,32 @@ from recidiviz.utils import secrets, environment
 _DATABASE_TYPE = 'postgresql'
 
 
-class UsMaMiddlesexController(BaseDirectIngestController[IngestArgs,
-                                                         Iterable[Dict]]):
-    """Reads tables from our us_ma_middlesex postgres db, which is an extract of
-    the county's own sql database. The data flows through several formats, from
-    postgres tables to dataframes to python dictionaries to IngestInfo objects.
+def _create_engine():
+    db_user = secrets.get_secret('us_ma_middlesex_db_user')
+    db_password = secrets.get_secret('us_ma_middlesex_db_password')
+    db_name = secrets.get_secret('us_ma_middlesex_db_name')
+    cloudsql_instance_id = secrets.get_secret('us_ma_middlesex_instance_id')
+    return sqlalchemy.create_engine(
+        sqlalchemy.engine.url.URL(
+            drivername=_DATABASE_TYPE,
+            username=db_user,
+            password=db_password,
+            database=db_name,
+            query={'host': '/cloudsql/{}'.format(cloudsql_instance_id)}))
 
-    Each job reads the earliest data export in the database and persists
-    converted data. After each export is successfully persisted its rows are
-    dropped from the cloud SQL database. If conversion or persistence run
-    into an error, all following exports are not processed. Otherwise, another
-    job is queued and the next-oldest export is processed, until no rows are
-    left in the cloud SQL database.
-    """
 
-    def __init__(self):
-        super(UsMaMiddlesexController, self).__init__('us_ma_middlesex',
-                                                      SystemLevel.COUNTY)
-        self.scheduled_ingest_times: Set[datetime.datetime] = set()
+class UsMaMiddlesexContentsHandle(IngestContentsHandle[Dict]):
+    """Class that provides an iterator over Middlesex SQL data."""
 
-    def _create_engine(self):
-        db_user = secrets.get_secret('us_ma_middlesex_db_user')
-        db_password = secrets.get_secret('us_ma_middlesex_db_password')
-        db_name = secrets.get_secret('us_ma_middlesex_db_name')
-        cloudsql_instance_id = secrets.get_secret('us_ma_middlesex_instance_id')
-        return sqlalchemy.create_engine(
-            sqlalchemy.engine.url.URL(
-                drivername=_DATABASE_TYPE,
-                username=db_user,
-                password=db_password,
-                database=db_name,
-                query={'host': '/cloudsql/{}'.format(cloudsql_instance_id)}))
+    def __init__(self, args: IngestArgs):
+        self.args = args
 
-    # ============== #
-    # JOB SCHEDULING #
-    # ============== #
-
-    def _get_next_job_args(self) -> Optional[IngestArgs]:
-        df = pd.read_sql_query('SELECT MIN(export_time) FROM booking',
-                               self._create_engine())
-        ingest_time = df[min][0]
-        if not ingest_time:
-            logging.info("No more export times - successfully persisted all "
-                         "data exports.")
-            return None
-        if ingest_time in self.scheduled_ingest_times:
-            raise DirectIngestError(
-                msg=f"Received a second job for ingest time [{ingest_time}]. "
-                "Did the previous job delete this export from the database?",
-                error_type=DirectIngestErrorType.CLEANUP_ERROR)
-
-        return IngestArgs(ingest_time=ingest_time)
-
-    def _on_job_scheduled(self, ingest_args: IngestArgs):
-        self.scheduled_ingest_times.add(ingest_args.ingest_time)
-
-    # =================== #
-    # SINGLE JOB RUN CODE #
-    # =================== #
-    def _can_proceed_with_ingest_for_contents(self, contents: ContentsType):
-        return True
-
-    def _parse(self,
-               args: IngestArgs,
-               contents: Iterable[Dict]) -> IngestInfo:
-        return UsMaMiddlesexParser().parse(contents)
-
-    def _job_tag(self, args: IngestArgs) -> str:
-        return f'{self.region.region_code}:{args.ingest_time}'
-
-    def _are_contents_empty(self,
-                            contents: Iterable[Dict]) -> bool:
-        """Checks if there are any content Dicts to process, returns True if not
-        (i.e. there are no elements in the Iterable).
-        """
-        return not bool(peekable(contents))
-
-    def _read_contents(self, args: IngestArgs) -> Iterable[Dict]:
+    def get_contents_iterator(self) -> Iterator[Dict]:
         """Queries the postgresql database for the most recent extract and reads
         the results to JSON."""
 
-        export_time = args.ingest_time
-        engine = self._create_engine()
+        export_time = self.args.ingest_time
+        engine = _create_engine()
 
         def query_table(table_name: str) -> pd.DataFrame:
             query = (f'select * from {table_name} '
@@ -157,12 +101,84 @@ class UsMaMiddlesexController(BaseDirectIngestController[IngestArgs,
                 'hold': person_holds.to_dict('records')}
             yield person_dict
 
+
+class UsMaMiddlesexController(
+        BaseDirectIngestController[IngestArgs, UsMaMiddlesexContentsHandle]):
+    """Reads tables from our us_ma_middlesex postgres db, which is an extract of
+    the county's own sql database. The data flows through several formats, from
+    postgres tables to dataframes to python dictionaries to IngestInfo objects.
+
+    Each job reads the earliest data export in the database and persists
+    converted data. After each export is successfully persisted its rows are
+    dropped from the cloud SQL database. If conversion or persistence run
+    into an error, all following exports are not processed. Otherwise, another
+    job is queued and the next-oldest export is processed, until no rows are
+    left in the cloud SQL database.
+    """
+
+    def __init__(self):
+        super(UsMaMiddlesexController, self).__init__('us_ma_middlesex',
+                                                      SystemLevel.COUNTY)
+        self.scheduled_ingest_times: Set[datetime.datetime] = set()
+
+    # ============== #
+    # JOB SCHEDULING #
+    # ============== #
+
+    def _get_next_job_args(self) -> Optional[IngestArgs]:
+        df = pd.read_sql_query('SELECT MIN(export_time) FROM booking',
+                               _create_engine())
+        ingest_time = df[min][0]
+        if not ingest_time:
+            logging.info("No more export times - successfully persisted all "
+                         "data exports.")
+            return None
+        if ingest_time in self.scheduled_ingest_times:
+            raise DirectIngestError(
+                msg=f"Received a second job for ingest time [{ingest_time}]. "
+                "Did the previous job delete this export from the database?",
+                error_type=DirectIngestErrorType.CLEANUP_ERROR)
+
+        return IngestArgs(ingest_time=ingest_time)
+
+    def _on_job_scheduled(self, ingest_args: IngestArgs):
+        self.scheduled_ingest_times.add(ingest_args.ingest_time)
+
+    # =================== #
+    # SINGLE JOB RUN CODE #
+    # =================== #
+
+    def _get_contents_handle(
+            self, args: IngestArgs) -> Optional[UsMaMiddlesexContentsHandle]:
+        return UsMaMiddlesexContentsHandle(args)
+
+    def _can_proceed_with_ingest_for_contents(
+            self, _contents_handle: UsMaMiddlesexContentsHandle):
+        return True
+
+    def _parse(self,
+               args: IngestArgs,
+               contents_handle: UsMaMiddlesexContentsHandle) -> IngestInfo:
+        return UsMaMiddlesexParser().parse(
+            contents_handle.get_contents_iterator())
+
+    def _job_tag(self, args: IngestArgs) -> str:
+        return f'{self.region.region_code}:{args.ingest_time}'
+
+    def _are_contents_empty(
+            self,
+            contents_handle: UsMaMiddlesexContentsHandle) -> bool:
+        """Checks if there are any content Dicts to process, returns True if not
+        (i.e. there are no elements in the Iterable).
+        """
+        return not bool(peekable(contents_handle.get_contents_iterator()))
+
     def _do_cleanup(self, args: IngestArgs):
         """Removes all rows in all tables for a single export time."""
 
         export_time = args.ingest_time
         if environment.in_gae_production():
-            engine = self._create_engine()
+            engine = _create_engine()
             meta = sqlalchemy.MetaData()
             meta.reflect(bind=engine)
             for table in reversed(meta.sorted_tables):

@@ -20,10 +20,9 @@ GCSFileSystem.
 
 import abc
 import inspect
-import io
 import logging
 import os
-from typing import List, Iterable, Optional, Callable
+from typing import List, Optional, Callable
 
 import pandas as pd
 from more_itertools import spy
@@ -32,7 +31,7 @@ from recidiviz import IngestInfo
 from recidiviz.common.ingest_metadata import SystemLevel
 
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
-    GcsfsDirectIngestController
+    GcsfsDirectIngestController, GcsfsFileContentsHandle
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     GcsfsIngestArgs
 from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath, \
@@ -63,12 +62,10 @@ class CsvGcsfsDirectIngestController(GcsfsDirectIngestController):
     def _get_file_tag_rank_list(self) -> List[str]:
         pass
 
-    def _contents_to_str(self, contents: Iterable[str]):
-        return '\n'.join(contents)
-
-    def _file_meets_file_line_limit(self, contents: Iterable[str]):
+    def _file_meets_file_line_limit(
+            self, contents_handle: GcsfsFileContentsHandle) -> bool:
         # Read a chunk up to one line bigger than the acceptable size
-        df_list = list(pd.read_csv(io.StringIO(self._contents_to_str(contents)),
+        df_list = list(pd.read_csv(contents_handle.local_file_path,
                                    dtype=str,
                                    chunksize=(self.file_split_line_limit+1)))
 
@@ -82,14 +79,13 @@ class CsvGcsfsDirectIngestController(GcsfsDirectIngestController):
 
     def _split_file(self,
                     path: GcsfsFilePath,
-                    file_contents: Iterable[str]) -> None:
+                    file_contents_handle: GcsfsFileContentsHandle) -> None:
 
         output_dir = GcsfsDirectoryPath.from_file_path(path)
-        str_contents = self._contents_to_str(file_contents)
 
         upload_paths_and_df = []
         for i, df in enumerate(pd.read_csv(
-                io.StringIO(str_contents),
+                file_contents_handle.local_file_path,
                 dtype=str,
                 chunksize=self.file_split_line_limit,
                 keep_default_na=False)):
@@ -130,7 +126,7 @@ class CsvGcsfsDirectIngestController(GcsfsDirectIngestController):
 
     def _parse(self,
                args: GcsfsIngestArgs,
-               contents: Iterable[str]) -> IngestInfo:
+               contents_handle: GcsfsFileContentsHandle) -> IngestInfo:
         file_tag = self.file_tag(args.file_path)
 
         if file_tag not in self._get_file_tag_rank_list():
@@ -167,19 +163,16 @@ class CsvGcsfsDirectIngestController(GcsfsDirectIngestController):
             self.system_level,
             should_set_with_empty_values)
 
-        return data_extractor.extract_and_populate_data(contents)
+        return data_extractor.extract_and_populate_data(
+            contents_handle.get_contents_iterator())
 
     def _are_contents_empty(self,
-                            contents: Iterable[str]) -> bool:
+                            contents_handle: GcsfsFileContentsHandle) -> bool:
         """Returns true if the CSV file is emtpy, i.e. it contains no non-header
          rows.
          """
-        vals, _ = spy(contents, 2)
+        vals, _ = spy(contents_handle.get_contents_iterator(), 2)
         return len(vals) < 2
-
-    def _can_proceed_with_ingest_for_contents(self, contents: Iterable[str]):
-        return self._are_contents_empty(contents) or \
-               self._file_meets_file_line_limit(contents)
 
     def _get_row_pre_processors_for_file(self, _file_tag) -> List[Callable]:
         """Subclasses should override to return row_pre_processors for a given

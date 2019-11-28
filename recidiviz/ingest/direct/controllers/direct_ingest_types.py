@@ -15,9 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines types used for direct ingest."""
+import abc
 import datetime
 import heapq
-from typing import TypeVar, Generic, Callable, List, Tuple, Optional
+from typing import TypeVar, Generic, Callable, List, Tuple, Optional, Iterator
 
 import attr
 import cattr
@@ -38,8 +39,25 @@ class IngestArgs:
         return cattr.structure(serializable, cls)
 
 
-ContentsType = TypeVar('ContentsType')
 IngestArgsType = TypeVar('IngestArgsType', bound=IngestArgs)
+
+# Type for a single row/chunk returned by the ingest contents iterator.
+IngestContentsRowType = TypeVar('IngestContentsRowType')
+
+
+class IngestContentsHandle(Generic[IngestContentsRowType]):
+    @abc.abstractmethod
+    def get_contents_iterator(self) -> Iterator[IngestContentsRowType]:
+        """Should be overridden by subclasses to return an iterator over the
+        contents that should be ingested into the format supported by this
+        controller.
+
+        Will throw if the contents could not be read (i.e. if they no longer
+        exist).
+        """
+
+
+ContentsHandleType = TypeVar('ContentsHandleType', bound=IngestContentsHandle)
 
 
 class ArgsPriorityQueue(Generic[IngestArgsType]):
