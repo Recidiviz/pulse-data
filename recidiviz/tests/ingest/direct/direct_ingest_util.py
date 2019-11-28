@@ -17,9 +17,12 @@
 """Helpers for direct ingest tests."""
 import datetime
 import os
+import shutil
+import tempfile
 import threading
 import time
 import unittest
+import uuid
 from typing import Set, List, Union, Optional, Dict
 
 from mock import Mock, patch
@@ -49,7 +52,7 @@ class FakeDirectIngestGCSFileSystem(DirectIngestGCSFileSystem):
     def __init__(self):
         self.mutex = threading.Lock()
         self.all_paths: Set[Union[GcsfsFilePath, GcsfsDirectoryPath]] = set()
-        self.uploaded_contents: Dict[str, str] = {}
+        self.uploaded_test_path_to_actual: Dict[str, str] = {}
         self.controller: Optional[GcsfsDirectIngestController] = None
 
     def test_set_controller(self,
@@ -79,12 +82,24 @@ class FakeDirectIngestGCSFileSystem(DirectIngestGCSFileSystem):
         with self.mutex:
             return path.abs_path() in [p.abs_path() for p in self.all_paths]
 
-    def download_as_string(self, path: GcsfsFilePath) -> bytes:
-        if not self.exists(path):
-            raise ValueError(f'Path [{path.abs_path()}] does not exist.')
+    @staticmethod
+    def generate_random_temp_path() -> str:
+        temp_dir = os.path.join(tempfile.gettempdir(), 'direct_ingest')
 
-        if path.abs_path() in self.uploaded_contents:
-            return bytes(self.uploaded_contents[path.abs_path()], 'utf-8')
+        if not os.path.exists(temp_dir):
+            os.mkdir(temp_dir)
+
+        return os.path.join(temp_dir, str(uuid.uuid4()))
+
+    def download_to_temp_file(self, path: GcsfsFilePath) -> Optional[str]:
+        """Downloads file contents into local temporary_file, returning path to
+        temp file, or None if the path no-longer exists in the GCS file system.
+        """
+        if not self.exists(path):
+            return None
+
+        if path.abs_path() in self.uploaded_test_path_to_actual:
+            return self.uploaded_test_path_to_actual[path.abs_path()]
 
         directory_path, _ = os.path.split(path.abs_path())
 
@@ -92,18 +107,24 @@ class FakeDirectIngestGCSFileSystem(DirectIngestGCSFileSystem):
         suffix = f'_{parts.filename_suffix}' if parts.filename_suffix else ''
         fixture_filename = f'{parts.file_tag}{suffix}.{parts.extension}'
 
-        actual_fixture_file_path = os.path.join(directory_path,
-                                                fixture_filename)
+        actual_fixture_file_path = \
+            fixtures.file_path_from_relative_path(
+                os.path.join(directory_path, fixture_filename))
 
-        fixture_contents = fixtures.as_string_from_relative_path(
-            actual_fixture_file_path)
-        return bytes(fixture_contents, 'utf-8')
+        tempfile_path = self.generate_random_temp_path()
+
+        return shutil.copyfile(actual_fixture_file_path,
+                               tempfile_path)
 
     def upload_from_string(self,
                            path: GcsfsFilePath,
                            contents: str,
                            content_type: str):
-        self.uploaded_contents[path.abs_path()] = contents
+        temp_path = self.generate_random_temp_path()
+        with open(temp_path, 'w') as f:
+            f.write(contents)
+
+        self.uploaded_test_path_to_actual[path.abs_path()] = temp_path
         self._add_path(path)
 
     def copy(self,

@@ -14,16 +14,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for the BaseStateDirectIngestController."""
+"""Class with basic functionality for tests of all state
+GcsfsDirectIngestControllers.
+"""
 import abc
-import os
-import unittest
 from typing import List, Type
 
 from freezegun import freeze_time
 from mock import patch, Mock, create_autospec
+from sqlalchemy.ext.declarative import DeclarativeMeta
 
-from recidiviz import IngestInfo
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
     GcsfsDirectIngestController
 from recidiviz.persistence.database.base_schema import StateBase
@@ -34,24 +34,25 @@ from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.entity.entity_utils import print_entity_tree
 from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.tests.ingest.direct.direct_ingest_util import \
-    build_gcsfs_controller_for_tests, ingest_args_for_fixture_file, \
     FakeDirectIngestGCSFileSystem, run_task_queues_to_empty, \
     path_for_fixture_file
+from recidiviz.tests.ingest.direct.regions.base_direct_ingest_controller_tests \
+    import BaseDirectIngestControllerTests
 from recidiviz.tests.persistence.entity.state.entities_test_utils import \
     clear_db_ids
-from recidiviz.tests.utils import fakes
 from recidiviz.utils.regions import Region
 
 
 @patch('recidiviz.utils.metadata.project_id',
        Mock(return_value='recidiviz-staging'))
 @freeze_time('2019-09-27')
-class BaseStateDirectIngestControllerTests(unittest.TestCase):
-    """Tests for the BaseStateDirectIngestController."""
-
+class BaseStateDirectIngestControllerTests(BaseDirectIngestControllerTests):
+    """Class with basic functionality for tests of all state
+    GcsfsDirectIngestControllers.
+    """
     @classmethod
     @abc.abstractmethod
-    def state_code(cls) -> str:
+    def region_code(cls) -> str:
         pass
 
     @classmethod
@@ -59,44 +60,9 @@ class BaseStateDirectIngestControllerTests(unittest.TestCase):
     def controller_cls(cls) -> Type[GcsfsDirectIngestController]:
         pass
 
-    def setUp(self) -> None:
-        self.maxDiff = 250000
-        fakes.use_in_memory_sqlite_database(StateBase)
-
-        self.controller = build_gcsfs_controller_for_tests(
-            self.controller_cls(),
-            self.fixture_path_prefix(),
-            run_async=False,
-            max_delay_sec_between_files=0)
-
     @classmethod
-    def fixture_path_prefix(cls):
-        return os.path.join('direct', 'regions', cls.state_code().lower())
-
-    def run_parse_file_test(self, expected: IngestInfo, file_tag: str) -> None:
-        args = ingest_args_for_fixture_file(self.controller, f'{file_tag}.csv')
-
-        if not isinstance(self.controller.fs, FakeDirectIngestGCSFileSystem):
-            raise ValueError(f"Controller fs must have type "
-                             f"FakeDirectIngestGCSFileSystem. Found instead "
-                             f"type [{type(self.controller.fs)}]")
-        self.controller.fs.test_add_path(args.file_path)
-
-        # pylint:disable=protected-access
-        fixture_contents = self.controller._read_contents(args)
-
-        if fixture_contents is None:
-            raise ValueError('Contents should not be None')
-
-        final_info = self.controller._parse(args, fixture_contents)
-
-        print("FINAL")
-        print(final_info)
-        print("\n\n\n")
-        print("EXPECTED")
-        print(expected)
-
-        self.assertEqual(final_info, expected)
+    def schema_base(cls) -> DeclarativeMeta:
+        return StateBase
 
     def _run_ingest_job_for_filename(self, filename: str) -> None:
         get_region_patcher = patch(

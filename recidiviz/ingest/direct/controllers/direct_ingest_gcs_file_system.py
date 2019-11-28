@@ -22,9 +22,11 @@ import abc
 import datetime
 import logging
 import os
+import uuid
 from typing import List, Optional, Union
 
 from google.cloud import storage
+from google.cloud.exceptions import NotFound
 
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     filename_parts_from_path
@@ -81,8 +83,13 @@ class DirectIngestGCSFileSystem:
         """Returns True if the object exists in the fs, False otherwise."""
 
     @abc.abstractmethod
-    def download_as_string(self, path: GcsfsFilePath) -> bytes:
-        """Downloads file contents into string format."""
+    def download_to_temp_file(self, path: GcsfsFilePath) -> Optional[str]:
+        """Generates a new file in a temporary directory on the local file
+        system (App Engine VM when in prod/staging), and downloads file contents
+        from the provided GCS path into that file, returning the path to temp
+        file on the local App Engine VM file system, or None if the GCS file is
+        not found.
+        """
 
     @abc.abstractmethod
     def upload_from_string(self,
@@ -317,12 +324,31 @@ class DirectIngestGCSFileSystemImpl(DirectIngestGCSFileSystem):
 
         raise ValueError(f'Unexpected path type [{type(path)}]')
 
-    def download_as_string(self, path: GcsfsFilePath) -> bytes:
+    @staticmethod
+    def _generate_random_temp_path() -> str:
+        temp_dir = os.path.join('/tmp', 'direct_ingest')
+
+        if not os.path.exists(temp_dir):
+            os.mkdir(temp_dir)
+
+        return os.path.join(temp_dir, str(uuid.uuid4()))
+
+    def download_to_temp_file(self, path: GcsfsFilePath) -> Optional[str]:
         bucket = self.storage_client.get_bucket(path.bucket_name)
         blob = bucket.get_blob(path.blob_name)
         if not blob:
             raise ValueError(f'Blob at path [{path.abs_path()}] does not exist')
-        return blob.download_as_string()
+
+        temp_file_path = self._generate_random_temp_path()
+
+        try:
+            blob.download_to_filename(temp_file_path)
+            return temp_file_path
+        except NotFound:
+            logging.info(
+                "File path [%s] no longer exists - might have already "
+                "been processed or deleted", path.abs_path())
+            return None
 
     def upload_from_string(self, path: GcsfsFilePath,
                            contents: str,

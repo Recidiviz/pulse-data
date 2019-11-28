@@ -15,12 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for GcsfsDirectIngestController."""
+import abc
 import datetime
 import json
 import os
 import unittest
 from collections import defaultdict
-from typing import List
+from typing import List, Optional, Set
 
 from mock import patch, Mock
 
@@ -32,7 +33,7 @@ from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller \
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import \
     SPLIT_FILE_STORAGE_SUBDIR
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
-    GcsfsDirectIngestController
+    GcsfsDirectIngestController, GcsfsFileContentsHandle
 from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath, \
     GcsfsDirectoryPath
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
@@ -48,7 +49,38 @@ from recidiviz.tests.utils.fake_region import TEST_STATE_REGION, \
     TEST_COUNTY_REGION
 
 
-class StateTestGcsfsDirectIngestController(CsvGcsfsDirectIngestController):
+class BaseTestCsvGcsfsDirectIngestController(CsvGcsfsDirectIngestController):
+    def __init__(self,
+                 region_name: str,
+                 system_level: SystemLevel,
+                 ingest_directory_path: Optional[str],
+                 storage_directory_path: Optional[str]):
+        super().__init__(region_name,
+                         system_level,
+                         ingest_directory_path,
+                         storage_directory_path)
+        self.local_paths: Set[str] = set()
+
+    @abc.abstractmethod
+    def _get_file_tag_rank_list(self) -> List[str]:
+        pass
+
+    def _get_contents_handle(
+            self, args: GcsfsIngestArgs) -> Optional[GcsfsFileContentsHandle]:
+        handle = super()._get_contents_handle(args)
+        if handle:
+            self.local_paths.add(handle.local_file_path)
+        return handle
+
+    def has_temp_paths_in_disk(self):
+        for path in self.local_paths:
+            if os.path.exists(path):
+                return True
+        return False
+
+
+class StateTestGcsfsDirectIngestController(
+        BaseTestCsvGcsfsDirectIngestController):
     def __init__(self,
                  ingest_directory_path: str,
                  storage_directory_path: str):
@@ -61,7 +93,8 @@ class StateTestGcsfsDirectIngestController(CsvGcsfsDirectIngestController):
         return ['tagA', 'tagB', 'tagC']
 
 
-class CountyTestGcsfsDirectIngestController(CsvGcsfsDirectIngestController):
+class CountyTestGcsfsDirectIngestController(
+        BaseTestCsvGcsfsDirectIngestController):
     def __init__(self,
                  ingest_directory_path: str,
                  storage_directory_path: str):
@@ -94,6 +127,10 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             reversed(sorted(controller._get_file_tag_rank_list())))
 
         add_paths_with_tags_and_process(self, controller, file_tags)
+
+        self.assertIsInstance(controller,
+                              BaseTestCsvGcsfsDirectIngestController)
+        self.assertFalse(controller.has_temp_paths_in_disk())
 
     @patch("recidiviz.utils.regions.get_region",
            Mock(return_value=TEST_STATE_REGION))
