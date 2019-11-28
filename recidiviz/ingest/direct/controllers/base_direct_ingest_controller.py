@@ -27,7 +27,7 @@ from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import \
     DirectIngestCloudTaskManagerImpl
 from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
 from recidiviz.ingest.direct.controllers.direct_ingest_types import \
-    ContentsType, IngestArgsType
+    IngestArgsType, ContentsHandleType
 from recidiviz.ingest.direct.errors import DirectIngestError, \
     DirectIngestErrorType
 from recidiviz.ingest.ingestor import Ingestor
@@ -37,7 +37,8 @@ from recidiviz.utils import regions
 
 
 class BaseDirectIngestController(Ingestor,
-                                 Generic[IngestArgsType, ContentsType]):
+                                 Generic[IngestArgsType,
+                                         ContentsHandleType]):
     """Parses and persists individual-level info from direct ingest partners.
     """
 
@@ -157,7 +158,6 @@ class BaseDirectIngestController(Ingestor,
         Runs the full ingest process for this controller - reading and parsing
         raw input data, transforming it to our schema, then writing to the
         database.
-
         Returns:
             True if we should try to schedule the next job on completion. False,
              otherwise.
@@ -165,24 +165,24 @@ class BaseDirectIngestController(Ingestor,
         start_time = datetime.datetime.now()
         logging.info("Starting ingest for ingest run [%s]", self._job_tag(args))
 
-        contents = self._read_contents(args)
+        contents_handle = self._get_contents_handle(args)
 
-        if contents is None:
+        if contents_handle is None:
             logging.warning(
-                "Failed to read contents for ingest run [%s] - returning.",
-                self._job_tag(args))
+                "Failed to get contents handle for ingest run [%s] - "
+                "returning.", self._job_tag(args))
             # If the file no-longer exists, we do want to kick the scheduler
             # again to pick up the next file to run. We expect this to happen
             # occasionally as a race when the scheduler picks up a file before
             # it has been properly moved.
             return True
 
-        if not self._can_proceed_with_ingest_for_contents(contents):
+        if not self._can_proceed_with_ingest_for_contents(contents_handle):
             logging.warning(
                 "Cannot proceed with contents for ingest run [%s] - returning.",
                 self._job_tag(args))
             # If we get here, we've failed to properly split a file picked up
-            # by the scheduler. We don't want to scheduler a new job after
+            # by the scheduler. We don't want to schedule a new job after
             # returning here, otherwise we'll get ourselves in a loop where we
             # continually try to schedule this file.
             return False
@@ -190,8 +190,8 @@ class BaseDirectIngestController(Ingestor,
         logging.info("Successfully read contents for ingest run [%s]",
                      self._job_tag(args))
 
-        if not self._are_contents_empty(contents):
-            self._parse_and_persist_contents(args, contents)
+        if not self._are_contents_empty(contents_handle):
+            self._parse_and_persist_contents(args, contents_handle)
         else:
             logging.warning(
                 "Contents are empty for ingest run [%s] - skipping parse and "
@@ -207,12 +207,12 @@ class BaseDirectIngestController(Ingestor,
 
     def _parse_and_persist_contents(self,
                                     args: IngestArgsType,
-                                    contents: ContentsType):
+                                    contents_handle: ContentsHandleType):
         """
         Runs the full ingest process for this controller for files with
         non-empty contents.
         """
-        ingest_info = self._parse(args, contents)
+        ingest_info = self._parse(args, contents_handle)
         if not ingest_info:
             raise DirectIngestError(
                 error_type=DirectIngestErrorType.PARSE_ERROR,
@@ -253,26 +253,27 @@ class BaseDirectIngestController(Ingestor,
         """
 
     @abc.abstractmethod
-    def _read_contents(self, args: IngestArgsType) -> Optional[ContentsType]:
-        """Should be overridden by subclasses to read contents that should be
-        ingested into the format supported by this controller.
-
+    def _get_contents_handle(
+            self, args: IngestArgsType) -> Optional[ContentsHandleType]:
+        """Should be overridden by subclasses to return a handle to the contents
+        that can return an iterator over the contents and also manages cleanup
+        of resources once we are done with the contents.
         Will return None if the contents could not be read (i.e. if they no
         longer exist).
         """
 
     @abc.abstractmethod
     def _are_contents_empty(self,
-                            contents: ContentsType) -> bool:
+                            contents_handle: ContentsHandleType) -> bool:
         """Should be overridden by subclasses to return True if the contents
-        should be considered "empty" and not parsed. For example, a CSV might
-        have a single header line but no actual data.
+        for the given args should be considered "empty" and not parsed. For
+        example, a CSV might have a single header line but no actual data.
         """
 
     @abc.abstractmethod
     def _parse(self,
                args: IngestArgsType,
-               contents: ContentsType) -> IngestInfo:
+               contents_handle: ContentsHandleType) -> IngestInfo:
         """Should be overridden by subclasses to parse raw ingested contents
         into an IngestInfo object.
         """
@@ -284,7 +285,9 @@ class BaseDirectIngestController(Ingestor,
         """
 
     @abc.abstractmethod
-    def _can_proceed_with_ingest_for_contents(self, contents: ContentsType):
-        """ Given the contents read from the file, can the controller continue
-        with ingest.
+    def _can_proceed_with_ingest_for_contents(
+            self,
+            contents_handle: ContentsHandleType):
+        """ Given a pointer to the contents, can the controller continue with
+        ingest.
         """

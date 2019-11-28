@@ -54,6 +54,8 @@ def as_string(region_directory: str, filename: str):
 
     return as_string_from_relative_path(relative_path)
 
+def file_path_from_relative_path(relative_path: str) -> str:
+    return os.path.join(os.path.dirname(__file__), relative_path)
 
 def as_string_from_relative_path(relative_path: str):
     """Returns the contents of the given fixture file as a string.
@@ -63,8 +65,7 @@ def as_string_from_relative_path(relative_path: str):
             /recidiviz/tests/ingest directory.
 
     """
-    with open(os.path.join(os.path.dirname(__file__),
-                           relative_path)) as fixture_file:
+    with open(file_path_from_relative_path(relative_path)) as fixture_file:
         string = fixture_file.read()
     return string
 

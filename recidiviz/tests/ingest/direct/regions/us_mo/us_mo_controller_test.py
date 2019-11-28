@@ -77,7 +77,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
     """Tests for the UsMoController."""
 
     @classmethod
-    def state_code(cls) -> str:
+    def region_code(cls) -> str:
         return _STATE_CODE_UPPER.lower()
 
     @classmethod
