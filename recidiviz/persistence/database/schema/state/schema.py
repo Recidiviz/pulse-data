@@ -104,6 +104,7 @@ state_sentence_status = Enum(
 
 state_supervision_type = Enum(
     state_enum_strings.state_supervision_type_civil_commitment,
+    enum_strings.external_unknown,
     state_enum_strings.state_supervision_type_halfway_house,
     state_enum_strings.state_supervision_type_parole,
     state_enum_strings.state_supervision_type_post_confinement,
