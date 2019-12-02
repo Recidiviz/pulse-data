@@ -1,4 +1,5 @@
 key_mappings:
+  F1$CTC: state_supervision_period.supervision_type
   F1$CD: state_supervision_period.start_date
   F1$ORC: state_supervision_period.admission_reason
   F1$WW: state_supervision_period.termination_date
@@ -25,7 +26,6 @@ keys_to_ignore:
   - F1$OPT  # Open Reason Type - Handled manually in the controller
   - F1$ARC  # Action Reason Code - Handled manually in the controller
   - F1$CTO  # Case Type (Opening) - Handled manually in the controller
-  - F1$CTC  # Case Type (Current) - Handled manually in the controller
   - F1$SY   # Unused - Status code change date
   - F1$PFI  # Purpose for incarceration - Handled manually in the controller
   - F1$OR0  # Unused - Ordinal Date Field 0

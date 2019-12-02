@@ -61,8 +61,7 @@ from recidiviz.ingest.direct.regions.us_mo.us_mo_constants import \
     VIOLATION_KEY_SEQ, CITATION_ID_PREFIX, CITATION_KEY_SEQ, DOC_ID, CYCLE_ID, \
     SENTENCE_KEY_SEQ, FIELD_KEY_SEQ, \
     SUPERVISION_SENTENCE_LENGTH_MONTHS, SUPERVISION_SENTENCE_LENGTH_DAYS, \
-    PERIOD_OPEN_CODE, PERIOD_CASE_TYPE_CURRENT, PERIOD_CASE_TYPE_OPENING, \
-    INCARCERATION_SENTENCE_PROJECTED_MIN_DATE, \
+    PERIOD_OPEN_CODE, INCARCERATION_SENTENCE_PROJECTED_MIN_DATE, \
     INCARCERATION_SENTENCE_PROJECTED_MAX_DATE, \
     SUPERVISION_SENTENCE_PROJECTED_COMPLETION_DATE, PERIOD_RELEASE_DATE, \
     PERIOD_PURPOSE_FOR_INCARCERATION, PERIOD_OPEN_TYPE, PERIOD_START_DATE, \
@@ -143,24 +142,6 @@ class UsMoController(CsvGcsfsDirectIngestController):
         '0', '99999999'
     ]
 
-    SUPERVISION_CASE_TYPE_CODES: Dict[str, StateSupervisionType] = {
-        'BP': StateSupervisionType.PAROLE,  # Board Parole
-        'CR': StateSupervisionType.PAROLE,  # Conditional Release
-        'IN': StateSupervisionType.PAROLE,  # Inmate
-        'IP': StateSupervisionType.PAROLE,  # Interstate Parole
-        'NA': StateSupervisionType.PAROLE,  # New Admission
-        'DV': StateSupervisionType.PROBATION,  # Diversion
-        'IC': StateSupervisionType.PROBATION,  # Interstate Probation
-        'PB': StateSupervisionType.PROBATION,  # Former Probation Case
-    }
-
-    CASE_TYPE_CODES_THAT_FALL_BACK_TO_PROBATION: List[str] = [
-        # These are kinds of cases that appear to be probation unless there's an
-        # open reason or an opening case type that indicate parole
-
-        'FC', 'MC', 'LC', 'UC', ' C'  # The space in the last one is intentional
-    ]
-
     REVOCATION_OPEN_REASON_CODES: List[str] = [
         'FB', 'FF', 'FM', 'FN', 'FT'  # Various forms of field violations
     ]
@@ -168,7 +149,18 @@ class UsMoController(CsvGcsfsDirectIngestController):
     ENUM_OVERRIDES: Dict[EntityEnum, List[str]] = {
         StateChargeClassificationType.INFRACTION: ['L'],  # Local/ordinance
 
+        StateSupervisionType.EXTERNAL_UNKNOWN: [
+            'XX',  # Unknown (Not Associated)
+        ],
+        StateSupervisionType.PAROLE: [
+            'BP',   # Board Parole
+            'CR',   # Conditional Release
+            'IN',   # Inmate
+            'IP',   # Interstate Parole
+            'NA',   # New Admission
+        ],
         StateSupervisionType.PROBATION: [
+            # Sentence-related codes
             'BND',  # Bond Supervision (no longer used)
             'CPR',  # Court Parole (a form of probation)
             'DFP',  # Deferred Prosecution
@@ -176,6 +168,16 @@ class UsMoController(CsvGcsfsDirectIngestController):
             'IPR',  # Interstate Compact Probation
             'SES',  # Suspended Execution of Sentence (Probation)
             'SIS',  # Suspended Imposition of Sentence (Probation)
+
+            # Period-related codes
+            'DV',   # Diversion
+            'IC',   # Interstate Probation
+            'PB',   # Former Probation Case
+            'FC',   # Felony Court Case
+            'LC',   # Local/Ordinance Court Case
+            'MC',   # Misdemeanor Court Case
+            'UC',   # Unknown Court Case
+            ' C',   # Court Case Check Type
         ],
 
         StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN: [
@@ -436,7 +438,6 @@ class UsMoController(CsvGcsfsDirectIngestController):
                     self.PERIOD_MAGICAL_DATES,
                     StateSupervisionPeriod),
                 self._set_supervision_period_status,
-                self._set_supervision_type
             ],
             'tak158_tak024_supervision_period_from_supervision_sentence': [
                 self._gen_clear_magical_date_value(
@@ -445,7 +446,6 @@ class UsMoController(CsvGcsfsDirectIngestController):
                     self.PERIOD_MAGICAL_DATES,
                     StateSupervisionPeriod),
                 self._set_supervision_period_status,
-                self._set_supervision_type
             ],
             'tak028_tak042_tak076_tak024_violation_reports': [
                 self._gen_violation_response_type_posthook(
@@ -933,71 +933,6 @@ class UsMoController(CsvGcsfsDirectIngestController):
                     obj.__setattr__(
                         'status',
                         StateSupervisionPeriodStatus.UNDER_SUPERVISION.value)
-
-    @classmethod
-    def _set_supervision_type(cls,
-                              _file_tag: str,
-                              row: Dict[str, str],
-                              extracted_objects: List[IngestObject],
-                              _cache: IngestObjectCache):
-        """
-        Derives the proper supervision type from the various codes on the
-        supervision period row data. The algorithm is as follows:
-
-        1. If the row's open code is explicitly parole or probation,
-        choose that.
-
-        2. Otherwise, check the current case type. If the case type maps to a
-        specific supervision type, choose that.
-
-        3. Otherwise, check if the current case type is one that falls back to
-        probation. If so, check the opening case type to see if it maps to a
-        specific supervision type: if so choose that. Otherwise, choose
-        probation.
-        """
-        def _set_type(final_supervision_type: StateSupervisionType):
-            for obj in extracted_objects:
-                if isinstance(obj, StateSupervisionPeriod):
-                    obj.__setattr__('supervision_type',
-                                    final_supervision_type.value)
-
-        supervision_type_from_open_code = None
-        open_code = row.get(PERIOD_OPEN_CODE)
-
-        if open_code == cls.RELEASE_TO_PAROLE:
-            supervision_type_from_open_code = StateSupervisionType.PAROLE
-        elif open_code == cls.RELEASE_TO_PROBATION:
-            supervision_type_from_open_code = StateSupervisionType.PROBATION
-
-        if supervision_type_from_open_code:
-            _set_type(supervision_type_from_open_code)
-            return
-
-        supervision_type_from_case_type = None
-        case_type_current = row.get(PERIOD_CASE_TYPE_CURRENT)
-
-        if case_type_current:
-            supervision_type_from_case_type = \
-                cls.SUPERVISION_CASE_TYPE_CODES.get(case_type_current)
-
-        if supervision_type_from_case_type:
-            _set_type(supervision_type_from_case_type)
-            return
-
-        if case_type_current and case_type_current in \
-                cls.CASE_TYPE_CODES_THAT_FALL_BACK_TO_PROBATION:
-            case_type_opening = row.get(PERIOD_CASE_TYPE_OPENING)
-            if not case_type_opening:
-                return
-
-            supervision_type_at_opening = cls.SUPERVISION_CASE_TYPE_CODES.get(
-                case_type_opening)
-
-            if supervision_type_at_opening == StateSupervisionType.PAROLE:
-                _set_type(supervision_type_at_opening)
-                return
-
-            _set_type(StateSupervisionType.PROBATION)
 
     @classmethod
     def _sentence_group_ancestor_chain_override(cls,
