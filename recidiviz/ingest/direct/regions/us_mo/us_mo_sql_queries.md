@@ -213,140 +213,7 @@ ON
 	probation_sentence_status_explosion.BU$FSO = MAX_UPDATED_FSO
 WHERE MAX_STATUS_SEQ IS NOT NULL AND MAX_UPDATED_FSO IS NOT NULL;
 ```
-### tak028_tak042_tak076_tak024_violation_reports
-TODO(2645): Add time filtering for non-historical dumps
-```
-WITH conditions_violated_cf AS (
--- An updated version of TAK042 that only has one row per citation.
-	SELECT 
-		conditions_cf.CF$DOC, 
-		conditions_cf.CF$CYC, 
-		conditions_cf.CF$VSN, 
-		LISTAGG(conditions_cf.CF$VCV, ',') AS violated_conditions
-	FROM 
-		LBAKRDTA.TAK042 AS conditions_cf
-	GROUP BY 
-		conditions_cf.CF$DOC, 
-		conditions_cf.CF$CYC, 
-		conditions_cf.CF$VSN
-	ORDER BY 
-		conditions_cf.CF$DOC, 
-		conditions_cf.CF$CYC, 
-		conditions_cf.CF$VSN
-),
-valid_sentences_cz AS (
--- Only keeps rows in TAK076 which refer to either 
--- IncarcerationSentences or non-INV/SIS SupervisionSentences
-	SELECT 
-		sentence_xref_with_probation_info_cz_bu.CZ$DOC, 
-		sentence_xref_with_probation_info_cz_bu.CZ$CYC, 
-		sentence_xref_with_probation_info_cz_bu.CZ$SEO, 
-		sentence_xref_with_probation_info_cz_bu.CZ$FSO, 
-		sentence_xref_with_probation_info_cz_bu.CZ$VSN 
-	FROM (
-    	SELECT 
-    	    * 
-    	FROM 
-    		LBAKRDTA.TAK076 sentence_xref_cz
-    	LEFT JOIN 
-    		LBAKRDTA.TAK024 prob_sentence_bu
-    	ON 
-    		sentence_xref_cz.CZ$DOC = prob_sentence_bu.BU$DOC
-    		AND sentence_xref_cz.CZ$CYC = prob_sentence_bu.BU$CYC
-    		AND sentence_xref_cz.CZ$SEO = prob_sentence_bu.BU$SEO
-    		AND sentence_xref_cz.CZ$FSO = prob_sentence_bu.BU$FSO
-    	) sentence_xref_with_probation_info_cz_bu
-	WHERE 
-		sentence_xref_with_probation_info_cz_bu.CZ$FSO = 0 
-		OR (
-			sentence_xref_with_probation_info_cz_bu.BU$PBT != 'INV' 
-			AND sentence_xref_with_probation_info_cz_bu.BU$PBT != 'SIS'
-		)
-)
 
-SELECT 
-	* 
-FROM 
-	LBAKRDTA.TAK028 violation_reports_by
-LEFT JOIN 
-	conditions_violated_cf
-ON 
-	violation_reports_by.BY$DOC = conditions_violated_cf.CF$DOC
-	AND violation_reports_by.BY$CYC = conditions_violated_cf.CF$CYC
-	AND violation_reports_by.BY$VSN = conditions_violated_cf.CF$VSN
-JOIN 
-	valid_sentences_cz
-ON 
-	violation_reports_by.BY$DOC = valid_sentences_cz.CZ$DOC
-	AND violation_reports_by.BY$CYC = valid_sentences_cz.CZ$CYC
-	AND violation_reports_by.BY$VSN = valid_sentences_cz.CZ$VSN;
-```
-
-### tak291_tak292_tak024_citations
-TODO(2645): Add time filtering for non-historical dumps
-```
-WITH valid_sentences_js AS (
--- Only keeps rows in TAK291 which refer to either 
--- IncarcerationSentences or non-INV/SIS SupervisionSentences
-    SELECT 
-        sentence_xref_with_probation_info_js_bu.JS$DOC, 
-        sentence_xref_with_probation_info_js_bu.JS$CYC, 
-        sentence_xref_with_probation_info_js_bu.JS$SEO, 
-        sentence_xref_with_probation_info_js_bu.JS$FSO, 
-        sentence_xref_with_probation_info_js_bu.JS$CSQ 
-    FROM (
-        SELECT 
-            * 
-        FROM 
-            LBAKRDTA.TAK291 sentence_xref_js
-        LEFT JOIN 
-            LBAKRDTA.TAK024 prob_sentence_bu
-        ON 
-            sentence_xref_js.JS$DOC = prob_sentence_bu.BU$DOC
-            AND sentence_xref_js.JS$CYC = prob_sentence_bu.BU$CYC
-            AND sentence_xref_js.JS$SEO = prob_sentence_bu.BU$SEO
-            AND sentence_xref_js.JS$FSO = prob_sentence_bu.BU$FSO
-        ) sentence_xref_with_probation_info_js_bu
-    WHERE 
-    	sentence_xref_with_probation_info_js_bu.JS$FSO = 0 
-    	OR (
-    		sentence_xref_with_probation_info_js_bu.BU$PBT != 'INV' 
-    		AND sentence_xref_with_probation_info_js_bu.BU$PBT != 'SIS'
-    	)
-),
-citations_with_multiple_violations_jt AS (
--- An updated version of TAK292 that only has one row per citation.
-    SELECT 
-        citations_jt.JT$DOC, 
-        citations_jt.JT$CYC, 
-        citations_jt.JT$CSQ, 
-        citations_jt.JT$VG, 
-        LISTAGG(citations_jt.JT$VCV, ',') AS violated_conditions 
-    FROM 
-        LBAKRDTA.TAK292 citations_jt
-    GROUP BY 
-        citations_jt.JT$DOC, 
-        citations_jt.JT$CYC, 
-        citations_jt.JT$CSQ, 
-        citations_jt.JT$VG 
-    ORDER BY 
-        citations_jt.JT$DOC, 
-        citations_jt.JT$CYC, 
-        citations_jt.JT$CSQ, 
-        citations_jt.JT$VG
-)
-
-SELECT 
-    *
-FROM 
-    citations_with_multiple_violations_jt
-JOIN 
-    valid_sentences_js
-ON 
-    citations_with_multiple_violations_jt.JT$DOC = valid_sentences_js.JS$DOC
-    AND citations_with_multiple_violations_jt.JT$CYC = valid_sentences_js.JS$CYC
-    AND citations_with_multiple_violations_jt.JT$CSQ = valid_sentences_js.JS$CSQ;
-```
 
 ### tak065_institution_history
 A query that adds sequence numbers to the tak065_institution_history table (helpful for ID generation).
@@ -674,4 +541,140 @@ ON
 -- Uncomment below to query for a given person
 -- WHERE body_status_f1.F1$DOC = 1080572 AND body_status_f1.F1$CYC = 20020611
 ;
+```
+### Supervision Violations and Violation Responses
+
+#### tak028_tak042_tak076_tak024_violation_reports
+TODO(2645): Add time filtering for non-historical dumps
+```
+WITH conditions_violated_cf AS (
+-- An updated version of TAK042 that only has one row per citation.
+	SELECT 
+		conditions_cf.CF$DOC, 
+		conditions_cf.CF$CYC, 
+		conditions_cf.CF$VSN, 
+		LISTAGG(conditions_cf.CF$VCV, ',') AS violated_conditions
+	FROM 
+		LBAKRDTA.TAK042 AS conditions_cf
+	GROUP BY 
+		conditions_cf.CF$DOC, 
+		conditions_cf.CF$CYC, 
+		conditions_cf.CF$VSN
+	ORDER BY 
+		conditions_cf.CF$DOC, 
+		conditions_cf.CF$CYC, 
+		conditions_cf.CF$VSN
+),
+valid_sentences_cz AS (
+-- Only keeps rows in TAK076 which refer to either 
+-- IncarcerationSentences or non-INV/SIS SupervisionSentences
+	SELECT 
+		sentence_xref_with_probation_info_cz_bu.CZ$DOC, 
+		sentence_xref_with_probation_info_cz_bu.CZ$CYC, 
+		sentence_xref_with_probation_info_cz_bu.CZ$SEO, 
+		sentence_xref_with_probation_info_cz_bu.CZ$FSO, 
+		sentence_xref_with_probation_info_cz_bu.CZ$VSN 
+	FROM (
+    	SELECT 
+    	    * 
+    	FROM 
+    		LBAKRDTA.TAK076 sentence_xref_cz
+    	LEFT JOIN 
+    		LBAKRDTA.TAK024 prob_sentence_bu
+    	ON 
+    		sentence_xref_cz.CZ$DOC = prob_sentence_bu.BU$DOC
+    		AND sentence_xref_cz.CZ$CYC = prob_sentence_bu.BU$CYC
+    		AND sentence_xref_cz.CZ$SEO = prob_sentence_bu.BU$SEO
+    		AND sentence_xref_cz.CZ$FSO = prob_sentence_bu.BU$FSO
+    	) sentence_xref_with_probation_info_cz_bu
+	WHERE 
+		sentence_xref_with_probation_info_cz_bu.CZ$FSO = 0 
+		OR (
+			sentence_xref_with_probation_info_cz_bu.BU$PBT != 'INV' 
+			AND sentence_xref_with_probation_info_cz_bu.BU$PBT != 'SIS'
+		)
+)
+
+SELECT 
+	* 
+FROM 
+	LBAKRDTA.TAK028 violation_reports_by
+LEFT JOIN 
+	conditions_violated_cf
+ON 
+	violation_reports_by.BY$DOC = conditions_violated_cf.CF$DOC
+	AND violation_reports_by.BY$CYC = conditions_violated_cf.CF$CYC
+	AND violation_reports_by.BY$VSN = conditions_violated_cf.CF$VSN
+JOIN 
+	valid_sentences_cz
+ON 
+	violation_reports_by.BY$DOC = valid_sentences_cz.CZ$DOC
+	AND violation_reports_by.BY$CYC = valid_sentences_cz.CZ$CYC
+	AND violation_reports_by.BY$VSN = valid_sentences_cz.CZ$VSN;
+```
+
+#### tak291_tak292_tak024_citations
+TODO(2645): Add time filtering for non-historical dumps
+```
+WITH valid_sentences_js AS (
+-- Only keeps rows in TAK291 which refer to either 
+-- IncarcerationSentences or non-INV/SIS SupervisionSentences
+    SELECT 
+        sentence_xref_with_probation_info_js_bu.JS$DOC, 
+        sentence_xref_with_probation_info_js_bu.JS$CYC, 
+        sentence_xref_with_probation_info_js_bu.JS$SEO, 
+        sentence_xref_with_probation_info_js_bu.JS$FSO, 
+        sentence_xref_with_probation_info_js_bu.JS$CSQ 
+    FROM (
+        SELECT 
+            * 
+        FROM 
+            LBAKRDTA.TAK291 sentence_xref_js
+        LEFT JOIN 
+            LBAKRDTA.TAK024 prob_sentence_bu
+        ON 
+            sentence_xref_js.JS$DOC = prob_sentence_bu.BU$DOC
+            AND sentence_xref_js.JS$CYC = prob_sentence_bu.BU$CYC
+            AND sentence_xref_js.JS$SEO = prob_sentence_bu.BU$SEO
+            AND sentence_xref_js.JS$FSO = prob_sentence_bu.BU$FSO
+        ) sentence_xref_with_probation_info_js_bu
+    WHERE 
+    	sentence_xref_with_probation_info_js_bu.JS$FSO = 0 
+    	OR (
+    		sentence_xref_with_probation_info_js_bu.BU$PBT != 'INV' 
+    		AND sentence_xref_with_probation_info_js_bu.BU$PBT != 'SIS'
+    	)
+),
+citations_with_multiple_violations_jt AS (
+-- An updated version of TAK292 that only has one row per citation.
+    SELECT 
+        citations_jt.JT$DOC, 
+        citations_jt.JT$CYC, 
+        citations_jt.JT$CSQ, 
+        citations_jt.JT$VG, 
+        LISTAGG(citations_jt.JT$VCV, ',') AS violated_conditions 
+    FROM 
+        LBAKRDTA.TAK292 citations_jt
+    GROUP BY 
+        citations_jt.JT$DOC, 
+        citations_jt.JT$CYC, 
+        citations_jt.JT$CSQ, 
+        citations_jt.JT$VG 
+    ORDER BY 
+        citations_jt.JT$DOC, 
+        citations_jt.JT$CYC, 
+        citations_jt.JT$CSQ, 
+        citations_jt.JT$VG
+)
+
+SELECT 
+    *
+FROM 
+    citations_with_multiple_violations_jt
+JOIN 
+    valid_sentences_js
+ON 
+    citations_with_multiple_violations_jt.JT$DOC = valid_sentences_js.JS$DOC
+    AND citations_with_multiple_violations_jt.JT$CYC = valid_sentences_js.JS$CYC
+    AND citations_with_multiple_violations_jt.JT$CSQ = valid_sentences_js.JS$CSQ;
 ```
