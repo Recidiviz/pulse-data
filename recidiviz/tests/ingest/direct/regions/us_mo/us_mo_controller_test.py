@@ -892,7 +892,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             self):
         sp_110035_19890901_2 = StateSupervisionPeriod(
             state_supervision_period_id='110035-19890901-2',
-            supervision_type='PAROLE',
+            supervision_type='BP',
             status='TERMINATED',
             start_date='19921006',
             admission_reason='IT',
@@ -901,7 +901,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         )
         sp_110035_19890901_4 = StateSupervisionPeriod(
             state_supervision_period_id='110035-19890901-4',
-            supervision_type='PAROLE',
+            supervision_type='BP',
             status='TERMINATED',
             start_date='19931102',
             admission_reason='IT',
@@ -910,7 +910,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         )
         sp_110035_19890901_6 = StateSupervisionPeriod(
             state_supervision_period_id='110035-19890901-6',
-            supervision_type='PAROLE',
+            supervision_type='BP',
             status='TERMINATED',
             start_date='19950206',
             admission_reason='IT',
@@ -920,7 +920,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
 
         sp_110035_20010414_1 = StateSupervisionPeriod(
             state_supervision_period_id='110035-20010414-1',
-            supervision_type='PROBATION',
+            supervision_type='FC',
             status='TERMINATED',
             start_date='20010414',
             admission_reason='NA',
@@ -929,7 +929,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         )
         sp_110035_20010414_3 = StateSupervisionPeriod(
             state_supervision_period_id='110035-20010414-3',
-            supervision_type='PAROLE',
+            supervision_type='BP',
             status='TERMINATED',
             start_date='20121102',
             admission_reason='IT',
@@ -938,7 +938,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         )
         sp_110035_20010414_5 = StateSupervisionPeriod(
             state_supervision_period_id='110035-20010414-5',
-            supervision_type='PAROLE',
+            supervision_type='BP',
             status='TERMINATED',
             start_date='20131127',
             admission_reason='IT',
@@ -947,7 +947,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         )
         sp_110035_20010414_6 = StateSupervisionPeriod(
             state_supervision_period_id='110035-20010414-6',
-            supervision_type='PAROLE',
+            supervision_type='BP',
             status='TERMINATED',
             start_date='20160328',
             admission_reason='CI',
@@ -1009,7 +1009,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                                 state_supervision_period_id=
                                                 '710448-20010414-2',
                                                 status='TERMINATED',
-                                                supervision_type='PAROLE',
+                                                supervision_type='BP',
                                                 start_date='20020117',
                                                 admission_reason='IT',
                                                 termination_date='20020912',
@@ -1025,7 +1025,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                                 state_supervision_period_id=
                                                 '710448-20010414-4',
                                                 status='TERMINATED',
-                                                supervision_type='PAROLE',
+                                                supervision_type='BP',
                                                 start_date='20040928',
                                                 admission_reason='IT',
                                                 termination_date='20060911',
@@ -1054,7 +1054,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                                 state_supervision_period_id=
                                                 '910324-19890825-2',
                                                 status='UNDER_SUPERVISION',
-                                                supervision_type='PAROLE',
+                                                supervision_type='BP',
                                                 start_date='20081115',
                                                 admission_reason='IT',
                                             )
@@ -1081,7 +1081,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                                 state_supervision_period_id=
                                                 '624624-19890617-1',
                                                 status='UNDER_SUPERVISION',
-                                                supervision_type='PAROLE',
+                                                supervision_type='BP',
                                                 start_date='19890617',
                                                 admission_reason='NA',
                                             )
@@ -1155,7 +1155,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                                 state_supervision_period_id=
                                                 '110035-20040712-1',
                                                 status='TERMINATED',
-                                                supervision_type='PAROLE',
+                                                supervision_type='BP',
                                                 start_date='20040712',
                                                 admission_reason='IT',
                                                 termination_date='20080119',
@@ -2570,7 +2570,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 status=StateSupervisionPeriodStatus.TERMINATED,
                 status_raw_text='TERMINATED',
                 supervision_type=StateSupervisionType.PAROLE,
-                supervision_type_raw_text='PAROLE',
+                supervision_type_raw_text='BP',
                 start_date=datetime.date(year=1992, month=10, day=6),
                 admission_reason=
                 StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
@@ -2589,7 +2589,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 status=StateSupervisionPeriodStatus.TERMINATED,
                 status_raw_text='TERMINATED',
                 supervision_type=StateSupervisionType.PAROLE,
-                supervision_type_raw_text='PAROLE',
+                supervision_type_raw_text='BP',
                 start_date=datetime.date(year=1993, month=11, day=2),
                 admission_reason=
                 StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
@@ -2608,7 +2608,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 status=StateSupervisionPeriodStatus.TERMINATED,
                 status_raw_text='TERMINATED',
                 supervision_type=StateSupervisionType.PAROLE,
-                supervision_type_raw_text='PAROLE',
+                supervision_type_raw_text='BP',
                 start_date=datetime.date(year=1995, month=2, day=6),
                 admission_reason=
                 StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
@@ -2633,7 +2633,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 status=StateSupervisionPeriodStatus.TERMINATED,
                 status_raw_text='TERMINATED',
                 supervision_type=StateSupervisionType.PROBATION,
-                supervision_type_raw_text='PROBATION',
+                supervision_type_raw_text='FC',
                 start_date=datetime.date(year=2001, month=4, day=14),
                 admission_reason=
                 StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
@@ -2652,7 +2652,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 status=StateSupervisionPeriodStatus.TERMINATED,
                 status_raw_text='TERMINATED',
                 supervision_type=StateSupervisionType.PAROLE,
-                supervision_type_raw_text='PAROLE',
+                supervision_type_raw_text='BP',
                 start_date=datetime.date(year=2012, month=11, day=2),
                 admission_reason=
                 StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
@@ -2671,7 +2671,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 status=StateSupervisionPeriodStatus.TERMINATED,
                 status_raw_text='TERMINATED',
                 supervision_type=StateSupervisionType.PAROLE,
-                supervision_type_raw_text='PAROLE',
+                supervision_type_raw_text='BP',
                 start_date=datetime.date(year=2013, month=11, day=27),
                 admission_reason=
                 StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
@@ -2690,7 +2690,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 status=StateSupervisionPeriodStatus.TERMINATED,
                 status_raw_text='TERMINATED',
                 supervision_type=StateSupervisionType.PAROLE,
-                supervision_type_raw_text='PAROLE',
+                supervision_type_raw_text='BP',
                 start_date=datetime.date(year=2016, month=3, day=28),
                 admission_reason=
                 StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION,
@@ -2716,7 +2716,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 status=StateSupervisionPeriodStatus.TERMINATED,
                 status_raw_text='TERMINATED',
                 supervision_type=StateSupervisionType.PAROLE,
-                supervision_type_raw_text='PAROLE',
+                supervision_type_raw_text='BP',
                 start_date=datetime.date(year=2002, month=1, day=17),
                 admission_reason=
                 StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
@@ -2737,7 +2737,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 status=StateSupervisionPeriodStatus.TERMINATED,
                 status_raw_text='TERMINATED',
                 supervision_type=StateSupervisionType.PAROLE,
-                supervision_type_raw_text='PAROLE',
+                supervision_type_raw_text='BP',
                 start_date=datetime.date(year=2004, month=9, day=28),
                 admission_reason=
                 StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
@@ -2758,7 +2758,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
                 status_raw_text='UNDER_SUPERVISION',
                 supervision_type=StateSupervisionType.PAROLE,
-                supervision_type_raw_text='PAROLE',
+                supervision_type_raw_text='BP',
                 start_date=datetime.date(year=2008, month=11, day=15),
                 admission_reason=
                 StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
@@ -2803,7 +2803,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
                 status_raw_text='UNDER_SUPERVISION',
                 supervision_type=StateSupervisionType.PAROLE,
-                supervision_type_raw_text='PAROLE',
+                supervision_type_raw_text='BP',
                 start_date=datetime.date(year=1989, month=6, day=17),
                 admission_reason=
                 StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
@@ -2847,7 +2847,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 status=StateSupervisionPeriodStatus.TERMINATED,
                 status_raw_text='TERMINATED',
                 supervision_type=StateSupervisionType.PAROLE,
-                supervision_type_raw_text='PAROLE',
+                supervision_type_raw_text='BP',
                 start_date=datetime.date(year=2004, month=7, day=12),
                 admission_reason=
                 StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
