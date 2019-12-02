@@ -16,6 +16,8 @@
 # =============================================================================
 
 """Shared constants related to supervision."""
+
+import recidiviz.common.constants.enum_canonical_strings as enum_strings
 import recidiviz.common.constants.state.enum_canonical_strings as \
     state_enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
@@ -24,6 +26,7 @@ from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 class StateSupervisionType(EntityEnum, metaclass=EntityEnumMeta):
     CIVIL_COMMITMENT = \
         state_enum_strings.state_supervision_type_civil_commitment
+    EXTERNAL_UNKNOWN = enum_strings.external_unknown
     HALFWAY_HOUSE = state_enum_strings.state_supervision_type_halfway_house
     PAROLE = state_enum_strings.state_supervision_type_parole
     POST_CONFINEMENT = \
