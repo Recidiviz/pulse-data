@@ -102,7 +102,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
         'tak158_tak024_incarceration_period_from_supervision_sentence',
         'tak158_tak024_supervision_period_from_supervision_sentence',
         'tak028_tak042_tak076_tak024_violation_reports',
-        'tak292_tak291_tak024_citations',
+        'tak291_tak292_tak024_citations',
     ]
 
     PRIMARY_COL_PREFIXES_BY_FILE_TAG = {
@@ -115,7 +115,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
         'tak158_tak024_incarceration_period_from_supervision_sentence': 'BU',
         'tak158_tak024_supervision_period_from_supervision_sentence': 'BU',
         'tak028_tak042_tak076_tak024_violation_reports': 'BY',
-        'tak292_tak291_tak024_citations': 'JT',
+        'tak291_tak292_tak024_citations': 'JT',
     }
 
     SUSPENDED_SENTENCE_STATUS_CODES = {
@@ -455,7 +455,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 self._set_violation_type_on_violation,
                 self._set_recommendations_on_violation_response,
             ],
-            'tak292_tak291_tak024_citations': [
+            'tak291_tak292_tak024_citations': [
                 self._gen_violation_response_type_posthook(
                     StateSupervisionViolationResponseType.CITATION),
                 self._set_deciding_body_as_supervising_officer,
@@ -478,7 +478,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 self._generate_supervision_period_id_coords,
             'tak028_tak042_tak076_tak024_violation_reports':
                 self._generate_supervision_violation_id_coords_for_reports,
-            'tak292_tak291_tak024_citations':
+            'tak291_tak292_tak024_citations':
                 self._generate_supervision_violation_id_coords_for_citations,
         }
 
@@ -497,7 +497,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 self._supervision_sentence_ancestor_chain_override,
             'tak028_tak042_tak076_tak024_violation_reports':
                 self._supervision_violation_report_ancestor_chain_override,
-            'tak292_tak291_tak024_citations':
+            'tak291_tak292_tak024_citations':
                 self._supervision_violation_citation_ancestor_chain_override,
         }
 
@@ -545,7 +545,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 'tak158_tak024_incarceration_period_from_supervision_sentence',
                 'tak158_tak024_supervision_period_from_supervision_sentence',
                 'tak028_tak042_tak076_tak024_violation_reports',
-                'tak292_tak291_tak024_citations',
+                'tak291_tak292_tak024_citations',
         ]:
             return US_MO_DOC
 
