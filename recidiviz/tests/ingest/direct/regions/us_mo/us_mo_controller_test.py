@@ -1378,7 +1378,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         self.run_parse_file_test(
             expected, 'tak028_tak042_tak076_tak024_violation_reports')
 
-    def test_populate_data_tak292_tak291_tak024_citations(self):
+    def test_populate_data_tak291_tak292_tak024_citations(self):
         sss_110035_20040712_1 = StateSupervisionSentence(
             state_supervision_sentence_id='110035-20040712-1',
             state_supervision_periods=[
@@ -1475,7 +1475,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                     sis_910324_19890825_1]
                             )])])
 
-        self.run_parse_file_test(expected, 'tak292_tak291_tak024_citations')
+        self.run_parse_file_test(expected, 'tak291_tak292_tak024_citations')
 
     @staticmethod
     def _populate_person_backedges(
@@ -3370,7 +3370,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             placeholder_ssp2_910324_19890825_1)
 
         # Act
-        self._run_ingest_job_for_filename('tak292_tak291_tak024_citations.csv')
+        self._run_ingest_job_for_filename('tak291_tak292_tak024_citations.csv')
 
         # Assert
         self.assert_expected_db_people(expected_people)
