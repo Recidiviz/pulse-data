@@ -1164,6 +1164,39 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
                     )])
             ])
 
+        supervision_period_117111 = StateSupervisionPeriod(
+            state_supervision_period_id=
+            '117111',
+            start_date='7/17/2014',
+            termination_date='12/8/2014',
+            termination_reason='9',
+            state_supervision_violation_entries=[
+                violation_for_17111
+            ],
+            county_code='INVALID'
+        )
+        supervision_period_140408 = StateSupervisionPeriod(
+            state_supervision_period_id=
+            '140408',
+            start_date='3/24/2017',
+            termination_date='2/27/2018',
+            termination_reason='9',
+            state_supervision_violation_entries=[
+                violation_for_140408
+            ],
+            county_code='US_ND_GRIGGS'
+        )
+        supervision_period_147777 = StateSupervisionPeriod(
+            state_supervision_period_id=
+            '147777',
+            start_date='3/24/2013',
+            termination_date='2/27/2016',
+            termination_reason='9',
+            state_supervision_violation_entries=[
+                violation_for_147777
+            ],
+            county_code='US_ND_GRIGGS'
+        )
         expected = IngestInfo(state_people=[
             StatePerson(state_person_id='92237',
                         state_person_external_ids=[
@@ -1205,17 +1238,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
                                         completion_date='12/8/2014',
                                         max_length='580d',
                                         state_supervision_periods=[
-                                            StateSupervisionPeriod(
-                                                state_supervision_period_id=
-                                                '117111',
-                                                start_date='7/17/2014',
-                                                termination_date='12/8/2014',
-                                                termination_reason='9',
-                                                state_supervision_violations=[
-                                                    violation_for_17111
-                                                ],
-                                                county_code='INVALID'
-                                            )
+                                            supervision_period_117111,
                                         ],
                                         state_charges=[
                                             StateCharge(
@@ -1248,17 +1271,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
                                         projected_completion_date='3/23/2019',
                                         completion_date='2/27/2018',
                                         state_supervision_periods=[
-                                            StateSupervisionPeriod(
-                                                state_supervision_period_id=
-                                                '140408',
-                                                start_date='3/24/2017',
-                                                termination_date='2/27/2018',
-                                                termination_reason='9',
-                                                state_supervision_violations=[
-                                                    violation_for_140408
-                                                ],
-                                                county_code='US_ND_GRIGGS'
-                                            )
+                                            supervision_period_140408,
                                         ],
                                         state_charges=[
                                             StateCharge(
@@ -1279,17 +1292,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
                                         projected_completion_date='3/23/2015',
                                         completion_date='2/27/2016',
                                         state_supervision_periods=[
-                                            StateSupervisionPeriod(
-                                                state_supervision_period_id=
-                                                '147777',
-                                                start_date='3/24/2013',
-                                                termination_date='2/27/2016',
-                                                termination_reason='9',
-                                                state_supervision_violations=[
-                                                    violation_for_147777
-                                                ],
-                                                county_code='US_ND_GRIGGS'
-                                            )
+                                            supervision_period_147777,
                                         ],
                                         state_charges=[
                                             StateCharge(
@@ -2914,7 +2917,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         supervision_violation_117111 = \
             entities.StateSupervisionViolation.new_with_defaults(
                 state_code=_STATE_CODE,
-                supervision_period=supervision_period_117111,
+                supervision_periods=[supervision_period_117111],
                 person=supervision_period_117111.person)
         supervision_violation_response_117111 = \
             entities.StateSupervisionViolationResponse.new_with_defaults(
@@ -2940,7 +2943,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
                 person=supervision_violation_117111.person)
         supervision_violation_117111.supervision_violation_responses.append(
             supervision_violation_response_117111)
-        supervision_period_117111.supervision_violations.append(
+        supervision_period_117111.supervision_violation_entries.append(
             supervision_violation_117111)
         supervision_sentence_117111.supervision_periods.append(
             supervision_period_117111)
@@ -2984,7 +2987,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
                 violation_type=StateSupervisionViolationType.TECHNICAL,
                 violation_type_raw_text='TECHNICAL',
                 state_code=_STATE_CODE,
-                supervision_period=supervision_period_140408,
+                supervision_periods=[supervision_period_140408],
                 person=supervision_period_140408.person)
         supervision_violation_response_140408 = \
             entities.StateSupervisionViolationResponse.new_with_defaults(
@@ -3053,7 +3056,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
                 violation_type_raw_text='FELONY',
                 is_violent=True,
                 state_code=_STATE_CODE,
-                supervision_period=supervision_period_147777,
+                supervision_periods=[supervision_period_147777],
                 person=supervision_period_147777.person)
         supervision_violation_response_147777 = \
             entities.StateSupervisionViolationResponse.new_with_defaults(
@@ -3097,7 +3100,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         supervision_sentence_140408.charges = [charge_140408]
         supervision_violation_140408.supervision_violation_responses.append(
             supervision_violation_response_140408)
-        supervision_period_140408.supervision_violations.append(
+        supervision_period_140408.supervision_violation_entries.append(
             supervision_violation_140408)
         supervision_sentence_140408.supervision_periods.append(
             supervision_period_140408)
@@ -3108,7 +3111,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         supervision_sentence_147777.charges = [charge_147777]
         supervision_violation_147777.supervision_violation_responses.append(
             supervision_violation_response_147777)
-        supervision_period_147777.supervision_violations.append(
+        supervision_period_147777.supervision_violation_entries.append(
             supervision_violation_147777)
         supervision_sentence_147777.supervision_periods.append(
             supervision_period_147777)

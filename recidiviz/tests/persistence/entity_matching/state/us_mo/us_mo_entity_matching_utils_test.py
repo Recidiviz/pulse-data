@@ -69,7 +69,8 @@ class TestUsMoMatchingUtils(TestCase):
             external_id='DOC-CYC-VSN1-SEO-FSO')
         sv_2 = schema.StateSupervisionViolation(
             external_id='DOC-CYC-VSN1-SEO-FSO')
-        sp = schema.StateSupervisionPeriod(supervision_violations=[sv, sv_2])
+        sp = schema.StateSupervisionPeriod(
+            supervision_violation_entries=[sv, sv_2])
         ss = schema.StateSupervisionSentence(supervision_periods=[sp])
         sg = schema.StateSentenceGroup(supervision_sentences=[ss])
         p = schema.StatePerson(sentence_groups=[sg])
@@ -78,7 +79,7 @@ class TestUsMoMatchingUtils(TestCase):
             external_id='DOC-CYC-VSN1')
         expected_sv_2 = attr.evolve(expected_sv)
         expected_sp = StateSupervisionPeriod.new_with_defaults(
-            supervision_violations=[expected_sv, expected_sv_2])
+            supervision_violation_entries=[expected_sv, expected_sv_2])
         expected_ss = StateSupervisionSentence.new_with_defaults(
             supervision_periods=[expected_sp])
         expected_sg = StateSentenceGroup.new_with_defaults(
@@ -92,7 +93,8 @@ class TestUsMoMatchingUtils(TestCase):
     def test_removeSeosFromViolationIds_unexpectedFormat(self):
         with pytest.raises(EntityMatchingError):
             sv = schema.StateSupervisionViolation(external_id='bad_id')
-            sp = schema.StateSupervisionPeriod(supervision_violations=[sv])
+            sp = schema.StateSupervisionPeriod(
+                supervision_violation_entries=[sv])
             ss = schema.StateSupervisionSentence(supervision_periods=[sp])
             sg = schema.StateSentenceGroup(supervision_sentences=[ss])
             p = schema.StatePerson(sentence_groups=[sg])

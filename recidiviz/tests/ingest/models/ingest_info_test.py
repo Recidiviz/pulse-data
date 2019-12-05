@@ -109,7 +109,8 @@ class TestIngestInfo(unittest.TestCase):
             ['decision_agent_ids', 'decision_agents']
         supervision_period_fields_ignore = \
             ['supervising_officer_id', 'supervising_officer',
-             'state_supervision_violation_ids', 'state_supervision_violations',
+             'state_supervision_violation_entry_ids',
+             'state_supervision_violation_entries',
              'state_assessment_ids', 'state_assessments',
              'state_program_assignment_ids', 'state_program_assignments']
         supervision_violation_fields_ignore = \

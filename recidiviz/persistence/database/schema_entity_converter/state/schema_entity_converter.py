@@ -58,7 +58,18 @@ class _StateSchemaEntityConverter(BaseSchemaEntityConverter[SrcBaseType,
     def _get_entities_module(self) -> ModuleType:
         return entities
 
-    def _should_skip_field(self, field: FieldNameType) -> bool:
+    # TODO(2697): Remove these checks once these columns are removed from
+    # our schema.
+    # TODO(2668): Remove these checks once these columns are removed from
+    # our schema.
+    def _should_skip_field(
+            self, entity_cls: Type, field: FieldNameType) -> bool:
+        if entity_cls == entities.StateSupervisionPeriod \
+                and field == 'supervision_violations':
+            return True
+        if entity_cls == entities.StateSupervisionViolation \
+                and field == 'supervision_period':
+            return True
         return False
 
     def _populate_indirect_back_edges(self, dst: DstBaseType):
@@ -71,7 +82,7 @@ class _StateSchemaEntityConverter(BaseSchemaEntityConverter[SrcBaseType,
         entity_cls: Type[Entity] = self._get_entity_class(dst)
 
         for field, _ in attr.fields_dict(entity_cls).items():
-            if self._should_skip_field(field):
+            if self._should_skip_field(entity_cls, field):
                 continue
 
             if self._direction_checker.is_back_edge(dst, field):
