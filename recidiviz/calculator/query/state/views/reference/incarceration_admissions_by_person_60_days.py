@@ -41,7 +41,7 @@ INCARCERATION_ADMISSIONS_BY_PERSON_60_DAYS_QUERY = \
 /*{description}*/
 
 SELECT * EXCEPT (rownum) FROM
-(SELECT *, row_number() OVER (PARTITION BY person_id ORDER BY admission_date) AS rownum
+(SELECT *, row_number() OVER (PARTITION BY person_id ORDER BY admission_date ASC, external_id DESC) AS rownum
 FROM
 (SELECT * FROM 
 `{project_id}.{views_dataset}.incarceration_admissions_deduped`
