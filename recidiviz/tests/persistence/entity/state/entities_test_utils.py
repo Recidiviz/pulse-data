@@ -482,7 +482,7 @@ def generate_full_graph_state_person(
             violated_conditions='MISSED CURFEW',
         )
 
-    supervision_period.supervision_violations = [supervision_violation]
+    supervision_period.supervision_violation_entries = [supervision_violation]
 
     supervision_officer_agent = entities.StateAgent.new_with_defaults(
         agent_type=StateAgentType.SUPERVISION_OFFICER,
@@ -575,7 +575,7 @@ def generate_full_graph_state_person(
             child.person = person
 
         supervision_period_children = \
-            supervision_period.supervision_violations + \
+            supervision_period.supervision_violation_entries + \
             supervision_period.assessments + \
             supervision_period.program_assignments
 

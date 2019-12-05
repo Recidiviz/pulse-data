@@ -99,7 +99,8 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
         pass
 
     @abc.abstractmethod
-    def _should_skip_field(self, field: FieldNameType) -> bool:
+    def _should_skip_field(
+            self, entity_cls: Type, field: FieldNameType) -> bool:
         pass
 
     @abc.abstractmethod
@@ -213,7 +214,7 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
                 "Unable to convert class [{0}]".format(src.__class__))
 
         for field, attribute in attr.fields_dict(entity_cls).items():
-            if self._should_skip_field(field):
+            if self._should_skip_field(entity_cls, field):
                 continue
 
             if self._direction_checker.is_back_edge(src, field) and \
