@@ -118,6 +118,9 @@ class TestStrFieldUtils(TestCase):
         assert parse_date('Jan 1, 2018') == \
                datetime.date(year=2018, month=1, day=1)
 
+    def test_parseDate_zero(self):
+        assert parse_date('0') is None
+
     def test_parseNoDate(self):
         assert parse_date('None set') is None
 

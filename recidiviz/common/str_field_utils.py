@@ -217,6 +217,8 @@ def parse_date(
     Parses a string into a datetime.date object, using |from_dt| as a base for
     any relative dates.
     """
+    if date_string == '0':
+        return None
 
     if _is_yyyymmdd_date(date_string):
         return parse_yyyymmdd_date(date_string)
