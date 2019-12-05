@@ -315,6 +315,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         is_capital_punishment='Y',
                                         state_charges=[
                                             StateCharge(
+                                                state_charge_id=
+                                                '110035-19890901-1',
                                                 offense_date=None,
                                                 county_code='US_MO_JACKSON',
                                                 ncic_code='0904',
@@ -342,6 +344,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         is_capital_punishment='N',
                                         state_charges=[
                                             StateCharge(
+                                                state_charge_id=
+                                                '110035-20010414-1',
                                                 offense_date='20000604',
                                                 county_code=
                                                 'US_MO_ST_LOUIS_CITY',
@@ -378,6 +382,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         is_capital_punishment=None,
                                         state_charges=[
                                             StateCharge(
+                                                state_charge_id=
+                                                '310261-19890821-3',
                                                 offense_date='20141004',
                                                 county_code=
                                                 'US_MO_ST_LOUIS_COUNTY',
@@ -414,6 +420,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         is_capital_punishment='N',
                                         state_charges=[
                                             StateCharge(
+                                                state_charge_id=
+                                                '710448-20010414-1',
                                                 offense_date='20000731',
                                                 county_code=
                                                 'US_MO_ST_LOUIS_CITY',
@@ -436,6 +444,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         is_life='False',
                                         is_capital_punishment='N',
                                         state_charges=[StateCharge(
+                                            state_charge_id=
+                                            '710448-20010414-2',
                                             offense_date='20050301',
                                             ncic_code='3599',
                                             statute='32500990',
@@ -456,6 +466,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         is_life='False',
                                         is_capital_punishment='N',
                                         state_charges=[StateCharge(
+                                            state_charge_id=
+                                            '710448-20010414-3',
                                             offense_date='20050301',
                                             ncic_code='4899',
                                             statute='27020990',
@@ -488,6 +500,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         is_capital_punishment='N',
                                         state_charges=[
                                             StateCharge(
+                                                state_charge_id=
+                                                '910324-19890825-1',
                                                 offense_date=None,
                                                 ncic_code='3572',
                                                 statute='32040720',
@@ -526,6 +540,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         max_length='5Y 0M 0D',
                                         state_charges=[
                                             StateCharge(
+                                                state_charge_id=
+                                                '910324-19890825-1',
                                                 ncic_code='5404',
                                                 statute='47410040',
                                                 description=
@@ -544,6 +560,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         max_length='1Y 0M 0D',
                                         state_charges=[
                                             StateCharge(
+                                                state_charge_id=
+                                                '910324-19890825-2',
                                                 ncic_code='5404',
                                                 description='DWI',
                                                 classification_type='F')]
@@ -570,6 +588,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         max_length='0Y 0M 0D',
                                         state_charges=[
                                             StateCharge(
+                                                state_charge_id=
+                                                '310261-19890821-1',
                                                 ncic_code='5707',
                                                 description='BRK & END')]
                                     )
@@ -596,6 +616,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         max_length='3Y 0M 0D',
                                         state_charges=[
                                             StateCharge(
+                                                state_charge_id=
+                                                '110035-20040712-1',
                                                 ncic_code='2399',
                                                 description='BURG&STEAL',
                                                 classification_type='F')]
@@ -1782,6 +1804,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         charge_110035_19890901 = entities.StateCharge.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            external_id='110035-19890901-1',
             county_code='US_MO_JACKSON',
             ncic_code='0904',
             statute='10021040',
@@ -1820,6 +1843,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
 
         charge_110035_20010414 = entities.StateCharge.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
+            external_id='110035-20010414-1',
             status=ChargeStatus.PRESENT_WITHOUT_INFO,
             offense_date=datetime.date(year=2000, month=6, day=4),
             county_code='US_MO_ST_LOUIS_CITY',
@@ -1863,6 +1887,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         charge_310261 = entities.StateCharge.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            external_id='310261-19890821-3',
             offense_date=datetime.date(year=2014, month=10, day=4),
             county_code='US_MO_ST_LOUIS_COUNTY',
             ncic_code='3599',
@@ -1899,6 +1924,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             )
         charge_710448_1 = entities.StateCharge.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
+            external_id='710448-20010414-1',
             status=ChargeStatus.PRESENT_WITHOUT_INFO,
             offense_date=datetime.date(year=2000, month=7, day=31),
             county_code='US_MO_ST_LOUIS_CITY',
@@ -1938,6 +1964,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         charge_710448_2 = entities.StateCharge.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            external_id='710448-20010414-2',
             offense_date=datetime.date(year=2005, month=3, day=1),
             ncic_code='3599',
             statute='32500990',
@@ -1974,6 +2001,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             )
         charge_710448_3 = entities.StateCharge.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
+            external_id='710448-20010414-3',
             status=ChargeStatus.PRESENT_WITHOUT_INFO,
             offense_date=datetime.date(year=2005, month=3, day=1),
             ncic_code='4899',
@@ -2020,6 +2048,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         charge_910324 = entities.StateCharge.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            external_id='910324-19890825-1',
             ncic_code='3572',
             statute='32040720',
             description='POSSESSION OF METHAMPHETAMINE',
@@ -2060,20 +2089,16 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             )
         sg_910324_19890825.supervision_sentences.append(sss_910324_19890825_1)
 
-        charge_910324_ss_1 = entities.StateCharge.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            status=ChargeStatus.PRESENT_WITHOUT_INFO,
-            ncic_code='5404',
-            statute='47410040',
-            description='DRIVING WHILE INTOXICATED - THIRD OFFENSE',
-            classification_type=
-            StateChargeClassificationType.FELONY,
-            classification_type_raw_text='F',
-            classification_subtype='D',
-            supervision_sentences=[sss_910324_19890825_1],
-            person=person_910324,
-        )
-        sss_910324_19890825_1.charges = [charge_910324_ss_1]
+        # A charge already exists in the DB for this external_id, so we just
+        # update the fields rather than create a whole new entity
+        charge_910324.ncic_code = '5404'
+        charge_910324.statute = '47410040'
+        charge_910324.description = 'DRIVING WHILE INTOXICATED - THIRD OFFENSE'
+        charge_910324.classification_type = StateChargeClassificationType.FELONY
+        charge_910324.classification_type_raw_text = 'F'
+        charge_910324.classification_subtype = 'D'
+        charge_910324.supervision_sentences.append(sss_910324_19890825_1)
+        sss_910324_19890825_1.charges = [charge_910324]
 
         sss_910324_19890825_2 = \
             entities.StateSupervisionSentence.new_with_defaults(
@@ -2095,6 +2120,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         charge_910324_ss_2 = entities.StateCharge.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            external_id='910324-19890825-2',
             ncic_code='5404',
             description='DWI',
             classification_type=
@@ -2125,6 +2151,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         charge_310261_ss_1 = entities.StateCharge.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            external_id='310261-19890821-1',
             ncic_code='5707',
             description='BRK & END',
             supervision_sentences=[sss_310261_19890821_1],
@@ -2160,6 +2187,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         charge_110035_ss_1 = entities.StateCharge.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            external_id='110035-20040712-1',
             ncic_code='2399',
             description='BURG&STEAL',
             classification_type=
@@ -3219,7 +3247,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             'tak028_tak042_tak076_tak024_violation_reports.csv')
 
         # Assert
-        self.assert_expected_db_people(expected_people, debug=True)
+        self.assert_expected_db_people(expected_people)
 
         ##############################################################
         # TAK292_TAK291_TAK024 CITATIONS
@@ -3373,6 +3401,14 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         self._run_ingest_job_for_filename('tak291_tak292_tak024_citations.csv')
 
         # Assert
+        self.assert_expected_db_people(expected_people)
+
+        # Rerun for sanity
+        # pylint:disable=protected-access
+        file_tags = self.controller._get_file_tag_rank_list()
+        for file_tag in file_tags:
+            self._run_ingest_job_for_filename(f'{file_tag}.csv')
+
         self.assert_expected_db_people(expected_people)
 
     def test_run_incarceration_period_na_not_converted_to_NaN(self) -> None:
