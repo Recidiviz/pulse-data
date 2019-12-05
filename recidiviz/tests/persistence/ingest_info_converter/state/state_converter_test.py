@@ -272,7 +272,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
         )
         ingest_info.state_supervision_periods.add(
             state_supervision_period_id='S_PERIOD_ID1',
-            state_supervision_violation_ids=['VIOLATION_ID'],
+            state_supervision_violation_entry_ids=['VIOLATION_ID'],
             supervision_type='PAROLE',
             supervision_level='MED',
             state_program_assignment_ids=['PROGRAM_ASSIGNMENT_ID']
@@ -588,7 +588,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                                     supervision_type=
                                     StateSupervisionType.PAROLE,
                                     supervision_type_raw_text='PAROLE',
-                                    supervision_violations=[violation],
+                                    supervision_violation_entries=[violation],
                                     program_assignments=[program_assignment]
                                 )
                             ]

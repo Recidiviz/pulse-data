@@ -1134,7 +1134,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             status=StateSupervisionPeriodStatus.EXTERNAL_UNKNOWN.value,
             state_code=_STATE_CODE, county_code='county_code',
             assessments=[db_assessment_2],
-            supervision_violations=[db_supervision_violation],
+            supervision_violation_entries=[db_supervision_violation],
             supervising_officer=db_agent_po)
         db_supervision_sentence = generate_supervision_sentence(
             person=db_person,
@@ -1242,7 +1242,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             supervision_period_id=None,
             county_code='county_code-updated',
             assessments=[assessment_2],
-            supervision_violations=[supervision_violation],
+            supervision_violation_entries=[supervision_violation],
             supervising_officer=agent_po)
         supervision_sentence = attr.evolve(
             self.to_entity(db_supervision_sentence),
@@ -1323,7 +1323,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         expected_supervision_period = attr.evolve(
             supervision_period, supervision_period_id=_ID,
             assessments=[expected_assessment_2],
-            supervision_violations=[expected_supervision_violation],
+            supervision_violation_entries=[expected_supervision_violation],
             supervising_officer=expected_agent_po)
         expected_supervision_sentence = attr.evolve(
             supervision_sentence, supervision_sentence_id=_ID,

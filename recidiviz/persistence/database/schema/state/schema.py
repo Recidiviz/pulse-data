@@ -408,6 +408,18 @@ state_incarceration_sentence_supervision_period_association_table = \
                  ForeignKey(
                      'state_supervision_period.supervision_period_id')))
 
+state_supervision_period_supervision_violation_association_table = \
+    Table('state_supervision_period_supervision_violation_association',
+          StateBase.metadata,
+          Column('supervision_period_id',
+                 Integer,
+                 ForeignKey(
+                     'state_supervision_period.supervision_period_id')),
+          Column('supervision_violation_id',
+                 Integer,
+                 ForeignKey(
+                     'state_supervision_violation.supervision_violation_id')))
+
 state_supervision_period_program_assignment_association_table = \
     Table('state_supervision_period_program_assignment_association',
           StateBase.metadata,
@@ -1420,9 +1432,19 @@ class StateSupervisionPeriod(StateBase,
     person = relationship('StatePerson', uselist=False)
     supervising_officer = relationship(
         'StateAgent', uselist=False, lazy='selectin')
+    # TODO(2668): Deprecated - Delete this column from our schema.
     supervision_violations = relationship(
         'StateSupervisionViolation',
         backref='supervision_period',
+        lazy='selectin')
+    # TODO(2697): Rename `supervision_violation_entries` to
+    # `supervision_violations` once the 1:many relationship
+    # `supervision_violations` above has been removed from our db/schema object.
+    supervision_violation_entries = relationship(
+        'StateSupervisionViolation',
+        secondary=
+        state_supervision_period_supervision_violation_association_table,
+        backref='supervision_periods',
         lazy='selectin')
     assessments = relationship(
         'StateAssessment', backref='supervision_period', lazy='selectin')
@@ -1791,6 +1813,7 @@ class _StateSupervisionViolationSharedColumns(
     is_violent = Column(Boolean)
     violated_conditions = Column(String(255))
 
+    # TODO(2668): Deprecated - remove this column from our schema.
     @declared_attr
     def supervision_period_id(self):
         return Column(

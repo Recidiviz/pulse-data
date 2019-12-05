@@ -1262,7 +1262,8 @@ class StateSupervisionPeriod(IngestObject):
                  termination_date=None, state_code=None, county_code=None,
                  admission_reason=None, termination_reason=None,
                  supervision_level=None, conditions=None,
-                 supervising_officer=None, state_supervision_violations=None,
+                 supervising_officer=None,
+                 state_supervision_violation_entries=None,
                  state_assessments=None, state_program_assignments=None):
         self.state_supervision_period_id: Optional[str] = \
             state_supervision_period_id
@@ -1278,8 +1279,9 @@ class StateSupervisionPeriod(IngestObject):
         self.conditions: List[str] = conditions or []
 
         self.supervising_officer: Optional[StateAgent] = supervising_officer
-        self.state_supervision_violations: List[StateSupervisionViolation] = \
-            state_supervision_violations or []
+        self.state_supervision_violation_entries: \
+            List[StateSupervisionViolation] = \
+            state_supervision_violation_entries or []
         self.state_assessments: List[StateAssessment] = state_assessments or []
         self.state_program_assignments: List[StateProgramAssignment] = \
             state_program_assignments or []
@@ -1294,7 +1296,7 @@ class StateSupervisionPeriod(IngestObject):
     def create_state_supervision_violation(self, **kwargs) \
             -> 'StateSupervisionViolation':
         supervision_violation = StateSupervisionViolation(**kwargs)
-        self.state_supervision_violations.append(supervision_violation)
+        self.state_supervision_violation_entries.append(supervision_violation)
         return supervision_violation
 
     def create_state_assessment(self, **kwargs) -> 'StateAssessment':
@@ -1311,7 +1313,7 @@ class StateSupervisionPeriod(IngestObject):
     def get_state_supervision_violation_by_id(
             self, state_supervision_violation_id
     ) -> Optional['StateSupervisionViolation']:
-        return next((sc for sc in self.state_supervision_violations
+        return next((sc for sc in self.state_supervision_violation_entries
                      if sc.state_supervision_violation_id ==
                      state_supervision_violation_id), None)
 
@@ -1319,8 +1321,8 @@ class StateSupervisionPeriod(IngestObject):
         if not self.supervising_officer:
             self.supervising_officer = None
 
-        self.state_supervision_violations = \
-            [sv for sv in self.state_supervision_violations if sv]
+        self.state_supervision_violation_entries = \
+            [sv for sv in self.state_supervision_violation_entries if sv]
         self.state_assessments = [a for a in self.state_assessments if a]
         self.state_program_assignments = [
             p.prune() for p in self.state_program_assignments if p]
@@ -1328,7 +1330,7 @@ class StateSupervisionPeriod(IngestObject):
         return self
 
     def sort(self):
-        self.state_supervision_violations.sort()
+        self.state_supervision_violation_entries.sort()
         self.state_assessments.sort()
         self.state_program_assignments.sort()
 

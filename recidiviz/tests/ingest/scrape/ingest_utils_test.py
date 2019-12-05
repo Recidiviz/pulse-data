@@ -512,7 +512,7 @@ class TestIngestUtils:
         supervision_period_agent_pb.state_agent_id = 'agentPO'
         supervision_period_agent_pb.full_name = 'Officer Paroley'
 
-        supervision_period_pb.state_supervision_violation_ids.append(
+        supervision_period_pb.state_supervision_violation_entry_ids.append(
             'violation1')
         violation_pb = expected_proto.state_supervision_violations.add()
         violation_pb.state_supervision_violation_id = 'violation1'

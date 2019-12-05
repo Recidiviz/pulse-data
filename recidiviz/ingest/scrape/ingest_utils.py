@@ -368,12 +368,13 @@ def convert_ingest_info_to_proto(ingest_info_py: ingest_info.IngestInfo) \
                 proto_period.supervising_officer_id = \
                     proto_supervising_officer.state_agent_id
 
-            for violation in supervision_period.state_supervision_violations:
+            for violation in \
+                    supervision_period.state_supervision_violation_entries:
                 proto_violation = _populate_proto(
                     'state_supervision_violations', violation,
                     'state_supervision_violation_id',
                     state_supervision_violation_map)
-                proto_period.state_supervision_violation_ids.append(
+                proto_period.state_supervision_violation_entry_ids.append(
                     proto_violation.state_supervision_violation_id)
 
                 for violation_type in \
@@ -902,9 +903,9 @@ def convert_proto_to_ingest_info(
         if proto_supervision_period.supervising_officer_id:
             supervision_period.supervising_officer = \
                 state_agent_map[proto_supervision_period.supervising_officer_id]
-        supervision_period.state_supervision_violations = \
+        supervision_period.state_supervision_violation_entries = \
             [state_supervision_violation_map[proto_id] for proto_id
-             in proto_supervision_period.state_supervision_violation_ids]
+             in proto_supervision_period.state_supervision_violation_entry_ids]
         supervision_period.state_assessments = \
             [state_assessment_map[proto_id] for proto_id
              in proto_supervision_period.state_assessment_ids]

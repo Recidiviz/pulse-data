@@ -18,8 +18,6 @@
 import datetime
 from typing import Type, List
 
-import attr
-
 from recidiviz import IngestInfo
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.person_characteristics import Gender, Race, \
@@ -1198,7 +1196,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             state_supervision_sentence_id='110035-20040712-1',
             state_supervision_periods=[
                 StateSupervisionPeriod(
-                    state_supervision_violations=[
+                    state_supervision_violation_entries=[
                         StateSupervisionViolation(
                             state_supervision_violation_id=
                             '110035-20040712-R1-1-1',
@@ -1273,7 +1271,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             state_supervision_sentence_id='110035-20040712-2',
             state_supervision_periods=[
                 StateSupervisionPeriod(
-                    state_supervision_violations=[
+                    state_supervision_violation_entries=[
                         StateSupervisionViolation(
                             state_supervision_violation_id=
                             '110035-20040712-R2-2-1',
@@ -1308,7 +1306,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             state_incarceration_sentence_id='910324-19890825-1',
             state_supervision_periods=[
                 StateSupervisionPeriod(
-                    state_supervision_violations=[
+                    state_supervision_violation_entries=[
                         StateSupervisionViolation(
                             state_supervision_violation_id=
                             '910324-19890825-R1-1-0',
@@ -1340,7 +1338,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             state_supervision_sentence_id='910324-19890825-1',
             state_supervision_periods=[
                 StateSupervisionPeriod(
-                    state_supervision_violations=[
+                    state_supervision_violation_entries=[
                         StateSupervisionViolation(
                             state_supervision_violation_id=
                             '910324-19890825-R1-1-1',
@@ -1405,7 +1403,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             state_supervision_sentence_id='110035-20040712-1',
             state_supervision_periods=[
                 StateSupervisionPeriod(
-                    state_supervision_violations=[
+                    state_supervision_violation_entries=[
                         StateSupervisionViolation(
                             state_supervision_violation_id=
                             '110035-20040712-C1-1-1',
@@ -1427,7 +1425,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             state_supervision_sentence_id='110035-20040712-2',
             state_supervision_periods=[
                 StateSupervisionPeriod(
-                    state_supervision_violations=[
+                    state_supervision_violation_entries=[
                         StateSupervisionViolation(
                             state_supervision_violation_id=
                             '110035-20040712-C1-2-2',
@@ -1449,7 +1447,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             state_incarceration_sentence_id='910324-19890825-1',
             state_supervision_periods=[
                 StateSupervisionPeriod(
-                    state_supervision_violations=[
+                    state_supervision_violation_entries=[
                         StateSupervisionViolation(
                             state_supervision_violation_id=
                             '910324-19890825-C1-1-0',
@@ -2912,7 +2910,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 state_code=_STATE_CODE_UPPER,
                 external_id='110035-20040712-R1',
                 violation_date=datetime.date(year=2005, month=1, day=1),
-                supervision_period=placeholder_ssp_110035_20040712_1,
+                supervision_periods=[placeholder_ssp_110035_20040712_1],
                 person=person_110035,
             )
         ssvt_110035_20040712_r1_1_t = \
@@ -2986,12 +2984,12 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 supervision_violation_response=ssvr_110035_20040712_r1_1,
                 person=person_110035,
             )
-        ssv_110035_20040712_r2_1 = \
+        ssv_110035_20040712_r2 = \
             entities.StateSupervisionViolation.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
                 external_id='110035-20040712-R2',
                 violation_date=datetime.date(year=2006, month=1, day=1),
-                supervision_period=placeholder_ssp_110035_20040712_1,
+                supervision_periods=[placeholder_ssp_110035_20040712_1],
                 person=person_110035,
             )
         ssvt_110035_20040712_r2_1_a = \
@@ -2999,7 +2997,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 state_code=_STATE_CODE_UPPER,
                 violation_type=StateSupervisionViolationType.ABSCONDED,
                 violation_type_raw_text='A',
-                supervision_violation=ssv_110035_20040712_r2_1,
+                supervision_violation=ssv_110035_20040712_r2,
                 person=person_110035,
             )
         ssvt_110035_20040712_r2_1_e = \
@@ -3007,14 +3005,14 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 state_code=_STATE_CODE_UPPER,
                 violation_type=StateSupervisionViolationType.ESCAPED,
                 violation_type_raw_text='E',
-                supervision_violation=ssv_110035_20040712_r2_1,
+                supervision_violation=ssv_110035_20040712_r2,
                 person=person_110035,
             )
         ssvc_110035_20040712_r2_1_res = \
             entities.StateSupervisionViolatedConditionEntry.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
                 condition='SPC',
-                supervision_violation=ssv_110035_20040712_r2_1,
+                supervision_violation=ssv_110035_20040712_r2,
                 person=person_110035,
             )
         ssvr_110035_20040712_r2_1 = \
@@ -3024,7 +3022,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 response_type=
                 StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_type_raw_text='VIOLATION_REPORT',
-                supervision_violation=ssv_110035_20040712_r2_1,
+                supervision_violation=ssv_110035_20040712_r2,
                 deciding_body_type=
                 StateSupervisionViolationResponseDecidingBodyType.
                 SUPERVISION_OFFICER,
@@ -3045,14 +3043,14 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         ssv_110035_20040712_r1_1.supervision_violation_types.append(
             ssvt_110035_20040712_r1_1_t)
 
-        ssv_110035_20040712_r2_1.supervision_violation_responses.append(
+        ssv_110035_20040712_r2.supervision_violation_responses.append(
             ssvr_110035_20040712_r2_1)
-        ssv_110035_20040712_r2_1.supervision_violated_conditions.append(
+        ssv_110035_20040712_r2.supervision_violated_conditions.append(
             ssvc_110035_20040712_r2_1_res)
-        ssv_110035_20040712_r2_1.supervision_violation_types.extend([
+        ssv_110035_20040712_r2.supervision_violation_types.extend([
             ssvt_110035_20040712_r2_1_e, ssvt_110035_20040712_r2_1_a])
-        placeholder_ssp_110035_20040712_1.supervision_violations.extend(
-            [ssv_110035_20040712_r1_1, ssv_110035_20040712_r2_1])
+        placeholder_ssp_110035_20040712_1.supervision_violation_entries.extend(
+            [ssv_110035_20040712_r1_1, ssv_110035_20040712_r2])
 
         sss_110035_20040712_2 = \
             entities.StateSupervisionSentence.new_with_defaults(
@@ -3069,61 +3067,10 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 supervision_sentences=[sss_110035_20040712_2],
                 person=person_110035,
             )
-        # TODO(2658): Re-use ssv above once violations are a many to many
-        # association as opposed to 1 to many.
-        ssv_110035_20040712_r2_1_dup = \
-            entities.StateSupervisionViolation.new_with_defaults(
-                state_code=_STATE_CODE_UPPER,
-                external_id='110035-20040712-R2',
-                violation_date=datetime.date(year=2006, month=1, day=1),
-                supervision_period=placeholder_ssp_110035_20040712_2,
-                person=person_110035,
-            )
-        ssvc_110035_20040712_r2_1_dup_res = \
-            entities.StateSupervisionViolatedConditionEntry.new_with_defaults(
-                state_code=_STATE_CODE_UPPER,
-                condition='SPC',
-                supervision_violation=ssv_110035_20040712_r2_1_dup,
-                person=person_110035,
-            )
-        ssvt_110035_20040712_r2_1_dup_a = \
-            entities.StateSupervisionViolationTypeEntry.new_with_defaults(
-                state_code=_STATE_CODE_UPPER,
-                violation_type=StateSupervisionViolationType.ABSCONDED,
-                violation_type_raw_text='A',
-                supervision_violation=ssv_110035_20040712_r2_1_dup,
-                person=person_110035,
-            )
-        ssvt_110035_20040712_r2_1_dup_e = \
-            entities.StateSupervisionViolationTypeEntry.new_with_defaults(
-                state_code=_STATE_CODE_UPPER,
-                violation_type=StateSupervisionViolationType.ESCAPED,
-                violation_type_raw_text='E',
-                supervision_violation=ssv_110035_20040712_r2_1_dup,
-                person=person_110035,
-            )
-        ssvr_110035_20040712_r2_1_dup = \
-            entities.StateSupervisionViolationResponse.new_with_defaults(
-                state_code=_STATE_CODE_UPPER,
-                response_date=datetime.date(year=2006, month=1, day=2),
-                response_type=
-                StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                response_type_raw_text='VIOLATION_REPORT',
-                supervision_violation=ssv_110035_20040712_r2_1_dup,
-                deciding_body_type=
-                StateSupervisionViolationResponseDecidingBodyType.
-                SUPERVISION_OFFICER,
-                deciding_body_type_raw_text='SUPERVISION_OFFICER',
-                person=person_110035,
-            )
-        ssv_110035_20040712_r2_1_dup.supervision_violation_responses.append(
-            ssvr_110035_20040712_r2_1_dup)
-        ssv_110035_20040712_r2_1_dup.supervision_violated_conditions.append(
-            ssvc_110035_20040712_r2_1_dup_res)
-        ssv_110035_20040712_r2_1_dup.supervision_violation_types.extend([
-            ssvt_110035_20040712_r2_1_dup_e, ssvt_110035_20040712_r2_1_dup_a])
-        placeholder_ssp_110035_20040712_2.supervision_violations.append(
-            ssv_110035_20040712_r2_1_dup)
+        ssv_110035_20040712_r2.supervision_periods.append(
+            placeholder_ssp_110035_20040712_2)
+        placeholder_ssp_110035_20040712_2.supervision_violation_entries.append(
+            ssv_110035_20040712_r2)
         sss_110035_20040712_2.supervision_periods.append(
             placeholder_ssp_110035_20040712_2)
         sg_110035_20040712.supervision_sentences.append(sss_110035_20040712_2)
@@ -3135,19 +3082,19 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 incarceration_sentences=[sis_910324_19890825_1],
                 person=person_910324,
             )
-        ssv_910324_19890825_r1_1 = \
+        ssv_910324_19890825_r1 = \
             entities.StateSupervisionViolation.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
                 external_id='910324-19890825-R1',
                 violation_date=datetime.date(year=2009, month=4, day=17),
-                supervision_period=placeholder_ssp_910324_19890825,
+                supervision_periods=[placeholder_ssp_910324_19890825],
                 person=person_910324,
             )
         ssvc_910324_19890825_r1_1_emp = \
             entities.StateSupervisionViolatedConditionEntry.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
                 condition='EMP',
-                supervision_violation=ssv_910324_19890825_r1_1,
+                supervision_violation=ssv_910324_19890825_r1,
                 person=person_910324,
             )
         ssvt_910324_19890825_r1_1_m = \
@@ -3155,7 +3102,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 state_code=_STATE_CODE_UPPER,
                 violation_type=StateSupervisionViolationType.MISDEMEANOR,
                 violation_type_raw_text='M',
-                supervision_violation=ssv_910324_19890825_r1_1,
+                supervision_violation=ssv_910324_19890825_r1,
                 person=person_910324,
             )
         ssvr_910324_19890825_r1_1 = \
@@ -3169,7 +3116,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 StateSupervisionViolationResponseDecidingBodyType.
                 SUPERVISION_OFFICER,
                 deciding_body_type_raw_text='SUPERVISION_OFFICER',
-                supervision_violation=ssv_910324_19890825_r1_1,
+                supervision_violation=ssv_910324_19890825_r1,
                 person=person_910324,
             )
         ssvrd_910324_19890825_r1_1_co = \
@@ -3182,21 +3129,19 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 supervision_violation_response=ssvr_910324_19890825_r1_1,
                 person=person_910324,
             )
-        ssv_910324_19890825_r1_1.supervision_violation_responses.append(
+        ssv_910324_19890825_r1.supervision_violation_responses.append(
             ssvr_910324_19890825_r1_1)
-        ssv_910324_19890825_r1_1.supervision_violated_conditions.append(
+        ssv_910324_19890825_r1.supervision_violated_conditions.append(
             ssvc_910324_19890825_r1_1_emp)
-        ssv_910324_19890825_r1_1.supervision_violation_types.append(
+        ssv_910324_19890825_r1.supervision_violation_types.append(
             ssvt_910324_19890825_r1_1_m)
         ssvr_910324_19890825_r1_1.supervision_violation_response_decisions\
             .append(ssvrd_910324_19890825_r1_1_co)
-        placeholder_ssp_910324_19890825.supervision_violations.append(
-            ssv_910324_19890825_r1_1)
+        placeholder_ssp_910324_19890825.supervision_violation_entries.append(
+            ssv_910324_19890825_r1)
         sis_910324_19890825_1.supervision_periods.append(
             placeholder_ssp_910324_19890825)
 
-        # TODO(2658): Re-use entities above once violations are a many to many
-        # association as opposed to 1 to many.
         placeholder_ssp_910324_19890825_2 = \
             entities.StateSupervisionPeriod.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
@@ -3204,41 +3149,10 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 supervision_sentences=[sss_910324_19890825_1],
                 person=person_910324,
             )
-        ssv_910324_19890825_r1_1_dup = attr.evolve(
-            ssv_910324_19890825_r1_1,
-            supervision_violation_responses=[],
-            supervision_violated_conditions=[],
-            supervision_violation_types=[],
-            supervision_period=placeholder_ssp_910324_19890825_2,
-            person=person_910324)
-        ssvc_910324_19890825_r1_1_emp_dup = attr.evolve(
-            ssvc_910324_19890825_r1_1_emp,
-            supervision_violation=ssv_910324_19890825_r1_1_dup,
-            person=person_910324)
-        ssvt_910324_19890825_r1_1_m_dup = attr.evolve(
-            ssvt_910324_19890825_r1_1_m,
-            supervision_violation=ssv_910324_19890825_r1_1_dup,
-            person=person_910324)
-        ssvr_910324_19890825_r1_1_dup = attr.evolve(
-            ssvr_910324_19890825_r1_1,
-            supervision_violation_response_decisions=[],
-            supervision_violation=ssv_910324_19890825_r1_1_dup,
-            person=person_910324)
-        ssvrd_910324_19890825_r1_1_co_dup = attr.evolve(
-            ssvrd_910324_19890825_r1_1_co,
-            supervision_violation_response=ssvr_910324_19890825_r1_1_dup,
-            person=person_910324)
-
-        ssv_910324_19890825_r1_1_dup.supervision_violation_responses.append(
-            ssvr_910324_19890825_r1_1_dup)
-        ssv_910324_19890825_r1_1_dup.supervision_violated_conditions.append(
-            ssvc_910324_19890825_r1_1_emp_dup)
-        ssv_910324_19890825_r1_1_dup.supervision_violation_types.append(
-            ssvt_910324_19890825_r1_1_m_dup)
-        ssvr_910324_19890825_r1_1_dup.supervision_violation_response_decisions \
-            .append(ssvrd_910324_19890825_r1_1_co_dup)
-        placeholder_ssp_910324_19890825_2.supervision_violations.append(
-            ssv_910324_19890825_r1_1_dup)
+        ssv_910324_19890825_r1.supervision_periods.append(
+            placeholder_ssp_910324_19890825_2)
+        placeholder_ssp_910324_19890825_2.supervision_violation_entries.append(
+            ssv_910324_19890825_r1)
         sss_910324_19890825_1.supervision_periods.append(
             placeholder_ssp_910324_19890825_2)
 
@@ -3260,32 +3174,32 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 supervision_sentences=[sss_110035_20040712_1],
                 person=person_110035,
             )
-        ssv_110035_20040712_c1_1 = \
+        ssv_110035_20040712_c1 = \
             entities.StateSupervisionViolation.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
                 external_id='110035-20040712-C1',
-                supervision_period=placeholder_ssp2_110035_20040712_1,
+                supervision_periods=[placeholder_ssp2_110035_20040712_1],
                 person=person_110035,
             )
         ssvc_110035_20040712_c1_1_drg = \
             entities.StateSupervisionViolatedConditionEntry.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
                 condition='DRG',
-                supervision_violation=ssv_110035_20040712_c1_1,
+                supervision_violation=ssv_110035_20040712_c1,
                 person=person_110035,
             )
         ssvc_110035_20040712_c1_1_law = \
             entities.StateSupervisionViolatedConditionEntry.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
                 condition='LAW',
-                supervision_violation=ssv_110035_20040712_c1_1,
+                supervision_violation=ssv_110035_20040712_c1,
                 person=person_110035,
             )
         ssvr_110035_20040712_c1_1 = \
             entities.StateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
                 response_date=datetime.date(year=2013, month=2, day=10),
-                supervision_violation=ssv_110035_20040712_c1_1,
+                supervision_violation=ssv_110035_20040712_c1,
                 response_type=StateSupervisionViolationResponseType.CITATION,
                 response_type_raw_text='CITATION',
                 deciding_body_type=
@@ -3294,12 +3208,12 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 deciding_body_type_raw_text='SUPERVISION_OFFICER',
                 person=person_110035,
             )
-        ssv_110035_20040712_c1_1.supervision_violation_responses.append(
+        ssv_110035_20040712_c1.supervision_violation_responses.append(
             ssvr_110035_20040712_c1_1)
-        ssv_110035_20040712_c1_1.supervision_violated_conditions.extend([
+        ssv_110035_20040712_c1.supervision_violated_conditions.extend([
             ssvc_110035_20040712_c1_1_drg, ssvc_110035_20040712_c1_1_law])
-        placeholder_ssp2_110035_20040712_1.supervision_violations.append(
-            ssv_110035_20040712_c1_1)
+        placeholder_ssp2_110035_20040712_1.supervision_violation_entries.append(
+            ssv_110035_20040712_c1)
         sss_110035_20040712_1.supervision_periods.append(
             placeholder_ssp2_110035_20040712_1)
 
@@ -3310,46 +3224,10 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 supervision_sentences=[sss_110035_20040712_2],
                 person=person_110035,
             )
-        ssv_110035_20040712_c1_2 = \
-            entities.StateSupervisionViolation.new_with_defaults(
-                state_code=_STATE_CODE_UPPER,
-                external_id='110035-20040712-C1',
-                supervision_period=placeholder_ssp2_110035_20040712_2,
-                person=person_110035,
-            )
-        ssvc_110035_20040712_c1_2_drg = \
-            entities.StateSupervisionViolatedConditionEntry.new_with_defaults(
-                state_code=_STATE_CODE_UPPER,
-                condition='DRG',
-                supervision_violation=ssv_110035_20040712_c1_2,
-                person=person_110035,
-            )
-        ssvc_110035_20040712_c1_2_law = \
-            entities.StateSupervisionViolatedConditionEntry.new_with_defaults(
-                state_code=_STATE_CODE_UPPER,
-                condition='LAW',
-                supervision_violation=ssv_110035_20040712_c1_2,
-                person=person_110035,
-            )
-        ssvr_110035_20040712_c1_2 = \
-            entities.StateSupervisionViolationResponse.new_with_defaults(
-                state_code=_STATE_CODE_UPPER,
-                response_date=datetime.date(year=2013, month=2, day=10),
-                supervision_violation=ssv_110035_20040712_c1_2,
-                response_type=StateSupervisionViolationResponseType.CITATION,
-                response_type_raw_text='CITATION',
-                deciding_body_type=
-                StateSupervisionViolationResponseDecidingBodyType.
-                SUPERVISION_OFFICER,
-                deciding_body_type_raw_text='SUPERVISION_OFFICER',
-                person=person_110035,
-            )
-        ssv_110035_20040712_c1_2.supervision_violation_responses.append(
-            ssvr_110035_20040712_c1_2)
-        ssv_110035_20040712_c1_2.supervision_violated_conditions.extend([
-            ssvc_110035_20040712_c1_2_drg, ssvc_110035_20040712_c1_2_law])
-        placeholder_ssp2_110035_20040712_2.supervision_violations.append(
-            ssv_110035_20040712_c1_2)
+        ssv_110035_20040712_c1.supervision_periods.append(
+            placeholder_ssp2_110035_20040712_2)
+        placeholder_ssp2_110035_20040712_2.supervision_violation_entries.append(
+            ssv_110035_20040712_c1)
         sss_110035_20040712_2.supervision_periods.append(
             placeholder_ssp2_110035_20040712_2)
 
@@ -3365,7 +3243,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 state_code=_STATE_CODE_UPPER,
                 external_id='910324-19890825-C1',
                 violated_conditions=None,
-                supervision_period=placeholder_ssp2_910324_19890825_1,
+                supervision_periods=[placeholder_ssp2_910324_19890825_1],
                 person=person_910324,
             )
         ssvc_910324_19890825_c1_1_drg = \
@@ -3392,7 +3270,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             ssvr_910324_19890825_c1_1)
         ssv_910324_19890825_c1_1.supervision_violated_conditions.append(
             ssvc_910324_19890825_c1_1_drg)
-        placeholder_ssp2_910324_19890825_1.supervision_violations.append(
+        placeholder_ssp2_910324_19890825_1.supervision_violation_entries.append(
             ssv_910324_19890825_c1_1)
         sis_910324_19890825_1.supervision_periods.append(
             placeholder_ssp2_910324_19890825_1)
