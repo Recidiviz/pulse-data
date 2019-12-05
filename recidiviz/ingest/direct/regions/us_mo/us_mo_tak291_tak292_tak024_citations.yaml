@@ -14,8 +14,12 @@ keys_to_ignore:
   # TODO(2604): Take another pass through these columns to document and ensure they should be ignored
   - JT$CYC  # Offender Cycle Number - Handled manually in the controller
   - JT$CSQ  # Citation Sequence Number - Handled manually in the controller
+  - CREATE_DT  # Unused - Date Created (JT$* cols)
+  - UPDATE_DT  # Unused - Date Last Updated (JT$* cols)
   - JS$DOC  # Unused - Duplicate of JT$DOC
   - JS$CYC  # Unused - Duplicate of JT$CYC
   - JS$CSQ  # Unused - Duplicate of JT$CSQ
   - JS$SEO  # Sentence Key Sequence Number - Handled manually in controller
   - JS$FSO  # Field Sentence Sequence Number - Handled manually in controller
+  - JS$DCR  # Unused - Date Created (JS$* cols)
+  - JS$DLU  # Unused - Date Last Updated (JS$* cols)
