@@ -47,7 +47,8 @@ INCARCERATION_RELEASES_DEDUPED_QUERY = \
 /*{description}*/
 
 SELECT * EXCEPT (rownum) FROM 
-(SELECT *, row_number() OVER (PARTITION BY state_code, person_id, release_date, release_reason, facility ORDER BY source_supervision_violation_response_id) AS rownum
+(SELECT *, row_number() OVER (PARTITION BY state_code, person_id, release_date, release_reason, facility
+ORDER BY source_supervision_violation_response_id DESC, external_id DESC) AS rownum
 FROM `{project_id}.{base_dataset}.state_incarceration_period`
 WHERE release_reason IN
 ('COMMUTED', 'CONDITIONAL_RELEASE', 'SENTENCE_SERVED'))
