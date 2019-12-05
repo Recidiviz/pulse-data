@@ -1200,7 +1200,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                         StateSupervisionViolation(
                             state_supervision_violation_id=
                             '110035-20040712-R1-1-1',
-                            violation_date='20050101',
+                            violation_date='0',
                             state_supervision_violation_types=[
                                 StateSupervisionViolationTypeEntry(
                                     violation_type='T'
@@ -2909,7 +2909,6 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             entities.StateSupervisionViolation.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
                 external_id='110035-20040712-R1',
-                violation_date=datetime.date(year=2005, month=1, day=1),
                 supervision_periods=[placeholder_ssp_110035_20040712_1],
                 person=person_110035,
             )
