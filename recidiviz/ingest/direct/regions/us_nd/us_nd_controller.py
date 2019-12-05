@@ -160,6 +160,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
                 self._concatenate_docstars_length_periods,
                 self._record_revocation,
                 self._set_judge_agent_type,
+                self._add_supervision_period_termination_date,
                 gen_normalize_county_codes_posthook(self.region.region_code,
                                                     'TB_CTY',
                                                     StateSupervisionPeriod,
@@ -494,6 +495,32 @@ class UsNdController(CsvGcsfsDirectIngestController):
                 # All other statuses have their dates automatically set
                 if status == 'Discharged':
                     extracted_object.discharge_date = status_date
+
+    # TODO(1882): Specify this mapping in the YAML once a single csv column can
+    # can be mapped to multiple fields.
+    @staticmethod
+    def _add_supervision_period_termination_date(
+            _file_tag: str,
+            _row: Dict[str, str],
+            extracted_objects: List[IngestObject],
+            _cache: IngestObjectCache):
+        """Sets SupervisionPeriod.termination_date from the parent
+        SupervisionSentence.completion_date. This is possible because in ND, we
+        always have a 1:1 mapping of SupervisionSentence:SupervisionPeriod.
+        """
+        for extracted_object in extracted_objects:
+            if isinstance(extracted_object, StateSupervisionSentence):
+                completion_date = extracted_object.completion_date
+
+                supervision_periods = extracted_object.state_supervision_periods
+                if len(supervision_periods) > 1:
+                    raise ValueError(
+                        f'SupervisionSentence '
+                        f'{extracted_object.state_supervision_sentence_id} has '
+                        f'{str(len(supervision_periods))} associated '
+                        f'supervision periods, expected a maximum of 1.')
+                if supervision_periods:
+                    supervision_periods[0].termination_date = completion_date
 
     @staticmethod
     def _concatenate_docstars_length_periods(

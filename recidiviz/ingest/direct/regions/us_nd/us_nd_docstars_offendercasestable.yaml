@@ -1,11 +1,11 @@
 key_mappings:
   DESCRIPTION: state_supervision_sentence.supervision_type
   PAROLE_TO: state_supervision_sentence.projected_completion_date
+  TERM_DATE: state_supervision_sentence.completion_date
 
 child_key_mappings:
   CASE_NUMBER: state_supervision_period.state_supervision_period_id
   PAROLE_FR: state_supervision_period.start_date
-  TERM_DATE: state_supervision_period.termination_date
   TA_TYPE: state_supervision_period.termination_reason
   TB_CTY: state_supervision_period.county_code
   JUDGE: state_agent.full_name

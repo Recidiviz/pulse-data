@@ -1202,6 +1202,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
                                         state_supervision_sentence_id='117111',
                                         supervision_type='Parole',
                                         projected_completion_date='8/7/2015',
+                                        completion_date='12/8/2014',
                                         max_length='580d',
                                         state_supervision_periods=[
                                             StateSupervisionPeriod(
@@ -1245,6 +1246,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
                                         state_supervision_sentence_id='140408',
                                         supervision_type='Suspended',
                                         projected_completion_date='3/23/2019',
+                                        completion_date='2/27/2018',
                                         state_supervision_periods=[
                                             StateSupervisionPeriod(
                                                 state_supervision_period_id=
@@ -1275,6 +1277,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
                                         state_supervision_sentence_id='147777',
                                         supervision_type='Suspended',
                                         projected_completion_date='3/23/2015',
+                                        completion_date='2/27/2016',
                                         state_supervision_periods=[
                                             StateSupervisionPeriod(
                                                 state_supervision_period_id=
@@ -2819,7 +2822,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         self.assert_expected_db_people(expected_people)
 
         ######################################
-        # DOCSTARS CASES
+        # DOCSTARS OFFENDERCASES
         ######################################
         # Arrange
         sentence_group_placeholder_ss = \
@@ -2875,8 +2878,9 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
                 supervision_type_raw_text='PAROLE',
                 projected_completion_date=datetime.date(year=2015, month=8,
                                                         day=7),
+                completion_date=datetime.date(year=2014, month=12, day=8),
                 max_length_days=580, state_code=_STATE_CODE,
-                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                status=StateSentenceStatus.COMPLETED,
                 person=sentence_group_placeholder_ss.person,
                 sentence_group=sentence_group_placeholder_ss)
         charge_117111 = entities.StateCharge.new_with_defaults(
@@ -2957,8 +2961,9 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
                 supervision_type_raw_text='SUSPENDED',
                 projected_completion_date=datetime.date(
                     year=2019, month=3, day=23),
+                completion_date=datetime.date(year=2018, month=2, day=27),
                 state_code=_STATE_CODE,
-                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                status=StateSentenceStatus.COMPLETED,
                 person=sentence_group_person_2_placeholder_ss.person,
                 sentence_group=sentence_group_person_2_placeholder_ss)
         supervision_period_140408 = \
@@ -3024,8 +3029,9 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
                 supervision_type_raw_text='SUSPENDED',
                 projected_completion_date=datetime.date(
                     year=2015, month=3, day=23),
+                completion_date=datetime.date(year=2016, month=2, day=27),
                 state_code=_STATE_CODE,
-                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                status=StateSentenceStatus.COMPLETED,
                 person=sentence_group_person_2_placeholder_ss.person,
                 sentence_group=sentence_group_person_2_placeholder_ss)
         supervision_period_147777 = \
