@@ -384,7 +384,8 @@ class UsMoController(CsvGcsfsDirectIngestController):
                     StateIncarcerationSentence),
                 self.set_sentence_status,
                 self._clear_zero_date_string,
-                self.tak022_tak023_set_parole_eligibility_date
+                self.tak022_tak023_set_parole_eligibility_date,
+                self.set_charge_id_from_sentence_id,
             ],
             'tak022_tak024_tak025_tak026_offender_sentence_probation': [
                 gen_normalize_county_codes_posthook(self.region.region_code,
@@ -407,7 +408,8 @@ class UsMoController(CsvGcsfsDirectIngestController):
                     self.SENTENCE_MAGICAL_DATES,
                     StateSupervisionSentence),
                 self.set_sentence_status,
-                self._clear_zero_date_string
+                self._clear_zero_date_string,
+                self.set_charge_id_from_sentence_id,
             ],
             'tak158_tak023_incarceration_period_from_incarceration_sentence': [
                 self._gen_clear_magical_date_value(
@@ -614,6 +616,31 @@ class UsMoController(CsvGcsfsDirectIngestController):
         for obj in extracted_objects:
             if isinstance(obj, StateIncarcerationSentence):
                 obj.__setattr__('parole_eligibility_date', date_iso)
+
+    @classmethod
+    def set_charge_id_from_sentence_id(
+            cls,
+            _file_tag: str,
+            _row: Dict[str, str],
+            extracted_objects: List[IngestObject],
+            _cache: IngestObjectCache):
+        for obj in extracted_objects:
+            if isinstance(obj, StateIncarcerationSentence):
+                sentence_id = obj.state_incarceration_sentence_id
+                charges = obj.state_charges
+            elif isinstance(obj, StateSupervisionSentence):
+                sentence_id = obj.state_supervision_sentence_id
+                charges = obj.state_charges
+            else:
+                continue
+
+            if len(charges) > 1:
+                raise ValueError(f"Expected a maximum of one charge per "
+                                 f"sentence, but found sentence {sentence_id} "
+                                 f"with {str(len(charges))} charges")
+
+            if charges:
+                charges[0].state_charge_id = sentence_id
 
     @classmethod
     def _gen_violation_response_type_posthook(
