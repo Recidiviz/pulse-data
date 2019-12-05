@@ -31,21 +31,23 @@ keys_to_ignore:
   - BY$PLN  # Unused - DOC location acronym
   - BY$PON  # TODO(2656): Should we try to derive probation officer from this Employee ID
   - BY$RCA  # Unused - Requires court action
-  - BY$DCR
-  - BY$TCR
+  - BY$DCR  # Unused - Date Created (BY$* cols)
+  - BY$TCR  # Unused - Time Created (BY$* cols)
   - BY$UID
-  - BY$DLU
-  - BY$TLU
+  - BY$DLU  # Unused - Date Last Updated (BY$* cols)
+  - BY$TLU  # Unused - Time Last Updated (BY$* cols)
   - BY$UIU
   - CF$DOC  # Unused - Duplicate of BY$DOC
   - CF$CYC  # Unused - Duplicate of BY$CYC
   - CF$VSN  # Unused - Duplicate of BY$VSN
+  - CREATE_DT  # Unused - Date Created (CF$* cols)
+  - UPDATE_DT  # Unused - Date Last Updated (CF$* cols)
   - CZ$DOC  # Unused - Duplicate of BY$DOC
   - CZ$CYC  # Unused - Duplicate of BY$CYC
   - CZ$VSN  # Unused - Duplicate of BY$VSN
   - CZ$SEO  # Sentence Key Sequence Number - Handled manually in controller
   - CZ$FSO  # Field Sentence Sequence Number - Handled manually in controller
-  - CZ$DCR
-  - CZ$TCR
-  - CZ$DLU
-  - CZ$TLU
+  - CZ$DCR  # Unused - Date Created (CZ$* cols)
+  - CZ$TCR  # Unused - Time Created (CZ$* cols)
+  - CZ$DLU  # Unused - Date Last Updated (CZ$* cols)
+  - CZ$TLU  # Unused - Time Last Updated (CZ$* cols)
