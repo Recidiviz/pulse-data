@@ -38,7 +38,7 @@ INCARCERATION_ADMISSIONS_BY_PERSON_AND_MONTH_QUERY = \
 /*{description}*/
 
 SELECT * EXCEPT (rownum) FROM
-(SELECT *, row_number() OVER (PARTITION BY person_id, admission_year, admission_month ORDER BY admission_date) AS rownum
+(SELECT *, row_number() OVER (PARTITION BY person_id, admission_year, admission_month ORDER BY admission_date ASC, external_id DESC) AS rownum
 FROM
 (SELECT *, EXTRACT(YEAR from admission_date) as admission_year, EXTRACT(MONTH from admission_date) AS admission_month
 FROM `{project_id}.{views_dataset}.incarceration_admissions_deduped` )

@@ -38,7 +38,7 @@ INCARCERATION_RELEASES_BY_PERSON_AND_MONTH_QUERY = \
 /*{description}*/
 
 SELECT * EXCEPT (rownum) FROM
-(SELECT *, row_number() OVER (PARTITION BY person_id, release_year, release_month ORDER BY release_date) AS rownum
+(SELECT *, row_number() OVER (PARTITION BY person_id, release_year, release_month ORDER BY release_date ASC, external_id DESC) AS rownum
 FROM
 (SELECT *, EXTRACT(YEAR from release_date) AS release_year, EXTRACT(MONTH from release_date) AS release_month
 FROM `{project_id}.{views_dataset}.incarceration_releases_deduped`)
