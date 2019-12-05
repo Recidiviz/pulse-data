@@ -46,7 +46,8 @@ INCARCERATION_ADMISSIONS_DEDUPED_QUERY = \
 /*{description}*/
 
 SELECT * EXCEPT (rownum) FROM 
-(SELECT *, row_number() OVER (PARTITION BY state_code, person_id, admission_date, admission_reason, facility ORDER BY source_supervision_violation_response_id DESC) AS rownum
+(SELECT *, row_number() OVER (PARTITION BY state_code, person_id, admission_date, admission_reason, facility
+ORDER BY source_supervision_violation_response_id DESC, external_id DESC) AS rownum
 FROM
 `{project_id}.{base_dataset}.state_incarceration_period`
 WHERE admission_reason IN
