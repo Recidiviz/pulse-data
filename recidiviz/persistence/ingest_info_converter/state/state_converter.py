@@ -421,9 +421,10 @@ class StateConverter(BaseConverter[entities.StatePerson]):
             self._convert_supervision_violation(
                 self.supervision_violations[violation_id])
             for violation_id
-            in ingest_supervision_period.state_supervision_violation_ids
+            in ingest_supervision_period.state_supervision_violation_entry_ids
         ]
-        supervision_period_builder.supervision_violations = converted_violations
+        supervision_period_builder.supervision_violation_entries = \
+            converted_violations
 
         converted_assessments = [
             self._convert_assessment(self.assessments[assessment_id])

@@ -237,6 +237,7 @@ def test_get_all_table_classes():
         'state_supervision_sentence_incarceration_period_association',
         'state_supervision_sentence_supervision_period_association',
         'state_supervision_violation_response_decision_agent_association',
+        'state_supervision_period_supervision_violation_association',
     ]
 
     expected_table_class_names = \

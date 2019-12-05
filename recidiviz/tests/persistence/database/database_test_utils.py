@@ -6,6 +6,8 @@ from recidiviz.common.constants.bond import BondStatus, BondType
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.person_characteristics import Ethnicity, Race
 from recidiviz.common.constants.state.state_agent import StateAgentType
+from recidiviz.common.constants.state.state_assessment import \
+    StateAssessmentType
 from recidiviz.common.constants.state.state_court_case import StateCourtType
 from recidiviz.common.constants.state.state_fine import StateFineStatus
 from recidiviz.common.constants.state.state_incarceration_period import \
@@ -53,6 +55,16 @@ def generate_test_supervision_violation_response(person_id) -> \
     return instance
 
 
+def generate_test_assessment(person_id) -> state_schema.StateAssessment:
+    instance = state_schema.StateAssessment(
+        assessment_id=345,
+        state_code='us_ca',
+        assessment_type=StateAssessmentType.ASI.value,
+        person_id=person_id
+    )
+    return instance
+
+
 def generate_test_supervision_violation(person_id,
                                         supervision_violation_responses) -> \
         state_schema.StateSupervisionViolation:
@@ -92,7 +104,7 @@ def generate_test_supervision_period(person_id, supervision_violations) -> \
         status=StateSupervisionPeriodStatus.EXTERNAL_UNKNOWN.value,
         state_code='us_ca',
         person_id=person_id,
-        supervision_violations=supervision_violations,
+        supervision_violation_entries=supervision_violations,
     )
 
     return instance

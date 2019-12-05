@@ -437,11 +437,6 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
             return False
         if cls in get_multiparent_classes():
             return False
-        # TODO(2658): Remove this check and add StateSupervisionViolation to the
-        # multiparent_classes group above.
-        if self.state_matching_delegate.get_region_code().upper() == 'US_MO' \
-            and cls == schema.StateSupervisionViolation:
-            return False
         return True
 
     def _order_merge_from_and_onto_trees(self, a: EntityTree, b: EntityTree)\

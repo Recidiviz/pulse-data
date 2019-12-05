@@ -405,7 +405,8 @@ def get_multiparent_classes() -> List[Type[DatabaseEntity]]:
             schema.StateProgramAssignment,
             schema.StateCharge,
             schema.StateParoleDecision,
-            schema.StateSupervisionViolationResponse]
+            schema.StateSupervisionViolationResponse,
+            schema.StateSupervisionViolation]
 
 
 def get_all_entities_of_cls(

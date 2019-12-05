@@ -724,7 +724,7 @@ class StateSupervisionPeriod(ExternalIdEntity, BuildableAttr, DefaultableAttr):
         attr.ib(factory=list)
     supervision_sentences: List['StateSupervisionSentence'] = \
         attr.ib(factory=list)
-    supervision_violations: List['StateSupervisionViolation'] = attr.ib(
+    supervision_violation_entries: List['StateSupervisionViolation'] = attr.ib(
         factory=list)
     assessments: List['StateAssessment'] = attr.ib(factory=list)
 
@@ -925,8 +925,8 @@ class StateSupervisionViolation(ExternalIdEntity,
 
     # Cross-entity relationships
     person: Optional['StatePerson'] = attr.ib(default=None)
-    supervision_period: Optional['StateSupervisionPeriod'] = \
-        attr.ib(default=None)
+    supervision_periods: List['StateSupervisionPeriod'] = \
+        attr.ib(factory=list)
     supervision_violation_types: List['StateSupervisionViolationTypeEntry'] = \
         attr.ib(factory=list)
     supervision_violated_conditions: \

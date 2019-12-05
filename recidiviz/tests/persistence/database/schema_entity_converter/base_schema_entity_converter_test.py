@@ -16,6 +16,7 @@
 # =============================================================================
 """Tests for BaseSchemaEntityConverter"""
 from types import ModuleType
+from typing import Type
 from unittest import TestCase
 
 from more_itertools import one
@@ -61,7 +62,8 @@ class TestSchemaEntityConverter(BaseSchemaEntityConverter):
     def _get_entities_module(self) -> ModuleType:
         return entities
 
-    def _should_skip_field(self, field: FieldNameType) -> bool:
+    def _should_skip_field(
+            self, entity_cls: Type, field: FieldNameType) -> bool:
         return False
 
     def _populate_indirect_back_edges(self, _):

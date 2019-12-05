@@ -1019,7 +1019,7 @@ class StateSupervisionPeriod(google___protobuf___message___Message):
     supervision_level = ... # type: typing___Text
     supervising_officer_id = ... # type: typing___Text
     conditions = ... # type: google___protobuf___internal___containers___RepeatedScalarFieldContainer[typing___Text]
-    state_supervision_violation_ids = ... # type: google___protobuf___internal___containers___RepeatedScalarFieldContainer[typing___Text]
+    state_supervision_violation_entry_ids = ... # type: google___protobuf___internal___containers___RepeatedScalarFieldContainer[typing___Text]
     state_assessment_ids = ... # type: google___protobuf___internal___containers___RepeatedScalarFieldContainer[typing___Text]
     state_program_assignment_ids = ... # type: google___protobuf___internal___containers___RepeatedScalarFieldContainer[typing___Text]
 
@@ -1037,7 +1037,7 @@ class StateSupervisionPeriod(google___protobuf___message___Message):
         supervision_level : typing___Optional[typing___Text] = None,
         supervising_officer_id : typing___Optional[typing___Text] = None,
         conditions : typing___Optional[typing___Iterable[typing___Text]] = None,
-        state_supervision_violation_ids : typing___Optional[typing___Iterable[typing___Text]] = None,
+        state_supervision_violation_entry_ids : typing___Optional[typing___Iterable[typing___Text]] = None,
         state_assessment_ids : typing___Optional[typing___Iterable[typing___Text]] = None,
         state_program_assignment_ids : typing___Optional[typing___Iterable[typing___Text]] = None,
         ) -> None: ...
@@ -1047,10 +1047,10 @@ class StateSupervisionPeriod(google___protobuf___message___Message):
     def CopyFrom(self, other_msg: google___protobuf___message___Message) -> None: ...
     if sys.version_info >= (3,):
         def HasField(self, field_name: typing_extensions___Literal[u"admission_reason",u"county_code",u"start_date",u"state_code",u"state_supervision_period_id",u"status",u"supervising_officer_id",u"supervision_level",u"supervision_type",u"termination_date",u"termination_reason"]) -> builtin___bool: ...
-        def ClearField(self, field_name: typing_extensions___Literal[u"admission_reason",u"conditions",u"county_code",u"start_date",u"state_assessment_ids",u"state_code",u"state_program_assignment_ids",u"state_supervision_period_id",u"state_supervision_violation_ids",u"status",u"supervising_officer_id",u"supervision_level",u"supervision_type",u"termination_date",u"termination_reason"]) -> None: ...
+        def ClearField(self, field_name: typing_extensions___Literal[u"admission_reason",u"conditions",u"county_code",u"start_date",u"state_assessment_ids",u"state_code",u"state_program_assignment_ids",u"state_supervision_period_id",u"state_supervision_violation_entry_ids",u"status",u"supervising_officer_id",u"supervision_level",u"supervision_type",u"termination_date",u"termination_reason"]) -> None: ...
     else:
         def HasField(self, field_name: typing_extensions___Literal[u"admission_reason",b"admission_reason",u"county_code",b"county_code",u"start_date",b"start_date",u"state_code",b"state_code",u"state_supervision_period_id",b"state_supervision_period_id",u"status",b"status",u"supervising_officer_id",b"supervising_officer_id",u"supervision_level",b"supervision_level",u"supervision_type",b"supervision_type",u"termination_date",b"termination_date",u"termination_reason",b"termination_reason"]) -> builtin___bool: ...
-        def ClearField(self, field_name: typing_extensions___Literal[u"admission_reason",b"admission_reason",u"conditions",b"conditions",u"county_code",b"county_code",u"start_date",b"start_date",u"state_assessment_ids",b"state_assessment_ids",u"state_code",b"state_code",u"state_program_assignment_ids",b"state_program_assignment_ids",u"state_supervision_period_id",b"state_supervision_period_id",u"state_supervision_violation_ids",b"state_supervision_violation_ids",u"status",b"status",u"supervising_officer_id",b"supervising_officer_id",u"supervision_level",b"supervision_level",u"supervision_type",b"supervision_type",u"termination_date",b"termination_date",u"termination_reason",b"termination_reason"]) -> None: ...
+        def ClearField(self, field_name: typing_extensions___Literal[u"admission_reason",b"admission_reason",u"conditions",b"conditions",u"county_code",b"county_code",u"start_date",b"start_date",u"state_assessment_ids",b"state_assessment_ids",u"state_code",b"state_code",u"state_program_assignment_ids",b"state_program_assignment_ids",u"state_supervision_period_id",b"state_supervision_period_id",u"state_supervision_violation_entry_ids",b"state_supervision_violation_entry_ids",u"status",b"status",u"supervising_officer_id",b"supervising_officer_id",u"supervision_level",b"supervision_level",u"supervision_type",b"supervision_type",u"termination_date",b"termination_date",u"termination_reason",b"termination_reason"]) -> None: ...
 
 class StateIncarcerationIncident(google___protobuf___message___Message):
     DESCRIPTOR: google___protobuf___descriptor___Descriptor = ...

@@ -230,7 +230,7 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
         placeholder_sp = StateSupervisionPeriod.new_with_defaults(
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
             state_code=_US_ND,
-            supervision_violations=[placeholder_sv])
+            supervision_violation_entries=[placeholder_sv])
         placeholder_ss = StateSupervisionSentence.new_with_defaults(
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             state_code=_US_ND,
@@ -247,7 +247,8 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
             placeholder_sv,
             supervision_violation_responses=[expected_svr_1, expected_svr_2])
         expected_placeholder_sp = attr.evolve(
-            placeholder_sp, supervision_violations=[expected_placeholder_sv])
+            placeholder_sp,
+            supervision_violation_entries=[expected_placeholder_sv])
         expected_placeholder_ss = attr.evolve(
             placeholder_ss, supervision_periods=[expected_placeholder_sp])
 

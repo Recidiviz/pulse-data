@@ -43,9 +43,7 @@ _US_MO = 'US_MO'
 class TestMoEntityMatching(BaseStateEntityMatcherTest):
     """Test class for US_MO specific entity matching logic."""
 
-    # TODO(2658): Update test to expect one merged SupervisionViolation after
-    # SupervisionPeriod <-> SupervisionViolation mapping is many-to-many.
-    def test_supervisionViolationsWithDifferentParents_persistsDuplicates(self):
+    def test_supervisionViolationsWithDifferentParents_mergesViolations(self):
         db_person = generate_person(person_id=_ID, full_name=_FULL_NAME)
         db_supervision_violation = generate_supervision_violation(
             person=db_person,
@@ -56,7 +54,7 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
             person=db_person,
             state_code=_US_MO,
             supervision_period_id=_ID,
-            supervision_violations=[db_supervision_violation])
+            supervision_violation_entries=[db_supervision_violation])
         db_incarceration_sentence = generate_incarceration_sentence(
             person=db_person,
             state_code=_US_MO,
@@ -86,7 +84,7 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
         placeholder_supervision_period = attr.evolve(
             self.to_entity(db_placeholder_supervision_period),
             supervision_period_id=None,
-            supervision_violations=[supervision_violation])
+            supervision_violation_entries=[supervision_violation])
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             state_code=_US_MO,
@@ -108,14 +106,12 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
 
         expected_supervision_violation = attr.evolve(
             self.to_entity(db_supervision_violation))
-        expected_supervision_violation_dup = attr.evolve(
-            expected_supervision_violation)
         expected_placeholder_supervision_period_is = attr.evolve(
             placeholder_supervision_period,
-            supervision_violations=[expected_supervision_violation])
+            supervision_violation_entries=[expected_supervision_violation])
         expected_placeholder_supervision_period_ss = attr.evolve(
             self.to_entity(db_placeholder_supervision_period),
-            supervision_violations=[expected_supervision_violation_dup])
+            supervision_violation_entries=[expected_supervision_violation])
         expected_supervision_sentence = attr.evolve(
             supervision_sentence,
             supervision_periods=[expected_placeholder_supervision_period_ss])
@@ -149,7 +145,7 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
             state_code=_US_MO,
             external_id=_EXTERNAL_ID,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            supervision_violations=[supervision_violation])
+            supervision_violation_entries=[supervision_violation])
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             state_code=_US_MO,
@@ -174,7 +170,7 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
             supervision_violation, external_id=updated_external_id)
         expected_supervision_period = attr.evolve(
             supervision_period,
-            supervision_violations=[expected_supervision_violation])
+            supervision_violation_entries=[expected_supervision_violation])
         expected_supervision_sentence = attr.evolve(
             supervision_sentence,
             supervision_periods=[expected_supervision_period])

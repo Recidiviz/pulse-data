@@ -20,6 +20,7 @@ objects.
 """
 
 from types import ModuleType
+from typing import Type
 
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema_entity_converter. \
@@ -46,10 +47,11 @@ class _CountySchemaEntityConverter(BaseSchemaEntityConverter[SrcBaseType,
     def _get_entities_module(self) -> ModuleType:
         return entities
 
-    def _should_skip_field(self, field: FieldNameType) -> bool:
+    def _should_skip_field(
+            self, entity_cls: Type, field: FieldNameType) -> bool:
         # TODO(1145): Correctly convert related_sentences once schema
         # for this field is finalized.
-        return field == 'related_sentences'
+        return entity_cls == entities.Sentence and field == 'related_sentences'
 
     def _populate_indirect_back_edges(self, _):
         return

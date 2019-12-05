@@ -384,7 +384,7 @@ class TestUsNdMatchingUtils(TestCase):
         placeholder_sv = StateSupervisionViolation.new_with_defaults(
             supervision_violation_responses=[svr_1, svr_2, svr_3])
         placeholder_sp = StateSupervisionPeriod.new_with_defaults(
-            supervision_violations=[placeholder_sv])
+            supervision_violation_entries=[placeholder_sv])
         placeholder_ss = StateSupervisionSentence.new_with_defaults(
             supervision_periods=[placeholder_sp])
 
@@ -407,7 +407,8 @@ class TestUsNdMatchingUtils(TestCase):
             supervision_violation_responses=[expected_svr_1, expected_svr_2,
                                              expected_svr_3])
         expected_placeholder_sp = attr.evolve(
-            placeholder_sp, supervision_violations=[expected_placeholder_sv])
+            placeholder_sp,
+            supervision_violation_entries=[expected_placeholder_sv])
         expected_placeholder_ss = attr.evolve(
             placeholder_ss, supervision_periods=[expected_placeholder_sp])
 
@@ -452,7 +453,7 @@ class TestUsNdMatchingUtils(TestCase):
         placeholder_sv = StateSupervisionViolation.new_with_defaults(
             supervision_violation_responses=[svr_1, svr_2])
         placeholder_sp = StateSupervisionPeriod.new_with_defaults(
-            supervision_violations=[placeholder_sv])
+            supervision_violation_entries=[placeholder_sv])
         placeholder_ss = StateSupervisionSentence.new_with_defaults(
             supervision_periods=[placeholder_sp])
 
@@ -478,7 +479,8 @@ class TestUsNdMatchingUtils(TestCase):
             placeholder_sv,
             supervision_violation_responses=[expected_svr_1, expected_svr_2])
         expected_placeholder_sp = attr.evolve(
-            placeholder_sp, supervision_violations=[expected_placeholder_sv])
+            placeholder_sp,
+            supervision_violation_entries=[expected_placeholder_sv])
         expected_placeholder_ss = attr.evolve(
             placeholder_ss, supervision_periods=[expected_placeholder_sp])
 
@@ -520,7 +522,7 @@ class TestUsNdMatchingUtils(TestCase):
         placeholder_sv = StateSupervisionViolation.new_with_defaults(
             supervision_violation_responses=[svr_1, svr_2])
         placeholder_sp = StateSupervisionPeriod.new_with_defaults(
-            supervision_violations=[placeholder_sv])
+            supervision_violation_entries=[placeholder_sv])
         placeholder_ss = StateSupervisionSentence.new_with_defaults(
             supervision_periods=[placeholder_sp])
 
@@ -546,7 +548,8 @@ class TestUsNdMatchingUtils(TestCase):
             placeholder_sv,
             supervision_violation_responses=[expected_svr_1, expected_svr_2])
         expected_placeholder_sp = attr.evolve(
-            placeholder_sp, supervision_violations=[expected_placeholder_sv])
+            placeholder_sp,
+            supervision_violation_entries=[expected_placeholder_sv])
         expected_placeholder_ss = attr.evolve(
             placeholder_ss, supervision_periods=[expected_placeholder_sp])
 
@@ -584,7 +587,7 @@ class TestUsNdMatchingUtils(TestCase):
         placeholder_sv = StateSupervisionViolation.new_with_defaults(
             supervision_violation_responses=[svr_1])
         placeholder_sp = StateSupervisionPeriod.new_with_defaults(
-            supervision_violations=[placeholder_sv])
+            supervision_violation_entries=[placeholder_sv])
         placeholder_ss = StateSupervisionSentence.new_with_defaults(
             supervision_periods=[placeholder_sp])
 
@@ -609,7 +612,8 @@ class TestUsNdMatchingUtils(TestCase):
             placeholder_sv,
             supervision_violation_responses=[expected_svr_1])
         expected_placeholder_sp = attr.evolve(
-            placeholder_sp, supervision_violations=[expected_placeholder_sv])
+            placeholder_sp,
+            supervision_violation_entries=[expected_placeholder_sv])
         expected_placeholder_ss = attr.evolve(
             placeholder_ss, supervision_periods=[expected_placeholder_sp])
 

@@ -384,7 +384,7 @@ message StateSupervisionPeriod {
     optional string supervising_officer_id = 11;
 
     repeated string conditions = 12;
-    repeated string state_supervision_violation_ids = 13;
+    repeated string state_supervision_violation_entry_ids = 13;
     repeated string state_assessment_ids = 14;
     repeated string state_program_assignment_ids = 15;
 }

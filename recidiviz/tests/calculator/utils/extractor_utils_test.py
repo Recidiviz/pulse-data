@@ -699,18 +699,17 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
         supervision_period = \
             database_test_utils.generate_test_supervision_period(123, [])
 
-        supervision_violation = \
-            database_test_utils.generate_test_supervision_violation(123, [])
+        assessment = database_test_utils.generate_test_assessment(123)
 
         # 1-to-many relationship
-        supervision_violation.supervision_period_id = \
+        assessment.supervision_period_id = \
             supervision_period.supervision_period_id
 
         data_dict = {
             supervision_period.__tablename__:
                 normalized_database_base_dict_list([supervision_period]),
-            supervision_violation.__tablename__:
-                normalized_database_base_dict_list([supervision_violation]),
+            assessment.__tablename__:
+                normalized_database_base_dict_list([assessment]),
         }
 
         test_pipeline = TestPipeline()
@@ -728,16 +727,15 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
         # Assert it has the property fields we expect
         assert len(properties_dict.keys()) == 1
 
-        output_supervision_violations = \
-            properties_dict.get('supervision_violations')
+        output_assessments = properties_dict.get('assessments')
 
         assert_that(
-            output_supervision_violations, ExtractAssertMatchers.
+            output_assessments, ExtractAssertMatchers.
             validate_extract_relationship_property_entities(
                 outer_connection_id=supervision_period.person_id,
                 inner_connection_id=supervision_period.supervision_period_id,
-                class_type=entities.StateSupervisionViolation),
-            label="Validate supervision_violations output")
+                class_type=entities.StateAssessment),
+            label="Validate assessments output")
 
         test_pipeline.run()
 
