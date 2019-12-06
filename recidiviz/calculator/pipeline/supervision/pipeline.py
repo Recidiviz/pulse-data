@@ -56,7 +56,7 @@ from more_itertools import one
 
 from recidiviz.calculator.pipeline.supervision import identifier, calculator
 from recidiviz.calculator.pipeline.supervision.metrics import \
-    SupervisionPopulationMetric, SupervisionMetric
+    SupervisionMetric, SupervisionPopulationMetric, SupervisionRevocationMetric
 from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionMetricType as MetricType
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
@@ -124,7 +124,8 @@ class GetSupervisionMetrics(beam.PTransform):
             input_or_inputs
             | 'Map to metric combinations' >>
             beam.ParDo(CalculateSupervisionMetricCombinations(),
-                       **self.inclusions).with_outputs('populations'))
+                       **self.inclusions).with_outputs('populations',
+                                                       'revocations'))
 
         # Calculate the supervision population values for the metrics combined
         # by key
@@ -132,16 +133,28 @@ class GetSupervisionMetrics(beam.PTransform):
                                  | 'Calculate supervision population values' >>
                                  beam.CombinePerKey(SumFn()))
 
+        # Calculate the revocation count values for metrics combined by key
+        revocations_with_sums = (supervision_metric_combinations.revocations
+                                 | 'Calculate supervision revocation values' >>
+                                 beam.CombinePerKey(SumFn()))
+
         # Produce the SupervisionPopulationMetrics
         population_metrics = (populations_with_sums
                               | 'Produce supervision population metrics' >>
                               beam.ParDo(
-                                  ProduceSupervisionPopulationMetric(),
+                                  ProduceSupervisionMetrics(),
+                                  **self._pipeline_options))
+
+        # Produce the SupervisionRevocationMetrics
+        revocation_metrics = (revocations_with_sums
+                              | 'Produce supervision revocation metrics' >>
+                              beam.ParDo(
+                                  ProduceSupervisionMetrics(),
                                   **self._pipeline_options))
 
         # Merge the metric groups
-        merged_metrics = ([population_metrics]
-                          | 'Merge population metrics' >>
+        merged_metrics = ((population_metrics, revocation_metrics)
+                          | 'Merge population and revocation metrics' >>
                           beam.Flatten())
 
         # Return SupervisionMetrics objects
@@ -226,13 +239,17 @@ class CalculateSupervisionMetricCombinations(beam.DoFn):
         # Return each of the supervision metric combinations
         for metric_combination in metric_combinations:
             metric_key, value = metric_combination
+            metric_type = metric_key.get('metric_type')
 
             # Converting the metric key to a JSON string so it is hashable
             serializable_dict = json_serializable_metric_key(metric_key)
             json_key = json.dumps(serializable_dict, sort_keys=True)
 
-            if metric_key.get('metric_type') == MetricType.POPULATION.value:
+            if metric_type == MetricType.POPULATION.value:
                 yield beam.pvalue.TaggedOutput('populations',
+                                               (json_key, value))
+            elif metric_type == MetricType.REVOCATION.value:
+                yield beam.pvalue.TaggedOutput('revocations',
                                                (json_key, value))
 
     def to_runner_api_parameter(self, _):
@@ -246,9 +263,10 @@ class CalculateSupervisionMetricCombinations(beam.DoFn):
                      'region': str,
                      'job_timestamp': str}
                   )
-@with_output_types(SupervisionPopulationMetric)
-class ProduceSupervisionPopulationMetric(beam.DoFn):
-    """Produces SupervisionPopulationMetrics."""
+@with_output_types(SupervisionMetric)
+class ProduceSupervisionMetrics(beam.DoFn):
+    """Produces SupervisionPopulationMetrics
+    and SupervisionRevocationMetrics ready for persistence."""
 
     def process(self, element, *args, **kwargs):
         pipeline_options = kwargs
@@ -264,14 +282,19 @@ class ProduceSupervisionPopulationMetric(beam.DoFn):
 
         # Convert JSON string to dictionary
         dict_metric_key = json.loads(metric_key)
+        metric_type = dict_metric_key.get('metric_type')
 
-        if dict_metric_key.get('metric_type') == MetricType.POPULATION.value:
-            # For count metrics, the value is the number of returns
+        if metric_type == MetricType.POPULATION.value:
             dict_metric_key['count'] = value
 
             supervision_metric = \
-                SupervisionPopulationMetric. \
-                build_from_metric_key_group(
+                SupervisionPopulationMetric.build_from_metric_key_group(
+                    dict_metric_key, pipeline_job_id)
+        elif metric_type == MetricType.REVOCATION.value:
+            dict_metric_key['count'] = value
+
+            supervision_metric = \
+                SupervisionRevocationMetric.build_from_metric_key_group(
                     dict_metric_key, pipeline_job_id)
         else:
             logging.error("Unexpected metric of type: %s",
@@ -311,6 +334,8 @@ class SupervisionMetricWritableDict(beam.DoFn):
 
         if isinstance(element, SupervisionPopulationMetric):
             yield beam.pvalue.TaggedOutput('populations', element_dict)
+        elif isinstance(element, SupervisionRevocationMetric):
+            yield beam.pvalue.TaggedOutput('revocations', element_dict)
 
     def to_runner_api_parameter(self, _):
         pass  # Passing unused abstract method.
@@ -532,16 +557,27 @@ def run(argv=None):
                             | 'Convert to dict to be written to BQ' >>
                             beam.ParDo(
                                 SupervisionMetricWritableDict()).with_outputs(
-                                    'populations'))
+                                    'populations', 'revocations'))
 
         # Write the metrics to the output tables in BigQuery
         populations_table = known_args.output + \
             '.supervision_population_metrics'
 
+        revocations_table = known_args.output + \
+            '.supervision_revocation_metrics'
+
         _ = (writable_metrics.populations
              | f"Write population metrics to BQ table: {populations_table}" >>
              beam.io.WriteToBigQuery(
                  table=populations_table,
+                 create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
+                 write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
+             ))
+
+        _ = (writable_metrics.revocations
+             | f"Write revocation metrics to BQ table: {revocations_table}" >>
+             beam.io.WriteToBigQuery(
+                 table=revocations_table,
                  create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
                  write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
              ))

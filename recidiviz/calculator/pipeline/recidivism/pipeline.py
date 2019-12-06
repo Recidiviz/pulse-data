@@ -264,18 +264,19 @@ class CalculateRecidivismMetricCombinations(beam.DoFn):
         # Return each of the recidivism metric combinations
         for metric_combination in metric_combinations:
             metric_key, value = metric_combination
+            metric_type = metric_key.get('metric_type')
 
             # Converting the metric key to a JSON string so it is hashable
             serializable_dict = json_serializable_metric_key(metric_key)
             json_key = json.dumps(serializable_dict, sort_keys=True)
 
-            if metric_key.get('metric_type') == MetricType.RATE:
+            if metric_type == MetricType.RATE:
                 yield beam.pvalue.TaggedOutput('rates',
                                                (json_key, value))
-            elif metric_key.get('metric_type') == MetricType.COUNT:
+            elif metric_type == MetricType.COUNT:
                 yield beam.pvalue.TaggedOutput('counts',
                                                (json_key, value))
-            elif metric_key.get('metric_type') == MetricType.LIBERTY:
+            elif metric_type == MetricType.LIBERTY:
                 yield beam.pvalue.TaggedOutput('liberties',
                                                (json_key, value))
 
@@ -329,8 +330,9 @@ class ProduceReincarcerationRecidivismCountMetric(beam.DoFn):
 
         # Convert JSON string to dictionary
         dict_metric_key = json.loads(metric_key)
+        metric_type = dict_metric_key.get('metric_type')
 
-        if dict_metric_key.get('metric_type') == MetricType.COUNT.value:
+        if metric_type == MetricType.COUNT.value:
             # For count metrics, the value is the number of returns
             dict_metric_key['returns'] = value
 
@@ -405,8 +407,9 @@ class ProduceReincarcerationRecidivismMetric(beam.DoFn):
 
         # Convert JSON string to dictionary
         dict_metric_key = json.loads(metric_key)
+        metric_type = dict_metric_key.get('metric_type')
 
-        if dict_metric_key.get('metric_type') == MetricType.RATE.value:
+        if metric_type == MetricType.RATE.value:
             # For rate metrics, the value is a dictionary storing the data
             # necessary for recidivism rate metrics
 
@@ -419,7 +422,7 @@ class ProduceReincarcerationRecidivismMetric(beam.DoFn):
                 ReincarcerationRecidivismRateMetric. \
                 build_from_metric_key_group(
                     dict_metric_key, pipeline_job_id)
-        elif dict_metric_key.get('metric_type') == MetricType.LIBERTY.value:
+        elif metric_type == MetricType.LIBERTY.value:
             dict_metric_key['returns'] = value.get('returns')
             dict_metric_key['avg_liberty'] = value.get('avg_liberty')
 
@@ -469,7 +472,6 @@ class FilterMetrics(beam.DoFn):
 
     def to_runner_api_parameter(self, _):
         pass  # Passing unused abstract method.
-
 
 
 @with_input_types(ReincarcerationRecidivismMetric)
