@@ -26,6 +26,9 @@ from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 class StateSupervisionPeriodAdmissionReason(EntityEnum,
                                             metaclass=EntityEnumMeta):
+    ABSCONSION = \
+        state_enum_strings.\
+        state_supervision_period_admission_reason_absconsion
     # This reason indicates the person has been released from an incarceration
     # period into a supervision period (i.e. parole).
     CONDITIONAL_RELEASE = \
@@ -90,6 +93,9 @@ class StateSupervisionPeriodTerminationReason(EntityEnum,
     EXPIRATION = \
         state_enum_strings.\
         state_supervision_period_termination_reason_expiration
+    RETURN_FROM_ABSCONSION = \
+        state_enum_strings.\
+        state_supervision_period_termination_reason_return_from_absconsion
     REVOCATION = \
         state_enum_strings.\
         state_supervision_period_termination_reason_revocation
@@ -108,6 +114,8 @@ _STATE_SUPERVISION_ADMISSION_TYPE_MAP = {
     'COURT SENTENCE': StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
     'SENTENCE': StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
     'EXTERNAL UNKNOWN': StateSupervisionPeriodAdmissionReason.EXTERNAL_UNKNOWN,
+    'ABSCONSION':
+        StateSupervisionPeriodAdmissionReason.ABSCONSION,
     'RETURN FROM ABSCOND':
         StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION,
     'RETURN FROM ABSCONSION':
@@ -144,6 +152,8 @@ _STATE_SUPERVISION_PERIOD_TERMINATION_REASON_MAP = {
     'DISCHARGED': StateSupervisionPeriodTerminationReason.DISCHARGE,
     'EXPIRATION': StateSupervisionPeriodTerminationReason.EXPIRATION,
     'EXPIRED': StateSupervisionPeriodTerminationReason.EXPIRATION,
+    'RETURN FROM ABSCONSION':
+        StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION,
     'REVOCATION': StateSupervisionPeriodTerminationReason.REVOCATION,
     'REVOKED': StateSupervisionPeriodTerminationReason.REVOCATION,
     'SUSPENDED': StateSupervisionPeriodAdmissionReason.RETURN_FROM_SUSPENSION,
