@@ -165,6 +165,7 @@ state_supervision_type_pre_confinement = 'PRE_CONFINEMENT'
 state_supervision_type_probation = 'PROBATION'
 
 # supervision_period.py
+state_supervision_period_admission_reason_absconsion = 'ABSCONSION'
 state_supervision_period_admission_reason_conditional_release = \
     'CONDITIONAL_RELEASE'
 state_supervision_period_admission_reason_court_sentence = 'COURT_SENTENCE'
@@ -187,6 +188,8 @@ state_supervision_period_termination_reason_absconsion = 'ABSCONSION'
 state_supervision_period_termination_reason_death = 'DEATH'
 state_supervision_period_termination_reason_discharge = 'DISCHARGE'
 state_supervision_period_termination_reason_expiration = 'EXPIRATION'
+state_supervision_period_termination_reason_return_from_absconsion = \
+    'RETURN_FROM_ABSCONSION'
 state_supervision_period_termination_reason_revocation = 'REVOCATION'
 state_supervision_period_termination_reason_suspension = 'SUSPENSION'
 
