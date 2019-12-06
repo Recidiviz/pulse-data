@@ -84,6 +84,9 @@ class TestStateSchemaEnums(TestSchemaEnums):
             'state_incarceration_incident_outcome_type':
                 state_incarceration_incident.
                 StateIncarcerationIncidentOutcomeType,
+            'state_specialized_purpose_for_incarceration':
+                state_incarceration_period.
+                StateSpecializedPurposeForIncarceration,
             'state_program_assignment_participation_status':
                 state_program_assignment.
                 StateProgramAssignmentParticipationStatus,
