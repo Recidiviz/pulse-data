@@ -631,7 +631,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             'tak022_tak024_tak025_tak026_offender_sentence_probation')
 
     # pylint: disable=line-too-long
-    def test_populate_data_tak158_tak023_incarceration_period_from_incarceration_sentence(self):
+    def test_populate_data_tak158_tak023_tak026_incarceration_period_from_incarceration_sentence(self):
         vr_110035_19890901_3 = StateSupervisionViolationResponse(
             response_type='PERMANENT_DECISION',
             response_date='19930701',
@@ -662,8 +662,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             deciding_body_type='PAROLE_BOARD'
         )
 
-        ip_110035_19890901_1 = StateIncarcerationPeriod(
-            state_incarceration_period_id='110035-19890901-1',
+        ip_110035_19890901_1_0 = StateIncarcerationPeriod(
+            state_incarceration_period_id='110035-19890901-1-0',
             status='NOT_IN_CUSTODY',
             admission_date='19890901',
             admission_reason='NA',
@@ -671,8 +671,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             release_reason='IT',
             specialized_purpose_for_incarceration='S',
         )
-        ip_110035_19890901_3 = StateIncarcerationPeriod(
-            state_incarceration_period_id='110035-19890901-3',
+        ip_110035_19890901_3_0 = StateIncarcerationPeriod(
+            state_incarceration_period_id='110035-19890901-3-0',
             status='NOT_IN_CUSTODY',
             admission_date='19930701',
             admission_reason='PAROLE_REVOCATION',
@@ -681,8 +681,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             specialized_purpose_for_incarceration='I',
             source_supervision_violation_response=vr_110035_19890901_3
         )
-        ip_110035_19890901_5 = StateIncarcerationPeriod(
-            state_incarceration_period_id='110035-19890901-5',
+        ip_110035_19890901_5_0 = StateIncarcerationPeriod(
+            state_incarceration_period_id='110035-19890901-5-0',
             status='NOT_IN_CUSTODY',
             admission_date='19940609',
             admission_reason='PAROLE_REVOCATION',
@@ -692,8 +692,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             source_supervision_violation_response=vr_110035_19890901_5
         )
 
-        ip_110035_20010414_2 = StateIncarcerationPeriod(
-            state_incarceration_period_id='110035-20010414-2',
+        ip_110035_20010414_2_0 = StateIncarcerationPeriod(
+            state_incarceration_period_id='110035-20010414-2-0',
             status='NOT_IN_CUSTODY',
             admission_date='20010420',
             admission_reason='PROBATION_REVOCATION',
@@ -702,8 +702,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             specialized_purpose_for_incarceration='S',
             source_supervision_violation_response=vr_110035_20010414_2
         )
-        ip_110035_20010414_4 = StateIncarcerationPeriod(
-            state_incarceration_period_id='110035-20010414-4',
+        ip_110035_20010414_4_0 = StateIncarcerationPeriod(
+            state_incarceration_period_id='110035-20010414-4-0',
             status='NOT_IN_CUSTODY',
             admission_date='20130521',
             admission_reason='IB',
@@ -711,8 +711,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             release_reason='IT',
             specialized_purpose_for_incarceration='S',
         )
-        ip_110035_20010414_7 = StateIncarcerationPeriod(
-            state_incarceration_period_id='110035-20010414-7',
+        ip_110035_20010414_7_0 = StateIncarcerationPeriod(
+            state_incarceration_period_id='110035-20010414-7-0',
             status='NOT_IN_CUSTODY',
             admission_date='20160328',
             admission_reason='IB',
@@ -736,9 +736,9 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         state_incarceration_sentence_id=
                                         '110035-19890901-1',
                                         state_incarceration_periods=[
-                                            ip_110035_19890901_1,
-                                            ip_110035_19890901_3,
-                                            ip_110035_19890901_5,
+                                            ip_110035_19890901_1_0,
+                                            ip_110035_19890901_3_0,
+                                            ip_110035_19890901_5_0,
                                         ]
                                     )
                                 ]),
@@ -749,9 +749,9 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         state_incarceration_sentence_id=
                                         '110035-20010414-1',
                                         state_incarceration_periods=[
-                                            ip_110035_20010414_2,
-                                            ip_110035_20010414_4,
-                                            ip_110035_20010414_7,
+                                            ip_110035_20010414_2_0,
+                                            ip_110035_20010414_4_0,
+                                            ip_110035_20010414_7_0,
                                         ]
                                     )
                                 ])
@@ -772,7 +772,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         state_incarceration_periods=[
                                             StateIncarcerationPeriod(
                                                 state_incarceration_period_id=
-                                                '310261-19890821-1',
+                                                '310261-19890821-1-0',
                                                 status='IN_CUSTODY',
                                                 admission_date='19900329',
                                                 admission_reason='NA',
@@ -799,7 +799,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         state_incarceration_periods=[
                                             StateIncarcerationPeriod(
                                                 state_incarceration_period_id=
-                                                '710448-20010414-1',
+                                                '710448-20010414-1-0',
                                                 status='NOT_IN_CUSTODY',
                                                 admission_date='20010705',
                                                 admission_reason='NA',
@@ -815,7 +815,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         state_incarceration_periods=[
                                             StateIncarcerationPeriod(
                                                 state_incarceration_period_id=
-                                                '710448-20010414-3',
+                                                '710448-20010414-3-0',
                                                 status='NOT_IN_CUSTODY',
                                                 admission_date='20020912',
                                                 admission_reason='PAROLE_REVOCATION',
@@ -845,7 +845,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         state_incarceration_periods=[
                                             StateIncarcerationPeriod(
                                                 state_incarceration_period_id=
-                                                '910324-19890825-1',
+                                                '910324-19890825-1-0',
                                                 status='NOT_IN_CUSTODY',
                                                 admission_date='19891023',
                                                 admission_reason='NA',
@@ -874,7 +874,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         state_incarceration_periods=[
                                             StateIncarcerationPeriod(
                                                 state_incarceration_period_id=
-                                                '523523-19890617-1',
+                                                '523523-19890617-1-0',
                                                 status='IN_CUSTODY',
                                                 admission_date='19890617',
                                                 admission_reason='NA',
@@ -901,7 +901,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         state_incarceration_periods=[
                                             StateIncarcerationPeriod(
                                                 state_incarceration_period_id=
-                                                '867530-19970224-1',
+                                                '867530-19970224-1-0',
                                                 status='NOT_IN_CUSTODY',
                                                 admission_date='19970224',
                                                 admission_reason='NA',
@@ -918,13 +918,13 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(
             expected,
-            'tak158_tak023_incarceration_period_from_incarceration_sentence')
+            'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence')
 
     # pylint: disable=line-too-long
-    def test_populate_data_tak158_tak023_supervision_period_from_incarceration_sentence(
+    def test_populate_data_tak158_tak023_tak026_supervision_period_from_incarceration_sentence(
             self):
-        sp_110035_19890901_2 = StateSupervisionPeriod(
-            state_supervision_period_id='110035-19890901-2',
+        sp_110035_19890901_2_0 = StateSupervisionPeriod(
+            state_supervision_period_id='110035-19890901-2-0',
             supervision_type='BP',
             status='TERMINATED',
             start_date='19921006',
@@ -932,8 +932,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             termination_date='19930701',
             termination_reason='BP'
         )
-        sp_110035_19890901_4 = StateSupervisionPeriod(
-            state_supervision_period_id='110035-19890901-4',
+        sp_110035_19890901_4_0 = StateSupervisionPeriod(
+            state_supervision_period_id='110035-19890901-4-0',
             supervision_type='BP',
             status='TERMINATED',
             start_date='19931102',
@@ -941,8 +941,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             termination_date='19940609',
             termination_reason='BP'
         )
-        sp_110035_19890901_6 = StateSupervisionPeriod(
-            state_supervision_period_id='110035-19890901-6',
+        sp_110035_19890901_6_0 = StateSupervisionPeriod(
+            state_supervision_period_id='110035-19890901-6-0',
             supervision_type='BP',
             status='TERMINATED',
             start_date='19950206',
@@ -951,8 +951,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             termination_reason='DC'
         )
 
-        sp_110035_20010414_1 = StateSupervisionPeriod(
-            state_supervision_period_id='110035-20010414-1',
+        sp_110035_20010414_1_0 = StateSupervisionPeriod(
+            state_supervision_period_id='110035-20010414-1-0',
             supervision_type='FC',
             status='TERMINATED',
             start_date='20010414',
@@ -960,8 +960,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             termination_date='20010420',
             termination_reason='RV'
         )
-        sp_110035_20010414_3 = StateSupervisionPeriod(
-            state_supervision_period_id='110035-20010414-3',
+        sp_110035_20010414_3_0 = StateSupervisionPeriod(
+            state_supervision_period_id='110035-20010414-3-0',
             supervision_type='BP',
             status='TERMINATED',
             start_date='20121102',
@@ -969,8 +969,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             termination_date='20130521',
             termination_reason='RT'
         )
-        sp_110035_20010414_5 = StateSupervisionPeriod(
-            state_supervision_period_id='110035-20010414-5',
+        sp_110035_20010414_5_0 = StateSupervisionPeriod(
+            state_supervision_period_id='110035-20010414-5-0',
             supervision_type='BP',
             status='TERMINATED',
             start_date='20131127',
@@ -978,8 +978,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             termination_date='20150706',
             termination_reason='FA'
         )
-        sp_110035_20010414_6 = StateSupervisionPeriod(
-            state_supervision_period_id='110035-20010414-6',
+        sp_110035_20010414_6_0 = StateSupervisionPeriod(
+            state_supervision_period_id='110035-20010414-6-0',
             supervision_type='BP',
             status='TERMINATED',
             start_date='20160328',
@@ -1003,9 +1003,9 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         state_incarceration_sentence_id=
                                         '110035-19890901-1',
                                         state_supervision_periods=[
-                                            sp_110035_19890901_2,
-                                            sp_110035_19890901_4,
-                                            sp_110035_19890901_6,
+                                            sp_110035_19890901_2_0,
+                                            sp_110035_19890901_4_0,
+                                            sp_110035_19890901_6_0,
                                         ]
                                     )
                                 ]),
@@ -1016,10 +1016,10 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         state_incarceration_sentence_id=
                                         '110035-20010414-1',
                                         state_supervision_periods=[
-                                            sp_110035_20010414_1,
-                                            sp_110035_20010414_3,
-                                            sp_110035_20010414_5,
-                                            sp_110035_20010414_6,
+                                            sp_110035_20010414_1_0,
+                                            sp_110035_20010414_3_0,
+                                            sp_110035_20010414_5_0,
+                                            sp_110035_20010414_6_0,
                                         ]
                                     )
                                 ])
@@ -1040,7 +1040,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         state_supervision_periods=[
                                             StateSupervisionPeriod(
                                                 state_supervision_period_id=
-                                                '710448-20010414-2',
+                                                '710448-20010414-2-0',
                                                 status='TERMINATED',
                                                 supervision_type='BP',
                                                 start_date='20020117',
@@ -1056,7 +1056,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         state_supervision_periods=[
                                             StateSupervisionPeriod(
                                                 state_supervision_period_id=
-                                                '710448-20010414-4',
+                                                '710448-20010414-4-0',
                                                 status='TERMINATED',
                                                 supervision_type='BP',
                                                 start_date='20040928',
@@ -1085,7 +1085,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         state_supervision_periods=[
                                             StateSupervisionPeriod(
                                                 state_supervision_period_id=
-                                                '910324-19890825-2',
+                                                '910324-19890825-2-0',
                                                 status='UNDER_SUPERVISION',
                                                 supervision_type='BP',
                                                 start_date='20081115',
@@ -1112,7 +1112,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         state_supervision_periods=[
                                             StateSupervisionPeriod(
                                                 state_supervision_period_id=
-                                                '624624-19890617-1',
+                                                '624624-19890617-1-0',
                                                 status='UNDER_SUPERVISION',
                                                 supervision_type='BP',
                                                 start_date='19890617',
@@ -1127,10 +1127,10 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(
             expected,
-            'tak158_tak023_supervision_period_from_incarceration_sentence')
+            'tak158_tak023_tak026_supervision_period_from_incarceration_sentence')
 
     # pylint: disable=line-too-long
-    def test_populate_data_tak158_tak024_incarceration_period_from_supervision_sentence(self):
+    def test_populate_data_tak158_tak024_tak026_incarceration_period_from_supervision_sentence(self):
         expected = IngestInfo(state_people=[
             StatePerson(state_person_id='910324',
                         state_person_external_ids=[
@@ -1148,7 +1148,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         state_incarceration_periods=[
                                             StateIncarcerationPeriod(
                                                 state_incarceration_period_id=
-                                                '910324-19890825-1',
+                                                '910324-19890825-1-0',
                                                 status='NOT_IN_CUSTODY',
                                                 admission_date='19891023',
                                                 admission_reason='NA',
@@ -1165,10 +1165,10 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(
             expected,
-            'tak158_tak024_incarceration_period_from_supervision_sentence')
+            'tak158_tak024_tak026_incarceration_period_from_supervision_sentence')
 
     # pylint: disable=line-too-long
-    def test_populate_data_tak158_tak024_supervision_period_from_supervision_sentence(
+    def test_populate_data_tak158_tak024_tak026_supervision_period_from_supervision_sentence(
             self):
         expected = IngestInfo(state_people=[
             StatePerson(state_person_id='110035',
@@ -1187,11 +1187,31 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         state_supervision_periods=[
                                             StateSupervisionPeriod(
                                                 state_supervision_period_id=
-                                                '110035-20040712-1',
+                                                '110035-20040712-1-0',
                                                 status='TERMINATED',
                                                 supervision_type='BP',
                                                 start_date='20040712',
                                                 admission_reason='IT',
+                                                termination_date='20050808',
+                                                termination_reason='65L9100'
+                                            ),
+                                            StateSupervisionPeriod(
+                                                state_supervision_period_id=
+                                                '110035-20040712-1-8',
+                                                status='TERMINATED',
+                                                supervision_type='BP',
+                                                start_date='20050808',
+                                                admission_reason='65L9100',
+                                                termination_date='20050909',
+                                                termination_reason='65N9500'
+                                            ),
+                                            StateSupervisionPeriod(
+                                                state_supervision_period_id=
+                                                '110035-20040712-1-9',
+                                                status='TERMINATED',
+                                                supervision_type='BP',
+                                                start_date='20050909',
+                                                admission_reason='65N9500',
                                                 termination_date='20080119',
                                                 termination_reason='DC'
                                             )
@@ -1203,7 +1223,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(
             expected,
-            'tak158_tak024_supervision_period_from_supervision_sentence')
+            'tak158_tak024_tak026_supervision_period_from_supervision_sentence')
 
     def test_populate_data_tak028_tak042_tak076_tak024_violation_reports(self):
         sss_110035_20040712_1 = StateSupervisionSentence(
@@ -2221,10 +2241,10 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         # TAK158_TAK023 INCARCERATION PERIOD FROM INCARCERATION SENTENCE
         ################################################################
         # Arrange
-        ip_110035_19890901_1 = \
+        ip_110035_19890901_1_0 = \
             entities.StateIncarcerationPeriod.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
-                external_id='110035-19890901-1',
+                external_id='110035-19890901-1-0',
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 status_raw_text='NOT_IN_CUSTODY',
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -2241,10 +2261,10 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 incarceration_sentences=[sis_110035_19890901_1]
             )
 
-        ip_110035_19890901_3 = \
+        ip_110035_19890901_3_0 = \
             entities.StateIncarcerationPeriod.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
-                external_id='110035-19890901-3',
+                external_id='110035-19890901-3-0',
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 status_raw_text='NOT_IN_CUSTODY',
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -2279,13 +2299,13 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 deciding_body_type_raw_text='PAROLE_BOARD',
                 person=person_110035,
             )
-        ip_110035_19890901_3.source_supervision_violation_response = \
+        ip_110035_19890901_3_0.source_supervision_violation_response = \
             vr_110035_19890901_3
 
-        ip_110035_19890901_5 = \
+        ip_110035_19890901_5_0 = \
             entities.StateIncarcerationPeriod.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
-                external_id='110035-19890901-5',
+                external_id='110035-19890901-5-0',
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 status_raw_text='NOT_IN_CUSTODY',
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -2318,19 +2338,19 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 deciding_body_type_raw_text='PAROLE_BOARD',
                 person=person_110035,
             )
-        ip_110035_19890901_5.source_supervision_violation_response = \
+        ip_110035_19890901_5_0.source_supervision_violation_response = \
             vr_110035_19890901_5
 
         sis_110035_19890901_1.incarceration_periods = [
-            ip_110035_19890901_1,
-            ip_110035_19890901_3,
-            ip_110035_19890901_5
+            ip_110035_19890901_1_0,
+            ip_110035_19890901_3_0,
+            ip_110035_19890901_5_0
         ]
 
-        ip_110035_20010414_2 = \
+        ip_110035_20010414_2_0 = \
             entities.StateIncarcerationPeriod.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
-                external_id='110035-20010414-2',
+                external_id='110035-20010414-2-0',
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 status_raw_text='NOT_IN_CUSTODY',
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -2359,13 +2379,13 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 revocation_type_raw_text='S',
                 person=person_110035,
             )
-        ip_110035_20010414_2.source_supervision_violation_response = \
+        ip_110035_20010414_2_0.source_supervision_violation_response = \
             vr_110035_20010414_2
 
-        ip_110035_20010414_4 = \
+        ip_110035_20010414_4_0 = \
             entities.StateIncarcerationPeriod.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
-                external_id='110035-20010414-4',
+                external_id='110035-20010414-4-0',
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 status_raw_text='NOT_IN_CUSTODY',
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -2381,10 +2401,10 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 person=person_110035,
                 incarceration_sentences=[sis_110035_20010414_1]
             )
-        ip_110035_20010414_7 = \
+        ip_110035_20010414_7_0 = \
             entities.StateIncarcerationPeriod.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
-                external_id='110035-20010414-7',
+                external_id='110035-20010414-7-0',
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 status_raw_text='NOT_IN_CUSTODY',
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -2401,15 +2421,15 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 incarceration_sentences=[sis_110035_20010414_1]
             )
         sis_110035_20010414_1.incarceration_periods = [
-            ip_110035_20010414_2,
-            ip_110035_20010414_4,
-            ip_110035_20010414_7
+            ip_110035_20010414_2_0,
+            ip_110035_20010414_4_0,
+            ip_110035_20010414_7_0
         ]
 
-        ip_310261_19890821_1 = \
+        ip_310261_19890821_1_0 = \
             entities.StateIncarcerationPeriod.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
-                external_id='310261-19890821-1',
+                external_id='310261-19890821-1-0',
                 status=StateIncarcerationPeriodStatus.IN_CUSTODY,
                 status_raw_text='IN_CUSTODY',
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -2421,12 +2441,12 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 person=person_310261,
                 incarceration_sentences=[sis_310261_19890821_3]
             )
-        sis_310261_19890821_3.incarceration_periods = [ip_310261_19890821_1]
+        sis_310261_19890821_3.incarceration_periods = [ip_310261_19890821_1_0]
 
-        ip_710448_20010414_1 = \
+        ip_710448_20010414_1_0 = \
             entities.StateIncarcerationPeriod.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
-                external_id='710448-20010414-1',
+                external_id='710448-20010414-1-0',
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 status_raw_text='NOT_IN_CUSTODY',
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -2442,12 +2462,12 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 person=person_710448,
                 incarceration_sentences=[sis_710448_20010414_1]
             )
-        sis_710448_20010414_1.incarceration_periods = [ip_710448_20010414_1]
+        sis_710448_20010414_1.incarceration_periods = [ip_710448_20010414_1_0]
 
-        ip_710448_20010414_3 = \
+        ip_710448_20010414_3_0 = \
             entities.StateIncarcerationPeriod.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
-                external_id='710448-20010414-3',
+                external_id='710448-20010414-3-0',
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 status_raw_text='NOT_IN_CUSTODY',
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -2480,15 +2500,15 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 deciding_body_type_raw_text='PAROLE_BOARD',
                 person=person_710448,
             )
-        ip_710448_20010414_3.source_supervision_violation_response = \
+        ip_710448_20010414_3_0.source_supervision_violation_response = \
             vr_710448_20010414_3
 
-        sis_710448_20010414_3.incarceration_periods = [ip_710448_20010414_3]
+        sis_710448_20010414_3.incarceration_periods = [ip_710448_20010414_3_0]
 
-        ip_910324_19890825_1 = \
+        ip_910324_19890825_1_0 = \
             entities.StateIncarcerationPeriod.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
-                external_id='910324-19890825-1',
+                external_id='910324-19890825-1-0',
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 status_raw_text='NOT_IN_CUSTODY',
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -2505,7 +2525,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 person=person_910324,
                 incarceration_sentences=[sis_910324_19890825_1]
             )
-        sis_910324_19890825_1.incarceration_periods = [ip_910324_19890825_1]
+        sis_910324_19890825_1.incarceration_periods = [ip_910324_19890825_1_0]
 
         # New person and entity tree introduced at this point
         person_523523 = entities.StatePerson.new_with_defaults()
@@ -2536,10 +2556,10 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             )
         sg_523523_19890617.incarceration_sentences.append(sis_523523_19890617_1)
 
-        ip_523523_19890617_1 = \
+        ip_523523_19890617_1_0 = \
             entities.StateIncarcerationPeriod.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
-                external_id='523523-19890617-1',
+                external_id='523523-19890617-1-0',
                 status=StateIncarcerationPeriodStatus.IN_CUSTODY,
                 status_raw_text='IN_CUSTODY',
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -2551,7 +2571,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 person=person_523523,
                 incarceration_sentences=[sis_523523_19890617_1],
             )
-        sis_523523_19890617_1.incarceration_periods.append(ip_523523_19890617_1)
+        sis_523523_19890617_1.incarceration_periods.append(ip_523523_19890617_1_0)
 
         expected_people.append(person_523523)
 
@@ -2584,10 +2604,10 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             )
         sg_867530_19970224.incarceration_sentences.append(sis_867530_19970224_1)
 
-        ip_867530_19970224_1 = \
+        ip_867530_19970224_1_0 = \
             entities.StateIncarcerationPeriod.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
-                external_id='867530-19970224-1',
+                external_id='867530-19970224-1-0',
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 status_raw_text='NOT_IN_CUSTODY',
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -2602,13 +2622,13 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 person=person_867530,
                 incarceration_sentences=[sis_867530_19970224_1],
             )
-        sis_867530_19970224_1.incarceration_periods.append(ip_867530_19970224_1)
+        sis_867530_19970224_1.incarceration_periods.append(ip_867530_19970224_1_0)
 
         expected_people.append(person_867530)
 
         # Act
         self._run_ingest_job_for_filename(
-            'tak158_tak023_incarceration_period_from_incarceration_sentence.csv'
+            'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence.csv'
         )
 
         # Assert
@@ -2618,10 +2638,10 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         # TAK158_TAK023 SUPERVISION PERIOD FROM INCARCERATION SENTENCE
         ################################################################
         # Arrange
-        sp_110035_19890901_2 = \
+        sp_110035_19890901_2_0 = \
             entities.StateSupervisionPeriod.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
-                external_id='110035-19890901-2',
+                external_id='110035-19890901-2-0',
                 status=StateSupervisionPeriodStatus.TERMINATED,
                 status_raw_text='TERMINATED',
                 supervision_type=StateSupervisionType.PAROLE,
@@ -2637,10 +2657,10 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 person=person_110035,
                 incarceration_sentences=[sis_110035_19890901_1]
             )
-        sp_110035_19890901_4 = \
+        sp_110035_19890901_4_0 = \
             entities.StateSupervisionPeriod.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
-                external_id='110035-19890901-4',
+                external_id='110035-19890901-4-0',
                 status=StateSupervisionPeriodStatus.TERMINATED,
                 status_raw_text='TERMINATED',
                 supervision_type=StateSupervisionType.PAROLE,
@@ -2656,10 +2676,10 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 person=person_110035,
                 incarceration_sentences=[sis_110035_19890901_1]
             )
-        sp_110035_19890901_6 = \
+        sp_110035_19890901_6_0 = \
             entities.StateSupervisionPeriod.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
-                external_id='110035-19890901-6',
+                external_id='110035-19890901-6-0',
                 status=StateSupervisionPeriodStatus.TERMINATED,
                 status_raw_text='TERMINATED',
                 supervision_type=StateSupervisionType.PAROLE,
@@ -2676,15 +2696,15 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 incarceration_sentences=[sis_110035_19890901_1]
             )
         sis_110035_19890901_1.supervision_periods = [
-            sp_110035_19890901_2,
-            sp_110035_19890901_4,
-            sp_110035_19890901_6
+            sp_110035_19890901_2_0,
+            sp_110035_19890901_4_0,
+            sp_110035_19890901_6_0
         ]
 
-        sp_110035_20010414_1 = \
+        sp_110035_20010414_1_0 = \
             entities.StateSupervisionPeriod.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
-                external_id='110035-20010414-1',
+                external_id='110035-20010414-1-0',
                 status=StateSupervisionPeriodStatus.TERMINATED,
                 status_raw_text='TERMINATED',
                 supervision_type=StateSupervisionType.PROBATION,
@@ -2700,10 +2720,10 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 person=person_110035,
                 incarceration_sentences=[sis_110035_20010414_1]
             )
-        sp_110035_20010414_3 = \
+        sp_110035_20010414_3_0 = \
             entities.StateSupervisionPeriod.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
-                external_id='110035-20010414-3',
+                external_id='110035-20010414-3-0',
                 status=StateSupervisionPeriodStatus.TERMINATED,
                 status_raw_text='TERMINATED',
                 supervision_type=StateSupervisionType.PAROLE,
@@ -2719,10 +2739,10 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 person=person_110035,
                 incarceration_sentences=[sis_110035_20010414_1]
             )
-        sp_110035_20010414_5 = \
+        sp_110035_20010414_5_0 = \
             entities.StateSupervisionPeriod.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
-                external_id='110035-20010414-5',
+                external_id='110035-20010414-5-0',
                 status=StateSupervisionPeriodStatus.TERMINATED,
                 status_raw_text='TERMINATED',
                 supervision_type=StateSupervisionType.PAROLE,
@@ -2738,10 +2758,10 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 person=person_110035,
                 incarceration_sentences=[sis_110035_20010414_1]
             )
-        sp_110035_20010414_6 = \
+        sp_110035_20010414_6_0 = \
             entities.StateSupervisionPeriod.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
-                external_id='110035-20010414-6',
+                external_id='110035-20010414-6-0',
                 status=StateSupervisionPeriodStatus.TERMINATED,
                 status_raw_text='TERMINATED',
                 supervision_type=StateSupervisionType.PAROLE,
@@ -2758,16 +2778,16 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 incarceration_sentences=[sis_110035_20010414_1]
             )
         sis_110035_20010414_1.supervision_periods = [
-            sp_110035_20010414_1,
-            sp_110035_20010414_3,
-            sp_110035_20010414_5,
-            sp_110035_20010414_6
+            sp_110035_20010414_1_0,
+            sp_110035_20010414_3_0,
+            sp_110035_20010414_5_0,
+            sp_110035_20010414_6_0
         ]
 
-        sp_710448_20010414_2 = \
+        sp_710448_20010414_2_0 = \
             entities.StateSupervisionPeriod.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
-                external_id='710448-20010414-2',
+                external_id='710448-20010414-2-0',
                 status=StateSupervisionPeriodStatus.TERMINATED,
                 status_raw_text='TERMINATED',
                 supervision_type=StateSupervisionType.PAROLE,
@@ -2783,12 +2803,12 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 person=person_710448,
                 incarceration_sentences=[sis_710448_20010414_1]
             )
-        sis_710448_20010414_1.supervision_periods = [sp_710448_20010414_2]
+        sis_710448_20010414_1.supervision_periods = [sp_710448_20010414_2_0]
 
-        sp_710448_20010414_4 = \
+        sp_710448_20010414_4_0 = \
             entities.StateSupervisionPeriod.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
-                external_id='710448-20010414-4',
+                external_id='710448-20010414-4-0',
                 status=StateSupervisionPeriodStatus.TERMINATED,
                 status_raw_text='TERMINATED',
                 supervision_type=StateSupervisionType.PAROLE,
@@ -2804,12 +2824,12 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 person=person_710448,
                 incarceration_sentences=[sis_710448_20010414_3]
             )
-        sis_710448_20010414_3.supervision_periods = [sp_710448_20010414_4]
+        sis_710448_20010414_3.supervision_periods = [sp_710448_20010414_4_0]
 
-        sp_910324_19890825_2 = \
+        sp_910324_19890825_2_0 = \
             entities.StateSupervisionPeriod.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
-                external_id='910324-19890825-2',
+                external_id='910324-19890825-2-0',
                 status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
                 status_raw_text='UNDER_SUPERVISION',
                 supervision_type=StateSupervisionType.PAROLE,
@@ -2821,7 +2841,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 person=person_910324,
                 incarceration_sentences=[sis_910324_19890825_1]
             )
-        sis_910324_19890825_1.supervision_periods = [sp_910324_19890825_2]
+        sis_910324_19890825_1.supervision_periods = [sp_910324_19890825_2_0]
 
         person_624624 = entities.StatePerson.new_with_defaults()
         spei_624624 = entities.StatePersonExternalId.new_with_defaults(
@@ -2851,10 +2871,10 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             )
         sg_624624_19890617.incarceration_sentences.append(sis_624624_19890617_1)
 
-        sp_624624_19890617_1 = \
+        sp_624624_19890617_1_0 = \
             entities.StateSupervisionPeriod.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
-                external_id='624624-19890617-1',
+                external_id='624624-19890617-1-0',
                 status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
                 status_raw_text='UNDER_SUPERVISION',
                 supervision_type=StateSupervisionType.PAROLE,
@@ -2866,13 +2886,13 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 person=person_624624,
                 incarceration_sentences=[sis_624624_19890617_1],
             )
-        sis_624624_19890617_1.supervision_periods.append(sp_624624_19890617_1)
+        sis_624624_19890617_1.supervision_periods.append(sp_624624_19890617_1_0)
 
         expected_people.append(person_624624)
 
         # Act
         self._run_ingest_job_for_filename(
-            'tak158_tak023_supervision_period_from_incarceration_sentence.csv')
+            'tak158_tak023_tak026_supervision_period_from_incarceration_sentence.csv')
 
         # Assert
         self.assert_expected_db_people(expected_people)
@@ -2881,12 +2901,12 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         # TAK158_TAK024 INCARCERATION PERIOD FROM SUPERVISION SENTENCE
         ################################################################
         # Arrange
-        ip_910324_19890825_1.supervision_sentences = [sss_910324_19890825_1]
-        sss_910324_19890825_1.incarceration_periods = [ip_910324_19890825_1]
+        ip_910324_19890825_1_0.supervision_sentences = [sss_910324_19890825_1]
+        sss_910324_19890825_1.incarceration_periods = [ip_910324_19890825_1_0]
 
         # Act
         self._run_ingest_job_for_filename(
-            'tak158_tak024_incarceration_period_from_supervision_sentence.csv')
+            'tak158_tak024_tak026_incarceration_period_from_supervision_sentence.csv')
 
         # Assert
         self.assert_expected_db_people(expected_people)
@@ -2895,10 +2915,10 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         # TAK158_TAK024 SUPERVISION PERIOD FROM SUPERVISION SENTENCE
         ################################################################
         # Arrange
-        sp_110035_20040712_1 = \
+        sp_110035_20040712_1_0 = \
             entities.StateSupervisionPeriod.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
-                external_id='110035-20040712-1',
+                external_id='110035-20040712-1-0',
                 status=StateSupervisionPeriodStatus.TERMINATED,
                 status_raw_text='TERMINATED',
                 supervision_type=StateSupervisionType.PAROLE,
@@ -2907,6 +2927,44 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 admission_reason=
                 StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
                 admission_reason_raw_text='IT',
+                termination_date=datetime.date(year=2005, month=8, day=8),
+                termination_reason=
+                StateSupervisionPeriodTerminationReason.ABSCONSION,
+                termination_reason_raw_text='65L9100',
+                person=person_110035,
+                supervision_sentences=[sss_110035_20040712_1]
+            )
+        sp_110035_20040712_1_8 = \
+            entities.StateSupervisionPeriod.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                external_id='110035-20040712-1-8',
+                status=StateSupervisionPeriodStatus.TERMINATED,
+                status_raw_text='TERMINATED',
+                supervision_type=StateSupervisionType.PAROLE,
+                supervision_type_raw_text='BP',
+                start_date=datetime.date(year=2005, month=8, day=8),
+                admission_reason=
+                StateSupervisionPeriodAdmissionReason.ABSCONSION,
+                admission_reason_raw_text='65L9100',
+                termination_date=datetime.date(year=2005, month=9, day=9),
+                termination_reason=
+                StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION,
+                termination_reason_raw_text='65N9500',
+                person=person_110035,
+                supervision_sentences=[sss_110035_20040712_1]
+            )
+        sp_110035_20040712_1_9 = \
+            entities.StateSupervisionPeriod.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                external_id='110035-20040712-1-9',
+                status=StateSupervisionPeriodStatus.TERMINATED,
+                status_raw_text='TERMINATED',
+                supervision_type=StateSupervisionType.PAROLE,
+                supervision_type_raw_text='BP',
+                start_date=datetime.date(year=2005, month=9, day=9),
+                admission_reason=
+                StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION,
+                admission_reason_raw_text='65N9500',
                 termination_date=datetime.date(year=2008, month=1, day=19),
                 termination_reason=
                 StateSupervisionPeriodTerminationReason.DISCHARGE,
@@ -2914,11 +2972,16 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 person=person_110035,
                 supervision_sentences=[sss_110035_20040712_1]
             )
-        sss_110035_20040712_1.supervision_periods = [sp_110035_20040712_1]
+
+        sss_110035_20040712_1.supervision_periods = [
+            sp_110035_20040712_1_0,
+            sp_110035_20040712_1_8,
+            sp_110035_20040712_1_9
+        ]
 
         # Act
         self._run_ingest_job_for_filename(
-            'tak158_tak024_supervision_period_from_supervision_sentence.csv')
+            'tak158_tak024_tak026_supervision_period_from_supervision_sentence.csv')
 
         # Assert
         self.assert_expected_db_people(expected_people)
@@ -3331,7 +3394,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         self.controller.file_split_line_limit = 1
 
         self._run_ingest_job_for_filename(
-            'tak158_tak023_incarceration_period_from_incarceration_sentence.csv'
+            'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence.csv'
         )
 
         session = SessionFactory.for_schema_base(StateBase)
