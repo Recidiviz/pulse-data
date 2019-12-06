@@ -59,8 +59,8 @@ from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionPopulationMetric, SupervisionMetric
 from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionMetricType as MetricType
-from recidiviz.calculator.pipeline.supervision.supervision_month import \
-    SupervisionMonth
+from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
+    SupervisionTimeBucket
 from recidiviz.calculator.pipeline.utils.beam_utils import SumFn
 from recidiviz.calculator.pipeline.utils.entity_hydration_utils import \
     SetViolationResponseOnIncarcerationPeriod
@@ -91,24 +91,24 @@ def clear_job_id():
 
 @with_input_types(beam.typehints.Tuple[int, Dict[str, Any]])
 @with_output_types(beam.typehints.Tuple[entities.StatePerson,
-                                        List[SupervisionMonth]])
-class GetSupervisionMonths(beam.PTransform):
+                                        List[SupervisionTimeBucket]])
+class GetSupervisionTimeBuckets(beam.PTransform):
     """Transforms a StatePerson and their periods of supervision and
-     incarceration into SupervisionMonths."""
+     incarceration into SupervisionTimeBuckets."""
 
     def __init__(self):
-        super(GetSupervisionMonths, self).__init__()
+        super(GetSupervisionTimeBuckets, self).__init__()
 
     def expand(self, input_or_inputs):
         return (input_or_inputs
-                | beam.ParDo(ClassifySupervisionMonths()))
+                | beam.ParDo(ClassifySupervisionTimeBuckets()))
 
 
 @with_input_types(beam.typehints.Tuple[entities.StatePerson,
-                                       List[SupervisionMonth]])
+                                       List[SupervisionTimeBucket]])
 @with_output_types(SupervisionMetric)
 class GetSupervisionMetrics(beam.PTransform):
-    """Transforms a StatePerson and their SupervisionMonths into
+    """Transforms a StatePerson and their SupervisionTimeBuckets into
     SupervisionMetrics."""
 
     def __init__(self, pipeline_options: Dict[str, str],
@@ -119,7 +119,7 @@ class GetSupervisionMetrics(beam.PTransform):
 
     def expand(self, input_or_inputs):
         # Calculate supervision metric combinations from a StatePerson and their
-        # SupervisionMonths
+        # SupervisionTimeBuckets
         supervision_metric_combinations = (
             input_or_inputs
             | 'Map to metric combinations' >>
@@ -150,12 +150,13 @@ class GetSupervisionMetrics(beam.PTransform):
 
 @with_input_types(beam.typehints.Tuple[int, Dict[str, Any]])
 @with_output_types(beam.typehints.Tuple[entities.StatePerson,
-                                        List[SupervisionMonth]])
-class ClassifySupervisionMonths(beam.DoFn):
-    """Classifies time on supervision as months with or without revocation."""
+                                        List[SupervisionTimeBucket]])
+class ClassifySupervisionTimeBuckets(beam.DoFn):
+    """Classifies time on supervision as years and months with or without
+    revocation."""
 
     def process(self, element, *args, **kwargs):
-        """Identifies instances of revocation and non-revocation months on
+        """Identifies instances of revocation and non-revocation time buckets on
         supervision.
         """
         _, person_periods = element
@@ -171,26 +172,26 @@ class ClassifySupervisionMonths(beam.DoFn):
         # Get the StatePerson
         person = one(person_periods['person'])
 
-        # Find the SupervisionMonths from the supervision and incarceration
+        # Find the SupervisionTimeBuckets from the supervision and incarceration
         # periods
-        supervision_months = \
-            identifier.find_supervision_months(
+        supervision_time_buckets = \
+            identifier.find_supervision_time_buckets(
                 supervision_periods,
                 incarceration_periods)
 
-        if not supervision_months:
-            logging.info("No valid supervision months for person with"
+        if not supervision_time_buckets:
+            logging.info("No valid supervision time buckets for person with"
                          "id: %d. Excluding them from the "
                          "calculations.", person.person_id)
         else:
-            yield (person, supervision_months)
+            yield (person, supervision_time_buckets)
 
     def to_runner_api_parameter(self, _):
         pass  # Passing unused abstract method.
 
 
 @with_input_types(beam.typehints.Tuple[entities.StatePerson,
-                                       List[SupervisionMonth]])
+                                       List[SupervisionTimeBucket]])
 @with_output_types(beam.typehints.Tuple[str, Any])
 class CalculateSupervisionMetricCombinations(beam.DoFn):
     """Calculates supervision metric combinations."""
@@ -199,10 +200,11 @@ class CalculateSupervisionMetricCombinations(beam.DoFn):
         """Produces various supervision metric combinations.
 
         Sends the calculator the StatePerson entity and their corresponding
-        SupervisionMonths for mapping all supervision combinations.
+        SupervisionTimeBuckets for mapping all supervision combinations.
 
         Args:
-            element: Tuple containing a StatePerson and their SupervisionMonths
+            element: Tuple containing a StatePerson and their
+                SupervisionTimeBuckets
             **kwargs: This should be a dictionary with values for the
                 following keys:
                     - age_bucket
@@ -212,12 +214,14 @@ class CalculateSupervisionMetricCombinations(beam.DoFn):
         Yields:
             Each supervision metric combination, tagged by metric type.
         """
-        person, supervision_months = element
+        person, supervision_time_buckets = element
 
-        # Calculate recidivism metric combinations for this person and events
+        # Calculate supervision metric combinations for this person and their
+        # supervision time buckets
         metric_combinations = \
             calculator.map_supervision_combinations(person,
-                                                    supervision_months, kwargs)
+                                                    supervision_time_buckets,
+                                                    kwargs)
 
         # Return each of the supervision metric combinations
         for metric_combination in metric_combinations:
@@ -499,12 +503,12 @@ def run(argv=None):
             beam.CoGroupByKey()
         )
 
-        # Identify SupervisionMonths from the StatePerson's
+        # Identify SupervisionTimeBuckets from the StatePerson's
         # StateSupervisionPeriods and StateIncarcerationPeriods
-        person_months = (
+        person_time_buckets = (
             person_and_periods |
-            'Get Supervision Months' >>
-            GetSupervisionMonths())
+            'Get Supervision Time Buckets' >>
+            GetSupervisionTimeBuckets())
 
         # Get dimensions to include and methodologies to use
         inclusions, _ = dimensions_and_methodologies(known_args)
@@ -517,7 +521,7 @@ def run(argv=None):
         all_pipeline_options['job_timestamp'] = job_timestamp
 
         # Get supervision metrics
-        supervision_metrics = (person_months
+        supervision_metrics = (person_time_buckets
                                | 'Get Supervision Metrics' >>
                                GetSupervisionMetrics(
                                    pipeline_options=all_pipeline_options,

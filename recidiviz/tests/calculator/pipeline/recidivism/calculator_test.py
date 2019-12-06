@@ -40,6 +40,8 @@ from recidiviz.persistence.entity.state.entities import StatePerson, Gender,\
     StatePersonRace, Race, StatePersonEthnicity, Ethnicity
 from recidiviz.calculator.pipeline.recidivism.metrics import \
     ReincarcerationRecidivismMetricType as MetricType
+from recidiviz.tests.calculator.calculator_test_utils import \
+    demographic_metric_combos_count_for_person
 
 
 def test_reincarcerations():
@@ -549,6 +551,7 @@ ALL_INCLUSIONS_DICT = {
         'stay_length_bucket': True
     }
 
+
 class TestMapRecidivismCombinations(unittest.TestCase):
     """Tests the map_recidivism_combinations function."""
 
@@ -580,34 +583,6 @@ class TestMapRecidivismCombinations(unittest.TestCase):
 
     RECIDIVISM_COUNT_WINDOWS = 2  # Month, Year
     LIBERTY_TIME_WINDOWS = 2  # Month, Year
-
-    @staticmethod
-    def demographic_metric_combos_count_for_person(
-            person: StatePerson,
-            inclusions: Dict[str, bool]) -> int:
-        """Returns the number of possible demographic metric combinations for a
-        given person, given the metric inclusions list."""
-
-        total_metric_combos = 1
-        for key, should_include in inclusions.items():
-            multiplier_for_key = 1  # always one combo where key isn't included
-            if should_include:
-                if key in {'age_bucket',
-                           'gender',
-                           'release_facility',
-                           'stay_length_bucket'}:
-                    # A single person can only ever have one of these
-                    # characteristics
-                    multiplier_for_key += 1
-                elif key == 'race':
-                    multiplier_for_key += len(person.races)
-                elif key == 'ethnicity':
-                    multiplier_for_key += len(person.ethnicities)
-                else:
-                    raise ValueError(f'Unexpected metric key: [{key}]')
-            total_metric_combos *= multiplier_for_key
-
-        return total_metric_combos
 
     def relevant_combos_count_for_recidivism_release_event(
             self, release_event: RecidivismReleaseEvent):
@@ -655,7 +630,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         the person, the release events, and the dimensions that should be
         included in the explosion of feature combinations."""
         demographic_metric_combos = \
-            self.demographic_metric_combos_count_for_person(
+            demographic_metric_combos_count_for_person(
                 person, inclusions)
 
         all_release_events = [
@@ -703,7 +678,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         """Returns the expected number of metrics of only the metric_type
         'count'."""
         demographic_metric_combos = \
-            self.demographic_metric_combos_count_for_person(
+            demographic_metric_combos_count_for_person(
                 person, inclusions)
 
         recidivism_release_events = [

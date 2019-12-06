@@ -32,9 +32,7 @@ from recidiviz.calculator.pipeline.recidivism.release_event import \
     ReincarcerationReturnType, ReincarcerationReturnFromSupervisionType, \
     ReleaseEvent, RecidivismReleaseEvent, NonRecidivismReleaseEvent
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import \
-    drop_placeholder_temporary_and_missing_status_periods, \
-    validate_admission_data, validate_release_data, \
-    collapse_incarceration_periods
+    prepare_incarceration_periods_for_calculations
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus
 from recidiviz.common.constants.state.state_incarceration_period import \
@@ -79,7 +77,7 @@ def find_release_events_by_cohort_year(
     release_events: Dict[int, List[ReleaseEvent]] = defaultdict(list)
 
     incarceration_periods = \
-        validate_sort_and_collapse_incarceration_periods(incarceration_periods)
+        prepare_incarceration_periods_for_calculations(incarceration_periods)
 
     for index, incarceration_period in enumerate(incarceration_periods):
         state_code = incarceration_period.state_code
@@ -135,39 +133,6 @@ def find_release_events_by_cohort_year(
                 release_events[release_cohort].append(event)
 
     return release_events
-
-
-def validate_sort_and_collapse_incarceration_periods(
-        incarceration_periods: List[StateIncarcerationPeriod]) -> \
-        List[StateIncarcerationPeriod]:
-    """Validates, sorts, and collapses the incarceration period inputs.
-
-    Ensures the necessary dates and fields are set on each incarceration period.
-    If an incarceration period is found with missing data, drops the
-    incarceration period from the calculations. Then, sorts the list of valid
-    StateIncarcerationPeriods by admission_date, and collapses the ones
-    connected by a transfer.
-    """
-
-    incarceration_periods_no_placeholders = \
-        drop_placeholder_temporary_and_missing_status_periods(
-            incarceration_periods
-        )
-
-    incarceration_periods_valid_admissions = \
-        validate_admission_data(incarceration_periods_no_placeholders)
-
-    incarceration_periods_valid_releases = \
-        validate_release_data(incarceration_periods_valid_admissions)
-
-    validated_incarceration_periods = incarceration_periods_valid_releases
-
-    validated_incarceration_periods.sort(key=lambda b: b.admission_date)
-
-    collapsed_incarceration_periods = \
-        collapse_incarceration_periods(validated_incarceration_periods)
-
-    return collapsed_incarceration_periods
 
 
 def for_last_incarceration_period(

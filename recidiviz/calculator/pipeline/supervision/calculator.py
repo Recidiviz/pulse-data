@@ -14,10 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Calculates supervision metrics from supervision months.
+"""Calculates supervision metrics from supervision time buckets.
 
 This contains the core logic for calculating supervision metrics on a
-person-by-person basis. It transforms SupervisionMonths into supervision
+person-by-person basis. It transforms SupervisionTimeBuckets into supervision
 metrics, key-value pairs where the key represents all of the dimensions
 represented in the data point, and the value represents an indicator of whether
 the person should contribute to that metric.
@@ -27,8 +27,8 @@ from copy import deepcopy
 from datetime import date
 from typing import Dict, List, Tuple, Any
 
-from recidiviz.calculator.pipeline.supervision.supervision_month import \
-    SupervisionMonth
+from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
+    SupervisionTimeBucket
 from recidiviz.calculator.pipeline.utils.calculator_utils import age_at_date, \
     age_bucket, for_characteristics_races_ethnicities, for_characteristics
 from recidiviz.calculator.pipeline.supervision.metrics import \
@@ -39,17 +39,19 @@ from recidiviz.persistence.entity.state.entities import StatePerson
 
 
 def map_supervision_combinations(person: StatePerson,
-                                 supervision_months: List[SupervisionMonth],
+                                 supervision_time_buckets:
+                                 List[SupervisionTimeBucket],
                                  inclusions: Dict[str, bool]) \
         -> List[Tuple[Dict[str, Any], Any]]:
-    """Transforms SupervisionMonths and a StatePerson into metric combinations.
+    """Transforms SupervisionTimeBuckets and a StatePerson into metric
+    combinations.
 
-    Takes in a StatePerson and all of her SupervisionMonths and returns an array
-    of "supervision combinations". These are key-value pairs where the key
+    Takes in a StatePerson and all of her SupervisionTimeBuckets and returns an
+    array of "supervision combinations". These are key-value pairs where the key
     represents a specific metric and the value represents whether or not
     the person should be counted as a positive instance of that metric.
 
-    This translates a particular month on supervision into many different
+    This translates a particular time on supervision into many different
     supervision population metrics. Each metric represents one of many possible
     combinations of characteristics being tracked for that event. For example,
     if a White male is on supervision, there is a metric that corresponds to
@@ -58,7 +60,7 @@ def map_supervision_combinations(person: StatePerson,
 
     Args:
         person: the StatePerson
-        supervision_months: A list of SupervisionMonths for the given
+        supervision_time_buckets: A list of SupervisionTimeBuckets for the given
             StatePerson.
         inclusions: A dictionary containing the following keys that correspond
             to characteristic dimensions:
@@ -76,12 +78,13 @@ def map_supervision_combinations(person: StatePerson,
 
     event_based_metrics: List[Tuple[Dict[str, Any], Any]] = []
 
-    for supervision_month in supervision_months:
+    for supervision_time_bucket in supervision_time_buckets:
         characteristic_combos_population = \
-            characteristic_combinations(person, supervision_month, inclusions)
+            characteristic_combinations(
+                person, supervision_time_bucket, inclusions)
 
         population_metrics_event_based = map_population_combinations(
-            characteristic_combos_population, supervision_month
+            characteristic_combos_population, supervision_time_bucket
         )
 
         event_based_metrics.extend(population_metrics_event_based)
@@ -99,17 +102,17 @@ def map_supervision_combinations(person: StatePerson,
 
 
 def characteristic_combinations(person: StatePerson,
-                                supervision_month: SupervisionMonth,
+                                supervision_time_bucket: SupervisionTimeBucket,
                                 inclusions: Dict[str, bool]) -> \
         List[Dict[str, Any]]:
     """Calculates all supervision metric combinations.
 
     Returns the list of all combinations of the metric characteristics, of all
-    sizes, given the StatePerson and SupervisionMonth. That is, this returns a
-    list of dictionaries where each dictionary is a combination of 0 to n unique
-    elements of characteristics, where n is the number of keys in the given
-    inclusions bucket that are set to True + 1 dimension for the supervision
-    type (which is always included).
+    sizes, given the StatePerson and SupervisionTimeBucket. That is, this
+    returns a list of dictionaries where each dictionary is a combination of 0
+    to n unique elements of characteristics, where n is the number of keys in
+    the given inclusions dictionary that are set to True + 1 dimension for the
+    supervision type (which is always included).
 
     For each event, we need to calculate metrics across combinations of:
     MetricMethodologyType (Event-based, Person-based);
@@ -120,8 +123,8 @@ def characteristic_combinations(person: StatePerson,
 
     Args:
         person: the StatePerson we are picking characteristics from
-        supervision_month: the SupervisionMonth we are picking characteristics
-            from
+        supervision_time_bucket: the SupervisionTimeBucket we are picking
+            characteristics from
         inclusions: A dictionary containing the following keys that correspond
             to characteristic dimensions:
                 - age_bucket
@@ -138,12 +141,18 @@ def characteristic_combinations(person: StatePerson,
 
     characteristics: Dict[str, Any] = {}
 
-    if supervision_month.supervision_type:
-        characteristics['supervision_type'] = supervision_month.supervision_type
+    if supervision_time_bucket.supervision_type:
+        characteristics['supervision_type'] = \
+            supervision_time_bucket.supervision_type
     if inclusions.get('age_bucket'):
-        start_of_month = \
-            date(supervision_month.year, supervision_month.month, 1)
-        entry_age = age_at_date(person, start_of_month)
+        year = supervision_time_bucket.year
+        month = supervision_time_bucket.month
+
+        if month is None:
+            month = 1
+
+        start_of_bucket = date(year, month, 1)
+        entry_age = age_at_date(person, start_of_bucket)
         entry_age_bucket = age_bucket(entry_age)
         if entry_age_bucket is not None:
             characteristics['age_bucket'] = entry_age_bucket
@@ -169,20 +178,20 @@ def characteristic_combinations(person: StatePerson,
 
 def map_population_combinations(
         characteristic_combos: List[Dict[str, Any]],
-        supervision_month: SupervisionMonth) -> \
+        supervision_time_bucket: SupervisionTimeBucket) -> \
         List[Tuple[Dict[str, Any], Any]]:
-    """Maps the given month and characteristic combinations to a variety of
-    metrics that track supervision populations.
+    """Maps the given time bucket and characteristic combinations to a variety
+    of metrics that track supervision populations.
 
     All values will be 1 for population metrics, because the presence of a
-    SupervisionMonth for a given month implies that the person was counted
-    towards the supervision population for that month.
+    SupervisionTimeBucket for a given time bucket implies that the person was
+    counted towards the supervision population for that time bucket.
 
     Args:
         characteristic_combos: A list of dictionaries containing all unique
             combinations of characteristics.
-        supervision_month: the month on supervision from which the combination
-            was derived
+        supervision_time_bucket: The time bucket on supervision from which
+            the combination was derived.
 
     Returns:
         A list of key-value tuples representing specific metric combinations and
@@ -190,9 +199,9 @@ def map_population_combinations(
     """
     metrics = []
 
-    year = supervision_month.year
-    month = supervision_month.month
-    state_code = supervision_month.state_code
+    year = supervision_time_bucket.year
+    month = supervision_time_bucket.month
+    state_code = supervision_time_bucket.state_code
 
     for combo in characteristic_combos:
         combo['metric_type'] = SupervisionMetricType.POPULATION.value
