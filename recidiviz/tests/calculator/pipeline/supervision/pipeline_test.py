@@ -31,8 +31,9 @@ from datetime import date
 from recidiviz.calculator.pipeline.supervision import pipeline, calculator
 from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionMetric, SupervisionMetricType
-from recidiviz.calculator.pipeline.supervision.supervision_month import \
-    NonRevocationReturnSupervisionMonth, RevocationReturnSupervisionMonth
+from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
+    NonRevocationReturnSupervisionTimeBucket, \
+    RevocationReturnSupervisionTimeBucket
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
 from recidiviz.calculator.pipeline.utils import extractor_utils
@@ -172,10 +173,10 @@ class TestSupervisionPipeline(unittest.TestCase):
         ]
 
         inclusions = {
-            'age_bucket': False,
-            'gender': False,
-            'race': False,
-            'ethnicity': False,
+            'age_bucket': True,
+            'gender': True,
+            'race': True,
+            'ethnicity': True,
         }
 
         data_dict = {schema.StatePerson.__tablename__: persons_data,
@@ -271,12 +272,12 @@ class TestSupervisionPipeline(unittest.TestCase):
                               beam.CoGroupByKey()
                               )
 
-        # Identify SupervisionMonths from the StatePerson's
+        # Identify SupervisionTimeBuckets from the StatePerson's
         # StateSupervisionPeriods and StateIncarcerationPeriods
         person_months = (
             person_and_periods |
             'Get Supervision Months' >>
-            pipeline.GetSupervisionMonths())
+            pipeline.GetSupervisionTimeBuckets())
 
         # Get pipeline job details for accessing job_id
         all_pipeline_options = PipelineOptions().get_all_options()
@@ -565,12 +566,12 @@ class TestSupervisionPipeline(unittest.TestCase):
                               beam.CoGroupByKey()
                               )
 
-        # Identify SupervisionMonths from the StatePerson's
+        # Identify SupervisionTimeBuckets from the StatePerson's
         # StateSupervisionPeriods and StateIncarcerationPeriods
         person_months = (
             person_and_periods |
             'Get Supervision Months' >>
-            pipeline.GetSupervisionMonths())
+            pipeline.GetSupervisionTimeBuckets())
 
         # Get pipeline job details for accessing job_id
         all_pipeline_options = PipelineOptions().get_all_options()
@@ -592,11 +593,11 @@ class TestSupervisionPipeline(unittest.TestCase):
         test_pipeline.run()
 
 
-class TestClassifySupervisionMonths(unittest.TestCase):
-    """Tests the ClassifySupervisionMonths DoFn in the pipeline."""
+class TestClassifySupervisionTimeBuckets(unittest.TestCase):
+    """Tests the ClassifySupervisionTimeBuckets DoFn in the pipeline."""
 
-    def testClassifySupervisionMonths(self):
-        """Tests the ClassifySupervisionMonths DoFn."""
+    def testClassifySupervisionTimeBuckets(self):
+        """Tests the ClassifySupervisionTimeBuckets DoFn."""
         fake_person_id = 12345
 
         fake_person = StatePerson.new_with_defaults(
@@ -633,23 +634,27 @@ class TestClassifySupervisionMonths(unittest.TestCase):
                               supervision_period
                           ]}
 
-        supervision_months = [
-            NonRevocationReturnSupervisionMonth(
+        supervision_time_buckets = [
+            NonRevocationReturnSupervisionTimeBucket(
                 supervision_period.state_code,
                 2015, 3,
                 supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+            NonRevocationReturnSupervisionTimeBucket(
                 supervision_period.state_code,
                 2015, 4,
                 supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+            NonRevocationReturnSupervisionTimeBucket(
                 supervision_period.state_code,
                 2015, 5,
+                supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket(
+                supervision_period.state_code,
+                2015, None,
                 supervision_period.supervision_type)
         ]
 
         correct_output = [
-            (fake_person, supervision_months)]
+            (fake_person, supervision_time_buckets)]
 
         test_pipeline = TestPipeline()
 
@@ -657,16 +662,16 @@ class TestClassifySupervisionMonths(unittest.TestCase):
                   | beam.Create([(fake_person_id,
                                   person_periods)])
                   | 'Identify Supervision Months' >>
-                  beam.ParDo(pipeline.ClassifySupervisionMonths())
+                  beam.ParDo(pipeline.ClassifySupervisionTimeBuckets())
                   )
 
         assert_that(output, equal_to(correct_output))
 
         test_pipeline.run()
 
-    def testClassifySupervisionMonthsRevocation(self):
-        """Tests the ClassifySupervisionMonths DoFn when there is an instance
-        of revocation."""
+    def testClassifySupervisionTimeBucketsRevocation(self):
+        """Tests the ClassifySupervisionTimeBuckets DoFn when there is an
+        instance of revocation."""
         fake_person_id = 12345
 
         fake_person = StatePerson.new_with_defaults(
@@ -703,23 +708,27 @@ class TestClassifySupervisionMonths(unittest.TestCase):
                               supervision_period
                           ]}
 
-        supervision_months = [
-            NonRevocationReturnSupervisionMonth(
+        supervision_time_buckets = [
+            NonRevocationReturnSupervisionTimeBucket(
                 supervision_period.state_code,
                 2015, 3,
                 supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+            NonRevocationReturnSupervisionTimeBucket(
                 supervision_period.state_code,
                 2015, 4,
                 supervision_period.supervision_type),
-            RevocationReturnSupervisionMonth(
+            RevocationReturnSupervisionTimeBucket(
                 supervision_period.state_code,
                 2015, 5,
+                supervision_period.supervision_type),
+            RevocationReturnSupervisionTimeBucket(
+                supervision_period.state_code,
+                2015, None,
                 supervision_period.supervision_type)
         ]
 
         correct_output = [
-            (fake_person, supervision_months)]
+            (fake_person, supervision_time_buckets)]
 
         test_pipeline = TestPipeline()
 
@@ -727,15 +736,15 @@ class TestClassifySupervisionMonths(unittest.TestCase):
                   | beam.Create([(fake_person_id,
                                   person_periods)])
                   | 'Identify Supervision Months' >>
-                  beam.ParDo(pipeline.ClassifySupervisionMonths())
+                  beam.ParDo(pipeline.ClassifySupervisionTimeBuckets())
                   )
 
         assert_that(output, equal_to(correct_output))
 
         test_pipeline.run()
 
-    def testClassifySupervisionMonths_NoIncarcerationPeriods(self):
-        """Tests the ClassifySupervisionMonths DoFn when the person has no
+    def testClassifySupervisionTimeBuckets_NoIncarcerationPeriods(self):
+        """Tests the ClassifySupervisionTimeBuckets DoFn when the person has no
         incarceration periods."""
         fake_person_id = 12345
 
@@ -760,23 +769,27 @@ class TestClassifySupervisionMonths(unittest.TestCase):
                               supervision_period
                           ]}
 
-        supervision_months = [
-            NonRevocationReturnSupervisionMonth(
+        supervision_time_buckets = [
+            NonRevocationReturnSupervisionTimeBucket(
                 supervision_period.state_code,
                 2015, 3,
                 supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+            NonRevocationReturnSupervisionTimeBucket(
                 supervision_period.state_code,
                 2015, 4,
                 supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+            NonRevocationReturnSupervisionTimeBucket(
                 supervision_period.state_code,
                 2015, 5,
+                supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket(
+                supervision_period.state_code,
+                2015, None,
                 supervision_period.supervision_type)
         ]
 
         correct_output = [
-            (fake_person, supervision_months)]
+            (fake_person, supervision_time_buckets)]
 
         test_pipeline = TestPipeline()
 
@@ -784,15 +797,15 @@ class TestClassifySupervisionMonths(unittest.TestCase):
                   | beam.Create([(fake_person_id,
                                   person_periods)])
                   | 'Identify Supervision Months' >>
-                  beam.ParDo(pipeline.ClassifySupervisionMonths())
+                  beam.ParDo(pipeline.ClassifySupervisionTimeBuckets())
                   )
 
         assert_that(output, equal_to(correct_output))
 
         test_pipeline.run()
 
-    def testClassifySupervisionMonths_NoSupervisionPeriods(self):
-        """Tests the ClassifySupervisionMonths DoFn when the person
+    def testClassifySupervisionTimeBuckets_NoSupervisionPeriods(self):
+        """Tests the ClassifySupervisionTimeBuckets DoFn when the person
         has no supervision periods."""
         fake_person_id = 12345
 
@@ -826,7 +839,7 @@ class TestClassifySupervisionMonths(unittest.TestCase):
                   | beam.Create([(fake_person_id,
                                   person_periods)])
                   | 'Identify Supervision Months' >>
-                  beam.ParDo(pipeline.ClassifySupervisionMonths())
+                  beam.ParDo(pipeline.ClassifySupervisionTimeBuckets())
                   )
 
         assert_that(output, equal_to(correct_output))
@@ -844,10 +857,11 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
             birthdate=date(1970, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)
 
-        supervision_months = [
-            NonRevocationReturnSupervisionMonth('CA',
-                                                2015, 3,
-                                                StateSupervisionType.PROBATION),
+        supervision_time_buckets = [
+            NonRevocationReturnSupervisionTimeBucket(
+                'CA',
+                2015, 3,
+                StateSupervisionType.PROBATION),
         ]
 
         inclusions = {
@@ -859,13 +873,13 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
 
         # Get the number of combinations of person-event characteristics.
         num_combinations = len(calculator.characteristic_combinations(
-            fake_person, supervision_months[0], inclusions))
+            fake_person, supervision_time_buckets[0], inclusions))
         assert num_combinations > 0
 
         # Each characteristic combination will be tracked for each of the
         # months and the two methodology types
         expected_population_metric_count = \
-            num_combinations * len(supervision_months) * 2
+            num_combinations * len(supervision_time_buckets) * 2
 
         expected_combination_counts = \
             {'population': expected_population_metric_count}
@@ -873,7 +887,7 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
         test_pipeline = TestPipeline()
 
         output = (test_pipeline
-                  | beam.Create([(fake_person, supervision_months)])
+                  | beam.Create([(fake_person, supervision_time_buckets)])
                   | 'Calculate Supervision Metrics' >>
                   beam.ParDo(pipeline.CalculateSupervisionMetricCombinations(),
                              **inclusions).with_outputs('populations')
