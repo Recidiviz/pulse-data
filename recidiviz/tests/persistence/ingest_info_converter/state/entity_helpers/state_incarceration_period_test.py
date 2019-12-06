@@ -24,7 +24,8 @@ from recidiviz.common.constants.state.state_incarceration import \
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus, StateIncarcerationFacilitySecurityLevel, \
     StateIncarcerationPeriodAdmissionReason, \
-    StateIncarcerationPeriodReleaseReason
+    StateIncarcerationPeriodReleaseReason, \
+    StateSpecializedPurposeForIncarceration
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
@@ -47,6 +48,7 @@ class StateIncarcerationPeriodConverterTest(unittest.TestCase):
             projected_release_reason='CONDITIONAL_RELEASE',
             release_reason='SERVED',
             state_incarceration_period_id='INCARCERATION_ID',
+            specialized_purpose_for_incarceration='SHOCK INCARCERATION',
             admission_date='1/2/2111',
             release_date='2/2/2112',
             state_code='us_nd',
@@ -79,6 +81,10 @@ class StateIncarcerationPeriodConverterTest(unittest.TestCase):
             release_reason=
             StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
             release_reason_raw_text='SERVED',
+            specialized_purpose_for_incarceration=
+            StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
+            specialized_purpose_for_incarceration_raw_text=
+            'SHOCK INCARCERATION',
             external_id='INCARCERATION_ID',
             admission_date=date(year=2111, month=1, day=2),
             release_date=date(year=2112, month=2, day=2),

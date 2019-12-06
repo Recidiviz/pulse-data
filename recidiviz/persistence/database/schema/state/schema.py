@@ -358,6 +358,14 @@ state_program_assignment_discharge_reason = Enum(
     state_enum_strings.state_program_assignment_discharge_reason_reincarcerated,
     name='state_program_assignment_discharge_reason')
 
+state_specialized_purpose_for_incarceration = Enum(
+    state_enum_strings.
+    state_specialized_purpose_for_incarceration_shock_incarceration,
+    state_enum_strings.
+    state_specialized_purpose_for_incarceration_treatment_in_prison,
+    name='state_specialized_purpose_for_incarceration'
+)
+
 # Join tables
 
 state_supervision_sentence_incarceration_period_association_table = \
@@ -1328,6 +1336,9 @@ class _StateIncarcerationPeriodSharedColumns(
     release_reason = \
         Column(state_incarceration_period_release_reason)
     release_reason_raw_text = Column(String(255))
+    specialized_purpose_for_incarceration = \
+        Column(state_specialized_purpose_for_incarceration)
+    specialized_purpose_for_incarceration_raw_text = Column(String(255))
 
     @declared_attr
     def source_supervision_violation_response_id(self):

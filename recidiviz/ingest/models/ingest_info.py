@@ -1162,7 +1162,9 @@ class StateIncarcerationPeriod(IngestObject):
                  release_date=None, state_code=None, county_code=None,
                  facility=None, housing_unit=None, facility_security_level=None,
                  admission_reason=None, projected_release_reason=None,
-                 release_reason=None, state_incarceration_incidents=None,
+                 release_reason=None,
+                 specialized_purpose_for_incarceration=None,
+                 state_incarceration_incidents=None,
                  state_parole_decisions=None, state_assessments=None,
                  state_program_assignments=None,
                  source_supervision_violation_response=None):
@@ -1180,6 +1182,8 @@ class StateIncarcerationPeriod(IngestObject):
         self.admission_reason: Optional[str] = admission_reason
         self.projected_release_reason: Optional[str] = projected_release_reason
         self.release_reason: Optional[str] = release_reason
+        self.specialized_purpose_for_incarceration: Optional[str] = \
+            specialized_purpose_for_incarceration
 
         self.state_incarceration_incidents: List[StateIncarcerationIncident] = \
             state_incarceration_incidents or []

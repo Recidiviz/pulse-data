@@ -362,12 +362,13 @@ message StateIncarcerationPeriod {
     optional string admission_reason = 11;
     optional string projected_release_reason = 12;
     optional string release_reason = 13;
+    optional string specialized_purpose_for_incarceration = 14;
 
-    repeated string state_incarceration_incident_ids = 14;
-    repeated string state_parole_decision_ids = 15;
-    repeated string state_assessment_ids = 16;
-    repeated string state_program_assignment_ids = 17;
-    optional string source_supervision_violation_response_id = 18;
+    repeated string state_incarceration_incident_ids = 15;
+    repeated string state_parole_decision_ids = 16;
+    repeated string state_assessment_ids = 17;
+    repeated string state_program_assignment_ids = 18;
+    optional string source_supervision_violation_response_id = 19;
 }
 
 message StateSupervisionPeriod {

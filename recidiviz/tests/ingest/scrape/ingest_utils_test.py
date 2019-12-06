@@ -360,6 +360,8 @@ class TestIngestUtils:
             create_state_incarceration_period()
         incarceration_period.state_incarceration_period_id = 'ip1'
         incarceration_period.status = 'IN_CUSTODY'
+        incarceration_period.specialized_purpose_for_incarceration = \
+            'SHOCK INCARCERATION'
         incarceration_period.state_program_assignments = [program_assignment]
         incident = incarceration_period.create_state_incarceration_incident()
         incident.state_incarceration_incident_id = 'incident1'
@@ -570,6 +572,8 @@ class TestIngestUtils:
             expected_proto.state_incarceration_periods.add()
         incarceration_period_pb.state_incarceration_period_id = 'ip1'
         incarceration_period_pb.status = 'IN_CUSTODY'
+        incarceration_period_pb.specialized_purpose_for_incarceration = \
+            'SHOCK INCARCERATION'
         incarceration_period_pb.state_incarceration_incident_ids \
             .append('incident1')
         incident_pb = expected_proto.state_incarceration_incidents.add()

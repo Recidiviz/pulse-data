@@ -26,7 +26,8 @@ from recidiviz.common.constants.state.state_charge import \
     StateChargeClassificationType
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodAdmissionReason, \
-    StateIncarcerationPeriodReleaseReason, StateIncarcerationPeriodStatus
+    StateIncarcerationPeriodReleaseReason, StateIncarcerationPeriodStatus, \
+    StateSpecializedPurposeForIncarceration
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import \
     StateSupervisionType
@@ -221,6 +222,16 @@ class UsMoController(CsvGcsfsDirectIngestController):
             'ID',  # Institutional Discharge
         ],
 
+        StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION: [
+            'O',  # 120-Day Shock
+            'R',  # Regimented Disc Program
+        ],
+        StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON: [
+            'A',  # Assessment
+            'I',  # Inst Treatment Center
+            'L',  # Long Term Drug Treatment
+        ],
+
         StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE: [
             'IB',  # Institutional Administrative
             'IC',  # Institutional Release to Probation
@@ -317,7 +328,9 @@ class UsMoController(CsvGcsfsDirectIngestController):
             'CN',  # Committed New Charge- No Vio: seems erroneous
             'RV',  # Revoked: seems erroneous
         ],
-
+        StateSpecializedPurposeForIncarceration: [
+            'S',  # Serving Sentence
+        ],
         StateSupervisionPeriodTerminationReason: [
             'IB',  # Institutional Administrative: seems erroneous
             'IT',  # Institutional Release to Supervision: seems erroneous
@@ -325,7 +338,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
         StateSupervisionViolationResponseDecision: [
             'RN',     # SIS revoke to SES
             'NOREC',  # No Recommendation
-        ]
+        ],
     }
 
     def __init__(self,
