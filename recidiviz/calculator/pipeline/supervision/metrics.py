@@ -47,13 +47,13 @@ class SupervisionMetric(RecidivizMetric):
     # Year
     year: int = attr.ib(default=None)
 
-    # Month
-    month: int = attr.ib(default=None)
-
     # Optional characteristics
 
+    # Month
+    month: Optional[int] = attr.ib(default=None)
+
     # Supervision Type
-    supervision_type: StateSupervisionType = attr.ib(default=None)
+    supervision_type: Optional[StateSupervisionType] = attr.ib(default=None)
 
     @staticmethod
     def build_from_metric_key_group(metric_key: Dict[str, Any],

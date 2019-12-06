@@ -31,6 +31,7 @@ from recidiviz.common.constants.state.state_incarceration_period import \
 from recidiviz.persistence.entity.entity_utils import is_placeholder
 
 
+
 def drop_placeholder_temporary_and_missing_status_periods(
         incarceration_periods: List[StateIncarcerationPeriod]) -> \
         List[StateIncarcerationPeriod]:
@@ -227,3 +228,36 @@ def combine_incarceration_periods(start: StateIncarcerationPeriod,
     start.release_reason_raw_text = end.release_reason_raw_text
 
     return start
+
+
+def prepare_incarceration_periods_for_calculations(
+        incarceration_periods: List[StateIncarcerationPeriod]) -> \
+        List[StateIncarcerationPeriod]:
+    """Validates, sorts, and collapses the incarceration period inputs.
+
+    Ensures the necessary dates and fields are set on each incarceration period.
+    If an incarceration period is found with missing data, drops the
+    incarceration period from the calculations. Then, sorts the list of valid
+    StateIncarcerationPeriods by admission_date, and collapses the ones
+    connected by a transfer.
+    """
+
+    incarceration_periods_no_placeholders = \
+        drop_placeholder_temporary_and_missing_status_periods(
+            incarceration_periods
+        )
+
+    incarceration_periods_valid_admissions = \
+        validate_admission_data(incarceration_periods_no_placeholders)
+
+    incarceration_periods_valid_releases = \
+        validate_release_data(incarceration_periods_valid_admissions)
+
+    validated_incarceration_periods = incarceration_periods_valid_releases
+
+    validated_incarceration_periods.sort(key=lambda b: b.admission_date)
+
+    collapsed_incarceration_periods = \
+        collapse_incarceration_periods(validated_incarceration_periods)
+
+    return collapsed_incarceration_periods

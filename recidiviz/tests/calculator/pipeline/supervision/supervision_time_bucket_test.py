@@ -14,10 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for supervision/supervision_month.py."""
+"""Tests for supervision/supervision_time_bucket.py."""
 
-from recidiviz.calculator.pipeline.supervision.supervision_month import \
-    RevocationReturnSupervisionMonth, NonRevocationReturnSupervisionMonth
+from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
+    RevocationReturnSupervisionTimeBucket, \
+    NonRevocationReturnSupervisionTimeBucket
 from recidiviz.common.constants.state.state_supervision import \
     StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_violation import \
@@ -26,22 +27,22 @@ from recidiviz.common.constants.state.state_supervision_violation_response \
     import StateSupervisionViolationResponseRevocationType
 
 
-def test_supervision_month():
+def test_supervision_time_bucket():
     state_code = 'CA'
     year = 2000
     month = 11
     supervision_type = StateSupervisionType.PROBATION
 
-    supervision_month = NonRevocationReturnSupervisionMonth(
+    supervision_time_bucket = NonRevocationReturnSupervisionTimeBucket(
         state_code, year, month, supervision_type)
 
-    assert supervision_month.state_code == state_code
-    assert supervision_month.year == year
-    assert supervision_month.month == month
-    assert supervision_month.supervision_type == supervision_type
+    assert supervision_time_bucket.state_code == state_code
+    assert supervision_time_bucket.year == year
+    assert supervision_time_bucket.month == month
+    assert supervision_time_bucket.supervision_type == supervision_type
 
 
-def test_revocation_supervision_month():
+def test_revocation_supervision_time_bucket():
     state_code = 'CA'
     year = 2000
     month = 11
@@ -50,46 +51,63 @@ def test_revocation_supervision_month():
         StateSupervisionViolationResponseRevocationType.REINCARCERATION
     source_violation_type = StateSupervisionViolationType.TECHNICAL
 
-    supervision_month = RevocationReturnSupervisionMonth(
+    supervision_time_bucket = RevocationReturnSupervisionTimeBucket(
         state_code, year, month, supervision_type, revocation_type,
         source_violation_type)
 
-    assert supervision_month.state_code == state_code
-    assert supervision_month.year == year
-    assert supervision_month.month == month
-    assert supervision_month.supervision_type == supervision_type
-    assert supervision_month.revocation_type == revocation_type
-    assert supervision_month.source_violation_type == source_violation_type
+    assert supervision_time_bucket.state_code == state_code
+    assert supervision_time_bucket.year == year
+    assert supervision_time_bucket.month == month
+    assert supervision_time_bucket.supervision_type == supervision_type
+    assert supervision_time_bucket.revocation_type == revocation_type
+    assert supervision_time_bucket.source_violation_type == \
+           source_violation_type
 
 
-def test_non_revocation_supervision_month():
+def test_non_revocation_supervision_time_bucket():
     state_code = 'UT'
     year = 1999
     month = 3
 
-    supervision_month = NonRevocationReturnSupervisionMonth(
+    supervision_time_bucket = NonRevocationReturnSupervisionTimeBucket(
         state_code, year, month)
 
-    assert state_code == supervision_month.state_code
-    assert supervision_month.year == year
-    assert supervision_month.month == month
-    assert not isinstance(supervision_month, RevocationReturnSupervisionMonth)
+    assert state_code == supervision_time_bucket.state_code
+    assert supervision_time_bucket.year == year
+    assert supervision_time_bucket.month == month
+    assert not isinstance(supervision_time_bucket,
+                          RevocationReturnSupervisionTimeBucket)
+
+
+def test_supervision_time_bucket_year():
+    state_code = 'CA'
+    year = 2000
+    month = None
+    supervision_type = StateSupervisionType.PROBATION
+
+    supervision_time_bucket = NonRevocationReturnSupervisionTimeBucket(
+        state_code, year, month, supervision_type)
+
+    assert supervision_time_bucket.state_code == state_code
+    assert supervision_time_bucket.year == year
+    assert supervision_time_bucket.month == month
+    assert supervision_time_bucket.supervision_type == supervision_type
 
 
 def test_eq_different_field():
     state_code = 'CA'
     year = 2018
-    month = 1
+    month = None
     supervision_type = StateSupervisionType.PROBATION
     revocation_type = \
         StateSupervisionViolationResponseRevocationType.REINCARCERATION
     source_violation_type = StateSupervisionViolationType.TECHNICAL
 
-    first = RevocationReturnSupervisionMonth(
+    first = RevocationReturnSupervisionTimeBucket(
         state_code, year, month, supervision_type, revocation_type,
         source_violation_type)
 
-    second = RevocationReturnSupervisionMonth(
+    second = RevocationReturnSupervisionTimeBucket(
         state_code, year, 4, supervision_type, revocation_type,
         source_violation_type)
 
@@ -105,11 +123,11 @@ def test_eq_different_results():
         StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION
     source_violation_type = StateSupervisionViolationType.MUNICIPAL
 
-    first = RevocationReturnSupervisionMonth(
+    first = RevocationReturnSupervisionTimeBucket(
         state_code, year, month, supervision_type, revocation_type,
         source_violation_type)
 
-    second = NonRevocationReturnSupervisionMonth(
+    second = NonRevocationReturnSupervisionTimeBucket(
         state_code, year, month, supervision_type)
 
     assert first != second
@@ -124,10 +142,10 @@ def test_eq_different_types():
         StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION
     source_violation_type = StateSupervisionViolationType.MUNICIPAL
 
-    supervision_month = RevocationReturnSupervisionMonth(
+    supervision_time_bucket = RevocationReturnSupervisionTimeBucket(
         state_code, year, month, supervision_type, revocation_type,
         source_violation_type)
 
     different = "Everything you do is a banana"
 
-    assert supervision_month != different
+    assert supervision_time_bucket != different

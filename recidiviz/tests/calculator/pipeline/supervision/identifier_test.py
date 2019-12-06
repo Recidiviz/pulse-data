@@ -24,28 +24,32 @@ import unittest
 from freezegun import freeze_time
 
 from recidiviz.calculator.pipeline.supervision import identifier
-from recidiviz.calculator.pipeline.supervision.supervision_month import \
-    NonRevocationReturnSupervisionMonth, RevocationReturnSupervisionMonth
+from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
+    NonRevocationReturnSupervisionTimeBucket, \
+    RevocationReturnSupervisionTimeBucket
 from recidiviz.common.constants.state.state_supervision import \
     StateSupervisionType
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodAdmissionReason as AdmissionReason, \
     StateIncarcerationPeriodReleaseReason as ReleaseReason, \
     StateIncarcerationPeriodStatus
+from recidiviz.common.constants.state.state_supervision_period import \
+    StateSupervisionPeriodStatus
 from recidiviz.persistence.entity.state.entities import \
     StateSupervisionPeriod, StateIncarcerationPeriod
 
 
-class TestClassifySupervisionMonths(unittest.TestCase):
-    """Tests for the find_supervision_months function."""
+class TestClassifySupervisionTimeBuckets(unittest.TestCase):
+    """Tests for the find_supervision_time_buckets function."""
 
-    def test_find_supervision_months(self):
-        """Tests the find_supervision_months function for a single supervision
-        period with no incarceration periods."""
+    def test_find_supervision_time_buckets(self):
+        """Tests the find_supervision_time_buckets function for a single
+        supervision period with no incarceration periods."""
 
         supervision_period = \
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=111,
+                status=StateSupervisionPeriodStatus.TERMINATED,
                 state_code='UT',
                 start_date=date(2018, 3, 5),
                 termination_date=date(2018, 5, 19),
@@ -55,34 +59,39 @@ class TestClassifySupervisionMonths(unittest.TestCase):
         supervision_periods = [supervision_period]
         incarceration_periods = []
 
-        supervision_months = identifier.find_supervision_months(
+        supervision_time_buckets = identifier.find_supervision_time_buckets(
             supervision_periods, incarceration_periods
         )
 
-        assert len(supervision_months) == 3
+        self.assertEqual(len(supervision_time_buckets), 4)
 
-        assert supervision_months == [
-            NonRevocationReturnSupervisionMonth(
+        self.assertEqual(supervision_time_buckets, [
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
                 2018, 3,
                 supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
                 2018, 4,
                 supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
                 2018, 5,
-                supervision_period.supervision_type)
-        ]
+                supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_year(
+                supervision_period.state_code,
+                2018,
+                supervision_period.supervision_type),
+        ])
 
-    def test_find_supervision_months_overlaps_year(self):
-        """Tests the find_supervision_months function for a single supervision
-        period with no incarceration periods, where the supervision period
-        overlaps two calendar years."""
+    def test_find_supervision_time_buckets_overlaps_year(self):
+        """Tests the find_supervision_time_buckets function for a single
+        supervision period with no incarceration periods, where the supervision
+        period overlaps two calendar years."""
         supervision_period = \
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=111,
+                status=StateSupervisionPeriodStatus.TERMINATED,
                 state_code='UT',
                 start_date=date(2018, 3, 5),
                 termination_date=date(2019, 1, 19),
@@ -92,66 +101,75 @@ class TestClassifySupervisionMonths(unittest.TestCase):
         supervision_periods = [supervision_period]
         incarceration_periods = []
 
-        supervision_months = identifier.find_supervision_months(
+        supervision_time_buckets = identifier.find_supervision_time_buckets(
             supervision_periods, incarceration_periods
         )
 
-        assert len(supervision_months) == 11
+        self.assertEqual(len(supervision_time_buckets), 13)
 
-        assert supervision_months == [
-            NonRevocationReturnSupervisionMonth(
+        self.assertEqual(supervision_time_buckets, [
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
                 2018, 3,
                 supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
                 2018, 4,
                 supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
                 2018, 5,
                 supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
                 2018, 6,
                 supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
                 2018, 7,
                 supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
                 2018, 8,
                 supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
                 2018, 9,
                 supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
                 2018, 10,
                 supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
                 2018, 11,
                 supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
                 2018, 12,
                 supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
                 2019, 1,
+                supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_year(
+                supervision_period.state_code,
+                2018,
+                supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_year(
+                supervision_period.state_code,
+                2019,
                 supervision_period.supervision_type)
-        ]
+        ])
 
-    def test_find_supervision_months_two_supervision_periods(self):
-        """Tests the find_supervision_months function for two supervision
+    def test_find_supervision_time_buckets_two_supervision_periods(self):
+        """Tests the find_supervision_time_buckets function for two supervision
         periods with no incarceration periods."""
 
         first_supervision_period = \
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=111,
+                status=StateSupervisionPeriodStatus.TERMINATED,
                 state_code='UT',
                 start_date=date(2018, 3, 5),
                 termination_date=date(2018, 5, 19),
@@ -161,6 +179,7 @@ class TestClassifySupervisionMonths(unittest.TestCase):
         second_supervision_period = \
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=111,
+                status=StateSupervisionPeriodStatus.TERMINATED,
                 state_code='UT',
                 start_date=date(2019, 8, 5),
                 termination_date=date(2019, 12, 19),
@@ -171,47 +190,57 @@ class TestClassifySupervisionMonths(unittest.TestCase):
                                second_supervision_period]
         incarceration_periods = []
 
-        supervision_months = identifier.find_supervision_months(
+        supervision_time_buckets = identifier.find_supervision_time_buckets(
             supervision_periods, incarceration_periods
         )
 
-        assert len(supervision_months) == 8
+        self.assertEqual(len(supervision_time_buckets), 10)
 
-        assert supervision_months == [
-            NonRevocationReturnSupervisionMonth(
+        self.assertEqual(supervision_time_buckets, [
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 first_supervision_period.state_code, 2018, 3,
                 first_supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 first_supervision_period.state_code, 2018, 4,
                 first_supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 first_supervision_period.state_code, 2018, 5,
                 first_supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
-                first_supervision_period.state_code, 2019, 8,
+            NonRevocationReturnSupervisionTimeBucket.for_year(
+                first_supervision_period.state_code,
+                2018,
                 first_supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
-                first_supervision_period.state_code, 2019, 9,
-                first_supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
-                first_supervision_period.state_code, 2019, 10,
-                first_supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
-                first_supervision_period.state_code, 2019, 11,
-                first_supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
-                first_supervision_period.state_code, 2019, 12,
-                first_supervision_period.supervision_type)
-        ]
+            NonRevocationReturnSupervisionTimeBucket.for_month(
+                second_supervision_period.state_code, 2019, 8,
+                second_supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_month(
+                second_supervision_period.state_code, 2019, 9,
+                second_supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_month(
+                second_supervision_period.state_code, 2019, 10,
+                second_supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_month(
+                second_supervision_period.state_code, 2019, 11,
+                second_supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_month(
+                second_supervision_period.state_code, 2019, 12,
+                second_supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_year(
+                second_supervision_period.state_code,
+                2019,
+                second_supervision_period.supervision_type)
+        ])
 
-    def test_find_supervision_months_overlapping_supervision_periods(self):
-        """Tests the find_supervision_months function for two supervision
+    # pylint: disable=line-too-long
+    def test_find_supervision_time_buckets_overlapping_supervision_periods(self):
+        """Tests the find_supervision_time_buckets function for two supervision
         periods with no incarceration periods, where the supervision
         periods are of the same type and have overlapping months."""
 
         first_supervision_period = \
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=111,
+                status=StateSupervisionPeriodStatus.TERMINATED,
                 state_code='UT',
                 start_date=date(2018, 3, 5),
                 termination_date=date(2018, 5, 19),
@@ -220,7 +249,8 @@ class TestClassifySupervisionMonths(unittest.TestCase):
 
         second_supervision_period = \
             StateSupervisionPeriod.new_with_defaults(
-                supervision_period_id=111,
+                supervision_period_id=222,
+                status=StateSupervisionPeriodStatus.TERMINATED,
                 state_code='UT',
                 start_date=date(2018, 4, 15),
                 termination_date=date(2018, 7, 19),
@@ -231,44 +261,52 @@ class TestClassifySupervisionMonths(unittest.TestCase):
                                second_supervision_period]
         incarceration_periods = []
 
-        supervision_months = identifier.find_supervision_months(
+        supervision_time_buckets = identifier.find_supervision_time_buckets(
             supervision_periods, incarceration_periods
         )
 
-        assert len(supervision_months) == 7
+        self.assertEqual(len(supervision_time_buckets), 9)
 
-        assert supervision_months == [
-            NonRevocationReturnSupervisionMonth(
+        self.assertEqual(supervision_time_buckets, [
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 first_supervision_period.state_code, 2018, 3,
                 first_supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 first_supervision_period.state_code, 2018, 4,
                 first_supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 first_supervision_period.state_code, 2018, 5,
                 first_supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
-                first_supervision_period.state_code, 2018, 4,
+            NonRevocationReturnSupervisionTimeBucket.for_year(
+                first_supervision_period.state_code, 2018,
                 first_supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
-                first_supervision_period.state_code, 2018, 5,
-                first_supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
-                first_supervision_period.state_code, 2018, 6,
-                first_supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
-                first_supervision_period.state_code, 2018, 7,
-                first_supervision_period.supervision_type)
-        ]
+            NonRevocationReturnSupervisionTimeBucket.for_month(
+                second_supervision_period.state_code, 2018, 4,
+                second_supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_month(
+                second_supervision_period.state_code, 2018, 5,
+                second_supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_month(
+                second_supervision_period.state_code, 2018, 6,
+                second_supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_month(
+                second_supervision_period.state_code, 2018, 7,
+                second_supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_year(
+                second_supervision_period.state_code, 2018,
+                second_supervision_period.supervision_type)
+        ])
 
-    def test_find_supervision_months_overlapping_periods_different_types(self):
-        """Tests the find_supervision_months function for two supervision
+    # pylint: disable=line-too-long
+    def test_find_supervision_time_buckets_overlapping_periods_different_types(self):
+        """Tests the find_supervision_time_buckets function for two supervision
         periods with no incarceration periods, where the supervision
         periods are of different types and have overlapping months."""
 
         first_supervision_period = \
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=111,
+                status=StateSupervisionPeriodStatus.TERMINATED,
                 state_code='UT',
                 start_date=date(2018, 3, 5),
                 termination_date=date(2018, 5, 19),
@@ -277,7 +315,8 @@ class TestClassifySupervisionMonths(unittest.TestCase):
 
         second_supervision_period = \
             StateSupervisionPeriod.new_with_defaults(
-                supervision_period_id=111,
+                supervision_period_id=222,
+                status=StateSupervisionPeriodStatus.TERMINATED,
                 state_code='UT',
                 start_date=date(2018, 4, 15),
                 termination_date=date(2018, 7, 19),
@@ -288,43 +327,50 @@ class TestClassifySupervisionMonths(unittest.TestCase):
                                second_supervision_period]
         incarceration_periods = []
 
-        supervision_months = identifier.find_supervision_months(
+        supervision_time_buckets = identifier.find_supervision_time_buckets(
             supervision_periods, incarceration_periods
         )
 
-        assert len(supervision_months) == 7
+        self.assertEqual(len(supervision_time_buckets), 9)
 
-        assert supervision_months == [
-            NonRevocationReturnSupervisionMonth(
+        self.assertEqual(supervision_time_buckets, [
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 first_supervision_period.state_code, 2018, 3,
                 first_supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 first_supervision_period.state_code, 2018, 4,
                 first_supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 first_supervision_period.state_code, 2018, 5,
                 first_supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+            NonRevocationReturnSupervisionTimeBucket.for_year(
+                first_supervision_period.state_code, 2018,
+                first_supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 second_supervision_period.state_code, 2018, 4,
                 second_supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 second_supervision_period.state_code, 2018, 5,
                 second_supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 second_supervision_period.state_code, 2018, 6,
                 second_supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 second_supervision_period.state_code, 2018, 7,
+                second_supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_year(
+                second_supervision_period.state_code, 2018,
                 second_supervision_period.supervision_type)
-        ]
+        ])
 
-    def test_find_supervision_months_multiple_periods(self):
-        """Tests the find_supervision_months function for two supervision
+    def test_find_supervision_time_buckets_multiple_periods(self):
+        """Tests the find_supervision_time_buckets function for two supervision
         periods with two incarceration periods."""
 
         first_supervision_period = \
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=111,
+                status=StateSupervisionPeriodStatus.TERMINATED,
                 state_code='UT',
                 start_date=date(2017, 3, 5),
                 termination_date=date(2017, 5, 19),
@@ -345,6 +391,7 @@ class TestClassifySupervisionMonths(unittest.TestCase):
         second_supervision_period = \
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=222,
+                status=StateSupervisionPeriodStatus.TERMINATED,
                 state_code='UT',
                 start_date=date(2018, 8, 5),
                 termination_date=date(2018, 12, 19),
@@ -367,50 +414,124 @@ class TestClassifySupervisionMonths(unittest.TestCase):
         incarceration_periods = [first_incarceration_period,
                                  second_incarceration_period]
 
-        supervision_months = identifier.find_supervision_months(
+        supervision_time_buckets = identifier.find_supervision_time_buckets(
             supervision_periods, incarceration_periods
         )
 
-        assert len(supervision_months) == 8
+        self.assertEqual(len(supervision_time_buckets), 10)
 
-        assert supervision_months == [
-            NonRevocationReturnSupervisionMonth(
+        self.assertEqual(supervision_time_buckets, [
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 first_supervision_period.state_code, 2017, 3,
                 first_supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 first_supervision_period.state_code,
                 2017, 4,
                 first_supervision_period.supervision_type),
-            RevocationReturnSupervisionMonth(
+            RevocationReturnSupervisionTimeBucket.for_month(
                 first_supervision_period.state_code, 2017, 5,
                 first_supervision_period.supervision_type,
                 None, None),
-            NonRevocationReturnSupervisionMonth(
-                first_supervision_period.state_code, 2018, 8,
-                first_supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
-                first_supervision_period.state_code, 2018, 9,
-                first_supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
-                first_supervision_period.state_code, 2018, 10,
-                first_supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
-                first_supervision_period.state_code, 2018, 11,
-                first_supervision_period.supervision_type),
-            RevocationReturnSupervisionMonth(
-                first_supervision_period.state_code, 2018, 12,
+            RevocationReturnSupervisionTimeBucket.for_year(
+                first_supervision_period.state_code, 2017,
                 first_supervision_period.supervision_type,
                 None, None),
-        ]
+            NonRevocationReturnSupervisionTimeBucket.for_month(
+                second_supervision_period.state_code, 2018, 8,
+                second_supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_month(
+                second_supervision_period.state_code, 2018, 9,
+                second_supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_month(
+                second_supervision_period.state_code, 2018, 10,
+                second_supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_month(
+                second_supervision_period.state_code, 2018, 11,
+                second_supervision_period.supervision_type),
+            RevocationReturnSupervisionTimeBucket.for_month(
+                second_supervision_period.state_code, 2018, 12,
+                second_supervision_period.supervision_type,
+                None, None),
+            RevocationReturnSupervisionTimeBucket.for_year(
+                second_supervision_period.state_code, 2018,
+                second_supervision_period.supervision_type,
+                None, None),
+        ])
 
-    def test_find_supervision_months_incarceration_overlaps_periods(self):
-        """Tests the find_supervision_months function for two supervision
+    def test_find_supervision_time_buckets_multiple_admissions_in_month(self):
+        """Tests the find_supervision_time_buckets function for a supervision
+        period with two incarceration periods with admission dates in the
+        same month."""
+
+        first_supervision_period = \
+            StateSupervisionPeriod.new_with_defaults(
+                supervision_period_id=111,
+                status=StateSupervisionPeriodStatus.TERMINATED,
+                state_code='UT',
+                start_date=date(2017, 3, 5),
+                termination_date=date(2017, 5, 9),
+                supervision_type=StateSupervisionType.PROBATION
+            )
+
+        first_incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=111,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='UT',
+                admission_date=date(2017, 5, 11),
+                admission_reason=AdmissionReason.PROBATION_REVOCATION,
+                release_date=date(2017, 5, 15),
+                release_reason=ReleaseReason.CONDITIONAL_RELEASE
+            )
+
+        second_incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=222,
+                state_code='UT',
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                admission_date=date(2017, 5, 17),
+                admission_reason=AdmissionReason.PROBATION_REVOCATION,
+                release_date=date(2019, 3, 3),
+                release_reason=ReleaseReason.SENTENCE_SERVED
+            )
+
+        supervision_periods = [first_supervision_period]
+        incarceration_periods = [first_incarceration_period,
+                                 second_incarceration_period]
+
+        supervision_time_buckets = identifier.find_supervision_time_buckets(
+            supervision_periods, incarceration_periods
+        )
+
+        self.assertEqual(len(supervision_time_buckets), 4)
+
+        self.assertEqual(supervision_time_buckets, [
+            NonRevocationReturnSupervisionTimeBucket.for_month(
+                first_supervision_period.state_code, 2017, 3,
+                first_supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_month(
+                first_supervision_period.state_code,
+                2017, 4,
+                first_supervision_period.supervision_type),
+            RevocationReturnSupervisionTimeBucket.for_month(
+                first_supervision_period.state_code, 2017, 5,
+                first_supervision_period.supervision_type,
+                None, None),
+            RevocationReturnSupervisionTimeBucket.for_year(
+                first_supervision_period.state_code, 2017,
+                first_supervision_period.supervision_type,
+                None, None)
+        ])
+
+    def test_find_supervision_time_buckets_incarceration_overlaps_periods(self):
+        """Tests the find_supervision_time_buckets function for two supervision
         periods with an incarceration period that overlaps the end of one
         supervision period and the start of another."""
 
         first_supervision_period = \
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=111,
+                status=StateSupervisionPeriodStatus.TERMINATED,
                 state_code='UT',
                 start_date=date(2017, 3, 5),
                 termination_date=date(2017, 5, 19),
@@ -431,6 +552,7 @@ class TestClassifySupervisionMonths(unittest.TestCase):
         second_supervision_period = \
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=222,
+                status=StateSupervisionPeriodStatus.TERMINATED,
                 state_code='UT',
                 start_date=date(2017, 8, 5),
                 termination_date=date(2017, 12, 19),
@@ -441,46 +563,53 @@ class TestClassifySupervisionMonths(unittest.TestCase):
                                second_supervision_period]
         incarceration_periods = [incarceration_period]
 
-        supervision_months = identifier.find_supervision_months(
+        supervision_time_buckets = identifier.find_supervision_time_buckets(
             supervision_periods, incarceration_periods
         )
 
-        assert len(supervision_months) == 7
+        self.assertEqual(len(supervision_time_buckets), 9)
 
-        assert supervision_months == [
-            NonRevocationReturnSupervisionMonth(
+        self.assertEqual(supervision_time_buckets, [
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 first_supervision_period.state_code, 2017, 3,
                 first_supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
-                first_supervision_period.state_code,
-                2017, 4,
+            NonRevocationReturnSupervisionTimeBucket.for_month(
+                first_supervision_period.state_code, 2017, 4,
                 first_supervision_period.supervision_type),
-            RevocationReturnSupervisionMonth(
+            RevocationReturnSupervisionTimeBucket.for_month(
                 first_supervision_period.state_code, 2017, 5,
                 first_supervision_period.supervision_type,
                 None, None),
-            NonRevocationReturnSupervisionMonth(
+            RevocationReturnSupervisionTimeBucket.for_year(
+                first_supervision_period.state_code, 2017,
+                first_supervision_period.supervision_type,
+                None, None),
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 first_supervision_period.state_code, 2017, 9,
                 first_supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 first_supervision_period.state_code, 2017, 10,
                 first_supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 first_supervision_period.state_code, 2017, 11,
                 first_supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 first_supervision_period.state_code, 2017, 12,
-                first_supervision_period.supervision_type)
-        ]
+                first_supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_year(
+                first_supervision_period.state_code, 2017,
+                first_supervision_period.supervision_type),
+        ])
 
-    def test_find_supervision_months_return_next_month(self):
-        """Tests the find_supervision_months function
+    def test_find_supervision_time_buckets_return_next_month(self):
+        """Tests the find_supervision_time_buckets function
         when there is an incarceration period with a revocation admission
         the month after the supervision period's termination_date."""
 
         supervision_period = \
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=111,
+                status=StateSupervisionPeriodStatus.TERMINATED,
                 state_code='UT',
                 start_date=date(2018, 3, 5),
                 termination_date=date(2018, 5, 19),
@@ -499,35 +628,94 @@ class TestClassifySupervisionMonths(unittest.TestCase):
         supervision_periods = [supervision_period]
         incarceration_periods = [incarceration_period]
 
-        supervision_months = identifier.find_supervision_months(
+        supervision_time_buckets = identifier.find_supervision_time_buckets(
             supervision_periods, incarceration_periods
         )
 
-        assert len(supervision_months) == 4
+        self.assertEqual(len(supervision_time_buckets), 5)
 
-        assert supervision_months == [
-            NonRevocationReturnSupervisionMonth(
+        self.assertEqual(supervision_time_buckets, [
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
                 2018, 3, supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
                 2018, 4, supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
                 2018, 5, supervision_period.supervision_type),
-            RevocationReturnSupervisionMonth(
+            RevocationReturnSupervisionTimeBucket.for_month(
                 incarceration_period.state_code,
-                2018, 6, StateSupervisionType.PROBATION, None, None)
-        ]
+                2018, 6, StateSupervisionType.PROBATION, None, None),
+            RevocationReturnSupervisionTimeBucket.for_year(
+                incarceration_period.state_code,
+                2018, StateSupervisionType.PROBATION, None, None)
+        ])
 
-    def test_find_supervision_months_return_months_later(self):
-        """Tests the find_supervision_months function
+    def test_find_supervision_time_buckets_return_next_year(self):
+        """Tests the find_supervision_time_buckets function
+        when there is an incarceration period with a revocation admission
+        the month after the supervision period's termination_date, where the
+        revocation admission happens in the next year."""
+
+        supervision_period = \
+            StateSupervisionPeriod.new_with_defaults(
+                supervision_period_id=111,
+                status=StateSupervisionPeriodStatus.TERMINATED,
+                state_code='UT',
+                start_date=date(2018, 10, 5),
+                termination_date=date(2018, 12, 19),
+                supervision_type=StateSupervisionType.PROBATION
+            )
+
+        incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=111,
+                status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+                state_code='UT',
+                admission_date=date(2019, 1, 5),
+                admission_reason=AdmissionReason.PROBATION_REVOCATION
+            )
+
+        supervision_periods = [supervision_period]
+        incarceration_periods = [incarceration_period]
+
+        supervision_time_buckets = identifier.find_supervision_time_buckets(
+            supervision_periods, incarceration_periods
+        )
+
+        # self.assertEqual(len(supervision_time_buckets), 6)
+
+        self.assertEqual(supervision_time_buckets, [
+            NonRevocationReturnSupervisionTimeBucket.for_month(
+                supervision_period.state_code,
+                2018, 10, supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_month(
+                supervision_period.state_code,
+                2018, 11, supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_month(
+                supervision_period.state_code,
+                2018, 12, supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_year(
+                supervision_period.state_code,
+                2018, supervision_period.supervision_type),
+            RevocationReturnSupervisionTimeBucket.for_month(
+                incarceration_period.state_code,
+                2019, 1, StateSupervisionType.PROBATION, None, None),
+            RevocationReturnSupervisionTimeBucket.for_year(
+                incarceration_period.state_code,
+                2019, StateSupervisionType.PROBATION, None, None),
+        ])
+
+    def test_find_supervision_time_buckets_return_months_later(self):
+        """Tests the find_supervision_time_buckets function
         when there is an incarceration period with a revocation admission
         months after the supervision period's termination_date."""
 
         supervision_period = \
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=111,
+                status=StateSupervisionPeriodStatus.TERMINATED,
                 state_code='UT',
                 start_date=date(2018, 3, 5),
                 termination_date=date(2018, 5, 19),
@@ -546,39 +734,230 @@ class TestClassifySupervisionMonths(unittest.TestCase):
         supervision_periods = [supervision_period]
         incarceration_periods = [incarceration_period]
 
-        supervision_months = identifier.find_supervision_months(
+        supervision_time_buckets = identifier.find_supervision_time_buckets(
             supervision_periods, incarceration_periods
         )
 
-        assert len(supervision_months) == 4
+        self.assertEqual(len(supervision_time_buckets), 5)
 
-        assert supervision_months == [
-            NonRevocationReturnSupervisionMonth(
+        self.assertEqual(supervision_time_buckets, [
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
                 2018, 3, supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
                 2018, 4, supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
                 2018, 5, supervision_period.supervision_type),
-            RevocationReturnSupervisionMonth(
+            RevocationReturnSupervisionTimeBucket.for_month(
                 incarceration_period.state_code,
-                2018, 10, StateSupervisionType.PROBATION, None, None)
-        ]
+                2018, 10, StateSupervisionType.PROBATION, None, None),
+            RevocationReturnSupervisionTimeBucket.for_year(
+                incarceration_period.state_code,
+                2018, StateSupervisionType.PROBATION, None, None)
+        ])
+
+    def test_find_supervision_time_buckets_return_years_later(self):
+        """Tests the find_supervision_time_buckets function
+        when there is an incarceration period with a revocation admission
+        years after the supervision period's termination_date."""
+
+        supervision_period = \
+            StateSupervisionPeriod.new_with_defaults(
+                supervision_period_id=111,
+                status=StateSupervisionPeriodStatus.TERMINATED,
+                state_code='UT',
+                start_date=date(2015, 3, 5),
+                termination_date=date(2015, 5, 19),
+                supervision_type=StateSupervisionType.PROBATION
+            )
+
+        incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=111,
+                status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+                state_code='UT',
+                admission_date=date(2017, 10, 25),
+                admission_reason=AdmissionReason.PROBATION_REVOCATION
+            )
+
+        supervision_periods = [supervision_period]
+        incarceration_periods = [incarceration_period]
+
+        supervision_time_buckets = identifier.find_supervision_time_buckets(
+            supervision_periods, incarceration_periods
+        )
+
+        self.assertEqual(len(supervision_time_buckets), 6)
+
+        self.assertEqual(supervision_time_buckets, [
+            NonRevocationReturnSupervisionTimeBucket.for_month(
+                supervision_period.state_code,
+                2015, 3, supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_month(
+                supervision_period.state_code,
+                2015, 4, supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_month(
+                supervision_period.state_code,
+                2015, 5, supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_year(
+                supervision_period.state_code,
+                2015, supervision_period.supervision_type),
+            RevocationReturnSupervisionTimeBucket.for_month(
+                incarceration_period.state_code,
+                2017, 10, StateSupervisionType.PROBATION, None, None),
+            RevocationReturnSupervisionTimeBucket.for_year(
+                incarceration_period.state_code,
+                2017, StateSupervisionType.PROBATION, None, None),
+        ])
+
+    def test_find_supervision_time_buckets_multiple_periods_revocations(self):
+        """Tests the find_supervision_time_buckets function
+        when the person is revoked and returned to supervision twice in one
+        year."""
+
+        first_supervision_period = \
+            StateSupervisionPeriod.new_with_defaults(
+                supervision_period_id=111,
+                status=StateSupervisionPeriodStatus.TERMINATED,
+                state_code='UT',
+                start_date=date(2018, 1, 5),
+                termination_date=date(2018, 12, 19),
+                supervision_type=StateSupervisionType.PAROLE
+            )
+
+        first_incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=111,
+                status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+                state_code='UT',
+                admission_date=date(2018, 3, 25),
+                admission_reason=AdmissionReason.PAROLE_REVOCATION,
+                release_date=date(2018, 8, 2),
+                release_reason=ReleaseReason.CONDITIONAL_RELEASE
+            )
+
+        second_incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=111,
+                status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+                state_code='UT',
+                admission_date=date(2018, 9, 25),
+                admission_reason=AdmissionReason.PAROLE_REVOCATION,
+                release_date=date(2018, 12, 2),
+                release_reason=ReleaseReason.CONDITIONAL_RELEASE
+            )
+
+        supervision_periods = [first_supervision_period]
+        incarceration_periods = [first_incarceration_period,
+                                 second_incarceration_period]
+
+        supervision_time_buckets = identifier.find_supervision_time_buckets(
+            supervision_periods, incarceration_periods
+        )
+
+        self.assertEqual(len(supervision_time_buckets), 9)
+
+        self.assertEqual(supervision_time_buckets, [
+            NonRevocationReturnSupervisionTimeBucket.for_month(
+                first_supervision_period.state_code,
+                2018, 1, first_supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_month(
+                first_supervision_period.state_code,
+                2018, 2, first_supervision_period.supervision_type),
+            RevocationReturnSupervisionTimeBucket.for_month(
+                first_supervision_period.state_code,
+                2018, 3, first_supervision_period.supervision_type, None, None),
+            NonRevocationReturnSupervisionTimeBucket.for_month(
+                first_supervision_period.state_code,
+                2018, 8, first_supervision_period.supervision_type),
+            RevocationReturnSupervisionTimeBucket.for_month(
+                first_supervision_period.state_code,
+                2018, 9, first_supervision_period.supervision_type, None, None),
+            NonRevocationReturnSupervisionTimeBucket.for_month(
+                first_supervision_period.state_code,
+                2018, 12, first_supervision_period.supervision_type),
+            RevocationReturnSupervisionTimeBucket.for_year(
+                first_supervision_period.state_code,
+                2018, first_supervision_period.supervision_type, None, None),
+            RevocationReturnSupervisionTimeBucket.for_year(
+                first_supervision_period.state_code,
+                2018, first_supervision_period.supervision_type, None, None),
+            NonRevocationReturnSupervisionTimeBucket.for_year(
+                first_incarceration_period.state_code,
+                2018, first_supervision_period.supervision_type),
+        ])
+
+    def test_find_supervision_time_buckets_placeholders(self):
+        """Tests the find_supervision_time_buckets function
+        when there are placeholder supervision periods that should be dropped
+        from the calculations."""
+
+        supervision_period = \
+            StateSupervisionPeriod.new_with_defaults(
+                supervision_period_id=111,
+                status=StateSupervisionPeriodStatus.TERMINATED,
+                state_code='UT',
+                start_date=date(2018, 3, 5),
+                termination_date=date(2018, 5, 19),
+                supervision_type=StateSupervisionType.PROBATION
+            )
+
+        supervision_period_placeholder = \
+            StateSupervisionPeriod.new_with_defaults(
+                supervision_period_id=111,
+                status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+                state_code='UT',
+            )
+
+        incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=111,
+                status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+                state_code='UT',
+                admission_date=date(2018, 5, 25),
+                admission_reason=AdmissionReason.PROBATION_REVOCATION
+            )
+
+        supervision_periods = [supervision_period,
+                               supervision_period_placeholder]
+        incarceration_periods = [incarceration_period]
+
+        supervision_time_buckets = identifier.find_supervision_time_buckets(
+            supervision_periods, incarceration_periods
+        )
+
+        self.assertEqual(len(supervision_time_buckets), 4)
+
+        self.assertEqual(supervision_time_buckets, [
+            NonRevocationReturnSupervisionTimeBucket.for_month(
+                supervision_period.state_code,
+                2018, 3, supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_month(
+                supervision_period.state_code,
+                2018, 4, supervision_period.supervision_type),
+            RevocationReturnSupervisionTimeBucket.for_month(
+                supervision_period.state_code,
+                2018, 5, supervision_period.supervision_type, None, None),
+            RevocationReturnSupervisionTimeBucket.for_year(
+                incarceration_period.state_code,
+                2018, StateSupervisionType.PROBATION, None, None),
+        ])
 
 
 class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
     """Tests for the find_months_for_supervision_period function."""
 
-    def test_find_months_for_supervision_period_revocation(self):
-        """Tests the find_months_for_supervision_period function
+    def test_find_time_buckets_for_supervision_period_revocation(self):
+        """Tests the find_time_buckets_for_supervision_period function
         when there is an incarceration period with a revocation admission
         in the same month as the supervision period's termination_date."""
 
         supervision_period = \
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=111,
+                status=StateSupervisionPeriodStatus.TERMINATED,
                 state_code='UT',
                 start_date=date(2018, 3, 5),
                 termination_date=date(2018, 5, 19),
@@ -588,6 +967,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
         incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=111,
+                status=StateIncarcerationPeriodStatus.IN_CUSTODY,
                 state_code='UT',
                 admission_date=date(2018, 5, 25),
                 admission_reason=AdmissionReason.PROBATION_REVOCATION
@@ -598,34 +978,35 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 [incarceration_period])
 
         months_of_incarceration = identifier.identify_months_of_incarceration(
-            [incarceration_period]
-        )
+            [incarceration_period])
 
-        supervision_months = identifier.find_months_for_supervision_period(
-            supervision_period, indexed_incarceration_periods,
-            months_of_incarceration
-        )
+        supervision_time_buckets = \
+            identifier.find_time_buckets_for_supervision_period(
+                supervision_period, indexed_incarceration_periods,
+                months_of_incarceration
+            )
 
-        assert len(supervision_months) == 3
+        self.assertEqual(len(supervision_time_buckets), 4)
 
-        assert supervision_months == [
-            NonRevocationReturnSupervisionMonth(
+        self.assertEqual(supervision_time_buckets, [
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
-                2018, 3,
-                supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+                2018, 3, supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
-                2018, 4,
-                supervision_period.supervision_type),
-            RevocationReturnSupervisionMonth(
+                2018, 4, supervision_period.supervision_type),
+            RevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
-                2018, 5,
-                supervision_period.supervision_type,
+                2018, 5, supervision_period.supervision_type,
+                None, None),
+            RevocationReturnSupervisionTimeBucket.for_year(
+                supervision_period.state_code,
+                2018, supervision_period.supervision_type,
                 None, None)
-        ]
+        ])
 
-    def test_find_months_for_supervision_period_nested_revocation(self):
-        """Tests the find_months_for_supervision_period function
+    def test_find_time_buckets_for_supervision_period_nested_revocation(self):
+        """Tests the find_time_buckets_for_supervision_period function
         when there is an incarceration period with a revocation admission,
         a stay in prison, and a continued supervision period after release
         from incarceration."""
@@ -653,47 +1034,56 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 [incarceration_period])
 
         months_of_incarceration = identifier.identify_months_of_incarceration(
-            [incarceration_period]
-        )
+            [incarceration_period])
 
-        supervision_months = identifier.find_months_for_supervision_period(
-            supervision_period, indexed_incarceration_periods,
-            months_of_incarceration
-        )
+        supervision_time_buckets = \
+            identifier.find_time_buckets_for_supervision_period(
+                supervision_period, indexed_incarceration_periods,
+                months_of_incarceration
+            )
 
-        assert len(supervision_months) == 6
+        self.assertEqual(len(supervision_time_buckets), 8)
 
-        assert supervision_months == [
-            NonRevocationReturnSupervisionMonth(
+        self.assertEqual(supervision_time_buckets, [
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
                 2018, 3,
                 supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
                 2018, 4,
                 supervision_period.supervision_type),
-            RevocationReturnSupervisionMonth(
+            RevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
                 2018, 5,
                 supervision_period.supervision_type,
                 None, None),
-            NonRevocationReturnSupervisionMonth(
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
                 2018, 10,
                 supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
                 2018, 11,
                 supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
                 2018, 12,
-                supervision_period.supervision_type)
-        ]
+                supervision_period.supervision_type),
+            RevocationReturnSupervisionTimeBucket.for_year(
+                supervision_period.state_code,
+                2018,
+                supervision_period.supervision_type,
+                None, None),
+            NonRevocationReturnSupervisionTimeBucket.for_year(
+                supervision_period.state_code,
+                2018,
+                supervision_period.supervision_type),
+        ])
 
     # pylint: disable=line-too-long
-    def test_find_months_for_supervision_period_revocation_before_termination(self):
-        """Tests the find_months_for_supervision_period function
+    def test_find_time_buckets_for_supervision_period_revocation_before_termination(self):
+        """Tests the find_time_buckets_for_supervision_period function
         when there is an incarceration period with a revocation admission
         before the supervision period's termination_date, but in the same
         month as the termination_date."""
@@ -720,35 +1110,35 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 [incarceration_period])
 
         months_of_incarceration = identifier.identify_months_of_incarceration(
-            [incarceration_period]
-        )
+            [incarceration_period])
 
-        supervision_months = identifier.find_months_for_supervision_period(
-            supervision_period, indexed_incarceration_periods,
-            months_of_incarceration
-        )
+        supervision_time_buckets = \
+            identifier.find_time_buckets_for_supervision_period(
+                supervision_period, indexed_incarceration_periods,
+                months_of_incarceration
+            )
 
-        assert len(supervision_months) == 3
+        self.assertEqual(len(supervision_time_buckets), 4)
 
-        assert supervision_months == [
-            NonRevocationReturnSupervisionMonth(
+        self.assertEqual(supervision_time_buckets, [
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
-                2018, 3,
-                supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+                2018, 3, supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
-                2018, 4,
-                supervision_period.supervision_type),
-            RevocationReturnSupervisionMonth(
+                2018, 4, supervision_period.supervision_type),
+            RevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
-                2018, 5,
-                supervision_period.supervision_type,
-                None, None)
-        ]
+                2018, 5, supervision_period.supervision_type,
+                None, None),
+            RevocationReturnSupervisionTimeBucket.for_year(
+                supervision_period.state_code,
+                2018, supervision_period.supervision_type, None, None)
+        ])
 
     # pylint: disable=line-too-long
-    def test_find_months_for_supervision_period_revocation_before_termination_month(self):
-        """Tests the find_months_for_supervision_period function
+    def test_find_time_buckets_for_supervision_period_revocation_before_termination_month(self):
+        """Tests the find_time_buckets_for_supervision_period function
         when there is an incarceration period with a revocation admission
         before the supervision period's termination_date, and in a different
         month as the termination_date."""
@@ -775,34 +1165,35 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 [incarceration_period])
 
         months_of_incarceration = identifier.identify_months_of_incarceration(
-            [incarceration_period]
-        )
+            [incarceration_period])
 
-        supervision_months = identifier.find_months_for_supervision_period(
-            supervision_period, indexed_incarceration_periods,
-            months_of_incarceration
-        )
+        supervision_time_buckets = \
+            identifier.find_time_buckets_for_supervision_period(
+                supervision_period, indexed_incarceration_periods,
+                months_of_incarceration
+            )
 
-        assert len(supervision_months) == 3
+        self.assertEqual(len(supervision_time_buckets), 4)
 
-        assert supervision_months == [
-            NonRevocationReturnSupervisionMonth(
+        self.assertEqual(supervision_time_buckets, [
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
-                2018, 3,
-                supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+                2018, 3, supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
-                2018, 4,
-                supervision_period.supervision_type),
-            RevocationReturnSupervisionMonth(
+                2018, 4, supervision_period.supervision_type),
+            RevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
-                2018, 5,
-                supervision_period.supervision_type,
-                None, None)
-        ]
+                2018, 5, supervision_period.supervision_type,
+                None, None),
+            RevocationReturnSupervisionTimeBucket.for_year(
+                supervision_period.state_code,
+                2018, supervision_period.supervision_type, None, None)
+        ])
 
-    def test_find_months_for_supervision_period_revocation_no_termination(self):
-        """Tests the find_months_for_supervision_period function
+    # pylint: disable=line-too-long
+    def test_find_time_buckets_for_supervision_period_revocation_no_termination(self):
+        """Tests the find_time_buckets_for_supervision_period function
         when there is an incarceration period with a revocation admission,
         where there is no termination_date on the supervision_period, and
         no release_date on the incarceration_period."""
@@ -828,40 +1219,39 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 [incarceration_period])
 
         months_of_incarceration = identifier.identify_months_of_incarceration(
-            [incarceration_period]
-        )
+            [incarceration_period])
 
-        supervision_months = identifier.find_months_for_supervision_period(
-            supervision_period, indexed_incarceration_periods,
-            months_of_incarceration
-        )
+        supervision_time_buckets = \
+            identifier.find_time_buckets_for_supervision_period(
+                supervision_period, indexed_incarceration_periods,
+                months_of_incarceration
+            )
 
-        assert len(supervision_months) == 4
+        self.assertEqual(len(supervision_time_buckets), 5)
 
-        assert supervision_months == [
-            NonRevocationReturnSupervisionMonth(
+        self.assertEqual(supervision_time_buckets, [
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
-                2003, 7,
-                supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+                2003, 7, supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
-                2003, 8,
-                supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+                2003, 8, supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
-                2003, 9,
-                supervision_period.supervision_type),
-            RevocationReturnSupervisionMonth(
+                2003, 9, supervision_period.supervision_type),
+            RevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
-                2003, 10,
-                supervision_period.supervision_type,
-                None, None)
-        ]
+                2003, 10, supervision_period.supervision_type,
+                None, None),
+            RevocationReturnSupervisionTimeBucket.for_year(
+                supervision_period.state_code,
+                2003, supervision_period.supervision_type, None, None)
+        ])
 
     # pylint: disable=line-too-long
     @freeze_time('2019-11-03')
-    def test_find_months_for_supervision_period_nested_revocation_no_termination(self):
-        """Tests the find_months_for_supervision_period function
+    def test_find_time_buckets_for_supervision_period_nested_revocation_no_termination(self):
+        """Tests the find_time_buckets_for_supervision_period function
         when there is an incarceration period with a revocation admission,
         a stay in prison, and a continued supervision period after release
         from incarceration that has still not terminated."""
@@ -888,43 +1278,44 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 [incarceration_period])
 
         months_of_incarceration = identifier.identify_months_of_incarceration(
-            [incarceration_period]
-        )
+            [incarceration_period])
 
-        supervision_months = identifier.find_months_for_supervision_period(
-            supervision_period, indexed_incarceration_periods,
-            months_of_incarceration
-        )
+        supervision_time_buckets = \
+            identifier.find_time_buckets_for_supervision_period(
+                supervision_period, indexed_incarceration_periods,
+                months_of_incarceration
+            )
 
-        assert len(supervision_months) == 5
+        self.assertEqual(len(supervision_time_buckets), 7)
 
-        assert supervision_months == [
-            NonRevocationReturnSupervisionMonth(
+        self.assertEqual(supervision_time_buckets, [
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
-                2019, 3,
-                supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+                2019, 3, supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
-                2019, 4,
-                supervision_period.supervision_type),
-            RevocationReturnSupervisionMonth(
+                2019, 4, supervision_period.supervision_type),
+            RevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
-                2019, 5,
-                supervision_period.supervision_type,
+                2019, 5, supervision_period.supervision_type,
                 None, None),
-            NonRevocationReturnSupervisionMonth(
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
-                2019, 10,
-                supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+                2019, 10, supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
-                2019, 11,
-                supervision_period.supervision_type),
-        ]
+                2019, 11, supervision_period.supervision_type),
+            RevocationReturnSupervisionTimeBucket.for_year(
+                supervision_period.state_code,
+                2019, supervision_period.supervision_type, None, None),
+            NonRevocationReturnSupervisionTimeBucket.for_year(
+                supervision_period.state_code,
+                2019, supervision_period.supervision_type),
+        ])
 
     @freeze_time('2019-09-04')
-    def test_find_months_for_supervision_period_admission_today(self):
-        """Tests the find_months_for_supervision_period function
+    def test_find_time_buckets_for_supervision_period_admission_today(self):
+        """Tests the find_time_buckets_for_supervision_period function
         when there is an incarceration period with a revocation admission today,
         where there is no termination_date on the supervision_period, and
         no release_date on the incarceration_period."""
@@ -950,38 +1341,37 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 [incarceration_period])
 
         months_of_incarceration = identifier.identify_months_of_incarceration(
-            [incarceration_period]
-        )
+            [incarceration_period])
 
-        supervision_months = identifier.find_months_for_supervision_period(
-            supervision_period, indexed_incarceration_periods,
-            months_of_incarceration
-        )
+        supervision_time_buckets = \
+            identifier.find_time_buckets_for_supervision_period(
+                supervision_period, indexed_incarceration_periods,
+                months_of_incarceration
+            )
+        self.assertEqual(len(supervision_time_buckets), 5)
 
-        assert len(supervision_months) == 4
+        self.assertEqual(supervision_time_buckets, [
+            NonRevocationReturnSupervisionTimeBucket.for_month(
+                supervision_period.state_code,
+                2019, 6, supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_month(
+                supervision_period.state_code,
+                2019, 7, supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_month(
+                supervision_period.state_code,
+                2019, 8, supervision_period.supervision_type),
+            RevocationReturnSupervisionTimeBucket.for_month(
+                supervision_period.state_code,
+                2019, 9, supervision_period.supervision_type,
+                None, None),
+            RevocationReturnSupervisionTimeBucket.for_year(
+                supervision_period.state_code,
+                2019, supervision_period.supervision_type, None, None)
+        ])
 
-        assert supervision_months == [
-            NonRevocationReturnSupervisionMonth(
-                supervision_period.state_code,
-                2019, 6,
-                supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
-                supervision_period.state_code,
-                2019, 7,
-                supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
-                supervision_period.state_code,
-                2019, 8,
-                supervision_period.supervision_type),
-            RevocationReturnSupervisionMonth(
-                supervision_period.state_code,
-                2019, 9,
-                supervision_period.supervision_type,
-                None, None)
-        ]
-
-    def test_find_months_for_supervision_period_admission_no_revocation(self):
-        """Tests the find_months_for_supervision_period function
+    # pylint: disable=line-too-long
+    def test_find_time_buckets_for_supervision_period_admission_no_revocation(self):
+        """Tests the find_time_buckets_for_supervision_period function
         when there is an incarceration period with a non-revocation admission
         before the supervision period's termination_date."""
 
@@ -1007,37 +1397,41 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 [incarceration_period])
 
         months_of_incarceration = identifier.identify_months_of_incarceration(
-            [incarceration_period]
-        )
+            [incarceration_period])
 
-        supervision_months = identifier.find_months_for_supervision_period(
-            supervision_period, indexed_incarceration_periods,
-            months_of_incarceration
-        )
+        supervision_time_buckets = \
+            identifier.find_time_buckets_for_supervision_period(
+                supervision_period, indexed_incarceration_periods,
+                months_of_incarceration
+            )
 
-        assert len(supervision_months) == 4
+        self.assertEqual(len(supervision_time_buckets), 5)
 
-        assert supervision_months == [
-            NonRevocationReturnSupervisionMonth(
+        self.assertEqual(supervision_time_buckets, [
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
                 2018, 3,
                 supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
                 2018, 4,
                 supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
                 2018, 5,
                 supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
                 2018, 6,
+                supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_year(
+                supervision_period.state_code,
+                2018,
                 supervision_period.supervision_type)
-        ]
+        ])
 
-    def test_find_months_for_supervision_period_mismatch_types(self):
-        """Tests the find_months_for_supervision_period function
+    def test_find_time_buckets_for_supervision_period_mismatch_types(self):
+        """Tests the find_time_buckets_for_supervision_period function
         when there is an incarceration period with a revocation admission
         that does not match the supervision period type."""
 
@@ -1063,37 +1457,270 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 [incarceration_period])
 
         months_of_incarceration = identifier.identify_months_of_incarceration(
-            [incarceration_period]
-        )
+            [incarceration_period])
 
-        supervision_months = identifier.find_months_for_supervision_period(
-            supervision_period, indexed_incarceration_periods,
-            months_of_incarceration
-        )
+        supervision_time_buckets = \
+            identifier.find_time_buckets_for_supervision_period(
+                supervision_period, indexed_incarceration_periods,
+                months_of_incarceration
+            )
 
-        assert len(supervision_months) == 4
+        self.assertEqual(len(supervision_time_buckets), 5)
 
-        assert supervision_months == [
-            NonRevocationReturnSupervisionMonth(
+        self.assertEqual(supervision_time_buckets, [
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
-                2018, 3,
-                supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+                2018, 3, supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
-                2018, 4,
-                supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+                2018, 4, supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
-                2018, 5,
-                supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+                2018, 5, supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
-                2018, 6,
-                supervision_period.supervision_type)
-        ]
+                2018, 6, supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_year(
+                supervision_period.state_code,
+                2018, supervision_period.supervision_type)
+        ])
 
-    def test_find_months_for_supervision_period_ends_on_first(self):
-        """Tests the find_months_for_supervision_period function for a
+    # pylint: disable=line-too-long
+    def test_find_time_buckets_for_supervision_period_multiple_incarcerations_in_year(self):
+        """Tests the find_time_buckets_for_supervision_period function
+        when there are multiple incarceration periods in the year of
+        supervision."""
+
+        supervision_period = \
+            StateSupervisionPeriod.new_with_defaults(
+                supervision_period_id=111,
+                status=StateSupervisionPeriodStatus.TERMINATED,
+                state_code='UT',
+                start_date=date(2018, 3, 5),
+                termination_date=date(2018, 6, 19),
+                supervision_type=StateSupervisionType.PAROLE
+            )
+
+        first_incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=111,
+                state_code='UT',
+                admission_date=date(2018, 6, 2),
+                admission_reason=AdmissionReason.PAROLE_REVOCATION,
+                release_date=date(2018, 9, 3),
+                release_reason=date(2018, 10, 30)
+            )
+
+        second_incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=222,
+                state_code='UT',
+                admission_date=date(2018, 11, 17),
+                admission_reason=AdmissionReason.PAROLE_REVOCATION
+            )
+
+        indexed_incarceration_periods = \
+            identifier.index_incarceration_periods_by_admission_month(
+                [first_incarceration_period, second_incarceration_period])
+
+        months_of_incarceration = identifier.identify_months_of_incarceration(
+            [first_incarceration_period, second_incarceration_period])
+
+        supervision_time_buckets = \
+            identifier.find_time_buckets_for_supervision_period(
+                supervision_period, indexed_incarceration_periods,
+                months_of_incarceration
+            )
+
+        self.assertEqual(len(supervision_time_buckets), 5)
+
+        self.assertEqual(supervision_time_buckets, [
+            NonRevocationReturnSupervisionTimeBucket.for_month(
+                supervision_period.state_code,
+                2018, 3, supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_month(
+                supervision_period.state_code,
+                2018, 4, supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_month(
+                supervision_period.state_code,
+                2018, 5, supervision_period.supervision_type),
+            RevocationReturnSupervisionTimeBucket.for_month(
+                supervision_period.state_code,
+                2018, 6, supervision_period.supervision_type, None, None),
+            RevocationReturnSupervisionTimeBucket.for_year(
+                supervision_period.state_code,
+                2018, supervision_period.supervision_type, None, None)
+        ])
+
+    # pylint: disable=line-too-long
+    def test_find_time_buckets_for_supervision_period_multiple_incarcerations_overlap(
+            self):
+        """Tests the find_time_buckets_for_supervision_period function when
+        there are multiple incarceration periods in the year of supervision,
+        and the supervision overlaps both incarcerations."""
+
+        supervision_period = \
+            StateSupervisionPeriod.new_with_defaults(
+                supervision_period_id=111,
+                status=StateSupervisionPeriodStatus.TERMINATED,
+                state_code='UT',
+                start_date=date(2018, 3, 5),
+                termination_date=date(2018, 12, 30),
+                supervision_type=StateSupervisionType.PROBATION
+            )
+
+        first_incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=111,
+                state_code='UT',
+                admission_date=date(2018, 6, 2),
+                admission_reason=AdmissionReason.PROBATION_REVOCATION,
+                release_date=date(2018, 9, 3),
+                release_reason=ReleaseReason.CONDITIONAL_RELEASE
+            )
+
+        second_incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=222,
+                state_code='UT',
+                admission_date=date(2018, 11, 17),
+                admission_reason=AdmissionReason.PROBATION_REVOCATION,
+                release_date=date(2018, 12, 3),
+                release_reason=ReleaseReason.SENTENCE_SERVED
+            )
+
+        indexed_incarceration_periods = \
+            identifier.index_incarceration_periods_by_admission_month(
+                [first_incarceration_period, second_incarceration_period])
+
+        months_of_incarceration = identifier.identify_months_of_incarceration(
+            [first_incarceration_period, second_incarceration_period])
+
+        supervision_time_buckets = \
+            identifier.find_time_buckets_for_supervision_period(
+                supervision_period, indexed_incarceration_periods,
+                months_of_incarceration
+            )
+
+        self.assertEqual(len(supervision_time_buckets), 11)
+
+        self.assertEqual(supervision_time_buckets, [
+            NonRevocationReturnSupervisionTimeBucket.for_month(
+                supervision_period.state_code,
+                2018, 3, supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_month(
+                supervision_period.state_code,
+                2018, 4, supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_month(
+                supervision_period.state_code,
+                2018, 5, supervision_period.supervision_type),
+            RevocationReturnSupervisionTimeBucket.for_month(
+                supervision_period.state_code,
+                2018, 6, supervision_period.supervision_type, None, None),
+            NonRevocationReturnSupervisionTimeBucket.for_month(
+                supervision_period.state_code,
+                2018, 9, supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_month(
+                supervision_period.state_code,
+                2018, 10, supervision_period.supervision_type),
+            RevocationReturnSupervisionTimeBucket.for_month(
+                supervision_period.state_code,
+                2018, 11, supervision_period.supervision_type, None, None),
+            NonRevocationReturnSupervisionTimeBucket.for_month(
+                supervision_period.state_code,
+                2018, 12, supervision_period.supervision_type),
+            RevocationReturnSupervisionTimeBucket.for_year(
+                supervision_period.state_code,
+                2018, supervision_period.supervision_type, None, None),
+            RevocationReturnSupervisionTimeBucket.for_year(
+                supervision_period.state_code,
+                2018, supervision_period.supervision_type, None, None),
+            NonRevocationReturnSupervisionTimeBucket.for_year(
+                supervision_period.state_code,
+                2018, supervision_period.supervision_type)
+        ])
+
+    # pylint: disable=line-too-long
+    def test_find_time_buckets_for_supervision_period_multiple_years(
+            self):
+        """Tests the find_time_buckets_for_supervision_period function when
+        the supervision period overlaps multiple years, and there is an
+        incarceration period during this time that also overlaps multiple
+        years."""
+
+        supervision_period = \
+            StateSupervisionPeriod.new_with_defaults(
+                supervision_period_id=111,
+                status=StateSupervisionPeriodStatus.TERMINATED,
+                state_code='UT',
+                start_date=date(2008, 3, 5),
+                termination_date=date(2010, 3, 19),
+                supervision_type=StateSupervisionType.PROBATION
+            )
+
+        first_incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=111,
+                state_code='UT',
+                admission_date=date(2008, 6, 2),
+                admission_reason=AdmissionReason.PROBATION_REVOCATION,
+                release_date=date(2009, 12, 3),
+                release_reason=ReleaseReason.CONDITIONAL_RELEASE
+            )
+
+        indexed_incarceration_periods = \
+            identifier.index_incarceration_periods_by_admission_month(
+                [first_incarceration_period])
+
+        months_of_incarceration = identifier.identify_months_of_incarceration(
+            [first_incarceration_period])
+
+        supervision_time_buckets = \
+            identifier.find_time_buckets_for_supervision_period(
+                supervision_period, indexed_incarceration_periods,
+                months_of_incarceration
+            )
+
+        self.assertEqual(len(supervision_time_buckets), 11)
+
+        self.assertEqual(supervision_time_buckets, [
+            NonRevocationReturnSupervisionTimeBucket.for_month(
+                supervision_period.state_code,
+                2008, 3, supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_month(
+                supervision_period.state_code,
+                2008, 4, supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_month(
+                supervision_period.state_code,
+                2008, 5, supervision_period.supervision_type),
+            RevocationReturnSupervisionTimeBucket.for_month(
+                supervision_period.state_code,
+                2008, 6, supervision_period.supervision_type, None, None),
+            NonRevocationReturnSupervisionTimeBucket.for_month(
+                supervision_period.state_code,
+                2009, 12, supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_month(
+                supervision_period.state_code,
+                2010, 1, supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_month(
+                supervision_period.state_code,
+                2010, 2, supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_month(
+                supervision_period.state_code,
+                2010, 3, supervision_period.supervision_type),
+            RevocationReturnSupervisionTimeBucket.for_year(
+                supervision_period.state_code,
+                2008, supervision_period.supervision_type, None, None),
+            NonRevocationReturnSupervisionTimeBucket.for_year(
+                supervision_period.state_code,
+                2009, supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_year(
+                supervision_period.state_code,
+                2010, supervision_period.supervision_type),
+        ])
+
+    def test_find_time_buckets_for_supervision_period_ends_on_first(self):
+        """Tests the find_time_buckets_for_supervision_period function for a
         supervision period with no incarceration periods, where the supervision
         period ends on the 1st day of a month."""
 
@@ -1111,39 +1738,42 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 [])
 
         months_of_incarceration = identifier.identify_months_of_incarceration(
-            []
-        )
+            [])
 
-        supervision_months = identifier.find_months_for_supervision_period(
-            supervision_period, indexed_incarceration_periods,
-            months_of_incarceration
-        )
+        supervision_time_buckets = \
+            identifier.find_time_buckets_for_supervision_period(
+                supervision_period, indexed_incarceration_periods,
+                months_of_incarceration
+            )
 
-        assert len(supervision_months) == 7
+        self.assertEqual(len(supervision_time_buckets), 8)
 
-        assert supervision_months == [
-            NonRevocationReturnSupervisionMonth(
+        self.assertEqual(supervision_time_buckets, [
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
                 2001, 1, supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
                 2001, 2, supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
                 2001, 3, supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
                 2001, 4, supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
                 2001, 5, supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
                 2001, 6, supervision_period.supervision_type),
-            NonRevocationReturnSupervisionMonth(
+            NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
-                2001, 7, supervision_period.supervision_type)
-        ]
+                2001, 7, supervision_period.supervision_type),
+            NonRevocationReturnSupervisionTimeBucket.for_year(
+                supervision_period.state_code,
+                2001, supervision_period.supervision_type)
+        ])
 
 
 class TestIndexIncarcerationPeriodsByAdmissionMonth(unittest.TestCase):
@@ -1166,11 +1796,11 @@ class TestIndexIncarcerationPeriodsByAdmissionMonth(unittest.TestCase):
                 [incarceration_period]
             )
 
-        assert indexed_incarceration_periods == {
+        self.assertEqual(indexed_incarceration_periods, {
             2018: {
                 6: [incarceration_period]
             }
-        }
+        })
 
     def test_index_incarceration_periods_by_admission_month_multiple(self):
         """Tests the index_incarceration_periods_by_admission_month function
@@ -1198,14 +1828,14 @@ class TestIndexIncarcerationPeriodsByAdmissionMonth(unittest.TestCase):
                 [first_incarceration_period, second_incarceration_period]
             )
 
-        assert indexed_incarceration_periods == {
+        self.assertEqual(indexed_incarceration_periods, {
             2018: {
                 6: [first_incarceration_period]
             },
             2019: {
                 3: [second_incarceration_period]
             }
-        }
+        })
 
     # pylint: disable=line-too-long
     def test_index_incarceration_periods_by_admission_month_multiple_month(self):
@@ -1235,11 +1865,11 @@ class TestIndexIncarcerationPeriodsByAdmissionMonth(unittest.TestCase):
                 [first_incarceration_period, second_incarceration_period]
             )
 
-        assert indexed_incarceration_periods == {
+        self.assertEqual(indexed_incarceration_periods, {
             2018: {
                 6: [first_incarceration_period, second_incarceration_period]
             },
-        }
+        })
 
     def test_index_incarceration_periods_by_admission_month_none(self):
         """Tests the index_incarceration_periods_by_admission_month function
@@ -1247,7 +1877,7 @@ class TestIndexIncarcerationPeriodsByAdmissionMonth(unittest.TestCase):
         indexed_incarceration_periods = \
             identifier.index_incarceration_periods_by_admission_month([])
 
-        assert indexed_incarceration_periods == {}
+        self.assertEqual(indexed_incarceration_periods, {})
 
 
 class TestIdentifyMonthsOfIncarceration(unittest.TestCase):
@@ -1267,9 +1897,9 @@ class TestIdentifyMonthsOfIncarceration(unittest.TestCase):
         months_incarcerated = \
             identifier.identify_months_of_incarceration([incarceration_period])
 
-        assert months_incarcerated == {
+        self.assertEqual(months_incarcerated, {
             (2018, 7), (2018, 8), (2018, 9), (2018, 10), (2018, 11)
-        }
+        })
 
     def test_identify_months_of_incarceration_incarcerated_on_first(self):
         """Tests the identify_months_of_incarceration function where the person
@@ -1286,9 +1916,9 @@ class TestIdentifyMonthsOfIncarceration(unittest.TestCase):
         months_incarcerated = \
             identifier.identify_months_of_incarceration([incarceration_period])
 
-        assert months_incarcerated == {
+        self.assertEqual(months_incarcerated, {
             (2018, 8), (2018, 9), (2018, 10), (2018, 11)
-        }
+        })
 
     def test_identify_months_of_incarceration_released_last_day(self):
         """Tests the identify_months_of_incarceration function where the person
@@ -1305,9 +1935,9 @@ class TestIdentifyMonthsOfIncarceration(unittest.TestCase):
         months_incarcerated = \
             identifier.identify_months_of_incarceration([incarceration_period])
 
-        assert months_incarcerated == {
+        self.assertEqual(months_incarcerated, {
             (2018, 9), (2018, 10)
-        }
+        })
 
     def test_identify_months_of_incarceration_no_full_months(self):
         """Tests the identify_months_of_incarceration function where the person
@@ -1324,7 +1954,7 @@ class TestIdentifyMonthsOfIncarceration(unittest.TestCase):
         months_incarcerated = \
             identifier.identify_months_of_incarceration([incarceration_period])
 
-        assert months_incarcerated == set()
+        self.assertEqual(months_incarcerated, set())
 
     def test_identify_months_of_incarceration_leap_year(self):
         """Tests the identify_months_of_incarceration function where the person
@@ -1342,4 +1972,4 @@ class TestIdentifyMonthsOfIncarceration(unittest.TestCase):
         months_incarcerated = \
             identifier.identify_months_of_incarceration([incarceration_period])
 
-        assert months_incarcerated == set()
+        self.assertEqual(months_incarcerated, set())
