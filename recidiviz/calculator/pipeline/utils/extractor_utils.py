@@ -22,6 +22,7 @@ from more_itertools import one
 
 import apache_beam as beam
 from apache_beam.typehints import with_input_types, with_output_types
+from sqlalchemy.orm import RelationshipProperty
 
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.common.attr_utils import is_property_list, \
@@ -228,11 +229,21 @@ class _ExtractRelationshipPropertyEntities(beam.PTransform):
         names_to_properties = self._root_schema_class. \
             get_relationship_property_names_and_properties()
 
+        # TODO(2707): Remove this workaround in favor of a long-term approach
+        if self._root_schema_class.__tablename__ == \
+                'state_supervision_violation_response':
+            self._create_transient_supervision_violation_relationship(
+                names_to_properties)
+
         properties_dict = {}
 
         for property_name, property_object in names_to_properties.items():
             # Get class name associated with the property
-            class_name = property_object.argument.arg
+            if isinstance(property_object,
+                          self._TransientlyReplicatedRelationship):
+                class_name = property_object.argument
+            else:
+                class_name = property_object.argument.arg
 
             entity_class = entity_utils.get_entity_class_in_module_with_name(
                 state_entities, class_name)
@@ -296,6 +307,31 @@ class _ExtractRelationshipPropertyEntities(beam.PTransform):
                 properties_dict[property_name] = entities
 
         return properties_dict
+
+    class _TransientlyReplicatedRelationship(RelationshipProperty):
+        """A transient, minimal version of a SqlAlchemy RelationshipProperty.
+
+        This is used as a workaround to allow this Dataflow entity extraction
+        logic to hydrate along the backedge references that used to exist on
+        the schema.py entities but no longer do as of commit
+        a72dc5435024e06148ac891204a5667c72c4df1e.
+
+        We need to "create" a model of that relationship, without persisting it
+        in any way, to let the logic below traverse from a
+        StateSupervisionViolationResponse to a StateSupervisionViolation.
+        """
+
+    def _create_transient_supervision_violation_relationship(
+            self, names_to_properties):
+        transient_relationship = self._TransientlyReplicatedRelationship(
+            'StateSupervisionViolation',
+            uselist=False,
+            back_populates='supervision_violation_responses',
+        )
+        transient_relationship.key = 'supervision_violation'
+
+        names_to_properties['supervision_violation'] = \
+            transient_relationship
 
 
 class _ExtractEntityWithAssociationTable(beam.PTransform):
