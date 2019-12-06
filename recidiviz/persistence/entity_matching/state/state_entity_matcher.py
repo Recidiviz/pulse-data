@@ -47,7 +47,8 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import \
     convert_to_placeholder, is_multiple_id_entity, \
     get_external_id_keys_from_multiple_id_entity, get_multiple_id_classes, \
     read_db_entity_trees_of_cls_to_merge, get_multiparent_classes, \
-    db_id_or_object_id, is_standalone_class, is_standalone_entity
+    db_id_or_object_id, is_standalone_class, is_standalone_entity, \
+    log_entity_count
 from recidiviz.persistence.entity.entity_utils import is_placeholder, \
     get_set_entity_field_names, get_all_core_entity_field_names, \
     get_all_db_objs_from_tree, get_all_db_objs_from_trees
@@ -107,6 +108,10 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
 
         # Set this to True if you want to run with consistency checking
         self.do_ingest_obj_consistency_check = False
+
+        # Set this to True if you want counts on all entities read from the
+        # DB to be logged.
+        self.log_entity_counts = True
 
         self.entities_to_convert_to_placeholder: List[DatabaseEntity] = []
 
@@ -241,6 +246,11 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
             self.state_matching_delegate.read_potential_match_db_persons(
                 session=session,
                 ingested_persons=ingested_db_persons)
+
+        if self.log_entity_counts:
+            logging.info('Entity counts for all people read from the DB:')
+            log_entity_count(db_persons)
+
         logging.info("Read [%d] persons from DB in region [%s]",
                      len(db_persons),
                      self.state_matching_delegate.get_region_code())
