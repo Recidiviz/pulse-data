@@ -971,6 +971,61 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
 
         test_pipeline.run()
 
+    def testExtractRelationshipPropertyEntities_ViolationAndResponse(self):
+        """Tests the ExtractRelationshipPropertyEntities PTransform when there
+        is a 1-to-1 relationship to be hydrated (from the point of
+        view of the root schema object), namely from
+        StateSupervisionViolationResponse to StateSupervisionViolation."""
+
+        supervision_violation_response = database_test_utils. \
+            generate_test_supervision_violation_response(123)
+
+        supervision_violation = database_test_utils. \
+            generate_test_supervision_violation(123, [])
+
+        # 1 to 1 relationship
+        supervision_violation_response.supervision_violation_id = \
+            supervision_violation.supervision_violation_id
+
+        data_dict = {
+            supervision_violation_response.__tablename__:
+                normalized_database_base_dict_list(
+                    [supervision_violation_response]),
+            supervision_violation.__tablename__:
+                normalized_database_base_dict_list([supervision_violation])
+        }
+
+        test_pipeline = TestPipeline()
+
+        properties_dict = (test_pipeline
+                           | 'Extract relationship properties for the '
+                             'SupervisionViolationResponse' >>
+                           extractor_utils._ExtractRelationshipPropertyEntities(
+                               dataset=None,
+                               data_dict=data_dict,
+                               root_schema_class=
+                               schema.StateSupervisionViolationResponse,
+                               root_id_field=
+                               'supervision_violation_response_id',
+                               unifying_id_field='person_id'
+                           ))
+
+        # Assert it has the property fields we expect
+        assert len(properties_dict.keys()) == 1
+
+        output_violation = properties_dict.get('supervision_violation')
+
+        assert_that(
+            output_violation, ExtractAssertMatchers.
+            validate_extract_relationship_property_entities(
+                outer_connection_id=supervision_violation_response.person_id,
+                inner_connection_id=supervision_violation_response.
+                supervision_violation_response_id,
+                class_type=entities.StateSupervisionViolation),
+            label="Validate state_supervision_violation output")
+
+        test_pipeline.run()
+
 
 class TestExtractEntityWithAssociationTable(unittest.TestCase):
     """Tests the ExtractEntityWithAssociationTable DoFn."""
