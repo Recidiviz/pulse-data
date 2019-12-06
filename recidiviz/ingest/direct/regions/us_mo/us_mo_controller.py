@@ -65,9 +65,10 @@ from recidiviz.ingest.direct.regions.us_mo.us_mo_constants import \
     PERIOD_OPEN_CODE, INCARCERATION_SENTENCE_PROJECTED_MIN_DATE, \
     INCARCERATION_SENTENCE_PROJECTED_MAX_DATE, \
     SUPERVISION_SENTENCE_PROJECTED_COMPLETION_DATE, PERIOD_RELEASE_DATE, \
-    PERIOD_PURPOSE_FOR_INCARCERATION, PERIOD_OPEN_TYPE, PERIOD_START_DATE, \
-    SUPERVISION_VIOLATION_VIOLATED_CONDITIONS, SUPERVISION_VIOLATION_TYPES, \
-    SUPERVISION_VIOLATION_RECOMMENDATIONS, PERIOD_CLOSE_ACTION_REASON
+    PERIOD_PURPOSE_FOR_INCARCERATION, PERIOD_OPEN_CODE_SUBTYPE, \
+    PERIOD_START_DATE, SUPERVISION_VIOLATION_VIOLATED_CONDITIONS, \
+    SUPERVISION_VIOLATION_TYPES, SUPERVISION_VIOLATION_RECOMMENDATIONS, \
+    PERIOD_CLOSE_CODE_SUBTYPE
 from recidiviz.ingest.direct.state_shared_row_posthooks import \
     copy_name_to_alias, gen_label_single_external_id_hook, \
     gen_normalize_county_codes_posthook, \
@@ -97,10 +98,10 @@ class UsMoController(CsvGcsfsDirectIngestController):
         'tak040_offender_cycles',
         'tak022_tak023_tak025_tak026_offender_sentence_institution',
         'tak022_tak024_tak025_tak026_offender_sentence_probation',
-        'tak158_tak023_incarceration_period_from_incarceration_sentence',
-        'tak158_tak023_supervision_period_from_incarceration_sentence',
-        'tak158_tak024_incarceration_period_from_supervision_sentence',
-        'tak158_tak024_supervision_period_from_supervision_sentence',
+        'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence',
+        'tak158_tak023_tak026_supervision_period_from_incarceration_sentence',
+        'tak158_tak024_tak026_incarceration_period_from_supervision_sentence',
+        'tak158_tak024_tak026_supervision_period_from_supervision_sentence',
         'tak028_tak042_tak076_tak024_violation_reports',
         'tak291_tak292_tak024_citations',
     ]
@@ -110,10 +111,11 @@ class UsMoController(CsvGcsfsDirectIngestController):
         'tak040_offender_cycles': 'DQ',
         'tak022_tak023_tak025_tak026_offender_sentence_institution': 'BS',
         'tak022_tak024_tak025_tak026_offender_sentence_probation': 'BS',
-        'tak158_tak023_incarceration_period_from_incarceration_sentence': 'BT',
-        'tak158_tak023_supervision_period_from_incarceration_sentence': 'BT',
-        'tak158_tak024_incarceration_period_from_supervision_sentence': 'BU',
-        'tak158_tak024_supervision_period_from_supervision_sentence': 'BU',
+        # pylint: disable=line-too-long
+        'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence': 'BT',
+        'tak158_tak023_tak026_supervision_period_from_incarceration_sentence': 'BT',
+        'tak158_tak024_tak026_incarceration_period_from_supervision_sentence': 'BU',
+        'tak158_tak024_tak026_supervision_period_from_supervision_sentence': 'BU',
         'tak028_tak042_tak076_tak024_violation_reports': 'BY',
         'tak291_tak292_tak024_citations': 'JT',
     }
@@ -151,9 +153,11 @@ class UsMoController(CsvGcsfsDirectIngestController):
         StateChargeClassificationType.INFRACTION: ['L'],  # Local/ordinance
 
         StateSupervisionType.EXTERNAL_UNKNOWN: [
+            # Codes originating from F1$CTC - Case Type Current
             'XX',  # Unknown (Not Associated)
         ],
         StateSupervisionType.PAROLE: [
+            # Codes originating from F1$CTC - Case Type Current
             'BP',   # Board Parole
             'CR',   # Conditional Release
             'IN',   # Inmate
@@ -161,7 +165,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
             'NA',   # New Admission
         ],
         StateSupervisionType.PROBATION: [
-            # Sentence-related codes
+            # Sentence-related codes originating from F1$CTC - Case Type Current
             'BND',  # Bond Supervision (no longer used)
             'CPR',  # Court Parole (a form of probation)
             'DFP',  # Deferred Prosecution
@@ -170,7 +174,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
             'SES',  # Suspended Execution of Sentence (Probation)
             'SIS',  # Suspended Imposition of Sentence (Probation)
 
-            # Period-related codes
+            # Period-related codes originating from F1$CTC - Case Type Current
             'DV',   # Diversion
             'IC',   # Interstate Probation
             'PB',   # Former Probation Case
@@ -242,8 +246,15 @@ class UsMoController(CsvGcsfsDirectIngestController):
             'RT',  # Reinstatement
             'TR',  # Other State
         ],
+        StateSupervisionPeriodAdmissionReason.ABSCONSION: [
+            # Absconsion codes from TAK026 BW$SCD
+            '65O1010', '65O1020', '65O1030', '99O2035', '65L9100'
+        ],
         StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION: [
             'CI',  # Captured from Absconsion
+
+            # Absconsion return codes from TAK026 BW$SCD
+            '65N9500'
         ],
         StateSupervisionPeriodAdmissionReason.EXTERNAL_UNKNOWN: [
             '??',  # Code Unknown
@@ -251,6 +262,13 @@ class UsMoController(CsvGcsfsDirectIngestController):
 
         StateSupervisionPeriodTerminationReason.ABSCONSION: [
             'FA',  # Field Absconder
+
+            # Absconsion codes from TAK026 BW$SCD
+            '65O1010', '65O1020', '65O1030', '99O2035', '65L9100'
+        ],
+        StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION: [
+            # Absconsion return codes from TAK026 BW$SCD
+            '65N9500'
         ],
         StateSupervisionPeriodTerminationReason.DEATH: [
             'DE',  # Death
@@ -424,7 +442,8 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 self._clear_zero_date_string,
                 self.set_charge_id_from_sentence_id,
             ],
-            'tak158_tak023_incarceration_period_from_incarceration_sentence': [
+            # pylint: disable=line-too-long
+            'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence': [
                 self._gen_clear_magical_date_value(
                     'release_date',
                     PERIOD_RELEASE_DATE,
@@ -435,7 +454,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 self._create_source_violation_response,
                 self._process_execution,
             ],
-            'tak158_tak024_incarceration_period_from_supervision_sentence': [
+            'tak158_tak024_tak026_incarceration_period_from_supervision_sentence': [
                 self._gen_clear_magical_date_value(
                     'release_date',
                     PERIOD_RELEASE_DATE,
@@ -446,7 +465,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 self._create_source_violation_response,
                 self._process_execution,
             ],
-            'tak158_tak023_supervision_period_from_incarceration_sentence': [
+            'tak158_tak023_tak026_supervision_period_from_incarceration_sentence': [
                 self._gen_clear_magical_date_value(
                     'termination_date',
                     PERIOD_RELEASE_DATE,
@@ -454,7 +473,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
                     StateSupervisionPeriod),
                 self._set_supervision_period_status,
             ],
-            'tak158_tak024_supervision_period_from_supervision_sentence': [
+            'tak158_tak024_tak026_supervision_period_from_supervision_sentence': [
                 self._gen_clear_magical_date_value(
                     'termination_date',
                     PERIOD_RELEASE_DATE,
@@ -483,13 +502,14 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 self._generate_incarceration_sentence_id_coords,
             'tak022_tak024_tak025_tak026_offender_sentence_probation':
                 self._generate_supervision_sentence_id_coords,
-            'tak158_tak023_incarceration_period_from_incarceration_sentence':
+            # pylint: disable=line-too-long
+            'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence':
                 self._generate_incarceration_period_id_coords,
-            'tak158_tak024_incarceration_period_from_supervision_sentence':
+            'tak158_tak024_tak026_incarceration_period_from_supervision_sentence':
                 self._generate_incarceration_period_id_coords,
-            'tak158_tak023_supervision_period_from_incarceration_sentence':
+            'tak158_tak023_tak026_supervision_period_from_incarceration_sentence':
                 self._generate_supervision_period_id_coords,
-            'tak158_tak024_supervision_period_from_supervision_sentence':
+            'tak158_tak024_tak026_supervision_period_from_supervision_sentence':
                 self._generate_supervision_period_id_coords,
             'tak028_tak042_tak076_tak024_violation_reports':
                 self._generate_supervision_violation_id_coords_for_reports,
@@ -502,13 +522,14 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 self._sentence_group_ancestor_chain_override,
             'tak022_tak024_tak025_tak026_offender_sentence_probation':
                 self._sentence_group_ancestor_chain_override,
-            'tak158_tak023_incarceration_period_from_incarceration_sentence':
+            # pylint: disable=line-too-long
+            'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence':
                 self._incarceration_sentence_ancestor_chain_override,
-            'tak158_tak024_incarceration_period_from_supervision_sentence':
+            'tak158_tak024_tak026_incarceration_period_from_supervision_sentence':
                 self._supervision_sentence_ancestor_chain_override,
-            'tak158_tak023_supervision_period_from_incarceration_sentence':
+            'tak158_tak023_tak026_supervision_period_from_incarceration_sentence':
                 self._incarceration_sentence_ancestor_chain_override,
-            'tak158_tak024_supervision_period_from_supervision_sentence':
+            'tak158_tak024_tak026_supervision_period_from_supervision_sentence':
                 self._supervision_sentence_ancestor_chain_override,
             'tak028_tak042_tak076_tak024_violation_reports':
                 self._supervision_violation_report_ancestor_chain_override,
@@ -555,10 +576,10 @@ class UsMoController(CsvGcsfsDirectIngestController):
         if file_tag in [
                 'tak022_tak023_tak025_tak026_offender_sentence_institution',
                 'tak022_tak024_tak025_tak026_offender_sentence_probation',
-                'tak158_tak023_incarceration_period_from_incarceration_sentence',
-                'tak158_tak023_supervision_period_from_incarceration_sentence',
-                'tak158_tak024_incarceration_period_from_supervision_sentence',
-                'tak158_tak024_supervision_period_from_supervision_sentence',
+                'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence',
+                'tak158_tak023_tak026_supervision_period_from_incarceration_sentence',
+                'tak158_tak024_tak026_incarceration_period_from_supervision_sentence',
+                'tak158_tak024_tak026_supervision_period_from_supervision_sentence',
                 'tak028_tak042_tak076_tak024_violation_reports',
                 'tak291_tak292_tak024_citations',
         ]:
@@ -852,7 +873,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
                                          extracted_objects: List[IngestObject],
                                          _cache: IngestObjectCache):
         admission_reason = row.get(PERIOD_OPEN_CODE, None)
-        open_type = row.get(PERIOD_OPEN_TYPE, None)
+        open_type = row.get(PERIOD_OPEN_CODE_SUBTYPE, None)
 
         if cls._is_due_to_revocation(admission_reason):
             for obj in extracted_objects:
@@ -883,7 +904,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
         """Creates a source supervision violation response directly on
         the incarceration period created in the given row, if appropriate."""
         admission_reason = row.get(PERIOD_OPEN_CODE, None)
-        open_type = row.get(PERIOD_OPEN_TYPE, None)
+        open_type = row.get(PERIOD_OPEN_CODE_SUBTYPE, None)
 
         if cls._is_due_to_revocation(admission_reason):
             for obj in extracted_objects:
@@ -932,9 +953,9 @@ class UsMoController(CsvGcsfsDirectIngestController):
                            row: Dict[str, str],
                            extracted_objects: List[IngestObject],
                            _cache: IngestObjectCache):
-        close_action_reason = row.get(PERIOD_CLOSE_ACTION_REASON, None)
+        close_subtype = row.get(PERIOD_CLOSE_CODE_SUBTYPE, None)
 
-        if close_action_reason == 'EX':
+        if close_subtype == 'EX':
             for obj in extracted_objects:
                 if isinstance(obj, StateIncarcerationPeriod):
                     obj.release_reason = \
@@ -1159,8 +1180,9 @@ class UsMoController(CsvGcsfsDirectIngestController):
     @classmethod
     def _generate_period_id(cls, col_prefix: str, row: Dict[str, str]) -> str:
         sentence_group_id = cls._generate_sentence_group_id(col_prefix, row)
-        period_seq_num = row[f'{cls.PERIOD_SEQUENCE_PRIMARY_COL_PREFIX}$SQN']
-        return f'{sentence_group_id}-{period_seq_num}'
+        subcycle_seq_num = row[f'{cls.PERIOD_SEQUENCE_PRIMARY_COL_PREFIX}$SQN']
+        start_status_seq_num = row['START_STATUS_SEQ_NUM']
+        return f'{sentence_group_id}-{subcycle_seq_num}-{start_status_seq_num}'
 
     @classmethod
     def _generate_supervision_violation_id_with_report_prefix(
