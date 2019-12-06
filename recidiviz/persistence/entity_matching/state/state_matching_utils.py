@@ -18,7 +18,7 @@
 entities."""
 import logging
 from collections import defaultdict
-from typing import List, cast, Optional, Set, Type, Dict
+from typing import List, cast, Optional, Set, Type, Dict, Sequence
 
 from recidiviz.common.constants import enum_canonical_strings
 from recidiviz.common.constants.state.state_agent import StateAgentType
@@ -602,3 +602,29 @@ def is_standalone_entity(entity: DatabaseEntity) -> bool:
     can exist separate from a StatePerson tree.
     """
     return is_standalone_class(entity.__class__)
+
+
+def log_entity_count(db_persons: List[schema.StatePerson]):
+    """Counts and logs the total number of entities of each class included in
+    the |db_persons| trees.
+    """
+    entity_counter: Dict[str, int] = {}
+    _count_entities(db_persons, entity_counter)
+    debug_msg = 'Entity counter\n'
+    for k, v in entity_counter.items():
+        debug_msg += f'{str(k)}: {str(v)}\n'
+    logging.info(debug_msg)
+
+
+def _count_entities(
+        all_entities: Sequence[DatabaseEntity],
+        entity_counter: Dict[str, int]) -> Dict:
+    for entity in all_entities:
+        name = entity.get_entity_name()
+        count = entity_counter.get(name, 0)
+        entity_counter[name] = count + 1
+        for child_name in get_set_entity_field_names(
+                entity, EntityFieldType.FORWARD_EDGE):
+            child_list = entity.get_field_as_list(child_name)
+            _count_entities(child_list, entity_counter)
+    return entity_counter
