@@ -45,6 +45,14 @@ from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationFacilitySecurityLevel
 from recidiviz.common.constants.state.state_supervision import \
     StateSupervisionType
+from recidiviz.common.constants.state.state_supervision_period import \
+    StateSupervisionPeriodTerminationReason
+from recidiviz.common.constants.state.state_supervision_violation import \
+    StateSupervisionViolationType as ViolationType, \
+    StateSupervisionViolationType
+from recidiviz.common.constants.state.state_supervision_violation_response \
+    import StateSupervisionViolationResponseRevocationType as RevocationType, \
+    StateSupervisionViolationResponseRevocationType
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.entities import \
@@ -276,7 +284,266 @@ class TestSupervisionPipeline(unittest.TestCase):
         # StateSupervisionPeriods and StateIncarcerationPeriods
         person_months = (
             person_and_periods |
-            'Get Supervision Months' >>
+            'Get Supervision Time Buckets' >>
+            pipeline.GetSupervisionTimeBuckets())
+
+        # Get pipeline job details for accessing job_id
+        all_pipeline_options = PipelineOptions().get_all_options()
+
+        # Add timestamp for local jobs
+        job_timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S.%f')
+        all_pipeline_options['job_timestamp'] = job_timestamp
+
+        # Get supervision metrics
+        supervision_metrics = (person_months
+                               | 'Get Supervision Metrics' >>
+                               pipeline.GetSupervisionMetrics(
+                                   pipeline_options=all_pipeline_options,
+                                   inclusions=inclusions))
+
+        assert_that(supervision_metrics,
+                    AssertMatchers.validate_pipeline_test())
+
+        test_pipeline.run()
+
+    def testSupervisionPipeline_withRevocations(self):
+        fake_person_id = 12345
+        fake_svr_id = 56789
+        fake_violation_id = 345789
+
+        fake_person = schema.StatePerson(
+            person_id=fake_person_id, gender=Gender.FEMALE,
+            birthdate=date(1990, 1, 1),
+            residency_status=ResidencyStatus.PERMANENT)
+
+        persons_data = [normalized_database_base_dict(fake_person)]
+
+        race_1 = schema.StatePersonRace(
+            person_race_id=111,
+            state_code='VA',
+            race=Race.WHITE,
+            person_id=fake_person_id
+        )
+
+        races_data = normalized_database_base_dict_list([race_1])
+
+        ethnicity = schema.StatePersonEthnicity(
+            person_ethnicity_id=111,
+            state_code='VA',
+            ethnicity=Ethnicity.HISPANIC,
+            person_id=fake_person_id)
+
+        ethnicity_data = normalized_database_base_dict_list([ethnicity])
+
+        initial_incarceration = schema.StateIncarcerationPeriod(
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='CA',
+            county_code='124',
+            facility='San Quentin',
+            facility_security_level=StateIncarcerationFacilitySecurityLevel.
+            MAXIMUM,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.
+            NEW_ADMISSION,
+            projected_release_reason=StateIncarcerationPeriodReleaseReason.
+            CONDITIONAL_RELEASE,
+            admission_date=date(2008, 11, 20),
+            release_date=date(2010, 12, 4),
+            release_reason=StateIncarcerationPeriodReleaseReason.
+            SENTENCE_SERVED,
+            person_id=fake_person_id
+        )
+
+        first_reincarceration = schema.StateIncarcerationPeriod(
+            incarceration_period_id=2222,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='CA',
+            county_code='124',
+            facility='San Quentin',
+            facility_security_level=StateIncarcerationFacilitySecurityLevel.
+            MAXIMUM,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.
+            NEW_ADMISSION,
+            projected_release_reason=StateIncarcerationPeriodReleaseReason.
+            CONDITIONAL_RELEASE,
+            admission_date=date(2011, 4, 5),
+            release_date=date(2014, 4, 14),
+            release_reason=StateIncarcerationPeriodReleaseReason.
+            SENTENCE_SERVED,
+            person_id=fake_person_id)
+
+        # This probation supervision period ended in a revocation
+        supervision_period = schema.StateSupervisionPeriod(
+            supervision_period_id=1111,
+            state_code='CA',
+            county_code='124',
+            start_date=date(2015, 3, 14),
+            termination_date=date(2017, 1, 4),
+            termination_reason=
+            StateSupervisionPeriodTerminationReason.REVOCATION,
+            supervision_type=StateSupervisionType.PROBATION,
+            person_id=fake_person_id
+        )
+
+        ssvr = schema.StateSupervisionViolationResponse(
+            supervision_violation_response_id=fake_svr_id,
+            state_code='us_ca',
+            person_id=fake_person_id,
+            revocation_type=
+            StateSupervisionViolationResponseRevocationType.REINCARCERATION,
+            supervision_violation_id=fake_violation_id
+        )
+
+        violation = schema.StateSupervisionViolation(
+            supervision_violation_id=fake_violation_id,
+            violation_type=StateSupervisionViolationType.TECHNICAL,
+            state_code='us_ca',
+            person_id=fake_person_id,
+            supervision_violation_responses=[ssvr]
+        )
+
+        # This incarceration period was due to a probation revocation
+        revocation_reincarceration = schema.StateIncarcerationPeriod(
+            incarceration_period_id=3333,
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            state_code='CA',
+            county_code='124',
+            facility='San Quentin',
+            facility_security_level=StateIncarcerationFacilitySecurityLevel.
+            MAXIMUM,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.
+            PROBATION_REVOCATION,
+            projected_release_reason=StateIncarcerationPeriodReleaseReason.
+            CONDITIONAL_RELEASE,
+            admission_date=date(2017, 1, 4),
+            person_id=fake_person_id,
+            source_supervision_violation_response_id=fake_svr_id)
+
+        incarceration_periods_data = [
+            normalized_database_base_dict(initial_incarceration),
+            normalized_database_base_dict(first_reincarceration),
+            normalized_database_base_dict(revocation_reincarceration)
+        ]
+
+        supervision_periods_data = [
+            normalized_database_base_dict(supervision_period)
+        ]
+
+        supervision_violation_response_data = [
+            normalized_database_base_dict(ssvr)
+        ]
+
+        supervision_violation_data = [
+            normalized_database_base_dict(violation)
+        ]
+
+        inclusions = {
+            'age_bucket': False,
+            'gender': False,
+            'race': False,
+            'ethnicity': False,
+        }
+
+        data_dict = {schema.StatePerson.__tablename__: persons_data,
+                     schema.StatePersonRace.__tablename__: races_data,
+                     schema.StatePersonEthnicity.__tablename__: ethnicity_data,
+                     schema.StateIncarcerationPeriod.__tablename__:
+                         incarceration_periods_data,
+                     schema.StateSupervisionViolation.__tablename__:
+                         supervision_violation_data,
+                     schema.StateSupervisionViolationResponse.__tablename__:
+                         supervision_violation_response_data,
+                     schema.StateSupervisionPeriod.__tablename__:
+                         supervision_periods_data}
+
+        test_pipeline = TestPipeline()
+
+        # Get StatePersons
+        persons = (test_pipeline
+                   | 'Load Persons' >>
+                   extractor_utils.BuildRootEntity(
+                       dataset=None,
+                       data_dict=data_dict,
+                       root_schema_class=schema.StatePerson,
+                       root_entity_class=entities.StatePerson,
+                       unifying_id_field='person_id',
+                       build_related_entities=True))
+
+        # Get StateIncarcerationPeriods
+        incarceration_periods = (test_pipeline
+                                 | 'Load IncarcerationPeriods' >>
+                                 extractor_utils.BuildRootEntity(
+                                     dataset=None,
+                                     data_dict=data_dict,
+                                     root_schema_class=
+                                     schema.StateIncarcerationPeriod,
+                                     root_entity_class=
+                                     entities.StateIncarcerationPeriod,
+                                     unifying_id_field='person_id',
+                                     build_related_entities=True))
+
+        # Get StateSupervisionViolationResponses
+        supervision_violation_responses = \
+            (test_pipeline
+             | 'Load SupervisionViolationResponses' >>
+             extractor_utils.BuildRootEntity(
+                 dataset=None,
+                 data_dict=data_dict,
+                 root_schema_class=schema.StateSupervisionViolationResponse,
+                 root_entity_class=entities.StateSupervisionViolationResponse,
+                 unifying_id_field='person_id',
+                 build_related_entities=True
+             ))
+
+        # Get StateSupervisionPeriods
+        supervision_periods = (test_pipeline
+                               | 'Load SupervisionPeriods' >>
+                               extractor_utils.BuildRootEntity(
+                                   dataset=None,
+                                   data_dict=data_dict,
+                                   root_schema_class=
+                                   schema.StateSupervisionPeriod,
+                                   root_entity_class=
+                                   entities.StateSupervisionPeriod,
+                                   unifying_id_field='person_id',
+                                   build_related_entities=False))
+
+        # Group StateIncarcerationPeriods and StateSupervisionViolationResponses
+        # by person_id
+        incarceration_periods_and_violation_responses = (
+            {'incarceration_periods': incarceration_periods,
+             'violation_responses': supervision_violation_responses}
+            | 'Group StateIncarcerationPeriods to '
+            'StateSupervisionViolationResponses' >>
+            beam.CoGroupByKey()
+        )
+
+        # Set the fully hydrated StateSupervisionViolationResponse entities on
+        # the corresponding StateIncarcerationPeriods
+        incarceration_periods_with_source_violations = (
+            incarceration_periods_and_violation_responses
+            | 'Set hydrated StateSupervisionViolationResponses on '
+            'the StateIncarcerationPeriods' >>
+            beam.ParDo(pipeline.SetViolationResponseOnIncarcerationPeriod()))
+
+        # Group each StatePerson with their StateIncarcerationPeriods and
+        # StateSupervisionPeriods
+        person_and_periods = ({'person': persons,
+                               'incarceration_periods':
+                                   incarceration_periods_with_source_violations,
+                               'supervision_periods':
+                                   supervision_periods
+                               }
+                              | 'Group StatePerson to StateIncarcerationPeriods'
+                                ' and StateSupervisionPeriods' >>
+                              beam.CoGroupByKey()
+                              )
+
+        # Identify SupervisionMonths from the StatePerson's
+        # StateSupervisionPeriods and StateIncarcerationPeriods
+        person_months = (
+            person_and_periods |
+            'Get Supervision Time Buckets' >>
             pipeline.GetSupervisionTimeBuckets())
 
         # Get pipeline job details for accessing job_id
@@ -570,7 +837,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         # StateSupervisionPeriods and StateIncarcerationPeriods
         person_months = (
             person_and_periods |
-            'Get Supervision Months' >>
+            'Get Supervision Time Buckets' >>
             pipeline.GetSupervisionTimeBuckets())
 
         # Get pipeline job details for accessing job_id
@@ -899,6 +1166,79 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
 
         test_pipeline.run()
 
+    def testCalculateSupervisionMetricCombinations_withRevocations(self):
+        """Tests the CalculateSupervisionMetricCombinations DoFn where
+        revocations are identified."""
+        fake_person = StatePerson.new_with_defaults(
+            person_id=123, gender=Gender.MALE,
+            birthdate=date(1970, 1, 1),
+            residency_status=ResidencyStatus.PERMANENT)
+
+        supervision_months = [
+            RevocationReturnSupervisionTimeBucket(
+                'CA', 2015, 2, StateSupervisionType.PROBATION,
+                RevocationType.REINCARCERATION, ViolationType.TECHNICAL),
+            RevocationReturnSupervisionTimeBucket(
+                'CA', 2015, 3, StateSupervisionType.PROBATION,
+                RevocationType.REINCARCERATION, ViolationType.TECHNICAL),
+        ]
+
+        inclusions = {
+            'age_bucket': True,
+            'gender': True,
+            'race': True,
+            'ethnicity': True,
+        }
+
+        # Get expected number of combinations for revocation counts
+        num_combinations_revocation = len(
+            calculator.characteristic_combinations(
+                fake_person, supervision_months[0], inclusions,
+                with_revocation_dimensions=True))
+        assert num_combinations_revocation > 0
+
+        # Multiply by the number of months and by 2 (to account for methodology)
+        expected_revocation_metric_count = \
+            num_combinations_revocation * len(supervision_months) * 2
+
+        expected_combination_counts_revocations = {
+            'revocation': expected_revocation_metric_count
+        }
+
+        # Get expected number of combinations for population count
+        num_combinations_population = len(
+            calculator.characteristic_combinations(
+                fake_person, supervision_months[0], inclusions))
+        assert num_combinations_population > 0
+
+        # Multiply by the number of months and by 2 (to account for methodology)
+        expected_population_metric_count = \
+            num_combinations_population * len(supervision_months) * 2
+
+        expected_combination_counts_populations = {
+            'population': expected_population_metric_count,
+        }
+
+        test_pipeline = TestPipeline()
+
+        output = (test_pipeline
+                  | beam.Create([(fake_person, supervision_months)])
+                  | 'Calculate Supervision Metrics' >>
+                  beam.ParDo(pipeline.CalculateSupervisionMetricCombinations(),
+                             **inclusions).with_outputs('populations',
+                                                        'revocations')
+                  )
+
+        assert_that(output.revocations, AssertMatchers.
+                    count_combinations(expected_combination_counts_revocations),
+                    'Assert number of revocation metrics is expected value')
+
+        assert_that(output.populations, AssertMatchers.
+                    count_combinations(expected_combination_counts_populations),
+                    'Assert number of population metrics is expected value')
+
+        test_pipeline.run()
+
     def testCalculateSupervisionMetricCombinations_NoSupervision(self):
         """Tests the CalculateSupervisionMetricCombinations when there are
         no supervision months. This should never happen because any person
@@ -965,7 +1305,41 @@ class TestProduceSupervisionPopulationMetric(unittest.TestCase):
                   | beam.Create([(metric_key, value)])
                   | 'Produce Supervision Population Metric' >>
                   beam.ParDo(pipeline.
-                             ProduceSupervisionPopulationMetric(),
+                             ProduceSupervisionMetrics(),
+                             **all_pipeline_options)
+                  )
+
+        assert_that(output, AssertMatchers.
+                    validate_supervision_population_metric(value))
+
+        test_pipeline.run()
+
+    def testProduceSupervisionPopulationMetric_revocation(self):
+        metric_key_dict = {'gender': Gender.FEMALE,
+                           'methodology': MetricMethodologyType.PERSON,
+                           'year': 2012,
+                           'month': 12,
+                           'metric_type':
+                               SupervisionMetricType.REVOCATION.value,
+                           'state_code': 'VA'}
+
+        metric_key = json.dumps(json_serializable_metric_key(metric_key_dict),
+                                sort_keys=True)
+
+        value = 10
+
+        test_pipeline = TestPipeline()
+
+        all_pipeline_options = PipelineOptions().get_all_options()
+
+        job_timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S.%f')
+        all_pipeline_options['job_timestamp'] = job_timestamp
+
+        output = (test_pipeline
+                  | beam.Create([(metric_key, value)])
+                  | 'Produce Supervision Population Metric' >>
+                  beam.ParDo(pipeline.
+                             ProduceSupervisionMetrics(),
                              **all_pipeline_options)
                   )
 
@@ -993,7 +1367,7 @@ class TestProduceSupervisionPopulationMetric(unittest.TestCase):
                   | beam.Create([(metric_key, value)])
                   | 'Produce Supervision Population Metric' >>
                   beam.ParDo(pipeline.
-                             ProduceSupervisionPopulationMetric(),
+                             ProduceSupervisionMetrics(),
                              **all_pipeline_options)
                   )
 
@@ -1034,11 +1408,14 @@ class AssertMatchers:
                 combination, _ = result
 
                 combination_dict = json.loads(combination)
+                metric_type = combination_dict.get('metric_type')
 
-                if combination_dict.get('metric_type') == \
-                        SupervisionMetricType.POPULATION.value:
+                if metric_type == SupervisionMetricType.POPULATION.value:
                     actual_combination_counts['population'] = \
                         actual_combination_counts['population'] + 1
+                elif metric_type == SupervisionMetricType.REVOCATION.value:
+                    actual_combination_counts['revocation'] = \
+                        actual_combination_counts['revocation'] + 1
 
             for key in expected_combination_counts:
                 if expected_combination_counts[key] != \
@@ -1050,19 +1427,17 @@ class AssertMatchers:
 
     @staticmethod
     def validate_supervision_population_metric(expected_population_count):
-        """Asserts that the count on the
-        SupervisionPopulationMetric produced by the pipeline matches
-        the expected population count."""
+        """Asserts that the count on the SupervisionMetric produced by the
+        pipeline matches the expected population count."""
         def _validate_supervision_population_metric(output):
             if len(output) != 1:
                 raise BeamAssertException('Failed assert. Should be only one '
-                                          'SupervisionPopulationMetric'
-                                          ' returned.')
+                                          'SupervisionMetric returned.')
 
-            population_metric = output[0]
+            supervision_metric = output[0]
 
-            if population_metric.count != expected_population_count:
-                raise BeamAssertException('Failed assert. Population count does'
-                                          'not match expected value.')
+            if supervision_metric.count != expected_population_count:
+                raise BeamAssertException('Failed assert. Supervision count '
+                                          'does not match expected value.')
 
         return _validate_supervision_population_metric

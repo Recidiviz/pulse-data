@@ -25,13 +25,17 @@ import attr
 from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric
 from recidiviz.common.constants.state.state_supervision import \
     StateSupervisionType
+from recidiviz.common.constants.state.state_supervision_violation import \
+    StateSupervisionViolationType
+from recidiviz.common.constants.state.state_supervision_violation_response \
+    import StateSupervisionViolationResponseRevocationType
 
 
-# TODO(2643): Add revocation metric
 class SupervisionMetricType(Enum):
     """The type of supervision metrics."""
 
     POPULATION = 'POPULATION'
+    REVOCATION = 'REVOCATION'
 
 
 @attr.s
@@ -99,8 +103,50 @@ class SupervisionPopulationMetric(SupervisionMetric):
         metric_key['job_id'] = job_id
         metric_key['created_on'] = date.today()
 
-        recidivism_metric = cast(SupervisionPopulationMetric,
-                                 SupervisionPopulationMetric.
-                                 build_from_dictionary(metric_key))
+        supervision_metric = cast(SupervisionPopulationMetric,
+                                  SupervisionPopulationMetric.
+                                  build_from_dictionary(metric_key))
 
-        return recidivism_metric
+        return supervision_metric
+
+
+@attr.s
+class SupervisionRevocationMetric(SupervisionMetric):
+    """Subclass of SupervisionMetric that contains supervision revocation
+    counts."""
+    # Required characteristics
+
+    # Revocation count
+    count: int = attr.ib(default=None)
+
+    # Optional characteristics
+
+    # The StateSupervisionViolationResponseRevocationType enum for the type of
+    # revocation of supervision that this metric describes
+    revocation_type: Optional[StateSupervisionViolationResponseRevocationType] \
+        = attr.ib(default=None)
+
+    # StateSupervisionViolationType enum for the type of violation that
+    # eventually caused the revocation of supervision
+    source_violation_type: Optional[StateSupervisionViolationType] = \
+        attr.ib(default=None)
+
+    @staticmethod
+    def build_from_metric_key_group(metric_key: Dict[str, Any],
+                                    job_id: str) -> \
+            Optional['SupervisionRevocationMetric']:
+        """Builds a SupervisionRevocationMetric object from the given
+         arguments.
+        """
+
+        if not metric_key:
+            raise ValueError("The metric_key is empty.")
+
+        metric_key['job_id'] = job_id
+        metric_key['created_on'] = date.today()
+
+        supervision_metric = cast(SupervisionRevocationMetric,
+                                  SupervisionRevocationMetric.
+                                  build_from_dictionary(metric_key))
+
+        return supervision_metric
